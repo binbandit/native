@@ -2,8 +2,8 @@ extension CodeTheme {
     public static let native = CodeTheme(
         id: "native",
         name: "Native",
+        // Native DesignSystem light semantic tokens, darkened where AA contrast requires it.
         light: CodePalette(
-            // Native DesignSystem light semantic tokens, darkened where AA contrast requires it.
             foreground: CodeColor(rgb: 0x181818),
             background: CodeColor(rgb: 0xFFFFFF),
             comment: CodeColor(rgb: 0x6E6E6E),
@@ -27,8 +27,8 @@ extension CodeTheme {
             selection: CodeColor(rgb: 0x000000, alpha: 0x14),
             lineHighlight: CodeColor(rgb: 0x000000, alpha: 0x0B)
         ),
+        // Native DesignSystem dark semantic tokens.
         dark: CodePalette(
-            // Native DesignSystem dark semantic tokens.
             foreground: CodeColor(rgb: 0xEDEDED),
             background: CodeColor(rgb: 0x171717),
             comment: CodeColor(rgb: 0x8A8A8A),

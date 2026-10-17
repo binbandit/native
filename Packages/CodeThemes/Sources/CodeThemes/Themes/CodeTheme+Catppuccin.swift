@@ -2,8 +2,8 @@ extension CodeTheme {
     public static let catppuccinLatte = CodeTheme(
         id: "catppuccin-latte",
         name: "Catppuccin Latte",
+        // catppuccin-latte.json
         light: CodePalette(
-            // catppuccin-latte.json
             foreground: CodeColor(rgb: 0x4C4F69),
             background: CodeColor(rgb: 0xEFF1F5),
             comment: CodeColor(rgb: 0x7C7F93),
@@ -32,8 +32,8 @@ extension CodeTheme {
     public static let catppuccinMacchiato = CodeTheme(
         id: "catppuccin-macchiato",
         name: "Catppuccin Macchiato",
+        // catppuccin-macchiato.json
         dark: CodePalette(
-            // catppuccin-macchiato.json
             foreground: CodeColor(rgb: 0xCAD3F5),
             background: CodeColor(rgb: 0x24273A),
             comment: CodeColor(rgb: 0x939AB7),
@@ -62,8 +62,8 @@ extension CodeTheme {
     public static let catppuccinMocha = CodeTheme(
         id: "catppuccin-mocha",
         name: "Catppuccin Mocha",
+        // catppuccin-mocha.json
         dark: CodePalette(
-            // catppuccin-mocha.json
             foreground: CodeColor(rgb: 0xCDD6F4),
             background: CodeColor(rgb: 0x1E1E2E),
             comment: CodeColor(rgb: 0x9399B2),

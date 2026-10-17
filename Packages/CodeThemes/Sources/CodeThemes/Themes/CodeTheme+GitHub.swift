@@ -2,8 +2,8 @@ extension CodeTheme {
     public static let github = CodeTheme(
         id: "github",
         name: "GitHub",
+        // github-light.json
         light: CodePalette(
-            // github-light.json
             foreground: CodeColor(rgb: 0x24292E),
             background: CodeColor(rgb: 0xFFFFFF),
             comment: CodeColor(rgb: 0x6A737D),
@@ -27,8 +27,8 @@ extension CodeTheme {
             selection: CodeColor(rgb: 0x0366D6, alpha: 0x25),
             lineHighlight: CodeColor(rgb: 0xF6F8FA)
         ),
+        // github-dark.json
         dark: CodePalette(
-            // github-dark.json
             foreground: CodeColor(rgb: 0xE1E4E8),
             background: CodeColor(rgb: 0x24292E),
             comment: CodeColor(rgb: 0x6A737D),

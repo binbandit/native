@@ -2,8 +2,8 @@ extension CodeTheme {
     public static let rosePine = CodeTheme(
         id: "rose-pine",
         name: "Rosé Pine",
+        // rose-pine-dawn.json
         light: CodePalette(
-            // rose-pine-dawn.json
             foreground: CodeColor(rgb: 0x575279),
             background: CodeColor(rgb: 0xFAF4ED),
             comment: CodeColor(rgb: 0x9893A5),
@@ -27,8 +27,8 @@ extension CodeTheme {
             selection: CodeColor(rgb: 0x6E6A86, alpha: 0x14),
             lineHighlight: CodeColor(rgb: 0x6E6A86, alpha: 0x0D)
         ),
+        // rose-pine.json
         dark: CodePalette(
-            // rose-pine.json
             foreground: CodeColor(rgb: 0xE0DEF4),
             background: CodeColor(rgb: 0x191724),
             comment: CodeColor(rgb: 0x6E6A86),

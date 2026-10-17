@@ -175,3 +175,19 @@ private extension TranscriptItem {
         if case .toolCall(let call) = self { call } else { nil }
     }
 }
+
+struct ToolCallMetaTests {
+    @Test func metaFromEveryUpdateIsKept() throws {
+        var state = SessionState()
+        for line in [Wire.readToolCall, Wire.readMetaOnlyUpdate, Wire.readCompletedUpdate] {
+            state.apply(try Wire.update(line))
+        }
+        guard case .toolCall(let read)? = state.items.first else {
+            Issue.record("Expected the read call")
+            return
+        }
+        // The later toolName-only update doesn't wipe the tool's response.
+        #expect(read.meta?["claudeCode"]?["toolName"]?.stringValue == "Read")
+        #expect(read.meta?["claudeCode"]?["toolResponse"]?["file"]?["numLines"] == .number(2))
+    }
+}

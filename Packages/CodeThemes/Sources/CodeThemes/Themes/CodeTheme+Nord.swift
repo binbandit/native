@@ -2,8 +2,8 @@ extension CodeTheme {
     public static let nord = CodeTheme(
         id: "nord",
         name: "Nord",
+        // nord.json
         dark: CodePalette(
-            // nord.json
             foreground: CodeColor(rgb: 0xD8DEE9),
             background: CodeColor(rgb: 0x2E3440),
             comment: CodeColor(rgb: 0x616E88),

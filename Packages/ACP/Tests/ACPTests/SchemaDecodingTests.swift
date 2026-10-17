@@ -77,6 +77,7 @@ struct SchemaDecodingTests {
     @Test func toolCallSequenceDecodes() throws {
         let updates = try [Wire.readToolCall, Wire.readInputUpdate, Wire.readMetaOnlyUpdate, Wire.readCompletedUpdate]
             .map(Wire.update)
+        let readMeta = JSONValue.object(["claudeCode": .object(["toolName": .string("Read")])])
         guard case .toolCall(let created) = updates[0],
             case .toolCallUpdate(let described) = updates[1],
             case .toolCallUpdate(let metaOnly) = updates[2],
@@ -92,6 +93,7 @@ struct SchemaDecodingTests {
         expectedCreated.rawInput = .object([:])
         expectedCreated.content = []
         expectedCreated.locations = []
+        expectedCreated.meta = readMeta
         #expect(created == expectedCreated)
 
         // Updates carry only what changed; everything else stays nil.
@@ -99,13 +101,18 @@ struct SchemaDecodingTests {
             toolCallId: Wire.readToolCallID, title: "Read /private/tmp/acp-research/sandbox/notes.txt")
         expectedDescribed.rawInput = .object(["file_path": .string("/private/tmp/acp-research/sandbox/notes.txt")])
         expectedDescribed.locations = [ToolCallLocation(path: "/private/tmp/acp-research/sandbox/notes.txt", line: 1)]
+        expectedDescribed.meta = readMeta
         #expect(described == expectedDescribed)
 
-        #expect(metaOnly == ToolCallUpdate(toolCallId: Wire.readToolCallID))
+        // Only Claude Code's own data: the tool's response, kept as `_meta`.
+        #expect(metaOnly.title == nil && metaOnly.status == nil && metaOnly.content == nil)
+        #expect(metaOnly.meta?["claudeCode"]?["toolResponse"]?["file"]?["filePath"]?.stringValue
+            == "/private/tmp/acp-research/sandbox/notes.txt")
 
         var expectedCompleted = ToolCallUpdate(toolCallId: Wire.readToolCallID, status: .completed)
         expectedCompleted.rawOutput = .string("1\thello\n2\t")
         expectedCompleted.content = [.content(.text("```\n1\thello\n```"))]
+        expectedCompleted.meta = readMeta
         #expect(completed == expectedCompleted)
     }
 
