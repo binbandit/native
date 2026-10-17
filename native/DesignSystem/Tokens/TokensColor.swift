@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 
 // Color tokens. Every token is a dynamic `Color` that resolves per appearance, exposed on
@@ -160,21 +159,11 @@ nonisolated private enum DSPalette {
         dark: UInt32,
         darkAlpha: CGFloat = 1
     ) -> Color {
-        let lightColor = srgb(light, alpha: lightAlpha)
-        let darkColor = srgb(dark, alpha: darkAlpha)
-        return Color(nsColor: NSColor(name: "ds.\(name)") { appearance in
-            appearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? darkColor : lightColor
-        })
-    }
-
-    /// An sRGB color from a 0xRRGGBB literal.
-    static func srgb(_ hex: UInt32, alpha: CGFloat = 1) -> NSColor {
-        NSColor(
-            srgbRed: CGFloat((hex >> 16) & 0xFF) / 255,
-            green: CGFloat((hex >> 8) & 0xFF) / 255,
-            blue: CGFloat(hex & 0xFF) / 255,
-            alpha: alpha
-        )
+        Color(DSPlatformColor.dsDynamic(
+            name: name,
+            light: .dsSRGB(light, alpha: lightAlpha),
+            dark: .dsSRGB(dark, alpha: darkAlpha)
+        ))
     }
 }
 

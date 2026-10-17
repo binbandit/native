@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 
 /// The one way to show a failure: what happened, what Native already did about it, what the user
@@ -142,8 +141,7 @@ public struct ErrorState: View {
         .background(.dsSurfaceSunken, in: .rect(cornerRadius: DS.Radius.control, style: .continuous))
         .overlay(alignment: .topTrailing) {
             IconButton("Copy Error Output", systemImage: "doc.on.doc") {
-                NSPasteboard.general.clearContents()
-                NSPasteboard.general.setString(details, forType: .string)
+                DSPasteboard.copy(details)
             }
             .padding(DS.Space.xs)
         }

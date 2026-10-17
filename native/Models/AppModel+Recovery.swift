@@ -34,6 +34,12 @@ extension AppModel {
             reopen.append(selection)
         }
         for key in reopen {
+            let old = previous.first { $0.key == key }
+            if let old, !old.hasStarted {
+                // The agent never saved it, so there's nothing to reopen; an empty one does as well.
+                _ = await replaceEmptySession(old, on: runtime)
+                continue
+            }
             await loadSession(key)
             guard let session = sessions.session(key) else { continue }
             if interrupted.contains(key) {

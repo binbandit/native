@@ -146,6 +146,13 @@ final class SessionModel {
         parentID != nil
     }
 
+    /// Whether the session has had a turn, so its agent has saved it and can reopen it.
+    var hasStarted: Bool {
+        lastStopReason != nil || phase == .prompting || state.items.contains { item in
+            if case .message(let message) = item { message.role == .user } else { false }
+        }
+    }
+
     func child(_ id: SessionID) -> SessionModel? {
         children[id]
     }

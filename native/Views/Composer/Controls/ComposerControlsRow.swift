@@ -3,7 +3,7 @@ import SwiftUI
 
 /// The composer's bottom row, after the reference app's: attach, model with its effort meter, autonomy, plan
 /// mode and help leading; the follow-up hint and context usage trailing.
-struct ComposerControlsRow<Context: View>: View {
+struct ComposerControlsRow<Extras: View, Context: View>: View {
     let settings: ComposerSettings
     /// The autonomy level shown while Plan Mode suspends it, and restored when Plan Mode ends.
     let resumedAutonomy: String?
@@ -15,6 +15,8 @@ struct ComposerControlsRow<Context: View>: View {
     let onCycleEffort: () -> Void
     let onCycleAutonomy: () -> Void
     let onTogglePlan: () -> Void
+    /// Other features' controls, after the composer's own (the goal pill).
+    @ViewBuilder let extras: () -> Extras
     /// The context-window indicator, from the Usage feature.
     @ViewBuilder let context: () -> Context
 
@@ -50,6 +52,7 @@ struct ComposerControlsRow<Context: View>: View {
             ForEach(settings.others, id: \.option.id) { setting in
                 SettingMenuPill(setting: setting, onSet: onSet)
             }
+            extras()
             HelpButton()
         } trailing: {
             if let followUpHint {

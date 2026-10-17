@@ -1,5 +1,3 @@
-import ACP
-
 /// The slash command being typed: the draft while it's a bare "/name", before any argument.
 struct SlashCommandQuery: Equatable {
     /// What's typed after the slash.
@@ -11,17 +9,17 @@ struct SlashCommandQuery: Equatable {
     }
 
     /// The draft once `command` is inserted, ready for its argument.
-    static func draft(inserting command: AvailableCommand) -> String {
+    static func draft(inserting command: ComposerSlashCommand) -> String {
         "/\(command.name) "
     }
 
     /// The commands matching the query, as the reference app ranks them: exact names first, then prefixes,
     /// then word prefixes, then names containing the query, keeping the agent's order within each.
-    func matches(in commands: [AvailableCommand]) -> [AvailableCommand] {
+    func matches(in commands: [ComposerSlashCommand]) -> [ComposerSlashCommand] {
         let query = text.lowercased()
         guard !query.isEmpty else { return commands }
         return commands.enumerated()
-            .compactMap { offset, command -> (rank: Int, offset: Int, command: AvailableCommand)? in
+            .compactMap { offset, command -> (rank: Int, offset: Int, command: ComposerSlashCommand)? in
                 let name = command.name.lowercased()
                 let words = name.split { !$0.isLetter && !$0.isNumber }
                 let rank: Int? =

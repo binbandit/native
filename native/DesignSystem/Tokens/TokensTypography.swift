@@ -1,4 +1,3 @@
-import AppKit
 import CoreText
 import SwiftUI
 import Synchronization
@@ -83,7 +82,7 @@ public nonisolated enum DSTypography {
         case semibold = 600
         case bold = 700
 
-        var system: NSFont.Weight {
+        var system: DSPlatformFont.Weight {
             switch self {
             case .light: .light
             case .regular, .book: .regular
@@ -94,31 +93,43 @@ public nonisolated enum DSTypography {
         }
     }
 
-    /// The `NSFont` behind a token, for AppKit text views (the composer's editor, code views).
-    public static func nsFont(size: CGFloat, weight: Weight = .regular, design: Design = .sans) -> NSFont {
+    /// The platform font behind a token, for text views outside SwiftUI (the composer's editor,
+    /// code views) and for metrics such as cap height.
+    public static func platformFont(size: CGFloat, weight: Weight = .regular, design: Design = .sans) -> DSPlatformFont {
         guard isGeistAvailable else {
             return switch design {
             case .sans: .systemFont(ofSize: size, weight: weight.system)
             case .mono: .monospacedSystemFont(ofSize: size, weight: weight.system)
             }
         }
-        let family = design == .sans ? "Geist" : "Geist Mono"
         // 'wght' as a four-character code.
-        let weightAxis = 0x7767_6874
-        let descriptor = NSFontDescriptor(fontAttributes: [
+        let variation = [0x7767_6874: weight.rawValue]
+        let family = design == .sans ? "Geist" : "Geist Mono"
+        #if canImport(AppKit)
+        let descriptor = NSFontDescriptor(fontAttributes: [.family: family, .variation: variation])
+        return NSFont(descriptor: descriptor, size: size) ?? .systemFont(ofSize: size, weight: weight.system)
+        #else
+        let descriptor = UIFontDescriptor(fontAttributes: [
             .family: family,
-            .variation: [weightAxis: weight.rawValue],
+            UIFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String): variation,
         ])
-        return NSFont(descriptor: descriptor, size: size)
-            ?? .systemFont(ofSize: size, weight: weight.system)
+        return UIFont(descriptor: descriptor, size: size)
+        #endif
     }
+
+    #if canImport(AppKit)
+    /// The `NSFont` behind a token; `platformFont` under its AppKit name.
+    public static func nsFont(size: CGFloat, weight: Weight = .regular, design: Design = .sans) -> NSFont {
+        platformFont(size: size, weight: weight, design: design)
+    }
+    #endif
 
     static func font(size: CGFloat, weight: Weight = .regular, design: Design = .sans) -> Font {
         let key = Key(size: size, weight: weight, design: design)
         if let font = cache.withLock({ $0[key] }) {
             return font
         }
-        let font = Font(nsFont(size: size, weight: weight, design: design))
+        let font = Font(platformFont(size: size, weight: weight, design: design) as CTFont)
         cache.withLock { $0[key] = font }
         return font
     }
