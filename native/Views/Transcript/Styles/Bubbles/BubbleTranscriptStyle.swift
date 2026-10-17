@@ -72,7 +72,7 @@ private struct BubbleRowView: View {
                     .padding(.leading, BubbleMetrics.horizontalPadding)
             }
         case .activity(let rows):
-            agentSide {
+            agentSide(hugsContent: true) {
                 BubbleActivityTray {
                     ForEach(rows) { row in
                         switch row {
@@ -97,9 +97,10 @@ private struct BubbleRowView: View {
         }
     }
 
-    /// Lines content up with the agent's bubbles, past the strip their tails use.
-    private func agentSide(@ViewBuilder _ content: () -> some View) -> some View {
-        BubbleLane(side: .leading) {
+    /// Lines content up with the agent's bubbles, past the strip their tails use. Hugging content
+    /// sizes to it like a bubble; the rest takes the agent's full share.
+    private func agentSide(hugsContent: Bool = false, @ViewBuilder _ content: () -> some View) -> some View {
+        BubbleLane(side: .leading, hugsContent: hugsContent) {
             content()
                 .padding(.leading, BubbleMetrics.tailWidth)
         }

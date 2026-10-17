@@ -8,13 +8,13 @@ struct RootView: View {
     @Environment(\.releaseChannel) private var releaseChannel
     @State private var columnVisibility = NavigationSplitViewVisibility.all
     @State private var undoToast: UndoToastItem?
-    @Environment(\.undoManager) private var undoManager
     @State private var showsPullRequests = false
     @Environment(AutomationCenter.self) private var automation
     /// Workflows or Automations, when one of them has the detail column.
     @State private var automationPage: AutomationPage?
     /// The run open on the Workflows page, if any.
     @State private var workflowPath: [WorkflowRun.ID] = []
+    @Environment(ExpeditionCenter.self) private var expeditions
 
     var body: some View {
         @Bindable var model = model
@@ -64,7 +64,6 @@ struct RootView: View {
         }
         .toolbar(removing: .sidebarToggle)
         .focusedSceneValue(\.sidebarVisibility, $columnVisibility)
-        .focusedSceneValue(\.windowUndoManager, undoManager)
         .undoToast($undoToast)
         .onChange(of: model.lastUndoable?.id) {
             undoToast = model.lastUndoable.map { action in UndoToastItem(action.message, undo: action.undo) }
@@ -75,20 +74,31 @@ struct RootView: View {
             if shows {
                 model.selection = nil
                 automationPage = nil
+                expeditions.isPageShown = false
             }
         }
         .onChange(of: automationPage) { _, page in
             if page != nil {
                 model.selection = nil
                 showsPullRequests = false
+                expeditions.isPageShown = false
             }
         }
         .onChange(of: model.selection) { _, key in
             if key != nil {
                 showsPullRequests = false
                 automationPage = nil
+                expeditions.isPageShown = false
             }
         }
+        .onChange(of: expeditions.isPageShown) { _, shows in
+            if shows {
+                model.selection = nil
+                showsPullRequests = false
+                automationPage = nil
+            }
+        }
+        .newExpeditionSheet()
         .sheet(isPresented: $automation.isWorkflowPickerRequested) {
             WorkflowPickerSheet(cwd: model.currentProject?.url, onAddProject: { model.isAddingProject = true }) { run in
                 automationPage = .workflows
@@ -162,6 +172,9 @@ struct RootView: View {
             if model.plugins.isEnabled(BuiltInPlugins.automations.manifest.id) || !automation.automations.automations.isEmpty {
                 AutomationsNavItem(isSelected: automationPage == .automations) { automationPage = .automations }
             }
+            if model.plugins.isEnabled(BuiltInPlugins.expeditions.manifest.id) || !expeditions.runner.expeditions.isEmpty {
+                ExpeditionsNavItem(isSelected: expeditions.isPageShown) { expeditions.show() }
+            }
         } accessories: {
             EmptyView()
         } taskAccessory: { summary in
@@ -191,6 +204,10 @@ struct RootView: View {
             WorkflowsPage(path: $workflowPath, onSetUpAutomations: automationsSetUp) { session in
                 TranscriptView(session: session) { _ in }
             }
+        } else if expeditions.isPageShown {
+            ExpeditionsPage { session in
+                TranscriptView(session: session) { _ in }
+            }
         } else if automationPage == .automations {
             AutomationsPage { run in
                 workflowPath = [run]
@@ -212,8 +229,6 @@ struct RootView: View {
 extension FocusedValues {
     /// The main window's sidebar visibility, for the View menu's sidebar command.
     @Entry var sidebarVisibility: Binding<NavigationSplitViewVisibility>?
-    /// The main window's undo manager, so menu commands can make their actions undoable.
-    @Entry var windowUndoManager: UndoManager?
 }
 
 extension URL {

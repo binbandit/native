@@ -61,6 +61,14 @@ final class TerminalStore {
         panel(for: session).newTab()
     }
 
+    /// A panel outside any task, running `command` instead of a login shell, for one-off jobs
+    /// such as signing in to an agent. It isn't kept: the caller ends it with `closeAll()`.
+    func standalonePanel(running command: String, in directory: URL) -> TerminalPanelModel {
+        TerminalPanelModel(workingDirectory: directory, command: command) { [weak self] in
+            self?.startedEngine()
+        }
+    }
+
     /// Ends a task's shells, for when the task is closed or archived.
     func closeTerminals(for key: SessionKey) {
         panels.removeValue(forKey: key)?.closeAll()

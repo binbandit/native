@@ -95,7 +95,9 @@ struct GitTaskSetupBanner: View {
         case .failed: "The worktree couldn't be set up"
         case .finished(let result) where result.timedOut: "The setup script ran too long"
         case .finished(let result) where result.succeeded:
-            "Worktree set up in \(result.duration.formatted(.units(allowed: [.minutes, .seconds], width: .abbreviated)))"
+            result.duration < .seconds(1)
+                ? "Worktree set up"
+                : "Worktree set up in \(result.duration.formatted(.units(allowed: [.minutes, .seconds], width: .abbreviated)))"
         case .finished(let result): "The setup script failed with exit code \(result.exitCode ?? 1)"
         }
     }

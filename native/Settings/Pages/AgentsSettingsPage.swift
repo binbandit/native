@@ -19,12 +19,13 @@ extension SettingsPane {
                             id: entry.rowID, title: entry.agent.name, description: entry.commandLine,
                             keywords: [entry.agent.id, entry.agent.command])
                     ]
-                        + AgentDefaultSetting.allCases.map { setting in
+                        + [
                             SettingsSearchEntry(
-                                id: setting.rowID(agentID: entry.agent.id),
-                                title: "\(entry.agent.name) \(setting.title.lowercased())",
+                                id: AgentDefaultsRow.rowID(agentID: entry.definition.id),
+                                title: "\(entry.agent.name) defaults",
+                                description: "Default model and effort for new tasks",
                                 keywords: ["model", "effort", "thinking"])
-                        }
+                        ]
                 }
             },
             content: { AgentsSettingsPage(registry: registry) }
@@ -66,11 +67,9 @@ struct AgentsSettingsPage: View {
                 ForEach(shownEntries) { entry in
                     agentRow(entry)
                     if registry.isEnabled(entry.plugin.id) {
-                        ForEach(AgentDefaultSetting.allCases, id: \.self) { setting in
-                            AgentDefaultRow(agentName: entry.agent.name, agentID: entry.agent.id, setting: setting)
-                                // Under the agent's name, past its icon.
-                                .padding(.leading, SettingsMetrics.iconTile + DS.Space.lg)
-                        }
+                        AgentDefaultsRow(agentName: entry.agent.name, agentID: entry.definition.id)
+                            // Under the agent's name, past its icon.
+                            .padding(.leading, SettingsMetrics.iconTile + DS.Space.lg)
                     }
                 }
             }

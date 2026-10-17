@@ -75,7 +75,7 @@ private struct AgentHealthChip: View {
             .trackHover($isHovered)
             .help(summary(now: .now))
             .accessibilityLabel(runtime.agent.displayName)
-            .accessibilityValue(summary(now: .now))
+            .accessibilityValue(accessibilityValue(now: .now))
             .popover(isPresented: $isShowingDetails, arrowEdge: .top) {
                 AgentDetailsView(runtime: runtime, limit: limit)
             }
@@ -84,6 +84,11 @@ private struct AgentHealthChip: View {
                 LimitChip(status: limit) { isShowingDetails = true }
             }
         }
+    }
+
+    /// The status and limit without the name, which is already the label.
+    private func accessibilityValue(now: Date) -> String {
+        [health.summary(for: runtime), limit?.line(now: now)].compactMap(\.self).joined(separator: ", ")
     }
 
     /// The status, and the limit in the shared wording when there is one.

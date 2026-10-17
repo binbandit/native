@@ -12,23 +12,31 @@ struct NewSessionItem: View {
             Task { await model.newSession() }
         } accessory: {
             SidebarRowMenu(label: "New Session With") {
-                Section("New Session With") {
-                    ForEach(model.agents, id: \.agent.id) { runtime in
-                        Button {
-                            Task { await model.newSession(with: runtime.agent.id) }
-                        } label: {
-                            Label {
-                                Text(runtime.agent.displayName)
-                            } icon: {
-                                // Menus draw only an `Image`.
-                                AgentIconStore.shared.image(
-                                    for: runtime.agent, size: DS.Size.rowLeading, scale: displayScale,
-                                    colorScheme: colorScheme)
+                // Menus only show item icons when the content asks for them.
+                Group {
+                    Section("New Session With") {
+                        ForEach(model.agents, id: \.agent.id) { runtime in
+                            Button {
+                                Task { await model.newSession(with: runtime.agent.id) }
+                            } label: {
+                                Label {
+                                    Text(runtime.agent.displayName)
+                                } icon: {
+                                    // Menus draw only an `Image`.
+                                    AgentIconStore.shared.image(
+                                        for: runtime.agent, size: DS.Size.rowLeading, scale: displayScale,
+                                        colorScheme: colorScheme)
+                                }
                             }
+                            .disabled(!model.canCreateSession(with: runtime.agent.id))
                         }
-                        .disabled(!model.canCreateSession(with: runtime.agent.id))
+                    }
+                    if !model.agentsToAdd.isEmpty {
+                        Divider()
+                        Button("Add Agent…", systemImage: "plus") { model.isAddingAgent = true }
                     }
                 }
+                .labelStyle(.titleAndIcon)
             }
         }
         .disabled(model.projects.all.isEmpty || !model.agents.contains { model.canCreateSession(with: $0.agent.id) })

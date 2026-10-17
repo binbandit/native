@@ -100,6 +100,20 @@ public nonisolated struct DSAccentPalette: Hashable, Identifiable, Sendable {
     )
 }
 
+nonisolated extension DSAccentPalette {
+    /// Whether the accent has no hue (Original's graphite and off-white), so it reads as a shade
+    /// rather than a color: large accent fills would glare, and color can't carry meaning.
+    public var isMonochrome: Bool {
+        [light.accent, dark.accent].allSatisfy { Self.chroma(of: $0) < 0.08 }
+    }
+
+    /// The spread between the strongest and weakest channel, 0 for grays.
+    private static func chroma(of hex: UInt32) -> Double {
+        let channels = [(hex >> 16) & 0xFF, (hex >> 8) & 0xFF, hex & 0xFF].map { Double($0) / 255 }
+        return (channels.max() ?? 0) - (channels.min() ?? 0)
+    }
+}
+
 nonisolated extension EnvironmentValues {
     /// The accent palette `.dsAccent` and its relatives resolve against.
     @Entry public var dsAccentPalette: DSAccentPalette = .original
@@ -144,3 +158,18 @@ nonisolated struct DSAccentStyle: ShapeStyle, Hashable {
         )
     }
 }
+
+#if DEBUG
+#Preview("Monochrome palettes") {
+    // Only Original has no hue, so features that fill large areas with the accent tone it down there.
+    let _ = assert(DSAccentPalette.all.filter(\.isMonochrome).map(\.id) == ["original"])
+    VStack(alignment: .leading, spacing: DS.Space.sm) {
+        ForEach(DSAccentPalette.all) { palette in
+            Text(verbatim: "\(palette.name): \(palette.isMonochrome ? "monochrome" : "has a hue")")
+                .foregroundStyle(.dsAccentText)
+                .dsAccentPalette(palette)
+        }
+    }
+    .padding(DS.Space.xl)
+}
+#endif

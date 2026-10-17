@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// A bubble: round corners away from the speaker, tighter ones where bubbles of a group meet, and
-/// a small hooked tail at the bottom of the group's last bubble. The tail lives in a strip of
+/// a tail curving out of the bottom corner of the group's last bubble. The tail lives in a strip of
 /// `BubbleMetrics.tailWidth` on the speaker's side that every bubble reserves.
 nonisolated struct BubbleShape: Shape {
     var side: BubbleSide
@@ -29,19 +29,16 @@ nonisolated struct BubbleShape: Shape {
             radius: topSide
         )
         if position.isLast {
-            // Down the side, then flare out into the tip and sweep back under the bubble.
-            let tip = CGPoint(x: rect.maxX, y: body.maxY)
-            path.addLine(to: CGPoint(x: body.maxX, y: body.maxY - radius))
+            // The corner squares off and the side sweeps out, concave, into a tip level with the
+            // bottom, so the tail grows out of the bubble and the bottom edge runs straight to it.
+            let rise = BubbleMetrics.tailHeight
+            path.addLine(to: CGPoint(x: body.maxX, y: body.maxY - rise))
             path.addCurve(
-                to: tip,
-                control1: CGPoint(x: body.maxX, y: body.maxY - radius * 0.35),
-                control2: CGPoint(x: body.maxX + tail * 0.4, y: body.maxY - tail * 0.15)
+                to: CGPoint(x: rect.maxX, y: body.maxY),
+                control1: CGPoint(x: body.maxX, y: body.maxY - rise * 0.4),
+                control2: CGPoint(x: body.maxX + tail * 0.45, y: body.maxY - 0.5)
             )
-            path.addCurve(
-                to: CGPoint(x: body.maxX - radius * 0.9, y: body.maxY),
-                control1: CGPoint(x: rect.maxX - tail * 1.4, y: body.maxY + tail * 0.05),
-                control2: CGPoint(x: body.maxX - radius * 0.4, y: body.maxY - tail * 0.2)
-            )
+            path.addLine(to: CGPoint(x: body.maxX - radius, y: body.maxY))
         } else {
             path.addArc(
                 tangent1End: CGPoint(x: body.maxX, y: body.maxY), tangent2End: CGPoint(x: body.minX, y: body.maxY),
