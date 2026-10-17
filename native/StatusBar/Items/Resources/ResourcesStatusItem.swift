@@ -48,7 +48,7 @@ private struct ResourcesSegment: View {
             HStack(spacing: DS.Space.sm) {
                 StatusBarGlyph("memorychip")
                 Text(hasSample ? ResourceFormat.memory(snapshot.memory) : "–")
-                    .foregroundStyle(memoryTint)
+                    .modifier(Tint(color: memoryTint))
                 StatusBarDivider()
                 StatusBarGlyph("cpu")
                 Text(hasSample ? ResourceFormat.cpu(snapshot.cpu) : "–")
@@ -65,5 +65,18 @@ private struct ResourcesSegment: View {
     private var memoryTint: Color? {
         let share = Double(snapshot.memory) / Double(max(ProcessInfo.processInfo.physicalMemory, 1))
         return share >= 0.5 ? .dsDanger : share >= 0.25 ? .dsWarning : nil
+    }
+}
+
+/// Colors a figure when there's a reason to, and otherwise leaves the segment's own color.
+private struct Tint: ViewModifier {
+    let color: Color?
+
+    func body(content: Content) -> some View {
+        if let color {
+            content.foregroundStyle(color)
+        } else {
+            content
+        }
     }
 }

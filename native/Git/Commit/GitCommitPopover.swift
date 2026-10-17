@@ -12,7 +12,7 @@ struct GitCommitPopover: View {
     @State private var selected: Set<String> = []
     @State private var isDrafting = false
     @State private var isCommitting = false
-    @State private var error: String?
+    @State private var notice: GitNotice?
     @FocusState private var isMessageFocused: Bool
 
     var body: some View {
@@ -21,8 +21,12 @@ struct GitCommitPopover: View {
             header
             messageEditor
             fileList(files)
-            if let error {
-                errorBox(error)
+            if let notice {
+                GitNoticeBanner(notice: notice, onAction: { action in
+                    isPresented = false
+                    Task { await model.run(action) }
+                }, onDismiss: { self.notice = nil })
+                    .clipShape(.rect(cornerRadius: DS.Radius.control, style: .continuous))
             }
             SeparatorLine()
             footer(files)
@@ -46,8 +50,10 @@ struct GitCommitPopover: View {
                 .truncationMode(.middle)
             Spacer(minLength: DS.Space.md)
             if isDrafting {
-                ProgressView()
-                    .controlSize(.small)
+                DotGridLoader(pattern: .typing)
+                    .foregroundStyle(.dsAccentText)
+                    .frame(width: GitMetrics.loaderSmall, height: GitMetrics.loaderSmall)
+                    .help("Drafting a message…")
             } else if CommitMessageDrafter.isAvailable {
                 IconButton("Draft Message with Apple Intelligence", systemImage: "sparkles") {
                     Task { await draft() }
@@ -120,20 +126,6 @@ struct GitCommitPopover: View {
         .onTapGesture { toggle(file.path) }
     }
 
-    private func errorBox(_ message: String) -> some View {
-        ScrollView {
-            Text(message)
-                .font(.dsMonoCaption)
-                .foregroundStyle(.dsDanger)
-                .textSelection(.enabled)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(DS.Space.sm)
-        }
-        .frame(maxHeight: GitMetrics.commitMessageHeight)
-        .fixedSize(horizontal: false, vertical: true)
-        .background(.dsDanger.opacity(0.08), in: .rect(cornerRadius: DS.Radius.control, style: .continuous))
-    }
-
     private func footer(_ files: [GitCommitFile]) -> some View {
         let canCommit = !selected.isEmpty && !model.commitMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         return HStack(spacing: DS.Space.sm) {
@@ -146,8 +138,9 @@ struct GitCommitPopover: View {
             }
             Spacer(minLength: DS.Space.md)
             if isCommitting {
-                ProgressView()
-                    .controlSize(.small)
+                DotGridLoader(pattern: .typing)
+                    .foregroundStyle(.dsTextSecondary)
+                    .frame(width: GitMetrics.loaderSmall, height: GitMetrics.loaderSmall)
             }
             Button("Commit & Push") {
                 Task { await commit(files, push: true) }
@@ -179,9 +172,9 @@ struct GitCommitPopover: View {
         let changes = model.changes.filter { selected.contains($0.path) }
         do {
             model.commitMessage = try await model.draftCommitMessage(for: changes)
-            error = nil
+            notice = nil
         } catch {
-            self.error = error.localizedDescription
+            notice = GitNotice(tone: .failure, title: "Couldn't draft a message", message: error.localizedDescription)
         }
     }
 
@@ -194,7 +187,7 @@ struct GitCommitPopover: View {
             isPresented = false
             next?()
         } catch {
-            self.error = error.localizedDescription
+            notice = GitNotice(failure: error, during: .commit)
         }
     }
 }

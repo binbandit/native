@@ -10,7 +10,7 @@ nonisolated enum HomeLayout {
     /// Cards per row (`md:grid-cols-3`).
     static let maxColumns = 3
     /// Below this a card's label stops fitting, so rows get fewer cards.
-    static let minCardWidth: CGFloat = 150
+    static let minCardWidth: CGFloat = 176
     /// `h-32`.
     static let cardHeight: CGFloat = 128
     /// `gap-3`.
