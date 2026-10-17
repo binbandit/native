@@ -48,14 +48,24 @@ final class GitStore {
         return worktree.path
     }
 
-    /// Removes a task's worktree, first saving uncommitted work under `refs/native-checkpoints/`.
-    /// Its branch stays. Returns the checkpoint ref when there was work to save.
-    @discardableResult
-    func removeTaskWorktree(at folder: URL) async throws -> String? {
+    /// Removes a task's worktree, first saving its uncommitted work as a checkpoint. Its branch
+    /// stays, so `restoreTaskWorktree` can bring the whole thing back.
+    func removeTaskWorktree(at folder: URL) async throws -> RemovedTaskWorktree {
         let repository = try await requireRepository(at: folder)
+        let main = try await repository.worktrees().first(where: \.isMain)?.path ?? repository.root
+        let branch = try await repository.status().branch.name
         let checkpoint = try await repository.removeWorktree(at: repository.root, force: true)
         models.removeValue(forKey: folder.standardizedFileURL)
-        return checkpoint?.reference
+        return RemovedTaskWorktree(path: repository.root, mainRoot: main, branch: branch, checkpoint: checkpoint)
+    }
+
+    /// Checks a removed task worktree's branch out where it was and restores its uncommitted work.
+    func restoreTaskWorktree(_ removed: RemovedTaskWorktree) async throws -> URL {
+        guard let branch = removed.branch else {
+            throw GitError.detachedHead
+        }
+        let main = try await requireRepository(at: removed.mainRoot)
+        return try await main.restoreWorktree(at: removed.path, branch: branch, from: removed.checkpoint).path
     }
 
     // MARK: - Resolving git
