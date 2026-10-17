@@ -13,6 +13,7 @@ final class BubbleClock {
     /// Notes rows by id. `live` says they arrived just now, while the transcript was showing.
     func note(_ ids: [String], live: Bool) {
         let now = Date.now
+        FileHandle.standardError.write(Data("LABSCLOCK live=\(live) ids=\(ids.count) seen=\(seen.count)\n".utf8))
         for id in ids where seen.insert(id).inserted && live {
             dates[id] = now
         }
