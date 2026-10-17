@@ -1,27 +1,33 @@
 import Foundation
 import Observation
 
-/// The items the status bar shows, and which ones the user hid (kept under `statusBar.hiddenItems`).
+/// The items the status bar shows. Each item is shown or hidden by default when it's registered;
+/// the user's own choices override that and are kept under `statusBar.visibility`.
 @Observable
 final class StatusBarRegistry {
     private(set) var items: [AnyStatusBarItem] = []
-    private(set) var hiddenIDs: Set<String> {
-        didSet { defaults.set(hiddenIDs.sorted(), forKey: Self.hiddenKey) }
+    /// The user's choices, by item id. Items without one use their default.
+    private var choices: [String: Bool] {
+        didSet { defaults.set(choices, forKey: Self.visibilityKey) }
     }
 
+    private var defaultVisibility: [String: Bool] = [:]
     @ObservationIgnored private let defaults: UserDefaults
-    private static let hiddenKey = "statusBar.hiddenItems"
+    private static let visibilityKey = "statusBar.visibility"
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        hiddenIDs = Set(defaults.stringArray(forKey: Self.hiddenKey) ?? [])
+        choices = defaults.dictionary(forKey: Self.visibilityKey) as? [String: Bool] ?? [:]
     }
 
-    /// Adds an item, replacing one with the same id.
-    func register(_ item: some StatusBarItem) {
+    /// Adds an item, replacing one with the same id. Native keeps the bar minimal: register only
+    /// what most people want as visible by default, and let the rest be turned on from the bar's
+    /// menu.
+    func register(_ item: some StatusBarItem, isVisibleByDefault: Bool = true) {
         let item = AnyStatusBarItem(item)
         items.removeAll { $0.id == item.id }
         items.append(item)
+        defaultVisibility[item.id] = isVisibleByDefault
     }
 
     func unregister(_ id: String) {
@@ -31,7 +37,7 @@ final class StatusBarRegistry {
     /// The items shown at one end, outer edge first.
     func visibleItems(_ placement: StatusBarPlacement) -> [AnyStatusBarItem] {
         items
-            .filter { $0.placement == placement && !hiddenIDs.contains($0.id) }
+            .filter { $0.placement == placement && isVisible($0.id) }
             .sorted { $0.order < $1.order }
     }
 
@@ -41,14 +47,10 @@ final class StatusBarRegistry {
     }
 
     func isVisible(_ id: String) -> Bool {
-        !hiddenIDs.contains(id)
+        choices[id] ?? defaultVisibility[id] ?? true
     }
 
     func setVisible(_ visible: Bool, for id: String) {
-        if visible {
-            hiddenIDs.remove(id)
-        } else {
-            hiddenIDs.insert(id)
-        }
+        choices[id] = visible
     }
 }

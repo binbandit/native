@@ -53,10 +53,10 @@ struct ResourcesPanel: View {
     /// Orca's summary line: total CPU and memory, with the total's trend.
     private var summary: some View {
         HStack(spacing: DS.Space.md) {
-            Text(ResourceFormat.cpu(snapshot.cpu))
+            Text(DSFormat.cpu(snapshot.cpu))
                 .foregroundStyle(.dsTextPrimary)
             StatusBarDivider()
-            Text(ResourceFormat.memory(snapshot.memory))
+            Text(DSFormat.memory(snapshot.memory))
                 .foregroundStyle(.dsTextPrimary)
             Text("in \(snapshot.processCount) \(snapshot.processCount == 1 ? "process" : "processes")")
                 .foregroundStyle(.dsTextTertiary)

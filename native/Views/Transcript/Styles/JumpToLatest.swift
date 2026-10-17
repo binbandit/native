@@ -1,3 +1,4 @@
+import ACP
 import SwiftUI
 
 /// The small round button that floats above the composer while a turn runs and you've scrolled
@@ -23,14 +24,25 @@ struct JumpToLatestMenuItem: View {
     @FocusedValue(\.transcriptJumpToLatest) private var jump
 
     var body: some View {
-        Button("Jump to Latest") { jump?() }
+        Button("Jump to Latest") { jump?.action() }
             .disabled(jump == nil)
     }
 }
 
+/// Scrolls a session's transcript to its newest output. Equal for the same session, so the focused
+/// value doesn't change, and menus don't update, on every transcript update.
+struct TranscriptJumpCommand: Equatable {
+    let sessionID: SessionID
+    let action: @MainActor () -> Void
+
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.sessionID == rhs.sessionID
+    }
+}
+
 extension FocusedValues {
-    /// Scrolls the visible session's transcript to its newest output.
-    @Entry var transcriptJumpToLatest: (@MainActor () -> Void)?
+    /// Jumps the visible session's transcript to its newest output, while it's scrolled away.
+    @Entry var transcriptJumpToLatest: TranscriptJumpCommand?
 }
 
 extension EnvironmentValues {
