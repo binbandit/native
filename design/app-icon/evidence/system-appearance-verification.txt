@@ -1,0 +1,30 @@
+Checked: 2026-10-17T11:25:41.679582+00:00
+HEAD: 66955b282ddb4495bba9c1227f2be6b4c12b4637
+
+Claim: Glass is no longer a theme. Original restores the compiled system icon, with normal default/dark artwork and native Mono settings for Clear/Tinted. Alternate themes retain explicit light/dark Dock overrides.
+
+Before: last successful isolated Native.app showed 8 choices, including Glass. Captured settings-glass-before-removal.png. Source hashes are recorded in verification.txt from the prior check.
+
+After: real AppIconPreferences.swift and AppearanceSettingsView.swift compiled into an isolated SwiftUI preview, using the compiled current asset catalog. NativeIconSettingsPreview bundle ID dev.native.icon-settings-preview. The picker displays 7 themes, no Glass, Original displays Follows macOS. Captured settings-system-appearances.png.
+
+Verified: UI theme selection, no Glass option, current model checks including legacy Glass preference migration, native bundle restoration, 12 alternate light/dark variants, persistence and appearance observation.
+Partial: full integration build remains blocked by concurrent StatusBar ResourcesPanel/ResourcesStatusItem compilation errors. The independent preview compiled and loaded the actual changed model/view and assets. Global macOS icon settings were not changed; all six native icon variants were exported with Apple ictool instead of exercising live Dock style changes.
+
+sandbox_extension_issue_file_to_process failed for /tmp/NativeIconChecks.app: 1 (Operation not permitted)
+PASS: 12 color variants switch the Dock image; Original restores the native bundle; automatic light/dark updates; explicit override; persisted selection; invalid preference recovery; legacy Glass migration.
+
+Native export checks (ictool, macOS design generation 27):
+ClearDark.png 7a2dd0a2d637ad67bc0b67bcdd2bab33df4e4f570e124e82e9a9f0394e15ff46
+ClearLight.png 605098e1301012489aa35e04367ba1bd67d238e527367c8f6fc6ad4f25147834
+Dark.png 149fb4715638d5a9100fbbda83582eb901b1cfc77d272f24d18a664d99869c40
+Default.png debaf98d9dcd6cc6de9acc7f375a3451538d51a35206e27dffe46c1a7c279929
+TintedDark.png 1ebd142c5e076f0795af048d3ffd594906044d4fc0b32478f844d64e73d64e24
+TintedLight.png 9c0dbab63a3618e033bd1f097505dd7f419d4e61947448282c7a74c82a400709
+
+Formatter: swift format lint --strict on both changed Swift files passed.
+
+SHA-256 of current source files:
+067dd5956831925fe0f2e024345b24b053b1a8ff5e22791329ae5c5a7110cc0d native/Models/AppIconPreferences.swift
+e6ff602648424269fb532ef8b67b0db9563576d96a658a665e6bf6c6eae1aac3 native/Views/Settings/AppearanceSettingsView.swift
+13db24907a2a5ba556fd6bc427800afb047ec8112b83a56a07822e6f5c28d391 native/AppIcon.icon/icon.json
+81c006761bc664919ee582d45eeab91f1e338259dbeba0ab9de960e36de9d62b native/AppIcon.icon/Assets/native-mark.svg
