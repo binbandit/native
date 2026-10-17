@@ -1,8 +1,8 @@
 import Foundation
 
 /// A message one session sends another through `send_message`.
-nonisolated struct TaskMessage: Hashable, Sendable {
-    enum Delivery: String, Hashable, Sendable {
+struct TaskMessage: Sendable {
+    enum Delivery: String, Sendable {
         /// Added to the recipient's running turn.
         case steered
         /// Held until the recipient's running turn ends, then sent as its next prompt.
@@ -11,8 +11,8 @@ nonisolated struct TaskMessage: Hashable, Sendable {
         case prompted
     }
 
-    var sender: UUID
-    var recipient: UUID
+    var sender: SessionKey
+    var recipient: SessionKey
     /// What the sender wrote, for the transcripts, which show who it's from on their own.
     var text: String
     /// What the recipient's agent is given: `text`, introduced with who sent it and how to reply,

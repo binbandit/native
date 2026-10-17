@@ -6,6 +6,7 @@ import SwiftUI
 struct GitChangesHeader: View {
     let model: GitRepositoryModel
     @Binding var isCommitting: Bool
+    @State private var isSmartCommitting = false
     let onCreatePullRequest: (() -> Void)?
 
     var body: some View {
@@ -32,6 +33,13 @@ struct GitChangesHeader: View {
 
     @ViewBuilder private var primaryAction: some View {
         if let status = model.status, let branch = model.branch {
+            if status.changedFileCount > 1, status.conflicted.isEmpty {
+                IconButton("Smart Commit…", systemImage: "square.stack.3d.up") { isSmartCommitting = true }
+                    .dsHitTarget(DS.Size.controlXS)
+                    .sheet(isPresented: $isSmartCommitting) {
+                        GitSmartCommitSheet(repository: model)
+                    }
+            }
             if !status.isClean {
                 Button("Commit", systemImage: "checkmark") { isCommitting = true }
                     .buttonStyle(.ds(.primary))

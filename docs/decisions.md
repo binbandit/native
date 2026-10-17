@@ -164,3 +164,20 @@ Beta is a Sparkle channel inside the stable feed: opting in from Settings costs 
 users still get stable releases. Both feeds are GitHub release assets: stable and beta at
 `releases/latest/download/appcast.xml`, nightly on a rolling `nightly` release. Release notes are
 drafted from conventional commits; there's no hand-written changelog.
+
+## 2026-10-18: The terminal is libghostty
+
+Each task's terminal (`native/Terminal`) embeds libghostty, the library inside Ghostty (MIT): a
+fast, correct VT emulator with a Metal renderer, CoreText font shaping, input method and kitty
+keyboard support, and the same embedding API (`ghostty.h`) Ghostty's own macOS app is built on.
+Writing an emulator is years of work; SwiftTerm draws with Core Graphics and lags on correctness;
+xterm.js would mean a web view. The embedding API isn't declared stable, so the build pins one
+Ghostty commit and the Zig it requires (`scripts/build-libghostty.sh`): currently `b1d2b7ef1`
+(a 2026-09-28 tip build Ghostty shipped) with Zig 0.16.0, because Ghostty's last release (1.3.1)
+pins Zig 0.15.2, which can't link on macOS 27. The script fetches both into
+`~/Library/Caches/native-build` (never the user's own Zig or Ghostty) and builds a static
+`libghostty.a` (ReleaseFast, no Sentry, no gettext) that the app links through a module map, plus
+Ghostty's terminfo and shell integration, which the build phase copies into the bundle. Nothing
+built or fetched lives in the repo. A build without it still compiles (`canImport(GhosttyKit)`) and
+the terminal says how to enable it. Native writes the whole libghostty config itself and never
+reads the user's Ghostty config, so the terminal follows Native's design system and settings.

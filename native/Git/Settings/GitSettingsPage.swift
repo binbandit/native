@@ -15,10 +15,14 @@ extension SettingsPane {
         keywords: ["branch", "worktree", "prefix", "env", "setup script", "archive"],
         searchEntries: {
             [
-                SettingsSearchEntry(id: GitSettingsPage.prefixRow, title: "Branch prefix", keywords: ["username", "github"]),
-                SettingsSearchEntry(id: GitSettingsPage.workspaceRow, title: "New tasks get", keywords: ["worktree", "branch"]),
-                SettingsSearchEntry(id: GitSettingsPage.envFilesRow, title: "Files to copy into new worktrees", keywords: [".env"]),
-                SettingsSearchEntry(id: GitSettingsPage.scriptsRow, title: "Setup scripts", keywords: ["setup", "install"]),
+                SettingsSearchEntry(
+                    id: GitSettingsPage.prefixRow, title: "Branch prefix", keywords: ["username", "github"]),
+                SettingsSearchEntry(
+                    id: GitSettingsPage.workspaceRow, title: "New tasks get", keywords: ["worktree", "branch"]),
+                SettingsSearchEntry(
+                    id: GitSettingsPage.envFilesRow, title: "Files to copy into new worktrees", keywords: [".env"]),
+                SettingsSearchEntry(
+                    id: GitSettingsPage.scriptsRow, title: "Setup scripts", keywords: ["setup", "install"]),
             ]
         },
         content: { GitSettingsPage() }
@@ -39,11 +43,14 @@ struct GitSettingsPage: View {
     var body: some View {
         @Bindable var settings = settings
         SettingsPage {
-            SettingsHeader("Git", description: Text("How new tasks get their branch and worktree. Everything runs with your own git."))
+            SettingsHeader(
+                "Git",
+                description: Text("How new tasks get their branch and worktree. Everything runs with your own git."))
             SettingsRowGroup {
                 SettingsRow(
                     id: Self.prefixRow, "Branch prefix",
-                    description: Text("New branches start with it, like \(settings.branchPrefix(gitHubLogin: "you"))fix-login-bug.")
+                    description: Text(
+                        "New branches start with it, like \(settings.branchPrefix(gitHubLogin: "you"))fix-login-bug.")
                 ) {
                     HStack(spacing: DS.Space.sm) {
                         if settings.branchPrefixMode == .custom {
@@ -64,7 +71,9 @@ struct GitSettingsPage: View {
                 }
                 SettingsRow(
                     id: Self.workspaceRow, "New tasks get",
-                    description: Text("A worktree keeps parallel tasks from editing the same files. Worktrees live in ~/.native/worktrees.")
+                    description: Text(
+                        "A worktree keeps parallel tasks from editing the same files. Worktrees live in ~/.native/worktrees."
+                    )
                 ) {
                     SettingsSelect(
                         label: "New tasks get", selection: $settings.newTaskWorkspace,
@@ -85,8 +94,10 @@ struct GitSettingsPage: View {
                     SettingsSwitch("Delete the branch when archiving", isOn: $settings.deletesBranchOnArchive)
                 }
             }
-            SettingsSubheading("Setup scripts", note: "Run in each new worktree of the project, after env files are copied.")
-                .settingsRevealTarget(Self.scriptsRow)
+            SettingsSubheading(
+                "Setup scripts", note: "Run in each new worktree of the project, after env files are copied."
+            )
+            .settingsRevealTarget(Self.scriptsRow)
             SettingsRowGroup {
                 ForEach(settings.setupScripts.keys.sorted(), id: \.self) { path in
                     let root = URL(filePath: path, directoryHint: .isDirectory)

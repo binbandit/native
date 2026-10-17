@@ -99,8 +99,33 @@ workflow step waiting for approval. They're chosen not to collide with text edit
 | ⌥⌘G | Set or edit the session's goal | Session |
 | ⌥⌘R | Run a workflow | Session |
 
+## Terminal
+
+Each task has a terminal panel under the composer, opening in the task's folder (`docs/terminal.md`).
+
+| Keys | Action | Menu |
+| --- | --- | --- |
+| ⌃` | Show the task's terminal and focus it; with the terminal focused, hide it and return to the composer | View |
+| ⌃⇧` | New terminal tab | View |
+| | Close the terminal tab (asks first when a program is running in it) | View |
+
+While a terminal has focus, keys go to its shell, except ⌘ shortcuts that Native's menus claim
+(they keep working) and these, which the terminal handles itself:
+
+| Keys | Action |
+| --- | --- |
+| ⌘C / ⌘V / ⌘A | Copy the selection, paste, select all (Edit menu) |
+| ⌘K | Clear the screen and scrollback |
+| ⌘Home / ⌘End | Scroll to the top / bottom of the scrollback |
+| ⌘PageUp / ⌘PageDown, ⇧PageUp / ⇧PageDown | Scroll by a page |
+| ⌘⇧↑ / ⌘⇧↓ | Jump to the previous / next prompt |
+| ⌘← / ⌘→, ⌘⌫ | Start / end of the line, delete to the start of the line (sent to the shell) |
+| ⌥← / ⌥→ | Back / forward one word (sent to the shell) |
+
 ## Ownership
 
 Menu commands live in `NativeApp`; composer keys in `native/Views/Composer*`; permission keys in
-`native/Views/Transcript/ToolCallView.swift`; sidebar keys in `SidebarView`. Change a key here first,
+`native/Views/Transcript/ToolCallView.swift`; sidebar keys in `SidebarView`; terminal commands in
+`native/Terminal/Views/TerminalCommands.swift` and keys inside a terminal in
+`GhosttyConfiguration.keybinds` (`Packages/Terminal`). Change a key here first,
 then in code.

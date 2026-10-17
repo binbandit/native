@@ -1,4 +1,5 @@
 import SwiftUI
+import Terminal
 
 /// View ▸ Show Terminal, New Terminal Tab and Close Terminal Tab, for the task in the frontmost
 /// window. Every shortcut here is listed in `docs/keyboard.md`, Terminal.

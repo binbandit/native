@@ -287,14 +287,14 @@ extension GhosttySurfaceView: NSTextInputClient {
         guard let surface else { return NSRect(origin: frame.origin, size: .zero) }
         var x = 0.0
         var y = 0.0
-        var width = cellSize.width
-        var height = cellSize.height
+        var width = Double(cellSize.width)
+        var height = Double(cellSize.height)
         ghostty_surface_ime_point(surface, &x, &y, &width, &height)
         if range.length == 0, width > 0 {
             width = 0
-            x += cellSize.width * Double(range.location)
+            x += Double(cellSize.width) * Double(range.location)
         }
-        let rect = NSRect(x: x, y: bounds.height - y, width: width, height: max(height, cellSize.height))
+        let rect = NSRect(x: x, y: bounds.height - y, width: width, height: max(height, Double(cellSize.height)))
         let inWindow = convert(rect, to: nil)
         return window?.convertToScreen(inWindow) ?? inWindow
     }

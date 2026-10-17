@@ -25,7 +25,8 @@ struct GitSetupScriptEditor: View {
                 .frame(minHeight: GitMetrics.scriptEditorHeight)
                 .background(.dsSurface, in: .rect(cornerRadius: DS.Radius.control, style: .continuous))
                 .overlay {
-                    RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous).strokeBorder(.dsBorder, lineWidth: 1)
+                    RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous).strokeBorder(
+                        .dsBorder, lineWidth: 1)
                 }
                 .accessibilityLabel("Setup script")
             HStack {

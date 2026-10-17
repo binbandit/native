@@ -25,8 +25,8 @@ public nonisolated struct AutomationOccurrence: Codable, Hashable, Sendable {
         self.occurredAt = occurredAt
     }
 
-    /// The line an automation's prompt gets, so the agent knows what to look at.
-    public var context: String {
+    /// What happened, in a few words: "CI failed: acme/reports#214 Add CSV export".
+    public var headline: String {
         let what = switch kind {
         case .pullRequestOpened: "Pull request opened"
         case .pullRequestUpdated: "Pull request updated"
@@ -35,6 +35,11 @@ public nonisolated struct AutomationOccurrence: Codable, Hashable, Sendable {
         case .taskFinished: "Task finished"
         case .branchPushed: "Branch pushed"
         }
-        return "\(what): \(subject)" + (url.map { " (\($0.absoluteString))" } ?? "")
+        return "\(what): \(subject)"
+    }
+
+    /// The line an automation's prompt gets, so the agent knows what to look at.
+    public var context: String {
+        headline + (url.map { " (\($0.absoluteString))" } ?? "")
     }
 }

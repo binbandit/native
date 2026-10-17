@@ -8,7 +8,7 @@ public nonisolated enum AutomationTrigger: Codable, Hashable, Sendable {
     public var summary: String {
         switch self {
         case .schedule(let schedule): schedule.summary()
-        case .event(let kind): "When " + kind.label.prefix(1).lowercased() + kind.label.dropFirst()
+        case .event(let kind): "When " + kind.clause
         }
     }
 
