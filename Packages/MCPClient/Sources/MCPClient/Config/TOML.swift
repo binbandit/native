@@ -333,7 +333,7 @@ private struct TOMLParser {
             if scalar == delimiter, peek(1) == delimiter, peek(2) == delimiter {
                 index += 3
                 // Up to two more quotes right before the closing ones belong to the string.
-                while peek() == delimiter, result.count >= 0 {
+                for _ in 0..<2 where peek() == delimiter {
                     result.append(delimiter)
                     index += 1
                 }
