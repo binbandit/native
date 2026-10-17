@@ -1,0 +1,65 @@
+# Builds Native Nightly from main every night and publishes it to the rolling "nightly" release.
+# docs/releasing.md explains the release flow and the secrets this uses.
+name: Nightly
+
+on:
+  schedule:
+    - cron: "0 7 * * *" # 07:00 UTC
+  workflow_dispatch:
+    inputs:
+      force:
+        description: Publish even if main hasn't changed since the last nightly
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+jobs:
+  nightly:
+    # Needs Xcode with the macOS 27 SDK. Set the MACOS_RUNNER and XCODE_DEVELOPER_DIR repository
+    # variables to use another runner or Xcode without editing this file.
+    runs-on: ${{ vars.MACOS_RUNNER || 'macos-26' }}
+    timeout-minutes: 90
+    env:
+      DEVELOPER_DIR: ${{ vars.XCODE_DEVELOPER_DIR || '/Applications/Xcode_27.1.app/Contents/Developer' }}
+      GH_TOKEN: ${{ github.token }}
+      NATIVE_TEAM_ID: ${{ secrets.NATIVE_TEAM_ID }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: main
+          fetch-depth: 0 # build numbers and release notes come from history
+          fetch-tags: true
+
+      - name: Check for changes since the last nightly
+        id: changes
+        run: |
+          last=$(git rev-parse --quiet --verify 'refs/tags/nightly^{commit}' || true)
+          if [ "$last" = "$(git rev-parse HEAD)" ] && [ "${{ inputs.force }}" != "true" ]; then
+            echo "main hasn't changed since the last nightly; nothing to publish."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up signing
+        if: steps.changes.outputs.skip != 'true'
+        env:
+          DEVELOPER_ID_CERTIFICATE_P12: ${{ secrets.DEVELOPER_ID_CERTIFICATE_P12 }}
+          DEVELOPER_ID_CERTIFICATE_PASSWORD: ${{ secrets.DEVELOPER_ID_CERTIFICATE_PASSWORD }}
+          NOTARY_API_KEY_P8: ${{ secrets.NOTARY_API_KEY_P8 }}
+          NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
+          NOTARY_API_ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: scripts/release/ci-signing.sh setup
+
+      - name: Build, notarize and publish
+        if: steps.changes.outputs.skip != 'true'
+        run: scripts/release/release.sh --channel nightly --publish --ed-key-file "$SPARKLE_KEY_FILE"
+
+      - name: Tear down signing
+        if: always()
+        run: scripts/release/ci-signing.sh teardown

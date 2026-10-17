@@ -9,6 +9,7 @@ import Observation
 @Observable
 final class AutomationCenter {
     let workflows = WorkflowRunner(store: .standard)
+    let automations = AutomationEngine(store: .standard)
     private(set) var library = WorkflowLibrary()
     /// Set to ask the window to show the workflow picker; the view clears it.
     var isWorkflowPickerRequested = false
@@ -30,6 +31,23 @@ final class AutomationCenter {
 
     init(goalStore: GoalStore = .standard) {
         self.goalStore = goalStore
+        workflows.onRunChange = { [automations] in automations.workflowRunChanged($0) }
+    }
+
+    /// Wires Automations to the app's features; until then it keeps its schedule but starts nothing.
+    func connectAutomations(
+        repository: @escaping (URL) async -> String?,
+        worktree: @escaping (_ project: URL, _ title: String) async throws -> URL,
+        pullRequests: @escaping () async -> [PullRequestSnapshot]?
+    ) {
+        automations.host = AppAutomationsHost(center: self, repository: repository, worktree: worktree, pullRequests: pullRequests)
+    }
+
+    /// A turn ended normally. A task the user started finishing is an event automations can wait on;
+    /// workflow steps and subagents aren't, so an automation can't trigger itself.
+    func taskTurnEnded(_ context: SessionContext) {
+        guard context.parentID == nil, host?.session(for: context.clientID)?.origin == .user else { return }
+        automations.noteTaskFinished(project: context.cwd, title: context.title ?? "A task")
     }
 
     /// Wires the center to the app: workflow steps run as the app's task sessions, pull request steps

@@ -62,12 +62,14 @@ public struct ManagedServer: Identifiable, Hashable, Sendable, Codable {
     public var agents: Selection
     /// Project paths (`ProjectPath.key`); a session in a folder inside one counts as in it.
     public var projects: Selection
+    /// Projects it's turned off in, such as after failing there ("Disable for this project").
+    public var excludedProjects: [String]
     /// Where it was imported from, such as "Claude Code · ~/.claude.json".
     public var origin: String?
 
     public init(
         id: UUID = UUID(), name: String, transport: Transport, isEnabled: Bool = true,
-        agents: Selection = .all, projects: Selection = .all, origin: String? = nil
+        agents: Selection = .all, projects: Selection = .all, excludedProjects: [String] = [], origin: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -75,6 +77,7 @@ public struct ManagedServer: Identifiable, Hashable, Sendable, Codable {
         self.isEnabled = isEnabled
         self.agents = agents
         self.projects = projects
+        self.excludedProjects = excludedProjects
         self.origin = origin
     }
 
@@ -85,10 +88,11 @@ public struct ManagedServer: Identifiable, Hashable, Sendable, Codable {
 
     /// Whether a session working in `directory` is in one of the chosen projects.
     public func includes(directory: URL?) -> Bool {
+        let path = directory.map(ProjectPath.key)
+        let contains = { (paths: [String]) in path.map { path in paths.contains { path == $0 || path.hasPrefix($0 == "/" ? $0 : $0 + "/") } } ?? false }
+        if contains(excludedProjects) { return false }
         guard case .only(let paths) = projects else { return true }
-        guard let directory else { return false }
-        let path = ProjectPath.key(directory)
-        return paths.contains { path == $0 || path.hasPrefix($0 == "/" ? $0 : $0 + "/") }
+        return contains(paths)
     }
 
     /// Names agents accept: letters, digits, `-` and `_`. Claude Code joins the name into tool

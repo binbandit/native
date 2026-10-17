@@ -19,7 +19,8 @@
 #   --ed-key-file <path>     Sparkle EdDSA private key file, or - for stdin (default: the Keychain)
 #   --download-url-prefix <url>  where the appcast says archives live (default: the GitHub release)
 #   --build-setting KEY=VALUE    extra xcodebuild setting, repeatable (local update tests)
-#   --output <dir>           default: build/release/<channel>
+#   --output <dir>           default: $TMPDIR/native-release/<channel>, outside the repo so quicksaves
+#                            never pick up archives
 #   --no-dmg                 skip the disk image
 #
 # Environment: NATIVE_NOTARY_PROFILE (notarytool keychain profile, default native-notary),
@@ -44,7 +45,7 @@ while [ $# -gt 0 ]; do
         --build-setting) settings+=("$2"); shift ;;
         --output) output=$2; shift ;;
         --no-dmg) make_dmg=0 ;;
-        -h | --help) sed -n '2,29p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h | --help) sed -n '2,30p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) die "unknown option $1 (see --help)" ;;
     esac
     shift
@@ -92,7 +93,8 @@ tag="v$version"
 [ "$channel" = nightly ] && tag=nightly
 releases="https://github.com/$repo/releases"
 [ -n "$url_prefix" ] || url_prefix="$releases/download/$tag/"
-output=${output:-build/release/$channel}
+output=${output:-${RUNNER_TEMP:-${TMPDIR:-/tmp}}/native-release/$channel}
+output=${output%/}
 archive="$output/$asset_base.xcarchive"
 app="$output/$product.app"
 # Nightly archives carry the build number so a download in flight never meets a replaced file.

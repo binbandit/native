@@ -19,6 +19,7 @@
 		00000000000000000A070020 /* NativeAutomation in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000000A070010 /* NativeAutomation */; };
 		00000000000000005E1EA503 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; platformFilters = (macos, ); productRef = 00000000000000005E1EA502 /* Sparkle */; };
 		000000000000000071E10020 /* Terminal in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000071E10010 /* Terminal */; };
+		54227E023083ADA900D7771F /* MCPClient in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000000AC10010 /* MCPClient */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -90,6 +91,7 @@
 		000000000000000130000000 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
+				54227E023083ADA900D7771F /* MCPClient in Frameworks */,
 				000000000000000000000320 /* ACP in Frameworks */,
 				000000000000000000474820 /* GitHub in Frameworks */,
 				000000000000000000000420 /* MCP in Frameworks */,
@@ -744,13 +746,13 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Automation;
 		};
-		000000000000000071E10000 /* XCLocalSwiftPackageReference "Packages/Terminal" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = Packages/Terminal;
-		};
 		00000000000000000AC10000 /* XCLocalSwiftPackageReference "Packages/MCPClient" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/MCPClient;
+		};
+		000000000000000071E10000 /* XCLocalSwiftPackageReference "Packages/Terminal" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Terminal;
 		};
 /* End XCLocalSwiftPackageReference section */
 
@@ -802,6 +804,10 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = NativeAutomation;
 		};
+		00000000000000000AC10010 /* MCPClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = MCPClient;
+		};
 		00000000000000005E1EA502 /* Sparkle */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 00000000000000005E1EA501 /* XCRemoteSwiftPackageReference "Sparkle" */;
@@ -810,10 +816,6 @@
 		000000000000000071E10010 /* Terminal */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Terminal;
-		};
-		00000000000000000AC10010 /* MCPClient */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = MCPClient;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
