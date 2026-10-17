@@ -75,6 +75,7 @@ final class AppModel {
     /// Internal only for AppModel+Listing.swift.
     @ObservationIgnored let taskRecords = TaskSessionRecords()
     @ObservationIgnored private let environment = ShellEnvironment()
+    private let sessionLists = ProjectSessionLists()
     @ObservationIgnored private let pluginEvents: AsyncStream<SessionEvent>
     @ObservationIgnored private let titleEvents: AsyncStream<TitleEvent>
     /// Tasks whose workspace has been told its title, so it's told only once. Internal only for
@@ -259,12 +260,15 @@ final class AppModel {
     // MARK: - Sessions
 
     /// A project's sessions from every agent, in the user's order, then most recently active first.
+    /// Kept between calls until something it's built from changes, since views ask on every update.
     func sessions(in project: Project.ID) -> [SessionSummary] {
-        let summaries = allSessions(in: project).filter { summary in
-            !archivedSessions.contains(summary.id) && !pendingDeletionKeys.contains(summary.id)
-                && !ordering.isPinned(summary.id)
+        sessionLists.list(for: project) {
+            let summaries = allSessions(in: project).filter { summary in
+                !archivedSessions.contains(summary.id) && !pendingDeletionKeys.contains(summary.id)
+                    && !ordering.isPinned(summary.id)
+            }
+            return ordering.sorted(summaries, in: project, recency: lastActive)
         }
-        return ordering.sorted(summaries, in: project, recency: lastActive)
     }
 
     /// A project's sessions from every agent, archived ones included.

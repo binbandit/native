@@ -20,8 +20,13 @@ final class SessionOrdering {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        orders = defaults.data(forKey: Self.key).flatMap { try? JSONDecoder().decode([Project.ID: [SessionKey]].self, from: $0) } ?? [:]
-        pinned = defaults.data(forKey: Self.pinnedKey).flatMap { try? JSONDecoder().decode([SessionKey].self, from: $0) } ?? []
+        orders =
+            defaults.data(forKey: Self.key).flatMap {
+                try? JSONDecoder().decode([Project.ID: [SessionKey]].self, from: $0)
+            } ?? [:]
+        pinned =
+            defaults.data(forKey: Self.pinnedKey).flatMap { try? JSONDecoder().decode([SessionKey].self, from: $0) }
+            ?? []
     }
 
     func isPinned(_ key: SessionKey) -> Bool {
@@ -50,10 +55,16 @@ final class SessionOrdering {
     }
 
     /// `sessions` in display order: unplaced ones by `recency`, newest first, then the user's order.
-    func sorted(_ sessions: [SessionSummary], in project: Project.ID, recency: (SessionSummary) -> Date) -> [SessionSummary] {
+    func sorted(
+        _ sessions: [SessionSummary], in project: Project.ID, recency: (SessionSummary) -> Date
+    ) -> [SessionSummary] {
         let order = orders[project, default: []]
         let positions = Dictionary(order.enumerated().map { ($1, $0) }, uniquingKeysWith: { first, _ in first })
-        let unplaced = sessions.filter { positions[$0.id] == nil }.sorted { recency($0) > recency($1) }
+        // Each session's recency once, not once per comparison: it can mean parsing a date.
+        let unplaced = sessions.filter { positions[$0.id] == nil }
+            .map { ($0, recency($0)) }
+            .sorted { $0.1 > $1.1 }
+            .map(\.0)
         let placed = sessions.compactMap { session in positions[session.id].map { (session, $0) } }
             .sorted { $0.1 < $1.1 }
             .map(\.0)
@@ -61,7 +72,9 @@ final class SessionOrdering {
     }
 
     /// Moves sessions as the user dragged them within `displayed`, the project's sessions as shown.
-    func move(_ displayed: [SessionKey], in project: Project.ID, fromOffsets source: IndexSet, toOffset destination: Int) {
+    func move(
+        _ displayed: [SessionKey], in project: Project.ID, fromOffsets source: IndexSet, toOffset destination: Int
+    ) {
         var keys = displayed
         keys.move(fromOffsets: source, toOffset: destination)
         orders[project] = keys
