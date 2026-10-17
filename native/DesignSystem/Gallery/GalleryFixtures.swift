@@ -19,6 +19,18 @@ enum GalleryFixtures {
         SampleTask(id: "polish", title: "Sidebar polish", status: .done, isUnread: true, diff: (added: 128, removed: 14), badge: .dot),
         SampleTask(id: "flaky", title: "Investigate flaky test", status: .failed, subtitle: "Codex · fix/flaky-ui-test", age: 3600 * 26),
     ]
+
+    static let limits: [LimitStatus] = [
+        LimitStatus(
+            id: "claude", provider: "Claude Code", level: .reached, window: "5-hour",
+            resetsAt: .now.addingTimeInterval(42 * 60), utilization: 1, resume: .offered
+        ),
+        LimitStatus(
+            id: "claude-scheduled", provider: "Claude Code", level: .reached, window: "weekly Opus",
+            resetsAt: .now.addingTimeInterval(3600 * 26), resume: .scheduled(.now.addingTimeInterval(3600 * 26 + 120))
+        ),
+        LimitStatus(id: "codex", provider: "Codex", level: .warning, window: "weekly", utilization: 0.9),
+    ]
 }
 
 extension TaskRow where Leading == EmptyView, Accessory == EmptyView {
