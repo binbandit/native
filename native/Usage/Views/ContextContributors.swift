@@ -14,12 +14,7 @@ struct ContextContributors: View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
             ForEach(sections) { section in
                 VStack(alignment: .leading, spacing: 0) {
-                    SectionHeader(section.title) {
-                        Text(TokenFormat.compact(section.tokens))
-                            .font(.dsBody)
-                            .monospacedDigit()
-                            .foregroundStyle(.dsTextTertiary)
-                    }
+                    ContributorSectionHeader(title: section.title, tokens: TokenFormat.compact(total(of: section)))
                     rows(for: section)
                 }
             }
@@ -31,7 +26,7 @@ struct ContextContributors: View {
         switch section {
         case .mcpServers(let servers):
             ForEach(servers) { server in
-                MCPServerRow(server: server)
+                MCPServerRow(server: server, tokens: report.tokens(of: server))
             }
         case .memoryFiles(let files):
             ForEach(files, id: \.path) { file in
@@ -63,7 +58,12 @@ struct ContextContributors: View {
             .skills(skills),
             .agents(report.agents.sorted { $0.tokens > $1.tokens }),
         ]
-        return candidates.filter { $0.tokens > 0 }.sorted { $0.tokens > $1.tokens }
+        return candidates.filter { $0.tokens > 0 }.sorted { total(of: $0) > total(of: $1) }
+    }
+
+    /// The agent's own category total where it has one; items' counts are rounded.
+    private func total(of section: Section) -> Int {
+        report.categoryTokens(section.category) ?? section.tokens
     }
 
     private enum Section: Identifiable {
@@ -79,6 +79,15 @@ struct ContextContributors: View {
             case .mcpServers: "MCP servers"
             case .memoryFiles: "Memory files"
             case .skills(let skills): "Skills · \(skills.count)"
+            case .agents: "Custom agents"
+            }
+        }
+
+        var category: String {
+            switch self {
+            case .mcpServers: "MCP tools"
+            case .memoryFiles: "Memory files"
+            case .skills: "Skills"
             case .agents: "Custom agents"
             }
         }

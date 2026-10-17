@@ -106,6 +106,12 @@ struct ModelPicker: View {
                         .lineLimit(1)
                         .truncationMode(.tail)
                 }
+                // The accent can be monochrome, so the current model gets a check too.
+                Image(systemName: "checkmark")
+                    .font(.dsCaption)
+                    .foregroundStyle(.dsAccentText)
+                    .opacity(isCurrent ? 1 : 0)
+                    .accessibilityHidden(true)
             }
             .lineLimit(1)
             .padding(.horizontal, DS.Space.md)

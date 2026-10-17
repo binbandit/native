@@ -2,7 +2,7 @@ import SwiftUI
 
 /// A provider's usage limit as it applies to one session: what was hit and when it resets, in
 /// Native's one wording, with Resume at Reset and Snooze Until Reset where they make sense.
-struct LimitBanner: View {
+struct ProviderLimitBanner: View {
     let notice: LimitNotice
     var onResumeAtReset: () -> Void = {}
     var onCancelResume: () -> Void = {}

@@ -11,7 +11,8 @@ struct ContextCategoryTable: View {
             Grid(alignment: .leading, horizontalSpacing: DS.Space.md, verticalSpacing: DS.Space.xs) {
                 ForEach(composition.segments) { segment in
                     row(segment.name, tokens: TokenFormat.compact(segment.tokens), share: TokenFormat.share(segment.tokens, of: composition.windowTokens)) {
-                        Swatch(color: segment.kind.color)
+                        // The free space is the bar's track, faint enough to need an edge here.
+                        Swatch(color: segment.kind.color, isOutlined: segment.kind == .free)
                     }
                     .foregroundStyle(segment.kind == .free ? .dsTextSecondary : .dsTextPrimary)
                 }
@@ -24,7 +25,7 @@ struct ContextCategoryTable: View {
                     Grid(alignment: .leading, horizontalSpacing: DS.Space.md, verticalSpacing: DS.Space.xs) {
                         ForEach(composition.deferred, id: \.name) { category in
                             row(category.name, tokens: TokenFormat.compact(category.tokens), share: "") {
-                                Swatch(color: .clear, isOutlined: true)
+                                Swatch(color: .clear, isOutlined: true, isDashed: true)
                             }
                             .foregroundStyle(.dsTextSecondary)
                         }
@@ -58,6 +59,7 @@ struct ContextCategoryTable: View {
 private struct Swatch: View {
     let color: Color
     var isOutlined = false
+    var isDashed = false
 
     var body: some View {
         RoundedRectangle(cornerRadius: DS.Radius.small, style: .continuous)
@@ -65,7 +67,7 @@ private struct Swatch: View {
             .overlay {
                 if isOutlined {
                     RoundedRectangle(cornerRadius: DS.Radius.small, style: .continuous)
-                        .strokeBorder(.dsBorder, style: StrokeStyle(lineWidth: 1, dash: [2, 1]))
+                        .strokeBorder(.dsBorder, style: StrokeStyle(lineWidth: 1, dash: isDashed ? [2, 1] : []))
                 }
             }
             .frame(width: UsageMetrics.swatchSize, height: UsageMetrics.swatchSize)

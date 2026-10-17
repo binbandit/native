@@ -1,41 +1,36 @@
+import Exec
 import Foundation
 
 /// The user's `git`, run with their environment so their config, hooks, credential helpers and
-/// signing keys all apply. GUI apps don't inherit a terminal's PATH, so callers pass the login
-/// shell's environment and the executable is looked up on its PATH.
+/// signing keys all apply. Every command, and every look at the working tree, goes through a
+/// `CommandRunner`, so a repository on another machine (a remote Native Host) works the same as
+/// one on this Mac. Watching for changes goes through a `RepositoryMonitor` for the same reason.
 ///
-/// Nothing here touches the network except `Repository.push()`.
-public struct Git: Sendable, Hashable {
-    public let executableURL: URL
+/// Nothing here touches the network except `Repository.push()` and `pull()`.
+public struct Git: Sendable {
+    /// `git` to look up on the PATH, or an absolute path on the runner's machine.
+    public let executable: String
+    /// The environment git runs with: the user's login shell's, since GUI apps (and remote hosts)
+    /// don't inherit a terminal's.
     public let environment: [String: String]
+    public let runner: any CommandRunner
+    public let monitor: any RepositoryMonitor
 
-    /// Finds `git` on `environment`'s PATH.
-    public init(environment: [String: String]) throws(GitError) {
-        guard let executable = Self.locate(in: environment) else { throw .gitNotFound }
-        self.init(executableURL: executable, environment: environment)
-    }
-
-    public init(executableURL: URL, environment: [String: String]) {
-        self.executableURL = executableURL
+    public init(
+        environment: [String: String],
+        runner: any CommandRunner = LocalCommandRunner(),
+        monitor: any RepositoryMonitor = FSEventsRepositoryMonitor(),
+        executable: String = "git"
+    ) {
+        self.executable = executable
+        self.runner = runner
+        self.monitor = monitor
         // Variables a git hook would export to us; inherited, they'd point every command at the
         // wrong repository or index.
         let repositoryOverrides: Set = [
             "GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR", "GIT_PREFIX", "GIT_OBJECT_DIRECTORY",
         ]
         self.environment = environment.filter { !repositoryOverrides.contains($0.key) }
-    }
-
-    /// The first executable `git` on the PATH in `environment`.
-    public static func locate(in environment: [String: String]) -> URL? {
-        let path = environment["PATH"] ?? "/usr/bin:/bin:/usr/sbin:/sbin"
-        let fileManager = FileManager.default
-        for directory in path.split(separator: ":") where !directory.isEmpty {
-            let candidate = URL(filePath: String(directory)).appending(path: "git")
-            if fileManager.isExecutableFile(atPath: candidate.path(percentEncoded: false)) {
-                return candidate
-            }
-        }
-        return nil
     }
 
     /// The repository containing `folder`, or `nil` when it isn't inside a working tree.
@@ -68,9 +63,9 @@ public struct Git: Sendable, Hashable {
         return repository
     }
 
-    /// `git --version`, e.g. "2.47.1".
+    /// `git --version`, e.g. "2.47.1". Fails with `.gitNotFound` when git isn't installed.
     public func version() async throws(GitError) -> String {
-        let output = try await run(["--version"], in: FileManager.default.temporaryDirectory, readOnly: true)
+        let output = try await run(["--version"], in: nil, readOnly: true)
         return output.text.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(
             of: "git version ", with: "")
     }
@@ -90,7 +85,7 @@ public struct Git: Sendable, Hashable {
     @discardableResult
     func run(
         _ arguments: [String],
-        in directory: URL,
+        in directory: URL?,
         readOnly: Bool = false,
         input: Data? = nil,
         environment overrides: [String: String] = [:],
@@ -105,15 +100,7 @@ public struct Git: Sendable, Hashable {
         }
         environment.merge(overrides) { $1 }
 
-        let output: Output
-        do {
-            output = try await Self.launch(
-                executableURL, arguments: arguments, in: directory, environment: environment, input: input)
-        } catch let error as GitError {
-            throw error
-        } catch {
-            throw .launchFailed(error.localizedDescription)
-        }
+        let output = try await execute(executable, arguments, in: directory, environment: environment, input: input)
         guard accepted.contains(output.status) else {
             // Some failures, like "nothing to commit", only go to stdout.
             let message = output.stderr.isEmpty ? String(output.text.prefix(4096)) : output.stderr
@@ -122,78 +109,38 @@ public struct Git: Sendable, Hashable {
         return output
     }
 
-    private static func launch(
-        _ executable: URL,
-        arguments: [String],
-        in directory: URL,
+    /// Runs a plain tool (`cat`, `rm`, `cp`) on the same machine as git, for the few working tree
+    /// operations git has no command for.
+    func runTool(_ tool: String, _ arguments: [String], in directory: URL?) async throws(GitError) -> Output {
+        try await execute(tool, arguments, in: directory, environment: environment, input: nil)
+    }
+
+    private func execute(
+        _ executable: String,
+        _ arguments: [String],
+        in directory: URL?,
         environment: [String: String],
         input: Data?
-    ) async throws -> Output {
-        let process = Process()
-        process.executableURL = executable
-        process.arguments = arguments
-        process.currentDirectoryURL = directory
-        process.environment = environment
-        let stdout = Pipe()
-        let stderr = Pipe()
-        let stdin = input.map { _ in Pipe() }
-        process.standardOutput = stdout
-        process.standardError = stderr
-        process.standardInput = stdin ?? FileHandle.nullDevice
-
-        let output: Output = try await withTaskCancellationHandler {
-            try await withCheckedThrowingContinuation { continuation in
-                // Blocking reads on GCD threads rather than the cooperative pool. Both pipes drain
-                // at once so neither can fill up and stall git.
-                DispatchQueue.global(qos: .userInitiated).async {
-                    do {
-                        try process.run()
-                    } catch {
-                        continuation.resume(throwing: GitError.launchFailed(error.localizedDescription))
-                        return
-                    }
-                    if let input, let stdin {
-                        DispatchQueue.global(qos: .userInitiated).async {
-                            try? stdin.fileHandleForWriting.write(contentsOf: input)
-                            try? stdin.fileHandleForWriting.close()
-                        }
-                    }
-                    let errors = PipeDrain(stderr.fileHandleForReading)
-                    let data = stdout.fileHandleForReading.readDataToEndOfFile()
-                    let errorData = errors.wait()
-                    process.waitUntilExit()
-                    continuation.resume(
-                        returning: Output(
-                            stdout: data,
-                            stderr: String(decoding: errorData, as: UTF8.self),
-                            status: process.terminationStatus
-                        ))
-                }
-            }
-        } onCancel: {
-            // git cleans up its lock files on SIGTERM.
-            if process.isRunning { process.terminate() }
+    ) async throws(GitError) -> Output {
+        let command = Command(
+            executable,
+            arguments,
+            in: directory?.path(percentEncoded: false),
+            environment: environment,
+            standardInput: input
+        )
+        let result: CommandResult
+        do {
+            result = try await runner.run(command)
+        } catch CommandError.notFound where executable == self.executable {
+            throw .gitNotFound
+        } catch let error as CommandError {
+            throw .launchFailed(error.localizedDescription)
+        } catch {
+            throw .launchFailed(error.localizedDescription)
         }
-        if Task.isCancelled { throw GitError.cancelled }
-        return output
-    }
-}
-
-/// Reads a pipe to its end on a background thread.
-private final class PipeDrain: @unchecked Sendable {
-    private let done = DispatchSemaphore(value: 0)
-    // Written once before `done` is signaled, read only after waiting on it.
-    private var data = Data()
-
-    init(_ handle: FileHandle) {
-        DispatchQueue.global(qos: .userInitiated).async { [self] in
-            data = handle.readDataToEndOfFile()
-            done.signal()
-        }
-    }
-
-    func wait() -> Data {
-        done.wait()
-        return data
+        // The runner stops the command when the task is cancelled; its output is incomplete.
+        if Task.isCancelled { throw .cancelled }
+        return Output(stdout: result.standardOutput, stderr: result.errorOutput, status: result.exitCode)
     }
 }

@@ -84,20 +84,3 @@ extension JSON {
         arrayValue?.compactMap(\.stringValue) ?? []
     }
 }
-
-/// Reads a JSON file into `JSON`, reporting a problem only when the file exists but can't be read.
-enum ConfigFileReader {
-    static func json(at url: URL, problems: inout [ConfigProblem]) -> JSON? {
-        guard let data = FileManager.default.contents(atPath: url.path(percentEncoded: false)) else { return nil }
-        do {
-            return try JSONDecoder().decode(JSON.self, from: data)
-        } catch {
-            problems.append(ConfigProblem(file: url, message: "It isn't valid JSON."))
-            return nil
-        }
-    }
-
-    static func exists(_ url: URL) -> Bool {
-        FileManager.default.fileExists(atPath: url.path(percentEncoded: false))
-    }
-}

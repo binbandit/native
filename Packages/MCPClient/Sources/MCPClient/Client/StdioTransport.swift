@@ -1,3 +1,4 @@
+import Exec
 import Foundation
 import MCP
 import Synchronization
@@ -6,11 +7,10 @@ import Synchronization
 /// stdout. Replies are matched to requests by id as lines arrive; the server's own requests are
 /// answered on the spot.
 final class StdioTransport: MCPClientTransport {
-    private let process: Process
-    private let input: FileHandle
     private let command: String
     private let state = Mutex(State())
     private let stderrTail = OutputTail()
+    private let process = Mutex<(any StdioProcess)?>(nil)
 
     private struct State {
         var pending: [Int: CheckedContinuation<Result<JSON, ProbeError>, Never>] = [:]
@@ -19,49 +19,17 @@ final class StdioTransport: MCPClientTransport {
         var exitStatus: Int32?
     }
 
-    /// Launches `command` through `env`, which looks it up on `environment`'s PATH the way a shell
-    /// would (an app launched from the Finder has no useful PATH of its own).
-    init(command: String, arguments: [String], environment: [String: String], workingDirectory: URL?) throws(ProbeError) {
-        // A server that dies mid-write must surface as an error, not end the process with SIGPIPE.
-        signal(SIGPIPE, SIG_IGN)
-        self.command = command
-        process = Process()
-        process.executableURL = URL(filePath: "/usr/bin/env")
-        process.arguments = [command] + arguments
-        process.environment = environment
-        process.currentDirectoryURL = workingDirectory
-        let stdin = Pipe()
-        let stdout = Pipe()
-        let stderr = Pipe()
-        process.standardInput = stdin
-        process.standardOutput = stdout
-        process.standardError = stderr
-        input = stdin.fileHandleForWriting
-
-        stdout.fileHandleForReading.readabilityHandler = { [weak self] handle in
-            let data = handle.availableData
-            if data.isEmpty {
-                handle.readabilityHandler = nil
-                self?.finish()
-            } else {
-                self?.receive(data)
-            }
-        }
-        stderr.fileHandleForReading.readabilityHandler = { [stderrTail] handle in
-            let data = handle.availableData
-            if data.isEmpty {
-                handle.readabilityHandler = nil
-            } else {
-                stderrTail.append(data)
-            }
-        }
-        process.terminationHandler = { [weak self] process in
-            self?.state.withLock { $0.exitStatus = process.terminationStatus }
-        }
+    init(_ command: Command, launcher: some StdioLauncher) throws(ProbeError) {
+        self.command = command.executable
         do {
-            try process.run()
+            let process = try launcher.launch(command) { [weak self] event in
+                self?.handle(event)
+            }
+            self.process.withLock { $0 = process }
+        } catch CommandError.notFound(let executable) {
+            throw .failure(.launch, "Couldn't find \(executable) on your PATH.")
         } catch {
-            throw .failure(.launch, "Couldn't launch \(command): \(error.localizedDescription)")
+            throw .failure(.launch, "Couldn't launch \(command.executable): \(error.localizedDescription)")
         }
     }
 
@@ -88,25 +56,31 @@ final class StdioTransport: MCPClientTransport {
         write(JSONRPC.notification(method, params: params))
     }
 
-    /// Closes stdin, which well-behaved servers take as the signal to exit, then terminates.
+    /// The MCP shutdown sequence: close stdin, then SIGTERM, then SIGKILL, waiting between each.
     func close() async {
-        try? input.close()
-        guard process.isRunning else { return }
-        try? await Task.sleep(for: .milliseconds(300))
-        if process.isRunning {
-            process.terminate()
-        }
-        try? await Task.sleep(for: .seconds(2))
-        if process.isRunning {
-            kill(process.processIdentifier, SIGKILL)
+        guard let process = process.withLock({ $0 }) else { return }
+        process.closeInput()
+        for (wait, force) in [(Duration.milliseconds(300), false), (.seconds(2), true)] {
+            guard process.isRunning else { return }
+            try? await Task.sleep(for: wait)
+            process.terminate(force: force)
         }
     }
 
     private func write(_ message: Data) {
         do {
-            try input.write(contentsOf: message + Data("\n".utf8))
+            try process.withLock { $0 }?.write(message + Data("\n".utf8))
         } catch {
-            finish()
+            closed()
+        }
+    }
+
+    private func handle(_ event: StdioEvent) {
+        switch event {
+        case .output(let data): receive(data)
+        case .error(let data): stderrTail.append(data)
+        case .outputClosed: closed()
+        case .exited(let status): state.withLock { $0.exitStatus = status }
         }
     }
 
@@ -135,7 +109,7 @@ final class StdioTransport: MCPClientTransport {
     }
 
     /// Stdout closed: the server exited or is about to. Everything waiting fails.
-    private func finish() {
+    private func closed() {
         let pending = state.withLock { state in
             state.isClosed = true
             defer { state.pending = [:] }
@@ -144,7 +118,7 @@ final class StdioTransport: MCPClientTransport {
         guard !pending.isEmpty else { return }
         // The exit status arrives just after stdout closes; give it a moment.
         Task {
-            for _ in 0..<20 where state.withLock({ $0.exitStatus }) == nil && process.isRunning {
+            for _ in 0..<20 where state.withLock({ $0.exitStatus }) == nil {
                 try? await Task.sleep(for: .milliseconds(25))
             }
             let error = exitError()
@@ -153,14 +127,11 @@ final class StdioTransport: MCPClientTransport {
     }
 
     private func exitError() -> ProbeError {
-        let status = state.withLock { $0.exitStatus } ?? (process.isRunning ? nil : process.terminationStatus)
-        switch status {
-        case 127?:
-            return .failure(.launch, "Couldn't find \(command) on your PATH.", exitStatus: 127)
+        switch state.withLock({ $0.exitStatus }) {
         case let status?:
-            return .failure(.initialize, "The server exited with status \(status) before answering.", exitStatus: status)
+            .failure(.initialize, "\(command) exited with status \(status) before answering.", exitStatus: status)
         case nil:
-            return .failure(.initialize, "The server closed its output before answering.")
+            .failure(.initialize, "\(command) closed its output before answering.")
         }
     }
 }

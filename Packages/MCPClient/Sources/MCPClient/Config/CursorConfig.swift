@@ -5,22 +5,23 @@ import Foundation
 /// `${workspaceFolder}`.
 struct CursorConfig {
     var home: URL
+    var reader: ConfigFileReader
 
     func read(projects: [URL]) -> AgentMCPConfiguration {
         var problems: [ConfigProblem] = []
         let userFile = home.appending(path: ".cursor/mcp.json")
-        var files = [ConfigFile(url: userFile, role: "User servers", exists: ConfigFileReader.exists(userFile))]
+        var files = [ConfigFile(url: userFile, role: "User servers", exists: reader.exists(userFile))]
         var servers = servers(in: userFile, scope: .user, problems: &problems)
         for project in projects {
             let file = project.appending(path: ".cursor/mcp.json")
-            files.append(ConfigFile(url: file, role: "Project servers for \(project.lastPathComponent)", exists: ConfigFileReader.exists(file)))
+            files.append(ConfigFile(url: file, role: "Project servers for \(project.lastPathComponent)", exists: reader.exists(file)))
             servers += self.servers(in: file, scope: .project(project), problems: &problems)
         }
         return AgentMCPConfiguration(format: .cursor, servers: servers, files: files, problems: problems)
     }
 
     private func servers(in file: URL, scope: ConfiguredServer.Scope, problems: inout [ConfigProblem]) -> [ConfiguredServer] {
-        let json = ConfigFileReader.json(at: file, problems: &problems)
+        let json = reader.json(at: file, problems: &problems)
         return ServerMap.servers(in: json?["mcpServers"], file: file, problems: &problems).map { server in
             var entry = ConfiguredServer(server: server, format: .cursor, scope: scope, source: file, resolution: .cursor)
             // Cursor works out which of the two HTTP transports a URL speaks; so does the probe.
@@ -35,6 +36,8 @@ struct CursorConfig {
 /// Reads agents' own MCP configuration files. Nothing here writes them: changes go through the
 /// agents' CLIs (`AgentCLICommand`).
 public struct AgentConfigReader: Sendable {
+    public var files: any ConfigFileSystem
+    /// The home folder on the machine `files` reads.
     public var home: URL
     /// The user's environment, for `CLAUDE_CONFIG_DIR` and `CODEX_HOME`.
     public var environment: [String: String]
@@ -42,10 +45,12 @@ public struct AgentConfigReader: Sendable {
     public var claudeManagedFile: URL
 
     public init(
+        files: any ConfigFileSystem = LocalConfigFiles(),
         home: URL = FileManager.default.homeDirectoryForCurrentUser,
         environment: [String: String] = ProcessInfo.processInfo.environment,
         claudeManagedFile: URL = URL(filePath: "/Library/Application Support/ClaudeCode/managed-mcp.json")
     ) {
+        self.files = files
         self.home = home
         self.environment = environment
         self.claudeManagedFile = claudeManagedFile
@@ -54,10 +59,11 @@ public struct AgentConfigReader: Sendable {
     /// The format's servers at user scope and in each of `projects`.
     public func read(_ format: AgentConfigFormat, projects: [URL]) -> AgentMCPConfiguration {
         let projects = projects.map { ProjectPath.url(ProjectPath.key($0)) }
+        let reader = ConfigFileReader(files: files)
         return switch format {
-        case .claudeCode: ClaudeCodeConfig(home: home, environment: environment, managedFile: claudeManagedFile).read(projects: projects)
-        case .codex: CodexConfig(home: home, environment: environment).read(projects: projects)
-        case .cursor: CursorConfig(home: home).read(projects: projects)
+        case .claudeCode: ClaudeCodeConfig(home: home, environment: environment, managedFile: claudeManagedFile, reader: reader).read(projects: projects)
+        case .codex: CodexConfig(home: home, environment: environment, reader: reader).read(projects: projects)
+        case .cursor: CursorConfig(home: home, reader: reader).read(projects: projects)
         }
     }
 }

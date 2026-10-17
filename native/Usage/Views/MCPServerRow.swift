@@ -4,6 +4,8 @@ import SwiftUI
 /// An MCP server and what its tools cost, opening to the tools themselves, most expensive first.
 struct MCPServerRow: View {
     let server: ContextReport.MCPServer
+    /// The server's share of the window, which may differ a little from its tools' rounded sum.
+    let tokens: Int
 
     @State private var isExpanded = false
     @State private var showsAllTools = false
@@ -19,7 +21,7 @@ struct MCPServerRow: View {
                 ContributorRow(
                     title: server.name,
                     detail: server.tools.count == 1 ? "1 tool" : "\(server.tools.count) tools",
-                    tokens: TokenFormat.compact(server.tokens)
+                    tokens: TokenFormat.compact(tokens)
                 ) {
                     Image(systemName: "chevron.right")
                         .font(.system(size: DS.Space.md, weight: .semibold))
@@ -36,7 +38,7 @@ struct MCPServerRow: View {
                 let tools = showsAllTools ? server.tools : Array(server.tools.prefix(Self.previewCount))
                 ForEach(tools, id: \.name) { tool in
                     ContributorRow(title: tool.shortName, tokens: TokenFormat.compact(tool.tokens), isMono: true)
-                        .padding(.leading, DS.Space.md)
+                        .padding(.leading, UsageMetrics.swatchSize + DS.Space.md)
                         .help(tool.name)
                 }
                 if !showsAllTools, server.tools.count > Self.previewCount {

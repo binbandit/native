@@ -3,13 +3,16 @@ import Foundation
 
 extension SessionState {
     /// What the agent said to close its latest turn: its last run of messages after its last tool
-    /// call since the user's last prompt. Narration between tool calls is left out because the
-    /// session that delegated the task wants the outcome. Nil when it hasn't said anything yet.
+    /// call since the last prompt. Narration between tool calls is left out because the session
+    /// that delegated the task wants the outcome. Nil when it hasn't said anything yet.
     var latestReply: String? {
         var messages: [String] = []
         scan: for item in items.reversed() {
             switch item {
+            // A message from another session starts a turn without a user message, so it bounds
+            // the reply too; otherwise the previous turn's reply would pass for this one's.
             case .message(let message) where message.role == .user: break scan
+            case .sessionMessage: break scan
             case .message(let message) where message.role == .agent: messages.append(message.text)
             case .toolCall where !messages.isEmpty: break scan
             default: continue
