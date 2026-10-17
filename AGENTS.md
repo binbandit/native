@@ -70,6 +70,10 @@ swift format lint --strict <files you changed>
 scripts/check-ios.sh native/<YourFeature>   # typechecks your folder (plus DesignSystem) for iPadOS
 ```
 
+Keep the shared build green: about a dozen agents build this one tree. Develop unfinished files behind a
+compilation condition or in a scratch package until they compile, and fix a break you caused before
+anything else.
+
 Format only the files you change, so parallel work doesn't collide on whitespace. A repo-wide
 `swift format lint --recursive --strict native Packages` becomes a required check once the one-time
 formatting pass has landed.

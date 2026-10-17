@@ -44,13 +44,20 @@ enum TranscriptFixtures {
 
     static let messages: [TranscriptMessage] = {
         var state = SessionState()
-        state.appendUserMessage("Read notes.txt, then create a file named out.txt containing the word done, then run `ls` with bash.")
-        state.apply(.agentThoughtChunk(ContentChunk(content: .text(
-            "The user wants three steps. I'll read the file first, then write `out.txt`, then list the directory."
-        ))))
-        state.apply(.agentMessageChunk(ContentChunk(content: .text(
-            "All three done. `notes.txt` contains \"hello\", `out.txt` now contains \"done\", and `ls` shows **both files**."
-        ))))
+        state.appendUserMessage(
+            "Read notes.txt, then create a file named out.txt containing the word done, then run `ls` with bash.")
+        state.apply(
+            .agentThoughtChunk(
+                ContentChunk(
+                    content: .text(
+                        "The user wants three steps. I'll read the file first, then write `out.txt`, then list the directory."
+                    ))))
+        state.apply(
+            .agentMessageChunk(
+                ContentChunk(
+                    content: .text(
+                        "All three done. `notes.txt` contains \"hello\", `out.txt` now contains \"done\", and `ls` shows **both files**."
+                    ))))
         return state.items.compactMap { item in
             if case .message(let message) = item { message } else { nil }
         }
@@ -101,7 +108,8 @@ enum TranscriptFixtures {
         }
     }()
 
-    static let plan: [PlanEntry] = decode("""
+    static let plan: [PlanEntry] = decode(
+        """
         [
           {"content": "Read notes.txt", "priority": "high", "status": "completed"},
           {"content": "Create out.txt containing \\"done\\"", "priority": "high", "status": "completed"},
@@ -195,7 +203,8 @@ enum TranscriptFixtures {
 
     private static let editUpdate: String = {
         let old = (1...30).map { "let value\($0) = \($0)" }.joined(separator: "\n") + "\n"
-        let new = old
+        let new =
+            old
             .replacingOccurrences(of: "let value4 = 4\n", with: "let value4 = 40\nlet extra = true\n")
             .replacingOccurrences(of: "let value22 = 22\n", with: "")
         return """

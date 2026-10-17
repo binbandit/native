@@ -1,3 +1,4 @@
+#if EXPEDITIONS_WIP
 import NativeAutomation
 import NativeExpeditions
 import SwiftUI
@@ -103,3 +104,4 @@ extension Expedition {
         }
     }
 }
+#endif
