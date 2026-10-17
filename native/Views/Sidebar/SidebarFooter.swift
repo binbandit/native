@@ -25,11 +25,15 @@ struct SidebarFooter: View {
     }
 }
 
-/// Opens the Settings window (Conductor's gear, "Settings ⌘,").
+/// Opens the Settings window (Conductor's gear, "Settings ⌘,"). iPadOS has no Settings scene; the
+/// app presents settings there itself, so the gear isn't shown.
 private struct SettingsButton: View {
+    #if os(macOS)
     @Environment(\.openSettings) private var openSettings
+    #endif
 
     var body: some View {
+        #if os(macOS)
         Button {
             openSettings()
         } label: {
@@ -38,6 +42,7 @@ private struct SettingsButton: View {
         .buttonStyle(.plain)
         .help("Settings (⌘,)")
         .accessibilityLabel("Settings")
+        #endif
     }
 }
 
@@ -104,6 +109,7 @@ private struct FooterGlyph: View {
             .foregroundStyle(isHovered ? .dsTextPrimary : .dsTextSecondary)
             .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
             .contentShape(.rect)
+            .dsHitTarget(DS.Size.rowLeading)
             .trackHover($isHovered)
     }
 }
