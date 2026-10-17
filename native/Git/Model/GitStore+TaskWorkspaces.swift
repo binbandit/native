@@ -21,9 +21,7 @@ extension GitStore {
             return GitTaskCheckout(folder: repository.root, branch: branch, copiedFiles: [], runsSetupScript: false)
         case .worktree:
             let main = try await repository.worktrees().first(where: \.isMain)?.path ?? repository.root
-            let folder = Worktree.defaultLocation(home: repository.git.environment["HOME"])
-                .appending(path: Worktree.slug(repository.name, maxLength: 60), directoryHint: .isDirectory)
-                .appending(path: code, directoryHint: .isDirectory)
+            let folder = Self.taskLocation(of: repository).appending(path: code, directoryHint: .isDirectory)
             let worktree = try await repository.addWorktree(at: folder, newBranch: branch)
             try await repository.markProvisional(branch)
             var run = GitSetupRun(state: .running, copiedFiles: [], projectRoot: main)
@@ -77,7 +75,30 @@ extension GitStore {
         }
     }
 
+    /// The worktrees Native made for the project's tasks, under `~/.native/worktrees/<repository>/`.
+    /// The user's own worktrees elsewhere aren't included.
+    func taskWorktrees(of project: URL) async -> [URL] {
+        guard let repository = try? await resolveGit().repository(at: project),
+            let worktrees = try? await repository.worktrees()
+        else { return [] }
+        let location = Self.taskLocation(of: repository).standardizedFileURL.path(percentEncoded: false)
+        return worktrees.filter { !$0.isMain && $0.path.standardizedFileURL.path(percentEncoded: false).hasPrefix(location) }
+            .map(\.path)
+    }
+
+    /// Whether `folder` is a worktree Native made, which Native may remove.
+    func isTaskWorktree(_ folder: URL, of project: URL) async -> Bool {
+        let path = folder.standardizedFileURL.path(percentEncoded: false)
+        return await taskWorktrees(of: project).contains { $0.standardizedFileURL.path(percentEncoded: false) == path }
+    }
+
     // MARK: - Helpers
+
+    /// Where a repository's task worktrees go, in the home folder of the machine it's on.
+    private static func taskLocation(of repository: Repository) -> URL {
+        Worktree.defaultLocation(home: repository.git.environment["HOME"])
+            .appending(path: Worktree.slug(repository.name, maxLength: 60), directoryHint: .isDirectory)
+    }
 
     /// `<prefix><code>` with a code no branch uses yet.
     private func provisionalBranch(in repository: Repository, prefix: String) async throws -> (String, String) {

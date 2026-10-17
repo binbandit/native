@@ -16,6 +16,7 @@ struct UpdateRestartContext: Equatable, Sendable {
         guard workingTasks > 0 else { return nil }
         let tasks = workingTasks == 1 ? "Your working task" : "Your \(workingTasks) working tasks"
         let keep = workingTasks == 1 ? "keeps" : "keep"
-        return keepsRunning ? "\(tasks) \(keep) running while Native restarts." : "\(tasks) will stop if Native restarts now."
+        return keepsRunning
+            ? "\(tasks) \(keep) running while Native restarts." : "\(tasks) will stop if Native restarts now."
     }
 }

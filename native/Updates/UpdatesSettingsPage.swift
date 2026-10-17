@@ -16,10 +16,13 @@ extension SettingsPane {
             keywords: ["update", "version", "beta", "nightly", "sparkle", "release notes", "upgrade"],
             searchEntries: {
                 [
-                    SettingsSearchEntry(id: UpdatesSettingsPage.channelRow, title: "Update channel", keywords: ["beta", "stable", "nightly"]),
+                    SettingsSearchEntry(
+                        id: UpdatesSettingsPage.channelRow, title: "Update channel",
+                        keywords: ["beta", "stable", "nightly"]),
                     SettingsSearchEntry(id: UpdatesSettingsPage.checksRow, title: "Check for updates automatically"),
                     SettingsSearchEntry(id: UpdatesSettingsPage.downloadsRow, title: "Download updates automatically"),
-                    SettingsSearchEntry(id: UpdatesSettingsPage.versionRow, title: "Version", keywords: ["build", "release notes"]),
+                    SettingsSearchEntry(
+                        id: UpdatesSettingsPage.versionRow, title: "Version", keywords: ["build", "release notes"]),
                 ]
             },
             content: { UpdatesSettingsPage(controller: controller) }
@@ -68,7 +71,8 @@ struct UpdatesSettingsPage: View {
                 ) {
                     SettingsSwitch(
                         "Download automatically",
-                        isOn: Binding(get: { controller.automaticallyDownloads }, set: controller.setAutomaticallyDownloads)
+                        isOn: Binding(
+                            get: { controller.automaticallyDownloads }, set: controller.setAutomaticallyDownloads)
                     )
                     .disabled(!controller.isAvailable || !controller.automaticallyChecks)
                 }
@@ -111,7 +115,9 @@ struct UpdatesSettingsPage: View {
                 id: Self.channelRow,
                 "Channel",
                 description: Text(controller.channel.summary),
-                detail: Text("Native Nightly always follows nightly builds. Install Native for stable releases; the two live side by side.")
+                detail: Text(
+                    "Native Nightly always follows nightly builds. Install Native for stable releases; the two live side by side."
+                )
             ) {
                 Text(controller.channel.title)
                     .font(.dsBody)

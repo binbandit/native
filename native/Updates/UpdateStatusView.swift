@@ -14,15 +14,18 @@ struct UpdateStatusView: View {
             case .idle:
                 idle
             case .checking:
-                progress("Checking for updates…", detail: "Looking at the \(controller.channel.title) channel on GitHub.")
+                progress(
+                    "Checking for updates…", detail: "Looking at the \(controller.channel.title) channel on GitHub.")
             case .upToDate(let checkedAt):
                 upToDate(checkedAt: checkedAt)
             case .available(let release):
                 available(release)
             case .downloading(let release, let fraction):
-                transferring("Downloading Native \(release.version)…", release: release, fraction: fraction, canCancel: true)
+                transferring(
+                    "Downloading Native \(release.version)…", release: release, fraction: fraction, canCancel: true)
             case .preparing(let release, let fraction):
-                transferring("Preparing Native \(release.version)…", release: release, fraction: fraction, canCancel: false)
+                transferring(
+                    "Preparing Native \(release.version)…", release: release, fraction: fraction, canCancel: false)
             case .ready(let release):
                 ready(release)
             case .installing(let release):
@@ -80,7 +83,8 @@ struct UpdateStatusView: View {
         }
     }
 
-    private func transferring(_ title: String, release: UpdateRelease, fraction: Double?, canCancel: Bool) -> some View {
+    private func transferring(_ title: String, release: UpdateRelease, fraction: Double?, canCancel: Bool) -> some View
+    {
         VStack(alignment: .leading, spacing: DS.Space.md) {
             UpdateStatusRow(
                 symbol: "arrow.down.circle", tint: .dsAccent, title: title,
@@ -142,13 +146,22 @@ struct UpdateStatusView: View {
         let (title, detail): (String, String) =
             switch reason {
             case .developmentBuild:
-                ("Updates are off in development builds", "A development build would replace itself with a release. Pull and rebuild to get new changes.")
+                (
+                    "Updates are off in development builds",
+                    "A development build would replace itself with a release. Pull and rebuild to get new changes."
+                )
             case .notConfigured:
-                ("Updates aren't set up for this build", "It has no update feed or signing key, so it can't verify an update. Install a release from GitHub to get updates.")
+                (
+                    "Updates aren't set up for this build",
+                    "It has no update feed or signing key, so it can't verify an update. Install a release from GitHub to get updates."
+                )
             case .unsupportedPlatform:
                 ("Updates come from the App Store", "On iPad, Native updates through the App Store or TestFlight.")
             case .updaterFailed(let message):
-                ("Native can't check for updates", "The updater didn't start: \(message) Install the latest release from GitHub to fix it.")
+                (
+                    "Native can't check for updates",
+                    "The updater didn't start: \(message) Install the latest release from GitHub to fix it."
+                )
             }
         return UpdateStatusRow(symbol: "minus.circle", tint: .dsTextTertiary, title: title, detail: detail) {
             if let url = controller.current.allReleasesURL {
