@@ -31,10 +31,8 @@ struct GoalBudgetFields: View {
                 .font(.dsCaptionMedium)
                 .foregroundStyle(.dsTextSecondary)
             HStack(spacing: DS.Space.sm) {
-                TextField(title, text: text, prompt: Text("No limit").foregroundStyle(.dsTextQuaternary))
-                    .automationField()
+                AutomationTextField(label: title, text: text, placeholder: "No limit")
                     .monospacedDigit()
-                    .labelsHidden()
                 Text(unit)
                     .font(.dsCaption)
                     .foregroundStyle(.dsTextTertiary)

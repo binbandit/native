@@ -116,6 +116,7 @@ private struct SessionCommands: Commands {
     var body: some Commands {
         CommandMenu("Session") {
             Button("Focus Composer") {
+                session?.wantsComposerFocus = true
                 session?.focusComposerRequest += 1
             }
             .keyboardShortcut("l")

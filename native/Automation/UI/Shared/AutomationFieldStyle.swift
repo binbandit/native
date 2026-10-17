@@ -11,6 +11,7 @@ struct AutomationTextField: View {
     var lines: ClosedRange<Int> = 1...1
     var font: Font = .dsBody
     var onSubmit: () -> Void = {}
+    private var focusesOnAppear = false
 
     @FocusState private var isFocused: Bool
 
@@ -41,20 +42,17 @@ struct AutomationTextField: View {
             .background(.dsSurface, in: shape)
             .overlay { shape.strokeBorder(isFocused ? Color.dsBorderHover : .dsBorder, lineWidth: 1) }
             .accessibilityLabel(label)
+            .onAppear {
+                if focusesOnAppear {
+                    isFocused = true
+                }
+            }
     }
 
     /// Takes keyboard focus as soon as it appears.
-    func focusedOnAppear() -> some View {
-        modifier(FocusOnAppear())
-    }
-}
-
-private struct FocusOnAppear: ViewModifier {
-    @FocusState private var isFocused: Bool
-
-    func body(content: Content) -> some View {
-        content
-            .focused($isFocused)
-            .onAppear { isFocused = true }
+    func focusedOnAppear() -> AutomationTextField {
+        var field = self
+        field.focusesOnAppear = true
+        return field
     }
 }

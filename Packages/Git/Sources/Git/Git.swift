@@ -16,10 +16,11 @@ public struct Git: Sendable {
     public let runner: any CommandRunner
     public let monitor: any RepositoryMonitor
 
+    /// A client passes its host's runner and monitor; on a Mac the defaults are this Mac's.
     public init(
         environment: [String: String],
-        runner: any CommandRunner = LocalCommandRunner(),
-        monitor: any RepositoryMonitor = FSEventsRepositoryMonitor(),
+        runner: any CommandRunner,
+        monitor: any RepositoryMonitor,
         executable: String = "git"
     ) {
         self.executable = executable
@@ -32,6 +33,15 @@ public struct Git: Sendable {
         ]
         self.environment = environment.filter { !repositoryOverrides.contains($0.key) }
     }
+
+    #if os(macOS)
+    /// Git on this Mac.
+    public init(environment: [String: String], executable: String = "git") {
+        self.init(
+            environment: environment, runner: LocalCommandRunner(), monitor: FSEventsRepositoryMonitor(),
+            executable: executable)
+    }
+    #endif
 
     /// The repository containing `folder`, or `nil` when it isn't inside a working tree.
     public func repository(at folder: URL) async throws(GitError) -> Repository? {

@@ -29,7 +29,7 @@ struct TestRepository {
             path: "native-git-tests/\(UUID().uuidString)", directoryHint: .isDirectory)
         folder = base.appending(path: name, directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        git = Git(environment: Self.environment, runner: runner)
+        git = Git(environment: Self.environment, runner: runner, monitor: FSEventsRepositoryMonitor())
     }
 
     /// `git init` with a `main` branch, optionally committing a README.

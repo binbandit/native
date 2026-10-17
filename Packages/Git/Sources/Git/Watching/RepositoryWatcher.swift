@@ -1,3 +1,4 @@
+#if os(macOS)
 import CoreServices
 import Foundation
 
@@ -76,3 +77,4 @@ private final class WatcherContext: @unchecked Sendable {
         if !change.isEmpty { continuation.yield(change) }
     }
 }
+#endif

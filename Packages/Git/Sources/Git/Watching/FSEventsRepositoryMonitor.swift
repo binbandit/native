@@ -1,3 +1,4 @@
+#if os(macOS)
 import Foundation
 
 /// Watches repositories on this Mac with FSEvents.
@@ -26,3 +27,4 @@ public struct FSEventsRepositoryMonitor: RepositoryMonitor {
         }
     }
 }
+#endif

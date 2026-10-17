@@ -1,4 +1,3 @@
-import AppKit
 import Git
 import SwiftUI
 
@@ -85,14 +84,6 @@ struct GitChangeList: View {
         }
         Button("Discard Changes…", role: .destructive) { onDiscard([change]) }
         Divider()
-        if let root = model.repository?.root {
-            let url = root.appending(path: change.path)
-            Button("Open") { NSWorkspace.shared.open(url) }
-            Button("Reveal in Finder") { NSWorkspace.shared.activateFileViewerSelecting([url]) }
-        }
-        Button("Copy Path") {
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(change.path, forType: .string)
-        }
+        GitFileMenuItems(path: change.path, root: model.repository?.root)
     }
 }

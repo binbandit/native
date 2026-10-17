@@ -2,7 +2,7 @@ import Git
 import SwiftUI
 
 /// A changed file in the inspector (the reference app `FileRow`): the path, then its line counts and status
-/// glyph, which give way to stage and discard buttons on hover.
+/// glyph, which give way to stage and discard buttons on hover or selection.
 struct GitChangeRow: View {
     let change: FileChange
     let isSelected: Bool
@@ -18,10 +18,10 @@ struct GitChangeRow: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
             ZStack(alignment: .trailing) {
                 summary
-                    .opacity(isHovered ? 0 : 1)
+                    .opacity(showsActions ? 0 : 1)
                 actions
-                    .opacity(isHovered ? 1 : 0)
-                    .allowsHitTesting(isHovered)
+                    .opacity(showsActions ? 1 : 0)
+                    .allowsHitTesting(showsActions)
             }
         }
         .padding(.leading, DS.Space.md)
@@ -74,6 +74,11 @@ struct GitChangeRow: View {
             IconButton("Discard Changes", systemImage: "arrow.uturn.backward", action: onDiscard)
             IconButton(stageLabel, systemImage: change.area == .staged ? "minus" : "plus", action: onToggleStaged)
         }
+    }
+
+    /// Hovering shows a row's actions; selecting it does too, so touch can reach them.
+    private var showsActions: Bool {
+        isHovered || isSelected
     }
 
     private var stageLabel: String {
