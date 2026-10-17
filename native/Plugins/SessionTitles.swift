@@ -33,6 +33,11 @@ final class SessionTitles {
         userTitles[key.storageKey] ?? generatedTitles[key.storageKey] ?? agentTitle
     }
 
+    /// The title the user typed, if any, so a rename can be undone back to exactly what was there.
+    func userTitle(for key: Key) -> String? {
+        userTitles[key.storageKey]
+    }
+
     /// Sets the user's own title; an empty one goes back to the automatic title.
     func rename(_ key: Key, to title: String) {
         let title = title.trimmingCharacters(in: .whitespacesAndNewlines)

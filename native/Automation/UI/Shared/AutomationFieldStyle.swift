@@ -1,28 +1,60 @@
 import SwiftUI
 
-extension View {
-    /// Draws a plain text field the way goal and workflow forms do, like the composer's surface:
-    /// 12pt text on the surface fill inside a 1pt border that darkens on focus. The text color is
-    /// left to the field, since setting one would also color its prompt.
-    func automationField() -> some View {
-        modifier(AutomationField())
-    }
-}
+/// A text field in goal and workflow forms, drawn like the composer's surface: 12pt text on the
+/// surface fill inside a 1pt border that darkens on focus. The placeholder is drawn here, in the
+/// design system's color, because macOS fields ignore a styled prompt.
+struct AutomationTextField: View {
+    let label: String
+    @Binding var text: String
+    var placeholder = ""
+    var axis: Axis = .horizontal
+    var lines: ClosedRange<Int> = 1...1
+    var font: Font = .dsBody
+    var onSubmit: () -> Void = {}
 
-private struct AutomationField: ViewModifier {
     @FocusState private var isFocused: Bool
 
-    func body(content: Content) -> some View {
+    var body: some View {
         let shape = RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous)
-        content
+        TextField(label, text: $text, axis: axis)
+            .lineLimit(lines)
             .textFieldStyle(.plain)
-            .font(.dsBody)
+            .font(font)
             .tracking(DS.Tracking.tight)
+            .labelsHidden()
             .focused($isFocused)
+            .onSubmit(onSubmit)
+            .overlay(alignment: .topLeading) {
+                if text.isEmpty {
+                    Text(placeholder)
+                        .font(font)
+                        .tracking(DS.Tracking.tight)
+                        .foregroundStyle(.dsTextTertiary)
+                        .lineLimit(lines.upperBound)
+                        .allowsHitTesting(false)
+                        .accessibilityHidden(true)
+                }
+            }
             .padding(.horizontal, DS.Space.md)
             .padding(.vertical, DS.Space.sm)
             .frame(minHeight: DS.Size.controlSM)
             .background(.dsSurface, in: shape)
             .overlay { shape.strokeBorder(isFocused ? Color.dsBorderHover : .dsBorder, lineWidth: 1) }
+            .accessibilityLabel(label)
+    }
+
+    /// Takes keyboard focus as soon as it appears.
+    func focusedOnAppear() -> some View {
+        modifier(FocusOnAppear())
+    }
+}
+
+private struct FocusOnAppear: ViewModifier {
+    @FocusState private var isFocused: Bool
+
+    func body(content: Content) -> some View {
+        content
+            .focused($isFocused)
+            .onAppear { isFocused = true }
     }
 }
