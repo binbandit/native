@@ -165,6 +165,10 @@ private struct ViewCommands: Commands {
             ))
             .keyboardShortcut("j", modifiers: [.command, .option])
             .disabled(needsYouFilter == nil)
+
+            Divider()
+            FoldEarlierTurnsToggle()
+            JumpToLatestMenuItem()
         }
     }
 }

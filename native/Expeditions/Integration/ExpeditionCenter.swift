@@ -46,6 +46,12 @@ final class ExpeditionCenter {
         isPageShown = true
     }
 
+    /// Whether there's anything to list: the sidebar shows the page while there is, even with the
+    /// plugin off.
+    var hasExpeditions: Bool {
+        !runner.expeditions.isEmpty
+    }
+
     /// Expeditions waiting on the user, for the sidebar's count.
     var waitingCount: Int {
         runner.expeditions.count { $0.phase.needsUser }

@@ -35,7 +35,9 @@ struct SubagentCard: View {
             .background(.quaternary.opacity(0.5), in: .rect(cornerRadius: 10))
             .overlay {
                 RoundedRectangle(cornerRadius: 10)
-                    .strokeBorder(subagent.workState == .requiresAction ? AnyShapeStyle(.orange.opacity(0.6)) : AnyShapeStyle(.separator))
+                    .strokeBorder(
+                        subagent.workState == .requiresAction
+                            ? AnyShapeStyle(.orange.opacity(0.6)) : AnyShapeStyle(.separator))
             }
             .contentShape(.rect(cornerRadius: 10))
         }
