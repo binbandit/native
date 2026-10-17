@@ -66,6 +66,7 @@ xcodebuild -project native.xcodeproj -scheme native -derivedDataPath /tmp/native
 (cd Packages/ACP && swift test)          # likewise for every package
 swift format format -i <files you changed>   # style lives in .swift-format (4 spaces, 120 columns)
 swift format lint --strict <files you changed>
+scripts/check-ios.sh native/<YourFeature>   # typechecks your folder (plus DesignSystem) for iPadOS
 ```
 
 Format only the files you change, so parallel work doesn't collide on whitespace. A repo-wide
