@@ -56,6 +56,7 @@ public final class HostCore {
     let logger = HostLogger(category: "Host")
     private var environment: Task<[String: String], Never>?
     private var heartbeat: Task<Void, Never>?
+    private var server: SocketServer?
 
     public init(configuration: Configuration) throws {
         self.configuration = configuration
@@ -94,6 +95,11 @@ public final class HostCore {
                 try? await Task.sleep(for: interval)
             }
         }
+    }
+
+    /// Keeps the socket server alive as long as the host.
+    func retain(_ server: SocketServer) {
+        self.server = server
     }
 
     var info: HostInfo {

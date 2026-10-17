@@ -45,7 +45,13 @@ struct DesignSystemGalleryColumn: View {
             Text(colorScheme == .dark ? "Dark" : "Light")
                 .font(.dsTitle)
                 .foregroundStyle(.dsTextPrimary)
-            GallerySection("Colors", source: "the reference app core-ui v2 (\"the reference app\" preset), the reference app statuses") {
+            GallerySection("Brand", source: "Native's emblem, lockups, nightly sky and moon") {
+                GalleryBrand()
+            }
+            GallerySection("Accent palettes", source: "One per app-icon theme, set with .dsAccentPalette(themeID:)") {
+                GalleryAccentPalettes()
+            }
+            GallerySection("Colors", source: "the reference app core-ui v2 neutrals, the reference app statuses, CVD-safe chart series") {
                 GalleryColors()
             }
             GallerySection("Typography", source: "Geist / Geist Mono, the reference app scale") {
@@ -63,10 +69,13 @@ struct DesignSystemGalleryColumn: View {
             GallerySection("Composer", source: "the reference app composer") {
                 GalleryComposer()
             }
-            GallerySection("Controls", source: "the reference app buttons, Kbd; the reference app badges, cards, empty states") {
+            GallerySection("Controls", source: "the reference app buttons, Kbd; the reference app badges, cards") {
                 GalleryControls()
             }
-            GallerySection("Launch", source: "the reference app startup animation, Native's marks") {
+            GallerySection("Patterns", source: "One per situation (docs/product-quality.md)") {
+                GalleryPatterns()
+            }
+            GallerySection("Launch", source: "The emblem assembling itself") {
                 LaunchAnimationView()
                     .frame(height: 220)
                     .clipShape(.rect(cornerRadius: DS.Radius.card))

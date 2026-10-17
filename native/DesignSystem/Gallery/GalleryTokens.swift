@@ -25,8 +25,9 @@ struct GalleryColors: View {
         ("Semantic", [
             ("dsSuccess", .dsSuccess), ("dsWarning", .dsWarning), ("dsDanger", .dsDanger),
             ("dsInfo", .dsInfo), ("dsMerged", .dsMerged), ("dsDangerFill", .dsDangerFill),
-            ("dsWarningFill", .dsWarningFill),
+            ("dsWarningFill", .dsWarningFill), ("dsAttention", .dsAttention),
         ]),
+        ("Charts", [("dsChart1", .dsChart1), ("dsChart2", .dsChart2), ("dsChart3", .dsChart3)]),
     ]
 
     var body: some View {

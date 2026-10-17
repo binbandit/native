@@ -31,6 +31,40 @@
 - **Subagents** are child sessions: announced by agents (the ACP subagents RFD) or started by
   Native's orchestration tools on any agent. Both look and behave the same in the UI.
 
+## Clients and hosts
+
+Native is split into a **host**, which runs agents, commands and file access, and **clients**, which
+show and drive it. The Mac app runs a local host (the durable background host, `docs/durability.md`)
+and is also its first client. An iPad, an iPhone, or a Mac connected to a Mac mini or a Linux server
+is a client of a remote host. Every client speaks the same host protocol: a Unix socket locally, an
+end-to-end authenticated connection (paired by QR code) remotely.
+
+What follows from that:
+
+- **Only hosts touch the machine.** Spawning agents, running git or gh, reading project files,
+  keeping the Mac awake and sampling processes happen on a host. Code that shells out takes a
+  `CommandRunner` (`Packages/Exec`); a client gets one that forwards to its host.
+- **Clients are platform-neutral.** Models, views and the design system compile for macOS and
+  iPadOS. Platform-specific code (AppKit, NSWorkspace, window chrome, menu bar extras) lives behind
+  small adapters in `native/Platform/`, with an iPadOS counterpart or a documented absence.
+- **Every input is first class.** Pointer, touch and hardware keyboard all reach every action:
+  hover-only affordances get a touch equivalent (a visible button, context menu or swipe action),
+  touch targets are at least 44pt, and the shortcuts in `docs/keyboard.md` work on iPad keyboards.
+- **Layouts adapt to width, not to platform.** A Mac window, an iPad in Stage Manager and an iPhone
+  are points on one range: the sidebar and inspector become overlays at narrow widths, and the
+  iPhone's compact width is the companion layout.
+
+### Getting there
+
+1. Rules now: no AppKit in models or shared views, no process spawning outside `Packages/Exec` and
+   the host, and `Packages/*` build for iOS.
+2. The host protocol carries everything the UI needs (sessions, approvals, git, gh, files, usage,
+   limits), and its client library builds for iOS (durable host work).
+3. `AppModel` talks to a host client instead of spawning agents itself; the Mac connects to its
+   local host.
+4. The app target adds the iPadOS destination, fills in the `native/Platform/` adapters, and gets an
+   iPad layout pass on device.
+
 ## Module layout
 
 Today most code lives in the app target, organized by feature folder, with UI-free libraries in
@@ -87,4 +121,4 @@ The move is mechanical and happens in small PRs once the current feature work la
 
 - `docs/keyboard.md`: every shortcut.
 - `docs/decisions.md`: decisions and why they were made.
-- `docs/companion.md`: the planned iPhone companion and what it requires of the Mac app now.
+- `docs/companion.md`: the iPhone companion layout, pairing and transport.

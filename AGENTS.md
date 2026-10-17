@@ -40,6 +40,11 @@ these rules exist to keep changes small, isolated and easy to review.
 - **Quality.** `docs/product-quality.md` is the bar for every feature: every state designed (what
   happened, undo, what next, never an empty nothing), one pattern per recurring situation, and
   failures handled so the user feels caught. Break your feature on purpose before calling it done.
+- **Platforms.** Native runs on Mac and iPad (`docs/architecture.md`, "Clients and hosts"). Models
+  and shared views compile for both: no AppKit in them, and no process spawning outside
+  `Packages/Exec` and the host. Platform-specific code goes behind an adapter in `native/Platform/`.
+  Every action works with pointer, touch and keyboard, so hover-only affordances need a touch
+  equivalent.
 - **Keyboard.** `docs/keyboard.md` is the source of truth for shortcuts. Change it first, and every
   new action needs a menu command or a shortcut.
 - **Swift.** Swift 6 language mode with strict concurrency; the app target defaults to MainActor.
