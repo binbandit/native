@@ -1,3 +1,4 @@
+# shellcheck shell=bash
 # Helpers for scripts/release. Sourced, not run. Works with macOS's bash 3.2.
 
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)

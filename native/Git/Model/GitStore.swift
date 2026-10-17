@@ -10,6 +10,10 @@ final class GitStore {
     /// which a GUI app doesn't inherit.
     typealias EnvironmentProvider = () async -> [String: String]
 
+    let settings: GitSettings
+    /// Setup of task worktrees, by worktree folder, for the task's setup notice.
+    var setupRuns: [URL: GitSetupRun] = [:]
+
     @ObservationIgnored private let environmentProvider: EnvironmentProvider
     /// Builds git for the host the projects are on; a client passes one that runs on its host.
     @ObservationIgnored private let makeGit: ([String: String]) -> Git
@@ -17,15 +21,22 @@ final class GitStore {
     // Not observed: models are created lazily from view bodies, which mustn't mutate observed state.
     @ObservationIgnored private var models: [URL: GitRepositoryModel] = [:]
 
-    init(environment: @escaping EnvironmentProvider, makeGit: @escaping ([String: String]) -> Git) {
+    init(
+        environment: @escaping EnvironmentProvider, settings: GitSettings = GitSettings(),
+        makeGit: @escaping ([String: String]) -> Git
+    ) {
         environmentProvider = environment
+        self.settings = settings
         self.makeGit = makeGit
     }
 
     #if os(macOS)
     /// Git on this Mac.
-    convenience init(environment: @escaping EnvironmentProvider = { await LoginShell.environment() }) {
-        self.init(environment: environment, makeGit: { Git(environment: $0) })
+    convenience init(
+        environment: @escaping EnvironmentProvider = { await LoginShell.environment() },
+        settings: GitSettings = GitSettings()
+    ) {
+        self.init(environment: environment, settings: settings, makeGit: { Git(environment: $0) })
     }
     #endif
 
@@ -70,7 +81,14 @@ final class GitStore {
         let branch = try await repository.status().branch.name
         let checkpoint = try await repository.removeWorktree(at: repository.root, force: true)
         models.removeValue(forKey: folder.standardizedFileURL)
-        return RemovedTaskWorktree(path: repository.root, mainRoot: main, branch: branch, checkpoint: checkpoint)
+        setupRuns[folder.standardizedFileURL] = nil
+        var archivedBranch = false
+        if settings.deletesBranchOnArchive, let branch {
+            // The checkpoint, if any, sits on the branch's tip, so archiving keeps both reachable.
+            archivedBranch = (try? await requireRepository(at: main).archiveBranch(branch)) != nil
+        }
+        return RemovedTaskWorktree(
+            path: repository.root, mainRoot: main, branch: branch, checkpoint: checkpoint, archivedBranch: archivedBranch)
     }
 
     /// Checks a removed task worktree's branch out where it was and restores its uncommitted work.
@@ -79,19 +97,22 @@ final class GitStore {
             throw GitError.detachedHead
         }
         let main = try await requireRepository(at: removed.mainRoot)
+        if removed.archivedBranch {
+            try await main.restoreArchivedBranch(branch)
+        }
         return try await main.restoreWorktree(at: removed.path, branch: branch, from: removed.checkpoint).path
     }
 
     // MARK: - Resolving git
 
-    private func resolveGit() async -> Git {
+    func resolveGit() async -> Git {
         if let git { return git }
         let resolved = makeGit(await environmentProvider())
         git = resolved
         return resolved
     }
 
-    private func requireRepository(at folder: URL) async throws -> Repository {
+    func requireRepository(at folder: URL) async throws -> Repository {
         guard let repository = try await resolveGit().repository(at: folder) else {
             throw GitError.failed(
                 arguments: ["rev-parse"], status: 128,

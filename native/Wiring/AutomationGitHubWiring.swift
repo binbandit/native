@@ -46,3 +46,33 @@ enum AutomationGitHubWiring {
         return WorkflowPullRequestResult(url: url, number: Int(url.lastPathComponent))
     }
 }
+
+extension AutomationGitHubWiring {
+    /// The project's GitHub repository, for matching pull request events to automations.
+    static func repository(of project: URL, gitHub: GitHubModel) async -> String? {
+        try? await gitHub.repository(of: project).nameWithOwner
+    }
+
+    /// A fresh worktree for an automation's run, on a new branch named after it.
+    static func worktree(for project: URL, title: String, git: GitStore) async throws -> URL {
+        try await git.createTaskWorktree(in: project, title: title)
+    }
+
+    /// The user's open pull requests as the GitHub feature last saw them (it keeps the inbox fresh),
+    /// for automations to compare between polls; nil when GitHub isn't available.
+    static func pullRequestSnapshots(gitHub: GitHubModel) async -> [PullRequestSnapshot]? {
+        if gitHub.inbox == nil {
+            await gitHub.refresh()
+        }
+        guard let inbox = gitHub.inbox else { return nil }
+        let authored = Set(inbox.authored.map(\.url))
+        let reviewRequested = Set(inbox.reviewRequested.map(\.url))
+        return inbox.all.map { pullRequest in
+            PullRequestSnapshot(
+                url: pullRequest.url, repository: pullRequest.repository, number: pullRequest.number, title: pullRequest.title,
+                updatedAt: pullRequest.updatedAt, isAuthored: authored.contains(pullRequest.url),
+                isReviewRequested: reviewRequested.contains(pullRequest.url), hasFailingChecks: pullRequest.checks?.state == .failing
+            )
+        }
+    }
+}

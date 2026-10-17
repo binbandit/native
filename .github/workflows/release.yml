@@ -1,0 +1,62 @@
+# Publishes a stable or beta release when a version tag is pushed: v1.4.0 is stable, v1.5.0-beta.1
+# is beta. docs/releasing.md explains the release flow and the secrets this uses.
+name: Release
+
+on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+"
+      - "v[0-9]+.[0-9]+.[0-9]+-beta.[0-9]+"
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ${{ vars.MACOS_RUNNER || 'macos-26' }}
+    timeout-minutes: 90
+    env:
+      DEVELOPER_DIR: ${{ vars.XCODE_DEVELOPER_DIR || '/Applications/Xcode_27.1.app/Contents/Developer' }}
+      GH_TOKEN: ${{ github.token }}
+      NATIVE_TEAM_ID: ${{ secrets.NATIVE_TEAM_ID }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Work out the channel
+        id: version
+        run: |
+          version="${GITHUB_REF_NAME#v}"
+          case "$version" in
+            *-beta.*) channel=beta ;;
+            *) channel=stable ;;
+          esac
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "channel=$channel" >> "$GITHUB_OUTPUT"
+
+      - name: Set up signing
+        env:
+          DEVELOPER_ID_CERTIFICATE_P12: ${{ secrets.DEVELOPER_ID_CERTIFICATE_P12 }}
+          DEVELOPER_ID_CERTIFICATE_PASSWORD: ${{ secrets.DEVELOPER_ID_CERTIFICATE_PASSWORD }}
+          NOTARY_API_KEY_P8: ${{ secrets.NOTARY_API_KEY_P8 }}
+          NOTARY_API_KEY_ID: ${{ secrets.NOTARY_API_KEY_ID }}
+          NOTARY_API_ISSUER_ID: ${{ secrets.NOTARY_API_ISSUER_ID }}
+          SPARKLE_PRIVATE_KEY: ${{ secrets.SPARKLE_PRIVATE_KEY }}
+        run: scripts/release/ci-signing.sh setup
+
+      - name: Build, notarize and publish
+        run: >-
+          scripts/release/release.sh
+          --channel "${{ steps.version.outputs.channel }}"
+          --version "${{ steps.version.outputs.version }}"
+          --publish --ed-key-file "$SPARKLE_KEY_FILE"
+
+      - name: Tear down signing
+        if: always()
+        run: scripts/release/ci-signing.sh teardown

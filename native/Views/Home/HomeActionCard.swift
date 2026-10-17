@@ -111,6 +111,6 @@ private struct HomeCardButtonStyle: ButtonStyle {
             }
             .overlay { shape.strokeBorder(.dsSeparator, lineWidth: 1) }
             .contentShape(shape)
-            .contentShape(.focusEffect, shape)
+            .dsFocusShape(shape)
     }
 }

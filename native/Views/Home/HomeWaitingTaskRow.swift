@@ -37,7 +37,7 @@ struct HomeWaitingTaskRow<ID: Hashable>: View {
             }
             .padding(.horizontal, DS.Space.md)
             .padding(.vertical, DS.Space.md)
-            .frame(minHeight: HomeLayout.minTapHeight)
+            .frame(minHeight: DS.Size.minimumHitTarget)
             .contentShape(.rect)
         }
         .buttonStyle(SidebarRowButtonStyle())

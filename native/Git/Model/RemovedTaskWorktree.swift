@@ -10,11 +10,13 @@ struct RemovedTaskWorktree: Hashable, Sendable {
     let branch: String?
     /// Uncommitted work saved before removal; `nil` when there was none.
     let checkpoint: Checkpoint?
+    /// The branch was deleted too (kept under `refs/native-archived-branches/`).
+    let archivedBranch: Bool
 
     /// "Removed the worktree. Uncommitted work was saved as a checkpoint." for the archive UI.
     var summary: String {
-        checkpoint == nil
-            ? "Removed the worktree. Its branch \(branch ?? "") keeps every commit."
-            : "Removed the worktree. Uncommitted work was saved as a checkpoint, so it can be restored."
+        let work = checkpoint == nil ? "" : " Uncommitted work was saved as a checkpoint."
+        let branchNote = archivedBranch ? " The branch was deleted; restoring brings it back." : ""
+        return "Removed the worktree.\(work)\(branchNote) You can restore it."
     }
 }
