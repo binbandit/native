@@ -12,7 +12,8 @@ enum OrchestrationTools {
         directory as you, and the user sees each one as a subagent of the session that started it. If \
         you are a task yourself, list_tasks shows your parent and sibling tasks, which you can message. \
         Delegate work that benefits from an independent session or a different model; do quick lookups \
-        yourself.
+        yourself. To extend Native itself, such as writing a Native plugin for the user, read the guide \
+        first: list_skills, then get_skill.
         """
 
     private static let taskID: JSON = [

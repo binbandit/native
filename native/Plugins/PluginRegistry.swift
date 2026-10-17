@@ -26,7 +26,10 @@ final class PluginRegistry {
         var id: URL { url }
     }
 
-    static let directory = FileManager.default.homeDirectoryForCurrentUser.appending(path: ".native/plugins", directoryHint: .isDirectory)
+    /// `~/.native/plugins`, unless the `pluginsDirectory` default names another folder: launch with
+    /// `-pluginsDirectory <path>` to try plugins without touching the user's own.
+    static let directory = UserDefaults.standard.string(forKey: "pluginsDirectory").map { URL(filePath: $0, directoryHint: .isDirectory) }
+        ?? FileManager.default.homeDirectoryForCurrentUser.appending(path: ".native/plugins", directoryHint: .isDirectory)
 
     private(set) var plugins: [LoadedPlugin] = []
     private(set) var failures: [LoadFailure] = []

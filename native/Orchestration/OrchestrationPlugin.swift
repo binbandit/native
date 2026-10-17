@@ -24,6 +24,7 @@ struct OrchestrationPlugin: NativePlugin {
             version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0",
             instructions: OrchestrationTools.instructions,
             tools: OrchestrationTools.all(orchestrator)
+                + SkillTools.all(NativeSkill.bundled(), pluginsFolder: PluginRegistry.directory)
         ) { token in
             await orchestrator.caller(for: token)
         }
