@@ -38,8 +38,9 @@ final class AppModel {
     var errorMessage: String?
     /// The agent a session is being created with, while that's under way.
     private(set) var creatingSessionWith: AgentDefinition.ID?
-    /// The project whose home was shown last, for when no session is selected.
-    private var focusedProjectID: Project.ID?
+    /// The project whose home was shown last, for when no session is selected. Internal only for
+    /// AppModel+Projects.swift.
+    var focusedProjectID: Project.ID?
 
     // Internal only for AppModel+Navigation.swift.
     var history = NavigationHistory<SessionKey>()
@@ -169,71 +170,18 @@ final class AppModel {
         }
     }
 
-    private func start(_ runtime: AgentRuntime, environment: [String: String]) async {
+    /// Launches an agent and routes its events. Internal only for AppModel+Recovery.swift.
+    func start(_ runtime: AgentRuntime, environment: [String: String]) async {
         let agent = runtime.agent.id
         await runtime.start(environment: environment) { [weak self] event in
-            self?.sessions.handle(event, from: agent, connection: self?.runtimes[agent]?.connection)
+            guard let self else { return }
+            if case .disconnected = event {
+                handleCrash(of: agent)
+            } else {
+                sessions.handle(event, from: agent, connection: runtimes[agent]?.connection)
+            }
         }
         await refreshSessions(of: runtime)
-    }
-
-    // MARK: - Projects
-
-    /// Opens a folder as a project, or finds it if it's open already, and lists its sessions.
-    func addProject(_ url: URL) async {
-        let project = projects.add(url)
-        focusProject(project.id)
-        await refreshSessions(in: project)
-    }
-
-    /// Shows a project's home: no session selected, and new sessions go to that project.
-    func focusProject(_ id: Project.ID) {
-        focusedProjectID = id
-        selection = nil
-    }
-
-    /// Closes a project in the sidebar (its sessions stay with the agents). With an undo manager,
-    /// ⌘Z puts it back in its place with the order the user gave its sessions.
-    func removeProject(_ id: Project.ID, undoManager: UndoManager? = nil) {
-        guard let index = projects.all.firstIndex(where: { $0.id == id }) else { return }
-        let project = projects.all[index]
-        let order = ordering.order(in: id)
-        if let selection, catalog.lookup(selection)?.project == id {
-            self.selection = nil
-        }
-        projects.remove(id)
-        catalog.remove(project: id)
-        ordering.forget(id)
-        undoManager?.registerUndo(withTarget: self) { model in
-            MainActor.assumeIsolated {
-                model.restoreProject(project, at: index, order: order, undoManager: undoManager)
-            }
-        }
-        undoManager?.setActionName("Remove Project")
-    }
-
-    private func restoreProject(_ project: Project, at index: Int, order: [SessionKey]?, undoManager: UndoManager?) {
-        projects.restore(project, at: index)
-        ordering.restore(order, in: project.id)
-        undoManager?.registerUndo(withTarget: self) { model in
-            MainActor.assumeIsolated {
-                model.removeProject(project.id, undoManager: undoManager)
-            }
-        }
-        undoManager?.setActionName("Remove Project")
-        Task { await refreshSessions(in: project) }
-    }
-
-    func moveProjects(fromOffsets source: IndexSet, toOffset destination: Int) {
-        projects.move(fromOffsets: source, toOffset: destination)
-    }
-
-    /// The project new sessions go to unless the user picks one: the selected session's, else the first.
-    var currentProject: Project? {
-        if let selection, let listed = catalog.lookup(selection), let project = projects.project(listed.project) {
-            return project
-        }
-        return focusedProjectID.flatMap(projects.project) ?? projects.all.first
     }
 
     // MARK: - Sessions
@@ -318,7 +266,7 @@ final class AppModel {
         }
     }
 
-    private func refreshSessions(in project: Project) async {
+    func refreshSessions(in project: Project) async {
         await withTaskGroup(of: Void.self) { group in
             for runtime in agents {
                 group.addTask { await self.refreshSessions(in: project, of: runtime) }
