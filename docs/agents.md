@@ -23,7 +23,8 @@ and offers the rest in Add Agent with their `setup.install` command (shown, neve
 - **Launch:** `opencode acp`, the user's own `opencode` (Homebrew: `anomalyco/tap/opencode`).
   No adapter to pin; it reads the user's OpenCode config, providers and skills.
 - **Verified** 2026-10-17 with OpenCode 1.19.3: `initialize`, `session/new`, `session/list`, and
-  a prompt answered (`end_turn`) on the free `opencode/deepseek-v4.1-flash-free` model.
+  a prompt answered (`end_turn`) on the free `opencode/deepseek-v4.1-flash-free` model, both from a
+  scratch client and in Native (new session, model switched in the composer, reply shown).
 - **Capabilities:** `loadSession`; sessions `list`, `resume`, `fork`, `close`; images; embedded
   context; MCP over HTTP and SSE.
 - **Auth:** one method, `opencode-login` ("Run `opencode auth login` in the terminal"), a terminal
@@ -48,7 +49,9 @@ and offers the rest in Add Agent with their `setup.install` command (shown, neve
   registry lists for Pi (`pi-acp`); it spawns `pi --mode rpc` per session and translates. Several
   forks exist on npm; the registry's is the one to track.
 - **Verified** 2026-10-17 with Pi 1.3.0 and pi-acp 0.0.34: `initialize`, `session/new`,
-  `session/list`, `session/set_config_option` and a prompt answered (`end_turn`).
+  `session/list`, `session/set_config_option` and a prompt answered (`end_turn`), from a scratch
+  client and in Native (on `openai/gpt-5.4-mini` with an API key, since the test Mac's OAuth logins
+  had expired).
 - **Capabilities:** `loadSession`; sessions `list` and `delete`; images; no embedded context
   (unless `PI_ACP_ENABLE_EMBEDDED_CONTEXT=true`); no MCP over HTTP or SSE.
 - **MCP:** the adapter accepts `mcpServers` but doesn't pass them to Pi, so Native's orchestration
@@ -77,7 +80,9 @@ and offers the rest in Add Agent with their `setup.install` command (shown, neve
 - **Verified** 2026-10-17 with Copilot CLI 1.0.98, installed in a throwaway prefix
   (`npm install --prefix /tmp/agents-test/copilot @github/copilot@1.0.98`) with
   `COPILOT_HOME` pointed at a temporary folder: `initialize`, `session/new`, `session/list` and a
-  prompt answered (`end_turn`). It isn't installed on the test Mac, so Native shows it in Add Agent.
+  prompt answered (`end_turn`). In Native: not installed, it's absent from the sidebar and offered
+  in Add Agent; after linking the throwaway `copilot` onto the PATH, Check Again found and started
+  it without a relaunch ("Added Copilot."), and a session answered a prompt.
 - **Capabilities:** `loadSession`; sessions `list` and `close`; `auth.logout`; images; embedded
   context; MCP over HTTP and SSE. Its built-in GitHub MCP server starts with every session.
 - **Auth:** one method, `copilot-login`, with `_meta["terminal-auth"]` (`copilot login`).
@@ -126,5 +131,7 @@ nothing:
 SVGs are drawn by Native's own small renderer (`native/AgentIcons/Glyph/`: paths, basic shapes,
 groups, transforms, fill rules, strokes), so glyphs scale crisply, take the text color like SF
 Symbols, and need no AppKit. SVGs with text, images or `<use>` fall back to the monogram.
-Everything views draw goes through `AgentIcon(agent:size:)`; menus, which only take an `Image`,
-use `AgentIconStore.image(for:size:scale:)`.
+Everything views draw goes through `AgentIcon(agent:size:)`. Menus only take an `Image` and ignore
+SwiftUI's template rendering, so they use `AgentIconStore.image(for:size:scale:colorScheme:)`,
+which draws glyphs in that appearance's label color; and macOS menus hide item icons unless the
+menu's content (not the `Menu` itself) has `.labelStyle(.titleAndIcon)`.
