@@ -74,8 +74,9 @@ struct HostRegistration {
     /// development builds.
     private static var channel: String {
         guard let data = try? Data(contentsOf: bundledPlist),
-              let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
-              let environment = plist["EnvironmentVariables"] as? [String: String] else { return "" }
+            let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
+            let environment = plist["EnvironmentVariables"] as? [String: String]
+        else { return "" }
         return environment[HostLocation.channelVariable] ?? ""
     }
 }

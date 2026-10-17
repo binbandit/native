@@ -7,10 +7,11 @@ import Testing
 /// The host as users depend on it: a real `native-host` process and a scripted ACP agent, broken on
 /// purpose. Every test kills something mid-turn and checks that the work finishes anyway, and that
 /// the transcript says what happened.
-@Suite("Durable host, end to end", .serialized)
+@Suite("Durable host, end to end", .serialized, .timeLimit(.minutes(1)))
 struct HostEndToEndTests {
     private func startSession(_ recorder: Recorder, harness: HostHarness) async throws -> HostSessionID {
-        let summary = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: harness.root.path(percentEncoded: false)))
+        let summary = try await recorder.client.newSession(
+            NewSessionParams(agentID: "fake", cwd: harness.root.path(percentEncoded: false)))
         try await recorder.client.attach(summary.id)
         return summary.id
     }
@@ -76,7 +77,9 @@ struct HostEndToEndTests {
         try harness.start()
         let second = try await harness.connect()
         try await second.client.attach(session)
-        try await second.wait("the resumed turn and the queued message to finish", timeout: .seconds(30)) { await $0.turnsEnded(session).count == 2 }
+        try await second.wait("the resumed turn and the queued message to finish", timeout: .seconds(30)) {
+            await $0.turnsEnded(session).count == 2
+        }
         let recovery = try #require(await second.recoveries(session).first)
         #expect(recovery.cause == .hostStopped)
         #expect(recovery.action == .resumed)
@@ -104,7 +107,9 @@ struct HostEndToEndTests {
         try harness.start()
         let second = try await harness.connect()
         try await second.client.attach(session)
-        try await second.wait("the resent turn to end", timeout: .seconds(30)) { await $0.turnsEnded(session) == ["end_turn"] }
+        try await second.wait("the resent turn to end", timeout: .seconds(30)) {
+            await $0.turnsEnded(session) == ["end_turn"]
+        }
         #expect(await second.recoveries(session).map(\.action) == [.resent])
         #expect(harness.received == ["prompt\tlose-once please", "prompt\tlose-once please"])
         #expect(await second.agentText(session).contains("echo: lose-once please"))
@@ -118,7 +123,9 @@ struct HostEndToEndTests {
         let recorder = try await harness.connect()
         let session = try await startSession(recorder, harness: harness)
         _ = try await recorder.client.prompt(PromptParams(sessionID: session, text: "crash-once now"))
-        try await recorder.wait("recovery to finish the turn", timeout: .seconds(30)) { await $0.turnsEnded(session) == ["end_turn"] }
+        try await recorder.wait("recovery to finish the turn", timeout: .seconds(30)) {
+            await $0.turnsEnded(session) == ["end_turn"]
+        }
         let recovery = try #require(await recorder.recoveries(session).first)
         #expect(recovery.cause == .agentStopped)
         #expect(recovery.action == .resumed)
@@ -141,7 +148,8 @@ struct HostEndToEndTests {
         let toolCall = try #require(await recorder.mirror(session).state.pendingPermissions.first?.toolCallID)
         let summary = try await recorder.client.sessions().first { $0.id == session }
         #expect(summary?.needsApproval == true)
-        try await recorder.client.respondPermission(RespondPermissionParams(sessionID: session, toolCallID: toolCall, optionID: "allow"))
+        try await recorder.client.respondPermission(
+            RespondPermissionParams(sessionID: session, toolCallID: toolCall, optionID: "allow"))
         try await recorder.wait("the turn to end") { await $0.turnsEnded(session) == ["end_turn"] }
         #expect(await recorder.agentText(session).contains("permission: allow"))
         await recorder.stop()
@@ -154,8 +162,12 @@ struct HostEndToEndTests {
         let recorder = try await harness.connect()
         let session = try await startSession(recorder, harness: harness)
         _ = try await recorder.client.prompt(PromptParams(sessionID: session, text: "slow 6"))
-        #expect(try await recorder.client.prompt(PromptParams(sessionID: session, text: "next", behavior: .queue)) == .queued)
-        #expect(try await recorder.client.prompt(PromptParams(sessionID: session, text: "also this", behavior: .steer)) == .steered)
+        #expect(
+            try await recorder.client.prompt(PromptParams(sessionID: session, text: "next", behavior: .queue))
+                == .queued)
+        #expect(
+            try await recorder.client.prompt(PromptParams(sessionID: session, text: "also this", behavior: .steer))
+                == .steered)
         try await recorder.wait("both turns to end", timeout: .seconds(20)) { await $0.turnsEnded(session).count == 2 }
         #expect(harness.received == ["prompt\tslow 6", "steer\talso this", "prompt\tnext"])
         await recorder.stop()

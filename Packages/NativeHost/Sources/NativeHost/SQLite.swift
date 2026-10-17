@@ -25,7 +25,8 @@ final class SQLiteDatabase {
         let flags = SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE | SQLITE_OPEN_FULLMUTEX
         let code = sqlite3_open_v2(url.path(percentEncoded: false), &handle, flags, nil)
         guard code == SQLITE_OK, let handle else {
-            let message = handle.map { String(cString: sqlite3_errmsg($0)) } ?? "can't open \(url.path(percentEncoded: false))"
+            let message =
+                handle.map { String(cString: sqlite3_errmsg($0)) } ?? "can't open \(url.path(percentEncoded: false))"
             sqlite3_close(handle)
             throw Failure(code: code, message: message)
         }
@@ -64,12 +65,13 @@ final class SQLiteDatabase {
         defer { sqlite3_finalize(statement) }
         for (offset, value) in values.enumerated() {
             let index = Int32(offset + 1)
-            let code = switch value {
-            case .null: sqlite3_bind_null(statement, index)
-            case .integer(let integer): sqlite3_bind_int64(statement, index, integer)
-            case .real(let real): sqlite3_bind_double(statement, index, real)
-            case .text(let text): sqlite3_bind_text(statement, index, text, -1, Self.transient)
-            }
+            let code =
+                switch value {
+                case .null: sqlite3_bind_null(statement, index)
+                case .integer(let integer): sqlite3_bind_int64(statement, index, integer)
+                case .real(let real): sqlite3_bind_double(statement, index, real)
+                case .text(let text): sqlite3_bind_text(statement, index, text, -1, Self.transient)
+                }
             guard code == SQLITE_OK else { throw Failure(code: code, message: lastError) }
         }
         var rows: [[Value]] = []
@@ -77,14 +79,15 @@ final class SQLiteDatabase {
             let code = sqlite3_step(statement)
             if code == SQLITE_DONE { break }
             guard code == SQLITE_ROW else { throw Failure(code: code, message: "\(lastError) in: \(sql)") }
-            rows.append((0..<sqlite3_column_count(statement)).map { column in
-                switch sqlite3_column_type(statement, column) {
-                case SQLITE_INTEGER: .integer(sqlite3_column_int64(statement, column))
-                case SQLITE_FLOAT: .real(sqlite3_column_double(statement, column))
-                case SQLITE_TEXT: .text(String(cString: sqlite3_column_text(statement, column)))
-                default: .null
-                }
-            })
+            rows.append(
+                (0..<sqlite3_column_count(statement)).map { column in
+                    switch sqlite3_column_type(statement, column) {
+                    case SQLITE_INTEGER: .integer(sqlite3_column_int64(statement, column))
+                    case SQLITE_FLOAT: .real(sqlite3_column_double(statement, column))
+                    case SQLITE_TEXT: .text(String(cString: sqlite3_column_text(statement, column)))
+                    default: .null
+                    }
+                })
         }
         return rows
     }

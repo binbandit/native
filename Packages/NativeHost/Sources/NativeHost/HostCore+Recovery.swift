@@ -10,7 +10,8 @@ extension HostCore {
     /// waiting on a turn start draining once their session is back.
     func resumeInterruptedWork() throws {
         let previousBoot = try store.meta(MetaKey.bootTime).flatMap(Double.init).map(Date.init(timeIntervalSince1970:))
-        let lastSeenAlive = try store.meta(MetaKey.heartbeat).flatMap(Double.init).map(Date.init(timeIntervalSince1970:))
+        let lastSeenAlive = try store.meta(MetaKey.heartbeat).flatMap(Double.init).map(
+            Date.init(timeIntervalSince1970:))
         let cause = RecoveryPlanner.cause(previousBoot: previousBoot, currentBoot: configuration.bootTime)
         try store.setMeta(MetaKey.bootTime, configuration.bootTime.map { String($0.timeIntervalSince1970) })
         try store.setMeta(MetaKey.cleanShutdown, "0")
@@ -21,7 +22,9 @@ extension HostCore {
         }
         let turns = try store.unfinishedTurns()
         if !turns.isEmpty {
-            journal(.hostStarted, session: nil, detail: "Resuming \(turns.count) interrupted \(turns.count == 1 ? "task" : "tasks")")
+            journal(
+                .hostStarted, session: nil,
+                detail: "Resuming \(turns.count) interrupted \(turns.count == 1 ? "task" : "tasks")")
         }
         for turn in turns {
             guard let session = sessions[turn.sessionID] else {
@@ -34,7 +37,8 @@ extension HostCore {
             let interruptedAt = max(lastSeenAlive ?? turn.startedAt, turn.startedAt)
             Task { await recover(session, cause: cause, interruptedAt: interruptedAt) }
         }
-        for session in sessions.values where session.turn == nil && !session.queue.isEmpty && !session.record.isQueuePaused {
+        for session in sessions.values
+        where session.turn == nil && !session.queue.isEmpty && !session.record.isQueuePaused {
             Task {
                 try? await load(session)
                 drainQueue(session)
@@ -71,7 +75,10 @@ extension HostCore {
         guard let turn = session.turn else { return }
         session.isRecoveryCancelled = false
         if turn.attempts >= RecoveryPlanner.maximumAttempts {
-            conclude(turn, in: session, note: RecoveryNote(cause: cause, action: .paused, agentName: session.agentName, interruptedAt: interruptedAt))
+            conclude(
+                turn, in: session,
+                note: RecoveryNote(
+                    cause: cause, action: .paused, agentName: session.agentName, interruptedAt: interruptedAt))
             return
         }
         do {
@@ -81,42 +88,51 @@ extension HostCore {
             // The turn stays committed: it resumes when the agent can run again (the user's next
             // message, or the next time the host starts).
             session.phase = .disconnected
-            let note = RecoveryNote(cause: cause, action: .failed, agentName: session.agentName, interruptedAt: interruptedAt, problem: error.localizedDescription)
+            let note = RecoveryNote(
+                cause: cause, action: .failed, agentName: session.agentName, interruptedAt: interruptedAt,
+                problem: error.localizedDescription)
             append(.recovered(note), to: session)
             journal(.recovered, session: session, recovery: note)
             publish(session)
             return
         }
         guard !session.isRecoveryCancelled, session.turn?.requestID == turn.requestID else { return }
-        let decision = RecoveryPlanner.decide(prompt: turn.text, attempts: turn.attempts, replayedUserMessages: session.mirror.userMessages)
-        let action: RecoveryNote.Action = switch decision {
-        case .resend: .resent
-        case .resume: .resumed
-        case .pause: .paused
-        }
-        let note = RecoveryNote(cause: cause, action: action, agentName: session.agentName, interruptedAt: interruptedAt)
+        let decision = RecoveryPlanner.decide(
+            prompt: turn.text, attempts: turn.attempts, replayedUserMessages: session.mirror.userMessages)
+        let action: RecoveryNote.Action =
+            switch decision {
+            case .resend: .resent
+            case .resume: .resumed
+            case .pause: .paused
+            }
+        let note = RecoveryNote(
+            cause: cause, action: action, agentName: session.agentName, interruptedAt: interruptedAt)
         if decision == .pause {
             conclude(turn, in: session, note: note)
             return
         }
         append(.recovered(note), to: session)
         journal(.recovered, session: session, recovery: note)
-        let prompt = switch decision {
-        case .resume:
-            QueuedPrompt(text: RecoveryPlanner.interruptionPrompt(cause: cause), isEchoed: false)
-        default:
-            // The reload replaced the transcript, which no longer shows the message; echo it again.
-            QueuedPrompt(id: turn.requestID, text: turn.text, isEchoed: true)
-        }
+        let prompt =
+            switch decision {
+            case .resume:
+                QueuedPrompt(text: RecoveryPlanner.interruptionPrompt(cause: cause), isEchoed: false)
+            default:
+                // The reload replaced the transcript, which no longer shows the message; echo it again.
+                QueuedPrompt(id: turn.requestID, text: turn.text, isEchoed: true)
+            }
         // Steered messages the agent recorded arrived; the rest wait their turn in the queue.
         let replayed = session.mirror.userMessages
-        session.queue.removeAll { $0.isSteering && RecoveryPlanner.agentReceived($0.prompt.text, replayedUserMessages: replayed) }
+        session.queue.removeAll {
+            $0.isSteering && RecoveryPlanner.agentReceived($0.prompt.text, replayedUserMessages: replayed)
+        }
         for index in session.queue.indices {
             session.queue[index].isSteering = false
         }
         do {
             try startTurn(
-                in: session, prompt: prompt, origin: .user, kind: decision == .resume ? .recovery : turn.kind, attempts: turn.attempts + 1
+                in: session, prompt: prompt, origin: .user, kind: decision == .resume ? .recovery : turn.kind,
+                attempts: turn.attempts + 1
             )
         } catch {
             logger.error("Couldn't restart an interrupted turn: \(error.localizedDescription)")

@@ -110,7 +110,8 @@ public actor NativeHostClient {
     public func attach(_ session: HostSessionID) async throws -> HostSessionSummary {
         let seen = attachments[session] ?? nil
         attachments.updateValue(seen, forKey: session)
-        let result: AttachResult = try await call(HostProtocol.Method.attach, AttachParams(sessionID: session, epoch: epoch, afterSeq: seen))
+        let result: AttachResult = try await call(
+            HostProtocol.Method.attach, AttachParams(sessionID: session, epoch: epoch, afterSeq: seen))
         return result.summary
     }
 
@@ -164,7 +165,9 @@ public actor NativeHostClient {
         let _: EmptyMessage = try await call(HostProtocol.Method.shutdown, ShutdownParams(stopAgents: stopAgents))
     }
 
-    private func call<Result: Decodable & Sendable>(_ method: String, _ params: some Encodable & Sendable) async throws -> Result {
+    private func call<Result: Decodable & Sendable>(
+        _ method: String, _ params: some Encodable & Sendable
+    ) async throws -> Result {
         guard let peer, hostInfo != nil || method == HostProtocol.Method.initialize else { throw Failure.notConnected }
         return try await peer.request(method, params, as: Result.self)
     }
@@ -184,15 +187,18 @@ public actor NativeHostClient {
             } catch {
                 failures += 1
                 let reason = error.localizedDescription
-                setState(failures >= Self.unreachableAfter ? .unreachable(reason: reason) : .reconnecting(attempt: failures, reason: reason))
+                setState(
+                    failures >= Self.unreachableAfter
+                        ? .unreachable(reason: reason) : .reconnecting(attempt: failures, reason: reason))
             }
             peer = nil
             // Quick at first (a host restarting under launchd is back within seconds), then patient.
-            let delay: Duration = switch failures {
-            case 0: .milliseconds(100)
-            case 1...3: .milliseconds(250 << failures)
-            default: .seconds(5)
-            }
+            let delay: Duration =
+                switch failures {
+                case 0: .milliseconds(100)
+                case 1...3: .milliseconds(250 << failures)
+                default: .seconds(5)
+                }
             try? await Task.sleep(for: delay)
         }
     }
@@ -206,7 +212,8 @@ public actor NativeHostClient {
         }
         self.peer = peer
         peer.start()
-        let info: HostInfo = try await peer.request(HostProtocol.Method.initialize, InitializeParams(clientInfo: clientInfo), as: HostInfo.self)
+        let info: HostInfo = try await peer.request(
+            HostProtocol.Method.initialize, InitializeParams(clientInfo: clientInfo), as: HostInfo.self)
         guard info.protocolVersion == HostProtocol.version else {
             peer.close()
             throw VersionMismatch(hostVersion: info.protocolVersion)
@@ -220,7 +227,9 @@ public actor NativeHostClient {
         epoch = info.epoch
         setState(.connected(info))
         for (session, seen) in attachments {
-            _ = try? await peer.request(HostProtocol.Method.attach, AttachParams(sessionID: session, epoch: epoch, afterSeq: seen), as: AttachResult.self)
+            _ = try? await peer.request(
+                HostProtocol.Method.attach, AttachParams(sessionID: session, epoch: epoch, afterSeq: seen),
+                as: AttachResult.self)
         }
     }
 

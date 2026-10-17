@@ -75,7 +75,8 @@ final class DurableHost {
     func newSession(agent: String, cwd: URL) async -> HostSessionID? {
         var created: HostSessionID?
         await perform("start a session") { client in
-            let summary = try await client.newSession(NewSessionParams(agentID: agent, cwd: cwd.path(percentEncoded: false)))
+            let summary = try await client.newSession(
+                NewSessionParams(agentID: agent, cwd: cwd.path(percentEncoded: false)))
             self.upsert(summary)
             self.mirrors[summary.id] = SessionMirror()
             try await client.attach(summary.id)
@@ -107,7 +108,8 @@ final class DurableHost {
 
     func choose(_ option: PermissionOption, forToolCall toolCall: String, in session: HostSessionID) async {
         await perform("answer the request") { client in
-            try await client.respondPermission(RespondPermissionParams(sessionID: session, toolCallID: toolCall, optionID: option.optionId))
+            try await client.respondPermission(
+                RespondPermissionParams(sessionID: session, toolCallID: toolCall, optionID: option.optionId))
         }
     }
 
@@ -139,7 +141,9 @@ final class DurableHost {
         let info = Bundle.main.infoDictionary ?? [:]
         let client = NativeHostClient(
             transport: LocalSocketTransport(location: registrar.location),
-            clientInfo: PeerInfo(name: "Native", version: info["CFBundleShortVersionString"] as? String ?? "0", build: info["CFBundleVersion"] as? String ?? "0")
+            clientInfo: PeerInfo(
+                name: "Native", version: info["CFBundleShortVersionString"] as? String ?? "0",
+                build: info["CFBundleVersion"] as? String ?? "0")
         )
         self.client = client
         listening = Task { [weak self] in

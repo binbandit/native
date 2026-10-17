@@ -11,6 +11,9 @@ final class GitStore {
     typealias EnvironmentProvider = () async -> [String: String]
 
     let settings: GitSettings
+    /// Told about every push Native makes, with the checkout it ran in and the branch, e.g. for
+    /// "branch pushed" automations. Set by the app's wiring so Git doesn't know who listens.
+    @ObservationIgnored var onBranchPushed: (@MainActor (_ project: URL, _ branch: String) -> Void)?
     /// Setup of task worktrees, by worktree folder, for the task's setup notice.
     var setupRuns: [URL: GitSetupRun] = [:]
 
@@ -45,6 +48,7 @@ final class GitStore {
         let key = folder.standardizedFileURL
         if let model = models[key] { return model }
         let model = GitRepositoryModel(folder: key, git: { [weak self] in await self?.resolveGit() })
+        model.onPushed = { [weak self] project, branch in self?.onBranchPushed?(project, branch) }
         models[key] = model
         return model
     }

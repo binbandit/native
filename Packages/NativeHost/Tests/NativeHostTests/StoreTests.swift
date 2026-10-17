@@ -1,8 +1,9 @@
 import ACP
 import Foundation
-@testable import NativeHost
 import NativeHostProtocol
 import Testing
+
+@testable import NativeHost
 
 @Suite("Host store")
 struct StoreTests {
@@ -19,9 +20,16 @@ struct StoreTests {
 
     @Test("A turn, its queue and its request id survive the store being reopened")
     func survivesReopen() throws {
-        let session = StoredSession(id: HostSessionID(), agentID: "fake", agentSessionID: SessionID("s1"), cwd: "/tmp", parentID: nil, origin: .user)
-        let turn = UnfinishedTurn(sessionID: session.id, requestID: UUID(), text: "slow 5", kind: .prompt, echo: true, startedAt: Date(timeIntervalSince1970: 1_700_000_000))
-        let queued = [StoredQueueItem(prompt: QueuedPrompt(text: "first"), isSteering: false), StoredQueueItem(prompt: QueuedPrompt(text: "second"), isSteering: true)]
+        let session = StoredSession(
+            id: HostSessionID(), agentID: "fake", agentSessionID: SessionID("s1"), cwd: "/tmp", parentID: nil,
+            origin: .user)
+        let turn = UnfinishedTurn(
+            sessionID: session.id, requestID: UUID(), text: "slow 5", kind: .prompt, echo: true,
+            startedAt: Date(timeIntervalSince1970: 1_700_000_000))
+        let queued = [
+            StoredQueueItem(prompt: QueuedPrompt(text: "first"), isSteering: false),
+            StoredQueueItem(prompt: QueuedPrompt(text: "second"), isSteering: true),
+        ]
         do {
             let store = try HostStore(url: url)
             try store.insertSession(session)
@@ -42,12 +50,14 @@ struct StoreTests {
     @Test("A failed transaction leaves nothing behind")
     func atomicTransactions() throws {
         let store = try HostStore(url: url)
-        let session = StoredSession(id: HostSessionID(), agentID: "fake", agentSessionID: nil, cwd: "/tmp", parentID: nil, origin: .user)
+        let session = StoredSession(
+            id: HostSessionID(), agentID: "fake", agentSessionID: nil, cwd: "/tmp", parentID: nil, origin: .user)
         try store.insertSession(session)
         struct Interrupted: Error {}
         #expect(throws: Interrupted.self) {
             try store.transaction {
-                try store.beginTurn(UnfinishedTurn(sessionID: session.id, requestID: UUID(), text: "x", kind: .prompt, echo: true))
+                try store.beginTurn(
+                    UnfinishedTurn(sessionID: session.id, requestID: UUID(), text: "x", kind: .prompt, echo: true))
                 throw Interrupted()
             }
         }
@@ -57,9 +67,12 @@ struct StoreTests {
     @Test("Closing a session drops its turn, queue and approvals")
     func cascades() throws {
         let store = try HostStore(url: url)
-        let session = StoredSession(id: HostSessionID(), agentID: "fake", agentSessionID: SessionID("s"), cwd: "/tmp", parentID: nil, origin: .user)
+        let session = StoredSession(
+            id: HostSessionID(), agentID: "fake", agentSessionID: SessionID("s"), cwd: "/tmp", parentID: nil,
+            origin: .user)
         try store.insertSession(session)
-        try store.beginTurn(UnfinishedTurn(sessionID: session.id, requestID: UUID(), text: "x", kind: .prompt, echo: true))
+        try store.beginTurn(
+            UnfinishedTurn(sessionID: session.id, requestID: UUID(), text: "x", kind: .prompt, echo: true))
         try store.setQueue([StoredQueueItem(prompt: QueuedPrompt(text: "y"), isSteering: false)], for: session.id)
         try store.addApproval(sessionID: session.id, toolCallID: "call", title: "Write")
         try store.deleteSession(session.id)
@@ -71,9 +84,12 @@ struct StoreTests {
     @Test("The activity journal keeps recovery notes")
     func activity() throws {
         let store = try HostStore(url: url)
-        let note = RecoveryNote(cause: .hostStopped, action: .resumed, agentName: "Claude Code", interruptedAt: Date(timeIntervalSince1970: 1_000))
+        let note = RecoveryNote(
+            cause: .hostStopped, action: .resumed, agentName: "Claude Code",
+            interruptedAt: Date(timeIntervalSince1970: 1_000))
         let first = try store.appendActivity(.turnFinished, session: nil, subject: "Fix the build")
-        let second = try store.appendActivity(.recovered, session: HostSessionID(), subject: "Claude Code", recovery: note)
+        let second = try store.appendActivity(
+            .recovered, session: HostSessionID(), subject: "Claude Code", recovery: note)
         #expect(try store.activity(after: nil, limit: 10).map(\.id) == [first.id, second.id])
         #expect(try store.activity(after: first.id, limit: 10).first?.recovery == note)
     }

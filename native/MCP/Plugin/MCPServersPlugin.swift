@@ -6,8 +6,10 @@ import Foundation
 /// already load a server from their own configuration don't get a second copy, and agents that
 /// can't use a transport don't get servers that need it.
 struct MCPServersPlugin: NativePlugin {
+    static let id = "mcp-servers"
+
     let manifest = PluginManifest(
-        id: "mcp-servers",
+        id: Self.id,
         name: "MCP Servers",
         description: "Gives every agent the MCP servers you set up in Native, and shows the servers each agent loads on its own."
     )

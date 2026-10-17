@@ -61,8 +61,13 @@ extension HostCore {
     }
 
     /// Commits the turn, then runs it in the background: the session is prompting when this returns.
-    func startTurn(in session: HostSession, prompt: QueuedPrompt, origin: PromptEcho.Origin, kind: UnfinishedTurn.Kind = .prompt, attempts: Int = 0) throws {
-        let turn = UnfinishedTurn(sessionID: session.id, requestID: prompt.id, text: prompt.text, kind: kind, echo: prompt.isEchoed, attempts: attempts)
+    func startTurn(
+        in session: HostSession, prompt: QueuedPrompt, origin: PromptEcho.Origin, kind: UnfinishedTurn.Kind = .prompt,
+        attempts: Int = 0
+    ) throws {
+        let turn = UnfinishedTurn(
+            sessionID: session.id, requestID: prompt.id, text: prompt.text, kind: kind, echo: prompt.isEchoed,
+            attempts: attempts)
         session.record.lastActivity = .now
         try store.transaction {
             try store.beginTurn(turn)
@@ -86,12 +91,15 @@ extension HostCore {
             // The turn stays committed; it runs once the agent can (see `prompt`, `load`).
             return
         }
-        guard session.turn?.requestID == turn.requestID, let link = agents[session.record.agentID], let peer = link.peer,
-              let agentSessionID = session.record.agentSessionID else { return }
+        guard session.turn?.requestID == turn.requestID, let link = agents[session.record.agentID],
+            let peer = link.peer,
+            let agentSessionID = session.record.agentSessionID
+        else { return }
         let generation = link.generation
         do {
             let response = try await peer.request(
-                "session/prompt", PromptRequest(sessionId: agentSessionID, prompt: [.text(turn.text)]), as: RawPromptResponse.self
+                "session/prompt", PromptRequest(sessionId: agentSessionID, prompt: [.text(turn.text)]),
+                as: RawPromptResponse.self
             )
             finish(turn, in: session, stopReason: response.stopReason)
         } catch PeerError.closed {
@@ -144,7 +152,8 @@ extension HostCore {
     /// Starts the next queued message once nothing is running, one per turn, unless paused.
     func drainQueue(_ session: HostSession) {
         guard session.phase == .idle, session.turn == nil, !session.record.isQueuePaused,
-              let index = session.queue.firstIndex(where: { !$0.isSteering }) else { return }
+            let index = session.queue.firstIndex(where: { !$0.isSteering })
+        else { return }
         let next = session.queue.remove(at: index)
         do {
             try startTurn(in: session, prompt: next.prompt, origin: .queued)
@@ -159,17 +168,21 @@ extension HostCore {
     private func steer(_ item: QueuedPrompt, into session: HostSession) async throws -> PromptDelivery {
         try enqueue(item, in: session, atFront: true, steering: true)
         var delivery = PromptDelivery.queued
-        if let link = agents[session.record.agentID], let peer = link.peer, let agentSessionID = session.record.agentSessionID {
+        if let link = agents[session.record.agentID], let peer = link.peer,
+            let agentSessionID = session.record.agentSessionID
+        {
             do {
                 let response = try await peer.request(
-                    "_session/steering", SteerRequest(sessionId: agentSessionID, prompt: [.text(item.text)]), as: RawSteerResponse.self
+                    "_session/steering", SteerRequest(sessionId: agentSessionID, prompt: [.text(item.text)]),
+                    as: RawSteerResponse.self
                 )
                 switch response.outcome {
                 case "injected", "startedNewTurn":
                     // An older agent takes it as a new turn of its own; either way it's delivered.
                     session.queue.removeAll { $0.prompt.id == item.id }
                     if item.isEchoed {
-                        append(.prompt(PromptEcho(text: item.text, steered: response.outcome == "injected")), to: session)
+                        append(
+                            .prompt(PromptEcho(text: item.text, steered: response.outcome == "injected")), to: session)
                     }
                     delivery = .steered
                 default:
@@ -177,7 +190,11 @@ extension HostCore {
                     break
                 }
             } catch {
-                append(.notice(text: "Couldn't add your message to the running turn, so it's queued: \(error.localizedDescription)", isError: true), to: session)
+                append(
+                    .notice(
+                        text:
+                            "Couldn't add your message to the running turn, so it's queued: \(error.localizedDescription)",
+                        isError: true), to: session)
             }
         }
         if let index = session.queue.firstIndex(where: { $0.prompt.id == item.id }) {
@@ -239,7 +256,8 @@ extension HostCore {
             throw HostError.agentUnavailable(session.agentName)
         }
         let response = try await peer.request(
-            "session/set_config_option", RawSetConfigOptionRequest(sessionId: agentSessionID, configId: params.configID, value: params.value),
+            "session/set_config_option",
+            RawSetConfigOptionRequest(sessionId: agentSessionID, configId: params.configID, value: params.value),
             as: RawConfigOptionsResponse.self
         )
         if let options = response.configOptions {

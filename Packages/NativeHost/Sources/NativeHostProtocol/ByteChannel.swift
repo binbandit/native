@@ -35,8 +35,12 @@ public final class ByteChannel: ByteStream {
     public init(reading readDescriptor: Int32, writing writeDescriptor: Int32, label: String) {
         let queue = DispatchQueue(label: "Native.ByteChannel.\(label)")
         self.queue = queue
-        reader = DispatchIO(type: .stream, fileDescriptor: readDescriptor, queue: queue) { _ in closeDescriptor(readDescriptor) }
-        writer = DispatchIO(type: .stream, fileDescriptor: writeDescriptor, queue: queue) { _ in closeDescriptor(writeDescriptor) }
+        reader = DispatchIO(type: .stream, fileDescriptor: readDescriptor, queue: queue) { _ in
+            closeDescriptor(readDescriptor)
+        }
+        writer = DispatchIO(type: .stream, fileDescriptor: writeDescriptor, queue: queue) { _ in
+            closeDescriptor(writeDescriptor)
+        }
         // Deliver whatever has arrived rather than waiting to fill a buffer.
         reader.setLimit(lowWater: 1)
     }

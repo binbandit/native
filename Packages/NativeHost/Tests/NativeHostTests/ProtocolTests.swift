@@ -13,18 +13,24 @@ struct ProtocolTests {
         return try decoder.decode(Value.self, from: encoder.encode(value))
     }
 
-    @Test("Every event survives the wire", arguments: [
-        HostEvent.Payload.reset(loading: true),
-        .loaded,
-        .update(.object(["sessionUpdate": .string("usage_update"), "used": .number(12_345), "size": .number(200_000)])),
-        .prompt(PromptEcho(text: "Fix it", steered: true, origin: .queued)),
-        .permissionRequested(toolCallID: "call-1", request: .object(["sessionId": .string("s")])),
-        .permissionResolved(toolCallID: "call-1", optionID: nil),
-        .turnEnded(stopReason: "end_turn"),
-        .turnFailed(message: "Rate limited"),
-        .notice(text: "Hi", isError: false),
-        .recovered(RecoveryNote(cause: .hostStopped, action: .resumed, agentName: "Codex", interruptedAt: Date(timeIntervalSince1970: 1_700_000_000))),
-    ])
+    @Test(
+        "Every event survives the wire",
+        arguments: [
+            HostEvent.Payload.reset(loading: true),
+            .loaded,
+            .update(
+                .object(["sessionUpdate": .string("usage_update"), "used": .number(12_345), "size": .number(200_000)])),
+            .prompt(PromptEcho(text: "Fix it", steered: true, origin: .queued)),
+            .permissionRequested(toolCallID: "call-1", request: .object(["sessionId": .string("s")])),
+            .permissionResolved(toolCallID: "call-1", optionID: nil),
+            .turnEnded(stopReason: "end_turn"),
+            .turnFailed(message: "Rate limited"),
+            .notice(text: "Hi", isError: false),
+            .recovered(
+                RecoveryNote(
+                    cause: .hostStopped, action: .resumed, agentName: "Codex",
+                    interruptedAt: Date(timeIntervalSince1970: 1_700_000_000))),
+        ])
     func eventRoundTrip(_ payload: HostEvent.Payload) throws {
         let event = HostEvent(seq: 7, at: Date(timeIntervalSince1970: 1_700_000_000.5), payload: payload)
         #expect(try roundTrip(event) == event)
@@ -40,7 +46,9 @@ struct ProtocolTests {
 
     @Test("Forwarded integers stay integers, so the reducer can decode them")
     func integersSurviveForwarding() throws {
-        let update = JSONValue.object(["sessionUpdate": .string("usage_update"), "used": .number(12_345), "size": .number(200_000)])
+        let update = JSONValue.object([
+            "sessionUpdate": .string("usage_update"), "used": .number(12_345), "size": .number(200_000),
+        ])
         let data = try JSONEncoder().encode(update)
         #expect(String(decoding: data, as: UTF8.self).contains("12345"))
         #expect(!String(decoding: data, as: UTF8.self).contains("12345.0"))
@@ -53,7 +61,8 @@ struct ProtocolTests {
     func peerOrdering() async throws {
         let (clientEnd, serverEnd) = try UnixSocket.pair()
         let server = PeerBox()
-        let serverPeer = JSONRPCPeer(channel: ByteChannel.socket(serverEnd, label: "server"), label: "server") { event in
+        let serverPeer = JSONRPCPeer(channel: ByteChannel.socket(serverEnd, label: "server"), label: "server") {
+            event in
             guard case .request(let message) = event, let id = message.id else { return }
             let peer = await server.peer
             for index in 0..<50 {

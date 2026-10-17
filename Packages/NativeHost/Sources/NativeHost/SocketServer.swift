@@ -1,6 +1,7 @@
 import Dispatch
 import Foundation
 import NativeHostProtocol
+
 #if canImport(Darwin)
 import Darwin
 #elseif canImport(Glibc)
@@ -23,7 +24,8 @@ final class SocketServer: Sendable {
     init(path: String, verifier: (any PeerVerifier)?, accept: @escaping @Sendable (any ByteStream) -> Void) throws {
         let descriptor = try UnixSocket.listen(at: path)
         self.descriptor = descriptor
-        let source = DispatchSource.makeReadSource(fileDescriptor: descriptor, queue: DispatchQueue(label: "Native.SocketServer"))
+        let source = DispatchSource.makeReadSource(
+            fileDescriptor: descriptor, queue: DispatchQueue(label: "Native.SocketServer"))
         self.source = source
         let logger = logger
         source.setEventHandler {

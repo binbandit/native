@@ -6,7 +6,7 @@ import os
 @MainActor
 public final class WorkflowRunStore {
     public static let standard = WorkflowRunStore(
-        url: URL.applicationSupportDirectory.appending(path: "Native/workflow-runs.json", directoryHint: .notDirectory)
+        url: AutomationStorage.file("workflow-runs.json")
     )
 
     /// Older runs are dropped past this, newest kept.

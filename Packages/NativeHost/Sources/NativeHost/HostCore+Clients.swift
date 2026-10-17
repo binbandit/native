@@ -71,7 +71,9 @@ extension HostCore {
 
     /// Handles one request. `reply` must be called, once, in the same actor turn as the state the
     /// result describes, so nothing slips in between (see `attach`).
-    private func answer(_ message: JSONRPCPeer.Message, from client: ClientLink, reply: (any Encodable & Sendable) throws -> Void) async throws {
+    private func answer(
+        _ message: JSONRPCPeer.Message, from client: ClientLink, reply: (any Encodable & Sendable) throws -> Void
+    ) async throws {
         typealias Method = HostProtocol.Method
         switch message.method {
         case Method.initialize:
@@ -82,7 +84,10 @@ extension HostCore {
             try syncAgents(try message.params(as: SyncAgentsParams.self).agents)
             try reply(EmptyMessage())
         case Method.listSessions:
-            try reply(sessions.values.map(\.summary).sorted { ($0.lastActivity ?? .distantPast) > ($1.lastActivity ?? .distantPast) })
+            try reply(
+                sessions.values.map(\.summary).sorted {
+                    ($0.lastActivity ?? .distantPast) > ($1.lastActivity ?? .distantPast)
+                })
         case Method.newSession:
             try reply(try await newSession(try message.params(as: NewSessionParams.self)))
         case Method.openSession:
@@ -131,11 +136,14 @@ extension HostCore {
     /// Replays what the client hasn't seen as notifications, then answers, all in one actor turn:
     /// the client applies the replay, then live events, with nothing missed or doubled. A session
     /// the agent doesn't have loaded (after a restart) starts loading; its replay streams in live.
-    private func attach(_ params: AttachParams, client: ClientLink, reply: (any Encodable & Sendable) throws -> Void) throws {
+    private func attach(
+        _ params: AttachParams, client: ClientLink, reply: (any Encodable & Sendable) throws -> Void
+    ) throws {
         let session = try session(params.sessionID)
         let afterSeq = params.epoch == epoch ? params.afterSeq : nil
         for event in session.events(after: afterSeq) {
-            client.notify(HostProtocol.Method.sessionEvent, SessionEventNotification(sessionID: session.id, event: event))
+            client.notify(
+                HostProtocol.Method.sessionEvent, SessionEventNotification(sessionID: session.id, event: event))
         }
         session.subscribers.insert(client.id)
         client.attached.insert(session.id)

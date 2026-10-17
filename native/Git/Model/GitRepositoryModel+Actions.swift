@@ -50,6 +50,7 @@ extension GitRepositoryModel {
         let ahead = branch?.ahead ?? 0
         await perform(.push) { repository in
             try await repository.push()
+            await notePushed(repository)
             let upstream = try await repository.status().branch.upstream ?? "the remote"
             return GitNotice(
                 tone: .success,
@@ -78,6 +79,7 @@ extension GitRepositoryModel {
             guard push else { return GitNotice(tone: .success, title: "Committed “\(subject)”") }
             do {
                 try await repository.push()
+                await notePushed(repository)
             } catch {
                 var notice = GitNotice(failure: error, during: .push)
                 notice.message = "Your commit is saved locally. " + (notice.message ?? "")
@@ -149,6 +151,12 @@ extension GitRepositoryModel {
             selection = status?.conflicted.first?.id
         case .undoCommits(let receipt): await undoCommits(receipt)
         }
+    }
+
+    /// Reports a push to `onPushed` with the checkout it ran in.
+    private func notePushed(_ repository: Repository) async {
+        guard let onPushed, let branch = try? await repository.status().branch.name else { return }
+        onPushed(repository.root, branch)
     }
 
     /// Every path the changes touch, renames' original paths included.

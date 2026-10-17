@@ -69,7 +69,9 @@ public struct SessionMirror: Sendable {
 
     /// An ACP stop reason from its wire name; unknown names stay as `.other`.
     public static func stopReason(_ raw: String) -> StopReason {
-        guard let data = try? JSONEncoder().encode(raw), let reason = try? JSONDecoder().decode(StopReason.self, from: data) else {
+        guard let data = try? JSONEncoder().encode(raw),
+            let reason = try? JSONDecoder().decode(StopReason.self, from: data)
+        else {
             return .other(raw)
         }
         return reason

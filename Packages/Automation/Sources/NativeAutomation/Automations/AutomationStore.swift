@@ -5,7 +5,7 @@ import os
 @MainActor
 public final class AutomationStore {
     public static let standard = AutomationStore(
-        url: URL.applicationSupportDirectory.appending(path: "Native/automations.json", directoryHint: .notDirectory)
+        url: AutomationStorage.file("automations.json")
     )
 
     private let url: URL

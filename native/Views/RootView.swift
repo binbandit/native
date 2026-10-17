@@ -7,6 +7,7 @@ struct RootView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.releaseChannel) private var releaseChannel
     @State private var columnVisibility = NavigationSplitViewVisibility.all
+    @State private var undoToast: UndoToastItem?
     @State private var showsPullRequests = false
     @Environment(AutomationCenter.self) private var automation
     /// Workflows or Automations, when one of them has the detail column.
@@ -62,6 +63,10 @@ struct RootView: View {
         }
         .toolbar(removing: .sidebarToggle)
         .focusedSceneValue(\.sidebarVisibility, $columnVisibility)
+        .undoToast($undoToast)
+        .onChange(of: model.lastUndoable?.id) {
+            undoToast = model.lastUndoable.map { action in UndoToastItem(action.message, undo: action.undo) }
+        }
         .focusedSceneValue(\.showsPullRequests, $showsPullRequests)
         // The pull requests page and a session take turns in the detail column.
         .onChange(of: showsPullRequests) { _, shows in

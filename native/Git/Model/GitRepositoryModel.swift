@@ -34,6 +34,8 @@ final class GitRepositoryModel {
     var commitMessage = ""
 
     @ObservationIgnored let resolveGit: () async -> Git?
+    /// Called after each successful push with the checkout it ran in and the branch.
+    @ObservationIgnored var onPushed: ((_ project: URL, _ branch: String) -> Void)?
     @ObservationIgnored private var refreshTask: Task<Void, Never>?
     @ObservationIgnored private var isRefreshPending = false
     @ObservationIgnored private var watchTask: Task<Void, Never>?

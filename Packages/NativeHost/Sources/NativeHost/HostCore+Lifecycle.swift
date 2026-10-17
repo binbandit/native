@@ -21,7 +21,8 @@ extension HostCore {
     }
 
     func exitIfIdleForRestart() {
-        guard isRestartingWhenIdle, !sessions.values.contains(where: { $0.turn != nil || $0.phase == .recovering }) else { return }
+        guard isRestartingWhenIdle, !sessions.values.contains(where: { $0.turn != nil || $0.phase == .recovering })
+        else { return }
         for link in agents.values {
             link.stop()
         }

@@ -13,6 +13,8 @@ public protocol AutomationHost: AnyObject {
     func startWorkflow(_ definition: WorkflowDefinition, input: String, cwd: URL, overrides: [String: WorkflowAgent.ID]) -> WorkflowRun.ID
     func cancelWorkflowRun(_ id: WorkflowRun.ID)
     func workflowRun(_ id: WorkflowRun.ID) -> WorkflowRun?
-    /// The user's open pull requests as GitHub reports them now; nil when GitHub isn't available.
-    func pullRequestSnapshots() async -> [PullRequestSnapshot]?
+    /// The user's open pull requests as GitHub reports them now. Throws, saying why, when they
+    /// can't be read (gh missing or signed out, offline), so the user learns why event automations
+    /// aren't firing instead of seeing nothing happen.
+    func pullRequestSnapshots() async throws -> [PullRequestSnapshot]
 }

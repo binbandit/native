@@ -19,7 +19,8 @@ public struct HostLocation: Hashable, Sendable {
     /// `~/Library/Application Support/Native`, or `…/Native/Channels/<channel>` for a named channel.
     public static func standard(channel: String = "") -> HostLocation {
         let support = URL.applicationSupportDirectory.appending(path: "Native", directoryHint: .isDirectory)
-        let directory = channel.isEmpty ? support : support.appending(path: "Channels/\(channel)", directoryHint: .isDirectory)
+        let directory =
+            channel.isEmpty ? support : support.appending(path: "Channels/\(channel)", directoryHint: .isDirectory)
         return HostLocation(directory: directory, channel: channel)
     }
 
@@ -37,7 +38,9 @@ public struct HostLocation: Hashable, Sendable {
 
     /// Creates the directory, readable by the user alone: the socket inside it is the host's door.
     public func prepare() throws {
-        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
-        try FileManager.default.setAttributes([.posixPermissions: 0o700], ofItemAtPath: directory.path(percentEncoded: false))
+        try FileManager.default.createDirectory(
+            at: directory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o700], ofItemAtPath: directory.path(percentEncoded: false))
     }
 }

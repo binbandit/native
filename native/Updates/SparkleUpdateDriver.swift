@@ -44,8 +44,9 @@ final class SparkleUpdateDriver: NSObject {
         updater?.checkForUpdates()
     }
 
-    func checkInBackground() {
-        updater?.checkForUpdatesInBackground()
+    /// Starts a quiet check shortly, after any session in progress has wound down.
+    func recheckSoon() {
+        updater?.resetUpdateCycleAfterShortDelay()
     }
 
     /// Downloads the offered update if needed, then installs it.

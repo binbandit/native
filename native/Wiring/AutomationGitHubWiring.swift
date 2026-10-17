@@ -58,13 +58,31 @@ extension AutomationGitHubWiring {
         try await git.createTaskWorktree(in: project, title: title)
     }
 
+    /// Why pull request events can't be seen.
+    struct EventSourceError: LocalizedError {
+        let errorDescription: String?
+    }
+
     /// The user's open pull requests as the GitHub feature last saw them (it keeps the inbox fresh),
-    /// for automations to compare between polls; nil when GitHub isn't available.
-    static func pullRequestSnapshots(gitHub: GitHubModel) async -> [PullRequestSnapshot]? {
+    /// for automations to compare between polls. Throws with the reason and the fix when GitHub
+    /// can't be read.
+    static func pullRequestSnapshots(gitHub: GitHubModel) async throws -> [PullRequestSnapshot] {
         if gitHub.inbox == nil {
             await gitHub.refresh()
         }
-        guard let inbox = gitHub.inbox else { return nil }
+        switch gitHub.availability {
+        case .notInstalled:
+            throw EventSourceError(errorDescription: "The GitHub CLI (gh) isn't installed, so Native can't see pull request events. Install it (brew install gh), then run gh auth login.")
+        case .notAuthenticated:
+            throw EventSourceError(errorDescription: "gh isn't signed in, so Native can't see pull request events. Run gh auth login in a terminal; Native picks it up on its next check.")
+        case .offline:
+            throw EventSourceError(errorDescription: "You're offline, so Native can't see pull request events. They're picked up again when the network returns.")
+        case .ready, nil:
+            break
+        }
+        guard let inbox = gitHub.inbox else {
+            throw EventSourceError(errorDescription: gitHub.lastError?.localizedDescription ?? "GitHub hasn't answered yet; Native tries again in two minutes.")
+        }
         let authored = Set(inbox.authored.map(\.url))
         let reviewRequested = Set(inbox.reviewRequested.map(\.url))
         return inbox.all.map { pullRequest in

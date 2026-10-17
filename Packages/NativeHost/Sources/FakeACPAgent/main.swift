@@ -46,21 +46,32 @@ actor FakeAgent {
         do {
             switch message.method {
             case "initialize":
-                try peer.respond(to: id, with: JSONValue.object([
-                    "protocolVersion": .number(1),
-                    "agentCapabilities": .object(["loadSession": .bool(true)]),
-                    "agentInfo": .object(["name": .string("fake-agent"), "version": .string("1")]),
-                    "_meta": .object(["steering": .object(["supported": .bool(true)])]),
-                ]))
+                try peer.respond(
+                    to: id,
+                    with: JSONValue.object([
+                        "protocolVersion": .number(1),
+                        "agentCapabilities": .object(["loadSession": .bool(true)]),
+                        "agentInfo": .object(["name": .string("fake-agent"), "version": .string("1")]),
+                        "_meta": .object(["steering": .object(["supported": .bool(true)])]),
+                    ]))
             case "session/new":
                 let session = SessionID(UUID().uuidString)
                 try save([], for: session)
-                try peer.respond(to: id, with: JSONValue.object(["sessionId": .string(session.rawValue), "configOptions": Self.configOptions]))
+                try peer.respond(
+                    to: id,
+                    with: JSONValue.object([
+                        "sessionId": .string(session.rawValue), "configOptions": Self.configOptions,
+                    ]))
             case "session/load":
                 let session = try message.params(as: SessionParams.self).sessionId
                 for (index, entry) in try load(session).enumerated() {
                     let kind = entry.role == "user" ? "user_message_chunk" : "agent_message_chunk"
-                    try update(session, ["sessionUpdate": .string(kind), "messageId": .string("m\(index)"), "content": Self.text(entry.text)])
+                    try update(
+                        session,
+                        [
+                            "sessionUpdate": .string(kind), "messageId": .string("m\(index)"),
+                            "content": Self.text(entry.text),
+                        ])
                 }
                 try peer.respond(to: id, with: JSONValue.object(["configOptions": Self.configOptions]))
             case "session/prompt":
@@ -118,15 +129,24 @@ actor FakeAgent {
             try append(Message(role: "agent", text: reply), to: session)
             return "end_turn"
         } else if text.hasPrefix("permission") {
-            let answer = try await peer?.request("session/request_permission", JSONValue.object([
-                "sessionId": .string(session.rawValue),
-                "toolCall": .object(["toolCallId": .string("call-\(UUID().uuidString.prefix(8))"), "title": .string("Write notes.txt"), "kind": .string("edit")]),
-                "options": .array([
-                    .object(["optionId": .string("allow"), "name": .string("Allow"), "kind": .string("allow_once")]),
-                    .object(["optionId": .string("reject"), "name": .string("Reject"), "kind": .string("reject_once")]),
-                ]),
-            ]), as: JSONValue.self)
-            reply = "permission: \(answer?["outcome"]?["optionId"]?.stringValue ?? answer?["outcome"]?["outcome"]?.stringValue ?? "none")"
+            let answer = try await peer?.request(
+                "session/request_permission",
+                JSONValue.object([
+                    "sessionId": .string(session.rawValue),
+                    "toolCall": .object([
+                        "toolCallId": .string("call-\(UUID().uuidString.prefix(8))"),
+                        "title": .string("Write notes.txt"), "kind": .string("edit"),
+                    ]),
+                    "options": .array([
+                        .object(["optionId": .string("allow"), "name": .string("Allow"), "kind": .string("allow_once")]
+                        ),
+                        .object([
+                            "optionId": .string("reject"), "name": .string("Reject"), "kind": .string("reject_once"),
+                        ]),
+                    ]),
+                ]), as: JSONValue.self)
+            reply =
+                "permission: \(answer?["outcome"]?["optionId"]?.stringValue ?? answer?["outcome"]?["outcome"]?.stringValue ?? "none")"
         } else if text.contains("[Native] Your previous turn was interrupted") {
             reply = "resumed"
         } else {
@@ -140,7 +160,8 @@ actor FakeAgent {
     // MARK: - Store
 
     private func update(_ session: SessionID, _ update: [String: JSONValue]) throws {
-        try peer?.notify("session/update", JSONValue.object(["sessionId": .string(session.rawValue), "update": .object(update)]))
+        try peer?.notify(
+            "session/update", JSONValue.object(["sessionId": .string(session.rawValue), "update": .object(update)]))
     }
 
     private func file(_ session: SessionID) -> URL {
@@ -185,11 +206,16 @@ actor FakeAgent {
         .object(["type": .string("text"), "text": .string(text)])
     }
 
-    private static let configOptions = JSONValue.array([.object([
-        "id": .string("mode"), "name": .string("Mode"), "category": .string("mode"), "type": .string("select"),
-        "currentValue": .string("default"),
-        "options": .array([.object(["value": .string("default"), "name": .string("Default")]), .object(["value": .string("plan"), "name": .string("Plan")])]),
-    ])])
+    private static let configOptions = JSONValue.array([
+        .object([
+            "id": .string("mode"), "name": .string("Mode"), "category": .string("mode"), "type": .string("select"),
+            "currentValue": .string("default"),
+            "options": .array([
+                .object(["value": .string("default"), "name": .string("Default")]),
+                .object(["value": .string("plan"), "name": .string("Plan")]),
+            ]),
+        ])
+    ])
 
     struct SessionParams: Decodable { var sessionId: SessionID }
     struct CancelParams: Decodable { var sessionId: SessionID }
@@ -199,7 +225,9 @@ actor FakeAgent {
     }
 }
 
-let store = URL(filePath: ProcessInfo.processInfo.environment["FAKE_AGENT_STORE"] ?? NSTemporaryDirectory(), directoryHint: .isDirectory)
+let store = URL(
+    filePath: ProcessInfo.processInfo.environment["FAKE_AGENT_STORE"] ?? NSTemporaryDirectory(),
+    directoryHint: .isDirectory)
 try? FileManager.default.createDirectory(at: store, withIntermediateDirectories: true)
 let agent = FakeAgent(store: store)
 let channel = ByteChannel(reading: dup(STDIN_FILENO), writing: dup(STDOUT_FILENO), label: "fake-agent")

@@ -48,7 +48,10 @@ public struct AgentSpec: Codable, Hashable, Sendable, Identifiable {
     /// `{"CLAUDE_CODE_EXECUTABLE": "claude"}`.
     public var resolveExecutables: [String: String]
 
-    public init(id: String, name: String, command: String, args: [String] = [], env: [String: String] = [:], resolveExecutables: [String: String] = [:]) {
+    public init(
+        id: String, name: String, command: String, args: [String] = [], env: [String: String] = [:],
+        resolveExecutables: [String: String] = [:]
+    ) {
         self.id = id
         self.name = name
         self.command = command
@@ -139,9 +142,12 @@ public struct HostSessionSummary: Codable, Hashable, Sendable, Identifiable {
     public var problem: String?
 
     public init(
-        id: HostSessionID, agentID: String, agentName: String, agentSessionID: SessionID?, cwd: String, parentID: HostSessionID? = nil,
-        origin: SessionOrigin = .user, title: String? = nil, phase: HostSessionPhase, needsApproval: Bool = false, queue: [QueuedPrompt] = [],
-        isQueuePaused: Bool = false, supportsSteering: Bool = false, lastActivity: Date? = nil, lastStopReason: String? = nil, problem: String? = nil
+        id: HostSessionID, agentID: String, agentName: String, agentSessionID: SessionID?, cwd: String,
+        parentID: HostSessionID? = nil,
+        origin: SessionOrigin = .user, title: String? = nil, phase: HostSessionPhase, needsApproval: Bool = false,
+        queue: [QueuedPrompt] = [],
+        isQueuePaused: Bool = false, supportsSteering: Bool = false, lastActivity: Date? = nil,
+        lastStopReason: String? = nil, problem: String? = nil
     ) {
         self.id = id
         self.agentID = agentID

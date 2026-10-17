@@ -14,7 +14,7 @@ final class StepTaskRecords {
     }
 
     static let standard = StepTaskRecords(
-        url: URL.applicationSupportDirectory.appending(path: "Native/workflow-tasks.json", directoryHint: .notDirectory)
+        url: AutomationStorage.file("workflow-tasks.json")
     )
 
     /// Records kept; runs are capped too, so older ones have nothing left to reopen.

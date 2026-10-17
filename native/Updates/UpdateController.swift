@@ -67,6 +67,15 @@ final class UpdateController {
         if case .unavailable = state { false } else { true }
     }
 
+    /// Whether the toolbar's update button has anything to show; the toolbar leaves the slot out
+    /// otherwise.
+    var showsToolbarButton: Bool {
+        switch state {
+        case .available, .downloading, .preparing, .ready, .installing: true
+        case .idle, .checking, .upToDate, .failed, .unavailable: false
+        }
+    }
+
     // MARK: - Actions
 
     /// "Check for Updates…": looks now, even while a scheduled check is waiting.
@@ -140,7 +149,7 @@ final class UpdateController {
         if case .available = state {
             driver?.remindLater()
         }
-        driver?.checkInBackground()
+        driver?.recheckSoon()
         #endif
     }
 
