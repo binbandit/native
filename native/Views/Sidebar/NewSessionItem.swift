@@ -5,6 +5,7 @@ import SwiftUI
 struct NewSessionItem: View {
     @Environment(AppModel.self) private var model
     @Environment(\.displayScale) private var displayScale
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         SidebarNavItem("New Session", systemImage: "plus", shortcut: "⌘N") {
@@ -21,7 +22,8 @@ struct NewSessionItem: View {
                             } icon: {
                                 // Menus draw only an `Image`.
                                 AgentIconStore.shared.image(
-                                    for: runtime.agent, size: DS.Size.rowLeading, scale: displayScale)
+                                    for: runtime.agent, size: DS.Size.rowLeading, scale: displayScale,
+                                    colorScheme: colorScheme)
                             }
                         }
                         .disabled(!model.canCreateSession(with: runtime.agent.id))

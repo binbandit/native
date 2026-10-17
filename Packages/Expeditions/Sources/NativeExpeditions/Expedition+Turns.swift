@@ -118,8 +118,9 @@ extension Expedition {
             let rewritesApproved = route.assignments.contains { old in
                 revised.assignments.first { $0.id == old.id } != old
             }
-            if missingStarted.isEmpty, !rewritesApproved {
-                let added = revised.assignments.count - route.assignments.count
+            // Growth past the size of the approved route is a change of scope, so the user decides.
+            let added = revised.assignments.count - route.assignments.count
+            if missingStarted.isEmpty, !rewritesApproved, added <= route.assignments.count {
                 sync(to: revised)
                 note(.progress, "The lead added \(added) \(added == 1 ? "assignment" : "assignments") to the legs ahead.", slot: .lead, at: now)
             } else if missingStarted.isEmpty {

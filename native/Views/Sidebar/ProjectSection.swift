@@ -75,6 +75,7 @@ private struct ProjectMenu: View {
     @Environment(AppModel.self) private var model
     @Environment(\.undoManager) private var undoManager
     @Environment(\.displayScale) private var displayScale
+    @Environment(\.colorScheme) private var colorScheme
     let project: Project
     @Binding var isPickingIcon: Bool
     @Binding var isConfirmingDelete: Bool
@@ -92,7 +93,8 @@ private struct ProjectMenu: View {
                     Label {
                         Text(runtime.agent.displayName)
                     } icon: {
-                        AgentIconStore.shared.image(for: runtime.agent, size: DS.Size.rowLeading, scale: displayScale)
+                        AgentIconStore.shared.image(
+                            for: runtime.agent, size: DS.Size.rowLeading, scale: displayScale, colorScheme: colorScheme)
                     }
                 }
                 .disabled(!model.canCreateSession(in: project.id, with: runtime.agent.id))

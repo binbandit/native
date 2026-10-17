@@ -156,7 +156,8 @@ public nonisolated enum ExpeditionPrompt {
         }
         sections.append(
             "Work in this folder and stay within your assignment. When it's done, commit your changes with a clear message, "
-                + "then say what you changed and how you verified it.")
+                + "then report: what you changed, how you verified it (the commands you ran and what they showed), "
+                + "and anything you found but left undone. The reviewer reads this report.")
         return sections.joined(separator: "\n\n")
     }
 

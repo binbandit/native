@@ -48,7 +48,8 @@ struct BubbleMessageView: View {
     /// The time beside the bubble, in the empty space on the other side. A zero-width frame at the
     /// bubble's edge lets the label overflow outward without taking any room.
     @ViewBuilder private var timestamp: some View {
-        if isHovering || showsTime, let date = BubbleClock.shared.date(for: TranscriptItem.message(message).id) {
+        // Replayed history has no times, so its bubbles show none rather than a wrong one.
+        if isHovering || showsTime, let date = message.startedAt {
             Text(date, style: .time)
                 .font(.dsCaption)
                 .foregroundStyle(.dsTextTertiary)

@@ -35,8 +35,8 @@ struct TranscriptView: View {
         .defaultScrollAnchor(.bottom, for: .initialOffset)
         .defaultScrollAnchor(.bottom, for: .sizeChanges)
         .scrollPosition($position)
-        .onScrollGeometryChange(for: Bool.self) { geometry in
-            geometry.visibleRect.maxY < geometry.contentSize.height - DS.Space.xxxl
+        .onScrollGeometryChange(for: Bool.self) { [threshold = DS.Space.xxxl] geometry in
+            geometry.visibleRect.maxY < geometry.contentSize.height - threshold
         } action: { _, isAway in
             isAwayFromLatest = isAway
         }
@@ -48,7 +48,7 @@ struct TranscriptView: View {
             }
         }
         .animation(.dsStandard, value: showsJumpToLatest)
-        .focusedSceneValue(\.transcriptJumpToLatest, isPrimary && isAwayFromLatest ? jumpToLatest : nil)
+        .focusedSceneValue(\.transcriptJumpToLatest, isPrimary && isAwayFromLatest ? { jumpToLatest() } : nil)
         .onScrollGeometryChange(for: String.self) { g in
             "content \(g.contentSize) insets \(g.contentInsets) container \(g.containerSize) offset \(g.contentOffset)"
         } action: { _, new in
