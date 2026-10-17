@@ -47,6 +47,8 @@ final class AppModel {
     @ObservationIgnored var isNavigatingHistory = false
 
     private var lastUsedAgent: AgentDefinition.ID?
+    /// Internal only for AppModel+Recovery.swift.
+    @ObservationIgnored var restartPolicies: [AgentDefinition.ID: AgentRestartPolicy] = [:]
     @ObservationIgnored private let services: SessionServices
     @ObservationIgnored private let launcher: SessionLauncher
     @ObservationIgnored private let environment = ShellEnvironment()

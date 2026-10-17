@@ -72,6 +72,7 @@ struct GitCommitPopover: View {
             .font(.dsCallout)
             .scrollContentBackground(.hidden)
             .focused($isMessageFocused)
+            .accessibilityLabel("Commit message")
             .padding(DS.Space.sm)
             .frame(height: GitMetrics.commitMessageHeight)
             .background(.dsSurface, in: shape)
