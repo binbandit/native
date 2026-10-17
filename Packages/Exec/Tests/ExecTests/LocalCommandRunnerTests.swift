@@ -44,5 +44,45 @@ struct LocalCommandRunnerTests {
             try await runner.run(Command("sleep", ["5"], environment: environment, timeout: .milliseconds(200)))
         }
     }
+
+    /// Cancellation that arrives before launch used to call `terminate()` on a process that never ran,
+    /// which raises an Objective-C exception and crashes the app.
+    @Test func alreadyCancelledTaskDoesNotLaunch() async {
+        let runner = runner
+        let environment = environment
+        let task = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            return try await runner.run(Command("sleep", ["5"], environment: environment))
+        }
+        await #expect(throws: CancellationError.self) { try await task.value }
+    }
+
+    @Test func cancellationStopsARunningCommand() async {
+        let runner = runner
+        let environment = environment
+        let clock = ContinuousClock()
+        let start = clock.now
+        let task = Task { try await runner.run(Command("sleep", ["5"], environment: environment)) }
+        try? await Task.sleep(for: .milliseconds(100))
+        task.cancel()
+        await #expect(throws: CancellationError.self) { try await task.value }
+        #expect(clock.now - start < .seconds(2))
+    }
+
+    /// Racing cancellation against launch must never crash, whichever side wins.
+    @Test func cancellationRacingLaunchNeverCrashes() async {
+        let runner = runner
+        let environment = environment
+        await withTaskGroup { group in
+            for attempt in 0..<50 {
+                let task = Task { try await runner.run(Command("true", environment: environment)) }
+                group.addTask {
+                    if attempt.isMultiple(of: 2) { await Task.yield() }
+                    task.cancel()
+                    _ = try? await task.value
+                }
+            }
+        }
+    }
 }
 #endif

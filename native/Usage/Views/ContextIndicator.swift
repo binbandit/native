@@ -76,9 +76,9 @@ struct ContextIndicator<Source: ContextSource>: View {
         }
         let cost = usage.cost.map { " · \($0.amount.formatted(.currency(code: $0.currency))) spent" } ?? ""
         return """
-        Context \(DSFormat.percent(usage.fractionUsed)) full
-        \(DSFormat.tokens(usage.used)) of \(DSFormat.tokens(usage.size)) tokens\(cost)
-        Click for a breakdown
-        """
+            Context \(DSFormat.percent(usage.fractionUsed)) full
+            \(DSFormat.tokens(usage.used)) of \(DSFormat.tokens(usage.size)) tokens\(cost)
+            Click for a breakdown
+            """
     }
 }

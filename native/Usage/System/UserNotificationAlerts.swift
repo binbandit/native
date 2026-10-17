@@ -30,7 +30,8 @@ final class UserNotificationAlerts: NSObject, LimitAlerting {
             let status = limit.limitStatus()
             content.title = status.headline
             content.body = Self.reachedBody(status, sessions: sessions, now: now)
-            content.categoryIdentifier = (limit.resetsAt != nil && !sessions.isEmpty ? Category.reached : .snoozable).rawValue
+            content.categoryIdentifier =
+                (limit.resetsAt != nil && !sessions.isEmpty ? Category.reached : .snoozable).rawValue
             content.userInfo = Payload(agent: limit.agent, target: sessions.first).userInfo
         case .warning(let limit):
             guard !NSApplication.shared.isActive else { return }
@@ -68,7 +69,8 @@ final class UserNotificationAlerts: NSObject, LimitAlerting {
         let resets = reset.capitalizedFirst + "."
         switch sessions.count {
         case 0: return resets
-        case 1: return "\(resets) \(sessions[0].title.map { "“\($0)”" } ?? "Your session") stopped and can pick up then."
+        case 1:
+            return "\(resets) \(sessions[0].title.map { "“\($0)”" } ?? "Your session") stopped and can pick up then."
         default: return "\(resets) \(sessions.count) sessions stopped and can pick up then."
         }
     }
@@ -90,12 +92,16 @@ final class UserNotificationAlerts: NSObject, LimitAlerting {
 }
 
 extension UserNotificationAlerts: UNUserNotificationCenterDelegate {
-    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification) async -> UNNotificationPresentationOptions {
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter, willPresent notification: UNNotification
+    ) async -> UNNotificationPresentationOptions {
         // Other plugins' notifications keep the system's default: not shown while Native is frontmost.
         notification.request.identifier.hasPrefix("native.usage-limit.") ? [.banner, .sound] : []
     }
 
-    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse
+    ) async {
         guard let payload = Payload(userInfo: response.notification.request.content.userInfo) else { return }
         let action = response.actionIdentifier
         await MainActor.run { receive(payload, actionIdentifier: action) }
@@ -114,10 +120,11 @@ private enum Category: String, CaseIterable {
     var category: UNNotificationCategory {
         let resume = UNNotificationAction(identifier: Action.resumeAtReset.rawValue, title: "Resume at Reset")
         let snooze = UNNotificationAction(identifier: Action.snoozeUntilReset.rawValue, title: "Snooze Until Reset")
-        let actions = switch self {
-        case .reached: [resume, snooze]
-        case .snoozable: [snooze]
-        }
+        let actions =
+            switch self {
+            case .reached: [resume, snooze]
+            case .snoozable: [snooze]
+            }
         return UNNotificationCategory(identifier: rawValue, actions: actions, intentIdentifiers: [])
     }
 }

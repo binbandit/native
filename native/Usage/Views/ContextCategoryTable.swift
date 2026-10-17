@@ -10,7 +10,10 @@ struct ContextCategoryTable: View {
         VStack(alignment: .leading, spacing: DS.Space.md) {
             Grid(alignment: .leading, horizontalSpacing: DS.Space.md, verticalSpacing: DS.Space.xs) {
                 ForEach(composition.segments) { segment in
-                    row(segment.name, tokens: DSFormat.tokens(segment.tokens), share: DSFormat.share(segment.tokens, of: composition.windowTokens)) {
+                    row(
+                        segment.name, tokens: DSFormat.tokens(segment.tokens),
+                        share: DSFormat.share(segment.tokens, of: composition.windowTokens)
+                    ) {
                         // The free space is the bar's track, faint enough to need an edge here.
                         Swatch(color: segment.kind.color, isOutlined: segment.kind == .free)
                     }

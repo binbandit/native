@@ -10,7 +10,9 @@ struct ContextPressureBanner<Source: ContextSource>: View {
     @State private var isShowingBreakdown = false
 
     var body: some View {
-        if let fraction = source.fractionUsed, ContextPressure(fraction: fraction) == .critical, dismissedAt.map({ fraction > $0 + 0.02 }) ?? true {
+        if let fraction = source.fractionUsed, ContextPressure(fraction: fraction) == .critical,
+            dismissedAt.map({ fraction > $0 + 0.02 }) ?? true
+        {
             UsageBannerRow(
                 systemImage: "exclamationmark.circle",
                 tint: .dsWarning,

@@ -30,8 +30,11 @@ struct ContextContributors: View {
             }
         case .memoryFiles(let files):
             ForEach(files, id: \.path) { file in
-                ContributorRow(title: URL(filePath: file.path).lastPathComponent, detail: file.type, tokens: DSFormat.tokens(file.tokens))
-                    .help(file.path)
+                ContributorRow(
+                    title: URL(filePath: file.path).lastPathComponent, detail: file.type,
+                    tokens: DSFormat.tokens(file.tokens)
+                )
+                .help(file.path)
             }
         case .skills(let skills):
             let shown = showsAllSkills ? skills : Array(skills.prefix(Self.skillPreviewCount))

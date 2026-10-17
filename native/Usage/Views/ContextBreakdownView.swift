@@ -58,11 +58,17 @@ private struct ContextBreakdownPlaceholder<Source: ContextSource>: View {
     var body: some View {
         switch source.reportStatus {
         case .unsupported:
-            note(systemImage: "info.circle", text: source.usage == nil
-                ? "\(source.agentName) hasn’t reported its context yet. The total shows up after its first reply."
-                : "\(source.agentName) reports only how much of its context is in use, not what fills it.")
+            note(
+                systemImage: "info.circle",
+                text: source.usage == nil
+                    ? "\(source.agentName) hasn’t reported its context yet. The total shows up after its first reply."
+                    : "\(source.agentName) reports only how much of its context is in use, not what fills it.")
         case .busy:
-            note(systemImage: "clock", text: "The breakdown is read while \(source.agentName) is idle, at no token cost. It’s ready when this turn ends.")
+            note(
+                systemImage: "clock",
+                text:
+                    "The breakdown is read while \(source.agentName) is idle, at no token cost. It’s ready when this turn ends."
+            )
         case .refreshing, .ready:
             HStack(spacing: DS.Space.sm) {
                 DotGridLoader(pattern: .typing)
@@ -74,7 +80,9 @@ private struct ContextBreakdownPlaceholder<Source: ContextSource>: View {
             }
         case .failed:
             VStack(alignment: .leading, spacing: DS.Space.md) {
-                note(systemImage: "exclamationmark.triangle", text: "\(source.agentName) didn’t answer with a breakdown.")
+                note(
+                    systemImage: "exclamationmark.triangle", text: "\(source.agentName) didn’t answer with a breakdown."
+                )
                 Button("Try Again") {
                     Task { await source.refreshReport() }
                 }

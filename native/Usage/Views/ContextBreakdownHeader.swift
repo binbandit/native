@@ -65,7 +65,9 @@ struct ContextBreakdownHeader<Source: ContextSource>: View {
 
     private func subtitle(now: Date) -> String {
         guard let report = source.report else { return source.agentName }
-        let age = now.timeIntervalSince(report.capturedAt) < 60 ? "just now" : report.capturedAt.formatted(.relative(presentation: .named))
+        let age =
+            now.timeIntervalSince(report.capturedAt) < 60
+            ? "just now" : report.capturedAt.formatted(.relative(presentation: .named))
         return [report.model ?? source.agentName, "updated \(age)"].joined(separator: " · ")
     }
 

@@ -57,12 +57,14 @@ final class UsageLimits {
             // A late report about a reset that already passed says nothing about now.
             if let until, until <= now() { return }
             let current = providers[agent]
-            report(agent, agentName: agentName, status: .reached, window: info.window, resetsAt: until,
-                   utilization: info.utilization, message: current?.status == .reached ? current?.message : nil)
+            report(
+                agent, agentName: agentName, status: .reached, window: info.window, resetsAt: until,
+                utilization: info.utilization, message: current?.status == .reached ? current?.message : nil)
         } else if info.isWarning {
             if let current = providers[agent], current.status == .reached, isInForce(current) { return }
-            report(agent, agentName: agentName, status: .warning, window: info.window, resetsAt: info.resetsAt,
-                   utilization: info.utilization, message: nil)
+            report(
+                agent, agentName: agentName, status: .warning, window: info.window, resetsAt: info.resetsAt,
+                utilization: info.utilization, message: nil)
         } else if info.effectiveStatus == .allowed {
             clearLimit(of: agent, resumingScheduled: true)
             processDue()
@@ -74,7 +76,10 @@ final class UsageLimits {
     /// `target` is nil for sessions that can't be prompted, like subagents: their failure still
     /// tells about the provider.
     @discardableResult
-    func recordFailure(_ turn: FailedTurn, error: any Error, agent: AgentDefinition.ID, agentName: String, stopping target: LimitTarget?) -> Bool {
+    func recordFailure(
+        _ turn: FailedTurn, error: any Error, agent: AgentDefinition.ID, agentName: String,
+        stopping target: LimitTarget?
+    ) -> Bool {
         let hit = UsageLimitHit(error: error, agentText: turn.agentText, now: now())
         let current = providers[agent].flatMap { limit in
             limit.status == .reached && now().timeIntervalSince(limit.updatedAt) < Self.statusFreshness ? limit : nil
@@ -82,8 +87,9 @@ final class UsageLimits {
         guard hit != nil || current != nil else { return false }
         if let hit {
             // A structured status knows the reset to the second; the message rounds it.
-            report(agent, agentName: agentName, status: .reached, window: hit.window ?? current?.window,
-                   resetsAt: current?.resetsAt ?? hit.resetsAt, utilization: current?.utilization, message: hit.message)
+            report(
+                agent, agentName: agentName, status: .reached, window: hit.window ?? current?.window,
+                resetsAt: current?.resetsAt ?? hit.resetsAt, utilization: current?.utilization, message: hit.message)
         }
         guard let target else { return true }
         var limited = sessions[target.id] ?? LimitedSession(target: target, work: turn.work)
@@ -205,7 +211,8 @@ final class UsageLimits {
         defer { isProcessing = false }
         let now = now()
         for limit in providers.values {
-            let isExpired = limit.resetsAt.map { $0 <= now } ?? (now.timeIntervalSince(limit.updatedAt) > Self.unknownResetExpiry)
+            let isExpired =
+                limit.resetsAt.map { $0 <= now } ?? (now.timeIntervalSince(limit.updatedAt) > Self.unknownResetExpiry)
             if isExpired {
                 clearLimit(of: limit.agent, resumingScheduled: false)
             }
@@ -321,7 +328,8 @@ final class UsageLimits {
 
     private func postAlert(for agent: AgentDefinition.ID) async {
         pendingAlerts[agent] = nil
-        guard var limit = providers[agent], !limit.hasAlerted, !limit.isSnoozed, !limit.isDismissed, isInForce(limit) else { return }
+        guard var limit = providers[agent], !limit.hasAlerted, !limit.isSnoozed, !limit.isDismissed, isInForce(limit)
+        else { return }
         limit.hasAlerted = true
         providers[agent] = limit
         changed()
@@ -336,10 +344,11 @@ final class UsageLimits {
 
     /// Saves and re-arms the timer for the next reset or resume.
     private func changed() {
-        store.save(UsageLimitsSnapshot(
-            providers: providers.values.sorted { $0.agent.rawValue < $1.agent.rawValue },
-            sessions: sessions.values.sorted { $0.target.session.rawValue < $1.target.session.rawValue }
-        ))
+        store.save(
+            UsageLimitsSnapshot(
+                providers: providers.values.sorted { $0.agent.rawValue < $1.agent.rawValue },
+                sessions: sessions.values.sorted { $0.target.session.rawValue < $1.target.session.rawValue }
+            ))
         let next = (providers.values.compactMap(\.resetsAt) + sessions.values.compactMap(\.resumeAt)).min()
         timer.schedule(at: next, now: now()) { [weak self] in self?.processDue() }
     }

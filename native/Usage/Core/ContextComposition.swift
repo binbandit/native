@@ -28,7 +28,9 @@ struct ContextComposition: Hashable {
     init(report: ContextReport) {
         let used = report.usedCategories.filter { $0.tokens > 0 }
         let ordered = ContextGroup.allCases.flatMap { group in
-            used.filter { ContextGroup(category: $0.name) == group }.map { Segment(name: $0.name, tokens: $0.tokens, kind: .used(group)) }
+            used.filter { ContextGroup(category: $0.name) == group }.map {
+                Segment(name: $0.name, tokens: $0.tokens, kind: .used(group))
+            }
         }
         var segments = ordered
         let free = report.freeTokens
