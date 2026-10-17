@@ -11,6 +11,7 @@
 		000000000000000000000420 /* MCP in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000000410 /* MCP */; };
 		000000000000000000474820 /* GitHub in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000474810 /* GitHub */; };
 		000000000000000000617320 /* Git in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000617310 /* Git */; };
+		000000000000000000E10320 /* Experiments in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000E10310 /* Experiments */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -33,6 +34,7 @@
 				000000000000000000474820 /* GitHub in Frameworks */,
 				000000000000000000000420 /* MCP in Frameworks */,
 				000000000000000000617320 /* Git in Frameworks */,
+				000000000000000000E10320 /* Experiments in Frameworks */,
 			);
 		};
 /* End PBXFrameworksBuildPhase section */
@@ -76,6 +78,7 @@
 				000000000000000000474810 /* GitHub */,
 				000000000000000000000410 /* MCP */,
 				000000000000000000617310 /* Git */,
+				000000000000000000E10310 /* Experiments */,
 			);
 			productName = Native;
 			productReference = 000000000000000000000120 /* native.app */;
@@ -110,6 +113,7 @@
 				000000000000000000474800 /* XCLocalSwiftPackageReference "Packages/GitHub" */,
 				000000000000000000000400 /* XCLocalSwiftPackageReference "Packages/MCPServer" */,
 				000000000000000000617300 /* XCLocalSwiftPackageReference "Packages/Git" */,
+				000000000000000000E10300 /* XCLocalSwiftPackageReference "Packages/Experiments" */,
 			);
 			preferredProjectObjectVersion = 90;
 			productRefGroup = 000000000000000000000020 /* Products */;
@@ -348,6 +352,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Git;
 		};
+		000000000000000000E10300 /* XCLocalSwiftPackageReference "Packages/Experiments" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Experiments;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -366,6 +374,10 @@
 		000000000000000000617310 /* Git */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Git;
+		};
+		000000000000000000E10310 /* Experiments */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Experiments;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
