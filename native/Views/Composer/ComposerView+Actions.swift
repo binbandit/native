@@ -4,7 +4,7 @@ import SwiftUI
 
 // What the composer's controls and keys do, through the session's model methods.
 extension ComposerView {
-    private func draftChanged() {
+    func draftChanged() {
         highlighted = 0
         if SlashCommandQuery(draft: session.draft) == nil, mentionQuery == nil {
             suggestionsDismissed = false

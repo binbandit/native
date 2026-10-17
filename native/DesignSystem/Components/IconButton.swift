@@ -78,7 +78,9 @@ private struct IconButtonStyle: ButtonStyle {
         let isHighlighted = isHovered || isActive || configuration.isPressed
         configuration.label
             .foregroundStyle(isHighlighted ? .dsTextPrimary : .dsTextSecondary)
-            .background(configuration.isPressed ? .dsPressed : isActive ? .dsSelected : isHovered ? .dsHover : .clear, in: shape)
+            .background(
+                configuration.isPressed ? .dsPressed : isActive ? .dsSelected : isHovered ? .dsHover : .clear, in: shape
+            )
             .dsFocusShape(shape)
     }
 }

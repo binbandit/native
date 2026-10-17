@@ -5,7 +5,10 @@ import SwiftUI
 struct GalleryStatus: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), alignment: .leading), count: 3), alignment: .leading, spacing: DS.Space.sm) {
+            LazyVGrid(
+                columns: Array(repeating: GridItem(.flexible(), alignment: .leading), count: 3), alignment: .leading,
+                spacing: DS.Space.sm
+            ) {
                 ForEach(TaskStatus.allCases, id: \.self) { status in
                     HStack(spacing: DS.Space.sm) {
                         StatusIndicator(status: status)
@@ -17,7 +20,10 @@ struct GalleryStatus: View {
                 }
             }
             HStack(spacing: DS.Space.xxl) {
-                ForEach([("typing", DotGridLoader.Pattern.typing), ("waiting", .waiting), ("settingUp", .settingUp)], id: \.0) { loader in
+                ForEach(
+                    [("typing", DotGridLoader.Pattern.typing), ("waiting", .waiting), ("settingUp", .settingUp)],
+                    id: \.0
+                ) { loader in
                     VStack(spacing: DS.Space.sm) {
                         DotGridLoader(pattern: loader.1)
                             .foregroundStyle(.dsTextPrimary)
@@ -163,7 +169,10 @@ struct GalleryControls: View {
                         .foregroundStyle(.dsTextSecondary)
                 }
             }
-            EmptyStateView("No Sessions Yet", systemImage: "text.bubble", message: "Start one with ⌘N, or pick a project in the sidebar.") {
+            EmptyStateView(
+                "No Sessions Yet", systemImage: "text.bubble",
+                message: "Start one with ⌘N, or pick a project in the sidebar."
+            ) {
                 Button("New Session") {}.buttonStyle(.ds(.primary))
                 Button("Open Folder…") {}.buttonStyle(.ds(.secondary))
             }

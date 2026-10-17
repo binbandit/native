@@ -115,7 +115,9 @@ private struct LaunchEmblem: View {
         ZStack {
             NativeMark(link: link)
                 .trim(from: 0, to: trace)
-                .stroke(.dsTextPrimary, style: StrokeStyle(lineWidth: max(size / 70, 1), lineCap: .round, lineJoin: .round))
+                .stroke(
+                    .dsTextPrimary, style: StrokeStyle(lineWidth: max(size / 70, 1), lineCap: .round, lineJoin: .round)
+                )
                 // The outline gives way to the fill, so the finished emblem has the mark's weight.
                 .opacity(1 - frame.fill)
             NativeMark(link: link)

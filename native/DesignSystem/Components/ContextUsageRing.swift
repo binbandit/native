@@ -26,7 +26,10 @@ public struct ContextUsageRing: View {
                 .stroke(.dsBorder, lineWidth: lineWidth)
             Circle()
                 .trim(from: 0, to: clamped)
-                .stroke(clamped > 0.9 ? Color.dsDanger : .dsTextTertiary, style: StrokeStyle(lineWidth: lineWidth, lineCap: .butt))
+                .stroke(
+                    clamped > 0.9 ? Color.dsDanger : .dsTextTertiary,
+                    style: StrokeStyle(lineWidth: lineWidth, lineCap: .butt)
+                )
                 .rotationEffect(.degrees(-90))
         }
         .padding(lineWidth / 2)

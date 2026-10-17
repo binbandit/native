@@ -39,7 +39,8 @@ public struct DotGridLoader: View {
                 let scale = frame.map { dot.scale(at: $0) } ?? 0.6
                 guard scale > 0.01 else { continue }
                 let radius = 20 * scale * unit
-                let rect = CGRect(x: dot.x * unit - radius, y: dot.y * unit - radius, width: radius * 2, height: radius * 2)
+                let rect = CGRect(
+                    x: dot.x * unit - radius, y: dot.y * unit - radius, width: radius * 2, height: radius * 2)
                 context.fill(Path(ellipseIn: rect), with: .foreground)
             }
         }
@@ -96,42 +97,48 @@ extension DotGridLoader.Pattern {
     private nonisolated static let low = 50.0, mid = 120.0, high = 190.0
 
     /// `typing.json`: frames 0-64, column by column.
-    private nonisolated static let typingTiming = Timing(start: 0, end: 64, dots: [
-        Dot(x: low, y: low, pulses: [(0, 17, 35)]),
-        Dot(x: low, y: mid, pulses: [(5, 22, 38)]),
-        Dot(x: low, y: high, pulses: [(9, 25, 41)]),
-        Dot(x: mid, y: low, pulses: [(12, 28, 44)]),
-        Dot(x: mid, y: mid, pulses: [(15, 31, 47)]),
-        Dot(x: mid, y: high, pulses: [(18, 34, 50)]),
-        Dot(x: high, y: low, pulses: [(21, 37, 53)]),
-        Dot(x: high, y: mid, pulses: [(24, 40, 57)]),
-        Dot(x: high, y: high, pulses: [(27, 45, 62)]),
-    ])
+    private nonisolated static let typingTiming = Timing(
+        start: 0, end: 64,
+        dots: [
+            Dot(x: low, y: low, pulses: [(0, 17, 35)]),
+            Dot(x: low, y: mid, pulses: [(5, 22, 38)]),
+            Dot(x: low, y: high, pulses: [(9, 25, 41)]),
+            Dot(x: mid, y: low, pulses: [(12, 28, 44)]),
+            Dot(x: mid, y: mid, pulses: [(15, 31, 47)]),
+            Dot(x: mid, y: high, pulses: [(18, 34, 50)]),
+            Dot(x: high, y: low, pulses: [(21, 37, 53)]),
+            Dot(x: high, y: mid, pulses: [(24, 40, 57)]),
+            Dot(x: high, y: high, pulses: [(27, 45, 62)]),
+        ])
 
     /// `waiting.json`: frames 32-128, around the border clockwise; the center stays dark.
-    private nonisolated static let waitingTiming = Timing(start: 32, end: 128, dots: [
-        Dot(x: low, y: low, pulses: [(88, 100, 112)]),
-        Dot(x: mid, y: low, pulses: [(0, 16, 32), (96, 112, 128)]),
-        Dot(x: high, y: low, pulses: [(16, 28, 40), (112, 124, 136)]),
-        Dot(x: high, y: mid, pulses: [(24, 40, 56), (120, 136, 152)]),
-        Dot(x: high, y: high, pulses: [(40, 52, 64)]),
-        Dot(x: mid, y: high, pulses: [(48, 64, 80)]),
-        Dot(x: low, y: high, pulses: [(64, 76, 88)]),
-        Dot(x: low, y: mid, pulses: [(72, 88, 104)]),
-    ])
+    private nonisolated static let waitingTiming = Timing(
+        start: 32, end: 128,
+        dots: [
+            Dot(x: low, y: low, pulses: [(88, 100, 112)]),
+            Dot(x: mid, y: low, pulses: [(0, 16, 32), (96, 112, 128)]),
+            Dot(x: high, y: low, pulses: [(16, 28, 40), (112, 124, 136)]),
+            Dot(x: high, y: mid, pulses: [(24, 40, 56), (120, 136, 152)]),
+            Dot(x: high, y: high, pulses: [(40, 52, 64)]),
+            Dot(x: mid, y: high, pulses: [(48, 64, 80)]),
+            Dot(x: low, y: high, pulses: [(64, 76, 88)]),
+            Dot(x: low, y: mid, pulses: [(72, 88, 104)]),
+        ])
 
     /// `setting-up-loader.json`: frames 0-144, blooming out from the center.
-    private nonisolated static let settingUpTiming = Timing(start: 0, end: 144, dots: [
-        Dot(x: mid, y: mid, pulses: [(0, 16, 32), (72, 88, 104)]),
-        Dot(x: mid, y: low, pulses: [(9, 25, 41), (93, 109, 125)]),
-        Dot(x: high, y: mid, pulses: [(13, 29, 45), (89, 105, 121)]),
-        Dot(x: mid, y: high, pulses: [(17, 33, 49), (85, 101, 117)]),
-        Dot(x: low, y: mid, pulses: [(21, 37, 53), (81, 97, 113)]),
-        Dot(x: low, y: low, pulses: [(27, 43, 59), (111, 127, 143)]),
-        Dot(x: high, y: low, pulses: [(31, 47, 63), (107, 123, 139)]),
-        Dot(x: high, y: high, pulses: [(35, 51, 67), (103, 119, 135)]),
-        Dot(x: low, y: high, pulses: [(39, 55, 71), (99, 115, 131)]),
-    ])
+    private nonisolated static let settingUpTiming = Timing(
+        start: 0, end: 144,
+        dots: [
+            Dot(x: mid, y: mid, pulses: [(0, 16, 32), (72, 88, 104)]),
+            Dot(x: mid, y: low, pulses: [(9, 25, 41), (93, 109, 125)]),
+            Dot(x: high, y: mid, pulses: [(13, 29, 45), (89, 105, 121)]),
+            Dot(x: mid, y: high, pulses: [(17, 33, 49), (85, 101, 117)]),
+            Dot(x: low, y: mid, pulses: [(21, 37, 53), (81, 97, 113)]),
+            Dot(x: low, y: low, pulses: [(27, 43, 59), (111, 127, 143)]),
+            Dot(x: high, y: low, pulses: [(31, 47, 63), (107, 123, 139)]),
+            Dot(x: high, y: high, pulses: [(35, 51, 67), (103, 119, 135)]),
+            Dot(x: low, y: high, pulses: [(39, 55, 71), (99, 115, 131)]),
+        ])
 }
 
 #Preview("Dot grid loaders") {

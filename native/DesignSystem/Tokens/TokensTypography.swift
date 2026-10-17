@@ -95,7 +95,8 @@ public nonisolated enum DSTypography {
 
     /// The platform font behind a token, for text views outside SwiftUI (the composer's editor,
     /// code views) and for metrics such as cap height.
-    public static func platformFont(size: CGFloat, weight: Weight = .regular, design: Design = .sans) -> DSPlatformFont {
+    public static func platformFont(size: CGFloat, weight: Weight = .regular, design: Design = .sans) -> DSPlatformFont
+    {
         guard isGeistAvailable else {
             return switch design {
             case .sans: .systemFont(ofSize: size, weight: weight.system)

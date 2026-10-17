@@ -26,7 +26,8 @@ public nonisolated enum DSFormat {
         if calendar.isDate(date, inSameDayAs: now) {
             return clock
         }
-        if let tomorrow = calendar.date(byAdding: .day, value: 1, to: now), calendar.isDate(date, inSameDayAs: tomorrow) {
+        if let tomorrow = calendar.date(byAdding: .day, value: 1, to: now), calendar.isDate(date, inSameDayAs: tomorrow)
+        {
             return "tomorrow at \(clock)"
         }
         return "\(date.formatted(.dateTime.weekday(.abbreviated).month(.abbreviated).day())) at \(clock)"

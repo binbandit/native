@@ -96,15 +96,22 @@ public struct NoticeBanner<Actions: View>: View {
 
 extension NoticeBanner where Actions == EmptyView {
     public init(tone: Tone, systemImage: String? = nil, title: String, detail: String? = nil, footnote: String? = nil) {
-        self.init(tone: tone, systemImage: systemImage, title: title, detail: detail, footnote: footnote) { EmptyView() }
+        self.init(tone: tone, systemImage: systemImage, title: title, detail: detail, footnote: footnote) {
+            EmptyView()
+        }
     }
 }
 
 #Preview("Notice banner") {
     DSPreviewPair {
         VStack(spacing: DS.Space.md) {
-            NoticeBanner(tone: .info, title: "You're offline", detail: "Your message is queued and sends when the network returns.")
-            NoticeBanner(tone: .warning, title: "Claude Code sign-in expired", detail: "Sign in to keep going; your draft stays put.") {
+            NoticeBanner(
+                tone: .info, title: "You're offline",
+                detail: "Your message is queued and sends when the network returns.")
+            NoticeBanner(
+                tone: .warning, title: "Claude Code sign-in expired",
+                detail: "Sign in to keep going; your draft stays put."
+            ) {
                 Button("Sign In") {}.buttonStyle(.ds(.primary))
             }
         }

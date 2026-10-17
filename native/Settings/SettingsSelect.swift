@@ -51,7 +51,7 @@ struct SettingsSelect<Value: Hashable>: View {
         .buttonStyle(.plain)
         .menuIndicator(.hidden)
         .fixedSize()
-        .contentShape(.focusEffect, shape)
+        .settingsFocusShape(shape)
         .trackHover($isHovered)
         .accessibilityLabel(label)
         .accessibilityValue(selectedTitle)

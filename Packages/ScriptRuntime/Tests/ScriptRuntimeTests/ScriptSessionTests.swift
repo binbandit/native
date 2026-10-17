@@ -136,7 +136,9 @@ private let tasks = [
 
     @Test func cancellationStopsTheRuntime() async throws {
         let runtime = FakeRuntime { _, _ in }
-        let run = Task { try await ScriptSession.run(code: "", bindings: [], inputs: [:], limits: .standard, transport: runtime) }
+        let run = Task {
+            try await ScriptSession.run(code: "", bindings: [], inputs: [:], limits: .standard, transport: runtime)
+        }
         try await Task.sleep(for: .milliseconds(50))
         run.cancel()
         await #expect(throws: CancellationError.self) { try await run.value }

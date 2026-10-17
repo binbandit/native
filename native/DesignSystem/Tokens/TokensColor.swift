@@ -159,11 +159,11 @@ nonisolated private enum DSPalette {
         dark: UInt32,
         darkAlpha: CGFloat = 1
     ) -> Color {
-        Color(DSPlatformColor.dsDynamic(
-            name: name,
-            light: .dsSRGB(light, alpha: lightAlpha),
-            dark: .dsSRGB(dark, alpha: darkAlpha)
-        ))
+        Color(
+            DSPlatformColor.dsDynamic(
+                name: name,
+                light: .dsSRGB(light, alpha: lightAlpha),
+                dark: .dsSRGB(dark, alpha: darkAlpha)
+            ))
     }
 }
-

@@ -64,7 +64,8 @@ public enum ScriptReference {
     }
 
     private static func firstSentence(_ text: String) -> String? {
-        let flattened = text.split(whereSeparator: \.isNewline).joined(separator: " ").trimmingCharacters(in: .whitespaces)
+        let flattened = text.split(whereSeparator: \.isNewline).joined(separator: " ").trimmingCharacters(
+            in: .whitespaces)
         guard !flattened.isEmpty else { return nil }
         if let end = flattened.range(of: ". ") {
             return String(flattened[..<end.lowerBound]) + "."

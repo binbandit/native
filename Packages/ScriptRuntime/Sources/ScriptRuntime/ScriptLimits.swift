@@ -12,7 +12,9 @@ public struct ScriptLimits: Sendable, Hashable {
     /// The largest tool result handed to a script, as JSON text; larger results fail the call.
     public var toolResultBytes: Int
 
-    public init(time: Duration = .seconds(60), heapMiB: Int = 128, toolCalls: Int = 1000, toolResultBytes: Int = 5 << 20) {
+    public init(
+        time: Duration = .seconds(60), heapMiB: Int = 128, toolCalls: Int = 1000, toolResultBytes: Int = 5 << 20
+    ) {
         self.time = time
         self.heapMiB = heapMiB
         self.toolCalls = toolCalls

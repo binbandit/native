@@ -5,7 +5,7 @@ let package = Package(
     name: "Exec",
     platforms: [.macOS(.v15), .iOS(.v18)],
     products: [
-        .library(name: "Exec", targets: ["Exec"]),
+        .library(name: "Exec", targets: ["Exec"])
     ],
     targets: [
         .target(name: "Exec"),

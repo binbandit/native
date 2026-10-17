@@ -64,7 +64,8 @@ enum ScriptOutboundFrame: Decodable, Sendable, Equatable {
         case "ready": self = .ready(protocolVersion: try container.decode(Int.self, forKey: .protocolVersion))
         case "evaluation_started": self = .evaluationStarted
         case "text":
-            self = .text(try container.decode(String.self, forKey: .text), end: try container.decode(Bool.self, forKey: .end))
+            self = .text(
+                try container.decode(String.self, forKey: .text), end: try container.decode(Bool.self, forKey: .end))
         case "tool_call":
             self = .toolCall(
                 id: try container.decode(UInt32.self, forKey: .id),

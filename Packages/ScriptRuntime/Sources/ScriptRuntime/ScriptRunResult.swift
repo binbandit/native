@@ -42,7 +42,9 @@ public struct ScriptRunResult: Sendable, Hashable {
             "tool_calls": .number(Double(toolCalls.count)),
         ]
         if let failure {
-            var detail: [String: ScriptJSON] = ["kind": .string(failure.kind.rawValue), "message": .string(failure.message)]
+            var detail: [String: ScriptJSON] = [
+                "kind": .string(failure.kind.rawValue), "message": .string(failure.message),
+            ]
             detail["line"] = failure.line.map { .number(Double($0)) }
             detail["column"] = failure.column.map { .number(Double($0)) }
             object["failure"] = .object(detail)

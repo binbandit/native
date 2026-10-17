@@ -26,7 +26,9 @@ public struct ElapsedTimeText: View {
     private func label(_ seconds: TimeInterval) -> some View {
         Text(DSFormat.duration(seconds))
             .monospacedDigit()
-            .accessibilityLabel(Duration.seconds(Int(max(seconds, 0))).formatted(.units(allowed: [.hours, .minutes, .seconds], width: .wide)))
+            .accessibilityLabel(
+                Duration.seconds(Int(max(seconds, 0))).formatted(
+                    .units(allowed: [.hours, .minutes, .seconds], width: .wide)))
     }
 }
 

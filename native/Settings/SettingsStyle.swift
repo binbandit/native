@@ -81,3 +81,15 @@ extension View {
             .padding(.vertical, style.leading / 2)
     }
 }
+
+extension View {
+    /// The shape macOS draws a control's keyboard focus ring in. iPadOS draws its own.
+    @ViewBuilder
+    func settingsFocusShape(_ shape: some Shape) -> some View {
+        #if os(macOS)
+            contentShape(.focusEffect, shape)
+        #else
+            self
+        #endif
+    }
+}

@@ -54,7 +54,10 @@ public struct EmptyStateView<Actions: View>: View {
 
 extension EmptyStateView where Actions == Button<Text> {
     /// An empty state with its one action as a primary button.
-    public init(_ title: String, systemImage: String? = nil, message: String? = nil, actionTitle: String, action: @escaping () -> Void) {
+    public init(
+        _ title: String, systemImage: String? = nil, message: String? = nil, actionTitle: String,
+        action: @escaping () -> Void
+    ) {
         self.init(title, systemImage: systemImage, message: message) {
             Button(actionTitle, action: action)
         }

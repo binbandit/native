@@ -37,7 +37,8 @@ struct GallerySidebar: View {
             .frame(height: DS.Window.headerHeight)
 
             VStack(spacing: 0) {
-                SidebarNavItem("New Session", systemImage: "plus", shortcut: "⌘N") {} accessory: {
+                SidebarNavItem("New Session", systemImage: "plus", shortcut: "⌘N") {
+                } accessory: {
                     SidebarRowMenu(label: "Choose an Agent") {
                         Button("Claude Code") {}
                         Button("Codex") {}
@@ -62,7 +63,9 @@ struct GallerySidebar: View {
             .padding(.top, DS.Space.md)
 
             VStack(alignment: .leading, spacing: 0) {
-                ProjectGroup(name: "native", isExpanded: $nativeExpanded, taskCount: GalleryFixtures.tasks.count, onNewTask: {}) {
+                ProjectGroup(
+                    name: "native", isExpanded: $nativeExpanded, taskCount: GalleryFixtures.tasks.count, onNewTask: {}
+                ) {
                     Button("Reveal in Finder") {}
                     Divider()
                     Button("Remove Project", role: .destructive) {}
@@ -71,7 +74,9 @@ struct GallerySidebar: View {
                         TaskRow(task, isSelected: selection == task.id) { selection = task.id }
                     }
                 }
-                ProjectGroup(name: "conductor", icon: .symbol("folder"), isExpanded: $otherExpanded, taskCount: 2, onNewTask: {}) {
+                ProjectGroup(
+                    name: "conductor", icon: .symbol("folder"), isExpanded: $otherExpanded, taskCount: 2, onNewTask: {}
+                ) {
                     TaskRow(
                         title: "Agent icon and context",
                         status: .working,
@@ -104,7 +109,8 @@ private struct GalleryBackdrop: View {
             Color.dsBackground
             Circle().fill(.orange).frame(width: 220).offset(x: -120, y: -170)
             Circle().fill(.blue).frame(width: 180).offset(x: 40, y: 40)
-            RoundedRectangle(cornerRadius: 30).fill(.pink).frame(width: 140, height: 240).rotationEffect(.degrees(20)).offset(x: -60, y: 200)
+            RoundedRectangle(cornerRadius: 30).fill(.pink).frame(width: 140, height: 240).rotationEffect(.degrees(20))
+                .offset(x: -60, y: 200)
             Text("Native")
                 .font(.ds(64, weight: .bold))
                 .foregroundStyle(.green)
