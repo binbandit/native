@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Linked into the binary (build.rs). The App Sandbox needs a bundle identifier to set up a
+	     command-line tool's container, and it must match the signing identifier. -->
+	<key>CFBundleIdentifier</key>
+	<string>dev.native.script-runtime</string>
+	<key>CFBundleName</key>
+	<string>native-script-runtime</string>
+</dict>
+</plist>
