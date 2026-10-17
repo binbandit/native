@@ -31,6 +31,11 @@ struct NativeApp: App {
                     BuiltInPlugins.automation.center.connect(to: model) { [git, gitHub] draft in
                         try await AutomationGitHubWiring.openPullRequest(draft, git: git, gitHub: gitHub)
                     }
+                    BuiltInPlugins.automation.center.connectAutomations(
+                        repository: { [gitHub] in await AutomationGitHubWiring.repository(of: $0, gitHub: gitHub) },
+                        worktree: { [git] in try await AutomationGitHubWiring.worktree(for: $0, title: $1, git: git) },
+                        pullRequests: { [gitHub] in await AutomationGitHubWiring.pullRequestSnapshots(gitHub: gitHub) }
+                    )
                     iconPreferences.start()
                     await model.start()
                 }
@@ -43,6 +48,7 @@ struct NativeApp: App {
                 }
                 .task(id: model.plugins.enabledPlugins.map(\.manifest)) {
                     BuiltInPlugins.automation.center.reloadLibrary(from: model.plugins)
+                    BuiltInPlugins.automation.center.automations.isEnabled = model.plugins.isEnabled(BuiltInPlugins.automations.manifest.id)
                 }
         }
         .defaultSize(width: 1120, height: 780)

@@ -87,6 +87,35 @@ extension GitRepositoryModel {
         }
     }
 
+    /// Makes a smart commit's commits in order, after a checkpoint, and offers to undo them. When
+    /// one fails (often a hook), the ones made so far stay, and the notice says why and still offers
+    /// the undo. Returns whether every commit was made.
+    @discardableResult
+    func commit(_ plan: CommitPlan) async -> Bool {
+        var succeeded = false
+        await perform(.commit) { repository in
+            let (receipt, failure) = try await repository.commit(plan, changes: changes)
+            let made = receipt.commits.count == 1 ? "1 commit" : "\(receipt.commits.count) commits"
+            guard let failure else {
+                succeeded = true
+                return GitNotice(tone: .success, title: "Made \(made)", action: .undoCommits(receipt))
+            }
+            var notice = GitNotice(failure: failure, during: .commit)
+            notice.message = "Made \(made) of \(plan.groups.count) before this one failed. " + (notice.message ?? "")
+            if !receipt.commits.isEmpty { notice.action = .undoCommits(receipt) }
+            return notice
+        }
+        return succeeded
+    }
+
+    /// Takes back a smart commit: the branch and the staged state go back to before it.
+    func undoCommits(_ receipt: CommitPlanReceipt) async {
+        await perform(.undoCommits) { repository in
+            try await repository.undo(receipt)
+            return GitNotice(tone: .success, title: receipt.commits.count == 1 ? "Undid 1 commit" : "Undid \(receipt.commits.count) commits")
+        }
+    }
+
     /// A commit message for `files` from the on-device model, in the style of recent commits.
     func draftCommitMessage(for files: [FileChange]) async throws -> String {
         guard let repository else { return "" }
@@ -116,6 +145,7 @@ extension GitRepositoryModel {
         case .showConflicts:
             dismissNotice()
             selection = status?.conflicted.first?.id
+        case .undoCommits(let receipt): await undoCommits(receipt)
         }
     }
 

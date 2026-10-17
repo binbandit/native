@@ -1,3 +1,5 @@
+import Foundation
+
 extension BuiltInPlugins {
     /// Cursor's CLI agent, which speaks ACP itself (`cursor-agent acp`), so there's no adapter to
     /// pin: it runs whatever `cursor-agent` the user installed, and that CLI updates itself. Sign-in
@@ -15,7 +17,13 @@ extension BuiltInPlugins {
             symbol: "cursorarrow",
             command: "cursor-agent",
             args: ["acp"],
-            mcpConfig: "cursor"
+            mcpConfig: "cursor",
+            icon: AgentIconSource(apps: ["com.todesktop.230313mzl4w4u92"], registry: "cursor"),
+            setup: AgentSetupGuide(
+                install: "brew install --cask cursor-cli",
+                docs: URL(string: "https://cursor.com/docs/cli/installation"),
+                signIn: "cursor-agent login"
+            )
         )]
     ))
 }

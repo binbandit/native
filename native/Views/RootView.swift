@@ -9,7 +9,8 @@ struct RootView: View {
     @State private var columnVisibility = NavigationSplitViewVisibility.all
     @State private var showsPullRequests = false
     @Environment(AutomationCenter.self) private var automation
-    @State private var showsWorkflows = false
+    /// Workflows or Automations, when one of them has the detail column.
+    @State private var automationPage: AutomationPage?
     /// The run open on the Workflows page, if any.
     @State private var workflowPath: [WorkflowRun.ID] = []
 
@@ -66,11 +67,11 @@ struct RootView: View {
         .onChange(of: showsPullRequests) { _, shows in
             if shows {
                 model.selection = nil
-                showsWorkflows = false
+                automationPage = nil
             }
         }
-        .onChange(of: showsWorkflows) { _, shows in
-            if shows {
+        .onChange(of: automationPage) { _, page in
+            if page != nil {
                 model.selection = nil
                 showsPullRequests = false
             }
@@ -78,12 +79,12 @@ struct RootView: View {
         .onChange(of: model.selection) { _, key in
             if key != nil {
                 showsPullRequests = false
-                showsWorkflows = false
+                automationPage = nil
             }
         }
         .sheet(isPresented: $automation.isWorkflowPickerRequested) {
             WorkflowPickerSheet(cwd: model.currentProject?.url, onAddProject: { model.isAddingProject = true }) { run in
-                showsWorkflows = true
+                automationPage = .workflows
                 workflowPath = [run]
             }
         }
@@ -144,12 +145,25 @@ struct RootView: View {
             PullRequestsNavItem(isSelected: showsPullRequests) { showsPullRequests = true }
             // Minimal by default: only when goals and workflows are on, or a run is there to see.
             if model.plugins.isEnabled(BuiltInPlugins.automation.manifest.id) || !automation.workflows.runs.isEmpty {
-                WorkflowsNavItem(isSelected: showsWorkflows) { showsWorkflows = true }
+                WorkflowsNavItem(isSelected: automationPage == .workflows) { automationPage = .workflows }
+            }
+            if model.plugins.isEnabled(BuiltInPlugins.automations.manifest.id) || !automation.automations.automations.isEmpty {
+                AutomationsNavItem(isSelected: automationPage == .automations) { automationPage = .automations }
             }
         } accessories: {
             EmptyView()
         } taskAccessory: { summary in
             AppTaskRowAccessory(summary: summary)
+        }
+    }
+
+    /// Turns Automations on and opens it, from the Workflows page; nil once it's in the sidebar.
+    private var automationsSetUp: (() -> Void)? {
+        let id = BuiltInPlugins.automations.manifest.id
+        guard !model.plugins.isEnabled(id), automation.automations.automations.isEmpty else { return nil }
+        return {
+            model.plugins.setEnabled(true, for: id)
+            automationPage = .automations
         }
     }
 
@@ -161,9 +175,14 @@ struct RootView: View {
     private var detail: some View {
         if showsPullRequests {
             PullRequestsView()
-        } else if showsWorkflows {
-            WorkflowsPage(path: $workflowPath) { session in
+        } else if automationPage == .workflows {
+            WorkflowsPage(path: $workflowPath, onSetUpAutomations: automationsSetUp) { session in
                 TranscriptView(session: session) { _ in }
+            }
+        } else if automationPage == .automations {
+            AutomationsPage { run in
+                workflowPath = [run]
+                automationPage = .workflows
             }
         } else if let key = model.selection {
             if let session = model.session(key) {
