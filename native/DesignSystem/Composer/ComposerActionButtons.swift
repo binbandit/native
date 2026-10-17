@@ -73,7 +73,7 @@ private struct ComposerActionStyle: ButtonStyle {
         configuration.label
             .background(fill(isPressed: configuration.isPressed), in: shape)
             .contentShape(shape)
-            .contentShape(.focusEffect, shape)
+            .dsFocusShape(shape)
     }
 
     private func fill(isPressed: Bool) -> Color {

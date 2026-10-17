@@ -40,6 +40,17 @@ extension View {
     }
 }
 
+extension View {
+    /// The shape the keyboard focus ring follows (macOS; iPadOS draws its own).
+    public func dsFocusShape(_ shape: some Shape) -> some View {
+        #if os(macOS)
+        contentShape(.focusEffect, shape)
+        #else
+        self
+        #endif
+    }
+}
+
 /// Copies text to the general pasteboard.
 enum DSPasteboard {
     static func copy(_ string: String) {
