@@ -153,6 +153,13 @@ enum ShortcutReference {
                         keys: ["Esc", "⌘["]),
                 ]),
             Group(
+                title: "Appearance",
+                shortcuts: [
+                    Shortcut(
+                        id: "halloween-icon", title: "Toggle the Halloween icon",
+                        note: "Available October 1 through November 7", keys: ["⌥⇧⌘H"])
+                ]),
+            Group(
                 title: "Terminal",
                 shortcuts: [
                     Shortcut(

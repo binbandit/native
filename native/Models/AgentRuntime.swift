@@ -3,13 +3,14 @@ import Foundation
 import Observation
 
 /// One agent's process and connection, and how starting it went. Each agent runs on its own, so
-/// one failing leaves the others alone.
+/// one failing leaves the others alone. Agents start when something needs them (`AppModel`
+/// decides when) and can be parked again, so an unused one holds no process.
 @Observable
 final class AgentRuntime {
     typealias Status = AgentRuntimeStatus
 
     let agent: AgentDefinition
-    private(set) var status = Status.starting
+    private(set) var status = Status.idle
     /// What the agent says about itself, such as its version.
     private(set) var info: Implementation?
     private(set) var capabilities: AgentCapabilities?
@@ -20,6 +21,8 @@ final class AgentRuntime {
     private(set) var isSigningIn = false
 
     private var process: AgentProcess?
+    /// The launch in flight, so callers that ask for the agent while it starts all wait for it.
+    @ObservationIgnored private var launching: Task<Void, Never>?
     /// Bumped whenever the process is replaced, so events from an old one are dropped.
     private var generation = 0
 
@@ -36,6 +39,11 @@ final class AgentRuntime {
         status == .ready
     }
 
+    /// Whether sessions can start on the agent: it's running, or idle and starts when asked.
+    var isAvailable: Bool {
+        status == .ready || status == .idle
+    }
+
     /// The agent's launched process (env, which execs the agent), for resource reporting; nil while
     /// it isn't running.
     var processIdentifier: Int32? {
@@ -43,12 +51,28 @@ final class AgentRuntime {
     }
 
     /// Launches the agent and initializes the connection. Its events, including `.disconnected`
-    /// when it exits, go to `onEvent`.
+    /// when it exits, go to `onEvent`. While a launch is in flight, this waits for it instead.
     func start(environment: [String: String], onEvent: @escaping @MainActor (AgentEvent) -> Void) async {
+        if let launching {
+            return await launching.value
+        }
         guard process == nil else { return }
+        // Set before the launch task runs, so callers can tell a launch is under way.
+        status = .starting
+        let launch = Task { await self.launch(environment: environment, onEvent: onEvent) }
+        launching = launch
+        await launch.value
+        launching = nil
+    }
+
+    /// Waits for a launch under way, if there is one.
+    func finishStarting() async {
+        await launching?.value
+    }
+
+    private func launch(environment: [String: String], onEvent: @escaping @MainActor (AgentEvent) -> Void) async {
         generation += 1
         let generation = generation
-        status = .starting
         needsSignIn = false
         let command = agent.command(environment: environment)
         guard Self.isInstalled(command) else {
@@ -81,6 +105,15 @@ final class AgentRuntime {
         generation += 1
         process?.terminate()
         process = nil
+    }
+
+    /// Ends a running agent's process to give its memory back, leaving it to start again when
+    /// something needs it. Its sessions go with the process; the caller drops their models.
+    func park() {
+        guard status == .ready else { return }
+        stop()
+        status = .idle
+        needsSignIn = false
     }
 
     /// Signs in with one of `authMethods`. The agent may open a browser and wait for the user.

@@ -1,5 +1,8 @@
 /// How starting an agent went, with what views need to show it, so they don't each switch over it.
 enum AgentRuntimeStatus: Equatable {
+    /// Not running, and fine that way: agents start when something needs them and stop after
+    /// sitting unused, so they don't hold memory the user isn't using.
+    case idle
     case starting
     case ready
     /// The agent's command isn't on the user's PATH, so it was never launched.
@@ -14,6 +17,7 @@ enum AgentRuntimeStatus: Equatable {
 
     var label: String {
         switch self {
+        case .idle: "Idle"
         case .starting: "Starting…"
         case .ready: "Ready"
         case .notInstalled: "Not installed"
@@ -24,7 +28,7 @@ enum AgentRuntimeStatus: Equatable {
     var severity: Severity {
         switch self {
         case .starting: .progress
-        case .ready: .ok
+        case .idle, .ready: .ok
         case .notInstalled: .attention
         case .failed: .problem
         }
@@ -33,7 +37,7 @@ enum AgentRuntimeStatus: Equatable {
     /// What to tell the user beyond the label: how to fix a missing command, or why it stopped.
     var guidance: String? {
         switch self {
-        case .starting, .ready: nil
+        case .idle, .starting, .ready: nil
         case .notInstalled(let command):
             "Native couldn't find `\(command)` on your PATH. Install it, then choose Retry."
         case .failed(let message): message
@@ -43,7 +47,7 @@ enum AgentRuntimeStatus: Equatable {
     /// Whether starting the agent again could help.
     var canRetry: Bool {
         switch self {
-        case .starting, .ready: false
+        case .idle, .starting, .ready: false
         case .notInstalled, .failed: true
         }
     }

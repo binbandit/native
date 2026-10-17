@@ -21,7 +21,9 @@ struct HomeDetail: View {
                 onSelectTask: { model.selection = $0 }
             )
         } else {
-            HomeWelcomeView(agents: agents, addProjectShortcut: KeyboardShortcut("o"), onAddProject: { model.isAddingProject = true })
+            HomeWelcomeView(
+                agents: agents, addProjectShortcut: KeyboardShortcut("o"),
+                onAddProject: { model.isAddingProject = true })
         }
     }
 
@@ -46,7 +48,7 @@ struct HomeDetail: View {
             return HomeAgentRemedy("Restart \(agent.displayName)") { Task { await model.restart(agent.id) } }
         case .ready where runtime.needsSignIn && !runtime.authMethods.isEmpty:
             return HomeAgentRemedy("Sign In to \(agent.displayName)") { model.signInPrompt = agent.id }
-        case .starting, .ready:
+        case .idle, .starting, .ready:
             return nil
         }
     }
@@ -60,12 +62,15 @@ struct HomeDetail: View {
             }
             .sorted { ($0.1.lastActivity ?? .distantPast) < ($1.1.lastActivity ?? .distantPast) }
             .map { summary, _, wait in
-                let (request, status): (String, TaskStatus) = switch wait {
-                case .input(let question): (question, .needsInput)
-                case .permission(let tool): (tool, .needsPermission)
-                case .planReview(let plan): (plan, .needsPlanReview)
-                }
-                return HomeWaitingTask(id: summary.id, title: model.title(for: summary), request: request, status: status, agentName: summary.agent.displayName)
+                let (request, status): (String, TaskStatus) =
+                    switch wait {
+                    case .input(let question): (question, .needsInput)
+                    case .permission(let tool): (tool, .needsPermission)
+                    case .planReview(let plan): (plan, .needsPlanReview)
+                    }
+                return HomeWaitingTask(
+                    id: summary.id, title: model.title(for: summary), request: request, status: status,
+                    agentName: summary.agent.displayName)
             }
     }
 
@@ -74,7 +79,8 @@ struct HomeDetail: View {
         return switch runtime.status {
         case .starting: .starting
         case .ready where runtime.needsSignIn: .unavailable("Needs sign-in")
-        case .ready: .available
+        // An idle agent starts when the user picks it.
+        case .idle, .ready: .available
         case .notInstalled, .failed: .unavailable(runtime.status.label)
         }
     }

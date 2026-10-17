@@ -7,6 +7,9 @@ struct RootView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.releaseChannel) private var releaseChannel
     @State private var columnVisibility = NavigationSplitViewVisibility.all
+    /// The sidebar's width as the user left it. Settings replaces the split view, and a new one opens
+    /// at its ideal width, so this is the ideal.
+    @State private var sidebarWidth = RootSidebarWidth()
     @State private var undoToast: UndoToastItem?
     @State private var showsPullRequests = false
     @Environment(AutomationCenter.self) private var automation
@@ -147,7 +150,12 @@ struct RootView: View {
                 // goes from both the column and the split view. On the column it must come before
                 // the width, or SwiftUI drops the width.
                 .toolbar(removing: .sidebarToggle)
-                .navigationSplitViewColumnWidth(min: 220, ideal: DS.Size.sidebarWidth, max: 380)
+                .onGeometryChange(for: CGFloat.self) {
+                    $0.size.width
+                } action: {
+                    sidebarWidth.value = $0
+                }
+                .navigationSplitViewColumnWidth(min: 220, ideal: sidebarWidth.value, max: 380)
                 .toolbar {
                     ToolbarItem {
                         SidebarCollapseButton(isExpanded: columnVisibility != .detailOnly) {
@@ -244,12 +252,41 @@ struct RootView: View {
                 SessionView(session: session)
                     .id(key)
             } else {
-                ProgressView()
+                openingSession(key)
             }
         } else {
             HomeDetail()
         }
     }
+
+    /// A selected session on its way in: its agent starting first if it was idle, or why it can't.
+    @ViewBuilder
+    private func openingSession(_ key: SessionKey) -> some View {
+        if let runtime = model.runtime(key.agent), runtime.status.canRetry {
+            let isMissing = if case .notInstalled = runtime.status { true } else { false }
+            EmptyStateView(
+                "Couldn't Start \(runtime.agent.displayName)", systemImage: "exclamationmark.triangle",
+                message: runtime.status.guidance,
+                actionTitle: isMissing ? "Check Again" : "Restart \(runtime.agent.displayName)"
+            ) {
+                Task { await model.restart(key.agent) }
+            }
+        } else if let runtime = model.runtime(key.agent), runtime.status == .starting {
+            ProgressView("Starting \(runtime.agent.displayName)…")
+                .controlSize(.small)
+                .font(.dsBody)
+                .foregroundStyle(.dsTextSecondary)
+        } else {
+            ProgressView()
+                .controlSize(.small)
+        }
+    }
+}
+
+/// A plain reference rather than state, so tracking the width while the user drags doesn't redraw
+/// the window.
+private final class RootSidebarWidth {
+    var value = DS.Size.sidebarWidth
 }
 
 extension FocusedValues {
