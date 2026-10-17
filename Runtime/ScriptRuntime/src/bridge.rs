@@ -4,8 +4,8 @@
 //! script could tamper with.
 
 use crate::protocol::{
-    Binding, Failure, FailureKind, MAX_OUTPUT, MAX_OUTSTANDING_CALLS, MAX_TEXT_CALLS, MAX_TIMERS, Outbound, TEXT_CHUNK,
-    emit,
+    Binding, Failure, FailureKind, MAX_OUTPUT, MAX_OUTSTANDING_CALLS, MAX_TEXT_CALLS, MAX_TIMERS,
+    MAX_TOOL_INPUT, Outbound, TEXT_CHUNK, emit,
 };
 use serde::Deserialize;
 use serde_json::{Value, json};
@@ -62,7 +62,10 @@ struct Refusal {
 
 impl From<&str> for Refusal {
     fn from(message: &str) -> Self {
-        Self { message: message.into(), kind: None }
+        Self {
+            message: message.into(),
+            kind: None,
+        }
     }
 }
 
@@ -82,7 +85,10 @@ impl Bridge {
 
     /// The earliest timer, if any is scheduled.
     pub fn next_timer(&self) -> Option<(u32, Instant)> {
-        self.timers.iter().min_by_key(|(_, timer)| timer.due).map(|(id, timer)| (*id, timer.due))
+        self.timers
+            .iter()
+            .min_by_key(|(_, timer)| timer.due)
+            .map(|(id, timer)| (*id, timer.due))
     }
 
     /// Takes timer `id` for firing, rescheduling it if it repeats. False if it was cleared.
@@ -100,7 +106,10 @@ impl Bridge {
     }
 
     fn next_id(&mut self) -> Result<u32, Refusal> {
-        self.last_id = self.last_id.checked_add(1).ok_or("The script ran out of identifiers")?;
+        self.last_id = self
+            .last_id
+            .checked_add(1)
+            .ok_or("The script ran out of identifiers")?;
         Ok(self.last_id)
     }
 
@@ -108,7 +117,8 @@ impl Bridge {
         match request {
             Request::Metadata => Ok(json!({ "bindings": self.bindings, "inputs": self.inputs })),
             Request::Text { text } => {
-                if self.text_calls >= MAX_TEXT_CALLS || text.len() > MAX_OUTPUT - self.output_bytes {
+                if self.text_calls >= MAX_TEXT_CALLS || text.len() > MAX_OUTPUT - self.output_bytes
+                {
                     return Err(Refusal {
                         message: format!(
                             "Output limit reached: a script can emit {} MiB of text in {MAX_TEXT_CALLS} text() calls",
@@ -123,16 +133,32 @@ impl Bridge {
                 Ok(Value::Null)
             }
             Request::Call { index, input } => {
-                let tool_name = self.bindings.get(index).ok_or("Unknown tool")?.tool_name.clone();
+                let tool_name = self
+                    .bindings
+                    .get(index)
+                    .ok_or("Unknown tool")?
+                    .tool_name
+                    .clone();
                 if !input.is_object() {
                     return Err("Tools take one object argument".into());
                 }
+                if input.to_string().len() > MAX_TOOL_INPUT {
+                    return Err("A tool's argument can be at most 1 MiB of JSON".into());
+                }
                 if self.outstanding.len() >= MAX_OUTSTANDING_CALLS {
-                    return Err(format!("A script can have at most {MAX_OUTSTANDING_CALLS} tool calls in flight").as_str().into());
+                    return Err(format!(
+                        "A script can have at most {MAX_OUTSTANDING_CALLS} tool calls in flight"
+                    )
+                    .as_str()
+                    .into());
                 }
                 let id = self.next_id()?;
                 self.outstanding.insert(id);
-                emit(&Outbound::ToolCall { id, tool_name: &tool_name, input: &input });
+                emit(&Outbound::ToolCall {
+                    id,
+                    tool_name: &tool_name,
+                    input: &input,
+                });
                 Ok(json!(id))
             }
             Request::Schedule { delay, repeat } => {
@@ -142,11 +168,19 @@ impl Bridge {
                     return Err("Timers can be set for at most a day".into());
                 }
                 if self.timers.len() >= MAX_TIMERS {
-                    return Err(format!("A script can have at most {MAX_TIMERS} timers").as_str().into());
+                    return Err(format!("A script can have at most {MAX_TIMERS} timers")
+                        .as_str()
+                        .into());
                 }
                 let id = self.next_id()?;
                 let delay = Duration::from_millis(delay as u64);
-                self.timers.insert(id, Timer { due: Instant::now() + delay, interval: repeat.then_some(delay) });
+                self.timers.insert(
+                    id,
+                    Timer {
+                        due: Instant::now() + delay,
+                        interval: repeat.then_some(delay),
+                    },
+                );
                 Ok(json!(id))
             }
             Request::Clear { id } => {
@@ -182,7 +216,10 @@ fn emit_text(text: &str) {
             end -= 1;
         }
         let (piece, tail) = rest.split_at(end);
-        emit(&Outbound::Text { text: piece, end: tail.is_empty() });
+        emit(&Outbound::Text {
+            text: piece,
+            end: tail.is_empty(),
+        });
         if tail.is_empty() {
             return;
         }
@@ -192,7 +229,11 @@ fn emit_text(text: &str) {
 
 /// `__native_host(requestJSON) -> replyJSON`. The reply is `{"value": …}`, or `{"error": message}`
 /// with an optional failure `kind` for the guest to throw.
-pub fn host_callback(scope: &mut v8::PinScope, args: v8::FunctionCallbackArguments, mut rv: v8::ReturnValue) {
+pub fn host_callback(
+    scope: &mut v8::PinScope,
+    args: v8::FunctionCallbackArguments,
+    mut rv: v8::ReturnValue,
+) {
     let argument = args.get(0);
     let reply = if argument.is_string() {
         let text = argument.to_rust_string_lossy(scope);
@@ -219,5 +260,7 @@ pub fn host_callback(scope: &mut v8::PinScope, args: v8::FunctionCallbackArgumen
 
 /// The isolate always carries its bridge; `runtime::run` puts it there before any script runs.
 pub fn bridge<'a>(scope: &'a mut v8::PinScope) -> &'a mut Bridge {
-    scope.get_slot_mut::<Bridge>().expect("the isolate has a bridge")
+    scope
+        .get_slot_mut::<Bridge>()
+        .expect("the isolate has a bridge")
 }

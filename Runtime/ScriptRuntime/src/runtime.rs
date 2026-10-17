@@ -35,7 +35,12 @@ pub struct Shared {
 impl Shared {
     pub fn stop(&self) {
         self.input_ended.store(true, Ordering::Release);
-        if let Some(handle) = self.isolate.lock().unwrap_or_else(|poison| poison.into_inner()).as_ref() {
+        if let Some(handle) = self
+            .isolate
+            .lock()
+            .unwrap_or_else(|poison| poison.into_inner())
+            .as_ref()
+        {
             handle.terminate_execution();
         }
     }
@@ -56,7 +61,11 @@ struct HeapGuard {
 
 /// V8 calls this just before it would run out of heap, which would otherwise abort the process.
 /// Stopping the script instead lets the runtime report a memory failure.
-unsafe extern "C" fn near_heap_limit(data: *mut c_void, current_limit: usize, _initial_limit: usize) -> usize {
+unsafe extern "C" fn near_heap_limit(
+    data: *mut c_void,
+    current_limit: usize,
+    _initial_limit: usize,
+) -> usize {
     // SAFETY: `data` is the `HeapGuard` boxed in `run`, which outlives the isolate.
     let guard = unsafe { &*(data as *const HeapGuard) };
     guard.exceeded.store(true, Ordering::Release);
@@ -79,15 +88,27 @@ struct Guest {
     fire: v8::Global<v8::Function>,
 }
 
-pub fn run(evaluation: Evaluation, input: &Receiver<Input>, shared: &Arc<Shared>, heap_limit: usize) -> Ending {
+pub fn run(
+    evaluation: Evaluation,
+    input: &Receiver<Input>,
+    shared: &Arc<Shared>,
+    heap_limit: usize,
+) -> Ending {
     // Declared before the isolate so it's dropped after it: the heap callback points into it.
     let guard: Box<HeapGuard>;
     let mut isolate = v8::Isolate::new(v8::CreateParams::default().heap_limits(0, heap_limit));
-    guard = Box::new(HeapGuard { handle: isolate.thread_safe_handle(), exceeded: AtomicBool::new(false) });
-    isolate.add_near_heap_limit_callback(near_heap_limit, &*guard as *const HeapGuard as *mut c_void);
+    guard = Box::new(HeapGuard {
+        handle: isolate.thread_safe_handle(),
+        exceeded: AtomicBool::new(false),
+    });
+    isolate
+        .add_near_heap_limit_callback(near_heap_limit, &*guard as *const HeapGuard as *mut c_void);
     isolate.set_microtasks_policy(v8::MicrotasksPolicy::Explicit);
     isolate.set_slot(Bridge::new(evaluation.bindings, evaluation.inputs));
-    *shared.isolate.lock().unwrap_or_else(|poison| poison.into_inner()) = Some(isolate.thread_safe_handle());
+    *shared
+        .isolate
+        .lock()
+        .unwrap_or_else(|poison| poison.into_inner()) = Some(isolate.thread_safe_handle());
     if shared.input_ended.load(Ordering::Acquire) {
         return Ending::Finished;
     }
@@ -101,7 +122,10 @@ pub fn run(evaluation: Evaluation, input: &Receiver<Input>, shared: &Arc<Shared>
             Err(failure) => finish_with(Completion::Failed(failure)),
         }
     };
-    *shared.isolate.lock().unwrap_or_else(|poison| poison.into_inner()) = None;
+    *shared
+        .isolate
+        .lock()
+        .unwrap_or_else(|poison| poison.into_inner()) = None;
     ending
 }
 
@@ -112,20 +136,40 @@ fn install_guest(scope: &mut v8::PinScope) -> Result<Guest, Failure> {
         global.delete(scope, key.into());
     }
     let key = v8_string(scope, "__native_host")?;
-    let host = v8::Function::new(scope, bridge::host_callback).ok_or_else(|| internal("Couldn't create the host bridge"))?;
+    let host = v8::Function::new(scope, bridge::host_callback)
+        .ok_or_else(|| internal("Couldn't create the host bridge"))?;
     global.set(scope, key.into(), host.into());
 
     v8::tc_scope!(let tc, scope);
     let source = v8_string(tc, include_str!("bootstrap.js"))?;
     let name = v8_string(tc, BOOTSTRAP_NAME)?;
-    let origin = v8::ScriptOrigin::new(tc, name.into(), 0, 0, false, 0, None, false, false, false, None);
+    let origin = v8::ScriptOrigin::new(
+        tc,
+        name.into(),
+        0,
+        0,
+        false,
+        0,
+        None,
+        false,
+        false,
+        false,
+        None,
+    );
     let ran = v8::Script::compile(tc, source, Some(&origin)).and_then(|script| script.run(tc));
     if ran.is_none() {
-        let reason = tc.exception().map(|error| error.to_rust_string_lossy(tc)).unwrap_or_default();
-        return Err(internal(&format!("The script runtime didn't start: {reason}")));
+        let reason = tc
+            .exception()
+            .map(|error| error.to_rust_string_lossy(tc))
+            .unwrap_or_default();
+        return Err(internal(&format!(
+            "The script runtime didn't start: {reason}"
+        )));
     }
     let key = v8_string(tc, "__native_guest")?;
-    let exports = global.get(tc, key.into()).and_then(|value| v8::Local::<v8::Array>::try_from(value).ok());
+    let exports = global
+        .get(tc, key.into())
+        .and_then(|value| v8::Local::<v8::Array>::try_from(value).ok());
     global.delete(tc, key.into());
     let exports = exports.ok_or_else(|| internal("The script runtime didn't start"))?;
     let function = |index| {
@@ -135,7 +179,11 @@ fn install_guest(scope: &mut v8::PinScope) -> Result<Guest, Failure> {
             .map(|function| v8::Global::new(tc, function))
             .ok_or_else(|| internal("The script runtime didn't start"))
     };
-    Ok(Guest { settle: function(0)?, deliver: function(1)?, fire: function(2)? })
+    Ok(Guest {
+        settle: function(0)?,
+        deliver: function(1)?,
+        fire: function(2)?,
+    })
 }
 
 fn evaluate(
@@ -189,7 +237,11 @@ fn evaluate(
             None => input.recv().map_err(|_| RecvTimeoutError::Disconnected),
         };
         match received {
-            Ok(Input::Frame(Inbound::ToolResult { id, is_error, content })) => {
+            Ok(Input::Frame(Inbound::ToolResult {
+                id,
+                is_error,
+                content,
+            })) => {
                 if !bridge::bridge(scope).outstanding.remove(&id) {
                     return protocol_error("The host answered a tool call that isn't in flight");
                 }
@@ -200,15 +252,17 @@ fn evaluate(
                 };
                 call(scope, &guest.deliver, &[id_value, is_error, content.into()]);
             }
-            Ok(Input::Frame(Inbound::Evaluate { .. })) => return protocol_error("A runtime runs one script"),
+            Ok(Input::Frame(Inbound::Evaluate { .. })) => {
+                return protocol_error("A runtime runs one script");
+            }
             Ok(Input::Invalid(reason)) => return protocol_error(&reason),
             Ok(Input::Closed) | Err(RecvTimeoutError::Disconnected) => return Ending::Finished,
             Err(RecvTimeoutError::Timeout) => {
-                if let Some((id, _)) = next_timer {
-                    if bridge::bridge(scope).take_timer(id) {
-                        let id_value = v8::Integer::new_from_unsigned(scope, id).into();
-                        call(scope, &guest.fire, &[id_value]);
-                    }
+                if let Some((id, _)) = next_timer
+                    && bridge::bridge(scope).take_timer(id)
+                {
+                    let id_value = v8::Integer::new_from_unsigned(scope, id).into();
+                    call(scope, &guest.fire, &[id_value]);
                 }
             }
         }
@@ -221,12 +275,18 @@ fn stopped(scope: &mut v8::PinScope, shared: &Shared, guard: &HeapGuard) -> Opti
         return Some(Ending::Finished);
     }
     if guard.exceeded.load(Ordering::Acquire) {
-        let failure = Failure::new(FailureKind::Memory, "The script used more memory than its limit allows");
+        let failure = Failure::new(
+            FailureKind::Memory,
+            "The script used more memory than its limit allows",
+        );
         return Some(finish_with(Completion::Failed(failure)));
     }
     if scope.is_execution_terminating() {
         // Only `exit()` terminates execution from inside the script.
-        let completion = bridge::bridge(scope).completion.take().unwrap_or(Completion::Exited);
+        let completion = bridge::bridge(scope)
+            .completion
+            .take()
+            .unwrap_or(Completion::Exited);
         return Some(finish_with(completion));
     }
     None
@@ -234,17 +294,33 @@ fn stopped(scope: &mut v8::PinScope, shared: &Shared, guard: &HeapGuard) -> Opti
 
 fn compile(scope: &mut v8::PinScope, code: &str) -> Result<v8::Global<v8::Module>, Failure> {
     v8::tc_scope!(let tc, scope);
-    let source = v8::String::new(tc, code).ok_or_else(|| Failure::new(FailureKind::Syntax, "The script is too large"))?;
+    let source = v8::String::new(tc, code)
+        .ok_or_else(|| Failure::new(FailureKind::Syntax, "The script is too large"))?;
     let name = v8_string(tc, SCRIPT_NAME)?;
-    let origin = v8::ScriptOrigin::new(tc, name.into(), 0, 0, false, 0, None, false, false, true, None);
+    let origin = v8::ScriptOrigin::new(
+        tc,
+        name.into(),
+        0,
+        0,
+        false,
+        0,
+        None,
+        false,
+        false,
+        true,
+        None,
+    );
     let mut source = v8::script_compiler::Source::new(source, Some(&origin));
     let Some(module) = v8::script_compiler::compile_module(tc, &mut source) else {
-        let message = tc.exception().map(|error| error.to_rust_string_lossy(tc)).unwrap_or_else(|| "The script doesn't parse".into());
+        let message = tc
+            .exception()
+            .map(|error| error.to_rust_string_lossy(tc))
+            .unwrap_or_else(|| "The script doesn't parse".into());
         let mut failure = Failure::new(FailureKind::Syntax, message);
-        if let Some(message) = tc.message() {
-            if let Some(line) = message.get_line_number(tc) {
-                failure = failure.at(line as u32, message.get_start_column() as u32 + 1);
-            }
+        if let Some(message) = tc.message()
+            && let Some(line) = message.get_line_number(tc)
+        {
+            failure = failure.at(line as u32, message.get_start_column() as u32 + 1);
         }
         return Err(failure);
     };
@@ -254,10 +330,15 @@ fn compile(scope: &mut v8::PinScope, code: &str) -> Result<v8::Global<v8::Module
             FailureKind::Syntax,
             "Scripts can't import modules: there are none. Call tools.<path>() for everything outside the script.",
         );
-        let request = requests.get(tc, 0).and_then(|data| v8::Local::<v8::ModuleRequest>::try_from(data).ok());
+        let request = requests
+            .get(tc, 0)
+            .and_then(|data| v8::Local::<v8::ModuleRequest>::try_from(data).ok());
         if let Some(request) = request {
             let location = module.source_offset_to_location(request.get_source_offset());
-            failure = failure.at(location.get_line_number() as u32 + 1, location.get_column_number() as u32 + 1);
+            failure = failure.at(
+                location.get_line_number() as u32 + 1,
+                location.get_column_number() as u32 + 1,
+            );
         }
         return Err(failure);
     }
@@ -281,7 +362,11 @@ fn stalled(scope: &mut v8::PinScope, module: &v8::Local<v8::Module>) -> Failure 
         "The script is waiting on a promise that nothing will settle: no tool call or timer is pending",
     );
     let stalls = module.get_stalled_top_level_await_message(scope);
-    match stalls.first().and_then(|(_, message)| message.get_line_number(scope).map(|line| (line, message.get_start_column()))) {
+    match stalls.first().and_then(|(_, message)| {
+        message
+            .get_line_number(scope)
+            .map(|line| (line, message.get_start_column()))
+    }) {
         Some((line, column)) => failure.at(line as u32, column as u32 + 1),
         None => failure,
     }
@@ -289,14 +374,23 @@ fn stalled(scope: &mut v8::PinScope, module: &v8::Local<v8::Module>) -> Failure 
 
 /// Calls a guest function. The guest catches the script's own errors and reports them through the
 /// bridge, so anything thrown here is the runtime's problem, or termination, which the loop sees.
-fn call(scope: &mut v8::PinScope, function: &v8::Global<v8::Function>, args: &[v8::Local<v8::Value>]) {
+fn call(
+    scope: &mut v8::PinScope,
+    function: &v8::Global<v8::Function>,
+    args: &[v8::Local<v8::Value>],
+) {
     v8::tc_scope!(let tc, scope);
     let function = v8::Local::new(tc, function);
     let receiver = v8::undefined(tc).into();
     if function.call(tc, receiver, args).is_none() && !tc.is_execution_terminating() {
-        let reason = tc.exception().map(|error| error.to_rust_string_lossy(tc)).unwrap_or_default();
+        let reason = tc
+            .exception()
+            .map(|error| error.to_rust_string_lossy(tc))
+            .unwrap_or_default();
         let failure = internal(&format!("The script runtime failed: {reason}"));
-        bridge::bridge(tc).completion.get_or_insert(Completion::Failed(failure));
+        bridge::bridge(tc)
+            .completion
+            .get_or_insert(Completion::Failed(failure));
     }
 }
 
@@ -309,7 +403,9 @@ fn finish_with(completion: Completion) -> Ending {
 }
 
 fn protocol_error(reason: &str) -> Ending {
-    emit(&Outbound::Error { error: &internal(reason) });
+    emit(&Outbound::Error {
+        error: &internal(reason),
+    });
     Ending::ProtocolError
 }
 
@@ -317,6 +413,9 @@ fn internal(message: &str) -> Failure {
     Failure::new(FailureKind::Internal, message)
 }
 
-fn v8_string<'s>(scope: &mut v8::PinScope<'s, '_>, text: &str) -> Result<v8::Local<'s, v8::String>, Failure> {
+fn v8_string<'s>(
+    scope: &mut v8::PinScope<'s, '_>,
+    text: &str,
+) -> Result<v8::Local<'s, v8::String>, Failure> {
     v8::String::new(scope, text).ok_or_else(|| internal("Couldn't allocate a string"))
 }

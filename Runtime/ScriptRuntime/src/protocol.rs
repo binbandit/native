@@ -18,6 +18,8 @@ pub const MAX_TEXT_CALLS: usize = 1024;
 /// Text goes out in pieces of at most this many bytes, so an outbound frame stays well under the
 /// host's line limit even when JSON escaping inflates it.
 pub const TEXT_CHUNK: usize = MIB;
+/// The largest argument one tool call can carry, as JSON. Data that size belongs in `inputs`.
+pub const MAX_TOOL_INPUT: usize = MIB;
 /// Tool calls a script can have in flight at once.
 pub const MAX_OUTSTANDING_CALLS: usize = 128;
 /// Timers a script can have scheduled at once.
@@ -60,16 +62,27 @@ pub enum Inbound {
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum Outbound<'a> {
     #[serde(rename_all = "camelCase")]
-    Ready { protocol_version: u32 },
+    Ready {
+        protocol_version: u32,
+    },
     EvaluationStarted,
     /// A piece of one `text()` call; `end` marks its last piece.
-    Text { text: &'a str, end: bool },
+    Text {
+        text: &'a str,
+        end: bool,
+    },
     #[serde(rename_all = "camelCase")]
-    ToolCall { id: u32, tool_name: &'a str, input: &'a Value },
+    ToolCall {
+        id: u32,
+        tool_name: &'a str,
+        input: &'a Value,
+    },
     /// The script finished. Nothing follows.
     Result,
     /// The script failed. Nothing follows.
-    Error { error: &'a Failure },
+    Error {
+        error: &'a Failure,
+    },
 }
 
 /// Why a script failed, with its position in the script when there is one.
@@ -103,7 +116,12 @@ pub enum FailureKind {
 
 impl Failure {
     pub fn new(kind: FailureKind, message: impl Into<String>) -> Self {
-        Self { kind, message: message.into(), line: None, column: None }
+        Self {
+            kind,
+            message: message.into(),
+            line: None,
+            column: None,
+        }
     }
 
     pub fn at(mut self, line: u32, column: u32) -> Self {
@@ -117,7 +135,10 @@ impl Inbound {
     /// Checks what serde can't: bindings name distinct, safe paths, and no binding sits inside
     /// another's namespace.
     fn validate(&self) -> Result<(), &'static str> {
-        let Self::Evaluate { bindings, inputs, .. } = self else {
+        let Self::Evaluate {
+            bindings, inputs, ..
+        } = self
+        else {
             return Ok(());
         };
         let mut leaves = HashSet::new();
@@ -126,7 +147,11 @@ impl Inbound {
             if binding.path.is_empty() || binding.tool_name.is_empty() {
                 return Err("A binding needs a path and a tool name");
             }
-            if binding.path.iter().any(|segment| segment.is_empty() || RESERVED_SEGMENTS.contains(&segment.as_str())) {
+            if binding
+                .path
+                .iter()
+                .any(|segment| segment.is_empty() || RESERVED_SEGMENTS.contains(&segment.as_str()))
+            {
                 return Err("A binding path segment is empty or reserved");
             }
             for depth in 1..binding.path.len() {
@@ -158,9 +183,15 @@ pub enum ReadError {
 pub fn read_frame(reader: &mut impl BufRead) -> Result<Inbound, ReadError> {
     let mut line = Vec::new();
     loop {
-        let chunk = reader.fill_buf().map_err(|error| ReadError::Invalid(error.to_string()))?;
+        let chunk = reader
+            .fill_buf()
+            .map_err(|error| ReadError::Invalid(error.to_string()))?;
         if chunk.is_empty() {
-            return Err(if line.is_empty() { ReadError::Closed } else { ReadError::Invalid("Truncated frame".into()) });
+            return Err(if line.is_empty() {
+                ReadError::Closed
+            } else {
+                ReadError::Invalid("Truncated frame".into())
+            });
         }
         let (take, complete) = match chunk.iter().position(|&byte| byte == b'\n') {
             Some(index) => (index + 1, true),
@@ -172,9 +203,11 @@ pub fn read_frame(reader: &mut impl BufRead) -> Result<Inbound, ReadError> {
         line.extend_from_slice(&chunk[..take]);
         reader.consume(take);
         if complete {
-            let frame: Inbound =
-                serde_json::from_slice(&line).map_err(|error| ReadError::Invalid(format!("Invalid frame: {error}")))?;
-            frame.validate().map_err(|reason| ReadError::Invalid(reason.into()))?;
+            let frame: Inbound = serde_json::from_slice(&line)
+                .map_err(|error| ReadError::Invalid(format!("Invalid frame: {error}")))?;
+            frame
+                .validate()
+                .map_err(|reason| ReadError::Invalid(reason.into()))?;
             return Ok(frame);
         }
     }
@@ -183,7 +216,9 @@ pub fn read_frame(reader: &mut impl BufRead) -> Result<Inbound, ReadError> {
 /// Writes one frame. If the host has gone away there's no one left to tell, so the process ends.
 pub fn emit(frame: &Outbound) {
     let mut out = io::stdout().lock();
-    let written = serde_json::to_writer(&mut out, frame).is_ok() && out.write_all(b"\n").is_ok() && out.flush().is_ok();
+    let written = serde_json::to_writer(&mut out, frame).is_ok()
+        && out.write_all(b"\n").is_ok()
+        && out.flush().is_ok();
     if !written {
         std::process::exit(0);
     }
@@ -199,8 +234,10 @@ mod tests {
 
     #[test]
     fn reads_an_evaluation() {
-        let frame = read(r#"{"type":"evaluate","code":"text(1)","bindings":[{"path":["a","b"],"toolName":"t"}],"inputs":{"x":"y"}}
-"#);
+        let frame = read(
+            r#"{"type":"evaluate","code":"text(1)","bindings":[{"path":["a","b"],"toolName":"t"}],"inputs":{"x":"y"}}
+"#,
+        );
         assert!(matches!(frame, Ok(Inbound::Evaluate { ref bindings, .. }) if bindings.len() == 1));
     }
 
@@ -212,15 +249,26 @@ mod tests {
             r#"[{"path":["a"],"toolName":"t"},{"path":["a"],"toolName":"u"}]"#,
             r#"[{"path":["a"],"toolName":"t"},{"path":["a","b"],"toolName":"u"}]"#,
         ] {
-            let frame = read(&format!("{{\"type\":\"evaluate\",\"code\":\"\",\"bindings\":{bindings}}}\n"));
-            assert!(matches!(frame, Err(ReadError::Invalid(_))), "accepted {bindings}");
+            let frame = read(&format!(
+                "{{\"type\":\"evaluate\",\"code\":\"\",\"bindings\":{bindings}}}\n"
+            ));
+            assert!(
+                matches!(frame, Err(ReadError::Invalid(_))),
+                "accepted {bindings}"
+            );
         }
     }
 
     #[test]
     fn rejects_non_string_inputs_and_unknown_fields() {
-        assert!(matches!(read("{\"type\":\"evaluate\",\"code\":\"\",\"inputs\":{\"a\":1}}\n"), Err(ReadError::Invalid(_))));
-        assert!(matches!(read("{\"type\":\"evaluate\",\"code\":\"\",\"extra\":1}\n"), Err(ReadError::Invalid(_))));
+        assert!(matches!(
+            read("{\"type\":\"evaluate\",\"code\":\"\",\"inputs\":{\"a\":1}}\n"),
+            Err(ReadError::Invalid(_))
+        ));
+        assert!(matches!(
+            read("{\"type\":\"evaluate\",\"code\":\"\",\"extra\":1}\n"),
+            Err(ReadError::Invalid(_))
+        ));
     }
 
     #[test]
@@ -231,7 +279,10 @@ mod tests {
 
     #[test]
     fn refuses_lines_over_the_limit() {
-        let huge = format!("{{\"type\":\"evaluate\",\"code\":\"{}\"}}\n", "x".repeat(MAX_LINE));
+        let huge = format!(
+            "{{\"type\":\"evaluate\",\"code\":\"{}\"}}\n",
+            "x".repeat(MAX_LINE)
+        );
         assert!(matches!(read(&huge), Err(ReadError::Invalid(_))));
     }
 
@@ -239,9 +290,20 @@ mod tests {
     fn writes_frames_in_the_documented_shape() {
         let failure = Failure::new(FailureKind::Exception, "boom").at(3, 7);
         let json = serde_json::to_string(&Outbound::Error { error: &failure }).unwrap();
-        assert_eq!(json, r#"{"type":"error","error":{"kind":"exception","message":"boom","line":3,"column":7}}"#);
+        assert_eq!(
+            json,
+            r#"{"type":"error","error":{"kind":"exception","message":"boom","line":3,"column":7}}"#
+        );
         let input = serde_json::json!({});
-        let json = serde_json::to_string(&Outbound::ToolCall { id: 1, tool_name: "t", input: &input }).unwrap();
-        assert_eq!(json, r#"{"type":"tool_call","id":1,"toolName":"t","input":{}}"#);
+        let json = serde_json::to_string(&Outbound::ToolCall {
+            id: 1,
+            tool_name: "t",
+            input: &input,
+        })
+        .unwrap();
+        assert_eq!(
+            json,
+            r#"{"type":"tool_call","id":1,"toolName":"t","input":{}}"#
+        );
     }
 }

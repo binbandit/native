@@ -5,7 +5,7 @@ nonisolated enum GitMetrics {
     /// Inspector column widths; the floor fits a path, its line counts and two row actions.
     static let inspectorMinWidth: CGFloat = 340
     static let inspectorIdealWidth: CGFloat = 420
-    static let inspectorMaxWidth: CGFloat = 560
+    static let inspectorMaxWidth: CGFloat = 720
     /// The header row, as tall as Conductor's git panel tab row.
     static let headerHeight: CGFloat = 40
     /// The "N files changed" row (Conductor `ChangesSummary`, h-8).

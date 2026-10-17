@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		000000000000000071E10020 /* Terminal in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000071E10010 /* Terminal */; };
 		000000000000000000000320 /* ACP in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000000310 /* ACP */; };
 		000000000000000000000420 /* MCP in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000000410 /* MCP */; };
 		000000000000000000474820 /* GitHub in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000474810 /* GitHub */; };
@@ -18,6 +17,7 @@
 		000000000000000000617320 /* Git in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000617310 /* Git */; };
 		000000000000000000E10320 /* Experiments in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000E10310 /* Experiments */; };
 		00000000000000005E1EA503 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; platformFilters = (macos, ); productRef = 00000000000000005E1EA502 /* Sparkle */; };
+		000000000000000071E10020 /* Terminal in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000071E10010 /* Terminal */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -254,22 +254,6 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		000000000000000071E10030 /* Build libghostty */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			inputPaths = (
-				"$(SRCROOT)/scripts/build-libghostty.sh",
-			);
-			name = "Build libghostty";
-			outputPaths = (
-				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/terminfo",
-				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/ghostty",
-			);
-			shellPath = /bin/sh;
-			shellScript = (
-				"/bin/bash \"$SCRIPT_INPUT_FILE_0\" --xcode",
-			);
-		};
 		0000000000000000004E480F /* Install Launch Agent */ = {
 			isa = PBXShellScriptBuildPhase;
 			inputPaths = (
@@ -300,6 +284,22 @@
 			shellPath = /bin/sh;
 			shellScript = (
 				"\"$SCRIPT_INPUT_FILE_0\" --optional --output \"$SCRIPT_OUTPUT_FILE_0\" --identity \"$EXPANDED_CODE_SIGN_IDENTITY\"",
+			);
+		};
+		000000000000000071E10030 /* Build libghostty */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			inputPaths = (
+				"$(SRCROOT)/scripts/build-libghostty.sh",
+			);
+			name = "Build libghostty";
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/terminfo",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/ghostty",
+			);
+			shellPath = /bin/sh;
+			shellScript = (
+				"/bin/bash \"$SCRIPT_INPUT_FILE_0\" --xcode",
 			);
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -567,8 +567,11 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/Native-Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
-				LIBRARY_SEARCH_PATHS = "$(inherited) $(HOME)/Library/Caches/native-build/libghostty/lib";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(HOME)/Library/Caches/native-build/libghostty/lib",
+				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "$(NATIVE_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = "$(NATIVE_PRODUCT_NAME)";
@@ -619,8 +622,11 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/Native-Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
-				LIBRARY_SEARCH_PATHS = "$(inherited) $(HOME)/Library/Caches/native-build/libghostty/lib";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(HOME)/Library/Caches/native-build/libghostty/lib",
+				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "$(NATIVE_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = Native;
@@ -647,8 +653,11 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "Config/Native-Info.plist";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
-				LIBRARY_SEARCH_PATHS = "$(inherited) $(HOME)/Library/Caches/native-build/libghostty/lib";
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
+				LIBRARY_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(HOME)/Library/Caches/native-build/libghostty/lib",
+				);
 				MARKETING_VERSION = 1.0;
 				PRODUCT_BUNDLE_IDENTIFIER = "$(NATIVE_BUNDLE_IDENTIFIER)";
 				PRODUCT_NAME = Native;
@@ -697,10 +706,6 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		000000000000000071E10000 /* XCLocalSwiftPackageReference "Packages/Terminal" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = Packages/Terminal;
-		};
 		000000000000000000000300 /* XCLocalSwiftPackageReference "Packages/ACP" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/ACP;
@@ -729,6 +734,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Experiments;
 		};
+		000000000000000071E10000 /* XCLocalSwiftPackageReference "Packages/Terminal" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Terminal;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -743,10 +752,6 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		000000000000000071E10010 /* Terminal */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = Terminal;
-		};
 		000000000000000000000310 /* ACP */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = ACP;
@@ -783,6 +788,10 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 00000000000000005E1EA501 /* XCRemoteSwiftPackageReference "Sparkle" */;
 			productName = Sparkle;
+		};
+		000000000000000071E10010 /* Terminal */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Terminal;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

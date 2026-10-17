@@ -19,11 +19,14 @@ struct OrchestrationPlugin: NativePlugin {
 
     init() {
         let orchestrator = Orchestrator()
+        let tools = OrchestrationTools.all(orchestrator)
+        // run_script exists only where the script runtime does; without it the server just lacks it.
+        let script = OrchestrationScriptTool.make(binding: tools)
         let server = MCPHTTPServer(
             name: "native",
             version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0",
-            instructions: OrchestrationTools.instructions,
-            tools: OrchestrationTools.all(orchestrator)
+            instructions: OrchestrationTools.instructions + (script == nil ? "" : OrchestrationScriptTool.instructions),
+            tools: tools + [script].compactMap { $0 }
                 + SkillTools.all(NativeSkill.bundled(), pluginsFolder: PluginRegistry.directory)
         ) { token in
             await orchestrator.caller(for: token)

@@ -26,13 +26,20 @@ impl Runtime {
         let (sender, frames) = mpsc::channel();
         std::thread::spawn(move || {
             for line in stdout.lines().map_while(Result::ok) {
-                if sender.send(serde_json::from_str(&line).expect("frames are JSON")).is_err() {
+                if sender
+                    .send(serde_json::from_str(&line).expect("frames are JSON"))
+                    .is_err()
+                {
                     return;
                 }
             }
         });
         let stdin = child.stdin.take();
-        let mut runtime = Self { child, stdin, frames };
+        let mut runtime = Self {
+            child,
+            stdin,
+            frames,
+        };
         assert_eq!(runtime.next()["type"], "ready");
         runtime
     }
@@ -44,7 +51,9 @@ impl Runtime {
     }
 
     fn next(&mut self) -> Value {
-        self.frames.recv_timeout(TIMEOUT).expect("a frame arrives in time")
+        self.frames
+            .recv_timeout(TIMEOUT)
+            .expect("a frame arrives in time")
     }
 }
 
@@ -64,16 +73,31 @@ struct Run {
 
 impl Run {
     fn error(&self) -> &Value {
-        assert_eq!(self.end["type"], "error", "expected a failure, got {}", self.end);
+        assert_eq!(
+            self.end["type"], "error",
+            "expected a failure, got {}",
+            self.end
+        );
         &self.end["error"]
     }
 }
 
-fn run_with(code: &str, bindings: Value, inputs: Value, arguments: &[&str], tool: impl Fn(&str, &Value) -> (bool, Value)) -> Run {
+fn run_with(
+    code: &str,
+    bindings: Value,
+    inputs: Value,
+    arguments: &[&str],
+    tool: impl Fn(&str, &Value) -> (bool, Value),
+) -> Run {
     let mut runtime = Runtime::start(arguments);
-    runtime.send(json!({ "type": "evaluate", "code": code, "bindings": bindings, "inputs": inputs }));
+    runtime
+        .send(json!({ "type": "evaluate", "code": code, "bindings": bindings, "inputs": inputs }));
     assert_eq!(runtime.next()["type"], "evaluation_started");
-    let mut run = Run { text: vec![], calls: vec![], end: Value::Null };
+    let mut run = Run {
+        text: vec![],
+        calls: vec![],
+        end: Value::Null,
+    };
     let mut pending = String::new();
     loop {
         let frame = runtime.next();
@@ -100,7 +124,9 @@ fn run_with(code: &str, bindings: Value, inputs: Value, arguments: &[&str], tool
 }
 
 fn run(code: &str) -> Run {
-    run_with(code, json!([]), json!({}), &[], |_, _| (true, json!("no tools")))
+    run_with(code, json!([]), json!({}), &[], |_, _| {
+        (true, json!("no tools"))
+    })
 }
 
 fn tasks() -> Value {
@@ -114,7 +140,10 @@ fn task_tool(name: &str, input: &Value) -> (bool, Value) {
     match name {
         "list_tasks" => (false, json!({ "tasks": [{ "id": "t1" }, { "id": "t2" }] })),
         "get_task" if input["task_id"] == "missing" => (true, json!("There's no task \"missing\"")),
-        "get_task" => (false, json!({ "task_id": input["task_id"], "status": "idle" })),
+        "get_task" => (
+            false,
+            json!({ "task_id": input["task_id"], "status": "idle" }),
+        ),
         _ => (true, json!("unknown tool")),
     }
 }
@@ -136,14 +165,20 @@ fn calls_bound_tools_and_prints_a_summary() {
     assert_eq!(run.end["type"], "result");
     assert_eq!(run.text, ["2 tasks: t1 idle, t2 idle", r#"{"done":true}"#]);
     assert_eq!(run.calls.len(), 3);
-    assert_eq!(run.calls[1], ("get_task".to_owned(), json!({ "task_id": "t1" })));
+    assert_eq!(
+        run.calls[1],
+        ("get_task".to_owned(), json!({ "task_id": "t1" }))
+    );
 }
 
 #[test]
 fn reports_syntax_errors_with_their_position() {
     let error = run("const a = 1;\nconst b = ;\n").error().clone();
     assert_eq!(error["kind"], "syntax");
-    assert_eq!((error["line"].clone(), error["column"].clone()), (json!(2), json!(11)));
+    assert_eq!(
+        (error["line"].clone(), error["column"].clone()),
+        (json!(2), json!(11))
+    );
 }
 
 #[test]
@@ -151,7 +186,10 @@ fn reports_exceptions_with_their_position() {
     let error = run("text('before');\n  null.boom;\n").error().clone();
     assert_eq!(error["kind"], "exception");
     assert!(error["message"].as_str().unwrap().starts_with("TypeError"));
-    assert_eq!((error["line"].clone(), error["column"].clone()), (json!(2), json!(8)));
+    assert_eq!(
+        (error["line"].clone(), error["column"].clone()),
+        (json!(2), json!(8))
+    );
 }
 
 #[test]
@@ -159,7 +197,10 @@ fn a_failed_tool_call_rejects_at_its_call_site() {
     let code = "try { await tools.tasks.get({ task_id: 'missing' }) } catch (error) { text(error.message) }\n\
                 await tools.tasks.get({ task_id: 'missing' });\n";
     let run = run_with(code, tasks(), json!({}), &[], task_tool);
-    assert_eq!(run.text, [r#"tools.tasks.get failed: There's no task "missing""#]);
+    assert_eq!(
+        run.text,
+        [r#"tools.tasks.get failed: There's no task "missing""#]
+    );
     let error = run.error();
     assert_eq!(error["kind"], "exception");
     assert_eq!(error["line"], 2);
@@ -189,11 +230,23 @@ fn scripts_cannot_reach_modules_files_network_or_processes() {
     "#;
     let probed = run(probes);
     assert_eq!(probed.end["type"], "result");
-    assert!(probed.text.iter().all(|line| !line.contains("ESCAPED")), "{:?}", probed.text);
-    assert_eq!(probed.text.last().unwrap(), "function clearInterval,clearTimeout,console,exit,inputs,setInterval,setTimeout,text,tools");
+    assert!(
+        probed.text.iter().all(|line| !line.contains("ESCAPED")),
+        "{:?}",
+        probed.text
+    );
+    assert_eq!(
+        probed.text.last().unwrap(),
+        "function clearInterval,clearTimeout,console,exit,inputs,setInterval,setTimeout,text,tools"
+    );
 
-    let error = run("text('never');\nimport fs from 'node:fs';\n").error().clone();
-    assert_eq!((error["kind"].clone(), error["line"].clone()), (json!("syntax"), json!(2)));
+    let error = run("text('never');\nimport fs from 'node:fs';\n")
+        .error()
+        .clone();
+    assert_eq!(
+        (error["kind"].clone(), error["line"].clone()),
+        (json!("syntax"), json!(2))
+    );
 }
 
 #[test]
@@ -201,13 +254,29 @@ fn inputs_carry_text_and_name_what_is_missing() {
     let code = "text(inputs.greeting.toUpperCase()); inputs.other";
     let run = run_with(code, json!([]), json!({ "greeting": "hi" }), &[], task_tool);
     assert_eq!(run.text, ["HI"]);
-    assert!(run.error()["message"].as_str().unwrap().contains("inputs.other wasn't supplied. Inputs for this run: greeting"));
+    assert!(
+        run.error()["message"]
+            .as_str()
+            .unwrap()
+            .contains("inputs.other wasn't supplied. Inputs for this run: greeting")
+    );
 }
 
 #[test]
 fn unknown_tools_list_what_exists() {
-    let run = run_with("await tools.tasks.cancel({})", tasks(), json!({}), &[], task_tool);
-    assert!(run.error()["message"].as_str().unwrap().contains("tools.tasks.cancel doesn't exist. Available here: list, get"));
+    let run = run_with(
+        "await tools.tasks.cancel({})",
+        tasks(),
+        json!({}),
+        &[],
+        task_tool,
+    );
+    assert!(
+        run.error()["message"]
+            .as_str()
+            .unwrap()
+            .contains("tools.tasks.cancel doesn't exist. Available here: list, get")
+    );
 }
 
 #[test]
@@ -234,23 +303,36 @@ fn exit_stops_the_script_where_it_stands() {
 
 #[test]
 fn a_script_waiting_on_nothing_is_reported_as_stalled() {
-    let error = run("text('waiting');\nawait new Promise(() => {});\n").error().clone();
+    let error = run("text('waiting');\nawait new Promise(() => {});\n")
+        .error()
+        .clone();
     assert_eq!(error["kind"], "stalled");
     assert_eq!(error["line"], 2);
 }
 
 #[test]
 fn unawaited_tool_calls_finish_before_the_result() {
-    let run = run_with("tools.tasks.list(); text('started')", tasks(), json!({}), &[], task_tool);
+    let run = run_with(
+        "tools.tasks.list(); text('started')",
+        tasks(),
+        json!({}),
+        &[],
+        task_tool,
+    );
     assert_eq!(run.end["type"], "result");
     assert_eq!(run.calls.len(), 1);
 }
 
 #[test]
 fn output_is_limited() {
-    let error = run("const chunk = 'x'.repeat(1024 * 1024); for (let i = 0; i < 6; i++) text(chunk);").error().clone();
+    let error =
+        run("const chunk = 'x'.repeat(1024 * 1024); for (let i = 0; i < 6; i++) text(chunk);")
+            .error()
+            .clone();
     assert_eq!(error["kind"], "output_limit");
-    let error = run("for (let i = 0; i < 2000; i++) text(i);").error().clone();
+    let error = run("for (let i = 0; i < 2000; i++) text(i);")
+        .error()
+        .clone();
     assert_eq!(error["kind"], "output_limit");
 }
 
@@ -263,7 +345,13 @@ fn large_text_arrives_in_pieces_and_whole() {
 #[test]
 fn memory_is_limited() {
     let code = "const hoard = []; while (true) hoard.push('x'.repeat(1024) + hoard.length);";
-    let run = run_with(code, json!([]), json!({}), &["--max-heap-mib", "32"], task_tool);
+    let run = run_with(
+        code,
+        json!([]),
+        json!({}),
+        &["--max-heap-mib", "32"],
+        task_tool,
+    );
     assert_eq!(run.error()["kind"], "memory");
 }
 
@@ -291,4 +379,12 @@ fn rejects_a_tool_result_for_a_call_that_isnt_in_flight() {
     let end = runtime.next();
     assert_eq!(end["error"]["kind"], "internal");
     assert_eq!(runtime.child.wait().unwrap().code(), Some(1));
+}
+
+#[test]
+fn tool_arguments_are_limited() {
+    let code = "try { await tools.tasks.get({ task_id: 'x'.repeat(2 * 1024 * 1024) }) } catch (error) { text(error.message) }";
+    let run = run_with(code, tasks(), json!({}), &[], task_tool);
+    assert_eq!(run.text, ["A tool's argument can be at most 1 MiB of JSON"]);
+    assert!(run.calls.is_empty());
 }
