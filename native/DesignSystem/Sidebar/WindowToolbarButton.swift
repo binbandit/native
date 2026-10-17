@@ -60,7 +60,7 @@ private struct WindowToolbarButtonStyle: ButtonStyle {
         configuration.label
             .foregroundStyle(isHovered || isActive ? .dsTextPrimary : .dsTextSecondary)
             .opacity(configuration.isPressed ? 0.6 : 1)
-            .contentShape(.focusEffect, RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous))
+            .dsFocusShape(RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous))
     }
 }
 

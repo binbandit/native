@@ -40,7 +40,7 @@ private struct UpdateButtonStyle: ButtonStyle {
         let shape = RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous)
         configuration.label
             .background(configuration.isPressed ? .dsAccentPressed : isHovered ? .dsAccentHover : .dsAccent, in: shape)
-            .contentShape(.focusEffect, shape)
+            .dsFocusShape(shape)
     }
 }
 

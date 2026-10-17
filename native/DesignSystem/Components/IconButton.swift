@@ -79,7 +79,7 @@ private struct IconButtonStyle: ButtonStyle {
         configuration.label
             .foregroundStyle(isHighlighted ? .dsTextPrimary : .dsTextSecondary)
             .background(configuration.isPressed ? .dsPressed : isActive ? .dsSelected : isHovered ? .dsHover : .clear, in: shape)
-            .contentShape(.focusEffect, shape)
+            .dsFocusShape(shape)
     }
 }
 

@@ -39,7 +39,8 @@ struct GitNoticeBanner: View {
                 }
             }
             .tracking(DS.Tracking.tight)
-            .fixedSize(horizontal: false, vertical: true)
+            // No vertical fixedSize: inside the inspector's split view it makes the column's minimum
+            // height that of the text wrapped at zero width, which grows the window without end.
             .frame(maxWidth: .infinity, alignment: .leading)
             if let onDismiss {
                 IconButton("Dismiss", systemImage: "xmark", action: onDismiss)
