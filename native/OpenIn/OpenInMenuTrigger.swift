@@ -29,8 +29,9 @@ final class OpenInMenuTriggerView: NSView {
     var onHoverChange: (Bool) -> Void = { _ in }
     var onOpenChange: (Bool) -> Void = { _ in }
 
-    /// Matches the gap Conductor leaves between a trigger and its popover (`sideOffset` 4px).
-    private static let menuGap = DS.Space.xs
+    /// How far the menu's top edge sits below the control: Conductor's popover offset (4px), plus
+    /// the padding NSMenu draws above the item placed at the pop-up location (5pt on macOS 27).
+    private static let menuOffset = DS.Space.xs + 5
 
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
@@ -83,7 +84,7 @@ final class OpenInMenuTriggerView: NSView {
         onOpenChange(true)
         let location = NSPoint(
             x: bounds.maxX - menu.size.width,
-            y: isFlipped ? bounds.maxY + Self.menuGap : bounds.minY - Self.menuGap
+            y: isFlipped ? bounds.maxY + Self.menuOffset : bounds.minY - Self.menuOffset
         )
         menu.popUp(positioning: nil, at: location, in: self)
         onOpenChange(false)

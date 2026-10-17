@@ -1,1 +1,81 @@
-print("native-host")
+import Darwin
+import Foundation
+import NativeHost
+import NativeHostMac
+import NativeHostProtocol
+
+// A Native host for development, tests and other machines. The app embeds its own helper; this is
+// the same host without the app bundle around it.
+//
+//   native-host [serve] [--home <dir>] [--channel <name>] [--inherit-environment]
+//   native-host attach [--home <dir>] [--channel <name>]
+//
+// `attach` bridges stdin and stdout to a running host's socket, which is how a client reaches a host
+// on another machine: `ssh <machine> native-host attach`.
+
+signal(SIGPIPE, SIG_IGN)
+
+let given = Array(CommandLine.arguments.dropFirst())
+let command = given.first.flatMap { $0.hasPrefix("-") ? nil : $0 } ?? "serve"
+let arguments = given.first == command ? Array(given.dropFirst()) : given
+
+func option(_ name: String, in arguments: [String]) -> String? {
+    guard let index = arguments.firstIndex(of: name), arguments.indices.contains(index + 1) else { return nil }
+    return arguments[index + 1]
+}
+
+func fail(_ message: String, status: Int32 = 1) -> Never {
+    FileHandle.standardError.write(Data("native-host: \(message)\n".utf8))
+    exit(status)
+}
+
+let channel = option("--channel", in: arguments) ?? ""
+let location = option("--home", in: arguments).map { HostLocation(directory: URL(filePath: $0, directoryHint: .isDirectory), channel: channel) }
+    ?? HostLocation.standard(channel: channel)
+
+switch command {
+case "serve":
+    let info = PeerInfo(name: "native-host", version: "1.0", build: "dev")
+    let configuration = MacHost.configuration(location: location, info: info, inheritEnvironment: arguments.contains("--inherit-environment"))
+    Task { @HostActor in
+        do {
+            _ = try HostMain.start(configuration, verifier: CodeSignatureVerifier())
+            FileHandle.standardError.write(Data("native-host: serving at \(location.socketPath)\n".utf8))
+        } catch let error as HostMain.Failure {
+            if case .alreadyRunning = error { fail(error.localizedDescription, status: 0) }
+            fail(error.localizedDescription)
+        } catch {
+            fail(error.localizedDescription)
+        }
+    }
+    dispatchMain()
+
+case "attach":
+    let socket: Int32
+    do {
+        socket = try UnixSocket.connect(to: location.socketPath)
+    } catch {
+        fail("no host at \(location.socketPath): \(error.localizedDescription)")
+    }
+    let remote = ByteChannel.socket(socket, label: "attach")
+    let local = ByteChannel(reading: dup(STDIN_FILENO), writing: dup(STDOUT_FILENO), label: "stdio")
+    // Either side closing ends the bridge, once what the other side has to say got through.
+    Task {
+        for await chunk in remote.incoming() {
+            local.write(chunk)
+        }
+        await local.flushed()
+        exit(0)
+    }
+    Task {
+        for await chunk in local.incoming() {
+            remote.write(chunk)
+        }
+        await remote.flushed()
+        exit(0)
+    }
+    dispatchMain()
+
+default:
+    fail("unknown command \(command); use serve or attach")
+}

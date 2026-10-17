@@ -27,6 +27,7 @@ public final class ByteChannel: ByteStream {
         var backlog = 0
         var isClosed = false
         var onClose: [@Sendable () -> Void] = []
+        var flushWaiters: [CheckedContinuation<Void, Never>] = []
     }
 
     /// Takes ownership of both descriptors and closes them when the channel closes. They may not be
@@ -79,12 +80,28 @@ public final class ByteChannel: ByteStream {
         let bytes = data.withUnsafeBytes { DispatchData(bytes: $0) }
         writer.write(offset: 0, data: bytes, queue: queue) { [weak self] done, _, error in
             guard done, let self else { return }
-            state.withLock { $0.backlog -= count }
+            let waiters = state.withLock { state in
+                state.backlog -= count
+                defer { if state.backlog == 0 { state.flushWaiters = [] } }
+                return state.backlog == 0 ? state.flushWaiters : []
+            }
+            for waiter in waiters { waiter.resume() }
             if error != 0 {
                 close(discardingPendingWrites: true)
             }
         }
         return true
+    }
+
+    /// Returns once everything written so far has gone out (or failed to).
+    public func flushed() async {
+        await withCheckedContinuation { continuation in
+            let isEmpty = state.withLock { state in
+                if state.backlog > 0 { state.flushWaiters.append(continuation) }
+                return state.backlog == 0
+            }
+            if isEmpty { continuation.resume() }
+        }
     }
 
     public var isClosed: Bool {

@@ -76,8 +76,12 @@ struct MCPHandshake {
                 throw .failure(.listTools, failure.message, exitStatus: failure.exitStatus)
             }
             for definition in result["tools"]?.arrayValue ?? [] {
-                bytes += Self.encodedSize(of: definition)
-                if let tool = Self.tool(from: definition) { tools.append(tool) }
+                let size = Self.encodedSize(of: definition)
+                bytes += size
+                if var tool = Self.tool(from: definition) {
+                    tool.definitionBytes = size
+                    tools.append(tool)
+                }
             }
             cursor = result["nextCursor"]?.stringValue
             if cursor == nil { break }

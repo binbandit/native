@@ -74,14 +74,20 @@ public struct MCPToolInfo: Hashable, Sendable, Identifiable {
     /// The server's `readOnlyHint` and `destructiveHint` annotations, when it gives them.
     public var isReadOnly: Bool?
     public var isDestructive: Bool?
+    /// UTF-8 size of the tool's definition as sent: what it adds to an agent's context.
+    public var definitionBytes: Int
 
-    public init(name: String, title: String? = nil, description: String? = nil, parameters: [String] = [], isReadOnly: Bool? = nil, isDestructive: Bool? = nil) {
+    public init(
+        name: String, title: String? = nil, description: String? = nil, parameters: [String] = [],
+        isReadOnly: Bool? = nil, isDestructive: Bool? = nil, definitionBytes: Int = 0
+    ) {
         self.name = name
         self.title = title
         self.description = description
         self.parameters = parameters
         self.isReadOnly = isReadOnly
         self.isDestructive = isDestructive
+        self.definitionBytes = definitionBytes
     }
 
     public var id: String { name }
