@@ -16,11 +16,15 @@ struct ChecksButton: View {
         } label: {
             ChecksIndicator(checks: checks)
                 .padding(DS.Space.xxs)
-                .background(isHovered ? .dsHover : .clear, in: RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous))
+                .background(
+                    isHovered ? .dsHover : .clear,
+                    in: RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous)
+                )
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)
         .trackHover($isHovered)
-        .help(ChecksIndicator.summary(checks) + (checks.state == .failing ? "\nOpen the failing check" : "\nOpen checks"))
+        .help(
+            ChecksIndicator.summary(checks) + (checks.state == .failing ? "\nOpen the failing check" : "\nOpen checks"))
     }
 }

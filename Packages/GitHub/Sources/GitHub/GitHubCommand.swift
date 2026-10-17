@@ -14,7 +14,10 @@ public struct GitHubCommand: Sendable, Hashable {
     public var isMutating: Bool
     public var timeout: Duration
 
-    init(_ arguments: [String], in location: RepositoryLocation? = nil, input: Data? = nil, isMutating: Bool = false, timeout: Duration = .seconds(30)) {
+    init(
+        _ arguments: [String], in location: RepositoryLocation? = nil, input: Data? = nil, isMutating: Bool = false,
+        timeout: Duration = .seconds(30)
+    ) {
         self.arguments = arguments
         self.input = input
         self.isMutating = isMutating
@@ -57,11 +60,12 @@ extension GitHubCommand {
     }
 
     public static func search(_ search: PullRequestSearch) -> GitHubCommand {
-        let involvement = switch search.involvement {
-        case .author: "--author=\(search.user)"
-        case .reviewRequested: "--review-requested=\(search.user)"
-        case .assignee: "--assignee=\(search.user)"
-        }
+        let involvement =
+            switch search.involvement {
+            case .author: "--author=\(search.user)"
+            case .reviewRequested: "--review-requested=\(search.user)"
+            case .assignee: "--assignee=\(search.user)"
+            }
         var arguments = [
             "search", "prs", involvement,
             "--state=\(search.state.rawValue)",
@@ -91,11 +95,14 @@ extension GitHubCommand {
             var variables: Variables
         }
         // Encoding plain strings can't fail.
-        let body = (try? JSONEncoder().encode(Request(query: PullRequestStatus.query, variables: .init(ids: ids)))) ?? Data()
+        let body =
+            (try? JSONEncoder().encode(Request(query: PullRequestStatus.query, variables: .init(ids: ids)))) ?? Data()
         return GitHubCommand(["api", "graphql", "--input", "-"], input: body)
     }
 
-    public static func listPullRequests(_ filter: PullRequestListFilter, in location: RepositoryLocation) -> GitHubCommand {
+    public static func listPullRequests(
+        _ filter: PullRequestListFilter, in location: RepositoryLocation
+    ) -> GitHubCommand {
         var arguments = ["pr", "list", "--state=\(filter.state.rawValue)", "--limit=\(filter.limit)"]
         if let author = filter.author { arguments.append("--author=\(author)") }
         if let head = filter.head { arguments.append("--head=\(head)") }
@@ -104,7 +111,9 @@ extension GitHubCommand {
         return GitHubCommand(arguments, in: location)
     }
 
-    public static func viewPullRequest(_ pullRequest: PullRequestSelector, in location: RepositoryLocation) -> GitHubCommand {
+    public static func viewPullRequest(
+        _ pullRequest: PullRequestSelector, in location: RepositoryLocation
+    ) -> GitHubCommand {
         GitHubCommand(["pr", "view", pullRequest.argument, "--json", PullRequest.fields], in: location)
     }
 
@@ -113,7 +122,9 @@ extension GitHubCommand {
     }
 
     /// Opens the pull request in the browser gh is configured with.
-    public static func openInBrowser(_ pullRequest: PullRequestSelector, in location: RepositoryLocation) -> GitHubCommand {
+    public static func openInBrowser(
+        _ pullRequest: PullRequestSelector, in location: RepositoryLocation
+    ) -> GitHubCommand {
         GitHubCommand(["pr", "view", pullRequest.argument, "--web"], in: location)
     }
 }
@@ -127,13 +138,17 @@ extension GitHubCommand {
         var arguments = ["pr", "create", "--title=\(pullRequest.title)", "--body-file=-", "--head=\(pullRequest.head)"]
         if let base = pullRequest.base { arguments.append("--base=\(base)") }
         if pullRequest.isDraft { arguments.append("--draft") }
-        return GitHubCommand(arguments, in: .directory(directory), input: Data(pullRequest.body.utf8), isMutating: true, timeout: .seconds(120))
+        return GitHubCommand(
+            arguments, in: .directory(directory), input: Data(pullRequest.body.utf8), isMutating: true,
+            timeout: .seconds(120))
     }
 
     /// Changes the working tree of `directory`, so use a fresh worktree: gh refuses to switch over
     /// uncommitted changes, and git won't check the head branch out twice, so pass `localBranch`
     /// or `detach` when it may be checked out elsewhere.
-    public static func checkout(_ pullRequest: PullRequestSelector, in directory: URL, localBranch: String? = nil, detach: Bool = false) -> GitHubCommand {
+    public static func checkout(
+        _ pullRequest: PullRequestSelector, in directory: URL, localBranch: String? = nil, detach: Bool = false
+    ) -> GitHubCommand {
         var arguments = ["pr", "checkout", pullRequest.argument]
         if let localBranch { arguments.append("--branch=\(localBranch)") }
         if detach { arguments.append("--detach") }
@@ -142,7 +157,10 @@ extension GitHubCommand {
 
     /// Pass the head commit the user saw as `matchHeadCommit`, so a push that lands in between
     /// isn't merged unseen; and a `.remote` location, so `deleteBranch` leaves local checkouts alone.
-    public static func merge(_ pullRequest: PullRequestSelector, in location: RepositoryLocation, method: MergeMethod, deleteBranch: Bool = false, matchHeadCommit: String? = nil) -> GitHubCommand {
+    public static func merge(
+        _ pullRequest: PullRequestSelector, in location: RepositoryLocation, method: MergeMethod,
+        deleteBranch: Bool = false, matchHeadCommit: String? = nil
+    ) -> GitHubCommand {
         var arguments = ["pr", "merge", pullRequest.argument, "--\(method.rawValue)"]
         if deleteBranch { arguments.append("--delete-branch") }
         if let matchHeadCommit { arguments.append("--match-head-commit=\(matchHeadCommit)") }

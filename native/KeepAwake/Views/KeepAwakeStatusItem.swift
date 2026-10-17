@@ -44,18 +44,15 @@ private struct KeepAwakeSegment: View {
         .buttonStyle(.plain)
         .menuIndicator(.hidden)
         .fixedSize()
-        .help("Keep Mac awake: \(description)")
+        .help(description)
         .accessibilityLabel("Keep Mac awake")
         .accessibilityValue("\(controller.mode.title). \(description)")
     }
 
-    /// The mode, or while a timer runs, the time left on it ("1h 24m"), updated each minute.
-    @ViewBuilder
-    private var label: some View {
+    /// The mode, or while a timer runs, when it ends ("Until 5:40 PM").
+    private var label: Text {
         if let until = controller.awakeUntil {
-            TimelineView(.periodic(from: .now, by: 60)) { context in
-                Text(Duration.seconds(max(until.timeIntervalSince(context.date), 0)).formatted(.units(allowed: [.hours, .minutes], width: .narrow)))
-            }
+            Text("Until \(DSFormat.time(until, now: .now))")
         } else {
             Text(controller.mode.shortTitle)
         }

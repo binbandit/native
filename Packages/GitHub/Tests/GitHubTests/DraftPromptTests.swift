@@ -1,4 +1,5 @@
 import Testing
+
 @testable import GitHub
 
 struct DraftPromptTests {
@@ -9,7 +10,8 @@ struct DraftPromptTests {
         """
 
     @Test func smallMaterialIsIncludedWhole() {
-        let prompt = PullRequestDraftPrompt(head: "fix-button-cursors", base: "main", commits: commits, diff: "--- a/x\n+++ b/x\n+cursor: pointer;")
+        let prompt = PullRequestDraftPrompt(
+            head: "fix-button-cursors", base: "main", commits: commits, diff: "--- a/x\n+++ b/x\n+cursor: pointer;")
         let text = prompt.text(characterBudget: 4_000)
 
         #expect(text.hasPrefix("Branch: fix-button-cursors (into main)"))
@@ -42,7 +44,8 @@ struct DraftPromptTests {
     }
 
     @Test func templateIsPassedAlong() {
-        let text = PullRequestDraftPrompt(head: "h", commits: "c", template: "## Summary\n\n## Testing").text(characterBudget: 2_000)
+        let text = PullRequestDraftPrompt(head: "h", commits: "c", template: "## Summary\n\n## Testing").text(
+            characterBudget: 2_000)
         #expect(text.contains("Follow this pull request template:\n## Summary"))
     }
 }

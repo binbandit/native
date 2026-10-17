@@ -19,7 +19,10 @@ public struct PullRequestCheck: Sendable, Hashable, Decodable {
     public var startedAt: Date?
     public var completedAt: Date?
 
-    public init(name: String, state: String, bucket: Bucket?, link: URL? = nil, workflow: String? = nil, description: String? = nil, event: String? = nil, startedAt: Date? = nil, completedAt: Date? = nil) {
+    public init(
+        name: String, state: String, bucket: Bucket?, link: URL? = nil, workflow: String? = nil,
+        description: String? = nil, event: String? = nil, startedAt: Date? = nil, completedAt: Date? = nil
+    ) {
         self.name = name
         self.state = state
         self.bucket = bucket

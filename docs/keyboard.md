@@ -28,6 +28,13 @@ don't support steering queue it instead, and the hint says so.
 The composer always shows the current mapping as a hint while the agent works, e.g.
 "↩ Queue · ⌘↩ Steer".
 
+## Commit popover
+
+| Keys | Action |
+| --- | --- |
+| ⌘Return | Commit the selected files |
+| Escape | Close the popover |
+
 ## Slash commands
 
 | Keys | Action |

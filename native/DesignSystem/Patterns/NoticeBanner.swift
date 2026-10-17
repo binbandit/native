@@ -1,0 +1,113 @@
+import SwiftUI
+
+/// The one inline notice: a tinted glyph, a title, up to two supporting lines and trailing
+/// actions, on a raised surface outlined in the tone. `ErrorState` and `LimitBanner` are built on
+/// it; use it directly for other notices (offline, sign-in expired) rather than inventing one.
+public struct NoticeBanner<Actions: View>: View {
+    public enum Tone: Sendable {
+        case info, success, warning, danger
+
+        var color: Color {
+            switch self {
+            case .info: .dsInfo
+            case .success: .dsSuccess
+            case .warning: .dsWarning
+            case .danger: .dsDanger
+            }
+        }
+
+        var defaultSymbol: String {
+            switch self {
+            case .info: "info.circle"
+            case .success: "checkmark.circle"
+            case .warning: "exclamationmark.triangle"
+            case .danger: "exclamationmark.octagon"
+            }
+        }
+    }
+
+    let tone: Tone
+    let systemImage: String?
+    let title: String
+    let detail: String?
+    let footnote: String?
+    let actions: Actions
+
+    /// - Parameters:
+    ///   - detail: The main supporting line, in secondary text.
+    ///   - footnote: A quieter line, e.g. the provider's own message.
+    ///   - actions: At most one primary button, plus a dismiss if the notice can go away.
+    public init(
+        tone: Tone,
+        systemImage: String? = nil,
+        title: String,
+        detail: String? = nil,
+        footnote: String? = nil,
+        @ViewBuilder actions: () -> Actions
+    ) {
+        self.tone = tone
+        self.systemImage = systemImage
+        self.title = title
+        self.detail = detail
+        self.footnote = footnote
+        self.actions = actions()
+    }
+
+    public var body: some View {
+        let shape = RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous)
+        HStack(alignment: .top, spacing: DS.Space.md) {
+            Image(systemName: systemImage ?? tone.defaultSymbol)
+                .font(.system(size: 13))
+                .foregroundStyle(tone.color)
+                .frame(width: DS.Size.rowLeading, height: 18)
+                .accessibilityHidden(true)
+
+            VStack(alignment: .leading, spacing: DS.Space.xxs) {
+                Text(title)
+                    .font(.dsBodyMedium)
+                    .foregroundStyle(.dsTextPrimary)
+                if let detail {
+                    Text(detail)
+                        .font(.dsBody)
+                        .foregroundStyle(.dsTextSecondary)
+                }
+                if let footnote {
+                    Text(footnote)
+                        .font(.dsCaption)
+                        .foregroundStyle(.dsTextTertiary)
+                }
+            }
+            .tracking(DS.Tracking.tight)
+            .textSelection(.enabled)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .fixedSize(horizontal: false, vertical: true)
+
+            HStack(spacing: DS.Space.xs) {
+                actions
+            }
+        }
+        .padding(.vertical, DS.Space.md)
+        .padding(.horizontal, DS.Space.lg)
+        .background(.dsSurfaceRaised, in: shape)
+        .overlay { shape.strokeBorder(tone.color.opacity(0.35), lineWidth: 1) }
+        .accessibilityElement(children: .contain)
+    }
+}
+
+extension NoticeBanner where Actions == EmptyView {
+    public init(tone: Tone, systemImage: String? = nil, title: String, detail: String? = nil, footnote: String? = nil) {
+        self.init(tone: tone, systemImage: systemImage, title: title, detail: detail, footnote: footnote) { EmptyView() }
+    }
+}
+
+#Preview("Notice banner") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.md) {
+            NoticeBanner(tone: .info, title: "You're offline", detail: "Your message is queued and sends when the network returns.")
+            NoticeBanner(tone: .warning, title: "Claude Code sign-in expired", detail: "Sign in to keep going; your draft stays put.") {
+                Button("Sign In") {}.buttonStyle(.ds(.primary))
+            }
+        }
+        .frame(width: 520)
+    }
+}

@@ -42,7 +42,9 @@ struct PullRequestBadge: View {
             }
             .padding(.horizontal, DS.Space.xxs)
             .frame(height: DS.Size.rowLeading)
-            .background(isHovered ? .dsHover : .clear, in: RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous))
+            .background(
+                isHovered ? .dsHover : .clear, in: RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous)
+            )
             .contentShape(.rect)
         }
         .buttonStyle(.plain)

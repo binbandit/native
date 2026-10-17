@@ -1,4 +1,5 @@
 import Foundation
+
 @testable import GitHub
 
 /// JSON captured from `gh` on a real account (read-only commands), in `Fixtures/`.

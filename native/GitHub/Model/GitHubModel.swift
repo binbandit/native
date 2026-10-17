@@ -47,7 +47,10 @@ final class GitHubModel {
     /// - Parameters:
     ///   - environment: The login-shell environment of the machine gh runs on; `true` reads it again.
     ///   - runner: Runs gh on the machine that hosts the projects.
-    init(environment: @escaping @MainActor (_ refresh: Bool) async -> [String: String], runner: any CommandRunner = LocalCommandRunner()) {
+    init(
+        environment: @escaping @MainActor (_ refresh: Bool) async -> [String: String],
+        runner: any CommandRunner = LocalCommandRunner()
+    ) {
         self.environment = environment
         self.runner = runner
     }
@@ -217,7 +220,8 @@ final class GitHubModel {
         let cli = await cli()
         do {
             let pullRequest = try await cli.pullRequest(forBranch: branch.branch, in: .directory(branch.directory))
-            branchPullRequests[branch] = BranchPullRequest(pullRequest: pullRequest.map(PullRequestSummary.init), fetchedAt: .now)
+            branchPullRequests[branch] = BranchPullRequest(
+                pullRequest: pullRequest.map(PullRequestSummary.init), fetchedAt: .now)
         } catch .notARepository, .notFound {
             branchPullRequests[branch] = BranchPullRequest(pullRequest: nil, fetchedAt: .now)
         } catch {
@@ -249,7 +253,9 @@ extension GitHubModel {
     /// Shows fixed data and never runs gh, for previews and render checks.
     static func preview(
         inbox: PullRequestInbox? = nil,
-        availability: GitHubAvailability? = .ready(accounts: [AuthStatus.Account(host: "github.com", login: "binbandit", active: true, state: .success)]),
+        availability: GitHubAvailability? = .ready(accounts: [
+            AuthStatus.Account(host: "github.com", login: "binbandit", active: true, state: .success)
+        ]),
         error: GitHubError? = nil,
         branches: [BranchReference: PullRequestSummary] = [:]
     ) -> GitHubModel {

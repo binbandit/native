@@ -169,30 +169,30 @@ final class UsageLimits {
 
     // MARK: - What sessions show
 
-    /// The banner for one of the provider's sessions, if its limit has anything to say there.
-    func notice(agent: AgentDefinition.ID, session: SessionID) -> LimitNotice? {
+    /// The provider's limit while it's in force, for places that show it whatever session is open:
+    /// the status bar, the sidebar.
+    func limitStatus(for agent: AgentDefinition.ID) -> LimitStatus? {
+        guard let limit = providers[agent], isInForce(limit) else { return nil }
+        return limit.limitStatus()
+    }
+
+    /// The limit as it applies to one of the provider's sessions, for that session's banner: with
+    /// the resume it can offer, and nothing once the user dismissed or snoozed a warning.
+    func limitStatus(agent: AgentDefinition.ID, session: SessionID) -> LimitStatus? {
         guard let limit = providers[agent], isInForce(limit) else { return nil }
         let limited = sessions[LimitTarget.ID(agent: agent, session: session)]
-        let kind: LimitNotice.Kind
         switch limit.status {
         case .warning:
             guard !limit.isDismissed, !limit.isSnoozed else { return nil }
-            kind = .warning
+            return limit.limitStatus()
         case .reached:
             guard !limit.isDismissed || limited != nil else { return nil }
-            kind = limit.isSnoozed ? .snoozed : .reached
-        }
-        let resume: LimitNotice.Resume
-        if let limited, limit.status == .reached {
+            guard let limited else { return limit.limitStatus() }
             if let resumeAt = limited.resumeAt {
-                resume = .scheduled(resumeAt, prompt: limited.work.resumePrompt)
-            } else {
-                resume = limit.resetsAt == nil ? .unavailable : .offered
+                return limit.limitStatus(resume: .scheduled(resumeAt))
             }
-        } else {
-            resume = .notNeeded
+            return limit.limitStatus(resume: limit.resetsAt == nil ? .unavailable : .offered)
         }
-        return LimitNotice(limit: limit, kind: kind, resume: resume)
     }
 
     // MARK: - Due work

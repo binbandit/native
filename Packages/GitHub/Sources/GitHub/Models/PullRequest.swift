@@ -51,8 +51,8 @@ public struct PullRequest: Sendable, Hashable, Decodable, Identifiable {
 
     private enum CodingKeys: String, CodingKey {
         case number, title, body, url, state, isDraft, author, headRefName, baseRefName, headRefOid,
-             reviewDecision, statusCheckRollup, latestReviews, mergeable, mergeStateStatus, labels,
-             additions, deletions, createdAt, updatedAt, mergedAt, closedAt, isCrossRepository
+            reviewDecision, statusCheckRollup, latestReviews, mergeable, mergeStateStatus, labels,
+            additions, deletions, createdAt, updatedAt, mergedAt, closedAt, isCrossRepository
     }
 
     public init(from decoder: any Decoder) throws {

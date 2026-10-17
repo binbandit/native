@@ -28,7 +28,7 @@ public enum GitHubError: Error, Sendable, Hashable {
     public var stderr: String? {
         switch self {
         case .notAuthenticated(let message), .rateLimited(let message), .offline(let message),
-             .notARepository(let message), .notFound(let message), .failed(_, let message):
+            .notARepository(let message), .notFound(let message), .failed(_, let message):
             message
         case .notInstalled, .timedOut, .cancelled, .unexpectedOutput:
             nil
@@ -61,7 +61,9 @@ public enum GitHubError: Error, Sendable, Hashable {
             return .notARepository(message)
         }
         // gh exits with 4 when a command needs a login it doesn't have.
-        if exitCode == 4 || mentions("gh auth login", "bad credentials", "http 401", "authentication required", "token has expired") {
+        if exitCode == 4
+            || mentions("gh auth login", "bad credentials", "http 401", "authentication required", "token has expired")
+        {
             return .notAuthenticated(message)
         }
         if mentions("rate limit", "http 429", "abuse detection") {

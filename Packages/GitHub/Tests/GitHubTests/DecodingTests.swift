@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import GitHub
 
 struct DecodingTests {
@@ -138,7 +139,8 @@ struct DecodingTests {
     }
 
     @Test func unresolvedStatusNodesAreSkipped() throws {
-        let json = #"{"data":{"nodes":[null,{},{"id":"PR_1","headRefName":"a","baseRefName":"main","reviewDecision":"SOMETHING_NEW","mergeable":"UNKNOWN","additions":1,"deletions":0,"commits":{"nodes":[{"commit":{"statusCheckRollup":null}}]}}]}}"#
+        let json =
+            #"{"data":{"nodes":[null,{},{"id":"PR_1","headRefName":"a","baseRefName":"main","reviewDecision":"SOMETHING_NEW","mergeable":"UNKNOWN","additions":1,"deletions":0,"commits":{"nodes":[{"commit":{"statusCheckRollup":null}}]}}]}}"#
         let response = try GitHubJSON.decode(PullRequestStatus.Response.self, from: Data(json.utf8))
         let statuses = response.data.nodes.compactMap { $0?.status }
 
@@ -150,7 +152,8 @@ struct DecodingTests {
     @Test func summaryFromSearchAndStatus() throws {
         let results = try Fixtures.decode([PullRequestSearchResult].self, from: "search-authored")
         let response = try Fixtures.decode(PullRequestStatus.Response.self, from: "graphql-pull-request-status")
-        let statuses = Dictionary(uniqueKeysWithValues: response.data.nodes.compactMap { $0?.status }.map { ($0.id, $0) })
+        let statuses = Dictionary(
+            uniqueKeysWithValues: response.data.nodes.compactMap { $0?.status }.map { ($0.id, $0) })
         let result = try #require(results.first)
 
         let summary = PullRequestSummary(result, status: statuses[result.id])

@@ -14,7 +14,7 @@ struct ContextContributors: View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
             ForEach(sections) { section in
                 VStack(alignment: .leading, spacing: 0) {
-                    ContributorSectionHeader(title: section.title, tokens: TokenFormat.compact(total(of: section)))
+                    ContributorSectionHeader(title: section.title, tokens: DSFormat.tokens(total(of: section)))
                     rows(for: section)
                 }
             }
@@ -30,13 +30,13 @@ struct ContextContributors: View {
             }
         case .memoryFiles(let files):
             ForEach(files, id: \.path) { file in
-                ContributorRow(title: URL(filePath: file.path).lastPathComponent, detail: file.type, tokens: TokenFormat.compact(file.tokens))
+                ContributorRow(title: URL(filePath: file.path).lastPathComponent, detail: file.type, tokens: DSFormat.tokens(file.tokens))
                     .help(file.path)
             }
         case .skills(let skills):
             let shown = showsAllSkills ? skills : Array(skills.prefix(Self.skillPreviewCount))
             ForEach(shown, id: \.name) { skill in
-                ContributorRow(title: skill.name, detail: skill.source, tokens: TokenFormat.compact(skill.tokens))
+                ContributorRow(title: skill.name, detail: skill.source, tokens: skill.tokens.formatted)
             }
             if !showsAllSkills, skills.count > Self.skillPreviewCount {
                 ShowAllButton(title: "Show all \(skills.count) skills") {
@@ -45,7 +45,7 @@ struct ContextContributors: View {
             }
         case .agents(let agents):
             ForEach(agents, id: \.type) { agent in
-                ContributorRow(title: agent.type, detail: agent.source, tokens: TokenFormat.compact(agent.tokens))
+                ContributorRow(title: agent.type, detail: agent.source, tokens: DSFormat.tokens(agent.tokens))
             }
         }
     }

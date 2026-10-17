@@ -35,7 +35,9 @@ public struct AuthStatus: Sendable, Hashable, Decodable {
         /// Comma-separated OAuth scopes.
         public var scopes: String?
 
-        public init(host: String, login: String, active: Bool, state: State?, tokenSource: String? = nil, scopes: String? = nil) {
+        public init(
+            host: String, login: String, active: Bool, state: State?, tokenSource: String? = nil, scopes: String? = nil
+        ) {
             self.host = host
             self.login = login
             self.active = active

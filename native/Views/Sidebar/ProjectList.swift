@@ -38,8 +38,8 @@ struct ProjectList<TaskAccessory: View>: View {
         }
         .onChange(of: model.selection) {
             guard let selection = model.selection,
-                  let project = model.sessionList.first(where: { $0.id == selection })?.project,
-                  collapsed.contains(project)
+                let project = model.sessionList.first(where: { $0.id == selection })?.project,
+                collapsed.contains(project)
             else { return }
             withAnimation(.dsDisclosure) {
                 collapsed.set(project, collapsed: false)
@@ -66,7 +66,8 @@ private struct AddProjectPrompt: View {
                 .contentShape(.rect)
                 .overlay {
                     RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
-                        .strokeBorder(.dsSeparator, style: StrokeStyle(lineWidth: 1, dash: [DS.Space.xs, DS.Space.xxs]))
+                        .strokeBorder(
+                            .dsSeparator, style: StrokeStyle(lineWidth: 1, dash: [DS.Space.xs, DS.Space.xxs]))
                 }
         }
         .buttonStyle(SidebarRowButtonStyle())

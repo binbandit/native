@@ -15,18 +15,13 @@ extension Repository {
 
         // A scratch copy of the index, so neither tree touches the real one; starting from a copy
         // also means `add` only rehashes what changed.
-        let scratch = FileManager.default.temporaryDirectory.appending(
-            path: "native-checkpoint-\(UUID().uuidString).index")
-        defer { try? FileManager.default.removeItem(at: scratch) }
-        let indexPath = try await run(["rev-parse", "--path-format=absolute", "--git-path", "index"], readOnly: true)
-            .text.trimmingCharacters(in: .whitespacesAndNewlines)
-        try? FileManager.default.copyItem(at: URL(filePath: indexPath), to: scratch)
-        let scratchEnvironment = ["GIT_INDEX_FILE": scratch.path(percentEncoded: false)]
-        // An index with conflicts has no tree; the working tree alone is still worth saving.
-        let indexTree = try await run(["write-tree"], environment: scratchEnvironment, acceptingStatus: [0, 128])
-        try await run(["add", "--all"], environment: scratchEnvironment)
-        let workingTree = try await run(["write-tree"], environment: scratchEnvironment).text.trimmingCharacters(
-            in: .whitespacesAndNewlines)
+        let (indexTree, workingTree) = try await withScratchIndex(copyingIndex: true) { scratch throws(GitError) in
+            // An index with conflicts has no tree; the working tree alone is still worth saving.
+            let indexTree = try await run(["write-tree"], environment: scratch, acceptingStatus: [0, 128])
+            try await run(["add", "--all"], environment: scratch)
+            let workingTree = try await run(["write-tree"], environment: scratch)
+            return (indexTree, workingTree.text.trimmingCharacters(in: .whitespacesAndNewlines))
+        }
 
         var parents = branch.commit.map { [$0] } ?? []
         if let head = branch.commit, indexTree.status == 0 {

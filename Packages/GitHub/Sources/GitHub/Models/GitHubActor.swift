@@ -20,7 +20,8 @@ public struct GitHubActor: Sendable, Hashable, Decodable {
         // `gh search` reports apps with `is_bot: false`, but `type: "Bot"` and a `[bot]` login;
         // `gh pr view` reports them as `app/<name>`.
         let type = try container.decodeIfPresent(String.self, forKey: .type)
-        isBot = try container.decodeIfPresent(Bool.self, forKey: .isBot) == true
+        isBot =
+            try container.decodeIfPresent(Bool.self, forKey: .isBot) == true
             || type == "Bot" || login.hasSuffix("[bot]") || login.hasPrefix("app/")
     }
 }

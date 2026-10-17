@@ -77,6 +77,7 @@ struct AgentDetailsView: View {
 
     private var detailLine: String {
         let version = runtime.info.map { [$0.displayName, $0.version].compactMap(\.self).joined(separator: " ") }
-        return [health.summary(for: runtime), health == .ready ? nil : version].compactMap(\.self).joined(separator: " · ")
+        return [health.summary(for: runtime), health == .ready ? nil : version].compactMap(\.self).joined(
+            separator: " · ")
     }
 }

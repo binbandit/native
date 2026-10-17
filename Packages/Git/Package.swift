@@ -7,8 +7,11 @@ let package = Package(
     products: [
         .library(name: "Git", targets: ["Git"])
     ],
+    dependencies: [
+        .package(path: "../Exec")
+    ],
     targets: [
-        .target(name: "Git"),
+        .target(name: "Git", dependencies: [.product(name: "Exec", package: "Exec")]),
         .testTarget(name: "GitTests", dependencies: ["Git"]),
     ]
 )

@@ -1,21 +1,26 @@
 import Foundation
 import Testing
+
 @testable import GitHub
 
 struct PullRequestFilterTests {
     /// The real inbox captured from gh: authored and review-requested searches, enriched.
     func inbox() throws -> PullRequestInbox {
         let response = try Fixtures.decode(PullRequestStatus.Response.self, from: "graphql-pull-request-status")
-        let statuses = Dictionary(uniqueKeysWithValues: response.data.nodes.compactMap { $0?.status }.map { ($0.id, $0) })
+        let statuses = Dictionary(
+            uniqueKeysWithValues: response.data.nodes.compactMap { $0?.status }.map { ($0.id, $0) })
         func section(_ name: String) throws -> [PullRequestSummary] {
-            try Fixtures.decode([PullRequestSearchResult].self, from: name).map { PullRequestSummary($0, status: statuses[$0.id]) }
+            try Fixtures.decode([PullRequestSearchResult].self, from: name).map {
+                PullRequestSummary($0, status: statuses[$0.id])
+            }
         }
         let authored = try section("search-authored")
         // An assignment that duplicates an authored pull request, and one that doesn't.
         var extra = try #require(authored.last)
         extra.url = URL(filePath: "/elsewhere/repo/pull/1")
         extra.repository = "elsewhere/repo"
-        return PullRequestInbox(authored: authored, reviewRequested: try section("search-review-requested"), assigned: [authored[0], extra])
+        return PullRequestInbox(
+            authored: authored, reviewRequested: try section("search-review-requested"), assigned: [authored[0], extra])
     }
 
     @Test func involvementPutsReviewsFirstAndDropsDuplicateAssignments() throws {

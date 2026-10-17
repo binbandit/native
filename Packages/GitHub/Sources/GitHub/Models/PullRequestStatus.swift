@@ -90,15 +90,17 @@ public struct PullRequestStatus: Sendable, Hashable, Decodable {
     /// counts from its per-state tallies.
     private static func summary(_ rollup: Rollup) -> CheckSummary {
         var counts = [CheckOutcome: Int]()
-        let tallies = (rollup.contexts?.checkRunCountsByState ?? []) + (rollup.contexts?.statusContextCountsByState ?? [])
+        let tallies =
+            (rollup.contexts?.checkRunCountsByState ?? []) + (rollup.contexts?.statusContextCountsByState ?? [])
         for tally in tallies where tally.count > 0 {
             counts[CheckOutcome(state: tally.state), default: 0] += tally.count
         }
-        let state: CheckSummary.State = switch rollup.state.uppercased() {
-        case "SUCCESS": .passing
-        case "FAILURE", "ERROR": .failing
-        default: .pending
-        }
+        let state: CheckSummary.State =
+            switch rollup.state.uppercased() {
+            case "SUCCESS": .passing
+            case "FAILURE", "ERROR": .failing
+            default: .pending
+            }
         return CheckSummary(
             state: state,
             passed: counts[.passed] ?? 0,

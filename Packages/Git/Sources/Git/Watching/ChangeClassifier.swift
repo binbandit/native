@@ -7,9 +7,9 @@ struct ChangeClassifier: Sendable {
     let commonDirectory: String
 
     init(repository: Repository) {
-        root = Repository.canonicalPath(repository.root)
-        gitDirectory = Repository.canonicalPath(repository.gitDirectory)
-        commonDirectory = Repository.canonicalPath(repository.commonDirectory)
+        root = Self.canonicalPath(repository.root)
+        gitDirectory = Self.canonicalPath(repository.gitDirectory)
+        commonDirectory = Self.canonicalPath(repository.commonDirectory)
     }
 
     init(root: String, gitDirectory: String, commonDirectory: String) {
@@ -25,6 +25,16 @@ struct ChangeClassifier: Sendable {
             paths.append(directory)
         }
         return paths
+    }
+
+    /// The path with symlinks resolved, e.g. `/tmp` to `/private/tmp`, as FSEvents reports it.
+    static func canonicalPath(_ url: URL) -> String {
+        let path = url.standardizedFileURL.path(percentEncoded: false)
+        guard let resolved = realpath(path, nil) else {
+            return path.hasSuffix("/") && path.count > 1 ? String(path.dropLast()) : path
+        }
+        defer { free(resolved) }
+        return String(cString: resolved)
     }
 
     func classify(_ paths: some Sequence<String>) -> RepositoryChange {

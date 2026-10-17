@@ -22,7 +22,8 @@ public struct PullRequestFilter: Sendable, Hashable {
     public var query: String
     public var includesDrafts: Bool
 
-    public init(scope: Scope = .all, grouping: Grouping = .involvement, query: String = "", includesDrafts: Bool = true) {
+    public init(scope: Scope = .all, grouping: Grouping = .involvement, query: String = "", includesDrafts: Bool = true)
+    {
         self.scope = scope
         self.grouping = grouping
         self.query = query
@@ -38,10 +39,11 @@ public struct PullRequestFilter: Sendable, Hashable {
         guard includesDrafts || !pullRequest.isDraft else { return false }
         let terms = terms
         guard !terms.isEmpty else { return true }
-        let haystack = [
-            pullRequest.title, pullRequest.reference, "#\(pullRequest.number)", pullRequest.headRefName ?? "",
-            pullRequest.author?.login ?? "",
-        ] + pullRequest.labels.map(\.name)
+        let haystack =
+            [
+                pullRequest.title, pullRequest.reference, "#\(pullRequest.number)", pullRequest.headRefName ?? "",
+                pullRequest.author?.login ?? "",
+            ] + pullRequest.labels.map(\.name)
         return terms.allSatisfy { term in haystack.contains { $0.localizedCaseInsensitiveContains(term) } }
     }
 
@@ -78,14 +80,16 @@ public struct PullRequestFilter: Sendable, Hashable {
     }
 
     private func repositoryGroups(in inbox: PullRequestInbox) -> [PullRequestGroup] {
-        let pullRequests: [PullRequestSummary] = switch scope {
-        case .all: inbox.all
-        case .authored: inbox.authored
-        case .reviewRequested: inbox.reviewRequested
-        case .assigned: inbox.assigned
-        }
+        let pullRequests: [PullRequestSummary] =
+            switch scope {
+            case .all: inbox.all
+            case .authored: inbox.authored
+            case .reviewRequested: inbox.reviewRequested
+            case .assigned: inbox.assigned
+            }
         let byRepository = Dictionary(grouping: pullRequests.filter(matches), by: \.repository)
-        return byRepository
+        return
+            byRepository
             .map { PullRequestGroup(.repository($0.key), $0.value.sorted { $0.updatedAt > $1.updatedAt }) }
             .sorted { lhs, rhs in
                 let lhsLatest = lhs.pullRequests.first?.updatedAt ?? .distantPast

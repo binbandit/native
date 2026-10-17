@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// A centered placeholder for an empty pane (the reference app's empty states: 20pt tertiary glyph, 13pt
-/// medium title, 12pt secondary message, actions below).
+/// The one empty state: what this is (the title), why it's empty (the message) and the one action
+/// that fills it, centered in the pane (the reference app's empty states: 20pt tertiary glyph, 13pt medium
+/// title, 12pt secondary message, the action below). Never leave a pane blank.
 public struct EmptyStateView<Actions: View>: View {
     let title: String
     let systemImage: String?
@@ -41,11 +42,22 @@ public struct EmptyStateView<Actions: View>: View {
             HStack(spacing: DS.Space.md) {
                 actions
             }
+            // The action is primary unless the caller styles it.
+            .buttonStyle(.ds(.primary))
             .padding(.top, DS.Space.xs)
         }
         .tracking(DS.Tracking.tight)
         .padding(DS.Space.xxl)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+}
+
+extension EmptyStateView where Actions == Button<Text> {
+    /// An empty state with its one action as a primary button.
+    public init(_ title: String, systemImage: String? = nil, message: String? = nil, actionTitle: String, action: @escaping () -> Void) {
+        self.init(title, systemImage: systemImage, message: message) {
+            Button(actionTitle, action: action)
+        }
     }
 }
 

@@ -8,7 +8,7 @@ import SwiftUI
 /// Option turns every other app into "Set <app> as Default", which changes the default without
 /// opening anything.
 enum OpenInMenu {
-    static func make(folder: URL, model: OpenInModel) -> NSMenu {
+    static func make(for location: OpenInLocation, model: OpenInModel) -> NSMenu {
         let menu = NSMenu()
         menu.autoenablesItems = false
         let defaultID = model.defaultApp?.id
@@ -17,19 +17,25 @@ enum OpenInMenu {
                 menu.addItem(.separator())
             }
             for app in group {
-                addItems(for: app, isDefault: app.id == defaultID, folder: folder, model: model, to: menu)
+                addItem(for: app, isDefault: app.id == defaultID, location: location, model: model, to: menu)
             }
         }
         menu.addItem(.separator())
         let copyIcon = NSImage(systemSymbolName: "doc.on.doc", accessibilityDescription: nil)
-        menu.addItem(NSMenuItem("Copy Path", image: copyIcon) { model.copyPath(of: folder) })
+        menu.addItem(NSMenuItem("Copy Path", image: copyIcon) { model.copyPath(of: location) })
         return menu
     }
 
     /// The app's row; every app but the default gets an Option alternate that only sets the default.
-    private static func addItems(for app: OpenInApp, isDefault: Bool, folder: URL, model: OpenInModel, to menu: NSMenu) {
+    private static func addItem(
+        for app: OpenInApp,
+        isDefault: Bool,
+        location: OpenInLocation,
+        model: OpenInModel,
+        to menu: NSMenu
+    ) {
         let icon = model.icon(for: app)
-        let item = NSMenuItem(app.name, image: icon) { model.open(folder, in: app) }
+        let item = NSMenuItem(app.name, image: icon) { model.open(location, in: app) }
         menu.addItem(item)
         if isDefault {
             item.state = .on

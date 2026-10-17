@@ -9,7 +9,10 @@ import SwiftUI
 
 #Preview("Pull Requests - Offline") {
     PullRequestsView()
-        .environment(GitHubModel.preview(inbox: PullRequestPreviewFixtures.inbox, error: .offline("error connecting to api.github.com")))
+        .environment(
+            GitHubModel.preview(
+                inbox: PullRequestPreviewFixtures.inbox, error: .offline("error connecting to api.github.com"))
+        )
         .frame(width: 900, height: 480)
 }
 

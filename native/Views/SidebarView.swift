@@ -84,10 +84,13 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
     }
 }
 
-extension SidebarView where NavigationItems == EmptyView, Accessories == EmptyView, TaskAccessory == SessionContextUsage {
+extension SidebarView
+where NavigationItems == EmptyView, Accessories == EmptyView, TaskAccessory == SessionContextUsage {
     /// The sidebar with nothing from other features, and the built-in context ring on task rows.
     init() {
-        self.init(navigationItems: { EmptyView() }, accessories: { EmptyView() }, taskAccessory: { SessionContextUsage(summary: $0) })
+        self.init(
+            navigationItems: { EmptyView() }, accessories: { EmptyView() },
+            taskAccessory: { SessionContextUsage(summary: $0) })
     }
 }
 
@@ -95,6 +98,8 @@ extension SidebarView where TaskAccessory == SessionContextUsage {
     /// The sidebar with other features' navigation rows and accessories, and the built-in context ring
     /// on task rows.
     init(@ViewBuilder navigationItems: () -> NavigationItems, @ViewBuilder accessories: () -> Accessories) {
-        self.init(navigationItems: navigationItems, accessories: accessories, taskAccessory: { SessionContextUsage(summary: $0) })
+        self.init(
+            navigationItems: navigationItems, accessories: accessories,
+            taskAccessory: { SessionContextUsage(summary: $0) })
     }
 }

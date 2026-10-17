@@ -158,12 +158,7 @@ final class LegacySSETransport: MCPClientTransport {
     private let headers: [String: String]
     private let endpoint: URL
     private let reader: Task<Void, Never>
-    private let state: Mutex<State>
-
-    private struct State {
-        var pending: [Int: CheckedContinuation<Result<JSON, ProbeError>, Never>] = [:]
-        var isClosed = false
-    }
+    private let replies: PendingReplies
 
     /// Opens the stream and waits for the `endpoint` event.
     static func connect(url: URL, headers: [String: String], session: URLSession) async throws(ProbeError) -> LegacySSETransport {
@@ -173,7 +168,7 @@ final class LegacySSETransport: MCPClientTransport {
         let (bytes, response) = try await StreamableHTTPTransport.send(request, on: session, stage: .connect)
         let sendsCredentials = headers.keys.contains { $0.caseInsensitiveCompare("Authorization") == .orderedSame }
         try await StreamableHTTPTransport.check(response, bytes: bytes, sentCredentials: sendsCredentials)
-        let state = Mutex(State())
+        let replies = PendingReplies()
         let (endpoints, found) = AsyncStream.makeStream(of: URL.self)
         let reader = Task {
             var parser = ServerSentEvents()
@@ -185,50 +180,37 @@ final class LegacySSETransport: MCPClientTransport {
                             found.yield(endpoint.absoluteURL)
                         }
                     } else if case .response(let id, let result)? = JSONRPC.decode(Data(event.data.utf8)) {
-                        let continuation = state.withLock { $0.pending.removeValue(forKey: id) }
-                        continuation?.resume(returning: result.mapError { .failure(.initialize, "The server answered with an error: \($0.message) (\($0.code)).") })
+                        replies.resolve(id, with: result.mapError { .failure(.initialize, "The server answered with an error: \($0.message) (\($0.code)).") })
                     }
                 }
             } catch {}
             found.finish()
-            let pending = state.withLock { state in
-                state.isClosed = true
-                defer { state.pending = [:] }
-                return Array(state.pending.values)
-            }
-            pending.forEach { $0.resume(returning: .failure(.failure(.initialize, "The server closed its event stream."))) }
+            replies.closeAll(with: .failure(.initialize, "The server closed its event stream."))
         }
         var iterator = endpoints.makeAsyncIterator()
         guard let endpoint = await iterator.next() else {
             reader.cancel()
             throw .failure(.connect, "The server's event stream never named an endpoint to send messages to.")
         }
-        return LegacySSETransport(session: session, headers: headers, endpoint: endpoint, reader: reader, state: state)
+        return LegacySSETransport(session: session, headers: headers, endpoint: endpoint, reader: reader, replies: replies)
     }
 
-    private init(session: URLSession, headers: [String: String], endpoint: URL, reader: Task<Void, Never>, state: Mutex<State>) {
+    private init(session: URLSession, headers: [String: String], endpoint: URL, reader: Task<Void, Never>, replies: PendingReplies) {
         self.session = session
         self.headers = headers
         self.endpoint = endpoint
         self.reader = reader
-        self.state = state
+        self.replies = replies
     }
 
     func request(_ method: String, params: JSON, id: Int) async throws(ProbeError) -> JSON {
         let result = await withCheckedContinuation { (continuation: CheckedContinuation<Result<JSON, ProbeError>, Never>) in
-            let isClosed = state.withLock { state in
-                if !state.isClosed { state.pending[id] = continuation }
-                return state.isClosed
-            }
-            if isClosed {
-                continuation.resume(returning: .failure(.failure(.initialize, "The server closed its event stream.")))
-                return
-            }
+            guard replies.await(id, continuation, ifClosed: .failure(.initialize, "The server closed its event stream.")) else { return }
             Task {
                 do throws(ProbeError) {
                     try await post(JSONRPC.request(method, params: params, id: id))
                 } catch {
-                    state.withLock { $0.pending.removeValue(forKey: id) }?.resume(returning: .failure(error))
+                    replies.resolve(id, with: .failure(error))
                 }
             }
         }
@@ -251,5 +233,39 @@ final class LegacySSETransport: MCPClientTransport {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         let (bytes, response) = try await StreamableHTTPTransport.send(request, on: session, stage: .initialize)
         try await StreamableHTTPTransport.check(response, bytes: bytes, sentCredentials: false)
+    }
+}
+
+/// Requests waiting for replies that arrive on another channel, by id.
+final class PendingReplies: Sendable {
+    private struct State {
+        var waiting: [Int: CheckedContinuation<Result<JSON, ProbeError>, Never>] = [:]
+        var isClosed = false
+    }
+
+    private let state = Mutex(State())
+
+    /// Registers `continuation` for `id`; when already closed, resumes it with `closedError` and
+    /// returns false.
+    func await(_ id: Int, _ continuation: CheckedContinuation<Result<JSON, ProbeError>, Never>, ifClosed closedError: ProbeError) -> Bool {
+        let isClosed = state.withLock { state in
+            if !state.isClosed { state.waiting[id] = continuation }
+            return state.isClosed
+        }
+        if isClosed { continuation.resume(returning: .failure(closedError)) }
+        return !isClosed
+    }
+
+    func resolve(_ id: Int, with result: Result<JSON, ProbeError>) {
+        state.withLock { $0.waiting.removeValue(forKey: id) }?.resume(returning: result)
+    }
+
+    func closeAll(with error: ProbeError) {
+        let waiting = state.withLock { state in
+            state.isClosed = true
+            defer { state.waiting = [:] }
+            return Array(state.waiting.values)
+        }
+        waiting.forEach { $0.resume(returning: .failure(error)) }
     }
 }

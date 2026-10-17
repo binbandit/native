@@ -35,7 +35,8 @@ final class OpenInMenuTriggerView: NSView {
     override func updateTrackingAreas() {
         super.updateTrackingAreas()
         trackingAreas.forEach(removeTrackingArea)
-        addTrackingArea(NSTrackingArea(rect: .zero, options: [.mouseEnteredAndExited, .activeInKeyWindow, .inVisibleRect], owner: self))
+        let options: NSTrackingArea.Options = [.mouseEnteredAndExited, .activeInActiveApp, .inVisibleRect]
+        addTrackingArea(NSTrackingArea(rect: .zero, options: options, owner: self))
     }
 
     override func mouseEntered(with event: NSEvent) {
@@ -54,8 +55,8 @@ final class OpenInMenuTriggerView: NSView {
     override var canBecomeKeyView: Bool { NSApp.isFullKeyboardAccessEnabled }
 
     override func keyDown(with event: NSEvent) {
-        let opensMenu = [.downArrow, .carriageReturn, .enter].contains(event.specialKey) || event.charactersIgnoringModifiers == " "
-        if opensMenu {
+        let isSpace = event.charactersIgnoringModifiers == " "
+        if isSpace || [.downArrow, .carriageReturn, .enter].contains(event.specialKey) {
             showMenu()
         } else {
             super.keyDown(with: event)

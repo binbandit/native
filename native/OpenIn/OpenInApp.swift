@@ -24,8 +24,15 @@ nonisolated struct OpenInApp: Identifiable, Hashable, Sendable {
         }
     }
 
-    /// Opens `folder` in the app and brings it to the front.
-    func open(_ folder: URL, using workspace: NSWorkspace = .shared) async throws {
+    /// Opens the location in the app and brings it to the front.
+    func open(_ location: OpenInLocation, using workspace: NSWorkspace = .shared) async throws {
+        switch location {
+        case .local(let folder):
+            try await open(folder, using: workspace)
+        }
+    }
+
+    private func open(_ folder: URL, using workspace: NSWorkspace) async throws {
         let configuration = NSWorkspace.OpenConfiguration()
         configuration.activates = true
         switch target.launch {

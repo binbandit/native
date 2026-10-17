@@ -11,7 +11,10 @@ public struct PullRequestInbox: Sendable, Hashable {
     public var assigned: [PullRequestSummary]
     public var fetchedAt: Date
 
-    public init(authored: [PullRequestSummary] = [], reviewRequested: [PullRequestSummary] = [], assigned: [PullRequestSummary] = [], fetchedAt: Date = .now) {
+    public init(
+        authored: [PullRequestSummary] = [], reviewRequested: [PullRequestSummary] = [],
+        assigned: [PullRequestSummary] = [], fetchedAt: Date = .now
+    ) {
         self.authored = authored
         self.reviewRequested = reviewRequested
         self.assigned = assigned

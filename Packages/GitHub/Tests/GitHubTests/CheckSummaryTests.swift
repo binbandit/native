@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import GitHub
 
 struct CheckSummaryTests {
@@ -24,7 +25,8 @@ struct CheckSummaryTests {
     }
 
     @Test func runningCheckRunIsPendingWhateverItsConclusion() throws {
-        let json = #"[{"__typename":"CheckRun","name":"build","status":"IN_PROGRESS","conclusion":"","startedAt":"2026-10-12T06:58:25Z","completedAt":"0001-01-01T00:00:00Z","workflowName":"CI","detailsUrl":""}]"#
+        let json =
+            #"[{"__typename":"CheckRun","name":"build","status":"IN_PROGRESS","conclusion":"","startedAt":"2026-10-12T06:58:25Z","completedAt":"0001-01-01T00:00:00Z","workflowName":"CI","detailsUrl":""}]"#
         let checks = try GitHubJSON.decode([StatusCheck].self, from: Data(json.utf8))
         let check = try #require(checks.first)
 

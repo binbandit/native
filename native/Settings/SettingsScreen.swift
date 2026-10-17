@@ -68,11 +68,17 @@ struct SettingsScreen: View {
         .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         .navigationTitle("Settings")
         .background {
+            // Key equivalents, so they work wherever focus is (or isn't).
             Button("Search Settings") { focus = .search }
                 .keyboardShortcut("f")
                 .hidden()
+            // While there's a query, Escape goes to the search field, which clears it.
+            Button("Close Settings", action: close)
+                .keyboardShortcut(.cancelAction)
+                .disabled(!query.isEmpty)
+                .hidden()
         }
-        .onExitCommand(perform: close)
+        .defaultFocus($focus, .navigation)
         .onChange(of: focus) { _, newValue in
             // the reference app closes the results when you click away from the search.
             if newValue != .search {

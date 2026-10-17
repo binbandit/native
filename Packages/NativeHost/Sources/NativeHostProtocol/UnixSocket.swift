@@ -1,4 +1,8 @@
+#if canImport(Darwin)
 import Darwin
+#elseif canImport(Glibc)
+import Glibc
+#endif
 import Foundation
 
 /// Unix domain sockets, the host's local transport. Paths are limited to 103 bytes by `sockaddr_un`.
@@ -25,11 +29,11 @@ public enum UnixSocket {
         var address = try makeAddress(path)
         let descriptor = try makeSocket()
         let result = withUnsafePointer(to: &address) { pointer in
-            pointer.withMemoryRebound(to: sockaddr.self, capacity: 1) { Darwin.connect(descriptor, $0, socklen_t(MemoryLayout<sockaddr_un>.size)) }
+            pointer.withMemoryRebound(to: sockaddr.self, capacity: 1) { connectSocket(descriptor, $0, socklen_t(MemoryLayout<sockaddr_un>.size)) }
         }
         guard result == 0 else {
             let code = errno
-            Darwin.close(descriptor)
+            closeDescriptor(descriptor)
             throw Failure.system("connect", errno: code)
         }
         return descriptor
@@ -44,9 +48,9 @@ public enum UnixSocket {
         let bound = withUnsafePointer(to: &address) { pointer in
             pointer.withMemoryRebound(to: sockaddr.self, capacity: 1) { bind(descriptor, $0, socklen_t(MemoryLayout<sockaddr_un>.size)) }
         }
-        guard bound == 0, chmod(path, 0o600) == 0, Darwin.listen(descriptor, backlog) == 0 else {
+        guard bound == 0, chmod(path, 0o600) == 0, listenSocket(descriptor, backlog) == 0 else {
             let code = errno
-            Darwin.close(descriptor)
+            closeDescriptor(descriptor)
             throw Failure.system("listen", errno: code)
         }
         // Accepting happens from a dispatch source, which must never block.
@@ -86,7 +90,18 @@ public enum UnixSocket {
             buffer.copyBytes(from: bytes)
             buffer[bytes.count] = 0
         }
+        #if canImport(Darwin)
         address.sun_len = UInt8(MemoryLayout<sockaddr_un>.size)
+        #endif
         return address
     }
+}
+
+// The C functions, under names the enum's own methods don't shadow.
+private func connectSocket(_ descriptor: Int32, _ address: UnsafePointer<sockaddr>, _ length: socklen_t) -> Int32 {
+    connect(descriptor, address, length)
+}
+
+private func listenSocket(_ descriptor: Int32, _ backlog: Int32) -> Int32 {
+    listen(descriptor, backlog)
 }

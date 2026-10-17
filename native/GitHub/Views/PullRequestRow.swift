@@ -79,7 +79,7 @@ struct PullRequestRow: View {
                     .layoutPriority(-1)
             }
             TimelineView(.everyMinute) { context in
-                Text(CompactAgeText.format(pullRequest.updatedAt, now: context.date))
+                Text(DSFormat.compactAge(pullRequest.updatedAt, now: context.date))
                     .monospacedDigit()
                     .foregroundStyle(.dsTextTertiary)
                     .fixedSize()
@@ -108,8 +108,15 @@ struct PullRequestRow: View {
         .padding(.leading, DS.Space.xl)
         // Fades the metadata out under the buttons rather than cutting it off.
         .background {
-            LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: .dsBackground, location: 0.35)], startPoint: .leading, endPoint: .trailing)
-                .overlay(Color.dsHover.mask(LinearGradient(stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.35)], startPoint: .leading, endPoint: .trailing)))
+            LinearGradient(
+                stops: [.init(color: .clear, location: 0), .init(color: .dsBackground, location: 0.35)],
+                startPoint: .leading, endPoint: .trailing
+            )
+            .overlay(
+                Color.dsHover.mask(
+                    LinearGradient(
+                        stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.35)],
+                        startPoint: .leading, endPoint: .trailing)))
         }
     }
 

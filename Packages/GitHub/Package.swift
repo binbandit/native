@@ -5,10 +5,10 @@ let package = Package(
     name: "GitHub",
     platforms: [.macOS(.v15)],
     products: [
-        .library(name: "GitHub", targets: ["GitHub"]),
+        .library(name: "GitHub", targets: ["GitHub"])
     ],
     dependencies: [
-        .package(path: "../Exec"),
+        .package(path: "../Exec")
     ],
     targets: [
         .target(name: "GitHub", dependencies: [.product(name: "Exec", package: "Exec")]),
