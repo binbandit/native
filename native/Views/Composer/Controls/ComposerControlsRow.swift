@@ -3,11 +3,10 @@ import SwiftUI
 
 /// The composer's bottom row, after the reference app's: attach, model with its effort meter, autonomy, plan
 /// mode and help leading; the follow-up hint and context usage trailing.
-struct ComposerControlsRow: View {
+struct ComposerControlsRow<Context: View>: View {
     let settings: ComposerSettings
     /// The autonomy level shown while Plan Mode suspends it, and restored when Plan Mode ends.
     let resumedAutonomy: String?
-    let usage: Usage?
     /// What Return and ⌘Return do with a follow-up, shown while the agent works.
     let followUpHint: FollowUpHint?
     @Binding var isModelPickerOpen: Bool
@@ -16,6 +15,8 @@ struct ComposerControlsRow: View {
     let onCycleEffort: () -> Void
     let onCycleAutonomy: () -> Void
     let onTogglePlan: () -> Void
+    /// The context-window indicator, from the Usage feature.
+    @ViewBuilder let context: () -> Context
 
     var body: some View {
         ComposerControlsBar {
@@ -63,9 +64,7 @@ struct ComposerControlsRow: View {
                     .help(followUpHint.help)
                     .transition(.opacity)
             }
-            if let usage {
-                UsageIndicator(usage: usage)
-            }
+            context()
         }
         .animation(.dsQuick, value: followUpHint)
     }

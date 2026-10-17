@@ -109,7 +109,7 @@ public actor NativeHostClient {
     @discardableResult
     public func attach(_ session: HostSessionID) async throws -> HostSessionSummary {
         let seen = attachments[session] ?? nil
-        attachments[session] = seen
+        attachments.updateValue(seen, forKey: session)
         let result: AttachResult = try await call(HostProtocol.Method.attach, AttachParams(sessionID: session, epoch: epoch, afterSeq: seen))
         return result.summary
     }
@@ -214,7 +214,7 @@ public actor NativeHostClient {
         if epoch != info.epoch {
             // A new host process: sequence numbers start over, so re-attach from the beginning.
             for session in attachments.keys {
-                attachments[session] = .some(nil)
+                attachments.updateValue(nil, forKey: session)
             }
         }
         epoch = info.epoch
