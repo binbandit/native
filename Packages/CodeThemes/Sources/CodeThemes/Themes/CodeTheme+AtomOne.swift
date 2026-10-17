@@ -16,7 +16,8 @@ extension CodeTheme {
             type: CodeColor(rgb: 0xC18401),
             operator: CodeColor(rgb: 0x383A42),
             regex: CodeColor(rgb: 0x0184BC),
-            invalid: CodeColor(rgb: 0x383A42),  // Fallback: foreground.
+            // One Light has no invalid scope or error color; its red is the closest.
+            invalid: CodeColor(rgb: 0xE45649),
             punctuation: CodeColor(rgb: 0x383A42),  // Fallback: foreground.
             insertedForeground: CodeColor(rgb: 0x50A14F),
             insertedBackground: CodeColor(rgb: 0x00809B, alpha: 0x33),
@@ -40,15 +41,16 @@ extension CodeTheme {
             tag: CodeColor(rgb: 0xE06C75),
             type: CodeColor(rgb: 0xE5C07B),
             operator: CodeColor(rgb: 0xABB2BF),
-            regex: CodeColor(rgb: 0x56B6C2),
+            regex: CodeColor(rgb: 0xE06C75),
             invalid: CodeColor(rgb: 0xC24038),  // Fallback: editorError.foreground.
             punctuation: CodeColor(rgb: 0xABB2BF),  // Fallback: foreground.
             insertedForeground: CodeColor(rgb: 0x98C379),
             insertedBackground: CodeColor(rgb: 0x00809B, alpha: 0x33),
             deletedForeground: CodeColor(rgb: 0xE06C75),
             deletedBackground: CodeColor(rgb: 0xE06C75, alpha: 0x26),  // Derived: deleted foreground.
-            changedForeground: CodeColor(rgb: 0xABB2BF),  // Fallback: gitDecoration.modifiedResourceForeground.
-            changedBackground: CodeColor(rgb: 0xABB2BF, alpha: 0x26),  // Derived: no VS Code changed-text background.
+            // One Dark Pro lacks markup.changed; use Atom One's changed hue, as One Light does.
+            changedForeground: CodeColor(rgb: 0xC678DD),
+            changedBackground: CodeColor(rgb: 0xC678DD, alpha: 0x26),  // Derived: no VS Code changed-text background.
             selection: CodeColor(rgb: 0x677696, alpha: 0x60),
             lineHighlight: CodeColor(rgb: 0x2C313C)
         )

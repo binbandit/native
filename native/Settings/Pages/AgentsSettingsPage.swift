@@ -13,8 +13,18 @@ extension SettingsPane {
             group: .agents,
             order: 0,
             searchEntries: {
-                AgentsSettingsPage.entries(in: registry).map { entry in
-                    SettingsSearchEntry(id: entry.rowID, title: entry.agent.name, description: entry.commandLine, keywords: [entry.agent.id, entry.agent.command])
+                AgentsSettingsPage.entries(in: registry).flatMap { entry in
+                    [
+                        SettingsSearchEntry(
+                            id: entry.rowID, title: entry.agent.name, description: entry.commandLine,
+                            keywords: [entry.agent.id, entry.agent.command])
+                    ]
+                        + AgentDefaultSetting.allCases.map { setting in
+                            SettingsSearchEntry(
+                                id: setting.rowID(agentID: entry.agent.id),
+                                title: "\(entry.agent.name) \(setting.title.lowercased())",
+                                keywords: ["model", "effort", "thinking"])
+                        }
                 }
             },
             content: { AgentsSettingsPage(registry: registry) }
@@ -30,12 +40,15 @@ struct AgentsSettingsPage: View {
         let plugin: PluginManifest
 
         var id: String { agent.id }
+        var definition: AgentDefinition { AgentDefinition(agent, pluginID: plugin.id) }
         var rowID: SettingsRowID { SettingsRowID("agent.\(agent.id)") }
         var commandLine: String { ([agent.command] + agent.args).joined(separator: " ") }
     }
 
     /// The host's registry, passed in so a client of several hosts can show any of them.
     let registry: PluginRegistry
+
+    @Environment(AppModel.self) private var model
 
     static func entries(in registry: PluginRegistry) -> [Entry] {
         registry.plugins.flatMap { loaded in
@@ -45,23 +58,61 @@ struct AgentsSettingsPage: View {
 
     var body: some View {
         SettingsPage {
-            SettingsHeader("Agents", description: Text("Agents Native can start sessions with. Each comes from a plugin and speaks ACP."))
+            SettingsHeader(
+                "Agents",
+                description: Text("Agents Native can run tasks with. Each comes from an extension and speaks ACP."))
             SettingsRowGroup {
-                ForEach(Self.entries(in: registry)) { entry in
-                    SettingsRow(
-                        id: entry.rowID,
-                        entry.agent.name,
-                        icon: entry.agent.symbol ?? "sparkle",
-                        description: Text(entry.commandLine).font(SettingsTextStyle.mono.font),
-                        detail: detail(for: entry)
-                    ) {
-                        SettingsSwitch(entry.agent.name, isOn: Binding(
-                            get: { registry.isEnabled(entry.plugin.id) },
-                            set: { registry.setEnabled($0, for: entry.plugin.id) }
-                        ))
+                // Agents that aren't installed are under Add an Agent instead, unless turned off.
+                ForEach(shownEntries) { entry in
+                    agentRow(entry)
+                    if registry.isEnabled(entry.plugin.id) {
+                        ForEach(AgentDefaultSetting.allCases, id: \.self) { setting in
+                            AgentDefaultRow(agentName: entry.agent.name, agentID: entry.agent.id, setting: setting)
+                                // Under the agent's name, past its icon.
+                                .padding(.leading, SettingsMetrics.iconTile + DS.Space.lg)
+                        }
                     }
                 }
             }
+            SettingsHeader(
+                "Add an Agent",
+                description: Text(
+                    "Agents Native knows but can't find on this Mac. Install one in your terminal, then check again. Native never runs these commands."
+                ))
+            AddAgentList(agents: model.agentsToAdd, summaries: registry.descriptions) {
+                await model.checkForAgents()
+            }
+        }
+    }
+
+    private var shownEntries: [Entry] {
+        Self.entries(in: registry).filter {
+            model.installations.isInstalled($0.definition.id) || !registry.isEnabled($0.plugin.id)
+        }
+    }
+
+    private func agentRow(_ entry: Entry) -> some View {
+        HStack(spacing: DS.Space.lg) {
+            SettingsIconTile {
+                AgentIcon(agent: entry.definition, size: SettingsMetrics.tileGlyph + DS.Space.xs)
+            }
+            row(entry)
+        }
+    }
+
+    private func row(_ entry: Entry) -> some View {
+        SettingsRow(
+            id: entry.rowID,
+            entry.agent.name,
+            description: Text(entry.commandLine).font(SettingsTextStyle.mono.font),
+            detail: detail(for: entry)
+        ) {
+            SettingsSwitch(
+                entry.agent.name,
+                isOn: Binding(
+                    get: { registry.isEnabled(entry.plugin.id) },
+                    set: { registry.setEnabled($0, for: entry.plugin.id) }
+                ))
         }
     }
 
@@ -70,10 +121,13 @@ struct AgentsSettingsPage: View {
         // The switch is the plugin's, so it also covers the plugin's other agents.
         let siblings = entry.plugin.agents.filter { $0.id != entry.agent.id }.map(\.name)
         if !siblings.isEmpty {
-            lines[0] = "Shares a switch with \(ListFormatter.localizedString(byJoining: siblings)), from the \(entry.plugin.name) extension. " + lines[0]
+            lines[0] =
+                "Shares a switch with \(ListFormatter.localizedString(byJoining: siblings)), from the \(entry.plugin.name) extension. "
+                + lines[0]
         }
         if !entry.agent.resolveExecutables.isEmpty {
-            lines.append("Uses \(entry.agent.resolveExecutables.values.sorted().joined(separator: ", ")) from your PATH")
+            lines.append(
+                "Uses \(entry.agent.resolveExecutables.values.sorted().joined(separator: ", ")) from your PATH")
         }
         return Text(lines.joined(separator: "\n"))
     }

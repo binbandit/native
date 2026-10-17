@@ -116,7 +116,11 @@ private struct SettingsSearchResults: View {
                     }
                 }
                 .padding(DS.Space.xs)
-                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
+                .onGeometryChange(for: CGFloat.self) {
+                    $0.size.height
+                } action: {
+                    contentHeight = $0
+                }
             }
             .frame(height: min(contentHeight, SettingsMetrics.resultsMaxHeight))
             .onChange(of: highlighted) { proxy.scrollTo(highlighted) }
@@ -156,11 +160,15 @@ private struct ResultRow: View {
             }
             .padding(.horizontal, DS.Space.md)
             .padding(.vertical, DS.Space.sm)
-            .background(isHighlighted ? Color.dsHover : .clear, in: RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous))
+            .background(
+                isHighlighted ? Color.dsHover : .clear,
+                in: RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
+            )
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(result.item.rowID == nil ? result.item.title : "\(result.item.title), \(result.item.paneTitle)")
+        .accessibilityLabel(
+            result.item.rowID == nil ? result.item.title : "\(result.item.title), \(result.item.paneTitle)")
     }
 
     /// Matched letters at full strength, the rest at half, as Conductor highlights matches. A

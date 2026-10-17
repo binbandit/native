@@ -1,5 +1,7 @@
 import Darwin
 
+/// An 8-bit sRGB color with alpha. Plain values rather than SwiftUI colors keep the package UI-free, so the host and
+/// the companion can share themes; the app converts at the edge.
 public struct CodeColor: Sendable, Hashable, CustomStringConvertible {
     public let red: UInt8
     public let green: UInt8
@@ -53,6 +55,7 @@ public struct CodeColor: Sendable, Hashable, CustomStringConvertible {
         0.2126 * Self.linearized(red) + 0.7152 * Self.linearized(green) + 0.0722 * Self.linearized(blue)
     }
 
+    /// WCAG contrast ratio. Alpha is ignored, so composite a translucent color over its background first.
     public func contrastRatio(with other: CodeColor) -> Double {
         let lighter = max(relativeLuminance, other.relativeLuminance)
         let darker = min(relativeLuminance, other.relativeLuminance)
@@ -60,8 +63,8 @@ public struct CodeColor: Sendable, Hashable, CustomStringConvertible {
     }
 
     private static func hex(_ value: UInt8) -> String {
-        let digits = Array("0123456789ABCDEF")
-        return "\(digits[Int(value >> 4)])\(digits[Int(value & 0x0F)])"
+        let digits = String(value, radix: 16, uppercase: true)
+        return value < 0x10 ? "0\(digits)" : digits
     }
 
     private static func linearized(_ value: UInt8) -> Double {

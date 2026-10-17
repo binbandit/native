@@ -11,6 +11,7 @@ struct NativeApp: App {
     /// Held here because AppModel keeps its provider weakly.
     @State private var taskWorkspaces: GitTaskWorkspaceProvider
     @State private var iconPreferences = AppIconPreferences()
+    @State private var terminals = TerminalStore()
 
     init() {
         // Git and GitHub run with the login-shell environment the agents get.
@@ -38,6 +39,7 @@ struct NativeApp: App {
                 .environment(git)
                 .environment(gitHub)
                 .environment(BuiltInPlugins.automation.center)
+                .environment(terminals)
                 .createPullRequestSheet(gitHub)
                 .dsAccentPalette(themeID: iconPreferences.theme.rawValue)
                 .task {
@@ -73,6 +75,7 @@ struct NativeApp: App {
             ViewCommands()
             GoCommands(model: model)
             SessionCommands(model: model)
+            TerminalCommands(store: terminals)
         }
 
         Window("Durable Sessions", id: HostPreviewWindow.id) {
@@ -82,7 +85,8 @@ struct NativeApp: App {
         }
 
         Settings {
-            SettingsView(additionalPanes: [.labs, .git, .mcpServers(registry: model.plugins)])
+            SettingsView(additionalPanes: [.labs, .git, .mcpServers(registry: model.plugins), .terminal(terminals.preferences)])
+                .environment(model)
                 .environment(model.plugins)
                 .environment(git.settings)
                 .environment(iconPreferences)

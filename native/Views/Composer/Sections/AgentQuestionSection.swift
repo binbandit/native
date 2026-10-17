@@ -209,6 +209,7 @@ struct AgentQuestionSection: View {
     }
 }
 
+#if DEBUG
 #Preview("Agent question") {
     ComposerSurface {
         if let questionnaire = AgentQuestionnaire.preview {
@@ -218,3 +219,4 @@ struct AgentQuestionSection: View {
     .padding()
     .frame(width: 640)
 }
+#endif

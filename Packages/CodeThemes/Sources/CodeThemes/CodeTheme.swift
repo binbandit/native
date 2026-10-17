@@ -1,3 +1,5 @@
+/// A named code color theme. Many themes exist for only one appearance, so a theme has a light palette, a dark
+/// palette or both; the initializers guarantee at least one.
 public struct CodeTheme: Identifiable, Sendable, Hashable {
     public struct ID: RawRepresentable, Hashable, Sendable, Codable, ExpressibleByStringLiteral {
         public let rawValue: String

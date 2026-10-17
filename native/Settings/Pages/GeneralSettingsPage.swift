@@ -12,12 +12,14 @@ extension SettingsPane {
         group: .personal,
         order: 0,
         searchEntries: {
-            [SettingsSearchEntry(
-                id: GeneralSettingsPage.followUpRow,
-                title: "Follow-up behavior",
-                description: "Queue messages to send after the agent finishes, or steer the agent mid-turn.",
-                keywords: ["queue", "steer", "return", "send", "message"]
-            )]
+            [
+                SettingsSearchEntry(
+                    id: GeneralSettingsPage.followUpRow,
+                    title: "Follow-up behavior",
+                    description: "Queue messages to send after the agent finishes, or steer the agent mid-turn.",
+                    keywords: ["queue", "steer", "return", "send", "message"]
+                )
+            ]
         },
         content: { GeneralSettingsPage() }
     )
@@ -36,7 +38,9 @@ struct GeneralSettingsPage: View {
                     id: Self.followUpRow,
                     "Follow-up behavior",
                     description: Text("Queue messages to send after the agent finishes, or steer the agent mid-turn."),
-                    detail: Text("Use \(Image(systemName: "command"))\(Image(systemName: "arrow.turn.down.left")) to \(followUp.opposite.title.lowercased()). Agents that can't steer queue instead.")
+                    detail: Text(
+                        "Use \(Image(systemName: "command"))\(Image(systemName: "arrow.turn.down.left")) to \(followUp.opposite.title.lowercased()). Agents that can't steer queue instead."
+                    )
                 ) {
                     SettingsSelect(
                         label: "Follow-up behavior",

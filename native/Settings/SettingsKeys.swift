@@ -8,7 +8,8 @@ struct KeyGlyphs: View {
 
     var body: some View {
         HStack(spacing: 0) {
-            ForEach(Array(keys.split(separator: "↵", omittingEmptySubsequences: false).enumerated()), id: \.offset) { index, text in
+            ForEach(Array(keys.split(separator: "↵", omittingEmptySubsequences: false).enumerated()), id: \.offset) {
+                index, text in
                 if index > 0 {
                     Image(systemName: "arrow.turn.down.left")
                         .font(.system(size: SettingsMetrics.returnGlyph, weight: .medium))
@@ -51,7 +52,10 @@ struct SearchShortcutHint: View {
         .font(.ds(SettingsMetrics.hintFontSize, weight: .medium))
         .foregroundStyle(.dsTextSecondary)
         .padding(.horizontal, DS.Space.xs)
-        .frame(minWidth: SettingsMetrics.hintHeight + DS.Space.xs, minHeight: SettingsMetrics.hintHeight, maxHeight: SettingsMetrics.hintHeight)
+        .frame(
+            minWidth: SettingsMetrics.hintHeight + DS.Space.xs, minHeight: SettingsMetrics.hintHeight,
+            maxHeight: SettingsMetrics.hintHeight
+        )
         .background(.dsSurfaceSunken, in: shape)
         .overlay { shape.strokeBorder(.dsSeparator, lineWidth: 1) }
         .fixedSize()

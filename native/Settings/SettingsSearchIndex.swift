@@ -32,10 +32,15 @@ struct SettingsSearchIndex {
     @MainActor
     init(panes: [SettingsPane]) {
         items = panes.flatMap { pane in
-            let paneItem = Item(paneID: pane.id, paneTitle: pane.title, systemImage: pane.systemImage, rowID: nil, title: pane.title, description: "", keywords: pane.keywords)
-            return [paneItem] + pane.searchEntries().map { entry in
-                Item(paneID: pane.id, paneTitle: pane.title, systemImage: pane.systemImage, rowID: entry.id, title: entry.title, description: entry.description, keywords: entry.keywords)
-            }
+            let paneItem = Item(
+                paneID: pane.id, paneTitle: pane.title, systemImage: pane.systemImage, rowID: nil, title: pane.title,
+                description: "", keywords: pane.keywords)
+            return [paneItem]
+                + pane.searchEntries().map { entry in
+                    Item(
+                        paneID: pane.id, paneTitle: pane.title, systemImage: pane.systemImage, rowID: entry.id,
+                        title: entry.title, description: entry.description, keywords: entry.keywords)
+                }
         }
     }
 
@@ -56,7 +61,9 @@ struct SettingsSearchIndex {
         }
         // A stable sort keeps equal scores in pane order.
         return ranked.enumerated()
-            .sorted { $0.element.score != $1.element.score ? $0.element.score > $1.element.score : $0.offset < $1.offset }
+            .sorted {
+                $0.element.score != $1.element.score ? $0.element.score > $1.element.score : $0.offset < $1.offset
+            }
             .prefix(limit)
             .map(\.element)
     }

@@ -1,6 +1,7 @@
 import GitHub
 import SwiftUI
 
+#if DEBUG
 #Preview("Pull Requests") {
     PullRequestsView()
         .environment(GitHubModel.preview(inbox: PullRequestPreviewFixtures.inbox))
@@ -48,3 +49,4 @@ import SwiftUI
     CreatePullRequestSheet(request: PullRequestPreviewFixtures.createRequest)
         .environment(GitHubModel.preview())
 }
+#endif

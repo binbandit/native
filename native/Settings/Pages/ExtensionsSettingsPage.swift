@@ -32,7 +32,7 @@ struct ExtensionsSettingsPage: View {
     let registry: PluginRegistry
 
     #if os(macOS)
-        @Environment(\.openURL) private var openURL
+    @Environment(\.openURL) private var openURL
     #endif
 
     static func rowID(_ pluginID: String) -> SettingsRowID {
@@ -51,14 +51,16 @@ struct ExtensionsSettingsPage: View {
         SettingsPage {
             SettingsHeader(
                 title: "Extensions",
-                description: Text("Turn on what you use. Changes apply to sessions started afterwards; agents start or stop right away.")
+                description: Text(
+                    "Turn on what you use. Changes apply to sessions started afterwards; agents start or stop right away."
+                )
             ) {
                 Button("Reload", systemImage: "arrow.clockwise") { registry.reload() }
                     .buttonStyle(.ds(.secondary, size: .medium))
                     .help("Read the plugins folder again")
                 #if os(macOS)
-                    Button("Open Plugins Folder", systemImage: "folder", action: openFolder)
-                        .buttonStyle(.ds(.secondary, size: .medium))
+                Button("Open Plugins Folder", systemImage: "folder", action: openFolder)
+                    .buttonStyle(.ds(.secondary, size: .medium))
                 #endif
             }
             SettingsRowGroup {
@@ -67,7 +69,8 @@ struct ExtensionsSettingsPage: View {
                 }
             }
             VStack(alignment: .leading, spacing: DS.Space.lg) {
-                SettingsSubheading("Your plugins", note: "Plugins in ~/.native/plugins, each a folder with a plugin.json.")
+                SettingsSubheading(
+                    "Your plugins", note: "Plugins in ~/.native/plugins, each a folder with a plugin.json.")
                 if installed.isEmpty {
                     installedEmptyState
                 } else {
@@ -114,10 +117,10 @@ struct ExtensionsSettingsPage: View {
     }
 
     #if os(macOS)
-        private func openFolder() {
-            let folder = PluginRegistry.directory
-            try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-            openURL(folder)
-        }
+    private func openFolder() {
+        let folder = PluginRegistry.directory
+        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+        openURL(folder)
+    }
     #endif
 }

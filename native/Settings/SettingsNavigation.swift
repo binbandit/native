@@ -67,7 +67,8 @@ struct SettingsNavigation<Search: View>: View {
                             NavItem(
                                 pane: pane,
                                 isSelected: pane.id == selection,
-                                showsFocusRing: showsFocusRing && focus.wrappedValue == .navigation && pane.id == selection
+                                showsFocusRing: showsFocusRing && focus.wrappedValue == .navigation
+                                    && pane.id == selection
                             ) {
                                 select(pane.id)
                             }
