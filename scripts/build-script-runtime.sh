@@ -6,7 +6,7 @@
 #   scripts/build-script-runtime.sh                      build and sign into the shared cache
 #   scripts/build-script-runtime.sh --test               run the crate's tests
 #   scripts/build-script-runtime.sh --sandbox            build against V8 with its memory sandbox
-#   scripts/build-script-runtime.sh --output <path> [--identity <id>] [--identifier <id>] [--optional]
+#   scripts/build-script-runtime.sh --output <path> [--identity <id>] [--optional]
 #
 # The first build downloads V8's prebuilt static library (about 37 MiB, a minute or two) into the
 # cargo target directory; later builds take seconds. --sandbox needs V8 built from source, which
@@ -23,6 +23,7 @@ crate="$repo/Runtime/ScriptRuntime"
 cache="${NATIVE_SCRIPT_RUNTIME_CACHE:-$HOME/Library/Caches/Native/ScriptRuntime}"
 output="$cache/native-script-runtime"
 identity="-"
+# Must match CFBundleIdentifier in Runtime/ScriptRuntime/Info.plist; the sandbox container is named after it.
 identifier="dev.native.script-runtime"
 sandbox=0
 test=0
@@ -32,7 +33,6 @@ while [ $# -gt 0 ]; do
     case "$1" in
         --output) output="$2"; shift 2 ;;
         --identity) identity="${2:--}"; shift 2 ;;
-        --identifier) identifier="$2"; shift 2 ;;
         --sandbox) sandbox=1; shift ;;
         --test) test=1; shift ;;
         # From Xcode: a missing toolchain or a failed build warns and leaves scripts disabled
