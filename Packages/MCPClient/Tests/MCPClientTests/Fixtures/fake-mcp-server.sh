@@ -16,12 +16,16 @@ while IFS= read -r line; do
       printf '{"jsonrpc":"2.0","method":"notifications/message","params":{"level":"info","data":"hello"}}\n'
       printf '{"jsonrpc":"2.0","id":%s,"result":{"protocolVersion":"2025-06-18","capabilities":{"tools":{"listChanged":false}},"serverInfo":{"name":"fake","title":"Fake Server","version":"1.2.3"},"instructions":"Use the fake tools."}}\n' "$id"
       ;;
-    *'"method":"tools/list"'*'"cursor"'*)
-      printf '{"jsonrpc":"2.0","id":%s,"result":{"tools":[{"name":"delete","description":"Deletes a thing.","inputSchema":{"type":"object","properties":{"id":{"type":"string"}},"required":["id"]},"annotations":{"destructiveHint":true}}]}}\n' "$id"
-      ;;
     *'"method":"tools/list"'*)
-      printf '{"jsonrpc":"2.0","id":99,"method":"roots/list"}\n'
-      printf '{"jsonrpc":"2.0","id":%s,"result":{"tools":[{"name":"search","title":"Search","description":"Finds things.","inputSchema":{"type":"object","properties":{"limit":{"type":"number"},"query":{"type":"string"}},"required":["query"]},"annotations":{"readOnlyHint":true}}],"nextCursor":"page-2"}}\n' "$id"
+      case "$line" in
+        *'"cursor"'*)
+          printf '{"jsonrpc":"2.0","id":%s,"result":{"tools":[{"name":"delete","description":"Deletes a thing.","inputSchema":{"type":"object","properties":{"id":{"type":"string"}},"required":["id"]},"annotations":{"destructiveHint":true}}]}}\n' "$id"
+          ;;
+        *)
+          printf '{"jsonrpc":"2.0","id":99,"method":"roots/list"}\n'
+          printf '{"jsonrpc":"2.0","id":%s,"result":{"tools":[{"name":"search","title":"Search","description":"Finds things.","inputSchema":{"type":"object","properties":{"limit":{"type":"number"},"query":{"type":"string"}},"required":["query"]},"annotations":{"readOnlyHint":true}}],"nextCursor":"page-2"}}\n' "$id"
+          ;;
+      esac
       ;;
   esac
 done

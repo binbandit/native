@@ -77,7 +77,7 @@ struct PullRequestsView: View {
                 if inbox.all.isEmpty {
                     EmptyStateView(
                         "No Open Pull Requests",
-                        systemImage: "arrow.triangle.pull",
+                        systemImage: "tray",
                         message:
                             "Pull requests you open, are asked to review, or are assigned show up here, from every repository you can see. Open one from a task's branch with Create Pull Request."
                     ) {

@@ -51,7 +51,8 @@ final class HostStore {
                     created_at REAL NOT NULL,
                     last_activity REAL,
                     last_stop_reason TEXT,
-                    queue_paused INTEGER NOT NULL DEFAULT 0
+                    queue_paused INTEGER NOT NULL DEFAULT 0,
+                    mcp_servers TEXT NOT NULL DEFAULT '[]'
                 );
                 CREATE UNIQUE INDEX IF NOT EXISTS sessions_agent_session ON sessions(agent_id, agent_session_id);
                 CREATE TABLE IF NOT EXISTS turns (
@@ -137,12 +138,13 @@ final class HostStore {
     func insertSession(_ session: StoredSession) throws {
         try database.run(
             """
-            INSERT INTO sessions (id, agent_id, agent_session_id, cwd, parent_id, origin, title, created_at, last_activity, last_stop_reason, queue_paused)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO sessions (id, agent_id, agent_session_id, cwd, parent_id, origin, title, created_at, last_activity, last_stop_reason, queue_paused, mcp_servers)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             .text(session.id.description), .text(session.agentID), .text(session.agentSessionID?.rawValue), .text(session.cwd),
             .text(session.parentID?.description), .text(session.origin.rawValue), .text(session.title), .date(session.createdAt),
-            .date(session.lastActivity), .text(session.lastStopReason), .bool(session.isQueuePaused)
+            .date(session.lastActivity), .text(session.lastStopReason), .bool(session.isQueuePaused),
+            .text(String(decoding: try JSONEncoder().encode(session.mcpServers), as: UTF8.self))
         )
     }
 
@@ -163,7 +165,10 @@ final class HostStore {
 
     func sessions() throws -> [StoredSession] {
         try database.query(
-            "SELECT id, agent_id, agent_session_id, cwd, parent_id, origin, title, created_at, last_activity, last_stop_reason, queue_paused FROM sessions ORDER BY created_at"
+            """
+            SELECT id, agent_id, agent_session_id, cwd, parent_id, origin, title, created_at, last_activity, last_stop_reason, queue_paused, mcp_servers
+            FROM sessions ORDER BY created_at
+            """
         ).compactMap(StoredSession.init(row:))
     }
 
@@ -222,7 +227,10 @@ final class HostStore {
 
     func recordDelivery(_ delivery: PromptDelivery, for requestID: UUID, in sessionID: HostSessionID) throws {
         try database.run(
-            "INSERT OR IGNORE INTO requests (request_id, session_id, delivery, at) VALUES (?, ?, ?, ?)",
+            """
+            INSERT INTO requests (request_id, session_id, delivery, at) VALUES (?, ?, ?, ?)
+            ON CONFLICT(request_id) DO UPDATE SET delivery = excluded.delivery
+            """,
             .text(requestID.uuidString), .text(sessionID.description), .text(delivery.rawValue), .date(.now)
         )
     }
@@ -309,10 +317,13 @@ struct StoredSession: Hashable {
     var lastActivity: Date?
     var lastStopReason: String?
     var isQueuePaused: Bool
+    /// ACP `McpServer` objects for the agent, handed over again on every reload.
+    var mcpServers: [JSONValue]
 
     init(
         id: HostSessionID, agentID: String, agentSessionID: SessionID?, cwd: String, parentID: HostSessionID?, origin: SessionOrigin,
-        title: String? = nil, createdAt: Date = .now, lastActivity: Date? = nil, lastStopReason: String? = nil, isQueuePaused: Bool = false
+        title: String? = nil, createdAt: Date = .now, lastActivity: Date? = nil, lastStopReason: String? = nil, isQueuePaused: Bool = false,
+        mcpServers: [JSONValue] = []
     ) {
         self.id = id
         self.agentID = agentID
@@ -325,16 +336,18 @@ struct StoredSession: Hashable {
         self.lastActivity = lastActivity
         self.lastStopReason = lastStopReason
         self.isQueuePaused = isQueuePaused
+        self.mcpServers = mcpServers
     }
 
     fileprivate init?(row: [SQLiteDatabase.Value]) {
         guard let id = row[0].text.flatMap(UUID.init(uuidString:)), let agentID = row[1].text, let cwd = row[3].text,
               let createdAt = row[7].date else { return nil }
+        let servers = row[11].text.flatMap { try? JSONDecoder().decode([JSONValue].self, from: Data($0.utf8)) } ?? []
         self.init(
             id: HostSessionID(id), agentID: agentID, agentSessionID: row[2].text.map(SessionID.init), cwd: cwd,
             parentID: row[4].text.flatMap(UUID.init(uuidString:)).map(HostSessionID.init),
             origin: row[5].text.flatMap(SessionOrigin.init(rawValue:)) ?? .unknown, title: row[6].text, createdAt: createdAt,
-            lastActivity: row[8].date, lastStopReason: row[9].text, isQueuePaused: row[10].bool
+            lastActivity: row[8].date, lastStopReason: row[9].text, isQueuePaused: row[10].bool, mcpServers: servers
         )
     }
 }

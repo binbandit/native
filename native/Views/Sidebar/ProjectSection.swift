@@ -10,7 +10,7 @@ struct ProjectSection<TaskAccessory: View>: View {
     let isExpanded: Binding<Bool>
     let drag: SidebarDragState
     let taskAccessory: (SessionSummary) -> TaskAccessory
-    /// Selecting a row also moves keyboard focus to the list, so arrows and Return work next.
+    /// A session row was clicked.
     let select: (SessionKey) -> Void
 
     var body: some View {
@@ -124,7 +124,7 @@ private struct ProjectEmptyRow: View {
             }
             .buttonStyle(SidebarRowButtonStyle())
             .trackHover($isHovered)
-            .help("New session in \(project.name) (⌘N)")
+            .help("New session in \(project.name)")
         } else {
             Text(
                 model.agents.contains { $0.status == .starting }

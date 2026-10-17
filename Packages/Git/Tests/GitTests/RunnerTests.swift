@@ -44,6 +44,23 @@ struct RunnerTests {
         #expect(leftovers.isEmpty)
     }
 
+    @Test func cancelledCallersDontStartCommands() async throws {
+        let runner = RecordingRunner()
+        let test = try await TestRepository.make(runner: runner)
+        defer { test.remove() }
+        let repository = try await test.repository
+        runner.commands.withLock { $0.removeAll() }
+
+        let task = Task {
+            withUnsafeCurrentTask { $0?.cancel() }
+            return try await repository.status()
+        }
+
+        await #expect(throws: GitError.cancelled) { try await task.value }
+        let ran = runner.commands.withLock { $0.count }
+        #expect(ran == 0)
+    }
+
     @Test func missingGitIsReported() async throws {
         let git = Git(environment: ["PATH": "/nonexistent"])
         await #expect(throws: GitError.gitNotFound) { try await git.version() }

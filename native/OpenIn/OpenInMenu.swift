@@ -22,7 +22,10 @@ enum OpenInMenu {
         }
         menu.addItem(.separator())
         let copyIcon = NSImage(systemSymbolName: "doc.on.doc", accessibilityDescription: nil)
-        menu.addItem(NSMenuItem("Copy Path", image: copyIcon) { model.copyPath(of: location) })
+        let copyPath = NSMenuItem("Copy Path", image: copyIcon) { model.copyPath(of: location) }
+        // Shown so its title lines up with the apps' (a hidden image leaves no gap).
+        copyPath.preferredImageVisibility = .visible
+        menu.addItem(copyPath)
         return menu
     }
 

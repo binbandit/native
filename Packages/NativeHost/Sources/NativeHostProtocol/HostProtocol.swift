@@ -122,12 +122,16 @@ public struct NewSessionParams: Codable, Sendable {
     public var cwd: String
     public var parentID: HostSessionID?
     public var origin: SessionOrigin
+    /// ACP `McpServer` objects for the agent, verbatim. The host hands them over again whenever it
+    /// reloads the session.
+    public var mcpServers: [JSONValue]
 
-    public init(agentID: String, cwd: String, parentID: HostSessionID? = nil, origin: SessionOrigin = .user) {
+    public init(agentID: String, cwd: String, parentID: HostSessionID? = nil, origin: SessionOrigin = .user, mcpServers: [JSONValue] = []) {
         self.agentID = agentID
         self.cwd = cwd
         self.parentID = parentID
         self.origin = origin
+        self.mcpServers = mcpServers
     }
 }
 
@@ -138,12 +142,14 @@ public struct OpenSessionParams: Codable, Sendable {
     public var agentSessionID: SessionID
     public var cwd: String
     public var title: String?
+    public var mcpServers: [JSONValue]
 
-    public init(agentID: String, agentSessionID: SessionID, cwd: String, title: String? = nil) {
+    public init(agentID: String, agentSessionID: SessionID, cwd: String, title: String? = nil, mcpServers: [JSONValue] = []) {
         self.agentID = agentID
         self.agentSessionID = agentSessionID
         self.cwd = cwd
         self.title = title
+        self.mcpServers = mcpServers
     }
 }
 
@@ -156,7 +162,7 @@ public struct SessionParams: Codable, Sendable {
 }
 
 /// Starts streaming a session's events to this client. With the `epoch` and last `seq` the client
-/// saw, only what it missed is sent; otherwise the whole log, from its `reset`.
+/// saw, only what it missed is replayed; otherwise the whole log, from its `reset`.
 public struct AttachParams: Codable, Sendable {
     public var sessionID: HostSessionID
     public var epoch: UUID?
@@ -169,13 +175,13 @@ public struct AttachParams: Codable, Sendable {
     }
 }
 
+/// The host replays the events as `_native/session/event` notifications before it answers, like
+/// ACP's `session/load`, so when this arrives the client has applied all of them.
 public struct AttachResult: Codable, Sendable {
     public var summary: HostSessionSummary
-    public var events: [HostEvent]
 
-    public init(summary: HostSessionSummary, events: [HostEvent]) {
+    public init(summary: HostSessionSummary) {
         self.summary = summary
-        self.events = events
     }
 }
 
