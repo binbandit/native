@@ -1,8 +1,8 @@
 # Grok AI (iOS)
 
-App id `6670324846`. $29M/mo, 3M downloads, 4.87 stars, #7 Productivity. 76 screens, walked in full on
-2026-10-17 (metadata for all; images downloaded and viewed for the 40 screens that bear on Native:
-chat, agent build, questions, automations, skills, settings, usage). Skipped imagery: Imagine, Image
+App id `6670324846`. $29M/mo, 3M downloads, 4.87 stars, #7 Productivity. 76 screens, metadata walked in
+full on 2026-10-17; 20 stills viewed (agent build, usage, questions, search activity, drawer, settings,
+automations, skills, menus) and 20 more downloaded for reference. Skipped imagery: Imagine, Image
 Editor, Video Generation, Country Explorer/Metrics (generated mini-apps), web views.
 Re-fetch with `get_screen(screen_ref="6670324846/<id>")`.
 

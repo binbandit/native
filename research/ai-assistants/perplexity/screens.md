@@ -1,8 +1,8 @@
 # Perplexity (iOS)
 
-App id `1668000334`. $7M/mo, 700K downloads, 4.82 stars. 27 screens, walked in full on 2026-10-17
-(images viewed for chat, options, models, "Computer", library, connectors, settings; auth and Spaces
-forms from metadata). Re-fetch with `get_screen(screen_ref="1668000334/<id>")`.
+App id `1668000334`. $7M/mo, 700K downloads, 4.82 stars. 27 screens, metadata walked in full on
+2026-10-17; 10 stills viewed (answer, follow-ups, options, models, Computer, home, library, connectors,
+settings), the rest from metadata. Re-fetch with `get_screen(screen_ref="1668000334/<id>")`.
 
 Why it matters for Native: cleanest "steps completed" summary, inline citations as chips, the best example
 of **quota microcopy at the point of use**, and "Computer" - a background multi-step agent mode with its

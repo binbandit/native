@@ -1,7 +1,8 @@
 # ChatGPT (iOS)
 
-App id `6448311069`. $299M/mo, 25M downloads, 4.83 stars, #2 Productivity. 37 screens, walked in full on
-2026-10-17 (onboarding auth screens skimmed from metadata only; everything else downloaded and viewed).
+App id `6448311069`. $299M/mo, 25M downloads, 4.83 stars, #2 Productivity. 37 screens, metadata walked in
+full on 2026-10-17; 10 stills viewed (home, generating, attach, chat menu, drawer, projects, Codex,
+settings), the rest from metadata.
 Re-fetch with `get_screen(screen_ref="6448311069/<id>")`.
 
 Why it matters for Native: the category's default grammar (most users' mental model of "an AI app"), and it

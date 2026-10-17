@@ -1,7 +1,8 @@
 # Claude by Anthropic (iOS)
 
-App id `6473753684`. $68M/mo, 8M downloads, 4.72 stars, #4 Productivity. 45 screens (3 videos), walked in
-full on 2026-10-17. Re-fetch any screen with `get_screen(screen_ref="6473753684/<id>")`.
+App id `6473753684`. $68M/mo, 8M downloads, 4.72 stars, #4 Productivity. 45 screens (3 videos), metadata
+walked in full on 2026-10-17; 30 stills viewed (home, composer, pickers, chat, artifacts, drawer, empty
+states, settings, onboarding), videos not viewed. Re-fetch any screen with `get_screen(screen_ref="6473753684/<id>")`.
 
 Why it matters for Native: the closest consumer analogue to a Claude Code harness (it even shows a Claude
 Code tool-call preview), the best-in-class model/effort picker, and a restrained, warm-neutral visual

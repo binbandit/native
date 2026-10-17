@@ -1,8 +1,8 @@
 # v0 by Vercel (iOS)
 
-App id `6745097949`. $50K/mo, 4.84 stars, #57 Developer Tools. 58 screens, walked in full on 2026-10-17
-(images viewed for the agent build transcript, questions, tasks, preview menu, history, GitHub connect,
-usage, settings; auth web views, pricing pages and the generated apps' own screens from metadata only).
+App id `6745097949`. $50K/mo, 4.84 stars, #57 Developer Tools. 58 screens, metadata walked in full on
+2026-10-17; 15 stills viewed (build transcript, checkpoints, questions, tasks, preview menu, summary,
+history, GitHub connect, usage, settings); auth, pricing and the generated apps from metadata only.
 Re-fetch with `get_screen(screen_ref="6745097949/<id>")`.
 
 Why it matters for Native: the library's only real **coding agent on a phone**. Its transcript is the same
