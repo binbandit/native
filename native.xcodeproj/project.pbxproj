@@ -192,6 +192,7 @@
 				00000000000000005E1EA502 /* Sparkle */,
 				0000000000000000005C5210 /* ScriptRuntime */,
 				000000000000000071E10010 /* Terminal */,
+				00000000000000000AC10010 /* MCPClient */,
 			);
 			productName = Native;
 			productReference = 000000000000000000000120 /* Native.app */;
@@ -232,6 +233,7 @@
 				0000000000000000004E4810 /* XCLocalSwiftPackageReference "Packages/NativeHost" */,
 				00000000000000005E1EA501 /* XCRemoteSwiftPackageReference "Sparkle" */,
 				0000000000000000005C5200 /* XCLocalSwiftPackageReference "Packages/ScriptRuntime" */,
+				00000000000000000AC10000 /* XCLocalSwiftPackageReference "Packages/MCPClient" */,
 			);
 			preferredProjectObjectVersion = 90;
 			productRefGroup = 000000000000000000000020 /* Products */;
@@ -746,6 +748,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Terminal;
 		};
+		00000000000000000AC10000 /* XCLocalSwiftPackageReference "Packages/MCPClient" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/MCPClient;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -804,6 +810,10 @@
 		000000000000000071E10010 /* Terminal */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Terminal;
+		};
+		00000000000000000AC10010 /* MCPClient */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = MCPClient;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
