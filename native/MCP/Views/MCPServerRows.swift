@@ -71,7 +71,7 @@ struct MCPManagedServerRow: View {
         }
         parts += library.skippedAgents(for: server).map(\.reason)
         if let cost = library.contextCost(of: server.name) {
-            parts.append("\(TokenFormat.compact(cost.tokens)) tokens of Claude Code's context")
+            parts.append("\(DSFormat.tokens(cost.tokens)) tokens of Claude Code's context")
         }
         return parts.joined(separator: " · ")
     }

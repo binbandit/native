@@ -85,7 +85,7 @@ struct SessionRow<Accessory: View>: View {
             .disabled(!model.canMove(target, .down))
         Divider()
         Button("Copy Session ID") {
-            PlatformPasteboard.copy(summary.info.sessionId.rawValue)
+            DSPasteboard.copy(summary.info.sessionId.rawValue)
         }
         Divider()
         Button("Archive", action: archive)

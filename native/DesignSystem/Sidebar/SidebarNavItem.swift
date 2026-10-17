@@ -53,6 +53,7 @@ public struct SidebarNavItem<Accessory: View>: View {
                     }
                 }
                 .padding(DS.Space.sm)
+                .frame(minHeight: DS.Size.minimumHitTarget)
                 .contentShape(.rect)
             }
             .buttonStyle(SidebarRowButtonStyle())

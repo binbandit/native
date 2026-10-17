@@ -43,7 +43,7 @@ private struct SidebarSwipeModifier: ViewModifier {
     @State private var width: CGFloat = 0
 
     /// Each revealed action is a touch target wide.
-    private static let actionWidth = DS.Size.touchTarget + DS.Space.lg
+    private static let actionWidth = DS.Size.minimumHitTarget + DS.Space.lg
 
     func body(content: Content) -> some View {
         content

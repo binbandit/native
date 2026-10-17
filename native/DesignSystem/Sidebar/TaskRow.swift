@@ -127,6 +127,7 @@ public struct TaskRow<Leading: View, Accessory: View>: View {
             .padding(.vertical, DS.Space.md)
             .padding(.leading, indent.leading)
             .padding(.trailing, DS.Space.sm)
+            .frame(minHeight: DS.Size.rowMinHeight)
             .contentShape(.rect)
         }
         .buttonStyle(SidebarRowButtonStyle())
