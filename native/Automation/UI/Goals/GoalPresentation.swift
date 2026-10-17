@@ -16,6 +16,9 @@ struct GoalPresentation: Hashable {
     let fraction: Double?
     let primaryAction: Action?
 
+    /// Spelled out for the tooltip, since the bar's figures are terse.
+    let usageHelp: String
+
     init(goal: Goal, isWorking: Bool, agentName: String, at now: Date) {
         let usage = goal.usage(at: now)
         let isBudgetSpent = goal.exhaustedBudget(at: now, iterationCeiling: GoalLoop.safetyIterationCeiling) != nil
@@ -24,11 +27,16 @@ struct GoalPresentation: Hashable {
             .compactMap(\.self)
             .joined(separator: " · ")
         fraction = usage.fractionUsed
+        usageHelp = [
+            "Iterations: \(usage.iterationsText)",
+            "active time: \(usage.elapsedText)",
+            usage.costText.map { "spend: \($0)" },
+        ].compactMap(\.self).joined(separator: ", ")
         let reason = goal.lastReason
         switch goal.status {
         case .active:
             label = "Goal"
-            let iteration = "Iteration \(goal.iterations + 1)"
+            let iteration = "Iteration \(goal.iterations + 1)" + (goal.budget.maxIterations.map { " of \($0)" } ?? "")
             detail = isWorking ? [iteration, reason ?? "working toward the goal"].joined(separator: " · ") : "\(iteration) starts when \(agentName) is free"
             primaryAction = .pause
         case .paused:
@@ -37,7 +45,7 @@ struct GoalPresentation: Hashable {
             primaryAction = .resume
         case .blocked:
             label = "Needs you"
-            detail = "\(agentName) needs you: \(reason ?? "it can't go on without your input"). Reply to continue."
+            detail = "\(agentName) needs you: \(Self.sentence(reason ?? "it can't go on without your input")) Reply to continue."
             primaryAction = .resume
         case .limited:
             label = isBudgetSpent ? "Budget used" : "Limited"
@@ -48,5 +56,11 @@ struct GoalPresentation: Hashable {
             detail = reason.map { "Done: \($0)" } ?? "\(agentName) reported the goal met"
             primaryAction = .clear
         }
+    }
+
+    /// Ends `text` with a period unless it already ends a sentence.
+    private static func sentence(_ text: String) -> String {
+        guard let last = text.last, !".?!".contains(last) else { return text }
+        return text + "."
     }
 }

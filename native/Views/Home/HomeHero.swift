@@ -15,6 +15,8 @@ struct HomeHero: View {
                 .nightSky(isEnabled: releaseChannel.isNightly)
             if releaseChannel.isNightly {
                 Badge("Nightly", style: .mono)
+                    // Keeps the sky's stars from showing through the letters.
+                    .background(.dsBackground, in: .rect(cornerRadius: DS.Radius.small))
             }
         }
         .foregroundStyle(.dsTextPrimary)

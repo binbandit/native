@@ -51,6 +51,11 @@ public struct TOMLError: Error, Hashable, Sendable, CustomStringConvertible {
     public var line: Int
     public var message: String
 
+    public init(line: Int, message: String) {
+        self.line = line
+        self.message = message
+    }
+
     public var description: String { "Line \(line): \(message)" }
 }
 

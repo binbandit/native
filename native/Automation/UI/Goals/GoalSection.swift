@@ -44,12 +44,13 @@ struct GoalSection: View {
                     .foregroundStyle(.dsTextTertiary)
                     .lineLimit(1)
                     .fixedSize()
+                    .help(presentation.usageHelp)
                 trailingActions(presentation)
             }
             Text(presentation.detail)
                 .font(.dsCaption)
                 .tracking(DS.Tracking.tight)
-                .foregroundStyle(goal.status == .blocked ? .dsAccentText : .dsTextSecondary)
+                .foregroundStyle(goal.status == .blocked ? .dsAttention : .dsTextSecondary)
                 .lineLimit(2)
                 .padding(.leading, DS.Size.rowLeading + DS.Space.md)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -112,7 +113,8 @@ struct GoalSection: View {
     private func tone(_ presentation: GoalPresentation) -> Badge.Tone {
         switch goal.status {
         case .active: .accent
-        case .blocked: .accent
+        // Badge has no attention tone yet; warning is the nearest amber.
+        case .blocked: .warning
         case .limited: .warning
         case .complete: .success
         case .paused: .neutral

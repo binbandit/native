@@ -2,7 +2,8 @@ import SwiftUI
 
 extension View {
     /// Draws a plain text field the way goal and workflow forms do, like the composer's surface:
-    /// 12pt text on the surface fill inside a 1pt border that darkens on focus.
+    /// 12pt text on the surface fill inside a 1pt border that darkens on focus. The text color is
+    /// left to the field, since setting one would also color its prompt.
     func automationField() -> some View {
         modifier(AutomationField())
     }
@@ -17,7 +18,6 @@ private struct AutomationField: ViewModifier {
             .textFieldStyle(.plain)
             .font(.dsBody)
             .tracking(DS.Tracking.tight)
-            .foregroundStyle(.dsTextPrimary)
             .focused($isFocused)
             .padding(.horizontal, DS.Space.md)
             .padding(.vertical, DS.Space.sm)

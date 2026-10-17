@@ -65,10 +65,5 @@ struct OpenInCommands: View {
                 Image(nsImage: model.icon(for: app))
             }
         }
-        .modifierKeyAlternate(.option) {
-            Button("Set \(app.name) as Default") {
-                model.setDefault(app)
-            }
-        }
     }
 }
