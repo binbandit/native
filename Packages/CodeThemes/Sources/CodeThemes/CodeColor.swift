@@ -35,10 +35,9 @@ public struct CodeColor: Sendable, Hashable, CustomStringConvertible {
         }
 
         func channel(_ foreground: UInt8, _ background: UInt8) -> UInt8 {
-            let value = (
-                Double(foreground) * foregroundAlpha
-                    + Double(background) * backgroundAlpha * (1 - foregroundAlpha)
-            ) / resultAlpha
+            let value =
+                (Double(foreground) * foregroundAlpha
+                    + Double(background) * backgroundAlpha * (1 - foregroundAlpha)) / resultAlpha
             return UInt8(value.rounded())
         }
 

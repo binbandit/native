@@ -16,16 +16,16 @@ extension CodeTheme {
             type: CodeColor(rgb: 0xC18401),
             operator: CodeColor(rgb: 0x383A42),
             regex: CodeColor(rgb: 0x0184BC),
-            invalid: CodeColor(rgb: 0x383A42), // Fallback: foreground.
-            punctuation: CodeColor(rgb: 0x383A42), // Fallback: foreground.
+            invalid: CodeColor(rgb: 0x383A42),  // Fallback: foreground.
+            punctuation: CodeColor(rgb: 0x383A42),  // Fallback: foreground.
             insertedForeground: CodeColor(rgb: 0x50A14F),
             insertedBackground: CodeColor(rgb: 0x00809B, alpha: 0x33),
             deletedForeground: CodeColor(rgb: 0xE45649),
-            deletedBackground: CodeColor(rgb: 0xE45649, alpha: 0x26), // Derived: deleted foreground.
+            deletedBackground: CodeColor(rgb: 0xE45649, alpha: 0x26),  // Derived: deleted foreground.
             changedForeground: CodeColor(rgb: 0xA626A4),
-            changedBackground: CodeColor(rgb: 0xA626A4, alpha: 0x26), // Derived: no VS Code changed-text background.
+            changedBackground: CodeColor(rgb: 0xA626A4, alpha: 0x26),  // Derived: no VS Code changed-text background.
             selection: CodeColor(rgb: 0xE5E5E6),
-            lineHighlight: CodeColor(rgb: 0x383A42, alpha: 0x0C) // Derived: missing line highlight background.
+            lineHighlight: CodeColor(rgb: 0x383A42, alpha: 0x0C)  // Derived: missing line highlight background.
         ),
         // one-dark-pro.json
         dark: CodePalette(
@@ -41,14 +41,14 @@ extension CodeTheme {
             type: CodeColor(rgb: 0xE5C07B),
             operator: CodeColor(rgb: 0xABB2BF),
             regex: CodeColor(rgb: 0x56B6C2),
-            invalid: CodeColor(rgb: 0xC24038), // Fallback: editorError.foreground.
-            punctuation: CodeColor(rgb: 0xABB2BF), // Fallback: foreground.
+            invalid: CodeColor(rgb: 0xC24038),  // Fallback: editorError.foreground.
+            punctuation: CodeColor(rgb: 0xABB2BF),  // Fallback: foreground.
             insertedForeground: CodeColor(rgb: 0x98C379),
             insertedBackground: CodeColor(rgb: 0x00809B, alpha: 0x33),
             deletedForeground: CodeColor(rgb: 0xE06C75),
-            deletedBackground: CodeColor(rgb: 0xE06C75, alpha: 0x26), // Derived: deleted foreground.
-            changedForeground: CodeColor(rgb: 0xABB2BF), // Fallback: gitDecoration.modifiedResourceForeground.
-            changedBackground: CodeColor(rgb: 0xABB2BF, alpha: 0x26), // Derived: no VS Code changed-text background.
+            deletedBackground: CodeColor(rgb: 0xE06C75, alpha: 0x26),  // Derived: deleted foreground.
+            changedForeground: CodeColor(rgb: 0xABB2BF),  // Fallback: gitDecoration.modifiedResourceForeground.
+            changedBackground: CodeColor(rgb: 0xABB2BF, alpha: 0x26),  // Derived: no VS Code changed-text background.
             selection: CodeColor(rgb: 0x677696, alpha: 0x60),
             lineHighlight: CodeColor(rgb: 0x2C313C)
         )

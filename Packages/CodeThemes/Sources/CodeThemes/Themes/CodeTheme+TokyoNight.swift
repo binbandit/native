@@ -23,7 +23,7 @@ extension CodeTheme {
             deletedForeground: CodeColor(rgb: 0x914C54),
             deletedBackground: CodeColor(rgb: 0xDB4B4B, alpha: 0x22),
             changedForeground: CodeColor(rgb: 0x6183BB),
-            changedBackground: CodeColor(rgb: 0x6183BB, alpha: 0x26), // Derived: no VS Code changed-text background.
+            changedBackground: CodeColor(rgb: 0x6183BB, alpha: 0x26),  // Derived: no VS Code changed-text background.
             selection: CodeColor(rgb: 0x515C7E, alpha: 0x4D),
             lineHighlight: CodeColor(rgb: 0x1E202E)
         )

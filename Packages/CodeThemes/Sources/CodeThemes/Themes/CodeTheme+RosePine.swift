@@ -18,12 +18,12 @@ extension CodeTheme {
             regex: CodeColor(rgb: 0xEA9D34),
             invalid: CodeColor(rgb: 0xB4637A),
             punctuation: CodeColor(rgb: 0x797593),
-            insertedForeground: CodeColor(rgb: 0x56949F), // Fallback: gitDecoration.addedResourceForeground.
+            insertedForeground: CodeColor(rgb: 0x56949F),  // Fallback: gitDecoration.addedResourceForeground.
             insertedBackground: CodeColor(rgb: 0x56949F, alpha: 0x26),
-            deletedForeground: CodeColor(rgb: 0x797593), // Fallback: gitDecoration.deletedResourceForeground.
+            deletedForeground: CodeColor(rgb: 0x797593),  // Fallback: gitDecoration.deletedResourceForeground.
             deletedBackground: CodeColor(rgb: 0xB4637A, alpha: 0x26),
-            changedForeground: CodeColor(rgb: 0xD7827E), // Fallback: gitDecoration.modifiedResourceForeground.
-            changedBackground: CodeColor(rgb: 0xD7827E, alpha: 0x26), // Derived: no VS Code changed-text background.
+            changedForeground: CodeColor(rgb: 0xD7827E),  // Fallback: gitDecoration.modifiedResourceForeground.
+            changedBackground: CodeColor(rgb: 0xD7827E, alpha: 0x26),  // Derived: no VS Code changed-text background.
             selection: CodeColor(rgb: 0x6E6A86, alpha: 0x14),
             lineHighlight: CodeColor(rgb: 0x6E6A86, alpha: 0x0D)
         ),
@@ -43,12 +43,12 @@ extension CodeTheme {
             regex: CodeColor(rgb: 0xF6C177),
             invalid: CodeColor(rgb: 0xEB6F92),
             punctuation: CodeColor(rgb: 0x908CAA),
-            insertedForeground: CodeColor(rgb: 0x9CCFD8), // Fallback: gitDecoration.addedResourceForeground.
+            insertedForeground: CodeColor(rgb: 0x9CCFD8),  // Fallback: gitDecoration.addedResourceForeground.
             insertedBackground: CodeColor(rgb: 0x9CCFD8, alpha: 0x26),
-            deletedForeground: CodeColor(rgb: 0x908CAA), // Fallback: gitDecoration.deletedResourceForeground.
+            deletedForeground: CodeColor(rgb: 0x908CAA),  // Fallback: gitDecoration.deletedResourceForeground.
             deletedBackground: CodeColor(rgb: 0xEB6F92, alpha: 0x26),
-            changedForeground: CodeColor(rgb: 0xEBBCBA), // Fallback: gitDecoration.modifiedResourceForeground.
-            changedBackground: CodeColor(rgb: 0xEBBCBA, alpha: 0x26), // Derived: no VS Code changed-text background.
+            changedForeground: CodeColor(rgb: 0xEBBCBA),  // Fallback: gitDecoration.modifiedResourceForeground.
+            changedBackground: CodeColor(rgb: 0xEBBCBA, alpha: 0x26),  // Derived: no VS Code changed-text background.
             selection: CodeColor(rgb: 0x6E6A86, alpha: 0x33),
             lineHighlight: CodeColor(rgb: 0x6E6A86, alpha: 0x1A)
         )
