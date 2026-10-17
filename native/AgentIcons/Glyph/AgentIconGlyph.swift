@@ -3,9 +3,9 @@ import Foundation
 
 /// A monochrome vector icon, drawn in whatever color the text around it uses, like an SF Symbol.
 /// It's how the ACP registry ships agent icons: a 16×16 SVG that fills with `currentColor`.
-nonisolated struct AgentIconGlyph: Sendable {
+nonisolated struct AgentIconGlyph {
     /// One filled shape. Shapes keep their own fill rule, so one glyph can mix them.
-    struct Piece: Sendable {
+    struct Piece {
         /// In the glyph's own coordinates (`viewBox`).
         let path: CGPath
         let evenOdd: Bool

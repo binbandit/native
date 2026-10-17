@@ -17,12 +17,12 @@ final class TerminalStore {
     /// view (`TerminalPanelModifier`) before any terminal starts.
     @ObservationIgnored private var appearance: (TerminalAppearance, TerminalChrome)?
     @ObservationIgnored private var appliedStyle: TerminalStyle?
-    @ObservationIgnored private let makeEngine: () -> Result<TerminalEngine, TerminalEngineError>
+    @ObservationIgnored private let makeEngine: @MainActor () -> Result<TerminalEngine, TerminalEngineError>
 
     /// - Parameter makeEngine: Starts the engine the first time a terminal opens.
     init(
         preferences: TerminalPreferences = TerminalPreferences(),
-        makeEngine: @escaping () -> Result<TerminalEngine, TerminalEngineError> = TerminalStore.platformEngine
+        makeEngine: @escaping @MainActor () -> Result<TerminalEngine, TerminalEngineError> = TerminalStore.platformEngine
     ) {
         self.preferences = preferences
         self.makeEngine = makeEngine

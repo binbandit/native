@@ -1,3 +1,5 @@
+import Foundation
+
 extension BuiltInPlugins {
     /// Pi, the minimal coding agent, through `pi-acp`, the adapter the ACP registry lists for it. Pi
     /// speaks its own RPC protocol (`pi --mode rpc`), not ACP, so the adapter translates, running

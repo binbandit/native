@@ -54,15 +54,25 @@ struct AgentQuestionnaireAnswers: Equatable {
             if question.allowsMultiple, !picked.isEmpty {
                 content[question.key] = .array(picked.map(JSONValue.string))
             } else if let first = picked.first {
-                content[question.key] = .string(first)
+                content[question.key] = question.valueType == .boolean ? .bool(first == "true") : .string(first)
             } else if question.customKey == nil, !typedAnswer(for: question).isEmpty {
                 // A free-text question has no companion field: the text is the answer.
-                content[question.key] = .string(typedAnswer(for: question))
+                content[question.key] = Self.value(typedAnswer(for: question), as: question.valueType)
             }
             if let customKey = question.customKey, !typedAnswer(for: question).isEmpty {
                 content[customKey] = .string(typedAnswer(for: question))
             }
         }
         return content
+    }
+
+    /// Typed text as the type the field asks for; text that isn't a number stays text, for the agent
+    /// to reject with its own message.
+    private static func value(_ text: String, as type: AgentQuestionnaire.ValueType) -> JSONValue {
+        switch type {
+        case .number: Double(text).map(JSONValue.number) ?? .string(text)
+        case .integer: Int(text).map { .number(Double($0)) } ?? .string(text)
+        case .boolean, .string: .string(text)
+        }
     }
 }

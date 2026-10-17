@@ -1,4 +1,5 @@
 import CoreGraphics
+import Foundation
 
 /// Turns SVG path data (`M1 1H11V8Z`) into a `CGPath`: every command, absolute and relative, with
 /// implicit repeats and the compact forms exporters write (`1.5.5`, `-1-2`, arc flags run together).

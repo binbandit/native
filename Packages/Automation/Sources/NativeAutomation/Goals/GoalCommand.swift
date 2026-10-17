@@ -14,7 +14,7 @@ public nonisolated enum GoalCommand: Codable, Hashable, Sendable {
     case clear
 
     /// The command typed in `draft`, or nil when it isn't one.
-    init?(parsing draft: String) {
+    public init?(parsing draft: String) {
         let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard text.lowercased().hasPrefix("/goal") else { return nil }
         let rest = text.dropFirst(5)

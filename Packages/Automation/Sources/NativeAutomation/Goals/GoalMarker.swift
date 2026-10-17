@@ -25,7 +25,7 @@ public nonisolated struct GoalMarker: Hashable, Sendable {
     }
 
     /// The last status line in `reply`, if there is one.
-    init?(parsing reply: String) {
+    public init?(parsing reply: String) {
         guard let (_, marker) = Self.lastMarker(in: reply) else { return nil }
         self = marker
     }
