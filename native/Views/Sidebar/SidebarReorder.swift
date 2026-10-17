@@ -16,6 +16,8 @@ struct SidebarReorder {
 extension FocusedValues {
     /// The main window's sidebar reordering, for the Session menu's Move Up and Move Down.
     @Entry var sidebarReorder: SidebarReorder?
+    /// Whether the sidebar shows only the tasks that need the user, for the View menu (⌥⌘J).
+    @Entry var sidebarNeedsYouFilter: Binding<Bool>?
 }
 
 /// What a keyboard move applies to.

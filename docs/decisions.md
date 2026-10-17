@@ -100,7 +100,10 @@ experiment is declared once in a typed registry (id, title, description, stage: 
 default) and toggled in Settings ▸ Labs. An alternative design is its own implementation behind a
 small style protocol (for example a bubble-style transcript beside the standard one), never `if`
 branches scattered through shared views, so an experiment can be promoted, kept as a choice, or
-deleted without touching the default path.
+deleted without touching the default path. Small changes are gates (on/off at one call site) or
+parameters (a typed value); alternatives are variants that replace an extension point's default.
+Every experiment names an owner and a review date, so none linger. Plugins will contribute to the
+same extension points later, as a second source. See "Experiments" in `docs/architecture.md`.
 
 ## 2026-10-17: Any machine can be a host
 

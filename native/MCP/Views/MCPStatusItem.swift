@@ -1,3 +1,4 @@
+import MCPClient
 import SwiftUI
 
 /// The status bar's MCP item: the selected session's servers, and whether any needs attention.

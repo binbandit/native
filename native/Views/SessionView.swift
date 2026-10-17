@@ -51,6 +51,9 @@ struct SessionView: View {
                     GitChangesToolbarButton(model: repository, isPresented: $showsChanges)
                 }
                 .visibilityPriority(.high)
+                ToolbarItem {
+                    MCPSessionStatusButton(session: session)
+                }
             }
             .focusedSceneValue(\.gitChangesInspector, $showsChanges)
             .refreshesGitStatus(of: session, in: git)
