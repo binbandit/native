@@ -61,7 +61,7 @@ public struct LaunchdSessionJob: Sendable {
 
     /// The bundled plist, pointed at the helper by absolute path (launchd only resolves
     /// `BundleProgram` for jobs registered through `SMAppService`).
-    private func sessionPlist() throws -> (String, [String: Any]) {
+    func sessionPlist() throws -> (String, [String: Any]) {
         guard let data = try? Data(contentsOf: bundledPlist),
             var plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
             let label = plist["Label"] as? String, let program = plist["BundleProgram"] as? String

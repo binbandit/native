@@ -53,6 +53,10 @@ struct GhosttyConfigurationTests {
         #expect(values(of: "scrollback-limit-lines", in: unlimited) == ["unlimited"])
     }
 
+    @Test func saysItsXtermSoEveryMachineAndSetuidProgramKnowsIt() {
+        #expect(values(of: "term", in: configuration().text) == ["xterm-256color"])
+    }
+
     @Test func clearsGhosttysBindingsBeforeAddingTerminalOnes() {
         let bindings = values(of: "keybind", in: configuration().text)
         #expect(bindings.first == "clear")

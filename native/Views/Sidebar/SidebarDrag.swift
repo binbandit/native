@@ -12,6 +12,8 @@ final class SidebarDragState {
     enum Item: Hashable {
         case project(Project.ID)
         case session(SessionKey, in: Project.ID)
+        /// A task in the Pinned section, which reorders only among pinned tasks.
+        case pinned(SessionKey)
     }
 
     /// Where a drop would land: before (`.top`) or after (`.bottom`) a row.
@@ -49,6 +51,8 @@ final class SidebarDragState {
             dragged != target
         case (.session(let dragged, let draggedProject), .session(let target, let targetProject)):
             dragged != target && draggedProject == targetProject
+        case (.pinned(let dragged), .pinned(let target)):
+            dragged != target
         default:
             false
         }
@@ -219,6 +223,10 @@ extension AppModel {
             let keys = sessions(in: project).map(\.id)
             guard let from = keys.firstIndex(of: source), let to = keys.firstIndex(of: target) else { return }
             moveSessions(in: project, fromOffsets: [from], toOffset: drop.edge == .top ? to : to + 1)
+        case (.pinned(let source), .pinned(let target)):
+            let keys = pinnedSessions.map(\.id)
+            guard let from = keys.firstIndex(of: source), let to = keys.firstIndex(of: target) else { return }
+            movePinnedSessions(fromOffsets: [from], toOffset: drop.edge == .top ? to : to + 1)
         default:
             break
         }

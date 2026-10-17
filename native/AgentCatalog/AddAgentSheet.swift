@@ -20,9 +20,10 @@ struct AddAgentSheet: View {
             }
             .padding(DS.Space.xl)
             SeparatorLine()
-            ScrollView {
-                AddAgentList(agents: agents, summaries: summaries, checkAgain: checkAgain)
-                    .padding(DS.Space.xl)
+            // As tall as the list, scrolling only when it outgrows the sheet.
+            ViewThatFits(in: .vertical) {
+                list
+                ScrollView { list }
             }
             SeparatorLine()
             HStack {
@@ -33,8 +34,14 @@ struct AddAgentSheet: View {
             }
             .padding(DS.Space.lg)
         }
-        .frame(width: 520, height: 520)
+        .frame(width: 520)
+        .frame(maxHeight: 640)
         .background(.dsBackground)
+    }
+
+    private var list: some View {
+        AddAgentList(agents: agents, summaries: summaries, checkAgain: checkAgain)
+            .padding(DS.Space.xl)
     }
 }
 

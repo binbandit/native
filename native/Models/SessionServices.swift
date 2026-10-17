@@ -1,3 +1,5 @@
+import Foundation
+
 /// The app-wide pieces a session works with.
 struct SessionServices {
     let plugins: PluginRegistry

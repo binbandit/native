@@ -31,7 +31,7 @@ let package = Package(
         .executableTarget(name: "FakeACPAgent", dependencies: ["NativeHostProtocol", "ACP"]),
         .testTarget(
             name: "NativeHostTests",
-            dependencies: ["NativeHost", "NativeHostMac", "NativeHostClient", "NativeHostProtocol", "ACP", "native-host", "FakeACPAgent"]
+            dependencies: ["NativeHost", "NativeHostMac", "NativeHostClient", "NativeHostProtocol", "ACP", .product(name: "Exec", package: "Exec"), "native-host", "FakeACPAgent"]
         ),
     ]
 )

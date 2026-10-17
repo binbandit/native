@@ -25,15 +25,21 @@ enum RecoveryPlanner {
         return agentReceived(prompt, replayedUserMessages: replayedUserMessages) ? .resume : .resend
     }
 
-    /// Whether the agent's transcript ends with the prompt as its latest user message. Agents may
-    /// add context around a prompt when they store it, so containment counts.
+    /// How far back from the end of the agent's transcript a prompt still counts as its latest.
+    /// Agents can record something after a prompt they were cut off on: Claude Code adds a
+    /// "[Request interrupted by user]" user message when its process is killed (seen in E2E).
+    static let recentUserMessages = 3
+
+    /// Whether the prompt is among the agent's latest user messages. Agents may add context around a
+    /// prompt when they store it, so containment counts. A false positive (the same text sent twice
+    /// in a row, the second lost) only means a harmless "you were interrupted" message.
     static func agentReceived(_ prompt: String, replayedUserMessages: [String]) -> Bool {
         let prompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let last = replayedUserMessages.last?.trimmingCharacters(in: .whitespacesAndNewlines), !prompt.isEmpty
-        else {
-            return false
+        guard !prompt.isEmpty else { return false }
+        return replayedUserMessages.suffix(recentUserMessages).contains { message in
+            let message = message.trimmingCharacters(in: .whitespacesAndNewlines)
+            return message == prompt || message.contains(prompt)
         }
-        return last == prompt || last.contains(prompt)
     }
 
     /// What interrupted the host's previous run: a restart of the Mac if it has booted since, and

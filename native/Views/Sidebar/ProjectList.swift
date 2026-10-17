@@ -14,8 +14,12 @@ struct ProjectList<TaskAccessory: View>: View {
     @State private var drag = SidebarDragState()
 
     var body: some View {
-        let groups = model.projects.all.map { project in (project, visibleSessions(in: project.id)) }
+        let groups = model.projects.all.map { project in (project, visible(model.sessions(in: project.id))) }
+        let pinned = visible(model.pinnedSessions)
         VStack(alignment: .leading, spacing: DS.Space.xxs) {
+            if !pinned.isEmpty {
+                PinnedSection(sessions: pinned, drag: drag, taskAccessory: taskAccessory, select: select)
+            }
             SectionHeader(showsOnlyNeedsYou ? "Needs You" : "Projects") {
                 IconButton(
                     showsOnlyNeedsYou ? "Show All Tasks (⌥⌘J)" : "Show Only Tasks That Need You (⌥⌘J)",
@@ -33,7 +37,7 @@ struct ProjectList<TaskAccessory: View>: View {
 
             if model.projects.all.isEmpty {
                 AddProjectPrompt()
-            } else if showsOnlyNeedsYou, groups.allSatisfy({ $0.1.isEmpty }) {
+            } else if showsOnlyNeedsYou, pinned.isEmpty, groups.allSatisfy({ $0.1.isEmpty }) {
                 NothingNeedsYou { showsOnlyNeedsYou = false }
             }
             ForEach(groups, id: \.0.id) { project, sessions in
@@ -67,10 +71,9 @@ struct ProjectList<TaskAccessory: View>: View {
         }
     }
 
-    /// A project's sessions as the list shows them: all of them, or with the filter on, only those
-    /// waiting on the user (asking for something, or finished while they looked elsewhere).
-    private func visibleSessions(in project: Project.ID) -> [SessionSummary] {
-        let sessions = model.sessions(in: project)
+    /// Sessions as the list shows them: all of them, or with the filter on, only those waiting on
+    /// the user (asking for something, or finished while they looked elsewhere).
+    private func visible(_ sessions: [SessionSummary]) -> [SessionSummary] {
         guard showsOnlyNeedsYou else { return sessions }
         return sessions.filter { TaskStatus(model.session($0.id)).needsAttention || model.isUnread($0.id) }
     }

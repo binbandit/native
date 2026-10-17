@@ -12,17 +12,23 @@ public struct SessionState: Sendable {
     public private(set) var usage: Usage?
 
     private var toolCallIndices: [String: Int] = [:]
+    /// The clocks of live turns, keyed by the index of the prompt that started each one.
+    private(set) var turnClocks: [Int: TurnClock] = [:]
+    /// Where the running live turn starts. Only its items get times; replayed history has none.
+    private(set) var openTurn: Int?
     private var subagentIndices: [SessionID: Int] = [:]
     private var sessionMessageIndices: [String: Int] = [:]
 
     public init() {}
 
-    public mutating func apply(_ update: SessionUpdate) {
+    /// Folds one update in. `date` is when it arrived; only items of a live turn keep it.
+    public mutating func apply(_ update: SessionUpdate, at date: Date = .now) {
+        let date = openTurn == nil ? nil : date
         switch update {
-        case .userMessageChunk(let chunk): appendChunk(chunk, role: .user)
-        case .agentMessageChunk(let chunk): appendChunk(chunk, role: .agent)
-        case .agentThoughtChunk(let chunk): appendChunk(chunk, role: .thought)
-        case .toolCall(let update), .toolCallUpdate(let update): upsertToolCall(update)
+        case .userMessageChunk(let chunk): appendChunk(chunk, role: .user, at: date)
+        case .agentMessageChunk(let chunk): appendChunk(chunk, role: .agent, at: date)
+        case .agentThoughtChunk(let chunk): appendChunk(chunk, role: .thought, at: date)
+        case .toolCall(let update), .toolCallUpdate(let update): upsertToolCall(update, at: date)
         case .plan(let entries): plan = entries
         case .availableCommands(let commands): availableCommands = commands
         case .configOptions(let options): configOptions = options
@@ -64,18 +70,23 @@ public struct SessionState: Sendable {
     }
 
     /// Records a prompt the user sent. Agents don't echo live prompts back, only on replay.
-    /// `steered` marks a message added to a turn already in progress.
-    public mutating func appendUserMessage(_ text: String, steered: Bool = false) {
-        items.append(.message(TranscriptMessage(role: .user, text: text, wasSteered: steered)))
+    /// `steered` marks a message added to a turn already in progress; any other prompt starts a live
+    /// turn, timed from `date` until `endTurn`.
+    public mutating func appendUserMessage(_ text: String, steered: Bool = false, at date: Date = .now) {
+        if !steered {
+            openTurn = items.count
+            turnClocks[items.count] = TurnClock(startedAt: date)
+        }
+        items.append(.message(TranscriptMessage(role: .user, text: text, wasSteered: steered, startedAt: date, updatedAt: date)))
     }
 
     public mutating func appendNotice(_ text: String, isError: Bool) {
         items.append(.notice(TranscriptNotice(text: text, isError: isError)))
     }
 
-    public mutating func requestPermission(_ request: RequestPermissionRequest, id: RequestID) {
+    public mutating func requestPermission(_ request: RequestPermissionRequest, id: RequestID, at date: Date = .now) {
         // The request carries the tool call's latest details, which may be newer than the last update.
-        upsertToolCall(request.toolCall)
+        upsertToolCall(request.toolCall, at: openTurn == nil ? nil : date)
         guard let index = toolCallIndices[request.toolCall.toolCallId], case .toolCall(var call) = items[index] else { return }
         call.permission = PendingPermission(requestID: id, options: request.options)
         items[index] = .toolCall(call)
@@ -100,14 +111,20 @@ public struct SessionState: Sendable {
 
     /// Wraps up a prompt turn. ACP v1 has no status for tool calls a cancellation interrupted, so
     /// they're marked here; any stop other than a normal one is noted in the transcript.
-    public mutating func endTurn(_ stopReason: StopReason) {
+    public mutating func endTurn(_ stopReason: StopReason, at date: Date = .now) {
         if stopReason == .cancelled {
             for index in toolCallIndices.values {
                 guard case .toolCall(var call) = items[index], !call.status.isFinished else { continue }
                 call.status = .cancelled
                 call.permission = nil
+                if call.startedAt != nil { call.finishedAt = date }
                 items[index] = .toolCall(call)
             }
+        }
+        if let openTurn {
+            turnClocks[openTurn]?.endedAt = date
+            turnClocks[openTurn]?.stopReason = stopReason
+            self.openTurn = nil
         }
         switch stopReason {
         case .endTurn: break
@@ -122,7 +139,7 @@ public struct SessionState: Sendable {
 
     // MARK: - Folding
 
-    private mutating func appendChunk(_ chunk: ContentChunk, role: TranscriptMessage.Role) {
+    private mutating func appendChunk(_ chunk: ContentChunk, role: TranscriptMessage.Role, at date: Date?) {
         let text: String
         switch chunk.content {
         case .text(let string): text = string
@@ -133,9 +150,10 @@ public struct SessionState: Sendable {
         // Continue the last message when it has the same role and, if the agent sends ids, the same id.
         if case .message(var last) = items.last, last.role == role, chunk.messageId == nil || chunk.messageId == last.messageID {
             last.text += text
+            last.updatedAt = date ?? last.updatedAt
             items[items.count - 1] = .message(last)
         } else {
-            items.append(.message(TranscriptMessage(role: role, text: text, messageID: chunk.messageId)))
+            items.append(.message(TranscriptMessage(role: role, text: text, messageID: chunk.messageId, startedAt: date, updatedAt: date)))
         }
     }
 
@@ -172,13 +190,18 @@ public struct SessionState: Sendable {
         }
     }
 
-    private mutating func upsertToolCall(_ update: ToolCallUpdate) {
+    private mutating func upsertToolCall(_ update: ToolCallUpdate, at date: Date?) {
         if let index = toolCallIndices[update.toolCallId], case .toolCall(var call) = items[index] {
             call.merge(update)
+            if call.status.isFinished, call.finishedAt == nil, call.startedAt != nil {
+                call.finishedAt = date
+            }
             items[index] = .toolCall(call)
         } else {
             var call = ToolCallState(id: update.toolCallId)
             call.merge(update)
+            call.startedAt = date
+            if call.status.isFinished { call.finishedAt = date }
             toolCallIndices[update.toolCallId] = items.count
             items.append(.toolCall(call))
         }
@@ -239,6 +262,9 @@ public struct TranscriptMessage: Hashable, Sendable {
     public var messageID: String?
     /// A user message sent into a turn that was already running.
     public var wasSteered = false
+    /// When a live message began and last grew; nil for replayed history.
+    public var startedAt: Date?
+    public var updatedAt: Date?
 }
 
 public struct TranscriptNotice: Hashable, Sendable {
@@ -259,6 +285,9 @@ public struct ToolCallState: Hashable, Sendable {
     public var rawOutput: JSONValue?
     /// Set while the agent waits for the user to approve this call.
     public var permission: PendingPermission?
+    /// When a live call was first announced and when it finished; nil for replayed history.
+    public var startedAt: Date?
+    public var finishedAt: Date?
 
     mutating func merge(_ update: ToolCallUpdate) {
         if let title = update.title { self.title = title }

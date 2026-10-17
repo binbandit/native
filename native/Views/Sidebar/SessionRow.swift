@@ -10,6 +10,8 @@ struct SessionRow<Accessory: View>: View {
     @Environment(AppModel.self) private var model
     @Environment(\.undoManager) private var undoManager
     let summary: SessionSummary
+    /// Grouped under a project header, or flush in the Pinned section.
+    var indent: TaskRowIndent = .grouped
     let accessory: Accessory
     let select: () -> Void
 
@@ -27,6 +29,10 @@ struct SessionRow<Accessory: View>: View {
         model.isUnread(summary.id)
     }
 
+    private var isPinned: Bool {
+        model.isPinned(summary.id)
+    }
+
     var body: some View {
         if model.renaming == summary.id {
             SessionTitleField(summary: summary, status: TaskStatus(session))
@@ -38,6 +44,7 @@ struct SessionRow<Accessory: View>: View {
                 isUnread: isUnread,
                 date: session?.lastActivity ?? summary.info.updatedDate,
                 badge: badge,
+                indent: indent,
                 leading: AgentIcon(agent: summary.agent),
                 accessory: accessory,
                 action: select,
@@ -48,7 +55,7 @@ struct SessionRow<Accessory: View>: View {
             .simultaneousGesture(TapGesture(count: 2).onEnded(rename))
             .contextMenu { menu }
             .sidebarSwipeActions(
-                leading: [readAction],
+                leading: [readAction, pinAction],
                 trailing: [
                     SidebarSwipeAction("Archive", systemImage: "archivebox", tint: .dsInfo, action: archive),
                     SidebarSwipeAction("Delete", systemImage: "trash", tint: .dsDanger) { isConfirmingDelete = true },
@@ -59,6 +66,7 @@ struct SessionRow<Accessory: View>: View {
             .accessibilityActions {
                 Button("Rename", action: rename)
                 Button(isUnread ? "Mark as Read" : "Mark as Unread", action: toggleUnread)
+                Button(isPinned ? "Unpin" : "Pin", action: togglePinned)
                 Button("Archive", action: archive)
                 Button("Move Up") { model.move(target, .up) }
                 Button("Move Down") { model.move(target, .down) }
@@ -78,6 +86,7 @@ struct SessionRow<Accessory: View>: View {
     @ViewBuilder private var menu: some View {
         Button("Rename…", action: rename)
         Button(isUnread ? "Mark as Read" : "Mark as Unread", action: toggleUnread)
+        Button(isPinned ? "Unpin" : "Pin", action: togglePinned)
         Divider()
         Button("Move Up") { model.move(target, .up) }
             .disabled(!model.canMove(target, .up))
@@ -101,8 +110,12 @@ struct SessionRow<Accessory: View>: View {
         )
     }
 
+    private var pinAction: SidebarSwipeAction {
+        SidebarSwipeAction(isPinned ? "Unpin" : "Pin", systemImage: isPinned ? "pin.slash" : "pin", tint: .dsWarning, action: togglePinned)
+    }
+
     private var target: SidebarMoveTarget {
-        .session(summary.id, in: summary.project)
+        isPinned ? .pinned(summary.id) : .session(summary.id, in: summary.project)
     }
 
     /// Queued follow-ups, counted at the trailing edge.
@@ -111,9 +124,12 @@ struct SessionRow<Accessory: View>: View {
         return .count(count)
     }
 
-    /// The agent and title, then what the session is waiting on, so triage needs no click.
+    /// The agent and title (and project, when pinned away from it), then what the session is
+    /// waiting on, so triage needs no click.
     private var tooltip: String {
-        ["\(summary.agent.displayName) · \(title)", session?.sidebarAsk].compactMap(\.self).joined(separator: "\n")
+        let project = indent == .flat ? model.projects.project(summary.project).map { " · \($0.name)" } : nil
+        let line = "\(summary.agent.displayName) · \(title)\(project ?? "")"
+        return [line, session?.sidebarAsk].compactMap(\.self).joined(separator: "\n")
     }
 
     private var accessibilityLabel: String {
@@ -126,6 +142,10 @@ struct SessionRow<Accessory: View>: View {
 
     private func toggleUnread() {
         model.setUnread(summary.id, !isUnread)
+    }
+
+    private func togglePinned() {
+        model.setPinned(summary.id, !isPinned, undoManager: undoManager)
     }
 
     private func archive() {
