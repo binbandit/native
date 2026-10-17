@@ -1,4 +1,3 @@
-#if EXPEDITIONS_WIP
 import NativeAutomation
 import NativeExpeditions
 import SwiftUI
@@ -109,4 +108,3 @@ struct ExpeditionSeatRow: View {
         .accessibilityValue(status.label)
     }
 }
-#endif

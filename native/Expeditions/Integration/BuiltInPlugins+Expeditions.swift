@@ -1,4 +1,3 @@
-#if EXPEDITIONS_WIP
 import Foundation
 
 extension BuiltInPlugins {
@@ -6,4 +5,3 @@ extension BuiltInPlugins {
     /// same expeditions the plugin drives.
     static let expeditions = ExpeditionsPlugin()
 }
-#endif

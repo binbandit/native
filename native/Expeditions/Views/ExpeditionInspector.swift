@@ -1,4 +1,3 @@
-#if EXPEDITIONS_WIP
 import NativeAutomation
 import NativeExpeditions
 import SwiftUI
@@ -138,4 +137,3 @@ struct ExpeditionInspector<Transcript: View>: View {
         }
     }
 }
-#endif

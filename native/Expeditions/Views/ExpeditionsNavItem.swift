@@ -1,4 +1,3 @@
-#if EXPEDITIONS_WIP
 import SwiftUI
 
 /// "Expeditions" in the sidebar's top half. It counts the expeditions waiting on the user.
@@ -33,4 +32,3 @@ enum ExpeditionsMetrics {
     /// The crew and logbook column beside the route on wide windows.
     static let sideColumn: CGFloat = 280
 }
-#endif

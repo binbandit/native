@@ -1,4 +1,3 @@
-#if EXPEDITIONS_WIP
 import NativeAutomation
 import NativeExpeditions
 import SwiftUI
@@ -124,4 +123,3 @@ struct ExpeditionCrewPanel: View {
         message = ""
     }
 }
-#endif
