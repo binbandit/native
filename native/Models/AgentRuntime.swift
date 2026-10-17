@@ -1,0 +1,137 @@
+import ACP
+import Foundation
+import Observation
+
+/// One agent's process and connection, and how starting it went. Each agent runs on its own, so
+/// one failing leaves the others alone.
+@Observable
+final class AgentRuntime {
+    typealias Status = AgentRuntimeStatus
+
+    let agent: AgentDefinition
+    private(set) var status = Status.starting
+    /// What the agent says about itself, such as its version.
+    private(set) var info: Implementation?
+    private(set) var capabilities: AgentCapabilities?
+    /// Ways the agent offers to sign in, for when it turns requests away with `auth_required`.
+    private(set) var authMethods: [AuthMethod] = []
+    /// The agent turned a request away until the user signs in.
+    private(set) var needsSignIn = false
+    private(set) var isSigningIn = false
+
+    private var process: AgentProcess?
+    /// Bumped whenever the process is replaced, so events from an old one are dropped.
+    private var generation = 0
+
+    init(agent: AgentDefinition) {
+        self.agent = agent
+    }
+
+    /// The connection, while the agent can take requests.
+    var connection: ACPConnection? {
+        status == .ready ? process?.connection : nil
+    }
+
+    var isReady: Bool {
+        status == .ready
+    }
+
+    /// The agent's launched process (env, which execs the agent), for resource reporting; nil while
+    /// it isn't running.
+    var processIdentifier: Int32? {
+        process?.processIdentifier
+    }
+
+    /// Launches the agent and initializes the connection. Its events, including `.disconnected`
+    /// when it exits, go to `onEvent`.
+    func start(environment: [String: String], onEvent: @escaping @MainActor (AgentEvent) -> Void) async {
+        guard process == nil else { return }
+        generation += 1
+        let generation = generation
+        status = .starting
+        needsSignIn = false
+        let command = agent.command(environment: environment)
+        guard Self.isInstalled(command) else {
+            status = .notInstalled(command: command.executable)
+            return
+        }
+        do {
+            let process = try AgentProcess(command) { [weak self] event in
+                await self?.receive(event, generation: generation, onEvent: onEvent)
+            }
+            self.process = process
+            await process.start()
+            let response = try await process.connection.send(InitializeRequest(clientInfo: Self.clientInfo))
+            guard generation == self.generation else { return }
+            guard response.protocolVersion == ACP.protocolVersion else {
+                throw RPCError(code: 0, message: "\(agent.displayName) speaks ACP version \(response.protocolVersion); Native supports version \(ACP.protocolVersion).")
+            }
+            info = response.agentInfo
+            capabilities = response.agentCapabilities
+            authMethods = response.authMethods
+            status = .ready
+        } catch {
+            guard generation == self.generation else { return }
+            fail(error.localizedDescription)
+        }
+    }
+
+    /// Ends the process. Nothing it sends from here on is delivered.
+    func stop() {
+        generation += 1
+        process?.terminate()
+        process = nil
+    }
+
+    /// Signs in with one of `authMethods`. The agent may open a browser and wait for the user.
+    func signIn(with method: AuthMethod) async throws {
+        guard let connection else { return }
+        isSigningIn = true
+        defer { isSigningIn = false }
+        _ = try await connection.send(AuthenticateRequest(methodId: method.id))
+        needsSignIn = false
+    }
+
+    /// Records whether `error` is the agent asking the user to sign in.
+    @discardableResult
+    func noteSignInRequired(by error: any Error) -> Bool {
+        guard (error as? RPCError)?.isAuthRequired == true else { return false }
+        needsSignIn = true
+        return true
+    }
+
+    private func receive(_ event: AgentEvent, generation: Int, onEvent: @MainActor (AgentEvent) -> Void) {
+        // Ignore stragglers from a process we've already replaced.
+        guard generation == self.generation else { return }
+        if case .disconnected = event {
+            fail("\(agent.displayName) exited.")
+        }
+        onEvent(event)
+    }
+
+    private func fail(_ message: String) {
+        // A dying agent reports twice (EOF, then the failed request); the first, with stderr, wins.
+        if case .failed = status { return }
+        let stderr = process?.recentStderr.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        process?.terminate()
+        process = nil
+        status = .failed(stderr.isEmpty ? message : "\(message)\n\n\(stderr)")
+    }
+
+    /// Whether the command resolves the way `AgentProcess` will run it: an absolute path, or a name
+    /// on the environment's PATH.
+    private static func isInstalled(_ command: AgentCommand) -> Bool {
+        let fileManager = FileManager.default
+        if command.executable.hasPrefix("/") {
+            return fileManager.isExecutableFile(atPath: command.executable)
+        }
+        return command.environment["PATH", default: ""].split(separator: ":").contains { directory in
+            fileManager.isExecutableFile(atPath: URL(filePath: String(directory)).appending(path: command.executable).path(percentEncoded: false))
+        }
+    }
+
+    private static var clientInfo: Implementation {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0"
+        return Implementation(name: "native", title: "Native", version: version)
+    }
+}

@@ -1,0 +1,284 @@
+import ACP
+import AppKit
+import SwiftUI
+import UniformTypeIdentifiers
+
+/// The prompt composer, after the reference app's: one surface pinned under the transcript that stacks queued
+/// follow-ups, the agent's plan, the draft and a row of session controls, with slash commands
+/// floating above it. Its keys follow docs/keyboard.md.
+struct ComposerView: View {
+    @Bindable var session: SessionModel
+
+    @AppStorage(FollowUpBehavior.storageKey) private var followUp = FollowUpBehavior.defaultValue
+    @FocusState private var isFocused: Bool
+    /// The highlighted row of the slash-command list.
+    @State private var highlighted = 0
+    /// Escape closes the command list until the draft stops being a bare "/command".
+    @State private var commandsDismissed = false
+    @State private var isPlanExpanded = false
+    @State private var isModelPickerOpen = false
+    @State private var isAttaching = false
+    @State private var isDropTargeted = false
+    /// The queued follow-up open in the editor; Return saves it back to the queue.
+    @State private var editingQueued: SessionModel.QueuedPrompt.ID?
+    /// The autonomy level Plan Mode returns to, remembered from before it started.
+    @State private var autonomyBeforePlan: String?
+
+    private var canEdit: Bool {
+        session.phase != .loading && session.phase != .disconnected
+    }
+
+    private var isWorking: Bool {
+        session.phase == .prompting
+    }
+
+    /// The slash commands to list: only while the draft is a bare "/command" being typed.
+    private var commandMatches: [AvailableCommand] {
+        guard !commandsDismissed, let query = SlashCommandQuery(draft: session.draft) else { return [] }
+        return query.matches(in: session.state.availableCommands)
+    }
+
+    var body: some View {
+        let settings = ComposerSettings(session.state.configOptions)
+        let commands = commandMatches
+        surface(settings, commands: commands)
+            .overlay(alignment: .top) {
+                if !commands.isEmpty {
+                    // Float above the composer instead of growing it, so the transcript doesn't move:
+                    // a zero-height frame on the top edge, with the list hanging up out of it.
+                    SlashCommandList(commands: commands, highlighted: $highlighted, onChoose: insert)
+                        .padding(.bottom, DS.Space.md)
+                        .frame(height: 0, alignment: .bottom)
+                }
+            }
+            .frame(maxWidth: transcriptColumnWidth)
+            .padding(.horizontal, DS.Space.xxl)
+            .padding(.top, DS.Space.md)
+            .padding(.bottom, DS.Space.xl)
+            .frame(maxWidth: .infinity)
+            .onAppear { isFocused = true }
+            .onChange(of: session.draft) { draftChanged() }
+            // ⌘L and ⇧⌘E are menu commands; they reach the composer through the session.
+            .onChange(of: session.focusComposerRequest) { isFocused = true }
+            .onChange(of: session.isModelPickerRequested, initial: true) { _, isRequested in
+                guard isRequested else { return }
+                isModelPickerOpen = true
+                session.isModelPickerRequested = false
+            }
+            .onChange(of: settings.autonomy?.value, initial: true) { _, mode in
+                if let mode, mode != ComposerSettings.planValue {
+                    autonomyBeforePlan = mode
+                }
+            }
+            .fileImporter(isPresented: $isAttaching, allowedContentTypes: [.item], allowsMultipleSelection: true) { result in
+                if case .success(let urls) = result {
+                    insertMentions(of: urls)
+                }
+            }
+    }
+
+    // MARK: - Layout
+
+    private func surface(_ settings: ComposerSettings, commands: [AvailableCommand]) -> some View {
+        let plan = PlanProgress(entries: session.state.plan)
+        // Each child is a section of the surface, with a rule between it and the next.
+        return ComposerSurface(isFloating: true, isDropTargeted: isDropTargeted) {
+            // While commands are listed, they take the place of the sections above the draft.
+            if commands.isEmpty {
+                if !session.queuedPrompts.isEmpty {
+                    QueuedPromptsSection(
+                        prompts: session.queuedPrompts,
+                        editing: editingQueued,
+                        // After a cancelled turn the queue waits, idle, until one is sent by hand.
+                        sendNow: isWorking ? (session.supportsSteering ? .steer : nil) : .send,
+                        onSendNow: { id in Task { await session.steerQueued(id) } },
+                        onEdit: edit,
+                        onRemove: remove
+                    )
+                }
+                if plan.isActive {
+                    ComposerPlanSection(plan: plan, isWorking: isWorking, isExpanded: $isPlanExpanded)
+                }
+            }
+            inputSection(commands: commands)
+            ComposerControlsRow(
+                settings: settings,
+                resumedAutonomy: autonomyBeforePlan,
+                usage: session.state.usage,
+                followUpHint: isWorking ? FollowUpHint(preferred: followUp, supportsSteering: session.supportsSteering, agentName: session.agentName) : nil,
+                isModelPickerOpen: $isModelPickerOpen,
+                onAttach: { isAttaching = true },
+                onSet: set,
+                onCycleEffort: { apply(settings.nextEffort) },
+                onCycleAutonomy: { apply(settings.nextAutonomy) },
+                onTogglePlan: { apply(settings.togglingPlan(resumedAutonomy: autonomyBeforePlan)) }
+            )
+            .disabled(!canEdit)
+        }
+        .dropDestination(for: URL.self) { urls, _ in
+            insertMentions(of: urls)
+            return !urls.isEmpty
+        } isTargeted: {
+            isDropTargeted = $0
+        }
+        .animation(.dsStandard, value: plan.isActive)
+        .animation(.dsStandard, value: session.queuedPrompts)
+    }
+
+    private func inputSection(commands: [AvailableCommand]) -> some View {
+        HStack(alignment: .bottom, spacing: 0) {
+            ComposerEditor(text: $session.draft, placeholder: placeholder, isFocused: $isFocused) { press in
+                handleKey(press, commands: commands)
+            }
+            .disabled(!canEdit)
+            // the reference app shows Send only once there's something to send, and Stop while the agent works.
+            if session.canCancel {
+                ComposerStopButton(isEscapeEnabled: commands.isEmpty) {
+                    Task { await session.cancel() }
+                }
+                .padding(DS.Space.md)
+                .transition(.opacity)
+            } else if session.canSend {
+                ComposerSendButton { submit(followUp) }
+                    .padding(DS.Space.md)
+                    .transition(.opacity)
+            }
+        }
+        .frame(minHeight: DS.Size.composerInputMinHeight)
+        .background {
+            // ⌘. stops the turn too; a button takes one shortcut, so this one is invisible.
+            if session.canCancel {
+                Button("Stop") { Task { await session.cancel() } }
+                    .keyboardShortcut(".", modifiers: .command)
+                    .opacity(0)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
+        }
+        .animation(.dsQuick, value: session.canSend)
+        .animation(.dsQuick, value: session.canCancel)
+    }
+
+    private var placeholder: String {
+        let agent = session.agentName
+        return switch session.phase {
+        case .loading: "Waiting for session…"
+        case .disconnected: "\(agent) isn’t running"
+        case .prompting where session.needsApproval: "\(agent) is waiting for your approval…"
+        case .prompting: "Write a follow-up for \(agent)…"
+        case .idle where session.state.items.isEmpty: "What would you like \(agent) to work on?"
+        case .idle: "Message \(agent), or type / for commands"
+        }
+    }
+
+    // MARK: - Keyboard
+
+    private func handleKey(_ press: KeyPress, commands: [AvailableCommand]) -> KeyPress.Result {
+        guard let key = ComposerKeyMap.Key(press.key) else { return .ignored }
+        let context = ComposerKeyMap.Context(
+            isCommandListOpen: !commands.isEmpty,
+            isDraftEmpty: session.draft.isEmpty,
+            isWorking: isWorking,
+            hasQueuedPrompts: !session.queuedPrompts.isEmpty,
+            hasLastPrompt: session.state.lastPrompt != nil,
+            preferredFollowUp: followUp
+        )
+        let modifiers = ComposerKeyMap.Modifiers(press)
+        guard let action = ComposerKeyMap.action(for: key, modifiers: modifiers, isRepeat: press.phase == .repeat, in: context) else {
+            return .ignored
+        }
+        perform(action, commands: commands)
+        return .handled
+    }
+
+    private func perform(_ action: ComposerKeyMap.Action, commands: [AvailableCommand]) {
+        switch action {
+        case .moveHighlight(let delta):
+            highlighted = min(max(highlighted + delta, 0), commands.count - 1)
+        case .insertHighlightedCommand:
+            if commands.indices.contains(highlighted) {
+                insert(commands[highlighted])
+            }
+        case .closeCommandList:
+            commandsDismissed = true
+        case .recallLastPrompt:
+            session.draft = session.state.lastPrompt ?? ""
+        case .editLastQueuedPrompt:
+            if let last = session.queuedPrompts.last {
+                edit(last)
+            }
+        case .submit(let behavior):
+            submit(behavior)
+        case .moveFocus(let forward):
+            if forward {
+                NSApp.keyWindow?.selectNextKeyView(nil)
+            } else {
+                NSApp.keyWindow?.selectPreviousKeyView(nil)
+            }
+        case .swallow:
+            break
+        }
+    }
+
+    // MARK: - Actions
+
+    private func draftChanged() {
+        highlighted = 0
+        if SlashCommandQuery(draft: session.draft) == nil {
+            commandsDismissed = false
+        }
+        if session.draft.isEmpty {
+            editingQueued = nil
+        }
+    }
+
+    /// Sends the draft; while the agent works, queues or steers it, or saves the queued message
+    /// being edited.
+    private func submit(_ behavior: FollowUpBehavior) {
+        let text = session.draft.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard canEdit, !session.isSubagent, !text.isEmpty else { return }
+        if let id = editingQueued, session.queuedPrompts.contains(where: { $0.id == id }) {
+            session.updateQueued(id, text: text)
+            editingQueued = nil
+            session.draft = ""
+            return
+        }
+        // The queued message may have gone out while it was being edited; then it's a new message.
+        editingQueued = nil
+        Task { await session.submit(behavior) }
+    }
+
+    private func insert(_ command: AvailableCommand) {
+        session.draft = SlashCommandQuery.draft(inserting: command)
+        isFocused = true
+    }
+
+    private func edit(_ prompt: SessionModel.QueuedPrompt) {
+        editingQueued = prompt.id
+        session.draft = prompt.text
+        isFocused = true
+    }
+
+    private func remove(_ id: SessionModel.QueuedPrompt.ID) {
+        if editingQueued == id {
+            editingQueued = nil
+            session.draft = ""
+        }
+        session.removeQueued(id)
+    }
+
+    private func set(_ setting: SelectSetting, to value: String) {
+        Task { await session.setConfigOption(setting.option, to: value) }
+    }
+
+    private func apply(_ change: ComposerSettings.Change?) {
+        if let change {
+            set(change.setting, to: change.value)
+        }
+    }
+
+    private func insertMentions(of urls: [URL]) {
+        session.draft = FileMentions.draft(session.draft, mentioning: urls, relativeTo: session.cwd)
+        isFocused = true
+    }
+}

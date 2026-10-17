@@ -1,0 +1,239 @@
+import SwiftUI
+
+/// Renders agent Markdown (block-level structure included) with native SwiftUI views.
+///
+/// Foundation parses the source; each run's `presentationIntent` locates it in the block tree
+/// (paragraph inside list item inside list, ...), and the tree renders recursively. Inline styles
+/// (emphasis, code spans, links) stay on the `AttributedString` and render natively in `Text`.
+struct MarkdownView: View {
+    let source: String
+
+    init(_ source: String) {
+        self.source = source
+    }
+
+    var body: some View {
+        if let blocks = MarkdownNode.blocks(from: source) {
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(blocks) { block in
+                    MarkdownBlockView(node: block)
+                        .padding(.top, block.id == blocks.first?.id ? 0 : block.spacingAbove)
+                }
+            }
+            .textSelection(.enabled)
+        } else {
+            Text(verbatim: source)
+                .textSelection(.enabled)
+        }
+    }
+}
+
+// MARK: - Block tree
+
+private struct MarkdownNode: Identifiable {
+    /// The parser's identity for this block, unique within one document.
+    let id: Int
+    let kind: PresentationIntent.Kind
+    /// Inline content; only innermost blocks (paragraphs, headers, code, table cells) have any.
+    var text = AttributedString()
+    var children: [MarkdownNode] = []
+
+    static func blocks(from source: String) -> [MarkdownNode]? {
+        let options = AttributedString.MarkdownParsingOptions(
+            interpretedSyntax: .full,
+            failurePolicy: .returnPartiallyParsedIfPossible
+        )
+        guard let attributed = try? AttributedString(markdown: source, options: options) else { return nil }
+        var root = MarkdownNode(id: -1, kind: .paragraph)
+        for run in attributed.runs {
+            let intent = run.presentationIntent ?? PresentationIntent(.paragraph, identity: -2)
+            // `components` runs innermost first; insert from the outermost container down.
+            root.insert(styled(attributed[run.range]), along: intent.components.reversed()[...])
+        }
+        return root.children
+    }
+
+    private mutating func insert(_ text: AttributedString, along path: ArraySlice<PresentationIntent.IntentType>) {
+        guard let component = path.first else {
+            self.text.append(text)
+            return
+        }
+        // Runs arrive in document order, so a block's runs are contiguous.
+        if children.last?.id != component.identity {
+            children.append(MarkdownNode(id: component.identity, kind: component.kind))
+        }
+        children[children.count - 1].insert(text, along: path.dropFirst())
+    }
+
+    /// Gives code spans a faint backdrop so they read as code, not just a font change.
+    private static func styled(_ run: AttributedSubstring) -> AttributedString {
+        var text = AttributedString(run)
+        if text.inlinePresentationIntent?.contains(.code) == true {
+            text.backgroundColor = Color.primary.opacity(0.07)
+        }
+        return text
+    }
+
+    var spacingAbove: CGFloat {
+        if case .header = kind { 18 } else { 10 }
+    }
+}
+
+// MARK: - Rendering
+
+private struct MarkdownBlockView: View {
+    let node: MarkdownNode
+    var listDepth = 0
+
+    var body: some View {
+        switch node.kind {
+        case .header(let level):
+            Text(node.text)
+                .font(Self.headerFont(level))
+                .frame(maxWidth: .infinity, alignment: .leading)
+        case .codeBlock(let language):
+            CodeBlockView(code: String(node.text.characters), language: language)
+        case .thematicBreak:
+            Divider()
+                .padding(.vertical, 4)
+        case .blockQuote:
+            children
+                .foregroundStyle(.secondary)
+                .padding(.leading, 13)
+                .overlay(alignment: .leading) {
+                    Capsule()
+                        .fill(.tertiary)
+                        .frame(width: 3)
+                }
+        case .orderedList, .unorderedList:
+            list
+        case .table(let columns):
+            MarkdownTableView(rows: node.children, columns: columns)
+        default:
+            // Paragraphs, plus containers (list items) holding nested blocks.
+            if node.children.isEmpty {
+                Text(node.text)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                children
+            }
+        }
+    }
+
+    private var children: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            ForEach(node.children) { child in
+                MarkdownBlockView(node: child, listDepth: listDepth)
+            }
+        }
+    }
+
+    private var list: some View {
+        Grid(alignment: .leading, horizontalSpacing: 6, verticalSpacing: 4) {
+            ForEach(node.children) { item in
+                GridRow(alignment: .firstTextBaseline) {
+                    Text(marker(for: item))
+                        .monospacedDigit()
+                        .foregroundStyle(.secondary)
+                        .gridColumnAlignment(.trailing)
+                    MarkdownBlockView(node: item, listDepth: listDepth + 1)
+                }
+            }
+        }
+        .padding(.leading, 4)
+    }
+
+    private func marker(for item: MarkdownNode) -> String {
+        guard node.kind == .orderedList, case .listItem(let ordinal) = item.kind else {
+            return ["•", "◦", "▪︎"][listDepth % 3]
+        }
+        return "\(ordinal)."
+    }
+
+    private static func headerFont(_ level: Int) -> Font {
+        switch level {
+        case 1: .title2.bold()
+        case 2: .title3.bold()
+        default: .headline
+        }
+    }
+}
+
+private struct CodeBlockView: View {
+    let code: String
+    let language: String?
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            if let language, !language.isEmpty {
+                Text(language)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            ScrollView(.horizontal) {
+                Text(verbatim: code.hasSuffix("\n") ? String(code.dropLast()) : code)
+                    .font(.callout.monospaced())
+                    .lineSpacing(1)
+            }
+            .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
+            .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .nestedSurface(.fill.quinary, minimumRadius: 10)
+    }
+}
+
+private struct MarkdownTableView: View {
+    let rows: [MarkdownNode]
+    let columns: [PresentationIntent.TableColumn]
+
+    var body: some View {
+        Grid(alignment: .leading, horizontalSpacing: 18, verticalSpacing: 6) {
+            ForEach(rows) { row in
+                let isHeader = row.kind == .tableHeaderRow
+                GridRow {
+                    // Empty cells produce no runs, so place cells by column index.
+                    let cells = row.cellsByColumn
+                    ForEach(columns.indices, id: \.self) { column in
+                        Text(cells[column] ?? AttributedString())
+                            .fontWeight(isHeader ? .semibold : nil)
+                            .gridColumnAlignment(Self.alignment(columns[column].alignment))
+                    }
+                }
+                if isHeader || row.id != rows.last?.id {
+                    Divider()
+                        .gridCellUnsizedAxes(.horizontal)
+                }
+            }
+        }
+    }
+
+    private static func alignment(_ alignment: PresentationIntent.TableColumn.Alignment) -> HorizontalAlignment {
+        switch alignment {
+        case .center: .center
+        case .right: .trailing
+        default: .leading
+        }
+    }
+}
+
+private extension MarkdownNode {
+    var cellsByColumn: [Int: AttributedString] {
+        Dictionary(children.compactMap { cell in
+            guard case .tableCell(let column) = cell.kind else { return nil }
+            return (column, cell.text)
+        }, uniquingKeysWith: { first, _ in first })
+    }
+}
+
+#if DEBUG
+#Preview("Markdown") {
+    ScrollView {
+        MarkdownView(TranscriptFixtures.markdown)
+            .padding(20)
+    }
+    .frame(width: 640, height: 720)
+}
+#endif

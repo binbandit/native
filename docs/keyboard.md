@@ -1,0 +1,83 @@
+# Keyboard
+
+Native is fully usable from the keyboard. This table is the single source of truth: every shortcut
+here exists, appears in its menu (so it's discoverable and listed in the Keyboard Shortcuts sheet),
+and nothing outside this table claims a key.
+
+Standard macOS behavior comes for free and must not be broken: Tab / Shift-Tab move focus through
+controls (with Full Keyboard Access on), arrow keys move within lists and menus, Space activates the
+focused control, Escape dismisses popovers and sheets, ⌘W closes the window, ⌘Q quits, ⌘, opens
+Settings.
+
+## Sending
+
+| Keys | While the agent is idle | While the agent is working |
+| --- | --- | --- |
+| Return | Send | The preferred follow-up behavior (Settings: Queue or Steer) |
+| ⌘Return | Send | The other follow-up behavior |
+| Shift-Return, Option-Return | New line | New line |
+| Escape | Close the slash-command list if open | Stop the turn (with the slash-command list closed) |
+| ⌘. | | Stop the turn |
+| ↑ in an empty composer | Recall the last prompt | Edit the last queued message |
+
+**Queue** holds the message as a chip above the composer and sends it when the turn ends; queued
+messages go out one per turn, in order. Chips can be edited, removed, or steered into the running
+turn right away. **Steer** adds the message to the running turn (`_session/steering`); agents that
+don't support steering queue it instead, and the hint says so.
+
+The composer always shows the current mapping as a hint while the agent works, e.g.
+"↩ Queue · ⌘↩ Steer".
+
+## Slash commands
+
+| Keys | Action |
+| --- | --- |
+| / at the start of the composer | Open the command list |
+| ↑ / ↓ | Move the selection |
+| Return or Tab | Insert the selected command |
+| Escape | Close the list |
+
+## Permission requests
+
+The oldest pending request in the visible session answers these: a tool's permission request or a
+workflow step waiting for approval. They're chosen not to collide with text editing in the composer.
+
+| Keys | Action |
+| --- | --- |
+| ⌘Y | Allow once (approve the workflow step) |
+| ⌥⌘Y | Allow always (when offered) |
+| ⌘⇧⌫ | Reject |
+
+## Sessions and navigation
+
+| Keys | Action | Menu |
+| --- | --- | --- |
+| ⌘N | New session with the last-used agent | File |
+| ⌥⌘N | New session with… (agent picker) | File |
+| ⌘O | Open folder | File |
+| ⌘L | Focus the composer | Session |
+| ⌘[ / ⌘] | Back / forward through the sessions you've viewed | Go |
+| ⌘1 – ⌘9 | Go to the Nth session in the sidebar | Session |
+| ⌃Tab / ⌃⇧Tab | Next / previous session | Session |
+| Return on a selected sidebar session | Rename it (Escape cancels, Return commits) | Session |
+| ⌃⌘S | Show or hide the sidebar | View |
+| ⌥⌘↑ / ⌥⌘↓ | Move the selected project or session up / down | Session |
+| ⌘⇧P | Pull requests | Go |
+| ⌥⌘I | Show or hide the subagent inspector | View |
+| ⌘⇧D | Show or hide the changes inspector (the task's uncommitted git changes) | View |
+| ⌃⌘A | Keep Mac awake: cycle Off → While agents work → On (View ▸ Keep Mac Awake) | View |
+
+## Session settings
+
+| Keys | Action | Menu |
+| --- | --- | --- |
+| ⌘⇧M | Next permission mode | Session |
+| ⌘⇧E | Model picker | Session |
+| ⌥⌘G | Set or edit the session's goal | Session |
+| ⌥⌘R | Run a workflow | Session |
+
+## Ownership
+
+Menu commands live in `NativeApp`; composer keys in `native/Views/Composer*`; permission keys in
+`native/Views/Transcript/ToolCallView.swift`; sidebar keys in `SidebarView`. Change a key here first,
+then in code.
