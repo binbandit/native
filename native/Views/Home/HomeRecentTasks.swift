@@ -32,7 +32,11 @@ struct HomeRecentTasks<ID: Hashable>: View {
             }
         }
         .frame(maxWidth: HomeLayout.columnWidth)
-        .onGeometryChange(for: Bool.self) { $0.size.width < HomeLayout.compactWidth } action: { isCompact = $0 }
+        .onGeometryChange(for: Bool.self) {
+            $0.size.width < HomeLayout.compactWidth
+        } action: {
+            isCompact = $0
+        }
     }
 
     /// The row's trailing label: its project when the tasks span projects, else its agent (the glyph

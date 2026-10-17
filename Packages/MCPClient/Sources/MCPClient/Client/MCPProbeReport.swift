@@ -20,7 +20,9 @@ public struct MCPProbeReport: Hashable, Sendable {
     /// Streamable HTTP may only speak SSE.
     public var transport: MCPTransport.Kind?
     /// UTF-8 size of the tool definitions (names, descriptions and input schemas) as the server
-    /// sent them. Agents put these in the model's context.
+    /// sent them. Agents put these in the model's context, but how many tokens that makes depends
+    /// on the agent: Claude Code counts rea's 1.9 MB as about 197k tokens, ten bytes a token, while
+    /// a plain-prose definition is nearer four. Only the agent's own report gives the real figure.
     public var toolDefinitionBytes: Int
 
     public init(
@@ -35,12 +37,6 @@ public struct MCPProbeReport: Hashable, Sendable {
         self.duration = duration
         self.transport = transport
         self.toolDefinitionBytes = toolDefinitionBytes
-    }
-
-    /// A rough count of the context tokens the tool definitions take: about four bytes of JSON per
-    /// token. A `/context` report, where the agent has one, is the real figure.
-    public var estimatedToolTokens: Int {
-        (toolDefinitionBytes + 3) / 4
     }
 
     public var isConnected: Bool {

@@ -35,6 +35,10 @@ struct HomeNeedsYou<ID: Hashable>: View {
         .padding(DS.Space.sm)
         .background(.dsSurface, in: shape)
         .overlay { shape.strokeBorder(.dsAttention.opacity(HomeLayout.attentionOutlineOpacity), lineWidth: 1) }
-        .onGeometryChange(for: Bool.self) { $0.size.width < HomeLayout.compactWidth } action: { isCompact = $0 }
+        .onGeometryChange(for: Bool.self) {
+            $0.size.width < HomeLayout.compactWidth
+        } action: {
+            isCompact = $0
+        }
     }
 }
