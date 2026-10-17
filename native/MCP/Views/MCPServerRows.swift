@@ -30,7 +30,9 @@ struct MCPManagedServerRow: View {
                         Button("Check") { Task { await library.probe(key) } }
                         Divider()
                         ForEach(library.agents) { agent in
-                            if case .success(let command) = AgentCLI.add(server.config(with: library.secrets(for: server.id)), to: agent.format) {
+                            if case .success(let command) = AgentCLI.add(
+                                server.config(with: library.secrets(for: server.id)), to: agent.format)
+                            {
                                 Button("Add to \(agent.name)'s Own Config…") { onCommand(command) }
                             }
                         }
@@ -46,7 +48,9 @@ struct MCPManagedServerRow: View {
                     .menuIndicator(.hidden)
                     .fixedSize()
                     .accessibilityLabel("Actions for \(server.name)")
-                    SettingsSwitch(server.name, isOn: Binding(get: { server.isEnabled }, set: { library.setEnabled($0, for: server.id) }))
+                    SettingsSwitch(
+                        server.name,
+                        isOn: Binding(get: { server.isEnabled }, set: { library.setEnabled($0, for: server.id) }))
                 }
             }
             if isExpanded {
@@ -57,17 +61,21 @@ struct MCPManagedServerRow: View {
 
     /// Who gets it, then any agent that doesn't and why.
     private var detail: String {
-        let agents: String = switch server.agents {
-        case .all: "All agents"
-        case .only(let ids): library.agents.filter { ids.contains($0.id.rawValue) }.map(\.name).joined(separator: ", ")
-        }
-        let projects: String = switch server.projects {
-        case .all: "all projects"
-        case .only(let paths): paths.map { URL(filePath: $0).lastPathComponent }.joined(separator: ", ")
-        }
+        let agents: String =
+            switch server.agents {
+            case .all: "All agents"
+            case .only(let ids):
+                library.agents.filter { ids.contains($0.id.rawValue) }.map(\.name).joined(separator: ", ")
+            }
+        let projects: String =
+            switch server.projects {
+            case .all: "all projects"
+            case .only(let paths): paths.map { URL(filePath: $0).lastPathComponent }.joined(separator: ", ")
+            }
         var parts = ["\(agents) · \(projects)"]
         if !server.excludedProjects.isEmpty {
-            parts.append("Off in " + server.excludedProjects.map { URL(filePath: $0).lastPathComponent }.joined(separator: ", "))
+            parts.append(
+                "Off in " + server.excludedProjects.map { URL(filePath: $0).lastPathComponent }.joined(separator: ", "))
         }
         parts += library.skippedAgents(for: server).map(\.reason)
         if let cost = library.contextCost(of: server.name) {
@@ -93,7 +101,9 @@ struct MCPAgentServerRow: View {
                 detail: Text(detail)
             ) {
                 Badge(group.primary.server.transport.kind.displayName)
-                MCPHealthLabel(health: library.health(of: group.key, inactive: group.isLoaded ? nil : group.primary.status.inactiveReason))
+                MCPHealthLabel(
+                    health: library.health(
+                        of: group.key, inactive: group.isLoaded ? nil : group.primary.status.inactiveReason))
                 if let cost = library.contextCost(of: group.name) {
                     MCPContextCostLabel(cost: cost)
                 }
@@ -104,25 +114,33 @@ struct MCPAgentServerRow: View {
                 }
             }
             if isExpanded {
-                MCPServerDetails(library: library, key: group.key, name: group.name, project: group.primary.scope.project, entry: group.primary, onCommand: onCommand)
+                MCPServerDetails(
+                    library: library, key: group.key, name: group.name, project: group.primary.scope.project,
+                    entry: group.primary, onCommand: onCommand)
             }
         }
     }
 
     /// Which agents load it from where: "Claude Code · User, Codex · User (off)".
     private var detail: String {
-        var parts = [group.entries.map { entry in
-            let location = entry.scope.project.map { "\(entry.scope.displayName) in \($0.lastPathComponent)" } ?? entry.scope.displayName
-            let status = entry.status.inactiveReason.map { " (\($0.lowercased()))" } ?? ""
-            return "\(entry.format.displayName) · \(location)\(status)"
-        }.joined(separator: ", ")]
+        var parts = [
+            group.entries.map { entry in
+                let location =
+                    entry.scope.project.map { "\(entry.scope.displayName) in \($0.lastPathComponent)" }
+                    ?? entry.scope.displayName
+                let status = entry.status.inactiveReason.map { " (\($0.lowercased()))" } ?? ""
+                return "\(entry.format.displayName) · \(location)\(status)"
+            }.joined(separator: ", ")
+        ]
         if !group.aliases.isEmpty {
             parts.append("Also named " + group.aliases.joined(separator: ", "))
         }
         if library.managedServer(matching: group.endpoint) != nil {
             parts.append("Also set up in Native")
         }
-        let signIn = group.entries.filter { library.configuration(of: $0.format)?.signInRequired.contains($0.name) == true }
+        let signIn = group.entries.filter {
+            library.configuration(of: $0.format)?.signInRequired.contains($0.name) == true
+        }
         if !signIn.isEmpty {
             parts.append(signIn.map { "\($0.format.displayName) says it needs sign-in" }.joined(separator: ", "))
         }
@@ -159,7 +177,8 @@ private struct MCPAgentServerMenu: View {
             Divider()
             ForEach(group.entries) { entry in
                 if case .success(let command) = AgentCLI.remove(entry) {
-                    Button("Remove from \(entry.format.displayName) (\(entry.scope.displayName))…", role: .destructive) { onCommand(command) }
+                    Button("Remove from \(entry.format.displayName) (\(entry.scope.displayName))…", role: .destructive)
+                    { onCommand(command) }
                 }
             }
             if MCPFileActions.canReveal {
@@ -192,7 +211,10 @@ struct MCPExpandButton: View {
     let name: String
 
     var body: some View {
-        IconButton(isExpanded ? "Hide Details" : "Show Details", systemImage: isExpanded ? "chevron.up" : "chevron.down", size: .medium, isActive: isExpanded) {
+        IconButton(
+            isExpanded ? "Hide Details" : "Show Details", systemImage: isExpanded ? "chevron.up" : "chevron.down",
+            size: .medium, isActive: isExpanded
+        ) {
             withAnimation(.dsDisclosure) { isExpanded.toggle() }
         }
         .accessibilityLabel(isExpanded ? "Hide details for \(name)" : "Show details for \(name)")

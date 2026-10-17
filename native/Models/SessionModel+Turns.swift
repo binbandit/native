@@ -146,7 +146,12 @@ extension SessionModel {
         if isFirstPrompt {
             // Named alongside the turn rather than before it, so the prompt goes out right away.
             let request = TitleRequest(projectName: cwd.lastPathComponent, prompt: text)
-            Task { await services.titles.generateIfNeeded(for: titleKey, request: request, using: services.plugins.titler) }
+            Task {
+                await services.titles.generateIfNeeded(for: titleKey, request: request, using: services.plugins.titler)
+                if let title = services.titles.title(for: titleKey, agentTitle: nil) {
+                    services.titleLanded(key, cwd, title)
+                }
+            }
         }
         services.post(.promptSent(context, text: text))
         return state.items.count

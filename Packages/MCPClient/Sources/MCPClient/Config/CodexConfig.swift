@@ -10,7 +10,9 @@ struct CodexConfig {
     var reader: ConfigFileReader
 
     var userFile: URL {
-        let codexHome = environment["CODEX_HOME"].map { URL(filePath: $0, directoryHint: .isDirectory) } ?? home.appending(path: ".codex", directoryHint: .isDirectory)
+        let codexHome =
+            environment["CODEX_HOME"].map { URL(filePath: $0, directoryHint: .isDirectory) }
+            ?? home.appending(path: ".codex", directoryHint: .isDirectory)
         return codexHome.appending(path: "config.toml")
     }
 
@@ -23,16 +25,18 @@ struct CodexConfig {
         for project in projects {
             let file = project.appending(path: ".codex/config.toml")
             let exists = reader.exists(file)
-            files.append(ConfigFile(url: file, role: "Project servers for \(project.lastPathComponent)", exists: exists))
+            files.append(
+                ConfigFile(url: file, role: "Project servers for \(project.lastPathComponent)", exists: exists))
             guard exists else { continue }
             let isTrusted = user?["projects"]?[ProjectPath.key(project)]?["trust_level"]?.stringValue == "trusted"
-            servers += Self.servers(in: table(at: file, problems: &problems), scope: .project(project), source: file).map { server in
-                guard !isTrusted, server.status == .enabled else { return server }
-                var server = server
-                server.status = .awaitingApproval
-                server.notes.append("Codex reads a project's own config only once you trust the project.")
-                return server
-            }
+            servers += Self.servers(in: table(at: file, problems: &problems), scope: .project(project), source: file)
+                .map { server in
+                    guard !isTrusted, server.status == .enabled else { return server }
+                    var server = server
+                    server.status = .awaitingApproval
+                    server.notes.append("Codex reads a project's own config only once you trust the project.")
+                    return server
+                }
         }
         return AgentMCPConfiguration(format: .codex, servers: servers, files: files, problems: problems)
     }
@@ -57,12 +61,16 @@ struct CodexConfig {
     /// One `[mcp_servers.<name>]` table: `command`/`args`/`env`/`env_vars`/`cwd` for a local server,
     /// `url`/`http_headers`/`env_http_headers`/`bearer_token_env_var` for a remote one, and
     /// `enabled`, `enabled_tools` and `disabled_tools` for either.
-    static func server(named name: String, _ table: TOMLValue, scope: ConfiguredServer.Scope, source: URL) -> ConfiguredServer? {
+    static func server(
+        named name: String, _ table: TOMLValue, scope: ConfiguredServer.Scope, source: URL
+    ) -> ConfiguredServer? {
         let strings = { (key: String) in table[key]?.arrayValue?.compactMap(\.scalarText) ?? [] }
         let dictionary = { (key: String) in (table[key]?.tableValue ?? [:]).compactMapValues(\.scalarText) }
         let transport: MCPTransport
         if let command = table["command"]?.stringValue {
-            transport = .stdio(command: command, arguments: strings("args"), environment: dictionary("env"), workingDirectory: table["cwd"]?.stringValue)
+            transport = .stdio(
+                command: command, arguments: strings("args"), environment: dictionary("env"),
+                workingDirectory: table["cwd"]?.stringValue)
         } else if let text = table["url"]?.stringValue, let url = URL(string: text) {
             transport = .http(url: url, headers: dictionary("http_headers"))
         } else {
@@ -74,9 +82,15 @@ struct CodexConfig {
         let headerVariables = dictionary("env_http_headers")
         var notes: [String] = []
         if let bearer { notes.append("Bearer token from $\(bearer)") }
-        if !passThrough.isEmpty { notes.append("Passes through \(passThrough.map { "$" + $0 }.joined(separator: ", "))") }
-        if !strings("enabled_tools").isEmpty { notes.append("Only tools: \(strings("enabled_tools").joined(separator: ", "))") }
-        if !strings("disabled_tools").isEmpty { notes.append("Without tools: \(strings("disabled_tools").joined(separator: ", "))") }
+        if !passThrough.isEmpty {
+            notes.append("Passes through \(passThrough.map { "$" + $0 }.joined(separator: ", "))")
+        }
+        if !strings("enabled_tools").isEmpty {
+            notes.append("Only tools: \(strings("enabled_tools").joined(separator: ", "))")
+        }
+        if !strings("disabled_tools").isEmpty {
+            notes.append("Without tools: \(strings("disabled_tools").joined(separator: ", "))")
+        }
         return ConfiguredServer(
             server: MCPServerConfig(name: name, transport: transport),
             format: .codex,
@@ -112,18 +126,23 @@ public struct CodexListing: Hashable, Sendable {
         let decoder = JSONDecoder()
         decoder.keyDecodingStrategy = .convertFromSnakeCase
         let entries = try decoder.decode([Entry].self, from: data)
-        return CodexListing(servers: entries.compactMap { entry in
-            let transport: MCPTransport
-            switch (entry.transport.command, entry.transport.url.flatMap(URL.init(string:))) {
-            case (let command?, _):
-                transport = .stdio(command: command, arguments: entry.transport.args ?? [], environment: entry.transport.env ?? [:], workingDirectory: entry.transport.cwd)
-            case (nil, let url?):
-                transport = .http(url: url, headers: entry.transport.httpHeaders ?? [:])
-            default:
-                return nil
-            }
-            return Server(name: entry.name, isEnabled: entry.enabled ?? true, authStatus: entry.authStatus, transport: transport)
-        })
+        return CodexListing(
+            servers: entries.compactMap { entry in
+                let transport: MCPTransport
+                switch (entry.transport.command, entry.transport.url.flatMap(URL.init(string:))) {
+                case (let command?, _):
+                    transport = .stdio(
+                        command: command, arguments: entry.transport.args ?? [],
+                        environment: entry.transport.env ?? [:], workingDirectory: entry.transport.cwd)
+                case (nil, let url?):
+                    transport = .http(url: url, headers: entry.transport.httpHeaders ?? [:])
+                default:
+                    return nil
+                }
+                return Server(
+                    name: entry.name, isEnabled: entry.enabled ?? true, authStatus: entry.authStatus,
+                    transport: transport)
+            })
     }
 
     private struct Entry: Decodable {
@@ -155,13 +174,14 @@ extension AgentMCPConfiguration {
         }
         let known = Set(merged.servers.map(\.name))
         for server in listing.servers where !known.contains(server.name) {
-            merged.servers.append(ConfiguredServer(
-                server: MCPServerConfig(name: server.name, transport: server.transport),
-                format: .codex,
-                scope: .plugin(Self.pluginName(of: server) ?? "Codex"),
-                source: Self.pluginRoot(of: server) ?? merged.files.first?.url ?? URL(filePath: "/"),
-                status: server.isEnabled ? .enabled : .disabled
-            ))
+            merged.servers.append(
+                ConfiguredServer(
+                    server: MCPServerConfig(name: server.name, transport: server.transport),
+                    format: .codex,
+                    scope: .plugin(Self.pluginName(of: server) ?? "Codex"),
+                    source: Self.pluginRoot(of: server) ?? merged.files.first?.url ?? URL(filePath: "/"),
+                    status: server.isEnabled ? .enabled : .disabled
+                ))
         }
         merged.signInRequired = Set(listing.servers.filter(\.needsSignIn).map(\.name))
         return merged
@@ -176,7 +196,9 @@ extension AgentMCPConfiguration {
     }
 
     private static func pluginRoot(of server: CodexListing.Server) -> URL? {
-        guard case .stdio(_, _, _, let directory?) = server.transport, directory.contains("/plugins/cache/") else { return nil }
+        guard case .stdio(_, _, _, let directory?) = server.transport, directory.contains("/plugins/cache/") else {
+            return nil
+        }
         return URL(filePath: directory, directoryHint: .isDirectory).standardizedFileURL
     }
 }

@@ -80,13 +80,14 @@ private final class TableBuilder {
     var isImplicit = false
 
     var value: TOMLValue {
-        .table(entries.mapValues { entry in
-            switch entry {
-            case .value(let value): value
-            case .table(let table): table.value
-            case .tables(let tables): .array(tables.map(\.value))
-            }
-        })
+        .table(
+            entries.mapValues { entry in
+                switch entry {
+                case .value(let value): value
+                case .table(let table): table.value
+                case .tables(let tables): .array(tables.map(\.value))
+                }
+            })
     }
 }
 
@@ -148,7 +149,9 @@ private struct TOMLParser {
                 table = child
             case .table(let child)?:
                 if header && isLast {
-                    guard child.isImplicit else { throw failure("The table [\(path.joined(separator: "."))] is defined twice.") }
+                    guard child.isImplicit else {
+                        throw failure("The table [\(path.joined(separator: "."))] is defined twice.")
+                    }
                     child.isImplicit = false
                 }
                 table = child
@@ -207,7 +210,8 @@ private struct TOMLParser {
     }
 
     private static func isBareKey(_ scalar: Unicode.Scalar) -> Bool {
-        (scalar >= "a" && scalar <= "z") || (scalar >= "A" && scalar <= "Z") || (scalar >= "0" && scalar <= "9") || scalar == "_" || scalar == "-"
+        (scalar >= "a" && scalar <= "z") || (scalar >= "A" && scalar <= "Z") || (scalar >= "0" && scalar <= "9")
+            || scalar == "_" || scalar == "-"
     }
 
     // MARK: - Values
@@ -297,7 +301,9 @@ private struct TOMLParser {
             return .integer(value)
         }
         if let integer = Int(digits) { return .integer(integer) }
-        if digits.contains(where: { $0 == "." || $0 == "e" || $0 == "E" }), let float = Double(digits) { return .float(float) }
+        if digits.contains(where: { $0 == "." || $0 == "e" || $0 == "E" }), let float = Double(digits) {
+            return .float(float)
+        }
         if token.first?.isNumber == true, token.contains("-") || token.contains(":") { return .dateTime(token) }
         throw failure("\"\(token)\" isn't a value.")
     }
@@ -349,7 +355,9 @@ private struct TOMLParser {
             if !literal, scalar == "\\" {
                 // A backslash ending a line trims the newline and the whitespace after it.
                 var lookahead = index
-                while lookahead < scalars.count, scalars[lookahead] == " " || scalars[lookahead] == "\t" { lookahead += 1 }
+                while lookahead < scalars.count, scalars[lookahead] == " " || scalars[lookahead] == "\t" {
+                    lookahead += 1
+                }
                 if lookahead < scalars.count, scalars[lookahead] == "\n" || scalars[lookahead] == "\r" {
                     index = lookahead
                     while let space = peek(), " \t\r\n".unicodeScalars.contains(space) {
@@ -382,7 +390,9 @@ private struct TOMLParser {
             guard index + count <= scalars.count else { throw failure("Short unicode escape.") }
             let hex = String(String.UnicodeScalarView(scalars[index..<(index + count)]))
             index += count
-            guard let code = UInt32(hex, radix: 16), let unicode = Unicode.Scalar(code) else { throw failure("Invalid unicode escape \\\(scalar)\(hex).") }
+            guard let code = UInt32(hex, radix: 16), let unicode = Unicode.Scalar(code) else {
+                throw failure("Invalid unicode escape \\\(scalar)\(hex).")
+            }
             return [unicode]
         default:
             throw failure("Invalid escape \\\(scalar).")

@@ -38,7 +38,8 @@ final class StdioTransport: MCPClientTransport {
     }
 
     func request(_ method: String, params: JSON, id: Int) async throws(ProbeError) -> JSON {
-        let result = await withCheckedContinuation { (continuation: CheckedContinuation<Result<JSON, ProbeError>, Never>) in
+        let result = await withCheckedContinuation {
+            (continuation: CheckedContinuation<Result<JSON, ProbeError>, Never>) in
             let isClosed = state.withLock { state in
                 if !state.isClosed { state.pending[id] = continuation }
                 return state.isClosed
@@ -99,7 +100,10 @@ final class StdioTransport: MCPClientTransport {
             switch JSONRPC.decode(line) {
             case .response(let id, let result)?:
                 let continuation = state.withLock { $0.pending.removeValue(forKey: id) }
-                continuation?.resume(returning: result.mapError { .failure(.initialize, "The server answered with an error: \($0.message) (\($0.code)).") })
+                continuation?.resume(
+                    returning: result.mapError {
+                        .failure(.initialize, "The server answered with an error: \($0.message) (\($0.code)).")
+                    })
             case .request(let id, let method)?:
                 write(JSONRPC.reply(to: method, id: id))
             case .notification?, nil:

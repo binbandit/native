@@ -9,13 +9,44 @@ final class SessionOrdering {
     private var orders: [Project.ID: [SessionKey]] {
         didSet { save() }
     }
+    /// Pinned sessions, across projects, in the user's order.
+    private(set) var pinned: [SessionKey] {
+        didSet { defaults.set(try? JSONEncoder().encode(pinned), forKey: Self.pinnedKey) }
+    }
 
     @ObservationIgnored private let defaults: UserDefaults
     private static let key = "sessionOrder"
+    private static let pinnedKey = "pinnedSessions"
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         orders = defaults.data(forKey: Self.key).flatMap { try? JSONDecoder().decode([Project.ID: [SessionKey]].self, from: $0) } ?? [:]
+        pinned = defaults.data(forKey: Self.pinnedKey).flatMap { try? JSONDecoder().decode([SessionKey].self, from: $0) } ?? []
+    }
+
+    func isPinned(_ key: SessionKey) -> Bool {
+        pinned.contains(key)
+    }
+
+    /// Pins at the end of the pinned list, or at `index`, for undoing an unpin.
+    func pin(_ key: SessionKey, at index: Int? = nil) {
+        guard !pinned.contains(key) else { return }
+        pinned.insert(key, at: min(index ?? pinned.count, pinned.count))
+    }
+
+    /// Unpins, returning where the session was.
+    @discardableResult
+    func unpin(_ key: SessionKey) -> Int? {
+        guard let index = pinned.firstIndex(of: key) else { return nil }
+        pinned.remove(at: index)
+        return index
+    }
+
+    func movePinned(_ displayed: [SessionKey], fromOffsets source: IndexSet, toOffset destination: Int) {
+        var keys = displayed
+        keys.move(fromOffsets: source, toOffset: destination)
+        // Pins not on screen (their agent isn't running) keep their place at the end.
+        pinned = keys + pinned.filter { !keys.contains($0) }
     }
 
     /// `sessions` in display order: unplaced ones by `recency`, newest first, then the user's order.

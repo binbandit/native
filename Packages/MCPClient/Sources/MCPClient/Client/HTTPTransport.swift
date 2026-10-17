@@ -23,7 +23,8 @@ final class StreamableHTTPTransport: MCPClientTransport {
     }
 
     func request(_ method: String, params: JSON, id: Int) async throws(ProbeError) -> JSON {
-        let (bytes, response) = try await post(JSONRPC.request(method, params: params, id: id), stage: method == "initialize" ? .connect : .listTools)
+        let (bytes, response) = try await post(
+            JSONRPC.request(method, params: params, id: id), stage: method == "initialize" ? .connect : .listTools)
         if method == "initialize", [404, 405].contains(response.statusCode) {
             throw .notStreamableHTTP(status: response.statusCode)
         }
@@ -41,7 +42,9 @@ final class StreamableHTTPTransport: MCPClientTransport {
             }
             result = reply
         }
-        let value = try result.mapError { ProbeError.failure(.initialize, "The server answered with an error: \($0.message) (\($0.code)).") }.get()
+        let value = try result.mapError {
+            ProbeError.failure(.initialize, "The server answered with an error: \($0.message) (\($0.code)).")
+        }.get()
         if method == "initialize", let version = value["protocolVersion"]?.stringValue {
             state.withLock { $0.protocolVersion = version }
         }
@@ -67,7 +70,9 @@ final class StreamableHTTPTransport: MCPClientTransport {
         headers.keys.contains { $0.caseInsensitiveCompare("Authorization") == .orderedSame }
     }
 
-    private func post(_ body: Data, stage: MCPProbeFailure.Stage) async throws(ProbeError) -> (URLSession.AsyncBytes, HTTPURLResponse) {
+    private func post(
+        _ body: Data, stage: MCPProbeFailure.Stage
+    ) async throws(ProbeError) -> (URLSession.AsyncBytes, HTTPURLResponse) {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.httpBody = body
@@ -80,50 +85,66 @@ final class StreamableHTTPTransport: MCPClientTransport {
         return try await Self.send(request, on: session, stage: stage)
     }
 
-    static func send(_ request: URLRequest, on session: URLSession, stage: MCPProbeFailure.Stage) async throws(ProbeError) -> (URLSession.AsyncBytes, HTTPURLResponse) {
+    static func send(
+        _ request: URLRequest, on session: URLSession, stage: MCPProbeFailure.Stage
+    ) async throws(ProbeError) -> (URLSession.AsyncBytes, HTTPURLResponse) {
         do {
             let (bytes, response) = try await session.bytes(for: request)
-            guard let http = response as? HTTPURLResponse else { throw ProbeError.failure(stage, "The server's reply isn't HTTP.") }
+            guard let http = response as? HTTPURLResponse else {
+                throw ProbeError.failure(stage, "The server's reply isn't HTTP.")
+            }
             return (bytes, http)
         } catch let error as ProbeError {
             throw error
         } catch is CancellationError {
             throw .cancelled
         } catch {
-            throw .failure(stage, "Couldn't reach \(request.url?.host() ?? "the server"): \(error.localizedDescription)")
+            throw .failure(
+                stage, "Couldn't reach \(request.url?.host() ?? "the server"): \(error.localizedDescription)")
         }
     }
 
     /// Turns away anything but success: 401 and 403 as a sign-in the probe can't do, the rest with
     /// the start of the server's explanation.
-    func check(_ response: HTTPURLResponse, bytes: URLSession.AsyncBytes, sentCredentials: Bool) async throws(ProbeError) {
+    func check(
+        _ response: HTTPURLResponse, bytes: URLSession.AsyncBytes, sentCredentials: Bool
+    ) async throws(ProbeError) {
         try await Self.check(response, bytes: bytes, sentCredentials: sentCredentials)
     }
 
-    static func check(_ response: HTTPURLResponse, bytes: URLSession.AsyncBytes, sentCredentials: Bool) async throws(ProbeError) {
+    static func check(
+        _ response: HTTPURLResponse, bytes: URLSession.AsyncBytes, sentCredentials: Bool
+    ) async throws(ProbeError) {
         switch response.statusCode {
         case 200..<300:
             return
         case 401, 403:
-            throw .needsAuth(MCPAuthChallenge(
-                statusCode: response.statusCode,
-                resourceMetadata: MCPAuthChallenge.resourceMetadata(in: response.value(forHTTPHeaderField: "WWW-Authenticate")),
-                sentCredentials: sentCredentials
-            ))
+            throw .needsAuth(
+                MCPAuthChallenge(
+                    statusCode: response.statusCode,
+                    resourceMetadata: MCPAuthChallenge.resourceMetadata(
+                        in: response.value(forHTTPHeaderField: "WWW-Authenticate")),
+                    sentCredentials: sentCredentials
+                ))
         default:
             let body = (try? await collect(bytes, limit: 2_048)) ?? Data()
             let detail = excerpt(body)
-            throw .failure(.connect, "The server answered HTTP \(response.statusCode)" + (detail.isEmpty ? "." : ": \(detail)"))
+            throw .failure(
+                .connect, "The server answered HTTP \(response.statusCode)" + (detail.isEmpty ? "." : ": \(detail)"))
         }
     }
 
     /// Reads events until the one carrying the reply to `id`; the server's own requests and
     /// notifications on the way are skipped.
-    static func reply(to id: Int, inEventStream bytes: URLSession.AsyncBytes) async throws(ProbeError) -> Result<JSON, JSONRPC.RPCFailure> {
+    static func reply(
+        to id: Int, inEventStream bytes: URLSession.AsyncBytes
+    ) async throws(ProbeError) -> Result<JSON, JSONRPC.RPCFailure> {
         var parser = ServerSentEvents()
         do {
             for try await line in LineSequence(bytes: bytes) {
-                guard let event = parser.feed(line), case .response(id, let result)? = JSONRPC.decode(Data(event.data.utf8)) else { continue }
+                guard let event = parser.feed(line),
+                    case .response(id, let result)? = JSONRPC.decode(Data(event.data.utf8))
+                else { continue }
                 return result
             }
         } catch {
@@ -132,7 +153,8 @@ final class StreamableHTTPTransport: MCPClientTransport {
         throw .failure(.initialize, "The server's event stream ended without a reply.")
     }
 
-    static func collect(_ bytes: URLSession.AsyncBytes, limit: Int = 64 * 1024 * 1024) async throws(ProbeError) -> Data {
+    static func collect(_ bytes: URLSession.AsyncBytes, limit: Int = 64 * 1024 * 1024) async throws(ProbeError) -> Data
+    {
         var data = Data()
         do {
             for try await byte in bytes {
@@ -161,7 +183,9 @@ final class LegacySSETransport: MCPClientTransport {
     private let replies: PendingReplies
 
     /// Opens the stream and waits for the `endpoint` event.
-    static func connect(url: URL, headers: [String: String], session: URLSession) async throws(ProbeError) -> LegacySSETransport {
+    static func connect(
+        url: URL, headers: [String: String], session: URLSession
+    ) async throws(ProbeError) -> LegacySSETransport {
         var request = URLRequest(url: url)
         request.setValue("text/event-stream", forHTTPHeaderField: "Accept")
         headers.forEach { request.setValue($0.value, forHTTPHeaderField: $0.key) }
@@ -176,11 +200,17 @@ final class LegacySSETransport: MCPClientTransport {
                 for try await line in LineSequence(bytes: bytes) {
                     guard let event = parser.feed(line) else { continue }
                     if event.name == "endpoint" {
-                        if let endpoint = URL(string: event.data.trimmingCharacters(in: .whitespacesAndNewlines), relativeTo: url) {
+                        if let endpoint = URL(
+                            string: event.data.trimmingCharacters(in: .whitespacesAndNewlines), relativeTo: url)
+                        {
                             found.yield(endpoint.absoluteURL)
                         }
                     } else if case .response(let id, let result)? = JSONRPC.decode(Data(event.data.utf8)) {
-                        replies.resolve(id, with: result.mapError { .failure(.initialize, "The server answered with an error: \($0.message) (\($0.code)).") })
+                        replies.resolve(
+                            id,
+                            with: result.mapError {
+                                .failure(.initialize, "The server answered with an error: \($0.message) (\($0.code)).")
+                            })
                     }
                 }
             } catch {}
@@ -192,10 +222,14 @@ final class LegacySSETransport: MCPClientTransport {
             reader.cancel()
             throw .failure(.connect, "The server's event stream never named an endpoint to send messages to.")
         }
-        return LegacySSETransport(session: session, headers: headers, endpoint: endpoint, reader: reader, replies: replies)
+        return LegacySSETransport(
+            session: session, headers: headers, endpoint: endpoint, reader: reader, replies: replies)
     }
 
-    private init(session: URLSession, headers: [String: String], endpoint: URL, reader: Task<Void, Never>, replies: PendingReplies) {
+    private init(
+        session: URLSession, headers: [String: String], endpoint: URL, reader: Task<Void, Never>,
+        replies: PendingReplies
+    ) {
         self.session = session
         self.headers = headers
         self.endpoint = endpoint
@@ -204,8 +238,11 @@ final class LegacySSETransport: MCPClientTransport {
     }
 
     func request(_ method: String, params: JSON, id: Int) async throws(ProbeError) -> JSON {
-        let result = await withCheckedContinuation { (continuation: CheckedContinuation<Result<JSON, ProbeError>, Never>) in
-            guard replies.await(id, continuation, ifClosed: .failure(.initialize, "The server closed its event stream.")) else { return }
+        let result = await withCheckedContinuation {
+            (continuation: CheckedContinuation<Result<JSON, ProbeError>, Never>) in
+            guard
+                replies.await(id, continuation, ifClosed: .failure(.initialize, "The server closed its event stream."))
+            else { return }
             Task {
                 do throws(ProbeError) {
                     try await post(JSONRPC.request(method, params: params, id: id))
@@ -247,7 +284,10 @@ final class PendingReplies: Sendable {
 
     /// Registers `continuation` for `id`; when already closed, resumes it with `closedError` and
     /// returns false.
-    func await(_ id: Int, _ continuation: CheckedContinuation<Result<JSON, ProbeError>, Never>, ifClosed closedError: ProbeError) -> Bool {
+    func await(
+        _ id: Int, _ continuation: CheckedContinuation<Result<JSON, ProbeError>, Never>,
+        ifClosed closedError: ProbeError
+    ) -> Bool {
         let isClosed = state.withLock { state in
             if !state.isClosed { state.waiting[id] = continuation }
             return state.isClosed

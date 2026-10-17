@@ -23,15 +23,20 @@ public struct MCPProbe: Sendable {
     ///     environment; the server's own variables go on top.
     ///   - directory: Where a local server starts, and what a relative working directory in its
     ///     configuration is relative to (the project, or the home folder).
-    public func probe(_ server: MCPServerConfig, environment: [String: String], directory: String?) async -> MCPProbeReport {
+    public func probe(
+        _ server: MCPServerConfig, environment: [String: String], directory: String?
+    ) async -> MCPProbeReport {
         let startedAt = Date()
         let clock = ContinuousClock()
         let start = clock.now
         let connection = Connection()
-        let result = await withTaskGroup(of: Result<(MCPHandshake.Outcome, MCPTransport.Kind), ProbeError>?.self) { group in
+        let result = await withTaskGroup(of: Result<(MCPHandshake.Outcome, MCPTransport.Kind), ProbeError>?.self) {
+            group in
             group.addTask {
                 do throws(ProbeError) {
-                    return .success(try await connect(server, environment: environment, directory: directory, connection: connection))
+                    return .success(
+                        try await connect(
+                            server, environment: environment, directory: directory, connection: connection))
                 } catch {
                     return .failure(error)
                 }
@@ -39,7 +44,11 @@ public struct MCPProbe: Sendable {
             group.addTask {
                 // Cancelled when the probe finishes first.
                 guard (try? await Task.sleep(for: timeout)) != nil else { return nil }
-                return .failure(.failure(.initialize, "\(server.name) didn't answer within \(timeout.formatted(.units(allowed: [.seconds], width: .wide))).", exitStatus: nil))
+                return .failure(
+                    .failure(
+                        .initialize,
+                        "\(server.name) didn't answer within \(timeout.formatted(.units(allowed: [.seconds], width: .wide))).",
+                        exitStatus: nil))
             }
             let first = await group.next() ?? nil
             group.cancelAll()
@@ -56,13 +65,20 @@ public struct MCPProbe: Sendable {
                 duration: duration, transport: transport, toolDefinitionBytes: outcome.toolDefinitionBytes
             )
         case .failure(let error):
-            let status: MCPProbeReport.Status = switch error {
-            case .needsAuth(let challenge): .needsAuth(challenge)
-            case .failed(let failure): .failed(failure)
-            case .notStreamableHTTP(let status): .failed(MCPProbeFailure(stage: .connect, message: "The server answered HTTP \(status) and doesn't speak SSE either."))
-            case .cancelled: .failed(MCPProbeFailure(stage: .connect, message: "The probe was cancelled."))
-            }
-            return MCPProbeReport(status: status, stderr: stderr, startedAt: startedAt, duration: duration, transport: server.transport.kind)
+            let status: MCPProbeReport.Status =
+                switch error {
+                case .needsAuth(let challenge): .needsAuth(challenge)
+                case .failed(let failure): .failed(failure)
+                case .notStreamableHTTP(let status):
+                    .failed(
+                        MCPProbeFailure(
+                            stage: .connect, message: "The server answered HTTP \(status) and doesn't speak SSE either."
+                        ))
+                case .cancelled: .failed(MCPProbeFailure(stage: .connect, message: "The probe was cancelled."))
+                }
+            return MCPProbeReport(
+                status: status, stderr: stderr, startedAt: startedAt, duration: duration,
+                transport: server.transport.kind)
         }
     }
 
@@ -73,7 +89,9 @@ public struct MCPProbe: Sendable {
         switch server.transport {
         case .stdio(let command, let arguments, let variables, let workingDirectory):
             let transport = try StdioTransport(
-                Command(command, arguments, in: Self.directory(workingDirectory, relativeTo: directory), environment: environment.merging(variables) { $1 }),
+                Command(
+                    command, arguments, in: Self.directory(workingDirectory, relativeTo: directory),
+                    environment: environment.merging(variables) { $1 }),
                 launcher: launcher
             )
             connection.set(transport)
@@ -95,7 +113,8 @@ public struct MCPProbe: Sendable {
                 }
             }
         case .sse(let url, let headers):
-            let transport = try await LegacySSETransport.connect(url: url, headers: headers, session: connection.session)
+            let transport = try await LegacySSETransport.connect(
+                url: url, headers: headers, session: connection.session)
             connection.set(transport)
             return (try await handshake.run(on: transport), .sse)
         }
@@ -104,7 +123,8 @@ public struct MCPProbe: Sendable {
     private static func directory(_ configured: String?, relativeTo base: String?) -> String? {
         guard let configured, !configured.hasPrefix("/") else { return configured ?? base }
         guard let base else { return configured }
-        return URL(filePath: base, directoryHint: .isDirectory).appending(path: configured).standardizedFileURL.path(percentEncoded: false)
+        return URL(filePath: base, directoryHint: .isDirectory).appending(path: configured).standardizedFileURL.path(
+            percentEncoded: false)
     }
 }
 

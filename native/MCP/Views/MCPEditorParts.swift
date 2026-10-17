@@ -63,10 +63,15 @@ struct MCPSecretList: View {
                     }
                     .font(.dsMono)
                     .mcpFieldStyle()
-                    IconButton(revealed.contains(pair.id) ? "Hide Value" : "Show Value", systemImage: revealed.contains(pair.id) ? "eye.slash" : "eye", size: .medium) {
+                    IconButton(
+                        revealed.contains(pair.id) ? "Hide Value" : "Show Value",
+                        systemImage: revealed.contains(pair.id) ? "eye.slash" : "eye", size: .medium
+                    ) {
                         if !revealed.insert(pair.id).inserted { revealed.remove(pair.id) }
                     }
-                    IconButton("Remove \(pair.name.isEmpty ? "Row" : pair.name)", systemImage: "minus.circle", size: .medium) {
+                    IconButton(
+                        "Remove \(pair.name.isEmpty ? "Row" : pair.name)", systemImage: "minus.circle", size: .medium
+                    ) {
                         pairs.removeAll { $0.id == pair.id }
                     }
                 }
@@ -107,10 +112,12 @@ struct MCPChoiceList: View {
                             .settingsText(.body)
                             .foregroundStyle(.dsTextPrimary)
                         Spacer()
-                        SettingsSwitch(option.name, isOn: Binding(
-                            get: { chosen.contains(option.id) },
-                            set: { if $0 { chosen.insert(option.id) } else { chosen.remove(option.id) } }
-                        ))
+                        SettingsSwitch(
+                            option.name,
+                            isOn: Binding(
+                                get: { chosen.contains(option.id) },
+                                set: { if $0 { chosen.insert(option.id) } else { chosen.remove(option.id) } }
+                            ))
                     }
                     .padding(.leading, DS.Space.xl)
                 }

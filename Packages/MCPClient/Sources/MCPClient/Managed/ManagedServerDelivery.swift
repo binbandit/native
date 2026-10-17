@@ -13,7 +13,9 @@ public enum ManagedServerDelivery {
         /// What the agent loads in `directory` from its own configuration.
         public var agentServers: [ConfiguredServer]
 
-        public init(agentID: String, directory: URL?, transports: MCPTransportSupport?, agentServers: [ConfiguredServer]) {
+        public init(
+            agentID: String, directory: URL?, transports: MCPTransportSupport?, agentServers: [ConfiguredServer]
+        ) {
             self.agentID = agentID
             self.directory = directory
             self.transports = transports

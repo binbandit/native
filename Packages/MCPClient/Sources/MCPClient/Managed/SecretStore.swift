@@ -40,7 +40,9 @@ public struct KeychainSecretStore: SecretStore {
         let query = baseQuery(server)
         guard !secrets.isEmpty else {
             let status = SecItemDelete(query as CFDictionary)
-            guard status == errSecSuccess || status == errSecItemNotFound else { throw SecretStoreError(status: status) }
+            guard status == errSecSuccess || status == errSecItemNotFound else {
+                throw SecretStoreError(status: status)
+            }
             return
         }
         let data = try JSONEncoder().encode(secrets)

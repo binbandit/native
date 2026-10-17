@@ -8,6 +8,7 @@ struct RootView: View {
     @Environment(\.releaseChannel) private var releaseChannel
     @State private var columnVisibility = NavigationSplitViewVisibility.all
     @State private var undoToast: UndoToastItem?
+    @Environment(\.undoManager) private var undoManager
     @State private var showsPullRequests = false
     @Environment(AutomationCenter.self) private var automation
     /// Workflows or Automations, when one of them has the detail column.
@@ -63,6 +64,7 @@ struct RootView: View {
         }
         .toolbar(removing: .sidebarToggle)
         .focusedSceneValue(\.sidebarVisibility, $columnVisibility)
+        .focusedSceneValue(\.windowUndoManager, undoManager)
         .undoToast($undoToast)
         .onChange(of: model.lastUndoable?.id) {
             undoToast = model.lastUndoable.map { action in UndoToastItem(action.message, undo: action.undo) }
@@ -205,6 +207,8 @@ struct RootView: View {
 extension FocusedValues {
     /// The main window's sidebar visibility, for the View menu's sidebar command.
     @Entry var sidebarVisibility: Binding<NavigationSplitViewVisibility>?
+    /// The main window's undo manager, so menu commands can make their actions undoable.
+    @Entry var windowUndoManager: UndoManager?
 }
 
 extension URL {

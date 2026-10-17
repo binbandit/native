@@ -28,15 +28,19 @@ extension MCPLibrary {
     /// Probes every server that loads somewhere: managed ones that are on, and agents' own that
     /// aren't turned off. A few at a time.
     func probeAll() async {
-        let keys = servers.filter(\.isEnabled).map { MCPServerKey.managed($0.id) }
-            + configurations.values.flatMap(\.servers).filter { $0.status != .disabled }.map { MCPServerKey.agent($0.id) }
+        let keys =
+            servers.filter(\.isEnabled).map { MCPServerKey.managed($0.id) }
+            + configurations.values.flatMap(\.servers).filter { $0.status != .disabled }.map {
+                MCPServerKey.agent($0.id)
+            }
         await probe(keys)
     }
 
     /// Probes a session's active servers that haven't been checked in the last few minutes.
     func probeStale(_ entries: [MCPSessionEntry], in session: SessionContext) async {
         let stale = entries.filter(\.isActive).map(\.key).filter { key in
-            reports[key].map { Date.now.timeIntervalSince($0.startedAt) > Double(Self.freshness.components.seconds) } ?? true
+            reports[key].map { Date.now.timeIntervalSince($0.startedAt) > Double(Self.freshness.components.seconds) }
+                ?? true
         }
         await probe(stale, in: session)
     }
@@ -51,14 +55,18 @@ extension MCPLibrary {
     }
 
     /// The configuration to probe and the folder to start a local server in.
-    private func target(of key: MCPServerKey, environment: [String: String], session: SessionContext?) -> (MCPServerConfig, String?)? {
+    private func target(
+        of key: MCPServerKey, environment: [String: String], session: SessionContext?
+    ) -> (MCPServerConfig, String?)? {
         let home = environment["HOME"]
         switch key {
         case .managed(let id):
             guard let server = server(id) else { return nil }
             return (server.config(with: secrets(for: id)), session.map { ProjectPath.key($0.cwd) } ?? home)
         case .agent(let id):
-            guard let entry = configurations.values.lazy.flatMap(\.servers).first(where: { $0.id == id }) else { return nil }
+            guard let entry = configurations.values.lazy.flatMap(\.servers).first(where: { $0.id == id }) else {
+                return nil
+            }
             let project = entry.scope.project ?? session?.cwd
             return (entry.resolved(environment: environment, project: project), project.map(ProjectPath.key) ?? home)
         case .plugin(let id):
@@ -86,11 +94,16 @@ extension MCPLibrary {
     func contextCost(of name: String, in session: SessionKey? = nil) -> MCPContextCost? {
         let reports = host?.mcpContextReports ?? [:]
         let candidates = session.map { key in reports[key].map { [$0] } ?? [] } ?? Array(reports.values)
-        return candidates
+        return
+            candidates
             .sorted { $0.capturedAt > $1.capturedAt }
             .lazy
             .compactMap { report in
-                report.mcpServers.first { $0.name == name }.map { MCPContextCost(tokens: $0.tokens, tools: $0.tools.count, window: report.windowTokens, capturedAt: report.capturedAt) }
+                report.mcpServers.first { $0.name == name }.map {
+                    MCPContextCost(
+                        tokens: $0.tokens, tools: $0.tools.count, window: report.windowTokens,
+                        capturedAt: report.capturedAt)
+                }
             }
             .first
     }

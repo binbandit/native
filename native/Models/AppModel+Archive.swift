@@ -74,6 +74,14 @@ extension AppModel {
         archivedSessions.set(key, archived: false)
         unread.set(key, unread: false)
         catalog.remove(key)
+        ordering.unpin(key)
+        if let runtime = runtimes[key.agent], let connection = runtime.connection, runtime.capabilities?.deleteSessions == true {
+            do {
+                _ = try await connection.send(DeleteSessionRequest(sessionId: key.id))
+            } catch {
+                errorMessage = "The task is gone from Native, but \(runtime.agent.displayName) couldn't delete its copy: \(error.localizedDescription)"
+            }
+        }
         if let folder, let project = projects.project(projectID), folder.folderPath != project.path {
             do {
                 try await taskWorkspaces?.deleteWorkspace(at: folder, in: project)

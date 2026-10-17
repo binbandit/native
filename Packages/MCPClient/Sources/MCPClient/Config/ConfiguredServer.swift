@@ -124,7 +124,9 @@ public enum ValueResolution: Hashable, Sendable {
         case .none:
             break
         case .claudeCode, .cursor:
-            let expand = { (text: String) in Interpolation.expand(text, style: self, environment: environment, project: project) }
+            let expand = { (text: String) in
+                Interpolation.expand(text, style: self, environment: environment, project: project)
+            }
             server.transport = server.transport.mapValues(expand)
         case .codex(let passThrough, let bearer, let headerVariables):
             switch server.transport {
@@ -132,7 +134,8 @@ public enum ValueResolution: Hashable, Sendable {
                 for name in passThrough where variables[name] == nil {
                     variables[name] = environment[name]
                 }
-                server.transport = .stdio(command: command, arguments: arguments, environment: variables, workingDirectory: directory)
+                server.transport = .stdio(
+                    command: command, arguments: arguments, environment: variables, workingDirectory: directory)
             case .http(let url, var headers), .sse(let url, var headers):
                 for (header, variable) in headerVariables {
                     if let value = environment[variable] { headers[header] = value }
@@ -140,7 +143,8 @@ public enum ValueResolution: Hashable, Sendable {
                 if let bearer, let token = environment[bearer] {
                     headers["Authorization"] = "Bearer \(token)"
                 }
-                server.transport = server.transport.kind == .sse ? .sse(url: url, headers: headers) : .http(url: url, headers: headers)
+                server.transport =
+                    server.transport.kind == .sse ? .sse(url: url, headers: headers) : .http(url: url, headers: headers)
             }
         }
         return server
@@ -152,7 +156,9 @@ extension MCPTransport {
     func mapValues(_ transform: (String) -> String) -> MCPTransport {
         switch self {
         case .stdio(let command, let arguments, let environment, let directory):
-            .stdio(command: transform(command), arguments: arguments.map(transform), environment: environment.mapValues(transform), workingDirectory: directory.map(transform))
+            .stdio(
+                command: transform(command), arguments: arguments.map(transform),
+                environment: environment.mapValues(transform), workingDirectory: directory.map(transform))
         case .http(let url, let headers):
             .http(url: Self.map(url, transform), headers: headers.mapValues(transform))
         case .sse(let url, let headers):
@@ -162,7 +168,8 @@ extension MCPTransport {
 
     /// `URL` percent-encodes the braces of `${VAR}`, so they're put back before expanding.
     private static func map(_ url: URL, _ transform: (String) -> String) -> URL {
-        let raw = url.absoluteString.replacingOccurrences(of: "%7B", with: "{").replacingOccurrences(of: "%7D", with: "}")
+        let raw = url.absoluteString.replacingOccurrences(of: "%7B", with: "{").replacingOccurrences(
+            of: "%7D", with: "}")
         return URL(string: transform(raw)) ?? url
     }
 }

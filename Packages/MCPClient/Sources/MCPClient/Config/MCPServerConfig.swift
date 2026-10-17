@@ -20,7 +20,8 @@ public struct MCPServerConfig: Hashable, Sendable {
 /// their names (`secretNames`), never the values.
 public enum MCPTransport: Hashable, Sendable {
     /// A local server the client launches, speaking JSON-RPC over stdin and stdout.
-    case stdio(command: String, arguments: [String] = [], environment: [String: String] = [:], workingDirectory: String? = nil)
+    case stdio(
+        command: String, arguments: [String] = [], environment: [String: String] = [:], workingDirectory: String? = nil)
     /// A remote server over Streamable HTTP.
     case http(url: URL, headers: [String: String] = [:])
     /// A remote server over the HTTP+SSE transport that Streamable HTTP replaced (2024-11-05).
@@ -92,7 +93,9 @@ public enum MCPEndpointIdentity: Hashable, Sendable {
 
     /// Scheme and host are case-insensitive, and a trailing slash doesn't make a new endpoint.
     static func normalized(url: URL) -> String {
-        guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else { return url.absoluteString }
+        guard var components = URLComponents(url: url, resolvingAgainstBaseURL: false) else {
+            return url.absoluteString
+        }
         components.scheme = components.scheme?.lowercased()
         components.host = components.host?.lowercased()
         while components.path.count > 1, components.path.hasSuffix("/") {

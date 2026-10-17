@@ -40,12 +40,16 @@ struct MCPHandshake {
     }
 
     func run(on transport: some MCPClientTransport) async throws(ProbeError) -> Outcome {
-        let initialize = try await transport.request("initialize", params: [
-            "protocolVersion": .string(Self.protocolVersion),
-            // Native answers none of the server's requests (sampling, roots, elicitation).
-            "capabilities": [:],
-            "clientInfo": ["name": .string(clientName), "title": .string(clientTitle), "version": .string(clientVersion)],
-        ], id: 1)
+        let initialize = try await transport.request(
+            "initialize",
+            params: [
+                "protocolVersion": .string(Self.protocolVersion),
+                // Native answers none of the server's requests (sampling, roots, elicitation).
+                "capabilities": [:],
+                "clientInfo": [
+                    "name": .string(clientName), "title": .string(clientTitle), "version": .string(clientVersion),
+                ],
+            ], id: 1)
         guard let version = initialize["protocolVersion"]?.stringValue else {
             throw .failure(.initialize, "The server's answer to initialize has no protocol version.")
         }
@@ -124,7 +128,10 @@ enum JSONRPC {
     /// is a client feature the probe doesn't offer.
     static func reply(to method: String, id: JSON) -> Data {
         guard method != "ping" else { return encode(["jsonrpc": "2.0", "id": id, "result": [:]]) }
-        return encode(["jsonrpc": "2.0", "id": id, "error": ["code": -32601, "message": .string("Native's probe doesn't support \(method).")]])
+        return encode([
+            "jsonrpc": "2.0", "id": id,
+            "error": ["code": -32601, "message": .string("Native's probe doesn't support \(method).")],
+        ])
     }
 
     static func encode(_ message: JSON) -> Data {
@@ -147,7 +154,9 @@ enum JSONRPC {
     }
 
     static func decode(_ data: Data) -> Message? {
-        guard let message = try? JSONDecoder().decode(JSON.self, from: data), case .object(let fields) = message else { return nil }
+        guard let message = try? JSONDecoder().decode(JSON.self, from: data), case .object(let fields) = message else {
+            return nil
+        }
         if let method = fields["method"]?.stringValue {
             if let id = fields["id"], id != .null { return .request(id: id, method: method) }
             return .notification
@@ -156,7 +165,8 @@ enum JSONRPC {
         let id = Int(number)
         if let error = fields["error"] {
             let code = error["code"].flatMap { if case .number(let code) = $0 { Int(code) } else { nil } } ?? 0
-            return .response(id: id, .failure(RPCFailure(code: code, message: error["message"]?.stringValue ?? "Unknown error.")))
+            return .response(
+                id: id, .failure(RPCFailure(code: code, message: error["message"]?.stringValue ?? "Unknown error.")))
         }
         return .response(id: id, .success(fields["result"] ?? [:]))
     }

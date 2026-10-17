@@ -32,7 +32,8 @@ public protocol StdioProcess: Sendable {
 public struct LocalStdioLauncher: StdioLauncher {
     public init() {}
 
-    public func launch(_ command: Command, events: @escaping @Sendable (StdioEvent) -> Void) throws -> any StdioProcess {
+    public func launch(_ command: Command, events: @escaping @Sendable (StdioEvent) -> Void) throws -> any StdioProcess
+    {
         guard let executable = Self.resolve(command.executable, path: command.environment["PATH"]) else {
             throw CommandError.notFound(command.executable)
         }

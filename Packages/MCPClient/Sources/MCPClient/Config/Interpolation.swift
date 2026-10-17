@@ -13,14 +13,17 @@ enum Interpolation {
                 return result
             }
             let expression = String(rest[start.upperBound..<end])
-            result += value(of: expression, style: style, environment: environment, project: project) ?? "${\(expression)}"
+            result +=
+                value(of: expression, style: style, environment: environment, project: project) ?? "${\(expression)}"
             rest = rest[rest.index(after: end)...]
         }
         return result + rest
     }
 
     /// Unknown variables stay as written, so the launch fails visibly instead of with a blank.
-    private static func value(of expression: String, style: ValueResolution, environment: [String: String], project: URL?) -> String? {
+    private static func value(
+        of expression: String, style: ValueResolution, environment: [String: String], project: URL?
+    ) -> String? {
         switch style {
         case .claudeCode:
             // `${VAR:-default}` falls back when VAR is unset or empty.

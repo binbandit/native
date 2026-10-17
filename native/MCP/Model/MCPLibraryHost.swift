@@ -44,7 +44,8 @@ struct MCPPluginServer: Hashable, Identifiable {
     var config: MCPServerConfig {
         switch server {
         case .stdio(let name, let command, let arguments, let environment):
-            MCPServerConfig(name: name, transport: .stdio(command: command, arguments: arguments, environment: environment))
+            MCPServerConfig(
+                name: name, transport: .stdio(command: command, arguments: arguments, environment: environment))
         case .http(let name, let url, let headers):
             MCPServerConfig(name: name, transport: .http(url: url, headers: headers))
         }
@@ -64,9 +65,13 @@ final class AppMCPHost: MCPLibraryHost {
 
     var mcpAgents: [MCPAgent] {
         (model?.agents ?? []).compactMap { runtime in
-            guard let format = runtime.agent.manifest.mcpConfig.flatMap(AgentConfigFormat.init(rawValue:)) else { return nil }
+            guard let format = runtime.agent.manifest.mcpConfig.flatMap(AgentConfigFormat.init(rawValue:)) else {
+                return nil
+            }
             let transports = runtime.capabilities.map { MCPTransportSupport(http: $0.mcpHTTP, sse: $0.mcpSSE) }
-            return MCPAgent(id: runtime.agent.id, name: runtime.agent.displayName, symbol: runtime.agent.symbolName, format: format, transports: transports, isRunning: runtime.isReady)
+            return MCPAgent(
+                id: runtime.agent.id, name: runtime.agent.displayName, symbol: runtime.agent.symbolName, format: format,
+                transports: transports, isRunning: runtime.isReady)
         }
     }
 
@@ -84,10 +89,13 @@ final class AppMCPHost: MCPLibraryHost {
 
     func mcpPluginServers(for session: SessionContext?) -> [MCPPluginServer] {
         guard let registry = model?.plugins else { return [] }
-        return registry.plugins.filter { registry.isEnabled($0.id) && !($0.plugin is MCPServersPlugin) }.flatMap { loaded in
+        return registry.plugins.filter { registry.isEnabled($0.id) && !($0.plugin is MCPServersPlugin) }.flatMap {
+            loaded in
             let manifest = loaded.plugin.manifest
             let dynamic = session.map { loaded.plugin.mcpServers(for: $0) } ?? []
-            return (manifest.mcpServers.compactMap(\.server) + dynamic).map { MCPPluginServer(pluginName: manifest.name, server: $0) }
+            return (manifest.mcpServers.compactMap(\.server) + dynamic).map {
+                MCPPluginServer(pluginName: manifest.name, server: $0)
+            }
         }
     }
 }

@@ -52,7 +52,9 @@ public struct MCPServerInfo: Hashable, Sendable {
     /// What the server tells the model about using it.
     public var instructions: String?
 
-    public init(name: String, title: String? = nil, version: String? = nil, protocolVersion: String, instructions: String? = nil) {
+    public init(
+        name: String, title: String? = nil, version: String? = nil, protocolVersion: String, instructions: String? = nil
+    ) {
         self.name = name
         self.title = title
         self.version = version

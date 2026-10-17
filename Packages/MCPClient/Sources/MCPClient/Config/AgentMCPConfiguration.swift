@@ -19,7 +19,8 @@ public struct AgentMCPConfiguration: Hashable, Sendable {
     public var signInRequired: Set<String> = []
 
     public init(
-        format: AgentConfigFormat, servers: [ConfiguredServer] = [], files: [ConfigFile] = [], problems: [ConfigProblem] = [],
+        format: AgentConfigFormat, servers: [ConfiguredServer] = [], files: [ConfigFile] = [],
+        problems: [ConfigProblem] = [],
         accountConnectors: [String] = [], disabledInProject: [String: Set<String>] = [:], isManagedOnly: Bool = false
     ) {
         self.format = format

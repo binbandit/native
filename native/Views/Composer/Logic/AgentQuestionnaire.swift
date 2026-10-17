@@ -31,6 +31,15 @@ struct AgentQuestionnaire: Equatable {
 
     enum ValueType: Equatable {
         case string, boolean, number, integer
+
+        init(schemaType: String?) {
+            self = switch schemaType {
+            case "boolean": .boolean
+            case "number": .number
+            case "integer": .integer
+            default: .string
+            }
+        }
     }
 
     let questions: [Question]
@@ -54,12 +63,7 @@ struct AgentQuestionnaire: Equatable {
                 options: Self.options(in: field),
                 allowsMultiple: field["type"]?.stringValue == "array",
                 customKey: customKeys.contains(customKey) ? customKey : nil,
-                valueType: switch field["type"]?.stringValue {
-                case "boolean": .boolean
-                case "number": .number
-                case "integer": .integer
-                default: .string
-                }
+                valueType: ValueType(schemaType: field["type"]?.stringValue)
             )
         }
         guard !questions.isEmpty else { return nil }

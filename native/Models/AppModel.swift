@@ -69,6 +69,16 @@ final class AppModel {
     @ObservationIgnored let taskRecords = TaskSessionRecords()
     @ObservationIgnored private let environment = ShellEnvironment()
     @ObservationIgnored private let pluginEvents: AsyncStream<SessionEvent>
+    @ObservationIgnored private let titleEvents: AsyncStream<TitleEvent>
+    /// Tasks whose workspace has been told its title, so it's told only once. Internal only for
+    /// AppModel+Titles.swift.
+    @ObservationIgnored var titledWorkspaces: Set<SessionKey> = []
+
+    struct TitleEvent {
+        let key: SessionKey
+        let folder: URL
+        let title: String
+    }
     @ObservationIgnored private var isStarted = false
 
     private static let lastUsedAgentKey = "defaultAgent"
@@ -81,7 +91,11 @@ final class AppModel {
         self.titles = titles
         let (pluginEvents, continuation) = AsyncStream.makeStream(of: SessionEvent.self)
         self.pluginEvents = pluginEvents
-        services = SessionServices(plugins: plugins, titles: titles) { continuation.yield($0) }
+        let (titleEvents, titleContinuation) = AsyncStream.makeStream(of: TitleEvent.self)
+        self.titleEvents = titleEvents
+        services = SessionServices(plugins: plugins, titles: titles) { continuation.yield($0) } titleLanded: { key, folder, title in
+            titleContinuation.yield(TitleEvent(key: key, folder: folder, title: title))
+        }
         runtimes = AgentRuntimes(plugins: plugins)
         projects = Projects()
         catalog = SessionCatalog()
@@ -124,6 +138,11 @@ final class AppModel {
             for await event in pluginEvents {
                 markUnread(after: event)
                 await plugins.broadcast(event)
+            }
+        }
+        Task { [titleEvents] in
+            for await event in titleEvents {
+                await workspaceGotTitle(event)
             }
         }
         observeAgents()
@@ -206,7 +225,9 @@ final class AppModel {
 
     /// A project's sessions from every agent, in the user's order, then most recently active first.
     func sessions(in project: Project.ID) -> [SessionSummary] {
-        let summaries = allSessions(in: project).filter { !archivedSessions.contains($0.id) && !pendingDeletionKeys.contains($0.id) }
+        let summaries = allSessions(in: project).filter { summary in
+            !archivedSessions.contains(summary.id) && !pendingDeletionKeys.contains(summary.id) && !ordering.isPinned(summary.id)
+        }
         return ordering.sorted(summaries, in: project, recency: lastActive)
     }
 
@@ -217,9 +238,9 @@ final class AppModel {
         }
     }
 
-    /// Every project's sessions, in sidebar order.
+    /// Every session in the sidebar, in its order: pinned first, then each project's.
     var sessionList: [SessionSummary] {
-        projects.all.flatMap { sessions(in: $0.id) }
+        pinnedSessions + projects.all.flatMap { sessions(in: $0.id) }
     }
 
     func moveSessions(in project: Project.ID, fromOffsets source: IndexSet, toOffset destination: Int) {
@@ -241,30 +262,6 @@ final class AppModel {
         sessions.session(id: id)
     }
 
-    func title(for summary: SessionSummary) -> String {
-        if let session = sessions.session(summary.id) {
-            return session.displayTitle
-        }
-        return titles.title(for: SessionTitles.Key(agent: summary.agent.id, session: summary.info.sessionId), agentTitle: summary.info.title) ?? "New Session"
-    }
-
-    /// Gives the session the user's own title; an empty one goes back to the automatic title.
-    /// With an undo manager, ⌘Z restores the title exactly, automatic or the user's.
-    func rename(_ key: SessionKey, to title: String, undoManager: UndoManager? = nil) {
-        let previous = userTitle(for: key) ?? ""
-        titles.rename(SessionTitles.Key(agent: key.agent, session: key.id), to: title)
-        undoManager?.registerUndo(withTarget: self) { model in
-            MainActor.assumeIsolated {
-                model.rename(key, to: previous, undoManager: undoManager)
-            }
-        }
-        undoManager?.setActionName("Rename Session")
-    }
-
-    /// The title the user gave the session, or nil while it goes by an automatic one.
-    func userTitle(for key: SessionKey) -> String? {
-        titles.userTitle(for: SessionTitles.Key(agent: key.agent, session: key.id))
-    }
 
     var isCreatingSession: Bool {
         creatingSessionWith != nil

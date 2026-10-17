@@ -15,8 +15,11 @@ struct ClaudeCodeConfigTests {
     ])
 
     private func read(environment: [String: String] = [:]) -> AgentMCPConfiguration {
-        AgentConfigReader(files: files, home: .testHome, environment: environment, claudeManagedFile: URL(filePath: "/nowhere/managed-mcp.json"))
-            .read(.claudeCode, projects: [.app, .site])
+        AgentConfigReader(
+            files: files, home: .testHome, environment: environment,
+            claudeManagedFile: URL(filePath: "/nowhere/managed-mcp.json")
+        )
+        .read(.claudeCode, projects: [.app, .site])
     }
 
     @Test func readsEveryScope() {
@@ -36,7 +39,8 @@ struct ClaudeCodeConfigTests {
     }
 
     @Test func projectServersNeedApproval() {
-        let status = Dictionary(uniqueKeysWithValues: read().servers.filter { $0.scope == .project(.app) }.map { ($0.name, $0.status) })
+        let status = Dictionary(
+            uniqueKeysWithValues: read().servers.filter { $0.scope == .project(.app) }.map { ($0.name, $0.status) })
         #expect(status == ["design": .enabled, "legacy": .disabled, "fresh": .awaitingApproval])
         // `enableAllProjectMcpServers` approves every one.
         let site = read().servers.filter { $0.scope == .project(.site) }
@@ -45,7 +49,11 @@ struct ClaudeCodeConfigTests {
 
     @Test func pluginServersGetTheirRootFilledIn() throws {
         let notes = try #require(read().servers.first { $0.name == "plugin:notes:notes" })
-        #expect(notes.server.transport == .stdio(command: "/home/tester/.claude/plugins/cache/example-marketplace/notes/1.0.0/bin/notes-server", arguments: ["--stdio"]))
+        #expect(
+            notes.server.transport
+                == .stdio(
+                    command: "/home/tester/.claude/plugins/cache/example-marketplace/notes/1.0.0/bin/notes-server",
+                    arguments: ["--stdio"]))
         // The disabled plugin contributes nothing.
         #expect(!read().servers.contains { $0.name.contains("linter") })
     }
@@ -56,9 +64,15 @@ struct ClaudeCodeConfigTests {
         #expect(docs?.scope == .local(.app))
         #expect(docs?.server.transport.kind == .sse)
         #expect(effective.first { $0.name == "inspector" }?.status == .disabledInProject)
-        #expect(effective.filter(\.status.isLoaded).map(\.name).sorted() == ["design", "docs", "plugin:notes:notes", "tracker"])
+        #expect(
+            effective.filter(\.status.isLoaded).map(\.name).sorted() == [
+                "design", "docs", "plugin:notes:notes", "tracker",
+            ])
         // Elsewhere, only the user and plugin servers apply.
-        #expect(read().effective(in: URL(filePath: "/elsewhere")).map(\.name).sorted() == ["docs", "inspector", "plugin:notes:notes"])
+        #expect(
+            read().effective(in: URL(filePath: "/elsewhere")).map(\.name).sorted() == [
+                "docs", "inspector", "plugin:notes:notes",
+            ])
     }
 
     @Test func expandsVariablesLikeClaudeCode() throws {
@@ -68,27 +82,39 @@ struct ClaudeCodeConfigTests {
         #expect(environment == ["INSPECTOR_HOME": "/Users/someone/Inspector", "INSPECTOR_MODE": "fast"])
 
         let tracker = try #require(read().servers.first { $0.name == "tracker" })
-        #expect(tracker.resolved(environment: ["TRACKER_TOKEN": "abc"], project: .app).transport == .http(url: URL(string: "https://tracker.example.com/mcp")!, headers: ["Authorization": "Bearer abc"]))
+        #expect(
+            tracker.resolved(environment: ["TRACKER_TOKEN": "abc"], project: .app).transport
+                == .http(url: URL(string: "https://tracker.example.com/mcp")!, headers: ["Authorization": "Bearer abc"])
+        )
         // Unknown variables stay as written, so the failure is visible.
         #expect(tracker.resolved(environment: [:], project: .app).transport.secretNames == ["Authorization"])
     }
 
     @Test func managedConfigurationReplacesEverything() {
-        let managed = FakeFiles(["/home/tester/.claude.json": "claude.json", "/etc/managed-mcp.json": "project.mcp.json"])
-        let config = AgentConfigReader(files: managed, home: .testHome, environment: [:], claudeManagedFile: URL(filePath: "/etc/managed-mcp.json")).read(.claudeCode, projects: [.app])
+        let managed = FakeFiles([
+            "/home/tester/.claude.json": "claude.json", "/etc/managed-mcp.json": "project.mcp.json",
+        ])
+        let config = AgentConfigReader(
+            files: managed, home: .testHome, environment: [:], claudeManagedFile: URL(filePath: "/etc/managed-mcp.json")
+        ).read(.claudeCode, projects: [.app])
         #expect(config.isManagedOnly)
         #expect(config.effective(in: .app).allSatisfy { $0.scope == .managed })
     }
 
     @Test func followsClaudeConfigDirectory() {
         let moved = FakeFiles(["/custom/claude/.claude.json": "claude.json"])
-        let config = AgentConfigReader(files: moved, home: .testHome, environment: ["CLAUDE_CONFIG_DIR": "/custom/claude"], claudeManagedFile: URL(filePath: "/none")).read(.claudeCode, projects: [])
+        let config = AgentConfigReader(
+            files: moved, home: .testHome, environment: ["CLAUDE_CONFIG_DIR": "/custom/claude"],
+            claudeManagedFile: URL(filePath: "/none")
+        ).read(.claudeCode, projects: [])
         #expect(config.servers.map(\.name) == ["docs", "inspector"])
         #expect(config.files.first?.url.path(percentEncoded: false) == "/custom/claude/.claude.json")
     }
 
     @Test func missingFilesAreNotProblems() {
-        let config = AgentConfigReader(files: FakeFiles([:]), home: .testHome, environment: [:], claudeManagedFile: URL(filePath: "/none")).read(.claudeCode, projects: [.app])
+        let config = AgentConfigReader(
+            files: FakeFiles([:]), home: .testHome, environment: [:], claudeManagedFile: URL(filePath: "/none")
+        ).read(.claudeCode, projects: [.app])
         #expect(config.servers.isEmpty)
         #expect(config.problems.isEmpty)
         #expect(config.files.map(\.exists) == [false, false])

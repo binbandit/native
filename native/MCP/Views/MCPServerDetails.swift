@@ -43,7 +43,9 @@ struct MCPServerDetails: View {
             case .failed(let failure): failed(failure, stderr: report.stderr)
             }
         } else {
-            message("Not checked yet. Checking starts the server or reaches it, lists its tools and disconnects; it never calls a tool.")
+            message(
+                "Not checked yet. Checking starts the server or reaches it, lists its tools and disconnects; it never calls a tool."
+            )
             Button("Check \(name)") { Task { await library.probe(key) } }
                 .buttonStyle(.ds(.secondary, size: .medium))
         }
@@ -54,18 +56,22 @@ struct MCPServerDetails: View {
     @ViewBuilder
     private func connected(_ report: MCPProbeReport) -> some View {
         let info = report.server
-        Text([
-            info.map { [$0.title ?? $0.name, $0.version].compactMap(\.self).joined(separator: " ") },
-            info.map { "protocol \($0.protocolVersion)" },
-            report.transport.map { $0.displayName },
-            "answered in \(DSFormat.duration(Double(report.duration.components.seconds) + Double(report.duration.components.attoseconds) / 1e18))",
-        ].compactMap(\.self).joined(separator: " · "))
-            .settingsText(.caption)
-            .foregroundStyle(.dsTextSecondary)
+        Text(
+            [
+                info.map { [$0.title ?? $0.name, $0.version].compactMap(\.self).joined(separator: " ") },
+                info.map { "protocol \($0.protocolVersion)" },
+                report.transport.map { $0.displayName },
+                "answered in \(DSFormat.duration(Double(report.duration.components.seconds) + Double(report.duration.components.attoseconds) / 1e18))",
+            ].compactMap(\.self).joined(separator: " · ")
+        )
+        .settingsText(.caption)
+        .foregroundStyle(.dsTextSecondary)
         if let cost = library.contextCost(of: name) {
             MCPContextCostLabel(cost: cost)
         } else if report.toolDefinitionBytes > 0 {
-            message("Its tool definitions are \(ByteCountFormatter.string(fromByteCount: Int64(report.toolDefinitionBytes), countStyle: .file)), which agents load into every session's context. Run /context in a Claude Code session to see exactly how many tokens.")
+            message(
+                "Its tool definitions are \(ByteCountFormatter.string(fromByteCount: Int64(report.toolDefinitionBytes), countStyle: .file)), which agents load into every session's context. Run /context in a Claude Code session to see exactly how many tokens."
+            )
         }
         if report.tools.isEmpty {
             message("It offers no tools.")
@@ -73,7 +79,10 @@ struct MCPServerDetails: View {
             let tools = report.tools.sorted { $0.definitionBytes > $1.definitionBytes }
             VStack(alignment: .leading, spacing: DS.Space.md) {
                 ForEach(showsAllTools ? tools : Array(tools.prefix(Self.toolPreview))) { tool in
-                    MCPToolRow(tool: tool, share: report.toolDefinitionBytes > 0 ? Double(tool.definitionBytes) / Double(report.toolDefinitionBytes) : 0)
+                    MCPToolRow(
+                        tool: tool,
+                        share: report.toolDefinitionBytes > 0
+                            ? Double(tool.definitionBytes) / Double(report.toolDefinitionBytes) : 0)
                 }
             }
             if tools.count > Self.toolPreview {
@@ -88,11 +97,17 @@ struct MCPServerDetails: View {
     @ViewBuilder
     private func needsAuth(_ challenge: MCPAuthChallenge) -> some View {
         if challenge.sentCredentials {
-            message("\(name) turned down the credentials in its configuration (HTTP \(challenge.statusCode)). Check the token in its headers.")
+            message(
+                "\(name) turned down the credentials in its configuration (HTTP \(challenge.statusCode)). Check the token in its headers."
+            )
         } else if let entry {
-            message("\(name) asks you to sign in (HTTP \(challenge.statusCode)). \(entry.format.displayName) signs in itself and keeps the token, so Native can't use it to list the tools; \(entry.format.displayName) may already be signed in.")
+            message(
+                "\(name) asks you to sign in (HTTP \(challenge.statusCode)). \(entry.format.displayName) signs in itself and keeps the token, so Native can't use it to list the tools; \(entry.format.displayName) may already be signed in."
+            )
         } else {
-            message("\(name) asks you to sign in (HTTP \(challenge.statusCode)). Agents sign in to servers Native hands them once Native can show their sign-in links; until then, add an API token as an Authorization header.")
+            message(
+                "\(name) asks you to sign in (HTTP \(challenge.statusCode)). Agents sign in to servers Native hands them once Native can show their sign-in links; until then, add an API token as an Authorization header."
+            )
         }
         HStack(spacing: DS.Space.md) {
             if let entry, case .success(let command) = AgentCLI.signIn(entry) {
