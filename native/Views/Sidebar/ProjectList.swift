@@ -14,10 +14,12 @@ struct ProjectList<TaskAccessory: View>: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.xxs) {
             SectionHeader("Projects") {
-                IconButton("Add Project", systemImage: "plus") {
+                IconButton("Add Project", systemImage: "folder.badge.plus") {
                     model.isAddingProject = true
                 }
             }
+            // Lines the button up with the projects' "+" buttons.
+            .padding(.trailing, DS.Space.sm)
             if model.projects.all.isEmpty {
                 AddProjectPrompt()
             }

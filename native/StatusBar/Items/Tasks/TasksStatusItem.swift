@@ -55,6 +55,9 @@ private struct TasksSegment: View {
                         StatusIndicator(status: .working, size: StatusBarMetrics.statusGlyph)
                         Text("\(working) working")
                     }
+                    if working > 0, waiting > 0 {
+                        StatusBarDivider()
+                    }
                     if waiting > 0 {
                         StatusIndicator(status: .needsPermission, size: StatusBarMetrics.statusGlyph)
                         Text("\(waiting) \(waiting == 1 ? "needs" : "need") you")
