@@ -61,10 +61,7 @@ extension Repository {
     /// checkpoint has it. `nil` paths restores everything. Paths the checkpoint doesn't have are
     /// removed, so a discarded deletion is deleted again.
     public func restore(_ checkpoint: Checkpoint, paths: [String]? = nil) async throws(GitError) {
-        let indexCommit = try await run(
-            ["rev-parse", "--verify", "--quiet", "\(checkpoint.commit)^2"], readOnly: true, acceptingStatus: [0, 1])
-        if indexCommit.status == 0 {
-            let source = indexCommit.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        if let source = try await resolve("\(checkpoint.commit)^2") {
             // git refuses pathspecs that match nothing, in the source or the index.
             let staged = try await known(paths, in: source)
             if !staged.isEmpty {

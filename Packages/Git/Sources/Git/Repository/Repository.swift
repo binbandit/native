@@ -46,6 +46,12 @@ public struct Repository: Sendable, Hashable {
             arguments, in: root, readOnly: readOnly, input: input, environment: environment, acceptingStatus: accepted)
     }
 
+    /// The commit `revision` names, or `nil` when it names nothing (like HEAD before the first commit).
+    func resolve(_ revision: String) async throws(GitError) -> String? {
+        let output = try await run(["rev-parse", "--verify", "--quiet", revision], readOnly: true, acceptingStatus: [0, 1])
+        return output.status == 0 ? output.text.trimmingCharacters(in: .whitespacesAndNewlines) : nil
+    }
+
     /// Runs a command on literal paths fed through stdin, which sidesteps both pathspec magic
     /// (`*`, `:`) and argument length limits.
     func runWithPaths(_ arguments: [String], _ paths: [String]) async throws(GitError) {

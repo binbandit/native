@@ -36,7 +36,7 @@ enum Interpolation {
             }
             switch expression {
             case "userHome": return environment["HOME"] ?? FileManager.default.homeDirectoryForCurrentUser.path(percentEncoded: false)
-            case "workspaceFolder": return project?.path(percentEncoded: false)
+            case "workspaceFolder": return project.map(ProjectPath.key)
             case "workspaceFolderBasename": return project?.lastPathComponent
             case "pathSeparator", "/": return "/"
             default: return nil
