@@ -3,8 +3,9 @@ import Foundation
 import Observation
 import os
 
-/// The plugins Native runs with: the built-in ones plus any manifests in `~/.native/plugins`, minus
-/// those the user turned off. Everything else asks this for agents, MCP servers, titles and hooks.
+/// The plugins Native runs with: the built-in ones plus any manifests in `~/.native/plugins`, each on
+/// or off by the user's choice, or by its default until they choose. Everything else asks this for
+/// agents, MCP servers, titles and hooks.
 @Observable
 final class PluginRegistry {
     struct LoadedPlugin: Identifiable {
@@ -33,15 +34,24 @@ final class PluginRegistry {
 
     private(set) var plugins: [LoadedPlugin] = []
     private(set) var failures: [LoadFailure] = []
-    private(set) var disabledIDs: Set<String>
+    /// The user's explicit on/off choices; a plugin without one follows `isEnabledByDefault`.
+    private var choices: [String: Bool]
 
     private let builtIns: [any NativePlugin]
     private let logger = Logger(subsystem: "Native", category: "Plugins")
-    private static let disabledKey = "disabledPlugins"
+    private static let choicesKey = "pluginChoices"
+    /// Before plugins had defaults, only turning one off was recorded.
+    private static let legacyDisabledKey = "disabledPlugins"
 
     init(builtIns: [any NativePlugin] = BuiltInPlugins.all) {
         self.builtIns = builtIns
-        disabledIDs = Set(UserDefaults.standard.stringArray(forKey: Self.disabledKey) ?? [])
+        let defaults = UserDefaults.standard
+        if let stored = defaults.dictionary(forKey: Self.choicesKey) as? [String: Bool] {
+            choices = stored
+        } else {
+            let disabled = defaults.stringArray(forKey: Self.legacyDisabledKey) ?? []
+            choices = Dictionary(uniqueKeysWithValues: disabled.map { ($0, false) })
+        }
         reload()
     }
 
@@ -66,16 +76,13 @@ final class PluginRegistry {
     }
 
     func isEnabled(_ id: String) -> Bool {
-        !disabledIDs.contains(id)
+        choices[id] ?? plugins.first { $0.id == id }?.plugin.isEnabledByDefault ?? true
     }
 
+    /// Records the user's choice, which then outlasts any change to the plugin's default.
     func setEnabled(_ enabled: Bool, for id: String) {
-        if enabled {
-            disabledIDs.remove(id)
-        } else {
-            disabledIDs.insert(id)
-        }
-        UserDefaults.standard.set(disabledIDs.sorted(), forKey: Self.disabledKey)
+        choices[id] = enabled
+        UserDefaults.standard.set(choices, forKey: Self.choicesKey)
     }
 
     // MARK: - Contributions of enabled plugins
