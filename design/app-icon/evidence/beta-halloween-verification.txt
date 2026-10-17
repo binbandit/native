@@ -1,0 +1,83 @@
+Checked UTC: 2026-10-17T23:48:39.102548+00:00
+HEAD at evidence capture: 5a687cbd552b364d1208ef1208f7e3973fe69c15
+Relevant files are identified by SHA-256 below because other agents are editing and saving the shared tree concurrently.
+
+Scope: dedicated Beta compiled icon, actual Nightly compiled icon, bold Halloween variants for all three channels, opt-in seasonal controls and automatic expiration from October 1 through November 7 inclusive.
+
+verified - Apple Icon Composer: Beta exports Default, Dark, ClearLight, ClearDark, TintedLight, TintedDark. Beta and Nightly editable sources match their compiled source bundles byte-for-byte.
+verified - Asset catalog: all channel sources compile with AppIconBeta as the primary icon; six Halloween images load through the real AppKit Dock image setter in an isolated helper.
+verified - Package tests: seven annual availability cases, local Melbourne/Los Angeles boundaries, DST-aware closing boundary, next-year reopening.
+verified - Model/adapter: each channel uses the right light/dark Halloween image; expiry restores the base choice; stored opt-in cannot bypass the date gate; next-year opt-in works; selecting another theme exits Halloween; Original restores the compiled native bundle.
+verified - Real changed Settings view in isolated SwiftUI renderer: native switch on/off, light/dark variants, choice retained through relaunch, outside-season control hidden, selected icon restored. A ticking injected clock crossed the November 8 boundary and the real Timer updated the UI automatically without a relaunch or manual refresh. Global system time and appearance were not changed.
+verified - iPadOS: scripts/check-ios.sh passes the changed shared model, platform adapter, enums and view together with the real design system.
+verified - Formatting: swift format lint --strict on changed Swift files; bash -n scripts/release/release.sh.
+verified - Release pipeline plan: --channel beta resolves to Release, NATIVE_BETA and NATIVE_APP_ICON_NAME=AppIconBeta; no archive, signing, notarization or publication performed by the plan.
+verified - Release compilation: scripts/release/check.sh --derived-data /tmp/native-beta-halloween-build Release completed successfully.
+verified - Beta compilation: xcodebuild Release with NATIVE_CHANNEL_CONDITION=NATIVE_BETA NATIVE_APP_ICON_NAME=AppIconBeta completed successfully.
+verified - Nightly compilation: scripts/release/check.sh --derived-data /tmp/native-beta-halloween-build Nightly completed successfully.
+partial - Full main-window/agent-host startup was not driven; UI checks used the actual changed view/model in an isolated render app to avoid shared host state. All render apps were quit after checking.
+
+Screenshots: halloween-enabled.png, halloween-light.png, halloween-out-of-season.png, halloween-automatic-expiry.png
+
+Build metadata:
+Release: CFBundleIconName=AppIconBeta, CFBundleIconFile=AppIconBeta
+Nightly: CFBundleIconName=AppIconNightly, CFBundleIconFile=AppIconNightly
+
+sandbox_extension_issue_file_to_process failed for /tmp/NativeHalloweenChecks.app: 1 (Operation not permitted)
+PASS stable: light/dark seasonal Dock images, November 8 expiry, preserved choice, relaunch gate, next-year opt-in, theme selection exits Halloween, native restore
+PASS beta: light/dark seasonal Dock images, November 8 expiry, preserved choice, relaunch gate, next-year opt-in, theme selection exits Halloween, native restore
+PASS nightly: light/dark seasonal Dock images, November 8 expiry, preserved choice, relaunch gate, next-year opt-in, theme selection exits Halloween, native restore
+PASS: audited all 24 final icons
+
+SHA-256 of relevant current sources:
+99253b4743d53358ec9a7d25f460a1324f6126214325fd51ab491ec0a35ed518  Packages/AppAppearance/Sources/AppAppearance/SeasonalAppIcons.swift
+3e18e446969113bc19858f20d6a1859c2dfc324615c1ce7eb1507b44cb9a256b  Packages/AppAppearance/Tests/AppAppearanceTests/SeasonalAppIconsTests.swift
+4ef96c150557809f890ce91e6ec175812aafbe0560e77decdbbf536d5b97ca32  native/Models/AppIconPreferences.swift
+e96b6e022eb9a93d0f6781a1f0d655fd1aff79f1bf0f5bdfa5d7129ee7a69195  native/Models/AppIconTheme.swift
+3bd7c7e1c5b7e190dcb097bc1f9fd28c5a40d7a231dcfcd32cae4aaebf697fb4  native/Models/AppIconAppearance.swift
+14cad13c6d6e2efbb7e7960e15f99af74db3684492cb2543c348cd9d2c645e27  native/Platform/PlatformAppIcon.swift
+397b0cb39e92fe318d46ed8fb95fd88845c62618f36e7780af376fdc7844c32e  native/Views/Settings/AppearanceSettingsView.swift
+c14969e8ce45626c3db62b41aa19fa9875f800677c2b4aad15a628c4038a7547  native/NativeApp.swift
+161f35b73abb05e0d9b6f4599dfd6b7338e4a20483fb846b35f9da3e81fa8a6c  native/Settings/Pages/ShortcutReference.swift
+f8dc510f6a6646673a617f63142c631d0abaf703e53981ce71504143ce598431  native/DesignSystem/Tokens/TokensAppIcon.swift
+eab03cf22b86c7dbe8819ab2de673f27ae0e8b6b0f9cbb5cee75cc4d4f7c5705  scripts/release/release.sh
+c3f448ec546587ca45df3bb0bbc4fe3f694c88452e1c6b2b020942bebe70ef59  Config/Nightly.xcconfig
+418273131bae640f72f0ae7323354d87bc897d83222a5a55dbfae9c9ef519769  native.xcodeproj/project.pbxproj
+1e4f6b2e48d53ae79dcf2acc30cfbbb6219cf85a6a0e4d1bfa0d33c64cf60e7c  native/AppIconBeta.icon/icon.json
+c02927c621bca259718ef485a6fb2e6e1cd393820c08dad87542493c1f37274a  native/AppIconBeta.icon/Assets/lower-fold.svg
+931bb7e90f5950c7ebebcd918cf8643e9816af7874848e2a8da49c30e62a385b  native/AppIconBeta.icon/Assets/upper-fold.svg
+82b1ae18c9a672f8413eff50a27b4afe3e3c970dd043d41c45c1c8edb4f53946  native/AppIconBeta.icon/Assets/beta.svg
+4bfff8ec1533b07493e4132565a00ca20dd70fa9945a4afd0f9c68fe4dca6638  native/AppIconNightly.icon/icon.json
+6c3b5026f9aa5cc1454300e532f731aa8a7cc4faab6f71405933b54480467ffc  native/AppIconNightly.icon/Assets/night-sky.svg
+81c006761bc664919ee582d45eeab91f1e338259dbeba0ab9de960e36de9d62b  native/AppIconNightly.icon/Assets/native-mark.svg
+b47f4224b1707453615a5782973e5f5b008684fafa4a4bcd9a1c0e6ac85ee147  design/app-icon/HalloweenRegular.icon/icon.json
+d725d3609cf4891cade36591ba8e04c3f92edfc532a7b0efa407ae57bd83a480  design/app-icon/HalloweenRegular.icon/Assets/carving-rim.svg
+9dd470afb7b9075ebcc771f7a471ffa55b5cafa8c69ab8f6d003f594366ce54c  design/app-icon/HalloweenRegular.icon/Assets/carving.svg
+33529f4c8c29fa745a81aeb036989896cf98ed6a72c0684942edb087a7f813f2  design/app-icon/HalloweenRegular.icon/Assets/pumpkin.svg
+a74fc5fb644a371d5cd6b00429084785213c566c326b67832b6538b1ff0380c2  design/app-icon/HalloweenRegular.icon/Assets/bats.svg
+371a1cefea6fc4980aa35d273110f831426b239b5cd0ab6fe7e70bc5be71b1e0  design/app-icon/HalloweenRegular.icon/Assets/ribs.svg
+43358f56db81b9391d58947e1c04a0adfbd79ae49e3a8ebcc16d97568442671a  design/app-icon/HalloweenRegular.icon/Assets/cobweb.svg
+7af782af6e272032e595623a1c82dbbe14517187cce5d6021bfa2870440cd1ae  design/app-icon/HalloweenRegular.icon/Assets/stem.svg
+f4f49b8166d296d115c02e84458ea7576703652d538d447d5993d625f36e3fc1  design/app-icon/HalloweenBeta.icon/icon.json
+d725d3609cf4891cade36591ba8e04c3f92edfc532a7b0efa407ae57bd83a480  design/app-icon/HalloweenBeta.icon/Assets/carving-rim.svg
+c92be40e0cf963333273564b86f4fe9affaebf2411ae15854909764edeff4edf  design/app-icon/HalloweenBeta.icon/Assets/hat-band.svg
+9dd470afb7b9075ebcc771f7a471ffa55b5cafa8c69ab8f6d003f594366ce54c  design/app-icon/HalloweenBeta.icon/Assets/carving.svg
+132cab0407383b66ee92a03aac73520ee94a035507049f795511bac519febf3f  design/app-icon/HalloweenBeta.icon/Assets/hat-brim.svg
+7635320ff056f3bec42a4abe7b8db33cd650470b5ed422342070c3a5f1440ccd  design/app-icon/HalloweenBeta.icon/Assets/hat-buckle.svg
+33529f4c8c29fa745a81aeb036989896cf98ed6a72c0684942edb087a7f813f2  design/app-icon/HalloweenBeta.icon/Assets/pumpkin.svg
+ab8827a41e458d9f0e082e46735ed1c20cc9eb5c2165bbead886c01152e517ad  design/app-icon/HalloweenBeta.icon/Assets/bats.svg
+e5bcb54d6b48745ae97a75853a06620f3ca28c4c7b20ea93cd72e60edfdb03b0  design/app-icon/HalloweenBeta.icon/Assets/beta.svg
+ca47a20c491fe4fe710477d2d9b06785e940844e9f96cb7faf112f8c2f973b7e  design/app-icon/HalloweenBeta.icon/Assets/witch-hat.svg
+371a1cefea6fc4980aa35d273110f831426b239b5cd0ab6fe7e70bc5be71b1e0  design/app-icon/HalloweenBeta.icon/Assets/ribs.svg
+43358f56db81b9391d58947e1c04a0adfbd79ae49e3a8ebcc16d97568442671a  design/app-icon/HalloweenBeta.icon/Assets/cobweb.svg
+53093a3635832f1b704a15c20b875673c10ccbd3e575112d6940fc267d169348  design/app-icon/HalloweenNightly.icon/icon.json
+00c90c7cd12e66caa20d8f71c7a4e96ab30300d0f8afd0880d85d120158ff32a  design/app-icon/HalloweenNightly.icon/Assets/blood-moon.svg
+d725d3609cf4891cade36591ba8e04c3f92edfc532a7b0efa407ae57bd83a480  design/app-icon/HalloweenNightly.icon/Assets/carving-rim.svg
+3b2246829c337d2efe111fae6fd95d0cba96a195c5e48f1700c516632462fa2d  design/app-icon/HalloweenNightly.icon/Assets/moon-craters.svg
+9dd470afb7b9075ebcc771f7a471ffa55b5cafa8c69ab8f6d003f594366ce54c  design/app-icon/HalloweenNightly.icon/Assets/carving.svg
+33529f4c8c29fa745a81aeb036989896cf98ed6a72c0684942edb087a7f813f2  design/app-icon/HalloweenNightly.icon/Assets/pumpkin.svg
+d8b5941d25b09e2df82dacbc1c7a0da6bf9a59099d0e6e0f7bb8fbcbdff4af40  design/app-icon/HalloweenNightly.icon/Assets/stars.svg
+8a57cb2195511f1b9ba82fecf86ce7e5540e775fd53a9ae16d04cac2427568bd  design/app-icon/HalloweenNightly.icon/Assets/moon-bat.svg
+371a1cefea6fc4980aa35d273110f831426b239b5cd0ab6fe7e70bc5be71b1e0  design/app-icon/HalloweenNightly.icon/Assets/ribs.svg
+43358f56db81b9391d58947e1c04a0adfbd79ae49e3a8ebcc16d97568442671a  design/app-icon/HalloweenNightly.icon/Assets/cobweb.svg
+7af782af6e272032e595623a1c82dbbe14517187cce5d6021bfa2870440cd1ae  design/app-icon/HalloweenNightly.icon/Assets/stem.svg
