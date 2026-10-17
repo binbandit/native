@@ -23,7 +23,7 @@ struct ProbeTests {
         #expect(search.isReadOnly == true)
         #expect(report.tools.last?.isDestructive == true)
         #expect(report.toolDefinitionBytes > 200)
-        #expect(report.estimatedToolTokens == (report.toolDefinitionBytes + 3) / 4)
+        #expect(report.tools.map(\.definitionBytes).reduce(0, +) == report.toolDefinitionBytes)
         #expect(report.stderr.contains("fake server starting"))
     }
 

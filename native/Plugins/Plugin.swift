@@ -152,9 +152,11 @@ struct AgentIconSource: Codable, Hashable, Sendable {
             return
         }
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        path = try container.decodeIfPresent(String.self, forKey: .path)
-        apps = try container.decodeIfPresent([String].self, forKey: .apps) ?? []
-        registry = try container.decodeIfPresent(String.self, forKey: .registry)
+        self.init(
+            path: try container.decodeIfPresent(String.self, forKey: .path),
+            apps: try container.decodeIfPresent([String].self, forKey: .apps) ?? [],
+            registry: try container.decodeIfPresent(String.self, forKey: .registry)
+        )
     }
 }
 

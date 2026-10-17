@@ -16,6 +16,10 @@ public final class AutomationEngine {
     @ObservationIgnored public var host: (any AutomationHost)? {
         didSet { reconcileOpenRuns(); reschedule() }
     }
+    /// Off while the Automations plugin is off: nothing fires and nothing is polled.
+    @ObservationIgnored public var isEnabled = true {
+        didSet { reschedule() }
+    }
     @ObservationIgnored private let store: AutomationStore?
     @ObservationIgnored private let now: () -> Date
     @ObservationIgnored private var loop: Task<Void, Never>?
@@ -133,6 +137,7 @@ public final class AutomationEngine {
 
     /// Checks schedules and events once. The loop calls it; tests call it directly.
     public func tick() async {
+        guard isEnabled else { return }
         let date = now()
         for (id, reason) in AutomationPlanner.due(book.automations, lastChecked: book.lastChecked, now: date) {
             book.lastChecked[id] = date
@@ -152,7 +157,7 @@ public final class AutomationEngine {
 
     private func reschedule() {
         loop?.cancel()
-        guard host != nil else { return }
+        guard host != nil, isEnabled else { return }
         loop = Task { [weak self] in
             while !Task.isCancelled, let self {
                 await self.tick()
