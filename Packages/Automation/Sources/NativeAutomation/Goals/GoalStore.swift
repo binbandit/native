@@ -6,7 +6,7 @@ import os
 @MainActor
 public final class GoalStore {
     public static let standard = GoalStore(
-        url: URL.applicationSupportDirectory.appending(path: "Native/goals.json", directoryHint: .notDirectory)
+        url: AutomationStorage.file("goals.json")
     )
 
     private let url: URL

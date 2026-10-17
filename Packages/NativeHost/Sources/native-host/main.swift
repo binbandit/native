@@ -30,13 +30,17 @@ func fail(_ message: String, status: Int32 = 1) -> Never {
 }
 
 let channel = option("--channel", in: arguments) ?? ""
-let location = option("--home", in: arguments).map { HostLocation(directory: URL(filePath: $0, directoryHint: .isDirectory), channel: channel) }
+let location =
+    option("--home", in: arguments).map {
+        HostLocation(directory: URL(filePath: $0, directoryHint: .isDirectory), channel: channel)
+    }
     ?? HostLocation.standard(channel: channel)
 
 switch command {
 case "serve":
     let info = PeerInfo(name: "native-host", version: "1.0", build: "dev")
-    let configuration = MacHost.configuration(location: location, info: info, inheritEnvironment: arguments.contains("--inherit-environment"))
+    let configuration = MacHost.configuration(
+        location: location, info: info, inheritEnvironment: arguments.contains("--inherit-environment"))
     Task { @HostActor in
         do {
             _ = try HostMain.start(configuration, verifier: CodeSignatureVerifier())

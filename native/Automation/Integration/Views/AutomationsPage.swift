@@ -28,6 +28,9 @@ struct AutomationsPage: View {
             ScrollView {
                 VStack(alignment: .leading, spacing: DS.Space.xxl) {
                     header
+                    if engine.needsPolling, let problem = engine.eventSourceProblem {
+                        NoticeBanner(tone: .warning, systemImage: "exclamationmark.triangle", title: "Pull request events can't fire", detail: problem)
+                    }
                     if !engine.automations.isEmpty {
                         list
                     }
@@ -143,8 +146,11 @@ struct AutomationsPage: View {
 
     private func save(_ automation: Automation) {
         editing = nil
-        // Making one is turning the feature on.
-        model.plugins.setEnabled(true, for: BuiltInPlugins.automations.manifest.id)
+        // Making one is turning the feature on; an explicit choice is only recorded when it's off.
+        let id = BuiltInPlugins.automations.manifest.id
+        if !model.plugins.isEnabled(id) {
+            model.plugins.setEnabled(true, for: id)
+        }
         Task { await engine.save(automation) }
     }
 }

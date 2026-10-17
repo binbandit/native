@@ -40,7 +40,7 @@ final class AutomationCenter {
     func connectAutomations(
         repository: @escaping (URL) async -> String?,
         worktree: @escaping (_ project: URL, _ title: String) async throws -> URL,
-        pullRequests: @escaping () async -> [PullRequestSnapshot]?
+        pullRequests: @escaping () async throws -> [PullRequestSnapshot]
     ) {
         automations.host = AppAutomationsHost(center: self, repository: repository, worktree: worktree, pullRequests: pullRequests)
     }

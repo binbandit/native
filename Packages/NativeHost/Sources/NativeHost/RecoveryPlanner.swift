@@ -29,7 +29,8 @@ enum RecoveryPlanner {
     /// add context around a prompt when they store it, so containment counts.
     static func agentReceived(_ prompt: String, replayedUserMessages: [String]) -> Bool {
         let prompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let last = replayedUserMessages.last?.trimmingCharacters(in: .whitespacesAndNewlines), !prompt.isEmpty else {
+        guard let last = replayedUserMessages.last?.trimmingCharacters(in: .whitespacesAndNewlines), !prompt.isEmpty
+        else {
             return false
         }
         return last == prompt || last.contains(prompt)
@@ -47,11 +48,12 @@ enum RecoveryPlanner {
     /// The message that tells an agent its turn was cut off. It reads as Native's, not the user's,
     /// and asks the agent to verify state rather than assume its last step completed.
     static func interruptionPrompt(cause: RecoveryNote.Cause) -> String {
-        let reason = switch cause {
-        case .agentStopped, .unknown: "your process stopped unexpectedly"
-        case .hostStopped: "Native's background process stopped unexpectedly"
-        case .systemRestarted: "the computer restarted"
-        }
+        let reason =
+            switch cause {
+            case .agentStopped, .unknown: "your process stopped unexpectedly"
+            case .hostStopped: "Native's background process stopped unexpectedly"
+            case .systemRestarted: "the computer restarted"
+            }
         return """
             [Native] Your previous turn was interrupted because \(reason). Whatever you were in the middle of \
             may not have finished, and the result of your last tool call may be missing. Check the current \

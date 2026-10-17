@@ -16,7 +16,9 @@ public struct LaunchdSessionJob: Sendable {
     public let location: HostLocation
     private let runner: any CommandRunner
 
-    public init(bundledPlist: URL, appBundle: URL, location: HostLocation, runner: any CommandRunner = LocalCommandRunner()) {
+    public init(
+        bundledPlist: URL, appBundle: URL, location: HostLocation, runner: any CommandRunner = LocalCommandRunner()
+    ) {
         self.bundledPlist = bundledPlist
         self.appBundle = appBundle
         self.location = location
@@ -40,7 +42,8 @@ public struct LaunchdSessionJob: Sendable {
         let (label, plist) = try sessionPlist()
         try location.prepare()
         let path = location.directory.appending(path: "launchd.plist")
-        try PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0).write(to: path, options: .atomic)
+        try PropertyListSerialization.data(fromPropertyList: plist, format: .xml, options: 0).write(
+            to: path, options: .atomic)
         // The cleanup script disables stale labels; this build wants its own back. Bootstrapping a
         // job that's already loaded fails harmlessly; kickstart then starts it if it exited (a
         // stopped or idle host).
@@ -60,8 +63,9 @@ public struct LaunchdSessionJob: Sendable {
     /// `BundleProgram` for jobs registered through `SMAppService`).
     private func sessionPlist() throws -> (String, [String: Any]) {
         guard let data = try? Data(contentsOf: bundledPlist),
-              var plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
-              let label = plist["Label"] as? String, let program = plist["BundleProgram"] as? String else {
+            var plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
+            let label = plist["Label"] as? String, let program = plist["BundleProgram"] as? String
+        else {
             throw Failure.unreadablePlist
         }
         plist["BundleProgram"] = nil
@@ -75,7 +79,9 @@ public struct LaunchdSessionJob: Sendable {
     }
 
     private func launchctl(_ arguments: [String]) async throws -> CommandResult {
-        try await runner.run(Command("/bin/launchctl", arguments, environment: ProcessInfo.processInfo.environment, timeout: .seconds(10)))
+        try await runner.run(
+            Command(
+                "/bin/launchctl", arguments, environment: ProcessInfo.processInfo.environment, timeout: .seconds(10)))
     }
 }
 #endif

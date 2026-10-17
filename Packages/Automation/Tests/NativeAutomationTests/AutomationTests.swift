@@ -76,7 +76,8 @@ final class FakeAutomationHost: AutomationHost {
     let runner = WorkflowRunner()
     var automationAgents = [WorkflowAgent(id: "codex", name: "Codex")]
     var workflowLibrary = WorkflowLibrary()
-    var snapshots: [PullRequestSnapshot]? = []
+    var snapshots: [PullRequestSnapshot] = []
+    var snapshotError: (any Error)?
     var started: [(input: String, overrides: [String: String])] = []
     var failWorkspace = false
 
@@ -98,7 +99,10 @@ final class FakeAutomationHost: AutomationHost {
 
     func cancelWorkflowRun(_ id: WorkflowRun.ID) { runner.send(.cancel, to: id) }
     func workflowRun(_ id: WorkflowRun.ID) -> WorkflowRun? { runner.run(id) }
-    func pullRequestSnapshots() async -> [PullRequestSnapshot]? { snapshots }
+    func pullRequestSnapshots() async throws -> [PullRequestSnapshot] {
+        if let snapshotError { throw snapshotError }
+        return snapshots
+    }
 }
 
 @MainActor
@@ -170,6 +174,18 @@ final class FakeAutomationHost: AutomationHost {
             return
         }
         #expect(!message.isEmpty)
+    }
+
+    @Test func anUnreadableEventSourceSaysWhy() async {
+        let host = FakeAutomationHost()
+        host.snapshotError = CocoaError(.fileReadNoPermission)
+        let engine = AutomationEngine()
+        engine.host = host
+        engine.isEnabled = true
+        await engine.save(Automation(name: "CI", triggers: [.event(.checksFailed)], action: .prompt("x"), project: URL(filePath: "/p"), createdAt: .now))
+        await engine.tick()
+        #expect(engine.needsPolling)
+        #expect(engine.eventSourceProblem != nil)
     }
 
     @Test func stateRoundTripsThroughTheStore() async throws {

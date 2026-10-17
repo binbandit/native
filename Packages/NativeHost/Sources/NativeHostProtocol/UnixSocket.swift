@@ -1,9 +1,10 @@
+import Foundation
+
 #if canImport(Darwin)
 import Darwin
 #elseif canImport(Glibc)
 import Glibc
 #endif
-import Foundation
 
 /// Unix domain sockets, the host's local transport. Paths are limited to 103 bytes by `sockaddr_un`.
 public enum UnixSocket {
@@ -13,7 +14,8 @@ public enum UnixSocket {
 
         public var errorDescription: String? {
             switch self {
-            case .pathTooLong(let path): "The socket path is too long for the system (\(path.utf8.count) bytes): \(path)"
+            case .pathTooLong(let path):
+                "The socket path is too long for the system (\(path.utf8.count) bytes): \(path)"
             case .system(let call, let code): "\(call) failed: \(String(cString: strerror(code)))"
             }
         }
@@ -29,7 +31,9 @@ public enum UnixSocket {
         var address = try makeAddress(path)
         let descriptor = try makeSocket()
         let result = withUnsafePointer(to: &address) { pointer in
-            pointer.withMemoryRebound(to: sockaddr.self, capacity: 1) { connectSocket(descriptor, $0, socklen_t(MemoryLayout<sockaddr_un>.size)) }
+            pointer.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                connectSocket(descriptor, $0, socklen_t(MemoryLayout<sockaddr_un>.size))
+            }
         }
         guard result == 0 else {
             let code = errno
@@ -46,7 +50,9 @@ public enum UnixSocket {
         let descriptor = try makeSocket()
         unlink(path)
         let bound = withUnsafePointer(to: &address) { pointer in
-            pointer.withMemoryRebound(to: sockaddr.self, capacity: 1) { bind(descriptor, $0, socklen_t(MemoryLayout<sockaddr_un>.size)) }
+            pointer.withMemoryRebound(to: sockaddr.self, capacity: 1) {
+                bind(descriptor, $0, socklen_t(MemoryLayout<sockaddr_un>.size))
+            }
         }
         guard bound == 0, chmod(path, 0o600) == 0, listenSocket(descriptor, backlog) == 0 else {
             let code = errno

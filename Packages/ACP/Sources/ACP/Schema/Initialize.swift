@@ -51,7 +51,8 @@ public struct InitializeResponse: Decodable, Sendable {
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         protocolVersion = try container.decode(Int.self, forKey: .protocolVersion)
-        agentCapabilities = try container.decodeIfPresent(AgentCapabilities.self, forKey: .agentCapabilities) ?? AgentCapabilities()
+        agentCapabilities =
+            try container.decodeIfPresent(AgentCapabilities.self, forKey: .agentCapabilities) ?? AgentCapabilities()
         agentInfo = try container.decodeIfPresent(Implementation.self, forKey: .agentInfo)
         authMethods = try container.decodeIfPresent([AuthMethod].self, forKey: .authMethods) ?? []
         // Steering is an extension, advertised beside the standard capabilities.
@@ -71,6 +72,8 @@ public struct AgentCapabilities: Decodable, Hashable, Sendable {
     public var image = false
     /// Optional session methods, which ACP advertises by the presence of an (often empty) object.
     public var listSessions = false
+    /// Whether `DeleteSessionRequest` removes sessions from the agent's own store.
+    public var deleteSessions = false
     /// Whether `SteerRequest` works (the `_session/steering` extension).
     public var steering = false
     /// Which remote MCP transports the agent can connect to; every agent supports stdio servers.
@@ -94,6 +97,7 @@ public struct AgentCapabilities: Decodable, Hashable, Sendable {
 
     private struct SessionCapabilities: Decodable {
         var list: JSONValue?
+        var delete: JSONValue?
     }
 
     public init(from decoder: any Decoder) throws {
@@ -102,6 +106,7 @@ public struct AgentCapabilities: Decodable, Hashable, Sendable {
         image = try container.decodeIfPresent(PromptCapabilities.self, forKey: .promptCapabilities)?.image ?? false
         let session = try container.decodeIfPresent(SessionCapabilities.self, forKey: .sessionCapabilities)
         listSessions = session?.list.map { $0 != .null } ?? false
+        deleteSessions = session?.delete.map { $0 != .null } ?? false
         let mcp = try container.decodeIfPresent(MCPCapabilities.self, forKey: .mcpCapabilities)
         mcpHTTP = mcp?.http ?? false
         mcpSSE = mcp?.sse ?? false

@@ -1,5 +1,6 @@
 import Foundation
 import Git
+import GitHub
 
 /// Gives AppModel's tasks their workspaces from the Git feature: a worktree or branch per task as
 /// the Git settings say, named with the GitHub username prefix, and put away (with a checkpoint)
@@ -28,17 +29,22 @@ final class GitTaskWorkspaceProvider: TaskWorkspaceProvider {
 
     func deleteWorkspace(at folder: URL, in project: Project) async throws {
         guard await git.isTaskWorktree(folder, of: project.url) else { return }
-        try await git.removeTaskWorktree(at: folder)
+        _ = try await git.removeTaskWorktree(at: folder)
     }
 
     func deleteWorkspaces(of project: Project) async throws {
         for folder in await git.taskWorktrees(of: project.url) {
-            try await git.removeTaskWorktree(at: folder)
+            _ = try await git.removeTaskWorktree(at: folder)
         }
     }
 
     func taskFolders(of project: Project) async -> [URL] {
         await git.taskWorktrees(of: project.url)
+    }
+
+    /// Renames the task's provisional branch after its title, unless it was pushed or renamed.
+    func taskDidGetTitle(_ title: String, workspace: URL, in project: Project) async {
+        await git.renameProvisionalBranch(at: workspace, title: title)
     }
 
     /// The signed-in GitHub user, only asked for when the prefix needs it.

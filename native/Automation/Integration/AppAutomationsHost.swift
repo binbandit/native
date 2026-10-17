@@ -8,13 +8,13 @@ final class AppAutomationsHost: AutomationHost {
     private weak var center: AutomationCenter?
     private let repositoryLookup: (URL) async -> String?
     private let makeWorktree: (_ project: URL, _ title: String) async throws -> URL
-    private let pullRequests: () async -> [PullRequestSnapshot]?
+    private let pullRequests: () async throws -> [PullRequestSnapshot]
 
     init(
         center: AutomationCenter,
         repository: @escaping (URL) async -> String?,
         worktree: @escaping (_ project: URL, _ title: String) async throws -> URL,
-        pullRequests: @escaping () async -> [PullRequestSnapshot]?
+        pullRequests: @escaping () async throws -> [PullRequestSnapshot]
     ) {
         self.center = center
         repositoryLookup = repository
@@ -54,7 +54,7 @@ final class AppAutomationsHost: AutomationHost {
         center?.workflows.run(id)
     }
 
-    func pullRequestSnapshots() async -> [PullRequestSnapshot]? {
-        await pullRequests()
+    func pullRequestSnapshots() async throws -> [PullRequestSnapshot] {
+        try await pullRequests()
     }
 }

@@ -7,16 +7,21 @@ import Testing
 /// A real `native-host` process in a scratch folder, driving the fake agent, plus a client that
 /// records everything it hears. Tests kill and restart the host the way a crash would.
 final class HostHarness: @unchecked Sendable {
-    let root = FileManager.default.temporaryDirectory.appending(path: "native-host-e2e-\(UUID().uuidString.prefix(8))", directoryHint: .isDirectory)
+    let root = FileManager.default.temporaryDirectory.appending(
+        path: "native-host-e2e-\(UUID().uuidString.prefix(8))", directoryHint: .isDirectory)
     var home: URL { root.appending(path: "host", directoryHint: .isDirectory) }
     var agentStore: URL { root.appending(path: "agent", directoryHint: .isDirectory) }
     private var process: Process?
 
-    static let products = URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+    static let products = URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        .deletingLastPathComponent()
         .appending(path: ".build/debug", directoryHint: .isDirectory)
 
     var agentSpec: AgentSpec {
-        AgentSpec(id: "fake", name: "Fake Agent", command: Self.products.appending(path: "FakeACPAgent").path(percentEncoded: false), env: ["FAKE_AGENT_STORE": agentStore.path(percentEncoded: false)])
+        AgentSpec(
+            id: "fake", name: "Fake Agent",
+            command: Self.products.appending(path: "FakeACPAgent").path(percentEncoded: false),
+            env: ["FAKE_AGENT_STORE": agentStore.path(percentEncoded: false)])
     }
 
     var location: HostLocation {
@@ -60,7 +65,9 @@ final class HostHarness: @unchecked Sendable {
     }
 
     func connect() async throws -> Recorder {
-        let client = NativeHostClient(transport: LocalSocketTransport(location: location), clientInfo: PeerInfo(name: "tests", version: "1", build: "1"))
+        let client = NativeHostClient(
+            transport: LocalSocketTransport(location: location),
+            clientInfo: PeerInfo(name: "tests", version: "1", build: "1"))
         let recorder = Recorder(client: client)
         await recorder.listen()
         await client.start()
@@ -127,7 +134,9 @@ actor Recorder {
 
     /// Polls until `condition` holds, failing the test after `timeout`.
     @discardableResult
-    func wait(_ what: String, timeout: Duration = .seconds(20), until condition: @Sendable (Recorder) async -> Bool) async throws -> Bool {
+    func wait(
+        _ what: String, timeout: Duration = .seconds(20), until condition: @Sendable (Recorder) async -> Bool
+    ) async throws -> Bool {
         let deadline = ContinuousClock.now + timeout
         while ContinuousClock.now < deadline {
             if await condition(self) { return true }

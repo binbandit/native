@@ -23,7 +23,8 @@ struct HostPreviewWindow: View {
                 EmptyStateView(
                     "Keep agents working after Native quits",
                     systemImage: "moon.zzz",
-                    message: "Sessions here run in Native's background host. Quit Native, come back later, and the work is done. If the host or an agent stops, Native restarts it and resumes the task.",
+                    message:
+                        "Sessions here run in Native's background host. Quit Native, come back later, and the work is done. If the host or an agent stops, Native restarts it and resumes the task.",
                     actionTitle: "Turn On"
                 ) {
                     Task { await host.setEnabled(true) }
@@ -134,14 +135,18 @@ struct HostPreviewWindow: View {
                             HStack(spacing: DS.Space.md) {
                                 StatusIndicator(status: Self.status(of: session))
                                 VStack(alignment: .leading, spacing: 0) {
-                                    Text(session.title ?? URL(filePath: session.cwd).lastPathComponent).font(.dsCallout).lineLimit(1)
+                                    Text(session.title ?? URL(filePath: session.cwd).lastPathComponent).font(.dsCallout)
+                                        .lineLimit(1)
                                     Text(session.agentName).font(.dsCaption).foregroundStyle(Color.dsTextTertiary)
                                 }
                                 Spacer(minLength: 0)
                             }
                             .padding(.horizontal, DS.Space.md)
                             .frame(height: DS.Size.controlMD)
-                            .background(selection == session.id ? Color.dsSelected : .clear, in: .rect(cornerRadius: DS.Radius.row))
+                            .background(
+                                selection == session.id ? Color.dsSelected : .clear,
+                                in: .rect(cornerRadius: DS.Radius.row)
+                            )
                             .contentShape(.rect)
                         }
                         .buttonStyle(.plain)
@@ -187,7 +192,9 @@ struct HostPreviewWindow: View {
             EmptyStateView(
                 host.sessions.isEmpty ? "No durable sessions yet" : "No session selected",
                 systemImage: "rectangle.stack",
-                message: host.sessions.isEmpty ? "Start one with New Session. It keeps running after you quit Native." : "Pick a session on the left."
+                message: host.sessions.isEmpty
+                    ? "Start one with New Session. It keeps running after you quit Native."
+                    : "Pick a session on the left."
             )
         }
     }
@@ -200,13 +207,16 @@ struct HostPreviewWindow: View {
             ToolCallView(call: call) { option in
                 Task { await host.choose(option, forToolCall: call.id, in: session) }
             }
-        case .subagent(let subagent): Text(subagent.title ?? "Subagent").font(.dsBody).foregroundStyle(Color.dsTextSecondary)
+        case .subagent(let subagent):
+            Text(subagent.title ?? "Subagent").font(.dsBody).foregroundStyle(Color.dsTextSecondary)
         case .sessionMessage(let message): Text(message.text).font(.dsBody).foregroundStyle(Color.dsTextSecondary)
         }
     }
 
     private var isShowingError: Binding<Bool> {
-        Binding { host.errorMessage != nil } set: { isShowing in
+        Binding {
+            host.errorMessage != nil
+        } set: { isShowing in
             if !isShowing { host.errorMessage = nil }
         }
     }

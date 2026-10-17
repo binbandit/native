@@ -111,20 +111,24 @@ public struct RecoveryNote: Codable, Hashable, Sendable {
 
     /// The sentence a person reads, such as "Claude Code stopped unexpectedly at 2:14 PM. Native
     /// restarted it and resumed your task."
-    public func sentence(formattingTime format: (Date) -> String = { $0.formatted(date: .omitted, time: .shortened) }) -> String {
+    public func sentence(
+        formattingTime format: (Date) -> String = { $0.formatted(date: .omitted, time: .shortened) }
+    ) -> String {
         let time = format(interruptedAt)
-        let what = switch cause {
-        case .agentStopped, .unknown: "\(agentName) stopped unexpectedly at \(time)."
-        case .hostStopped: "Native's background host stopped unexpectedly at \(time)."
-        case .systemRestarted: "Your Mac restarted at \(time) while \(agentName) was working."
-        }
-        let did = switch action {
-        case .resumed: "Native restarted \(agentName) and asked it to pick up where it left off."
-        case .resent: "Your message hadn't reached \(agentName) yet, so Native sent it again."
-        case .paused: "It kept stopping, so Native paused this task. Send a message to continue."
-        case .failed: "Native couldn't restart \(agentName)\(problem.map { ": \($0)" } ?? ".")"
-        case .unknown: "Native recovered the session."
-        }
+        let what =
+            switch cause {
+            case .agentStopped, .unknown: "\(agentName) stopped unexpectedly at \(time)."
+            case .hostStopped: "Native's background host stopped unexpectedly at \(time)."
+            case .systemRestarted: "Your Mac restarted at \(time) while \(agentName) was working."
+            }
+        let did =
+            switch action {
+            case .resumed: "Native restarted \(agentName) and asked it to pick up where it left off."
+            case .resent: "Your message hadn't reached \(agentName) yet, so Native sent it again."
+            case .paused: "It kept stopping, so Native paused this task. Send a message to continue."
+            case .failed: "Native couldn't restart \(agentName)\(problem.map { ": \($0)" } ?? ".")"
+            case .unknown: "Native recovered the session."
+            }
         return "\(what) \(did)"
     }
 }
@@ -133,7 +137,8 @@ public struct RecoveryNote: Codable, Hashable, Sendable {
 
 extension HostEvent {
     private enum CodingKeys: String, CodingKey {
-        case seq, at, type, loading, update, prompt, toolCallID, request, optionID, stopReason, message, text, isError, recovery
+        case seq, at, type, loading, update, prompt, toolCallID, request, optionID, stopReason, message, text, isError,
+            recovery
     }
 
     public init(from decoder: any Decoder) throws {
@@ -141,21 +146,29 @@ extension HostEvent {
         seq = try container.decode(Int.self, forKey: .seq)
         at = try container.decode(Date.self, forKey: .at)
         let type = try container.decode(String.self, forKey: .type)
-        payload = switch type {
-        case "reset": .reset(loading: try container.decode(Bool.self, forKey: .loading))
-        case "loaded": .loaded
-        case "update": .update(try container.decode(JSONValue.self, forKey: .update))
-        case "prompt": .prompt(try container.decode(PromptEcho.self, forKey: .prompt))
-        case "permission_requested":
-            .permissionRequested(toolCallID: try container.decode(String.self, forKey: .toolCallID), request: try container.decode(JSONValue.self, forKey: .request))
-        case "permission_resolved":
-            .permissionResolved(toolCallID: try container.decode(String.self, forKey: .toolCallID), optionID: try container.decodeIfPresent(String.self, forKey: .optionID))
-        case "turn_ended": .turnEnded(stopReason: try container.decode(String.self, forKey: .stopReason))
-        case "turn_failed": .turnFailed(message: try container.decode(String.self, forKey: .message))
-        case "notice": .notice(text: try container.decode(String.self, forKey: .text), isError: try container.decode(Bool.self, forKey: .isError))
-        case "recovered": .recovered(try container.decode(RecoveryNote.self, forKey: .recovery))
-        default: .unsupported(type: type)
-        }
+        payload =
+            switch type {
+            case "reset": .reset(loading: try container.decode(Bool.self, forKey: .loading))
+            case "loaded": .loaded
+            case "update": .update(try container.decode(JSONValue.self, forKey: .update))
+            case "prompt": .prompt(try container.decode(PromptEcho.self, forKey: .prompt))
+            case "permission_requested":
+                .permissionRequested(
+                    toolCallID: try container.decode(String.self, forKey: .toolCallID),
+                    request: try container.decode(JSONValue.self, forKey: .request))
+            case "permission_resolved":
+                .permissionResolved(
+                    toolCallID: try container.decode(String.self, forKey: .toolCallID),
+                    optionID: try container.decodeIfPresent(String.self, forKey: .optionID))
+            case "turn_ended": .turnEnded(stopReason: try container.decode(String.self, forKey: .stopReason))
+            case "turn_failed": .turnFailed(message: try container.decode(String.self, forKey: .message))
+            case "notice":
+                .notice(
+                    text: try container.decode(String.self, forKey: .text),
+                    isError: try container.decode(Bool.self, forKey: .isError))
+            case "recovered": .recovered(try container.decode(RecoveryNote.self, forKey: .recovery))
+            default: .unsupported(type: type)
+            }
     }
 
     public func encode(to encoder: any Encoder) throws {

@@ -6,7 +6,9 @@ import Testing
 @Suite("Session mirror")
 struct SessionMirrorTests {
     private func chunk(_ kind: String, _ text: String, id: String? = nil) -> HostEvent.Payload {
-        var update: [String: JSONValue] = ["sessionUpdate": .string(kind), "content": .object(["type": .string("text"), "text": .string(text)])]
+        var update: [String: JSONValue] = [
+            "sessionUpdate": .string(kind), "content": .object(["type": .string("text"), "text": .string(text)]),
+        ]
         update["messageId"] = id.map(JSONValue.string)
         return .update(.object(update))
     }
@@ -37,7 +39,10 @@ struct SessionMirrorTests {
         mirror.apply([HostEvent(seq: 1, payload: .reset(loading: false)), prompt, prompt])
         #expect(mirror.userMessages == ["Once"])
         // A restarted host numbers from 1 again, starting with its reset.
-        mirror.apply([HostEvent(seq: 1, payload: .reset(loading: true)), HostEvent(seq: 2, payload: chunk("user_message_chunk", "Replayed", id: "m0"))])
+        mirror.apply([
+            HostEvent(seq: 1, payload: .reset(loading: true)),
+            HostEvent(seq: 2, payload: chunk("user_message_chunk", "Replayed", id: "m0")),
+        ])
         #expect(mirror.isLoading)
         #expect(mirror.userMessages == ["Replayed"])
         mirror.apply(HostEvent(seq: 3, payload: .loaded))
@@ -49,7 +54,9 @@ struct SessionMirrorTests {
         let request = JSONValue.object([
             "sessionId": .string("s"),
             "toolCall": .object(["toolCallId": .string("call-1"), "title": .string("Write notes.txt")]),
-            "options": .array([.object(["optionId": .string("allow"), "name": .string("Allow"), "kind": .string("allow_once")])]),
+            "options": .array([
+                .object(["optionId": .string("allow"), "name": .string("Allow"), "kind": .string("allow_once")])
+            ]),
         ])
         var mirror = SessionMirror()
         mirror.apply(HostEvent(seq: 1, payload: .permissionRequested(toolCallID: "call-1", request: request)))

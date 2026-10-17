@@ -59,7 +59,9 @@ struct HostInitializeRequest: Encodable, Sendable {
     var protocolVersion = ACP.protocolVersion
     /// Subagents show as their own sessions; Cursor reads that from `_meta` and Claude from the top
     /// level. No other optional client capabilities yet (fs, terminals), so agents do that work.
-    var clientCapabilities: JSONValue = .object(["subagents": .object([:]), "_meta": .object(["subagents": .object([:])])])
+    var clientCapabilities: JSONValue = .object([
+        "subagents": .object([:]), "_meta": .object(["subagents": .object([:])]),
+    ])
     var clientInfo: Implementation
 }
 

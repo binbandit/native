@@ -63,7 +63,8 @@ final class AgentLink {
             let peer = JSONRPCPeer(channel: channel, label: spec.id) { event in await onEvent(generation, event) }
             self.peer = peer
             peer.start()
-            let response = try await peer.request("initialize", HostInitializeRequest(clientInfo: clientInfo), as: HostInitializeResponse.self)
+            let response = try await peer.request(
+                "initialize", HostInitializeRequest(clientInfo: clientInfo), as: HostInitializeResponse.self)
             guard response.protocolVersion == ACP.protocolVersion else {
                 throw AgentLaunch.Failure.incompatible(name: spec.name, version: response.protocolVersion)
             }
@@ -79,7 +80,8 @@ final class AgentLink {
         } catch {
             guard generation == self.generation else { throw error }
             let detail = stderr.text.trimmingCharacters(in: .whitespacesAndNewlines)
-            let message = detail.isEmpty ? error.localizedDescription : "\(error.localizedDescription)\n\n\(detail.suffix(2_000))"
+            let message =
+                detail.isEmpty ? error.localizedDescription : "\(error.localizedDescription)\n\n\(detail.suffix(2_000))"
             terminateProcess()
             status = .failed(message)
             throw AgentLaunch.Failure.startFailed(message)
@@ -91,7 +93,10 @@ final class AgentLink {
         guard generation == self.generation, status != .stopped else { return false }
         self.generation += 1
         let stderr = stderr.text.trimmingCharacters(in: .whitespacesAndNewlines)
-        status = isStopping ? .stopped : .failed(stderr.isEmpty ? "\(spec.name) exited." : "\(spec.name) exited.\n\n\(stderr.suffix(2_000))")
+        status =
+            isStopping
+            ? .stopped
+            : .failed(stderr.isEmpty ? "\(spec.name) exited." : "\(spec.name) exited.\n\n\(stderr.suffix(2_000))")
         isStopping = false
         peer = nil
         terminateProcess()
@@ -134,7 +139,8 @@ enum AgentLaunch {
         var errorDescription: String? {
             switch self {
             case .notInstalled(let command): "\(command) isn't installed or isn't on your PATH."
-            case .incompatible(let name, let version): "\(name) speaks ACP version \(version); Native supports version \(ACP.protocolVersion)."
+            case .incompatible(let name, let version):
+                "\(name) speaks ACP version \(version); Native supports version \(ACP.protocolVersion)."
             case .startFailed(let message): message
             }
         }

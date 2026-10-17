@@ -95,7 +95,10 @@ public struct HostInfo: Codable, Hashable, Sendable {
     public var startedAt: Date
     public var channel: String
 
-    public init(protocolVersion: Int, hostID: HostID, machineName: String, hostInfo: PeerInfo, epoch: UUID, processID: Int32, startedAt: Date, channel: String) {
+    public init(
+        protocolVersion: Int, hostID: HostID, machineName: String, hostInfo: PeerInfo, epoch: UUID, processID: Int32,
+        startedAt: Date, channel: String
+    ) {
         self.protocolVersion = protocolVersion
         self.hostID = hostID
         self.machineName = machineName
@@ -126,7 +129,10 @@ public struct NewSessionParams: Codable, Sendable {
     /// reloads the session.
     public var mcpServers: [JSONValue]
 
-    public init(agentID: String, cwd: String, parentID: HostSessionID? = nil, origin: SessionOrigin = .user, mcpServers: [JSONValue] = []) {
+    public init(
+        agentID: String, cwd: String, parentID: HostSessionID? = nil, origin: SessionOrigin = .user,
+        mcpServers: [JSONValue] = []
+    ) {
         self.agentID = agentID
         self.cwd = cwd
         self.parentID = parentID
@@ -144,7 +150,9 @@ public struct OpenSessionParams: Codable, Sendable {
     public var title: String?
     public var mcpServers: [JSONValue]
 
-    public init(agentID: String, agentSessionID: SessionID, cwd: String, title: String? = nil, mcpServers: [JSONValue] = []) {
+    public init(
+        agentID: String, agentSessionID: SessionID, cwd: String, title: String? = nil, mcpServers: [JSONValue] = []
+    ) {
         self.agentID = agentID
         self.agentSessionID = agentSessionID
         self.cwd = cwd
@@ -196,7 +204,10 @@ public struct PromptParams: Codable, Sendable {
     public var echo: Bool
     public var origin: PromptEcho.Origin
 
-    public init(sessionID: HostSessionID, requestID: UUID = UUID(), text: String, behavior: PromptBehavior = .queue, echo: Bool = true, origin: PromptEcho.Origin = .user) {
+    public init(
+        sessionID: HostSessionID, requestID: UUID = UUID(), text: String, behavior: PromptBehavior = .queue,
+        echo: Bool = true, origin: PromptEcho.Origin = .user
+    ) {
         self.sessionID = sessionID
         self.requestID = requestID
         self.text = text
@@ -320,7 +331,10 @@ public struct ActivityEntry: Codable, Hashable, Sendable, Identifiable {
     public var detail: String?
     public var recovery: RecoveryNote?
 
-    public init(id: Int64, at: Date, sessionID: HostSessionID?, kind: Kind, subject: String? = nil, detail: String? = nil, recovery: RecoveryNote? = nil) {
+    public init(
+        id: Int64, at: Date, sessionID: HostSessionID?, kind: Kind, subject: String? = nil, detail: String? = nil,
+        recovery: RecoveryNote? = nil
+    ) {
         self.id = id
         self.at = at
         self.sessionID = sessionID

@@ -79,7 +79,9 @@ public final class HostCore {
         }
         let queues = try store.sessions().map { record in (record, try store.queue(for: record.id)) }
         for (record, queue) in queues {
-            let session = HostSession(record: record, agentName: agents[record.agentID]?.spec.name ?? record.agentID, phase: .idle, needsLoad: true, mcpServers: record.mcpServers)
+            let session = HostSession(
+                record: record, agentName: agents[record.agentID]?.spec.name ?? record.agentID, phase: .idle,
+                needsLoad: true, mcpServers: record.mcpServers)
             session.queue = queue.map { StoredQueueItem(prompt: $0.prompt, isSteering: false) }
             sessions[record.id] = session
             _ = session.append(.reset(loading: false))
@@ -110,15 +112,19 @@ public final class HostCore {
 
     var info: HostInfo {
         HostInfo(
-            protocolVersion: HostProtocol.version, hostID: hostID, machineName: configuration.machineName, hostInfo: configuration.hostInfo,
-            epoch: epoch, processID: ProcessInfo.processInfo.processIdentifier, startedAt: startedAt, channel: configuration.location.channel
+            protocolVersion: HostProtocol.version, hostID: hostID, machineName: configuration.machineName,
+            hostInfo: configuration.hostInfo,
+            epoch: epoch, processID: ProcessInfo.processInfo.processIdentifier, startedAt: startedAt,
+            channel: configuration.location.channel
         )
     }
 
     private func beat() {
         try? store.setMeta(MetaKey.heartbeat, String(Date.now.timeIntervalSince1970))
         guard let idleExit = configuration.idleExit else { return }
-        let isBusy = !clients.isEmpty || sessions.values.contains { $0.turn != nil || $0.phase == .recovering || $0.phase == .loading }
+        let isBusy =
+            !clients.isEmpty
+            || sessions.values.contains { $0.turn != nil || $0.phase == .recovering || $0.phase == .loading }
         if isBusy {
             lastBusy = .now
         } else if Date.now.timeIntervalSince(lastBusy) > Double(idleExit.components.seconds) {
@@ -162,9 +168,11 @@ public final class HostCore {
     /// The running agent for `agentID`, started if needed.
     func readyAgent(_ agentID: String) async throws -> AgentLink {
         guard let link = agents[agentID] else { throw HostError.unknownAgent(agentID) }
-        let environment: @Sendable () async -> [String: String] = { [weak self] in await self?.agentEnvironment() ?? [:] }
+        let environment: @Sendable () async -> [String: String] = { [weak self] in await self?.agentEnvironment() ?? [:]
+        }
         let clientInfo = Implementation(name: "native-host", title: "Native", version: configuration.hostInfo.version)
-        try await link.ensureStarted(environment: environment, clientInfo: clientInfo) { [weak self] generation, event in
+        try await link.ensureStarted(environment: environment, clientInfo: clientInfo) {
+            [weak self] generation, event in
             await self?.receive(event, from: agentID, generation: generation)
         }
         return link
@@ -181,16 +189,19 @@ public final class HostCore {
         let link = try await readyAgent(params.agentID)
         guard let peer = link.peer else { throw HostError.agentUnavailable(link.spec.name) }
         let record = StoredSession(
-            id: HostSessionID(), agentID: params.agentID, agentSessionID: nil, cwd: params.cwd, parentID: params.parentID,
+            id: HostSessionID(), agentID: params.agentID, agentSessionID: nil, cwd: params.cwd,
+            parentID: params.parentID,
             origin: params.origin, mcpServers: params.mcpServers
         )
         let response = try await peer.request(
-            "session/new", RawNewSessionRequest(cwd: params.cwd, mcpServers: params.mcpServers), as: RawNewSessionResponse.self
+            "session/new", RawNewSessionRequest(cwd: params.cwd, mcpServers: params.mcpServers),
+            as: RawNewSessionResponse.self
         )
         var stored = record
         stored.agentSessionID = response.sessionId
         try store.insertSession(stored)
-        let session = HostSession(record: stored, agentName: link.spec.name, phase: .idle, needsLoad: false, mcpServers: params.mcpServers)
+        let session = HostSession(
+            record: stored, agentName: link.spec.name, phase: .idle, needsLoad: false, mcpServers: params.mcpServers)
         session.supportsSteering = link.supportsSteering
         sessions[stored.id] = session
         append(.reset(loading: false), to: session)
@@ -204,17 +215,21 @@ public final class HostCore {
 
     /// Adopts a session the agent already has, or returns the host session that already holds it.
     func openSession(_ params: OpenSessionParams) async throws -> HostSessionSummary {
-        if let existing = sessions.values.first(where: { $0.record.agentID == params.agentID && $0.record.agentSessionID == params.agentSessionID }) {
+        if let existing = sessions.values.first(where: {
+            $0.record.agentID == params.agentID && $0.record.agentSessionID == params.agentSessionID
+        }) {
             try await load(existing)
             return existing.summary
         }
         guard let link = agents[params.agentID] else { throw HostError.unknownAgent(params.agentID) }
         let record = StoredSession(
-            id: HostSessionID(), agentID: params.agentID, agentSessionID: params.agentSessionID, cwd: params.cwd, parentID: nil,
+            id: HostSessionID(), agentID: params.agentID, agentSessionID: params.agentSessionID, cwd: params.cwd,
+            parentID: nil,
             origin: .user, title: params.title, mcpServers: params.mcpServers
         )
         try store.insertSession(record)
-        let session = HostSession(record: record, agentName: link.spec.name, phase: .idle, needsLoad: true, mcpServers: params.mcpServers)
+        let session = HostSession(
+            record: record, agentName: link.spec.name, phase: .idle, needsLoad: true, mcpServers: params.mcpServers)
         sessions[record.id] = session
         append(.reset(loading: false), to: session)
         publish(session)
@@ -250,7 +265,9 @@ public final class HostCore {
             append(.reset(loading: true), to: session)
             route(session, on: link)
             let response = try await peer.request(
-                "session/load", RawLoadSessionRequest(sessionId: agentSessionID, cwd: session.record.cwd, mcpServers: session.mcpServers),
+                "session/load",
+                RawLoadSessionRequest(
+                    sessionId: agentSessionID, cwd: session.record.cwd, mcpServers: session.mcpServers),
                 as: RawConfigOptionsResponse.self
             )
             if let options = response.configOptions {
@@ -327,7 +344,8 @@ public final class HostCore {
             return
         }
         guard let request = try? message.params(as: RawPermissionRequest.self), let raw = message.rawParams,
-              let sessionID = link.routes[request.sessionId], let session = sessions[sessionID] else {
+            let sessionID = link.routes[request.sessionId], let session = sessions[sessionID]
+        else {
             try? peer.respond(to: id, with: RequestPermissionResponse.cancelled)
             return
         }
@@ -342,8 +360,10 @@ public final class HostCore {
     /// An agent update for a session. A subagent the agent announces becomes a session of its own,
     /// so its traffic has somewhere to go.
     func apply(_ update: JSONValue, to session: HostSession, on link: AgentLink) {
-        if update["sessionUpdate"]?.stringValue == "subagent_update" || update["sessionUpdate"]?.stringValue == "subagent_spawned",
-           let child = update["sessionId"]?.stringValue.map(SessionID.init), link.routes[child] == nil {
+        if update["sessionUpdate"]?.stringValue == "subagent_update"
+            || update["sessionUpdate"]?.stringValue == "subagent_spawned",
+            let child = update["sessionId"]?.stringValue.map(SessionID.init), link.routes[child] == nil
+        {
             adoptSubagent(child, of: session, on: link)
         }
         let hadTitle = session.record.title
@@ -389,12 +409,16 @@ public final class HostCore {
     }
 
     /// Records something the user may want to know about later, and tells clients.
-    func journal(_ kind: ActivityEntry.Kind, session: HostSession?, detail: String? = nil, recovery: RecoveryNote? = nil) {
+    func journal(
+        _ kind: ActivityEntry.Kind, session: HostSession?, detail: String? = nil, recovery: RecoveryNote? = nil
+    ) {
         let subject = session.map { $0.record.title ?? $0.agentName }
-        guard let entry = try? store.appendActivity(kind, session: session?.id, subject: subject, detail: detail, recovery: recovery) else { return }
+        guard
+            let entry = try? store.appendActivity(
+                kind, session: session?.id, subject: subject, detail: detail, recovery: recovery)
+        else { return }
         for client in clients.values {
             client.notify(HostProtocol.Method.activity, entry)
         }
     }
 }
-

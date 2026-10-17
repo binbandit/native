@@ -34,7 +34,9 @@ public struct CodeSignatureVerifier: PeerVerifier {
     public func verify(socket descriptor: Int32) throws {
         var credentials = xucred()
         var length = socklen_t(MemoryLayout<xucred>.size)
-        guard getsockopt(descriptor, SOL_LOCAL, LOCAL_PEERCRED, &credentials, &length) == 0, credentials.cr_version == XUCRED_VERSION else {
+        guard getsockopt(descriptor, SOL_LOCAL, LOCAL_PEERCRED, &credentials, &length) == 0,
+            credentials.cr_version == XUCRED_VERSION
+        else {
             throw Rejection.unreadableCredentials
         }
         guard credentials.cr_uid == getuid() else { throw Rejection.otherUser(credentials.cr_uid) }
@@ -42,13 +44,18 @@ public struct CodeSignatureVerifier: PeerVerifier {
 
         var token = audit_token_t()
         length = socklen_t(MemoryLayout<audit_token_t>.size)
-        guard getsockopt(descriptor, SOL_LOCAL, LOCAL_PEERTOKEN, &token, &length) == 0 else { throw Rejection.unreadableCredentials }
+        guard getsockopt(descriptor, SOL_LOCAL, LOCAL_PEERTOKEN, &token, &length) == 0 else {
+            throw Rejection.unreadableCredentials
+        }
         let tokenData = withUnsafeBytes(of: &token) { Data($0) }
         var code: SecCode?
-        var status = SecCodeCopyGuestWithAttributes(nil, [kSecGuestAttributeAudit: tokenData] as CFDictionary, [], &code)
+        var status = SecCodeCopyGuestWithAttributes(
+            nil, [kSecGuestAttributeAudit: tokenData] as CFDictionary, [], &code)
         guard status == errSecSuccess, let code else { throw Rejection.unsigned(status) }
         var requirement: SecRequirement?
-        status = SecRequirementCreateWithString("anchor apple generic and certificate leaf[subject.OU] = \"\(teamIdentifier)\"" as CFString, [], &requirement)
+        status = SecRequirementCreateWithString(
+            "anchor apple generic and certificate leaf[subject.OU] = \"\(teamIdentifier)\"" as CFString, [],
+            &requirement)
         guard status == errSecSuccess, let requirement else { throw Rejection.unsigned(status) }
         status = SecCodeCheckValidity(code, [], requirement)
         guard status == errSecSuccess else { throw Rejection.unsigned(status) }
@@ -60,9 +67,11 @@ public struct CodeSignatureVerifier: PeerVerifier {
         var staticCode: SecStaticCode?
         var information: CFDictionary?
         guard SecCodeCopySelf([], &code) == errSecSuccess, let code,
-              SecCodeCopyStaticCode(code, [], &staticCode) == errSecSuccess, let staticCode,
-              SecCodeCopySigningInformation(staticCode, SecCSFlags(rawValue: kSecCSSigningInformation), &information) == errSecSuccess,
-              let information = information as? [String: Any] else { return nil }
+            SecCodeCopyStaticCode(code, [], &staticCode) == errSecSuccess, let staticCode,
+            SecCodeCopySigningInformation(staticCode, SecCSFlags(rawValue: kSecCSSigningInformation), &information)
+                == errSecSuccess,
+            let information = information as? [String: Any]
+        else { return nil }
         return information[kSecCodeInfoTeamIdentifier as String] as? String
     }
 }

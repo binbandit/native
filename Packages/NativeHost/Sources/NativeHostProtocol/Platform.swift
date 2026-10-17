@@ -1,9 +1,10 @@
+import Foundation
+
 #if canImport(Darwin)
 import Darwin
 #elseif canImport(Glibc)
 import Glibc
 #endif
-import Foundation
 
 /// `close(2)`, for types whose own `close()` method hides the C function.
 func closeDescriptor(_ descriptor: Int32) {

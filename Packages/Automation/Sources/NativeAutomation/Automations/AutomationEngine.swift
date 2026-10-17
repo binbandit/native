@@ -20,6 +20,9 @@ public final class AutomationEngine {
     @ObservationIgnored public var isEnabled = true {
         didSet { reschedule() }
     }
+    /// Why pull request events can't be seen right now, if they can't; nil once a poll works.
+    public private(set) var eventSourceProblem: String?
+
     @ObservationIgnored private let store: AutomationStore?
     @ObservationIgnored private let now: () -> Date
     @ObservationIgnored private var loop: Task<Void, Never>?
@@ -145,12 +148,19 @@ public final class AutomationEngine {
         }
         guard needsPolling, lastPoll.map({ date.timeIntervalSince($0) >= Self.pollInterval - 1 }) ?? true else { return }
         lastPoll = date
-        guard let snapshots = await host?.pullRequestSnapshots() else { return }
-        ingest(AutomationEventDetector.occurrences(from: book.pullRequests, to: snapshots, at: date))
-        book.pullRequests = snapshots
+        guard let host else { return }
+        do {
+            let snapshots = try await host.pullRequestSnapshots()
+            eventSourceProblem = nil
+            ingest(AutomationEventDetector.occurrences(from: book.pullRequests, to: snapshots, at: date))
+            book.pullRequests = snapshots
+        } catch {
+            eventSourceProblem = error.localizedDescription
+        }
     }
 
-    private var needsPolling: Bool {
+    /// Whether any automation waits on a pull request event, so GitHub has to be watched.
+    public var needsPolling: Bool {
         let gitHubEvents: Set<AutomationEventKind> = [.pullRequestOpened, .pullRequestUpdated, .reviewRequested, .checksFailed]
         return book.automations.contains { !$0.isPaused && !$0.eventKinds.isDisjoint(with: gitHubEvents) }
     }

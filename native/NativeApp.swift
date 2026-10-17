@@ -22,6 +22,7 @@ struct NativeApp: App {
         let taskWorkspaces = GitTaskWorkspaceProvider(git: git, gitHub: gitHub)
         _taskWorkspaces = State(initialValue: taskWorkspaces)
         model.taskWorkspaces = taskWorkspaces
+        GitAutomationWiring.connect(git, to: BuiltInPlugins.automation.center.automations)
     }
 
     var body: some Scene {

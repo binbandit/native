@@ -12,14 +12,18 @@ public enum MacHost {
         HostLocation.standard(channel: environment[HostLocation.channelVariable] ?? "")
     }
 
-    public static func configuration(location: HostLocation, info: PeerInfo, inheritEnvironment: Bool = false) -> HostCore.Configuration {
+    public static func configuration(
+        location: HostLocation, info: PeerInfo, inheritEnvironment: Bool = false
+    ) -> HostCore.Configuration {
         HostCore.Configuration(
             location: location,
             hostInfo: info,
             machineName: Host.current().localizedName ?? ProcessInfo.processInfo.hostName,
             bootTime: bootTime(),
             // Tests and `native-host --inherit-environment` pass their own; launchd's is bare.
-            environment: { @Sendable in inheritEnvironment ? ProcessInfo.processInfo.environment : await LoginShell.environment() },
+            environment: { @Sendable in
+                inheritEnvironment ? ProcessInfo.processInfo.environment : await LoginShell.environment()
+            },
             // A channel means a development build; its host shouldn't outlive interest in it.
             idleExit: location.channel.isEmpty ? nil : .seconds(15 * 60),
             exit: { status in Darwin.exit(status) }

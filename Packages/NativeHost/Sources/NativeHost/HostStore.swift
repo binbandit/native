@@ -17,7 +17,8 @@ final class HostStore {
 
     init(url: URL) throws {
         database = try SQLiteDatabase(url: url)
-        try database.execute("""
+        try database.execute(
+            """
             PRAGMA journal_mode = WAL;
             PRAGMA synchronous = FULL;
             PRAGMA fullfsync = ON;
@@ -37,7 +38,8 @@ final class HostStore {
         let version = try database.query("PRAGMA user_version").first?.first?.integer ?? 0
         guard version < Self.schemaVersion else { return }
         try database.transaction {
-            try database.execute("""
+            try database.execute(
+                """
                 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
                 CREATE TABLE IF NOT EXISTS agents (id TEXT PRIMARY KEY, spec TEXT NOT NULL);
                 CREATE TABLE IF NOT EXISTS sessions (
@@ -108,7 +110,9 @@ final class HostStore {
 
     func setMeta(_ key: String, _ value: String?) throws {
         if let value {
-            try database.run("INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value", .text(key), .text(value))
+            try database.run(
+                "INSERT INTO meta (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+                .text(key), .text(value))
         } else {
             try database.run("DELETE FROM meta WHERE key = ?", .text(key))
         }
@@ -121,7 +125,9 @@ final class HostStore {
         try database.transaction {
             try database.run("DELETE FROM agents")
             for agent in agents {
-                try database.run("INSERT INTO agents (id, spec) VALUES (?, ?)", .text(agent.id), .text(String(decoding: try encoder.encode(agent), as: UTF8.self)))
+                try database.run(
+                    "INSERT INTO agents (id, spec) VALUES (?, ?)", .text(agent.id),
+                    .text(String(decoding: try encoder.encode(agent), as: UTF8.self)))
             }
         }
     }
@@ -141,8 +147,10 @@ final class HostStore {
             INSERT INTO sessions (id, agent_id, agent_session_id, cwd, parent_id, origin, title, created_at, last_activity, last_stop_reason, queue_paused, mcp_servers)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
-            .text(session.id.description), .text(session.agentID), .text(session.agentSessionID?.rawValue), .text(session.cwd),
-            .text(session.parentID?.description), .text(session.origin.rawValue), .text(session.title), .date(session.createdAt),
+            .text(session.id.description), .text(session.agentID), .text(session.agentSessionID?.rawValue),
+            .text(session.cwd),
+            .text(session.parentID?.description), .text(session.origin.rawValue), .text(session.title),
+            .date(session.createdAt),
             .date(session.lastActivity), .text(session.lastStopReason), .bool(session.isQueuePaused),
             .text(String(decoding: try JSONEncoder().encode(session.mcpServers), as: UTF8.self))
         )
@@ -154,7 +162,8 @@ final class HostStore {
             UPDATE sessions SET agent_session_id = ?, title = ?, last_activity = ?, last_stop_reason = ?, queue_paused = ?
             WHERE id = ?
             """,
-            .text(session.agentSessionID?.rawValue), .text(session.title), .date(session.lastActivity), .text(session.lastStopReason),
+            .text(session.agentSessionID?.rawValue), .text(session.title), .date(session.lastActivity),
+            .text(session.lastStopReason),
             .bool(session.isQueuePaused), .text(session.id.description)
         )
     }
@@ -183,7 +192,8 @@ final class HostStore {
             ON CONFLICT(session_id) DO UPDATE SET request_id = excluded.request_id, text = excluded.text, kind = excluded.kind,
                 echo = excluded.echo, started_at = excluded.started_at, attempts = excluded.attempts
             """,
-            .text(turn.sessionID.description), .text(turn.requestID.uuidString), .text(turn.text), .text(turn.kind.rawValue),
+            .text(turn.sessionID.description), .text(turn.requestID.uuidString), .text(turn.text),
+            .text(turn.kind.rawValue),
             .bool(turn.echo), .date(turn.startedAt), .integer(Int64(turn.attempts))
         )
     }
@@ -193,7 +203,8 @@ final class HostStore {
     }
 
     func unfinishedTurns() throws -> [UnfinishedTurn] {
-        try database.query("SELECT session_id, request_id, text, kind, echo, started_at, attempts FROM turns").compactMap(UnfinishedTurn.init(row:))
+        try database.query("SELECT session_id, request_id, text, kind, echo, started_at, attempts FROM turns")
+            .compactMap(UnfinishedTurn.init(row:))
     }
 
     // MARK: - Queue
@@ -205,16 +216,21 @@ final class HostStore {
         for (position, item) in items.enumerated() {
             try database.run(
                 "INSERT INTO queue (session_id, position, id, text, echo, steering) VALUES (?, ?, ?, ?, ?, ?)",
-                .text(sessionID.description), .integer(Int64(position)), .text(item.prompt.id.uuidString), .text(item.prompt.text),
+                .text(sessionID.description), .integer(Int64(position)), .text(item.prompt.id.uuidString),
+                .text(item.prompt.text),
                 .bool(item.prompt.isEchoed), .bool(item.isSteering)
             )
         }
     }
 
     func queue(for sessionID: HostSessionID) throws -> [StoredQueueItem] {
-        try database.query("SELECT id, text, echo, steering FROM queue WHERE session_id = ? ORDER BY position", .text(sessionID.description)).compactMap { row in
+        try database.query(
+            "SELECT id, text, echo, steering FROM queue WHERE session_id = ? ORDER BY position",
+            .text(sessionID.description)
+        ).compactMap { row in
             guard let id = row[0].text.flatMap(UUID.init(uuidString:)), let text = row[1].text else { return nil }
-            return StoredQueueItem(prompt: QueuedPrompt(id: id, text: text, isEchoed: row[2].bool), isSteering: row[3].bool)
+            return StoredQueueItem(
+                prompt: QueuedPrompt(id: id, text: text, isEchoed: row[2].bool), isSteering: row[3].bool)
         }
     }
 
@@ -222,7 +238,8 @@ final class HostStore {
 
     /// What a prompt request id was delivered as, if it's been seen before.
     func delivery(for requestID: UUID) throws -> PromptDelivery? {
-        try database.query("SELECT delivery FROM requests WHERE request_id = ?", .text(requestID.uuidString)).first?.first?.text.map { PromptDelivery(rawValue: $0) ?? .unknown }
+        try database.query("SELECT delivery FROM requests WHERE request_id = ?", .text(requestID.uuidString)).first?
+            .first?.text.map { PromptDelivery(rawValue: $0) ?? .unknown }
     }
 
     func recordDelivery(_ delivery: PromptDelivery, for requestID: UUID, in sessionID: HostSessionID) throws {
@@ -250,7 +267,9 @@ final class HostStore {
     }
 
     func removeApproval(sessionID: HostSessionID, toolCallID: String) throws {
-        try database.run("DELETE FROM approvals WHERE session_id = ? AND tool_call_id = ?", .text(sessionID.description), .text(toolCallID))
+        try database.run(
+            "DELETE FROM approvals WHERE session_id = ? AND tool_call_id = ?", .text(sessionID.description),
+            .text(toolCallID))
     }
 
     func removeApprovals(sessionID: HostSessionID) throws {
@@ -262,7 +281,9 @@ final class HostStore {
     func approvals() throws -> [HostSessionID: [String]] {
         var approvals: [HostSessionID: [String]] = [:]
         for row in try database.query("SELECT session_id, tool_call_id FROM approvals") {
-            guard let session = row[0].text.flatMap(UUID.init(uuidString:)).map(HostSessionID.init), let toolCall = row[1].text else { continue }
+            guard let session = row[0].text.flatMap(UUID.init(uuidString:)).map(HostSessionID.init),
+                let toolCall = row[1].text
+            else { continue }
             approvals[session, default: []].append(toolCall)
         }
         return approvals
@@ -271,13 +292,18 @@ final class HostStore {
     // MARK: - Activity
 
     @discardableResult
-    func appendActivity(_ kind: ActivityEntry.Kind, session: HostSessionID?, subject: String?, detail: String? = nil, recovery: RecoveryNote? = nil, at: Date = .now) throws -> ActivityEntry {
+    func appendActivity(
+        _ kind: ActivityEntry.Kind, session: HostSessionID?, subject: String?, detail: String? = nil,
+        recovery: RecoveryNote? = nil, at: Date = .now
+    ) throws -> ActivityEntry {
         let encoded = try recovery.map { String(decoding: try JSONEncoder().encode($0), as: UTF8.self) }
         try database.run(
             "INSERT INTO activity (at, session_id, kind, subject, detail, recovery) VALUES (?, ?, ?, ?, ?, ?)",
             .date(at), .text(session?.description), .text(kind.rawValue), .text(subject), .text(detail), .text(encoded)
         )
-        return ActivityEntry(id: database.lastInsertRowID, at: at, sessionID: session, kind: kind, subject: subject, detail: detail, recovery: recovery)
+        return ActivityEntry(
+            id: database.lastInsertRowID, at: at, sessionID: session, kind: kind, subject: subject, detail: detail,
+            recovery: recovery)
     }
 
     func activity(after id: Int64?, limit: Int) throws -> [ActivityEntry] {
@@ -321,8 +347,10 @@ struct StoredSession: Hashable {
     var mcpServers: [JSONValue]
 
     init(
-        id: HostSessionID, agentID: String, agentSessionID: SessionID?, cwd: String, parentID: HostSessionID?, origin: SessionOrigin,
-        title: String? = nil, createdAt: Date = .now, lastActivity: Date? = nil, lastStopReason: String? = nil, isQueuePaused: Bool = false,
+        id: HostSessionID, agentID: String, agentSessionID: SessionID?, cwd: String, parentID: HostSessionID?,
+        origin: SessionOrigin,
+        title: String? = nil, createdAt: Date = .now, lastActivity: Date? = nil, lastStopReason: String? = nil,
+        isQueuePaused: Bool = false,
         mcpServers: [JSONValue] = []
     ) {
         self.id = id
@@ -341,12 +369,14 @@ struct StoredSession: Hashable {
 
     fileprivate init?(row: [SQLiteDatabase.Value]) {
         guard let id = row[0].text.flatMap(UUID.init(uuidString:)), let agentID = row[1].text, let cwd = row[3].text,
-              let createdAt = row[7].date else { return nil }
+            let createdAt = row[7].date
+        else { return nil }
         let servers = row[11].text.flatMap { try? JSONDecoder().decode([JSONValue].self, from: Data($0.utf8)) } ?? []
         self.init(
             id: HostSessionID(id), agentID: agentID, agentSessionID: row[2].text.map(SessionID.init), cwd: cwd,
             parentID: row[4].text.flatMap(UUID.init(uuidString:)).map(HostSessionID.init),
-            origin: row[5].text.flatMap(SessionOrigin.init(rawValue:)) ?? .unknown, title: row[6].text, createdAt: createdAt,
+            origin: row[5].text.flatMap(SessionOrigin.init(rawValue:)) ?? .unknown, title: row[6].text,
+            createdAt: createdAt,
             lastActivity: row[8].date, lastStopReason: row[9].text, isQueuePaused: row[10].bool, mcpServers: servers
         )
     }
@@ -370,7 +400,10 @@ struct UnfinishedTurn: Hashable {
     /// How many times recovery has already tried to finish this turn.
     var attempts: Int
 
-    init(sessionID: HostSessionID, requestID: UUID, text: String, kind: Kind, echo: Bool, startedAt: Date = .now, attempts: Int = 0) {
+    init(
+        sessionID: HostSessionID, requestID: UUID, text: String, kind: Kind, echo: Bool, startedAt: Date = .now,
+        attempts: Int = 0
+    ) {
         self.sessionID = sessionID
         self.requestID = requestID
         self.text = text
@@ -381,9 +414,13 @@ struct UnfinishedTurn: Hashable {
     }
 
     fileprivate init?(row: [SQLiteDatabase.Value]) {
-        guard let session = row[0].text.flatMap(UUID.init(uuidString:)), let request = row[1].text.flatMap(UUID.init(uuidString:)),
-              let text = row[2].text, let kind = row[3].text.flatMap(Kind.init(rawValue:)), let startedAt = row[5].date else { return nil }
-        self.init(sessionID: HostSessionID(session), requestID: request, text: text, kind: kind, echo: row[4].bool, startedAt: startedAt, attempts: Int(row[6].integer ?? 0))
+        guard let session = row[0].text.flatMap(UUID.init(uuidString:)),
+            let request = row[1].text.flatMap(UUID.init(uuidString:)),
+            let text = row[2].text, let kind = row[3].text.flatMap(Kind.init(rawValue:)), let startedAt = row[5].date
+        else { return nil }
+        self.init(
+            sessionID: HostSessionID(session), requestID: request, text: text, kind: kind, echo: row[4].bool,
+            startedAt: startedAt, attempts: Int(row[6].integer ?? 0))
     }
 }
 

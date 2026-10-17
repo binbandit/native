@@ -1,5 +1,6 @@
 import Foundation
 import NativeHostProtocol
+
 #if canImport(Darwin)
 import Darwin
 #elseif canImport(Glibc)
@@ -24,7 +25,8 @@ public enum HostMain {
 
     /// Starts the host and returns it, serving. The process keeps it alive by not exiting.
     @HostActor
-    public static func start(_ configuration: HostCore.Configuration, verifier: (any PeerVerifier)?) throws -> HostCore {
+    public static func start(_ configuration: HostCore.Configuration, verifier: (any PeerVerifier)?) throws -> HostCore
+    {
         try configuration.location.prepare()
         try acquireLock(at: configuration.location.lockPath)
         let core = try HostCore(configuration: configuration)

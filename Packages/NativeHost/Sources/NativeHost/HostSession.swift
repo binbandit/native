@@ -31,7 +31,9 @@ final class HostSession {
     /// Clients following this session's events.
     var subscribers: Set<ClientLink.ID> = []
 
-    init(record: StoredSession, agentName: String, phase: HostSessionPhase, needsLoad: Bool, mcpServers: [JSONValue] = []) {
+    init(
+        record: StoredSession, agentName: String, phase: HostSessionPhase, needsLoad: Bool, mcpServers: [JSONValue] = []
+    ) {
         self.record = record
         self.agentName = agentName
         self.phase = phase
@@ -67,8 +69,10 @@ final class HostSession {
 
     var summary: HostSessionSummary {
         HostSessionSummary(
-            id: record.id, agentID: record.agentID, agentName: agentName, agentSessionID: record.agentSessionID, cwd: record.cwd,
-            parentID: record.parentID, origin: record.origin, title: record.title, phase: phase, needsApproval: !pendingPermissions.isEmpty,
+            id: record.id, agentID: record.agentID, agentName: agentName, agentSessionID: record.agentSessionID,
+            cwd: record.cwd,
+            parentID: record.parentID, origin: record.origin, title: record.title, phase: phase,
+            needsApproval: !pendingPermissions.isEmpty,
             queue: queue.map(\.prompt), isQueuePaused: record.isQueuePaused, supportsSteering: supportsSteering,
             lastActivity: record.lastActivity, lastStopReason: record.lastStopReason, problem: problem
         )
