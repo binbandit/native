@@ -26,7 +26,7 @@ struct HomeRecentTasks<ID: Hashable>: View {
             .accessibilityAddTraits(.isHeader)
 
             ForEach(tasks) { task in
-                HomeTaskRow(task: task, detail: isCompact ? nil : spansProjects ? task.projectName ?? task.agentName : task.agentName) {
+                HomeTaskRow(task: task, detail: detail(for: task)) {
                     onSelect(task.id)
                 }
             }
@@ -35,9 +35,11 @@ struct HomeRecentTasks<ID: Hashable>: View {
         .onGeometryChange(for: Bool.self) { $0.size.width < HomeLayout.compactWidth } action: { isCompact = $0 }
     }
 
-    /// Whether to label rows with their project. When every task is in one project the label
-    /// tells them apart by agent instead; the glyph already shows the agent either way.
-    private var spansProjects: Bool {
-        Set(tasks.compactMap(\.projectName)).count > 1
+    /// The row's trailing label: its project when the tasks span projects, else its agent (the glyph
+    /// shows the agent either way), and nothing in a narrow column.
+    private func detail(for task: HomeTask<ID>) -> String? {
+        guard !isCompact else { return nil }
+        let spansProjects = Set(tasks.compactMap(\.projectName)).count > 1
+        return spansProjects ? task.projectName ?? task.agentName : task.agentName
     }
 }

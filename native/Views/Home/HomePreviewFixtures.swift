@@ -44,6 +44,17 @@ enum HomePreviewFixtures {
         task("6", "Diff view word wrapping", agent: 0, project: 0, minutesAgo: 9 * 24 * 60),
     ]
 
+    static let waitingTasks: [HomeWaitingTask<String>] = [
+        HomeWaitingTask(
+            id: "2", title: "Fix flaky permission request test", request: "Run `swift test --filter Permission`?",
+            status: .needsPermission, agentName: "Codex"
+        ),
+        HomeWaitingTask(
+            id: "3", title: "Landing page hero", request: "Should the nightly sky also show on the welcome page?",
+            status: .needsInput, agentName: "Cursor"
+        ),
+    ]
+
     private static func task(
         _ id: String, _ title: String, agent: Int, project: Int, minutesAgo: Double
     ) -> HomeTask<String> {
@@ -57,12 +68,17 @@ enum HomePreviewFixtures {
         )
     }
 
-    static func home(agents: [HomeAgent<String>] = agents, tasks: [HomeTask<String>] = tasks) -> some View {
+    static func home(
+        agents: [HomeAgent<String>] = agents,
+        tasks: [HomeTask<String>] = tasks,
+        waiting: [HomeWaitingTask<String>] = []
+    ) -> some View {
         HomeView(
             agents: agents,
             projects: projects,
             project: .constant("native"),
             recentTasks: tasks,
+            waitingTasks: waiting,
             onNewTask: { _, _ in },
             onAddProject: {},
             onSelectTask: { _ in }
@@ -84,6 +100,16 @@ enum HomePreviewFixtures {
     HomePreviewFixtures.home()
         .frame(width: 900, height: 780)
         .preferredColorScheme(.dark)
+}
+
+#Preview("Home, Needs You") {
+    HomePreviewFixtures.home(waiting: HomePreviewFixtures.waitingTasks)
+        .frame(width: 900, height: 900)
+}
+
+#Preview("Home, Narrow") {
+    HomePreviewFixtures.home(waiting: HomePreviewFixtures.waitingTasks)
+        .frame(width: 380, height: 900)
 }
 
 #Preview("Home, No Tasks") {
