@@ -11,25 +11,12 @@ public struct CompactAgeText: View {
 
     public var body: some View {
         TimelineView(.everyMinute) { context in
-            Text(Self.format(date, now: context.date))
+            Text(DSFormat.compactAge(date, now: context.date))
                 .font(.dsMicro)
                 .monospacedDigit()
                 .foregroundStyle(.dsTextTertiary)
                 .padding(.horizontal, DS.Space.xs)
                 .accessibilityLabel(date.formatted(.relative(presentation: .named)))
-        }
-    }
-
-    nonisolated static func format(_ date: Date, now: Date) -> String {
-        let minutes = Int(max(now.timeIntervalSince(date), 0) / 60)
-        let hour = 60, day = 60 * 24
-        switch minutes {
-        case ..<1: return "now"
-        case ..<hour: return "\(minutes)m"
-        case ..<day: return "\(minutes / hour)h"
-        case ..<(day * 30): return "\(minutes / day)d"
-        case ..<(day * 365): return "\(minutes / (day * 30))mo"
-        default: return "\(minutes / (day * 365))y"
         }
     }
 }
