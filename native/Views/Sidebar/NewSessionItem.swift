@@ -20,7 +20,8 @@ struct NewSessionItem: View {
                                 Text(runtime.agent.displayName)
                             } icon: {
                                 // Menus draw only an `Image`.
-                                AgentIconStore.shared.image(for: runtime.agent, size: DS.Size.rowLeading, scale: displayScale)
+                                AgentIconStore.shared.image(
+                                    for: runtime.agent, size: DS.Size.rowLeading, scale: displayScale)
                             }
                         }
                         .disabled(!model.canCreateSession(with: runtime.agent.id))

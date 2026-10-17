@@ -57,7 +57,9 @@ nonisolated struct ProjectIconResolver: Sendable {
                     if name == "AppIcon.appiconset" {
                         return await largestImage(inCatalogSet: path, root: root)
                     }
-                    if !name.hasPrefix("."), !Self.skippedDirectories.contains(name), !name.contains(".") || name.hasSuffix(".xcassets") {
+                    if !name.hasPrefix("."), !Self.skippedDirectories.contains(name),
+                        !name.contains(".") || name.hasSuffix(".xcassets")
+                    {
                         next.append(path)
                     }
                 }
@@ -103,9 +105,12 @@ nonisolated struct ProjectIconResolver: Sendable {
             kCGImageSourceCreateThumbnailWithTransform: true,
             kCGImageSourceThumbnailMaxPixelSize: maxPixelSize,
         ]
-        guard let image = CGImageSourceCreateThumbnailAtIndex(source, index, options as CFDictionary) else { return nil }
+        guard let image = CGImageSourceCreateThumbnailAtIndex(source, index, options as CFDictionary) else {
+            return nil
+        }
         let output = NSMutableData()
-        guard let destination = CGImageDestinationCreateWithData(output, UTType.png.identifier as CFString, 1, nil) else {
+        guard let destination = CGImageDestinationCreateWithData(output, UTType.png.identifier as CFString, 1, nil)
+        else {
             return nil
         }
         CGImageDestinationAddImage(destination, image, nil)

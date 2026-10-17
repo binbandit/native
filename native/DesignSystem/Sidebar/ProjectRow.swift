@@ -132,7 +132,10 @@ extension ProjectRow where MenuContent == EmptyView {
         onToggle: @escaping () -> Void,
         onNewTask: (() -> Void)? = nil
     ) {
-        self.init(name: name, icon: icon, isExpanded: isExpanded, taskCount: taskCount, onToggle: onToggle, onNewTask: onNewTask) {
+        self.init(
+            name: name, icon: icon, isExpanded: isExpanded, taskCount: taskCount, onToggle: onToggle,
+            onNewTask: onNewTask
+        ) {
             EmptyView()
         }
     }
@@ -183,7 +186,9 @@ public struct ProjectAvatar: View {
             ProjectRow(name: "native", isExpanded: true, onToggle: {}, onNewTask: {}) {
                 Button("Reveal in Finder") {}
             }
-            ProjectRow(name: "conductor", icon: .symbol("folder"), isExpanded: false, taskCount: 3, onToggle: {}, onNewTask: {})
+            ProjectRow(
+                name: "conductor", icon: .symbol("folder"), isExpanded: false, taskCount: 3, onToggle: {}, onNewTask: {}
+            )
             ProjectRow(name: "website", icon: .emoji("🌐"), isExpanded: false, taskCount: 1, onToggle: {})
         }
         .frame(width: 244)

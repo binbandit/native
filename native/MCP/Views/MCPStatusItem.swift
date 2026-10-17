@@ -27,8 +27,20 @@ private struct MCPStatusSegment: View {
     }
 
     var body: some View {
-        if let session {
-            MCPSessionStatusButton(session: session, onManage: onManage)
+        if let session, let library = MCPServersPlugin.library(in: model.plugins) {
+            let entries = library.entries(for: session.context)
+            let summary = MCPSessionSummary(library: library, entries: entries)
+            StatusBarSegment(help: summary.help, accessibilityLabel: "MCP servers", accessibilityValue: summary.help) {
+                HStack(spacing: DS.Space.sm) {
+                    StatusBarGlyph("server.rack")
+                    Text("MCP \(summary.active)")
+                    if summary.attention > 0 {
+                        StatusDot(color: .dsDanger)
+                    }
+                }
+            } details: {
+                MCPSessionPanel(library: library, session: session, entries: entries, onManage: onManage)
+            }
         } else if let library = MCPServersPlugin.library(in: model.plugins) {
             let count = library.servers.count(where: \.isEnabled)
             StatusBarSegment(

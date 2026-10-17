@@ -57,7 +57,11 @@ private struct SidebarSwipeModifier: ViewModifier {
                 .clipShape(.rect(cornerRadius: DS.Radius.row, style: .continuous))
                 .opacity(offset == 0 ? 0 : 1)
             }
-            .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+            .onGeometryChange(for: CGFloat.self) {
+                $0.size.width
+            } action: {
+                width = $0
+            }
             .simultaneousGesture(
                 DragGesture(minimumDistance: DS.Space.xl)
                     .onChanged { value in
