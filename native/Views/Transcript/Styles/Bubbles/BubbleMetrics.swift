@@ -6,8 +6,10 @@ nonisolated enum BubbleMetrics {
     /// A bubble's corners, and the tighter corners where bubbles of one group meet.
     static let radius: CGFloat = 18
     static let groupedRadius: CGFloat = 6
-    /// How far the tail reaches past the bubble. Every bubble reserves it, so edges line up.
-    static let tailWidth: CGFloat = 6
+    /// How far the tail reaches past the bubble, and how far up the side it starts. Every bubble
+    /// reserves the width, so edges line up.
+    static let tailWidth: CGFloat = 7
+    static let tailHeight: CGFloat = 14
     static let horizontalPadding = DS.Space.lg
     static let verticalPadding = DS.Space.md
 

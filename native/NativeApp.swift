@@ -39,6 +39,7 @@ struct NativeApp: App {
                 .environment(git)
                 .environment(gitHub)
                 .environment(BuiltInPlugins.automation.center)
+                .environment(BuiltInPlugins.expeditions.center)
                 .environment(terminals)
                 .createPullRequestSheet(gitHub)
                 .dsAccentPalette(themeID: iconPreferences.theme.rawValue)
@@ -54,6 +55,7 @@ struct NativeApp: App {
                         worktree: { [git] in try await AutomationGitHubWiring.worktree(for: $0, title: $1, git: git) },
                         pullRequests: { [gitHub] in try await AutomationGitHubWiring.pullRequestSnapshots(gitHub: gitHub) }
                     )
+                    ExpeditionWiring.connect(BuiltInPlugins.expeditions.center, model: model, git: git, gitHub: gitHub)
                     iconPreferences.start()
                     await model.start()
                 }
@@ -115,6 +117,8 @@ private struct FileCommands: Commands {
             }
             .keyboardShortcut("n", modifiers: [.command, .option])
             .disabled(model.projects.all.isEmpty || model.agents.isEmpty)
+
+            NewExpeditionMenuItem(model: model)
 
             Button("Open Folder…") {
                 model.isAddingProject = true
@@ -184,6 +188,7 @@ private struct GoCommands: Commands {
 
             Divider()
             PullRequestsMenuItem()
+            ExpeditionsMenuItem()
         }
     }
 }
@@ -192,7 +197,11 @@ private struct SessionCommands: Commands {
     let model: AppModel
     @FocusedValue(\.activeSession) private var session
     @FocusedValue(\.sidebarReorder) private var reorder
-    @FocusedValue(\.windowUndoManager) private var undoManager
+    /// The main window's undo manager, so ⌘Z takes back what these commands do. Read from AppKit
+    /// because a focused value isn't there when the window's focus is outside SwiftUI's reach.
+    private var undoManager: UndoManager? {
+        (NSApp.keyWindow ?? NSApp.mainWindow)?.undoManager
+    }
 
     var body: some Commands {
         CommandMenu("Session") {

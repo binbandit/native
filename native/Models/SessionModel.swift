@@ -205,6 +205,7 @@ final class SessionModel {
             switch update {
             case .subagent(let subagent): subagentControls.apply(subagent)
             case .usage(let usage): services.post(.usageUpdated(context, usage))
+            case .configOptions(let options): AgentSessionDefaults.remember(options, for: agent.id)
             default: break
             }
         }

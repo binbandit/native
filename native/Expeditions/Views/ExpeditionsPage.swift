@@ -5,13 +5,13 @@ import SwiftUI
 /// The Expeditions page: every expedition, newest first, and the way to start one. An expedition
 /// opens on its own page, with the way back in the toolbar.
 struct ExpeditionsPage<Transcript: View>: View {
-    @Binding var path: [Expedition.ID]
     @ViewBuilder let transcript: (SessionModel) -> Transcript
 
     @Environment(ExpeditionCenter.self) private var center
 
     var body: some View {
-        NavigationStack(path: $path) {
+        @Bindable var center = center
+        NavigationStack(path: $center.path) {
             ScrollView {
                 VStack(alignment: .leading, spacing: DS.Space.xxl) {
                     header
@@ -64,9 +64,9 @@ struct ExpeditionsPage<Transcript: View>: View {
         VStack(alignment: .leading, spacing: 0) {
             SectionHeader("Expeditions")
             ForEach(center.runner.expeditions) { expedition in
-                ExpeditionRow(expedition: expedition) { path = [expedition.id] }
+                ExpeditionRow(expedition: expedition) { center.path = [expedition.id] }
                     .contextMenu {
-                        Button("Open") { path = [expedition.id] }
+                        Button("Open") { center.path = [expedition.id] }
                         if expedition.phase.isOver {
                             Button("Remove from List", role: .destructive) { center.runner.remove(expedition.id) }
                         }

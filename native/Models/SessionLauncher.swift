@@ -50,6 +50,7 @@ final class SessionLauncher {
             configOptions: response.configOptions ?? [], origin: origin, parent: parent
         )
         store.register(session)
+        AgentSessionDefaults.remember(session.state.configOptions, for: runtime.agent.id)
         await AgentSessionDefaults.apply(to: session)
         services.post(.sessionStarted(session.context))
         return session

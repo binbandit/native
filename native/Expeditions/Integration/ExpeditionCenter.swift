@@ -13,9 +13,11 @@ final class ExpeditionCenter {
     let runner = ExpeditionRunner(store: .standard, documents: .standard)
     /// Set to ask the window to show the New Expedition sheet; the view clears it.
     var isNewExpeditionRequested = false
-    /// Set to ask the window to show the Expeditions page, opened on `requestedExpedition` if set.
-    var isPageRequested = false
-    var requestedExpedition: Expedition.ID?
+    /// Whether the Expeditions page has the window's detail column. The window clears it when
+    /// another page or a session takes the column.
+    var isPageShown = false
+    /// The expedition open on the page, if any.
+    var path: [Expedition.ID] = []
 
     @ObservationIgnored private(set) var host: AppExpeditionHost?
     /// Whether a project can have a worktree, has uncommitted changes, and whether `gh` is ready,
@@ -34,15 +36,14 @@ final class ExpeditionCenter {
         host.prepareBaseHandler = prepareBase
         host.openPullRequestHandler = openPullRequest
         host.limitStatusHandler = limitStatus
-        host.onOpenNotification = { [weak self] id in self?.show(id) }
         self.host = host
         runner.host = host
     }
 
     /// Opens the Expeditions page, on `expedition` if given.
     func show(_ expedition: Expedition.ID? = nil) {
-        requestedExpedition = expedition
-        isPageRequested = true
+        path = expedition.map { [$0] } ?? []
+        isPageShown = true
     }
 
     /// Expeditions waiting on the user, for the sidebar's count.

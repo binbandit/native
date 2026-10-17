@@ -15,8 +15,6 @@ final class AppExpeditionHost: ExpeditionHost {
     var prepareBaseHandler: ((URL, String, Bool) async throws -> URL)?
     var openPullRequestHandler: ((WorkflowPullRequestDraft) async throws -> WorkflowPullRequestResult)?
     var limitStatusHandler: ((AgentDefinition.ID) -> LimitStatus?)?
-    /// Called when the user clicks a notification about an expedition.
-    var onOpenNotification: ((Expedition.ID) -> Void)?
 
     private let records: ExpeditionCrewRecords
     /// Sessions reopened this launch: the expedition's task id to the session's new client id.

@@ -20,6 +20,17 @@ struct SchemaDecodingTests {
         #expect(response.authMethods.isEmpty)
     }
 
+    /// Captured from Copilot CLI 1.0.98 and pi-acp 0.0.34 (2026-10-17).
+    @Test func authMethodsCarryTerminalSignIn() throws {
+        let copilot = Data(#"{"id":"copilot-login","name":"Log in with Copilot CLI","description":"Run `copilot login` in the terminal","_meta":{"terminal-auth":{"command":"/opt/homebrew/bin/copilot","args":["login"],"label":"Copilot Login"}}}"#.utf8)
+        let pi = Data(#"{"id":"pi_terminal_login","name":"Launch pi in the terminal","description":"Start pi in an interactive terminal to configure API keys or login","type":"terminal","args":["--terminal-login"],"env":{}}"#.utf8)
+        let codex = Data(#"{"id":"chat-gpt","name":"ChatGPT","description":"Use ChatGPT to authenticate"}"#.utf8)
+
+        #expect(try JSONDecoder().decode(AuthMethod.self, from: copilot).terminal == .command("/opt/homebrew/bin/copilot", arguments: ["login"]))
+        #expect(try JSONDecoder().decode(AuthMethod.self, from: pi).terminal == .agent(arguments: ["--terminal-login"]))
+        #expect(try JSONDecoder().decode(AuthMethod.self, from: codex).terminal == nil)
+    }
+
     @Test func sessionCapabilitiesAdvertiseDelete() throws {
         let advertised = Data(#"{"sessionCapabilities":{"list":{},"delete":{}}}"#.utf8)
         let absent = Data(#"{"sessionCapabilities":{"list":{}}}"#.utf8)

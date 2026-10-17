@@ -118,8 +118,9 @@ private struct NothingNeedsYou: View {
                 .font(.dsBody)
                 .foregroundStyle(.dsTextTertiary)
                 .fixedSize(horizontal: false, vertical: true)
+            // Ghost, so nothing opaque sits on the translucent sidebar.
             Button("Show All Tasks", action: showAll)
-                .buttonStyle(.ds(.secondary))
+                .buttonStyle(.ds(.ghost))
         }
         .padding(.horizontal, DS.Space.sm)
         .padding(.vertical, DS.Space.md)

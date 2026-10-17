@@ -6,6 +6,7 @@ import SwiftUI
 /// by mouse or by touch.
 struct ProjectSection<TaskAccessory: View>: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.undoManager) private var undoManager
     @Environment(\.projectIconStore) private var injectedIconStore
     let project: Project
     /// The sessions to show: all of them, or those the Needs You filter keeps.
@@ -66,6 +67,8 @@ struct ProjectSection<TaskAccessory: View>: View {
             Button("New Session") { Task { await model.newSession(in: project.id) } }
             Button("Move Up") { model.move(.project(project.id), .up) }
             Button("Move Down") { model.move(.project(project.id), .down) }
+            Button("Archive") { model.archiveProject(project.id, undoManager: undoManager) }
+            Button("Delete") { isConfirmingDelete = true }
         }
     }
 }
@@ -99,7 +102,14 @@ private struct ProjectMenu: View {
                 }
                 .disabled(!model.canCreateSession(in: project.id, with: runtime.agent.id))
             }
+
+            if !model.agentsToAdd.isEmpty {
+                Divider()
+                Button("Add Agent…", systemImage: "plus") { model.isAddingAgent = true }
+            }
         }
+        // Menus only show item icons when the content asks for them.
+        .labelStyle(.titleAndIcon)
         Button("Show Project Home") {
             model.focusProject(project.id)
         }
