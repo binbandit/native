@@ -1,5 +1,6 @@
 import ACP
 import Foundation
+import NativeAutomation
 import os
 
 /// What it takes to reopen each workflow step's session after a restart: its agent, the agent's id

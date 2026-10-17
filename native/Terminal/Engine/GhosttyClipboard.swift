@@ -13,6 +13,8 @@ enum GhosttyClipboard {
         mimes: UnsafePointer<UnsafePointer<CChar>?>?, count: Int
     ) -> ghostty_clipboard_read_result_e {
         guard Thread.isMainThread else { return GHOSTTY_CLIPBOARD_READ_UNSUPPORTED }
+        // libghostty calls on the main thread and the pointers live for the call.
+        nonisolated(unsafe) let (userdata, state, mimes) = (userdata, state, mimes)
         return MainActor.assumeIsolated {
             guard location == GHOSTTY_CLIPBOARD_STANDARD,
                 let surface = GhosttySurfaceView.from(userdata: userdata)?.surface
@@ -34,6 +36,7 @@ enum GhosttyClipboard {
         state: UnsafeMutableRawPointer?, request: ghostty_clipboard_request_e
     ) {
         guard Thread.isMainThread else { return }
+        nonisolated(unsafe) let (userdata, confirm, state) = (userdata, confirm, state)
         MainActor.assumeIsolated {
             guard let view = GhosttySurfaceView.from(userdata: userdata), let surface = view.surface else { return }
             guard request == GHOSTTY_CLIPBOARD_REQUEST_PASTE, let confirm else {
@@ -48,8 +51,6 @@ enum GhosttyClipboard {
                 return (String(cString: mime), data)
             }
             let text = contents.first { $0.mime == "text/plain" }.flatMap { String(data: $0.data, encoding: .utf8) }
-            // libghostty keeps the request alive until it's completed or denied.
-            nonisolated(unsafe) let state = state
             askToPaste(text ?? "", in: view) { approved in
                 guard let surface = view.surface else { return }
                 if approved {

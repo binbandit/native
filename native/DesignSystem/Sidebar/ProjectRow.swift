@@ -76,7 +76,7 @@ public struct ProjectRow<MenuContent: View>: View {
                 }
                 .padding(.vertical, DS.Space.sm)
                 .padding(.leading, DS.Space.sm)
-                .frame(minHeight: 32)
+                .frame(minHeight: max(32, DS.Size.minimumHitTarget))
                 .contentShape(.rect)
             }
             .buttonStyle(SidebarRowButtonStyle())

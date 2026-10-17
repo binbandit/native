@@ -27,9 +27,9 @@ struct MCPContextCostLabel: View {
     let cost: MCPContextCost
 
     var body: some View {
-        Text("\(TokenFormat.compact(cost.tokens)) tokens of context · \(TokenFormat.share(cost.tokens, of: cost.window))")
+        Text("\(DSFormat.tokens(cost.tokens)) tokens of context · \(DSFormat.share(cost.tokens, of: cost.window))")
             .font(.dsCaption)
             .foregroundStyle(cost.fraction >= 0.1 ? .dsWarning : .dsTextSecondary)
-            .help("What this server's tool definitions take in every Claude Code session, from its latest /context report (\(cost.capturedAt.formatted(.relative(presentation: .named)))).")
+            .help("What this server's tool definitions take in every Claude Code session, from its latest /context report (\(DSFormat.compactAge(cost.capturedAt, now: .now)) ago).")
     }
 }

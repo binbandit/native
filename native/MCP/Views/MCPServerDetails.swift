@@ -58,7 +58,7 @@ struct MCPServerDetails: View {
             info.map { [$0.title ?? $0.name, $0.version].compactMap(\.self).joined(separator: " ") },
             info.map { "protocol \($0.protocolVersion)" },
             report.transport.map { $0.displayName },
-            "answered in \(report.duration.formatted(.units(allowed: [.seconds, .milliseconds], width: .abbreviated, maximumUnitCount: 1)))",
+            "answered in \(DSFormat.duration(Double(report.duration.components.seconds) + Double(report.duration.components.attoseconds) / 1e18))",
         ].compactMap(\.self).joined(separator: " · "))
             .settingsText(.caption)
             .foregroundStyle(.dsTextSecondary)
@@ -176,7 +176,7 @@ private struct MCPToolRow: View {
                 }
                 Spacer(minLength: DS.Space.md)
                 if share >= 0.01 {
-                    Text(TokenFormat.percent(share))
+                    Text(DSFormat.percent(share))
                         .font(.dsCaption)
                         .monospacedDigit()
                         .foregroundStyle(.dsTextTertiary)
