@@ -11,13 +11,7 @@ struct RootView: View {
     var body: some View {
         @Bindable var model = model
         NavigationSplitView(columnVisibility: $columnVisibility) {
-            SidebarView {
-                PullRequestsNavItem(isSelected: showsPullRequests) { showsPullRequests = true }
-            } accessories: {
-                EmptyView()
-            } taskAccessory: { summary in
-                AppTaskRowAccessory(summary: summary)
-            }
+            sidebar
                 // The only sidebar toggle is ours, right after the window controls as in the reference app; as a
                 // sidebar toolbar item it stays there when the sidebar is hidden, too. The system's
                 // goes from both the column and the split view. On the column it must come before
@@ -116,6 +110,18 @@ struct RootView: View {
             Button("Cancel", role: .cancel) {}
         } message: { runtime in
             Text("\(runtime.agent.displayName) needs you to sign in before it can start a session.")
+        }
+    }
+
+    /// The sidebar with the other features' parts: the pull requests page, and each task row's pull
+    /// request, branch state and context usage.
+    private var sidebar: some View {
+        SidebarView {
+            PullRequestsNavItem(isSelected: showsPullRequests) { showsPullRequests = true }
+        } accessories: {
+            EmptyView()
+        } taskAccessory: { summary in
+            AppTaskRowAccessory(summary: summary)
         }
     }
 

@@ -47,8 +47,7 @@ struct LabsSettingsPage: View {
         SettingsPage {
             SettingsHeader(
                 title: "Labs",
-                description: Text("Features and designs that aren't finished yet. They may change or go away. ")
-                    + Text("Turn one off anytime.").fontWeight(.medium)
+                description: description
             ) {
                 Button("Reset All", systemImage: "arrow.counterclockwise", action: resetAll)
                     .buttonStyle(.ds(.secondary, size: .medium))
@@ -70,6 +69,7 @@ struct LabsSettingsPage: View {
                 SettingsRowGroup {
                     ForEach(store.catalog.experiments) { experiment in
                         LabsExperimentRow(
+                            id: Self.rowID(experiment.id),
                             experiment: experiment,
                             value: store.saved.value(for: experiment.id) ?? experiment.defaultValue,
                             needsRelaunch: store.needsRelaunch(experiment.id),
@@ -77,11 +77,15 @@ struct LabsSettingsPage: View {
                         ) { value in
                             change(experiment.id, to: value, actionName: "Change \(experiment.title)")
                         }
-                        .settingsRevealTarget(Self.rowID(experiment.id))
                     }
                 }
             }
         }
+    }
+
+    private var description: Text {
+        let reassurance = Text("Turn one off anytime.").fontWeight(.medium)
+        return Text("Features and designs that aren't finished yet. They may change or go away. \(reassurance)")
     }
 
     /// Changes one experiment, undoably.
@@ -97,19 +101,22 @@ struct LabsSettingsPage: View {
         registerUndo(restoring: before, actionName: "Reset All Experiments")
     }
 
-    /// Undo puts back `overrides`; redo puts back what replaced them.
     private func registerUndo(restoring overrides: [ExperimentID: StoredValue], actionName: String) {
-        let store = store
-        let after = store.saved.overrides
-        guard overrides != after, let undoManager else { return }
+        guard let undoManager, overrides != store.saved.overrides else { return }
+        Self.registerUndo(on: undoManager, store: store, restoring: overrides)
+        undoManager.setActionName(actionName)
+    }
+
+    /// Undo puts back `overrides` and registers putting back what they replaced, so redo works too.
+    private static func registerUndo(
+        on undoManager: UndoManager, store: ExperimentStore, restoring overrides: [ExperimentID: StoredValue]
+    ) {
+        let replaced = store.saved.overrides
         undoManager.registerUndo(withTarget: store) { store in
             MainActor.assumeIsolated {
                 store.setOverrides(overrides)
-                undoManager.registerUndo(withTarget: store) { store in
-                    MainActor.assumeIsolated { store.setOverrides(after) }
-                }
+                registerUndo(on: undoManager, store: store, restoring: replaced)
             }
         }
-        undoManager.setActionName(actionName)
     }
 }
