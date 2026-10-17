@@ -31,7 +31,7 @@ final class PluginRegistry {
     /// `-pluginsDirectory <path>` to try plugins without touching the user's own.
     static let directory =
         UserDefaults.standard.string(forKey: "pluginsDirectory").map { URL(filePath: $0, directoryHint: .isDirectory) }
-        ?? FileManager.default.homeDirectoryForCurrentUser.appending(
+        ?? URL.homeDirectory.appending(
             path: ".native/plugins", directoryHint: .isDirectory)
 
     private(set) var plugins: [LoadedPlugin] = []

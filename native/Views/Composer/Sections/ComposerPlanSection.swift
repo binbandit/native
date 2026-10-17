@@ -55,7 +55,7 @@ struct ComposerPlanSection: View {
     }
 }
 
-/// Factory's step markers: a spinner on the step being worked on, an accent dot when done, a muted
+/// Factory's step markers: a loader on the step being worked on, an accent dot when done, a muted
 /// dot otherwise.
 private struct StepIndicator: View {
     let status: PlanEntry.Status
@@ -64,8 +64,9 @@ private struct StepIndicator: View {
     var body: some View {
         switch status {
         case .inProgress where isWorking:
-            ProgressView()
-                .controlSize(.mini)
+            // The one loader family (docs/product-quality.md), as PlanView uses.
+            DotGridLoader(pattern: .waiting)
+                .frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
         case .completed:
             dot(.dsAccent)
         case .pending, .inProgress:

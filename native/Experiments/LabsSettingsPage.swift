@@ -11,7 +11,7 @@ extension SettingsPane {
         id: .labs,
         title: "Labs",
         systemImage: "flask",
-        group: .more,
+        group: .extensions,
         order: 0,
         keywords: ["experiments", "experimental", "beta", "flags", "preview"],
         searchEntries: {

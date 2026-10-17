@@ -13,7 +13,7 @@ extension SettingsPane {
             id: .mcpServers,
             title: "MCP Servers",
             systemImage: "server.rack",
-            group: .agents,
+            group: .extensions,
             order: 20,
             keywords: ["mcp", "tools", "context", "oauth", "sign in", ".mcp.json", "config.toml", "mcp.json"],
             searchEntries: {

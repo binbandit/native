@@ -167,8 +167,8 @@ struct AgentQuestionSection: View {
     // MARK: - Actions
 
     private func handleKey(_ press: KeyPress) -> KeyPress.Result {
-        // Typing in the text field must stay typing.
-        guard focus == .card else { return .ignored }
+        // Typing in the text field must stay typing, and ⌘1–9, ⌥⌘↑/↓ and the like belong to the app.
+        guard focus == .card, press.modifiers.isDisjoint(with: [.command, .option, .control]) else { return .ignored }
         let options = question.options
         if let digit = press.characters.first?.wholeNumberValue, (1...9).contains(digit), digit <= options.count {
             highlighted = digit - 1
