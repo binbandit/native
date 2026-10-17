@@ -9,7 +9,10 @@ protocol ContextSource {
     var usage: Usage? { get }
     var report: ContextReport? { get }
     var reportStatus: ContextReportStatus { get }
+    /// Whether the agent can compact its context on request (`/compact`).
+    var canCompact: Bool { get }
     func refreshReport() async
+    func compact() async
 }
 
 extension ContextSource {
