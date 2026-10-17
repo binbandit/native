@@ -16,9 +16,14 @@ protocol NativePlugin: Sendable {
     func mcpServers(for session: SessionContext) -> [MCPServer]
     /// Session lifecycle hooks, delivered to every enabled plugin in order.
     func handle(_ event: SessionEvent) async
+    /// Whether the plugin runs before the user has chosen. Native starts minimal (see
+    /// `docs/decisions.md`), so built-ins that add to what a new user sees start off; a manifest the
+    /// user installed is on.
+    var isEnabledByDefault: Bool { get }
 }
 
 extension NativePlugin {
+    var isEnabledByDefault: Bool { true }
     var titler: (any SessionTitler)? { nil }
     func mcpServers(for session: SessionContext) -> [MCPServer] { [] }
     func handle(_ event: SessionEvent) async {}
