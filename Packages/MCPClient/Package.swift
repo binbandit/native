@@ -10,12 +10,17 @@ let package = Package(
     dependencies: [
         // For the protocol's `JSON` type, and in tests, a real server to probe.
         .package(path: "../MCPServer"),
+        // Agents' CLIs run through a `CommandRunner`, so they can run on whichever host owns the project.
+        .package(path: "../Exec"),
     ],
     targets: [
-        .target(name: "MCPClient", dependencies: [.product(name: "MCP", package: "MCPServer")]),
+        .target(name: "MCPClient", dependencies: [
+            .product(name: "MCP", package: "MCPServer"),
+            .product(name: "Exec", package: "Exec"),
+        ]),
         .testTarget(
             name: "MCPClientTests",
-            dependencies: ["MCPClient", .product(name: "MCP", package: "MCPServer")],
+            dependencies: ["MCPClient", .product(name: "MCP", package: "MCPServer"), .product(name: "Exec", package: "Exec")],
             resources: [.copy("Fixtures")]
         ),
     ]
