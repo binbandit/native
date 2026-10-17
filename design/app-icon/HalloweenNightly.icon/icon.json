@@ -5,13 +5,13 @@
   "fill-specializations": [
     {
       "value": {
-        "solid": "srgb:0.91373,0.86275,0.94118,1.00000"
+        "solid": "srgb:0.86275,0.81961,0.91373,1.00000"
       }
     },
     {
       "appearance": "dark",
       "value": {
-        "solid": "srgb:0.09804,0.06275,0.17647,1.00000"
+        "solid": "srgb:0.09020,0.05098,0.16863,1.00000"
       }
     },
     {
@@ -32,13 +32,13 @@
           "fill-specializations": [
             {
               "value": {
-                "solid": "srgb:0.38431,0.25098,0.36078,1.00000"
+                "solid": "srgb:0.71373,0.49804,0.42745,1.00000"
               }
             },
             {
               "appearance": "dark",
               "value": {
-                "solid": "srgb:0.82745,0.75686,1.00000,1.00000"
+                "solid": "srgb:0.43529,0.26667,0.36863,1.00000"
               }
             },
             {
@@ -55,20 +55,20 @@
               "value": true
             }
           ],
-          "image-name": "native-mark.svg",
-          "name": "Moonlit interlock"
+          "image-name": "cobweb.svg",
+          "name": "Cobweb"
         },
         {
           "fill-specializations": [
             {
               "value": {
-                "solid": "srgb:0.65490,0.30196,0.12941,1.00000"
+                "solid": "srgb:0.90588,0.54510,0.27843,1.00000"
               }
             },
             {
               "appearance": "dark",
               "value": {
-                "solid": "srgb:1.00000,0.65098,0.34902,1.00000"
+                "solid": "srgb:0.98824,0.62745,0.36471,1.00000"
               }
             },
             {
@@ -85,20 +85,20 @@
               "value": true
             }
           ],
-          "image-name": "night-sky.svg",
-          "name": "Harvest moon and stars"
+          "image-name": "blood-moon.svg",
+          "name": "Blood moon"
         },
         {
           "fill-specializations": [
             {
               "value": {
-                "solid": "srgb:0.61176,0.28627,0.19608,1.00000"
+                "solid": "srgb:0.83922,0.45098,0.25098,1.00000"
               }
             },
             {
               "appearance": "dark",
               "value": {
-                "solid": "srgb:0.88627,0.52549,0.32941,1.00000"
+                "solid": "srgb:0.89020,0.54118,0.31373,1.00000"
               }
             },
             {
@@ -115,12 +115,222 @@
               "value": true
             }
           ],
-          "image-name": "bats.svg",
-          "name": "Bats"
+          "image-name": "moon-craters.svg",
+          "name": "Lunar craters"
+        },
+        {
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "srgb:0.64706,0.39216,0.27059,1.00000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "srgb:0.82353,0.54510,0.34902,1.00000"
+              }
+            },
+            {
+              "appearance": "tinted",
+              "value": "automatic"
+            }
+          ],
+          "glass-specializations": [
+            {
+              "value": false
+            },
+            {
+              "appearance": "tinted",
+              "value": true
+            }
+          ],
+          "image-name": "stars.svg",
+          "name": "Halloween starfield"
+        },
+        {
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "srgb:0.26667,0.12941,0.22353,1.00000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "srgb:0.22353,0.12549,0.22745,1.00000"
+              }
+            },
+            {
+              "appearance": "tinted",
+              "value": "automatic"
+            }
+          ],
+          "glass-specializations": [
+            {
+              "value": false
+            },
+            {
+              "appearance": "tinted",
+              "value": true
+            }
+          ],
+          "image-name": "moon-bat.svg",
+          "name": "Bat across the moon"
+        },
+        {
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "srgb:0.30980,0.41961,0.23529,1.00000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "srgb:0.47059,0.63529,0.38824,1.00000"
+              }
+            },
+            {
+              "appearance": "tinted",
+              "value": "automatic"
+            }
+          ],
+          "glass-specializations": [
+            {
+              "value": false
+            },
+            {
+              "appearance": "tinted",
+              "value": true
+            }
+          ],
+          "image-name": "stem.svg",
+          "name": "Curled pumpkin stem"
+        },
+        {
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "srgb:0.62745,0.47451,0.75686,1.00000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "srgb:0.56078,0.38431,0.76078,1.00000"
+              }
+            },
+            {
+              "appearance": "tinted",
+              "value": "automatic"
+            }
+          ],
+          "glass-specializations": [
+            {
+              "value": false
+            },
+            {
+              "appearance": "tinted",
+              "value": true
+            }
+          ],
+          "image-name": "pumpkin.svg",
+          "name": "Violet pumpkin"
+        },
+        {
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "srgb:0.53725,0.37647,0.67451,1.00000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "srgb:0.41176,0.27059,0.56078,1.00000"
+              }
+            },
+            {
+              "appearance": "tinted",
+              "value": "automatic"
+            }
+          ],
+          "glass-specializations": [
+            {
+              "value": false
+            },
+            {
+              "appearance": "tinted",
+              "value": true
+            }
+          ],
+          "image-name": "ribs.svg",
+          "name": "Pumpkin ribs"
+        },
+        {
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "srgb:0.41176,0.27059,0.49804,1.00000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "srgb:0.32549,0.20392,0.42745,1.00000"
+              }
+            },
+            {
+              "appearance": "tinted",
+              "value": "automatic"
+            }
+          ],
+          "glass-specializations": [
+            {
+              "value": false
+            },
+            {
+              "appearance": "tinted",
+              "value": true
+            }
+          ],
+          "image-name": "carving-rim.svg",
+          "name": "Carved edges"
+        },
+        {
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "srgb:1.00000,0.88627,0.62745,1.00000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "srgb:1.00000,0.90196,0.67451,1.00000"
+              }
+            },
+            {
+              "appearance": "tinted",
+              "value": "automatic"
+            }
+          ],
+          "glass-specializations": [
+            {
+              "value": false
+            },
+            {
+              "appearance": "tinted",
+              "value": true
+            }
+          ],
+          "image-name": "carving.svg",
+          "name": "Interlock jack-o-lantern carving"
         }
       ],
       "lighting": "individual",
-      "name": "Halloween nightly",
+      "name": "Nightly jack-o-lantern",
       "refractivity-specializations": [
         {
           "appearance": "tinted",
