@@ -227,9 +227,9 @@ public final class AutomationEngine {
             }
         } catch {
             book.update(runID) {
-                $0.status = .failed(error.localizedDescription)
+                $0.status = .failed(WorkflowRunner.describe(error))
                 $0.endedAt = now()
-                $0.summary = error.localizedDescription
+                $0.summary = WorkflowRunner.describe(error)
             }
         }
     }
