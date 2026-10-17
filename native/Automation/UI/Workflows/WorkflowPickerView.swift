@@ -135,6 +135,6 @@ struct WorkflowPickerView: View {
     private var brokenSummary: String? {
         let broken = entries.filter { !$0.isRunnable }
         guard !broken.isEmpty else { return nil }
-        return broken.count == 1 ? "1 workflow can't run; hover it to see why." : "\(broken.count) workflows can't run; hover them to see why."
+        return broken.count == 1 ? "1 workflow can't run; its card says why." : "\(broken.count) workflows can't run; their cards say why."
     }
 }
