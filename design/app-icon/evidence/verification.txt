@@ -1,0 +1,40 @@
+Checked: 2026-10-17T10:56:26.827975+00:00
+HEAD: acd57e31176370a05510aebe55ee0a5ea824aea8
+
+Latest Nightly change: 12 additional four-point stars and 12 small stars; 26 stars total, plus the crescent. Both appearance PNGs exported with Apple Icon Composer ictool from Nightly.icon.
+
+Verification:
+- Visually checked both final 1024px Nightly PNGs.
+- Real Settings UI displays updated Nightly artwork and retains Nightly/Dark after relaunch. Screenshot: settings-nightly-dark.png.
+- Last successful isolated app binary used with newly compiled asset catalog because concurrent changes currently prevent a complete project build.
+- Current whole-project build: failed in concurrent SessionCatalog / GoalMarker changes. No edits made to those files.
+- Previously completed native Glass build succeeded. Glass is the compiled primary AppIcon.icon and selecting Glass restores the bundle icon stack.
+
+sandbox_extension_issue_file_to_process failed for /tmp/NativeIconChecks.app: 1 (Operation not permitted)
+PASS: 14 color variants switch the Dock image; Glass restores the native bundle; automatic light/dark updates; explicit override; persisted selection; invalid preference recovery.
+
+PASS AppIcon-arcade-dark.png: no enclosed transparency
+PASS AppIcon-arcade-light.png: no enclosed transparency
+PASS AppIcon-cobalt-dark.png: no enclosed transparency
+PASS AppIcon-cobalt-light.png: no enclosed transparency
+PASS AppIcon-ember-dark.png: no enclosed transparency
+PASS AppIcon-ember-light.png: no enclosed transparency
+PASS AppIcon-fern-dark.png: no enclosed transparency
+PASS AppIcon-fern-light.png: no enclosed transparency
+PASS AppIcon-glass-dark.png: no enclosed transparency
+PASS AppIcon-glass-light.png: no enclosed transparency
+PASS AppIcon-nightly-dark.png: no enclosed transparency
+PASS AppIcon-nightly-light.png: no enclosed transparency
+PASS AppIcon-original-dark.png: no enclosed transparency
+PASS AppIcon-original-light.png: no enclosed transparency
+PASS AppIcon-prism-dark.png: no enclosed transparency
+PASS AppIcon-prism-light.png: no enclosed transparency
+PASS: audited all 16 final icons
+
+SHA-256 of relevant current sources:
+853668ba4cf30f48d761f4c5fb022b8714624b3d3de3180f6342335313762646  native/Models/AppIconPreferences.swift
+3dc00c867a2b4d53d4c991e3f81b8b7318069faff393725bf4da0bb1a6625949  native/Views/Settings/AppearanceSettingsView.swift
+9ef1b8bc068a5fd680b4530bd12cc97bf383a1263d428f17a9b7c69f8125ad00  native/AppIcon.icon/icon.json
+6c3b5026f9aa5cc1454300e532f731aa8a7cc4faab6f71405933b54480467ffc  design/app-icon/Nightly.icon/Assets/night-sky.svg
+437aa60d40b64edf8ea04dfc12db07a00c5d41a4dab17a843f2838ece7158737  native/Assets.xcassets/AppIcon-nightly-dark.imageset/icon.png
+2e1f45919c99bf58fe1619b70fde74d638f28ce11dcb098f0a992c9686db8982  native/Assets.xcassets/AppIcon-nightly-light.imageset/icon.png

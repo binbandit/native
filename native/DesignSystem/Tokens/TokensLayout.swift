@@ -1,0 +1,100 @@
+import SwiftUI
+
+/// The design system's namespace for metrics: spacing, radii, sizes and shadows. Colors, fonts and
+/// animations live on their SwiftUI types with a `ds` prefix (`.dsTextSecondary`, `.dsBody`,
+/// `.dsQuick`) so leading-dot syntax works.
+public nonisolated enum DS {
+    /// Factory's spacing scale (`--core-v2-space-*`, px = pt).
+    public enum Space {
+        public static let xxs: CGFloat = 2
+        public static let xs: CGFloat = 4
+        public static let sm: CGFloat = 6
+        public static let md: CGFloat = 8
+        public static let lg: CGFloat = 12
+        public static let xl: CGFloat = 16
+        public static let xxl: CGFloat = 24
+        public static let xxxl: CGFloat = 32
+    }
+
+    public enum Radius {
+        /// Keyboard hints, tooltips, progress bars (Factory `--core-v2-radius-control`, 2px).
+        public static let small: CGFloat = 2
+        /// Buttons, the composer and its pills, the update button (Factory `--radius-sm`, 4px).
+        public static let control: CGFloat = 4
+        /// Sidebar rows: nav items, projects, tasks (Conductor `rounded-md`, 6px).
+        public static let row: CGFloat = 6
+        /// Cards and popovers (Conductor `rounded-lg`, 8px).
+        public static let card: CGFloat = 8
+        /// Large panels and sheets (Conductor `rounded-xl`, 12px).
+        public static let panel: CGFloat = 12
+    }
+
+    public enum Size {
+        /// Factory control heights (`--core-v2-control-height-*`).
+        public static let controlXS: CGFloat = 24
+        public static let controlSM: CGFloat = 28
+        public static let controlMD: CGFloat = 32
+        /// Square window-toolbar buttons: the sidebar toggle, back and forward (Factory 24px).
+        public static let toolbarButton: CGFloat = 24
+        /// Glyph size of sidebar nav icons (Factory `icon-size-sm`, 12px).
+        public static let navIcon: CGFloat = 12
+        /// The leading slot of project and task rows (Conductor `size-4`).
+        public static let rowLeading: CGFloat = 16
+        /// The status glyph inside that slot (Conductor `size-3.5`).
+        public static let statusGlyph: CGFloat = 14
+        /// The composer's send and stop buttons (Factory 24px).
+        public static let composerAction: CGFloat = 24
+        /// The composer's pills and square buttons (Factory 28px).
+        public static let composerPill: CGFloat = 28
+        /// Minimum height of the composer's text section (Factory 43px).
+        public static let composerInputMinHeight: CGFloat = 43
+        /// Rows in compact lists and popups: slash commands, queued messages, suggestions
+        /// (Factory `SuggestionRow`, 26px).
+        public static let listRow: CGFloat = 26
+        /// Default sidebar width (Conductor 256px; Factory ~260px).
+        public static let sidebarWidth: CGFloat = 256
+    }
+
+    /// The window's traffic-light row, for headers drawn under a transparent title bar.
+    public enum Window {
+        /// Height of Factory's sidebar header row (`SESSION_HEADER_HEIGHT`, 36px).
+        public static let headerHeight: CGFloat = 36
+    }
+
+    /// Drop shadows. Factory keeps elevation subtle: menus and dialogs only.
+    public struct Shadow: Sendable {
+        let light: Double
+        let dark: Double
+        let radius: CGFloat
+        let y: CGFloat
+
+        /// Menus, tooltips and dialogs (Factory `--core-v2-shadow-modal`: 0 8px 12px, 14%/50%).
+        public static let modal = Shadow(light: 0.14, dark: 0.5, radius: 6, y: 8)
+        /// Dragged rows (Factory `--core-v2-shadow-drag`: 0 2px 8px, 12%/45%).
+        public static let drag = Shadow(light: 0.12, dark: 0.45, radius: 4, y: 2)
+        /// Content lifted over scrolled content (Factory's floating composer: 0 4px 20px, 30%).
+        public static let floating = Shadow(light: 0.12, dark: 0.3, radius: 10, y: 4)
+    }
+}
+
+extension View {
+    /// Applies a design-system shadow, stronger in dark mode as in Factory.
+    public func dsShadow(_ shadow: DS.Shadow) -> some View {
+        modifier(DSShadowModifier(shadow: shadow))
+    }
+}
+
+private struct DSShadowModifier: ViewModifier {
+    let shadow: DS.Shadow
+
+    @Environment(\.colorScheme) private var colorScheme
+
+    func body(content: Content) -> some View {
+        // A CSS blur radius is twice SwiftUI's shadow radius.
+        content.shadow(
+            color: .black.opacity(colorScheme == .dark ? shadow.dark : shadow.light),
+            radius: shadow.radius,
+            y: shadow.y
+        )
+    }
+}

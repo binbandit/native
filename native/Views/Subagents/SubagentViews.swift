@@ -1,0 +1,117 @@
+import ACP
+import SwiftUI
+
+/// A subagent's entry in its parent's transcript: who it is, what it's doing, and a way into its
+/// own conversation.
+struct SubagentCard: View {
+    let subagent: SubagentState
+    let onOpen: () -> Void
+
+    var body: some View {
+        Button(action: onOpen) {
+            HStack(alignment: .firstTextBaseline, spacing: 10) {
+                Image(systemName: "person.2.fill")
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(.secondary)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(subagent.title ?? "Subagent")
+                        .fontWeight(.medium)
+                        .lineLimit(1)
+                    if let description = subagent.description, !description.isEmpty {
+                        Text(description)
+                            .font(.callout)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
+                    }
+                }
+                Spacer(minLength: 8)
+                SubagentStatusLabel(state: subagent.workState)
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 10)
+            .background(.quaternary.opacity(0.5), in: .rect(cornerRadius: 10))
+            .overlay {
+                RoundedRectangle(cornerRadius: 10)
+                    .strokeBorder(subagent.workState == .requiresAction ? AnyShapeStyle(.orange.opacity(0.6)) : AnyShapeStyle(.separator))
+            }
+            .contentShape(.rect(cornerRadius: 10))
+        }
+        .buttonStyle(.plain)
+        .help("Show this subagent's conversation")
+    }
+}
+
+struct SubagentStatusLabel: View {
+    let state: SubagentWorkState?
+
+    var body: some View {
+        HStack(spacing: 5) {
+            switch state {
+            case .running:
+                ProgressView()
+                    .controlSize(.mini)
+                Text("Working")
+            case .requiresAction:
+                Image(systemName: "exclamationmark.circle.fill")
+                    .foregroundStyle(.orange)
+                Text("Needs approval")
+            case .idle(let stopReason, let error):
+                switch stopReason {
+                case .error:
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.red)
+                    Text("Failed")
+                        .help(error?.message ?? "The subagent's work failed.")
+                case .cancelled:
+                    Image(systemName: "stop.circle")
+                    Text("Stopped")
+                default:
+                    Image(systemName: "checkmark.circle.fill")
+                        .foregroundStyle(.green)
+                    Text("Done")
+                }
+            case .unknown, .other, nil:
+                Image(systemName: "questionmark.circle")
+                Text("Unknown")
+            }
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .symbolRenderingMode(.hierarchical)
+        .animation(.smooth, value: state)
+    }
+}
+
+/// A message between sessions, such as the task a parent gave its subagent. It isn't from the
+/// user or to the user, so it reads as a labelled hand-off rather than a chat bubble.
+struct SessionMessageView: View {
+    let message: SessionMessage
+    /// The transcript this appears in, to tell incoming from outgoing.
+    let sessionID: SessionID
+    let name: (SessionID?) -> String
+
+    private var isOutgoing: Bool {
+        message.sender == sessionID
+    }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Label(
+                isOutgoing ? "To \(name(message.recipient))" : "From \(name(message.sender))",
+                systemImage: isOutgoing ? "arrow.up.right" : "arrow.down.left"
+            )
+            .font(.caption.weight(.medium))
+            .foregroundStyle(.secondary)
+            MarkdownView(message.text)
+        }
+        .padding(.leading, 12)
+        .overlay(alignment: .leading) {
+            Capsule()
+                .fill(.tint.opacity(0.5))
+                .frame(width: 3)
+        }
+    }
+}

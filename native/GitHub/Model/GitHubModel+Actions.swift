@@ -1,0 +1,79 @@
+import AppKit
+import GitHub
+
+/// What the user can do with a pull request. Views call these rather than gh or AppKit, so other
+/// clients can drive the same actions.
+extension GitHubModel {
+    func openInBrowser(_ pullRequest: PullRequestSummary) {
+        NSWorkspace.shared.open(pullRequest.url)
+    }
+
+    /// Opens the first failing check's log, so a red x leads straight to the failure; otherwise, or
+    /// when gh can't say, the pull request's Checks tab.
+    func openChecks(_ pullRequest: PullRequestSummary) async {
+        let checksTab = pullRequest.url.appending(path: "checks")
+        var destination = checksTab
+        if pullRequest.checks?.state == .failing,
+           let checks = try? await cli().checks(.number(pullRequest.number), in: location(of: pullRequest)) {
+            destination = checks.first { $0.outcome == .failed && $0.link != nil }?.link ?? checksTab
+        }
+        NSWorkspace.shared.open(destination)
+    }
+
+    /// Where gh finds a pull request's repository without a local checkout.
+    func location(of pullRequest: PullRequestSummary) -> RepositoryLocation {
+        let host = pullRequest.url.host() ?? "github.com"
+        return .remote(host == "github.com" ? pullRequest.repository : "\(host)/\(pullRequest.repository)")
+    }
+
+    func copyURL(_ pullRequest: PullRequestSummary) {
+        copy(pullRequest.url.absoluteString)
+    }
+
+    func copyBranch(_ pullRequest: PullRequestSummary) {
+        if let branch = pullRequest.headRefName {
+            copy(branch)
+        }
+    }
+
+    func copy(_ text: String) {
+        NSPasteboard.general.clearContents()
+        NSPasteboard.general.setString(text, forType: .string)
+    }
+
+    /// Asks the user to confirm before anything touches a working tree.
+    func requestOpenAsTask(_ pullRequest: PullRequestSummary) {
+        guard canOpenAsTask else { return }
+        openAsTaskCandidate = pullRequest
+    }
+
+    // MARK: - Creating
+
+    /// Shows the Create Pull Request sheet for a branch. This is the hook the Git feature's commit
+    /// UI calls (through the app) once the branch is pushed.
+    func presentCreatePullRequest(_ request: CreatePullRequestRequest) {
+        createRequest = request
+    }
+
+    /// Opens a pull request from the already-pushed branch, then updates its badge and the inbox.
+    func createPullRequest(_ pullRequest: NewPullRequest, in directory: URL) async throws(GitHubError) -> URL {
+        let url = try await cli().createPullRequest(pullRequest, in: directory)
+        invalidate(BranchReference(directory: directory, branch: pullRequest.head))
+        Task { await refresh() }
+        return url
+    }
+
+    /// The GitHub repository a checkout belongs to: its default branch is the base a new pull
+    /// request merges into, and a failure says why one can't be opened (no gh, no login, no
+    /// GitHub remote).
+    func repository(of directory: URL) async throws(GitHubError) -> GitHubRepository {
+        try await cli().repository(.directory(directory))
+    }
+
+    /// The open pull request a branch already has, so the sheet can point to it instead.
+    func openPullRequest(for branch: BranchReference) async -> PullRequestSummary? {
+        await loadPullRequest(for: branch, maxAge: 0)
+        guard let pullRequest = pullRequest(for: branch), pullRequest.state == .open else { return nil }
+        return pullRequest
+    }
+}

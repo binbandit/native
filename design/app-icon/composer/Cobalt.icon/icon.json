@@ -1,0 +1,53 @@
+{
+  "fill-specializations": [
+    {
+      "value": {
+        "solid": "srgb:0.90196,0.92941,1.00000,1.00000"
+      }
+    },
+    {
+      "appearance": "dark",
+      "value": {
+        "solid": "srgb:0.09020,0.21569,0.45098,1.00000"
+      }
+    }
+  ],
+  "groups": [
+    {
+      "name": "Native mark",
+      "layers": [
+        {
+          "image-name": "native-mark.svg",
+          "name": "Linked folds",
+          "glass": false,
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "srgb:0.13333,0.27451,0.60000,1.00000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "srgb:0.88627,0.92941,1.00000,1.00000"
+              }
+            }
+          ]
+        }
+      ],
+      "lighting": "individual",
+      "specular": false,
+      "shadow": {
+        "kind": "none",
+        "opacity": 0
+      },
+      "translucency": {
+        "enabled": false,
+        "value": 0
+      }
+    }
+  ],
+  "supported-platforms": {
+    "squares": "shared"
+  }
+}

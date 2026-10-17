@@ -1,0 +1,23 @@
+# macOS
+.DS_Store
+
+# Xcode
+xcuserdata/
+*.xcuserstate
+DerivedData/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+
+# Agent handoff notes (session coordination, not source)
+.claude/handoffs/
+
+# Design research: notes are shared, screenshots are not (third-party app screens)
+research/**/*.png
+research/**/*.jpg
+research/**/*.jpeg
+research/**/*.webp
+research/**/*.gif
+research/**/*.mp4
+research/**/*.mov

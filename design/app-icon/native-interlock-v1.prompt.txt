@@ -1,0 +1,11 @@
+Generated using the built-in image generation tool.
+Reference: the previous Native rosette concept, itself inspired by Factory's emblem.
+
+Use case: precise-object-edit.
+Input image 1 is the EDIT TARGET: the current Native app icon.
+The user likes the refinement, palette, stroke weight and dark background, but the six-petal rosette resembles Factory too closely.
+Change ONLY the white central emblem. Preserve the dark rounded-square tile, its dimensions and placement, transparent outer margins, the flat monochrome treatment, the off-white color, the line weight and the generous spacing.
+
+Replace the radial flower with a distinctive compact folded-loop emblem whose overall silhouette is a softly angular diamond, slightly wider than tall. Imagine one continuous broad outline bent into two offset rounded rhombus loops that interlock once at the center, with one precise black break at the crossing to show the over-under connection. Two beautiful open diamond-shaped negative spaces, balanced diagonally. Elegant geometry with flowing corners, neither sharp polygonal nor inflated. The emblem feels like an abstract precision joint or a beautifully folded path. It is one unified graceful emblem. Carefully balanced geometry, strong distinctive silhouette at small sizes.
+
+Make it recognizably different from the input's floral/radial shape. No petals, no circular rosette, no radial spokes, no star, no atom, no letter or type. No extra elements. No gradients, glow, metallic materials, textures, 3D, bevels, shadows, or decorative effects. Keep the confident flat app-icon graphic quality of the input. One centered icon, genuine transparency outside the tile.

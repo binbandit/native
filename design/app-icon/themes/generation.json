@@ -1,0 +1,87 @@
+{
+  "tool": "built-in image generation",
+  "variants": [
+    {
+      "theme": "original",
+      "appearance": "light",
+      "source": "AppIcon-original-light.png",
+      "prompt": "Use case: precise-object-edit.\nInput image 1 is the approved Native icon and is the EDIT TARGET. Create its matching LIGHT appearance.\nKeep the exact same interlocking folded-diamond emblem, every contour, gap, line thickness, location, proportions, tile size, rounded corners and transparent margins.\nChange ONLY the colors: the rounded-square tile becomes a pale cool porcelain gray (#F0F1F3), and the emblem becomes a very dark graphite (#202226). Keep everything flat, beautifully crisp and calm. No new details, letters, outlines, lighting or material effects. The result should be a faithful colorway of the same icon. Genuine transparency outside the tile."
+    },
+    {
+      "theme": "original",
+      "appearance": "dark",
+      "source": "AppIcon-original-dark.png",
+      "prompt": "Use case: precise-object-edit.\nInput image 1 is the EDIT TARGET: the current Native app icon.\nThe user likes the refinement, palette, stroke weight and dark background, but the six-petal rosette resembles Factory too closely.\nChange ONLY the white central emblem. Preserve the dark rounded-square tile, its dimensions and placement, transparent outer margins, the flat monochrome treatment, the off-white color, the line weight and the generous spacing.\n\nReplace the radial flower with a distinctive compact folded-loop emblem whose overall silhouette is a softly angular diamond, slightly wider than tall. Imagine one continuous broad outline bent into two offset rounded rhombus loops that interlock once at the center, with one precise black break at the crossing to show the over-under connection. Two beautiful open diamond-shaped negative spaces, balanced diagonally. Elegant geometry with flowing corners, neither sharp polygonal nor inflated. The emblem feels like an abstract precision joint or a beautifully folded path. It is one unified graceful emblem. Carefully balanced geometry, strong distinctive silhouette at small sizes.\n\nMake it recognizably different from the input's floral/radial shape. No petals, no circular rosette, no radial spokes, no star, no atom, no letter or type. No extra elements. No gradients, glow, metallic materials, textures, 3D, bevels, shadows, or decorative effects. Keep the confident flat app-icon graphic quality of the input. One centered icon, genuine transparency outside the tile."
+    },
+    {
+      "theme": "cobalt",
+      "appearance": "light",
+      "source": "AppIcon-cobalt-light.png",
+      "prompt": "Use case: precise-object-edit. Input image 1 is the approved Native icon, the EDIT TARGET. Change ONLY its colors to create a matching color theme. Preserve the EXACT emblem geometry, interlocking loops, every contour, gap, thickness, placement, size, tile silhouette and transparent margins. No redesign, new details, letters, borders, lighting or textures. Flat, crisp graphic artwork. Genuine transparency outside the rounded-square tile.\nLIGHT COBALT: pale mist-blue tile (#E6EDFF), deep cobalt-blue emblem (#224699). Sophisticated, restrained, clean."
+    },
+    {
+      "theme": "cobalt",
+      "appearance": "dark",
+      "source": "AppIcon-cobalt-dark.png",
+      "prompt": "Use case: precise-object-edit. Input image 1 is the approved Native icon, the EDIT TARGET. Change ONLY its colors to create a matching color theme. Preserve the EXACT emblem geometry, interlocking loops, every contour, gap, thickness, placement, size, tile silhouette and transparent margins. No redesign, new details, letters, borders, lighting or textures. Flat, crisp graphic artwork. Genuine transparency outside the rounded-square tile.\nDARK COBALT: deep midnight cobalt-blue tile (#173773), pale ice-blue emblem (#E2EDFF). Sophisticated, restrained, clean."
+    },
+    {
+      "theme": "fern",
+      "appearance": "light",
+      "source": "AppIcon-fern-light.png",
+      "prompt": "Use case: precise-object-edit. Input image 1 is the approved Native icon, the EDIT TARGET. Change ONLY its colors to create a matching color theme. Preserve the EXACT emblem geometry, interlocking loops, every contour, gap, thickness, placement, size, tile silhouette and transparent margins. No redesign, new details, letters, borders, lighting or textures. Flat, crisp graphic artwork. Genuine transparency outside the rounded-square tile.\nLIGHT FERN: pale mist-green tile (#E8F0E8), deep forest-green emblem (#254B38). Calm and botanical."
+    },
+    {
+      "theme": "fern",
+      "appearance": "dark",
+      "source": "AppIcon-fern-dark.png",
+      "prompt": "Use case: precise-object-edit. Input image 1 is the edit target, a Native Cobalt icon. Change only the two colors. Keep the exact same icon silhouette, size, placement, interlocked symbol, stroke and negative spaces. Background tile is a consistent fully opaque deep forest green #235244. Symbol is pale mint #DDEEE0. Background must be perfectly flat, uniform and opaque throughout the entire tile. No blotches, texture, holes, shading, lighting, or other details. Preserve genuine transparency only outside the tile."
+    },
+    {
+      "theme": "ember",
+      "appearance": "light",
+      "source": "AppIcon-ember-light.png",
+      "prompt": "Use case: precise-object-edit. Input image 1 is the approved Native icon, the EDIT TARGET. Change ONLY colors. Preserve EXACT emblem geometry, every contour, gap, thickness, placement, tile size, silhouette, and transparent margins. Flat, crisp graphic artwork. The entire tile interior must be completely opaque and have one consistent flat background color. No redesign, added details, lighting or textures. Genuine transparency only outside the rounded-square tile.\nLIGHT EMBER: pale peach-porcelain tile (#F8E8DF), rich oxblood-red emblem (#7D3830). Warm and confident."
+    },
+    {
+      "theme": "ember",
+      "appearance": "dark",
+      "source": "AppIcon-ember-dark.png",
+      "prompt": "Use case: precise-object-edit. Input image 1 is the approved Native icon, the EDIT TARGET. Change ONLY colors. Preserve EXACT emblem geometry, every contour, gap, thickness, placement, tile size, silhouette, and transparent margins. Flat, crisp graphic artwork. The entire tile interior must be completely opaque and have one consistent flat background color. No redesign, added details, lighting or textures. Genuine transparency only outside the rounded-square tile.\nDARK EMBER: dark wine-red tile (#4A2426), pale apricot emblem (#FFE0CE). Warm and confident."
+    },
+    {
+      "theme": "prism",
+      "appearance": "light",
+      "source": "AppIcon-prism-light.png",
+      "prompt": "Use case: precise-object-edit. Input image 1 is the EDIT TARGET, the approved Native app icon. Preserve its identity, proportions and generous spacing. Genuine transparency only outside the rounded-square tile. The entire tile interior must remain fully opaque.\nCreate the LIGHT PRISM edition. Keep the exact approved linked-diamond emblem, its geometry, stroke weight, every gap, placement and tile silhouette. Recolor the emblem as a beautiful flowing rainbow spectrum, coral to fuchsia to violet to cobalt to teal, bright and joyful yet refined. Background tile is opaque pale pearl-lavender. Rainbow belongs only inside the emblem, no added elements. Clean flat graphic style with a smooth vivid color spectrum, no glitter, shadows, 3D or text."
+    },
+    {
+      "theme": "prism",
+      "appearance": "dark",
+      "source": "AppIcon-prism-dark.png",
+      "prompt": "Use case: precise-object-edit. Input image 1 is the EDIT TARGET, the approved Native app icon. Preserve its identity, proportions and generous spacing. Genuine transparency only outside the rounded-square tile. The entire tile interior must remain fully opaque.\nCreate the DARK PRISM edition. Keep the exact approved linked-diamond emblem, its geometry, stroke weight, every gap, placement and tile silhouette. Recolor the emblem as a beautiful flowing rainbow spectrum, coral to fuchsia to violet to electric blue to mint, bright and joyful yet refined. Background tile is opaque very dark midnight-violet. Rainbow belongs only inside the emblem, no added elements. Clean flat graphic style with a smooth vivid color spectrum, no glitter, shadows, 3D or text."
+    },
+    {
+      "theme": "arcade",
+      "appearance": "light",
+      "source": "AppIcon-arcade-light.png",
+      "prompt": "Use case: style-transfer.\nInput image 1 is the EDIT TARGET, Native's approved app icon.\nCreate a fun ARCADE edition. Translate the same interlocking diamond-loop symbol into beautifully designed chunky pixel art. Keep its recognizable two linked loops, clear open centers and diagonal interlock, with square stepped pixel corners replacing the rounded bends. Deliberate, disciplined pixel grid, charming retro arcade identity. Keep the same scale, placement, rounded tile and transparent outer margins as the original.\nLIGHT arcade colorway: pale lavender tile, bold deep-violet left loop and hot-pink right loop. Small offset darker pixel edges can add a tiny 16-bit print effect. Bright, friendly and playful.\nOne icon only, no text, letters, game characters, decorative confetti, glow, texture or extra symbols. The entire background tile is opaque and consistent in color. Genuine transparency only outside its rounded-square silhouette."
+    },
+    {
+      "theme": "arcade",
+      "appearance": "dark",
+      "source": "AppIcon-arcade-dark.png",
+      "prompt": "Use case: style-transfer.\nInput image 1 is the EDIT TARGET, Native's approved app icon.\nCreate a fun ARCADE edition. Translate the same interlocking diamond-loop symbol into beautifully designed chunky pixel art. Keep its recognizable two linked loops, clear open centers and diagonal interlock, with square stepped pixel corners replacing the rounded bends. Deliberate, disciplined pixel grid, charming retro arcade identity. Keep the same scale, placement, rounded tile and transparent outer margins as the original.\nDARK arcade colorway: deep aubergine-purple tile, bold electric-lime left loop and candy-pink right loop. Small offset darker pixel edges can add a tiny 16-bit print effect. Bright, friendly and playful.\nOne icon only, no text, letters, game characters, decorative confetti, glow, texture or extra symbols. The entire background tile is opaque and consistent in color. Genuine transparency only outside its rounded-square silhouette."
+    }
+  ],
+  "status": "Archived image-generation explorations. These prompts document the design process, not the final PNG exports.",
+  "final_assets": {
+    "renderer": "Apple Icon Composer ictool",
+    "sources": [
+      "../Glass.icon",
+      "../Nightly.icon",
+      "../composer/*.icon"
+    ],
+    "note": "Final PNGs are rendered from the editable Composer projects, then padded to 1024 pixels. Glass uses the compiled native AppIcon.icon asset at runtime; its PNGs are Settings previews."
+  }
+}
