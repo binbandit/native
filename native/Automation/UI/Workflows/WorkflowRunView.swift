@@ -37,7 +37,7 @@ struct WorkflowRunView: View {
                     }
                 }
             }
-            .frame(maxWidth: AutomationMetrics.columnWidth, alignment: .leading)
+            .frame(maxWidth: DS.Size.contentColumn, alignment: .leading)
             .padding(.horizontal, DS.Space.xxl)
             .padding(.vertical, DS.Space.xxl)
             .frame(maxWidth: .infinity)

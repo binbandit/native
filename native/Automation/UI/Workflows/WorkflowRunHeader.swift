@@ -27,7 +27,7 @@ struct WorkflowRunHeader: View {
                         .font(.dsTitle3)
                         .foregroundStyle(.dsTextPrimary)
                         .lineLimit(2)
-                    Text([run.definition.name, run.cwd.lastPathComponent, run.startedText(now: now), run.cost.map(GoalUsage.costText)].compactMap(\.self).joined(separator: " · "))
+                    Text([run.definition.name, run.cwd.lastPathComponent, run.startedText(now: now), run.cost.map { DSFormat.cost($0) }].compactMap(\.self).joined(separator: " · "))
                         .monospacedDigit()
                         .font(.dsCaption)
                     .foregroundStyle(.dsTextTertiary)
@@ -86,7 +86,7 @@ struct WorkflowRunHeader: View {
         case .cancelled:
             return "Stopped. Finished steps keep their sessions and results."
         case .succeeded:
-            return run.endedAt.map { "Finished in \(GoalUsage.durationText($0.timeIntervalSince(run.createdAt), style: .full))." }
+            return run.endedAt.map { "Finished in \(DSFormat.duration($0.timeIntervalSince(run.createdAt)))." }
         case .running, .awaitingApproval, .blocked:
             return nil
         }
@@ -96,8 +96,7 @@ struct WorkflowRunHeader: View {
         switch run.phase {
         case .running: .accent
         case .paused, .cancelled: .neutral
-        // Badge has no attention tone yet; warning is the nearest amber.
-        case .awaitingApproval, .blocked: .warning
+        case .awaitingApproval, .blocked: .attention
         case .halted: run.hasFailedStep ? .danger : .warning
         case .succeeded: .success
         }

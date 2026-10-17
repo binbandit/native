@@ -18,7 +18,7 @@ struct WorkflowsPage<Transcript: View>: View {
                     }
                     library
                 }
-                .frame(maxWidth: AutomationMetrics.columnWidth, alignment: .leading)
+                .frame(maxWidth: DS.Size.contentColumn, alignment: .leading)
                 .padding(DS.Space.xxl)
                 .frame(maxWidth: .infinity)
             }

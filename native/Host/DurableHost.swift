@@ -37,9 +37,7 @@ final class DurableHost {
     private static let enabledKey = "NativeHostEnabled"
     private static let seenActivityKey = "NativeHostSeenActivity"
 
-    var isEnabled: Bool {
-        UserDefaults.standard.bool(forKey: Self.enabledKey)
-    }
+    private(set) var isEnabled = UserDefaults.standard.bool(forKey: DurableHost.enabledKey)
 
     var location: HostLocation {
         registrar.location
@@ -55,6 +53,7 @@ final class DurableHost {
 
     func setEnabled(_ enabled: Bool) async {
         UserDefaults.standard.set(enabled, forKey: Self.enabledKey)
+        isEnabled = enabled
         if enabled {
             register()
             connect()

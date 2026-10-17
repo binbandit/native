@@ -113,8 +113,7 @@ struct GoalSection: View {
     private func tone(_ presentation: GoalPresentation) -> Badge.Tone {
         switch goal.status {
         case .active: .accent
-        // Badge has no attention tone yet; warning is the nearest amber.
-        case .blocked: .warning
+        case .blocked: .attention
         case .limited: .warning
         case .complete: .success
         case .paused: .neutral

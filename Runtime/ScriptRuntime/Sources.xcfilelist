@@ -1,0 +1,13 @@
+# Everything the runtime is built from: Xcode's "Embed Script Runtime" phase reruns when any of these
+# change and is skipped otherwise. Add new source files here.
+$(SRCROOT)/Runtime/ScriptRuntime/Cargo.toml
+$(SRCROOT)/Runtime/ScriptRuntime/Cargo.lock
+$(SRCROOT)/Runtime/ScriptRuntime/build.rs
+$(SRCROOT)/Runtime/ScriptRuntime/Info.plist
+$(SRCROOT)/Runtime/ScriptRuntime/ScriptRuntime.entitlements
+$(SRCROOT)/Runtime/ScriptRuntime/src/main.rs
+$(SRCROOT)/Runtime/ScriptRuntime/src/protocol.rs
+$(SRCROOT)/Runtime/ScriptRuntime/src/bridge.rs
+$(SRCROOT)/Runtime/ScriptRuntime/src/runtime.rs
+$(SRCROOT)/Runtime/ScriptRuntime/src/probe.rs
+$(SRCROOT)/Runtime/ScriptRuntime/src/bootstrap.js

@@ -24,16 +24,22 @@ struct GoalPresentation: Hashable {
         let isBudgetSpent = goal.exhaustedBudget(at: now, iterationCeiling: GoalLoop.safetyIterationCeiling) != nil
         glyph = AutomationGlyph(goal: goal.status, isWorking: isWorking)
         // A cost of nothing against no cost budget says nothing, so it's left out.
-        let cost = usage.budget.maxCost == nil && (usage.cost ?? 0) == 0 ? nil : usage.costText
-        self.usage = [usage.iterationsText + (usage.budget.maxIterations == nil ? " iterations" : ""), usage.elapsedText, cost]
-            .compactMap(\.self)
-            .joined(separator: " · ")
+        let iterations = usage.budget.maxIterations.map { "\(usage.iterations)/\($0)" } ?? "\(usage.iterations) iterations"
+        // Whole minutes past the first: the bar refreshes every 15 seconds, and ticking seconds are noise.
+        let elapsed = DSFormat.duration(usage.elapsed < 60 ? usage.elapsed : (usage.elapsed / 60).rounded(.down) * 60)
+            + (usage.budget.maxDuration.map { "/" + DSFormat.duration($0) } ?? "")
+        // A cost of nothing against no cost budget says nothing, so it's left out.
+        let cost: String? = switch (usage.cost, usage.budget.maxCost) {
+        case (let spent?, let limit?): "\(DSFormat.cost(spent))/\(DSFormat.cost(limit))"
+        case (nil, let limit?): "–/\(DSFormat.cost(limit))"
+        case (let spent?, nil) where spent > 0: DSFormat.cost(spent)
+        default: nil
+        }
+        self.usage = [iterations, elapsed, cost].compactMap(\.self).joined(separator: " · ")
         fraction = usage.fractionUsed
-        usageHelp = [
-            "Iterations: \(usage.iterationsText)",
-            "active time: \(usage.elapsedText)",
-            usage.costText.map { "spend: \($0)" },
-        ].compactMap(\.self).joined(separator: ", ")
+        usageHelp = ["Iterations: \(iterations)", "active time: \(elapsed)", cost.map { "spend: \($0)" }]
+            .compactMap(\.self)
+            .joined(separator: ", ")
         let reason = goal.lastReason
         switch goal.status {
         case .active:
