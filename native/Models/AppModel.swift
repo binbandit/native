@@ -1,6 +1,7 @@
 import ACP
 import AppKit
 import Observation
+import os
 
 /// The app's state, composed of focused parts: the agents plugins provide (`AgentRuntimes`), the
 /// projects (`Projects`), the sessions agents list for them (`SessionCatalog`, ordered by
@@ -52,6 +53,7 @@ final class AppModel {
     @ObservationIgnored private var isStarted = false
 
     private static let lastUsedAgentKey = "defaultAgent"
+    private static let logger = Logger(subsystem: "Native", category: "Sessions")
 
     init(plugins: PluginRegistry = PluginRegistry(), titles: SessionTitles = SessionTitles()) {
         // Writing to an agent that just exited must surface as an error, not kill the app.
@@ -331,6 +333,7 @@ final class AppModel {
             }
             return
         }
+        Self.logger.debug("\(runtime.agent.displayName, privacy: .public) lists \(fetched.count) sessions in \(project.path, privacy: .public)")
         guard projects.project(project.id) != nil, runtimes[agent] === runtime else { return }
         // Only the user's own sessions are listed: subagents belong under their parent, and task
         // sessions to whatever started them.
