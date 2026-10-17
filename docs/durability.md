@@ -101,9 +101,28 @@ and the host lives in `~/Library/Application Support/Native/Channels/<channel>/`
 channel from its own embedded plist, so app and host always agree. Release builds use no channel and
 the standard location. Host state (socket, database, lock) never lives in the repo tree.
 
-The host is also opt-in during Phase 1, per channel (Window › Durable Sessions › Turn On, stored as
-`NativeHostEnabled.<channel>`), so building Native doesn't register a launchd job for every agent
-that runs it. Turn Off unregisters it, which stops the host and its agents.
+Development hosts must not pile up, so they differ from release in three ways:
+
+- **No login items.** A Debug build runs its host as a launchd job for the current login session
+  only (`LaunchdSessionJob`: `launchctl bootstrap gui/<uid>` with a plist written to the channel
+  folder). launchd still restarts it after a crash, but it never appears under Login Items, never
+  triggers "Background Items Added", and is gone after logout. Only release builds use
+  `SMAppService`. A Debug build that finds a login item left by an earlier build of itself
+  unregisters it, from the owning app as `SMAppService` requires.
+- **Idle exit.** A development host stops after 15 minutes with no clients and nothing running.
+- **Opt-in per channel.** The host starts only after Window › Durable Sessions › Turn On
+  (`NativeHostEnabled.<channel>`). Turn Off stops the host and its agents and unloads the job.
+
+`scripts/dev/clean-host-channels.sh` lists every development host job (labels ending in
+`.host.<10 hex digits>`) and channel folder. With `--apply` it stops and disables the ones no running
+Native uses (or not named with `--keep <channel>`), and deletes their folders. It never touches a
+release host or `~/Library/Application Support/Native` itself.
+
+What Brayden may see while agents develop: a "Native" entry under System Settings › General › Login
+Items & Extensions › Allow in the Background, left by a Debug build from before session-only jobs
+(two existed on 2026-10-18 and were removed with the script). The script stops and disables those
+jobs, so they can't run again; the entry itself goes once that build runs again (it unregisters
+its old item) or its DerivedData folder is deleted, or it can be switched off in that list.
 
 ## Transport and security
 
@@ -343,6 +362,10 @@ a "Durable Sessions (Preview)" window, opt-in. Nothing else in the app changes.
 orchestration MCP server (so delegated tasks survive the app quitting), titles, notifications with
 actions, limit resumes, goals and workflows, keep-awake, the menu bar extra, unread state. The
 plugin registry's runtime side follows (the plugin API moves into a package both sides import).
+Engines come to the host as packages, never as app-target files: goals, workflows and automations
+link `Packages/Automation` (Foundation-only, Codable, pure state plus a `due(at:)` planner), and the
+host implements its `AutomationHost` (start a workflow run, prepare a worktree, poll GitHub), with
+runs persisted in the host's store.
 
 **Phase 4: other machines.** Exec, files and the change feed in the protocol; the SSH transport and
 remote provisioning; the paired network transport and the iPad app.
