@@ -23,9 +23,9 @@ struct BubbleMessageView: View {
             .overlay(alignment: side == .trailing ? .bottomLeading : .bottomTrailing) {
                 timestamp
             }
-            .onHover { isHovering = $0 }
+            .onHover { isHovering = $0; FileHandle.standardError.write(Data("LABSHOVER \($0)\n".utf8)) }
             // Simultaneous, so clicks still select text.
-            .simultaneousGesture(TapGesture().onEnded { showsTime.toggle() })
+            .simultaneousGesture(TapGesture().onEnded { showsTime.toggle(); FileHandle.standardError.write(Data("LABSTAP\n".utf8)) })
             .animation(.dsQuick, value: isHovering || showsTime)
     }
 
