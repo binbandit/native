@@ -16,7 +16,7 @@ nonisolated struct GitProjectFileIndex: ProjectFileIndex {
     @concurrent
     func changedFiles() async -> Set<String> {
         // Porcelain -z: "XY path\0", with a rename's original path as an extra entry.
-        guard let output = try? Self.git(["status", "--porcelain", "-z"], in: root) else { return [] }
+        guard let output = try? Self.git(["status", "--porcelain", "-z", "--untracked-files=all"], in: root) else { return [] }
         return Set(output.split(separator: "\0").compactMap { entry in
             entry.count > 3 ? String(entry.dropFirst(3)) : nil
         })
