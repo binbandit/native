@@ -27,8 +27,9 @@ struct AppTaskRowAccessory: View {
 
     /// Tasks running in the project folder share its checkout, so every one of them would repeat
     /// the same branch state; only a task with its own worktree says something about itself.
+    /// Symlinks are resolved because agents may record `/private/tmp/x` for a project at `/tmp/x`.
     private func hasOwnCheckout(_ folder: URL) -> Bool {
         guard let project = model.projects.project(summary.project) else { return false }
-        return folder.folderPath != project.url.folderPath
+        return folder.resolvingSymlinksInPath().folderPath != project.url.resolvingSymlinksInPath().folderPath
     }
 }

@@ -223,7 +223,7 @@ struct AgentDefinition: Identifiable, Hashable, Sendable {
             executable: manifest.command,
             arguments: manifest.args,
             environment: environment,
-            workingDirectory: FileManager.default.homeDirectoryForCurrentUser
+            workingDirectory: URL.homeDirectory
         )
     }
 

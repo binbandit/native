@@ -18,7 +18,7 @@ struct KeepAwakeStatusItem: StatusBarItem {
 private struct KeepAwakeSegment: View {
     let controller: KeepAwakeController
 
-    @Environment(\.openSettings) private var openSettings
+    @Environment(SettingsPresentation.self) private var settings
 
     private var description: String {
         controller.status.description(keepsDisplayOn: controller.keepsDisplayOn)
@@ -29,7 +29,7 @@ private struct KeepAwakeSegment: View {
             KeepAwakeMenuItems(controller: controller)
             Divider()
             Button("Keep-Awake Settings…") {
-                openSettings()
+                settings.open(.keepAwake)
             }
         } label: {
             HStack(spacing: DS.Space.xs) {

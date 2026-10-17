@@ -182,6 +182,8 @@ struct ModelPicker: View {
 
     /// The search field keeps focus: arrows move through the list and Return picks.
     private func handleKey(_ press: KeyPress) -> KeyPress.Result {
+        // Shortcuts with ⌘, ⌥ or ⌃ belong to the app and the text field.
+        guard press.modifiers.isDisjoint(with: [.command, .option, .control]) else { return .ignored }
         let matches = matches
         switch press.key {
         case .downArrow:
