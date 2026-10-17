@@ -17,7 +17,7 @@ final class SystemClockEvents {
         }
     }
 
-    deinit {
+    isolated deinit {
         for (center, observer) in observers {
             center.removeObserver(observer)
         }

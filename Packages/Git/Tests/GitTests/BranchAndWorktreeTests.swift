@@ -10,7 +10,7 @@ struct BranchAndWorktreeTests {
     private func repositoryWithRemote() async throws -> (TestRepository, URL) {
         let test = try await TestRepository.make()
         let remote = test.folder.deletingLastPathComponent().appending(path: "origin.git", directoryHint: .isDirectory)
-        try await test.git("init", "--quiet", "--bare", remote.path(percentEncoded: false))
+        try await test.git("init", "--quiet", "--bare", "--initial-branch=main", remote.path(percentEncoded: false))
         try await test.git("remote", "add", "origin", remote.path(percentEncoded: false))
         return (test, remote)
     }
@@ -45,9 +45,37 @@ struct BranchAndWorktreeTests {
         let repository = try await test.repository
 
         await #expect(throws: GitError.noRemote) { try await repository.push() }
+        #expect(GitError.noRemote.failure == .noRemote)
 
         try await test.git("checkout", "--quiet", "--detach")
         await #expect(throws: GitError.detachedHead) { try await repository.push() }
+    }
+
+    @Test func rejectedPushIsClassifiedAndPullRecovers() async throws {
+        let (test, remote) = try await repositoryWithRemote()
+        defer { test.remove() }
+        let repository = try await test.repository
+        try await repository.push()
+        // Someone else pushes from another clone.
+        let other = test.folder.deletingLastPathComponent().appending(path: "other", directoryHint: .isDirectory)
+        try await test.git("clone", "--quiet", remote.path(percentEncoded: false), other.path(percentEncoded: false))
+        try Data("theirs\n".utf8).write(to: other.appending(path: "theirs.txt"))
+        try await test.git("add", ".", in: other)
+        try await test.git("commit", "--quiet", "-m", "Theirs", in: other)
+        try await test.git("push", "--quiet", in: other)
+        try test.write("mine.txt", "mine\n")
+        try await repository.commit(message: "Mine", files: try await repository.status().changes)
+        try await test.git("config", "pull.rebase", "true")
+
+        await #expect {
+            try await repository.push()
+        } throws: { error in
+            (error as? GitError)?.failure == .pushRejected
+        }
+
+        try await repository.pull()
+        try await repository.push()
+        #expect(try await repository.status().branch.ahead == 0)
     }
 
     @Test func listsLocalAndRemoteBranches() async throws {
@@ -116,6 +144,12 @@ struct BranchAndWorktreeTests {
         #expect(parent == (try await test.git("rev-parse", "agent-work")))
         // The main checkout's index and files are untouched.
         #expect(try await repository.status().isClean)
+
+        // Restoring brings the worktree and its uncommitted work back.
+        let restored = try await repository.restoreWorktree(at: worktree.path, branch: "agent-work", from: checkpoint)
+        #expect(restored.branch == "agent-work")
+        #expect(try String(contentsOf: worktree.path.appending(path: "draft.txt"), encoding: .utf8) == "unsaved\n")
+        #expect(try String(contentsOf: worktree.path.appending(path: "README.md"), encoding: .utf8) == "# Edited\n")
     }
 
     @Test func removingAWorktreeWhoseFolderIsGonePrunesIt() async throws {

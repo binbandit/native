@@ -68,18 +68,13 @@ extension Repository {
         }
     }
 
-    /// The paths that exist in `commit` or the index; all of them when `paths` is `nil`.
+    /// The requested paths that exist in `commit` or the index; `["."]`, everything, for `nil`.
     private func known(_ paths: [String]?, in commit: String) async throws(GitError) -> [String] {
-        var input = Data()
-        for path in paths ?? [] {
-            input.append(contentsOf: path.utf8)
-            input.append(0)
-        }
-        let pathspec = paths == nil ? [] : ["--pathspec-from-file=-", "--pathspec-file-nul"]
-        let inCommit = try await run(["--literal-pathspecs", "ls-tree", "-r", "-z", "--name-only", "--full-tree", commit] + pathspec, readOnly: true, input: paths == nil ? nil : input)
-        let inIndex = try await run(["--literal-pathspecs", "ls-files", "-z", "--full-name"] + pathspec, readOnly: true, input: paths == nil ? nil : input)
-        let names = (inCommit.text + inIndex.text).split(separator: "\0").map(String.init)
-        return Array(Set(names)).sorted()
+        guard let paths else { return ["."] }
+        let inCommit = try await run(["ls-tree", "-r", "-z", "--name-only", "--full-tree", commit], readOnly: true)
+        let inIndex = try await run(["ls-files", "-z", "--full-name"], readOnly: true)
+        let names = Set((inCommit.text + "\0" + inIndex.text).split(separator: "\0").map(String.init))
+        return paths.filter(names.contains)
     }
 
     /// A commit by Native's own identity, unsigned: checkpoints are bookkeeping, and shouldn't fail

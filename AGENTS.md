@@ -72,6 +72,22 @@ use your own DerivedData path, launch with `open -n`, automate only your own pro
 Design references: Factory (`~/developer/reverse/factory`, runnable rebuild `factory-clone`) and
 Conductor (`~/developer/reverse/conductor`, runnable rebuild `rebuild`). Read-only.
 
+## Saving work (Kite)
+
+The repo saves progress continuously with [Kite](https://github.com/binbandit/kite) (`kt`), so no
+work is lost. Many agents share one working tree, so:
+
+- **Save with a bare `kt`** from the repo root at every milestone (something compiles, a feature
+  works, before a risky change), and at least every 20–30 minutes of work. It snapshots the whole
+  tree, other agents' work included; that's intended.
+- **Never stage** (`git add`) and never run `git commit`, `reset`, `checkout`, `restore`, `stash`,
+  `switch` or `rebase`. A staged file would make everyone else's `kt` save only that file.
+- **Never run `kt land`, `kt undo`, `kt go`, `kt publish`, `kt pr` or `kt ship`.** They rewrite or
+  move shared history. The coordinator lands saves into conventional commits at integration points.
+- If `kt` fails on `.git/index.lock`, another agent is saving: wait a few seconds and retry, up to
+  three times. Never delete the lock file.
+- Nothing secret and no third-party assets in the tree (research screenshots are gitignored).
+
 ## Pull requests
 
 - One concern per PR, small enough to review in one sitting. Refactors and behavior changes go in

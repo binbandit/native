@@ -88,4 +88,24 @@ extension Repository {
         try await main.run(arguments + ["--", worktree.path.path(percentEncoded: false)])
         return saved
     }
+
+    /// Brings back a removed worktree: checks `branch` out at `path` again and, with a
+    /// checkpoint from `removeWorktree`, restores the uncommitted work it held.
+    @discardableResult
+    public func restoreWorktree(at path: URL, branch: String, from checkpoint: Checkpoint?) async throws(GitError) -> Worktree {
+        do {
+            try FileManager.default.createDirectory(at: path.deletingLastPathComponent(), withIntermediateDirectories: true)
+        } catch {
+            throw .launchFailed("Couldn't create \(path.deletingLastPathComponent().path(percentEncoded: false)): \(error.localizedDescription)")
+        }
+        try await run(["worktree", "add", "--", path.path(percentEncoded: false), branch])
+        let restored = Self.canonicalPath(path)
+        guard let worktree = try await worktrees().first(where: { Self.canonicalPath($0.path) == restored }) else {
+            throw .unexpectedOutput("The restored worktree at \(path.path(percentEncoded: false)) isn't listed.")
+        }
+        if let checkpoint, let repository = try await git.repository(at: worktree.path) {
+            try await repository.restore(checkpoint)
+        }
+        return worktree
+    }
 }

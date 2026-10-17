@@ -34,6 +34,12 @@ extension Repository {
         try await run(["push", "--set-upstream", remote, "HEAD:refs/heads/\(branch)"])
     }
 
+    /// Pulls the current branch's upstream, merging or rebasing as the user's `pull.rebase` says.
+    /// Like `push()`, this talks to the network, so it only runs when the user asks.
+    public func pull() async throws(GitError) {
+        try await run(["pull", "--no-edit"])
+    }
+
     /// Where a branch without an upstream should go: its push remote, the default push remote,
     /// `origin`, or the only remote there is.
     private func pushRemote(for branch: String) async throws(GitError) -> String {

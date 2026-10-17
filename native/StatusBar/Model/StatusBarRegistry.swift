@@ -35,6 +35,11 @@ final class StatusBarRegistry {
             .sorted { $0.order < $1.order }
     }
 
+    /// Every item, hidden ones included, in the order the bar shows them: leading, then trailing.
+    var orderedItems: [AnyStatusBarItem] {
+        items.sorted { ($0.placement == .leading ? 0 : 1, $0.order) < ($1.placement == .leading ? 0 : 1, $1.order) }
+    }
+
     func isVisible(_ id: String) -> Bool {
         !hiddenIDs.contains(id)
     }

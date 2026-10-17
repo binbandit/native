@@ -16,6 +16,8 @@ struct CreatePullRequestSheet: View {
     @State private var defaultBase: String?
     @State private var isDraft = false
     @State private var existing: PullRequestSummary?
+    /// Set when a pull request can't be opened from here at all, which the sheet explains instead.
+    @State private var blocker: GitHubSetupView.Problem?
     @State private var isCreating = false
     @State private var created: URL?
     @State private var error: GitHubError?
@@ -34,12 +36,15 @@ struct CreatePullRequestSheet: View {
             Group {
                 if let created {
                     CreatedPullRequestView(url: created, onCopy: { model.copy(created.absoluteString) }, onDone: { dismiss() })
+                } else if let blocker {
+                    GitHubSetupView(problem: blocker) { await load() }
+                        .frame(minHeight: CreatePullRequestLayout.descriptionHeight * 1.5)
                 } else {
                     form
                 }
             }
             .padding(DS.Space.xl)
-            if created == nil {
+            if created == nil, blocker == nil {
                 SeparatorLine()
                 footer
             }
@@ -139,15 +144,27 @@ struct CreatePullRequestSheet: View {
     // MARK: - Actions
 
     private func load() async {
-        base = request.base ?? ""
-        focus = .title
+        if base.isEmpty { base = request.base ?? "" }
         if title.isEmpty, let subject = Self.firstSubject(of: request.commits) {
             title = subject
         }
-        async let defaultBase = model.defaultBranch(in: request.directory)
-        async let existing = model.openPullRequest(for: request.branch)
-        self.defaultBase = await defaultBase
-        self.existing = await existing
+        focus = .title
+        do {
+            defaultBase = try await model.repository(of: request.directory).defaultBranch
+            blocker = nil
+        } catch .notInstalled {
+            blocker = .notInstalled
+        } catch .notAuthenticated {
+            blocker = .notAuthenticated
+        } catch .notARepository(let message) {
+            blocker = .failed(.notARepository(message))
+        } catch {
+            // Offline and the like: let the user write, and say why when they press Create.
+            blocker = nil
+        }
+        if blocker == nil {
+            existing = await model.openPullRequest(for: request.branch)
+        }
     }
 
     private func create() async {

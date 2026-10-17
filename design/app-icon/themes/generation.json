@@ -82,6 +82,6 @@
       "../Nightly.icon",
       "../composer/*.icon"
     ],
-    "note": "Final PNGs are rendered from the editable Composer projects, then padded to 1024 pixels. Glass uses the compiled native AppIcon.icon asset at runtime; its PNGs are Settings previews."
+    "note": "Original is the compiled native AppIcon.icon asset and follows macOS Default, Dark, Clear and Tinted appearances. Other themes are Dock image overrides with light/dark artwork. Glass PNGs and Glass.icon remain archived design explorations."
   }
 }

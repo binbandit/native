@@ -12,6 +12,8 @@ struct GitHubSetupView: View {
     }
 
     let problem: Problem
+    /// What "Check Again" does; refreshing the pull request list unless given.
+    var retry: (() async -> Void)?
 
     @Environment(GitHubModel.self) private var model
     @Environment(\.openURL) private var openURL
@@ -24,7 +26,9 @@ struct GitHubSetupView: View {
                 }
                 if let action = primaryAction {
                     Button(model.isRefreshing ? "Checking…" : action) {
-                        Task { await model.refresh(rereadEnvironment: true) }
+                        Task {
+                            if let retry { await retry() } else { await model.refresh(rereadEnvironment: true) }
+                        }
                     }
                     .buttonStyle(.ds(.primary, size: .medium))
                     .disabled(model.isRefreshing)
@@ -90,7 +94,7 @@ struct GitHubSetupView: View {
     private var primaryAction: String? {
         switch problem {
         case .notInstalled, .notAuthenticated: "Check Again"
-        case .failed(.rateLimited): nil
+        case .failed(.rateLimited), .failed(.notARepository): nil
         case .failed: "Try Now"
         }
     }

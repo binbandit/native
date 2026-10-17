@@ -21,10 +21,17 @@ struct PullRequestsHeader: View {
                             .foregroundStyle(.dsTextTertiary)
                     }
                 }
-                IconButton("Refresh", systemImage: "arrow.clockwise") {
-                    Task { await model.refresh(rereadEnvironment: model.availability != nil && model.inbox == nil) }
+                if model.isRefreshing {
+                    DotGridLoader(pattern: .waiting)
+                        .foregroundStyle(.dsTextSecondary)
+                        .frame(width: DS.Size.navIcon, height: DS.Size.navIcon)
+                        .frame(width: DS.Size.controlXS, height: DS.Size.controlXS)
+                        .accessibilityLabel("Refreshing")
+                } else {
+                    IconButton("Refresh", systemImage: "arrow.clockwise") {
+                        Task { await model.refresh() }
+                    }
                 }
-                .disabled(model.isRefreshing)
             }
 
             HStack(spacing: DS.Space.md) {
