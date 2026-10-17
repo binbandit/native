@@ -101,9 +101,9 @@ and the host lives in `~/Library/Application Support/Native/Channels/<channel>/`
 channel from its own embedded plist, so app and host always agree. Release builds use no channel and
 the standard location. Host state (socket, database, lock) never lives in the repo tree.
 
-The host is also opt-in during Phase 1 (`defaults write <bundle id> NativeHostEnabled -bool YES`, or
-the switch in the Durable Sessions window), so building Native doesn't register a launchd job for
-every agent that runs it. Unregister with the same switch.
+The host is also opt-in during Phase 1, per channel (Window › Durable Sessions › Turn On, stored as
+`NativeHostEnabled.<channel>`), so building Native doesn't register a launchd job for every agent
+that runs it. Turn Off unregisters it, which stops the host and its agents.
 
 ## Transport and security
 
