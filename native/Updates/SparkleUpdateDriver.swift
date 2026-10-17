@@ -118,7 +118,9 @@ extension SparkleUpdateDriver: SPUUserDriver {
         show(.checking)
     }
 
-    func showUpdateFound(with appcastItem: SUAppcastItem, state: SPUUserUpdateState, reply: @escaping (SPUUserUpdateChoice) -> Void) {
+    func showUpdateFound(
+        with appcastItem: SUAppcastItem, state: SPUUserUpdateState, reply: @escaping (SPUUserUpdateChoice) -> Void
+    ) {
         let release = makeRelease(appcastItem)
         self.release = release
         switch state.stage {
@@ -140,7 +142,8 @@ extension SparkleUpdateDriver: SPUUserDriver {
 
     func showUpdateReleaseNotes(with downloadData: SPUDownloadData) {
         if let notes = String(data: downloadData.data, encoding: .utf8) {
-            controller.driverDidLoadNotes(Self.readableNotes(notes, format: downloadData.mimeType == "text/html" ? "html" : "markdown"))
+            controller.driverDidLoadNotes(
+                Self.readableNotes(notes, format: downloadData.mimeType == "text/html" ? "html" : "markdown"))
         }
     }
 
@@ -199,7 +202,9 @@ extension SparkleUpdateDriver: SPUUserDriver {
         }
     }
 
-    func showInstallingUpdate(withApplicationTerminated applicationTerminated: Bool, retryTerminatingApplication: @escaping () -> Void) {
+    func showInstallingUpdate(
+        withApplicationTerminated applicationTerminated: Bool, retryTerminatingApplication: @escaping () -> Void
+    ) {
         if let release {
             show(.installing(release))
         }
@@ -243,7 +248,10 @@ extension SparkleUpdateDriver: SPUUpdaterDelegate {
     }
 
     /// A silent automatic download finished: the update installs at quit, or now on request.
-    func updater(_ updater: SPUUpdater, willInstallUpdateOnQuit item: SUAppcastItem, immediateInstallationBlock immediateInstallHandler: @escaping () -> Void) -> Bool {
+    func updater(
+        _ updater: SPUUpdater, willInstallUpdateOnQuit item: SUAppcastItem,
+        immediateInstallationBlock immediateInstallHandler: @escaping () -> Void
+    ) -> Bool {
         let release = makeRelease(item)
         self.release = release
         immediateInstall = immediateInstallHandler
@@ -263,7 +271,8 @@ extension SparkleUpdateDriver: SPUUpdaterDelegate {
 
     private static func isBenign(_ error: NSError) -> Bool {
         error.domain == SUSparkleErrorDomain
-            && [Int(SUError.noUpdateError.rawValue), Int(SUError.installationCanceledError.rawValue)].contains(error.code)
+            && [Int(SUError.noUpdateError.rawValue), Int(SUError.installationCanceledError.rawValue)].contains(
+                error.code)
     }
 }
 
@@ -283,14 +292,17 @@ extension UpdateFailure {
             return
         }
         guard error.domain == SUSparkleErrorDomain, let code = SUError(rawValue: OSStatus(error.code)) else {
-            self.init(kind: .other, title: "The update didn't finish", recovery: still, suggestion: "Try again in a moment.", details: details)
+            self.init(
+                kind: .other, title: "The update didn't finish", recovery: still, suggestion: "Try again in a moment.",
+                details: details)
             return
         }
         switch code {
         case .appcastParseError, .appcastError, .resumeAppcastError:
             self.init(
                 kind: .feed, title: "The update feed couldn't be read", recovery: still,
-                suggestion: "Try again later. If it keeps happening, download the latest release from GitHub.", details: details)
+                suggestion: "Try again later. If it keeps happening, download the latest release from GitHub.",
+                details: details)
         case .downloadError, .temporaryDirectoryError:
             self.init(
                 kind: .download, title: "The download didn't finish", recovery: "\(still) Nothing was installed.",
@@ -312,7 +324,9 @@ extension UpdateFailure {
                 suggestion: "Quit and reopen Native, then try again. If it keeps happening, download it from GitHub.",
                 details: details)
         default:
-            self.init(kind: .other, title: "The update didn't finish", recovery: still, suggestion: "Try again in a moment.", details: details)
+            self.init(
+                kind: .other, title: "The update didn't finish", recovery: still, suggestion: "Try again in a moment.",
+                details: details)
         }
     }
 }
