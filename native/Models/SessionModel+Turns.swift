@@ -94,8 +94,15 @@ extension SessionModel {
         queue.update(id, text: text)
     }
 
-    func removeQueued(_ id: QueuedPrompt.ID) {
-        queue.remove(id)
+    /// Removes a queued message; with an undo manager, ⌘Z puts it back in its place.
+    func removeQueued(_ id: QueuedPrompt.ID, undoManager: UndoManager? = nil) {
+        guard let index = queue.index(of: id), let item = queue.remove(id) else { return }
+        undoManager?.registerUndo(withTarget: self) { session in
+            MainActor.assumeIsolated {
+                session.queue.restore(item, at: index)
+            }
+        }
+        undoManager?.setActionName("Delete Queued Message")
     }
 
     /// Sends a queued message now instead of waiting: into the running turn, or as the next prompt
