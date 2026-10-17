@@ -25,8 +25,11 @@ struct ContextBarLayout {
 
         var merged: [Piece] = []
         for segment in segments {
-            if let last = merged.last, last.kind == segment.kind, natural(segment.tokens) < mergeBelow || natural(last.tokens) < mergeBelow {
-                merged[merged.count - 1] = Piece(kind: last.kind, names: last.names + [segment.name], tokens: last.tokens + segment.tokens, width: 0)
+            if let last = merged.last, last.kind == segment.kind,
+                natural(segment.tokens) < mergeBelow || natural(last.tokens) < mergeBelow
+            {
+                merged[merged.count - 1] = Piece(
+                    kind: last.kind, names: last.names + [segment.name], tokens: last.tokens + segment.tokens, width: 0)
             } else {
                 merged.append(Piece(kind: segment.kind, names: [segment.name], tokens: segment.tokens, width: 0))
             }

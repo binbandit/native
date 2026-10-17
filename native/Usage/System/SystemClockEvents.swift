@@ -11,9 +11,12 @@ final class SystemClockEvents {
             (.default, .NSSystemClockDidChange),
         ]
         observers = sources.map { center, name in
-            (center, center.addObserver(forName: name, object: nil, queue: .main) { _ in
-                MainActor.assumeIsolated { action() }
-            })
+            (
+                center,
+                center.addObserver(forName: name, object: nil, queue: .main) { _ in
+                    MainActor.assumeIsolated { action() }
+                }
+            )
         }
     }
 

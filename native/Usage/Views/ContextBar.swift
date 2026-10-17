@@ -8,7 +8,9 @@ struct ContextBar: View {
 
     var body: some View {
         GeometryReader { proxy in
-            let layout = ContextBarLayout(composition, width: proxy.size.width, gap: DS.Space.xxs, minWidth: DS.Space.xxs, mergeBelow: DS.Space.xs)
+            let layout = ContextBarLayout(
+                composition, width: proxy.size.width, gap: DS.Space.xxs, minWidth: DS.Space.xxs, mergeBelow: DS.Space.xs
+            )
             HStack(spacing: DS.Space.xxs) {
                 ForEach(layout.pieces) { piece in
                     Rectangle()
@@ -22,7 +24,8 @@ struct ContextBar: View {
         .clipShape(.rect(cornerRadius: DS.Radius.small, style: .continuous))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Context window")
-        .accessibilityValue("\(DSFormat.tokens(composition.usedTokens)) of \(DSFormat.tokens(composition.windowTokens)) tokens in use")
+        .accessibilityValue(
+            "\(DSFormat.tokens(composition.usedTokens)) of \(DSFormat.tokens(composition.windowTokens)) tokens in use")
     }
 
     private func tooltip(for piece: ContextBarLayout.Piece) -> String {

@@ -14,7 +14,8 @@ struct UsageLimitsFileStore: UsageLimitsStore {
 
     static var defaultURL: URL {
         let folder = Bundle.main.bundleIdentifier ?? "Native"
-        return URL.applicationSupportDirectory.appending(path: folder, directoryHint: .isDirectory).appending(path: "usage-limits.json")
+        return URL.applicationSupportDirectory.appending(path: folder, directoryHint: .isDirectory).appending(
+            path: "usage-limits.json")
     }
 
     init(url: URL = Self.defaultURL) {
@@ -34,7 +35,8 @@ struct UsageLimitsFileStore: UsageLimitsStore {
 
     func save(_ snapshot: UsageLimitsSnapshot) {
         do {
-            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(
+                at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
             try JSONEncoder().encode(snapshot).write(to: url, options: .atomic)
         } catch {
             Logger(subsystem: "Native", category: "Usage").error("Couldn't save usage limits: \(error)")

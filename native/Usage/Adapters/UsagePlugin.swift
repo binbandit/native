@@ -8,7 +8,8 @@ struct UsagePlugin: NativePlugin {
     let manifest = PluginManifest(
         id: "usage",
         name: "Usage",
-        description: "Tells you when an agent's usage limit is close or reached, picks stopped sessions back up when it resets, and breaks down what fills each session's context."
+        description:
+            "Tells you when an agent's usage limit is close or reached, picks stopped sessions back up when it resets, and breaks down what fills each session's context."
     )
 
     let limits: UsageLimits
@@ -29,7 +30,9 @@ struct UsagePlugin: NativePlugin {
                 limits.record(info, agent: session.agent, agentName: session.agentName)
             }
         case .turnFailed(let session, let prompt, let error, let items):
-            limits.recordFailure(FailedTurn(prompt: prompt, items: items), error: error, agent: session.agent, agentName: session.agentName, stopping: LimitTarget(session))
+            limits.recordFailure(
+                FailedTurn(prompt: prompt, items: items), error: error, agent: session.agent,
+                agentName: session.agentName, stopping: LimitTarget(session))
         case .turnEnded(let session, let reason):
             if let target = LimitTarget(session) {
                 limits.recordTurnEnded(reason, in: target)
