@@ -32,10 +32,13 @@ struct RouteAssignmentEditor: View {
                 .fixedSize()
                 .disabled(isRemoved)
                 .help("Who builds it")
-                Button(isRemoved ? "Restore" : "Remove", systemImage: isRemoved ? "arrow.uturn.backward" : "trash", action: toggleRemoved)
-                    .labelStyle(.iconOnly)
-                    .buttonStyle(.ds(.ghost))
-                    .help(isRemoved ? "Keep this assignment" : "Leave this assignment out of the route")
+                Button(
+                    isRemoved ? "Restore" : "Remove", systemImage: isRemoved ? "arrow.uturn.backward" : "trash",
+                    action: toggleRemoved
+                )
+                .labelStyle(.iconOnly)
+                .buttonStyle(.ds(.ghost))
+                .help(isRemoved ? "Keep this assignment" : "Leave this assignment out of the route")
             }
             if !isRemoved {
                 TextField("Brief", text: $assignment.brief, axis: .vertical)
@@ -67,7 +70,10 @@ struct RouteAssignmentEditor: View {
         }
         .padding(DS.Space.lg)
         .background(.dsSurface, in: .rect(cornerRadius: DS.Radius.card))
-        .overlay { RoundedRectangle(cornerRadius: DS.Radius.card).strokeBorder(isChanged ? .dsInfo.opacity(0.5) : .dsSeparator, lineWidth: 1) }
+        .overlay {
+            RoundedRectangle(cornerRadius: DS.Radius.card).strokeBorder(
+                isChanged ? .dsInfo.opacity(0.5) : .dsSeparator, lineWidth: 1)
+        }
         .opacity(isRemoved ? 0.6 : 1)
     }
 }

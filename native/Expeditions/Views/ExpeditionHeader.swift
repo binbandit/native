@@ -113,11 +113,15 @@ struct ExpeditionHeader: View {
         switch expedition.phase {
         case .paused:
             let finishing = expedition.assignments.count { $0.status.isActive }
-            return finishing > 0 ? "Paused. The running turn finishes; nothing new starts until you resume." : "Paused. Nothing new starts until you resume."
+            return finishing > 0
+                ? "Paused. The running turn finishes; nothing new starts until you resume."
+                : "Paused. Nothing new starts until you resume."
         case .stopped:
             return "Stopped. Sessions, reports and the worktree stay; nothing more runs."
         case .complete:
-            return expedition.endedAt.map { "Finished in \(DSFormat.duration($0.timeIntervalSince(expedition.createdAt))), \(DSFormat.duration(expedition.activeTime(at: now))) of it working." }
+            return expedition.endedAt.map {
+                "Finished in \(DSFormat.duration($0.timeIntervalSince(expedition.createdAt))), \(DSFormat.duration(expedition.activeTime(at: now))) of it working."
+            }
         case .limited:
             return "A provider limit stopped the crew. Work picks back up at the reset on its own."
         case .planning, .reviewing, .underway, .needsYou, .debriefing:

@@ -1,6 +1,7 @@
 import Foundation
 import NativeAutomation
 import Testing
+
 @testable import NativeExpeditions
 
 @Suite struct ExpeditionTests {
@@ -58,7 +59,9 @@ import Testing
         #expect(draft.body.hasPrefix("## Summary\nCSV export is in."))
         #expect(draft.cwd == URL(filePath: "/worktrees/app/csv"))
 
-        driver.send(.pullRequestOpened(WorkflowPullRequestResult(url: try #require(URL(string: "https://github.com/o/r/pull/7")), number: 7)))
+        driver.send(
+            .pullRequestOpened(
+                WorkflowPullRequestResult(url: try #require(URL(string: "https://github.com/o/r/pull/7")), number: 7)))
         #expect(driver.expedition.phase == .complete)
         #expect(driver.expedition.cost.map { abs($0 - 0.9) < 0.0001 } == true)
         #expect(driver.expedition.log.last?.text == "The expedition is complete.")
@@ -112,7 +115,8 @@ import Testing
         driver.end(.assignment("writer"), done)
         driver.end(.assignment("stream"), done)
         let reviewer = try #require(driver.tasks[.checkpoint("leg-1")])
-        driver.end(.checkpoint("leg-1"), "Quoting breaks on newlines (Export.swift:12).\nVERDICT: changes - newline quoting")
+        driver.end(
+            .checkpoint("leg-1"), "Quoting breaks on newlines (Export.swift:12).\nVERDICT: changes - newline quoting")
 
         // The fix continues the last builder's session instead of starting a new one.
         let fix = try #require(driver.expedition.assignments(in: "leg-1").last)

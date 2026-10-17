@@ -60,7 +60,9 @@ final class ExpeditionCenter {
     func handle(_ event: SessionEvent) async {
         switch event {
         case .turnEnded(let context, let stopReason):
-            runner.turnEnded(task: host?.task(forClient: context.clientID) ?? context.clientID, outcome: TurnOutcome(stopReason: stopReason, error: nil))
+            runner.turnEnded(
+                task: host?.task(forClient: context.clientID) ?? context.clientID,
+                outcome: TurnOutcome(stopReason: stopReason, error: nil))
         case .turnFailed(let context, _, let error, _):
             let outcome = describeLimit?(error).map(TurnOutcome.limited) ?? .failure(error.localizedDescription)
             runner.turnEnded(task: host?.task(forClient: context.clientID) ?? context.clientID, outcome: outcome)

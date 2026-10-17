@@ -30,11 +30,14 @@ public nonisolated struct CheckpointVerdict: Codable, Hashable, Sendable {
 
     public init?(parsing reply: String) {
         var lines = reply.components(separatedBy: .newlines)
-        let candidates = lines.indices.reversed().filter { !lines[$0].trimmingCharacters(in: .whitespaces).isEmpty }.prefix(Self.searchedLineCount)
+        let candidates = lines.indices.reversed().filter { !lines[$0].trimmingCharacters(in: .whitespaces).isEmpty }
+            .prefix(Self.searchedLineCount)
         for index in candidates {
             if let (outcome, note) = Self.parseLine(lines[index]) {
                 lines.remove(at: index)
-                self.init(outcome: outcome, note: note, findings: lines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines))
+                self.init(
+                    outcome: outcome, note: note,
+                    findings: lines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines))
                 return
             }
         }
@@ -45,7 +48,10 @@ public nonisolated struct CheckpointVerdict: Codable, Hashable, Sendable {
         let text = line.trimmingCharacters(in: decoration).lowercased()
         guard text.hasPrefix("verdict") else { return nil }
         let rest = Substring(text.dropFirst("verdict".count)).drop { $0.unicodeScalars.allSatisfy(separators.contains) }
-        let outcomes: [(String, Outcome)] = [("pass", .pass), ("passed", .pass), ("changes", .changes), ("changes needed", .changes), ("fail", .changes), ("failed", .changes)]
+        let outcomes: [(String, Outcome)] = [
+            ("pass", .pass), ("passed", .pass), ("changes", .changes), ("changes needed", .changes), ("fail", .changes),
+            ("failed", .changes),
+        ]
         // Longest first, so "passed" isn't read as "pass" followed by "ed".
         for (word, outcome) in outcomes.sorted(by: { $0.0.count > $1.0.count }) where rest.hasPrefix(word) {
             let after = rest.dropFirst(word.count)

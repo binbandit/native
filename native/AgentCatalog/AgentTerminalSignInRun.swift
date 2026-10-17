@@ -39,7 +39,9 @@ final class AgentTerminalSignInRun {
     var outcome: Outcome {
         switch status {
         case .running: lastOutcome = .running
-        case .exited: lastOutcome = exitCode == 0 ? .succeeded : .failed(code: exitCode)
+        // A quick exit is still a success when the command says so ("already signed in").
+        case .exited, .failedToStart(.exitedImmediately):
+            lastOutcome = exitCode == 0 ? .succeeded : .failed(code: exitCode)
         case .failedToStart: lastOutcome = .failed(code: exitCode)
         case nil: break
         }

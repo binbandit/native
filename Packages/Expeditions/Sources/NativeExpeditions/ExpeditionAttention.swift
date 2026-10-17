@@ -63,10 +63,16 @@ extension Expedition {
             items.append(ExpeditionAttention(kind: .stopped(.lead, lead.status), since: lead.waitingSince ?? updatedAt))
         }
         for run in assignments where run.status.isStopped {
-            items.append(ExpeditionAttention(kind: .stopped(.assignment(run.id), run.status), since: run.waitingSince ?? run.endedAt ?? updatedAt))
+            items.append(
+                ExpeditionAttention(
+                    kind: .stopped(.assignment(run.id), run.status), since: run.waitingSince ?? run.endedAt ?? updatedAt
+                ))
         }
         for run in checkpoints where run.status.isStopped {
-            items.append(ExpeditionAttention(kind: .stopped(.checkpoint(run.leg), run.status), since: run.waitingSince ?? run.endedAt ?? updatedAt))
+            items.append(
+                ExpeditionAttention(
+                    kind: .stopped(.checkpoint(run.leg), run.status),
+                    since: run.waitingSince ?? run.endedAt ?? updatedAt))
         }
         if approvedAt != nil, !legsSettled, let reason = exhaustedBudget(at: updatedAt) {
             items.append(ExpeditionAttention(kind: .budgetReached(reason), since: updatedAt))

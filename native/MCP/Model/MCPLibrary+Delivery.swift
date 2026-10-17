@@ -39,9 +39,12 @@ extension MCPLibrary {
             default: true
             }
         }
-        return own.map(MCPSessionEntry.agent)
+        let all =
+            own.map(MCPSessionEntry.agent)
             + managed.map { MCPSessionEntry.managed($0.server, $0.outcome) }
             + (host?.mcpPluginServers(for: session) ?? []).map(MCPSessionEntry.plugin)
+        // What the session actually has first; what's turned off or left out after.
+        return all.filter(\.isActive) + all.filter { !$0.isActive }
     }
 }
 

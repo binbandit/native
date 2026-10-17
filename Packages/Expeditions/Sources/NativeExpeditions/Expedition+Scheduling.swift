@@ -6,7 +6,9 @@ extension Expedition {
     /// to the parallel limit; its checkpoint once they're all done; the debrief once every leg is.
     /// Later legs wait for the current one, and nothing new goes out while the expedition is held.
     mutating func advance(at now: Date) -> [ExpeditionEffect] {
-        guard approvedAt != nil, !isStopped, endedAt == nil, pendingRouteChange == nil, base != nil, let route else { return [] }
+        guard approvedAt != nil, !isStopped, endedAt == nil, pendingRouteChange == nil, base != nil, let route else {
+            return []
+        }
         if legsSettled {
             return isPaused ? [] : beginDebrief(at: now)
         }
@@ -16,9 +18,11 @@ extension Expedition {
             guard let checkpoint = checkpointIndex(leg.id), !checkpoints[checkpoint].status.isFinished else { continue }
             var effects: [ExpeditionEffect] = []
             var active = assignments.count { $0.status.isActive }
-            for index in assignments.indices where assignments[index].leg == leg.id && assignments[index].status == .waiting {
+            for index in assignments.indices
+            where assignments[index].leg == leg.id && assignments[index].status == .waiting {
                 guard active < settings.maxParallel else { break }
-                guard assignments[index].assignment.after.allSatisfy({ assignment($0)?.status.isFinished ?? true }) else { continue }
+                guard assignments[index].assignment.after.allSatisfy({ assignment($0)?.status.isFinished ?? true })
+                else { continue }
                 effects += begin(index, at: now)
                 active += 1
             }
@@ -57,9 +61,12 @@ extension Expedition {
         assignments[index].startedAt = now
         assignments[index].endedAt = nil
         assignments[index].waitingSince = nil
-        let objective = run.isFix ? leg(run.leg).map(ExpeditionPrompt.fixGoal) ?? run.assignment.title : ExpeditionPrompt.assignmentGoal(run)
+        let objective =
+            run.isFix
+            ? leg(run.leg).map(ExpeditionPrompt.fixGoal) ?? run.assignment.title : ExpeditionPrompt.assignmentGoal(run)
         assignments[index].goal = GoalLoop(
-            objective: objective, budget: GoalBudget(maxIterations: settings.assignmentIterations), at: now, sessionCost: source?.sessionCost)
+            objective: objective, budget: GoalBudget(maxIterations: settings.assignmentIterations), at: now,
+            sessionCost: source?.sessionCost)
         if let source, let task = source.task {
             // A fix round continues the builder's session, so it keeps what it learned.
             assignments[index].task = task
@@ -81,7 +88,8 @@ extension Expedition {
         guard checkpoints[index].task != nil else {
             return [.createTask(.checkpoint(leg), agent: crew.reviewer, title: "Check “\(legInfo.title)”", cwd: base)]
         }
-        let text = checkpoints[index].rounds == 0
+        let text =
+            checkpoints[index].rounds == 0
             ? ExpeditionPrompt.checkpoint(self, leg: legInfo)
             : ExpeditionPrompt.recheck(self, leg: legInfo, fix: assignments(in: leg).last { $0.isFix })
         return send(text, to: .checkpoint(leg), at: now)
@@ -93,7 +101,8 @@ extension Expedition {
         let leg = checkpoints[index].leg
         guard let legInfo = self.leg(leg) else { return [] }
         let built = assignments(in: leg).filter { $0.status == .succeeded }
-        let source = built.max { ($0.endedAt ?? .distantPast) < ($1.endedAt ?? .distantPast) } ?? assignments(in: leg).last
+        let source =
+            built.max { ($0.endedAt ?? .distantPast) < ($1.endedAt ?? .distantPast) } ?? assignments(in: leg).last
         let round = checkpoints[index].rounds
         let fix = Route.Assignment(
             id: "\(leg)-fix-\(round)",
@@ -122,7 +131,9 @@ extension Expedition {
     }
 
     private mutating func beginDebrief(at now: Date) -> [ExpeditionEffect] {
-        guard debrief == nil, lead.job != .debriefing || !(lead.status.isActive || lead.status.isStopped) else { return [] }
+        guard debrief == nil, lead.job != .debriefing || !(lead.status.isActive || lead.status.isStopped) else {
+            return []
+        }
         note(.progress, "Every leg is done. \(crew.lead.name) is writing the debrief.", slot: .lead, at: now)
         return startLead(.debriefing, at: now)
     }
@@ -142,7 +153,8 @@ extension Expedition {
         switch lead.job {
         case .planning: ExpeditionPrompt.planning(self)
         case .revising: ExpeditionPrompt.revision(feedback: feedback ?? "")
-        case .reviewingLeg(let id): leg(id).map { ExpeditionPrompt.legReview(self, passed: $0) } ?? LimitText.continuation
+        case .reviewingLeg(let id):
+            leg(id).map { ExpeditionPrompt.legReview(self, passed: $0) } ?? LimitText.continuation
         case .debriefing: ExpeditionPrompt.debrief(self)
         case .conversation: LimitText.continuation
         }
@@ -157,7 +169,9 @@ extension Expedition {
         guard let loop = assignments[index].goal, let next = loop.nextPrompt(at: now) else {
             return send(prefix ?? LimitText.continuation, to: slot, at: now)
         }
-        var parts = [prefix, loop.needsKickoff ? ExpeditionPrompt.assignmentBriefing(self, assignments[index]) : nil, next].compactMap(\.self)
+        var parts = [
+            prefix, loop.needsKickoff ? ExpeditionPrompt.assignmentBriefing(self, assignments[index]) : nil, next,
+        ].compactMap(\.self)
         if assignments[index].isFix, loop.needsKickoff {
             parts = [prefix, assignments[index].assignment.brief, next].compactMap(\.self)
         }
@@ -165,7 +179,9 @@ extension Expedition {
     }
 
     /// Marks the seat working and hands its session `text` as the next prompt.
-    mutating func send(_ text: String, to slot: CrewSlot, at now: Date, origin: GoalLoop.Origin = .goal) -> [ExpeditionEffect] {
+    mutating func send(
+        _ text: String, to slot: CrewSlot, at now: Date, origin: GoalLoop.Origin = .goal
+    ) -> [ExpeditionEffect] {
         guard let task = task(of: slot) else { return [] }
         switch slot {
         case .lead:
@@ -217,7 +233,8 @@ extension Expedition {
 
     /// Makes an assignment's goal active again, granting a spent iteration budget once more.
     mutating func resumeGoal(_ slot: CrewSlot, at now: Date) {
-        guard case .assignment(let id) = slot, let index = assignmentIndex(id), var loop = assignments[index].goal else { return }
+        guard case .assignment(let id) = slot, let index = assignmentIndex(id), var loop = assignments[index].goal
+        else { return }
         if !loop.resume(at: now) {
             loop.extendBudget(at: now)
             loop.resume(at: now)

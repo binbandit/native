@@ -18,7 +18,8 @@ struct ExpeditionsPage<Transcript: View>: View {
                     if center.runner.expeditions.isEmpty {
                         EmptyStateView(
                             "No Expeditions Yet", systemImage: ExpeditionsMetrics.symbol,
-                            message: "Give a crew of agents a large objective. One plans a route you review, others build it in a worktree of their own, another checks each leg, and it ends with a pull request."
+                            message:
+                                "Give a crew of agents a large objective. One plans a route you review, others build it in a worktree of their own, another checks each leg, and it ends with a pull request."
                         ) {
                             Button("New Expedition…") { center.isNewExpeditionRequested = true }
                                 .buttonStyle(.ds(.primary, size: .medium))
@@ -47,10 +48,12 @@ struct ExpeditionsPage<Transcript: View>: View {
                 Text("Expeditions")
                     .font(.dsTitle2)
                     .foregroundStyle(.dsTextPrimary)
-                Text("Large objectives a crew of agents works through for hours, from a route you approve. Any agent can lead, build or review.")
-                    .font(.dsBody)
-                    .foregroundStyle(.dsTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                Text(
+                    "Large objectives a crew of agents works through for hours, from a route you approve. Any agent can lead, build or review."
+                )
+                .font(.dsBody)
+                .foregroundStyle(.dsTextSecondary)
+                .fixedSize(horizontal: false, vertical: true)
             }
             .tracking(DS.Tracking.tight)
             Spacer(minLength: DS.Space.lg)

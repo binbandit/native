@@ -35,8 +35,9 @@ public struct SessionState: Sendable {
         case .currentMode(let mode):
             // Agents that report modes this way still list them as the `mode` config option.
             if let index = configOptions.firstIndex(where: { $0.category == "mode" || $0.id == "mode" }),
-               case .select(_, let choices) = configOptions[index].kind,
-               choices.contains(where: { $0.value == mode }) {
+                case .select(_, let choices) = configOptions[index].kind,
+                choices.contains(where: { $0.value == mode })
+            {
                 configOptions[index].kind = .select(currentValue: mode, options: choices)
             }
         case .sessionInfo(let title): self.title = title ?? self.title
@@ -46,11 +47,13 @@ public struct SessionState: Sendable {
             self.usage = usage
         case .subagent(let update): upsertSubagent(update)
         case .sessionMessage(let update):
-            upsertSessionMessage(update.messageId, sender: update.senderSessionId, recipient: update.recipientSessionId) { message in
+            upsertSessionMessage(update.messageId, sender: update.senderSessionId, recipient: update.recipientSessionId)
+            { message in
                 message.content = update.content.applied(to: message.content) ?? []
             }
         case .sessionMessageChunk(let chunk):
-            upsertSessionMessage(chunk.messageId, sender: chunk.senderSessionId, recipient: chunk.recipientSessionId) { message in
+            upsertSessionMessage(chunk.messageId, sender: chunk.senderSessionId, recipient: chunk.recipientSessionId) {
+                message in
                 // Streamed text continues the block it belongs to rather than starting a paragraph.
                 if case .text(let next) = chunk.content, case .text(let previous)? = message.content.last {
                     message.content[message.content.count - 1] = .text(previous + next)
@@ -88,7 +91,9 @@ public struct SessionState: Sendable {
     public mutating func requestPermission(_ request: RequestPermissionRequest, id: RequestID, at date: Date = .now) {
         // The request carries the tool call's latest details, which may be newer than the last update.
         upsertToolCall(request.toolCall, at: openTurn == nil ? nil : date)
-        guard let index = toolCallIndices[request.toolCall.toolCallId], case .toolCall(var call) = items[index] else { return }
+        guard let index = toolCallIndices[request.toolCall.toolCallId], case .toolCall(var call) = items[index] else {
+            return
+        }
         call.permission = PendingPermission(requestID: id, options: request.options)
         items[index] = .toolCall(call)
     }
@@ -133,7 +138,8 @@ public struct SessionState: Sendable {
         case .maxTokens: appendNotice("Stopped: the response hit the token limit.", isError: true)
         case .maxTurnRequests: appendNotice("Stopped: the turn hit its request limit.", isError: true)
         case .refusal: appendNotice("The agent declined to continue.", isError: true)
-        case .error: appendNotice("The turn failed.", isError: true)
+        // `.error` is Native's own, set when the prompt threw: the caller has the error and explains it.
+        case .error: break
         case .other(let reason): appendNotice("Stopped: \(reason).", isError: true)
         }
     }
@@ -149,7 +155,9 @@ public struct SessionState: Sendable {
         case .unsupported(let type): text = "[\(type)]"
         }
         // Continue the last message when it has the same role and, if the agent sends ids, the same id.
-        if case .message(var last) = items.last, last.role == role, chunk.messageId == nil || chunk.messageId == last.messageID {
+        if case .message(var last) = items.last, last.role == role,
+            chunk.messageId == nil || chunk.messageId == last.messageID
+        {
             last.text += text
             last.updatedAt = date ?? last.updatedAt
             items[items.count - 1] = .message(last)
@@ -162,9 +170,10 @@ public struct SessionState: Sendable {
 
     private mutating func upsertSubagent(_ update: SubagentUpdate) {
         // The first announcement fixes the subagent's place in the transcript; later updates patch it.
-        var subagent = subagentIndices[update.sessionId].flatMap { index in
-            if case .subagent(let subagent) = items[index] { subagent } else { nil }
-        } ?? SubagentState(id: update.sessionId)
+        var subagent =
+            subagentIndices[update.sessionId].flatMap { index in
+                if case .subagent(let subagent) = items[index] { subagent } else { nil }
+            } ?? SubagentState(id: update.sessionId)
         subagent.title = update.title.applied(to: subagent.title)
         subagent.description = update.description.applied(to: subagent.description)
         subagent.canCancel = update.canCancel.applied(to: subagent.canCancel) ?? false
@@ -177,10 +186,13 @@ public struct SessionState: Sendable {
         }
     }
 
-    private mutating func upsertSessionMessage(_ messageID: String, sender: SessionID?, recipient: SessionID?, change: (inout SessionMessage) -> Void) {
-        var message = sessionMessageIndices[messageID].flatMap { index in
-            if case .sessionMessage(let message) = items[index] { message } else { nil }
-        } ?? SessionMessage(id: messageID)
+    private mutating func upsertSessionMessage(
+        _ messageID: String, sender: SessionID?, recipient: SessionID?, change: (inout SessionMessage) -> Void
+    ) {
+        var message =
+            sessionMessageIndices[messageID].flatMap { index in
+                if case .sessionMessage(let message) = items[index] { message } else { nil }
+            } ?? SessionMessage(id: messageID)
         // Participants fill in as they become known; a missing one never clears an earlier value.
         message.sender = sender ?? message.sender
         message.recipient = recipient ?? message.recipient

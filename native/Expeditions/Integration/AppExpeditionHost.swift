@@ -3,8 +3,9 @@ import Foundation
 import NativeAutomation
 import NativeExpeditions
 import UserNotifications
+
 #if canImport(AppKit)
-    import AppKit
+import AppKit
 #endif
 
 /// The app as expeditions see it, built on `AppModel`'s public API: crew members are detached task
@@ -42,7 +43,8 @@ final class AppExpeditionHost: ExpeditionHost {
             return session
         }
         guard let model, let record = records[task] else { throw ExpeditionHostError.sessionClosed }
-        let session = try await model.reopenTaskSession(agent: AgentDefinition.ID(rawValue: record.agent), id: record.session, cwd: record.cwd)
+        let session = try await model.reopenTaskSession(
+            agent: AgentDefinition.ID(rawValue: record.agent), id: record.session, cwd: record.cwd)
         reopened[task] = session.clientID
         return session
     }
@@ -55,7 +57,8 @@ final class AppExpeditionHost: ExpeditionHost {
 
     var expeditionAgents: [WorkflowAgent] {
         (model?.agents ?? []).filter(\.isReady).map { runtime in
-            WorkflowAgent(id: runtime.agent.id.rawValue, name: runtime.agent.displayName, symbol: runtime.agent.symbolName)
+            WorkflowAgent(
+                id: runtime.agent.id.rawValue, name: runtime.agent.displayName, symbol: runtime.agent.symbolName)
         }
     }
 
@@ -69,7 +72,8 @@ final class AppExpeditionHost: ExpeditionHost {
         guard let model else { throw ExpeditionHostError.appUnavailable }
         let session = try await model.startTaskSession(agent: AgentDefinition.ID(rawValue: agent), cwd: cwd)
         model.rename(session.key, to: title)
-        records.remember(ExpeditionCrewRecords.Record(agent: agent, session: session.id, cwd: session.cwd), for: session.clientID)
+        records.remember(
+            ExpeditionCrewRecords.Record(agent: agent, session: session.id, cwd: session.cwd), for: session.clientID)
         return session.clientID
     }
 
@@ -87,7 +91,9 @@ final class AppExpeditionHost: ExpeditionHost {
 
     func crewTaskReport(_ task: UUID) -> WorkflowTaskReport? {
         guard let session = session(for: task) else { return nil }
-        return WorkflowTaskReport(reply: session.state.latestReply, cost: session.state.usage?.cost?.amount, needsApproval: session.needsApproval)
+        return WorkflowTaskReport(
+            reply: session.state.latestReply, cost: session.state.usage?.cost?.amount,
+            needsApproval: session.needsApproval)
     }
 
     func openPullRequest(_ draft: WorkflowPullRequestDraft) async throws -> WorkflowPullRequestResult {
@@ -102,7 +108,7 @@ final class AppExpeditionHost: ExpeditionHost {
 
     func notify(_ notice: ExpeditionNotice) {
         #if canImport(AppKit)
-            guard !NSApplication.shared.isActive else { return }
+        guard !NSApplication.shared.isActive else { return }
         #endif
         Task {
             let center = UNUserNotificationCenter.current()
@@ -111,7 +117,8 @@ final class AppExpeditionHost: ExpeditionHost {
             content.title = notice.title
             content.body = notice.body
             content.userInfo = ["expedition": notice.expedition.uuidString]
-            try? await center.add(UNNotificationRequest(identifier: "expedition-\(UUID().uuidString)", content: content, trigger: nil))
+            try? await center.add(
+                UNNotificationRequest(identifier: "expedition-\(UUID().uuidString)", content: content, trigger: nil))
         }
     }
 }
@@ -125,9 +132,12 @@ enum ExpeditionHostError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .appUnavailable: "Native isn't ready to run expeditions yet."
-        case .sessionClosed: "The crew member's session is gone, and Native has no record of it to reopen. Retry starts a fresh one."
-        case .gitUnavailable: "Native couldn't reach the Git feature to make the crew's worktree. Run in the project folder instead."
-        case .pullRequestsUnavailable: "Native couldn't reach the GitHub feature to open the pull request. Copy the debrief and open it by hand."
+        case .sessionClosed:
+            "The crew member's session is gone, and Native has no record of it to reopen. Retry starts a fresh one."
+        case .gitUnavailable:
+            "Native couldn't reach the Git feature to make the crew's worktree. Run in the project folder instead."
+        case .pullRequestsUnavailable:
+            "Native couldn't reach the GitHub feature to open the pull request. Copy the debrief and open it by hand."
         }
     }
 }

@@ -31,7 +31,8 @@ final class ExpeditionCrewRecords {
     func remember(_ record: Record, for task: UUID) {
         records[task] = record
         do {
-            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(
+                at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
             try JSONEncoder().encode(records).write(to: url, options: .atomic)
         } catch {
             logger.error("Couldn't save expedition sessions: \(error)")

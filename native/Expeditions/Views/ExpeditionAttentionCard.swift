@@ -58,7 +58,10 @@ struct ExpeditionAttentionCard: View {
         }
         .padding(DS.Space.lg)
         .background(.dsSurface, in: .rect(cornerRadius: DS.Radius.card))
-        .overlay { RoundedRectangle(cornerRadius: DS.Radius.card).strokeBorder(item.isLimit ? .dsSeparator : .dsAttention.opacity(0.45), lineWidth: 1) }
+        .overlay {
+            RoundedRectangle(cornerRadius: DS.Radius.card).strokeBorder(
+                item.isLimit ? .dsSeparator : .dsAttention.opacity(0.45), lineWidth: 1)
+        }
     }
 
     private var slot: CrewSlot? {

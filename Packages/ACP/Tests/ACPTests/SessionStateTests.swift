@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import ACP
 
 struct SessionStateTests {
@@ -24,11 +25,11 @@ struct SessionStateTests {
         state.endTurn(try Wire.decode(PromptResponse.self, from: Wire.promptResult).stopReason)
 
         guard state.items.count == 5,
-              case .message(let prompt) = state.items[0],
-              case .toolCall(let read) = state.items[1],
-              case .toolCall(let write) = state.items[2],
-              case .toolCall(let bash) = state.items[3],
-              case .message(let reply) = state.items[4]
+            case .message(let prompt) = state.items[0],
+            case .toolCall(let read) = state.items[1],
+            case .toolCall(let write) = state.items[2],
+            case .toolCall(let bash) = state.items[3],
+            case .message(let reply) = state.items[4]
         else {
             Issue.record("Expected prompt, three tool calls and a reply, got \(state.items)")
             return
@@ -37,12 +38,19 @@ struct SessionStateTests {
 
         let calls = [read, write, bash]
         #expect(calls.map(\.id) == [Wire.readToolCallID, Wire.writeToolCallID, Wire.bashToolCallID])
-        #expect(calls.map(\.title) == ["Read /private/tmp/acp-research/sandbox/notes.txt", "Write /private/tmp/acp-research/sandbox/out.txt", "ls"])
+        #expect(
+            calls.map(\.title) == [
+                "Read /private/tmp/acp-research/sandbox/notes.txt", "Write /private/tmp/acp-research/sandbox/out.txt",
+                "ls",
+            ])
         #expect(calls.map(\.kind) == [.read, .edit, .execute])
         #expect(calls.map(\.status) == [.completed, .completed, .completed])
         #expect(calls.allSatisfy { $0.permission == nil })
         // Write's completing update omits content, so the diff survives it.
-        #expect(write.content == [.diff(FileDiff(path: "/private/tmp/acp-research/sandbox/out.txt", oldText: nil, newText: "done\n"))])
+        #expect(
+            write.content == [
+                .diff(FileDiff(path: "/private/tmp/acp-research/sandbox/out.txt", oldText: nil, newText: "done\n"))
+            ])
         #expect(bash.content == [.content(.text("```console\nnotes.txt\nout.txt\n```"))])
 
         #expect(reply.role == .agent)
@@ -81,7 +89,9 @@ struct SessionStateTests {
     }
 
     @Test func aToolCallBetweenChunksSplitsTheMessage() throws {
-        let state = folded([agentChunk("Checking.", id: "m1"), try Wire.update(Wire.readToolCall), agentChunk("Done.", id: "m1")])
+        let state = folded([
+            agentChunk("Checking.", id: "m1"), try Wire.update(Wire.readToolCall), agentChunk("Done.", id: "m1"),
+        ])
         #expect(state.items.count == 3)
         #expect(state.messages.map(\.text) == ["Checking.", "Done."])
     }
@@ -106,7 +116,8 @@ struct SessionStateTests {
     }
 
     @Test func cancelledTurnClosesOpenToolCalls() throws {
-        var state = folded(try [Wire.readToolCall, Wire.readCompletedUpdate, Wire.writeToolCall, Wire.bashToolCall].map(Wire.update))
+        var state = folded(
+            try [Wire.readToolCall, Wire.readCompletedUpdate, Wire.writeToolCall, Wire.bashToolCall].map(Wire.update))
         state.requestPermission(try Wire.params(RequestPermissionRequest.self, of: Wire.permissionRequest), id: .int(0))
 
         state.endTurn(.cancelled)
@@ -122,11 +133,21 @@ struct SessionStateTests {
         }
     }
 
-    @Test(arguments: [StopReason.maxTokens, .maxTurnRequests, .refusal, .error, .other("server_error")])
+    @Test(arguments: [StopReason.maxTokens, .maxTurnRequests, .refusal, .other("server_error")])
     func abnormalStopsAddAnErrorNotice(_ stopReason: StopReason) {
         var state = folded([agentChunk("Partial", id: "m1")])
         state.endTurn(stopReason)
         #expect(state.notices.map(\.isError) == [true])
+    }
+
+    /// A failed prompt is explained by whoever saw the error, so ending the turn only stops its clock.
+    @Test func failedTurnsEndWithoutAGenericNotice() throws {
+        var state = folded([agentChunk("Partial", id: "m1")])
+        state.appendUserMessage("Go")
+        state.endTurn(.error)
+        #expect(state.notices.isEmpty)
+        let clock = try #require(state.turnClocks.values.first { $0.stopReason == .error })
+        #expect(clock.endedAt != nil)
     }
 
     @Test func usageKeepsTheLastKnownCost() throws {

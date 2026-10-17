@@ -26,7 +26,10 @@ public nonisolated enum RouteParser {
     /// names assignments from legs before the ones in `reply`, which its work may come after.
     public static func parse(_ reply: String, builders: [String], earlier: Set<String> = []) -> Result<Route, Problem> {
         guard let json = block(in: reply) else {
-            return .failure(Problem("Your reply has no \(openTag) block. End it with the route as JSON inside \(openTag) and \(closeTag)."))
+            return .failure(
+                Problem(
+                    "Your reply has no \(openTag) block. End it with the route as JSON inside \(openTag) and \(closeTag)."
+                ))
         }
         let wire: WireRoute
         do {
@@ -51,7 +54,9 @@ public nonisolated enum RouteParser {
         return String(text[start...end])
     }
 
-    private static func validate(_ wire: WireRoute, builders: [String], earlier known: Set<String>) -> Result<Route, Problem> {
+    private static func validate(
+        _ wire: WireRoute, builders: [String], earlier known: Set<String>
+    ) -> Result<Route, Problem> {
         var seen = known
         var earlier = known
         var legs: [Route.Leg] = []
@@ -63,9 +68,12 @@ public nonisolated enum RouteParser {
                 guard let title = item.title?.trimmed, !title.isEmpty else {
                     return .failure(Problem("Assignment \(index + 1) in \"\(legTitle)\" has no title."))
                 }
-                var id = slug(item.id?.trimmed ?? "").nilIfEmpty ?? slug(title).nilIfEmpty ?? "assignment-\(seen.count + 1)"
+                var id =
+                    slug(item.id?.trimmed ?? "").nilIfEmpty ?? slug(title).nilIfEmpty ?? "assignment-\(seen.count + 1)"
                 if seen.contains(id) {
-                    guard item.id == nil else { return .failure(Problem("Two assignments have the id \"\(id)\"; give each its own.")) }
+                    guard item.id == nil else {
+                        return .failure(Problem("Two assignments have the id \"\(id)\"; give each its own."))
+                    }
                     id = unique(id, in: seen)
                 }
                 seen.insert(id)
@@ -76,37 +84,51 @@ public nonisolated enum RouteParser {
                 }
                 let doneWhen = (item.doneWhen ?? []).compactMap { $0.trimmed.nilIfEmpty }
                 let brief = item.brief?.trimmed.nilIfEmpty ?? title
-                assignments.append(Route.Assignment(
-                    id: id, title: title, brief: brief, doneWhen: doneWhen.isEmpty ? [wireLeg.outcome?.trimmed.nilIfEmpty ?? legTitle] : doneWhen,
-                    assignee: assignee, after: (item.after ?? []).map { slug($0.trimmed) }))
+                assignments.append(
+                    Route.Assignment(
+                        id: id, title: title, brief: brief,
+                        doneWhen: doneWhen.isEmpty ? [wireLeg.outcome?.trimmed.nilIfEmpty ?? legTitle] : doneWhen,
+                        assignee: assignee, after: (item.after ?? []).map { slug($0.trimmed) }))
             }
             guard !assignments.isEmpty else { continue }
             let inLeg = Set(assignments.map(\.id))
             for assignment in assignments {
                 for dependency in assignment.after where !earlier.contains(dependency) && !inLeg.contains(dependency) {
-                    return .failure(Problem("\"\(assignment.title)\" comes after \"\(dependency)\", which isn't an assignment in its leg or an earlier one."))
+                    return .failure(
+                        Problem(
+                            "\"\(assignment.title)\" comes after \"\(dependency)\", which isn't an assignment in its leg or an earlier one."
+                        ))
                 }
             }
             if let cycle = cycle(in: assignments) {
-                return .failure(Problem("The assignments \(cycle.map { "\"\($0)\"" }.joined(separator: ", ")) wait for each other, so none could start."))
+                return .failure(
+                    Problem(
+                        "The assignments \(cycle.map { "\"\($0)\"" }.joined(separator: ", ")) wait for each other, so none could start."
+                    ))
             }
             earlier.formUnion(inLeg)
-            legs.append(Route.Leg(id: "leg-\(legs.count + 1)", title: legTitle, outcome: wireLeg.outcome?.trimmed ?? legTitle, assignments: assignments))
+            legs.append(
+                Route.Leg(
+                    id: "leg-\(legs.count + 1)", title: legTitle, outcome: wireLeg.outcome?.trimmed ?? legTitle,
+                    assignments: assignments))
         }
         guard !legs.isEmpty else {
-            return .failure(Problem("The route has no assignments. Give it at least one leg with at least one assignment."))
+            return .failure(
+                Problem("The route has no assignments. Give it at least one leg with at least one assignment."))
         }
-        return .success(Route(
-            summary: wire.summary?.trimmed ?? "",
-            legs: legs,
-            questions: (wire.questions ?? []).compactMap { $0.trimmed.nilIfEmpty }.map { Route.Question(text: $0) },
-            assumptions: (wire.assumptions ?? []).compactMap { $0.trimmed.nilIfEmpty }
-        ))
+        return .success(
+            Route(
+                summary: wire.summary?.trimmed ?? "",
+                legs: legs,
+                questions: (wire.questions ?? []).compactMap { $0.trimmed.nilIfEmpty }.map { Route.Question(text: $0) },
+                assumptions: (wire.assumptions ?? []).compactMap { $0.trimmed.nilIfEmpty }
+            ))
     }
 
     /// The first set of assignments in `assignments` that wait on each other within the leg.
     private static func cycle(in assignments: [Route.Assignment]) -> [String]? {
-        var remaining = Dictionary(uniqueKeysWithValues: assignments.map { ($0.id, Set($0.after).intersection(assignments.map(\.id))) })
+        var remaining = Dictionary(
+            uniqueKeysWithValues: assignments.map { ($0.id, Set($0.after).intersection(assignments.map(\.id))) })
         while let free = remaining.first(where: { $0.value.isEmpty })?.key {
             remaining[free] = nil
             for key in remaining.keys {
@@ -118,7 +140,9 @@ public nonisolated enum RouteParser {
 
     static func slug(_ text: String) -> String {
         let allowed = CharacterSet.alphanumerics
-        let words = text.lowercased().unicodeScalars.split { !allowed.contains($0) }.map { String(String.UnicodeScalarView($0)) }
+        let words = text.lowercased().unicodeScalars.split { !allowed.contains($0) }.map {
+            String(String.UnicodeScalarView($0))
+        }
         return words.prefix(6).joined(separator: "-")
     }
 
@@ -142,7 +166,8 @@ public nonisolated enum RouteParser {
     }
 
     private static func path(_ keys: [any CodingKey]) -> String {
-        keys.isEmpty ? "the top level" : keys.map { $0.intValue.map { "[\($0)]" } ?? $0.stringValue }.joined(separator: ".")
+        keys.isEmpty
+            ? "the top level" : keys.map { $0.intValue.map { "[\($0)]" } ?? $0.stringValue }.joined(separator: ".")
     }
 
     // MARK: - Wire shape

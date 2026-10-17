@@ -61,7 +61,7 @@ struct MCPServerDetails: View {
                 info.map { [$0.title ?? $0.name, $0.version].compactMap(\.self).joined(separator: " ") },
                 info.map { "protocol \($0.protocolVersion)" },
                 report.transport.map { $0.displayName },
-                "answered in \(DSFormat.duration(Double(report.duration.components.seconds) + Double(report.duration.components.attoseconds) / 1e18))",
+                answeredIn(report.duration),
             ].compactMap(\.self).joined(separator: " · ")
         )
         .settingsText(.caption)
@@ -162,6 +162,12 @@ struct MCPServerDetails: View {
                     .buttonStyle(.ds(.secondary, size: .medium))
             }
         }
+    }
+
+    /// "answered in 3s", or under a second, which `DSFormat.duration` would round to 0s.
+    private func answeredIn(_ duration: Duration) -> String {
+        duration < .seconds(1)
+            ? "answered in under a second" : "answered in \(DSFormat.duration(Double(duration.components.seconds)))"
     }
 
     private func message(_ text: String) -> some View {

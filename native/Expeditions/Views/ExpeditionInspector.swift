@@ -26,7 +26,10 @@ struct ExpeditionInspector<Transcript: View>: View {
                 } else if let openError {
                     ErrorState("Couldn't open the session", suggestion: openError, layout: .pane)
                 } else if expedition.task(of: slot) == nil {
-                    EmptyStateView("Not Started", systemImage: "circle.dashed", message: "This seat gets its session when its turn comes.") {
+                    EmptyStateView(
+                        "Not Started", systemImage: "circle.dashed",
+                        message: "This seat gets its session when its turn comes."
+                    ) {
                         EmptyView()
                     }
                 } else {
@@ -80,8 +83,10 @@ struct ExpeditionInspector<Transcript: View>: View {
                     .buttonStyle(.ds(.secondary))
             }
             if status.isStopped {
-                Button(status == .interrupted ? "Resume" : "Retry") { send(status == .interrupted ? .resumeSlot(slot) : .retry(slot)) }
-                    .buttonStyle(.ds(.primary))
+                Button(status == .interrupted ? "Resume" : "Retry") {
+                    send(status == .interrupted ? .resumeSlot(slot) : .retry(slot))
+                }
+                .buttonStyle(.ds(.primary))
             }
             if case .assignment(let id) = slot, !status.isActive, !status.isFinished {
                 Menu("Reassign") {
@@ -99,15 +104,22 @@ struct ExpeditionInspector<Transcript: View>: View {
 
     private var messageField: some View {
         HStack(spacing: DS.Space.sm) {
-            TextField(status.isActive ? "Steer \(expedition.agent(of: slot).name)…" : "Message \(expedition.agent(of: slot).name)…", text: $message, axis: .vertical)
-                .textFieldStyle(.roundedBorder)
-                .lineLimit(1...5)
-                .onSubmit(sendMessage)
+            TextField(
+                status.isActive
+                    ? "Steer \(expedition.agent(of: slot).name)…" : "Message \(expedition.agent(of: slot).name)…",
+                text: $message, axis: .vertical
+            )
+            .textFieldStyle(.roundedBorder)
+            .lineLimit(1...5)
+            .onSubmit(sendMessage)
             Button("Send", systemImage: "arrow.up", action: sendMessage)
                 .labelStyle(.iconOnly)
                 .buttonStyle(.ds(.primary))
                 .disabled(message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                .help(status.isActive ? "Steered into the running turn where the agent supports it, queued otherwise" : "Sent as its next prompt")
+                .help(
+                    status.isActive
+                        ? "Steered into the running turn where the agent supports it, queued otherwise"
+                        : "Sent as its next prompt")
         }
     }
 

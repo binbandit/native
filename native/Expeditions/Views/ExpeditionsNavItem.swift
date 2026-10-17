@@ -9,7 +9,10 @@ struct ExpeditionsNavItem: View {
 
     var body: some View {
         let waiting = center.waitingCount
-        SidebarNavItem("Expeditions", systemImage: ExpeditionsMetrics.symbol, isSelected: isSelected, shortcut: "⇧⌘X", action: action) {
+        SidebarNavItem(
+            "Expeditions", systemImage: ExpeditionsMetrics.symbol, isSelected: isSelected, shortcut: "⇧⌘X",
+            action: action
+        ) {
             if waiting > 0 {
                 Text("\(waiting)")
                     .font(.dsMonoMicro)

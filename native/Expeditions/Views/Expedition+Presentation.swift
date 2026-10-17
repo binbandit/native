@@ -82,7 +82,10 @@ extension Expedition {
         guard let route else { return phase == .planning ? "Planning the route" : "No route yet" }
         let count = assignments.filter { !$0.isFix }.count
         let finished = assignments.filter { !$0.isFix && $0.status.isFinished }.count
-        let leg = currentLeg.flatMap { leg in route.legs.firstIndex { $0.id == leg.id } }.map { " · leg \($0 + 1) of \(route.legs.count)" } ?? ""
+        let leg =
+            currentLeg.flatMap { leg in route.legs.firstIndex { $0.id == leg.id } }.map {
+                " · leg \($0 + 1) of \(route.legs.count)"
+            } ?? ""
         return "\(finished) of \(count) assignments\(leg)"
     }
 
