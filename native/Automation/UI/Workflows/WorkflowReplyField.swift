@@ -1,3 +1,4 @@
+import NativeAutomation
 import SwiftUI
 
 /// Answers a step that stopped to ask something, in its own session: the reply goes to the step's

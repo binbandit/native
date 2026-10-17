@@ -1,3 +1,4 @@
+import NativeAutomation
 import SwiftUI
 
 /// One step in a run's timeline, after Factory's mission feature rows: status glyph, title, the

@@ -1,3 +1,4 @@
+import NativeAutomation
 import SwiftUI
 
 /// The workflow picker, bound to the app: runs start in `cwd` (the current project's folder), and

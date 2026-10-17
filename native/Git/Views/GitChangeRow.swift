@@ -72,7 +72,9 @@ struct GitChangeRow: View {
     private var actions: some View {
         HStack(spacing: 0) {
             IconButton("Discard Changes", systemImage: "arrow.uturn.backward", action: onDiscard)
+                .dsHitTarget(DS.Size.controlXS)
             IconButton(stageLabel, systemImage: change.area == .staged ? "minus" : "plus", action: onToggleStaged)
+                .dsHitTarget(DS.Size.controlXS)
         }
     }
 

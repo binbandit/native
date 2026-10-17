@@ -1,5 +1,6 @@
 import ACP
 import Foundation
+import NativeAutomation
 
 /// The app as workflows see it, built on `AppModel`'s public API: step tasks are detached task
 /// sessions (`startTaskSession`), prompted through `submit` like any session.

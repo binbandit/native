@@ -1,4 +1,5 @@
 import Foundation
+import NativeAutomation
 
 /// Goals and workflows as a plugin: it hears every session's turns, which is all the goal loop and
 /// the workflow runner need to drive agents. Keep one instance, and hand its `center` to the views.

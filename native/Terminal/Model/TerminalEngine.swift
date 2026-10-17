@@ -26,12 +26,15 @@ protocol TerminalSurfaceEvents: AnyObject {
 struct TerminalLaunch {
     /// The folder the shell starts in.
     var workingDirectory: URL
-    /// A command to run instead of the user's login shell (`/bin/sh -c`); nil runs the login shell.
+    /// A command to run instead of the user's login shell; nil runs the login shell.
     var command: String?
 }
 
-/// Makes terminals. The Mac's is libghostty running the shell locally; a host-backed engine
-/// (`docs/terminal.md`, "Remote and iPad") would attach to a pty the host owns instead.
+/// Makes and styles terminals. The Mac's engine is libghostty running the shell locally; a
+/// host-backed engine (`docs/terminal.md`, "Remote and iPad") would attach to a pty the host owns.
 protocol TerminalEngine: AnyObject {
-    func makeSurface(id: UUID, launch: TerminalLaunch, events: TerminalSurfaceEvents) -> TerminalSurface?
+    func makeSurface(id: UUID, launch: TerminalLaunch, events: TerminalSurfaceEvents) throws(TerminalStartFailure)
+        -> TerminalSurface
+    /// Restyles every terminal, running ones included.
+    func apply(_ style: TerminalStyle)
 }

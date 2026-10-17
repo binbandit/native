@@ -1,3 +1,4 @@
+import NativeAutomation
 import SwiftUI
 
 /// The composer's goal control: "Goal" to set one, or the goal's status once there is one, filled

@@ -1,3 +1,4 @@
+import NativeAutomation
 import SwiftUI
 
 /// A workflow step waiting at its gate, in the same shape as a tool's permission request: what's

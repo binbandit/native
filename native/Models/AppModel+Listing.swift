@@ -31,9 +31,13 @@ extension AppModel {
     private func refreshSessions(in project: Project, of runtime: AgentRuntime) async {
         guard let connection = runtime.connection, runtime.capabilities?.listSessions == true else { return }
         let agent = runtime.agent.id
-        let fetched: [SessionInfo]
+        var fetched: [SessionInfo] = []
         do {
-            fetched = try await SessionCatalog.fetch(cwd: project.path, from: connection)
+            // The project's own folder, and the folders Native made for its tasks (worktrees).
+            let folders = [project.path] + (await taskWorkspaces?.taskFolders(of: project) ?? []).map(\.folderPath)
+            for folder in Set(folders).sorted() {
+                fetched += try await SessionCatalog.fetch(cwd: folder, from: connection)
+            }
         } catch {
             if !runtime.noteSignInRequired(by: error) {
                 errorMessage = "Couldn't list \(runtime.agent.displayName) sessions in \(project.name): \(error.localizedDescription)"
@@ -46,7 +50,8 @@ extension AppModel {
         // sessions to whatever started them, in this run or an earlier one.
         let topLevel = fetched.filter { info in
             let key = SessionKey(agent: agent, id: info.sessionId)
-            return !taskRecords.contains(key) && (sessions.session(key)?.origin ?? .user) == .user
+            return !taskRecords.contains(key) && !deletedSessions.contains(key)
+                && (sessions.session(key)?.origin ?? .user) == .user
         }
         catalog.replace(agent, in: project.id, with: topLevel) { sessions.session(SessionKey(agent: agent, id: $0)) != nil }
         if let selection, selection.agent == agent, !catalog.contains(selection) {

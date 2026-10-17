@@ -5,8 +5,9 @@ import SwiftUI
 /// down the list. The glyph is the agent's, since the list mixes agents.
 struct HomeTaskRow<ID: Hashable>: View {
     let task: HomeTask<ID>
-    /// The trailing label: the project, or the agent when every task shares a project.
-    let detail: String
+    /// The trailing label: the project, or the agent when every task shares a project. A narrow
+    /// column leaves it out so the title keeps the room.
+    let detail: String?
     let action: () -> Void
 
     @State private var isHovered = false
@@ -24,17 +25,20 @@ struct HomeTaskRow<ID: Hashable>: View {
                     .lineLimit(1)
                     .truncationMode(.tail)
                 Spacer(minLength: DS.Space.md)
-                Text(detail)
-                    .font(.dsBody)
-                    .foregroundStyle(.dsTextTertiary)
-                    .lineLimit(1)
-                    .truncationMode(.middle)
-                    .frame(maxWidth: HomeLayout.taskDetailWidth, alignment: .trailing)
+                if let detail {
+                    Text(detail)
+                        .font(.dsBody)
+                        .foregroundStyle(.dsTextTertiary)
+                        .lineLimit(1)
+                        .truncationMode(.middle)
+                        .frame(maxWidth: HomeLayout.taskDetailWidth, alignment: .trailing)
+                }
                 age
                     .frame(width: HomeLayout.ageColumnWidth, alignment: .trailing)
             }
             .padding(.horizontal, DS.Space.md)
             .padding(.vertical, DS.Space.md + DS.Space.xxs)
+            .frame(minHeight: HomeLayout.minTapHeight)
             .contentShape(.rect)
         }
         .buttonStyle(SidebarRowButtonStyle())

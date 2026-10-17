@@ -1,5 +1,6 @@
 import ACP
 import Foundation
+import NativeAutomation
 
 extension TurnOutcome {
     /// The outcome of a `session/prompt`: its stop reason, or the error it failed with.

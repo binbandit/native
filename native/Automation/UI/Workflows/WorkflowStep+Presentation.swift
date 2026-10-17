@@ -1,4 +1,5 @@
 import Foundation
+import NativeAutomation
 
 extension WorkflowStep.Kind {
     /// What runs a step that isn't an agent's, where an agent's name would go.

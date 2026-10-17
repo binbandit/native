@@ -1,3 +1,4 @@
+import NativeAutomation
 import SwiftUI
 
 /// A task's goal as the composer's top section, after Factory's mission bar: the status in an

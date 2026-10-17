@@ -54,7 +54,7 @@ struct SettingsTextStyle {
     let leading: CGFloat
 
     private init(_ font: Font, size: CGFloat, weight: DSTypography.Weight = .regular, design: DSTypography.Design = .sans, lineHeight: CGFloat, trackingEm: CGFloat = 0) {
-        let metrics = DSTypography.nsFont(size: size, weight: weight, design: design)
+        let metrics = DSTypography.platformFont(size: size, weight: weight, design: design)
         self.font = font
         tracking = trackingEm * size
         leading = max(0, lineHeight - (metrics.ascender - metrics.descender + metrics.leading))

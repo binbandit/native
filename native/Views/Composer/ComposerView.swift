@@ -1,4 +1,5 @@
 import ACP
+import NativeAutomation
 import SwiftUI
 
 /// The prompt composer, after Factory's: one surface pinned under the transcript that stacks queued
@@ -120,6 +121,10 @@ struct ComposerView: View {
             // While commands are listed, they take the place of the sections above the draft.
             if commands.isEmpty {
                 SessionGoalBar(session: session)
+                if let question = session.pendingQuestion {
+                    questionSection(question)
+                        .id(question.id)
+                }
                 if !session.queuedPrompts.isEmpty {
                     QueuedPromptsSection(
                         prompts: session.queuedPrompts,
@@ -166,6 +171,26 @@ struct ComposerView: View {
         .animation(.dsStandard, value: session.queuedPrompts)
     }
 
+    /// The agent's question, docked above the draft. It takes focus when nothing's being typed.
+    @ViewBuilder
+    private func questionSection(_ question: SessionModel.PendingQuestion) -> some View {
+        let request = question.request
+        if let schema = request.requestedSchema, let questionnaire = AgentQuestionnaire(message: request.message, schema: schema) {
+            AgentQuestionSection(
+                questionnaire: questionnaire,
+                takesFocus: session.draft.isEmpty,
+                onSubmit: { content in Task { await session.answerQuestion(content) } },
+                onSkipAll: { Task { await session.declineQuestion() } }
+            )
+        } else {
+            AgentConfirmationRow(
+                message: request.message,
+                onContinue: { Task { await session.answerQuestion([:]) } },
+                onSkip: { Task { await session.declineQuestion() } }
+            )
+        }
+    }
+
     private func inputSection(commands: [ComposerSlashCommand]) -> some View {
         HStack(alignment: .bottom, spacing: 0) {
             ComposerEditor(text: $session.draft, placeholder: placeholder, isFocused: $isFocused) { press in
@@ -180,9 +205,8 @@ struct ComposerView: View {
                         Task { await session.cancel() }
                     }
                 } else if !session.draft.isEmpty {
-                    // Disabled rather than hidden when something blocks sending; the toast says why.
-                    ComposerSendButton { submit(followUp) }
-                        .disabled(!session.canSend && blocker != nil)
+                    // Disabled in place when something blocks sending, saying why.
+                    ComposerSendButton(disabledReason: blocker?.message) { submit(followUp) }
                 }
             }
             .frame(width: DS.Size.composerAction, height: DS.Size.composerAction)
@@ -224,6 +248,7 @@ struct ComposerView: View {
         let text = switch session.phase {
         case .loading: "Waiting for session…"
         case .disconnected: "\(agent) isn’t running"
+        case .prompting where session.pendingQuestion != nil: "\(agent) is waiting for your answer above…"
         case .prompting where session.needsApproval: "\(agent) is waiting for your approval…"
         case .prompting where followUp == .steer && session.supportsSteering: "Steer \(agent)’s current turn…"
         case .prompting: "Queue a follow-up for \(agent)…"
@@ -325,8 +350,9 @@ struct ComposerView: View {
         }
         // The queued message may have gone out while it was being edited; then it's a new message.
         editingQueued = nil
-        if session.canSend {
-            // It starts a turn, which the transcript shows.
+        if session.canSend, !session.queuedPrompts.isEmpty {
+            // After a cancelled turn paused the queue: the draft API sends the waiting messages
+            // first, then this one; each turn shows in the transcript.
             Task { await session.submit(behavior) }
             return
         }

@@ -1,5 +1,6 @@
 import ACP
 import Foundation
+import NativeAutomation
 
 /// Extends Native. Native's own agents and features are plugins too, so every extension point is
 /// exercised by built-in code before anything else depends on it.

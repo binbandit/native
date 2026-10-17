@@ -1,4 +1,5 @@
 import Foundation
+import NativeAutomation
 
 /// Why the app couldn't do something a workflow asked of it.
 enum AutomationHostError: LocalizedError {

@@ -1,4 +1,5 @@
 import Foundation
+import NativeAutomation
 
 /// What the goal bar says about a goal: its label, what it's doing or why it stopped, its spend, and
 /// the one action that moves it on. Kept apart from the view so every state's wording is in one

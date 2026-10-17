@@ -23,6 +23,7 @@ struct GitChangesHeader: View {
             IconButton("Refresh", systemImage: "arrow.clockwise") {
                 Task { await model.refreshNow() }
             }
+            .dsHitTarget(DS.Size.controlXS)
             primaryAction
         }
         .padding(.horizontal, DS.Space.md)

@@ -61,6 +61,7 @@ struct GitCommitPopover: View {
                 IconButton("Draft Message with Apple Intelligence", systemImage: "sparkles") {
                     Task { await draft() }
                 }
+                .dsHitTarget(DS.Size.controlXS)
                 .disabled(selected.isEmpty)
             }
         }

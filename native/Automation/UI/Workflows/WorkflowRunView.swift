@@ -1,3 +1,4 @@
+import NativeAutomation
 import SwiftUI
 
 /// A workflow run: its header, then its steps as a timeline, each opening its own session beside it

@@ -1,3 +1,4 @@
+import NativeAutomation
 import SwiftUI
 
 /// "Workflows" in the sidebar's top half, opening the runs and the library. It counts the runs that

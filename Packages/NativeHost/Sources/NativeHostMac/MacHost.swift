@@ -20,6 +20,8 @@ public enum MacHost {
             bootTime: bootTime(),
             // Tests and `native-host --inherit-environment` pass their own; launchd's is bare.
             environment: { @Sendable in inheritEnvironment ? ProcessInfo.processInfo.environment : await LoginShell.environment() },
+            // A channel means a development build; its host shouldn't outlive interest in it.
+            idleExit: location.channel.isEmpty ? nil : .seconds(15 * 60),
             exit: { status in Darwin.exit(status) }
         )
     }

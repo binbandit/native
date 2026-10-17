@@ -1,6 +1,7 @@
 import Foundation
 import Git
 import GitHub
+import NativeAutomation
 
 /// Connects workflows' "open pull request" step to the Git and GitHub features. The step's gate is
 /// where the user reviews the title and body, so this opens the pull request directly instead of

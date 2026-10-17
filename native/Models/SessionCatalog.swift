@@ -54,6 +54,12 @@ final class SessionCatalog {
         listed[project, default: [:]][agent, default: []].insert(info, at: 0)
     }
 
+    func remove(_ key: SessionKey) {
+        for project in listed.keys {
+            listed[project]?[key.agent]?.removeAll { $0.sessionId == key.id }
+        }
+    }
+
     func remove(agent: AgentDefinition.ID) {
         for project in listed.keys {
             listed[project]?[agent] = nil

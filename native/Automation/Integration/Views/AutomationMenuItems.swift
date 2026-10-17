@@ -1,3 +1,4 @@
+import NativeAutomation
 import SwiftUI
 
 /// The Session menu's goal and workflow items, for `NativeApp` to place in its Session menu. Their

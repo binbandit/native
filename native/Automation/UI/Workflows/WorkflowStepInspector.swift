@@ -1,3 +1,4 @@
+import NativeAutomation
 import SwiftUI
 
 /// A step's own conversation beside its run, like a subagent's: who's running it, where it stands,

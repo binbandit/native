@@ -1,3 +1,4 @@
+import NativeAutomation
 import SwiftUI
 
 /// The status glyph for a goal, a workflow step or a run. Everything maps onto the design system's

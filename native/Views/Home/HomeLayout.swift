@@ -15,6 +15,8 @@ nonisolated enum HomeLayout {
     static let cardHeight: CGFloat = 128
     /// `gap-3`.
     static let cardSpacing = DS.Space.lg
+    /// A card's height as a row, when only one fits across.
+    static let compactCardHeight: CGFloat = 60
     /// `p-4`.
     static let cardPadding = DS.Space.xl
     /// A card's glyph: 14pt in a 16pt slot matches the weight of 16pt line icons.
@@ -41,10 +43,26 @@ nonisolated enum HomeLayout {
     static let sectionSpacing: CGFloat = 40
     /// The hero's distance from the top of the window (`mt-56`), kept while the content fits.
     static let heroTop: CGFloat = 224
-    /// Page gutters (`px-8`).
+    /// Page gutters (`px-8`), and the tighter ones of a narrow column.
     static let gutter = DS.Space.xxxl
+    static let compactGutter = DS.Space.xl
+    /// Below this page width the gutters tighten and task rows drop their trailing label.
+    static let compactWidth: CGFloat = 520
+
+    // MARK: Input
+
+    /// The least height of anything tappable: 44pt where fingers tap it, the controls' own height
+    /// where a pointer clicks it.
+    #if os(iOS)
+    static let minTapHeight: CGFloat = 44
+    #else
+    static let minTapHeight: CGFloat = 0
+    #endif
 
     // MARK: Lists
+
+    /// The Needs You strip's outline, strong enough to read as urgent without shouting.
+    static let attentionOutlineOpacity = 0.45
 
     /// How many recent tasks the page lists; the sidebar has the rest.
     static let recentTaskLimit = 5

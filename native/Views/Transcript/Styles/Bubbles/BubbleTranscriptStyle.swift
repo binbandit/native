@@ -20,6 +20,11 @@ private struct BubbleTranscript: View {
         transcript.session.phase == .loading
     }
 
+    /// The agent is typing, not waiting on the user to answer a request.
+    private var isTyping: Bool {
+        transcript.isWorking && transcript.shortcutTarget == nil
+    }
+
     var body: some View {
         let rows = BubbleRow.plan(transcript.rows)
         LazyVStack(alignment: .leading, spacing: 0) {
@@ -28,7 +33,7 @@ private struct BubbleTranscript: View {
                     .padding(.top, index == 0 ? 0 : BubbleRow.spacing(between: rows[index - 1], and: row))
                     .transition(transition(for: row))
             }
-            if transcript.isWorking {
+            if isTyping {
                 BubbleTypingIndicator()
                     .padding(.top, rows.isEmpty ? 0 : BubbleMetrics.rowSpacing)
                     .transition(reduceMotion ? .opacity : AnyTransition(RevealTransition()))
@@ -36,7 +41,7 @@ private struct BubbleTranscript: View {
         }
         // New rows slide in as they arrive, but not while history replays.
         .animation(isLoading ? nil : .bouncy(duration: 0.4, extraBounce: 0.05), value: rows.map(\.id))
-        .animation(.smooth(duration: 0.25), value: transcript.isWorking)
+        .animation(.smooth(duration: 0.25), value: isTyping)
         .onChange(of: transcript.rows.map(\.id), initial: true) { old, new in
             BubbleClock.shared.note(new, live: old != new && !isLoading)
         }

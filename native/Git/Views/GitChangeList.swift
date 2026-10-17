@@ -50,12 +50,14 @@ struct GitChangeList: View {
                 Spacer(minLength: DS.Space.md)
                 if area != .staged {
                     IconButton("Discard All \(area.title)", systemImage: "arrow.uturn.backward") { onDiscard(changes) }
+                        .dsHitTarget(DS.Size.controlXS)
                 }
                 IconButton(
                     area == .staged ? "Unstage All" : "Stage All", systemImage: area == .staged ? "minus" : "plus"
                 ) {
                     Task { area == .staged ? await model.unstage(changes) : await model.stage(changes) }
                 }
+                .dsHitTarget(DS.Size.controlXS)
             }
             .tracking(DS.Tracking.tight)
             .padding(.leading, DS.Space.md)

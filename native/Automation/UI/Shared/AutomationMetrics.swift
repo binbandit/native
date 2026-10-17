@@ -1,3 +1,4 @@
+import NativeAutomation
 import SwiftUI
 
 /// The few widths goal and workflow screens need that the design system has no token for yet. Kept

@@ -16,6 +16,8 @@ public struct HomeView<AgentID: Hashable, ProjectID: Hashable, TaskID: Hashable>
     /// Recent tasks, most recent first: the chosen project's, or across projects, in which case rows
     /// name their project. The page lists the first few.
     let recentTasks: [HomeTask<TaskID>]
+    /// Tasks waiting on the user, oldest first. They lead the page while there are any.
+    let waitingTasks: [HomeWaitingTask<TaskID>]
     let onNewTask: (AgentID, ProjectID) -> Void
     let onAddProject: () -> Void
     let onSelectTask: (TaskID) -> Void
@@ -25,6 +27,7 @@ public struct HomeView<AgentID: Hashable, ProjectID: Hashable, TaskID: Hashable>
         projects: [HomeProject<ProjectID>],
         project: Binding<ProjectID>,
         recentTasks: [HomeTask<TaskID>],
+        waitingTasks: [HomeWaitingTask<TaskID>] = [],
         onNewTask: @escaping (AgentID, ProjectID) -> Void,
         onAddProject: @escaping () -> Void,
         onSelectTask: @escaping (TaskID) -> Void
@@ -33,6 +36,7 @@ public struct HomeView<AgentID: Hashable, ProjectID: Hashable, TaskID: Hashable>
         self.projects = projects
         _project = project
         self.recentTasks = recentTasks
+        self.waitingTasks = waitingTasks
         self.onNewTask = onNewTask
         self.onAddProject = onAddProject
         self.onSelectTask = onSelectTask
@@ -40,6 +44,11 @@ public struct HomeView<AgentID: Hashable, ProjectID: Hashable, TaskID: Hashable>
 
     public var body: some View {
         HomePage(hasActivity: !recentTasks.isEmpty) {
+            if !waitingTasks.isEmpty {
+                HomeNeedsYou(tasks: waitingTasks, onSelect: onSelectTask)
+                    .padding(.bottom, HomeLayout.sectionSpacing)
+            }
+        } cards: {
             ForEach(agents) { agent in
                 HomeAgentCard(agent: agent, isBusy: isCreatingTask) {
                     onNewTask(agent.id, project)

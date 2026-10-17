@@ -6,7 +6,10 @@ import Terminal
 @Observable
 final class TerminalPreferences {
     var settings: TerminalSettings {
-        didSet { save() }
+        didSet {
+            save()
+            onChange?()
+        }
     }
 
     /// The panel's height, shared by every task so it opens the size the user last left it.
@@ -16,6 +19,8 @@ final class TerminalPreferences {
 
     static let defaultPanelHeight: Double = 260
 
+    /// Called after `settings` changes, so running terminals can restyle.
+    @ObservationIgnored var onChange: (() -> Void)?
     @ObservationIgnored private let defaults: UserDefaults
 
     private enum Key {

@@ -1,3 +1,4 @@
+import NativeAutomation
 import SwiftUI
 
 /// A workflow run in the sidebar: a task row like any other, with the workflow's glyph leading and

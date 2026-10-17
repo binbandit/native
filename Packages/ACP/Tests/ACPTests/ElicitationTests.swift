@@ -40,11 +40,6 @@ struct ElicitationTests {
         #expect(try encoded(.cancel) == #"{"action":"cancel"}"#)
     }
 
-    @Test func clientAdvertisesFormElicitation() {
-        let request = InitializeRequest(clientInfo: Implementation(name: "native", title: nil, version: "1"))
-        #expect(request.clientCapabilities["elicitation"] == .object(["form": .object([:])]))
-    }
-
     private func encoded(_ response: CreateElicitationResponse) throws -> String {
         let encoder = JSONEncoder()
         encoder.outputFormatting = .sortedKeys

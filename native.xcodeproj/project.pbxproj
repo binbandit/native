@@ -16,6 +16,7 @@
 		0000000000000000005C5220 /* ScriptRuntime in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000005C5210 /* ScriptRuntime */; };
 		000000000000000000617320 /* Git in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000617310 /* Git */; };
 		000000000000000000E10320 /* Experiments in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000E10310 /* Experiments */; };
+		00000000000000000A070020 /* NativeAutomation in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000000A070010 /* NativeAutomation */; };
 		00000000000000005E1EA503 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; platformFilters = (macos, ); productRef = 00000000000000005E1EA502 /* Sparkle */; };
 		000000000000000071E10020 /* Terminal in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000071E10010 /* Terminal */; };
 /* End PBXBuildFile section */
@@ -92,6 +93,7 @@
 				000000000000000000000320 /* ACP in Frameworks */,
 				000000000000000000474820 /* GitHub in Frameworks */,
 				000000000000000000000420 /* MCP in Frameworks */,
+				00000000000000000A070020 /* NativeAutomation in Frameworks */,
 				000000000000000000617320 /* Git in Frameworks */,
 				000000000000000000E10320 /* Experiments in Frameworks */,
 				0000000000000000004E4814 /* NativeHostClient in Frameworks */,
@@ -183,6 +185,7 @@
 				000000000000000000000310 /* ACP */,
 				000000000000000000474810 /* GitHub */,
 				000000000000000000000410 /* MCP */,
+				00000000000000000A070010 /* NativeAutomation */,
 				000000000000000000617310 /* Git */,
 				000000000000000000E10310 /* Experiments */,
 				0000000000000000004E4813 /* NativeHostClient */,
@@ -223,6 +226,7 @@
 				000000000000000000000300 /* XCLocalSwiftPackageReference "Packages/ACP" */,
 				000000000000000000474800 /* XCLocalSwiftPackageReference "Packages/GitHub" */,
 				000000000000000000000400 /* XCLocalSwiftPackageReference "Packages/MCPServer" */,
+				00000000000000000A070000 /* XCLocalSwiftPackageReference "Packages/Automation" */,
 				000000000000000000617300 /* XCLocalSwiftPackageReference "Packages/Git" */,
 				000000000000000000E10300 /* XCLocalSwiftPackageReference "Packages/Experiments" */,
 				0000000000000000004E4810 /* XCLocalSwiftPackageReference "Packages/NativeHost" */,
@@ -734,6 +738,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Experiments;
 		};
+		00000000000000000A070000 /* XCLocalSwiftPackageReference "Packages/Automation" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Automation;
+		};
 		000000000000000071E10000 /* XCLocalSwiftPackageReference "Packages/Terminal" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Terminal;
@@ -783,6 +791,10 @@
 		000000000000000000E10310 /* Experiments */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Experiments;
+		};
+		00000000000000000A070010 /* NativeAutomation */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = NativeAutomation;
 		};
 		00000000000000005E1EA502 /* Sparkle */ = {
 			isa = XCSwiftPackageProductDependency;

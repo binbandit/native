@@ -8,6 +8,8 @@ struct HomeRecentTasks<ID: Hashable>: View {
     let totalCount: Int
     let onSelect: (ID) -> Void
 
+    @State private var isCompact = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(spacing: DS.Space.md) {
@@ -24,12 +26,13 @@ struct HomeRecentTasks<ID: Hashable>: View {
             .accessibilityAddTraits(.isHeader)
 
             ForEach(tasks) { task in
-                HomeTaskRow(task: task, detail: spansProjects ? task.projectName ?? task.agentName : task.agentName) {
+                HomeTaskRow(task: task, detail: isCompact ? nil : spansProjects ? task.projectName ?? task.agentName : task.agentName) {
                     onSelect(task.id)
                 }
             }
         }
         .frame(maxWidth: HomeLayout.columnWidth)
+        .onGeometryChange(for: Bool.self) { $0.size.width < HomeLayout.compactWidth } action: { isCompact = $0 }
     }
 
     /// Whether to label rows with their project. When every task is in one project the label

@@ -1,3 +1,4 @@
+import NativeAutomation
 import SwiftUI
 
 /// A step as the picker plans it, before anything runs: its order, what it waits for, the agent it

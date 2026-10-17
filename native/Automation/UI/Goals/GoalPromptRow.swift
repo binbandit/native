@@ -1,3 +1,4 @@
+import NativeAutomation
 import SwiftUI
 
 /// A prompt Native sent to drive a goal, as one quiet line in the transcript instead of a wall of

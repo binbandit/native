@@ -44,6 +44,7 @@ struct GitNoticeBanner: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             if let onDismiss {
                 IconButton("Dismiss", systemImage: "xmark", action: onDismiss)
+                    .dsHitTarget(DS.Size.controlXS)
                     .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + DS.Space.xs }
             }
         }

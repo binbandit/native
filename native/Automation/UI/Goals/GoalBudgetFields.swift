@@ -1,3 +1,4 @@
+import NativeAutomation
 import SwiftUI
 
 /// The three optional limits of a goal's budget, each a short field that's empty for "no limit".

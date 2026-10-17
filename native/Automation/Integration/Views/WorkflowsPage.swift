@@ -1,3 +1,4 @@
+import NativeAutomation
 import SwiftUI
 
 /// The Workflows page: runs, newest first, and the library to start one from. A run opens on its

@@ -171,10 +171,11 @@ struct SchemaDecodingTests {
 
     // MARK: - Encoding
 
-    /// Claude reads the capability at the top level, Cursor under `_meta`.
-    @Test func initializeRequestAdvertisesSubagents() throws {
+    /// Claude reads the subagents capability at the top level, Cursor under `_meta`. Form
+    /// elicitation is what makes Claude Code offer its AskUserQuestion tool.
+    @Test func initializeRequestAdvertisesSubagentsAndFormElicitation() throws {
         let request = InitializeRequest(clientInfo: Implementation(name: "probe", version: "0"))
-        let expected = try Wire.json(#"{"protocolVersion":1,"clientCapabilities":{"subagents":{},"_meta":{"subagents":{}}},"clientInfo":{"name":"probe","version":"0"}}"#)
+        let expected = try Wire.json(#"{"protocolVersion":1,"clientCapabilities":{"subagents":{},"elicitation":{"form":{}},"_meta":{"subagents":{}}},"clientInfo":{"name":"probe","version":"0"}}"#)
         #expect(try Wire.json(encoding: request) == expected)
     }
 
