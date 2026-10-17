@@ -6,11 +6,13 @@ import SwiftUI
 /// is opaque, so the sidebar material shows through everywhere.
 ///
 /// Features extend it through its slots rather than editing it: `navigationItems` adds rows under
-/// "New Session" (e.g. Pull Requests), `accessories` adds views under them (e.g. usage), and
-/// `taskAccessory` supplies each task row's trailing indicator (context usage by default).
+/// "New Session" (e.g. Pull Requests), `accessories` adds views under them (e.g. usage),
+/// `taskAccessory` supplies each task row's trailing indicator (context usage by default), and
+/// `limitStatus` says where each agent stands against its usage limits, for the footer.
 ///
-/// Keys (docs/keyboard.md): ↑ and ↓ move the selection once the list has focus (clicking a row gives
-/// it focus), Return renames the selected session, and it publishes `sidebarReorder` for ⌥⌘↑ / ⌥⌘↓.
+/// Keys (docs/keyboard.md): ↑ and ↓ move the selection once the list has focus, keeping focus here;
+/// clicking a row means "work here", so it focuses that session's composer. Return renames the
+/// selected session, and the sidebar publishes `sidebarReorder` for ⌥⌘↑ / ⌥⌘↓.
 struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View>: View {
     @Environment(AppModel.self) private var model
     @FocusState private var isListFocused: Bool
@@ -18,12 +20,15 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
     private let navigationItems: NavigationItems
     private let accessories: Accessories
     private let taskAccessory: (SessionSummary) -> TaskAccessory
+    private let limitStatus: (AgentDefinition.ID) -> LimitStatus?
 
     init(
+        limitStatus: @escaping (AgentDefinition.ID) -> LimitStatus? = { _ in nil },
         @ViewBuilder navigationItems: () -> NavigationItems,
         @ViewBuilder accessories: () -> Accessories,
         @ViewBuilder taskAccessory: @escaping (SessionSummary) -> TaskAccessory
     ) {
+        self.limitStatus = limitStatus
         self.navigationItems = navigationItems()
         self.accessories = accessories()
         self.taskAccessory = taskAccessory
@@ -65,15 +70,19 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
             }
             .accessibilityLabel("Projects")
 
-            SidebarFooter()
+            SidebarFooter(limitStatus: limitStatus)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .focusedSceneValue(\.sidebarReorder, reorder)
     }
 
+    /// A row was clicked: select it and hand focus to its composer once the session is open.
     private func select(_ key: SessionKey) {
         model.selection = key
-        isListFocused = true
+        Task {
+            await model.loadSession(key)
+            model.session(key)?.focusComposerRequest += 1
+        }
     }
 
     private var reorder: SidebarReorder {
