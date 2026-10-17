@@ -37,6 +37,11 @@ struct SettingsNavigation<Search: View>: View {
         .padding(.trailing, DS.Space.md)
         .frame(maxHeight: .infinity, alignment: .top)
         .background(.dsBackground)
+        .background(alignment: .trailing) {
+            // the reference app's `border-r`, full height, under the toolbar too.
+            SeparatorLine(axis: .vertical)
+                .ignoresSafeArea()
+        }
         .onChange(of: focus.wrappedValue) { _, newValue in
             showsFocusRing = newValue == .navigation && !isFocusingQuietly
             isFocusingQuietly = false

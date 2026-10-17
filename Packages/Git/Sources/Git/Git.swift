@@ -56,6 +56,16 @@ public struct Git: Sendable, Hashable {
         )
     }
 
+    /// Makes `folder` a repository with `git init`, honoring the user's `init.defaultBranch`.
+    @discardableResult
+    public func initializeRepository(at folder: URL) async throws(GitError) -> Repository {
+        try await run(["init", "--quiet"], in: folder)
+        guard let repository = try await repository(at: folder) else {
+            throw .unexpectedOutput("git init didn't create a repository at \(folder.path(percentEncoded: false)).")
+        }
+        return repository
+    }
+
     /// `git --version`, e.g. "2.47.1".
     public func version() async throws(GitError) -> String {
         let output = try await run(["--version"], in: FileManager.default.temporaryDirectory, readOnly: true)
@@ -74,6 +84,7 @@ public struct Git: Sendable, Hashable {
 
     /// Runs git in `directory`. Read-only commands skip optional locks, so a background status
     /// refresh never holds `index.lock` while an agent runs git in the same repository.
+    @discardableResult
     func run(
         _ arguments: [String],
         in directory: URL,

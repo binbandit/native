@@ -74,9 +74,9 @@ final class UserNotificationAlerts: NSObject, LimitAlerting {
     fileprivate func receive(_ payload: Payload, actionIdentifier: String) {
         switch actionIdentifier {
         case Action.resumeAtReset.rawValue:
-            onAction?(.resumeAtReset(payload.agent))
+            onAction?(.resumeAtReset(payload.agentID))
         case Action.snoozeUntilReset.rawValue:
-            onAction?(.snoozeUntilReset(payload.agent))
+            onAction?(.snoozeUntilReset(payload.agentID))
         case UNNotificationDefaultActionIdentifier:
             if let target = payload.target {
                 onAction?(.show(target))
@@ -121,33 +121,42 @@ private enum Category: String, CaseIterable {
 }
 
 /// What a notification carries so its actions can find their provider and session again, even
-/// after a relaunch.
+/// after a relaunch. Plain strings, since the center hands responses over off the main actor.
 private struct Payload: Sendable {
-    let agent: AgentDefinition.ID
-    let target: LimitTarget?
+    let agent: String
+    let session: String?
+    let agentName: String?
+    let title: String?
 
     init(agent: AgentDefinition.ID, target: LimitTarget?) {
-        self.agent = agent
-        self.target = target
+        self.agent = agent.rawValue
+        session = target?.session.rawValue
+        agentName = target?.agentName
+        title = target?.title
     }
 
     nonisolated init?(userInfo: [AnyHashable: Any]) {
         guard let agent = userInfo["agent"] as? String else { return nil }
-        self.agent = AgentDefinition.ID(rawValue: agent)
-        if let session = userInfo["session"] as? String, let agentName = userInfo["agentName"] as? String {
-            target = LimitTarget(agent: self.agent, agentName: agentName, session: SessionID(session), title: userInfo["title"] as? String)
-        } else {
-            target = nil
-        }
+        self.agent = agent
+        session = userInfo["session"] as? String
+        agentName = userInfo["agentName"] as? String
+        title = userInfo["title"] as? String
+    }
+
+    var agentID: AgentDefinition.ID {
+        AgentDefinition.ID(rawValue: agent)
+    }
+
+    var target: LimitTarget? {
+        guard let session, let agentName else { return nil }
+        return LimitTarget(agent: agentID, agentName: agentName, session: SessionID(session), title: title)
     }
 
     var userInfo: [String: String] {
-        var info = ["agent": agent.rawValue]
-        if let target {
-            info["session"] = target.session.rawValue
-            info["agentName"] = target.agentName
-            info["title"] = target.title
-        }
+        var info = ["agent": agent]
+        info["session"] = session
+        info["agentName"] = agentName
+        info["title"] = title
         return info
     }
 }

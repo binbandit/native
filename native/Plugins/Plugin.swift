@@ -70,8 +70,11 @@ struct AgentManifest: Codable, Hashable, Sendable {
     /// Variables to set to the absolute path of a command on the user's PATH, such as
     /// `{"CLAUDE_CODE_EXECUTABLE": "claude"}`, so an adapter runs the user's own CLI.
     var resolveExecutables: [String: String] = [:]
+    /// Where the agent keeps its own MCP configuration ("claude-code", "codex" or "cursor"), so the
+    /// MCP feature can show and import the servers it already loads. Nil when unknown.
+    var mcpConfig: String?
 
-    init(id: String, name: String, symbol: String? = nil, command: String, args: [String] = [], env: [String: String] = [:], resolveExecutables: [String: String] = [:]) {
+    init(id: String, name: String, symbol: String? = nil, command: String, args: [String] = [], env: [String: String] = [:], resolveExecutables: [String: String] = [:], mcpConfig: String? = nil) {
         self.id = id
         self.name = name
         self.symbol = symbol
@@ -79,6 +82,7 @@ struct AgentManifest: Codable, Hashable, Sendable {
         self.args = args
         self.env = env
         self.resolveExecutables = resolveExecutables
+        self.mcpConfig = mcpConfig
     }
 
     init(from decoder: any Decoder) throws {
@@ -90,6 +94,7 @@ struct AgentManifest: Codable, Hashable, Sendable {
         args = try container.decodeIfPresent([String].self, forKey: .args) ?? []
         env = try container.decodeIfPresent([String: String].self, forKey: .env) ?? [:]
         resolveExecutables = try container.decodeIfPresent([String: String].self, forKey: .resolveExecutables) ?? [:]
+        mcpConfig = try container.decodeIfPresent(String.self, forKey: .mcpConfig)
     }
 }
 

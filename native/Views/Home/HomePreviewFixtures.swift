@@ -14,6 +14,22 @@ enum HomePreviewFixtures {
         HomeAgent(id: "cursor", name: "Cursor", symbolName: "cursorarrow.rays", availability: .starting),
     ]
 
+    /// Every way an agent can be unable to start a task.
+    static let troubledAgents: [HomeAgent<String>] = [
+        HomeAgent(
+            id: "claude-code", name: "Claude Code", symbolName: "asterisk",
+            availability: .unavailable("Limit reached · resets 3:05 PM")
+        ),
+        HomeAgent(
+            id: "codex", name: "Codex", symbolName: "terminal",
+            availability: .unavailable("Needs sign-in"), remedy: HomeAgentRemedy("Sign In to Codex") {}
+        ),
+        HomeAgent(
+            id: "cursor", name: "Cursor", symbolName: "cursorarrow.rays",
+            availability: .unavailable("Not installed"), remedy: HomeAgentRemedy("Check Again for Cursor") {}
+        ),
+    ]
+
     static let tasks: [HomeTask<String>] = [
         task("1", "Queue follow-ups while a turn runs", agent: 0, project: 0, minutesAgo: 4),
         task("2", "Fix flaky permission request test", agent: 1, project: 0, minutesAgo: 52),
@@ -34,7 +50,7 @@ enum HomePreviewFixtures {
         )
     }
 
-    static func home(tasks: [HomeTask<String>] = tasks) -> some View {
+    static func home(agents: [HomeAgent<String>] = agents, tasks: [HomeTask<String>] = tasks) -> some View {
         HomeView(
             agents: agents,
             projects: projects,
@@ -65,6 +81,11 @@ enum HomePreviewFixtures {
 
 #Preview("Home, No Tasks") {
     HomePreviewFixtures.home(tasks: [])
+        .frame(width: 900, height: 780)
+}
+
+#Preview("Home, Agents Unavailable") {
+    HomePreviewFixtures.home(agents: HomePreviewFixtures.troubledAgents)
         .frame(width: 900, height: 780)
 }
 

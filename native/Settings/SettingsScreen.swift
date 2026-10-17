@@ -50,7 +50,8 @@ struct SettingsScreen: View {
                     onPick: open
                 )
             }
-            // Removing the sidebar toggle here, rather than on the split view, would drop this width.
+            // Applied after the width, this would make SwiftUI ignore the width.
+            .toolbar(removing: .sidebarToggle)
             .navigationSplitViewColumnWidth(SettingsMetrics.navWidth)
             .toolbar {
                 ToolbarSpacer(.flexible)

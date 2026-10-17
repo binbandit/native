@@ -154,4 +154,23 @@ struct ParsingTests {
         let stderr = "hint: Updates were rejected\nerror: failed to push some refs to 'origin'\nhint: try pulling first\n"
         #expect(GitError.summarize(stderr) == "failed to push some refs to 'origin'")
     }
+
+    @Test(arguments: [
+        ("push", "To github.com:me/repo.git\n ! [rejected]        main -> main (fetch first)\nerror: failed to push some refs\nhint: Updates were rejected because the remote contains work", GitFailure.pushRejected),
+        ("push", " ! [remote rejected] main -> main (protected branch hook declined)", GitFailure.remoteRefused),
+        ("push", "fatal: Could not read from remote repository.\ngit@github.com: Permission denied (publickey).", GitFailure.authenticationFailed),
+        ("push", "fatal: unable to access 'https://github.com/me/repo/': Could not resolve host: github.com", GitFailure.networkUnavailable),
+        ("push", "remote: Invalid username or token.\nfatal: Authentication failed for 'https://github.com/me/repo.git/'", GitFailure.authenticationFailed),
+        ("pull", "hint: You have divergent branches and need to specify how to reconcile them.", GitFailure.divergentBranches),
+        ("pull", "CONFLICT (content): Merge conflict in a.txt\nAutomatic merge failed; fix conflicts and then commit the result.", GitFailure.conflicts),
+        ("pull", "error: Your local changes to the following files would be overwritten by merge:\n\ta.txt", GitFailure.localChangesWouldBeOverwritten),
+        ("commit", "error: Committing is not possible because you have unmerged files.", GitFailure.unmergedFiles),
+        ("commit", "On branch main\nnothing to commit, working tree clean", GitFailure.nothingToCommit),
+        ("commit", "pre-commit: swiftformat found 3 issues", GitFailure.hookFailed),
+        ("add", "fatal: Unable to create '/r/.git/index.lock': File exists.\n\nAnother git process seems to be running", GitFailure.repositoryLocked),
+        ("status", "fatal: something new", GitFailure.other),
+    ])
+    func classifiesFailures(command: String, stderr: String, failure: GitFailure) {
+        #expect(GitError.failed(arguments: [command], status: 1, stderr: stderr).failure == failure)
+    }
 }

@@ -65,6 +65,7 @@ workflow step waiting for approval. They're chosen not to collide with text edit
 | ⌘⇧P | Pull requests | Go |
 | ⌥⌘I | Show or hide the subagent inspector | View |
 | ⌘⇧D | Show or hide the changes inspector (the task's uncommitted git changes) | View |
+| ⌃⌘M | Show the session's MCP servers | View |
 | ⌃⌘A | Keep Mac awake: cycle Off → While agents work → On (View ▸ Keep Mac Awake) | View |
 
 ## Session settings

@@ -18,7 +18,8 @@ enum BuiltInPlugins {
             symbol: "asterisk",
             command: "npx",
             args: ["--yes", "@agentclientprotocol/claude-agent-acp@0.93.0"],
-            resolveExecutables: ["CLAUDE_CODE_EXECUTABLE": "claude"]
+            resolveExecutables: ["CLAUDE_CODE_EXECUTABLE": "claude"],
+            mcpConfig: "claude-code"
         )]
     ))
 
@@ -33,7 +34,8 @@ enum BuiltInPlugins {
             symbol: "terminal",
             command: "npx",
             args: ["--yes", "@agentclientprotocol/codex-acp@2.2.2"],
-            resolveExecutables: ["CODEX_PATH": "codex"]
+            resolveExecutables: ["CODEX_PATH": "codex"],
+            mcpConfig: "codex"
         )]
     ))
 }

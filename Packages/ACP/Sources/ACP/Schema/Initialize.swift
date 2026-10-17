@@ -71,11 +71,19 @@ public struct AgentCapabilities: Decodable, Hashable, Sendable {
     public var listSessions = false
     /// Whether `SteerRequest` works (the `_session/steering` extension).
     public var steering = false
+    /// Which remote MCP transports the agent can connect to; every agent supports stdio servers.
+    public var mcpHTTP = false
+    public var mcpSSE = false
 
     init() {}
 
     private enum CodingKeys: String, CodingKey {
-        case loadSession, promptCapabilities, sessionCapabilities
+        case loadSession, promptCapabilities, sessionCapabilities, mcpCapabilities
+    }
+
+    private struct MCPCapabilities: Decodable {
+        var http: Bool?
+        var sse: Bool?
     }
 
     private struct PromptCapabilities: Decodable {
@@ -92,5 +100,8 @@ public struct AgentCapabilities: Decodable, Hashable, Sendable {
         image = try container.decodeIfPresent(PromptCapabilities.self, forKey: .promptCapabilities)?.image ?? false
         let session = try container.decodeIfPresent(SessionCapabilities.self, forKey: .sessionCapabilities)
         listSessions = session?.list.map { $0 != .null } ?? false
+        let mcp = try container.decodeIfPresent(MCPCapabilities.self, forKey: .mcpCapabilities)
+        mcpHTTP = mcp?.http ?? false
+        mcpSSE = mcp?.sse ?? false
     }
 }

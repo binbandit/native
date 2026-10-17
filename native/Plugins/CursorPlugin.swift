@@ -14,7 +14,8 @@ extension BuiltInPlugins {
             name: "Cursor",
             symbol: "cursorarrow",
             command: "cursor-agent",
-            args: ["acp"]
+            args: ["acp"],
+            mcpConfig: "cursor"
         )]
     ))
 }

@@ -169,13 +169,46 @@ struct RepositoryTests {
         try await repository.stage(["README.md"])
 
         let status = try await repository.status()
-        try await repository.discard(status.changes, movingToTrash: false)
+        let checkpoint = try #require(try await repository.discard(status.changes))
 
         #expect(try await repository.status().isClean)
         #expect(try test.read("tracked.txt") == "original\n")
         #expect(try test.read("README.md") == "# Test\n\nHello.\n")
         #expect(!test.exists("added.txt"))
         #expect(!test.exists("scratch.txt"))
+
+        // The checkpoint brings all of it back, staged state included.
+        try await repository.restore(checkpoint, paths: status.changes.map(\.path))
+        let restored = try await repository.status()
+        #expect(try test.read("tracked.txt") == "edited\n")
+        #expect(try test.read("scratch.txt") == "junk\n")
+        #expect(try test.read("README.md") == "# Staged edit\n")
+        #expect(restored.staged.map(\.path) == ["added.txt", "README.md"])
+        #expect(restored.unstaged.map(\.path) == ["tracked.txt"])
+        #expect(restored.untracked.map(\.path) == ["scratch.txt"])
+    }
+
+    @Test func restoringADiscardedDeletionDeletesAgain() async throws {
+        let test = try await TestRepository.make()
+        defer { test.remove() }
+        let repository = try await test.repository
+        try FileManager.default.removeItem(at: test.folder.appending(path: "README.md"))
+
+        let checkpoint = try #require(try await repository.discard(try await repository.status().changes))
+        #expect(test.exists("README.md"))
+
+        try await repository.restore(checkpoint, paths: ["README.md"])
+        #expect(!test.exists("README.md"))
+        #expect(try await repository.status().unstaged.map(\.kind) == [.deleted])
+    }
+
+    @Test func initializesARepository() async throws {
+        let plain = try TestRepository(name: "fresh")
+        defer { plain.remove() }
+
+        let repository = try await plain.git.initializeRepository(at: plain.folder)
+
+        #expect(try await repository.status().branch.isUnborn)
     }
 
     @Test func discardingUnstagedKeepsWhatsStaged() async throws {
@@ -186,7 +219,7 @@ struct RepositoryTests {
         try await repository.stage(["README.md"])
         try test.write("README.md", "# Unstaged on top\n")
 
-        try await repository.discard(try await repository.status().unstaged, movingToTrash: false)
+        try await repository.discard(try await repository.status().unstaged)
 
         #expect(try test.read("README.md") == "# Staged\n")
         #expect(try await repository.status().staged.map(\.path) == ["README.md"])

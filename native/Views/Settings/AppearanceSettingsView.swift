@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 struct AppearanceSettingsView: View {
@@ -9,7 +10,7 @@ struct AppearanceSettingsView: View {
 
         VStack(alignment: .leading, spacing: 24) {
             HStack(spacing: 18) {
-                Image(preferences.imageName)
+                previewImage(for: preferences.theme)
                     .resizable()
                     .interpolation(.high)
                     .scaledToFit()
@@ -72,7 +73,7 @@ struct AppearanceSettingsView: View {
             preferences.theme = theme
         } label: {
             VStack(spacing: 4) {
-                Image(theme.imageName(isDark: preferences.isDark))
+                previewImage(for: theme)
                     .resizable()
                     .interpolation(.high)
                     .scaledToFit()
@@ -102,5 +103,13 @@ struct AppearanceSettingsView: View {
         .accessibilityAddTraits(selected ? .isSelected : [])
         .accessibilityIdentifier("icon-theme-\(theme.rawValue)")
         .help("Use the \(theme.title) icon")
+    }
+
+    private func previewImage(for theme: AppIconTheme) -> Image {
+        if theme == .original {
+            Image(nsImage: NSWorkspace.shared.icon(forFile: Bundle.main.bundlePath))
+        } else {
+            Image(theme.imageName(isDark: preferences.isDark))
+        }
     }
 }
