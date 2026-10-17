@@ -83,6 +83,8 @@ struct AppearanceSettingsView: View {
                         }
                     }
                     .toggleStyle(.switch)
+                    .accessibilityLabel("Halloween edition")
+                    .accessibilityHint("Available October 1 through November 7. Restores your chosen icon afterwards.")
                     .accessibilityIdentifier("icon-halloween-enabled")
                 }
             }
@@ -107,7 +109,7 @@ struct AppearanceSettingsView: View {
                     Text(theme.title)
                     if selected {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(.tint)
+                            .foregroundStyle(.dsAccent)
                     }
                 }
                 .font(.dsCallout)
@@ -116,12 +118,12 @@ struct AppearanceSettingsView: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, DS.AppIcon.tilePadding)
             .background(
-                selected ? Color.accentColor.opacity(DS.AppIcon.selectedOpacity) : .clear,
+                selected ? Color.dsAccent.opacity(DS.AppIcon.selectedOpacity) : .clear,
                 in: .rect(cornerRadius: DS.Radius.panel)
             )
             .overlay {
                 RoundedRectangle(cornerRadius: DS.Radius.panel)
-                    .strokeBorder(selected ? Color.accentColor : .clear, lineWidth: DS.AppIcon.selectedBorder)
+                    .strokeBorder(selected ? Color.dsAccent : .clear, lineWidth: DS.AppIcon.selectedBorder)
             }
             .contentShape(.rect)
         }

@@ -50,13 +50,28 @@ enum ShortcutReference {
                     ),
                 ]),
             Group(
-                title: "Slash commands",
+                title: "Agent questions", note: "When an agent asks structured questions, the card takes focus.",
+                shortcuts: [
+                    Shortcut(id: "question-pick", title: "Pick that option", keys: ["1", "9"], joiner: "–"),
+                    Shortcut(id: "question-move", title: "Move between options", keys: ["↑", "↓"]),
+                    Shortcut(id: "question-space", title: "Pick the highlighted option", keys: ["Space"]),
+                    Shortcut(
+                        id: "question-next", title: "Next question", note: "Sends the answers after the last",
+                        keys: ["↵"]),
+                    Shortcut(
+                        id: "question-tab", title: "Move between the card, its field and the composer",
+                        keys: ["Tab", "⇧Tab"]),
+                ]),
+            Group(
+                title: "Slash commands and file mentions",
                 shortcuts: [
                     Shortcut(
                         id: "slash-open", title: "Open the command list", note: "At the start of the composer",
                         keys: ["/"]),
+                    Shortcut(
+                        id: "mention-open", title: "Open the file list", note: "At the start of a word", keys: ["@"]),
                     Shortcut(id: "slash-move", title: "Move the selection", keys: ["↑", "↓"]),
-                    Shortcut(id: "slash-insert", title: "Insert the selected command", keys: ["↵", "Tab"]),
+                    Shortcut(id: "slash-insert", title: "Insert the selection", keys: ["↵", "Tab"]),
                     Shortcut(id: "slash-close", title: "Close the list", keys: ["Esc"]),
                 ]),
             Group(
@@ -71,11 +86,23 @@ enum ShortcutReference {
                     Shortcut(id: "reject", title: "Reject", keys: ["⌘⇧⌫"]),
                 ]),
             Group(
+                title: "Git",
+                shortcuts: [
+                    Shortcut(
+                        id: "commit", title: "Commit the selected files", note: "In the commit popover", keys: ["⌘↵"]),
+                    Shortcut(
+                        id: "smart-commit", title: "Commit the planned groups", note: "In Smart Commit", keys: ["⌘↵"]),
+                    Shortcut(
+                        id: "setup-script", title: "Save the setup script", note: "In Settings ▸ Git", keys: ["⌘↵"]),
+                ]),
+            Group(
                 title: "Sessions and navigation",
                 shortcuts: [
                     Shortcut(id: "new-session", title: "New session", note: "With the last-used agent", keys: ["⌘N"]),
                     Shortcut(id: "new-session-with", title: "New session with…", note: "Pick the agent", keys: ["⌥⌘N"]),
+                    Shortcut(id: "new-expedition", title: "New expedition", keys: ["⌥⌘E"]),
                     Shortcut(id: "open-folder", title: "Open folder", keys: ["⌘O"]),
+                    Shortcut(id: "open-in", title: "Open the task's folder", note: "In the default app", keys: ["⇧⌘O"]),
                     Shortcut(id: "focus-composer", title: "Focus the composer", keys: ["⌘L"]),
                     Shortcut(
                         id: "history", title: "Back / forward", note: "Through the sessions you've viewed",
@@ -87,15 +114,23 @@ enum ShortcutReference {
                     Shortcut(
                         id: "rename-session", title: "Rename the selected session",
                         note: "In the sidebar. Return commits, Escape cancels.", keys: ["↵"]),
-                    Shortcut(id: "toggle-sidebar", title: "Show or hide the sidebar", keys: ["⌃⌘S"]),
                     Shortcut(
                         id: "move-item", title: "Move the selected project or session", note: "Up / down",
                         keys: ["⌥⌘↑", "⌥⌘↓"]),
+                    Shortcut(
+                        id: "archive", title: "Archive the selected task", note: "Undo brings it back", keys: ["⇧⌘A"]),
+                    Shortcut(id: "needs-you", title: "Show only tasks that need you", keys: ["⌥⌘J"]),
+                    Shortcut(id: "toggle-sidebar", title: "Show or hide the sidebar", keys: ["⌃⌘S"]),
                     Shortcut(id: "pull-requests", title: "Pull requests", keys: ["⌘⇧P"]),
+                    Shortcut(id: "expeditions", title: "Expeditions", keys: ["⌘⇧X"]),
                     Shortcut(id: "toggle-inspector", title: "Show or hide the subagent inspector", keys: ["⌥⌘I"]),
                     Shortcut(
                         id: "toggle-changes", title: "Show or hide the changes inspector",
                         note: "The task's uncommitted git changes", keys: ["⌘⇧D"]),
+                    Shortcut(id: "mcp-servers", title: "Show the session's MCP servers", keys: ["⌃⌘M"]),
+                    Shortcut(
+                        id: "keep-awake", title: "Keep Mac awake", note: "Cycles Off, While agents work, On",
+                        keys: ["⌃⌘A"]),
                 ]),
             Group(
                 title: "Session settings",
@@ -104,6 +139,30 @@ enum ShortcutReference {
                     Shortcut(id: "model-picker", title: "Model picker", keys: ["⌘⇧E"]),
                     Shortcut(id: "goal", title: "Set or edit the session's goal", keys: ["⌥⌘G"]),
                     Shortcut(id: "workflow", title: "Run a workflow", keys: ["⌥⌘R"]),
+                ]),
+            Group(
+                title: "Settings",
+                shortcuts: [
+                    Shortcut(id: "settings-open", title: "Open or close Settings", keys: ["⌘,"]),
+                    Shortcut(id: "settings-search", title: "Search settings", keys: ["⌘F"]),
+                    Shortcut(
+                        id: "settings-results", title: "Move through the results", note: "Return opens one",
+                        keys: ["↑", "↓"]),
+                    Shortcut(
+                        id: "settings-close", title: "Close Settings", note: "Escape clears the search first",
+                        keys: ["Esc", "⌘["]),
+                ]),
+            Group(
+                title: "Terminal",
+                shortcuts: [
+                    Shortcut(
+                        id: "terminal-toggle", title: "Show the task's terminal",
+                        note: "With it focused, hides it and returns to the composer", keys: ["⌃`"]),
+                    Shortcut(id: "terminal-new-tab", title: "New terminal tab", keys: ["⌃⇧`"]),
+                    Shortcut(id: "terminal-clear", title: "Clear the screen and scrollback", keys: ["⌘K"]),
+                    Shortcut(id: "terminal-scroll-ends", title: "Scroll to the top / bottom", keys: ["⌘Home", "⌘End"]),
+                    Shortcut(id: "terminal-page", title: "Scroll by a page", keys: ["⌘PageUp", "⌘PageDown"]),
+                    Shortcut(id: "terminal-prompts", title: "Previous / next prompt", keys: ["⌘⇧↑", "⌘⇧↓"]),
                 ]),
         ]
     }

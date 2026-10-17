@@ -8,17 +8,27 @@ import SwiftUI
 struct AppTaskRowAccessory: View {
     let summary: SessionSummary
 
+    @Environment(AppModel.self) private var model
     @Environment(GitStore.self) private var git
 
     var body: some View {
         let folder = URL(filePath: summary.info.cwd, directoryHint: .isDirectory)
-        let repository = git.model(for: folder)
         HStack(spacing: DS.Space.xs) {
-            if let branch = repository.branch?.name {
-                TaskPullRequestBadge(directory: folder, branch: branch)
+            if hasOwnCheckout(folder) {
+                let repository = git.model(for: folder)
+                if let branch = repository.branch?.name {
+                    TaskPullRequestBadge(directory: folder, branch: branch)
+                }
+                GitBranchBadge.Live(model: repository, font: .dsMicro, style: .compact)
             }
-            GitBranchBadge.Live(model: repository, font: .dsMicro, style: .compact)
             SessionContextUsage(summary: summary)
         }
+    }
+
+    /// Tasks running in the project folder share its checkout, so every one of them would repeat
+    /// the same branch state; only a task with its own worktree says something about itself.
+    private func hasOwnCheckout(_ folder: URL) -> Bool {
+        guard let project = model.projects.project(summary.project) else { return false }
+        return folder.folderPath != project.url.folderPath
     }
 }
