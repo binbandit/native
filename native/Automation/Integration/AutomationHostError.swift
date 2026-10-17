@@ -20,7 +20,7 @@ enum AutomationHostError: LocalizedError {
     var recoverySuggestion: String? {
         switch self {
         case .appUnavailable: "Try again in a moment."
-        case .taskClosed: "Retry the step to run it in a new session."
+        case .taskClosed: "Its agent no longer has the session. Retry the step to run it in a new session."
         case .pullRequestsUnavailable: "Install and sign in to the GitHub CLI (gh), then retry the step, or skip it and open the pull request yourself."
         case .scriptsUnavailable: "Skip the step, or run the workflow on a newer build of Native."
         }

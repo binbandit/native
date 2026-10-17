@@ -7,7 +7,7 @@ import os
 /// The registry is one JSON index (`agents[].id` and `agents[].icon`, a 16×16 monochrome SVG URL).
 /// A cached icon is used as is and refreshed in the background once it's a week old; the index is
 /// fetched only when an icon isn't cached, at most once a day.
-nonisolated actor AgentIconRegistry {
+actor AgentIconRegistry {
     static let indexURL = URL(string: "https://cdn.agentclientprotocol.com/registry/v1/latest/registry.json")
 
     private struct Index: Decodable {
@@ -59,7 +59,7 @@ nonisolated actor AgentIconRegistry {
         do {
             let (data, response) = try await session.data(from: url)
             guard (response as? HTTPURLResponse)?.statusCode == 200, data.count < Self.maximumIconSize,
-                await AgentIconGlyph.isDrawable(data)
+                AgentIconGlyph(svg: data) != nil
             else { return nil }
             try write(data, to: iconFile(for: id))
             return data
