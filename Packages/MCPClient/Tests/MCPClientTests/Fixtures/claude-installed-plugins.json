@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "plugins": {
+    "notes@example-marketplace": [
+      { "scope": "user", "installPath": "/home/tester/.claude/plugins/cache/example-marketplace/notes/1.0.0", "version": "1.0.0" }
+    ],
+    "linter@example-marketplace": [
+      { "scope": "user", "installPath": "/home/tester/.claude/plugins/cache/example-marketplace/linter/0.3.0", "version": "0.3.0" }
+    ]
+  }
+}

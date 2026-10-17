@@ -1,0 +1,39 @@
+model = "gpt-5.6"
+approval_policy = "on-request"
+
+[tui]
+notifications = true
+
+# Servers
+[mcp_servers.tracker]
+url = "https://tracker.example.com/mcp"
+enabled = false
+
+[mcp_servers.tracker.tools.save_issue]
+approval_mode = "approve"
+
+[mcp_servers.docs]
+url = "https://docs.example.com/mcp"
+bearer_token_env_var = "DOCS_TOKEN"
+env_http_headers = { "X-Workspace" = "DOCS_WORKSPACE" }
+
+[mcp_servers.inspector]
+command = "npx"
+args = [
+  "-y",
+  "example-inspector@2.1.0", # pinned
+  "mcp",
+]
+env_vars = ["INSPECTOR_LICENSE"]
+startup_timeout_sec = 30
+enabled_tools = ["open", "decompile"]
+
+[mcp_servers.inspector.env]
+INSPECTOR_HOME = '/Applications/Example Inspector.app'
+QUOTED = "tab\there \"quoted\" é"
+
+[projects."/work/app"]
+trust_level = "trusted"
+
+[projects."/work/site"]
+trust_level = "untrusted"

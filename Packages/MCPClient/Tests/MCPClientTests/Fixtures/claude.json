@@ -1,0 +1,35 @@
+{
+  "numStartups": 12,
+  "hasCompletedOnboarding": true,
+  "mcpServers": {
+    "docs": { "type": "http", "url": "https://docs.example.com/mcp" },
+    "inspector": {
+      "command": "npx",
+      "args": ["-y", "example-inspector@2.1.0", "mcp"],
+      "env": { "INSPECTOR_HOME": "${HOME}/Inspector", "INSPECTOR_MODE": "${INSPECTOR_MODE:-fast}" }
+    },
+    "socket": { "type": "ws", "url": "wss://socket.example.com/mcp" }
+  },
+  "projects": {
+    "/work/app": {
+      "allowedTools": [],
+      "mcpServers": {
+        "tracker": {
+          "type": "http",
+          "url": "https://tracker.example.com/mcp",
+          "headers": { "Authorization": "Bearer ${TRACKER_TOKEN}" }
+        },
+        "docs": { "type": "sse", "url": "https://docs.example.com/sse" }
+      },
+      "enabledMcpjsonServers": ["design"],
+      "disabledMcpjsonServers": ["legacy"],
+      "disabledMcpServers": ["inspector"]
+    },
+    "/work/site": {
+      "mcpServers": {},
+      "enableAllProjectMcpServers": true
+    }
+  },
+  "claudeAiMcpEverConnected": ["claude.ai Example Docs"],
+  "mcpNeedsAuthNoticed": ["docs"]
+}

@@ -1,0 +1,3 @@
+[mcp_servers.design]
+command = "design-mcp"
+args = ["--port", "4401"]
