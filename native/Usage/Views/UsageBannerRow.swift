@@ -1,56 +1,57 @@
 import SwiftUI
 
-/// The row every usage notice uses: a glyph, the headline with its detail, and actions on the
-/// right. It sits in the composer's stack as a section of its own, or on its own surface.
+/// A usage notice that isn't a provider limit (a nearly full context window), drawn like the
+/// design system's `LimitBanner` so warnings above the composer look and read alike: a tinted
+/// glyph, a headline with its detail under it, and actions on the right.
 struct UsageBannerRow<Actions: View>: View {
     let systemImage: String
     let tint: Color
     let title: String
     let detail: String?
+    var chrome: UsageBannerChrome = .card
     @ViewBuilder var actions: Actions
 
     var body: some View {
-        HStack(spacing: DS.Space.md) {
+        let shape = RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous)
+        HStack(alignment: .top, spacing: DS.Space.md) {
             Image(systemName: systemImage)
-                .font(.system(size: DS.Size.navIcon, weight: .medium))
+                .font(.dsCallout)
                 .foregroundStyle(tint)
-                .frame(width: DS.Size.rowLeading)
-            Text("\(Text(title).font(.dsBodyMedium).foregroundStyle(.dsTextPrimary))\(Text(detail.map { " · \($0)" } ?? "").font(.dsBody).foregroundStyle(.dsTextSecondary))")
-                .lineLimit(2)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(width: DS.Size.rowLeading, height: DS.Size.statusGlyph + DS.Space.xs)
+            VStack(alignment: .leading, spacing: DS.Space.xxs) {
+                Text(title)
+                    .font(.dsBodyMedium)
+                    .foregroundStyle(.dsTextPrimary)
+                if let detail {
+                    Text(detail)
+                        .font(.dsBody)
+                        .foregroundStyle(.dsTextSecondary)
+                }
+            }
+            .tracking(DS.Tracking.tight)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: DS.Space.xs) {
                 actions
             }
             .fixedSize()
         }
-        .padding(.leading, DS.Space.md)
-        .padding(.trailing, DS.Space.sm)
-        .padding(.vertical, DS.Space.sm)
-        .frame(minHeight: DS.Size.controlMD + DS.Space.md)
+        .padding(.vertical, DS.Space.md)
+        .padding(.horizontal, DS.Space.lg)
+        .background(chrome == .card ? Color.dsSurfaceRaised : .clear, in: shape)
+        .overlay {
+            if chrome == .card {
+                shape.strokeBorder(tint.opacity(0.35), lineWidth: 1)
+            }
+        }
         .accessibilityElement(children: .contain)
     }
 }
 
 /// How a usage notice is framed.
 enum UsageBannerChrome {
-    /// No frame of its own: a section in the composer's stack, which draws the rules around it.
-    case section
-    /// Its own outlined surface, matching the composer's, for placing above it.
+    /// Its own surface with a tinted edge, like `LimitBanner`, for placing above the composer.
     case card
-}
-
-extension View {
-    @ViewBuilder
-    func usageBannerChrome(_ chrome: UsageBannerChrome) -> some View {
-        switch chrome {
-        case .section:
-            self
-        case .card:
-            let shape = RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous)
-            background(.dsSurface, in: shape)
-                .overlay { shape.strokeBorder(.dsBorder, lineWidth: 1) }
-                .dsShadow(.floating)
-        }
-    }
+    /// No frame: a section inside the composer's stack, which draws the rules around it.
+    case section
 }

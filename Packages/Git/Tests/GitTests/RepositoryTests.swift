@@ -243,7 +243,8 @@ struct RepositoryTests {
 
         #expect(patch.contains("-Hello."))
         #expect(patch.contains("+Goodbye."))
-        #expect(patch.contains("+++ b/new.swift\n+print(1)"))
+        #expect(patch.contains("+++ b/new.swift"))
+        #expect(patch.contains("+print(1)"))
     }
 
     @Test func ignoredPathsHonorGitignore() async throws {

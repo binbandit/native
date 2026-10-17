@@ -3,7 +3,7 @@ import Git
 import Observation
 
 /// Live git state for one working folder: branch, changes and the selected file's diff, kept fresh
-/// by a file system watcher. Every git action the UI offers goes through this model.
+/// by the repository's change monitor. Every git action the UI offers goes through this model.
 @Observable
 final class GitRepositoryModel {
     enum State: Equatable {
@@ -33,7 +33,7 @@ final class GitRepositoryModel {
     /// The commit form's message, kept while the form is closed so a draft isn't lost.
     var commitMessage = ""
 
-    @ObservationIgnored let resolveGit: () async throws -> Git?
+    @ObservationIgnored let resolveGit: () async -> Git?
     @ObservationIgnored private var refreshTask: Task<Void, Never>?
     @ObservationIgnored private var isRefreshPending = false
     @ObservationIgnored private var watchTask: Task<Void, Never>?
@@ -47,7 +47,7 @@ final class GitRepositoryModel {
     /// How long a plain confirmation stays up.
     static let confirmationDuration = Duration.seconds(4)
 
-    init(folder: URL, git: @escaping () async throws -> Git?) {
+    init(folder: URL, git: @escaping () async -> Git?) {
         self.folder = folder
         resolveGit = git
         refresh()
@@ -145,7 +145,7 @@ final class GitRepositoryModel {
 
     private func currentRepository() async throws -> Repository? {
         if let repository { return repository }
-        guard let git = try await resolveGit(), let repository = try await git.repository(at: folder) else {
+        guard let git = await resolveGit(), let repository = try await git.repository(at: folder) else {
             return nil
         }
         self.repository = repository
@@ -216,9 +216,10 @@ final class GitRepositoryModel {
     // MARK: - Watching
 
     private func startWatching(_ repository: Repository) {
-        guard watchTask == nil, let watcher = RepositoryWatcher(repository: repository) else { return }
+        guard watchTask == nil else { return }
+        let changes = repository.changes()
         watchTask = Task { [weak self] in
-            for await change in watcher.changes {
+            for await change in changes {
                 guard let self else { return }
                 if await self.matters(change, in: repository) {
                     self.requestRefresh(settling: true)

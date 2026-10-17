@@ -78,7 +78,6 @@ struct SettingsScreen: View {
                 .disabled(!query.isEmpty)
                 .hidden()
         }
-        .defaultFocus($focus, .navigation)
         .onChange(of: focus) { _, newValue in
             // Conductor closes the results when you click away from the search.
             if newValue != .search {

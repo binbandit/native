@@ -36,12 +36,15 @@ enum OpenInMenu {
     ) {
         let icon = model.icon(for: app)
         let item = NSMenuItem(app.name, image: icon) { model.open(location, in: app) }
+        // macOS 27 hides menu images by default; an app's icon is how you spot it, as in Open With.
+        item.preferredImageVisibility = .visible
         menu.addItem(item)
         if isDefault {
             item.state = .on
             item.setKeyEquivalent(OpenInCommands.shortcut)
         } else {
             let alternate = NSMenuItem("Set \(app.name) as Default", image: icon) { model.setDefault(app) }
+            alternate.preferredImageVisibility = .visible
             alternate.keyEquivalentModifierMask = .option
             alternate.isAlternate = true
             menu.addItem(alternate)

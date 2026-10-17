@@ -4,7 +4,7 @@ import SwiftUI
 /// compacting as the next step. Shows nothing until the window passes 90%.
 struct ContextPressureBanner<Source: ContextSource>: View {
     let source: Source
-    var chrome: UsageBannerChrome = .section
+    var chrome: UsageBannerChrome = .card
 
     @State private var dismissedAt: Double?
     @State private var isShowingBreakdown = false
@@ -15,7 +15,8 @@ struct ContextPressureBanner<Source: ContextSource>: View {
                 systemImage: "exclamationmark.circle",
                 tint: .dsWarning,
                 title: "Context \(DSFormat.percent(fraction)) full",
-                detail: "\(source.agentName) compacts the conversation when it runs out of room"
+                detail: "\(source.agentName) compacts the conversation on its own when the window runs out.",
+                chrome: chrome
             ) {
                 Button("Breakdown") { isShowingBreakdown = true }
                     .buttonStyle(.ds(.ghost))
@@ -32,7 +33,6 @@ struct ContextPressureBanner<Source: ContextSource>: View {
                 // Dismissed until it fills noticeably further.
                 IconButton("Dismiss", systemImage: "xmark") { dismissedAt = fraction }
             }
-            .usageBannerChrome(chrome)
         }
     }
 }

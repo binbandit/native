@@ -40,12 +40,8 @@ extension Int: ParameterValue {
 
 extension Double: ParameterValue {
     public init?(stored: StoredValue) {
-        switch stored {
-        case .double(let value): self = value
-        // A whole number written by hand (`defaults write … -int 2`) still reads as a double.
-        case .int(let value): self = Double(value)
-        default: return nil
-        }
+        guard case .double(let value) = stored else { return nil }
+        self = value
     }
 
     public var stored: StoredValue { .double(self) }

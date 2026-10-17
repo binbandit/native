@@ -14,7 +14,9 @@ extension Repository {
         if let nested = changes.first(where: { $0.path.hasSuffix("/") }) {
             throw .failed(
                 arguments: ["clean"], status: 1,
-                stderr: "\(nested.path) is a separate repository; Native won't delete it. Remove it in Finder if you mean to.")
+                stderr:
+                    "\(nested.path) is a separate repository; Native won't delete it. Remove it in Finder if you mean to."
+            )
         }
         let checkpoint = try await checkpoint(named: "discard")
         let hasHead = try await resolve("HEAD") != nil

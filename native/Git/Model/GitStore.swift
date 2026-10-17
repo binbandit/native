@@ -23,7 +23,7 @@ final class GitStore {
     func model(for folder: URL) -> GitRepositoryModel {
         let key = folder.standardizedFileURL
         if let model = models[key] { return model }
-        let model = GitRepositoryModel(folder: key, git: { [weak self] in try await self?.resolveGit() })
+        let model = GitRepositoryModel(folder: key, git: { [weak self] in await self?.resolveGit() })
         models[key] = model
         return model
     }
@@ -70,9 +70,9 @@ final class GitStore {
 
     // MARK: - Resolving git
 
-    private func resolveGit() async throws -> Git {
+    private func resolveGit() async -> Git {
         if let git { return git }
-        let resolved = try Git(environment: await environmentProvider())
+        let resolved = Git(environment: await environmentProvider())
         git = resolved
         return resolved
     }

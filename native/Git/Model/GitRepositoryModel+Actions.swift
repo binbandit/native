@@ -96,7 +96,7 @@ extension GitRepositoryModel {
     /// `git init` for a folder that isn't a repository yet.
     func initializeRepository() async {
         do {
-            guard let git = try await resolveGit() else { return }
+            guard let git = await resolveGit() else { return }
             try await git.initializeRepository(at: folder)
             await refreshNow()
         } catch {
