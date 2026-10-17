@@ -111,7 +111,9 @@ struct SessionRow<Accessory: View>: View {
     }
 
     private var pinAction: SidebarSwipeAction {
-        SidebarSwipeAction(isPinned ? "Unpin" : "Pin", systemImage: isPinned ? "pin.slash" : "pin", tint: .dsWarning, action: togglePinned)
+        SidebarSwipeAction(
+            isPinned ? "Unpin" : "Pin", systemImage: isPinned ? "pin.slash" : "pin", tint: .dsWarning,
+            action: togglePinned)
     }
 
     private var target: SidebarMoveTarget {
