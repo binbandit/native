@@ -45,7 +45,7 @@ struct AgentSetupCard: View {
                         .foregroundStyle(.dsTextTertiary)
                 }
                 if let signIn = setup?.signIn {
-                    Text("Then sign in with `\(signIn)`, or from Native when it asks.")
+                    Text("Then sign in with `\(signIn)`.")
                         .font(.dsCaption)
                         .foregroundStyle(.dsTextTertiary)
                 }

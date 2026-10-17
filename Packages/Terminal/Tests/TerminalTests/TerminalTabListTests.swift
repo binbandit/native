@@ -23,6 +23,19 @@ struct TerminalTabListTests {
         #expect(list.selected?.displayTitle == "Terminal")
     }
 
+    @Test func numbersTabsThatShowTheSameTitle() {
+        var list = TerminalTabList()
+        let a = list.add(), b = list.add()
+        list.add()
+        list.setTitle("~/native", of: a.id)
+        list.setTitle("~/native", of: b.id)
+        #expect(list.label(of: list.tabs[0]) == "~/native · 1")
+        #expect(list.label(of: list.tabs[1]) == "~/native · 2")
+        #expect(list.label(of: list.tabs[2]) == "Terminal 3")
+        list.setTitle("vim", of: b.id)
+        #expect(list.label(of: list.tabs[0]) == "~/native")
+    }
+
     @Test func closingTheSelectedTabSelectsItsNeighbor() {
         var list = TerminalTabList()
         let a = list.add(), b = list.add(), c = list.add()

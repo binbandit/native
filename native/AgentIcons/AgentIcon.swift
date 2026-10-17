@@ -17,10 +17,16 @@ struct AgentIcon: View {
 
     var body: some View {
         AgentIconArtworkView(artwork: store.artwork(for: agent), size: size)
-            .task(id: agent.id) { await store.resolve(agent) }
+            .task(id: AgentIconLookup(agent: agent.id, generation: store.generation)) { await store.resolve(agent) }
             // The agent's name always sits beside it, or labels the control it's in.
             .accessibilityHidden(true)
     }
+}
+
+/// What `AgentIcon` looks up again when it changes: another agent, or the store starting over.
+private struct AgentIconLookup: Equatable {
+    let agent: AgentDefinition.ID
+    let generation: Int
 }
 
 /// Draws an artwork in a `size` square. Each kind is inset to the same optical size, so an app

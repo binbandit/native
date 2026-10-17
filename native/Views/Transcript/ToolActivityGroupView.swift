@@ -14,6 +14,25 @@ enum TranscriptRow: Identifiable {
         }
     }
 
+    /// How many transcript items the row shows.
+    var itemCount: Int {
+        switch self {
+        case .item: 1
+        case .exploration(let calls): calls.count
+        }
+    }
+
+    /// Work rows an earlier turn folds away: tool calls and reasoning. Prose and requests waiting
+    /// for the user never fold.
+    var isFoldableActivity: Bool {
+        switch self {
+        case .exploration: true
+        case .item(.toolCall(let call)): call.permission == nil
+        case .item(.message(let message)): message.role == .thought
+        case .item: false
+        }
+    }
+
     /// Folds each run of two or more consecutive read/search calls into one row, the way the reference app
     /// shows "Explored 3 files". Calls waiting for approval stay on their own.
     static func rows(from items: [TranscriptItem]) -> [TranscriptRow] {

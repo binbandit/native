@@ -16,6 +16,7 @@ struct TerminalTabBar: View {
                         ForEach(panel.tabs.tabs) { tab in
                             TerminalTabButton(
                                 tab: tab,
+                                label: panel.tabs.label(of: tab),
                                 isSelected: tab.id == panel.tabs.selectedID,
                                 select: { panel.select(tab.id) },
                                 close: { panel.requestClose(tab.id) },
@@ -45,6 +46,7 @@ struct TerminalTabBar: View {
 /// can be reached by touch).
 private struct TerminalTabButton: View {
     let tab: TerminalTabList.Tab
+    let label: String
     let isSelected: Bool
     let select: () -> Void
     let close: () -> Void
@@ -56,7 +58,7 @@ private struct TerminalTabButton: View {
         let shape = RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
         HStack(spacing: DS.Space.xs) {
             statusDot
-            Text(tab.displayTitle)
+            Text(label)
                 .font(.dsBody)
                 .foregroundStyle(isSelected ? .dsTextPrimary : .dsTextSecondary)
                 .lineLimit(1)
@@ -95,9 +97,9 @@ private struct TerminalTabButton: View {
 
     private var accessibilityLabel: String {
         switch tab.status {
-        case .running: tab.displayTitle
-        case .exited: "\(tab.displayTitle), exited"
-        case .failedToStart: "\(tab.displayTitle), didn't start"
+        case .running: label
+        case .exited: "\(label), exited"
+        case .failedToStart: "\(label), didn't start"
         }
     }
 }

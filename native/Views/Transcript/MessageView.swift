@@ -4,6 +4,9 @@ import SwiftUI
 /// A user prompt, an agent reply, or the agent's reasoning.
 struct MessageView: View {
     let message: TranscriptMessage
+    /// When reasoning started and, once the agent moved on, ended (`SessionState.thinkingInterval`).
+    /// Without it a thought times itself from its first to its last chunk.
+    var thinking: (start: Date, end: Date?)?
 
     var body: some View {
         switch message.role {
@@ -20,7 +23,7 @@ struct MessageView: View {
             MarkdownView(message.text)
                 .frame(maxWidth: .infinity, alignment: .leading)
         case .thought:
-            ThoughtView(text: message.text)
+            ThoughtView(text: message.text, clock: thinking ?? message.startedAt.map { ($0, message.updatedAt) })
         }
     }
 }
@@ -37,9 +40,12 @@ struct NoticeView: View {
     }
 }
 
-/// The agent's reasoning, collapsed behind a "Thinking" disclosure.
+/// The agent's reasoning, collapsed behind one quiet row named by a fact: "Thinking 4s…" with a
+/// ticking count while it streams, "Thought for 12s" once it's done.
 private struct ThoughtView: View {
     let text: String
+    /// Nil for replayed history, which has no times.
+    let clock: (start: Date, end: Date?)?
 
     @State private var isExpanded = false
 
@@ -48,8 +54,8 @@ private struct ThoughtView: View {
             Button {
                 withAnimation(.smooth(duration: 0.25)) { isExpanded.toggle() }
             } label: {
-                HStack(spacing: 5) {
-                    Text("Thinking")
+                HStack(spacing: DS.Space.sm) {
+                    label
                     DisclosureChevron(isExpanded: isExpanded)
                 }
                 .font(.callout)
@@ -71,6 +77,22 @@ private struct ThoughtView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
+
+    @ViewBuilder private var label: some View {
+        if let clock, let end = clock.end {
+            Text(DSFormat.thoughtFor(end.timeIntervalSince(clock.start)))
+        } else if let clock {
+            HStack(spacing: 0) {
+                Text("Thinking ")
+                ElapsedTimeText(since: clock.start)
+                Text(verbatim: "…")
+            }
+            .shimmering(true)
+        } else {
+            // Replayed history doesn't say how long it took.
+            Text("Thought")
+        }
+    }
 }
 
 /// Fills the offered width and trailing-aligns its content, which gets at most `fraction` of it.
@@ -80,7 +102,9 @@ private struct TrailingFractionLayout: Layout {
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         guard let child = subviews.first else { return .zero }
         let size = child.sizeThatFits(childProposal(for: proposal))
-        return CGSize(width: proposal.width ?? size.width, height: size.height)
+        // An ideal or maximum measurement fills nothing: report the bubble itself, never infinity.
+        let width = proposal.width.flatMap { $0.isFinite ? $0 : nil } ?? size.width
+        return CGSize(width: width, height: size.height)
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
@@ -91,7 +115,7 @@ private struct TrailingFractionLayout: Layout {
     }
 
     private func childProposal(for proposal: ProposedViewSize) -> ProposedViewSize {
-        ProposedViewSize(width: proposal.width.map { $0 * fraction }, height: nil)
+        ProposedViewSize(width: proposal.width.map { $0.isFinite ? $0 * fraction : $0 }, height: nil)
     }
 }
 

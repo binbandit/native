@@ -11,6 +11,8 @@ final class AgentIconStore {
     static let shared = AgentIconStore()
 
     private var artworks: [AgentDefinition.ID: AgentIconArtwork] = [:]
+    /// Bumped by `reset`, so views showing an icon look it up again.
+    private(set) var generation = 0
     @ObservationIgnored private var lookups: [AgentDefinition.ID: Task<Void, Never>] = [:]
     @ObservationIgnored private var images: [ImageKey: Image] = [:]
     @ObservationIgnored private let registry: AgentIconRegistry
@@ -55,6 +57,7 @@ final class AgentIconStore {
         lookups = [:]
         images = [:]
         artworks = [:]
+        generation += 1
     }
 
     /// The icon as an `Image`, for places that take nothing else, such as menu items. Glyphs and
