@@ -3,9 +3,14 @@ import SwiftUI
 /// Sample data for the home page's previews.
 enum HomePreviewFixtures {
     static let projects: [HomeProject<String>] = [
-        HomeProject(id: "native", name: "native", url: URL(filePath: "/Users/preview/Developer/native", directoryHint: .isDirectory)),
-        HomeProject(id: "pier", name: "pier", url: URL(filePath: "/Users/preview/Developer/pier", directoryHint: .isDirectory)),
-        HomeProject(id: "acp", name: "agent-client-protocol", url: URL(filePath: "/Users/preview/Developer/agent-client-protocol", directoryHint: .isDirectory)),
+        HomeProject(
+            id: "native", name: "native",
+            url: URL(filePath: "/Users/preview/Developer/native", directoryHint: .isDirectory)),
+        HomeProject(
+            id: "pier", name: "pier", url: URL(filePath: "/Users/preview/Developer/pier", directoryHint: .isDirectory)),
+        HomeProject(
+            id: "acp", name: "agent-client-protocol",
+            url: URL(filePath: "/Users/preview/Developer/agent-client-protocol", directoryHint: .isDirectory)),
     ]
 
     static let agents: [HomeAgent<String>] = [
@@ -39,7 +44,9 @@ enum HomePreviewFixtures {
         task("6", "Diff view word wrapping", agent: 0, project: 0, minutesAgo: 9 * 24 * 60),
     ]
 
-    private static func task(_ id: String, _ title: String, agent: Int, project: Int, minutesAgo: Double) -> HomeTask<String> {
+    private static func task(
+        _ id: String, _ title: String, agent: Int, project: Int, minutesAgo: Double
+    ) -> HomeTask<String> {
         HomeTask(
             id: id,
             title: title,

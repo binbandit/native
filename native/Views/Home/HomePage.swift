@@ -34,7 +34,11 @@ struct HomePage<Cards: View, Footer: View, Content: View>: View {
                 .opacity(isShown ? 1 : 0)
             }
             .frame(maxWidth: HomeLayout.columnWidth)
-            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { contentHeight = $0 }
+            .onGeometryChange(for: CGFloat.self) {
+                $0.size.height
+            } action: {
+                contentHeight = $0
+            }
             .padding(.top, topPadding)
             .padding([.horizontal, .bottom], HomeLayout.gutter)
             .frame(maxWidth: .infinity)
@@ -43,7 +47,9 @@ struct HomePage<Cards: View, Footer: View, Content: View>: View {
         .background(.dsBackground)
         .onGeometryChange(for: Viewport.self) { proxy in
             Viewport(height: proxy.size.height + proxy.safeAreaInsets.top, safeAreaTop: proxy.safeAreaInsets.top)
-        } action: { viewport = $0 }
+        } action: {
+            viewport = $0
+        }
         .onAppear {
             withAnimation(reduceMotion ? nil : HomeLayout.contentFadeIn) {
                 isShown = true

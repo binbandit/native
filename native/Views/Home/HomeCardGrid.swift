@@ -1,9 +1,9 @@
 import SwiftUI
 
 /// Lays cards out as Conductor's quick actions are: up to three to a row, each a third of the
-/// column. A short last row is centered rather than left-aligned, because the cards are agents and
-/// folders, whose number varies, and two cards sitting off to one side under a centered wordmark
-/// look like a missing third.
+/// column. A short last row is centered rather than left-aligned, because the cards are agents,
+/// whose number varies, and two cards sitting off to one side under the centered lockup look like a
+/// missing third.
 struct HomeCardGrid: Layout {
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let width = min(proposal.width ?? HomeLayout.columnWidth, HomeLayout.columnWidth)

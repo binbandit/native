@@ -17,6 +17,8 @@ final class GitRepositoryModel {
     private(set) var state = State.loading
     private(set) var repository: Repository?
     private(set) var status: RepositoryStatus?
+    /// Whether there's anywhere to push; publishing is only offered when there is.
+    private(set) var hasRemote = false
     /// The change whose diff is showing.
     var selection: FileChange.ID? {
         didSet {
@@ -75,6 +77,12 @@ final class GitRepositoryModel {
     var totals: LineStats { status?.totals ?? .zero }
     var isDirty: Bool { status.map { !$0.isClean } ?? false }
 
+    /// There are commits to push, or a branch to publish, and somewhere to push them.
+    var canPush: Bool {
+        guard let branch, hasRemote, !branch.isDetached, !branch.isUnborn else { return false }
+        return branch.ahead > 0 || branch.upstream == nil
+    }
+
     var selectedChange: FileChange? {
         guard let selection else { return nil }
         return changes.first { $0.id == selection }
@@ -123,7 +131,9 @@ final class GitRepositoryModel {
                 status = nil
                 return
             }
+            async let remotes = repository.remotes()
             let status = try await repository.status()
+            hasRemote = !(try await remotes).isEmpty
             guard !Task.isCancelled else { return }
             apply(status)
             state = .ready

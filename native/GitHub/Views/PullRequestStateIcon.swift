@@ -9,12 +9,21 @@ struct PullRequestStateIcon: View {
     var size: CGFloat = DS.Size.statusGlyph
 
     var body: some View {
-        Image(systemName: state == .merged ? "arrow.triangle.merge" : "arrow.triangle.pull")
-            .font(.system(size: size * 0.86, weight: .medium))
-            .foregroundStyle(tint)
+        PullRequestGlyph(kind: kind)
+            // Lucide's 2-point stroke on its 24-point grid.
+            .stroke(tint, style: StrokeStyle(lineWidth: size / 12, lineCap: .round, lineJoin: .round))
             .frame(width: size, height: size)
             .help(label)
+            .accessibilityElement()
             .accessibilityLabel(label)
+    }
+
+    private var kind: PullRequestGlyph.Kind {
+        switch state {
+        case .merged: .merged
+        case .closed: .closed
+        case .open, .other: isDraft ? .draft : .open
+        }
     }
 
     private var tint: Color {

@@ -5,7 +5,7 @@ import Foundation
 /// breakdown from `ContextReports`.
 struct SessionContextSource: ContextSource {
     let session: SessionModel
-    var reports: ContextReports = BuiltInPlugins.usage.contextReports
+    var reports = BuiltInPlugins.usage.contextReports
 
     var agentName: String { session.agentName }
     var usage: Usage? { session.state.usage }

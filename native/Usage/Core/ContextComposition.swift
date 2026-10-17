@@ -61,3 +61,10 @@ struct ContextComposition: Hashable {
         max(segments.reduce(0) { $0 + $1.tokens }, 1)
     }
 }
+
+extension ContextReport {
+    /// Whether the report lists any of the user's own setup: MCP tools, memory files, skills, agents.
+    var hasContributors: Bool {
+        !(mcpTools.isEmpty && memoryFiles.isEmpty && skills.isEmpty && agents.isEmpty)
+    }
+}

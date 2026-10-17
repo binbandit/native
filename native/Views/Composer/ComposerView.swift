@@ -10,6 +10,8 @@ struct ComposerView: View {
     @Bindable var session: SessionModel
 
     @AppStorage(FollowUpBehavior.storageKey) private var followUp = FollowUpBehavior.defaultValue
+    @Environment(\.undoManager) private var undoManager
+    @Environment(\.composerNextSteps) private var nextSteps
     @FocusState private var isFocused: Bool
     /// The highlighted row of the slash-command list.
     @State private var highlighted = 0
@@ -23,6 +25,8 @@ struct ComposerView: View {
     @State private var editingQueued: SessionModel.QueuedPrompt.ID?
     /// The autonomy level Plan Mode returns to, remembered from before it started.
     @State private var autonomyBeforePlan: String?
+    /// What the last action did, shown for a moment in the controls row.
+    @State private var feedback: ComposerFeedback?
 
     private var canEdit: Bool {
         session.phase != .loading && session.phase != .disconnected
@@ -30,6 +34,16 @@ struct ComposerView: View {
 
     private var isWorking: Bool {
         session.phase == .prompting
+    }
+
+    private var blocker: SendBlocker? {
+        SendBlocker(phase: session.phase, acceptsPrompts: session.acceptsPrompts, agentName: session.agentName)
+    }
+
+    /// After a turn ends normally, until the user starts on the next message.
+    private var showsNextSteps: Bool {
+        !nextSteps.isEmpty && session.phase == .idle && session.lastStopReason == .endTurn
+            && session.draft.isEmpty && session.queuedPrompts.isEmpty
     }
 
     /// The slash commands to list: only while the draft is a bare "/command" being typed.
@@ -58,6 +72,13 @@ struct ComposerView: View {
             .frame(maxWidth: .infinity)
             .onAppear { isFocused = true }
             .onChange(of: session.draft) { draftChanged() }
+            .task(id: feedback?.id) {
+                guard let shown = feedback else { return }
+                try? await Task.sleep(for: shown.duration)
+                if feedback?.id == shown.id {
+                    feedback = nil
+                }
+            }
             // ⌘L and ⇧⌘E are menu commands; they reach the composer through the session.
             .onChange(of: session.focusComposerRequest) { isFocused = true }
             .onChange(of: session.isModelPickerRequested, initial: true) { _, isRequested in
@@ -99,13 +120,21 @@ struct ComposerView: View {
                 if plan.isActive {
                     ComposerPlanSection(plan: plan, isWorking: isWorking, isExpanded: $isPlanExpanded)
                 }
+                if showsNextSteps {
+                    NextStepsSection(steps: nextSteps)
+                }
             }
             inputSection(commands: commands)
             ComposerControlsRow(
                 settings: settings,
                 resumedAutonomy: autonomyBeforePlan,
                 usage: session.state.usage,
-                followUpHint: isWorking ? FollowUpHint(preferred: followUp, supportsSteering: session.supportsSteering, agentName: session.agentName) : nil,
+                status: ComposerStatusLine(
+                    feedback: feedback,
+                    blocker: session.draft.isEmpty ? nil : blocker,
+                    followUpHint: isWorking ? FollowUpHint(preferred: followUp, supportsSteering: session.supportsSteering, agentName: session.agentName) : nil,
+                    onUndo: { undoManager?.undo() }
+                ),
                 isModelPickerOpen: $isModelPickerOpen,
                 onAttach: { isAttaching = true },
                 onSet: set,
@@ -122,6 +151,7 @@ struct ComposerView: View {
             isDropTargeted = $0
         }
         .animation(.dsStandard, value: plan.isActive)
+        .animation(.dsStandard, value: showsNextSteps)
         .animation(.dsStandard, value: session.queuedPrompts)
     }
 
@@ -138,8 +168,10 @@ struct ComposerView: View {
                 }
                 .padding(DS.Space.md)
                 .transition(.opacity)
-            } else if session.canSend {
+            } else if !session.draft.isEmpty {
+                // Disabled rather than hidden when something blocks sending; the status line says what.
                 ComposerSendButton { submit(followUp) }
+                    .disabled(!session.canSend && blocker != nil)
                     .padding(DS.Space.md)
                     .transition(.opacity)
             }
@@ -155,7 +187,7 @@ struct ComposerView: View {
                     .accessibilityHidden(true)
             }
         }
-        .animation(.dsQuick, value: session.canSend)
+        .animation(.dsQuick, value: session.draft.isEmpty)
         .animation(.dsQuick, value: session.canCancel)
     }
 
@@ -233,19 +265,41 @@ struct ComposerView: View {
     }
 
     /// Sends the draft; while the agent works, queues or steers it, or saves the queued message
-    /// being edited.
+    /// being edited. Says what happened, or why nothing could.
     private func submit(_ behavior: FollowUpBehavior) {
         let text = session.draft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard canEdit, !session.isSubagent, !text.isEmpty else { return }
+        guard !text.isEmpty else { return }
+        if let blocker {
+            feedback = .blocked(blocker)
+            return
+        }
         if let id = editingQueued, session.queuedPrompts.contains(where: { $0.id == id }) {
             session.updateQueued(id, text: text)
             editingQueued = nil
             session.draft = ""
+            feedback = .updatedInQueue
             return
         }
         // The queued message may have gone out while it was being edited; then it's a new message.
         editingQueued = nil
-        Task { await session.submit(behavior) }
+        if session.canSend {
+            // It starts a turn, which the transcript shows.
+            Task { await session.submit(behavior) }
+            return
+        }
+        session.draft = ""
+        Task {
+            do {
+                let delivery = try await session.submit(text, behavior)
+                feedback = ComposerFeedback(delivery: delivery, requested: behavior, supportsSteering: session.supportsSteering, agentName: session.agentName)
+            } catch {
+                // Nothing went out, so the message comes back to be sent again.
+                if session.draft.isEmpty {
+                    session.draft = text
+                }
+                feedback = .failed(error)
+            }
+        }
     }
 
     private func insert(_ command: AvailableCommand) {
@@ -264,7 +318,8 @@ struct ComposerView: View {
             editingQueued = nil
             session.draft = ""
         }
-        session.removeQueued(id)
+        session.removeQueued(id, undoManager: undoManager)
+        feedback = .removedFromQueue
     }
 
     private func set(_ setting: SelectSetting, to value: String) {

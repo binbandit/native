@@ -1,10 +1,13 @@
 import SwiftUI
 
-/// A 24pt square button for the window's toolbar row: the sidebar toggle, back and forward
-/// (Factory `WindowToolbarButton`: 4pt radius, secondary glyph, filled and primary on hover).
+/// A 24pt square glyph button for the window's title-bar row: the sidebar toggle, back and
+/// forward. Conductor's ghost style: a muted glyph that brightens on hover, with no fill, so it
+/// sits in a macOS toolbar without competing with the system's own button treatment (put it in a
+/// `ToolbarItem` with `.sharedBackgroundVisibility(.hidden)`). The tooltip shows the shortcut.
 public struct WindowToolbarButton: View {
     let label: String
     let systemImage: String
+    let glyphSize: CGFloat
     let isActive: Bool
     let shortcut: KeyboardShortcut?
     let action: () -> Void
@@ -12,15 +15,21 @@ public struct WindowToolbarButton: View {
     @Environment(\.isEnabled) private var isEnabled
     @State private var isHovered = false
 
+    /// - Parameters:
+    ///   - glyphSize: The symbol's point size; 13 for panel toggles, 12 for arrows (Conductor
+    ///     `size-4` and `size-3`).
+    ///   - isActive: Keeps the glyph bright, for a toggle that is on.
     public init(
         _ label: String,
         systemImage: String,
+        glyphSize: CGFloat = 13,
         isActive: Bool = false,
         shortcut: KeyboardShortcut? = nil,
         action: @escaping () -> Void
     ) {
         self.label = label
         self.systemImage = systemImage
+        self.glyphSize = glyphSize
         self.isActive = isActive
         self.shortcut = shortcut
         self.action = action
@@ -29,13 +38,14 @@ public struct WindowToolbarButton: View {
     public var body: some View {
         Button(action: action) {
             Image(systemName: systemImage)
-                .font(.system(size: 13, weight: .regular))
+                .font(.system(size: glyphSize, weight: .regular))
                 .frame(width: DS.Size.toolbarButton, height: DS.Size.toolbarButton)
                 .contentShape(.rect)
         }
         .buttonStyle(WindowToolbarButtonStyle(isHovered: isHovered && isEnabled, isActive: isActive))
+        .opacity(isEnabled ? 1 : 0.4)
         .keyboardShortcut(shortcut)
-        .help(shortcut.map { "\(label) (\($0.displayString))" } ?? label)
+        .help(shortcut.map { "\(label) \($0.displayString)" } ?? label)
         .accessibilityLabel(label)
         .trackHover($isHovered)
     }
@@ -46,12 +56,10 @@ private struct WindowToolbarButtonStyle: ButtonStyle {
     let isActive: Bool
 
     func makeBody(configuration: Configuration) -> some View {
-        let shape = RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous)
-        let isHighlighted = isHovered || isActive || configuration.isPressed
         configuration.label
-            .foregroundStyle(isHighlighted ? .dsTextPrimary : .dsTextSecondary)
-            .background(configuration.isPressed ? .dsPressed : isHighlighted ? .dsSelected : .clear, in: shape)
-            .contentShape(.focusEffect, shape)
+            .foregroundStyle(isHovered || isActive ? .dsTextPrimary : .dsTextSecondary)
+            .opacity(configuration.isPressed ? 0.6 : 1)
+            .contentShape(.focusEffect, RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous))
     }
 }
 
@@ -78,8 +86,8 @@ public struct SidebarCollapseButton: View {
     }
 }
 
-/// Back and forward through navigation history: Factory's pair of chevrons after the update
-/// button, bound to ⌘[ and ⌘].
+/// Back and forward through navigation history, bound to ⌘[ and ⌘]: Conductor's pair of 12pt
+/// arrows at the sidebar header's trailing edge.
 public struct HistoryNavigationButtons: View {
     let canGoBack: Bool
     let canGoForward: Bool
@@ -95,10 +103,22 @@ public struct HistoryNavigationButtons: View {
 
     public var body: some View {
         HStack(spacing: DS.Space.xxs) {
-            WindowToolbarButton("Back", systemImage: "chevron.left", shortcut: KeyboardShortcut("[", modifiers: .command), action: onBack)
-                .disabled(!canGoBack)
-            WindowToolbarButton("Forward", systemImage: "chevron.right", shortcut: KeyboardShortcut("]", modifiers: .command), action: onForward)
-                .disabled(!canGoForward)
+            WindowToolbarButton(
+                "Go back",
+                systemImage: "arrow.left",
+                glyphSize: 12,
+                shortcut: KeyboardShortcut("[", modifiers: .command),
+                action: onBack
+            )
+            .disabled(!canGoBack)
+            WindowToolbarButton(
+                "Go forward",
+                systemImage: "arrow.right",
+                glyphSize: 12,
+                shortcut: KeyboardShortcut("]", modifiers: .command),
+                action: onForward
+            )
+            .disabled(!canGoForward)
         }
     }
 }
