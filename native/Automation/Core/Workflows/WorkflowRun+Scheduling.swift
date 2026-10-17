@@ -36,6 +36,9 @@ extension WorkflowRun {
             let title = WorkflowTemplate.render(step.pullRequest?.title ?? "{{title}}", with: templateValues)
             let draft = WorkflowPullRequestDraft(title: title, body: prompt, cwd: cwd, isDraft: step.pullRequest?.isDraft ?? false)
             return [.openPullRequest(step: step.id, draft)]
+        case .script:
+            steps[index].status = .starting
+            return [.runScript(step: step.id, source: step.script ?? "", input: prompt, cwd: cwd)]
         case .agent:
             let continuedTask = step.continues.flatMap { stepRun($0)?.task }
             if let continuedTask, let continued = step.continues {

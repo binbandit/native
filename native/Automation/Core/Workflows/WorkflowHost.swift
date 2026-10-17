@@ -22,4 +22,6 @@ protocol WorkflowHost: AnyObject {
     /// Opens a pull request from the branch checked out in the draft's folder: the hook into the
     /// GitHub feature.
     func openPullRequest(_ draft: WorkflowPullRequestDraft) async throws -> WorkflowPullRequestResult
+    /// Runs a script step in Native's script runtime and returns its result.
+    func runScript(_ source: String, input: String, cwd: URL) async throws -> String
 }

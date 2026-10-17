@@ -8,6 +8,8 @@ final class AppAutomationHost: WorkflowHost {
     /// Opens a pull request through the GitHub feature. The app wires it; until then pull request
     /// steps fail with a way out (skip, or open it by hand).
     var openPullRequestHandler: ((WorkflowPullRequestDraft) async throws -> WorkflowPullRequestResult)?
+    /// Runs a script step in the script runtime (docs/script-runtime.md) once it exists.
+    var runScriptHandler: ((_ source: String, _ input: String, _ cwd: URL) async throws -> String)?
 
     init(model: AppModel) {
         self.model = model
@@ -54,5 +56,10 @@ final class AppAutomationHost: WorkflowHost {
     func openPullRequest(_ draft: WorkflowPullRequestDraft) async throws -> WorkflowPullRequestResult {
         guard let openPullRequestHandler else { throw AutomationHostError.pullRequestsUnavailable }
         return try await openPullRequestHandler(draft)
+    }
+
+    func runScript(_ source: String, input: String, cwd: URL) async throws -> String {
+        guard let runScriptHandler else { throw AutomationHostError.scriptsUnavailable }
+        return try await runScriptHandler(source, input, cwd)
     }
 }

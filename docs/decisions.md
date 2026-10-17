@@ -120,3 +120,13 @@ the Mac that host just happens to be local. Mac, iPad and iPhone share one Swift
 iPad gets the full Mac experience adapted to touch, pointer and hardware keyboard. The iPhone gets
 the companion layout of the same app (`docs/companion.md`). Pairing, transport and security are the
 companion's: a QR code, then end-to-end authenticated connections.
+
+## 2026-10-17: Minimal by default, shaped by the user
+
+Like the Pi agent harness, Native starts with the fewest things turned on and lets each user shape
+it into what they want. A fresh install is a clean place to talk to agents; everything else
+(status bar items, sounds, Native's MCP tools, automations, experiments, extra agents) is a
+built-in plugin the user turns on, from Settings ▸ Extensions or when Native offers it in context.
+Agents can extend Native for the user too: built-in skills teach them how to write Native plugins.
+Features are still designed in from the start; "off by default" is about what's on a new user's
+screen, not about what Native can do.

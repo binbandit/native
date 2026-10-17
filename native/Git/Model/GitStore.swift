@@ -52,9 +52,12 @@ final class GitStore {
 
     /// Gives a new task its own worktree of the repository at `folder`, on a new branch from its
     /// current HEAD, and returns the worktree's folder to run the session in.
-    func createTaskWorktree(in folder: URL, title: String, branchPrefix: String = "") async throws -> URL {
+    /// `detached` skips the branch, for checking a pull request out in the worktree.
+    func createTaskWorktree(
+        in folder: URL, title: String, branchPrefix: String = "", detached: Bool = false
+    ) async throws -> URL {
         let repository = try await requireRepository(at: folder)
-        let worktree = try await repository.createWorktree(forTask: title, branchPrefix: branchPrefix)
+        let worktree = try await repository.createWorktree(forTask: title, branchPrefix: branchPrefix, detached: detached)
         return worktree.path
     }
 

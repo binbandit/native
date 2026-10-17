@@ -93,11 +93,14 @@ struct ModelPicker: View {
             choose(choice)
         } label: {
             // Like Factory's list, the current model is in the accent color.
-            HStack(spacing: DS.Space.lg) {
-                Text(choice.name)
+            HStack(spacing: DS.Space.md) {
+                Text(model?.displayName(of: choice) ?? choice.name)
                     .font(.dsCallout)
                     .foregroundStyle(isCurrent ? .dsAccentText : .dsTextPrimary)
                     .layoutPriority(1)
+                if model?.isRecommended(choice) == true {
+                    Badge("Recommended", tone: .neutral, style: .soft)
+                }
                 Spacer(minLength: 0)
                 if let description = choice.description, description != choice.name {
                     Text(description)
@@ -128,36 +131,53 @@ struct ModelPicker: View {
     }
 
     private var footer: some View {
-        VStack(spacing: DS.Space.md) {
+        VStack(alignment: .leading, spacing: DS.Space.md) {
             if let effort {
                 HStack {
                     Text(effort.option.name)
                     Spacer()
-                    Picker(effort.option.name, selection: Binding(get: { effort.value }, set: { onSet(effort, $0) })) {
-                        ForEach(effort.choices) { choice in
-                            Text(choice.name).tag(choice.value)
-                        }
-                    }
-                    .labelsHidden()
-                    .fixedSize()
+                    effortMenu(effort)
                 }
             }
             ForEach(switches, id: \.option.id) { setting in
-                HStack {
-                    Text(setting.option.name)
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: DS.Space.xxs) {
+                        Text(setting.option.name)
+                        // Carries why it's off when the agent can't serve it (Claude Code's Fast mode).
+                        if let description = setting.option.description {
+                            Text(description)
+                                .font(.dsCaption)
+                                .foregroundStyle(.dsTextTertiary)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
+                    }
                     Spacer()
                     Toggle(setting.option.name, isOn: Binding(get: { setting.isOn }, set: { onSet(setting, $0 ? "on" : "off") }))
                         .toggleStyle(.switch)
                         .controlSize(.small)
                         .labelsHidden()
                 }
-                .help(setting.option.description ?? setting.option.name)
             }
         }
         .font(.dsBody)
         .foregroundStyle(.dsTextPrimary)
         .padding(.horizontal, DS.Space.lg)
         .padding(.vertical, DS.Space.md)
+    }
+
+    /// Effort levels with their cost noted beside each, as menu subtitles.
+    private func effortMenu(_ effort: SelectSetting) -> some View {
+        PillMenu(effort.currentName) {
+            ForEach(effort.choices) { choice in
+                Toggle(isOn: Binding(get: { choice.value == effort.value }, set: { _ in onSet(effort, choice.value) })) {
+                    Text(choice.name)
+                    if let note = effort.effortNote(for: choice) {
+                        Text(note)
+                    }
+                }
+            }
+        }
+        .help(effort.current.flatMap(effort.effortNote(for:)) ?? effort.option.name)
     }
 
     /// The search field keeps focus: arrows move through the list and Return picks.

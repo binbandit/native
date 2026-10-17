@@ -1,6 +1,5 @@
 import ACP
 import SwiftUI
-import UniformTypeIdentifiers
 
 /// The prompt composer, after Factory's: one surface pinned under the transcript that stacks queued
 /// follow-ups, the agent's plan, the draft and a row of session controls, with slash commands
@@ -18,7 +17,6 @@ struct ComposerView: View {
     @State private var commandsDismissed = false
     @State private var isPlanExpanded = false
     @State private var isModelPickerOpen = false
-    @State private var isAttaching = false
     @State private var isDropTargeted = false
     /// The queued follow-up open in the editor; Return saves it back to the queue.
     @State private var editingQueued: SessionModel.QueuedPrompt.ID?
@@ -103,11 +101,6 @@ struct ComposerView: View {
                     autonomyBeforePlan = mode
                 }
             }
-            .fileImporter(isPresented: $isAttaching, allowedContentTypes: [.item], allowsMultipleSelection: true) { result in
-                if case .success(let urls) = result {
-                    insertMentions(of: urls)
-                }
-            }
     }
 
     // MARK: - Layout
@@ -141,19 +134,19 @@ struct ComposerView: View {
                 settings: settings,
                 resumedAutonomy: autonomyBeforePlan,
 
-                context: { ContextIndicator(session: session, style: .labeled) },
                 followUpHint: isWorking ? FollowUpHint(preferred: followUp, supportsSteering: session.supportsSteering, agentName: session.agentName) : nil,
                 isModelPickerOpen: $isModelPickerOpen,
-                onAttach: { isAttaching = true },
+                onAttach: insertMentions,
                 onSet: set,
                 onCycleEffort: { apply(settings.nextEffort) },
                 onCycleAutonomy: { apply(settings.nextAutonomy) },
-                onTogglePlan: { apply(settings.togglingPlan(resumedAutonomy: autonomyBeforePlan)) }
+                onTogglePlan: { apply(settings.togglingPlan(resumedAutonomy: autonomyBeforePlan)) },
+                context: { ContextIndicator(session: session, style: .labeled) }
             )
             .disabled(!canEdit)
         }
         .dropDestination(for: URL.self) { urls, _ in
-            insertMentions(of: urls)
+            insertMentions(urls)
             return !urls.isEmpty
         } isTargeted: {
             isDropTargeted = $0
@@ -255,6 +248,9 @@ struct ComposerView: View {
         guard let action = ComposerKeyMap.action(for: key, modifiers: modifiers, isRepeat: press.phase == .repeat, in: context) else {
             return .ignored
         }
+        if case .moveFocus(let forward) = action {
+            return ComposerPlatform.moveKeyFocus(forward: forward) ? .handled : .ignored
+        }
         perform(action, commands: commands)
         return .handled
     }
@@ -277,9 +273,8 @@ struct ComposerView: View {
             }
         case .submit(let behavior):
             submit(behavior)
-        case .moveFocus(let forward):
-            ComposerPlatform.moveKeyFocus(forward: forward)
-        case .swallow:
+        // Focus moves in `handleKey`, which needs to know whether it did.
+        case .moveFocus, .swallow:
             break
         }
     }
@@ -369,7 +364,7 @@ struct ComposerView: View {
         }
     }
 
-    private func insertMentions(of urls: [URL]) {
+    private func insertMentions(_ urls: [URL]) {
         session.draft = FileMentions.draft(session.draft, mentioning: urls, relativeTo: session.cwd)
         isFocused = true
     }

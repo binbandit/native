@@ -71,6 +71,14 @@ nonisolated struct WorkflowIssue: Hashable, Sendable, CustomStringConvertible {
             if step.goal != nil || step.agent != nil || step.continues != nil {
                 messages.append("a pull request step doesn't run on an agent, so it takes no agent, continues or goal.")
             }
+        case .script:
+            if step.script?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty != false {
+                messages.append("a script step needs \"script\".")
+            }
+            if step.goal != nil || step.agent != nil || step.continues != nil {
+                messages.append("a script step doesn't run on an agent, so it takes no agent, continues or goal.")
+            }
+            templates = [step.prompt]
         }
         for variable in templates.flatMap(WorkflowTemplate.variables(in:)) {
             if case .unknown(let name) = variable {

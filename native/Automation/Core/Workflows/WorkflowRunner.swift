@@ -96,6 +96,12 @@ final class WorkflowRunner {
             } catch {
                 send(.pullRequestFailed(step: step, message: error.localizedDescription), to: run)
             }
+        case .runScript(let step, let source, let input, let cwd):
+            do {
+                send(.scriptFinished(step: step, output: try await host.runScript(source, input: input, cwd: cwd)), to: run)
+            } catch {
+                send(.scriptFailed(step: step, message: error.localizedDescription), to: run)
+            }
         }
     }
 }
