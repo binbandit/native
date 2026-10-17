@@ -129,6 +129,8 @@ public struct Git: Sendable {
             environment: environment,
             standardInput: input
         )
+        // A cancelled caller never starts a command: there's nothing to stop yet.
+        if Task.isCancelled { throw .cancelled }
         let result: CommandResult
         do {
             result = try await runner.run(command)

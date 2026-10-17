@@ -91,6 +91,19 @@ public nonisolated enum DSFormat {
             .joined(separator: " ")
     }
 
+    // MARK: System
+
+    /// Memory as Activity Monitor writes it: "745.7 MB", "1.42 GB".
+    public static func memory(_ bytes: UInt64) -> String {
+        Int64(clamping: bytes).formatted(.byteCount(style: .memory))
+    }
+
+    /// CPU as a percent of one core, as ps and Activity Monitor report it, so it can pass 100%.
+    /// One decimal below 10%, so idle processes don't all read 0%: "0.4%", "12%", "225%".
+    public static func cpu(_ percentOfCore: Double) -> String {
+        (percentOfCore / 100).formatted(.percent.precision(.fractionLength(percentOfCore < 10 ? 1 : 0)))
+    }
+
     private static func oneDecimal(_ value: Double) -> String {
         value.formatted(.number.precision(.fractionLength(0...1)).grouping(.never))
     }

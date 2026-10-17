@@ -38,7 +38,7 @@ struct PullRequestsHeader: View {
             }
 
             // Filters only mean something once there's a list to filter.
-            if model.inbox != nil {
+            if let inbox = model.inbox, !inbox.all.isEmpty {
                 HStack(spacing: DS.Space.md) {
                     PullRequestScopeTabs(scope: $model.filter.scope, inbox: model.inbox)
                     Spacer(minLength: DS.Space.md)

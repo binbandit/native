@@ -12,13 +12,6 @@ final class SidebarDragState {
     enum Item: Hashable {
         case project(Project.ID)
         case session(SessionKey, in: Project.ID)
-
-        var target: SidebarMoveTarget {
-            switch self {
-            case .project(let id): .project(id)
-            case .session(let key, let project): .session(key, in: project)
-            }
-        }
     }
 
     /// Where a drop would land: before (`.top`) or after (`.bottom`) a row.
@@ -39,10 +32,10 @@ final class SidebarDragState {
         dragged = item
         drop = nil
         let provider = NSItemProvider()
+        let type = Self.contentType.identifier
         // The payload is empty: the drop reads `dragged`. Keeping it in-process means it never
         // lands in another app either.
-        provider.registerDataRepresentation(forTypeIdentifier: Self.contentType.identifier, visibility: .ownProcess) {
-            completion in
+        provider.registerDataRepresentation(forTypeIdentifier: type, visibility: .ownProcess) { completion in
             completion(Data(), nil)
             return nil
         }

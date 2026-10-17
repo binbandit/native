@@ -10,7 +10,8 @@ public protocol ExperimentStorage: Sendable {
 
 /// Keeps each value under `experiment.<id>` in user defaults, so one can be set by hand:
 /// `defaults write <bundle id> experiment.bubbles -bool YES`.
-public struct UserDefaultsExperimentStorage: ExperimentStorage {
+// UserDefaults is documented as thread-safe but isn't marked Sendable.
+public struct UserDefaultsExperimentStorage: ExperimentStorage, @unchecked Sendable {
     private let defaults: UserDefaults
 
     public init(_ defaults: UserDefaults = .standard) {
