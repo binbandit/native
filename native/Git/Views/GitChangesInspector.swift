@@ -25,13 +25,16 @@ struct GitChangesInspector: View {
                 EmptyStateView(
                     "Not a Git repository",
                     systemImage: "folder",
-                    message: "\(model.folder.lastPathComponent) isn't tracked by git yet. Create a repository to review and commit changes here."
+                    message:
+                        "\(model.folder.lastPathComponent) isn't tracked by git yet. Create a repository to review and commit changes here."
                 ) {
                     Button("Create Repository") { Task { await model.initializeRepository() } }
                         .buttonStyle(.ds(.secondary))
                 }
             case .failed(let message):
-                EmptyStateView("Couldn't read the repository", systemImage: "exclamationmark.triangle", message: message) {
+                EmptyStateView(
+                    "Couldn't read the repository", systemImage: "exclamationmark.triangle", message: message
+                ) {
                     Button("Try Again") { model.refresh() }
                         .buttonStyle(.ds(.secondary))
                 }
@@ -66,7 +69,10 @@ struct GitChangesInspector: View {
             GeometryReader { proxy in
                 VStack(spacing: 0) {
                     GitChangeList(model: model) { pendingDiscard = $0 }
-                        .frame(height: min(GitChangeList.contentHeight(for: status), max(proxy.size.height * GitMetrics.listShare, GitMetrics.listMinHeight)))
+                        .frame(
+                            height: min(
+                                GitChangeList.contentHeight(for: status),
+                                max(proxy.size.height * GitMetrics.listShare, GitMetrics.listMinHeight)))
                     SeparatorLine()
                     GitDiffPane(change: model.selectedChange, content: model.selectedDiff)
                 }

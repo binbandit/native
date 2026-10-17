@@ -41,7 +41,8 @@ extension GitError: LocalizedError {
 
     /// git's message without its `fatal:`/`error:` prefixes and the hint lines around it.
     static func summarize(_ stderr: String) -> String {
-        let lines = stderr
+        let lines =
+            stderr
             .split(whereSeparator: \.isNewline)
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty && !$0.hasPrefix("hint:") }
@@ -51,6 +52,7 @@ extension GitError: LocalizedError {
             }
             return line
         }
-        return cleaned.isEmpty ? stderr.trimmingCharacters(in: .whitespacesAndNewlines) : cleaned.joined(separator: "\n")
+        return cleaned.isEmpty
+            ? stderr.trimmingCharacters(in: .whitespacesAndNewlines) : cleaned.joined(separator: "\n")
     }
 }

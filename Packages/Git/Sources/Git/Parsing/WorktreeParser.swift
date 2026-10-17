@@ -25,7 +25,8 @@ enum WorktreeParser {
             }
             switch key {
             case "HEAD": current?.head = value.allSatisfy({ $0 == "0" }) ? nil : value
-            case "branch": current?.branch = value.hasPrefix("refs/heads/") ? String(value.dropFirst("refs/heads/".count)) : value
+            case "branch":
+                current?.branch = value.hasPrefix("refs/heads/") ? String(value.dropFirst("refs/heads/".count)) : value
             case "detached": current?.isDetached = true
             case "bare": current?.isBare = true
             case "locked": current?.isLocked = true

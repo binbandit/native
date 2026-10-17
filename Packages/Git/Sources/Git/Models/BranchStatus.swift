@@ -21,7 +21,10 @@ public struct BranchStatus: Hashable, Sendable {
     /// The branch tracks an upstream whose remote branch no longer exists.
     public var isUpstreamGone: Bool
 
-    public init(head: Head, commit: String? = nil, upstream: String? = nil, ahead: Int = 0, behind: Int = 0, isUpstreamGone: Bool = false) {
+    public init(
+        head: Head, commit: String? = nil, upstream: String? = nil, ahead: Int = 0, behind: Int = 0,
+        isUpstreamGone: Bool = false
+    ) {
         self.head = head
         self.commit = commit
         self.upstream = upstream

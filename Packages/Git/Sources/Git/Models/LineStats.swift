@@ -16,6 +16,8 @@ public struct LineStats: Hashable, Sendable {
     public static let zero = LineStats()
 
     public static func + (lhs: LineStats, rhs: LineStats) -> LineStats {
-        LineStats(additions: lhs.additions + rhs.additions, deletions: lhs.deletions + rhs.deletions, isBinary: lhs.isBinary || rhs.isBinary)
+        LineStats(
+            additions: lhs.additions + rhs.additions, deletions: lhs.deletions + rhs.deletions,
+            isBinary: lhs.isBinary || rhs.isBinary)
     }
 }

@@ -79,7 +79,9 @@ final class GitStore {
 
     private func requireRepository(at folder: URL) async throws -> Repository {
         guard let repository = try await resolveGit().repository(at: folder) else {
-            throw GitError.failed(arguments: ["rev-parse"], status: 128, stderr: "\(folder.path(percentEncoded: false)) isn't in a git repository.")
+            throw GitError.failed(
+                arguments: ["rev-parse"], status: 128,
+                stderr: "\(folder.path(percentEncoded: false)) isn't in a git repository.")
         }
         return repository
     }

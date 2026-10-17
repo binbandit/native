@@ -11,7 +11,9 @@ extension Repository {
     public func discard(_ changes: [FileChange]) async throws(GitError) -> Checkpoint? {
         guard !changes.isEmpty else { return nil }
         let checkpoint = try await checkpoint(named: "discard")
-        let hasHead = try await run(["rev-parse", "--verify", "--quiet", "HEAD"], readOnly: true, acceptingStatus: [0, 1]).status == 0
+        let hasHead =
+            try await run(["rev-parse", "--verify", "--quiet", "HEAD"], readOnly: true, acceptingStatus: [0, 1]).status
+            == 0
         var restoreFromIndex: [String] = []
         var restoreFromHead: [String] = []
         var removeFromIndex: [String] = []
@@ -31,12 +33,13 @@ extension Repository {
                 }
             case .staged, .conflicted:
                 delete.insert(change.path)
-                let existedAtHead = switch change.kind {
-                case .added, .copied: false
-                // Both sides may have added it.
-                case .conflicted: try await exists(change.path, at: "HEAD")
-                default: hasHead
-                }
+                let existedAtHead =
+                    switch change.kind {
+                    case .added, .copied: false
+                    // Both sides may have added it.
+                    case .conflicted: try await exists(change.path, at: "HEAD")
+                    default: hasHead
+                    }
                 if change.kind == .renamed || change.kind == .copied || !existedAtHead {
                     removeFromIndex.append(change.path)
                 } else {
@@ -71,7 +74,10 @@ extension Repository {
         let url = root.appending(path: path, directoryHint: .notDirectory)
         let fileManager = FileManager.default
         // A dangling symlink isn't "reachable" but still has to go.
-        guard (try? url.checkResourceIsReachable()) == true || (try? fileManager.destinationOfSymbolicLink(atPath: url.path(percentEncoded: false))) != nil else {
+        guard
+            (try? url.checkResourceIsReachable()) == true
+                || (try? fileManager.destinationOfSymbolicLink(atPath: url.path(percentEncoded: false))) != nil
+        else {
             return
         }
         do {

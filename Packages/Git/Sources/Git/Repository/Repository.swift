@@ -42,7 +42,8 @@ public struct Repository: Sendable, Hashable {
         environment: [String: String] = [:],
         acceptingStatus accepted: Set<Int32> = [0]
     ) async throws(GitError) -> Git.Output {
-        try await git.run(arguments, in: root, readOnly: readOnly, input: input, environment: environment, acceptingStatus: accepted)
+        try await git.run(
+            arguments, in: root, readOnly: readOnly, input: input, environment: environment, acceptingStatus: accepted)
     }
 
     /// Runs a command on literal paths fed through stdin, which sidesteps both pathspec magic
@@ -53,7 +54,8 @@ public struct Repository: Sendable, Hashable {
             input.append(contentsOf: path.utf8)
             input.append(0)
         }
-        try await run(["--literal-pathspecs"] + arguments + ["--pathspec-from-file=-", "--pathspec-file-nul"], input: input)
+        try await run(
+            ["--literal-pathspecs"] + arguments + ["--pathspec-from-file=-", "--pathspec-file-nul"], input: input)
     }
 
     public static func == (lhs: Repository, rhs: Repository) -> Bool {
@@ -68,7 +70,9 @@ public struct Repository: Sendable, Hashable {
     /// The path with symlinks resolved, e.g. `/tmp` to `/private/tmp`, for comparing with git's.
     static func canonicalPath(_ url: URL) -> String {
         let path = url.standardizedFileURL.path(percentEncoded: false)
-        guard let resolved = realpath(path, nil) else { return path.hasSuffix("/") && path.count > 1 ? String(path.dropLast()) : path }
+        guard let resolved = realpath(path, nil) else {
+            return path.hasSuffix("/") && path.count > 1 ? String(path.dropLast()) : path
+        }
         defer { free(resolved) }
         return String(cString: resolved)
     }

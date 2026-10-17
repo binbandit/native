@@ -37,14 +37,17 @@ struct GitChangesHeader: View {
                     .disabled(!status.conflicted.isEmpty)
                     .help(status.conflicted.isEmpty ? "Commit changes" : "Resolve and stage the conflicted files first")
                     .popover(isPresented: $isCommitting, arrowEdge: .bottom) {
-                        GitCommitPopover(model: model, isPresented: $isCommitting, onCreatePullRequest: onCreatePullRequest)
+                        GitCommitPopover(
+                            model: model, isPresented: $isCommitting, onCreatePullRequest: onCreatePullRequest)
                     }
             } else if model.canPush {
                 Button(branch.upstream == nil ? "Publish" : "Push \(branch.ahead)", systemImage: "arrow.up") {
                     Task { await model.push() }
                 }
                 .buttonStyle(.ds(.secondary))
-                .help(branch.upstream == nil ? "Push the branch and track it" : "Push commits to \(branch.upstream ?? "the upstream")")
+                .help(
+                    branch.upstream == nil
+                        ? "Push the branch and track it" : "Push commits to \(branch.upstream ?? "the upstream")")
             } else if let onCreatePullRequest, !branch.isDetached {
                 Button("Create PR", systemImage: "arrow.triangle.pull", action: onCreatePullRequest)
                     .buttonStyle(.ds(.secondary))

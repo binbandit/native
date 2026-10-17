@@ -51,11 +51,17 @@ struct GitDiffPane: View {
                 DiffView(diff: diff, isEmbedded: true)
             }
         case .binary:
-            EmptyStateView("Binary file", systemImage: "doc.zipper", message: "Binary files can't be shown as a line diff.")
+            EmptyStateView(
+                "Binary file", systemImage: "doc.zipper", message: "Binary files can't be shown as a line diff.")
         case .tooLarge(let size):
-            EmptyStateView("File too large", systemImage: "doc.text.magnifyingglass", message: "This file is \(size.formatted(.byteCount(style: .file))). Open it in an editor to review the change.")
+            EmptyStateView(
+                "File too large", systemImage: "doc.text.magnifyingglass",
+                message:
+                    "This file is \(size.formatted(.byteCount(style: .file))). Open it in an editor to review the change."
+            )
         case .submodule:
-            EmptyStateView("Submodule", systemImage: "shippingbox", message: "The submodule points at a different commit.")
+            EmptyStateView(
+                "Submodule", systemImage: "shippingbox", message: "The submodule points at a different commit.")
         case .unavailable(let reason):
             EmptyStateView("Couldn't load the diff", systemImage: "exclamationmark.triangle", message: reason)
         }

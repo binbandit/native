@@ -29,33 +29,70 @@ extension GitNotice {
         let output = Self.output(of: error)
         switch error.failure {
         case .pushRejected:
-            self.init(tone: .failure, title: "The remote has commits you don't have", message: "Pull them in, then push again.", detail: output, action: .pull)
+            self.init(
+                tone: .failure, title: "The remote has commits you don't have",
+                message: "Pull them in, then push again.", detail: output, action: .pull)
         case .divergentBranches:
-            self.init(tone: .failure, title: "Your branch and the remote have diverged", message: "Git needs to know whether to merge or rebase. Set it once with “git config pull.rebase true” (or false to merge), then pull again.", detail: output)
+            self.init(
+                tone: .failure, title: "Your branch and the remote have diverged",
+                message:
+                    "Git needs to know whether to merge or rebase. Set it once with “git config pull.rebase true” (or false to merge), then pull again.",
+                detail: output)
         case .remoteRefused:
-            self.init(tone: .failure, title: "The remote refused the push", message: "The branch may be protected, or a server hook rejected it. Its reason is below; pushing to a new branch and opening a pull request usually works.", detail: output)
+            self.init(
+                tone: .failure, title: "The remote refused the push",
+                message:
+                    "The branch may be protected, or a server hook rejected it. Its reason is below; pushing to a new branch and opening a pull request usually works.",
+                detail: output)
         case .authenticationFailed:
-            self.init(tone: .failure, title: "Git couldn't sign in to the remote", message: "Check the credentials or SSH key git uses for this remote (try the same command in Terminal), then try again.", detail: output, action: operation == .pull ? .pull : .push)
+            self.init(
+                tone: .failure, title: "Git couldn't sign in to the remote",
+                message:
+                    "Check the credentials or SSH key git uses for this remote (try the same command in Terminal), then try again.",
+                detail: output, action: operation == .pull ? .pull : .push)
         case .networkUnavailable:
-            self.init(tone: .failure, title: "Couldn't reach the remote", message: "Check your connection, then try again. Your commits are safe locally.", action: operation == .pull ? .pull : .push)
+            self.init(
+                tone: .failure, title: "Couldn't reach the remote",
+                message: "Check your connection, then try again. Your commits are safe locally.",
+                action: operation == .pull ? .pull : .push)
         case .noRemote:
-            self.init(tone: .failure, title: "This repository has no remote", message: "Add one with “git remote add origin <url>”, or publish the repository to GitHub, then push.")
+            self.init(
+                tone: .failure, title: "This repository has no remote",
+                message: "Add one with “git remote add origin <url>”, or publish the repository to GitHub, then push.")
         case .detachedHead:
-            self.init(tone: .failure, title: "You're not on a branch", message: "HEAD points at a commit. Create or check out a branch to push your work.")
+            self.init(
+                tone: .failure, title: "You're not on a branch",
+                message: "HEAD points at a commit. Create or check out a branch to push your work.")
         case .unmergedFiles:
-            self.init(tone: .failure, title: "Resolve the conflicts first", message: "Edit each conflicted file to remove the conflict markers, stage it, then commit.", action: .showConflicts)
+            self.init(
+                tone: .failure, title: "Resolve the conflicts first",
+                message: "Edit each conflicted file to remove the conflict markers, stage it, then commit.",
+                action: .showConflicts)
         case .conflicts:
-            self.init(tone: .failure, title: "Pulling stopped on conflicts", message: "Resolve the conflicted files and stage them, then commit to finish the merge.", detail: output, action: .showConflicts)
+            self.init(
+                tone: .failure, title: "Pulling stopped on conflicts",
+                message: "Resolve the conflicted files and stage them, then commit to finish the merge.",
+                detail: output, action: .showConflicts)
         case .nothingToCommit:
             self.init(tone: .failure, title: "Nothing to commit", message: "The selected files match the last commit.")
         case .hookFailed:
-            self.init(tone: .failure, title: "A commit hook stopped the commit", message: "Fix what it reports below, then commit again. Your message and selection are kept.", detail: output)
+            self.init(
+                tone: .failure, title: "A commit hook stopped the commit",
+                message: "Fix what it reports below, then commit again. Your message and selection are kept.",
+                detail: output)
         case .repositoryLocked:
-            self.init(tone: .failure, title: "Another git process is using this repository", message: "An agent may be running git right now. Wait for it to finish, then try again.", detail: output)
+            self.init(
+                tone: .failure, title: "Another git process is using this repository",
+                message: "An agent may be running git right now. Wait for it to finish, then try again.", detail: output
+            )
         case .localChangesWouldBeOverwritten:
-            self.init(tone: .failure, title: "Pulling would overwrite uncommitted changes", message: "Commit or discard those changes first, then pull.", detail: output)
+            self.init(
+                tone: .failure, title: "Pulling would overwrite uncommitted changes",
+                message: "Commit or discard those changes first, then pull.", detail: output)
         case .other:
-            self.init(tone: .failure, title: operation.failureTitle, message: error.localizedDescription, detail: output == error.localizedDescription ? nil : output)
+            self.init(
+                tone: .failure, title: operation.failureTitle, message: error.localizedDescription,
+                detail: output == error.localizedDescription ? nil : output)
         }
     }
 

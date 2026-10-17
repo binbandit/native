@@ -35,7 +35,9 @@ struct ChangeClassifier: Sendable {
             } else if path.isInside(root) {
                 let relative = String(path.dropFirst(root.count + 1))
                 // Nested repositories' and submodules' internals, and a linked worktree's `.git` file.
-                guard !relative.isEmpty, relative != ".git", !relative.hasPrefix(".git/"), !relative.contains("/.git/"), !relative.hasSuffix("/.git") else { continue }
+                guard !relative.isEmpty, relative != ".git", !relative.hasPrefix(".git/"), !relative.contains("/.git/"),
+                    !relative.hasSuffix("/.git")
+                else { continue }
                 change.paths.insert(relative)
             }
         }

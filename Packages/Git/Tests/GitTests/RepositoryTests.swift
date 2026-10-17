@@ -1,6 +1,7 @@
 import Foundation
-@testable import Git
 import Testing
+
+@testable import Git
 
 @Suite("Repository against real temporary repositories")
 struct RepositoryTests {
@@ -65,7 +66,8 @@ struct RepositoryTests {
 
         #expect(status.branch.isUnborn)
         #expect(status.branch.name == "main")
-        #expect(status.staged == [FileChange(path: "a.txt", kind: .added, area: .staged, stats: LineStats(additions: 2))])
+        #expect(
+            status.staged == [FileChange(path: "a.txt", kind: .added, area: .staged, stats: LineStats(additions: 2))])
         #expect(status.untracked.map(\.path) == ["b.txt"])
         #expect(status.totals == LineStats(additions: 3))
 
@@ -115,11 +117,14 @@ struct RepositoryTests {
         status = try await repository.status()
         #expect(status.staged.isEmpty)
 
-        let commit = try await repository.commit(message: "Add odd file\n\nWith a body.", files: [try #require(status.untracked.first { $0.path == odd })])
+        let commit = try await repository.commit(
+            message: "Add odd file\n\nWith a body.", files: [try #require(status.untracked.first { $0.path == odd })])
         #expect(commit.count >= 40)
         status = try await repository.status()
         #expect(status.untracked.map(\.path) == ["other.txt"])
-        #expect(try await test.git("log", "-1", "--format=%B").trimmingCharacters(in: .whitespacesAndNewlines) == "Add odd file\n\nWith a body.")
+        #expect(
+            try await test.git("log", "-1", "--format=%B").trimmingCharacters(in: .whitespacesAndNewlines)
+                == "Add odd file\n\nWith a body.")
         #expect(try await repository.recentCommitSubjects() == ["Add odd file", "Initial commit"])
     }
 
@@ -137,7 +142,9 @@ struct RepositoryTests {
         let after = try await repository.status()
         #expect(after.untracked.map(\.path) == ["a.txt"])
         #expect(after.staged.isEmpty)
-        #expect(try await test.git("show", "--name-only", "--format=", "HEAD").trimmingCharacters(in: .whitespacesAndNewlines) == "b.txt")
+        #expect(
+            try await test.git("show", "--name-only", "--format=", "HEAD").trimmingCharacters(
+                in: .whitespacesAndNewlines) == "b.txt")
     }
 
     @Test func commitFailuresCarryGitsMessage() async throws {

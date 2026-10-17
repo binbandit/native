@@ -1,6 +1,7 @@
 import Foundation
-@testable import Git
 import Testing
+
+@testable import Git
 
 @Suite("Commit message helpers")
 struct CommitMessageTests {
@@ -29,21 +30,21 @@ struct CommitMessageTests {
     @Test func trimmingDropsNoiseAndKeepsEveryFile() {
         let big = (1...200).map { "+line \($0)" }.joined(separator: "\n")
         let patch = """
-        diff --git a/small.txt b/small.txt
-        index 123..456 100644
-        --- a/small.txt
-        +++ b/small.txt
-        @@ -1 +1 @@
-        -old
-        +new
-        diff --git a/big.txt b/big.txt
-        new file mode 100644
-        --- /dev/null
-        +++ b/big.txt
-        @@ -0,0 +1,200 @@
-        \(big)
+            diff --git a/small.txt b/small.txt
+            index 123..456 100644
+            --- a/small.txt
+            +++ b/small.txt
+            @@ -1 +1 @@
+            -old
+            +new
+            diff --git a/big.txt b/big.txt
+            new file mode 100644
+            --- /dev/null
+            +++ b/big.txt
+            @@ -0,0 +1,200 @@
+            \(big)
 
-        """
+            """
 
         let trimmed = PatchTrimmer.trim(patch, toCharacters: 400)
 

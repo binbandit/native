@@ -22,11 +22,14 @@ struct GitCommitPopover: View {
             messageEditor
             fileList(files)
             if let notice {
-                GitNoticeBanner(notice: notice, onAction: { action in
-                    isPresented = false
-                    Task { await model.run(action) }
-                }, onDismiss: { self.notice = nil })
-                    .clipShape(.rect(cornerRadius: DS.Radius.control, style: .continuous))
+                GitNoticeBanner(
+                    notice: notice,
+                    onAction: { action in
+                        isPresented = false
+                        Task { await model.run(action) }
+                    }, onDismiss: { self.notice = nil }
+                )
+                .clipShape(.rect(cornerRadius: DS.Radius.control, style: .continuous))
             }
             SeparatorLine()
             footer(files)
@@ -127,7 +130,8 @@ struct GitCommitPopover: View {
     }
 
     private func footer(_ files: [GitCommitFile]) -> some View {
-        let canCommit = !selected.isEmpty && !model.commitMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        let canCommit =
+            !selected.isEmpty && !model.commitMessage.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         return HStack(spacing: DS.Space.sm) {
             if let onCreatePullRequest, model.branch?.isDetached == false {
                 Button("Commit & Create PR") {

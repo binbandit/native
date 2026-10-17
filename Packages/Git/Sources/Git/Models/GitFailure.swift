@@ -44,22 +44,42 @@ extension GitError {
     static func classify(command: String, output: String) -> GitFailure {
         let has = { (needles: [String]) in needles.contains { output.contains($0) } }
         if has(["index.lock", "another git process seems to be running"]) { return .repositoryLocked }
-        if has(["could not resolve host", "could not connect", "connection timed out", "network is unreachable", "connection refused", "unable to access", "operation timed out"]) {
+        if has([
+            "could not resolve host", "could not connect", "connection timed out", "network is unreachable",
+            "connection refused", "unable to access", "operation timed out",
+        ]) {
             // "unable to access" also wraps authentication failures over HTTPS.
             if has(["403", "401", "authentication"]) { return .authenticationFailed }
             return .networkUnavailable
         }
-        if has(["authentication failed", "permission denied (publickey", "could not read username", "could not read password", "terminal prompts disabled", "invalid username or password", "host key verification failed"]) {
+        if has([
+            "authentication failed", "permission denied (publickey", "could not read username",
+            "could not read password", "terminal prompts disabled", "invalid username or password",
+            "host key verification failed",
+        ]) {
             return .authenticationFailed
         }
         if has(["divergent branches", "need to specify how to reconcile"]) { return .divergentBranches }
-        if has(["would be overwritten by merge", "would be overwritten by checkout", "please commit your changes or stash them"]) { return .localChangesWouldBeOverwritten }
-        if has(["protected branch", "pre-receive hook declined", "remote rejected", "push declined"]) { return .remoteRefused }
+        if has([
+            "would be overwritten by merge", "would be overwritten by checkout",
+            "please commit your changes or stash them",
+        ]) {
+            return .localChangesWouldBeOverwritten
+        }
+        if has(["protected branch", "pre-receive hook declined", "remote rejected", "push declined"]) {
+            return .remoteRefused
+        }
         if has(["non-fast-forward", "fetch first", "updates were rejected"]) { return .pushRejected }
-        if has(["unmerged files", "you have unmerged paths", "not possible because you have unmerged"]) { return .unmergedFiles }
+        if has(["unmerged files", "you have unmerged paths", "not possible because you have unmerged"]) {
+            return .unmergedFiles
+        }
         if command == "pull", has(["conflict"]) { return .conflicts }
-        if has(["nothing to commit", "nothing added to commit", "no changes added to commit"]) { return .nothingToCommit }
-        if has(["no configured push destination", "does not appear to be a git repository", "no such remote"]) { return .noRemote }
+        if has(["nothing to commit", "nothing added to commit", "no changes added to commit"]) {
+            return .nothingToCommit
+        }
+        if has(["no configured push destination", "does not appear to be a git repository", "no such remote"]) {
+            return .noRemote
+        }
         // A commit that fails for any other reason after git starts it is a hook saying no.
         if command == "commit" { return .hookFailed }
         return .other

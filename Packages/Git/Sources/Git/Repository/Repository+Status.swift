@@ -9,7 +9,8 @@ extension Repository {
 
     /// The branch, every changed file with its line counts, and the working tree's totals.
     public func status() async throws(GitError) -> RepositoryStatus {
-        let output = try await run(["status", "--porcelain=v2", "--branch", "-z", "--untracked-files=all"], readOnly: true)
+        let output = try await run(
+            ["status", "--porcelain=v2", "--branch", "-z", "--untracked-files=all"], readOnly: true)
         var (branch, changes) = try StatusParser.parse(output.text)
 
         // The working tree against HEAD, or against the empty tree before the first commit.
@@ -57,7 +58,8 @@ extension Repository {
             }
         }
         changes.sort { lhs, rhs in
-            lhs.area != rhs.area ? lhs.area < rhs.area : lhs.path.localizedStandardCompare(rhs.path) == .orderedAscending
+            lhs.area != rhs.area
+                ? lhs.area < rhs.area : lhs.path.localizedStandardCompare(rhs.path) == .orderedAscending
         }
         return RepositoryStatus(branch: branch, changes: changes, totals: totals, omittedUntrackedCount: omitted)
     }
@@ -66,10 +68,12 @@ extension Repository {
     private func untrackedStats(of path: String) -> LineStats? {
         let url = root.appending(path: path, directoryHint: .notDirectory)
         guard let values = try? url.resourceValues(forKeys: [.fileSizeKey, .isRegularFileKey]),
-              values.isRegularFile == true,
-              let size = values.fileSize
+            values.isRegularFile == true,
+            let size = values.fileSize
         else { return nil }
-        guard size <= Self.untrackedLineCountLimit, let data = try? Data(contentsOf: url, options: .mappedIfSafe) else { return nil }
+        guard size <= Self.untrackedLineCountLimit, let data = try? Data(contentsOf: url, options: .mappedIfSafe) else {
+            return nil
+        }
         if FileVersions.isBinary(data) { return LineStats(isBinary: true) }
         var lines = data.reduce(0) { $1 == 0x0A ? $0 + 1 : $0 }
         if let last = data.last, last != 0x0A { lines += 1 }

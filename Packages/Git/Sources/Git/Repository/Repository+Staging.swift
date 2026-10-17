@@ -23,7 +23,8 @@ extension Repository {
             input.append(0)
         }
         // 1: none of them are ignored.
-        let output = try await run(["check-ignore", "-z", "--stdin"], readOnly: true, input: input, acceptingStatus: [0, 1])
+        let output = try await run(
+            ["check-ignore", "-z", "--stdin"], readOnly: true, input: input, acceptingStatus: [0, 1])
         return Set(output.text.split(separator: "\0").map(String.init))
     }
 }

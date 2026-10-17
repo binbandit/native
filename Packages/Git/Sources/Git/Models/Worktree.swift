@@ -20,12 +20,15 @@ public struct Worktree: Hashable, Sendable, Identifiable {
     /// repository so the main checkout's status, file watchers and searches never see them
     /// (Conductor moved its worktrees out of repositories for the same reason).
     public static var defaultLocation: URL {
-        FileManager.default.homeDirectoryForCurrentUser.appending(path: ".native/worktrees", directoryHint: .isDirectory)
+        FileManager.default.homeDirectoryForCurrentUser.appending(
+            path: ".native/worktrees", directoryHint: .isDirectory)
     }
 
     /// A folder and branch name for `title`: lowercase ASCII letters, digits and dashes.
     public static func slug(_ title: String, maxLength: Int = 40) -> String {
-        let folded = title.folding(options: [.diacriticInsensitive, .caseInsensitive, .widthInsensitive], locale: Locale(identifier: "en_US_POSIX"))
+        let folded = title.folding(
+            options: [.diacriticInsensitive, .caseInsensitive, .widthInsensitive],
+            locale: Locale(identifier: "en_US_POSIX"))
         var slug = ""
         for scalar in folded.unicodeScalars {
             if ("a"..."z").contains(scalar) || ("0"..."9").contains(scalar) {

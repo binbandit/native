@@ -25,16 +25,21 @@ extension GitRepositoryModel {
         await perform(.discard) { repository in
             let checkpoint = try await repository.discard(changes)
             let files = Set(changes.map(\.path))
-            let title = files.count == 1 ? "Discarded changes to \(changes[0].fileName)" : "Discarded changes to \(files.count) files"
+            let title =
+                files.count == 1
+                ? "Discarded changes to \(changes[0].fileName)" : "Discarded changes to \(files.count) files"
             guard let checkpoint else { return GitNotice(tone: .success, title: title) }
-            return GitNotice(tone: .success, title: title, message: "A checkpoint was saved first, so you can put them back.", action: .restore(checkpoint, paths: paths))
+            return GitNotice(
+                tone: .success, title: title, message: "A checkpoint was saved first, so you can put them back.",
+                action: .restore(checkpoint, paths: paths))
         }
     }
 
     func restore(_ checkpoint: Checkpoint, paths: [String]) async {
         await perform(.restore) { repository in
             try await repository.restore(checkpoint, paths: paths)
-            return GitNotice(tone: .success, title: paths.count == 1 ? "Restored 1 file" : "Restored \(paths.count) files")
+            return GitNotice(
+                tone: .success, title: paths.count == 1 ? "Restored 1 file" : "Restored \(paths.count) files")
         }
     }
 
@@ -43,7 +48,11 @@ extension GitRepositoryModel {
         await perform(.push) { repository in
             try await repository.push()
             let upstream = try await repository.status().branch.upstream ?? "the remote"
-            return GitNotice(tone: .success, title: ahead == 0 ? "Published to \(upstream)" : ahead == 1 ? "Pushed 1 commit to \(upstream)" : "Pushed \(ahead) commits to \(upstream)")
+            return GitNotice(
+                tone: .success,
+                title: ahead == 0
+                    ? "Published to \(upstream)"
+                    : ahead == 1 ? "Pushed 1 commit to \(upstream)" : "Pushed \(ahead) commits to \(upstream)")
         }
     }
 
@@ -80,7 +89,8 @@ extension GitRepositoryModel {
         guard let repository else { return "" }
         async let patch = repository.patch(for: files)
         async let subjects = repository.recentCommitSubjects()
-        return try await CommitMessageDrafter().draft(patch: patch, files: files, style: CommitStyle(subjects: subjects))
+        return try await CommitMessageDrafter().draft(
+            patch: patch, files: files, style: CommitStyle(subjects: subjects))
     }
 
     /// `git init` for a folder that isn't a repository yet.

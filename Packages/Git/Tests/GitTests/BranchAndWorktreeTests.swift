@@ -1,7 +1,8 @@
 import Foundation
-@testable import Git
 import Synchronization
 import Testing
+
+@testable import Git
 
 @Suite("Branches, pushing and worktrees")
 struct BranchAndWorktreeTests {
@@ -100,8 +101,10 @@ struct BranchAndWorktreeTests {
         let repository = try await test.repository
         let location = test.folder.deletingLastPathComponent().appending(path: "worktrees", directoryHint: .isDirectory)
 
-        let first = try await repository.createWorktree(forTask: "Fix the Login bug", branchPrefix: "native/", in: location)
-        let second = try await repository.createWorktree(forTask: "Fix the login bug", branchPrefix: "native/", in: location)
+        let first = try await repository.createWorktree(
+            forTask: "Fix the Login bug", branchPrefix: "native/", in: location)
+        let second = try await repository.createWorktree(
+            forTask: "Fix the login bug", branchPrefix: "native/", in: location)
 
         #expect(first.branch == "native/fix-the-login-bug")
         #expect(second.branch == "native/fix-the-login-bug-2")
@@ -114,7 +117,9 @@ struct BranchAndWorktreeTests {
         #expect(linked.isLinkedWorktree)
         #expect(linked.name == "repo")
         #expect(try await linked.status().branch.name == "native/fix-the-login-bug")
-        #expect(try await repository.branches(includingRemote: false).first { $0.name == "native/fix-the-login-bug" }?.worktreePath != nil)
+        #expect(
+            try await repository.branches(includingRemote: false).first { $0.name == "native/fix-the-login-bug" }?
+                .worktreePath != nil)
 
         try await repository.removeWorktree(at: second.path)
         #expect(try await repository.worktrees().count == 2)
@@ -131,7 +136,9 @@ struct BranchAndWorktreeTests {
         try Data("# Edited\n".utf8).write(to: worktree.path.appending(path: "README.md"))
 
         // Without force git refuses, and nothing is lost.
-        await #expect(throws: GitError.self) { try await repository.removeWorktree(at: worktree.path, checkpoint: false) }
+        await #expect(throws: GitError.self) {
+            try await repository.removeWorktree(at: worktree.path, checkpoint: false)
+        }
 
         let checkpoint = try #require(try await repository.removeWorktree(at: worktree.path, force: true))
 

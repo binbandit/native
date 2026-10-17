@@ -145,7 +145,9 @@ final class GitRepositoryModel {
 
     private func currentRepository() async throws -> Repository? {
         if let repository { return repository }
-        guard let git = try await resolveGit(), let repository = try await git.repository(at: folder) else { return nil }
+        guard let git = try await resolveGit(), let repository = try await git.repository(at: folder) else {
+            return nil
+        }
         self.repository = repository
         startWatching(repository)
         return repository
@@ -156,13 +158,17 @@ final class GitRepositoryModel {
         guard newStatus != previous else { return }
         status = newStatus
         // Keep the same file selected when it moves between areas, e.g. after staging it.
-        if let selected = previous?.changes.first(where: { $0.id == selection }), !newStatus.changes.contains(where: { $0.id == selection }) {
+        if let selected = previous?.changes.first(where: { $0.id == selection }),
+            !newStatus.changes.contains(where: { $0.id == selection })
+        {
             selection = newStatus.changes.first { $0.path == selected.path }?.id ?? newStatus.changes.first?.id
         } else if selection == nil || !newStatus.changes.contains(where: { $0.id == selection }) {
             selection = newStatus.changes.first?.id
         }
         // The selected file itself may have changed on disk.
-        if let selected = selectedChange, previous?.changes.first(where: { $0.id == selected.id }) != selected || selectedDiff == nil {
+        if let selected = selectedChange,
+            previous?.changes.first(where: { $0.id == selected.id }) != selected || selectedDiff == nil
+        {
             loadSelectedDiff()
         }
     }

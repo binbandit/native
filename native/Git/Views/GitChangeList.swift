@@ -52,7 +52,9 @@ struct GitChangeList: View {
                 if area != .staged {
                     IconButton("Discard All \(area.title)", systemImage: "arrow.uturn.backward") { onDiscard(changes) }
                 }
-                IconButton(area == .staged ? "Unstage All" : "Stage All", systemImage: area == .staged ? "minus" : "plus") {
+                IconButton(
+                    area == .staged ? "Unstage All" : "Stage All", systemImage: area == .staged ? "minus" : "plus"
+                ) {
                     Task { area == .staged ? await model.unstage(changes) : await model.stage(changes) }
                 }
             }
