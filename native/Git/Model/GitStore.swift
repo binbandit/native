@@ -57,7 +57,8 @@ final class GitStore {
         in folder: URL, title: String, branchPrefix: String = "", detached: Bool = false
     ) async throws -> URL {
         let repository = try await requireRepository(at: folder)
-        let worktree = try await repository.createWorktree(forTask: title, branchPrefix: branchPrefix, detached: detached)
+        let worktree = try await repository.createWorktree(
+            forTask: title, branchPrefix: branchPrefix, detached: detached)
         return worktree.path
     }
 

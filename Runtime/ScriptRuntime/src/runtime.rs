@@ -128,7 +128,7 @@ fn install_guest(scope: &mut v8::PinScope) -> Result<Guest, Failure> {
     let exports = global.get(tc, key.into()).and_then(|value| v8::Local::<v8::Array>::try_from(value).ok());
     global.delete(tc, key.into());
     let exports = exports.ok_or_else(|| internal("The script runtime didn't start"))?;
-    let mut function = |index| {
+    let function = |index| {
         exports
             .get_index(tc, index)
             .and_then(|value| v8::Local::<v8::Function>::try_from(value).ok())

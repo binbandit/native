@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- The App Sandbox with nothing granted: no network, no files outside the helper's own
+	     container, no devices. Scripts reach the world only through the tools the host binds over
+	     stdin and stdout, which the sandbox leaves open. V8 runs without its JIT, so the hardened
+	     runtime needs no exceptions either. -->
+	<key>com.apple.security.app-sandbox</key>
+	<true/>
+</dict>
+</plist>

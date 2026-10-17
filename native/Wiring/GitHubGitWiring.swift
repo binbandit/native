@@ -48,7 +48,9 @@ enum GitHubGitWiring {
 
     /// Checks a pull request out in a fresh worktree of the project it belongs to and starts a task
     /// there with the default agent.
-    static func openAsTask(_ pullRequest: PullRequestSummary, app: AppModel, git: GitStore, gitHub: GitHubModel)
+    static func openAsTask(
+        _ pullRequest: PullRequestSummary, app: AppModel, git: GitStore, gitHub: GitHubModel
+    )
         async throws
     {
         guard let project = await project(for: pullRequest.repository, app: app, gitHub: gitHub) else {
@@ -77,7 +79,9 @@ enum GitHubGitWiring {
 
     /// The pull request's own branch name, so pushes go back to it, unless a local branch already
     /// has that name (often checked out in the main checkout, where git won't share it).
-    private static func localBranchName(for pullRequest: PullRequestSummary, in folder: URL, git: GitStore) async
+    private static func localBranchName(
+        for pullRequest: PullRequestSummary, in folder: URL, git: GitStore
+    ) async
         -> String
     {
         let fallback = "pr-\(pullRequest.number)"
