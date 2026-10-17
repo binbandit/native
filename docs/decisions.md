@@ -130,3 +130,9 @@ built-in plugin the user turns on, from Settings ▸ Extensions or when Native o
 Agents can extend Native for the user too: built-in skills teach them how to write Native plugins.
 Features are still designed in from the start; "off by default" is about what's on a new user's
 screen, not about what Native can do.
+
+## 2026-10-18: Releases on GitHub
+
+Native ships through GitHub Releases. Each channel (stable, beta, nightly) publishes signed,
+notarized builds as release assets, and the in-app updater reads a feed generated from those
+releases. No servers of our own.

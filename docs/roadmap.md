@@ -33,7 +33,7 @@ coordinator keeps this current.
 | Remappable, searchable shortcuts and a command palette | new `Commands` feature | `docs/keyboard.md` stays the source of defaults |
 | Code themes | design system | the reference app's set (Catppuccin, Tokyo Night, Gruvbox, Solarized, Dracula, Nord) plus popular ones |
 | Terminal | new `Terminal` feature | libghostty |
-| Updates and release channels | new `Updates` feature | Stable, beta, nightly |
+| Updates and release channels | new `Updates` feature | Stable, beta, nightly; published as GitHub Releases |
 | Startup performance | everyone, with a budget | First window well within one Dock bounce |
 | Built-in skills, starting with "build a Native plugin" | orchestration (Native's MCP server) | |
 | Minimal by default | plugins, settings | `docs/decisions.md` |

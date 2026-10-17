@@ -6,6 +6,7 @@ extension WorkflowRun {
     var statusLabel: String {
         guard phase == .halted else { return phase.label }
         if steps.contains(where: { if case .failed = $0.status { true } else { false } }) { return "Step failed" }
+        if steps.contains(where: { $0.status == .interrupted }) { return "Interrupted" }
         if steps.contains(where: { if case .limited = $0.status { true } else { false } }) { return "Limited" }
         return "Step stopped"
     }

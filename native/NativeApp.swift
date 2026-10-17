@@ -47,7 +47,7 @@ struct NativeApp: App {
         }
 
         Settings {
-            SettingsView()
+            SettingsView(additionalPanes: [.labs])
                 .environment(model.plugins)
                 .environment(iconPreferences)
                 .dsAccentPalette(themeID: iconPreferences.theme.rawValue)

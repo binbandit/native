@@ -10,11 +10,11 @@
 		000000000000000000000320 /* ACP in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000000310 /* ACP */; };
 		000000000000000000000420 /* MCP in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000000410 /* MCP */; };
 		000000000000000000474820 /* GitHub in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000474810 /* GitHub */; };
-		000000000000000000617320 /* Git in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000617310 /* Git */; };
-		000000000000000000E10320 /* Experiments in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000E10310 /* Experiments */; };
 		0000000000000000004E480E /* Native Host.app in Embed Login Items */ = {isa = PBXBuildFile; fileRef = 0000000000000000004E480A /* Native Host.app */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		0000000000000000004E4812 /* NativeHost in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000004E4811 /* NativeHost */; };
 		0000000000000000004E4814 /* NativeHostClient in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000004E4813 /* NativeHostClient */; };
+		000000000000000000617320 /* Git in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000617310 /* Git */; };
+		000000000000000000E10320 /* Experiments in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000E10310 /* Experiments */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -72,6 +72,12 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		0000000000000000004E4806 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			files = (
+				0000000000000000004E4812 /* NativeHost in Frameworks */,
+			);
+		};
 		000000000000000130000000 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
@@ -81,12 +87,6 @@
 				000000000000000000617320 /* Git in Frameworks */,
 				000000000000000000E10320 /* Experiments in Frameworks */,
 				0000000000000000004E4814 /* NativeHostClient in Frameworks */,
-			);
-		};
-		0000000000000000004E4806 /* Frameworks */ = {
-			isa = PBXFrameworksBuildPhase;
-			files = (
-				0000000000000000004E4812 /* NativeHost in Frameworks */,
 			);
 		};
 /* End PBXFrameworksBuildPhase section */
@@ -113,6 +113,27 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		0000000000000000004E4801 /* NativeHostHelper */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0000000000000000004E4802 /* Build configuration list for PBXNativeTarget "NativeHostHelper" */;
+			buildPhases = (
+				0000000000000000004E4805 /* Sources */,
+				0000000000000000004E4806 /* Frameworks */,
+				0000000000000000004E4807 /* Resources */,
+			);
+			buildRules = (
+			);
+			fileSystemSynchronizedGroups = (
+				0000000000000000004E4808 /* NativeHostHelper */,
+			);
+			name = NativeHostHelper;
+			packageProductDependencies = (
+				0000000000000000004E4811 /* NativeHost */,
+			);
+			productName = "Native Host";
+			productReference = 0000000000000000004E480A /* Native Host.app */;
+			productType = "com.apple.product-type.application";
+		};
 		000000000000000100000000 /* native */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 000000000000000110000000 /* Build configuration list for PBXNativeTarget "native" */;
@@ -142,27 +163,6 @@
 			);
 			productName = Native;
 			productReference = 000000000000000000000120 /* native.app */;
-			productType = "com.apple.product-type.application";
-		};
-		0000000000000000004E4801 /* NativeHostHelper */ = {
-			isa = PBXNativeTarget;
-			buildConfigurationList = 0000000000000000004E4802 /* Build configuration list for PBXNativeTarget "NativeHostHelper" */;
-			buildPhases = (
-				0000000000000000004E4805 /* Sources */,
-				0000000000000000004E4806 /* Frameworks */,
-				0000000000000000004E4807 /* Resources */,
-			);
-			buildRules = (
-			);
-			fileSystemSynchronizedGroups = (
-				0000000000000000004E4808 /* NativeHostHelper */,
-			);
-			name = NativeHostHelper;
-			packageProductDependencies = (
-				0000000000000000004E4811 /* NativeHost */,
-			);
-			productName = "Native Host";
-			productReference = 0000000000000000004E480A /* Native Host.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -209,12 +209,12 @@
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		000000000000000140000000 /* Resources */ = {
+		0000000000000000004E4807 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			files = (
 			);
 		};
-		0000000000000000004E4807 /* Resources */ = {
+		000000000000000140000000 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			files = (
 			);
@@ -240,12 +240,12 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		000000000000000120000000 /* Sources */ = {
+		0000000000000000004E4805 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			files = (
 			);
 		};
-		0000000000000000004E4805 /* Sources */ = {
+		000000000000000120000000 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			files = (
 			);
@@ -261,6 +261,54 @@
 /* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
+		0000000000000000004E4803 /* Debug configuration for PBXNativeTarget "NativeHostHelper" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Native;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_LSUIElement = YES;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "devplaceholder.$(PROJECT_UNIQUE_VALUE:identifier).Native.Host";
+				PRODUCT_NAME = "Native Host";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		0000000000000000004E4804 /* Release configuration for PBXNativeTarget "NativeHostHelper" */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_APP_SANDBOX = NO;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_CFBundleDisplayName = Native;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
+				INFOPLIST_KEY_LSUIElement = YES;
+				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = "devplaceholder.$(PROJECT_UNIQUE_VALUE:identifier).Native.Host";
+				PRODUCT_NAME = "Native Host";
+				SDKROOT = macosx;
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = macosx;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
 		000000000000000011000000 /* Debug configuration for PBXProject "native" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -433,57 +481,17 @@
 			};
 			name = Release;
 		};
-		0000000000000000004E4803 /* Debug configuration for PBXNativeTarget "NativeHostHelper" */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				ENABLE_APP_SANDBOX = NO;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = Native;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
-				INFOPLIST_KEY_LSUIElement = YES;
-				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "devplaceholder.$(PROJECT_UNIQUE_VALUE:identifier).Native.Host";
-				PRODUCT_NAME = "Native Host";
-				SDKROOT = macosx;
-				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = macosx;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 6.0;
-			};
-			name = Debug;
-		};
-		0000000000000000004E4804 /* Release configuration for PBXNativeTarget "NativeHostHelper" */ = {
-			isa = XCBuildConfiguration;
-			buildSettings = {
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				ENABLE_APP_SANDBOX = NO;
-				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = Native;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.developer-tools";
-				INFOPLIST_KEY_LSUIElement = YES;
-				LD_RUNPATH_SEARCH_PATHS = "@executable_path/../Frameworks";
-				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = "devplaceholder.$(PROJECT_UNIQUE_VALUE:identifier).Native.Host";
-				PRODUCT_NAME = "Native Host";
-				SDKROOT = macosx;
-				SKIP_INSTALL = YES;
-				SUPPORTED_PLATFORMS = macosx;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 6.0;
-			};
-			name = Release;
-		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		0000000000000000004E4802 /* Build configuration list for PBXNativeTarget "NativeHostHelper" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				0000000000000000004E4803 /* Debug configuration for PBXNativeTarget "NativeHostHelper" */,
+				0000000000000000004E4804 /* Release configuration for PBXNativeTarget "NativeHostHelper" */,
+			);
+			defaultConfigurationName = Release;
+		};
 		000000000000000010000000 /* Build configuration list for PBXProject "native" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -497,14 +505,6 @@
 			buildConfigurations = (
 				000000000000000111000000 /* Debug configuration for PBXNativeTarget "native" */,
 				000000000000000112000000 /* Release configuration for PBXNativeTarget "native" */,
-			);
-			defaultConfigurationName = Release;
-		};
-		0000000000000000004E4802 /* Build configuration list for PBXNativeTarget "NativeHostHelper" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				0000000000000000004E4803 /* Debug configuration for PBXNativeTarget "NativeHostHelper" */,
-				0000000000000000004E4804 /* Release configuration for PBXNativeTarget "NativeHostHelper" */,
 			);
 			defaultConfigurationName = Release;
 		};
@@ -523,6 +523,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/GitHub;
 		};
+		0000000000000000004E4810 /* XCLocalSwiftPackageReference "Packages/NativeHost" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/NativeHost;
+		};
 		000000000000000000617300 /* XCLocalSwiftPackageReference "Packages/Git" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Git;
@@ -530,10 +534,6 @@
 		000000000000000000E10300 /* XCLocalSwiftPackageReference "Packages/Experiments" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Experiments;
-		};
-		0000000000000000004E4810 /* XCLocalSwiftPackageReference "Packages/NativeHost" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = Packages/NativeHost;
 		};
 /* End XCLocalSwiftPackageReference section */
 
@@ -550,14 +550,6 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = GitHub;
 		};
-		000000000000000000617310 /* Git */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = Git;
-		};
-		000000000000000000E10310 /* Experiments */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = Experiments;
-		};
 		0000000000000000004E4811 /* NativeHost */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = NativeHost;
@@ -565,6 +557,14 @@
 		0000000000000000004E4813 /* NativeHostClient */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = NativeHostClient;
+		};
+		000000000000000000617310 /* Git */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Git;
+		};
+		000000000000000000E10310 /* Experiments */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Experiments;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

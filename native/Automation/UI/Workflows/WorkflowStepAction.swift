@@ -75,6 +75,8 @@ enum WorkflowStepAction: Hashable, Identifiable {
             return (hasTask ? resume : .retry, (hasReply ? [.accept] : []) + [.skip])
         case .failed:
             return (.retry, (hasTask ? [.resume(title: "Continue in Session")] : []) + [.skip, .stopWorkflow])
+        case .interrupted:
+            return (hasTask ? .resume(title: "Resume") : .retry, [.skip, .stopWorkflow])
         case .cancelled:
             return (hasTask ? .resume(title: "Resume") : .retry, (hasTask ? [.retry] : []) + (hasReply ? [.accept] : []) + [.skip])
         }

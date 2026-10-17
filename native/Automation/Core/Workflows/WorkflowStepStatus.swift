@@ -17,6 +17,9 @@ nonisolated enum WorkflowStepStatus: Codable, Hashable, Sendable {
     case limited(String)
     case failed(String)
     case cancelled
+    /// It was working when Native (the host) quit. Nothing resumes on its own; the user resumes it
+    /// in the same task, or stops.
+    case interrupted
     case succeeded
     case skipped
 
@@ -39,7 +42,7 @@ nonisolated enum WorkflowStepStatus: Codable, Hashable, Sendable {
     /// Stopped short, waiting for the user to resume, retry, accept or skip it.
     var isStopped: Bool {
         switch self {
-        case .blocked, .limited, .failed, .cancelled: true
+        case .blocked, .limited, .failed, .cancelled, .interrupted: true
         default: false
         }
     }
@@ -47,6 +50,7 @@ nonisolated enum WorkflowStepStatus: Codable, Hashable, Sendable {
     var reason: String? {
         switch self {
         case .blocked(let reason), .limited(let reason), .failed(let reason): reason
+        case .interrupted: "Native quit while this step was working."
         default: nil
         }
     }
@@ -62,6 +66,7 @@ nonisolated enum WorkflowStepStatus: Codable, Hashable, Sendable {
         case .limited: "Limited"
         case .failed: "Failed"
         case .cancelled: "Stopped"
+        case .interrupted: "Interrupted"
         case .succeeded: "Done"
         case .skipped: "Skipped"
         }
