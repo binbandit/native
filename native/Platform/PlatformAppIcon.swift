@@ -19,11 +19,12 @@ final class PlatformAppIcon {
     func start() {
         guard observers.isEmpty else { return }
         var notifications: [(NotificationCenter, Notification.Name)] = [
-            (.default, NSCalendar.dayChangedNotification),
+            (.default, .NSCalendarDayChanged),
             (.default, .NSSystemTimeZoneDidChange),
         ]
         #if canImport(AppKit)
-        appearanceObservation = NSApplication.shared.observe(\.effectiveAppearance, options: [.new]) { [weak self] _, _ in
+        appearanceObservation = NSApplication.shared.observe(\.effectiveAppearance, options: [.new]) {
+            [weak self] _, _ in
             Task { @MainActor [weak self] in self?.notify() }
         }
         notifications += [
@@ -35,9 +36,12 @@ final class PlatformAppIcon {
         notifications.append((.default, UIApplication.didBecomeActiveNotification))
         #endif
         observers = notifications.map { center, name in
-            (center, center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
-                Task { @MainActor [weak self] in self?.notify() }
-            })
+            (
+                center,
+                center.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                    Task { @MainActor [weak self] in self?.notify() }
+                }
+            )
         }
         notify()
     }
@@ -61,7 +65,8 @@ final class PlatformAppIcon {
         #if canImport(AppKit)
         let isDark = NSApplication.shared.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
         #elseif canImport(UIKit)
-        let isDark = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        let isDark =
+            UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
             .first?.traitCollection.userInterfaceStyle == .dark
         #else
         let isDark = false

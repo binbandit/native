@@ -2,13 +2,12 @@ import SwiftUI
 
 /// The sidebar. Its top half follows the reference app: "New Session" and the navigation items other features
 /// add, then their accessories (the usage meter). Below a hairline, the projects and their sessions
-/// follow the reference app's tree, and its footer holds the agents' health, Help and Settings. Nothing in it
+/// follow the reference app's tree, and its footer holds Help and Settings. Nothing in it
 /// is opaque, so the sidebar material shows through everywhere.
 ///
 /// Features extend it through its slots rather than editing it: `navigationItems` adds rows under
 /// "New Session" (e.g. Pull Requests), `accessories` adds views under them (e.g. usage),
-/// `taskAccessory` supplies each task row's trailing indicator (context usage by default), and
-/// `limitStatus` says where each agent stands against its usage limits, for the footer.
+/// and `taskAccessory` supplies each task row's trailing indicator (context usage by default).
 ///
 /// Keys (docs/keyboard.md): ↑ and ↓ move the selection once the list has focus, keeping focus here;
 /// clicking a row means "work here", so it focuses that session's composer. Return renames the
@@ -21,15 +20,12 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
     private let navigationItems: NavigationItems
     private let accessories: Accessories
     private let taskAccessory: (SessionSummary) -> TaskAccessory
-    private let limitStatus: (AgentDefinition.ID) -> LimitStatus?
 
     init(
-        limitStatus: @escaping (AgentDefinition.ID) -> LimitStatus? = { _ in nil },
         @ViewBuilder navigationItems: () -> NavigationItems,
         @ViewBuilder accessories: () -> Accessories,
         @ViewBuilder taskAccessory: @escaping (SessionSummary) -> TaskAccessory
     ) {
-        self.limitStatus = limitStatus
         self.navigationItems = navigationItems()
         self.accessories = accessories()
         self.taskAccessory = taskAccessory
@@ -72,7 +68,7 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
             }
             .accessibilityLabel("Projects")
 
-            SidebarFooter(limitStatus: limitStatus)
+            SidebarFooter()
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .focusedSceneValue(\.sidebarReorder, reorder)
@@ -100,9 +96,8 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
 extension SidebarView
 where NavigationItems == EmptyView, Accessories == EmptyView, TaskAccessory == SessionContextUsage {
     /// The sidebar with nothing from other features, and the built-in context ring on task rows.
-    init(limitStatus: @escaping (AgentDefinition.ID) -> LimitStatus? = { _ in nil }) {
+    init() {
         self.init(
-            limitStatus: limitStatus,
             navigationItems: { EmptyView() },
             accessories: { EmptyView() },
             taskAccessory: { SessionContextUsage(summary: $0) }
@@ -114,12 +109,10 @@ extension SidebarView where TaskAccessory == SessionContextUsage {
     /// The sidebar with other features' navigation rows and accessories, and the built-in context ring
     /// on task rows.
     init(
-        limitStatus: @escaping (AgentDefinition.ID) -> LimitStatus? = { _ in nil },
         @ViewBuilder navigationItems: () -> NavigationItems,
         @ViewBuilder accessories: () -> Accessories
     ) {
         self.init(
-            limitStatus: limitStatus,
             navigationItems: navigationItems,
             accessories: accessories,
             taskAccessory: { SessionContextUsage(summary: $0) }

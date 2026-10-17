@@ -15,54 +15,67 @@ struct RootView: View {
     /// The run open on the Workflows page, if any.
     @State private var workflowPath: [WorkflowRun.ID] = []
     @Environment(ExpeditionCenter.self) private var expeditions
+    @Environment(SettingsPresentation.self) private var settings
+    @Environment(TerminalStore.self) private var terminals
 
     var body: some View {
         @Bindable var model = model
         @Bindable var automation = automation
-        NavigationSplitView(columnVisibility: $columnVisibility) {
-            sidebar
-                // The only sidebar toggle is ours, right after the window controls as in the reference app; as a
-                // sidebar toolbar item it stays there when the sidebar is hidden, too. The system's
-                // goes from both the column and the split view. On the column it must come before
-                // the width, or SwiftUI drops the width.
-                .toolbar(removing: .sidebarToggle)
-                .navigationSplitViewColumnWidth(min: 220, ideal: DS.Size.sidebarWidth, max: 380)
-                .toolbar {
-                    ToolbarItem {
-                        SidebarCollapseButton(isExpanded: columnVisibility != .detailOnly) {
-                            withAnimation {
-                                columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
+        @Bindable var settings = settings
+        // Settings takes over the window while it's open, as in the reference app. The split view's state
+        // lives here, so leaving Settings returns to where you were.
+        Group {
+            if settings.isShown {
+                SettingsScreen(
+                    pane: $settings.pane,
+                    additionalPanes: AppSettingsPanes.all(plugins: model.plugins, terminals: terminals))
+            } else {
+                NavigationSplitView(columnVisibility: $columnVisibility) {
+                    sidebar
+                        // The only sidebar toggle is ours, right after the window controls as in the reference app; as a
+                        // sidebar toolbar item it stays there when the sidebar is hidden, too. The system's
+                        // goes from both the column and the split view. On the column it must come before
+                        // the width, or SwiftUI drops the width.
+                        .toolbar(removing: .sidebarToggle)
+                        .navigationSplitViewColumnWidth(min: 220, ideal: DS.Size.sidebarWidth, max: 380)
+                        .toolbar {
+                            ToolbarItem {
+                                SidebarCollapseButton(isExpanded: columnVisibility != .detailOnly) {
+                                    withAnimation {
+                                        columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
+                                    }
+                                }
+                            }
+                            .sharedBackgroundVisibility(.hidden)
+                            if releaseChannel.isNightly {
+                                ToolbarItem {
+                                    NightlyMark()
+                                        .foregroundStyle(.dsTextTertiary)
+                                }
+                                .sharedBackgroundVisibility(.hidden)
+                            }
+                            // Pushes the toggle to the sidebar's leading edge, next to the window controls, and
+                            // back and forward to its trailing edge, where the reference app has them.
+                            ToolbarSpacer(.flexible)
+                            // They belong to the sidebar's header, so they go away with it (⌘[ and ⌘] still work).
+                            if columnVisibility != .detailOnly {
+                                ToolbarItem {
+                                    HistoryNavigationButtons(
+                                        canGoBack: model.canGoBack,
+                                        canGoForward: model.canGoForward,
+                                        onBack: model.goBack,
+                                        onForward: model.goForward
+                                    )
+                                }
+                                .sharedBackgroundVisibility(.hidden)
                             }
                         }
-                    }
-                    .sharedBackgroundVisibility(.hidden)
-                    if releaseChannel.isNightly {
-                        ToolbarItem {
-                            NightlyMark()
-                                .foregroundStyle(.dsTextTertiary)
-                        }
-                        .sharedBackgroundVisibility(.hidden)
-                    }
-                    // Pushes the toggle to the sidebar's leading edge, next to the window controls, and
-                    // back and forward to its trailing edge, where the reference app has them.
-                    ToolbarSpacer(.flexible)
-                    // They belong to the sidebar's header, so they go away with it (⌘[ and ⌘] still work).
-                    if columnVisibility != .detailOnly {
-                        ToolbarItem {
-                            HistoryNavigationButtons(
-                                canGoBack: model.canGoBack,
-                                canGoForward: model.canGoForward,
-                                onBack: model.goBack,
-                                onForward: model.goForward
-                            )
-                        }
-                        .sharedBackgroundVisibility(.hidden)
-                    }
+                } detail: {
+                    detail
                 }
-        } detail: {
-            detail
+                .toolbar(removing: .sidebarToggle)
+            }
         }
-        .toolbar(removing: .sidebarToggle)
         .focusedSceneValue(\.sidebarVisibility, $columnVisibility)
         .undoToast($undoToast)
         .onChange(of: model.lastUndoable?.id) {
@@ -172,7 +185,9 @@ struct RootView: View {
             if model.plugins.isEnabled(BuiltInPlugins.automation.manifest.id) || !automation.workflows.runs.isEmpty {
                 WorkflowsNavItem(isSelected: automationPage == .workflows) { automationPage = .workflows }
             }
-            if model.plugins.isEnabled(BuiltInPlugins.automations.manifest.id) || !automation.automations.automations.isEmpty {
+            if model.plugins.isEnabled(BuiltInPlugins.automations.manifest.id)
+                || !automation.automations.automations.isEmpty
+            {
                 AutomationsNavItem(isSelected: automationPage == .automations) { automationPage = .automations }
             }
             if model.plugins.isEnabled(BuiltInPlugins.expeditions.manifest.id) || expeditions.hasExpeditions {

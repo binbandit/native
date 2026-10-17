@@ -1,3 +1,5 @@
+import Foundation
+
 enum AppIconTheme: String, CaseIterable, Identifiable {
     case original, cobalt, fern, ember, prism, arcade, nightly
 

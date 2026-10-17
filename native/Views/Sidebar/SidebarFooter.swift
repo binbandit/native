@@ -1,20 +1,15 @@
 import ACP
 import SwiftUI
 
-/// The sidebar's footer, after the reference app's: a hairline, then the agents' health where the reference app
-/// shows the plan badge, and Help and Settings at the trailing edge (the reference app's `px-4 py-3`, 20pt
-/// between the icons).
+/// The sidebar's footer, after the reference app's: a hairline, then Help and Settings at the trailing edge
+/// (the reference app's `px-4 py-3`, 20pt between the icons). Agents' health lives on Home, in Settings ▸
+/// Agents and in the Help menu, not here.
 struct SidebarFooter: View {
-    let limitStatus: (AgentDefinition.ID) -> LimitStatus?
-
     var body: some View {
-        HStack(spacing: DS.Space.lg) {
-            AgentHealthBar(limitStatus: limitStatus)
+        HStack(spacing: DS.Space.xl + DS.Space.xs) {
             Spacer(minLength: 0)
-            HStack(spacing: DS.Space.xl + DS.Space.xs) {
-                SidebarHelpMenu()
-                SettingsButton()
-            }
+            SidebarHelpMenu()
+            SettingsButton()
         }
         .padding(.horizontal, DS.Space.xl)
         .padding(.vertical, DS.Space.lg)
@@ -28,26 +23,22 @@ struct SidebarFooter: View {
 /// Opens the Settings window (the reference app's gear, "Settings ⌘,"). iPadOS has no Settings scene; the
 /// app presents settings there itself, so the gear isn't shown.
 private struct SettingsButton: View {
-    #if os(macOS)
-    @Environment(\.openSettings) private var openSettings
-    #endif
+    @Environment(SettingsPresentation.self) private var settings
 
     var body: some View {
-        #if os(macOS)
         Button {
-            openSettings()
+            settings.open()
         } label: {
             FooterGlyph(systemImage: "gearshape")
         }
         .buttonStyle(.plain)
         .help("Settings (⌘,)")
         .accessibilityLabel("Settings")
-        #endif
     }
 }
 
-/// the reference app's "?" menu: keyboard shortcuts, the protocol's docs, and each agent's version and
-/// restart, with the versions line at the bottom.
+/// the reference app's "?" menu: keyboard shortcuts, the protocol's docs, signing in to and restarting each
+/// agent, with the versions line at the bottom.
 private struct SidebarHelpMenu: View {
     @Environment(AppModel.self) private var model
     @State private var isShowingShortcuts = false
@@ -63,10 +54,26 @@ private struct SidebarHelpMenu: View {
             Divider()
             Section("Agents") {
                 ForEach(model.agents, id: \.agent.id) { runtime in
-                    Button("Restart \(runtime.agent.displayName)", systemImage: "arrow.clockwise") {
+                    // Signing in was the footer's job; it lives here now, next to Restart.
+                    if runtime.isReady, runtime.needsSignIn, !runtime.authMethods.isEmpty {
+                        Menu("Sign In to \(runtime.agent.displayName)") {
+                            ForEach(runtime.authMethods, id: \.id) { method in
+                                Button(method.name) {
+                                    Task { await model.signIn(to: runtime.agent.id, with: method) }
+                                }
+                                .disabled(runtime.isSigningIn)
+                            }
+                        }
+                    }
+                    Button(
+                        runtime.status.canRetry
+                            ? "Retry \(runtime.agent.displayName)" : "Restart \(runtime.agent.displayName)",
+                        systemImage: "arrow.clockwise"
+                    ) {
                         Task { await model.restart(runtime.agent.id) }
                     }
                     .disabled(runtime.status == .starting)
+                    .help(runtime.status.guidance ?? runtime.status.label)
                 }
             }
             Divider()

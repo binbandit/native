@@ -11,6 +11,8 @@ struct NativeApp: App {
     /// Held here because AppModel keeps its provider weakly.
     @State private var taskWorkspaces: GitTaskWorkspaceProvider
     @State private var iconPreferences = AppIconPreferences()
+    /// Settings takes over the main window, as in the reference app, rather than opening one of its own.
+    @State private var settings = SettingsPresentation()
     @State private var terminals = TerminalStore()
 
     init() {
@@ -26,7 +28,9 @@ struct NativeApp: App {
         _taskWorkspaces = State(initialValue: taskWorkspaces)
         model.taskWorkspaces = taskWorkspaces
         // Agents are child processes; ending them with the app keeps them from outliving it.
-        NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: .main) { _ in
+        NotificationCenter.default.addObserver(
+            forName: NSApplication.willTerminateNotification, object: nil, queue: .main
+        ) { _ in
             MainActor.assumeIsolated { model.stopAgents() }
         }
         GitAutomationWiring.connect(git, to: BuiltInPlugins.automation.center.automations)
@@ -41,6 +45,10 @@ struct NativeApp: App {
                 .environment(BuiltInPlugins.automation.center)
                 .environment(BuiltInPlugins.expeditions.center)
                 .environment(terminals)
+                .environment(settings)
+                .environment(model.plugins)
+                .environment(git.settings)
+                .environment(iconPreferences)
                 .createPullRequestSheet(gitHub)
                 .dsAccentPalette(themeID: iconPreferences.theme.rawValue)
                 .task {
@@ -53,7 +61,9 @@ struct NativeApp: App {
                     BuiltInPlugins.automation.center.connectAutomations(
                         repository: { [gitHub] in await AutomationGitHubWiring.repository(of: $0, gitHub: gitHub) },
                         worktree: { [git] in try await AutomationGitHubWiring.worktree(for: $0, title: $1, git: git) },
-                        pullRequests: { [gitHub] in try await AutomationGitHubWiring.pullRequestSnapshots(gitHub: gitHub) }
+                        pullRequests: { [gitHub] in
+                            try await AutomationGitHubWiring.pullRequestSnapshots(gitHub: gitHub)
+                        }
                     )
                     ExpeditionWiring.connect(BuiltInPlugins.expeditions.center, model: model, git: git, gitHub: gitHub)
                     iconPreferences.start()
@@ -68,14 +78,16 @@ struct NativeApp: App {
                 }
                 .task(id: model.plugins.enabledPlugins.map(\.manifest)) {
                     BuiltInPlugins.automation.center.reloadLibrary(from: model.plugins)
-                    BuiltInPlugins.automation.center.automations.isEnabled = model.plugins.isEnabled(BuiltInPlugins.automations.manifest.id)
+                    BuiltInPlugins.automation.center.automations.isEnabled = model.plugins.isEnabled(
+                        BuiltInPlugins.automations.manifest.id)
                 }
         }
         .defaultSize(width: 1120, height: 780)
         .commands {
             FileCommands(model: model)
-            ViewCommands()
-            GoCommands(model: model)
+            ViewCommands(iconPreferences: iconPreferences)
+            SettingsCommands(settings: settings)
+            GoCommands(model: model, settings: settings)
             SessionCommands(model: model)
             TerminalCommands(store: terminals)
         }
@@ -86,16 +98,6 @@ struct NativeApp: App {
                 .dsAccentPalette(themeID: iconPreferences.theme.rawValue)
         }
 
-        Settings {
-            SettingsView(additionalPanes: [.labs, .git, .mcpServers(registry: model.plugins), .terminal(terminals.preferences)])
-                .environment(model)
-                .environment(model.plugins)
-                .environment(git.settings)
-                .environment(iconPreferences)
-                .dsAccentPalette(themeID: iconPreferences.theme.rawValue)
-                .task { iconPreferences.start() }
-        }
-        .windowResizability(.contentSize)
     }
 }
 
@@ -129,6 +131,7 @@ private struct FileCommands: Commands {
 }
 
 private struct ViewCommands: Commands {
+    let iconPreferences: AppIconPreferences
     @FocusedValue(\.sidebarVisibility) private var sidebarVisibility
     @FocusedValue(\.activeSession) private var session
     @FocusedValue(\.mcpServersPopover) private var mcpServersPopover
@@ -159,36 +162,73 @@ private struct ViewCommands: Commands {
             .keyboardShortcut("m", modifiers: [.command, .control])
             .disabled(mcpServersPopover == nil)
 
-            Toggle("Show Only Tasks That Need You", isOn: Binding(
-                get: { needsYouFilter?.wrappedValue ?? false },
-                set: { needsYouFilter?.wrappedValue = $0 }
-            ))
+            Toggle(
+                "Show Only Tasks That Need You",
+                isOn: Binding(
+                    get: { needsYouFilter?.wrappedValue ?? false },
+                    set: { needsYouFilter?.wrappedValue = $0 }
+                )
+            )
             .keyboardShortcut("j", modifiers: [.command, .option])
             .disabled(needsYouFilter == nil)
 
             Divider()
             FoldEarlierTurnsToggle()
             JumpToLatestMenuItem()
+
+            if iconPreferences.isHalloweenAvailable {
+                Divider()
+                Toggle(
+                    "Halloween Icon",
+                    isOn: Binding(
+                        get: { iconPreferences.halloweenEnabled },
+                        set: { iconPreferences.halloweenEnabled = $0 }
+                    )
+                )
+                .keyboardShortcut("h", modifiers: [.command, .option, .shift])
+            }
+        }
+    }
+}
+
+private struct SettingsCommands: Commands {
+    let settings: SettingsPresentation
+    @Environment(\.openWindow) private var openWindow
+
+    var body: some Commands {
+        CommandGroup(replacing: .appSettings) {
+            Button("Settings…") {
+                // Settings lives in the main window, so bring the window back if it was closed.
+                openWindow(id: "main")
+                settings.toggle()
+            }
+            .keyboardShortcut(",")
         }
     }
 }
 
 private struct GoCommands: Commands {
     let model: AppModel
+    let settings: SettingsPresentation
 
     var body: some Commands {
         CommandMenu("Go") {
+            // In Settings, Back returns to where you were, like its Back button and Escape.
             Button("Back") {
-                model.goBack()
+                if settings.isShown {
+                    settings.close()
+                } else {
+                    model.goBack()
+                }
             }
             .keyboardShortcut("[")
-            .disabled(!model.canGoBack)
+            .disabled(!settings.isShown && !model.canGoBack)
 
             Button("Forward") {
                 model.goForward()
             }
             .keyboardShortcut("]")
-            .disabled(!model.canGoForward)
+            .disabled(settings.isShown || !model.canGoForward)
 
             Divider()
             PullRequestsMenuItem()

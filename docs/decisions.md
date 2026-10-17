@@ -192,3 +192,12 @@ lead agent proposes a route of assignments, the user approves it, and a crew of 
 providers works through it with review checkpoints, ending in a debrief and a pull request. It is
 built from Native's own pieces (orchestration, goals, the workflow engine, worktrees, the durable
 host) under its own vocabulary, never the reference app's. Design: `docs/expeditions.md`.
+
+## 2026-10-18: Seasonal channel icons are opt-in and expire locally
+
+Beta has a dedicated amber/ivory compiled icon; Nightly uses its moon and starfield as the compiled
+channel icon. Halloween editions are opt-in from October 1 through November 7, inclusive, for
+stable, beta and Nightly. They preserve the user's base icon and restore it at the closing boundary,
+including when an app stays running or wakes after the season. The Gregorian date policy lives in
+AppAppearance, with calendar boundary and time-zone tests. Mac Dock access and environment
+notifications live in PlatformAppIcon, outside shared models and views.

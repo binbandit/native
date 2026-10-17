@@ -60,8 +60,9 @@ keychain_args=()
 # MARK: - What to build
 
 case $channel in
-    stable | beta) configuration=Release product="Native" ;;
-    nightly) configuration=Nightly product="Native Nightly" ;;
+    stable) configuration=Release product="Native" channel_condition="" app_icon=AppIcon ;;
+    beta) configuration=Release product="Native" channel_condition=NATIVE_BETA app_icon=AppIconBeta ;;
+    nightly) configuration=Nightly product="Native Nightly" channel_condition=NATIVE_NIGHTLY app_icon=AppIconNightly ;;
     *) die "--channel must be stable, beta or nightly" ;;
 esac
 asset_base=${product// /-}
@@ -128,8 +129,6 @@ log "$product $version (build $build_number) from ${sha:0:7}, $MODE"
 # MARK: - Archive and sign
 
 log "Archiving ($configuration)"
-channel_condition=""
-[ "$channel" = beta ] && channel_condition=NATIVE_BETA
 # A secure timestamp is what notarization wants; ad hoc signatures can't carry one.
 sign_flags=""
 [ "$identity" = "-" ] || sign_flags="--timestamp${NATIVE_KEYCHAIN:+ --keychain $NATIVE_KEYCHAIN}"
@@ -139,7 +138,7 @@ run xcodebuild archive \
     -project native.xcodeproj -scheme native -configuration "$configuration" \
     -archivePath "$archive" -derivedDataPath "$output/DerivedData" -destination 'generic/platform=macOS' \
     MARKETING_VERSION="$version" CURRENT_PROJECT_VERSION="$build_number" \
-    NATIVE_CHANNEL_CONDITION="$channel_condition" \
+    NATIVE_CHANNEL_CONDITION="$channel_condition" NATIVE_APP_ICON_NAME="$app_icon" \
     CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="$identity" DEVELOPMENT_TEAM="$team" \
     CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO OTHER_CODE_SIGN_FLAGS="$sign_flags" \
     ${settings[@]+"${settings[@]}"} -quiet

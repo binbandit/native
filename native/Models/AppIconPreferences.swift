@@ -81,6 +81,11 @@ final class AppIconPreferences {
         "AppIcon-halloween-\(channel.rawValue)-\(isDark ? "dark" : "light")"
     }
 
+    func selectTheme(_ theme: AppIconTheme) {
+        self.theme = theme
+        halloweenEnabled = false
+    }
+
     func start() {
         guard !hasStarted else { return }
         hasStarted = true
@@ -98,7 +103,9 @@ final class AppIconPreferences {
         isHalloweenAvailable = SeasonalAppIcons.halloweenIsAvailable(on: date, timeZone: zone)
         seasonalTimer?.invalidate()
         if let boundary = SeasonalAppIcons.nextHalloweenBoundary(after: date, timeZone: zone) {
-            seasonalTimer = Timer.scheduledTimer(withTimeInterval: max(1, boundary.timeIntervalSince(date)), repeats: false) {
+            seasonalTimer = Timer.scheduledTimer(
+                withTimeInterval: max(1, boundary.timeIntervalSince(date)), repeats: false
+            ) {
                 [weak self] _ in
                 Task { @MainActor [weak self] in self?.refreshSeason() }
             }

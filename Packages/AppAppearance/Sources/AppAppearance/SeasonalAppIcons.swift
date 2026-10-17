@@ -12,7 +12,8 @@ public enum SeasonalAppIcons {
         let isAvailable = halloweenIsAvailable(on: date, timeZone: timeZone)
         return calendar(in: timeZone).nextDate(
             after: date,
-            matching: DateComponents(month: isAvailable ? 11 : 10, day: isAvailable ? 8 : 1, hour: 0, minute: 0, second: 0),
+            matching: DateComponents(
+                month: isAvailable ? 11 : 10, day: isAvailable ? 8 : 1, hour: 0, minute: 0, second: 0),
             matchingPolicy: .nextTime
         )
     }
