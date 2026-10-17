@@ -3,8 +3,8 @@ import SwiftUI
 
 /// The default transcript, Factory style: agent replies and tool activity in one column, tool
 /// activity as one dense block, and the user's prompts in trailing bubbles.
-struct StandardTranscriptStyle: TranscriptStyle {
-    func makeBody(_ transcript: TranscriptStyleConfiguration) -> some View {
+nonisolated struct StandardTranscriptStyle: TranscriptStyle {
+    @MainActor func makeBody(_ transcript: TranscriptStyleConfiguration) -> some View {
         let rows = transcript.rows
         let spacings = zip([nil] + rows.dropLast(), rows).map { previous, row in
             previous.map { spacing(between: $0, and: row) } ?? 0
@@ -21,7 +21,7 @@ struct StandardTranscriptStyle: TranscriptStyle {
         }
     }
 
-    @ViewBuilder
+    @MainActor @ViewBuilder
     private func row(_ row: TranscriptRow, in transcript: TranscriptStyleConfiguration) -> some View {
         switch row {
         case .exploration(let calls):
@@ -40,7 +40,7 @@ struct StandardTranscriptStyle: TranscriptStyle {
     }
 
     /// Tool activity reads as one dense block, Factory style; everything else gets room to breathe.
-    private func spacing(between previous: TranscriptRow, and next: TranscriptRow) -> CGFloat {
+    @MainActor private func spacing(between previous: TranscriptRow, and next: TranscriptRow) -> CGFloat {
         previous.isToolActivity && next.isToolActivity ? 2 : 16
     }
 }
