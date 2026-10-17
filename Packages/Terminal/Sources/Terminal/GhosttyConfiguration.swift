@@ -76,6 +76,10 @@ public struct GhosttyConfiguration: Hashable, Sendable {
         }
         set("scrollback-limit-bytes", "unlimited")
 
+        // Ghostty's own `xterm-ghostty` entry isn't on remote machines, and setuid programs (`top`,
+        // anything under `sudo`) ignore the bundled one, so the terminal says it's xterm. Programs
+        // still find truecolor (COLORTERM) and Ghostty's extensions by asking the terminal.
+        set("term", "xterm-256color")
         // Native shows its own state when a shell exits or fails to start, keeps the tab around
         // until the user closes it, and asks before closing a tab with a running process.
         set("wait-after-command", "true")

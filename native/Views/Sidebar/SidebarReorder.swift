@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// Moves the sidebar's selected item one place up or down, for ⌥⌘↑ / ⌥⌘↓ (docs/keyboard.md): the
-/// selected session within its project or, with no session selected, the project whose home is
-/// showing. The sidebar publishes it as a scene focused value, so the Session menu can drive it
+/// selected session within its project (or among pinned tasks) or, with no session selected, the
+/// project whose home is showing. The sidebar publishes it as a scene focused value, so the Session menu can drive it
 /// while the composer has focus.
 struct SidebarReorder {
     enum Direction {
@@ -24,6 +24,7 @@ extension FocusedValues {
 enum SidebarMoveTarget: Equatable {
     case project(Project.ID)
     case session(SessionKey, in: Project.ID)
+    case pinned(SessionKey)
 }
 
 extension AppModel {
@@ -31,6 +32,7 @@ extension AppModel {
     /// home is showing.
     var sidebarMoveTarget: SidebarMoveTarget? {
         if let selection {
+            if isPinned(selection) { return .pinned(selection) }
             return sessionList.first { $0.id == selection }.map { .session($0.id, in: $0.project) }
         }
         return currentProject.map { .project($0.id) }
@@ -51,6 +53,8 @@ extension AppModel {
             moveProjects(fromOffsets: [index], toOffset: destination)
         case .session(_, let project):
             moveSessions(in: project, fromOffsets: [index], toOffset: destination)
+        case .pinned:
+            movePinnedSessions(fromOffsets: [index], toOffset: destination)
         }
     }
 
@@ -61,6 +65,9 @@ extension AppModel {
             return ids.firstIndex(of: id).map { ($0, ids.count) }
         case .session(let key, let project):
             let keys = sessions(in: project).map(\.id)
+            return keys.firstIndex(of: key).map { ($0, keys.count) }
+        case .pinned(let key):
+            let keys = pinnedSessions.map(\.id)
             return keys.firstIndex(of: key).map { ($0, keys.count) }
         }
     }

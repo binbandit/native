@@ -135,6 +135,7 @@ extension SessionModel {
     /// Records the prompt and marks the turn as running, before anything suspends. Returns where the
     /// turn's own items begin in the transcript.
     private func beginTurn(_ text: String, echo: Bool) -> Int {
+        cancelRetry()
         let isFirstPrompt = !state.items.contains { item in
             if case .message(let message) = item { message.role == .user } else { false }
         }
@@ -165,9 +166,26 @@ extension SessionModel {
             services.post(.turnEnded(context, response.stopReason))
         } catch {
             let items = Array(state.items[min(start, state.items.count)...])
-            state.appendNotice(UsageLimitHit(error: error).map(\.message) ?? error.localizedDescription, isError: true)
+            let madeProgress = items.contains { item in
+                switch item {
+                case .message(let message): message.role != .user
+                case .toolCall, .subagent: true
+                default: false
+                }
+            }
+            if let delay = retryPolicy.nextDelay(after: error, turnMadeProgress: madeProgress) {
+                // Already in the transcript, so it goes back without showing again.
+                queue.prepend(text, isEchoed: false)
+                scheduleRetry(after: delay)
+                state.appendNotice("\(agentName) couldn't be reached (\(error.localizedDescription)). Native kept your message and will try again in \(delay.components.seconds) seconds. Press ⌘. to stop.", isError: true)
+            } else {
+                state.appendNotice(UsageLimitHit(error: error).map(\.message) ?? error.localizedDescription, isError: true)
+            }
             lastStopReason = .error
             services.post(.turnFailed(context, prompt: text, error: error, items: items))
+        }
+        if lastStopReason != .error {
+            retryPolicy.reset()
         }
         // Set after the stop reason, so whoever watches the phase reads how the turn ended.
         if phase == .prompting {
@@ -179,6 +197,24 @@ extension SessionModel {
         } else {
             drainQueue()
         }
+    }
+
+    private func scheduleRetry(after delay: Duration) {
+        isRetryScheduled = true
+        retryTask = Task { [weak self] in
+            try? await Task.sleep(for: delay)
+            guard !Task.isCancelled, let self else { return }
+            isRetryScheduled = false
+            retryTask = nil
+            queue.resume()
+            drainQueue()
+        }
+    }
+
+    func cancelRetry() {
+        retryTask?.cancel()
+        retryTask = nil
+        isRetryScheduled = false
     }
 
     /// Adds `text` to the running turn. If the turn ended first, it goes to the front of the queue.

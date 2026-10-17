@@ -70,6 +70,10 @@ final class SessionModel {
     /// threw. Nil until a turn has ended.
     var lastStopReason: StopReason?
     var queue = PromptQueue()
+    var retryPolicy = TurnRetryPolicy()
+    /// Waiting to send a prompt again after the network or the provider let it down.
+    var isRetryScheduled = false
+    @ObservationIgnored var retryTask: Task<Void, Never>?
     /// Questions the agent is waiting on (`elicitation/create`), oldest first; see
     /// SessionModel+Questions.
     var questions: [PendingQuestion] = []
@@ -182,7 +186,7 @@ final class SessionModel {
         if origin == .announced {
             phase != .disconnected && parent?.subagentControls.canCancel(id) == true
         } else {
-            phase == .prompting
+            phase == .prompting || isRetryScheduled
         }
     }
 
@@ -260,6 +264,11 @@ final class SessionModel {
     /// Cancels the current turn. For a subagent, that stops only its work, never its parent's turn.
     func cancel() async {
         guard canCancel else { return }
+        if isRetryScheduled {
+            cancelRetry()
+            state.appendNotice("Stopped retrying. Your message is still queued; send again to try it.", isError: false)
+            return
+        }
         // ACP requires answering open permission requests as cancelled when a turn is cancelled.
         for (toolCallID, _) in state.pendingPermissions {
             if let permission = state.resolvePermission(toolCallID: toolCallID) {

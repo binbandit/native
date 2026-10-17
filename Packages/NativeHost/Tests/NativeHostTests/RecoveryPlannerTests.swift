@@ -19,11 +19,18 @@ struct RecoveryPlannerTests {
         #expect(RecoveryPlanner.decide(prompt: "Fix the build", attempts: 0, replayedUserMessages: []) == .resend)
     }
 
-    @Test("Only the latest user message counts: an older identical prompt doesn't mean this one arrived")
-    func onlyLatestMessage() {
+    @Test("A prompt followed by the agent's own interruption marker still counts as received")
+    func interruptionMarker() {
+        let replay = ["Earlier task", "Write rows 1 through 500", "[Request interrupted by user]"]
         #expect(
-            RecoveryPlanner.decide(
-                prompt: "continue", attempts: 0, replayedUserMessages: ["continue", "something else"]) == .resend)
+            RecoveryPlanner.decide(prompt: "Write rows 1 through 500", attempts: 0, replayedUserMessages: replay)
+                == .resume)
+    }
+
+    @Test("An identical prompt from several turns back doesn't mean this one arrived")
+    func onlyRecentMessages() {
+        let replay = ["continue", "one", "two", "three"]
+        #expect(RecoveryPlanner.decide(prompt: "continue", attempts: 0, replayedUserMessages: replay) == .resend)
     }
 
     @Test("Agents that wrap the prompt when they store it still count as having it")
