@@ -110,7 +110,7 @@ public struct TaskRow<Leading: View, Accessory: View>: View {
                             .lineLimit(1)
                         Spacer(minLength: 0)
                         trailing
-                            .opacity(isHovered && onArchive != nil ? 0 : 1)
+                            .opacity(isArchiveShown ? 0 : 1)
                     }
                     .frame(height: 20)
 
@@ -139,7 +139,7 @@ public struct TaskRow<Leading: View, Accessory: View>: View {
             }
         }
         .overlay(alignment: .topTrailing) {
-            if let onArchive, isHovered {
+            if let onArchive, isArchiveShown {
                 Button("Archive", systemImage: "archivebox", action: onArchive)
                     .labelStyle(.iconOnly)
                     .buttonStyle(.plain)
@@ -147,6 +147,7 @@ public struct TaskRow<Leading: View, Accessory: View>: View {
                     .foregroundStyle(.dsTextSecondary)
                     .frame(width: 20, height: 20)
                     .contentShape(.rect)
+                    .dsHitTarget(20)
                     .padding(.top, DS.Space.md)
                     .padding(.trailing, DS.Space.xs)
                     .help("Archive Task")
@@ -188,6 +189,12 @@ public struct TaskRow<Leading: View, Accessory: View>: View {
 
             accessory
         }
+    }
+
+    /// The archive button replaces the trailing items on hover, and always on touch, which has
+    /// no hover to reveal it.
+    private var isArchiveShown: Bool {
+        onArchive != nil && (isHovered || DS.isTouchPlatform)
     }
 
     /// The type glyph stands in for the status at rest.

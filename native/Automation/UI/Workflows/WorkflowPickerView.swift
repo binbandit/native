@@ -19,7 +19,8 @@ struct WorkflowPickerView: View {
         entries: [WorkflowLibrary.Entry], agents: [WorkflowAgent], projectName: String,
         plan: @escaping (WorkflowDefinition, [String: WorkflowAgent.ID]) -> [String: WorkflowAssignment],
         onRun: @escaping (_ definition: WorkflowDefinition, _ input: String, _ overrides: [String: WorkflowAgent.ID]) -> Void,
-        onCancel: @escaping () -> Void
+        onCancel: @escaping () -> Void,
+        initialSelection: String? = nil
     ) {
         self.entries = entries
         self.agents = agents
@@ -27,7 +28,8 @@ struct WorkflowPickerView: View {
         self.plan = plan
         self.onRun = onRun
         self.onCancel = onCancel
-        _selectedID = State(initialValue: entries.first(where: \.isRunnable)?.id)
+        let runnable = entries.filter(\.isRunnable)
+        _selectedID = State(initialValue: runnable.first { $0.id == initialSelection }?.id ?? runnable.first?.id)
     }
 
     private var selected: WorkflowDefinition? {

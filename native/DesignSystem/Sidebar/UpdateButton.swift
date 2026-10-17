@@ -23,6 +23,7 @@ public struct UpdateButton: View {
                 .foregroundStyle(.dsTextOnAccent)
                 .padding(.horizontal, 10)
                 .padding(.vertical, DS.Space.xxs)
+                .dsHitTarget(20)
         }
         .buttonStyle(UpdateButtonStyle(isHovered: isHovered))
         .help("Update to version \(version). Click to download and restart.")

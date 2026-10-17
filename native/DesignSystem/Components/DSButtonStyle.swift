@@ -75,6 +75,7 @@ private struct DSButtonBody: View {
             .background(fill, in: shape)
             .overlay { shape.strokeBorder(border, lineWidth: 1) }
             .contentShape(shape)
+            .dsHitTarget(size.height)
             .contentShape(.focusEffect, shape)
             .trackHover($isHovered)
     }

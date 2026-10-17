@@ -7,9 +7,14 @@ struct RootView: View {
     @Environment(\.releaseChannel) private var releaseChannel
     @State private var columnVisibility = NavigationSplitViewVisibility.all
     @State private var showsPullRequests = false
+    @Environment(AutomationCenter.self) private var automation
+    @State private var showsWorkflows = false
+    /// The run open on the Workflows page, if any.
+    @State private var workflowPath: [WorkflowRun.ID] = []
 
     var body: some View {
         @Bindable var model = model
+        @Bindable var automation = automation
         NavigationSplitView(columnVisibility: $columnVisibility) {
             sidebar
                 // The only sidebar toggle is ours, right after the window controls as in the reference app; as a
@@ -58,10 +63,28 @@ struct RootView: View {
         .focusedSceneValue(\.showsPullRequests, $showsPullRequests)
         // The pull requests page and a session take turns in the detail column.
         .onChange(of: showsPullRequests) { _, shows in
-            if shows { model.selection = nil }
+            if shows {
+                model.selection = nil
+                showsWorkflows = false
+            }
+        }
+        .onChange(of: showsWorkflows) { _, shows in
+            if shows {
+                model.selection = nil
+                showsPullRequests = false
+            }
         }
         .onChange(of: model.selection) { _, key in
-            if key != nil { showsPullRequests = false }
+            if key != nil {
+                showsPullRequests = false
+                showsWorkflows = false
+            }
+        }
+        .sheet(isPresented: $automation.isWorkflowPickerRequested) {
+            WorkflowPickerSheet(cwd: model.currentProject?.url, onAddProject: { model.isAddingProject = true }) { run in
+                showsWorkflows = true
+                workflowPath = [run]
+            }
         }
         .task(id: model.selection) {
             if let key = model.selection {
@@ -118,6 +141,10 @@ struct RootView: View {
     private var sidebar: some View {
         SidebarView {
             PullRequestsNavItem(isSelected: showsPullRequests) { showsPullRequests = true }
+            // Minimal by default: only when goals and workflows are on, or a run is there to see.
+            if model.plugins.isEnabled(BuiltInPlugins.automation.manifest.id) || !automation.workflows.runs.isEmpty {
+                WorkflowsNavItem(isSelected: showsWorkflows) { showsWorkflows = true }
+            }
         } accessories: {
             EmptyView()
         } taskAccessory: { summary in
@@ -133,6 +160,10 @@ struct RootView: View {
     private var detail: some View {
         if showsPullRequests {
             PullRequestsView()
+        } else if showsWorkflows {
+            WorkflowsPage(path: $workflowPath) { session in
+                TranscriptView(session: session) { _ in }
+            }
         } else if let key = model.selection {
             if let session = model.session(key) {
                 SessionView(session: session)

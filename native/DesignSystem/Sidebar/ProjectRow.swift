@@ -92,13 +92,15 @@ public struct ProjectRow<MenuContent: View>: View {
                         .font(.system(size: 11, weight: .medium))
                         .frame(width: DS.Size.controlXS, height: DS.Size.controlXS)
                         .contentShape(.rect)
+                        .dsHitTarget(DS.Size.controlXS)
                 }
                 .menuStyle(.button)
                 .buttonStyle(.plain)
                 .menuIndicator(.hidden)
                 .fixedSize()
                 .foregroundStyle(.dsTextSecondary)
-                .opacity(isHovered ? 1 : 0)
+                // Touch has no hover to reveal it, so it stays.
+                .opacity(isHovered || DS.isTouchPlatform ? 1 : 0)
                 .help("Project Options")
                 .accessibilityLabel("\(name) Options")
             }

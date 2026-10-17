@@ -122,6 +122,7 @@ public struct SidebarRowMenu<Content: View>: View {
                 .frame(width: 20)
                 .frame(maxHeight: .infinity)
                 .contentShape(.rect)
+                .dsHitTarget(20)
         }
         .menuStyle(.button)
         .buttonStyle(.plain)

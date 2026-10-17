@@ -38,6 +38,7 @@ public struct ComposerChip: View {
                     .frame(width: 16, height: 16)
                     .background(isRemoveHovered ? Color.dsAccent : .clear, in: .circle)
                     .contentShape(.circle)
+                    .dsHitTarget(16)
                     .trackHover($isRemoveHovered)
                     .help("Remove")
             }

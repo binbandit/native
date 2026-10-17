@@ -41,6 +41,7 @@ public struct WindowToolbarButton: View {
                 .font(.system(size: glyphSize, weight: .regular))
                 .frame(width: DS.Size.toolbarButton, height: DS.Size.toolbarButton)
                 .contentShape(.rect)
+                .dsHitTarget(DS.Size.toolbarButton)
         }
         .buttonStyle(WindowToolbarButtonStyle(isHovered: isHovered && isEnabled, isActive: isActive))
         .opacity(isEnabled ? 1 : 0.4)
