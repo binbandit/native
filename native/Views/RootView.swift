@@ -175,7 +175,7 @@ struct RootView: View {
             if model.plugins.isEnabled(BuiltInPlugins.automations.manifest.id) || !automation.automations.automations.isEmpty {
                 AutomationsNavItem(isSelected: automationPage == .automations) { automationPage = .automations }
             }
-            if model.plugins.isEnabled(BuiltInPlugins.expeditions.manifest.id) || !expeditions.runner.expeditions.isEmpty {
+            if model.plugins.isEnabled(BuiltInPlugins.expeditions.manifest.id) || expeditions.hasExpeditions {
                 ExpeditionsNavItem(isSelected: expeditions.isPageShown) { expeditions.show() }
             }
         } accessories: {

@@ -65,6 +65,7 @@ these rules exist to keep changes small, isolated and easy to review.
 ```sh
 xcodebuild -project native.xcodeproj -scheme native -derivedDataPath /tmp/native-dd/<you> build
 (cd Packages/ACP && swift test)          # likewise for every package
+scripts/release/check.sh                  # Release and Nightly compile; run before landing #if DEBUG or build-setting changes
 swift format format -i <files you changed>   # style lives in .swift-format (4 spaces, 120 columns)
 swift format lint --strict <files you changed>
 scripts/check-ios.sh native/<YourFeature>   # typechecks your folder (plus DesignSystem) for iPadOS
