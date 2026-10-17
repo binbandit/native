@@ -53,7 +53,10 @@ notifications with actions and show a menu bar extra under its own bundle id; it
 
 **One host.** launchd runs one job per label, and the host takes an exclusive `flock` on `host.lock`
 for its lifetime; a second copy exits 0 (so launchd doesn't restart it). Agents are the host's
-children, in its process group, so launchd reaps them with it: no orphaned agent trees, ever. (Orca's
+children and exit when the host's end of their stdio closes, so they die with the host (checked by
+killing the host mid-turn under launchd: no adapters were left behind); Phase 2 also tracks each
+agent's process group (npm puts itself in its own) and ends it explicitly, so there are no orphaned
+agent trees, ever. (Orca's
 worst bugs were the opposite: daemons from old versions piling up, and an app that read "daemon
 unreachable" as "gone" and started a second copy of a running conversation. The lock and the
 single launchd label make both impossible.)
@@ -279,7 +282,9 @@ A turn is committed to `turns` **before** its prompt is written to the agent, an
 agent answers. So after any interruption, the host knows exactly which turns were cut off. Recovery
 reloads the session from the agent (`session/load`), then `RecoveryPlanner` decides from the replay:
 
-- **The agent's transcript ends with the prompt** → the agent had started. Native sends a message
+- **The prompt is among the agent's latest user messages** → the agent had started. ("Latest" is the
+  last three: agents can record something after a prompt they were cut off on; Claude Code adds
+  "[Request interrupted by user]".) Native sends a message
   marked as its own: "Your previous turn was interrupted because …. Check the current state before
   you continue (for example, re-read files you were changing), then carry on. If it was already
   done, say so briefly." Whatever the agent committed is in its history; nothing is re-run blindly.
@@ -379,7 +384,8 @@ remote provisioning; the paired network transport and the iPad app.
 | User disables background activity | detected via `SMAppService.status`; attached-host fallback, with an explanation |
 | A host bug kills every session at once | crashes are recovered like any interruption; recovery is capped per turn; the tests kill the host on purpose |
 | Host and agent die together, so turns are interrupted rather than continuing | accepted: the recovery message is cheap and honest. A per-agent stdio relay that outlives the host could make host crashes invisible later |
+| An agent's launcher (`npx`) dies but the adapter it started lives on, still holding the pipes | seen in E2E: the turn simply finishes, since the host talks to whoever holds stdio. Phase 2 tracks each agent's process group (npm makes its own) and ends the whole group when the top process exits or the agent is stopped |
 | Recovery prompts spend tokens | only turns that were actually running are resumed, at most three times |
-| An agent stores the prompt transformed, fooling the replay check | the check accepts containment; the worst case is a harmless "you were interrupted" for a prompt it never saw |
+| An agent stores the prompt transformed, or adds markers after it, fooling the replay check | the check accepts containment within the last three user messages; the worst case is a harmless "you were interrupted" for a prompt it never saw |
 | The in-memory event log grows with long sessions | cleared on every reload; a cap that reloads from the agent instead of keeping everything can come later |
 | Protocol drift between app and host versions | version handshake, unknown-tolerant enums and events, restart-when-idle updates |
