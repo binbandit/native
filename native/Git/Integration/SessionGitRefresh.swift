@@ -3,8 +3,9 @@ import SwiftUI
 
 extension View {
     /// Rescans the session's working folder when its agent ends a turn or finishes a tool call
-    /// that may have written files. The file watcher usually notices first; this catches writes
-    /// it coalesced away, and settles the counts the moment the agent stops.
+    /// that may have written files, and renames the task's provisional branch after its title. The
+    /// file watcher usually notices writes first; this catches ones it coalesced away, and settles
+    /// the counts the moment the agent stops.
     func refreshesGitStatus(of session: SessionModel, in store: GitStore) -> some View {
         modifier(SessionGitRefresh(session: session, store: store))
     }
@@ -21,6 +22,10 @@ private struct SessionGitRefresh: ViewModifier {
             }
             .onChange(of: finishedWrites) {
                 store.refresh(folder: session.cwd)
+            }
+            // A task's provisional branch takes its name from the title once there is one.
+            .task(id: session.displayTitle) {
+                await store.renameProvisionalBranch(at: session.cwd, title: session.displayTitle)
             }
     }
 

@@ -140,6 +140,15 @@ struct AgentCLITests {
         #expect(throws: AgentCLIUnavailable.self) { try AgentCLI.signIn(local).get() }
     }
 
+    @Test func splitsLikeAShell() {
+        #expect(ShellQuoting.split(#"npx -y "my pkg" 'it''s' a\ b"#) == ["npx", "-y", "my pkg", "its", "a b"])
+        #expect(ShellQuoting.split(#"echo "say \"hi\"" ''"#) == ["echo", #"say "hi""#, ""])
+        #expect(ShellQuoting.split("  ") == [])
+        #expect(ShellQuoting.split("echo 'open") == nil)
+        let words = ["node", "it's", "a b", "plain"]
+        #expect(ShellQuoting.split(ShellQuoting.commandLine(words)) == words)
+    }
+
     @Test func quotesLikeAShell() {
         #expect(ShellQuoting.commandLine(["echo", "it's", "a b", "plain-word", ""]) == #"echo 'it'\''s' 'a b' plain-word ''"#)
     }

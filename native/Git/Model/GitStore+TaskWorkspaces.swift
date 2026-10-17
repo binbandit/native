@@ -82,8 +82,10 @@ extension GitStore {
             let worktrees = try? await repository.worktrees()
         else { return [] }
         let location = Self.taskLocation(of: repository).standardizedFileURL.path(percentEncoded: false)
-        return worktrees.filter { !$0.isMain && $0.path.standardizedFileURL.path(percentEncoded: false).hasPrefix(location) }
-            .map(\.path)
+        return worktrees.filter {
+            !$0.isMain && $0.path.standardizedFileURL.path(percentEncoded: false).hasPrefix(location)
+        }
+        .map(\.path)
     }
 
     /// Whether `folder` is a worktree Native made, which Native may remove.

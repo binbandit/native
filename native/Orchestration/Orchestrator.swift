@@ -103,7 +103,7 @@ final class Orchestrator {
         }
         let prompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !prompt.isEmpty else { throw MCPToolError("The prompt is empty; say what the task should do.") }
-        let parent = try callerKey(caller)
+        let parent = try requireCallerKey(caller)
         let title = title?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty ?? Self.headline(of: prompt)
 
         let request = TaskRequest(agent: agent.id, parent: parent, title: title, text: prompt, prompt: taskPrompt(prompt, from: caller))
@@ -182,7 +182,7 @@ final class Orchestrator {
         }
 
         let message = TaskMessage(
-            sender: try callerKey(caller), recipient: recipient.session, text: text, prompt: prompt(text, from: caller, to: recipient))
+            sender: try requireCallerKey(caller), recipient: recipient.session, text: text, prompt: prompt(text, from: caller, to: recipient))
         let delivery: TaskMessage.Delivery
         do {
             delivery = try await host.deliver(message)
@@ -316,7 +316,7 @@ final class Orchestrator {
         host?.sessionKey(of: caller.clientID)
     }
 
-    private func callerKey(_ caller: OrchestrationCaller) throws -> SessionKey {
+    private func requireCallerKey(_ caller: OrchestrationCaller) throws -> SessionKey {
         guard let key = callerKey(caller) else { throw MCPToolError("Native doesn't have your session open, so it can't act for it.") }
         return key
     }
