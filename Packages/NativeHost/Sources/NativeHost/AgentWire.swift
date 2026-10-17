@@ -1,0 +1,82 @@
+import ACP
+import Foundation
+import NativeHostProtocol
+
+// The ACP messages the host exchanges with agents, in the shapes it needs: it forwards most of what
+// agents say verbatim, so payloads it doesn't interpret stay `JSONValue`.
+
+struct RawSessionNotification: Decodable, Sendable {
+    var sessionId: SessionID
+    var update: JSONValue
+}
+
+struct RawPermissionRequest: Decodable, Sendable {
+    struct ToolCall: Decodable, Sendable {
+        var toolCallId: String
+        var title: String?
+    }
+
+    var sessionId: SessionID
+    var toolCall: ToolCall
+}
+
+struct RawNewSessionRequest: Encodable, Sendable {
+    var cwd: String
+    var mcpServers: [JSONValue]
+}
+
+struct RawNewSessionResponse: Decodable, Sendable {
+    var sessionId: SessionID
+    var configOptions: JSONValue?
+}
+
+struct RawLoadSessionRequest: Encodable, Sendable {
+    var sessionId: SessionID
+    var cwd: String
+    var mcpServers: [JSONValue]
+}
+
+struct RawConfigOptionsResponse: Decodable, Sendable {
+    var configOptions: JSONValue?
+}
+
+struct RawSetConfigOptionRequest: Encodable, Sendable {
+    var sessionId: SessionID
+    var configId: String
+    var value: String
+}
+
+struct RawPromptResponse: Decodable, Sendable {
+    var stopReason: String
+}
+
+struct RawSteerResponse: Decodable, Sendable {
+    var outcome: String
+}
+
+/// What the host tells agents about itself in `initialize`.
+struct HostInitializeRequest: Encodable, Sendable {
+    var protocolVersion = ACP.protocolVersion
+    /// Subagents show as their own sessions; Cursor reads that from `_meta` and Claude from the top
+    /// level. No other optional client capabilities yet (fs, terminals), so agents do that work.
+    var clientCapabilities: JSONValue = .object(["subagents": .object([:]), "_meta": .object(["subagents": .object([:])])])
+    var clientInfo: Implementation
+}
+
+struct HostInitializeResponse: Decodable, Sendable {
+    var protocolVersion: Int
+    var agentCapabilities: AgentCapabilities?
+    var agentInfo: Implementation?
+    var _meta: JSONValue?
+
+    var supportsSteering: Bool {
+        _meta?["steering"]?["supported"] == .bool(true)
+    }
+}
+
+extension SessionMirror {
+    /// A `config_option_update`, for config options that came back in a response rather than an update.
+    static func configOptionsUpdate(_ options: JSONValue) -> JSONValue {
+        .object(["sessionUpdate": .string("config_option_update"), "configOptions": options])
+    }
+}

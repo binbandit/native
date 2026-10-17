@@ -5,9 +5,11 @@ import SwiftUI
 /// shows the plan badge, and Help and Settings at the trailing edge (Conductor's `px-4 py-3`, 20pt
 /// between the icons).
 struct SidebarFooter: View {
+    let limitStatus: (AgentDefinition.ID) -> LimitStatus?
+
     var body: some View {
         HStack(spacing: DS.Space.lg) {
-            AgentHealthBar()
+            AgentHealthBar(limitStatus: limitStatus)
             Spacer(minLength: 0)
             HStack(spacing: DS.Space.xl + DS.Space.xs) {
                 SidebarHelpMenu()

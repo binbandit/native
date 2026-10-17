@@ -1,11 +1,12 @@
 import ACP
 import SwiftUI
 
-/// An agent's details, from its footer chip: what it is and how it's doing, why it stopped or how
-/// to install it, the ways to sign in, and Retry or Restart.
+/// An agent's details, from its footer chip: what it is and how it's doing, its usage limit, why it
+/// stopped or how to install it, the ways to sign in, and Retry or Restart.
 struct AgentDetailsView: View {
     @Environment(AppModel.self) private var model
     let runtime: AgentRuntime
+    let limit: LimitStatus?
 
     private var health: AgentHealth {
         AgentHealth(runtime)
@@ -29,6 +30,15 @@ struct AgentDetailsView: View {
                             .font(.dsCaption)
                             .foregroundStyle(.dsTextTertiary)
                     }
+                }
+            }
+
+            if let limit {
+                TimelineView(.everyMinute) { context in
+                    Text(limit.line(now: context.date))
+                        .font(.dsBody)
+                        .foregroundStyle(limit.level == .reached ? .dsDanger : .dsWarning)
+                        .fixedSize(horizontal: false, vertical: true)
                 }
             }
 
@@ -75,9 +85,9 @@ struct AgentDetailsView: View {
         .frame(width: 300)
     }
 
+    /// "Ready · claude-code-acp 0.9", or the status alone while it isn't ready.
     private var detailLine: String {
-        let version = runtime.info.map { [$0.displayName, $0.version].compactMap(\.self).joined(separator: " ") }
-        return [health.summary(for: runtime), health == .ready ? nil : version].compactMap(\.self).joined(
-            separator: " · ")
+        guard health == .ready, let info = runtime.info else { return health.summary(for: runtime) }
+        return ["Ready", info.name, info.version].compactMap(\.self).joined(separator: " · ")
     }
 }
