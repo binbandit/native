@@ -31,6 +31,11 @@ final class SessionStore {
         sessions.values.first { $0.clientID == clientID }
     }
 
+    /// The agent's sessions open now, subagents included.
+    func open(of agent: AgentDefinition.ID) -> [SessionModel] {
+        sessions.filter { $0.key.agent == agent }.map(\.value)
+    }
+
     /// Adds a session and delivers whatever arrived for it before it existed.
     func register(_ session: SessionModel) {
         sessions[session.key] = session
@@ -64,10 +69,22 @@ final class SessionStore {
                 Task { try? await connection.respond(to: id, with: RequestPermissionResponse.cancelled) }
             }
         case .disconnected:
-            for (key, session) in sessions where key.agent == agent {
-                session.markDisconnected()
-            }
+            disconnect(agent, isRestarting: false)
         }
+    }
+
+    /// Marks an agent's sessions as cut off from it, returning the user's sessions whose turn it
+    /// interrupted.
+    @discardableResult
+    func disconnect(_ agent: AgentDefinition.ID, isRestarting: Bool) -> [SessionKey] {
+        var interrupted: [SessionKey] = []
+        for (key, session) in sessions where key.agent == agent {
+            if session.phase == .prompting, session.origin == .user {
+                interrupted.append(key)
+            }
+            session.markDisconnected(isRestarting: isRestarting)
+        }
+        return interrupted
     }
 
     private func deliver(_ update: SessionUpdate, to session: SessionModel) {

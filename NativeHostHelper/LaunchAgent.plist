@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Template for the launchd job SMAppService registers Native's host with. The app's build fills in
+     the placeholders (install-launch-agent.sh); docs/durability.md explains each key. -->
+<plist version="1.0">
+<dict>
+	<key>Label</key>
+	<string>__LABEL__</string>
+	<key>BundleProgram</key>
+	<string>Contents/Library/LoginItems/Native Host.app/Contents/MacOS/Native Host</string>
+	<key>AssociatedBundleIdentifiers</key>
+	<array>
+		<string>__APP_ID__</string>
+	</array>
+	<key>RunAtLoad</key>
+	<true/>
+	<key>KeepAlive</key>
+	<dict>
+		<key>SuccessfulExit</key>
+		<false/>
+	</dict>
+	<key>ProcessType</key>
+	<string>Interactive</string>
+	<key>EnvironmentVariables</key>
+	<dict>
+		<key>NATIVE_HOST_CHANNEL</key>
+		<string>__CHANNEL__</string>
+	</dict>
+</dict>
+</plist>

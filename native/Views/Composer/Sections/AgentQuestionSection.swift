@@ -139,9 +139,9 @@ struct AgentQuestionSection: View {
 
     private func rowFill(isPicked: Bool, isHighlighted: Bool) -> Color {
         if isPicked {
-            .dsAccentSubtle
-        } else if isHighlighted && focus == .card {
             .dsSelected
+        } else if isHighlighted && focus == .card {
+            .dsHover
         } else {
             .clear
         }

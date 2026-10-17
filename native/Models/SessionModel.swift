@@ -222,12 +222,25 @@ final class SessionModel {
         phase = .idle
     }
 
-    func markDisconnected() {
+    /// Cuts the session off from its agent, whose process went away. `isRestarting` says whether
+    /// Native is bringing the agent back on its own.
+    func markDisconnected(isRestarting: Bool = false) {
         guard phase != .disconnected else { return }
+        let wasWorking = phase == .prompting
         phase = .disconnected
         // Whatever the subagents were doing is unknown now.
         subagentControls.reset()
-        state.appendNotice("\(agentName) stopped running. Restart it from the sidebar to continue.", isError: true)
+        let notice = switch (isRestarting, wasWorking) {
+        case (true, true): "\(agentName) stopped unexpectedly in the middle of this turn. Native is restarting it and will ask it to pick up where it left off."
+        case (true, false): "\(agentName) stopped unexpectedly. Native is restarting it."
+        case (false, _): "\(agentName) stopped running. Restart it from the sidebar to continue."
+        }
+        state.appendNotice(notice, isError: true)
+    }
+
+    /// Adds a note to the transcript about something Native did, such as recovering the session.
+    func addNotice(_ text: String, isError: Bool) {
+        state.appendNotice(text, isError: isError)
     }
 
     // MARK: - Other actions
