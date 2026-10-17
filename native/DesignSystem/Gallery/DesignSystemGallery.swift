@@ -45,7 +45,13 @@ struct DesignSystemGalleryColumn: View {
             Text(colorScheme == .dark ? "Dark" : "Light")
                 .font(.dsTitle)
                 .foregroundStyle(.dsTextPrimary)
-            GallerySection("Colors", source: "Factory core-ui v2 (\"Factory\" preset), Conductor statuses") {
+            GallerySection("Brand", source: "Native's emblem, lockups, nightly sky and moon") {
+                GalleryBrand()
+            }
+            GallerySection("Accent palettes", source: "One per app-icon theme, set with .dsAccentPalette(themeID:)") {
+                GalleryAccentPalettes()
+            }
+            GallerySection("Colors", source: "Factory core-ui v2 neutrals, Conductor statuses, CVD-safe chart series") {
                 GalleryColors()
             }
             GallerySection("Typography", source: "Geist / Geist Mono, Factory scale") {
@@ -63,10 +69,13 @@ struct DesignSystemGalleryColumn: View {
             GallerySection("Composer", source: "Factory composer") {
                 GalleryComposer()
             }
-            GallerySection("Controls", source: "Factory buttons, Kbd; Conductor badges, cards, empty states") {
+            GallerySection("Controls", source: "Factory buttons, Kbd; Conductor badges, cards") {
                 GalleryControls()
             }
-            GallerySection("Launch", source: "Factory startup animation, Native's marks") {
+            GallerySection("Patterns", source: "One per situation (docs/product-quality.md)") {
+                GalleryPatterns()
+            }
+            GallerySection("Launch", source: "The emblem assembling itself") {
                 LaunchAnimationView()
                     .frame(height: 220)
                     .clipShape(.rect(cornerRadius: DS.Radius.card))

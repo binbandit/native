@@ -1,10 +1,11 @@
 # Companion app plan
 
-A Native companion for iPhone (and iPad), in the spirit of Conductor's: check on tasks away from
-the Mac, approve permission requests, steer or queue follow-ups, start a task, and get notified
-when something finishes or needs you. The Mac stays the host: agents, worktrees, credentials and
-plugins live there. Not built yet; this records the decisions that shape the Mac app now.
-
+The iPhone layout of Native, in the spirit of Conductor's and Orca's companions: check on tasks away
+from the Mac, approve permission requests, steer or queue follow-ups, start a task, and get notified
+when something finishes or needs you. The iPad runs the full app instead (see "Clients and hosts" in
+`docs/architecture.md`); both are clients of a host, paired and connected the same way. The host
+keeps agents, worktrees, credentials and plugins. Not built yet; this records the decisions that
+shape the Mac app now.
 ## Architecture
 
 - **The phone is an ACP client of the Mac.** Native already turns many agents into one coherent

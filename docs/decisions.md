@@ -110,3 +110,13 @@ once, and every project belongs to one. Remote hosts are reached over SSH first 
 keys, nothing new to trust), with other transports later. To keep this possible, nothing outside a
 host runs commands or touches project files directly: code that shells out takes a `CommandRunner`
 (`Packages/Exec`), so the same code runs on whichever machine owns the project.
+
+## 2026-10-17: Native runs on iPad, connected to a host
+
+The whole app runs on iPad, not just a companion. Agents can't run on iPadOS (no subprocesses), so
+the iPad is a client of a host: a Mac running Native, or any other host. This makes the split in
+"Any machine can be a host" the rule for every client: the UI is always a client of a host, and on
+the Mac that host just happens to be local. Mac, iPad and iPhone share one SwiftUI codebase. The
+iPad gets the full Mac experience adapted to touch, pointer and hardware keyboard. The iPhone gets
+the companion layout of the same app (`docs/companion.md`). Pairing, transport and security are the
+companion's: a QR code, then end-to-end authenticated connections.
