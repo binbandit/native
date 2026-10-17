@@ -10,7 +10,10 @@ public enum BranchNaming {
     /// A prefix as the user typed it, made safe to put in front of a branch name: `brayden/`,
     /// `team/brayden/`, or empty.
     public static func normalizedPrefix(_ raw: String) -> String {
-        let segments = raw.split(separator: "/").map { Worktree.slug(String($0), maxLength: 40) }.filter { $0 != "task" || raw.contains("task") }
+        // Segments with nothing to keep (`//`, `-`) drop out rather than becoming "task".
+        let segments = raw.split(separator: "/").compactMap { segment in
+            segment.contains { $0.isLetter || $0.isNumber } ? Worktree.slug(String(segment), maxLength: 40) : nil
+        }
         return segments.isEmpty ? "" : segments.joined(separator: "/") + "/"
     }
 

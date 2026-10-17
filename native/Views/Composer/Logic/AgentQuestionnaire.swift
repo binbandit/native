@@ -23,8 +23,14 @@ struct AgentQuestionnaire: Equatable {
         let allowsMultiple: Bool
         /// The field that takes a typed answer, or a note on the picked option.
         let customKey: String?
+        /// What the agent expects back; MCP servers' forms (through Codex) ask for more than text.
+        let valueType: ValueType
 
         var id: String { key }
+    }
+
+    enum ValueType: Equatable {
+        case string, boolean, number, integer
     }
 
     let questions: [Question]
@@ -47,7 +53,13 @@ struct AgentQuestionnaire: Equatable {
                 prompt: field["description"]?.stringValue ?? (fields.count == 1 ? message : field["title"]?.stringValue ?? message),
                 options: Self.options(in: field),
                 allowsMultiple: field["type"]?.stringValue == "array",
-                customKey: customKeys.contains(customKey) ? customKey : nil
+                customKey: customKeys.contains(customKey) ? customKey : nil,
+                valueType: switch field["type"]?.stringValue {
+                case "boolean": .boolean
+                case "number": .number
+                case "integer": .integer
+                default: .string
+                }
             )
         }
         guard !questions.isEmpty else { return nil }
@@ -72,6 +84,9 @@ struct AgentQuestionnaire: Equatable {
         }
         if case .array(let values)? = source["enum"] {
             return values.compactMap(\.stringValue).map { Option(value: $0, title: $0, description: nil) }
+        }
+        if field["type"]?.stringValue == "boolean" {
+            return [Option(value: "true", title: "Yes", description: nil), Option(value: "false", title: "No", description: nil)]
         }
         return []
     }

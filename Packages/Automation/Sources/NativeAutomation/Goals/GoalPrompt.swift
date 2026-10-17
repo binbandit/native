@@ -9,7 +9,7 @@ public nonisolated enum GoalPrompt: Hashable, Sendable {
     /// Asks the agent to keep going; `iteration` is the one about to start, counting from 1.
     case continuation(objective: String, iteration: Int)
 
-    init?(parsing text: String) {
+    public init?(parsing text: String) {
         let lines = text.components(separatedBy: .newlines)
         guard let first = lines.first?.trimmingCharacters(in: .whitespaces) else { return nil }
         if first == "<goal>", let end = lines.firstIndex(of: "</goal>") {

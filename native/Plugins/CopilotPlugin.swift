@@ -1,3 +1,5 @@
+import Foundation
+
 extension BuiltInPlugins {
     /// GitHub Copilot CLI, which speaks ACP itself (`copilot --acp`), so it runs the user's own
     /// `copilot` and updates on its own schedule. It signs in with `copilot login`, a
