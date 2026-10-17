@@ -35,9 +35,14 @@ public struct CommitPlan: Hashable, Sendable {
         var placed: Set<String> = []
         var groups: [Group] = []
         for (message, paths) in proposal {
-            let kept = paths.filter { changed.contains($0) && placed.insert($0).inserted }
             let message = message.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !kept.isEmpty, !message.isEmpty { groups.append(Group(message: message, paths: kept)) }
+            guard !message.isEmpty else { continue }
+            var kept: [String] = []
+            for path in paths where changed.contains(path) && !placed.contains(path) {
+                placed.insert(path)
+                kept.append(path)
+            }
+            if !kept.isEmpty { groups.append(Group(message: message, paths: kept)) }
         }
         let leftover = changedPaths.filter { !placed.contains($0) }
         if !leftover.isEmpty { groups.append(Group(message: leftoverMessage, paths: leftover)) }
@@ -56,7 +61,9 @@ public struct CommitPlan: Hashable, Sendable {
         }
         return CommitPlan(
             groups: order.map { folder in
-                Group(message: folder.isEmpty ? "Update project files" : "Update \(folder)", paths: byFolder[folder] ?? [])
+                Group(
+                    message: folder.isEmpty ? "Update project files" : "Update \(folder)", paths: byFolder[folder] ?? []
+                )
             })
     }
 }

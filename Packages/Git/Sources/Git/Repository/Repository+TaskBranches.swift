@@ -25,7 +25,8 @@ extension Repository {
 
     public func isProvisional(_ branch: String) async throws(GitError) -> Bool {
         let output = try await run(
-            ["config", "--get", "--bool", "branch.\(branch).nativeProvisional"], readOnly: true, acceptingStatus: [0, 1])
+            ["config", "--get", "--bool", "branch.\(branch).nativeProvisional"], readOnly: true,
+            acceptingStatus: [0, 1])
         return output.text.trimmingCharacters(in: .whitespacesAndNewlines) == "true"
     }
 

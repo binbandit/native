@@ -23,12 +23,15 @@ extension Repository {
             }
         }
         if !folders.isEmpty {
-            files += try await run(ignored + ["--"] + folders, readOnly: true).text.split(separator: "\0").map(String.init)
+            files += try await run(ignored + ["--"] + folders, readOnly: true).text.split(separator: "\0").map(
+                String.init)
         }
         guard !files.isEmpty else { return [] }
         // One shell for all of them, on the machine the repository is on.
-        let script = #"dest=$1; shift; for f; do [ -e "$dest/$f" ] && continue; mkdir -p "$dest/$(dirname -- "$f")" && cp -p -- "$f" "$dest/$f" || exit 1; done"#
-        let output = try await git.runTool("sh", ["-c", script, "sh", destination.path(percentEncoded: false)] + files, in: root)
+        let script =
+            #"dest=$1; shift; for f; do [ -e "$dest/$f" ] && continue; mkdir -p "$dest/$(dirname -- "$f")" && cp -p -- "$f" "$dest/$f" || exit 1; done"#
+        let output = try await git.runTool(
+            "sh", ["-c", script, "sh", destination.path(percentEncoded: false)] + files, in: root)
         guard output.status == 0 else {
             throw .failed(arguments: ["cp"], status: output.status, stderr: output.stderr)
         }

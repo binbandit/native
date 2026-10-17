@@ -26,7 +26,7 @@ final class TerminalStore {
     ) {
         self.preferences = preferences
         self.makeEngine = makeEngine
-        #if canImport(GhosttyKit)
+        #if canImport(GhosttyKit) && TERMINAL_ENGINE_WIP
         availability = .available
         #else
         availability = .notBuilt
@@ -112,7 +112,7 @@ final class TerminalStore {
 
     /// libghostty on the Mac, when the build includes it.
     static func platformEngine() -> Result<TerminalEngine, TerminalEngineError> {
-        #if canImport(GhosttyKit)
+        #if canImport(GhosttyKit) && TERMINAL_ENGINE_WIP
         GhosttyRuntime.start().map { $0 as TerminalEngine }
         #else
         .failure(.notBuilt)
