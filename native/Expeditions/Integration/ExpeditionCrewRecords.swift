@@ -1,3 +1,4 @@
+#if EXPEDITIONS_WIP
 import ACP
 import Foundation
 import NativeAutomation
@@ -43,3 +44,4 @@ final class ExpeditionCrewRecords {
         return (try? JSONDecoder().decode([UUID: Record].self, from: data)) ?? [:]
     }
 }
+#endif

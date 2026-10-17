@@ -41,18 +41,44 @@ struct SubagentCard: View {
         }
         .buttonStyle(.plain)
         .help("Show this subagent's conversation")
+        // One button to Accessibility, named by everything the card shows; the loader inside it is
+        // decoration, not a busy indicator of its own.
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityAddTraits(.isButton)
+        .accessibilityHint("Shows this subagent's conversation")
+        .accessibilityAction { onOpen() }
+    }
+
+    private var accessibilityLabel: String {
+        [subagent.title ?? "Subagent", subagent.description, SubagentStatusLabel.text(for: subagent.workState)]
+            .compactMap { $0?.isEmpty == false ? $0 : nil }
+            .joined(separator: ", ")
     }
 }
 
 struct SubagentStatusLabel: View {
     let state: SubagentWorkState?
 
+    /// The label's words, for anything that names the status without showing it.
+    static func text(for state: SubagentWorkState?) -> String {
+        switch state {
+        case .running: "Working"
+        case .requiresAction: "Needs approval"
+        case .idle(.error, _): "Failed"
+        case .idle(.cancelled, _): "Stopped"
+        case .idle: "Done"
+        case .unknown, .other, nil: "Unknown"
+        }
+    }
+
     var body: some View {
         HStack(spacing: 5) {
             switch state {
             case .running:
-                ProgressView()
-                    .controlSize(.mini)
+                DotGridLoader(pattern: .typing)
+                    .frame(width: DS.Size.navIcon, height: DS.Size.navIcon)
+                    .accessibilityHidden(true)
                 Text("Working")
             case .requiresAction:
                 Image(systemName: "exclamationmark.circle.fill")

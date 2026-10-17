@@ -1,3 +1,4 @@
+#if EXPEDITIONS_WIP
 import Foundation
 import NativeExpeditions
 
@@ -18,3 +19,4 @@ struct ExpeditionsPlugin: NativePlugin {
         await center.handle(event)
     }
 }
+#endif

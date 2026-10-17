@@ -31,8 +31,8 @@ struct HomeDetail: View {
             name: runtime.agent.displayName,
             symbolName: runtime.agent.symbolName,
             availability: availability(of: runtime),
-            shortcut: runtime.agent.id == model.defaultAgent?.id ? KeyboardShortcut("n") : nil,
-            remedy: remedy(for: runtime)
+            remedy: remedy(for: runtime),
+            shortcut: runtime.agent.id == model.defaultAgent?.id ? KeyboardShortcut("n") : nil
         )
     }
 

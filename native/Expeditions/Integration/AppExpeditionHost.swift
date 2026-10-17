@@ -1,3 +1,4 @@
+#if EXPEDITIONS_WIP
 import ACP
 import Foundation
 import NativeAutomation
@@ -133,3 +134,4 @@ enum ExpeditionHostError: LocalizedError {
         }
     }
 }
+#endif

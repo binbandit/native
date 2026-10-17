@@ -77,7 +77,8 @@ public struct SessionState: Sendable {
             openTurn = items.count
             turnClocks[items.count] = TurnClock(startedAt: date)
         }
-        items.append(.message(TranscriptMessage(role: .user, text: text, wasSteered: steered, startedAt: date, updatedAt: date)))
+        let message = TranscriptMessage(role: .user, text: text, wasSteered: steered, startedAt: date, updatedAt: date)
+        items.append(.message(message))
     }
 
     public mutating func appendNotice(_ text: String, isError: Bool) {
@@ -153,7 +154,9 @@ public struct SessionState: Sendable {
             last.updatedAt = date ?? last.updatedAt
             items[items.count - 1] = .message(last)
         } else {
-            items.append(.message(TranscriptMessage(role: role, text: text, messageID: chunk.messageId, startedAt: date, updatedAt: date)))
+            let message = TranscriptMessage(
+                role: role, text: text, messageID: chunk.messageId, startedAt: date, updatedAt: date)
+            items.append(.message(message))
         }
     }
 

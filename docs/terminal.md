@@ -34,6 +34,13 @@ Why libghostty, and the pin, are in `docs/decisions.md`.
   accent changes restyle running terminals live. `TerminalTheme` and `TerminalSettings.themeID` are
   the seam for the coming code-theme setting: a theme with its own `chrome` replaces the design
   system's background and text.
+- **`TERM` is `xterm-256color`.** Ghostty's own `xterm-ghostty` terminfo is bundled (and its
+  shell integration found through it), but setuid programs such as `top` and anything under
+  `sudo` ignore `TERMINFO`, and remote machines don't have it, which is Ghostty's most common
+  support question. Programs still get truecolor (`COLORTERM`) and Ghostty's extensions by
+  querying the terminal.
+- **Tabs** are named by their shell's title (the folder, or the running command), numbered when two
+  show the same title, and fall back to "Terminal", "Terminal 2", ... once their shell exits.
 - **Keys.** Ghostty's default bindings are cleared (they claim ⌘N, ⌘W, ⌘Q, ⌘T), so every ⌘
   shortcut in Native's menus keeps working inside a terminal; the few terminal-local ones are
   listed in `docs/keyboard.md`. Copy, paste and select all go through the Edit menu. Input runs
@@ -54,7 +61,8 @@ Why libghostty, and the pin, are in `docs/decisions.md`.
 | Pasting text that would run commands | A confirmation (Ghostty's paste protection) |
 
 To try the failure states by hand: `open -n Native.app --args -NativeTerminalCommand /nonexistent`
-runs that command instead of the login shell.
+runs that command instead of the login shell. Pressing any key in an exited tab closes it, and
+focus moves to the next tab.
 
 ## Building libghostty
 

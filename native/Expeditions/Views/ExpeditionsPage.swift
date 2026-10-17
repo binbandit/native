@@ -1,3 +1,4 @@
+#if EXPEDITIONS_WIP
 import NativeExpeditions
 import SwiftUI
 
@@ -105,7 +106,7 @@ private struct ExpeditionRow: View {
                 Badge(expedition.phase.label, tone: expedition.phase.tone, style: .mono)
             }
             .padding(.horizontal, DS.Space.md)
-            .frame(minHeight: DS.rowMinHeight)
+            .frame(minHeight: DS.Size.rowMinHeight)
             .contentShape(.rect)
         }
         .buttonStyle(SidebarRowButtonStyle())
@@ -113,3 +114,4 @@ private struct ExpeditionRow: View {
         .accessibilityHint("Opens the expedition")
     }
 }
+#endif

@@ -1,3 +1,4 @@
+#if EXPEDITIONS_WIP
 import ACP
 import Foundation
 import NativeAutomation
@@ -69,3 +70,4 @@ struct ExpeditionProjectProbe {
     var hasUncommittedChanges: Bool
     var gitHubReady: Bool?
 }
+#endif
