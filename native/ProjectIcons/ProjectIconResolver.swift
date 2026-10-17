@@ -46,9 +46,12 @@ nonisolated struct ProjectIconResolver: Sendable {
         return await appIcon(in: root)
     }
 
-    /// The largest image in the first `AppIcon.appiconset` found within `catalogDepth` folders.
+    /// The largest image in the first `AppIcon.appiconset` found within `catalogDepth` folders, else
+    /// in another app-icon set there (`AppIcon-Light.imageset`, as projects with alternate icons
+    /// keep them).
     private func appIcon(in root: URL) async -> Data? {
         var frontier = [""]
+        var alternates: [String] = []
         for _ in 0..<Self.catalogDepth {
             var next: [String] = []
             for directory in frontier {
@@ -57,7 +60,9 @@ nonisolated struct ProjectIconResolver: Sendable {
                     if name == "AppIcon.appiconset" {
                         return await largestImage(inCatalogSet: path, root: root)
                     }
-                    if !name.hasPrefix("."), !Self.skippedDirectories.contains(name),
+                    if name.hasPrefix("AppIcon"), name.hasSuffix(".appiconset") || name.hasSuffix(".imageset") {
+                        alternates.append(path)
+                    } else if !name.hasPrefix("."), !Self.skippedDirectories.contains(name),
                         !name.contains(".") || name.hasSuffix(".xcassets")
                     {
                         next.append(path)
@@ -66,7 +71,18 @@ nonisolated struct ProjectIconResolver: Sendable {
             }
             frontier = next
         }
+        // The default look first when the names say which it is.
+        let preferred = alternates.sorted { (Self.alternateRank($0), $0) < (Self.alternateRank($1), $1) }
+        for path in preferred.prefix(3) {
+            if let png = await largestImage(inCatalogSet: path, root: root) { return png }
+        }
         return nil
+    }
+
+    private static func alternateRank(_ path: String) -> Int {
+        let name = path.lowercased()
+        if name.contains("original") || name.contains("default") { return 0 }
+        return name.contains("light") ? 1 : 2
     }
 
     private func largestImage(inCatalogSet path: String, root: URL) async -> Data? {

@@ -89,13 +89,13 @@ public final class WorkflowRunner {
                 let task = try await host.createStepTask(agent: agent.id, title: title, cwd: cwd)
                 send(.taskCreated(step: step, task: task), to: run)
             } catch {
-                send(.taskFailed(step: step, message: "Couldn't start \(agent.name): \(error.localizedDescription)"), to: run)
+                send(.taskFailed(step: step, message: "Couldn't start \(agent.name): \(Self.describe(error))"), to: run)
             }
         case .prompt(let step, let task, let text):
             do {
                 try await host.sendToStepTask(task, text: text)
             } catch {
-                send(.taskFailed(step: step, message: "Couldn't send the step's prompt: \(error.localizedDescription)"), to: run)
+                send(.taskFailed(step: step, message: "Couldn't send the step's prompt: \(Self.describe(error))"), to: run)
             }
         case .cancelTask(let task):
             await host.cancelStepTask(task)
@@ -104,14 +104,20 @@ public final class WorkflowRunner {
                 let result = try await host.openPullRequest(draft)
                 send(.pullRequestOpened(step: step, result), to: run)
             } catch {
-                send(.pullRequestFailed(step: step, message: error.localizedDescription), to: run)
+                send(.pullRequestFailed(step: step, message: Self.describe(error)), to: run)
             }
         case .runScript(let step, let source, let input, let cwd):
             do {
                 send(.scriptFinished(step: step, output: try await host.runScript(source, input: input, cwd: cwd)), to: run)
             } catch {
-                send(.scriptFailed(step: step, message: error.localizedDescription), to: run)
+                send(.scriptFailed(step: step, message: Self.describe(error)), to: run)
             }
         }
+    }
+
+    /// What went wrong and, when the error knows it, what to do about it.
+    static func describe(_ error: any Error) -> String {
+        let suggestion = (error as? any LocalizedError)?.recoverySuggestion
+        return [error.localizedDescription, suggestion].compactMap(\.self).joined(separator: " ")
     }
 }

@@ -1,4 +1,5 @@
 import ACP
+import AppKit
 import NativeAutomation
 import SwiftUI
 
