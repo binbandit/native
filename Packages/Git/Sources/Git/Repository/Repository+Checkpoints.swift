@@ -54,8 +54,11 @@ extension Repository {
 
     /// Puts files back the way a checkpoint saved them, staged state included where the
     /// checkpoint has it. `nil` paths restores everything. Paths the checkpoint doesn't have are
-    /// removed, so a discarded deletion is deleted again.
-    public func restore(_ checkpoint: Checkpoint, paths: [String]? = nil) async throws(GitError) {
+    /// removed, so a discarded deletion is deleted again. With `workingTree` false only the index
+    /// goes back, e.g. to undo commits whose files are still on disk.
+    public func restore(
+        _ checkpoint: Checkpoint, paths: [String]? = nil, workingTree: Bool = true
+    ) async throws(GitError) {
         if let source = try await resolve("\(checkpoint.commit)^2") {
             // git refuses pathspecs that match nothing, in the source or the index.
             let staged = try await known(paths, in: source)
@@ -63,6 +66,7 @@ extension Repository {
                 try await runWithPaths(["restore", "--source=\(source)", "--staged"], staged)
             }
         }
+        guard workingTree else { return }
         let files = try await known(paths, in: checkpoint.commit)
         if !files.isEmpty {
             try await runWithPaths(["restore", "--source=\(checkpoint.commit)", "--worktree"], files)
