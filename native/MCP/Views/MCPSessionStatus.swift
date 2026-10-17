@@ -24,8 +24,7 @@ struct MCPSessionStatusButton: View {
                 isPresented.toggle()
             } label: {
                 HStack(spacing: DS.Space.sm) {
-                    Image(systemName: "server.rack")
-                        .font(.system(size: StatusBarMetrics.glyph))
+                    StatusBarGlyph("server.rack")
                     Text("MCP \(summary.active)")
                     if summary.attention > 0 {
                         StatusDot(color: .dsDanger)
