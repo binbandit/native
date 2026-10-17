@@ -1,4 +1,5 @@
 import AppKit
+import Exec
 import GitHub
 import Network
 import Observation
@@ -40,11 +41,15 @@ final class GitHubModel {
     @ObservationIgnored private let pathMonitor = NWPathMonitor()
     @ObservationIgnored private var isOnline = true
     @ObservationIgnored private let environment: @MainActor (_ refresh: Bool) async -> [String: String]
+    @ObservationIgnored private let runner: any CommandRunner
     @ObservationIgnored private var cachedCLI: GitHubCLI?
 
-    /// - Parameter environment: The user's login-shell environment; `true` reads it again.
-    init(environment: @escaping @MainActor (_ refresh: Bool) async -> [String: String]) {
+    /// - Parameters:
+    ///   - environment: The login-shell environment of the machine gh runs on; `true` reads it again.
+    ///   - runner: Runs gh on the machine that hosts the projects.
+    init(environment: @escaping @MainActor (_ refresh: Bool) async -> [String: String], runner: any CommandRunner = LocalCommandRunner()) {
         self.environment = environment
+        self.runner = runner
     }
 
     var canOpenAsTask: Bool {
@@ -169,7 +174,7 @@ final class GitHubModel {
         if let cachedCLI, !rereadEnvironment {
             return cachedCLI
         }
-        let cli = GitHubCLI(environment: await environment(rereadEnvironment))
+        let cli = GitHubCLI(environment: await environment(rereadEnvironment), runner: runner)
         cachedCLI = cli
         return cli
     }
@@ -248,14 +253,21 @@ extension GitHubModel {
         error: GitHubError? = nil,
         branches: [BranchReference: PullRequestSummary] = [:]
     ) -> GitHubModel {
-        let model = GitHubModel { _ in [:] }
-        model.cachedCLI = GitHubCLI(environment: [:], executable: nil)
+        let model = GitHubModel(environment: { _ in [:] }, runner: NoCommandRunner())
+        model.cachedCLI = GitHubCLI(environment: [:], runner: NoCommandRunner())
         model.inbox = inbox
         model.availability = availability
         model.schedule.recordSuccess(at: .now)
         model.lastError = error
         model.branchPullRequests = branches.mapValues { BranchPullRequest(pullRequest: $0, fetchedAt: .distantFuture) }
         return model
+    }
+}
+
+/// Runs nothing, as if gh weren't installed, so previews never touch GitHub.
+private struct NoCommandRunner: CommandRunner {
+    func run(_ command: Command) async throws -> CommandResult {
+        throw CommandError.notFound(command.executable)
     }
 }
 #endif

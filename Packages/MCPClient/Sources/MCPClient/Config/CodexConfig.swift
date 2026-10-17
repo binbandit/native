@@ -7,6 +7,7 @@ import Foundation
 struct CodexConfig {
     var home: URL
     var environment: [String: String]
+    var reader: ConfigFileReader
 
     var userFile: URL {
         let codexHome = environment["CODEX_HOME"].map { URL(filePath: $0, directoryHint: .isDirectory) } ?? home.appending(path: ".codex", directoryHint: .isDirectory)
@@ -15,13 +16,13 @@ struct CodexConfig {
 
     func read(projects: [URL]) -> AgentMCPConfiguration {
         var problems: [ConfigProblem] = []
-        var files = [ConfigFile(url: userFile, role: "User servers", exists: ConfigFileReader.exists(userFile))]
+        var files = [ConfigFile(url: userFile, role: "User servers", exists: reader.exists(userFile))]
         let user = table(at: userFile, problems: &problems)
         var servers = Self.servers(in: user, scope: .user, source: userFile)
 
         for project in projects {
             let file = project.appending(path: ".codex/config.toml")
-            let exists = ConfigFileReader.exists(file)
+            let exists = reader.exists(file)
             files.append(ConfigFile(url: file, role: "Project servers for \(project.lastPathComponent)", exists: exists))
             guard exists else { continue }
             let isTrusted = user?["projects"]?[ProjectPath.key(project)]?["trust_level"]?.stringValue == "trusted"
@@ -37,7 +38,7 @@ struct CodexConfig {
     }
 
     private func table(at url: URL, problems: inout [ConfigProblem]) -> TOMLValue? {
-        guard let data = FileManager.default.contents(atPath: url.path(percentEncoded: false)) else { return nil }
+        guard let data = reader.data(at: url) else { return nil }
         do {
             return .table(try TOML.parse(String(decoding: data, as: UTF8.self)))
         } catch {

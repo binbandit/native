@@ -18,12 +18,23 @@ nonisolated struct OpenInTarget: Identifiable, Hashable, Sendable {
         case arguments([String])
     }
 
+    /// How the app opens a folder on an SSH host.
+    enum RemoteLaunch: Hashable, Sendable {
+        /// A URL handed to the app, with `{host}` and `{path}` filled in.
+        case url(String)
+        /// A new window running `ssh -t <host> 'cd <path>; exec $SHELL'`.
+        case sshCommand
+    }
+
     /// Persisted as the user's default, so it never changes once shipped.
     let id: String
     /// Every bundle identifier the app ships under, preferred first.
     let bundleIdentifiers: [String]
     let kind: Kind
     var launch = Launch.document
+    /// How the app reaches a remote Native Host's folder, or nil if it can't. Data only for now:
+    /// every location is local until remote hosts exist (`OpenInLocation`).
+    var remote: RemoteLaunch?
 }
 
 nonisolated extension OpenInTarget {
@@ -35,13 +46,13 @@ nonisolated extension OpenInTarget {
     static let finder = OpenInTarget(id: "finder", bundleIdentifiers: ["com.apple.finder"], kind: .fileManager)
 
     private static let editors: [OpenInTarget] = [
-        .init(id: "cursor", bundleIdentifiers: ["com.todesktop.230313mzl4w4u92"], kind: .editor),
-        .init(id: "vscode", bundleIdentifiers: ["com.microsoft.VSCode"], kind: .editor),
-        .init(id: "vscode-insiders", bundleIdentifiers: ["com.microsoft.VSCodeInsiders"], kind: .editor),
-        .init(id: "zed", bundleIdentifiers: ["dev.zed.Zed"], kind: .editor),
-        .init(id: "zed-preview", bundleIdentifiers: ["dev.zed.Zed-Preview"], kind: .editor),
-        .init(id: "zed-nightly", bundleIdentifiers: ["dev.zed.Zed-Nightly"], kind: .editor),
-        .init(id: "windsurf", bundleIdentifiers: ["com.exafunction.windsurf"], kind: .editor),
+        .init(id: "cursor", bundleIdentifiers: ["com.todesktop.230313mzl4w4u92"], kind: .editor, remote: .url("cursor://vscode-remote/ssh-remote+{host}{path}")),
+        .init(id: "vscode", bundleIdentifiers: ["com.microsoft.VSCode"], kind: .editor, remote: .url("vscode://vscode-remote/ssh-remote+{host}{path}")),
+        .init(id: "vscode-insiders", bundleIdentifiers: ["com.microsoft.VSCodeInsiders"], kind: .editor, remote: .url("vscode-insiders://vscode-remote/ssh-remote+{host}{path}")),
+        .init(id: "zed", bundleIdentifiers: ["dev.zed.Zed"], kind: .editor, remote: .url("ssh://{host}{path}")),
+        .init(id: "zed-preview", bundleIdentifiers: ["dev.zed.Zed-Preview"], kind: .editor, remote: .url("ssh://{host}{path}")),
+        .init(id: "zed-nightly", bundleIdentifiers: ["dev.zed.Zed-Nightly"], kind: .editor, remote: .url("ssh://{host}{path}")),
+        .init(id: "windsurf", bundleIdentifiers: ["com.exafunction.windsurf"], kind: .editor, remote: .url("windsurf://vscode-remote/ssh-remote+{host}{path}")),
         .init(id: "antigravity", bundleIdentifiers: ["com.google.antigravity-ide"], kind: .editor),
         .init(id: "vscodium", bundleIdentifiers: ["com.vscodium"], kind: .editor),
         .init(id: "sublime-text", bundleIdentifiers: ["com.sublimetext.4", "com.sublimetext.3"], kind: .editor),
@@ -63,30 +74,33 @@ nonisolated extension OpenInTarget {
     ]
 
     private static let terminals: [OpenInTarget] = [
-        .init(id: "ghostty", bundleIdentifiers: ["com.mitchellh.ghostty"], kind: .terminal),
-        .init(id: "iterm", bundleIdentifiers: ["com.googlecode.iterm2"], kind: .terminal),
-        .init(id: "warp", bundleIdentifiers: ["dev.warp.Warp-Stable", "dev.warp.Warp-Preview"], kind: .terminal),
+        .init(id: "ghostty", bundleIdentifiers: ["com.mitchellh.ghostty"], kind: .terminal, remote: .sshCommand),
+        .init(id: "iterm", bundleIdentifiers: ["com.googlecode.iterm2"], kind: .terminal, remote: .sshCommand),
+        .init(id: "warp", bundleIdentifiers: ["dev.warp.Warp-Stable", "dev.warp.Warp-Preview"], kind: .terminal, remote: .sshCommand),
         // With `--single-instance`, a running kitty opens the window and the new process exits.
         .init(
             id: "kitty",
             bundleIdentifiers: ["net.kovidgoyal.kitty"],
             kind: .terminal,
-            launch: .arguments(["--single-instance", "--directory"])
+            launch: .arguments(["--single-instance", "--directory"]),
+            remote: .sshCommand
         ),
         // `start` opens the window in the running WezTerm when there is one.
         .init(
             id: "wezterm",
             bundleIdentifiers: ["com.github.wez.wezterm"],
             kind: .terminal,
-            launch: .arguments(["start", "--cwd"])
+            launch: .arguments(["start", "--cwd"]),
+            remote: .sshCommand
         ),
         .init(
             id: "alacritty",
             bundleIdentifiers: ["org.alacritty"],
             kind: .terminal,
-            launch: .arguments(["--working-directory"])
+            launch: .arguments(["--working-directory"]),
+            remote: .sshCommand
         ),
-        .init(id: "terminal", bundleIdentifiers: ["com.apple.Terminal"], kind: .terminal),
+        .init(id: "terminal", bundleIdentifiers: ["com.apple.Terminal"], kind: .terminal, remote: .sshCommand),
     ]
 
     private static let gitClients: [OpenInTarget] = [

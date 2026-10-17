@@ -1,51 +1,33 @@
+import Exec
 import Foundation
 
-/// The user's own `gh`, run as a subprocess: their logins, hosts (GitHub Enterprise included),
-/// aliases and config all apply, and Native never handles a token. Every read uses `--json` and
-/// decodes it; nothing parses gh's human-readable output.
+/// The user's own `gh`: their logins, hosts (GitHub Enterprise included), aliases and config all
+/// apply, and Native never handles a token. Every read uses `--json` and decodes it; nothing parses
+/// gh's human-readable output.
 ///
-/// Apps launched from the Dock don't get the user's shell PATH, so pass the login shell's
-/// environment: gh is located on its PATH, and gh in turn uses it to find `git`.
+/// gh runs through a `CommandRunner`, so it can run on whichever machine hosts the project. Pass
+/// that machine's login-shell environment: gh is found on its PATH, and uses it to find `git`.
 public struct GitHubCLI: Sendable {
-    /// The environment gh runs with (before Native's non-interactive overrides).
+    /// The environment gh runs with, before Native's non-interactive overrides.
     public let environment: [String: String]
     /// The host commands target, as `GH_HOST`; `nil` for gh's default.
     public let host: String?
-    /// The `gh` binary, or `nil` when it isn't installed.
-    public let executable: URL?
+    public let runner: any CommandRunner
 
-    public init(environment: [String: String], host: String? = nil) {
+    public init(environment: [String: String], host: String? = nil, runner: any CommandRunner = LocalCommandRunner()) {
         self.environment = environment
         self.host = host
-        executable = Self.locate(in: environment)
+        self.runner = runner
     }
 
     /// The same gh, aimed at another host.
     public func targeting(host: String?) -> GitHubCLI {
-        GitHubCLI(environment: environment, host: host, executable: executable)
+        GitHubCLI(environment: environment, host: host, runner: runner)
     }
 
-    /// With the binary already located, or deliberately absent (previews run no gh at all).
-    public init(environment: [String: String], host: String? = nil, executable: URL?) {
-        self.environment = environment
-        self.host = host
-        self.executable = executable
-    }
-
-    /// Finds `gh` on the environment's PATH, then where package managers put it, since a GUI app's
-    /// fallback environment may lack those directories.
-    public static func locate(in environment: [String: String]) -> URL? {
-        let home = environment["HOME"] ?? NSHomeDirectory()
-        let path = (environment["PATH"] ?? "").split(separator: ":").map(String.init)
-        let wellKnown = ["/opt/homebrew/bin", "/usr/local/bin", "/opt/local/bin", "\(home)/.nix-profile/bin", "/run/current-system/sw/bin", "/usr/bin"]
-        for directory in path + wellKnown where !directory.isEmpty {
-            let candidate = URL(filePath: directory, directoryHint: .isDirectory).appending(path: "gh")
-            if FileManager.default.isExecutableFile(atPath: candidate.path(percentEncoded: false)) {
-                return candidate
-            }
-        }
-        return nil
-    }
+    /// Where package managers put gh, appended to the PATH: an app's fallback environment (when the
+    /// login shell couldn't be read) may lack them.
+    static let wellKnownDirectories = ["/opt/homebrew/bin", "/usr/local/bin", "/opt/local/bin", "/run/current-system/sw/bin", "/usr/bin", "/bin"]
 
     /// What gh runs with: the given environment, made non-interactive and quiet.
     var processEnvironment: [String: String] {
@@ -55,47 +37,56 @@ public struct GitHubCLI: Sendable {
         environment["GH_NO_EXTENSION_UPDATE_NOTIFIER"] = "1"
         environment["GH_SPINNER_DISABLED"] = "1"
         environment["NO_COLOR"] = "1"
-        if environment["PATH"]?.isEmpty ?? true {
-            environment["PATH"] = "/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+        var path = (environment["PATH"] ?? "").split(separator: ":").map(String.init)
+        var directories = Self.wellKnownDirectories
+        if let home = environment["HOME"] {
+            directories.append("\(home)/.nix-profile/bin")
         }
+        path += directories.filter { !path.contains($0) }
+        environment["PATH"] = path.joined(separator: ":")
         if let host {
             environment["GH_HOST"] = host
         }
         return environment
     }
 
+    /// The command the runner executes for a gh invocation.
+    func command(for command: GitHubCommand) -> Command {
+        Command(
+            "gh",
+            command.arguments,
+            in: command.directory?.path(percentEncoded: false),
+            environment: processEnvironment,
+            standardInput: command.input,
+            timeout: command.timeout
+        )
+    }
+
     // MARK: - Running
 
     /// Runs a command and returns its stdout, throwing gh's classified failure otherwise.
     public func run(_ command: GitHubCommand, acceptingExitCodes accepted: Set<Int32> = [0]) async throws(GitHubError) -> Data {
-        guard let executable else { throw .notInstalled }
-        let output: ProcessOutput
+        let result: CommandResult
         do {
-            output = try await ProcessRunner.run(
-                executable,
-                arguments: command.arguments,
-                environment: processEnvironment,
-                directory: command.directory,
-                input: command.input,
-                timeout: command.timeout
-            )
-        } catch is ProcessRunner.TimedOut {
+            result = try await runner.run(self.command(for: command))
+        } catch CommandError.notFound {
+            throw .notInstalled
+        } catch CommandError.timedOut {
             throw .timedOut
+        } catch CommandError.unavailable(let reason) {
+            throw .offline(reason)
         } catch is CancellationError {
             throw .cancelled
         } catch {
-            if !FileManager.default.isExecutableFile(atPath: executable.path(percentEncoded: false)) {
-                throw .notInstalled
-            }
             throw .failed(exitCode: -1, error.localizedDescription)
         }
         if Task.isCancelled {
             throw .cancelled
         }
-        guard accepted.contains(output.exitCode) else {
-            throw GitHubError.classify(exitCode: output.exitCode, stderr: String(decoding: output.stderr, as: UTF8.self))
+        guard accepted.contains(result.exitCode) else {
+            throw GitHubError.classify(exitCode: result.exitCode, stderr: result.errorOutput)
         }
-        return output.stdout
+        return result.standardOutput
     }
 
     private func decode<T: Decodable>(_ type: T.Type, from command: GitHubCommand) async throws(GitHubError) -> T {

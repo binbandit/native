@@ -7,11 +7,14 @@ let package = Package(
     products: [
         .library(name: "GitHub", targets: ["GitHub"]),
     ],
+    dependencies: [
+        .package(path: "../Exec"),
+    ],
     targets: [
-        .target(name: "GitHub"),
+        .target(name: "GitHub", dependencies: [.product(name: "Exec", package: "Exec")]),
         .testTarget(
             name: "GitHubTests",
-            dependencies: ["GitHub"],
+            dependencies: ["GitHub", .product(name: "Exec", package: "Exec")],
             resources: [.copy("Fixtures")]
         ),
     ]

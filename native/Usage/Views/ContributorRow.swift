@@ -9,9 +9,9 @@ struct ContributorRow<Leading: View>: View {
     @ViewBuilder var leading: Leading
 
     var body: some View {
-        HStack(spacing: DS.Space.sm) {
+        HStack(spacing: DS.Space.md) {
             leading
-                .frame(width: DS.Space.md)
+                .frame(width: UsageMetrics.swatchSize)
             Text(title)
                 .font(isMono ? .dsMonoCaption : .dsBody)
                 .foregroundStyle(isMono ? .dsTextSecondary : .dsTextPrimary)
@@ -35,9 +35,29 @@ struct ContributorRow<Leading: View>: View {
     }
 }
 
-extension ContributorRow where Leading == EmptyView {
+extension ContributorRow where Leading == Color {
+    /// A row with an empty leading slot, so its title lines up with those that have one.
     init(title: String, detail: String? = nil, tokens: String, isMono: Bool = false) {
-        self.init(title: title, detail: detail, tokens: tokens, isMono: isMono) { EmptyView() }
+        self.init(title: title, detail: detail, tokens: tokens, isMono: isMono) { Color.clear }
+    }
+}
+
+/// A group of contributors' title and total, flush with the table above it.
+struct ContributorSectionHeader: View {
+    let title: String
+    let tokens: String
+
+    var body: some View {
+        HStack {
+            Text(title)
+                .accessibilityAddTraits(.isHeader)
+            Spacer(minLength: DS.Space.md)
+            Text(tokens)
+                .monospacedDigit()
+        }
+        .font(.dsBody)
+        .foregroundStyle(.dsTextTertiary)
+        .frame(minHeight: DS.Size.controlXS)
     }
 }
 
@@ -53,7 +73,7 @@ struct ShowAllButton: View {
             Text(title)
                 .font(.dsCaption)
                 .foregroundStyle(isHovered ? .dsTextPrimary : .dsTextTertiary)
-                .padding(.leading, DS.Space.md + DS.Space.sm)
+                .padding(.leading, UsageMetrics.swatchSize + DS.Space.md)
                 .frame(minHeight: DS.Size.controlXS - DS.Space.xs)
                 .contentShape(.rect)
         }

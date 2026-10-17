@@ -15,7 +15,8 @@ import MCP
 struct ClaudeCodeConfig {
     var home: URL
     var environment: [String: String]
-    var managedFile = URL(filePath: "/Library/Application Support/ClaudeCode/managed-mcp.json")
+    var managedFile: URL
+    var reader: ConfigFileReader
 
     private var configDirectory: URL {
         environment["CLAUDE_CONFIG_DIR"].map { URL(filePath: $0, directoryHint: .isDirectory) } ?? home.appending(path: ".claude", directoryHint: .isDirectory)
@@ -28,9 +29,9 @@ struct ClaudeCodeConfig {
     func read(projects: [URL]) -> AgentMCPConfiguration {
         var problems: [ConfigProblem] = []
         var servers: [ConfiguredServer] = []
-        var files = [ConfigFile(url: globalFile, role: "User and local servers", exists: ConfigFileReader.exists(globalFile))]
-        let global = ConfigFileReader.json(at: globalFile, problems: &problems)
-        let userSettings = ConfigFileReader.json(at: configDirectory.appending(path: "settings.json"), problems: &problems)
+        var files = [ConfigFile(url: globalFile, role: "User and local servers", exists: reader.exists(globalFile))]
+        let global = reader.json(at: globalFile, problems: &problems)
+        let userSettings = reader.json(at: configDirectory.appending(path: "settings.json"), problems: &problems)
 
         servers += ServerMap.servers(in: global?["mcpServers"], file: globalFile, problems: &problems).map {
             entry($0, scope: .user, source: globalFile)
@@ -46,13 +47,13 @@ struct ClaudeCodeConfig {
             disabledInProject[key] = Set(projectEntry?["disabledMcpServers"]?.stringArray ?? [])
 
             let mcpJSON = project.appending(path: ".mcp.json")
-            let exists = ConfigFileReader.exists(mcpJSON)
+            let exists = reader.exists(mcpJSON)
             files.append(ConfigFile(url: mcpJSON, role: "Project servers for \(project.lastPathComponent)", exists: exists))
             guard exists else { continue }
             let settings = [projectEntry, userSettings]
-                + [".claude/settings.json", ".claude/settings.local.json"].map { ConfigFileReader.json(at: project.appending(path: $0), problems: &problems) }
+                + [".claude/settings.json", ".claude/settings.local.json"].map { reader.json(at: project.appending(path: $0), problems: &problems) }
             let approval = ProjectApproval(settings.compactMap(\.self))
-            let file = ConfigFileReader.json(at: mcpJSON, problems: &problems)
+            let file = reader.json(at: mcpJSON, problems: &problems)
             servers += ServerMap.servers(in: file?["mcpServers"], file: mcpJSON, problems: &problems).map { server in
                 var configured = entry(server, scope: .project(project), source: mcpJSON)
                 configured.status = approval.status(of: server.name)
@@ -68,10 +69,10 @@ struct ClaudeCodeConfig {
         files += pluginFiles
 
         var isManagedOnly = false
-        if ConfigFileReader.exists(managedFile) {
+        if reader.exists(managedFile) {
             isManagedOnly = true
             files.append(ConfigFile(url: managedFile, role: "Managed servers", exists: true))
-            let managed = ConfigFileReader.json(at: managedFile, problems: &problems)
+            let managed = reader.json(at: managedFile, problems: &problems)
             servers += ServerMap.servers(in: managed?["mcpServers"], file: managedFile, problems: &problems).map {
                 entry($0, scope: .managed, source: managedFile)
             }
@@ -98,7 +99,7 @@ struct ClaudeCodeConfig {
     private func readPlugins(settings: JSON?, problems: inout [ConfigProblem]) -> ([ConfiguredServer], [ConfigFile]) {
         let enabled = (settings?["enabledPlugins"]?.objectValue ?? [:]).filter { $0.value.boolValue == true }.keys.sorted()
         guard !enabled.isEmpty else { return ([], []) }
-        let installed = ConfigFileReader.json(at: configDirectory.appending(path: "plugins/installed_plugins.json"), problems: &problems)
+        let installed = reader.json(at: configDirectory.appending(path: "plugins/installed_plugins.json"), problems: &problems)
         var servers: [ConfiguredServer] = []
         var files: [ConfigFile] = []
         for id in enabled {
@@ -125,7 +126,7 @@ struct ClaudeCodeConfig {
     private func pluginServerMaps(root: URL, problems: inout [ConfigProblem]) -> [(URL, JSON)] {
         var maps: [(URL, JSON)] = []
         let manifestURL = root.appending(path: ".claude-plugin/plugin.json")
-        let declared = ConfigFileReader.json(at: manifestURL, problems: &problems)?["mcpServers"]
+        let declared = reader.json(at: manifestURL, problems: &problems)?["mcpServers"]
         var paths: [String] = []
         switch declared {
         case .object(let object)?:
@@ -139,7 +140,7 @@ struct ClaudeCodeConfig {
         }
         for path in paths {
             let url = root.appending(path: path.replacingOccurrences(of: "${CLAUDE_PLUGIN_ROOT}/", with: ""))
-            guard let file = ConfigFileReader.json(at: url, problems: &problems) else { continue }
+            guard let file = reader.json(at: url, problems: &problems) else { continue }
             // Either `{"mcpServers": {...}}` or the map itself.
             maps.append((url, file["mcpServers"] ?? file))
         }
