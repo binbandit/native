@@ -27,6 +27,7 @@ struct GitCheckbox: View {
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
+        .dsHitTarget(GitMetrics.checkbox)
         .accessibilityLabel(label)
         .accessibilityValue(value == .on ? "Checked" : value == .mixed ? "Mixed" : "Unchecked")
         .accessibilityAddTraits(.isToggle)

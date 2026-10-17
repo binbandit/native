@@ -4,7 +4,7 @@ import FoundationModels
 import UserNotifications
 
 enum BuiltInPlugins {
-    static let all: [any NativePlugin] = [claudeCode, codex, cursor, OnDeviceTitlesPlugin(), NotificationsPlugin(), SoundsPlugin(), OrchestrationPlugin(), usage, automation]
+    static let all: [any NativePlugin] = [claudeCode, codex, cursor, openCode, pi, copilot, OnDeviceTitlesPlugin(), NotificationsPlugin(), SoundsPlugin(), OrchestrationPlugin(), usage, automation]
 
     /// Claude Code through its ACP adapter, running the user's own `claude`. Adapter versions are
     /// pinned so upgrades are deliberate; the adapters move fast.

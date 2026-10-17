@@ -1,3 +1,4 @@
+import NativeAutomation
 import SwiftUI
 
 /// Sets or edits a task's goal: the objective and an optional budget. Shown as a popover from the

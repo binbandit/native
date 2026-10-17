@@ -2,15 +2,21 @@ import Foundation
 import Observation
 import SwiftUI
 
-/// The projects open in the sidebar, in the user's order, remembered across launches.
+/// The projects open in the sidebar, in the user's order, and the ones archived out of it,
+/// remembered across launches.
 @Observable
 final class Projects {
     private(set) var all: [Project] = [] {
         didSet { save() }
     }
+    /// Projects the user archived, most recent first. Their sessions stay with the agents.
+    private(set) var archived: [Project] = [] {
+        didSet { save() }
+    }
 
     @ObservationIgnored private let defaults: UserDefaults
     private static let key = "projects"
+    private static let archivedKey = "archivedProjects"
     /// Where the single workspace of earlier versions was remembered.
     private static let legacyWorkspaceKey = "workspace"
 
@@ -22,6 +28,9 @@ final class Projects {
             all = [Project(id: UUID(), url: URL(filePath: path, directoryHint: .isDirectory))]
             // Assigning in init doesn't run `didSet`, and the project's id has to stick.
             save()
+        }
+        if let data = defaults.data(forKey: Self.archivedKey), let projects = try? JSONDecoder().decode([Project].self, from: data) {
+            archived = projects
         }
     }
 
@@ -50,6 +59,26 @@ final class Projects {
         all.insert(project, at: min(index, all.count))
     }
 
+    /// Moves a project out of the sidebar into the archive, returning where it was.
+    @discardableResult
+    func archive(_ id: Project.ID) -> Int? {
+        guard let index = all.firstIndex(where: { $0.id == id }) else { return nil }
+        archived.insert(all.remove(at: index), at: 0)
+        return index
+    }
+
+    /// Brings an archived project back to the sidebar, at `index` or the end.
+    func unarchive(_ id: Project.ID, at index: Int? = nil) {
+        guard let position = archived.firstIndex(where: { $0.id == id }) else { return }
+        let project = archived.remove(at: position)
+        all.insert(project, at: min(index ?? all.count, all.count))
+    }
+
+    /// Forgets an archived project entirely.
+    func removeArchived(_ id: Project.ID) {
+        archived.removeAll { $0.id == id }
+    }
+
     func move(fromOffsets source: IndexSet, toOffset destination: Int) {
         all.move(fromOffsets: source, toOffset: destination)
     }
@@ -57,6 +86,9 @@ final class Projects {
     private func save() {
         if let data = try? JSONEncoder().encode(all) {
             defaults.set(data, forKey: Self.key)
+        }
+        if let data = try? JSONEncoder().encode(archived) {
+            defaults.set(data, forKey: Self.archivedKey)
         }
     }
 }

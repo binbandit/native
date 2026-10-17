@@ -41,7 +41,7 @@ struct HomeProjectMenu<ID: Hashable>: View {
             }
             .foregroundStyle(isHovered ? .dsTextPrimary : .dsTextSecondary)
             .padding(.horizontal, DS.Space.md + DS.Space.xxs)
-            .frame(height: DS.Size.controlSM)
+            .frame(minHeight: max(DS.Size.controlSM, HomeLayout.minTapHeight))
             .background {
                 RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
                     .fill(isHovered ? .dsHover : .clear)

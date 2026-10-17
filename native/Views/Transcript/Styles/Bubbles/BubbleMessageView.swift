@@ -23,9 +23,9 @@ struct BubbleMessageView: View {
             .overlay(alignment: side == .trailing ? .bottomLeading : .bottomTrailing) {
                 timestamp
             }
-            .onHover { isHovering = $0; FileHandle.standardError.write(Data("LABSHOVER \($0)\n".utf8)) }
+            .onHover { isHovering = $0 }
             // Simultaneous, so clicks still select text.
-            .simultaneousGesture(TapGesture().onEnded { showsTime.toggle(); FileHandle.standardError.write(Data("LABSTAP\n".utf8)) })
+            .simultaneousGesture(TapGesture().onEnded { showsTime.toggle() })
             .animation(.dsQuick, value: isHovering || showsTime)
     }
 
@@ -45,18 +45,17 @@ struct BubbleMessageView: View {
         }
     }
 
-    /// The time beside the bubble, in the empty space on the other side.
+    /// The time beside the bubble, in the empty space on the other side. A zero-width frame at the
+    /// bubble's edge lets the label overflow outward without taking any room.
     @ViewBuilder private var timestamp: some View {
         if isHovering || showsTime, let date = BubbleClock.shared.date(for: TranscriptItem.message(message).id) {
             Text(date, style: .time)
                 .font(.dsCaption)
                 .foregroundStyle(.dsTextTertiary)
                 .fixedSize()
+                .padding(side == .trailing ? .trailing : .leading, BubbleMetrics.timestampSpacing)
                 .padding(.bottom, BubbleMetrics.verticalPadding)
-                .alignmentGuide(side == .trailing ? .leading : .trailing) { dimensions in
-                    side == .trailing
-                        ? dimensions.width + BubbleMetrics.timestampSpacing : -BubbleMetrics.timestampSpacing
-                }
+                .frame(width: 0, alignment: side == .trailing ? .trailing : .leading)
                 .transition(.opacity)
                 .accessibilityHidden(true)
         }

@@ -18,6 +18,7 @@ these rules exist to keep changes small, isolated and easy to review.
 | `native/<Feature>/` | Self-contained features (Orchestration, Git, GitHub, Usage, Automation, Sounds, StatusBar, Settings) |
 | `Packages/ACP` | ACP protocol, JSON-RPC connection, `SessionState` reducer. No UI. Builds for macOS and iOS |
 | `Packages/*` | Other UI-free libraries (MCP server, git, gh) with their own tests |
+| `Runtime/` | Non-Swift helpers embedded in the app (`Runtime/ScriptRuntime`: the sandboxed V8 script runtime) |
 | `docs/` | Architecture, keyboard map, decisions, plans. Read before changing behavior they describe |
 
 `docs/architecture.md` describes how these fit together and where the layout is heading.

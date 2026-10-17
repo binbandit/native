@@ -1,3 +1,4 @@
+import NativeAutomation
 import SwiftUI
 
 /// A workflow in the picker, after the reference app's suggested routines: a round glyph, the name, what it

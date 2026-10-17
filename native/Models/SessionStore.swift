@@ -68,6 +68,14 @@ final class SessionStore {
             } else if let connection {
                 Task { try? await connection.respond(to: id, with: RequestPermissionResponse.cancelled) }
             }
+        case .elicitationRequest(let id, let request):
+            if let session = sessions[SessionKey(agent: agent, id: request.sessionId)] {
+                session.requestQuestion(request, id: id)
+                // A question needs the user just as a permission request does.
+                services.post(.permissionRequested(session.context, toolCall: request.message))
+            } else if let connection {
+                Task { try? await connection.respond(to: id, with: CreateElicitationResponse.cancel) }
+            }
         case .disconnected:
             disconnect(agent, isRestarting: false)
         }

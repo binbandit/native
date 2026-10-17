@@ -1,3 +1,4 @@
+import NativeAutomation
 import SwiftUI
 
 /// Starts a workflow against the current project: pick one, say what it should do, check who runs

@@ -1,5 +1,6 @@
 import ACP
 import Foundation
+import NativeAutomation
 
 /// A goal's view of its session: goals prompt it the way the user would, through `submit`, so the
 /// prompt shows in the transcript and the turn is reported like any other.

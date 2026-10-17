@@ -11,11 +11,15 @@ public struct DesignSystemGallery: View {
 
     public var body: some View {
         ScrollView {
+            #if os(macOS)
+            HStack(alignment: .top, spacing: 0) { columns }
+            #else
             // Side by side where there's room, stacked on a narrower iPad.
             ViewThatFits(in: .horizontal) {
                 HStack(alignment: .top, spacing: 0) { columns }
                 VStack(spacing: 0) { columns }
             }
+            #endif
         }
         #if os(macOS)
         .frame(minWidth: 1280, minHeight: 720)

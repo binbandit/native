@@ -17,6 +17,8 @@ public struct HomeWelcomeView<AgentID: Hashable>: View {
 
     public var body: some View {
         HomePage {
+            EmptyView()
+        } cards: {
             HomeActionCard(
                 "Add a project", systemImage: "folder.badge.plus", detail: "Choose a folder to work in",
                 action: onAddProject

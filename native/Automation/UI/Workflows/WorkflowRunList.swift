@@ -1,3 +1,4 @@
+import NativeAutomation
 import SwiftUI
 
 /// The workflow runs in this window, newest first, or what to do when there are none.

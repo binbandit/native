@@ -1,3 +1,4 @@
+import NativeAutomation
 import SwiftUI
 
 /// A text field in goal and workflow forms, drawn like the composer's surface: 12pt text on the

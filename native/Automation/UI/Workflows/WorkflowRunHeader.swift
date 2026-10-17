@@ -1,3 +1,4 @@
+import NativeAutomation
 import SwiftUI
 
 /// The top of a run: what it's working on, where it stands, and pause, resume and stop for the

@@ -1,4 +1,5 @@
 import Foundation
+import NativeAutomation
 
 /// What the user can do with a step in its current state. Every stopped step offers a way on, so a
 /// run never strands the user: retry or resume it, take what it has, skip it, or stop the run.

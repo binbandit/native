@@ -1,5 +1,6 @@
 import ACP
 import Foundation
+import NativeAutomation
 import Observation
 
 /// Goals and workflows for the whole app: the views find a session's goal and the workflow runs

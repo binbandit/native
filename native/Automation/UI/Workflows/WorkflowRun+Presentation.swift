@@ -1,4 +1,5 @@
 import Foundation
+import NativeAutomation
 
 extension WorkflowRun {
     /// The run's status in a word or two. A run that stopped short says how, since "stopped" alone

@@ -17,6 +17,12 @@ final class AppModel {
     let ordering: SessionOrdering
     let sessions: SessionStore
     let unread: UnreadSessions
+    let archivedSessions = ArchivedSessions()
+    /// Makes and removes the folders tasks run in (worktrees). Set by the app from the Git feature;
+    /// without it tasks run in the project folder.
+    weak var taskWorkspaces: (any TaskWorkspaceProvider)?
+    /// The latest action the user can take back, for the window's undo toast.
+    var lastUndoable: UndoableAction?
 
     var selection: SessionKey? {
         didSet {
@@ -42,7 +48,15 @@ final class AppModel {
     /// AppModel+Projects.swift.
     var focusedProjectID: Project.ID?
 
-    // Internal only for AppModel+Navigation.swift.
+    // Internal only for the AppModel+ extensions.
+    /// Deletions waiting out their undo window.
+    @ObservationIgnored var pendingDeletions: [SessionKey: Task<Void, Never>] = [:] {
+        didSet { pendingDeletionKeys = Set(pendingDeletions.keys) }
+    }
+    private(set) var pendingDeletionKeys: Set<SessionKey> = []
+    @ObservationIgnored var pendingProjectDeletions: [Project.ID: Task<Void, Never>] = [:]
+    @ObservationIgnored var archivedWorkspaces: [SessionKey: TaskWorkspaceRemoval] = [:]
+    @ObservationIgnored let deletedSessions = DeletedSessions()
     var history = NavigationHistory<SessionKey>()
     @ObservationIgnored var isNavigatingHistory = false
 
@@ -192,10 +206,15 @@ final class AppModel {
 
     /// A project's sessions from every agent, in the user's order, then most recently active first.
     func sessions(in project: Project.ID) -> [SessionSummary] {
-        let summaries = agents.flatMap { runtime in
+        let summaries = allSessions(in: project).filter { !archivedSessions.contains($0.id) && !pendingDeletionKeys.contains($0.id) }
+        return ordering.sorted(summaries, in: project, recency: lastActive)
+    }
+
+    /// A project's sessions from every agent, archived ones included.
+    func allSessions(in project: Project.ID) -> [SessionSummary] {
+        agents.flatMap { runtime in
             catalog.sessions(in: project, of: runtime.agent.id).map { SessionSummary(project: project, agent: runtime.agent, info: $0) }
         }
-        return ordering.sorted(summaries, in: project, recency: lastActive)
     }
 
     /// Every project's sessions, in sidebar order.
@@ -276,8 +295,9 @@ final class AppModel {
         creatingSessionWith = agent
         defer { creatingSessionWith = nil }
         do {
-            let session = try await launcher.start(on: runtime, cwd: project.url)
-            catalog.add(SessionInfo(sessionId: session.id, cwd: project.path, updatedAt: .now), for: agent, in: project.id)
+            let cwd = try await taskWorkspaces?.workspace(forNewTaskIn: project, title: nil) ?? project.url
+            let session = try await launcher.start(on: runtime, cwd: cwd)
+            catalog.add(SessionInfo(sessionId: session.id, cwd: cwd.folderPath, updatedAt: .now), for: agent, in: project.id)
             session.wantsComposerFocus = true
             selection = session.key
             lastUsedAgent = agent

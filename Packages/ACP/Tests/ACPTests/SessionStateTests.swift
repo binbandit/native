@@ -15,6 +15,8 @@ struct SessionStateTests {
                 #expect(state.pendingPermissions.map { $0.toolCallID } == [Wire.writeToolCallID])
                 // The client allowed it straight away, as in the capture.
                 state.resolvePermission(toolCallID: request.toolCall.toolCallId)
+            case .elicitationRequest:
+                Issue.record("Unexpected question")
             case .disconnected:
                 Issue.record("Unexpected disconnect")
             }

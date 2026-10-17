@@ -3,7 +3,6 @@ import Foundation
 import NativeHostClient
 import NativeHostProtocol
 import Observation
-import ServiceManagement
 
 /// The app's handle on its local Native host: registering it with launchd, staying connected, and
 /// mirroring the sessions it runs. Phase 1 of `docs/durability.md` uses it for the Durable Sessions
@@ -46,10 +45,10 @@ final class DurableHost {
     }
 
     /// Connects if the host is enabled, registering it with launchd first.
-    func start(agents: [AgentSpec]) {
+    func start(agents: [AgentSpec]) async {
         self.agents = agents
         guard isEnabled else { return }
-        register()
+        await register()
         connect()
     }
 
@@ -57,7 +56,7 @@ final class DurableHost {
         UserDefaults.standard.set(enabled, forKey: Self.enabledKey)
         isEnabled = enabled
         if enabled {
-            register()
+            await register()
             connect()
         } else {
             await disconnect()
@@ -72,13 +71,17 @@ final class DurableHost {
 
     // MARK: - Sessions
 
-    func newSession(agent: String, cwd: URL) async {
+    /// Starts a session and returns its id, attached and ready to show.
+    func newSession(agent: String, cwd: URL) async -> HostSessionID? {
+        var created: HostSessionID?
         await perform("start a session") { client in
             let summary = try await client.newSession(NewSessionParams(agentID: agent, cwd: cwd.path(percentEncoded: false)))
             self.upsert(summary)
+            self.mirrors[summary.id] = SessionMirror()
             try await client.attach(summary.id)
-            return ()
+            created = summary.id
         }
+        return created
     }
 
     func attach(_ session: HostSessionID) async {
@@ -122,12 +125,12 @@ final class DurableHost {
 
     // MARK: - Connection
 
-    private func register() {
+    private func register() async {
         do {
-            try registrar.register()
+            try await registrar.register()
             registration = .enabled
         } catch {
-            registration = registrar.status == .requiresApproval ? .needsApproval : .failed(error.localizedDescription)
+            registration = registrar.status == .needsApproval ? .needsApproval : .failed(error.localizedDescription)
         }
     }
 

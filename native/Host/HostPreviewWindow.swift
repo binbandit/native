@@ -43,7 +43,7 @@ struct HostPreviewWindow: View {
         .frame(minWidth: 820, minHeight: 520)
         .background(Color.dsBackground)
         .task {
-            host.start(agents: model.plugins.agents.map(Self.spec))
+            await host.start(agents: model.plugins.agents.map(Self.spec))
         }
         .alert("Durable Sessions", isPresented: isShowingError, presenting: host.errorMessage) { _ in
             Button("OK") {}
@@ -60,6 +60,11 @@ struct HostPreviewWindow: View {
                 .font(.dsCaption)
                 .foregroundStyle(Color.dsTextSecondary)
             Spacer()
+            if case .failed(let reason) = host.registration {
+                Text("The host didn't start: \(reason)")
+                    .font(.dsCaption)
+                    .foregroundStyle(Color.dsDanger)
+            }
             if case .needsApproval = host.registration {
                 Button("Allow in Login Items…") { SMAppService.openSystemSettingsLoginItems() }
                     .buttonStyle(.ds(.secondary))
@@ -112,7 +117,7 @@ struct HostPreviewWindow: View {
                 ForEach(model.plugins.agents) { agent in
                     Button(agent.displayName) {
                         guard let cwd = model.currentProject?.url ?? model.projects.all.first?.url else { return }
-                        Task { await host.newSession(agent: agent.id.rawValue, cwd: cwd) }
+                        Task { selection = await host.newSession(agent: agent.id.rawValue, cwd: cwd) ?? selection }
                     }
                 }
             }
@@ -151,7 +156,9 @@ struct HostPreviewWindow: View {
         if let selection, let session = host.sessions.first(where: { $0.id == selection }) {
             VStack(spacing: 0) {
                 ScrollView {
-                    LazyVStack(alignment: .leading, spacing: DS.Space.lg) {
+                    // Not lazy: a lazy stack anchored to the bottom kept re-measuring replayed rows and
+                    // spun the main thread.
+                    VStack(alignment: .leading, spacing: DS.Space.lg) {
                         ForEach(host.mirrors[selection]?.state.items ?? []) { item in
                             transcriptItem(item, session: selection)
                         }

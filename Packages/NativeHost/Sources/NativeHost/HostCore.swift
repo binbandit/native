@@ -19,11 +19,14 @@ public final class HostCore {
         public var heartbeatInterval: Duration
         /// Called when the host should exit, with the status to exit with.
         public var exit: @Sendable (Int32) -> Void
+        /// Development hosts stop after this long with no clients and nothing running, so hosts of
+        /// builds nobody uses don't linger. Nil for release hosts, which stay up.
+        public var idleExit: Duration?
 
         public init(
             location: HostLocation, hostInfo: PeerInfo, machineName: String, bootTime: Date?,
             environment: @escaping @Sendable () async -> [String: String], heartbeatInterval: Duration = .seconds(30),
-            exit: @escaping @Sendable (Int32) -> Void
+            idleExit: Duration? = nil, exit: @escaping @Sendable (Int32) -> Void
         ) {
             self.location = location
             self.hostInfo = hostInfo
@@ -31,6 +34,7 @@ public final class HostCore {
             self.bootTime = bootTime
             self.environment = environment
             self.heartbeatInterval = heartbeatInterval
+            self.idleExit = idleExit
             self.exit = exit
         }
     }
@@ -57,6 +61,8 @@ public final class HostCore {
     private var environment: Task<[String: String], Never>?
     private var heartbeat: Task<Void, Never>?
     private var server: SocketServer?
+    /// When the host last had a client or a running turn, for `Configuration.idleExit`.
+    private var lastBusy = Date.now
 
     public init(configuration: Configuration) throws {
         self.configuration = configuration
@@ -111,6 +117,18 @@ public final class HostCore {
 
     private func beat() {
         try? store.setMeta(MetaKey.heartbeat, String(Date.now.timeIntervalSince1970))
+        guard let idleExit = configuration.idleExit else { return }
+        let isBusy = !clients.isEmpty || sessions.values.contains { $0.turn != nil || $0.phase == .recovering || $0.phase == .loading }
+        if isBusy {
+            lastBusy = .now
+        } else if Date.now.timeIntervalSince(lastBusy) > Double(idleExit.components.seconds) {
+            logger.info("Idle development host stopping")
+            for link in agents.values {
+                link.stop()
+            }
+            try? store.setMeta(MetaKey.cleanShutdown, "1")
+            configuration.exit(ExitStatus.stopped)
+        }
     }
 
     // MARK: - Environment and agents

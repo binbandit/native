@@ -1,3 +1,4 @@
+import NativeAutomation
 import SwiftUI
 
 /// The session's goal as the composer's top section, when it has one. Put it above the queued

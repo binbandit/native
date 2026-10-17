@@ -136,3 +136,10 @@ screen, not about what Native can do.
 Native ships through GitHub Releases. Each channel (stable, beta, nightly) publishes signed,
 notarized builds as release assets, and the in-app updater reads a feed generated from those
 releases. No servers of our own.
+
+## 2026-10-18: Scripts run in a sandboxed V8 isolate
+
+Code that agents or plugins hand Native to run (code mode's `run_script`, later code plugins and
+scripted workflow steps) runs in a separate Rust helper embedding V8, never in the app. It is jitless,
+sees only the tools it was given, and is signed into an App Sandbox with no file or network access.
+Why Rust and V8, and the protocol, are in `docs/script-runtime.md` ("Decision: a Rust and V8 runtime").

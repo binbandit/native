@@ -38,30 +38,28 @@ struct HomeActionCard<Accessory: View>: View {
 
     var body: some View {
         Button(action: action) {
-            VStack(alignment: .leading, spacing: 0) {
-                HStack(alignment: .top, spacing: DS.Space.md) {
-                    Image(systemName: systemImage)
-                        .font(HomeLayout.cardGlyph)
-                        .frame(width: HomeLayout.cardGlyphSlot, height: HomeLayout.cardGlyphSlot)
+            // A full-height card stacks glyph over label; a one-column grid gives each card a short
+            // row, where the same parts sit side by side.
+            ViewThatFits(in: .vertical) {
+                VStack(alignment: .leading, spacing: 0) {
+                    HStack(alignment: .top, spacing: DS.Space.md) {
+                        glyph
+                        Spacer(minLength: 0)
+                        accessory
+                    }
+                    Spacer(minLength: DS.Space.md)
+                    labels
+                }
+                .padding(HomeLayout.cardPadding)
+                HStack(spacing: DS.Space.lg) {
+                    glyph
+                    labels
                     Spacer(minLength: 0)
                     accessory
                 }
-                Spacer(minLength: DS.Space.md)
-                VStack(alignment: .leading, spacing: DS.Space.xxs) {
-                    Text(title)
-                        .font(.dsCallout)
-                        .lineLimit(1)
-                    if let detail {
-                        Text(detail)
-                            .font(.dsBody)
-                            .foregroundStyle(isDetailUrgent && isEnabled ? .dsAttention : .dsTextTertiary)
-                            .lineLimit(1)
-                            .truncationMode(.middle)
-                    }
-                }
+                .padding(.horizontal, HomeLayout.cardPadding)
             }
             .foregroundStyle(isEnabled ? .dsTextPrimary : .dsTextTertiary)
-            .padding(HomeLayout.cardPadding)
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         }
         .buttonStyle(HomeCardButtonStyle(isHovered: isHovered && isEnabled))
@@ -69,6 +67,27 @@ struct HomeActionCard<Accessory: View>: View {
         .accessibilityLabel(title)
         .accessibilityValue(detail ?? "")
         .trackHover($isHovered)
+    }
+
+    private var glyph: some View {
+        Image(systemName: systemImage)
+            .font(HomeLayout.cardGlyph)
+            .frame(width: HomeLayout.cardGlyphSlot, height: HomeLayout.cardGlyphSlot)
+    }
+
+    private var labels: some View {
+        VStack(alignment: .leading, spacing: DS.Space.xxs) {
+            Text(title)
+                .font(.dsCallout)
+                .lineLimit(1)
+            if let detail {
+                Text(detail)
+                    .font(.dsBody)
+                    .foregroundStyle(isDetailUrgent && isEnabled ? .dsAttention : .dsTextTertiary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
+        }
     }
 }
 

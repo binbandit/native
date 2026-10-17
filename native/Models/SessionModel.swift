@@ -70,6 +70,9 @@ final class SessionModel {
     /// threw. Nil until a turn has ended.
     var lastStopReason: StopReason?
     var queue = PromptQueue()
+    /// Questions the agent is waiting on (`elicitation/create`), oldest first; see
+    /// SessionModel+Questions.
+    var questions: [PendingQuestion] = []
     /// While a hidden command runs: the session takes no new turn, but its phase stays idle.
     var isRunningHiddenCommand = false
     @ObservationIgnored var hiddenCommand: HiddenCommandCapture?
@@ -186,6 +189,7 @@ final class SessionModel {
     /// Whether this session, or a subagent under it, is waiting on the user.
     var needsApproval: Bool {
         !state.pendingPermissions.isEmpty
+            || !questions.isEmpty
             || subagentControls.isAnyWaitingOnUser
             || children.values.contains(where: \.needsApproval)
     }
@@ -235,8 +239,9 @@ final class SessionModel {
         guard phase != .disconnected else { return }
         let wasWorking = phase == .prompting
         phase = .disconnected
-        // Whatever the subagents were doing is unknown now.
+        // Whatever the subagents were doing is unknown now, and no one is left to answer.
         subagentControls.reset()
+        questions.removeAll()
         let notice = switch (isRestarting, wasWorking) {
         case (true, true): "\(agentName) stopped unexpectedly in the middle of this turn. Native is restarting it and will ask it to pick up where it left off."
         case (true, false): "\(agentName) stopped unexpectedly. Native is restarting it."
@@ -261,6 +266,7 @@ final class SessionModel {
                 try? await connection.respond(to: permission.requestID, with: RequestPermissionResponse.cancelled)
             }
         }
+        await cancelQuestions()
         try? await connection.notify(CancelNotification(sessionId: id))
     }
 

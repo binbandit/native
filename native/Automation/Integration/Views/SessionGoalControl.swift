@@ -1,3 +1,4 @@
+import NativeAutomation
 import SwiftUI
 
 /// The composer's goal pill and the editor it opens. The editor also opens from Session > Set Goal

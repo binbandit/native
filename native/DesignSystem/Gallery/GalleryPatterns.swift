@@ -2,6 +2,8 @@ import SwiftUI
 
 /// The shared patterns: notices, errors, usage limits, undo and empty states, plus the formatters.
 struct GalleryPatterns: View {
+    private static let started = Date.now.addingTimeInterval(-72)
+
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
             NoticeBanner(tone: .info, title: "You're offline", detail: "Your message is queued and sends when the network returns.")
@@ -38,6 +40,20 @@ struct GalleryPatterns: View {
             )
             .frame(height: 200)
             .background(.dsSurfaceSunken, in: .rect(cornerRadius: DS.Radius.card))
+            DiffView(
+                path: "native/Views/SidebarView.swift",
+                oldText: "let title = \"Tasks\"\nvar body: some View {\n    List {}\n}\n",
+                newText: "let title = \"Projects\"\nvar body: some View {\n    List {}\n        .listStyle(.sidebar)\n}\n"
+            )
+            HStack(spacing: DS.Space.md) {
+                ElapsedTimeText(since: Self.started)
+                Text(DSFormat.thoughtFor(12))
+                Badge("Needs approval", tone: .attention, style: .soft)
+                StatusIndicator(status: .paused)
+                StatusIndicator(status: .limited)
+            }
+            .font(.dsBody)
+            .foregroundStyle(.dsTextSecondary)
             GalleryFormats()
         }
     }
@@ -54,6 +70,8 @@ private struct GalleryFormats: View {
         ("tokens", "\(DSFormat.tokens(103)), \(DSFormat.tokens(228_412)), \(DSFormat.tokens(1_000_000))"),
         ("percent / share", "\(DSFormat.percent(0.42)), \(DSFormat.share(4, of: 1_000))"),
         ("diffStat", DSFormat.diffStat(added: 12, removed: 3)),
+        ("duration", "\(DSFormat.duration(8)), \(DSFormat.duration(72)), \(DSFormat.duration(3840))"),
+        ("cost", "\(DSFormat.cost(0.42)), \(DSFormat.cost(1234.5)), \(DSFormat.cost(0.004))"),
         ("memory / cpu", "\(DSFormat.memory(1_525_000_000)), \(DSFormat.cpu(0.4)), \(DSFormat.cpu(225))"),
     ]
 
