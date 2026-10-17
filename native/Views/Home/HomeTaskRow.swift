@@ -51,7 +51,7 @@ struct HomeTaskRow<ID: Hashable>: View {
         if let date = task.date {
             // Re-rendered each minute so "now" doesn't linger while the page stays open.
             TimelineView(.everyMinute) { context in
-                Text(CompactAgeText.format(date, now: context.date))
+                Text(DSFormat.compactAge(date, now: context.date))
                     .font(.dsBody)
                     .monospacedDigit()
                     .foregroundStyle(.dsTextTertiary)
