@@ -20,6 +20,9 @@ struct SettingsScreen: View {
     @State private var reveal: SettingsReveal?
     @State private var flash: SettingsReveal?
     @FocusState private var focus: Focus?
+    /// At compact widths (iPad split view and slide over) the split view becomes a stack: the nav
+    /// first, and picking a page pushes it.
+    @State private var compactColumn = NavigationSplitViewColumn.sidebar
 
     private var panes: [SettingsPane] {
         (SettingsPane.builtIn(registry: registry) + additionalPanes)
@@ -33,14 +36,17 @@ struct SettingsScreen: View {
     private var selection: Binding<SettingsPane.ID> {
         Binding(
             get: { selectedPane?.id ?? .general },
-            set: { pane = $0 }
+            set: {
+                pane = $0
+                compactColumn = .detail
+            }
         )
     }
 
     var body: some View {
         // A split view, like the main window's, keeps the toolbar and window controls where they
         // are and puts Back at the nav's trailing edge, where the reference app has it.
-        NavigationSplitView(columnVisibility: .constant(.all)) {
+        NavigationSplitView(columnVisibility: .constant(.all), preferredCompactColumn: $compactColumn) {
             SettingsNavigation(panes: panes, selection: selection, focus: $focus) {
                 SettingsSearchField(
                     query: $query,
@@ -65,7 +71,9 @@ struct SettingsScreen: View {
         }
         .toolbar(removing: .sidebarToggle)
         .toolbar(removing: .title)
-        .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+        #if os(macOS)
+            .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+        #endif
         .navigationTitle("Settings")
         .background {
             // Key equivalents, so they work wherever focus is (or isn't).
@@ -110,7 +118,7 @@ struct SettingsScreen: View {
     }
 
     private func open(_ item: SettingsSearchIndex.Item) {
-        pane = item.paneID
+        selection.wrappedValue = item.paneID
         query = ""
         if let rowID = item.rowID {
             reveal = SettingsReveal(rowID: rowID)

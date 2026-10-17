@@ -11,6 +11,7 @@ struct MCPServerEditor: View {
     @State private var draft = MCPServerDraft()
     @State private var didLoad = false
     @State private var attemptedSave = false
+    @FocusState private var isNameFocused: Bool
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.xl) {
@@ -23,7 +24,7 @@ struct MCPServerEditor: View {
                         "Name", note: "Agents show its tools as mcp__\(draft.name.isEmpty ? "name" : draft.name)__tool."
                     ) {
                         TextField("Name", text: $draft.name, prompt: Text("linear"))
-                            .mcpFieldStyle()
+                            .mcpFieldStyle(focus: $isNameFocused)
                     }
                     Picker("Type", selection: $draft.kind) {
                         Text("Local command").tag(MCPTransport.Kind.stdio)
@@ -84,7 +85,10 @@ struct MCPServerEditor: View {
         .padding(DS.Space.xxl)
         .frame(width: 600)
         .background(.dsBackground)
-        .onAppear(perform: load)
+        .onAppear {
+            load()
+            isNameFocused = true
+        }
     }
 
     private func field<Content: View>(_ title: String, note: String, @ViewBuilder content: () -> Content) -> some View {

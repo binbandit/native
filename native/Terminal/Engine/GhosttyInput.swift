@@ -1,4 +1,4 @@
-#if canImport(GhosttyKit) && TERMINAL_ENGINE_WIP
+#if canImport(GhosttyKit)
 import AppKit
 import GhosttyKit
 
@@ -70,7 +70,9 @@ extension NSEvent {
     ///
     /// - Parameter translationMods: The modifiers that produced the text, when they differ from
     ///   the event's (Option used as Alt, say).
-    func ghosttyKeyEvent(_ action: ghostty_input_action_e, translationMods: NSEvent.ModifierFlags? = nil)
+    func ghosttyKeyEvent(
+        _ action: ghostty_input_action_e, translationMods: NSEvent.ModifierFlags? = nil
+    )
         -> ghostty_input_key_s
     {
         var event = ghostty_input_key_s()

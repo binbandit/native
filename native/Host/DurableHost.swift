@@ -177,8 +177,11 @@ final class DurableHost {
         case .sessionClosed(let session):
             sessions.removeAll { $0.id == session }
             mirrors[session] = nil
-        case .activity:
-            break
+        case .activity(let entry):
+            // Seen as it happens, so it isn't news the next time the app connects.
+            if awayActivity.isEmpty {
+                UserDefaults.standard.set(entry.id, forKey: Self.seenActivityKey)
+            }
         }
     }
 
@@ -193,7 +196,8 @@ final class DurableHost {
                 // The first connection only sets the baseline; there's no "away" before it.
                 UserDefaults.standard.set(entries.last?.id ?? 0, forKey: Self.seenActivityKey)
             } else {
-                awayActivity = entries.filter { $0.kind != .unknown }
+                // Each recovery is listed on its own, so the host's own restart adds nothing.
+                awayActivity = entries.filter { $0.kind != .unknown && $0.kind != .hostStarted }
             }
         } catch {
             errorMessage = error.localizedDescription

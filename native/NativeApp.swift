@@ -23,6 +23,10 @@ struct NativeApp: App {
         let taskWorkspaces = GitTaskWorkspaceProvider(git: git, gitHub: gitHub)
         _taskWorkspaces = State(initialValue: taskWorkspaces)
         model.taskWorkspaces = taskWorkspaces
+        // Agents are child processes; ending them with the app keeps them from outliving it.
+        NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: .main) { _ in
+            MainActor.assumeIsolated { model.stopAgents() }
+        }
         GitAutomationWiring.connect(git, to: BuiltInPlugins.automation.center.automations)
     }
 
@@ -189,7 +193,6 @@ private struct SessionCommands: Commands {
         CommandMenu("Session") {
             Button("Focus Composer") {
                 session?.wantsComposerFocus = true
-                session?.focusComposerRequest += 1
             }
             .keyboardShortcut("l")
             .disabled(session == nil || session?.isSubagent == true)

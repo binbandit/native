@@ -3,8 +3,8 @@ import NativeAutomation
 import SwiftUI
 
 /// The prompt composer, after the reference app's: one surface pinned under the transcript that stacks queued
-/// follow-ups, the agent's plan, the draft and a row of session controls, with slash commands
-/// floating above it. Its keys follow docs/keyboard.md.
+/// follow-ups, the agent's plan, the draft and a row of session controls, with slash commands and
+/// `@` file mentions floating above it. Its keys follow docs/keyboard.md.
 struct ComposerView: View {
     @Bindable var session: SessionModel
 
@@ -14,10 +14,12 @@ struct ComposerView: View {
     @Environment(\.transcriptColumnMaxWidth) private var columnWidth
     @Environment(AutomationCenter.self) private var automation
     @FocusState private var isFocused: Bool
-    /// The highlighted row of the slash-command list.
+    @State private var selection: TextSelection?
+    /// The highlighted row of the suggestion list.
     @State private var highlighted = 0
-    /// Escape closes the command list until the draft stops being a bare "/command".
-    @State private var commandsDismissed = false
+    /// Escape closes the suggestion list until the draft stops asking for one.
+    @State private var suggestionsDismissed = false
+    @State private var mentionSource: FileMentionSource?
     @State private var isPlanExpanded = false
     @State private var isModelPickerOpen = false
     @State private var isDropTargeted = false
@@ -46,10 +48,24 @@ struct ComposerView: View {
             && session.draft.isEmpty && session.queuedPrompts.isEmpty
     }
 
-    /// The slash commands to list: only while the draft is a bare "/command" being typed.
-    private var commandMatches: [ComposerSlashCommand] {
-        guard !commandsDismissed, let query = SlashCommandQuery(draft: session.draft) else { return [] }
-        return query.matches(in: nativeCommands + session.state.availableCommands.map(ComposerSlashCommand.init))
+    /// The `@` mention at the cursor, if one is being typed.
+    private var mentionQuery: FileMentionQuery? {
+        guard case .selection(let range)? = selection?.indices else { return nil }
+        return FileMentionQuery(draft: session.draft, cursor: range.upperBound)
+    }
+
+    /// Commands while the draft is a bare "/command"; files while an `@` mention is typed.
+    private var suggestions: ComposerSuggestions? {
+        guard !suggestionsDismissed else { return nil }
+        if let query = SlashCommandQuery(draft: session.draft) {
+            let commands = query.matches(in: nativeCommands + session.state.availableCommands.map(ComposerSlashCommand.init))
+            return commands.isEmpty ? nil : .commands(commands)
+        }
+        if let query = mentionQuery, let mentionSource {
+            let files = mentionSource.matches(for: query.text)
+            return files.isEmpty ? nil : .files(files, query: query)
+        }
+        return nil
     }
 
     /// Commands Native handles itself, listed before the agent's.
@@ -60,15 +76,22 @@ struct ComposerView: View {
 
     var body: some View {
         let settings = ComposerSettings(session.state.configOptions)
-        let commands = commandMatches
-        surface(settings, commands: commands)
+        let suggestions = suggestions
+        surface(settings, suggestions: suggestions)
             .overlay(alignment: .top) {
                 // Float above the composer instead of growing it, so the transcript doesn't move:
                 // a zero-height frame on the top edge, with the list or toast hanging up out of it.
                 Group {
-                    if !commands.isEmpty {
-                        SlashCommandList(commands: commands, highlighted: $highlighted, onChoose: insert)
-                    } else {
+                    switch suggestions {
+                    case .commands(let commands):
+                        ComposerSuggestionList(items: commands, highlighted: $highlighted, onChoose: insert) { command, isHighlighted in
+                            SlashCommandRow(command: command, isHighlighted: isHighlighted)
+                        }
+                    case .files(let files, let query):
+                        ComposerSuggestionList(items: files, highlighted: $highlighted, onChoose: { insert($0, for: query) }) { path, isHighlighted in
+                            FileMentionRow(path: path, isChanged: mentionSource?.changed.contains(path) == true, isHighlighted: isHighlighted)
+                        }
+                    case nil:
                         toast
                             .frame(maxWidth: .infinity, alignment: .trailing)
                     }
@@ -91,6 +114,12 @@ struct ComposerView: View {
                 takeFocusIfWanted()
             }
             .onChange(of: session.draft) { draftChanged() }
+            .onChange(of: mentionQuery != nil) { _, isMentioning in
+                guard isMentioning else { return }
+                let source = mentionSource ?? FileMentionSource(root: session.cwd)
+                mentionSource = source
+                Task { await source.loadIfNeeded() }
+            }
             .task(id: feedback?.id) {
                 guard let shown = feedback else { return }
                 try? await Task.sleep(for: shown.duration)
@@ -114,12 +143,12 @@ struct ComposerView: View {
 
     // MARK: - Layout
 
-    private func surface(_ settings: ComposerSettings, commands: [ComposerSlashCommand]) -> some View {
+    private func surface(_ settings: ComposerSettings, suggestions: ComposerSuggestions?) -> some View {
         let plan = PlanProgress(entries: session.state.plan)
         // Each child is a section of the surface, with a rule between it and the next.
         return ComposerSurface(isFloating: true, isDropTargeted: isDropTargeted) {
-            // While commands are listed, they take the place of the sections above the draft.
-            if commands.isEmpty {
+            // While suggestions are listed, they take the place of the sections above the draft.
+            if suggestions == nil {
                 SessionGoalBar(session: session)
                 if let question = session.pendingQuestion {
                     questionSection(question)
@@ -143,7 +172,7 @@ struct ComposerView: View {
                     NextStepsSection(steps: nextSteps)
                 }
             }
-            inputSection(commands: commands)
+            inputSection(suggestions: suggestions)
             ComposerControlsRow(
                 settings: settings,
                 resumedAutonomy: autonomyBeforePlan,
@@ -191,17 +220,17 @@ struct ComposerView: View {
         }
     }
 
-    private func inputSection(commands: [ComposerSlashCommand]) -> some View {
+    private func inputSection(suggestions: ComposerSuggestions?) -> some View {
         HStack(alignment: .bottom, spacing: 0) {
-            ComposerEditor(text: $session.draft, placeholder: placeholder, isFocused: $isFocused) { press in
-                handleKey(press, commands: commands)
+            ComposerEditor(text: $session.draft, selection: $selection, placeholder: placeholder, isFocused: $isFocused) { press in
+                handleKey(press, suggestions: suggestions)
             }
             .disabled(!canEdit)
             // One slot for Send and Stop, always reserved, so neither moves nor reflows the text when
             // they swap (the reference app shows Send only once there's a draft, Stop while the agent works).
             ZStack {
                 if session.canCancel {
-                    ComposerStopButton(isEscapeEnabled: commands.isEmpty) {
+                    ComposerStopButton(isEscapeEnabled: suggestions == nil) {
                         Task { await session.cancel() }
                     }
                 } else if !session.draft.isEmpty {
@@ -269,10 +298,10 @@ struct ComposerView: View {
 
     // MARK: - Keyboard
 
-    private func handleKey(_ press: KeyPress, commands: [ComposerSlashCommand]) -> KeyPress.Result {
+    private func handleKey(_ press: KeyPress, suggestions: ComposerSuggestions?) -> KeyPress.Result {
         guard let key = ComposerKeyMap.Key(press.key) else { return .ignored }
         let context = ComposerKeyMap.Context(
-            isCommandListOpen: !commands.isEmpty,
+            isSuggestionListOpen: suggestions != nil,
             isDraftEmpty: session.draft.isEmpty,
             isWorking: isWorking,
             hasQueuedPrompts: !session.queuedPrompts.isEmpty,
@@ -286,20 +315,25 @@ struct ComposerView: View {
         if case .moveFocus(let forward) = action {
             return ComposerPlatform.moveKeyFocus(forward: forward) ? .handled : .ignored
         }
-        perform(action, commands: commands)
+        perform(action, suggestions: suggestions)
         return .handled
     }
 
-    private func perform(_ action: ComposerKeyMap.Action, commands: [ComposerSlashCommand]) {
+    private func perform(_ action: ComposerKeyMap.Action, suggestions: ComposerSuggestions?) {
         switch action {
         case .moveHighlight(let delta):
-            highlighted = min(max(highlighted + delta, 0), commands.count - 1)
-        case .insertHighlightedCommand:
-            if commands.indices.contains(highlighted) {
+            highlighted = min(max(highlighted + delta, 0), (suggestions?.count ?? 1) - 1)
+        case .insertHighlightedSuggestion:
+            switch suggestions {
+            case .commands(let commands) where commands.indices.contains(highlighted):
                 insert(commands[highlighted])
+            case .files(let files, let query) where files.indices.contains(highlighted):
+                insert(files[highlighted], for: query)
+            default:
+                break
             }
-        case .closeCommandList:
-            commandsDismissed = true
+        case .closeSuggestionList:
+            suggestionsDismissed = true
         case .recallLastPrompt:
             session.draft = session.state.lastPrompt ?? ""
         case .editLastQueuedPrompt:
@@ -318,11 +352,12 @@ struct ComposerView: View {
 
     private func draftChanged() {
         highlighted = 0
-        if SlashCommandQuery(draft: session.draft) == nil {
-            commandsDismissed = false
+        if SlashCommandQuery(draft: session.draft) == nil, mentionQuery == nil {
+            suggestionsDismissed = false
         }
         if session.draft.isEmpty {
             editingQueued = nil
+            selection = nil
         }
     }
 
@@ -369,6 +404,14 @@ struct ComposerView: View {
                 feedback = .failed(error)
             }
         }
+    }
+
+    private func insert(_ path: String, for query: FileMentionQuery) {
+        let (text, cursor) = query.draft(session.draft, inserting: path)
+        session.draft = text
+        selection = TextSelection(insertionPoint: cursor)
+        mentionSource?.noteMentioned(path)
+        isFocused = true
     }
 
     private func insert(_ command: ComposerSlashCommand) {

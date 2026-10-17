@@ -1,4 +1,4 @@
-#if canImport(GhosttyKit) && TERMINAL_ENGINE_WIP
+#if canImport(GhosttyKit)
 import AppKit
 import Carbon
 import GhosttyKit

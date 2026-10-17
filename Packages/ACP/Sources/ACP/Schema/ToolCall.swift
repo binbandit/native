@@ -96,6 +96,13 @@ public struct ToolCallUpdate: Decodable, Hashable, Sendable {
     public var locations: [ToolCallLocation]?
     public var rawInput: JSONValue?
     public var rawOutput: JSONValue?
+    /// The agent's own extra data (`_meta`), such as Claude Code's `toolResponse`.
+    public var meta: JSONValue?
+
+    private enum CodingKeys: String, CodingKey {
+        case toolCallId, title, name, kind, status, content, locations, rawInput, rawOutput
+        case meta = "_meta"
+    }
 
     public init(toolCallId: String, title: String? = nil, kind: ToolKind? = nil, status: ToolCallStatus? = nil) {
         self.toolCallId = toolCallId

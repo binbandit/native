@@ -33,7 +33,9 @@ struct TerminalLaunch {
 /// Makes and styles terminals. The Mac's engine is libghostty running the shell locally; a
 /// host-backed engine (`docs/terminal.md`, "Remote and iPad") would attach to a pty the host owns.
 protocol TerminalEngine: AnyObject {
-    func makeSurface(id: UUID, launch: TerminalLaunch, events: TerminalSurfaceEvents) throws(TerminalStartFailure)
+    func makeSurface(
+        id: UUID, launch: TerminalLaunch, events: TerminalSurfaceEvents
+    ) throws(TerminalStartFailure)
         -> TerminalSurface
     /// Restyles every terminal, running ones included.
     func apply(_ style: TerminalStyle)

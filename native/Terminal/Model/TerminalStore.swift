@@ -22,11 +22,12 @@ final class TerminalStore {
     /// - Parameter makeEngine: Starts the engine the first time a terminal opens.
     init(
         preferences: TerminalPreferences = TerminalPreferences(),
-        makeEngine: @escaping @MainActor () -> Result<TerminalEngine, TerminalEngineError> = TerminalStore.platformEngine
+        makeEngine: @escaping @MainActor () -> Result<TerminalEngine, TerminalEngineError> = TerminalStore
+            .platformEngine
     ) {
         self.preferences = preferences
         self.makeEngine = makeEngine
-        #if canImport(GhosttyKit) && TERMINAL_ENGINE_WIP
+        #if canImport(GhosttyKit)
         availability = .available
         #else
         availability = .notBuilt
@@ -41,14 +42,15 @@ final class TerminalStore {
         return panel
     }
 
-    /// ⌃`: shows and focuses the task's terminal; from the terminal, hides it and returns to the
-    /// composer.
+    /// ⌃`: shows and focuses the task's terminal; from the terminal, or when there's no terminal
+    /// to focus, hides it and returns to the composer.
     func toggle(for session: SessionModel) {
         let panel = panel(for: session)
         if !panel.isVisible {
             panel.show()
-        } else if panel.isFocused {
+        } else if panel.isFocused || !panel.canFocus {
             panel.hide()
+            session.wantsComposerFocus = true
         } else {
             panel.focusSelected()
         }
@@ -112,7 +114,7 @@ final class TerminalStore {
 
     /// libghostty on the Mac, when the build includes it.
     static func platformEngine() -> Result<TerminalEngine, TerminalEngineError> {
-        #if canImport(GhosttyKit) && TERMINAL_ENGINE_WIP
+        #if canImport(GhosttyKit)
         GhosttyRuntime.start().map { $0 as TerminalEngine }
         #else
         .failure(.notBuilt)

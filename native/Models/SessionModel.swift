@@ -52,9 +52,6 @@ final class SessionModel {
     /// Asks the composer to take focus; the composer clears it once it has. A flag rather than a
     /// counter, so a request made while the composer is being created isn't lost.
     var wantsComposerFocus = false
-    /// Bumped to ask the session's view to focus the composer. Deprecated: use `wantsComposerFocus`;
-    /// goes once the composer and sidebar have switched.
-    var focusComposerRequest = 0
     /// Set to ask the session's view to open the model picker; the view clears it.
     var isModelPickerRequested = false
     /// Set to ask the session's view to show or hide the subagent inspector; the view clears it.

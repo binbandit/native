@@ -1,4 +1,4 @@
-#if canImport(GhosttyKit) && TERMINAL_ENGINE_WIP
+#if canImport(GhosttyKit)
 import AppKit
 import GhosttyKit
 import OSLog
@@ -72,7 +72,9 @@ final class GhosttyRuntime: TerminalEngine {
 
     // MARK: TerminalEngine
 
-    func makeSurface(id: UUID, launch: TerminalLaunch, events: TerminalSurfaceEvents) throws(TerminalStartFailure)
+    func makeSurface(
+        id: UUID, launch: TerminalLaunch, events: TerminalSurfaceEvents
+    ) throws(TerminalStartFailure)
         -> TerminalSurface
     {
         var isDirectory: ObjCBool = false
@@ -120,7 +122,8 @@ final class GhosttyRuntime: TerminalEngine {
         )
         // libghostty reads config from files only, so it goes through a private temporary one.
         let directory = FileManager.default.temporaryDirectory
-            .appending(path: "native-terminal-\(ProcessInfo.processInfo.processIdentifier)", directoryHint: .isDirectory)
+            .appending(
+                path: "native-terminal-\(ProcessInfo.processInfo.processIdentifier)", directoryHint: .isDirectory)
         let file = directory.appending(path: "ghostty.conf")
         do {
             try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)

@@ -1,26 +1,29 @@
 import SwiftUI
 
 extension View {
-    /// the reference app's input: an outlined 32pt field on the background, like `SettingsSelect`.
-    func mcpFieldStyle() -> some View {
-        modifier(MCPFieldStyle())
+    /// the reference app's input: an outlined 32pt field on the background, like `SettingsSelect`. Pass
+    /// `focus` to drive the field's focus from outside.
+    func mcpFieldStyle(focus: FocusState<Bool>.Binding? = nil) -> some View {
+        modifier(MCPFieldStyle(external: focus))
     }
 }
 
 private struct MCPFieldStyle: ViewModifier {
-    @FocusState private var isFocused: Bool
+    let external: FocusState<Bool>.Binding?
+    @FocusState private var internalFocus: Bool
 
     func body(content: Content) -> some View {
         let shape = RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
+        let focus = external ?? $internalFocus
         content
             .textFieldStyle(.plain)
             .settingsText(.body)
             .foregroundStyle(.dsTextPrimary)
-            .focused($isFocused)
+            .focused(focus)
             .padding(.horizontal, DS.Space.lg)
             .frame(minHeight: SettingsMetrics.controlHeight)
             .background(.dsBackground, in: shape)
-            .overlay { shape.strokeBorder(isFocused ? Color.dsBorderStrong : .dsBorder, lineWidth: 1) }
+            .overlay { shape.strokeBorder(focus.wrappedValue ? Color.dsBorderStrong : .dsBorder, lineWidth: 1) }
     }
 }
 

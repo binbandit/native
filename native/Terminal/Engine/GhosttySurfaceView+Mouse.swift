@@ -1,4 +1,4 @@
-#if canImport(GhosttyKit) && TERMINAL_ENGINE_WIP
+#if canImport(GhosttyKit)
 import AppKit
 import GhosttyKit
 
@@ -75,7 +75,8 @@ extension GhosttySurfaceView {
             x *= 2
             y *= 2
         }
-        ghostty_surface_mouse_scroll(surface, x, y, GhosttyInput.scrollMods(precise: precise, phase: event.momentumPhase))
+        ghostty_surface_mouse_scroll(
+            surface, x, y, GhosttyInput.scrollMods(precise: precise, phase: event.momentumPhase))
     }
 
     override func pressureChange(with event: NSEvent) {

@@ -1,5 +1,5 @@
 import ACP
-import AppKit
+import Foundation
 import Observation
 import os
 
@@ -104,11 +104,11 @@ final class AppModel {
         unread = UnreadSessions()
         launcher = SessionLauncher(plugins: plugins, services: services, store: sessions)
         lastUsedAgent = UserDefaults.standard.string(forKey: Self.lastUsedAgentKey).map(AgentDefinition.ID.init(rawValue:))
-        NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated {
-                self?.runtimes.stopAll()
-            }
-        }
+    }
+
+    /// Ends every agent's process, for when the app quits.
+    func stopAgents() {
+        runtimes.stopAll()
     }
 
     // MARK: - Agents

@@ -17,7 +17,7 @@ extension SettingsPane {
                     SettingsSearchEntry(id: entry.rowID, title: entry.agent.name, description: entry.commandLine, keywords: [entry.agent.id, entry.agent.command])
                 }
             },
-            content: { AgentsSettingsPage() }
+            content: { AgentsSettingsPage(registry: registry) }
         )
     }
 }
@@ -34,7 +34,8 @@ struct AgentsSettingsPage: View {
         var commandLine: String { ([agent.command] + agent.args).joined(separator: " ") }
     }
 
-    @Environment(PluginRegistry.self) private var registry
+    /// The host's registry, passed in so a client of several hosts can show any of them.
+    let registry: PluginRegistry
 
     static func entries(in registry: PluginRegistry) -> [Entry] {
         registry.plugins.flatMap { loaded in
@@ -64,14 +65,16 @@ struct AgentsSettingsPage: View {
         }
     }
 
-    private func detail(for entry: Entry) -> Text? {
-        var parts: [String] = []
+    private func detail(for entry: Entry) -> Text {
+        var lines = ["When off, Native stops \(entry.agent.name) and doesn't offer it for new tasks."]
+        // The switch is the plugin's, so it also covers the plugin's other agents.
+        let siblings = entry.plugin.agents.filter { $0.id != entry.agent.id }.map(\.name)
+        if !siblings.isEmpty {
+            lines[0] = "Shares a switch with \(ListFormatter.localizedString(byJoining: siblings)), from the \(entry.plugin.name) extension. " + lines[0]
+        }
         if !entry.agent.resolveExecutables.isEmpty {
-            parts.append("Uses \(entry.agent.resolveExecutables.values.sorted().joined(separator: ", ")) from your PATH")
+            lines.append("Uses \(entry.agent.resolveExecutables.values.sorted().joined(separator: ", ")) from your PATH")
         }
-        if entry.plugin.name != entry.agent.name {
-            parts.append("From the \(entry.plugin.name) plugin")
-        }
-        return parts.isEmpty ? nil : Text(parts.joined(separator: " · "))
+        return Text(lines.joined(separator: "\n"))
     }
 }
