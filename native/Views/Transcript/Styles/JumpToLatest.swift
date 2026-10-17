@@ -30,7 +30,7 @@ struct JumpToLatestMenuItem: View {
 
 extension FocusedValues {
     /// Scrolls the visible session's transcript to its newest output.
-    @Entry var transcriptJumpToLatest: (() -> Void)?
+    @Entry var transcriptJumpToLatest: (@MainActor () -> Void)?
 }
 
 extension EnvironmentValues {

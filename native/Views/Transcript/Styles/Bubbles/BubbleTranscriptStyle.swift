@@ -42,9 +42,6 @@ private struct BubbleTranscript: View {
         // New rows slide in as they arrive, but not while history replays.
         .animation(isLoading ? nil : .bouncy(duration: 0.4, extraBounce: 0.05), value: rows.map(\.id))
         .animation(.smooth(duration: 0.25), value: isTyping)
-        .onChange(of: transcript.rows.map(\.id), initial: true) { old, new in
-            BubbleClock.shared.note(new, live: old != new && !isLoading)
-        }
     }
 
     /// A sent message rises from the composer into place; everything else fades up.

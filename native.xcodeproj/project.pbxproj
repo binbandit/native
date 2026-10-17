@@ -746,10 +746,6 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Experiments;
 		};
-		00000000000000000E0ED000 /* XCLocalSwiftPackageReference "Packages/Expeditions" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = Packages/Expeditions;
-		};
 		00000000000000000A070000 /* XCLocalSwiftPackageReference "Packages/Automation" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Automation;
@@ -757,6 +753,10 @@
 		00000000000000000AC10000 /* XCLocalSwiftPackageReference "Packages/MCPClient" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/MCPClient;
+		};
+		00000000000000000E0ED000 /* XCLocalSwiftPackageReference "Packages/Expeditions" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Expeditions;
 		};
 		000000000000000071E10000 /* XCLocalSwiftPackageReference "Packages/Terminal" */ = {
 			isa = XCLocalSwiftPackageReference;
@@ -808,11 +808,6 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = Experiments;
 		};
-		00000000000000000E0ED010 /* NativeExpeditions */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 00000000000000000E0ED000 /* XCLocalSwiftPackageReference "Packages/Expeditions" */;
-			productName = NativeExpeditions;
-		};
 		00000000000000000A070010 /* NativeAutomation */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = NativeAutomation;
@@ -820,6 +815,11 @@
 		00000000000000000AC10010 /* MCPClient */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = MCPClient;
+		};
+		00000000000000000E0ED010 /* NativeExpeditions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 00000000000000000E0ED000 /* XCLocalSwiftPackageReference "Packages/Expeditions" */;
+			productName = NativeExpeditions;
 		};
 		00000000000000005E1EA502 /* Sparkle */ = {
 			isa = XCSwiftPackageProductDependency;

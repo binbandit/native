@@ -25,6 +25,7 @@ final class AgentIconStore {
         let agent: AgentDefinition.ID
         let size: CGFloat
         let scale: CGFloat
+        let colorScheme: ColorScheme
     }
 
     init(registry: AgentIconRegistry = AgentIconRegistry(), pluginsDirectory: URL = PluginRegistry.directory) {
@@ -60,17 +61,20 @@ final class AgentIconStore {
         generation += 1
     }
 
-    /// The icon as an `Image`, for places that take nothing else, such as menu items. Glyphs and
-    /// monograms come back as template images, so menus tint them like their text.
-    func image(for agent: AgentDefinition, size: CGFloat, scale: CGFloat) -> Image {
-        let key = ImageKey(agent: agent.id, size: size, scale: scale)
+    /// The icon as an `Image`, for places that take nothing else, such as menu items. Menus draw
+    /// it as is (they ignore SwiftUI's template rendering), so glyphs and monograms are drawn in
+    /// the label color of `colorScheme`, the menu's appearance.
+    func image(for agent: AgentDefinition, size: CGFloat, scale: CGFloat, colorScheme: ColorScheme) -> Image {
+        let key = ImageKey(agent: agent.id, size: size, scale: scale, colorScheme: colorScheme)
         if let image = images[key] { return image }
-        let artwork = artwork(for: agent)
         let renderer = ImageRenderer(
-            content: AgentIconArtworkView(artwork: artwork, size: size).foregroundStyle(.black))
+            content: AgentIconArtworkView(artwork: artwork(for: agent), size: size)
+                .foregroundStyle(.primary)
+                .environment(\.colorScheme, colorScheme)
+        )
         renderer.scale = scale
         guard let cgImage = renderer.cgImage else { return Image(systemName: agent.symbolName) }
-        let image = AgentIconMenuImage.image(cgImage, scale: scale, isTemplate: artwork.isTemplate)
+        let image = Image(decorative: cgImage, scale: scale)
         // Monograms are placeholders; only keep what `resolve` settled on.
         if artworks[agent.id] != nil { images[key] = image }
         return image
