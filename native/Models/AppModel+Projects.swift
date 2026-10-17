@@ -1,0 +1,61 @@
+import Foundation
+
+// The projects in the sidebar: adding, focusing, removing (with undo) and reordering them.
+extension AppModel {
+    /// Opens a folder as a project, or finds it if it's open already, and lists its sessions.
+    func addProject(_ url: URL) async {
+        let project = projects.add(url)
+        focusProject(project.id)
+        await refreshSessions(in: project)
+    }
+
+    /// Shows a project's home: no session selected, and new sessions go to that project.
+    func focusProject(_ id: Project.ID) {
+        focusedProjectID = id
+        selection = nil
+    }
+
+    /// Closes a project in the sidebar (its sessions stay with the agents). With an undo manager,
+    /// ⌘Z puts it back in its place with the order the user gave its sessions.
+    func removeProject(_ id: Project.ID, undoManager: UndoManager? = nil) {
+        guard let index = projects.all.firstIndex(where: { $0.id == id }) else { return }
+        let project = projects.all[index]
+        let order = ordering.order(in: id)
+        if let selection, catalog.lookup(selection)?.project == id {
+            self.selection = nil
+        }
+        projects.remove(id)
+        catalog.remove(project: id)
+        ordering.forget(id)
+        undoManager?.registerUndo(withTarget: self) { model in
+            MainActor.assumeIsolated {
+                model.restoreProject(project, at: index, order: order, undoManager: undoManager)
+            }
+        }
+        undoManager?.setActionName("Remove Project")
+    }
+
+    private func restoreProject(_ project: Project, at index: Int, order: [SessionKey]?, undoManager: UndoManager?) {
+        projects.restore(project, at: index)
+        ordering.restore(order, in: project.id)
+        undoManager?.registerUndo(withTarget: self) { model in
+            MainActor.assumeIsolated {
+                model.removeProject(project.id, undoManager: undoManager)
+            }
+        }
+        undoManager?.setActionName("Remove Project")
+        Task { await refreshSessions(in: project) }
+    }
+
+    func moveProjects(fromOffsets source: IndexSet, toOffset destination: Int) {
+        projects.move(fromOffsets: source, toOffset: destination)
+    }
+
+    /// The project new sessions go to unless the user picks one: the selected session's, else the first.
+    var currentProject: Project? {
+        if let selection, let listed = catalog.lookup(selection), let project = projects.project(listed.project) {
+            return project
+        }
+        return focusedProjectID.flatMap(projects.project) ?? projects.all.first
+    }
+}
