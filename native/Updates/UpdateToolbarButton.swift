@@ -58,3 +58,15 @@ struct UpdateToolbarButton: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Update button") {
+    DSPreviewPair {
+        HStack(spacing: DS.Space.lg) {
+            UpdateToolbarButton(controller: .preview("ready"))
+            UpdateToolbarButton(controller: .preview("downloading"))
+            UpdateToolbarButton(controller: .preview("installing"))
+        }
+    }
+}
+#endif

@@ -43,6 +43,11 @@ final class UpdateController {
 
     /// Starts Sparkle and its scheduled checks. Call once, at launch.
     func start() {
+        #if DEBUG
+        if let sample = UserDefaults.standard.string(forKey: "updatePreviewState"), applyPreview(sample) {
+            return
+        }
+        #endif
         #if canImport(Sparkle)
         guard driver == nil, case .idle = state else { return }
         let driver = SparkleUpdateDriver(controller: self)
@@ -190,6 +195,12 @@ final class UpdateController {
         case .idle, .checking, .upToDate, .failed, .unavailable: break
         }
     }
+
+    #if DEBUG
+    func previewPendingRestart(_ timing: RestartTiming?) {
+        pendingRestart = timing
+    }
+    #endif
 
     // MARK: - Restarting
 

@@ -260,3 +260,22 @@ private struct UpdateStatusRow<Actions: View>: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Update states") {
+    let samples = [
+        "idle", "checking", "upToDate", "available", "downloading", "preparing", "ready", "readyWaiting",
+        "installing", "failedOffline", "failedSecurity", "developmentBuild", "notConfigured",
+    ]
+    ScrollView {
+        DSPreviewPair {
+            VStack(alignment: .leading, spacing: DS.Space.lg) {
+                ForEach(samples, id: \.self) { sample in
+                    Card { UpdateStatusView(controller: .preview(sample)) }
+                }
+            }
+            .frame(width: 560)
+        }
+    }
+}
+#endif

@@ -17,6 +17,10 @@ struct SessionView: View {
             .safeAreaBar(edge: .bottom, spacing: 0) {
                 ComposerView(session: session)
             }
+            // How the task's worktree setup went: the project's setup script running, or why it failed.
+            .safeAreaBar(edge: .top, spacing: 0) {
+                GitTaskSetupBanner(store: git, folder: session.cwd)
+            }
             .focusedSceneValue(\.activeSession, session)
             .navigationTitle(session.displayTitle)
             .navigationSubtitle(

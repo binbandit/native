@@ -17,6 +17,8 @@ extension OrchestrationPlugin {
 final class AppOrchestrationHost: OrchestrationHost {
     /// Weak because the model owns the plugins, which own this.
     private weak var model: AppModel?
+    /// Tasks whose card already follows them, so reopening one twice doesn't double up.
+    private var mirrored: Set<SessionKey> = []
 
     init(model: AppModel) {
         self.model = model
@@ -26,27 +28,34 @@ final class AppOrchestrationHost: OrchestrationHost {
         model?.agents.filter(\.isReady).map(\.agent) ?? []
     }
 
-    func startTask(_ request: TaskRequest) async throws -> UUID {
+    func sessionKey(of clientID: UUID) -> SessionKey? {
+        model?.session(clientID: clientID)?.key
+    }
+
+    func startTask(_ request: TaskRequest) async throws -> SessionKey {
         let parent = try session(request.parent)
         guard let model else { throw HostError.closed }
-        let task = try await model.startTaskSession(agent: request.agent, parent: request.parent)
-        parent.apply(.subagent(SubagentUpdate(
-            sessionId: task.id,
-            title: .set(request.title ?? Self.headline(of: request.text)),
-            description: .set(task.agentName),
-            canCancel: .set(true),
-            state: .set(.running)
-        )))
+        let task = try await model.startTaskSession(agent: request.agent, parent: parent.clientID)
         // Recorded the way agents record their own subagents' tasks: in the subagent's transcript,
         // from its parent, while the parent's shows the subagent itself.
         task.apply(.sessionMessage(Self.message(request.text, from: parent, to: task)))
         try await task.submit(request.prompt, .queue, echo: false)
-        mirror(task, into: parent)
-        return task.clientID
+        show(task, titled: request.title, in: parent)
+        return task.key
     }
 
-    func taskSnapshot(_ session: UUID) -> TaskSnapshot? {
-        model?.session(clientID: session).map(Self.snapshot)
+    func openTask(_ record: OrchestrationTask) async throws {
+        guard let model, model.session(record.session) == nil else { return }
+        let parent = try session(record.parent)
+        // A card applied while the parent replays its history would land in the middle of it.
+        await Self.loaded(parent)
+        let task = try await model.reopenTaskSession(agent: record.session.agent, id: record.session.id, cwd: parent.cwd)
+        await Self.loaded(task)
+        show(task, titled: record.title, in: parent)
+    }
+
+    func taskSnapshot(_ session: SessionKey) -> TaskSnapshot? {
+        model?.session(session).map(Self.snapshot)
     }
 
     func deliver(_ message: TaskMessage) async throws -> TaskMessage.Delivery {
@@ -62,8 +71,8 @@ final class AppOrchestrationHost: OrchestrationHost {
         }
     }
 
-    func cancelTask(_ task: UUID) async {
-        await model?.session(clientID: task)?.cancel()
+    func cancelTask(_ task: SessionKey) async {
+        await model?.session(task)?.cancel()
     }
 
     // MARK: - Snapshots
@@ -92,13 +101,19 @@ final class AppOrchestrationHost: OrchestrationHost {
         }
     }
 
-    /// Keeps the parent's card for a task in step with the task, as an agent reports its own
-    /// subagents' work, for as long as the task is open.
-    private func mirror(_ task: SessionModel, into parent: SessionModel) {
+    /// Puts the task's card in the parent's transcript and keeps it in step with the task, as an
+    /// agent reports its own subagents' work, for as long as the task is open.
+    private func show(_ task: SessionModel, titled title: String, in parent: SessionModel) {
+        let state = Self.workState(Self.snapshot(of: task))
+        parent.apply(
+            .subagent(
+                SubagentUpdate(
+                    sessionId: task.id, title: .set(title), description: .set(task.agentName), canCancel: .set(true), state: .set(state))))
+        guard mirrored.insert(task.key).inserted else { return }
         let states = Observations { [weak task] in task.map { Self.workState(Self.snapshot(of: $0)) } }
         let id = task.id
         Task { [weak parent] in
-            var reported: SubagentWorkState? = .running
+            var reported: SubagentWorkState? = state
             for await state in states {
                 guard let state, let parent else { return }
                 guard state != reported else { continue }
@@ -120,20 +135,20 @@ final class AppOrchestrationHost: OrchestrationHost {
 
     // MARK: - Helpers
 
-    private func session(_ clientID: UUID) throws -> SessionModel {
-        guard let session = model?.session(clientID: clientID) else { throw HostError.closed }
+    private func session(_ key: SessionKey) throws -> SessionModel {
+        guard let session = model?.session(key) else { throw HostError.closed }
         return session
+    }
+
+    private static func loaded(_ session: SessionModel) async {
+        for await phase in Observations({ session.phase }) where phase != .loading {
+            return
+        }
     }
 
     /// Every transcript gets its own copy of a message, so each needs its own id.
     private static func message(_ text: String, from sender: SessionModel, to recipient: SessionModel) -> SessionMessageUpdate {
         SessionMessageUpdate(messageId: "native-\(UUID().uuidString)", senderSessionId: sender.id, recipientSessionId: recipient.id, content: [.text(text)])
-    }
-
-    /// A title for a task the calling agent didn't name: the start of its first line.
-    private static func headline(of text: String) -> String {
-        let line = text.split(whereSeparator: \.isNewline).first.map(String.init) ?? text
-        return line.count > 60 ? String(line.prefix(59)) + "…" : line
     }
 
     private enum HostError: LocalizedError {

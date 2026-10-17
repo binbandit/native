@@ -6,14 +6,22 @@ struct NativeApp: App {
     @State private var model: AppModel
     @State private var git: GitStore
     @State private var gitHub: GitHubModel
+    /// Held here because AppModel keeps its provider weakly.
+    @State private var taskWorkspaces: GitTaskWorkspaceProvider
     @State private var iconPreferences = AppIconPreferences()
 
     init() {
         // Git and GitHub run with the login-shell environment the agents get.
         let model = AppModel()
         _model = State(initialValue: model)
-        _git = State(initialValue: GitStore { await model.shellEnvironment() })
-        _gitHub = State(initialValue: GitHubModel { await model.shellEnvironment(refresh: $0) })
+        let git = GitStore { await model.shellEnvironment() }
+        let gitHub = GitHubModel { await model.shellEnvironment(refresh: $0) }
+        _git = State(initialValue: git)
+        _gitHub = State(initialValue: gitHub)
+        // New tasks get a worktree or branch as the Git settings say.
+        let taskWorkspaces = GitTaskWorkspaceProvider(git: git, gitHub: gitHub)
+        _taskWorkspaces = State(initialValue: taskWorkspaces)
+        model.taskWorkspaces = taskWorkspaces
     }
 
     var body: some Scene {
@@ -66,8 +74,9 @@ struct NativeApp: App {
         }
 
         Settings {
-            SettingsView(additionalPanes: [.labs])
+            SettingsView(additionalPanes: [.labs, .git])
                 .environment(model.plugins)
+                .environment(git.settings)
                 .environment(iconPreferences)
                 .dsAccentPalette(themeID: iconPreferences.theme.rawValue)
                 .task { iconPreferences.start() }
