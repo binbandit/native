@@ -46,9 +46,11 @@ public struct Repository: Sendable, Hashable {
             arguments, in: root, readOnly: readOnly, input: input, environment: environment, acceptingStatus: accepted)
     }
 
-    /// The commit `revision` names, or `nil` when it names nothing (like HEAD before the first commit).
+    /// The commit `revision` names, or `nil` when it names nothing, like HEAD before the first
+    /// commit.
     func resolve(_ revision: String) async throws(GitError) -> String? {
-        let output = try await run(["rev-parse", "--verify", "--quiet", revision], readOnly: true, acceptingStatus: [0, 1])
+        let output = try await run(
+            ["rev-parse", "--verify", "--quiet", revision], readOnly: true, acceptingStatus: [0, 1])
         return output.status == 0 ? output.text.trimmingCharacters(in: .whitespacesAndNewlines) : nil
     }
 

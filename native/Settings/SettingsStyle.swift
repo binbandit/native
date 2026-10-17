@@ -66,8 +66,9 @@ struct SettingsTextStyle {
     static let body = SettingsTextStyle(.ds(14), size: 14, lineHeight: 20)
     /// `text-sm font-medium`: row titles.
     static let bodyMedium = SettingsTextStyle(.dsHeadline, size: 14, weight: .medium, lineHeight: 20)
-    /// `text-2xl font-medium tracking-tight`: page titles.
-    static let title = SettingsTextStyle(.dsTitle, size: 24, weight: .medium, lineHeight: 32, trackingEm: -0.024)
+    /// `text-2xl`: page titles. Conductor asks for medium, but its web view draws Geist at this size
+    /// as light as 300 (measured against the shipped app), and that lightness is the look.
+    static let title = SettingsTextStyle(.ds(24, weight: .light), size: 24, weight: .light, lineHeight: 32, trackingEm: -0.024)
     /// `font-mono text-xs`: commands and paths.
     static let mono = SettingsTextStyle(.dsMono, size: 12, design: .mono, lineHeight: 16)
 }

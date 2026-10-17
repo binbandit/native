@@ -13,7 +13,7 @@ struct Project: Identifiable, Hashable, Codable, Sendable {
 
     /// The folder as agents take it, for `cwd`.
     var path: String {
-        url.path(percentEncoded: false)
+        url.folderPath
     }
 }
 
@@ -35,6 +35,8 @@ final class Projects {
             all = projects
         } else if let path = defaults.string(forKey: Self.legacyWorkspaceKey) {
             all = [Project(id: UUID(), url: URL(filePath: path, directoryHint: .isDirectory))]
+            // Assigning in init doesn't run `didSet`, and the project's id has to stick.
+            save()
         }
     }
 
