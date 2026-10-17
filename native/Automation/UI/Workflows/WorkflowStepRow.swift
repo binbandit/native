@@ -139,7 +139,7 @@ struct WorkflowStepRow: View {
         switch step.status {
         case .failed: .dsDanger
         case .limited: .dsWarning
-        case .blocked: .dsAccentText
+        case .blocked: .dsAttention
         default: .dsTextSecondary
         }
     }

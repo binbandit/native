@@ -2,21 +2,6 @@ import Foundation
 import Observation
 import SwiftUI
 
-/// A folder the user works in. Its sessions are whatever the agents list for it.
-struct Project: Identifiable, Hashable, Codable, Sendable {
-    let id: UUID
-    let url: URL
-
-    var name: String {
-        url.lastPathComponent
-    }
-
-    /// The folder as agents take it, for `cwd`.
-    var path: String {
-        url.folderPath
-    }
-}
-
 /// The projects open in the sidebar, in the user's order, remembered across launches.
 @Observable
 final class Projects {
@@ -47,8 +32,7 @@ final class Projects {
     /// Adds a folder at the end, or returns its project if it's already open.
     @discardableResult
     func add(_ url: URL) -> Project {
-        let url = url.standardizedFileURL
-        if let existing = all.first(where: { $0.url.standardizedFileURL == url }) {
+        if let existing = all.first(where: { $0.url.standardizedFileURL == url.standardizedFileURL }) {
             return existing
         }
         let project = Project(id: UUID(), url: url)

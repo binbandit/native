@@ -4,9 +4,8 @@ import SwiftUI
 /// The chevron's menu: every installed app with its own icon, grouped into editors, terminals, git
 /// clients and Finder, with the default checked and showing its shortcut, then Copy Path.
 ///
-/// Choosing an app opens the folder there and makes it the default (the reference app's behavior). Holding
-/// Option turns every other app into "Set <app> as Default", which changes the default without
-/// opening anything.
+/// Choosing an app opens the folder there and makes it the default, as in the reference app, so setting the
+/// default and using it are one step and the button always shows where you went last.
 enum OpenInMenu {
     static func make(for location: OpenInLocation, model: OpenInModel) -> NSMenu {
         let menu = NSMenu()
@@ -17,7 +16,7 @@ enum OpenInMenu {
                 menu.addItem(.separator())
             }
             for app in group {
-                addItem(for: app, isDefault: app.id == defaultID, location: location, model: model, to: menu)
+                menu.addItem(item(for: app, isDefault: app.id == defaultID, location: location, model: model))
             }
         }
         menu.addItem(.separator())
@@ -29,29 +28,20 @@ enum OpenInMenu {
         return menu
     }
 
-    /// The app's row; every app but the default gets an Option alternate that only sets the default.
-    private static func addItem(
+    private static func item(
         for app: OpenInApp,
         isDefault: Bool,
         location: OpenInLocation,
-        model: OpenInModel,
-        to menu: NSMenu
-    ) {
-        let icon = model.icon(for: app)
-        let item = NSMenuItem(app.name, image: icon) { model.open(location, in: app) }
+        model: OpenInModel
+    ) -> NSMenuItem {
+        let item = NSMenuItem(app.name, image: model.icon(for: app)) { model.open(location, in: app) }
         // macOS 27 hides menu images by default; an app's icon is how you spot it, as in Open With.
         item.preferredImageVisibility = .visible
-        menu.addItem(item)
         if isDefault {
             item.state = .on
             item.setKeyEquivalent(OpenInCommands.shortcut)
-        } else {
-            let alternate = NSMenuItem("Set \(app.name) as Default", image: icon) { model.setDefault(app) }
-            alternate.preferredImageVisibility = .visible
-            alternate.keyEquivalentModifierMask = .option
-            alternate.isAlternate = true
-            menu.addItem(alternate)
         }
+        return item
     }
 }
 

@@ -32,8 +32,9 @@ struct WorkflowApprovalCard: View {
             buttons
         }
         .padding(DS.Space.lg)
-        .background(.dsAccentSubtle, in: shape)
-        .overlay { shape.strokeBorder(Color.dsAccent.opacity(0.45), lineWidth: 1) }
+        // Amber like every request that waits on the user, whatever the accent theme.
+        .background(Color.dsAttention.opacity(0.06), in: shape)
+        .overlay { shape.strokeBorder(Color.dsAttention.opacity(0.45), lineWidth: 1) }
         .accessibilityElement(children: .contain)
         .accessibilityLabel(question)
     }

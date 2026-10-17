@@ -15,7 +15,8 @@ struct WorkflowRunRow: View {
             subtitle: "\(run.definition.name) · \(run.finishedCount)/\(run.steps.count)",
             date: run.endedAt ?? run.createdAt,
             badge: badge,
-            leading: Image(systemName: run.definition.symbol),
+            // No workflow glyph: the row is narrow, and the subtitle already names the workflow.
+            leading: EmptyView(),
             accessory: EmptyView(),
             action: action
         )
@@ -33,7 +34,7 @@ struct WorkflowRunRow: View {
         switch run.phase {
         case .awaitingApproval: .attention("Approve")
         case .blocked: .attention("Reply")
-        case .halted: .attention("Stopped")
+        case .halted: .attention(run.statusLabel)
         default: nil
         }
     }

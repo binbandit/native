@@ -20,7 +20,7 @@ nonisolated enum BuiltInWorkflows {
         {
           "id": "plan-implement-review",
           "name": "Plan, implement, review",
-          "summary": "One agent plans, another implements the plan as a goal, and the planner reviews the result.",
+          "summary": "One agent plans, another implements the plan, and the planner reviews the result.",
           "symbol": "list.bullet.rectangle",
           "input": { "label": "What should change?", "placeholder": "Add a --json flag to the export command" },
           "steps": [
@@ -38,8 +38,8 @@ nonisolated enum BuiltInWorkflows {
         #"""
         {
           "id": "implement-cross-review",
-          "name": "Implement with a second opinion",
-          "summary": "Your agent implements as a goal, a different provider reviews the work, and the implementer addresses the review with its context intact.",
+          "name": "Second opinion",
+          "summary": "Your agent implements it, another provider reviews the work, and the implementer fixes what it finds.",
           "symbol": "person.2.badge.gearshape",
           "input": { "label": "What should change?", "placeholder": "Fix the race in the upload retry logic" },
           "steps": [
@@ -61,7 +61,7 @@ nonisolated enum BuiltInWorkflows {
         {
           "id": "ship-pull-request",
           "name": "Ship a pull request",
-          "summary": "Plan, implement on a new branch, get a cross-provider review, fix what it finds, then open a pull request.",
+          "summary": "Plan, implement on a branch, cross-review, fix what the review finds, then open a pull request.",
           "symbol": "arrow.triangle.pull",
           "input": { "label": "What should the pull request do?", "placeholder": "Let users export reports as CSV" },
           "steps": [

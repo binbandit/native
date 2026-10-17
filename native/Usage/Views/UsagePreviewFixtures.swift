@@ -15,14 +15,20 @@ struct PreviewContextSource: ContextSource {
 
     static func claude(used: Int) -> PreviewContextSource {
         PreviewContextSource(
-            usage: Usage(used: used, size: 1_000_000, cost: Usage.Cost(amount: 0.19, currency: "USD")),
+            usage: usage(used: used, size: 1_000_000, cost: 0.19),
             report: ContextReport.parse(sampleReport(messages: used - 228_390))
         )
     }
 
     static let codex = PreviewContextSource(
-        agentName: "Codex", usage: Usage(used: 61_200, size: 258_400), reportStatus: .unsupported, canCompact: false
+        agentName: "Codex", usage: usage(used: 61_200, size: 258_400), reportStatus: .unsupported, canCompact: false
     )
+
+    /// Decoded as an agent would send it: `Usage` has no public initializer.
+    static func usage(used: Int, size: Int, cost: Double? = nil) -> Usage? {
+        let cost = cost.map { #","cost":{"amount":\#($0),"currency":"USD"}"# } ?? ""
+        return try? JSONDecoder().decode(Usage.self, from: Data(#"{"used":\#(used),"size":\#(size)\#(cost)}"#.utf8))
+    }
 
     /// Shaped like Claude Code's answer to `/context`, trimmed.
     static func sampleReport(messages: Int) -> String {

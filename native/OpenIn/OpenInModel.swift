@@ -78,11 +78,6 @@ final class OpenInModel {
         open(location, in: app)
     }
 
-    /// Makes `app` the default without opening anything.
-    func setDefault(_ app: OpenInApp) {
-        defaultID = app.id
-    }
-
     func copyPath(of location: OpenInLocation) {
         NSPasteboard.general.clearContents()
         NSPasteboard.general.setString(location.path, forType: .string)

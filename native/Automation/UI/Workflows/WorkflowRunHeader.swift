@@ -7,6 +7,13 @@ struct WorkflowRunHeader: View {
     let send: (WorkflowEvent) -> Void
 
     var body: some View {
+        // The start time reads as an age, which only moves by the minute.
+        TimelineView(.periodic(from: .now, by: 60)) { timeline in
+            content(now: timeline.date)
+        }
+    }
+
+    private func content(now: Date) -> some View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
             HStack(alignment: .top, spacing: DS.Space.md) {
                 Image(systemName: run.definition.symbol)
@@ -20,15 +27,9 @@ struct WorkflowRunHeader: View {
                         .font(.dsTitle3)
                         .foregroundStyle(.dsTextPrimary)
                         .lineLimit(2)
-                    HStack(spacing: DS.Space.xs) {
-                        Text([run.definition.name, run.cwd.lastPathComponent].joined(separator: " · ") + " · started")
-                        CompactAgeText(date: run.createdAt)
-                        if let cost = run.cost {
-                            Text("· \(GoalUsage.costText(cost))")
-                                .monospacedDigit()
-                        }
-                    }
-                    .font(.dsCaption)
+                    Text([run.definition.name, run.cwd.lastPathComponent, run.startedText(now: now), run.cost.map(GoalUsage.costText)].compactMap(\.self).joined(separator: " · "))
+                        .monospacedDigit()
+                        .font(.dsCaption)
                     .foregroundStyle(.dsTextTertiary)
                 }
                 .tracking(DS.Tracking.tight)
@@ -37,7 +38,7 @@ struct WorkflowRunHeader: View {
             }
             HStack(spacing: DS.Space.md) {
                 AutomationStatusGlyph(glyph: AutomationGlyph(run: run.phase))
-                Badge(run.phase.label, tone: tone, style: .mono)
+                Badge(run.statusLabel, tone: tone, style: .mono)
                 StepSegments(steps: run.steps)
                 Text("\(run.finishedCount) of \(run.steps.count) steps")
                     .font(.dsCaption)
@@ -95,8 +96,9 @@ struct WorkflowRunHeader: View {
         switch run.phase {
         case .running: .accent
         case .paused, .cancelled: .neutral
-        case .awaitingApproval, .blocked: .accent
-        case .halted: .danger
+        // Badge has no attention tone yet; warning is the nearest amber.
+        case .awaitingApproval, .blocked: .warning
+        case .halted: run.hasFailedStep ? .danger : .warning
         case .succeeded: .success
         }
     }
@@ -124,7 +126,7 @@ private struct StepSegments: View {
         case .succeeded: .dsSuccess
         case .skipped, .waiting: .dsSelected
         case .starting, .running: .dsAccent
-        case .awaitingApproval, .blocked: .dsAccent.opacity(0.5)
+        case .awaitingApproval, .blocked: .dsAttention
         case .paused, .cancelled: .dsTextQuaternary
         case .limited: .dsWarningFill
         case .failed: .dsDanger
