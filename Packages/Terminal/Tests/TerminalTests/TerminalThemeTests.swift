@@ -34,7 +34,7 @@ struct TerminalThemeTests {
 
     @Test func formatsAndBlendsColors() {
         #expect(TerminalRGB(0x0A0B0C).description == "#0a0b0c")
-        #expect(TerminalRGB(red: 1.2, green: 0.5, blue: -0.1) == TerminalRGB(red: 255, green: 128, blue: 0))
+        #expect(TerminalRGB(fractionalRed: 1.2, green: 0.5, blue: -0.1) == TerminalRGB(red: 255, green: 128, blue: 0))
         #expect(TerminalRGB(0xFFFFFF).over(TerminalRGB(0x000000), opacity: 0.5) == TerminalRGB(0x808080))
     }
 

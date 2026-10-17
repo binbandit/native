@@ -123,9 +123,9 @@ def main():
     manifest = (CRATE / 'Cargo.toml').read_text()
     manifest = manifest.replace('path = "src/main.rs"', f'path = "{CRATE}/src/main.rs"')
     manifest = manifest.replace(f'v8 = {{ version = "={V8_VERSION}",', f'v8 = {{ path = "{source}",')
-    manifest = manifest.replace('[package]', f'[package]\nbuild = "{CRATE}/build.rs"', 1)
     (project / 'Cargo.toml').write_text(manifest)
-    shutil.copyfile(CRATE / 'Cargo.lock', project / 'Cargo.lock')
+    for name in ['Cargo.lock', 'build.rs', 'Info.plist']:
+        shutil.copyfile(CRATE / name, project / name)
     subprocess.run(['cargo', 'metadata', '--offline', '--format-version', '1', '--manifest-path', str(project / 'Cargo.toml')],
                    stdout=subprocess.DEVNULL, check=True)
 
