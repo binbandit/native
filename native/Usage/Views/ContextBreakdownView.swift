@@ -32,7 +32,7 @@ struct ContextBreakdownView<Source: ContextSource>: View {
             VStack(alignment: .leading, spacing: DS.Space.lg) {
                 ContextBar(composition: ContextComposition(report: report))
                 ContextCategoryTable(composition: ContextComposition(report: report))
-                if !ContextContributors(report: report).isEmpty {
+                if report.hasContributors {
                     SeparatorLine()
                     ContextContributors(report: report)
                 }
@@ -48,12 +48,6 @@ struct ContextBreakdownView<Source: ContextSource>: View {
                 ContextBreakdownPlaceholder(source: source)
             }
         }
-    }
-}
-
-private extension ContextContributors {
-    var isEmpty: Bool {
-        report.mcpTools.isEmpty && report.memoryFiles.isEmpty && report.skills.isEmpty && report.agents.isEmpty
     }
 }
 

@@ -39,7 +39,6 @@ struct ProjectSection<TaskAccessory: View>: View {
         }
         .sidebarDraggable(item, title: project.name, state: drag)
         .sidebarDropTarget(item, state: drag, onDrop: model.applySidebarDrop)
-        .help(project.url.abbreviatedPath)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(project.name)
         .accessibilityActions {

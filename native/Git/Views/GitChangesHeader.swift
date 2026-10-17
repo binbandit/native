@@ -34,11 +34,12 @@ struct GitChangesHeader: View {
             if !status.isClean {
                 Button("Commit", systemImage: "checkmark") { isCommitting = true }
                     .buttonStyle(.ds(.primary))
-                    .help("Commit changes")
+                    .disabled(!status.conflicted.isEmpty)
+                    .help(status.conflicted.isEmpty ? "Commit changes" : "Resolve and stage the conflicted files first")
                     .popover(isPresented: $isCommitting, arrowEdge: .bottom) {
                         GitCommitPopover(model: model, isPresented: $isCommitting, onCreatePullRequest: onCreatePullRequest)
                     }
-            } else if branch.ahead > 0 || (branch.upstream == nil && !branch.isDetached && !branch.isUnborn) {
+            } else if model.canPush {
                 Button(branch.upstream == nil ? "Publish" : "Push \(branch.ahead)", systemImage: "arrow.up") {
                     Task { await model.push() }
                 }

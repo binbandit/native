@@ -58,7 +58,6 @@ private struct AgentHealthChip: View {
         .help("\(runtime.agent.displayName): \(AgentHealth(runtime).summary(for: runtime))")
         .accessibilityLabel(runtime.agent.displayName)
         .accessibilityValue(AgentHealth(runtime).summary(for: runtime))
-        .accessibilityHint("Shows details")
         .popover(isPresented: $isShowingDetails, arrowEdge: .top) {
             AgentDetailsView(runtime: runtime)
         }

@@ -26,7 +26,7 @@ nonisolated struct OpenInTarget: Identifiable, Hashable, Sendable {
     var launch = Launch.document
 }
 
-extension OpenInTarget {
+nonisolated extension OpenInTarget {
     /// Every known app, grouped by kind. Within a group the most widely used come first, so on first
     /// run the first installed one is the likeliest default: an editor if there is any, Xcode only
     /// when nothing else is installed (most Macs with developer tools have it), and Finder last.

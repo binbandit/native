@@ -17,6 +17,17 @@ final class OpenInModel {
         apps.first { $0.id == defaultID } ?? apps.first
     }
 
+    /// `apps` split into editors, terminals, git clients and Finder: the sections of the menus.
+    var appGroups: [[OpenInApp]] {
+        apps.reduce(into: []) { groups, app in
+            if groups.last?.last?.target.kind == app.target.kind {
+                groups[groups.count - 1].append(app)
+            } else {
+                groups.append([app])
+            }
+        }
+    }
+
     private var defaultID: OpenInTarget.ID? {
         didSet { defaults.set(defaultID, forKey: Self.defaultKey) }
     }

@@ -73,7 +73,7 @@ struct GitChangesInspector: View {
             }
         } else {
             EmptyStateView("No changes", systemImage: "checkmark.circle", message: cleanMessage) {
-                if let branch = model.branch, branch.ahead > 0 || (branch.upstream == nil && !branch.isDetached && !branch.isUnborn) {
+                if let branch = model.branch, model.canPush {
                     Button(branch.upstream == nil ? "Publish Branch" : "Push", systemImage: "arrow.up") {
                         Task { await model.push() }
                     }
@@ -127,6 +127,9 @@ struct GitChangesInspector: View {
         if branch.ahead > 0 {
             let commits = branch.ahead == 1 ? "1 commit is" : "\(branch.ahead) commits are"
             return "Everything is committed, and \(commits) ready to push."
+        }
+        if !model.hasRemote {
+            return "Everything is committed. This repository has no remote yet; add one to push."
         }
         if branch.upstream == nil, !branch.isDetached {
             return "Everything is committed. \(branch.displayName) isn't on a remote yet."

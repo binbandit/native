@@ -21,12 +21,5 @@ struct NewSessionItem: View {
             }
         }
         .disabled(model.projects.all.isEmpty || !model.agents.contains { model.canCreateSession(with: $0.agent.id) })
-        .help(help)
-    }
-
-    private var help: String {
-        let agent = model.defaultAgent.map { "\($0.displayName) " } ?? ""
-        let project = model.currentProject.map { " in \($0.name)" } ?? ""
-        return "New \(agent)Session\(project) (⌘N)"
     }
 }

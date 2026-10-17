@@ -2,13 +2,13 @@ import ACP
 import SwiftUI
 
 /// The composer's bottom row, after the reference app's: attach, model with its effort meter, autonomy, plan
-/// mode and help leading; the follow-up hint and context usage trailing.
+/// mode and help leading; the status line and context usage trailing.
 struct ComposerControlsRow: View {
     let settings: ComposerSettings
     /// The autonomy level shown while Plan Mode suspends it, and restored when Plan Mode ends.
     let resumedAutonomy: String?
     let usage: Usage?
-    let followUpHint: FollowUpHint?
+    let status: ComposerStatusLine
     @Binding var isModelPickerOpen: Bool
     let onAttach: () -> Void
     let onSet: (SelectSetting, String) -> Void
@@ -53,19 +53,10 @@ struct ComposerControlsRow: View {
             }
             HelpButton()
         } trailing: {
-            if let followUpHint {
-                Text(followUpHint.text)
-                    .font(.dsBody)
-                    .foregroundStyle(.dsTextTertiary)
-                    .lineLimit(1)
-                    .fixedSize()
-                    .help(followUpHint.help)
-                    .transition(.opacity)
-            }
+            status
             if let usage {
                 UsageIndicator(usage: usage)
             }
         }
-        .animation(.dsQuick, value: followUpHint)
     }
 }

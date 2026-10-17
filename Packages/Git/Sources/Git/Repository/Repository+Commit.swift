@@ -48,10 +48,15 @@ extension Repository {
             let remote = value.text.trimmingCharacters(in: .whitespacesAndNewlines)
             if value.status == 0, !remote.isEmpty { return remote }
         }
-        let remotes = try await run(["remote"], readOnly: true).text.split(separator: "\n").map(String.init)
+        let remotes = try await remotes()
         if remotes.contains("origin") { return "origin" }
         guard let first = remotes.first else { throw .noRemote }
         return first
+    }
+
+    /// The names of the configured remotes, e.g. `["origin"]`.
+    public func remotes() async throws(GitError) -> [String] {
+        try await run(["remote"], readOnly: true).text.split(separator: "\n").map(String.init)
     }
 
     // MARK: - History

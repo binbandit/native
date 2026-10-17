@@ -62,7 +62,8 @@ struct HomeTaskRow<ID: Hashable>: View {
     }
 
     private var accessibilityValue: String {
-        let parts = [task.agentName, task.projectName, task.date?.formatted(.relative(presentation: .named))] as [String?]
+        let parts =
+            [task.agentName, task.projectName, task.date?.formatted(.relative(presentation: .named))] as [String?]
         return parts.compactMap(\.self).joined(separator: ", ")
     }
 }

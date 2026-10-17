@@ -8,7 +8,8 @@ public struct HomeWelcomeView<AgentID: Hashable>: View {
     let addProjectShortcut: KeyboardShortcut?
     let onAddProject: () -> Void
 
-    public init(agents: [HomeAgent<AgentID>], addProjectShortcut: KeyboardShortcut?, onAddProject: @escaping () -> Void) {
+    public init(agents: [HomeAgent<AgentID>], addProjectShortcut: KeyboardShortcut?, onAddProject: @escaping () -> Void)
+    {
         self.agents = agents
         self.addProjectShortcut = addProjectShortcut
         self.onAddProject = onAddProject
@@ -16,7 +17,10 @@ public struct HomeWelcomeView<AgentID: Hashable>: View {
 
     public var body: some View {
         HomePage {
-            HomeActionCard("Add a project", systemImage: "folder.badge.plus", detail: "Choose a folder to work in", action: onAddProject) {
+            HomeActionCard(
+                "Add a project", systemImage: "folder.badge.plus", detail: "Choose a folder to work in",
+                action: onAddProject
+            ) {
                 if let addProjectShortcut {
                     Kbd(addProjectShortcut)
                 }

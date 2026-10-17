@@ -11,7 +11,9 @@ public struct HomeTask<ID: Hashable>: Identifiable {
     /// When the task was last active.
     public let date: Date?
 
-    public init(id: ID, title: String, agentName: String, agentSymbolName: String, projectName: String? = nil, date: Date?) {
+    public init(
+        id: ID, title: String, agentName: String, agentSymbolName: String, projectName: String? = nil, date: Date?
+    ) {
         self.id = id
         self.title = title
         self.agentName = agentName

@@ -27,9 +27,11 @@ public enum TaskBadge: Equatable, Sendable {
 /// set their title semibold in the primary color. With `onArchive`, an archive button takes the
 /// trailing items' place on hover (and is offered to VoiceOver as an action).
 ///
-/// Two optional slots: `leading`, a 16pt icon before the status glyph (the agent:
-/// `Image(systemName:)` or any view, tinted tertiary), and `accessory`, a view after the age
-/// (e.g. `ContextUsageRing`). See `TaskRow+Slots.swift` for the initializers without them.
+/// Two optional slots: `leading`, a 16pt type glyph (the agent: `Image(systemName:)` or any view,
+/// tinted tertiary), and `accessory`, a view after the age (e.g. `ContextUsageRing`). Like
+/// the reference app, the row has one leading visual: the type glyph at rest (idle or done), the status
+/// glyph while something is happening or wants the user. See `TaskRow+Slots.swift` for the
+/// initializers without slots.
 public struct TaskRow<Leading: View, Accessory: View>: View {
     let title: String
     let status: TaskStatus
@@ -86,16 +88,19 @@ public struct TaskRow<Leading: View, Accessory: View>: View {
     public var body: some View {
         Button(action: action) {
             HStack(alignment: .top, spacing: DS.Space.sm) {
-                if Leading.self != EmptyView.self {
-                    leading
-                        .font(.system(size: 11, weight: .regular))
-                        .foregroundStyle(.dsTextTertiary)
-                        .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
-                        .padding(.top, DS.Space.xxs)
+                Group {
+                    if showsLeading {
+                        leading
+                            .font(.system(size: 11, weight: .regular))
+                            .foregroundStyle(.dsTextTertiary)
+                            .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
+                            .help(status.label)
+                    } else {
+                        StatusIndicator(status: status)
+                    }
                 }
-                StatusIndicator(status: status)
-                    .padding(.top, DS.Space.xxs)
-                    .padding(.trailing, DS.Space.xxs)
+                .padding(.top, DS.Space.xxs)
+                .padding(.trailing, DS.Space.xxs)
 
                 VStack(alignment: .leading, spacing: DS.Space.xxs) {
                     HStack(spacing: DS.Space.sm) {
@@ -183,6 +188,11 @@ public struct TaskRow<Leading: View, Accessory: View>: View {
 
             accessory
         }
+    }
+
+    /// The type glyph stands in for the status at rest.
+    private var showsLeading: Bool {
+        Leading.self != EmptyView.self && (status == .idle || status == .done)
     }
 
     private var accessibilityValue: String {
