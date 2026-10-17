@@ -5,9 +5,9 @@ import SwiftUI
 /// list. The editor keeps focus and drives the highlight with the arrow keys; Return or Tab inserts
 /// the highlighted command.
 struct SlashCommandList: View {
-    let commands: [AvailableCommand]
+    let commands: [ComposerSlashCommand]
     @Binding var highlighted: Int
-    let onChoose: (AvailableCommand) -> Void
+    let onChoose: (ComposerSlashCommand) -> Void
 
     var body: some View {
         ComposerSurface(isFloating: true) {
@@ -28,7 +28,7 @@ struct SlashCommandList: View {
         }
     }
 
-    private func row(_ command: AvailableCommand, at index: Int) -> some View {
+    private func row(_ command: ComposerSlashCommand, at index: Int) -> some View {
         let isHighlighted = index == highlighted
         return Button {
             onChoose(command)

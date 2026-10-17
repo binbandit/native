@@ -10,6 +10,8 @@ struct ComposerView: View {
     @AppStorage(FollowUpBehavior.storageKey) private var followUp = FollowUpBehavior.defaultValue
     @Environment(\.undoManager) private var undoManager
     @Environment(\.composerNextSteps) private var nextSteps
+    @Environment(\.transcriptColumnMaxWidth) private var columnWidth
+    @Environment(AutomationCenter.self) private var automation
     @FocusState private var isFocused: Bool
     /// The highlighted row of the slash-command list.
     @State private var highlighted = 0
@@ -44,9 +46,15 @@ struct ComposerView: View {
     }
 
     /// The slash commands to list: only while the draft is a bare "/command" being typed.
-    private var commandMatches: [AvailableCommand] {
+    private var commandMatches: [ComposerSlashCommand] {
         guard !commandsDismissed, let query = SlashCommandQuery(draft: session.draft) else { return [] }
-        return query.matches(in: session.state.availableCommands)
+        return query.matches(in: nativeCommands + session.state.availableCommands.map(ComposerSlashCommand.init))
+    }
+
+    /// Commands Native handles itself, listed before the agent's.
+    private var nativeCommands: [ComposerSlashCommand] {
+        guard automation.goal(for: session) != nil else { return [] }
+        return [ComposerSlashCommand(name: "goal", description: GoalCommand.usage)]
     }
 
     var body: some View {
@@ -68,7 +76,7 @@ struct ComposerView: View {
                 .frame(height: 0, alignment: .bottom)
                 .animation(.dsQuick, value: feedback)
             }
-            .frame(maxWidth: transcriptColumnWidth)
+            .frame(maxWidth: columnWidth)
             .padding(.horizontal, DS.Space.xxl)
             .padding(.top, DS.Space.md)
             .padding(.bottom, DS.Space.xl)
@@ -105,12 +113,13 @@ struct ComposerView: View {
 
     // MARK: - Layout
 
-    private func surface(_ settings: ComposerSettings, commands: [AvailableCommand]) -> some View {
+    private func surface(_ settings: ComposerSettings, commands: [ComposerSlashCommand]) -> some View {
         let plan = PlanProgress(entries: session.state.plan)
         // Each child is a section of the surface, with a rule between it and the next.
         return ComposerSurface(isFloating: true, isDropTargeted: isDropTargeted) {
             // While commands are listed, they take the place of the sections above the draft.
             if commands.isEmpty {
+                SessionGoalBar(session: session)
                 if !session.queuedPrompts.isEmpty {
                     QueuedPromptsSection(
                         prompts: session.queuedPrompts,
@@ -141,6 +150,7 @@ struct ComposerView: View {
                 onCycleEffort: { apply(settings.nextEffort) },
                 onCycleAutonomy: { apply(settings.nextAutonomy) },
                 onTogglePlan: { apply(settings.togglingPlan(resumedAutonomy: autonomyBeforePlan)) },
+                extras: { SessionGoalControl(session: session) },
                 context: { ContextIndicator(session: session, style: .labeled) }
             )
             .disabled(!canEdit)
@@ -156,7 +166,7 @@ struct ComposerView: View {
         .animation(.dsStandard, value: session.queuedPrompts)
     }
 
-    private func inputSection(commands: [AvailableCommand]) -> some View {
+    private func inputSection(commands: [ComposerSlashCommand]) -> some View {
         HStack(alignment: .bottom, spacing: 0) {
             ComposerEditor(text: $session.draft, placeholder: placeholder, isFocused: $isFocused) { press in
                 handleKey(press, commands: commands)
@@ -234,7 +244,7 @@ struct ComposerView: View {
 
     // MARK: - Keyboard
 
-    private func handleKey(_ press: KeyPress, commands: [AvailableCommand]) -> KeyPress.Result {
+    private func handleKey(_ press: KeyPress, commands: [ComposerSlashCommand]) -> KeyPress.Result {
         guard let key = ComposerKeyMap.Key(press.key) else { return .ignored }
         let context = ComposerKeyMap.Context(
             isCommandListOpen: !commands.isEmpty,
@@ -255,7 +265,7 @@ struct ComposerView: View {
         return .handled
     }
 
-    private func perform(_ action: ComposerKeyMap.Action, commands: [AvailableCommand]) {
+    private func perform(_ action: ComposerKeyMap.Action, commands: [ComposerSlashCommand]) {
         switch action {
         case .moveHighlight(let delta):
             highlighted = min(max(highlighted + delta, 0), commands.count - 1)
@@ -296,6 +306,12 @@ struct ComposerView: View {
     private func submit(_ behavior: FollowUpBehavior) {
         let text = session.draft.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { return }
+        // `/goal …` is Native's own; it never reaches the agent.
+        if let command = GoalCommand(parsing: session.draft), let goal = automation.goal(for: session) {
+            session.draft = ""
+            Task { await goal.perform(command) }
+            return
+        }
         if let blocker {
             feedback = .blocked(blocker)
             return
@@ -329,7 +345,7 @@ struct ComposerView: View {
         }
     }
 
-    private func insert(_ command: AvailableCommand) {
+    private func insert(_ command: ComposerSlashCommand) {
         session.draft = SlashCommandQuery.draft(inserting: command)
         isFocused = true
     }

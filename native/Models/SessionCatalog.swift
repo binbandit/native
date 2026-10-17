@@ -38,6 +38,17 @@ final class SessionCatalog {
         lookup(key) != nil
     }
 
+    /// Puts another session in a listed one's place, as when a crash takes one the agent never
+    /// saved and Native starts a fresh one instead.
+    func swap(_ key: SessionKey, for info: SessionInfo) {
+        for (project, agents) in listed {
+            if let index = agents[key.agent]?.firstIndex(where: { $0.sessionId == key.id }) {
+                listed[project]?[key.agent]?[index] = info
+                return
+            }
+        }
+    }
+
     /// Lists a session the user just started, before the agent has saved it.
     func add(_ info: SessionInfo, for agent: AgentDefinition.ID, in project: Project.ID) {
         listed[project, default: [:]][agent, default: []].insert(info, at: 0)

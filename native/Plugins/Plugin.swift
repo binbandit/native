@@ -35,14 +35,21 @@ struct PluginManifest: Codable, Hashable, Sendable, Identifiable {
     var description: String?
     var agents: [AgentManifest] = []
     var mcpServers: [MCPServerManifest] = []
+    /// Multi-agent workflows the plugin offers (`WorkflowDefinition`'s JSON). A broken one is listed
+    /// with its problems rather than failing the plugin.
+    var workflows: [WorkflowDefinition] = []
 
-    init(id: String, name: String, version: String? = nil, description: String? = nil, agents: [AgentManifest] = [], mcpServers: [MCPServerManifest] = []) {
+    init(
+        id: String, name: String, version: String? = nil, description: String? = nil, agents: [AgentManifest] = [],
+        mcpServers: [MCPServerManifest] = [], workflows: [WorkflowDefinition] = []
+    ) {
         self.id = id
         self.name = name
         self.version = version
         self.description = description
         self.agents = agents
         self.mcpServers = mcpServers
+        self.workflows = workflows
     }
 
     init(from decoder: any Decoder) throws {
@@ -53,6 +60,7 @@ struct PluginManifest: Codable, Hashable, Sendable, Identifiable {
         description = try container.decodeIfPresent(String.self, forKey: .description)
         agents = try container.decodeIfPresent([AgentManifest].self, forKey: .agents) ?? []
         mcpServers = try container.decodeIfPresent([MCPServerManifest].self, forKey: .mcpServers) ?? []
+        workflows = try container.decodeIfPresent([WorkflowDefinition].self, forKey: .workflows) ?? []
     }
 }
 

@@ -108,6 +108,72 @@ The move is mechanical and happens in small PRs once the current feature work la
 3. Move `DesignSystem`, then each feature folder, into its own target.
 4. Leave `native/` as the thin app: entry point, root view, commands, assets.
 
+## Experiments
+
+New UIs, designs and behaviors ship as opt-in experiments first (see "Experiments behind flags" in
+`docs/decisions.md`). It's one contract system with three tiers, all typed end to end:
+
+- **Gate**: on or off, read at exactly one call site. The one place an experiment may be a plain
+  `if`, because the declaration names that site.
+- **Parameter**: a typed value (`Int`, `Double`, `String`, or a `ParameterChoice` enum) with a
+  default and the values it allows. A saved value outside them reads as the default.
+- **Variant**: alternative implementations for **extension points**. An `ExtensionPoint<Contract>`
+  is a protocol plus the default implementation; a variant claims points with its own
+  implementations while it's on. Two sources claiming one point is a conflict: the point falls back
+  to its default and Labs says so. Contracts that aren't views are plain Swift, so engines resolve
+  them from an `ExperimentSnapshot` off the main actor too.
+
+The core (declarations, `ExtensionPoint`, resolution, `ExperimentStore`) is the UI-free
+`Packages/Experiments`, tested with `swift test` and usable by the host and the companion. Every
+experiment Native has is declared in `native/Experiments/NativeExperiments.swift` and listed in
+`ExperimentCatalog.native`: id, title, one-line summary, stage (Labs or Beta), owner, review date,
+what it touches and whether it needs a relaunch. Settings ▸ Labs shows all of it, with conflicts,
+experiments past their review date, and Reset All (undoable). Values live in user defaults under
+`experiment.<id>`; experiments that need a relaunch keep their launch value until the next launch.
+Plugins will contribute implementations to the same extension points as a second
+`ContributionSource`, without changing how points resolve.
+
+Adding a **gate**:
+
+1. Declare `extension Gate { static let hideRetry = Gate(id: "hide-retry", title:, summary:, site:,
+   stage:, owner:, reviewBy:) }` in `NativeExperiments.swift`.
+2. List `Gate.hideRetry` in `ExperimentCatalog.native`.
+3. At the one site: `@Experiment(.hideRetry) private var hidesRetry`, then `if !hidesRetry { … }`.
+4. Run it, turn it on in Settings ▸ Labs, and check both states.
+5. By the review date, delete the gate and its losing branch, or make it a setting.
+
+Adding a **parameter**:
+
+1. Define the value type, e.g. `enum TranscriptWidth: String, ParameterChoice`.
+2. Declare it in a constrained extension: `extension Parameter where Value == TranscriptWidth {
+   static var transcriptWidth: Self { Self(id:, …, default: .standard, domain: .allCases) } }`.
+3. List `Parameter<TranscriptWidth>.transcriptWidth` in the catalog.
+4. Read it: `@Experiment(.transcriptWidth) private var width: TranscriptWidth`.
+5. By the review date, hard-code the winning value or promote it to a setting.
+
+Adding a **variant**:
+
+1. Find or add the extension point: a contract protocol (`TranscriptStyle: Sendable`) and
+   `extension ExtensionPoint where Contract == any TranscriptStyle { static var transcriptStyle }`
+   with today's behavior as the default. The point's owner exposes the seam.
+2. Read it where the behavior happens: `@Resolved(.transcriptStyle) private var style: any
+   TranscriptStyle` in a view, or `snapshot.implementation(of: .point)` in an engine.
+3. Write the alternative as its own type in its own folder (`Styles/Bubbles/`), never as `if`
+   branches in the default.
+4. Declare `extension Variant { static let bubbles = Variant(id:, …, claims: [Claim(.transcriptStyle,
+   BubbleTranscriptStyle())]) }` and list it in the catalog.
+5. To promote it, make it the point's default and delete the variant; to drop it, delete its folder
+   and declaration.
+
+### Transcript styles
+
+`TranscriptView` keeps scrolling and the loading and empty states; the rows come from the
+`TranscriptStyle` in effect. `StandardTranscriptStyle` is the default; `BubbleTranscriptStyle` (the
+Bubbles experiment, `native/Views/Transcript/Styles/Bubbles/`) shows the same rows as chat bubbles,
+reusing the transcript's leaf views. Both get a `TranscriptStyleConfiguration`, which owns the shared
+rules: which rows there are, which pending request answers the permission shortcuts, and how session
+messages name other sessions.
+
 ## Persistence
 
 | What | Where |

@@ -7,7 +7,7 @@ import Observation
 @MainActor
 @Observable
 final class AutomationCenter {
-    let workflows = WorkflowRunner()
+    let workflows = WorkflowRunner(store: .standard)
     private(set) var library = WorkflowLibrary()
     /// Set to ask the window to show the workflow picker; the view clears it.
     var isWorkflowPickerRequested = false
@@ -43,9 +43,16 @@ final class AutomationCenter {
         return controller
     }
 
-    /// Plugins' workflows, by plugin id, after the built-ins. Call when plugins change.
+    /// Plugins' workflows, by plugin id, after the built-ins.
     func reloadLibrary(contributions: [(plugin: String, workflows: [WorkflowDefinition])]) {
         library = WorkflowLibrary(contributions: contributions)
+    }
+
+    /// Picks up the workflows enabled plugins contribute. Call when plugins change.
+    func reloadLibrary(from plugins: PluginRegistry) {
+        reloadLibrary(contributions: plugins.enabledPlugins.compactMap { plugin in
+            plugin.manifest.workflows.isEmpty ? nil : (plugin: plugin.manifest.id, workflows: plugin.manifest.workflows)
+        })
     }
 
     // MARK: - Session events

@@ -19,7 +19,9 @@ struct WorkflowRunScreen<Transcript: View>: View {
                 report: { center.workflows.report(for: $0) },
                 send: { center.workflows.send($0, to: runID) },
                 openStep: $openStep,
-                answersShortcuts: answersShortcuts
+                // A permission request in the open step's session is older than anything Native
+                // gated, so it keeps the keys.
+                answersShortcuts: answersShortcuts && openSession(in: run)?.state.pendingPermissions.isEmpty != false
             )
             .navigationTitle(run.title)
             .navigationSubtitle(run.definition.name)
@@ -38,5 +40,9 @@ struct WorkflowRunScreen<Transcript: View>: View {
         } else {
             EmptyStateView("This Run Is Gone", systemImage: "point.3.connected.trianglepath.dotted", message: "Workflow runs last until Native quits. Their steps' sessions stay with their agents.")
         }
+    }
+
+    private func openSession(in run: WorkflowRun) -> SessionModel? {
+        openStep.flatMap(run.stepRun)?.task.flatMap { center.host?.session(for: $0) }
     }
 }

@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 
 /// Native's logo: the `NativeMark` emblem with the "Native" wordmark, set in Geist semibold with
@@ -60,7 +59,7 @@ public struct NativeLockup: View {
     }
 
     private var capHeight: CGFloat {
-        DSTypography.nsFont(size: size, weight: .semibold).capHeight
+        DSTypography.platformFont(size: size, weight: .semibold).capHeight
     }
 }
 
