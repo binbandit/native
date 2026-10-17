@@ -23,10 +23,12 @@ public struct AgentCLICommand: Hashable, Sendable, Identifiable {
 
     /// The command line as the user reads it, secrets replaced with `•••`.
     public var displayText: String {
-        let words = ([executable] + arguments).map { word in
-            secrets.filter { !$0.isEmpty }.reduce(word) { $0.replacingOccurrences(of: $1, with: "•••") }
-        }
-        let line = ShellQuoting.commandLine(words)
+        // Masked before quoting, so a word is quoted for what's shown rather than the secret.
+        let mask = "NATIVEMASKEDSECRET"
+        let line = ([executable] + arguments).map { word in
+            let masked = secrets.filter { !$0.isEmpty }.reduce(word) { $0.replacingOccurrences(of: $1, with: mask) }
+            return ShellQuoting.quote(masked).replacingOccurrences(of: mask, with: "•••")
+        }.joined(separator: " ")
         guard let directory else { return line }
         return "cd \(ShellQuoting.quote(directory)) && \(line)"
     }
