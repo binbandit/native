@@ -23,7 +23,9 @@ extension Repository {
                 return Data(destination.utf8)
             }
             var isDirectory: ObjCBool = false
-            guard fileManager.fileExists(atPath: url.path(percentEncoded: false), isDirectory: &isDirectory), !isDirectory.boolValue else {
+            guard fileManager.fileExists(atPath: url.path(percentEncoded: false), isDirectory: &isDirectory),
+                !isDirectory.boolValue
+            else {
                 return nil
             }
             do {
@@ -40,7 +42,9 @@ extension Repository {
         let new: Data?
         switch change.area {
         case .staged:
-            old = change.kind == .added || change.kind == .copied ? nil : try await contents(of: change.originalPath ?? change.path, at: .head)
+            old =
+                change.kind == .added || change.kind == .copied
+                ? nil : try await contents(of: change.originalPath ?? change.path, at: .head)
             new = change.kind == .deleted ? nil : try await contents(of: change.path, at: .index)
         case .unstaged:
             old = change.kind == .added ? nil : try await contents(of: change.path, at: .index)
@@ -59,13 +63,19 @@ extension Repository {
     /// for summarizing, e.g. drafting a commit message; trimming is up to the caller.
     public func patch(for changes: [FileChange], contextLines: Int = 2) async throws(GitError) -> String {
         let untracked = Set(changes.filter { $0.area == .untracked }.map(\.path))
-        let tracked = Array(Set(changes.filter { $0.area != .untracked }.flatMap(\.paths)).subtracting(untracked)).sorted()
+        let tracked = Array(Set(changes.filter { $0.area != .untracked }.flatMap(\.paths)).subtracting(untracked))
+            .sorted()
         var patch = ""
         if !tracked.isEmpty {
-            let isUnborn = try await run(["rev-parse", "--verify", "--quiet", "HEAD"], readOnly: true, acceptingStatus: [0, 1]).status != 0
+            let isUnborn =
+                try await run(["rev-parse", "--verify", "--quiet", "HEAD"], readOnly: true, acceptingStatus: [0, 1])
+                .status != 0
             let base = isUnborn ? try await emptyTree() : "HEAD"
             let output = try await run(
-                ["--literal-pathspecs", "diff", base, "-M", "-U\(contextLines)", "--no-color", "--no-ext-diff", "--no-textconv", "--"] + tracked,
+                [
+                    "--literal-pathspecs", "diff", base, "-M", "-U\(contextLines)", "--no-color", "--no-ext-diff",
+                    "--no-textconv", "--",
+                ] + tracked,
                 readOnly: true
             )
             patch = output.text
@@ -76,7 +86,9 @@ extension Repository {
             if FileVersions.isBinary(data) {
                 patch += "Binary file\n"
             } else {
-                for line in String(decoding: data, as: UTF8.self).split(separator: "\n", omittingEmptySubsequences: false) {
+                for line in String(decoding: data, as: UTF8.self).split(
+                    separator: "\n", omittingEmptySubsequences: false)
+                {
                     patch += "+\(line)\n"
                 }
             }

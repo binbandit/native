@@ -34,7 +34,10 @@ public struct FileChange: Hashable, Sendable, Identifiable {
     /// `nil` when unknown, e.g. for very large untracked files.
     public var stats: LineStats?
 
-    public init(path: String, originalPath: String? = nil, kind: Kind, area: Area, isSubmodule: Bool = false, stats: LineStats? = nil) {
+    public init(
+        path: String, originalPath: String? = nil, kind: Kind, area: Area, isSubmodule: Bool = false,
+        stats: LineStats? = nil
+    ) {
         self.path = path
         self.originalPath = originalPath
         self.kind = kind

@@ -5,7 +5,7 @@ let package = Package(
     name: "Git",
     platforms: [.macOS(.v15)],
     products: [
-        .library(name: "Git", targets: ["Git"]),
+        .library(name: "Git", targets: ["Git"])
     ],
     targets: [
         .target(name: "Git"),

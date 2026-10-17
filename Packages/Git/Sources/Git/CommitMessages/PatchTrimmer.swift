@@ -5,7 +5,10 @@ import Foundation
 /// their unused share to longer ones.
 public enum PatchTrimmer {
     /// Lines that cost tokens without saying anything about the change.
-    private static let noisePrefixes = ["index ", "similarity index", "dissimilarity index", "old mode", "new mode", "deleted file mode", "new file mode", "--- ", "+++ "]
+    private static let noisePrefixes = [
+        "index ", "similarity index", "dissimilarity index", "old mode", "new mode", "deleted file mode",
+        "new file mode", "--- ", "+++ ",
+    ]
 
     public static func trim(_ patch: String, toCharacters budget: Int) -> String {
         let files = split(patch).map(stripNoise)

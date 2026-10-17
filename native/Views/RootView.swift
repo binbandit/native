@@ -10,10 +10,12 @@ struct RootView: View {
         @Bindable var model = model
         NavigationSplitView(columnVisibility: $columnVisibility) {
             SidebarView()
+                // The only sidebar toggle is ours, right after the window controls as in the reference app; as a
+                // sidebar toolbar item it stays there when the sidebar is hidden, too. The system's
+                // goes from both the column and the split view. On the column it must come before
+                // the width, or SwiftUI drops the width.
+                .toolbar(removing: .sidebarToggle)
                 .navigationSplitViewColumnWidth(min: 220, ideal: DS.Size.sidebarWidth, max: 380)
-                // The only sidebar toggle is ours (the split view's own is removed below), right after
-                // the window controls as in the reference app. As a sidebar toolbar item it stays there when the
-                // sidebar is hidden, too.
                 .toolbar {
                     ToolbarItem {
                         SidebarCollapseButton(isExpanded: columnVisibility != .detailOnly) {
@@ -42,7 +44,6 @@ struct RootView: View {
         } detail: {
             detail
         }
-        // Here rather than on the sidebar column, where it makes SwiftUI drop the column's width.
         .toolbar(removing: .sidebarToggle)
         .focusedSceneValue(\.sidebarVisibility, $columnVisibility)
         .task(id: model.selection) {

@@ -1,6 +1,7 @@
 import Foundation
-@testable import Git
 import Testing
+
+@testable import Git
 
 /// A throwaway repository in the temporary directory, isolated from the user's git config so
 /// their hooks, signing and aliases can't affect the tests.
@@ -23,7 +24,8 @@ struct TestRepository {
 
     /// An empty folder; `initialize` makes it a repository.
     init(name: String = "repo") throws {
-        let base = FileManager.default.temporaryDirectory.appending(path: "native-git-tests/\(UUID().uuidString)", directoryHint: .isDirectory)
+        let base = FileManager.default.temporaryDirectory.appending(
+            path: "native-git-tests/\(UUID().uuidString)", directoryHint: .isDirectory)
         folder = base.appending(path: name, directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         git = try Git(environment: Self.environment)

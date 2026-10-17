@@ -22,10 +22,13 @@ extension Repository {
 
     /// Pushes the current branch, setting its upstream on the push remote when it has none.
     public func push() async throws(GitError) {
-        let branchOutput = try await run(["symbolic-ref", "--quiet", "--short", "HEAD"], readOnly: true, acceptingStatus: [0, 1])
+        let branchOutput = try await run(
+            ["symbolic-ref", "--quiet", "--short", "HEAD"], readOnly: true, acceptingStatus: [0, 1])
         guard branchOutput.status == 0 else { throw .detachedHead }
         let branch = branchOutput.text.trimmingCharacters(in: .whitespacesAndNewlines)
-        let upstream = try await run(["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"], readOnly: true, acceptingStatus: [0, 128])
+        let upstream = try await run(
+            ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"], readOnly: true,
+            acceptingStatus: [0, 128])
         if upstream.status == 0 {
             try await run(["push"])
             return
@@ -63,7 +66,8 @@ extension Repository {
 
     /// Subjects of the latest commits, newest first, e.g. to match a repository's message style.
     public func recentCommitSubjects(limit: Int = 20) async throws(GitError) -> [String] {
-        let output = try await run(["log", "-n", "\(limit)", "--no-merges", "--format=%s%x00"], readOnly: true, acceptingStatus: [0, 128])
+        let output = try await run(
+            ["log", "-n", "\(limit)", "--no-merges", "--format=%s%x00"], readOnly: true, acceptingStatus: [0, 128])
         // 128: no commits yet.
         guard output.status == 0 else { return [] }
         return output.text

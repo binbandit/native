@@ -16,7 +16,8 @@ public struct CommitStyle: Hashable, Sendable {
         isConventional = subjects.isEmpty || Double(conventional.count) >= Double(subjects.count) * 0.5
         var counts: [String: Int] = [:]
         for case let scope? in conventional { counts[scope, default: 0] += 1 }
-        commonScopes = counts.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }.prefix(5).map(\.key)
+        commonScopes = counts.sorted { $0.value != $1.value ? $0.value > $1.value : $0.key < $1.key }.prefix(5).map(
+            \.key)
         examples = Array(subjects.prefix(exampleCount))
     }
 

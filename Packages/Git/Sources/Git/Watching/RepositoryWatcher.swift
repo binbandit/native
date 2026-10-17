@@ -14,14 +14,17 @@ public final class RepositoryWatcher: Sendable {
 
     /// `nil` when FSEvents can't create a stream for the repository's folders.
     public init?(repository: Repository, latency: TimeInterval = 0.2) {
-        let (changes, continuation) = AsyncStream.makeStream(of: RepositoryChange.self, bufferingPolicy: .bufferingNewest(64))
+        let (changes, continuation) = AsyncStream.makeStream(
+            of: RepositoryChange.self, bufferingPolicy: .bufferingNewest(64))
         self.changes = changes
 
         let classifier = ChangeClassifier(repository: repository)
         let context = Unmanaged.passRetained(WatcherContext(classifier: classifier, continuation: continuation))
         self.context = context
-        var streamContext = FSEventStreamContext(version: 0, info: context.toOpaque(), retain: nil, release: nil, copyDescription: nil)
-        let flags = FSEventStreamCreateFlags(kFSEventStreamCreateFlagFileEvents | kFSEventStreamCreateFlagUseCFTypes | kFSEventStreamCreateFlagNoDefer)
+        var streamContext = FSEventStreamContext(
+            version: 0, info: context.toOpaque(), retain: nil, release: nil, copyDescription: nil)
+        let flags = FSEventStreamCreateFlags(
+            kFSEventStreamCreateFlagFileEvents | kFSEventStreamCreateFlagUseCFTypes | kFSEventStreamCreateFlagNoDefer)
         let created = FSEventStreamCreate(
             kCFAllocatorDefault,
             { _, info, count, paths, _, _ in

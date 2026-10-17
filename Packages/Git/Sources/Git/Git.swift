@@ -19,7 +19,9 @@ public struct Git: Sendable, Hashable {
         self.executableURL = executableURL
         // Variables a git hook would export to us; inherited, they'd point every command at the
         // wrong repository or index.
-        let repositoryOverrides: Set = ["GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR", "GIT_PREFIX", "GIT_OBJECT_DIRECTORY"]
+        let repositoryOverrides: Set = [
+            "GIT_DIR", "GIT_WORK_TREE", "GIT_INDEX_FILE", "GIT_COMMON_DIR", "GIT_PREFIX", "GIT_OBJECT_DIRECTORY",
+        ]
         self.environment = environment.filter { !repositoryOverrides.contains($0.key) }
     }
 
@@ -69,7 +71,8 @@ public struct Git: Sendable, Hashable {
     /// `git --version`, e.g. "2.47.1".
     public func version() async throws(GitError) -> String {
         let output = try await run(["--version"], in: FileManager.default.temporaryDirectory, readOnly: true)
-        return output.text.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(of: "git version ", with: "")
+        return output.text.trimmingCharacters(in: .whitespacesAndNewlines).replacingOccurrences(
+            of: "git version ", with: "")
     }
 
     // MARK: - Running
@@ -104,7 +107,8 @@ public struct Git: Sendable, Hashable {
 
         let output: Output
         do {
-            output = try await Self.launch(executableURL, arguments: arguments, in: directory, environment: environment, input: input)
+            output = try await Self.launch(
+                executableURL, arguments: arguments, in: directory, environment: environment, input: input)
         } catch let error as GitError {
             throw error
         } catch {
@@ -158,11 +162,12 @@ public struct Git: Sendable, Hashable {
                     let data = stdout.fileHandleForReading.readDataToEndOfFile()
                     let errorData = errors.wait()
                     process.waitUntilExit()
-                    continuation.resume(returning: Output(
-                        stdout: data,
-                        stderr: String(decoding: errorData, as: UTF8.self),
-                        status: process.terminationStatus
-                    ))
+                    continuation.resume(
+                        returning: Output(
+                            stdout: data,
+                            stderr: String(decoding: errorData, as: UTF8.self),
+                            status: process.terminationStatus
+                        ))
                 }
             }
         } onCancel: {
