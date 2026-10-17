@@ -130,9 +130,12 @@ struct ExpeditionAttentionCard: View {
                 .buttonStyle(.ds(.secondary))
             Button("Pass the Leg") { send(.accept(slot)) }
                 .buttonStyle(.ds(.secondary))
+        case .blocked:
+            Button("Retry") { send(.retry(slot)) }
+                .buttonStyle(.ds(.secondary))
         default:
             Button("Retry") { send(.retry(slot)) }
-                .buttonStyle(.ds(status == .blocked ? .secondary : .primary))
+                .buttonStyle(.ds(.primary))
         }
         if slot != .lead, status != .interrupted {
             if case .assignment = slot {

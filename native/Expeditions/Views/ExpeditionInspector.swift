@@ -25,13 +25,13 @@ struct ExpeditionInspector<Transcript: View>: View {
                 if let session {
                     transcript(session)
                 } else if let openError {
-                    ErrorState("Couldn't open the session", suggestion: openError, layout: .centered)
+                    ErrorState("Couldn't open the session", suggestion: openError, layout: .pane)
                 } else if expedition.task(of: slot) == nil {
                     EmptyStateView("Not Started", systemImage: "circle.dashed", message: "This seat gets its session when its turn comes.") {
                         EmptyView()
                     }
                 } else {
-                    DotGridLoader(pattern: .working)
+                    DotGridLoader(pattern: .typing)
                         .foregroundStyle(.dsTextTertiary)
                         .frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
