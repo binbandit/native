@@ -1,0 +1,7 @@
+{
+  "model": "opus",
+  "enabledPlugins": {
+    "notes@example-marketplace": true,
+    "linter@example-marketplace": false
+  }
+}

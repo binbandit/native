@@ -1,0 +1,10 @@
+{
+  "mcpServers": {
+    "inspector": {
+      "command": "npx",
+      "args": ["-y", "example-inspector@2.1.0", "mcp"],
+      "env": { "INSPECTOR_LICENSE": "${env:INSPECTOR_LICENSE}" }
+    },
+    "docs": { "url": "https://docs.example.com/mcp" }
+  }
+}

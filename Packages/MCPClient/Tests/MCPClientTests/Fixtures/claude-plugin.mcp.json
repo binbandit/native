@@ -1,0 +1,5 @@
+{
+  "mcpServers": {
+    "notes": { "command": "${CLAUDE_PLUGIN_ROOT}/bin/notes-server", "args": ["--stdio"] }
+  }
+}

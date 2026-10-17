@@ -1,0 +1,7 @@
+{
+  "mcpServers": {
+    "design": { "type": "http", "url": "http://localhost:4401/mcp" },
+    "legacy": { "command": "node", "args": ["legacy-server.js"] },
+    "fresh": { "command": "uvx", "args": ["fresh-mcp"] }
+  }
+}

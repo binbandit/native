@@ -1,0 +1,6 @@
+{
+  "mcpServers": {
+    "docs": { "url": "https://docs.example.com/${workspaceFolderBasename}/mcp" },
+    "files": { "command": "files-mcp", "args": ["${workspaceFolder}"] }
+  }
+}
