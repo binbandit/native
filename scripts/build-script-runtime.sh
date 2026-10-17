@@ -72,12 +72,15 @@ mkdir -p "$cache"
 cargo_args=(--release --locked --manifest-path "$crate/Cargo.toml")
 
 if [ "$sandbox" = 1 ]; then
-    v8_dir="${NATIVE_V8_SANDBOX_DIR:-$CARGO_TARGET_DIR/v8-sandbox/release/gn_out}"
+    v8_dir="${NATIVE_V8_SANDBOX_DIR:-$cache/v8-sandbox/target/release/gn_out}"
     if [ ! -f "$v8_dir/obj/librusty_v8.a" ]; then
         python3 -I "$crate/scripts/build-v8-sandbox.py" || give_up "V8 with its memory sandbox didn't build."
     fi
     export RUSTY_V8_ARCHIVE="$v8_dir/obj/librusty_v8.a"
     export RUSTY_V8_SRC_BINDING_PATH="$v8_dir/src_binding.rs"
+    # Its own target directory: V8's library sits at a fixed place in one, and the two builds
+    # would keep replacing each other's.
+    export CARGO_TARGET_DIR="$cache/target-sandbox"
     cargo_args+=(--features sandbox)
 fi
 

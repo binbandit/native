@@ -51,7 +51,7 @@ struct GitChangesInspector: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("The current files move to the Trash.")
+            Text("Native saves a checkpoint first, so you can restore them from the notice that follows.")
         }
     }
 

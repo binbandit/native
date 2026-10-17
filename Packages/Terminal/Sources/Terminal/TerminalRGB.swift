@@ -19,7 +19,7 @@ public struct TerminalRGB: Hashable, Sendable, CustomStringConvertible {
 
     /// A color from components in 0...1, as AppKit and SwiftUI resolve them; out-of-range values
     /// (extended sRGB) are clamped.
-    public init(red: Double, green: Double, blue: Double) {
+    public init(fractionalRed red: Double, green: Double, blue: Double) {
         func channel(_ value: Double) -> UInt8 {
             UInt8((min(max(value, 0), 1) * 255).rounded())
         }

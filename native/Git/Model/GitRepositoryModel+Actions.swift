@@ -30,7 +30,10 @@ extension GitRepositoryModel {
                 ? "Discarded changes to \(changes[0].fileName)" : "Discarded changes to \(files.count) files"
             guard let checkpoint else { return GitNotice(tone: .success, title: title) }
             return GitNotice(
-                tone: .success, title: title, message: "A checkpoint was saved first, so you can put them back.",
+                tone: .success, title: title,
+                message: files.count == 1
+                    ? "A checkpoint was saved first, so you can put it back."
+                    : "A checkpoint was saved first, so you can put them back.",
                 action: .restore(checkpoint, paths: paths))
         }
     }
