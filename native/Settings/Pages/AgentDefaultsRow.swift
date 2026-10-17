@@ -34,15 +34,17 @@ struct AgentDefaultsRow: View {
     }
 
     var body: some View {
-        SettingsRow(
-            id: Self.rowID(agentID: agentID),
-            "Defaults for new tasks",
-            description: Text(
-                hasChoices
-                    ? "Left on the agent's choice, \(agentName) picks. A value it stops offering is skipped."
-                    : "Start a task with \(agentName) once to choose from its models and efforts."
-            )
-        ) {
+        // The pickers get a line of their own, under the text, so they fit narrow windows and iPad.
+        VStack(alignment: .leading, spacing: DS.Space.md) {
+            SettingsRow(
+                id: Self.rowID(agentID: agentID),
+                "Defaults for new tasks",
+                description: Text(
+                    hasChoices
+                        ? "Left on the agent's choice, \(agentName) picks. A value it stops offering is skipped."
+                        : "Start a task with \(agentName) once to choose from its models and efforts."
+                )
+            ) { EmptyView() }
             HStack(spacing: DS.Space.md) {
                 ForEach(AgentSessionDefaults.Setting.allCases, id: \.self) { setting in
                     AgentDefaultPicker(agentName: agentName, agentID: agentID, setting: setting)
