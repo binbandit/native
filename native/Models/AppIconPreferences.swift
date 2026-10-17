@@ -1,31 +1,6 @@
-import AppKit
+import AppAppearance
+import Foundation
 import Observation
-
-enum AppIconTheme: String, CaseIterable, Identifiable {
-    case original, cobalt, fern, ember, prism, arcade, nightly
-
-    var id: Self { self }
-
-    var title: String { rawValue.capitalized }
-
-    func imageName(isDark: Bool) -> String {
-        "AppIcon-\(rawValue)-\(isDark ? "dark" : "light")"
-    }
-}
-
-enum AppIconAppearance: String, CaseIterable, Identifiable {
-    case system, light, dark
-
-    var id: Self { self }
-
-    var title: String {
-        switch self {
-        case .system: "Follow System"
-        case .light: "Light"
-        case .dark: "Dark"
-        }
-    }
-}
 
 @MainActor
 @Observable
@@ -44,25 +19,53 @@ final class AppIconPreferences {
         }
     }
 
+    var halloweenEnabled: Bool {
+        didSet {
+            defaults.set(halloweenEnabled, forKey: Self.halloweenKey)
+            apply()
+        }
+    }
+
     private(set) var systemIsDark = false
+    private(set) var isHalloweenAvailable: Bool
 
     @ObservationIgnored private let defaults: UserDefaults
-    @ObservationIgnored private var appearanceObservation: NSKeyValueObservation?
+    @ObservationIgnored private let channel: ReleaseChannel
+    @ObservationIgnored private let now: () -> Date
+    @ObservationIgnored private let timeZone: () -> TimeZone
+    @ObservationIgnored private let platform = PlatformAppIcon()
+    @ObservationIgnored private var seasonalTimer: Timer?
+    @ObservationIgnored private var hasStarted = false
 
     private static let themeKey = "appIconTheme"
     private static let appearanceKey = "appIconAppearance"
+    private static let halloweenKey = "appIconHalloweenEnabled"
 
-    init(defaults: UserDefaults = .standard) {
+    init(
+        defaults: UserDefaults = .standard,
+        channel: ReleaseChannel = .current,
+        now: @escaping () -> Date = Date.init,
+        timeZone: @escaping () -> TimeZone = { .current }
+    ) {
         self.defaults = defaults
+        self.channel = channel
+        self.now = now
+        self.timeZone = timeZone
         theme = defaults.string(forKey: Self.themeKey).flatMap(AppIconTheme.init(rawValue:)) ?? .original
         appearance = defaults.string(forKey: Self.appearanceKey).flatMap(AppIconAppearance.init(rawValue:)) ?? .system
+        halloweenEnabled = defaults.bool(forKey: Self.halloweenKey)
+        isHalloweenAvailable = SeasonalAppIcons.halloweenIsAvailable(on: now(), timeZone: timeZone())
         if defaults.string(forKey: Self.themeKey) == "glass" {
             defaults.set(AppIconTheme.original.rawValue, forKey: Self.themeKey)
         }
     }
 
+    var isHalloweenActive: Bool { halloweenEnabled && isHalloweenAvailable }
+    var usesSystemIcon: Bool { theme == .original && !isHalloweenActive }
+    var displayName: String { isHalloweenActive ? "Halloween · \(channel.displayName)" : theme.title }
+
     var isDark: Bool {
-        if theme == .original { return systemIsDark }
+        if usesSystemIcon { return systemIsDark }
         return switch appearance {
         case .system: systemIsDark
         case .light: false
@@ -70,30 +73,42 @@ final class AppIconPreferences {
         }
     }
 
-    var imageName: String { theme.imageName(isDark: isDark) }
-
-    func start() {
-        guard appearanceObservation == nil else { return }
-        appearanceObservation = NSApplication.shared.observe(\.effectiveAppearance, options: [.new]) {
-            [weak self] _, _ in
-            Task { @MainActor [weak self] in
-                self?.updateSystemAppearance()
-            }
-        }
-        updateSystemAppearance()
+    var imageName: String {
+        isHalloweenActive ? halloweenImageName : theme.imageName(isDark: isDark)
     }
 
-    private func updateSystemAppearance() {
-        systemIsDark = NSApplication.shared.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua
+    var halloweenImageName: String {
+        "AppIcon-halloween-\(channel.rawValue)-\(isDark ? "dark" : "light")"
+    }
+
+    func start() {
+        guard !hasStarted else { return }
+        hasStarted = true
+        platform.onEnvironmentChange = { [weak self] isDark in
+            self?.systemIsDark = isDark
+            self?.refreshSeason()
+        }
+        platform.start()
+    }
+
+    /// Re-evaluated on activation, wake, clock/time-zone changes and the seasonal boundary itself.
+    func refreshSeason() {
+        let date = now()
+        let zone = timeZone()
+        isHalloweenAvailable = SeasonalAppIcons.halloweenIsAvailable(on: date, timeZone: zone)
+        seasonalTimer?.invalidate()
+        if let boundary = SeasonalAppIcons.nextHalloweenBoundary(after: date, timeZone: zone) {
+            seasonalTimer = Timer.scheduledTimer(withTimeInterval: max(1, boundary.timeIntervalSince(date)), repeats: false) {
+                [weak self] _ in
+                Task { @MainActor [weak self] in self?.refreshSeason() }
+            }
+        }
         apply()
     }
 
     private func apply() {
-        if theme == .original {
-            // Keep the native icon stack so macOS controls Default, Dark, Clear and Tinted appearances.
-            NSApplication.shared.applicationIconImage = nil
-        } else {
-            NSApplication.shared.applicationIconImage = NSImage(named: imageName)
-        }
+        platform.apply(imageNamed: usesSystemIcon ? nil : imageName)
     }
+
+    isolated deinit { seasonalTimer?.invalidate() }
 }
