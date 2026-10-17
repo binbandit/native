@@ -19,7 +19,7 @@ public enum MacHost {
             machineName: Host.current().localizedName ?? ProcessInfo.processInfo.hostName,
             bootTime: bootTime(),
             // Tests and `native-host --inherit-environment` pass their own; launchd's is bare.
-            environment: inheritEnvironment ? { ProcessInfo.processInfo.environment } : { await LoginShell.environment() },
+            environment: { @Sendable in inheritEnvironment ? ProcessInfo.processInfo.environment : await LoginShell.environment() },
             exit: { status in Darwin.exit(status) }
         )
     }
