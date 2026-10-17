@@ -5,15 +5,15 @@ import SwiftUI
 /// How a transcript presents its rows. Each style is a whole implementation behind this contract:
 /// the standard one, and alternatives experiments contribute through `.transcriptStyle`. The
 /// transcript itself (scrolling, loading and empty states) stays the same whichever style is on.
-protocol TranscriptStyle: Sendable {
+nonisolated protocol TranscriptStyle: Sendable {
     associatedtype Body: View
 
     /// The rows, top to bottom, ending with the working indicator while the agent works.
-    @ViewBuilder func makeBody(_ transcript: TranscriptStyleConfiguration) -> Body
+    @MainActor @ViewBuilder func makeBody(_ transcript: TranscriptStyleConfiguration) -> Body
 }
 
 extension ExtensionPoint where Contract == any TranscriptStyle {
-    static var transcriptStyle: Self {
+    nonisolated static var transcriptStyle: Self {
         Self(id: "transcript.style", title: "Transcript style", default: StandardTranscriptStyle())
     }
 }
