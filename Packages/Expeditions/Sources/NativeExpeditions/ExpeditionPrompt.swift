@@ -79,7 +79,8 @@ public nonisolated enum ExpeditionPrompt {
     static func legReview(_ expedition: Expedition, passed leg: Route.Leg) -> String {
         let ahead = expedition.route?.legs.drop { $0.id != leg.id }.dropFirst() ?? []
         let legsAhead = ahead.map { leg in
-            "- \(leg.title): \(leg.outcome)\n" + leg.assignments.map { "  - \($0.id): \($0.title) (\($0.assignee))" }.joined(separator: "\n")
+            "- \(leg.title): \(leg.outcome)\n"
+                + leg.assignments.map { "  - \($0.id): \($0.title) (\($0.assignee))" }.joined(separator: "\n")
         }
         return """
             The leg "\(leg.title)" passed its checkpoint\(expedition.checkpoint(leg.id)?.latestVerdict?.note.map { ": \($0)" } ?? ".")
@@ -99,9 +100,11 @@ public nonisolated enum ExpeditionPrompt {
 
     static func debrief(_ expedition: Expedition) -> String {
         let legs = (expedition.route?.legs ?? []).map { leg in
-            let verdict = expedition.checkpoint(leg.id).map { checkpoint in
-                checkpoint.status == .skipped ? "not checked" : (checkpoint.latestVerdict?.note ?? checkpoint.status.label)
-            } ?? ""
+            let verdict =
+                expedition.checkpoint(leg.id).map { checkpoint in
+                    checkpoint.status == .skipped
+                        ? "not checked" : (checkpoint.latestVerdict?.note ?? checkpoint.status.label)
+                } ?? ""
             return "## \(leg.title) (\(verdict))\n" + reports(expedition, in: leg.id)
         }
         return """
@@ -145,7 +148,8 @@ public nonisolated enum ExpeditionPrompt {
         sections.append("Your assignment, \"\(run.assignment.title)\":\n\(run.assignment.brief)")
         let answers = expedition.route?.answeredQuestions ?? []
         if !answers.isEmpty {
-            sections.append("The user's answers:\n" + answers.map { "- \($0.text) \($0.answer ?? "")" }.joined(separator: "\n"))
+            sections.append(
+                "The user's answers:\n" + answers.map { "- \($0.text) \($0.answer ?? "")" }.joined(separator: "\n"))
         }
         if let assumptions = expedition.route?.assumptions, !assumptions.isEmpty {
             sections.append("Assumptions in the route:\n" + assumptions.map { "- \($0)" }.joined(separator: "\n"))
@@ -165,7 +169,8 @@ public nonisolated enum ExpeditionPrompt {
         "Address the reviewer's findings for the leg \"\(leg.title)\", so that: \(leg.outcome)"
     }
 
-    static func fixBriefing(_ expedition: Expedition, leg: Route.Leg, verdict: CheckpointVerdict, round: Int) -> String {
+    static func fixBriefing(_ expedition: Expedition, leg: Route.Leg, verdict: CheckpointVerdict, round: Int) -> String
+    {
         """
         The reviewer checked the leg "\(leg.title)" and asked for changes (round \(round)):
 
@@ -253,7 +258,8 @@ public nonisolated enum ExpeditionPrompt {
         if let duration = expedition.budget.maxDuration {
             parts.append("\(ExpeditionBudget.durationText(duration)) of working time")
         }
-        return parts.isEmpty ? "" : "\n- The budget for the whole expedition is \(parts.joined(separator: " and ")); plan for it."
+        return parts.isEmpty
+            ? "" : "\n- The budget for the whole expedition is \(parts.joined(separator: " and ")); plan for it."
     }
 
     static func reports(_ expedition: Expedition, in leg: String) -> String {
@@ -262,7 +268,10 @@ public nonisolated enum ExpeditionPrompt {
     }
 
     private static func report(_ expedition: Expedition, _ run: AssignmentRun) -> String {
-        let body = run.status == .skipped ? "(skipped)" : String((run.report ?? run.latestReply ?? "(no report)").prefix(reportLimit))
-        return "### \(run.assignment.title) (\(expedition.crew.agent(run.assignment.assignee)?.name ?? run.assignment.assignee))\n\(body)"
+        let body =
+            run.status == .skipped
+            ? "(skipped)" : String((run.report ?? run.latestReply ?? "(no report)").prefix(reportLimit))
+        return
+            "### \(run.assignment.title) (\(expedition.crew.agent(run.assignment.assignee)?.name ?? run.assignment.assignee))\n\(body)"
     }
 }

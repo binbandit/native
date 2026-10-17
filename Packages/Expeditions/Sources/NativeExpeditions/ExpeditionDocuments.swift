@@ -11,7 +11,8 @@ import NativeAutomation
 /// are the record the reviewer and the user rely on.
 @MainActor
 public final class ExpeditionDocuments {
-    public static let standard = ExpeditionDocuments(root: URL.homeDirectory.appending(path: ".native/expeditions", directoryHint: .isDirectory))
+    public static let standard = ExpeditionDocuments(
+        root: URL.homeDirectory.appending(path: ".native/expeditions", directoryHint: .isDirectory))
 
     public let root: URL
     /// What Native last wrote to each file, by path.
@@ -62,14 +63,17 @@ public final class ExpeditionDocuments {
             files["route.md"] = routeDocument(expedition, route)
         }
         for run in expedition.assignments where run.report != nil {
-            files["reports/\(run.id).md"] = "# \(run.assignment.title)\n\n\(agentName(expedition, run.assignment.assignee)) · \(run.status.label)\n\n\(run.report ?? "")\n"
+            files["reports/\(run.id).md"] =
+                "# \(run.assignment.title)\n\n\(agentName(expedition, run.assignment.assignee)) · \(run.status.label)\n\n\(run.report ?? "")\n"
         }
         for run in expedition.checkpoints where !run.verdicts.isEmpty {
             let title = expedition.leg(run.leg)?.title ?? run.leg
             let rounds = run.verdicts.enumerated().map { index, verdict in
                 "## Round \(index + 1): \(verdict.outcome == .pass ? "pass" : "changes")\(verdict.note.map { " - \($0)" } ?? "")\n\n\(verdict.findings)"
             }
-            files["checkpoints/\(run.leg).md"] = "# Checkpoint: \(title)\n\nReviewed by \(expedition.crew.reviewer.name)\n\n" + rounds.joined(separator: "\n\n") + "\n"
+            files["checkpoints/\(run.leg).md"] =
+                "# Checkpoint: \(title)\n\nReviewed by \(expedition.crew.reviewer.name)\n\n"
+                + rounds.joined(separator: "\n\n") + "\n"
         }
         if let debrief = expedition.debrief {
             files["debrief.md"] = "# \(expedition.title)\n\n\(debrief)\n"
@@ -83,7 +87,9 @@ public final class ExpeditionDocuments {
             lines += ["## Approach", "", route.summary, ""]
         }
         if !route.questions.isEmpty {
-            lines += ["## Questions", ""] + route.questions.map { "- \($0.text)" + ($0.answer.map { "\n  - \($0)" } ?? "") } + [""]
+            lines +=
+                ["## Questions", ""] + route.questions.map { "- \($0.text)" + ($0.answer.map { "\n  - \($0)" } ?? "") }
+                + [""]
         }
         if !route.assumptions.isEmpty {
             lines += ["## Assumptions", ""] + route.assumptions.map { "- \($0)" } + [""]
@@ -92,7 +98,11 @@ public final class ExpeditionDocuments {
             lines += ["## Leg \(index + 1): \(leg.title)", "", leg.outcome, ""]
             for assignment in leg.assignments {
                 let status = expedition.assignment(assignment.id)?.status.label ?? "Proposed"
-                lines += ["### \(assignment.title)", "", "`\(assignment.id)` · \(agentName(expedition, assignment.assignee)) · \(status)", "", assignment.brief, "", "Done when:"]
+                lines += [
+                    "### \(assignment.title)", "",
+                    "`\(assignment.id)` · \(agentName(expedition, assignment.assignee)) · \(status)", "",
+                    assignment.brief, "", "Done when:",
+                ]
                 lines += assignment.doneWhen.map { "- \($0)" }
                 if !assignment.after.isEmpty {
                     lines += ["", "After: " + assignment.after.map { "`\($0)`" }.joined(separator: ", ")]
@@ -109,7 +119,9 @@ public final class ExpeditionDocuments {
     private nonisolated static func logbook(_ expedition: Expedition) -> String {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime]
-        return (["# Logbook: \(expedition.title)", ""] + expedition.log.map { "- \(formatter.string(from: $0.at)) \($0.text)" }).joined(separator: "\n") + "\n"
+        return
+            (["# Logbook: \(expedition.title)", ""]
+            + expedition.log.map { "- \(formatter.string(from: $0.at)) \($0.text)" }).joined(separator: "\n") + "\n"
     }
 
     private nonisolated static func agentName(_ expedition: Expedition, _ id: String) -> String {

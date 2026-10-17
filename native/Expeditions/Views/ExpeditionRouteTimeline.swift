@@ -22,7 +22,9 @@ struct ExpeditionRouteTimeline: View {
                             .foregroundStyle(.dsTextPrimary)
                         Spacer()
                         if let checkpoint = expedition.checkpoint(leg.id), checkpoint.status.isFinished {
-                            Badge(checkpoint.status == .skipped ? "Skipped" : "Passed", tone: checkpoint.status == .skipped ? .neutral : .success, style: .soft)
+                            Badge(
+                                checkpoint.status == .skipped ? "Skipped" : "Passed",
+                                tone: checkpoint.status == .skipped ? .neutral : .success, style: .soft)
                         }
                     }
                     Text(leg.outcome)

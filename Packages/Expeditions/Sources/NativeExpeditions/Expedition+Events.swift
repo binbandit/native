@@ -15,7 +15,9 @@ extension Expedition {
         switch event {
         case .start:
             guard base == nil, lead.status == .waiting else { return [] }
-            note(.progress, usesWorktree ? "Making a worktree for the crew." : "The crew works in the project folder.", at: now)
+            note(
+                .progress, usesWorktree ? "Making a worktree for the crew." : "The crew works in the project folder.",
+                at: now)
             return [.prepareBase(project: project, title: title, worktree: usesWorktree)]
         case .baseReady(let url):
             guard base == nil else { return [] }
@@ -36,8 +38,10 @@ extension Expedition {
         case .turnEnded(let slot, let outcome, let reply, let cost):
             switch slot {
             case .lead: return leadTurnEnded(outcome, reply: reply, cost: cost, at: now)
-            case .assignment(let id): return assignmentTurnEnded(id, outcome: outcome, reply: reply, cost: cost, at: now)
-            case .checkpoint(let leg): return checkpointTurnEnded(leg, outcome: outcome, reply: reply, cost: cost, at: now)
+            case .assignment(let id):
+                return assignmentTurnEnded(id, outcome: outcome, reply: reply, cost: cost, at: now)
+            case .checkpoint(let leg):
+                return checkpointTurnEnded(leg, outcome: outcome, reply: reply, cost: cost, at: now)
             }
         case .pullRequestOpened(let result):
             guard isOpeningPullRequest else { return [] }
@@ -69,7 +73,10 @@ extension Expedition {
             lead.waitingSince = nil
             lead.job = .conversation
             sync(to: edited)
-            note(.user, "You approved the route: \(edited.legs.count) \(edited.legs.count == 1 ? "leg" : "legs"), \(edited.assignments.count) \(edited.assignments.count == 1 ? "assignment" : "assignments").", at: now)
+            note(
+                .user,
+                "You approved the route: \(edited.legs.count) \(edited.legs.count == 1 ? "leg" : "legs"), \(edited.assignments.count) \(edited.assignments.count == 1 ? "assignment" : "assignments").",
+                at: now)
             return advance(at: now)
         case .requestChanges(let text):
             let text = text.trimmed
@@ -102,11 +109,13 @@ extension Expedition {
             guard approvedAt != nil, !legsSettled else { return [] }
             isWrappingUp = true
             isPaused = false
-            for index in assignments.indices where !assignments[index].status.isActive && !assignments[index].status.isFinished {
+            for index in assignments.indices
+            where !assignments[index].status.isActive && !assignments[index].status.isFinished {
                 assignments[index].status = .skipped
                 assignments[index].waitingSince = nil
             }
-            for index in checkpoints.indices where !checkpoints[index].status.isActive && !checkpoints[index].status.isFinished {
+            for index in checkpoints.indices
+            where !checkpoints[index].status.isActive && !checkpoints[index].status.isFinished {
                 checkpoints[index].status = .skipped
                 checkpoints[index].waitingSince = nil
             }
@@ -170,9 +179,14 @@ extension Expedition {
     /// The draft for the pull request at the end: the objective's title, the debrief as its body.
     public var pullRequestDraft: WorkflowPullRequestDraft? {
         guard let base, let debrief else { return nil }
-        let agents = Set((assignments.map(\.assignment.assignee) + [crew.lead.id, crew.reviewer.id]).compactMap { crew.agent($0)?.name })
-        let footer = "Carried out in Native by \(agents.sorted().joined(separator: ", ")): \(finishedCount) \(finishedCount == 1 ? "assignment" : "assignments") across \(route?.legs.count ?? 0) checked \(route?.legs.count == 1 ? "leg" : "legs")."
-        return WorkflowPullRequestDraft(title: title, body: debrief + "\n\n---\n" + footer, cwd: base, isDraft: settings.draftPullRequest)
+        let agents = Set(
+            (assignments.map(\.assignment.assignee) + [crew.lead.id, crew.reviewer.id]).compactMap {
+                crew.agent($0)?.name
+            })
+        let footer =
+            "Carried out in Native by \(agents.sorted().joined(separator: ", ")): \(finishedCount) \(finishedCount == 1 ? "assignment" : "assignments") across \(route?.legs.count ?? 0) checked \(route?.legs.count == 1 ? "leg" : "legs")."
+        return WorkflowPullRequestDraft(
+            title: title, body: debrief + "\n\n---\n" + footer, cwd: base, isDraft: settings.draftPullRequest)
     }
 
     mutating func finish(at now: Date) {
@@ -219,7 +233,8 @@ extension Expedition {
             expedition.checkpoints[index].waitingSince = updatedAt
         }
         if pullRequestError == nil, isOpeningPullRequest {
-            expedition.pullRequestError = "Native quit while the pull request was opening. Check GitHub before retrying."
+            expedition.pullRequestError =
+                "Native quit while the pull request was opening. Check GitHub before retrying."
         }
         return expedition
     }

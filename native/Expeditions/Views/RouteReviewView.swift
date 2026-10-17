@@ -15,7 +15,10 @@ struct RouteReviewView: View {
     @State private var removed: Set<String> = []
     @State private var feedback = ""
 
-    init(expedition: Expedition, route: Route, send: @escaping (ExpeditionEvent) -> Void, onOpenLead: @escaping () -> Void) {
+    init(
+        expedition: Expedition, route: Route, send: @escaping (ExpeditionEvent) -> Void,
+        onOpenLead: @escaping () -> Void
+    ) {
         self.expedition = expedition
         self.route = route
         self.send = send
@@ -29,10 +32,13 @@ struct RouteReviewView: View {
                 VStack(alignment: .leading, spacing: DS.Space.xl) {
                     ExpeditionHeader(expedition: expedition, send: send)
                     if isRevising {
-                        NoticeBanner(tone: .info, title: "\(expedition.crew.lead.name) is revising the route", detail: "Your edits below are kept until the revision arrives.")
+                        NoticeBanner(
+                            tone: .info, title: "\(expedition.crew.lead.name) is revising the route",
+                            detail: "Your edits below are kept until the revision arrives.")
                     }
                     ForEach(expedition.attention.filter { $0.kind != .routeReady }) { item in
-                        ExpeditionAttentionCard(expedition: expedition, item: item, send: send, onOpen: { _ in onOpenLead() })
+                        ExpeditionAttentionCard(
+                            expedition: expedition, item: item, send: send, onOpen: { _ in onOpenLead() })
                     }
                     intro
                     if !draft.summary.isEmpty {
@@ -51,10 +57,13 @@ struct RouteReviewView: View {
                                     Text(draft.questions[index].text)
                                         .font(.dsBody)
                                         .foregroundStyle(.dsTextPrimary)
-                                    TextField("Your answer, shared with every builder", text: Binding(
-                                        get: { draft.questions[index].answer ?? "" },
-                                        set: { draft.questions[index].answer = $0 }
-                                    ), axis: .vertical)
+                                    TextField(
+                                        "Your answer, shared with every builder",
+                                        text: Binding(
+                                            get: { draft.questions[index].answer ?? "" },
+                                            set: { draft.questions[index].answer = $0 }
+                                        ), axis: .vertical
+                                    )
                                     .textFieldStyle(.roundedBorder)
                                     .font(.dsBody)
                                 }
@@ -87,7 +96,8 @@ struct RouteReviewView: View {
         }
         // The route answers the approval keys, like every other approval card.
         .background {
-            Button("Approve Route", action: approve).keyboardShortcut("y", modifiers: .command).hidden().disabled(isRevising)
+            Button("Approve Route", action: approve).keyboardShortcut("y", modifiers: .command).hidden().disabled(
+                isRevising)
             Button("Discard Route") { send(.discard) }.keyboardShortcut(.delete, modifiers: [.command, .shift]).hidden()
         }
     }
@@ -105,10 +115,12 @@ struct RouteReviewView: View {
             Text(expedition.previousRoutes.isEmpty ? "Review the route" : "Review the revised route")
                 .font(.dsTitle3)
                 .foregroundStyle(.dsTextPrimary)
-            Text("Edit anything, answer the lead's questions, or remove what you don't want. Approving sets the crew out; from then on they work to this route, and changes to it come back to you.")
-                .font(.dsBody)
-                .foregroundStyle(.dsTextSecondary)
-                .fixedSize(horizontal: false, vertical: true)
+            Text(
+                "Edit anything, answer the lead's questions, or remove what you don't want. Approving sets the crew out; from then on they work to this route, and changes to it come back to you."
+            )
+            .font(.dsBody)
+            .foregroundStyle(.dsTextSecondary)
+            .fixedSize(horizontal: false, vertical: true)
         }
         .tracking(DS.Tracking.tight)
     }
@@ -128,9 +140,12 @@ struct RouteReviewView: View {
                     toggleRemoved: { toggleRemoved(leg.assignments[index].id) }
                 )
             }
-            Label("Checkpoint: \(expedition.crew.reviewer.name) checks the leg against every “done when”.", systemImage: "checkmark.seal")
-                .font(.dsCaption)
-                .foregroundStyle(.dsTextTertiary)
+            Label(
+                "Checkpoint: \(expedition.crew.reviewer.name) checks the leg against every “done when”.",
+                systemImage: "checkmark.seal"
+            )
+            .font(.dsCaption)
+            .foregroundStyle(.dsTextTertiary)
         }
     }
 

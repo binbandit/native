@@ -30,7 +30,9 @@ public final class ExpeditionRunner {
 
     /// With a store, expeditions from earlier launches come back (interrupted where they were
     /// working) and every change is saved.
-    public init(store: ExpeditionStore? = nil, documents: ExpeditionDocuments? = nil, now: @escaping () -> Date = Date.init) {
+    public init(
+        store: ExpeditionStore? = nil, documents: ExpeditionDocuments? = nil, now: @escaping () -> Date = Date.init
+    ) {
         self.store = store
         self.documents = documents
         self.now = now
@@ -47,7 +49,9 @@ public final class ExpeditionRunner {
         objective: String, project: URL, usesWorktree: Bool, crew: Crew, budget: ExpeditionBudget = .unlimited,
         settings: ExpeditionSettings = ExpeditionSettings()
     ) -> Expedition.ID {
-        let expedition = Expedition(objective: objective, project: project, usesWorktree: usesWorktree, crew: crew, budget: budget, settings: settings, at: now())
+        let expedition = Expedition(
+            objective: objective, project: project, usesWorktree: usesWorktree, crew: crew, budget: budget,
+            settings: settings, at: now())
         expeditions.insert(expedition, at: 0)
         send(.start, to: expedition.id)
         return expedition.id
@@ -97,7 +101,8 @@ public final class ExpeditionRunner {
         guard let host else {
             switch effect {
             case .prepareBase: send(.baseFailed("Native isn't ready to run expeditions yet."), to: id)
-            case .createTask(let slot, _, _, _): send(.taskFailed(slot, message: "Native isn't ready to run expeditions yet."), to: id)
+            case .createTask(let slot, _, _, _):
+                send(.taskFailed(slot, message: "Native isn't ready to run expeditions yet."), to: id)
             default: break
             }
             return
@@ -145,7 +150,9 @@ public final class ExpeditionRunner {
     private func scheduleLimitWakeups(_ expedition: Expedition) {
         for slot in expedition.allSlots {
             let key = CrewWakeup(expedition: expedition.id, slot: slot)
-            guard case .limited = expedition.status(of: slot), let reset = host?.limitReset(agent: expedition.agent(of: slot).id) else {
+            guard case .limited = expedition.status(of: slot),
+                let reset = host?.limitReset(agent: expedition.agent(of: slot).id)
+            else {
                 wakeups.removeValue(forKey: key)?.cancel()
                 continue
             }
@@ -165,11 +172,15 @@ public final class ExpeditionRunner {
     private func announce(before: Expedition, after: Expedition) {
         let known = Set(before.attention.map(\.id))
         for item in after.attention where !known.contains(item.id) {
-            host?.notify(ExpeditionNotice(expedition: after.id, title: after.headline(for: item), body: after.detail(for: item) ?? after.title))
+            host?.notify(
+                ExpeditionNotice(
+                    expedition: after.id, title: after.headline(for: item), body: after.detail(for: item) ?? after.title
+                ))
         }
         if before.phase != .complete, after.phase == .complete {
             let body = after.pullRequest.map { "Pull request: \($0.url.absoluteString)" } ?? "The debrief is ready."
-            host?.notify(ExpeditionNotice(expedition: after.id, title: "Expedition complete: \(after.title)", body: body))
+            host?.notify(
+                ExpeditionNotice(expedition: after.id, title: "Expedition complete: \(after.title)", body: body))
         }
     }
 }

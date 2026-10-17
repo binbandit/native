@@ -1,5 +1,6 @@
 import Foundation
 import NativeAutomation
+
 @testable import NativeExpeditions
 
 /// Drives an expedition the way `ExpeditionRunner` does: makes the base and sessions right away,
@@ -20,7 +21,8 @@ struct ExpeditionDriver {
     init(budget: ExpeditionBudget = .unlimited, settings: ExpeditionSettings = ExpeditionSettings()) {
         let crew = Crew(lead: Self.claude, builders: [Self.codex], reviewer: Self.claude)
         expedition = Expedition(
-            objective: "Add CSV export to reports\nUsers want spreadsheets.", project: URL(filePath: "/work/app"), usesWorktree: true,
+            objective: "Add CSV export to reports\nUsers want spreadsheets.", project: URL(filePath: "/work/app"),
+            usesWorktree: true,
             crew: crew, budget: budget, settings: settings, at: clock)
     }
 

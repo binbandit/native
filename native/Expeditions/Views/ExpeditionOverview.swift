@@ -18,7 +18,8 @@ struct ExpeditionOverview: View {
                     VStack(alignment: .leading, spacing: DS.Space.md) {
                         SectionHeader("Needs you")
                         ForEach(expedition.attention) { item in
-                            ExpeditionAttentionCard(expedition: expedition, item: item, send: send, onOpen: { selected = $0 })
+                            ExpeditionAttentionCard(
+                                expedition: expedition, item: item, send: send, onOpen: { selected = $0 })
                         }
                     }
                 }
@@ -46,8 +47,10 @@ struct ExpeditionOverview: View {
         // A route change waiting on the user answers the approval keys.
         .background {
             if expedition.pendingRouteChange != nil {
-                Button("Accept Route Change") { send(.approveRouteChange) }.keyboardShortcut("y", modifiers: .command).hidden()
-                Button("Keep Route") { send(.keepRoute) }.keyboardShortcut(.delete, modifiers: [.command, .shift]).hidden()
+                Button("Accept Route Change") { send(.approveRouteChange) }.keyboardShortcut("y", modifiers: .command)
+                    .hidden()
+                Button("Keep Route") { send(.keepRoute) }.keyboardShortcut(.delete, modifiers: [.command, .shift])
+                    .hidden()
             }
         }
     }
@@ -75,7 +78,9 @@ private struct ExpeditionDebriefCard: View {
                 Spacer()
                 if let pullRequest = expedition.pullRequest {
                     Link(destination: pullRequest.url) {
-                        Label(pullRequest.number.map { "Pull Request #\($0)" } ?? "Pull Request", systemImage: "arrow.triangle.pull")
+                        Label(
+                            pullRequest.number.map { "Pull Request #\($0)" } ?? "Pull Request",
+                            systemImage: "arrow.triangle.pull")
                     }
                     .buttonStyle(.ds(.primary))
                 } else if expedition.isOpeningPullRequest {

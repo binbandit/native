@@ -17,7 +17,7 @@ final class GitSettings {
 
         var title: String {
             switch self {
-            case .gitHubUsername: "GitHub username"
+            case .gitHubUsername: "GitHub login"
             case .custom: "Custom"
             case .none: "None"
             }

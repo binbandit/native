@@ -21,7 +21,9 @@ extension Expedition {
 
     // MARK: - Lead
 
-    mutating func leadTurnEnded(_ outcome: TurnOutcome, reply: String?, cost: Double?, at now: Date) -> [ExpeditionEffect] {
+    mutating func leadTurnEnded(
+        _ outcome: TurnOutcome, reply: String?, cost: Double?, at now: Date
+    ) -> [ExpeditionEffect] {
         guard lead.status == .running else { return [] }
         lead.latestReply = reply ?? lead.latestReply
         lead.sessionCost = cost ?? lead.sessionCost
@@ -30,7 +32,9 @@ extension Expedition {
                 // A lead that can't look ahead mustn't hold the crew: the approved route stands.
                 lead.status = .succeeded
                 lead.job = .conversation
-                note(.attention, "The lead couldn't review the legs ahead (\(outcome.summary)), so the route stands.", slot: .lead, at: now)
+                note(
+                    .attention, "The lead couldn't review the legs ahead (\(outcome.summary)), so the route stands.",
+                    slot: .lead, at: now)
                 return advance(at: now)
             }
             stop(.lead, as: outcome.stoppedStatus, at: now)
@@ -73,7 +77,8 @@ extension Expedition {
         case .success(var parsed):
             // Answers carry over to the same questions in a revision.
             for index in parsed.questions.indices {
-                parsed.questions[index].answer = route?.questions.first { $0.text == parsed.questions[index].text }?.answer
+                parsed.questions[index].answer =
+                    route?.questions.first { $0.text == parsed.questions[index].text }?.answer
             }
             let changed = route.map { parsed.changedAssignments(since: $0).count }
             if let route {
@@ -84,8 +89,13 @@ extension Expedition {
             lead.job = .conversation
             lead.unreadRoutes = 0
             lead.waitingSince = now
-            let size = "\(parsed.legs.count) \(parsed.legs.count == 1 ? "leg" : "legs"), \(parsed.assignments.count) \(parsed.assignments.count == 1 ? "assignment" : "assignments")"
-            note(.attention, changed.map { "The lead revised the route (\($0) \($0 == 1 ? "assignment" : "assignments") changed): \(size)." } ?? "The lead proposed a route: \(size).", slot: .lead, at: now)
+            let size =
+                "\(parsed.legs.count) \(parsed.legs.count == 1 ? "leg" : "legs"), \(parsed.assignments.count) \(parsed.assignments.count == 1 ? "assignment" : "assignments")"
+            note(
+                .attention,
+                changed.map {
+                    "The lead revised the route (\($0) \($0 == 1 ? "assignment" : "assignments") changed): \(size)."
+                } ?? "The lead proposed a route: \(size).", slot: .lead, at: now)
             return []
         case .failure(let problem):
             lead.unreadRoutes += 1
@@ -101,20 +111,31 @@ extension Expedition {
     /// Applies the lead's revision of the legs ahead: on its own when it only adds work, otherwise
     /// as a change for the user to accept, because it rewrites what they approved.
     private mutating func reviseLegsAhead(_ reply: String, at now: Date) {
-        guard let route, let current = currentLeg, let start = route.legs.firstIndex(where: { $0.id == current.id }) else { return }
+        guard let route, let current = currentLeg, let start = route.legs.firstIndex(where: { $0.id == current.id })
+        else { return }
         let done = route.assignments.filter { assignment($0.id)?.status != .waiting }.map(\.id)
         let earlier = Set(route.legs[..<start].flatMap(\.assignments).map(\.id))
         switch RouteParser.parse(reply, builders: crew.builders.map(\.id), earlier: earlier) {
         case .failure(let problem):
-            note(.attention, "The lead's revision of the legs ahead couldn't be read (\(problem.message)), so the route stands.", slot: .lead, at: now)
+            note(
+                .attention,
+                "The lead's revision of the legs ahead couldn't be read (\(problem.message)), so the route stands.",
+                slot: .lead, at: now)
         case .success(let revision):
             var revised = route
             let ahead = Array(route.legs[start...])
-            revised.legs = Array(route.legs[..<start]) + revision.legs.enumerated().map { offset, leg in
-                Route.Leg(id: offset < ahead.count ? ahead[offset].id : "leg-\(route.legs.count + offset - ahead.count + 1)", title: leg.title, outcome: leg.outcome, assignments: leg.assignments)
-            }
+            revised.legs =
+                Array(route.legs[..<start])
+                + revision.legs.enumerated().map { offset, leg in
+                    Route.Leg(
+                        id: offset < ahead.count
+                            ? ahead[offset].id : "leg-\(route.legs.count + offset - ahead.count + 1)", title: leg.title,
+                        outcome: leg.outcome, assignments: leg.assignments)
+                }
             // Work that has started stays exactly as it is, wherever the lead put it.
-            let missingStarted = done.filter { id in revised.assignments.first { $0.id == id } != route.assignments.first { $0.id == id } }
+            let missingStarted = done.filter { id in
+                revised.assignments.first { $0.id == id } != route.assignments.first { $0.id == id }
+            }
             let rewritesApproved = route.assignments.contains { old in
                 revised.assignments.first { $0.id == old.id } != old
             }
@@ -122,20 +143,29 @@ extension Expedition {
             let added = revised.assignments.count - route.assignments.count
             if missingStarted.isEmpty, !rewritesApproved, added <= route.assignments.count {
                 sync(to: revised)
-                note(.progress, "The lead added \(added) \(added == 1 ? "assignment" : "assignments") to the legs ahead.", slot: .lead, at: now)
+                note(
+                    .progress,
+                    "The lead added \(added) \(added == 1 ? "assignment" : "assignments") to the legs ahead.",
+                    slot: .lead, at: now)
             } else if missingStarted.isEmpty {
                 pendingRouteChange = revised
                 lead.waitingSince = now
-                note(.attention, "The lead wants to change the legs ahead. Review the change to go on.", slot: .lead, at: now)
+                note(
+                    .attention, "The lead wants to change the legs ahead. Review the change to go on.", slot: .lead,
+                    at: now)
             } else {
-                note(.attention, "The lead's revision changed work that had already started, so the route stands.", slot: .lead, at: now)
+                note(
+                    .attention, "The lead's revision changed work that had already started, so the route stands.",
+                    slot: .lead, at: now)
             }
         }
     }
 
     // MARK: - Builders
 
-    mutating func assignmentTurnEnded(_ id: String, outcome: TurnOutcome, reply: String?, cost: Double?, at now: Date) -> [ExpeditionEffect] {
+    mutating func assignmentTurnEnded(
+        _ id: String, outcome: TurnOutcome, reply: String?, cost: Double?, at now: Date
+    ) -> [ExpeditionEffect] {
         guard let index = assignmentIndex(id), assignments[index].status == .running else { return [] }
         assignments[index].turns += 1
         assignments[index].latestReply = reply ?? assignments[index].latestReply
@@ -146,7 +176,10 @@ extension Expedition {
             assignments[index].automaticRecoveries += 1
             assignments[index].goal?.pause(at: now, reason: message)
             assignments[index].goal?.resume(at: now)
-            note(.attention, "\(agent(of: slot).name)'s turn on \(name(of: slot)) failed (\(message)). Native asked it to pick up where it left off.", slot: slot, at: now)
+            note(
+                .attention,
+                "\(agent(of: slot).name)'s turn on \(name(of: slot)) failed (\(message)). Native asked it to pick up where it left off.",
+                slot: slot, at: now)
             return send(ExpeditionPrompt.failed(message), to: slot, at: now)
         }
         guard var loop = assignments[index].goal else {
@@ -207,8 +240,11 @@ extension Expedition {
 
     // MARK: - Reviewer
 
-    mutating func checkpointTurnEnded(_ leg: String, outcome: TurnOutcome, reply: String?, cost: Double?, at now: Date) -> [ExpeditionEffect] {
-        guard let index = checkpointIndex(leg), checkpoints[index].status == .running, let legInfo = self.leg(leg) else { return [] }
+    mutating func checkpointTurnEnded(
+        _ leg: String, outcome: TurnOutcome, reply: String?, cost: Double?, at now: Date
+    ) -> [ExpeditionEffect] {
+        guard let index = checkpointIndex(leg), checkpoints[index].status == .running, let legInfo = self.leg(leg)
+        else { return [] }
         checkpoints[index].latestReply = reply ?? checkpoints[index].latestReply
         checkpoints[index].sessionCost = cost ?? checkpoints[index].sessionCost
         let slot = CrewSlot.checkpoint(leg)
@@ -222,7 +258,11 @@ extension Expedition {
             if checkpoints[index].unreadReplies == 1 {
                 return send(ExpeditionPrompt.verdictReminder, to: slot, at: now)
             }
-            stop(slot, as: .blocked("The reviewer didn't end with a verdict. Read its reply, then pass the leg or ask for another round."), at: now)
+            stop(
+                slot,
+                as: .blocked(
+                    "The reviewer didn't end with a verdict. Read its reply, then pass the leg or ask for another round."
+                ), at: now)
             return []
         }
         checkpoints[index].unreadReplies = 0
@@ -231,17 +271,27 @@ extension Expedition {
         case .pass:
             checkpoints[index].status = .succeeded
             checkpoints[index].endedAt = now
-            note(.success, "\(legInfo.title) passed its checkpoint\(verdict.note.map { ": \($0)" } ?? ".")", slot: slot, at: now)
+            note(
+                .success, "\(legInfo.title) passed its checkpoint\(verdict.note.map { ": \($0)" } ?? ".")", slot: slot,
+                at: now)
             return afterCheckpointPassed(legInfo, at: now)
         case .changes:
             let rounds = checkpoints[index].rounds
             let allowed = settings.fixRounds + checkpoints[index].extraRounds
             guard rounds <= allowed else {
-                stop(slot, as: .blocked("Still asking for changes after \(rounds - 1) \(rounds - 1 == 1 ? "round" : "rounds") of fixes\(verdict.note.map { ": \($0)" } ?? ".")"), at: now)
-                note(.attention, "\(legInfo.title)'s checkpoint is still asking for changes. It needs you to decide.", slot: slot, at: now)
+                stop(
+                    slot,
+                    as: .blocked(
+                        "Still asking for changes after \(rounds - 1) \(rounds - 1 == 1 ? "round" : "rounds") of fixes\(verdict.note.map { ": \($0)" } ?? ".")"
+                    ), at: now)
+                note(
+                    .attention, "\(legInfo.title)'s checkpoint is still asking for changes. It needs you to decide.",
+                    slot: slot, at: now)
                 return []
             }
-            note(.attention, "\(legInfo.title)'s checkpoint asked for changes\(verdict.note.map { ": \($0)" } ?? ".")", slot: slot, at: now)
+            note(
+                .attention, "\(legInfo.title)'s checkpoint asked for changes\(verdict.note.map { ": \($0)" } ?? ".")",
+                slot: slot, at: now)
             return startFixRound(index, verdict: verdict, at: now)
         }
     }
@@ -294,7 +344,9 @@ extension Expedition {
             guard status(of: slot) == .running, let task = task(of: slot) else { return [] }
             return [.cancelTask(task)]
         case .reassign(let id, let agent):
-            guard let index = assignmentIndex(id), !assignments[index].status.isActive, !assignments[index].status.isFinished else { return [] }
+            guard let index = assignmentIndex(id), !assignments[index].status.isActive,
+                !assignments[index].status.isFinished
+            else { return [] }
             if !crew.builders.contains(agent) {
                 crew.builders.append(agent)
             }
@@ -306,7 +358,9 @@ extension Expedition {
             note(.user, "You moved \(name(of: .assignment(id))) to \(agent.name).", slot: .assignment(id), at: now)
             return advance(at: now)
         case .anotherRound(let leg):
-            guard let index = checkpointIndex(leg), checkpoints[index].status.isStopped, let verdict = checkpoints[index].latestVerdict else { return [] }
+            guard let index = checkpointIndex(leg), checkpoints[index].status.isStopped,
+                let verdict = checkpoints[index].latestVerdict
+            else { return [] }
             checkpoints[index].extraRounds += 1
             note(.user, "You asked for another round of fixes.", slot: .checkpoint(leg), at: now)
             return startFixRound(index, verdict: verdict, at: now)
@@ -332,10 +386,14 @@ extension Expedition {
             guard let index = assignmentIndex(id) else { return [] }
             return sendGoalPrompt(index, at: now, prefix: prefix)
         case .lead:
-            let reminder = [.planning, .revising].contains(lead.job) ? "\n\nEnd your reply with the route between \(RouteParser.openTag) and \(RouteParser.closeTag), as asked." : ""
+            let reminder =
+                [.planning, .revising].contains(lead.job)
+                ? "\n\nEnd your reply with the route between \(RouteParser.openTag) and \(RouteParser.closeTag), as asked."
+                : ""
             return send((prefix ?? LimitText.continuation) + reminder, to: .lead, at: now)
         case .checkpoint:
-            return send((prefix ?? LimitText.continuation) + "\n\n" + ExpeditionPrompt.verdictReminder, to: slot, at: now)
+            return send(
+                (prefix ?? LimitText.continuation) + "\n\n" + ExpeditionPrompt.verdictReminder, to: slot, at: now)
         }
     }
 

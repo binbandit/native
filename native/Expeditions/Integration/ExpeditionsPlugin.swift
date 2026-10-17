@@ -7,7 +7,8 @@ struct ExpeditionsPlugin: NativePlugin {
     let manifest = PluginManifest(
         id: "expeditions",
         name: "Expeditions",
-        description: "A crew of agents works through a large objective for you: one plans a route you approve, others build it, another checks each leg, and it ends with a pull request."
+        description:
+            "A crew of agents works through a large objective for you: one plans a route you approve, others build it, another checks each leg, and it ends with a pull request."
     )
 
     var isEnabledByDefault: Bool { false }

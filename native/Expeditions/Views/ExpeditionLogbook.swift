@@ -19,19 +19,21 @@ struct ExpeditionLogbook: View {
                             .buttonStyle(.ds(.ghost))
                     }
                     #if os(macOS)
-                        if let folder = center.runner.documents?.folder(for: expedition.id) {
-                            Button("Show Files", systemImage: "folder") { PlatformFileBrowser.reveal(folder) }
-                                .labelStyle(.iconOnly)
-                                .buttonStyle(.ds(.ghost))
-                                .help("Show the route, reports and logbook as files")
-                        }
+                    if let folder = center.runner.documents?.folder(for: expedition.id) {
+                        Button("Show Files", systemImage: "folder") { PlatformFileBrowser.reveal(folder) }
+                            .labelStyle(.iconOnly)
+                            .buttonStyle(.ds(.ghost))
+                            .help("Show the route, reports and logbook as files")
+                    }
                     #endif
                 }
             }
             TimelineView(.periodic(from: .now, by: 60)) { timeline in
                 VStack(alignment: .leading, spacing: DS.Space.xs) {
                     ForEach(entries) { entry in
-                        Button { entry.slot.map { selected = $0 } } label: {
+                        Button {
+                            entry.slot.map { selected = $0 }
+                        } label: {
                             HStack(alignment: .firstTextBaseline, spacing: DS.Space.sm) {
                                 Text(DSFormat.time(entry.at, now: timeline.date))
                                     .font(.dsMonoCaption)

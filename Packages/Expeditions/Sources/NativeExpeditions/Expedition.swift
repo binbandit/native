@@ -54,7 +54,8 @@ public nonisolated struct Expedition: Codable, Hashable, Sendable, Identifiable 
     public internal(set) var activeSince: Date?
 
     public init(
-        id: UUID = UUID(), objective: String, project: URL, usesWorktree: Bool, crew: Crew, budget: ExpeditionBudget = .unlimited,
+        id: UUID = UUID(), objective: String, project: URL, usesWorktree: Bool, crew: Crew,
+        budget: ExpeditionBudget = .unlimited,
         settings: ExpeditionSettings = ExpeditionSettings(), at now: Date
     ) {
         self.id = id
@@ -107,7 +108,9 @@ public nonisolated struct Expedition: Codable, Hashable, Sendable, Identifiable 
     /// Every session the crew has used, for whoever needs to find them.
     public var tasks: [UUID] {
         var seen = Set<UUID>()
-        return ([lead.task] + assignments.map(\.task) + checkpoints.map(\.task)).compactMap(\.self).filter { seen.insert($0).inserted }
+        return ([lead.task] + assignments.map(\.task) + checkpoints.map(\.task)).compactMap(\.self).filter {
+            seen.insert($0).inserted
+        }
     }
 
     public func status(of slot: CrewSlot) -> WorkflowStepStatus? {
@@ -133,7 +136,9 @@ public nonisolated struct Expedition: Codable, Hashable, Sendable, Identifiable 
         case .checkpoint: crew.reviewer
         case .assignment(let id):
             assignment(id).flatMap { crew.agent($0.assignment.assignee) }
-                ?? WorkflowAgent(id: assignment(id)?.assignment.assignee ?? "", name: assignment(id)?.assignment.assignee ?? "An agent")
+                ?? WorkflowAgent(
+                    id: assignment(id)?.assignment.assignee ?? "",
+                    name: assignment(id)?.assignment.assignee ?? "An agent")
         }
     }
 
@@ -148,7 +153,9 @@ public nonisolated struct Expedition: Codable, Hashable, Sendable, Identifiable 
 
     /// What the crew has spent, across every session that reported cost.
     public var cost: Double? {
-        let costs = assignments.compactMap(\.cost) + checkpoints.compactMap(\.sessionCost) + [lead.sessionCost].compactMap(\.self)
+        let costs =
+            assignments.compactMap(\.cost) + checkpoints.compactMap(\.sessionCost)
+            + [lead.sessionCost].compactMap(\.self)
         return costs.isEmpty ? nil : costs.reduce(0, +)
     }
 
@@ -171,7 +178,8 @@ public nonisolated struct Expedition: Codable, Hashable, Sendable, Identifiable 
     }
 
     var isAnyoneWorking: Bool {
-        lead.status.isActive || assignments.contains { $0.status.isActive } || checkpoints.contains { $0.status.isActive }
+        lead.status.isActive || assignments.contains { $0.status.isActive }
+            || checkpoints.contains { $0.status.isActive }
     }
 
     /// Every leg's checkpoint has passed or been skipped: the debrief comes next.

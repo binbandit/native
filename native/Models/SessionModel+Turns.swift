@@ -181,6 +181,8 @@ extension SessionModel {
             } else {
                 state.appendNotice(UsageLimitHit(error: error).map(\.message) ?? error.localizedDescription, isError: true)
             }
+            // Closes the turn's clocks. The notice above already says what went wrong.
+            state.endTurn(.error)
             lastStopReason = .error
             services.post(.turnFailed(context, prompt: text, error: error, items: items))
         }

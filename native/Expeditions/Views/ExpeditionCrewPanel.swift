@@ -34,7 +34,8 @@ struct ExpeditionCrewPanel: View {
                 .padding(.top, DS.Space.xs)
                 // ⌘L focuses the composer elsewhere; here, the lead's field is the composer.
                 .background {
-                    Button("Message the Lead") { isMessageFocused = true }.keyboardShortcut("l", modifiers: .command).hidden()
+                    Button("Message the Lead") { isMessageFocused = true }.keyboardShortcut("l", modifiers: .command)
+                        .hidden()
                 }
             }
         }
@@ -49,15 +50,27 @@ struct ExpeditionCrewPanel: View {
 
     /// The lead, the seat each builder is on (or was on last), and the reviewer's latest checkpoint.
     private var members: [Member] {
-        var members = [Member(slot: .lead, agent: expedition.crew.lead, status: expedition.lead.status, doing: leadDoing)]
+        var members = [
+            Member(slot: .lead, agent: expedition.crew.lead, status: expedition.lead.status, doing: leadDoing)
+        ]
         for builder in expedition.crew.builders {
             let runs = expedition.assignments.filter { $0.assignment.assignee == builder.id }
-            let current = runs.first { $0.status.isActive || $0.status.isStopped } ?? runs.last { $0.status == .succeeded } ?? runs.first
+            let current =
+                runs.first { $0.status.isActive || $0.status.isStopped } ?? runs.last { $0.status == .succeeded }
+                ?? runs.first
             guard let current else { continue }
-            members.append(Member(slot: .assignment(current.id), agent: builder, status: current.status, doing: current.assignment.title))
+            members.append(
+                Member(
+                    slot: .assignment(current.id), agent: builder, status: current.status,
+                    doing: current.assignment.title))
         }
-        if let checkpoint = expedition.checkpoints.first(where: { $0.status != .waiting && !$0.status.isFinished }) ?? expedition.checkpoints.last(where: { $0.status.isFinished && $0.status != .skipped }) {
-            members.append(Member(slot: .checkpoint(checkpoint.leg), agent: expedition.crew.reviewer, status: checkpoint.status, doing: expedition.title(of: .checkpoint(checkpoint.leg))))
+        if let checkpoint = expedition.checkpoints.first(where: { $0.status != .waiting && !$0.status.isFinished })
+            ?? expedition.checkpoints.last(where: { $0.status.isFinished && $0.status != .skipped })
+        {
+            members.append(
+                Member(
+                    slot: .checkpoint(checkpoint.leg), agent: expedition.crew.reviewer, status: checkpoint.status,
+                    doing: expedition.title(of: .checkpoint(checkpoint.leg))))
         }
         return members.sorted { rank($0.status) < rank($1.status) }
     }
@@ -79,7 +92,9 @@ struct ExpeditionCrewPanel: View {
     }
 
     private func memberRow(_ member: Member) -> some View {
-        Button { selected = member.slot } label: {
+        Button {
+            selected = member.slot
+        } label: {
             HStack(alignment: .top, spacing: DS.Space.md) {
                 StatusIndicator(status: member.status.expeditionTaskStatus)
                 VStack(alignment: .leading, spacing: DS.Space.xxs) {
@@ -109,11 +124,15 @@ struct ExpeditionCrewPanel: View {
     /// What the member is doing this moment: its session's own activity line while it works,
     /// never just "Working…".
     private func activity(_ member: Member) -> String {
-        if member.status.isActive, let task = expedition.task(of: member.slot), let session = center.host?.session(for: task),
-           let line = session.state.latestReply?.split(whereSeparator: \.isNewline).last.map(String.init), !line.isEmpty {
+        if member.status.isActive, let task = expedition.task(of: member.slot),
+            let session = center.host?.session(for: task),
+            let line = session.state.latestReply?.split(whereSeparator: \.isNewline).last.map(String.init),
+            !line.isEmpty
+        {
             return "\(member.doing): \(line)"
         }
-        return member.status.isActive || member.status == .waiting ? member.doing : "\(member.doing) · \(member.status.label)"
+        return member.status.isActive || member.status == .waiting
+            ? member.doing : "\(member.doing) · \(member.status.label)"
     }
 
     private func sendMessage() {

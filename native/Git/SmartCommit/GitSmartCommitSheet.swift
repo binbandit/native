@@ -111,7 +111,7 @@ struct GitSmartCommitSheet: View {
             Button("Cancel", role: .cancel) { dismiss() }
                 .buttonStyle(.ds(.secondary))
                 .keyboardShortcut(.cancelAction)
-            Button(plan.groups.count == 1 ? "Make 1 Commit" : "Make \(plan.groups.count) Commits") {
+            Button(commitTitle) {
                 Task {
                     if await plan.commit() { dismiss() }
                 }
@@ -121,6 +121,14 @@ struct GitSmartCommitSheet: View {
             .disabled(!plan.canCommit)
         }
         .padding(DS.Space.lg)
+    }
+
+    private var commitTitle: String {
+        switch plan.groups.count {
+        case 0: "Make Commits"
+        case 1: "Make 1 Commit"
+        case let count: "Make \(count) Commits"
+        }
     }
 
     private var summary: String {

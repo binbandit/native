@@ -29,7 +29,9 @@ extension Expedition {
     public func detail(for item: ExpeditionAttention) -> String? {
         switch item.kind {
         case .routeReady:
-            route.map { "\($0.legs.count) \($0.legs.count == 1 ? "leg" : "legs"), \($0.assignments.count) \($0.assignments.count == 1 ? "assignment" : "assignments"). Review it, then approve it or ask for changes." }
+            route.map {
+                "\($0.legs.count) \($0.legs.count == 1 ? "leg" : "legs"), \($0.assignments.count) \($0.assignments.count == 1 ? "assignment" : "assignments"). Review it, then approve it or ask for changes."
+            }
         case .routeChange:
             "It rewrites work you approved, so it waits for you. The crew holds until you decide."
         case .baseFailed(let message), .pullRequestFailed(let message):
@@ -37,7 +39,8 @@ extension Expedition {
         case .budgetReached(let reason):
             "\(reason). Turns in flight finished; nothing new goes out until you add to it, wrap up or stop."
         case .stopped(_, let status):
-            status == .interrupted ? "Native quit while it was working. Resume tells the agent its turn was cut off." : status.reason
+            status == .interrupted
+                ? "Native quit while it was working. Resume tells the agent its turn was cut off." : status.reason
         }
     }
 }

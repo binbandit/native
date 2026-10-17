@@ -25,11 +25,13 @@ enum ExpeditionWiring {
         if model.repository == nil {
             await model.refreshNow()
         }
-        let ready: Bool? = switch gitHub.availability {
-        case .ready: true
-        case .notInstalled, .notAuthenticated: false
-        case .offline, nil: nil
-        }
-        return ExpeditionProjectProbe(isRepository: model.repository != nil, hasUncommittedChanges: !model.changes.isEmpty, gitHubReady: ready)
+        let ready: Bool? =
+            switch gitHub.availability {
+            case .ready: true
+            case .notInstalled, .notAuthenticated: false
+            case .offline, nil: nil
+            }
+        return ExpeditionProjectProbe(
+            isRepository: model.repository != nil, hasUncommittedChanges: !model.changes.isEmpty, gitHubReady: ready)
     }
 }

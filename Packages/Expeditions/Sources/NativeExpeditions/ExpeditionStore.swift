@@ -28,7 +28,8 @@ public final class ExpeditionStore {
 
     public func save(_ expeditions: [Expedition]) {
         do {
-            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(
+                at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
             try JSONEncoder().encode(expeditions).write(to: url, options: .atomic)
         } catch {
             logger.error("Couldn't save expeditions: \(error)")

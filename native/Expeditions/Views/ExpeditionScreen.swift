@@ -21,12 +21,17 @@ struct ExpeditionScreen<Transcript: View>: View {
                     if let selected {
                         ExpeditionInspector(expedition: expedition, slot: selected, send: send, transcript: transcript)
                             .inspectorColumnWidth(
-                                min: ExpeditionsMetrics.inspectorWidth.min, ideal: ExpeditionsMetrics.inspectorWidth.ideal,
+                                min: ExpeditionsMetrics.inspectorWidth.min,
+                                ideal: ExpeditionsMetrics.inspectorWidth.ideal,
                                 max: ExpeditionsMetrics.inspectorWidth.max)
                     }
                 }
         } else {
-            EmptyStateView("This Expedition Is Gone", systemImage: ExpeditionsMetrics.symbol, message: "It was removed from the list. Its sessions stay with their agents, and its worktree with the project.") {
+            EmptyStateView(
+                "This Expedition Is Gone", systemImage: ExpeditionsMetrics.symbol,
+                message:
+                    "It was removed from the list. Its sessions stay with their agents, and its worktree with the project."
+            ) {
                 EmptyView()
             }
         }
@@ -60,7 +65,8 @@ private struct ExpeditionPlanningView: View {
             VStack(alignment: .leading, spacing: DS.Space.xl) {
                 ExpeditionHeader(expedition: expedition, send: send)
                 ForEach(expedition.attention) { item in
-                    ExpeditionAttentionCard(expedition: expedition, item: item, send: send, onOpen: { _ in onOpenLead() })
+                    ExpeditionAttentionCard(
+                        expedition: expedition, item: item, send: send, onOpen: { _ in onOpenLead() })
                 }
                 if expedition.attention.isEmpty {
                     HStack(alignment: .top, spacing: DS.Space.lg) {
@@ -68,13 +74,19 @@ private struct ExpeditionPlanningView: View {
                             .foregroundStyle(.dsAccent)
                             .frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
                         VStack(alignment: .leading, spacing: DS.Space.xs) {
-                            Text(expedition.base == nil ? "Making the crew's workspace" : "\(expedition.crew.lead.name) is planning the route")
-                                .font(.dsBodyMedium)
-                                .foregroundStyle(.dsTextPrimary)
-                            Text("It reads the project without changing anything, then proposes legs and assignments for you to review. This usually takes a few minutes.")
-                                .font(.dsCaption)
-                                .foregroundStyle(.dsTextSecondary)
-                                .fixedSize(horizontal: false, vertical: true)
+                            Text(
+                                expedition.base == nil
+                                    ? "Making the crew's workspace"
+                                    : "\(expedition.crew.lead.name) is planning the route"
+                            )
+                            .font(.dsBodyMedium)
+                            .foregroundStyle(.dsTextPrimary)
+                            Text(
+                                "It reads the project without changing anything, then proposes legs and assignments for you to review. This usually takes a few minutes."
+                            )
+                            .font(.dsCaption)
+                            .foregroundStyle(.dsTextSecondary)
+                            .fixedSize(horizontal: false, vertical: true)
                         }
                         Spacer(minLength: DS.Space.lg)
                         if expedition.lead.task != nil {

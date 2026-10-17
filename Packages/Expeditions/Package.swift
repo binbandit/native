@@ -7,10 +7,10 @@ let package = Package(
     // iOS too: the engine runs on a host, and its state crosses the host protocol to every client.
     platforms: [.macOS(.v15), .iOS(.v18)],
     products: [
-        .library(name: "NativeExpeditions", targets: ["NativeExpeditions"]),
+        .library(name: "NativeExpeditions", targets: ["NativeExpeditions"])
     ],
     dependencies: [
-        .package(path: "../Automation"),
+        .package(path: "../Automation")
     ],
     targets: [
         .target(name: "NativeExpeditions", dependencies: [.product(name: "NativeAutomation", package: "Automation")]),

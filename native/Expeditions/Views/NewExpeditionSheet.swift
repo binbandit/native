@@ -97,11 +97,13 @@ struct NewExpeditionSheet: View {
                 .overlay { RoundedRectangle(cornerRadius: DS.Radius.control).strokeBorder(.dsBorder, lineWidth: 1) }
                 .overlay(alignment: .topLeading) {
                     if objective.isEmpty {
-                        Text("What should the crew get done? Describe the outcome, any constraints, and how you'll judge it.")
-                            .font(.dsCallout)
-                            .foregroundStyle(.dsTextTertiary)
-                            .padding(DS.Space.md)
-                            .allowsHitTesting(false)
+                        Text(
+                            "What should the crew get done? Describe the outcome, any constraints, and how you'll judge it."
+                        )
+                        .font(.dsCallout)
+                        .foregroundStyle(.dsTextTertiary)
+                        .padding(DS.Space.md)
+                        .allowsHitTesting(false)
                     }
                 }
                 .onAppear { isObjectiveFocused = true }
@@ -116,7 +118,9 @@ struct NewExpeditionSheet: View {
                         .font(.dsBody)
                         .foregroundStyle(.dsTextSecondary)
                 } else {
-                    agentPicker("Lead", selection: $lead, help: "Plans the route, revises it between legs and writes the debrief")
+                    agentPicker(
+                        "Lead", selection: $lead,
+                        help: "Plans the route, revises it between legs and writes the debrief")
                     HStack(alignment: .firstTextBaseline, spacing: DS.Space.md) {
                         Text("Builders")
                             .font(.dsBody)
@@ -124,15 +128,26 @@ struct NewExpeditionSheet: View {
                             .frame(width: 72, alignment: .leading)
                         VStack(alignment: .leading, spacing: DS.Space.xs) {
                             ForEach(agents) { agent in
-                                Toggle(agent.name, isOn: Binding(
-                                    get: { builders.contains(agent.id) },
-                                    set: { if $0 { builders.insert(agent.id) } else if builders.count > 1 { builders.remove(agent.id) } }
-                                ))
+                                Toggle(
+                                    agent.name,
+                                    isOn: Binding(
+                                        get: { builders.contains(agent.id) },
+                                        set: {
+                                            if $0 {
+                                                builders.insert(agent.id)
+                                            } else if builders.count > 1 {
+                                                builders.remove(agent.id)
+                                            }
+                                        }
+                                    )
+                                )
                                 .font(.dsBody)
                             }
                         }
                     }
-                    agentPicker("Reviewer", selection: $reviewer, help: "Checks each leg; a different provider than the builders catches more")
+                    agentPicker(
+                        "Reviewer", selection: $reviewer,
+                        help: "Checks each leg; a different provider than the builders catches more")
                 }
             }
         }
@@ -193,13 +208,17 @@ struct NewExpeditionSheet: View {
     }
 
     private var crew: Crew? {
-        guard let lead = agents.first(where: { $0.id == lead }), let reviewer = agents.first(where: { $0.id == reviewer }) else { return nil }
+        guard let lead = agents.first(where: { $0.id == lead }),
+            let reviewer = agents.first(where: { $0.id == reviewer })
+        else { return nil }
         return Crew(lead: lead, builders: agents.filter { builders.contains($0.id) }, reviewer: reviewer)
     }
 
     private var budget: ExpeditionBudget {
         ExpeditionBudget(
-            maxCost: Double(maxCost.trimmingCharacters(in: CharacterSet(charactersIn: "$ "))).flatMap { $0 > 0 ? $0 : nil },
+            maxCost: Double(maxCost.trimmingCharacters(in: CharacterSet(charactersIn: "$ "))).flatMap {
+                $0 > 0 ? $0 : nil
+            },
             maxDuration: Double(maxMinutes.trimmingCharacters(in: .whitespaces)).flatMap { $0 > 0 ? $0 * 60 : nil })
     }
 
@@ -207,7 +226,8 @@ struct NewExpeditionSheet: View {
         var readiness = ExpeditionReadiness()
         readiness.crew = crew
         readiness.unavailableAgents = model.agents.filter { !$0.isReady }.map { runtime in
-            "\(runtime.agent.displayName) can't join the crew: \(runtime.status.label.lowercased())." + (runtime.status.guidance.map { " \($0)" } ?? "")
+            "\(runtime.agent.displayName) can't join the crew: \(runtime.status.label.lowercased())."
+                + (runtime.status.guidance.map { " \($0)" } ?? "")
         }
         readiness.isRepository = probe?.isRepository
         readiness.hasUncommittedChanges = probe?.hasUncommittedChanges ?? false
@@ -235,7 +255,8 @@ struct NewExpeditionSheet: View {
         // Without a repository there's no worktree to make and no pull request to open.
         let isRepository = probe?.isRepository ?? true
         let id = center.runner.start(
-            objective: objective, project: project.url, usesWorktree: usesWorktree && isRepository, crew: crew, budget: budget,
+            objective: objective, project: project.url, usesWorktree: usesWorktree && isRepository, crew: crew,
+            budget: budget,
             settings: ExpeditionSettings(opensPullRequest: opensPullRequest && isRepository))
         dismiss()
         onStart(id)
