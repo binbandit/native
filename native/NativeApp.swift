@@ -10,7 +10,9 @@ struct NativeApp: App {
         Window("Native", id: "main") {
             RootView()
                 .environment(model)
+                .dsAccentPalette(themeID: iconPreferences.theme.rawValue)
                 .task {
+                    OrchestrationPlugin.connect(to: model)
                     iconPreferences.start()
                     await model.start()
                 }
@@ -27,6 +29,7 @@ struct NativeApp: App {
             SettingsView()
                 .environment(model.plugins)
                 .environment(iconPreferences)
+                .dsAccentPalette(themeID: iconPreferences.theme.rawValue)
                 .task { iconPreferences.start() }
         }
         .windowResizability(.contentSize)
@@ -107,6 +110,7 @@ private struct GoCommands: Commands {
 private struct SessionCommands: Commands {
     let model: AppModel
     @FocusedValue(\.activeSession) private var session
+    @FocusedValue(\.sidebarReorder) private var reorder
 
     var body: some Commands {
         CommandMenu("Session") {
@@ -143,6 +147,18 @@ private struct SessionCommands: Commands {
                 model.renaming = model.selection
             }
             .disabled(model.selection == nil)
+
+            Button("Move Up") {
+                reorder?.move(.up)
+            }
+            .keyboardShortcut(.upArrow, modifiers: [.command, .option])
+            .disabled(reorder?.canMove(.up) != true)
+
+            Button("Move Down") {
+                reorder?.move(.down)
+            }
+            .keyboardShortcut(.downArrow, modifiers: [.command, .option])
+            .disabled(reorder?.canMove(.down) != true)
 
             Button("Next Session") {
                 model.selectSession(offset: 1)
