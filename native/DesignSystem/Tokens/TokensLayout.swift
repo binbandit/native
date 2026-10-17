@@ -51,6 +51,9 @@ public nonisolated enum DS {
         /// Rows in compact lists and popups: slash commands, queued messages, suggestions
         /// (the reference app `SuggestionRow`, 26px).
         public static let listRow: CGFloat = 26
+        /// The readable column of the transcript, the composer and other long-form content: wide
+        /// enough for code, narrow enough to read.
+        public static let contentColumn: CGFloat = 760
         /// Default sidebar width (the reference app 256px; the reference app ~260px).
         public static let sidebarWidth: CGFloat = 256
     }

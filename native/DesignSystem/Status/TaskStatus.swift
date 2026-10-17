@@ -24,6 +24,10 @@ public nonisolated enum TaskStatus: Hashable, Sendable, CaseIterable {
     case failed
     /// The last turn was cancelled.
     case cancelled
+    /// Stopped on purpose until someone resumes it (a paused goal or workflow).
+    case paused
+    /// Stopped by a usage limit until it resets.
+    case limited
 
     /// the reference app's tooltip and accessibility text for the status.
     public var label: String {
@@ -38,6 +42,8 @@ public nonisolated enum TaskStatus: Hashable, Sendable, CaseIterable {
         case .done: "Done"
         case .failed: "Failed"
         case .cancelled: "Cancelled"
+        case .paused: "Paused"
+        case .limited: "Usage limit reached"
         }
     }
 
@@ -60,11 +66,12 @@ public nonisolated enum TaskStatus: Hashable, Sendable, CaseIterable {
     /// The glyph's color.
     public var tint: Color {
         switch self {
-        case .idle, .cancelled: .dsTextTertiary
+        case .idle, .cancelled, .paused: .dsTextTertiary
         case .starting, .working, .waiting: .dsTextSecondary
         case .needsInput, .needsPermission, .needsPlanReview: .dsAttention
         case .done: .dsSuccess
         case .failed: .dsDanger
+        case .limited: .dsWarning
         }
     }
 
@@ -77,6 +84,8 @@ public nonisolated enum TaskStatus: Hashable, Sendable, CaseIterable {
         case .done: "checkmark.circle"
         case .failed: "xmark.circle"
         case .cancelled: "slash.circle"
+        case .paused: "pause.circle"
+        case .limited: "hourglass"
         case .idle, .starting, .working, .waiting: nil
         }
     }

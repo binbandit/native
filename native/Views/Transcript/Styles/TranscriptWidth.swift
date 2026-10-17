@@ -29,7 +29,7 @@ nonisolated enum TranscriptWidth: String, ParameterChoice {
 }
 
 /// The readable column width shared by the transcript and the composer.
-nonisolated let transcriptColumnWidth: CGFloat = 760
+nonisolated let transcriptColumnWidth: CGFloat = DS.Size.contentColumn
 
 extension EnvironmentValues {
     /// How wide the session's transcript and composer may grow; `SessionView` sets it.

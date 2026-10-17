@@ -187,10 +187,10 @@ fn scripts_cannot_reach_modules_files_network_or_processes() {
         try { await import("node:fs"); text("import(): ESCAPED") } catch (error) { text(`import(): ${error.name}`) }
         text(typeof globalThis.require, Object.keys(globalThis).sort().join(","));
     "#;
-    let run = run(probes);
-    assert_eq!(run.end["type"], "result");
-    assert!(run.text.iter().all(|line| !line.contains("ESCAPED")), "{:?}", run.text);
-    assert_eq!(run.text.last().unwrap(), "function clearInterval,clearTimeout,console,exit,inputs,setInterval,setTimeout,text,tools");
+    let probed = run(probes);
+    assert_eq!(probed.end["type"], "result");
+    assert!(probed.text.iter().all(|line| !line.contains("ESCAPED")), "{:?}", probed.text);
+    assert_eq!(probed.text.last().unwrap(), "function clearInterval,clearTimeout,console,exit,inputs,setInterval,setTimeout,text,tools");
 
     let error = run("text('never');\nimport fs from 'node:fs';\n").error().clone();
     assert_eq!((error["kind"].clone(), error["line"].clone()), (json!("syntax"), json!(2)));
@@ -227,9 +227,9 @@ fn timers_fire_in_order_and_intervals_can_stop() {
 
 #[test]
 fn exit_stops_the_script_where_it_stands() {
-    let run = run("text('one'); exit(); text('two');");
-    assert_eq!(run.end["type"], "result");
-    assert_eq!(run.text, ["one"]);
+    let exited = run("text('one'); exit(); text('two');");
+    assert_eq!(exited.end["type"], "result");
+    assert_eq!(exited.text, ["one"]);
 }
 
 #[test]
@@ -256,8 +256,8 @@ fn output_is_limited() {
 
 #[test]
 fn large_text_arrives_in_pieces_and_whole() {
-    let run = run("text('é'.repeat(700000))");
-    assert_eq!(run.text, ["é".repeat(700_000)]);
+    let large = run("text('é'.repeat(700000))");
+    assert_eq!(large.text, ["é".repeat(700_000)]);
 }
 
 #[test]

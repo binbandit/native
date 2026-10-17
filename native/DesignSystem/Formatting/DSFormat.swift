@@ -51,6 +51,21 @@ public nonisolated enum DSFormat {
         [time(date, now: now), countdown(to: date, now: now)].compactMap(\.self).joined(separator: ", ")
     }
 
+    /// Elapsed work time: "8s", "1m 12s", "1h 4m". Show it with `.monospacedDigit()` (or use
+    /// `ElapsedTimeText`) so a ticking clock doesn't jitter.
+    public static func duration(_ seconds: TimeInterval) -> String {
+        let total = Int(max(seconds, 0))
+        let hours = total / 3600, minutes = total % 3600 / 60, remainder = total % 60
+        if hours > 0 { return minutes == 0 ? "\(hours)h" : "\(hours)h \(minutes)m" }
+        if minutes > 0 { return remainder == 0 ? "\(minutes)m" : "\(minutes)m \(remainder)s" }
+        return "\(remainder)s"
+    }
+
+    /// A finished thinking block's label: "Thought for 12s".
+    public static func thoughtFor(_ seconds: TimeInterval) -> String {
+        "Thought for \(duration(seconds))"
+    }
+
     // MARK: Counts
 
     /// Token counts, compact with at most one decimal as Claude Code prints them: "103", "2k",
@@ -89,6 +104,13 @@ public nonisolated enum DSFormat {
         [added > 0 ? "+\(lineCount(added))" : nil, removed > 0 ? "\u{2212}\(lineCount(removed))" : nil]
             .compactMap(\.self)
             .joined(separator: " ")
+    }
+
+    /// Spend in a currency: "$0.42", "$12.30", "$1,234.50"; "<$0.01" for a nonzero sliver.
+    public static func cost(_ amount: Double, currencyCode: String = "USD") -> String {
+        let style = FloatingPointFormatStyle<Double>.Currency(code: currencyCode).precision(.fractionLength(2))
+        if amount > 0, amount < 0.01 { return "<" + 0.01.formatted(style) }
+        return amount.formatted(style)
     }
 
     // MARK: System
