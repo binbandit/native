@@ -92,3 +92,12 @@ automatic tinting. Glass is an appearance, not a selectable theme. Existing Glas
 to Original. Other themes remain light/dark Dock image overrides through AppKit; they cannot retain
 the bundled icon's native Clear/Tinted rendering. No private system preference keys or icon APIs are
 used to imitate it.
+
+## 2026-10-17: Experiments behind flags, variants as separate implementations
+
+New UIs and designs ship to users as opt-in experiments before they become defaults. Every
+experiment is declared once in a typed registry (id, title, description, stage: Labs or Beta,
+default) and toggled in Settings ▸ Labs. An alternative design is its own implementation behind a
+small style protocol (for example a bubble-style transcript beside the standard one), never `if`
+branches scattered through shared views, so an experiment can be promoted, kept as a choice, or
+deleted without touching the default path.
