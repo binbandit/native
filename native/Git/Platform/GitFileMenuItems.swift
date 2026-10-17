@@ -16,11 +16,12 @@ struct GitFileMenuItems: View {
     var body: some View {
         #if os(macOS)
         if let root {
-            let url = root.appending(path: path)
-            Button("Open") { NSWorkspace.shared.open(url) }
-            Button("Reveal in Finder") { NSWorkspace.shared.activateFileViewerSelecting([url]) }
+            Button("Open") { NSWorkspace.shared.open(root.appending(path: path)) }
         }
         #endif
+        if let root, PlatformFileBrowser.canReveal {
+            Button("Reveal in Finder") { PlatformFileBrowser.reveal(root.appending(path: path)) }
+        }
         Button("Copy Path") { Self.copy(path) }
     }
 

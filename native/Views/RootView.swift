@@ -21,163 +21,171 @@ struct RootView: View {
     var body: some View {
         @Bindable var model = model
         @Bindable var automation = automation
-        @Bindable var settings = settings
-        // Settings takes over the window while it's open, as in Conductor. The split view's state
-        // lives here, so leaving Settings returns to where you were.
-        Group {
-            if settings.isShown {
-                SettingsScreen(
-                    pane: $settings.pane,
-                    additionalPanes: AppSettingsPanes.all(plugins: model.plugins, terminals: terminals))
-            } else {
-                NavigationSplitView(columnVisibility: $columnVisibility) {
-                    sidebar
-                        // The only sidebar toggle is ours, right after the window controls as in Factory; as a
-                        // sidebar toolbar item it stays there when the sidebar is hidden, too. The system's
-                        // goes from both the column and the split view. On the column it must come before
-                        // the width, or SwiftUI drops the width.
-                        .toolbar(removing: .sidebarToggle)
-                        .navigationSplitViewColumnWidth(min: 220, ideal: DS.Size.sidebarWidth, max: 380)
-                        .toolbar {
-                            ToolbarItem {
-                                SidebarCollapseButton(isExpanded: columnVisibility != .detailOnly) {
-                                    withAnimation {
-                                        columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
-                                    }
-                                }
-                            }
-                            .sharedBackgroundVisibility(.hidden)
-                            if releaseChannel.isNightly {
-                                ToolbarItem {
-                                    NightlyMark()
-                                        .foregroundStyle(.dsTextTertiary)
-                                }
-                                .sharedBackgroundVisibility(.hidden)
-                            }
-                            // Pushes the toggle to the sidebar's leading edge, next to the window controls, and
-                            // back and forward to its trailing edge, where Conductor has them.
-                            ToolbarSpacer(.flexible)
-                            // They belong to the sidebar's header, so they go away with it (⌘[ and ⌘] still work).
-                            if columnVisibility != .detailOnly {
-                                ToolbarItem {
-                                    HistoryNavigationButtons(
-                                        canGoBack: model.canGoBack,
-                                        canGoForward: model.canGoForward,
-                                        onBack: model.goBack,
-                                        onForward: model.goForward
-                                    )
-                                }
-                                .sharedBackgroundVisibility(.hidden)
-                            }
-                        }
-                } detail: {
-                    detail
+        content
+            .focusedSceneValue(\.sidebarVisibility, $columnVisibility)
+            .undoToast($undoToast)
+            .onChange(of: model.lastUndoable?.id) {
+                undoToast = model.lastUndoable.map { action in UndoToastItem(action.message, undo: action.undo) }
+            }
+            .focusedSceneValue(\.showsPullRequests, $showsPullRequests)
+            // The pull requests page and a session take turns in the detail column.
+            .onChange(of: showsPullRequests) { _, shows in
+                if shows {
+                    model.selection = nil
+                    automationPage = nil
+                    expeditions.isPageShown = false
                 }
-                .toolbar(removing: .sidebarToggle)
             }
-        }
-        .focusedSceneValue(\.sidebarVisibility, $columnVisibility)
-        .undoToast($undoToast)
-        .onChange(of: model.lastUndoable?.id) {
-            undoToast = model.lastUndoable.map { action in UndoToastItem(action.message, undo: action.undo) }
-        }
-        .focusedSceneValue(\.showsPullRequests, $showsPullRequests)
-        // The pull requests page and a session take turns in the detail column.
-        .onChange(of: showsPullRequests) { _, shows in
-            if shows {
-                model.selection = nil
-                automationPage = nil
-                expeditions.isPageShown = false
-            }
-        }
-        .onChange(of: automationPage) { _, page in
-            if page != nil {
-                model.selection = nil
-                showsPullRequests = false
-                expeditions.isPageShown = false
-            }
-        }
-        .onChange(of: model.selection) { _, key in
-            if key != nil {
-                showsPullRequests = false
-                automationPage = nil
-                expeditions.isPageShown = false
-            }
-        }
-        .onChange(of: expeditions.isPageShown) { _, shows in
-            if shows {
-                model.selection = nil
-                showsPullRequests = false
-                automationPage = nil
-            }
-        }
-        .newExpeditionSheet()
-        .sheet(isPresented: $automation.isWorkflowPickerRequested) {
-            WorkflowPickerSheet(cwd: model.currentProject?.url, onAddProject: { model.isAddingProject = true }) { run in
-                automationPage = .workflows
-                workflowPath = [run]
-            }
-        }
-        .task(id: model.selection) {
-            if let key = model.selection {
-                await model.loadSession(key)
-            }
-        }
-        .sheet(item: $model.terminalSignIn) { request in
-            AgentTerminalSignInSheet(request: request) { await model.finishTerminalSignIn($0) }
-        }
-        .sheet(isPresented: $model.isAddingAgent) {
-            AddAgentSheet(agents: model.agentsToAdd, summaries: model.plugins.descriptions) {
-                await model.checkForAgents()
-            }
-        }
-        .confirmationDialog("New Session With", isPresented: $model.isChoosingAgent) {
-            ForEach(model.agents, id: \.agent.id) { runtime in
-                Button(runtime.agent.displayName) {
-                    Task { await model.newSession(with: runtime.agent.id) }
+            .onChange(of: automationPage) { _, page in
+                if page != nil {
+                    model.selection = nil
+                    showsPullRequests = false
+                    expeditions.isPageShown = false
                 }
-                .disabled(!model.canCreateSession(with: runtime.agent.id))
             }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Choose the agent for the new session.")
-        }
-        .fileImporter(isPresented: $model.isAddingProject, allowedContentTypes: [.folder]) { result in
-            if case .success(let url) = result {
-                Task { await model.addProject(url) }
+            .onChange(of: model.selection) { _, key in
+                if key != nil {
+                    showsPullRequests = false
+                    automationPage = nil
+                    expeditions.isPageShown = false
+                }
             }
-        }
-        .alert(
-            "Something Went Wrong",
-            isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } }),
-            presenting: model.errorMessage
-        ) { _ in
-            Button("OK") {}
-        } message: { message in
-            Text(message)
-        }
-        .alert(
-            "Sign In to \(signInAgent?.agent.displayName ?? "")",
-            isPresented: Binding(get: { model.signInPrompt != nil }, set: { if !$0 { model.signInPrompt = nil } }),
-            presenting: signInAgent
-        ) { runtime in
-            ForEach(runtime.authMethods, id: \.id) { method in
-                Button(method.name) {
-                    Task {
-                        if await model.signIn(to: runtime.agent.id, with: method, thenStartSession: true) {
-                            await model.newSession(with: runtime.agent.id)
+            .onChange(of: expeditions.isPageShown) { _, shows in
+                if shows {
+                    model.selection = nil
+                    showsPullRequests = false
+                    automationPage = nil
+                }
+            }
+            .newExpeditionSheet()
+            .sheet(isPresented: $automation.isWorkflowPickerRequested) {
+                WorkflowPickerSheet(cwd: model.currentProject?.url, onAddProject: { model.isAddingProject = true }) {
+                    run in
+                    automationPage = .workflows
+                    workflowPath = [run]
+                }
+            }
+            .task(id: model.selection) {
+                if let key = model.selection {
+                    await model.loadSession(key)
+                }
+            }
+            .sheet(item: $model.terminalSignIn) { request in
+                AgentTerminalSignInSheet(request: request) { await model.finishTerminalSignIn($0) }
+            }
+            .sheet(isPresented: $model.isAddingAgent) {
+                AddAgentSheet(agents: model.agentsToAdd, summaries: model.plugins.descriptions) {
+                    await model.checkForAgents()
+                }
+            }
+            .confirmationDialog("New Session With", isPresented: $model.isChoosingAgent) {
+                ForEach(model.agents, id: \.agent.id) { runtime in
+                    Button(runtime.agent.displayName) {
+                        Task { await model.newSession(with: runtime.agent.id) }
+                    }
+                    .disabled(!model.canCreateSession(with: runtime.agent.id))
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("Choose the agent for the new session.")
+            }
+            .fileImporter(isPresented: $model.isAddingProject, allowedContentTypes: [.folder]) { result in
+                if case .success(let url) = result {
+                    Task { await model.addProject(url) }
+                }
+            }
+            .alert(
+                "Something Went Wrong",
+                isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } }),
+                presenting: model.errorMessage
+            ) { _ in
+                Button("OK") {}
+            } message: { message in
+                Text(message)
+            }
+            .alert(
+                "Sign In to \(signInAgent?.agent.displayName ?? "")",
+                isPresented: Binding(get: { model.signInPrompt != nil }, set: { if !$0 { model.signInPrompt = nil } }),
+                presenting: signInAgent
+            ) { runtime in
+                ForEach(runtime.authMethods, id: \.id) { method in
+                    Button(method.name) {
+                        Task {
+                            if await model.signIn(to: runtime.agent.id, with: method, thenStartSession: true) {
+                                await model.newSession(with: runtime.agent.id)
+                            }
                         }
                     }
                 }
+                Button("Cancel", role: .cancel) {}
+            } message: { runtime in
+                Text("\(runtime.agent.displayName) needs you to sign in before it can start a session.")
             }
-            Button("Cancel", role: .cancel) {}
-        } message: { runtime in
-            Text("\(runtime.agent.displayName) needs you to sign in before it can start a session.")
-        }
     }
 
     /// The sidebar with the other features' parts: the pull requests page, and each task row's pull
     /// request, branch state and context usage.
+    /// Settings takes over the window while it's open, as in Conductor. The split view's state lives
+    /// here, so leaving Settings returns to where you were.
+    @ViewBuilder
+    private var content: some View {
+        @Bindable var settings = settings
+        if settings.isShown {
+            SettingsScreen(
+                pane: $settings.pane,
+                additionalPanes: AppSettingsPanes.all(plugins: model.plugins, terminals: terminals))
+        } else {
+            splitView
+        }
+    }
+
+    private var splitView: some View {
+        NavigationSplitView(columnVisibility: $columnVisibility) {
+            sidebar
+                // The only sidebar toggle is ours, right after the window controls as in Factory; as a
+                // sidebar toolbar item it stays there when the sidebar is hidden, too. The system's
+                // goes from both the column and the split view. On the column it must come before
+                // the width, or SwiftUI drops the width.
+                .toolbar(removing: .sidebarToggle)
+                .navigationSplitViewColumnWidth(min: 220, ideal: DS.Size.sidebarWidth, max: 380)
+                .toolbar {
+                    ToolbarItem {
+                        SidebarCollapseButton(isExpanded: columnVisibility != .detailOnly) {
+                            withAnimation {
+                                columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
+                            }
+                        }
+                    }
+                    .sharedBackgroundVisibility(.hidden)
+                    if releaseChannel.isNightly {
+                        ToolbarItem {
+                            NightlyMark()
+                                .foregroundStyle(.dsTextTertiary)
+                        }
+                        .sharedBackgroundVisibility(.hidden)
+                    }
+                    // Pushes the toggle to the sidebar's leading edge, next to the window controls, and
+                    // back and forward to its trailing edge, where Conductor has them.
+                    ToolbarSpacer(.flexible)
+                    // They belong to the sidebar's header, so they go away with it (⌘[ and ⌘] still work).
+                    if columnVisibility != .detailOnly {
+                        ToolbarItem {
+                            HistoryNavigationButtons(
+                                canGoBack: model.canGoBack,
+                                canGoForward: model.canGoForward,
+                                onBack: model.goBack,
+                                onForward: model.goForward
+                            )
+                        }
+                        .sharedBackgroundVisibility(.hidden)
+                    }
+                }
+        } detail: {
+            detail
+        }
+        .toolbar(removing: .sidebarToggle)
+    }
+
     private var sidebar: some View {
         SidebarView {
             PullRequestsNavItem(isSelected: showsPullRequests) { showsPullRequests = true }
