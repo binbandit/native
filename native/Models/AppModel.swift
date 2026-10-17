@@ -45,6 +45,8 @@ final class AppModel {
     let installations = AgentInstallations()
     /// An agent that wants the user to sign in before it starts a session.
     var signInPrompt: AgentDefinition.ID?
+    /// A sign-in under way in a terminal, for agents that can only sign in there.
+    var terminalSignIn: AgentTerminalSignIn?
     var errorMessage: String?
     /// The agent a session is being created with, while that's under way.
     private(set) var creatingSessionWith: AgentDefinition.ID?
@@ -171,8 +173,13 @@ final class AppModel {
 
     /// Signs in to `agent`, reporting whether that worked.
     @discardableResult
-    func signIn(to agent: AgentDefinition.ID, with method: AuthMethod) async -> Bool {
+    func signIn(to agent: AgentDefinition.ID, with method: AuthMethod, thenStartSession: Bool = false) async -> Bool {
         guard let runtime = runtimes[agent] else { return false }
+        // Some agents only sign in from a terminal; the sign-in sheet takes it from here.
+        if let request = AgentTerminalSignIn(agent: runtime.agent, method: method, startsSession: thenStartSession) {
+            terminalSignIn = request
+            return false
+        }
         do {
             try await runtime.signIn(with: method)
         } catch {

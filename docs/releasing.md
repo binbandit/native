@@ -8,8 +8,8 @@ in `docs/decisions.md` ("Releases on GitHub", "Sparkle for updates", "Nightly be
 | --- | --- |
 | `native/Updates/` | `UpdateController` (observable state over Sparkle), the update button, Settings ▸ Updates, the Software Update window, the host version notice |
 | `Config/*.xcconfig`, `Config/Native-Info.plist` | channels, bundle identifiers, feed URLs and the signing key, in one place |
-| `scripts/release/` | `release.sh` (archive → notarize → package → appcast → publish), `release-notes.sh`, `ci-signing.sh` |
-| `.github/workflows/` | `nightly.yml` (every night), `release.yml` (on a `v*` tag) |
+| `scripts/release/` | `release.sh` (archive → notarize → package → appcast → publish), `check.sh` (compile Release and Nightly), `release-notes.sh`, `ci-signing.sh` |
+| `.github/workflows/` | `check.yml` (every pull request), `nightly.yml` (every night), `release.yml` (on a `v*` tag) |
 
 ## Channels
 
@@ -155,6 +155,11 @@ embedded in the appcast as Markdown, which Settings ▸ Updates renders. They're
 hand-edited, and there's no CHANGELOG: to change what users read, write a better commit title.
 
 ## CI
+
+`check.yml` runs `scripts/release/check.sh` on every pull request and push to `main`: it compiles
+the Release and Nightly configurations without signing, so a break that only shows up outside
+Debug (a `#Preview` calling a DEBUG-only fixture) is caught before a release needs it. Run it
+locally before landing anything that touches `#if DEBUG` code or build settings.
 
 `nightly.yml` runs at 07:00 UTC (and on demand), builds `main`, and skips when `main` hasn't moved
 since the last nightly. `release.yml` runs on `v*` tags. Both need Xcode with the macOS 27 SDK; set

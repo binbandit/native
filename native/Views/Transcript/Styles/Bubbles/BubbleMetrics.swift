@@ -31,11 +31,20 @@ nonisolated enum BubbleMetrics {
 }
 
 /// Bubbles' colors, all from design-system tokens: the user's bubbles take the accent (so they
-/// follow the app icon theme), the agent's a neutral wash of the text color.
+/// follow the app icon theme), the agent's a neutral wash of the text color. A monochrome accent
+/// (Original) would make the user's bubbles glaring slabs of near-black or near-white, so there
+/// they take a stronger wash than the agent's instead.
 nonisolated enum BubblePalette {
-    static let outgoing = Color.dsAccent
-    static let outgoingText = Color.dsTextOnAccent
     static let incoming = Color.dsTextPrimary.opacity(0.07)
+
+    static func outgoing(_ palette: DSAccentPalette) -> Color {
+        palette.isMonochrome ? .dsTextPrimary.opacity(0.13) : .dsAccent
+    }
+
+    static func outgoingText(_ palette: DSAccentPalette) -> Color {
+        palette.isMonochrome ? .dsTextPrimary : .dsTextOnAccent
+    }
+
     static let tray = Color.dsSurfaceSunken
     static let trayBorder = Color.dsSeparator
 }

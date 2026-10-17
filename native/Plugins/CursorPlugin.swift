@@ -21,8 +21,7 @@ extension BuiltInPlugins {
             icon: AgentIconSource(apps: ["com.todesktop.230313mzl4w4u92"], registry: "cursor"),
             setup: AgentSetupGuide(
                 install: "brew install --cask cursor-cli",
-                docs: URL(string: "https://cursor.com/docs/cli/installation"),
-                signIn: "cursor-agent login"
+                docs: URL(string: "https://cursor.com/docs/cli/installation")
             )
         )]
     ))

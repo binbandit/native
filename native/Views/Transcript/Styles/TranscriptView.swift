@@ -17,6 +17,8 @@ struct TranscriptView: View {
     @State private var position = ScrollPosition(edge: .bottom)
     /// Whether the newest output is out of view.
     @State private var isAwayFromLatest = false
+    /// The scroll container's width, which a legacy scroller doesn't change.
+    @State private var containerWidth: CGFloat?
 
     var body: some View {
         let items = session.state.items
@@ -35,6 +37,11 @@ struct TranscriptView: View {
         .defaultScrollAnchor(.bottom, for: .initialOffset)
         .defaultScrollAnchor(.bottom, for: .sizeChanges)
         .scrollPosition($position)
+        .onScrollGeometryChange(for: CGFloat.self) { geometry in
+            geometry.containerSize.width
+        } action: { _, width in
+            containerWidth = width
+        }
         .onScrollGeometryChange(for: Bool.self) { [threshold = DS.Space.xxxl] geometry in
             geometry.visibleRect.maxY < geometry.contentSize.height - threshold
         } action: { _, isAway in
@@ -65,24 +72,25 @@ struct TranscriptView: View {
         }
     }
 
-    /// The rows in a centered column: as wide as the width setting allows, with a margin each side.
+    /// The rows in a centered column, as wide as the width setting allows with a margin each side.
     private func column(_ transcript: TranscriptStyleConfiguration) -> some View {
-        let maxWidth = columnWidth
-        let margin = DS.Space.xxl
-        return AnyView(style.makeBody(transcript))
-            // Invariant: the rows' height must never depend on whether the vertical scroller is
-            // showing. Legacy (mouse) scrollers take layout width, and they appear whenever the
-            // content overflows, even for one pass. If the column followed the content width, a
-            // scroller flash would rewrap and re-estimate the lazy rows, the new height could hide
-            // the scroller again, and the two states fed each other forever: a 100% CPU hang on the
-            // main thread. So the column is sized from the scroll container, which a scroller
-            // doesn't change.
-            .containerRelativeFrame(.horizontal) { containerWidth, _ in
-                max(min(maxWidth, containerWidth - 2 * margin), 0)
-            }
+        AnyView(style.makeBody(transcript))
+            .frame(maxWidth: maxColumnWidth)
             .padding(.top, DS.Space.xl)
             .padding(.bottom, DS.Space.lg)
             .frame(maxWidth: .infinity)
+    }
+
+    /// Invariant: the rows' height must never depend on whether the vertical scroller is showing.
+    /// Legacy (mouse) scrollers take layout width, and they appear whenever the content overflows,
+    /// even for one pass. If the column followed the content width, a scroller flash rewrapped and
+    /// re-estimated the lazy rows, the new height could hide the scroller again, and the two states
+    /// fed each other forever: a 100% CPU hang on the main thread. So the column's width comes from
+    /// the scroll container, which a scroller doesn't change, and its margins are wider than a
+    /// scroller. It's a maximum, not a fixed width, so it never holds the window open either.
+    private var maxColumnWidth: CGFloat {
+        guard let containerWidth else { return columnWidth }
+        return max(min(columnWidth, containerWidth - 2 * DS.Space.xxl), 0)
     }
 
     /// Only while a turn runs: afterwards the latest is the turn's end, and scrolling up is reading.

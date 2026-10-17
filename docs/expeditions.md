@@ -1,7 +1,5 @@
 # Expeditions
 
-*Working name. The final name is Brayden's call; see "The name". This doc is renamed with it.*
-
 An expedition is a large objective that a crew of agents carries out over hours, from a route the
 user approved: a lead plans it, builders do the work in a workspace of its own, a reviewer checks
 each leg, and the user is asked only when it matters. It ends with a debrief and a pull request.
@@ -13,13 +11,30 @@ from, not copied. No code, prompts, text, assets or vocabulary of the reference 
 
 | Name | Why it fits |
 | --- | --- |
-| **Expeditions** (recommended) | A crew sets out on a long objective with a route and provisions, checks in at camps and comes back with a report. Reads clearly in a menu ("New Expedition…") and gives a coherent vocabulary: route, legs, crew, logbook, debrief. |
+| **Expeditions** (chosen) | A crew sets out on a long objective with a route and provisions, checks in at camps and comes back with a report. Reads clearly in a menu ("New Expedition…") and gives a coherent vocabulary: route, legs, crew, logbook, debrief. |
 | Constellations | Agents as stars joined into one figure: the strongest tie to Native's interlocking mark and Nightly's night sky, and the team view can literally draw one. Weaker as a verb and long in a sidebar. |
 | Voyages | The same journey idea in a shorter word, with a nod to navigating by the stars. Slightly whimsical for work that runs for hours. |
 | Ensembles | Many voices performing one piece: puts the cross-provider crew first. Says less about planning, progress and arriving. |
 
 The sub-terms below follow the recommended name. With Constellations or Ensembles they'd change
 (the route becomes a chart or a score), but the concepts don't.
+
+## What we took, and what we didn't
+
+From the research (`research/factory-missions.md`):
+
+- **Taken:** an engine that isn't an LLM runs the queue while an agent plans; structured handoffs
+  (a builder's report says what changed, how it was verified, and what it left undone); review by a
+  different provider than the builder by default; bounded attempts before the user is asked; a
+  guard on scope growth (a lead revision that more than doubles the route needs approval); agent
+  state shown as waiting on you, working, idle; a readiness check before anything starts.
+- **Done differently:** a budget per expedition (the reference app has none); worktree isolation by default;
+  the crew picked by the user across providers; protection that doesn't depend on which tool an
+  agent writes with (Native is the only writer and checks the files); steering a running member
+  without pausing the whole run; a pull request that's part of the finish, not whatever an agent
+  happened to open.
+- **Left out:** organization billing and "teams" as attribution; hidden cloud machines; free-text
+  dependencies.
 
 ## Vocabulary
 
@@ -224,8 +239,8 @@ block, the goal status line, the verdict). Native is the only writer, because:
 - only the right role changes the right thing: a route block counts only from the lead, a verdict
   only from the reviewer, a status line only for the assignment its session is on.
 
-The files are written read-only, and Native keeps the hash of what it wrote. If one changes anyway
-(any agent can `chmod`), Native puts its own copy back and logs which file and when.
+The files are written read-only, and Native remembers what it wrote. If one changes anyway (any
+agent can `chmod`), Native puts its own copy back and logs which file and when.
 
 ## The overview
 

@@ -20,7 +20,6 @@ nonisolated struct BubbleShape: Shape {
         let radius = min(BubbleMetrics.radius, body.height / 2, body.width / 2)
         let tight = min(BubbleMetrics.groupedRadius, radius)
         let topSide = position.isFirst ? radius : tight
-        let bottomSide = position.isLast ? radius : tight
 
         var path = Path()
         path.move(to: CGPoint(x: body.minX + radius, y: body.minY))
@@ -42,7 +41,7 @@ nonisolated struct BubbleShape: Shape {
         } else {
             path.addArc(
                 tangent1End: CGPoint(x: body.maxX, y: body.maxY), tangent2End: CGPoint(x: body.minX, y: body.maxY),
-                radius: bottomSide
+                radius: tight
             )
         }
         path.addArc(
