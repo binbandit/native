@@ -6,11 +6,18 @@ struct RootView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.releaseChannel) private var releaseChannel
     @State private var columnVisibility = NavigationSplitViewVisibility.all
+    @State private var showsPullRequests = false
 
     var body: some View {
         @Bindable var model = model
         NavigationSplitView(columnVisibility: $columnVisibility) {
-            SidebarView()
+            SidebarView {
+                PullRequestsNavItem(isSelected: showsPullRequests) { showsPullRequests = true }
+            } accessories: {
+                EmptyView()
+            } taskAccessory: { summary in
+                AppTaskRowAccessory(summary: summary)
+            }
                 // The only sidebar toggle is ours, right after the window controls as in Factory; as a
                 // sidebar toolbar item it stays there when the sidebar is hidden, too. The system's
                 // goes from both the column and the split view. On the column it must come before
@@ -54,6 +61,14 @@ struct RootView: View {
         }
         .toolbar(removing: .sidebarToggle)
         .focusedSceneValue(\.sidebarVisibility, $columnVisibility)
+        .focusedSceneValue(\.showsPullRequests, $showsPullRequests)
+        // The pull requests page and a session take turns in the detail column.
+        .onChange(of: showsPullRequests) { _, shows in
+            if shows { model.selection = nil }
+        }
+        .onChange(of: model.selection) { _, key in
+            if key != nil { showsPullRequests = false }
+        }
         .task(id: model.selection) {
             if let key = model.selection {
                 await model.loadSession(key)
@@ -110,7 +125,9 @@ struct RootView: View {
 
     @ViewBuilder
     private var detail: some View {
-        if let key = model.selection {
+        if showsPullRequests {
+            PullRequestsView()
+        } else if let key = model.selection {
             if let session = model.session(key) {
                 SessionView(session: session)
                     .id(key)

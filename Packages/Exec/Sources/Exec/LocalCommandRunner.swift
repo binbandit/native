@@ -18,58 +18,83 @@ public struct LocalCommandRunner: CommandRunner {
         if let directory = command.directory {
             process.currentDirectoryURL = URL(filePath: directory, directoryHint: .isDirectory)
         }
-        let input = Pipe()
-        let output = Pipe()
-        let error = Pipe()
-        process.standardInput = input
-        process.standardOutput = output
-        process.standardError = error
+        let inputPipe = Pipe()
+        let outputPipe = Pipe()
+        let errorPipe = Pipe()
+        process.standardInput = inputPipe
+        process.standardOutput = outputPipe
+        process.standardError = errorPipe
 
-        // Drain both pipes as data arrives: a command that fills one pipe's buffer while nobody reads
-        // it would block forever.
-        let collected = Collected()
-        output.fileHandleForReading.readabilityHandler = { collected.append($0.availableData, to: \.output) }
-        error.fileHandleForReading.readabilityHandler = { collected.append($0.availableData, to: \.error) }
+        // Both pipes are drained from the start, so a command that fills one pipe's buffer can't block,
+        // and each read ends only at EOF, so no output is lost or reordered.
+        async let standardOutput = Self.readToEnd(outputPipe.fileHandleForReading)
+        async let standardError = Self.readToEnd(errorPipe.fileHandleForReading)
 
         let lifecycle = Lifecycle(process)
-        let exitCode: Int32 = try await withTaskCancellationHandler {
-            try await withCheckedThrowingContinuation { continuation in
-                process.terminationHandler = { continuation.resume(returning: $0.terminationStatus) }
-                do {
-                    try lifecycle.launch()
-                } catch {
-                    process.terminationHandler = nil
-                    continuation.resume(throwing: error)
-                    return
-                }
-                if let stdin = command.standardInput {
-                    try? input.fileHandleForWriting.write(contentsOf: stdin)
-                }
-                try? input.fileHandleForWriting.close()
-                if let timeout = command.timeout {
-                    Task {
-                        try? await Task.sleep(for: timeout)
-                        lifecycle.stop(.timedOut)
+        let exitCode: Int32
+        do {
+            exitCode = try await withTaskCancellationHandler {
+                try await withCheckedThrowingContinuation { continuation in
+                    process.terminationHandler = { continuation.resume(returning: $0.terminationStatus) }
+                    do {
+                        try lifecycle.launch()
+                    } catch {
+                        process.terminationHandler = nil
+                        continuation.resume(throwing: error)
+                        return
+                    }
+                    if let stdin = command.standardInput {
+                        try? inputPipe.fileHandleForWriting.write(contentsOf: stdin)
+                    }
+                    try? inputPipe.fileHandleForWriting.close()
+                    if let timeout = command.timeout {
+                        Task {
+                            try? await Task.sleep(for: timeout)
+                            lifecycle.stop(.timedOut)
+                        }
                     }
                 }
+            } onCancel: {
+                lifecycle.stop(.cancelled)
             }
-        } onCancel: {
-            lifecycle.stop(.cancelled)
+        } catch {
+            // Nothing launched, so nothing will close the write ends: close them to end the reads.
+            try? outputPipe.fileHandleForWriting.close()
+            try? errorPipe.fileHandleForWriting.close()
+            _ = await (standardOutput, standardError)
+            throw error
         }
-
-        output.fileHandleForReading.readabilityHandler = nil
-        error.fileHandleForReading.readabilityHandler = nil
-        // Whatever arrived after the last readability callback.
-        collected.append(output.fileHandleForReading.readDataToEndOfFile(), to: \.output)
-        collected.append(error.fileHandleForReading.readDataToEndOfFile(), to: \.error)
+        let result = CommandResult(
+            exitCode: exitCode,
+            standardOutput: await standardOutput,
+            standardError: await standardError
+        )
 
         switch lifecycle.stopReason {
         case .cancelled: throw CancellationError()
         case .timedOut: throw CommandError.timedOut(command.executable, after: command.timeout ?? .zero)
-        case nil: break
+        case nil: return result
         }
-        let (standardOutput, standardError) = collected.snapshot
-        return CommandResult(exitCode: exitCode, standardOutput: standardOutput, standardError: standardError)
+    }
+
+    /// Reads a pipe until every writer has closed it.
+    private static func readToEnd(_ handle: FileHandle) async -> Data {
+        await withCheckedContinuation { continuation in
+            let queue = DispatchQueue(label: "Exec.LocalCommandRunner.read")
+            let buffer = Mutex(Data())
+            let channel = DispatchIO(type: .stream, fileDescriptor: handle.fileDescriptor, queue: queue) { _ in }
+            channel.setLimit(lowWater: 1)
+            channel.read(offset: 0, length: .max, queue: queue) { done, data, _ in
+                if let data, !data.isEmpty {
+                    buffer.withLock { $0.append(contentsOf: data) }
+                }
+                guard done else { return }
+                channel.close()
+                // The handle owns the descriptor; keep it open until the read is done.
+                withExtendedLifetime(handle) {}
+                continuation.resume(returning: buffer.withLock { $0 })
+            }
+        }
     }
 
     private static func resolve(_ executable: String, path: String?) -> URL? {
@@ -125,24 +150,6 @@ private final class Lifecycle: @unchecked Sendable {
             }
             state.stopReason = reason
         }
-    }
-}
-
-private final class Collected: Sendable {
-    struct Buffers {
-        var output = Data()
-        var error = Data()
-    }
-
-    private let buffers = Mutex(Buffers())
-
-    func append(_ data: Data, to stream: WritableKeyPath<Buffers, Data> & Sendable) {
-        guard !data.isEmpty else { return }
-        buffers.withLock { $0[keyPath: stream].append(data) }
-    }
-
-    var snapshot: (Data, Data) {
-        buffers.withLock { ($0.output, $0.error) }
     }
 }
 #endif

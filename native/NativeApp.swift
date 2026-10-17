@@ -3,19 +3,39 @@ import SwiftUI
 
 @main
 struct NativeApp: App {
-    @State private var model = AppModel()
+    @State private var model: AppModel
+    @State private var git: GitStore
+    @State private var gitHub: GitHubModel
     @State private var iconPreferences = AppIconPreferences()
+
+    init() {
+        // Git and GitHub run with the login-shell environment the agents get.
+        let model = AppModel()
+        _model = State(initialValue: model)
+        _git = State(initialValue: GitStore { await model.shellEnvironment() })
+        _gitHub = State(initialValue: GitHubModel { await model.shellEnvironment(refresh: $0) })
+    }
 
     var body: some Scene {
         Window("Native", id: "main") {
             RootView()
                 .environment(model)
+                .environment(git)
+                .environment(gitHub)
+                .createPullRequestSheet(gitHub)
                 .dsAccentPalette(themeID: iconPreferences.theme.rawValue)
                 .task {
                     OrchestrationPlugin.connect(to: model)
                     BuiltInPlugins.usage.limits.host = model
                     iconPreferences.start()
                     await model.start()
+                }
+                .task {
+                    gitHub.openAsTask = { [model, git, weak gitHub] pullRequest in
+                        guard let gitHub else { return }
+                        try await GitHubGitWiring.openAsTask(pullRequest, app: model, git: git, gitHub: gitHub)
+                    }
+                    await gitHub.keepFresh()
                 }
         }
         .defaultSize(width: 1120, height: 780)
@@ -84,6 +104,8 @@ private struct ViewCommands: Commands {
             }
             .keyboardShortcut("i", modifiers: [.command, .option])
             .disabled(session?.state.subagents.isEmpty ?? true)
+
+            GitChangesMenuItem()
         }
     }
 }
@@ -104,6 +126,9 @@ private struct GoCommands: Commands {
             }
             .keyboardShortcut("]")
             .disabled(!model.canGoForward)
+
+            Divider()
+            PullRequestsMenuItem()
         }
     }
 }
