@@ -70,7 +70,8 @@ final class AppModel {
     /// Internal only for AppModel+Recovery.swift.
     @ObservationIgnored var restartPolicies: [AgentDefinition.ID: AgentRestartPolicy] = [:]
     @ObservationIgnored private let services: SessionServices
-    @ObservationIgnored private let launcher: SessionLauncher
+    /// Internal only for AppModel+TaskSessions.swift.
+    @ObservationIgnored let launcher: SessionLauncher
     /// Internal only for AppModel+Listing.swift.
     @ObservationIgnored let taskRecords = TaskSessionRecords()
     @ObservationIgnored private let environment = ShellEnvironment()
@@ -99,7 +100,9 @@ final class AppModel {
         self.pluginEvents = pluginEvents
         let (titleEvents, titleContinuation) = AsyncStream.makeStream(of: TitleEvent.self)
         self.titleEvents = titleEvents
-        services = SessionServices(plugins: plugins, titles: titles) { continuation.yield($0) } titleLanded: { key, folder, title in
+        services = SessionServices(plugins: plugins, titles: titles) {
+            continuation.yield($0)
+        } titleLanded: { key, folder, title in
             titleContinuation.yield(TitleEvent(key: key, folder: folder, title: title))
         }
         runtimes = AgentRuntimes(plugins: plugins)
@@ -109,7 +112,8 @@ final class AppModel {
         sessions = SessionStore(services: services)
         unread = UnreadSessions()
         launcher = SessionLauncher(plugins: plugins, services: services, store: sessions)
-        lastUsedAgent = UserDefaults.standard.string(forKey: Self.lastUsedAgentKey).map(AgentDefinition.ID.init(rawValue:))
+        lastUsedAgent = UserDefaults.standard.string(forKey: Self.lastUsedAgentKey).map(
+            AgentDefinition.ID.init(rawValue:))
     }
 
     /// Ends every agent's process, for when the app quits.
@@ -132,11 +136,12 @@ final class AppModel {
     /// while that one can't start sessions, the first that can.
     var defaultAgent: AgentDefinition? {
         let lastUsed = agents.first { $0.agent.id == lastUsedAgent }
-        if let lastUsed, lastUsed.isReady { return lastUsed.agent }
-        return (agents.first(where: \.isReady) ?? lastUsed ?? agents.first)?.agent
+        if let lastUsed, lastUsed.isAvailable { return lastUsed.agent }
+        return (agents.first(where: \.isAvailable) ?? lastUsed ?? agents.first)?.agent
     }
 
-    /// Starts every agent plugins provide, and keeps up as plugins come and go.
+    /// Starts the agents worth having running (`agentsWorthStarting`), and keeps up as plugins come
+    /// and go. The rest start when something needs them.
     func start() async {
         guard !isStarted else { return }
         isStarted = true
@@ -152,6 +157,7 @@ final class AppModel {
             }
         }
         observeAgents()
+        parkAgentsWhenIdle()
         await syncAgents()
     }
 
@@ -178,6 +184,10 @@ final class AppModel {
         // Some agents only sign in from a terminal; the sign-in sheet takes it from here.
         if let request = AgentTerminalSignIn(agent: runtime.agent, method: method, startsSession: thenStartSession) {
             terminalSignIn = request
+            return false
+        }
+        guard await ensureRunning(agent) != nil else {
+            errorMessage = startFailure(of: agent)
             return false
         }
         do {
@@ -216,6 +226,7 @@ final class AppModel {
         let environment = await self.environment.current()
         installations.check(plugins.agents, environment: environment)
         let (added, removed) = runtimes.sync(including: installations.isInstalled)
+        let worthStarting = agentsWorthStarting()
         for agent in removed {
             sessions.removeAll(of: agent)
             catalog.remove(agent: agent)
@@ -224,7 +235,7 @@ final class AppModel {
             }
         }
         await withTaskGroup(of: Void.self) { group in
-            for runtime in added {
+            for runtime in added where worthStarting.contains(runtime.agent.id) {
                 group.addTask { await self.start(runtime, environment: environment) }
             }
         }
@@ -241,7 +252,8 @@ final class AppModel {
                 sessions.handle(event, from: agent, connection: runtimes[agent]?.connection)
             }
         }
-        await refreshSessions(of: runtime)
+        // Not awaited: whoever started the agent wants it for a session, not for the listing.
+        Task { await refreshSessions(of: runtime) }
     }
 
     // MARK: - Sessions
@@ -249,7 +261,8 @@ final class AppModel {
     /// A project's sessions from every agent, in the user's order, then most recently active first.
     func sessions(in project: Project.ID) -> [SessionSummary] {
         let summaries = allSessions(in: project).filter { summary in
-            !archivedSessions.contains(summary.id) && !pendingDeletionKeys.contains(summary.id) && !ordering.isPinned(summary.id)
+            !archivedSessions.contains(summary.id) && !pendingDeletionKeys.contains(summary.id)
+                && !ordering.isPinned(summary.id)
         }
         return ordering.sorted(summaries, in: project, recency: lastActive)
     }
@@ -257,7 +270,9 @@ final class AppModel {
     /// A project's sessions from every agent, archived ones included.
     func allSessions(in project: Project.ID) -> [SessionSummary] {
         agents.flatMap { runtime in
-            catalog.sessions(in: project, of: runtime.agent.id).map { SessionSummary(project: project, agent: runtime.agent, info: $0) }
+            catalog.sessions(in: project, of: runtime.agent.id).map {
+                SessionSummary(project: project, agent: runtime.agent, info: $0)
+            }
         }
     }
 
@@ -285,7 +300,6 @@ final class AppModel {
         sessions.session(id: id)
     }
 
-
     var isCreatingSession: Bool {
         creatingSessionWith != nil
     }
@@ -294,7 +308,7 @@ final class AppModel {
     /// and the default agent.
     func canCreateSession(in project: Project.ID? = nil, with agent: AgentDefinition.ID? = nil) -> Bool {
         guard let agent = agent ?? defaultAgent?.id, (project ?? currentProject?.id) != nil else { return false }
-        return !isCreatingSession && runtimes[agent]?.isReady == true
+        return !isCreatingSession && runtimes[agent]?.isAvailable == true
     }
 
     private func lastActive(_ summary: SessionSummary) -> Date {
@@ -308,16 +322,18 @@ final class AppModel {
             isAddingProject = true
             return
         }
-        guard let agent = agent ?? defaultAgent?.id,
-              canCreateSession(in: project.id, with: agent),
-              let runtime = runtimes[agent]
-        else { return }
+        guard let agent = agent ?? defaultAgent?.id, canCreateSession(in: project.id, with: agent) else { return }
         creatingSessionWith = agent
         defer { creatingSessionWith = nil }
+        guard let runtime = await ensureRunning(agent) else {
+            errorMessage = startFailure(of: agent)
+            return
+        }
         do {
             let cwd = try await taskWorkspaces?.workspace(forNewTaskIn: project, title: nil) ?? project.url
             let session = try await launcher.start(on: runtime, cwd: cwd)
-            catalog.add(SessionInfo(sessionId: session.id, cwd: cwd.folderPath, updatedAt: .now), for: agent, in: project.id)
+            catalog.add(
+                SessionInfo(sessionId: session.id, cwd: cwd.folderPath, updatedAt: .now), for: agent, in: project.id)
             session.wantsComposerFocus = true
             selection = session.key
             lastUsedAgent = agent
@@ -329,48 +345,6 @@ final class AppModel {
                 errorMessage = "Couldn't start a \(runtime.agent.displayName) session: \(error.localizedDescription)"
             }
         }
-    }
-
-    /// Starts a session for Native's tools, out of the sidebar: one another session delegates work
-    /// to (`parent`, Native's id for it; the session is its subagent and works in its folder unless
-    /// `cwd` says otherwise), or a detached one such as a workflow step. Returned idle.
-    func startTaskSession(agent: AgentDefinition.ID, cwd: URL? = nil, parent: UUID? = nil) async throws -> SessionModel {
-        let parentSession = try parent.map { id in
-            guard let session = sessions.session(clientID: id) else { throw SessionLauncher.LaunchError.parentClosed }
-            return session
-        }
-        guard let runtime = runtimes[agent], runtime.isReady else {
-            throw SessionLauncher.LaunchError.agentUnavailable(runtimes[agent]?.agent.displayName ?? agent.rawValue)
-        }
-        guard let cwd = cwd ?? parentSession?.cwd ?? currentProject?.url else {
-            throw SessionLauncher.LaunchError.failed(agent: runtime.agent.displayName, underlying: CocoaError(.fileNoSuchFile))
-        }
-        do {
-            let session = try await launcher.start(on: runtime, cwd: cwd, origin: .task, parent: parentSession)
-            taskRecords.add(TaskSessionRecords.Record(key: session.key, cwd: cwd, parent: parentSession?.key))
-            return session
-        } catch {
-            runtime.noteSignInRequired(by: error)
-            throw SessionLauncher.LaunchError.failed(agent: runtime.agent.displayName, underlying: error)
-        }
-    }
-
-    /// Reopens a task session Native started, in this run or an earlier one, replaying its history
-    /// and keeping it out of the sidebar. A delegated one rejoins its parent when that's open.
-    /// Returns the open session if it already is.
-    func reopenTaskSession(agent: AgentDefinition.ID, id: SessionID, cwd: URL) async throws -> SessionModel {
-        let key = SessionKey(agent: agent, id: id)
-        if let session = sessions.session(key) {
-            return session
-        }
-        guard let runtime = runtimes[agent], runtime.isReady else {
-            throw SessionLauncher.LaunchError.agentUnavailable(runtimes[agent]?.agent.displayName ?? agent.rawValue)
-        }
-        let record = taskRecords.record(key)
-        let parent = record?.parent.flatMap(sessions.session)
-        let session = try await launcher.load(key, cwd: cwd, on: runtime, origin: .task, parent: parent)
-        taskRecords.add(TaskSessionRecords.Record(key: key, cwd: cwd, parent: record?.parent))
-        return session
     }
 
     /// Starts a fresh session in an empty one's place, for one the agent never saved (it had no turn
@@ -385,9 +359,15 @@ final class AppModel {
         return session
     }
 
-    /// Opens a listed session, replaying its history from the agent the first time.
+    /// Opens a listed session, replaying its history from the agent the first time, which starts
+    /// the agent if it isn't running.
     func loadSession(_ key: SessionKey) async {
-        guard sessions.session(key) == nil, let runtime = runtimes[key.agent], let info = catalog.lookup(key)?.info else { return }
-        _ = try? await launcher.load(key, cwd: URL(filePath: info.cwd, directoryHint: .isDirectory), title: info.title, on: runtime)
+        guard sessions.session(key) == nil, let info = catalog.lookup(key)?.info,
+            let runtime = await ensureRunning(key.agent),
+            // Selecting a row loads it from two places; the first one to get here opens it.
+            sessions.session(key) == nil
+        else { return }
+        _ = try? await launcher.load(
+            key, cwd: URL(filePath: info.cwd, directoryHint: .isDirectory), title: info.title, on: runtime)
     }
 }

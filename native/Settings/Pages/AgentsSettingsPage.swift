@@ -100,18 +100,28 @@ struct AgentsSettingsPage: View {
     }
 
     private func row(_ entry: Entry) -> some View {
-        SettingsRow(
+        let runtime = model.runtime(entry.definition.id)
+        return SettingsRow(
             id: entry.rowID,
-            entry.agent.name,
+            title: Text(entry.agent.name),
             description: Text(entry.commandLine).font(SettingsTextStyle.mono.font),
             detail: detail(for: entry)
         ) {
-            SettingsSwitch(
-                entry.agent.name,
-                isOn: Binding(
-                    get: { registry.isEnabled(entry.plugin.id) },
-                    set: { registry.setEnabled($0, for: entry.plugin.id) }
-                ))
+            if let runtime, runtime.needsSignIn {
+                SettingsBadge("Needs sign-in")
+            }
+        } control: {
+            HStack(spacing: DS.Space.md) {
+                if let runtime {
+                    AgentRowActions(runtime: runtime)
+                }
+                SettingsSwitch(
+                    entry.agent.name,
+                    isOn: Binding(
+                        get: { registry.isEnabled(entry.plugin.id) },
+                        set: { registry.setEnabled($0, for: entry.plugin.id) }
+                    ))
+            }
         }
     }
 
