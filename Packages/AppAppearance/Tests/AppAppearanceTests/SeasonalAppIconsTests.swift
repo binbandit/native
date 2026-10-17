@@ -34,12 +34,14 @@ struct SeasonalAppIconsTests {
 
     @Test func schedulesClosingAcrossDaylightSaving() throws {
         let melbourne = try #require(TimeZone(identifier: "Australia/Melbourne"))
-        #expect(SeasonalAppIcons.nextHalloweenBoundary(after: try date("2026-10-01T00:00:00Z"), timeZone: melbourne)
-            == (try date("2026-11-07T13:00:00Z")))
+        #expect(
+            SeasonalAppIcons.nextHalloweenBoundary(after: try date("2026-10-01T00:00:00Z"), timeZone: melbourne)
+                == (try date("2026-11-07T13:00:00Z")))
     }
 
     @Test func schedulesNextOpeningAfterClosing() throws {
-        #expect(SeasonalAppIcons.nextHalloweenBoundary(after: try date("2026-11-08T00:00:00Z"), timeZone: .gmt)
-            == (try date("2027-10-01T00:00:00Z")))
+        #expect(
+            SeasonalAppIcons.nextHalloweenBoundary(after: try date("2026-11-08T00:00:00Z"), timeZone: .gmt)
+                == (try date("2027-10-01T00:00:00Z")))
     }
 }

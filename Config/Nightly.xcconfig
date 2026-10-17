@@ -8,6 +8,4 @@ NATIVE_CHANNEL_CONDITION = NATIVE_NIGHTLY
 NATIVE_FEED_URL = $(NATIVE_NIGHTLY_FEED_URL)
 NATIVE_HOST_CHANNEL = nightly
 
-// TODO(icon): the app icon owner adds the Nightly icon to the app target (for example
-// native/AppIconNightly.icon, from design/app-icon/Nightly.icon) and sets its name here.
-NATIVE_APP_ICON_NAME = AppIcon
+NATIVE_APP_ICON_NAME = AppIconNightly

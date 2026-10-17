@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 
 struct AppearanceSettingsView: View {
@@ -8,33 +7,33 @@ struct AppearanceSettingsView: View {
     var body: some View {
         @Bindable var preferences = preferences
 
-        VStack(alignment: .leading, spacing: 24) {
-            HStack(spacing: 18) {
-                previewImage(for: preferences.theme)
+        VStack(alignment: .leading, spacing: DS.Space.xxl) {
+            HStack(spacing: DS.Space.xl) {
+                currentPreview
                     .resizable()
                     .interpolation(.high)
                     .scaledToFit()
-                    .frame(width: 100, height: 100)
+                    .frame(width: DS.AppIcon.hero, height: DS.AppIcon.hero)
                     .accessibilityHidden(true)
 
-                VStack(alignment: .leading, spacing: 6) {
+                VStack(alignment: .leading, spacing: DS.Space.sm) {
                     Text("App icon")
-                        .font(.title2.weight(.semibold))
+                        .font(.dsTitle2)
                     Text("A little more you, in your Dock.")
                         .foregroundStyle(.secondary)
-                    Text(preferences.theme.title)
-                        .font(.callout.weight(.medium))
+                    Text(preferences.displayName)
+                        .font(.dsCalloutMedium)
                 }
             }
 
             Divider()
 
-            HStack(spacing: 20) {
+            HStack(spacing: DS.Space.xl) {
                 Text("Icon appearance")
                 Spacer(minLength: 0)
-                if preferences.theme == .original {
+                if preferences.usesSystemIcon {
                     Text("Follows macOS")
-                        .font(.callout)
+                        .font(.dsCallout)
                         .foregroundStyle(.secondary)
                 } else {
                     Picker("Icon appearance", selection: $preferences.appearance) {
@@ -49,51 +48,80 @@ struct AppearanceSettingsView: View {
             }
 
             Text(
-                preferences.theme == .original
+                preferences.usesSystemIcon
                     ? "Default, Dark, Clear and Tinted appearances follow your Mac’s settings."
-                    : "Choose Original to use your Mac’s Clear or Tinted icons."
+                    : preferences.isHalloweenActive
+                        ? "Your chosen icon returns after November 7. Turn Halloween off to switch back now."
+                        : "Choose Original to use your Mac’s Clear or Tinted icons."
             )
-            .font(.callout)
+            .font(.dsCallout)
             .foregroundStyle(.secondary)
 
-            LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 4), spacing: 12) {
+            LazyVGrid(
+                columns: Array(repeating: GridItem(.flexible(), spacing: DS.Space.lg), count: DS.AppIcon.columns),
+                spacing: DS.Space.lg
+            ) {
                 ForEach(AppIconTheme.allCases) { theme in
                     themeButton(theme)
                 }
             }
+
+            if preferences.isHalloweenAvailable {
+                Divider()
+                HStack(spacing: DS.Space.lg) {
+                    Image(preferences.halloweenImageName)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: DS.AppIcon.seasonalPreview, height: DS.AppIcon.seasonalPreview)
+                        .accessibilityHidden(true)
+                    Toggle(isOn: $preferences.halloweenEnabled) {
+                        VStack(alignment: .leading, spacing: DS.Space.xs) {
+                            Text("Halloween edition").font(.dsHeadline)
+                            Text("October 1 – November 7 · Returns to your chosen icon afterwards.")
+                                .font(.dsCaption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                    .toggleStyle(.switch)
+                    .accessibilityIdentifier("icon-halloween-enabled")
+                }
+            }
         }
-        .padding(28)
-        .animation(reduceMotion ? nil : .easeInOut(duration: 0.15), value: preferences.imageName)
+        .padding(DS.Space.xxl)
+        .animation(reduceMotion ? nil : .dsQuick, value: preferences.imageName)
     }
 
     private func themeButton(_ theme: AppIconTheme) -> some View {
         let selected = preferences.theme == theme
 
         return Button {
-            preferences.theme = theme
+            preferences.selectTheme(theme)
         } label: {
-            VStack(spacing: 4) {
+            VStack(spacing: DS.Space.xs) {
                 previewImage(for: theme)
                     .resizable()
                     .interpolation(.high)
                     .scaledToFit()
-                    .frame(width: 84, height: 84)
-                HStack(spacing: 5) {
+                    .frame(width: DS.AppIcon.tile, height: DS.AppIcon.tile)
+                HStack(spacing: DS.Space.xs) {
                     Text(theme.title)
                     if selected {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(.tint)
                     }
                 }
-                .font(.callout)
-                .frame(height: 18)
+                .font(.dsCallout)
+                .frame(height: DS.AppIcon.labelHeight)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 10)
-            .background(selected ? Color.accentColor.opacity(0.08) : .clear, in: .rect(cornerRadius: 12))
+            .padding(.vertical, DS.AppIcon.tilePadding)
+            .background(
+                selected ? Color.accentColor.opacity(DS.AppIcon.selectedOpacity) : .clear,
+                in: .rect(cornerRadius: DS.Radius.panel)
+            )
             .overlay {
-                RoundedRectangle(cornerRadius: 12)
-                    .strokeBorder(selected ? Color.accentColor : .clear, lineWidth: 2)
+                RoundedRectangle(cornerRadius: DS.Radius.panel)
+                    .strokeBorder(selected ? Color.accentColor : .clear, lineWidth: DS.AppIcon.selectedBorder)
             }
             .contentShape(.rect)
         }
@@ -107,9 +135,13 @@ struct AppearanceSettingsView: View {
 
     private func previewImage(for theme: AppIconTheme) -> Image {
         if theme == .original {
-            Image(nsImage: NSWorkspace.shared.icon(forFile: Bundle.main.bundlePath))
+            PlatformAppIcon.bundledPreview
         } else {
             Image(theme.imageName(isDark: preferences.isDark))
         }
+    }
+
+    private var currentPreview: Image {
+        preferences.isHalloweenActive ? Image(preferences.imageName) : previewImage(for: preferences.theme)
     }
 }

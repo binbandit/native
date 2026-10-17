@@ -22,7 +22,8 @@ in `docs/decisions.md` ("Releases on GitHub", "Sparkle for updates", "Nightly be
 | Host | standard location | standard location | its own channel (`nightly`), so the two never share a host |
 | Feed | `releases/latest/download/appcast.xml` | same feed, items tagged `<sparkle:channel>beta</sparkle:channel>` | `releases/download/nightly/appcast.xml` |
 | GitHub release | `v1.4.0` | `v1.5.0-beta.1`, a prerelease | the rolling `nightly` prerelease, its assets replaced each night |
-| Tells | none | "Native Beta" (`ReleaseChannel`) | the name, the crescent in the toolbar, stars on the home page, its icon |
+| Compiled icon | `AppIcon` | `AppIconBeta` | `AppIconNightly` |
+| Tells | none | "Native Beta" (`ReleaseChannel`) and the amber/ivory icon | the name, the crescent in the toolbar, stars on the home page, its icon |
 
 Nightly installs beside stable, like VS Code Insiders or Ghostty's tip builds: its own name, bundle
 id, defaults, feed and host. Beta users get stable releases too (stable items have no channel, so
@@ -227,3 +228,19 @@ ditto $work/old/Native.app $work/install/Native.app && open -n $work/install/Nat
 Then choose Native ▸ Check for Updates… and Update: the app downloads 1.1.0, verifies it, and
 reopens as 1.1.0. Delete the test app and its defaults (`defaults delete dev.native.updatetest`)
 afterwards.
+
+## Channel and seasonal icons
+
+The release script selects the compiled icon with `NATIVE_APP_ICON_NAME`: `AppIcon` for stable,
+`AppIconBeta` for beta, and `AppIconNightly` for Nightly. Beta keeps the stable app's identity and
+update feed; the dedicated icon identifies the installed build. The compiled channel icons retain
+macOS Default, Dark, Clear and Tinted appearances. Source projects live in `design/app-icon/`.
+
+Settings ▸ Appearance offers Halloween editions from October 1 through November 7, inclusive,
+in the device's local time zone. Each build uses its own Halloween artwork. The seasonal toggle
+remembers the user's opt-in, preserves their usual icon choice, and restores it on November 8.
+Choosing another icon turns Halloween off immediately. The seasonal option and View ▸ Halloween
+Icon disappear outside the window; a stored opt-in cannot activate an out-of-season icon.
+Availability refreshes at the next boundary and on activation, wake, clock and time-zone changes.
+`Packages/AppAppearance` owns and tests the date policy. Seasonal Dock overrides use light/dark
+PNGs rendered by Icon Composer, with editable layered `.icon` sources retained alongside them.

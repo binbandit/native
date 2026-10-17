@@ -7,7 +7,7 @@ and nothing outside this table claims a key.
 Standard macOS behavior comes for free and must not be broken: Tab / Shift-Tab move focus through
 controls (with Full Keyboard Access on), arrow keys move within lists and menus, Space activates the
 focused control, Escape dismisses popovers and sheets, ⌘W closes the window, ⌘Q quits, ⌘, opens
-Settings. In every sheet and dialog, Return activates the default (highlighted) button and Escape
+Settings in the main window (and closes it again). In every sheet and dialog, Return activates the default (highlighted) button and Escape
 cancels, so those keys don't get rows of their own.
 
 ## Sending
@@ -137,6 +137,8 @@ expedition's lead (the composer key, on a page without a composer).
 | ↑ / ↓ | Move through the search results |
 | Return | Open the highlighted result |
 | Escape | Clear the search; with it empty, close Settings |
+| ⌘[ | Close Settings, back to where you were (Go menu) |
+| ↑ / ↓ in the page list | Move to the previous / next page |
 
 ## Terminal
 
@@ -168,3 +170,9 @@ Menu commands live in `NativeApp`; composer keys in `native/Views/Composer*`; pe
 `SettingsScreen` and `SettingsSearchField`; terminal commands in
 `native/Terminal/Views/TerminalCommands.swift` and keys inside a terminal in
 `GhosttyConfiguration.keybinds` (`Packages/Terminal`). Change a key here first, then in code.
+
+## Seasonal app icons
+
+| Keys | Action |
+| --- | --- |
+| ⌥⇧⌘H | Toggle the Halloween edition (View menu, October 1 through November 7) |

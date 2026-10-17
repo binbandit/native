@@ -20,6 +20,7 @@
 		00000000000000000E0ED020 /* NativeExpeditions in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000000E0ED010 /* NativeExpeditions */; };
 		00000000000000005E1EA503 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; platformFilters = (macos, ); productRef = 00000000000000005E1EA502 /* Sparkle */; };
 		000000000000000071E10020 /* Terminal in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000071E10010 /* Terminal */; };
+		0000000000000000A99A0020 /* AppAppearance in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000A99A0010 /* AppAppearance */; };
 		54227E023083ADA900D7771F /* MCPClient in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000000AC10010 /* MCPClient */; };
 /* End PBXBuildFile section */
 
@@ -94,6 +95,7 @@
 			files = (
 				54227E023083ADA900D7771F /* MCPClient in Frameworks */,
 				000000000000000000000320 /* ACP in Frameworks */,
+				0000000000000000A99A0020 /* AppAppearance in Frameworks */,
 				000000000000000000474820 /* GitHub in Frameworks */,
 				000000000000000000000420 /* MCP in Frameworks */,
 				00000000000000000A070020 /* NativeAutomation in Frameworks */,
@@ -187,6 +189,7 @@
 			name = native;
 			packageProductDependencies = (
 				000000000000000000000310 /* ACP */,
+				0000000000000000A99A0010 /* AppAppearance */,
 				000000000000000000474810 /* GitHub */,
 				000000000000000000000410 /* MCP */,
 				00000000000000000A070010 /* NativeAutomation */,
@@ -230,6 +233,7 @@
 			packageReferences = (
 				000000000000000071E10000 /* XCLocalSwiftPackageReference "Packages/Terminal" */,
 				000000000000000000000300 /* XCLocalSwiftPackageReference "Packages/ACP" */,
+				0000000000000000A99A0000 /* XCLocalSwiftPackageReference "Packages/AppAppearance" */,
 				000000000000000000474800 /* XCLocalSwiftPackageReference "Packages/GitHub" */,
 				000000000000000000000400 /* XCLocalSwiftPackageReference "Packages/MCPServer" */,
 				00000000000000000A070000 /* XCLocalSwiftPackageReference "Packages/Automation" */,
@@ -657,7 +661,7 @@
 		000000000000000112000000 /* Release configuration for PBXNativeTarget "native" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = "$(NATIVE_APP_ICON_NAME)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_APP_SANDBOX = NO;
@@ -762,6 +766,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Terminal;
 		};
+		0000000000000000A99A0000 /* XCLocalSwiftPackageReference "Packages/AppAppearance" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/AppAppearance;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -829,6 +837,11 @@
 		000000000000000071E10010 /* Terminal */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Terminal;
+		};
+		0000000000000000A99A0010 /* AppAppearance */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0000000000000000A99A0000 /* XCLocalSwiftPackageReference "Packages/AppAppearance" */;
+			productName = AppAppearance;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
