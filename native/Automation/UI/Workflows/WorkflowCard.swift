@@ -26,7 +26,7 @@ struct WorkflowCard: View {
                     Text(entry.definition.summary)
                         .font(.dsCaption)
                         .foregroundStyle(.dsTextSecondary)
-                        .lineLimit(3, reservesSpace: true)
+                        .lineLimit(4, reservesSpace: true)
                         .fixedSize(horizontal: false, vertical: true)
                     footer
                         .padding(.top, DS.Space.sm)
@@ -60,11 +60,11 @@ struct WorkflowCard: View {
                 .lineLimit(2)
         } else {
             let steps = entry.definition.steps
+            // Goals show in the step list; the card keeps to what fits on one line.
             let parts = [
                 "\(steps.count) steps",
-                steps.contains { $0.goal != nil } ? "goals" : nil,
                 steps.count(where: { $0.approval != nil }).nonZero.map { "\($0) \($0 == 1 ? "approval" : "approvals")" },
-                steps.contains { $0.kind == .pullRequest } ? "pull request" : nil,
+                steps.contains { $0.kind == .pullRequest } ? "PR" : nil,
             ]
             HStack(spacing: DS.Space.xs) {
                 Image(systemName: "point.3.connected.trianglepath.dotted")

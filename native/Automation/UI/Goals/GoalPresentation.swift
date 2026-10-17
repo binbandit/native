@@ -23,7 +23,9 @@ struct GoalPresentation: Hashable {
         let usage = goal.usage(at: now)
         let isBudgetSpent = goal.exhaustedBudget(at: now, iterationCeiling: GoalLoop.safetyIterationCeiling) != nil
         glyph = AutomationGlyph(goal: goal.status, isWorking: isWorking)
-        self.usage = [usage.iterationsText + (usage.budget.maxIterations == nil ? " iterations" : ""), usage.elapsedText, usage.costText]
+        // A cost of nothing against no cost budget says nothing, so it's left out.
+        let cost = usage.budget.maxCost == nil && (usage.cost ?? 0) == 0 ? nil : usage.costText
+        self.usage = [usage.iterationsText + (usage.budget.maxIterations == nil ? " iterations" : ""), usage.elapsedText, cost]
             .compactMap(\.self)
             .joined(separator: " · ")
         fraction = usage.fractionUsed

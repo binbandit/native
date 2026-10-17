@@ -30,7 +30,11 @@ extension WorkflowRun {
             guard let index = index(of: step), steps[index].status == .starting else { return [] }
             finish(index, output: result.url.absoluteString, at: now)
             return advance(at: now)
-        case .pullRequestFailed(let step, let message):
+        case .scriptFinished(let step, let output):
+            guard let index = index(of: step), steps[index].status == .starting else { return [] }
+            finish(index, output: output, at: now)
+            return advance(at: now)
+        case .pullRequestFailed(let step, let message), .scriptFailed(let step, let message):
             guard let index = index(of: step), steps[index].status == .starting else { return [] }
             stop(index, as: .failed(message), at: now)
             return []

@@ -54,6 +54,9 @@ struct WorkflowStepRow: View {
         .background(isSelected ? Color.dsSelected : .clear, in: .rect(cornerRadius: DS.Radius.card))
         .contentShape(.rect)
         .trackHover($isHovered)
+        // Hover-only actions need an equivalent without a pointer: a long press on iPad, a
+        // secondary click on the Mac.
+        .contextMenu { contextActions }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(step.step.title), \(step.status.label)")
     }
@@ -84,8 +87,8 @@ struct WorkflowStepRow: View {
     }
 
     @ViewBuilder private var agentLabel: some View {
-        if step.step.kind == .pullRequest {
-            Label("GitHub", systemImage: "arrow.triangle.pull")
+        if let runner = step.step.kind.runnerLabel {
+            Label(runner.title, systemImage: runner.systemImage)
                 .font(.dsCaption)
                 .foregroundStyle(.dsTextTertiary)
         } else if let agent = step.assignment.agent {
@@ -121,7 +124,11 @@ struct WorkflowStepRow: View {
         case .awaitingApproval, .succeeded:
             return step.assignment.note
         case .starting:
-            return step.step.kind == .pullRequest ? "Opening the pull request…" : "Starting a \(agent) session…"
+            switch step.step.kind {
+            case .pullRequest: return "Opening the pull request…"
+            case .script: return "Running the script…"
+            case .agent: return "Starting a \(agent) session…"
+            }
         case .running:
             if report?.needsApproval == true {
                 return "\(agent) is waiting for you to approve a tool call. Open the step to answer."
@@ -179,6 +186,17 @@ struct WorkflowStepRow: View {
     }
 
     // MARK: - Ways on
+
+    @ViewBuilder private var contextActions: some View {
+        let available = WorkflowStepAction.available(for: step, isRunCancelled: run.isCancelled)
+        ForEach([available.primary].compactMap(\.self) + available.others) { action in
+            Button(action.title, systemImage: action.systemImage) { send(action.event(for: step.id)) }
+        }
+        if step.task != nil {
+            Divider()
+            Button("Open Session", systemImage: "sidebar.right", action: onOpen)
+        }
+    }
 
     private var hoverActions: some View {
         HStack(spacing: DS.Space.xxs) {

@@ -8,6 +8,9 @@ nonisolated struct WorkflowStep: Hashable, Sendable, Identifiable {
         case agent
         /// Opens a pull request through the host (the GitHub feature) from `pullRequest`.
         case pullRequest
+        /// Runs `script` in Native's script runtime (docs/script-runtime.md) with the rendered
+        /// `prompt` as its input; its result is the step's output. The runtime is the host's.
+        case script
     }
 
     /// Referenced by other steps (`{{steps.<id>.output}}`, `after`, `sameAs`...).
@@ -29,11 +32,13 @@ nonisolated struct WorkflowStep: Hashable, Sendable, Identifiable {
     /// Runs the step as a goal loop with this budget, instead of a single turn.
     var goal: GoalBudget?
     var pullRequest: WorkflowPullRequestTemplate?
+    /// The source a script step runs.
+    var script: String?
 
     init(
         id: String, title: String, kind: Kind = .agent, agent: WorkflowAgentChoice? = nil, continues: String? = nil,
         prompt: String = "", after: [String]? = nil, approval: WorkflowApproval? = nil, goal: GoalBudget? = nil,
-        pullRequest: WorkflowPullRequestTemplate? = nil
+        pullRequest: WorkflowPullRequestTemplate? = nil, script: String? = nil
     ) {
         self.id = id
         self.title = title
@@ -45,6 +50,7 @@ nonisolated struct WorkflowStep: Hashable, Sendable, Identifiable {
         self.approval = approval
         self.goal = goal
         self.pullRequest = pullRequest
+        self.script = script
     }
 
     /// `"goal": true` asks for a goal loop without saying how long; ten turns is enough for most
@@ -54,7 +60,7 @@ nonisolated struct WorkflowStep: Hashable, Sendable, Identifiable {
 
 extension WorkflowStep: Codable {
     private enum CodingKeys: String, CodingKey {
-        case id, title, kind, agent, continues, prompt, after, approval, goal, pullRequest
+        case id, title, kind, agent, continues, prompt, after, approval, goal, pullRequest, script
     }
 
     init(from decoder: any Decoder) throws {
@@ -77,6 +83,7 @@ extension WorkflowStep: Codable {
             goal = try container.decodeIfPresent(GoalBudget.self, forKey: .goal)
         }
         pullRequest = try container.decodeIfPresent(WorkflowPullRequestTemplate.self, forKey: .pullRequest)
+        script = try container.decodeIfPresent(String.self, forKey: .script)
     }
 
     func encode(to encoder: any Encoder) throws {
@@ -95,5 +102,6 @@ extension WorkflowStep: Codable {
         try container.encodeIfPresent(approval, forKey: .approval)
         try container.encodeIfPresent(goal, forKey: .goal)
         try container.encodeIfPresent(pullRequest, forKey: .pullRequest)
+        try container.encodeIfPresent(script, forKey: .script)
     }
 }

@@ -79,6 +79,40 @@ struct BranchAndWorktreeTests {
         #expect(try await repository.status().branch.ahead == 0)
     }
 
+    @Test func comparesABranchWithTheRemoteDefaultBranch() async throws {
+        let (test, _) = try await repositoryWithRemote()
+        defer { test.remove() }
+        let repository = try await test.repository
+        try await repository.push()
+        try await test.git("checkout", "--quiet", "-b", "feature")
+        try test.write("feature.txt", "new\n")
+        try await repository.commit(message: "Add feature\n\nBecause.", files: try await repository.status().changes)
+
+        let base = try await repository.comparisonBase(for: "main")
+        let log = try await repository.commitLog(since: base)
+        let diff = try await repository.branchDiff(since: base)
+
+        #expect(base == "origin/main")
+        #expect(log.contains("Add feature"))
+        #expect(log.contains("Because."))
+        #expect(!log.contains("Initial commit"))
+        #expect(diff.contains("+new"))
+        #expect(try await repository.comparisonBase(for: "missing") == "missing")
+    }
+
+    @Test func createsDetachedTaskWorktrees() async throws {
+        let test = try await TestRepository.make()
+        defer { test.remove() }
+        let repository = try await test.repository
+        let location = test.folder.deletingLastPathComponent().appending(path: "worktrees", directoryHint: .isDirectory)
+
+        let worktree = try await repository.createWorktree(forTask: "PR 12", in: location, detached: true)
+
+        #expect(worktree.isDetached)
+        #expect(worktree.branch == nil)
+        #expect(try await repository.branches(includingRemote: false).map(\.name) == ["main"])
+    }
+
     @Test func listsLocalAndRemoteBranches() async throws {
         let (test, _) = try await repositoryWithRemote()
         defer { test.remove() }

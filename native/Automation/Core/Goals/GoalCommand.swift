@@ -3,7 +3,7 @@ import Foundation
 /// `/goal` typed in the composer. Native handles it for every agent rather than passing it through,
 /// so goals behave the same everywhere; an agent with its own goal command gets it from the goal's
 /// strategy instead.
-nonisolated enum GoalCommand: Hashable, Sendable {
+nonisolated enum GoalCommand: Codable, Hashable, Sendable {
     /// `/goal <objective>`
     case set(objective: String)
     /// `/goal` alone: open the goal editor.

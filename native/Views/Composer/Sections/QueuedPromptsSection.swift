@@ -87,7 +87,7 @@ private struct QueuedPromptRow: View {
                 action("Remove from Queue", systemImage: "trash") { onRemove(prompt.id) }
                 action("Edit Message", systemImage: "square.and.pencil") { onEdit(prompt) }
             }
-            .opacity(isHovered || focusedAction != nil ? 1 : 0)
+            .opacity(!ComposerPlatform.revealsControlsOnHover || isHovered || focusedAction != nil ? 1 : 0)
         }
         .padding(.vertical, DS.Space.xs)
         .padding(.horizontal, DS.Space.md)
@@ -95,6 +95,16 @@ private struct QueuedPromptRow: View {
         .background(isNext ? Color.dsSelected : .clear, in: .rect(cornerRadius: DS.Radius.control, style: .continuous))
         .contentShape(.rect)
         .onTapGesture { onEdit(prompt) }
+        // The same actions without hovering: long-press on iPad, right-click on the Mac.
+        .contextMenu {
+            switch sendNow {
+            case .steer: Button("Steer Now", systemImage: "chevron.up") { onSendNow(prompt.id) }
+            case .send: Button("Send Now", systemImage: "chevron.up") { onSendNow(prompt.id) }
+            case nil: EmptyView()
+            }
+            Button("Edit Message", systemImage: "square.and.pencil") { onEdit(prompt) }
+            Button("Remove from Queue", systemImage: "trash", role: .destructive) { onRemove(prompt.id) }
+        }
         .trackHover($isHovered)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(isEditing ? "Editing: \(prompt.text)" : isNext ? "Next: \(prompt.text)" : prompt.text)

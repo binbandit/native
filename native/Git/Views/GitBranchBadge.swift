@@ -4,19 +4,29 @@ import SwiftUI
 /// A branch at a glance: name, a dot when the working tree has changes, and commits ahead of and
 /// behind its upstream. For sidebar task rows, window subtitles and the inspector header.
 struct GitBranchBadge: View {
+    enum Style {
+        /// Icon, name, dirty dot and arrows.
+        case regular
+        /// Only the dirty dot and arrows, for a one-line task row; the name is in the tooltip.
+        case compact
+    }
+
     let branch: BranchStatus
     var isDirty = false
     var font: Font = .dsCaption
+    var style = Style.regular
 
     var body: some View {
         HStack(spacing: DS.Space.xs) {
-            Image(systemName: branch.isDetached ? "smallcircle.filled.circle" : "arrow.triangle.branch")
-                .imageScale(.small)
-                .foregroundStyle(.dsTextTertiary)
-            Text(branch.displayName)
-                .foregroundStyle(.dsTextSecondary)
-                .lineLimit(1)
-                .truncationMode(.middle)
+            if style == .regular {
+                Image(systemName: branch.isDetached ? "smallcircle.filled.circle" : "arrow.triangle.branch")
+                    .imageScale(.small)
+                    .foregroundStyle(.dsTextTertiary)
+                Text(branch.displayName)
+                    .foregroundStyle(.dsTextSecondary)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
+            }
             if isDirty {
                 StatusDot(color: .dsWarning)
                     .help("Uncommitted changes")
@@ -39,6 +49,7 @@ struct GitBranchBadge: View {
         .monospacedDigit()
         .tracking(DS.Tracking.tight)
         .foregroundStyle(.dsTextTertiary)
+        .help(style == .compact ? accessibilityText : "")
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityText)
     }
@@ -57,10 +68,11 @@ extension GitBranchBadge {
     struct Live: View {
         let model: GitRepositoryModel
         var font: Font = .dsCaption
+        var style = Style.regular
 
         var body: some View {
             if let branch = model.branch {
-                GitBranchBadge(branch: branch, isDirty: model.isDirty, font: font)
+                GitBranchBadge(branch: branch, isDirty: model.isDirty, font: font, style: style)
             }
         }
     }

@@ -47,8 +47,8 @@ struct WorkflowStepPlanRow: View {
     }
 
     @ViewBuilder private var agentControl: some View {
-        if step.kind == .pullRequest {
-            Label("GitHub", systemImage: "arrow.triangle.pull")
+        if let runner = step.kind.runnerLabel {
+            Label(runner.title, systemImage: runner.systemImage)
                 .font(.dsBody)
                 .foregroundStyle(.dsTextSecondary)
                 .pillChrome()

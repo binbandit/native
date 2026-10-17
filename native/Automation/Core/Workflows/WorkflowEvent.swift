@@ -1,7 +1,7 @@
 import Foundation
 
 /// Something that happened to a run: the user acting on it, or its tasks reporting back.
-nonisolated enum WorkflowEvent: Hashable, Sendable {
+nonisolated enum WorkflowEvent: Codable, Hashable, Sendable {
     case start
     /// The host created the step's task session.
     case taskCreated(step: String, task: UUID)
@@ -11,6 +11,8 @@ nonisolated enum WorkflowEvent: Hashable, Sendable {
     case turnEnded(step: String, outcome: TurnOutcome, reply: String?, cost: Double?)
     case pullRequestOpened(step: String, WorkflowPullRequestResult)
     case pullRequestFailed(step: String, message: String)
+    case scriptFinished(step: String, output: String)
+    case scriptFailed(step: String, message: String)
 
     /// Lets a gated step run, with the user's edits to its prompt if they made any.
     case approve(step: String, prompt: String?)

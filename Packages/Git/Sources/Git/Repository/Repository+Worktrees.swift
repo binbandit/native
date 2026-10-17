@@ -19,12 +19,14 @@ extension Repository {
     /// Gives a task its own worktree, the reference app-style, so parallel agents never edit the same
     /// checkout. The folder (`<location>/<repository>/<slug>`) and the branch (`<prefix><slug>`)
     /// get a numeric suffix when either is taken, locally or on a remote. `location` defaults to
-    /// `~/.native/worktrees` in the home folder of the machine git runs on.
+    /// `~/.native/worktrees` in the home folder of the machine git runs on. A `detached` worktree
+    /// gets no branch, for checking out something else in it (a pull request).
     public func createWorktree(
         forTask title: String,
         branchPrefix: String = "",
         startPoint: String = "HEAD",
-        in location: URL? = nil
+        in location: URL? = nil,
+        detached: Bool = false
     ) async throws(GitError) -> Worktree {
         let slug = Worktree.slug(title)
         let base = location ?? Worktree.defaultLocation(home: git.environment["HOME"])
@@ -44,6 +46,10 @@ extension Repository {
                     stderr: "“\(branch)” isn't a valid branch name.")
             }
             do {
+                if detached {
+                    try await run(["worktree", "add", "--detach", "--", path.path(percentEncoded: false), startPoint])
+                    return try await requireListedWorktree(at: path)
+                }
                 return try await addWorktree(at: path, newBranch: branch, startPoint: startPoint)
             } catch .failed(_, _, let stderr) where stderr.contains("already exists") {
                 // A folder left at that path by something else; try the next name.
