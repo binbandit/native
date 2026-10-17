@@ -11,7 +11,7 @@ enum HomePreviewFixtures {
     static let agents: [HomeAgent<String>] = [
         HomeAgent(id: "claude-code", name: "Claude Code", symbolName: "asterisk", shortcut: KeyboardShortcut("n")),
         HomeAgent(id: "codex", name: "Codex", symbolName: "terminal"),
-        HomeAgent(id: "cursor", name: "Cursor", symbolName: "cursorarrow.rays", availability: .starting),
+        HomeAgent(id: "cursor", name: "Cursor", symbolName: "cursorarrow", availability: .starting),
     ]
 
     /// Every way an agent can be unable to start a task.
@@ -25,7 +25,7 @@ enum HomePreviewFixtures {
             availability: .unavailable("Needs sign-in"), remedy: HomeAgentRemedy("Sign In to Codex") {}
         ),
         HomeAgent(
-            id: "cursor", name: "Cursor", symbolName: "cursorarrow.rays",
+            id: "cursor", name: "Cursor", symbolName: "cursorarrow",
             availability: .unavailable("Not installed"), remedy: HomeAgentRemedy("Check Again for Cursor") {}
         ),
     ]

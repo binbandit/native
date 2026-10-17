@@ -26,8 +26,8 @@ final class GitRepositoryModel {
     private(set) var selectedDiff: GitDiffContent?
     /// A stage, commit or push is running.
     private(set) var isWorking = false
-    /// The last action's failure, for the inspector to show until dismissed.
-    var actionError: String?
+    /// Feedback for the last action: a failure with its next step, or a confirmation.
+    private(set) var notice: GitNotice?
     /// The commit form's message, kept while the form is closed so a draft isn't lost.
     var commitMessage = ""
 
@@ -42,6 +42,8 @@ final class GitRepositoryModel {
     static let settleDelay = Duration.milliseconds(250)
     /// Beyond this many changed paths an event batch isn't worth checking against `.gitignore`.
     static let ignoreCheckLimit = 500
+    /// How long a plain confirmation stays up.
+    static let confirmationDuration = Duration.seconds(4)
 
     init(folder: URL, git: @escaping () async throws -> Git?) {
         self.folder = folder
@@ -157,71 +159,42 @@ final class GitRepositoryModel {
 
     // MARK: - Actions
 
-    func stage(_ changes: [FileChange]) async {
-        await perform { try await $0.stage(Self.paths(of: changes)) }
-    }
-
-    func unstage(_ changes: [FileChange]) async {
-        await perform { try await $0.unstage(Self.paths(of: changes)) }
-    }
-
-    /// Destructive: the caller confirms first. The current files go to the Trash.
-    func discard(_ changes: [FileChange]) async {
-        await perform { try await $0.discard(changes) }
-    }
-
-    func push() async {
-        await perform { try await $0.push() }
-    }
-
-    /// Commits exactly `files`, staging them and unstaging anything else, then pushes if asked.
-    /// A failed commit throws so the commit form can show git's output (often a hook's); a failed
-    /// push after a good commit lands in `actionError`, since the commit itself happened.
-    func commit(message: String, files: [FileChange], push: Bool) async throws {
-        guard let repository else { return }
-        isWorking = true
-        defer { isWorking = false }
+    /// Runs one action at a time, then rescans. The action's notice, or `nil`, replaces the last
+    /// one; a failure becomes a notice with its reason and next step.
+    func perform(_ operation: GitNotice.Operation, _ action: (Repository) async throws -> GitNotice?) async {
         do {
-            try await repository.commit(message: message, files: files)
+            try await performThrowing(action)
         } catch {
-            await refreshNow()
-            throw error
+            show(GitNotice(failure: error, during: operation))
         }
-        commitMessage = ""
-        if push {
-            do {
-                try await repository.push()
-            } catch {
-                actionError = "Committed, but the push failed: \(error.localizedDescription)"
-            }
-        }
-        await refreshNow()
     }
 
-    /// A commit message for `files` from the on-device model, in the style of recent commits.
-    func draftCommitMessage(for files: [FileChange]) async throws -> String {
-        guard let repository else { return "" }
-        async let patch = repository.patch(for: files)
-        async let subjects = repository.recentCommitSubjects()
-        return try await CommitMessageDrafter().draft(patch: patch, files: files, style: CommitStyle(subjects: subjects))
-    }
-
-    private func perform(_ action: (Repository) async throws -> Void) async {
+    /// `perform`, leaving failures to the caller: the commit form shows them itself.
+    func performThrowing(_ action: (Repository) async throws -> GitNotice?) async throws {
         guard let repository, !isWorking else { return }
         isWorking = true
         defer { isWorking = false }
         do {
-            try await action(repository)
-            actionError = nil
+            show(try await action(repository))
         } catch {
-            actionError = error.localizedDescription
+            await refreshNow()
+            throw error
         }
         await refreshNow()
     }
 
-    /// Every path the changes touch, renames' original paths included.
-    private static func paths(of changes: [FileChange]) -> [String] {
-        Array(Set(changes.flatMap(\.paths))).sorted()
+    func show(_ notice: GitNotice?) {
+        self.notice = notice
+        // Plain confirmations fade; ones that offer a way back stay until dismissed or replaced.
+        guard let notice, notice.tone == .success, notice.action == nil else { return }
+        Task { [weak self] in
+            try? await Task.sleep(for: Self.confirmationDuration)
+            if self?.notice?.id == notice.id { self?.notice = nil }
+        }
+    }
+
+    func dismissNotice() {
+        notice = nil
     }
 
     // MARK: - Watching
