@@ -53,7 +53,7 @@ struct TerminalTabListTests {
     }
 
     @Test func aShellThatEndsAtOnceFailedToStart() {
-        #expect(TerminalStatus(exitedAfter: .milliseconds(40)) == .failedToStart)
+        #expect(TerminalStatus(exitedAfter: .milliseconds(40)) == .failedToStart(.exitedImmediately))
         #expect(TerminalStatus(exitedAfter: .seconds(12)) == .exited)
     }
 }

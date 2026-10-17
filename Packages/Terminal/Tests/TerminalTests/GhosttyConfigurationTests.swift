@@ -12,7 +12,7 @@ struct GhosttyConfigurationTests {
         GhosttyConfiguration(
             settings: settings,
             colors: TerminalTheme.native.colors(for: .dark, appChrome: chrome),
-            defaultFontFamily: "Geist Mono",
+            defaultFont: .init(family: "Geist Mono", isVariable: true),
             padding: .init(horizontal: 8, vertical: 6)
         )
     }
@@ -25,10 +25,13 @@ struct GhosttyConfigurationTests {
     }
 
     @Test func usesTheAppsCodeFontUnlessTheUserPickedOne() {
-        #expect(values(of: "font-family", in: configuration().text) == ["\"Geist Mono\""])
-        let custom = configuration(TerminalSettings(fontFamily: "JetBrains Mono", fontSize: 14))
-        #expect(values(of: "font-family", in: custom.text) == ["\"JetBrains Mono\""])
-        #expect(values(of: "font-size", in: custom.text) == ["14"])
+        let standard = configuration().text
+        #expect(values(of: "font-family", in: standard) == ["\"Geist Mono\""])
+        #expect(values(of: "font-variation", in: standard) == ["wght=400"])
+        let custom = configuration(TerminalSettings(fontFamily: "JetBrains Mono", fontSize: 14)).text
+        #expect(values(of: "font-family", in: custom) == ["\"JetBrains Mono\""])
+        #expect(values(of: "font-variation", in: custom).isEmpty)
+        #expect(values(of: "font-size", in: custom) == ["14"])
     }
 
     @Test func writesTheChromeAndAllSixteenPaletteColors() {

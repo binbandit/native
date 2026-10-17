@@ -97,3 +97,16 @@ public struct TerminalTheme: Identifiable, Hashable, Sendable {
         all.first { $0.id == id } ?? .native
     }
 }
+
+/// How every terminal draws: the user's settings, plus the colors for the app's current appearance.
+public struct TerminalStyle: Hashable, Sendable {
+    public var settings: TerminalSettings
+    public var appearance: TerminalAppearance
+    public var colors: TerminalColors
+
+    public init(settings: TerminalSettings, appearance: TerminalAppearance, colors: TerminalColors) {
+        self.settings = settings
+        self.appearance = appearance
+        self.colors = colors
+    }
+}

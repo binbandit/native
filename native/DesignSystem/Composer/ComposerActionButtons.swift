@@ -1,16 +1,23 @@
 import SwiftUI
 
-/// Sends the draft: a 24pt accent square with a chevron (Factory `ChatSubmitButton`), half
-/// transparent while disabled.
+/// Sends the draft: a 24pt accent square with a chevron (Factory `ChatSubmitButton`). When sending
+/// is blocked it stays in place, half transparent, and says why in its tooltip and accessibility
+/// hint, so the composer's 24pt send/stop slot never shifts.
 public struct ComposerSendButton: View {
+    let disabledReason: String?
     let action: () -> Void
 
-    @Environment(\.isEnabled) private var isEnabled
+    @Environment(\.isEnabled) private var isEnvironmentEnabled
     @State private var isHovered = false
 
-    public init(action: @escaping () -> Void) {
+    /// - Parameter disabledReason: Why sending is blocked right now ("Answer the permission
+    ///   request first"); disables the button. Nil when sending is allowed.
+    public init(disabledReason: String? = nil, action: @escaping () -> Void) {
+        self.disabledReason = disabledReason
         self.action = action
     }
+
+    private var isEnabled: Bool { isEnvironmentEnabled && disabledReason == nil }
 
     public var body: some View {
         Button(action: action) {
@@ -21,10 +28,13 @@ public struct ComposerSendButton: View {
                 .dsHitTarget(DS.Size.composerAction)
         }
         .buttonStyle(ComposerActionStyle(kind: .send, isHovered: isHovered && isEnabled))
+        .disabled(disabledReason != nil)
         .opacity(isEnabled ? 1 : 0.5)
-        .help(isEnabled ? "Send (⏎)" : "Sending disabled")
         .accessibilityLabel("Send Message")
+        .accessibilityHint(disabledReason ?? "")
         .trackHover($isHovered)
+        // On the wrapper, so the tooltip still shows while the button is disabled.
+        .help(isEnabled ? "Send (⏎)" : disabledReason ?? "Sending disabled")
     }
 }
 
@@ -88,7 +98,7 @@ private struct ComposerActionStyle: ButtonStyle {
     DSPreviewPair {
         HStack(spacing: DS.Space.md) {
             ComposerSendButton {}
-            ComposerSendButton {}.disabled(true)
+            ComposerSendButton(disabledReason: "Answer the permission request first") {}
             ComposerStopButton(isEscapeEnabled: false) {}
         }
     }

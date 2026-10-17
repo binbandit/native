@@ -4,8 +4,8 @@
 public struct GhosttyConfiguration: Hashable, Sendable {
     public var settings: TerminalSettings
     public var colors: TerminalColors
-    /// The family used when `settings.fontFamily` is nil: the app's code font.
-    public var defaultFontFamily: String
+    /// The font used when `settings.fontFamily` is nil: the app's code font.
+    public var defaultFont: DefaultFont
     /// Space between the text and the edge of the terminal, in points.
     public var padding: Padding
 
@@ -19,10 +19,22 @@ public struct GhosttyConfiguration: Hashable, Sendable {
         }
     }
 
-    public init(settings: TerminalSettings, colors: TerminalColors, defaultFontFamily: String, padding: Padding) {
+    public struct DefaultFont: Hashable, Sendable {
+        public var family: String
+        /// A variable font gets explicit regular and bold weights, since its default instance may
+        /// be neither.
+        public var isVariable: Bool
+
+        public init(family: String, isVariable: Bool) {
+            self.family = family
+            self.isVariable = isVariable
+        }
+    }
+
+    public init(settings: TerminalSettings, colors: TerminalColors, defaultFont: DefaultFont, padding: Padding) {
         self.settings = settings
         self.colors = colors
-        self.defaultFontFamily = defaultFontFamily
+        self.defaultFont = defaultFont
         self.padding = padding
     }
 
@@ -33,7 +45,15 @@ public struct GhosttyConfiguration: Hashable, Sendable {
             lines.append("\(key) = \(value)")
         }
 
-        set("font-family", Self.quoted(settings.fontFamily ?? defaultFontFamily))
+        if let family = settings.fontFamily {
+            set("font-family", Self.quoted(family))
+        } else {
+            set("font-family", Self.quoted(defaultFont.family))
+            if defaultFont.isVariable {
+                set("font-variation", "wght=400")
+                set("font-variation-bold", "wght=700")
+            }
+        }
         set("font-size", Self.number(settings.fontSize))
 
         let chrome = colors.chrome

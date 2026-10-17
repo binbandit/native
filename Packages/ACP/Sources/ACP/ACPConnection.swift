@@ -6,6 +6,8 @@ public enum AgentEvent: Sendable {
     case sessionUpdate(SessionNotification)
     /// Answer with `ACPConnection.respond(to:with:)`, using `RequestPermissionResponse`.
     case permissionRequest(RequestID, RequestPermissionRequest)
+    /// Answer with `ACPConnection.respond(to:with:)`, using `CreateElicitationResponse`.
+    case elicitationRequest(RequestID, CreateElicitationRequest)
     case disconnected
 }
 
@@ -156,8 +158,11 @@ public actor ACPConnection {
             case "session/request_permission":
                 let request = try decoder.decode(IncomingParams<RequestPermissionRequest>.self, from: line).params
                 await onEvent(.permissionRequest(id, request))
+            case "elicitation/create":
+                let request = try decoder.decode(IncomingParams<CreateElicitationRequest>.self, from: line).params
+                await onEvent(.elicitationRequest(id, request))
             default:
-                // We advertise no optional client capabilities, so anything else (fs, terminals, ...)
+                // Native advertises no other client capabilities (fs, terminals, ...), so anything else
                 // is unexpected.
                 try write(OutgoingError(id: id, error: .methodNotFound(method)))
             }
