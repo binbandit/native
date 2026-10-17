@@ -36,6 +36,7 @@ struct NativeApp: App {
                 .dsAccentPalette(themeID: iconPreferences.theme.rawValue)
                 .task {
                     OrchestrationPlugin.connect(to: model)
+                    MCPServersPlugin.connect(to: model) { BuiltInPlugins.usage.contextReports.reports }
                     BuiltInPlugins.usage.limits.host = model
                     BuiltInPlugins.automation.center.connect(to: model) { [git, gitHub] draft in
                         try await AutomationGitHubWiring.openPullRequest(draft, git: git, gitHub: gitHub)
@@ -75,7 +76,7 @@ struct NativeApp: App {
         }
 
         Settings {
-            SettingsView(additionalPanes: [.labs, .git])
+            SettingsView(additionalPanes: [.labs, .git, .mcpServers(registry: model.plugins)])
                 .environment(model.plugins)
                 .environment(git.settings)
                 .environment(iconPreferences)
@@ -116,6 +117,7 @@ private struct FileCommands: Commands {
 private struct ViewCommands: Commands {
     @FocusedValue(\.sidebarVisibility) private var sidebarVisibility
     @FocusedValue(\.activeSession) private var session
+    @FocusedValue(\.mcpServersPopover) private var mcpServersPopover
 
     var body: some Commands {
         CommandGroup(replacing: .sidebar) {
@@ -135,6 +137,12 @@ private struct ViewCommands: Commands {
             .disabled(session?.state.subagents.isEmpty ?? true)
 
             GitChangesMenuItem()
+
+            Button("Show MCP Servers") {
+                mcpServersPopover?.wrappedValue.toggle()
+            }
+            .keyboardShortcut("m", modifiers: [.command, .control])
+            .disabled(mcpServersPopover == nil)
         }
     }
 }

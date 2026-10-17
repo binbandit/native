@@ -87,17 +87,25 @@ final class GitSettings {
 
     /// The setup script for the project whose main checkout is `root`, if it has one.
     func setupScript(forProjectAt root: URL) -> String? {
-        let script = setupScripts[Self.key(for: root)]?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let key = Self.key(for: root)
+        // Stored keys may be spelled differently (`/tmp` and `/private/tmp`), so compare normalized.
+        let script = setupScripts.first { Self.key(for: URL(filePath: $0.key)) == key }?.value
+            .trimmingCharacters(in: .whitespacesAndNewlines)
         return script?.isEmpty == false ? script : nil
     }
 
     func setSetupScript(_ script: String, forProjectAt root: URL) {
+        let key = Self.key(for: root)
         let trimmed = script.trimmingCharacters(in: .whitespacesAndNewlines)
-        setupScripts[Self.key(for: root)] = trimmed.isEmpty ? nil : script
+        var scripts = setupScripts.filter { Self.key(for: URL(filePath: $0.key)) != key }
+        if !trimmed.isEmpty { scripts[key] = script }
+        setupScripts = scripts
     }
 
+    /// A project folder's path with symlinks resolved and no trailing slash.
     static func key(for root: URL) -> String {
-        root.standardizedFileURL.path(percentEncoded: false)
+        let path = root.resolvingSymlinksInPath().standardizedFileURL.path(percentEncoded: false)
+        return path.count > 1 && path.hasSuffix("/") ? String(path.dropLast()) : path
     }
 
     private func save(_ value: Any, for key: Key) {

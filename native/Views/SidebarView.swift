@@ -16,6 +16,7 @@ import SwiftUI
 struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View>: View {
     @Environment(AppModel.self) private var model
     @FocusState private var isListFocused: Bool
+    @AppStorage("sidebar.showsOnlyNeedsYou") private var showsOnlyNeedsYou = false
 
     private let navigationItems: NavigationItems
     private let accessories: Accessories
@@ -47,7 +48,7 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
                 .padding(.horizontal, DS.Space.lg)
 
             ScrollView {
-                ProjectList(taskAccessory: taskAccessory, select: select)
+                ProjectList(taskAccessory: taskAccessory, showsOnlyNeedsYou: $showsOnlyNeedsYou, select: select)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, DS.Space.sm)
                     .padding(.vertical, DS.Space.md)
@@ -56,12 +57,13 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
             .focusable()
             .focused($isListFocused)
             .focusEffectDisabled()
-            .onMoveCommand { direction in
-                switch direction {
-                case .up: model.selectSession(offset: -1)
-                case .down: model.selectSession(offset: 1)
-                default: break
-                }
+            .onKeyPress(.upArrow) {
+                model.selectSession(offset: -1)
+                return .handled
+            }
+            .onKeyPress(.downArrow) {
+                model.selectSession(offset: 1)
+                return .handled
             }
             .onKeyPress(.return) {
                 guard model.renaming == nil, let selection = model.selection else { return .ignored }
@@ -74,14 +76,16 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .focusedSceneValue(\.sidebarReorder, reorder)
+        .focusedSceneValue(\.sidebarNeedsYouFilter, $showsOnlyNeedsYou)
     }
 
-    /// A row was clicked: select it and hand focus to its composer once the session is open.
+    /// A row was clicked or tapped, which means "work here": select it and focus its composer once
+    /// the session is open. Keyboard navigation selects without this, so focus stays in the list.
     private func select(_ key: SessionKey) {
         model.selection = key
         Task {
             await model.loadSession(key)
-            model.session(key)?.focusComposerRequest += 1
+            model.session(key)?.wantsComposerFocus = true
         }
     }
 
