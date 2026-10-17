@@ -56,14 +56,51 @@ public struct Repository: Sendable, Hashable {
 
     /// Runs a command on literal paths fed through stdin, which sidesteps both pathspec magic
     /// (`*`, `:`) and argument length limits.
-    func runWithPaths(_ arguments: [String], _ paths: [String]) async throws(GitError) {
+    func runWithPaths(
+        _ arguments: [String], _ paths: [String], environment: [String: String] = [:]
+    ) async throws(GitError) {
         var input = Data()
         for path in paths {
             input.append(contentsOf: path.utf8)
             input.append(0)
         }
         try await run(
-            ["--literal-pathspecs"] + arguments + ["--pathspec-from-file=-", "--pathspec-file-nul"], input: input)
+            ["--literal-pathspecs"] + arguments + ["--pathspec-from-file=-", "--pathspec-file-nul"],
+            input: input, environment: environment)
+    }
+
+    /// Runs `body` with `GIT_INDEX_FILE` pointing at a scratch index in the git directory, so the
+    /// real index is never touched, and removes the scratch index afterwards. With `copyingIndex`
+    /// the scratch starts as a copy of the real index.
+    func withScratchIndex<Result>(
+        copyingIndex: Bool,
+        _ body: ([String: String]) async throws(GitError) -> Result
+    ) async throws(GitError) -> Result {
+        let scratch = gitDirectory.appending(path: "native-scratch-\(UUID().uuidString).index").path(percentEncoded: false)
+        if copyingIndex {
+            let index = try await run(["rev-parse", "--path-format=absolute", "--git-path", "index"], readOnly: true)
+                .text.trimmingCharacters(in: .whitespacesAndNewlines)
+            // Before anything is staged there's no index to copy, and an empty scratch is right.
+            _ = try await git.runTool("cp", ["--", index, scratch], in: root)
+        }
+        let result: Result
+        do {
+            result = try await body(["GIT_INDEX_FILE": scratch])
+        } catch {
+            _ = try? await git.runTool("rm", ["-f", "--", scratch], in: root)
+            throw error
+        }
+        _ = try await git.runTool("rm", ["-f", "--", scratch], in: root)
+        return result
+    }
+
+    /// The top of the working tree at `path` as git spells it (symlinks resolved), or `nil` when
+    /// there's no working tree there. Comparing git's own spellings works on any machine.
+    func toplevel(of path: URL) async -> String? {
+        guard let output = try? await git.run(["rev-parse", "--show-toplevel"], in: path, readOnly: true),
+            output.status == 0
+        else { return nil }
+        return output.text.trimmingCharacters(in: .newlines)
     }
 
     public static func == (lhs: Repository, rhs: Repository) -> Bool {
@@ -73,15 +110,5 @@ public struct Repository: Sendable, Hashable {
     public func hash(into hasher: inout Hasher) {
         hasher.combine(root)
         hasher.combine(gitDirectory)
-    }
-
-    /// The path with symlinks resolved, e.g. `/tmp` to `/private/tmp`, for comparing with git's.
-    static func canonicalPath(_ url: URL) -> String {
-        let path = url.standardizedFileURL.path(percentEncoded: false)
-        guard let resolved = realpath(path, nil) else {
-            return path.hasSuffix("/") && path.count > 1 ? String(path.dropLast()) : path
-        }
-        defer { free(resolved) }
-        return String(cString: resolved)
     }
 }

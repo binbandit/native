@@ -15,7 +15,9 @@ public struct PullRequestListFilter: Sendable, Hashable {
     public var search: String?
     public var limit: Int
 
-    public init(state: State = .open, author: String? = nil, head: String? = nil, search: String? = nil, limit: Int = 30) {
+    public init(
+        state: State = .open, author: String? = nil, head: String? = nil, search: String? = nil, limit: Int = 30
+    ) {
         self.state = state
         self.author = author
         self.head = head

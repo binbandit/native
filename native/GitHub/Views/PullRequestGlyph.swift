@@ -17,7 +17,10 @@ nonisolated struct PullRequestGlyph: Shape {
         }
         var path = Path()
         func circle(_ x: CGFloat, _ y: CGFloat) {
-            path.addEllipse(in: CGRect(x: rect.minX + (x - 3) * scale, y: rect.minY + (y - 3) * scale, width: 6 * scale, height: 6 * scale))
+            path.addEllipse(
+                in: CGRect(
+                    x: rect.minX + (x - 3) * scale, y: rect.minY + (y - 3) * scale, width: 6 * scale, height: 6 * scale)
+            )
         }
         func line(_ points: (CGFloat, CGFloat)...) {
             path.addLines(points.map { point($0.0, $0.1) })

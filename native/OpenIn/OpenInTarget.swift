@@ -46,20 +46,59 @@ nonisolated extension OpenInTarget {
     static let finder = OpenInTarget(id: "finder", bundleIdentifiers: ["com.apple.finder"], kind: .fileManager)
 
     private static let editors: [OpenInTarget] = [
-        .init(id: "cursor", bundleIdentifiers: ["com.todesktop.230313mzl4w4u92"], kind: .editor, remote: .url("cursor://vscode-remote/ssh-remote+{host}{path}")),
-        .init(id: "vscode", bundleIdentifiers: ["com.microsoft.VSCode"], kind: .editor, remote: .url("vscode://vscode-remote/ssh-remote+{host}{path}")),
-        .init(id: "vscode-insiders", bundleIdentifiers: ["com.microsoft.VSCodeInsiders"], kind: .editor, remote: .url("vscode-insiders://vscode-remote/ssh-remote+{host}{path}")),
-        .init(id: "zed", bundleIdentifiers: ["dev.zed.Zed"], kind: .editor, remote: .url("ssh://{host}{path}")),
-        .init(id: "zed-preview", bundleIdentifiers: ["dev.zed.Zed-Preview"], kind: .editor, remote: .url("ssh://{host}{path}")),
-        .init(id: "zed-nightly", bundleIdentifiers: ["dev.zed.Zed-Nightly"], kind: .editor, remote: .url("ssh://{host}{path}")),
-        .init(id: "windsurf", bundleIdentifiers: ["com.exafunction.windsurf"], kind: .editor, remote: .url("windsurf://vscode-remote/ssh-remote+{host}{path}")),
+        .init(
+            id: "cursor",
+            bundleIdentifiers: ["com.todesktop.230313mzl4w4u92"],
+            kind: .editor,
+            remote: .url("cursor://vscode-remote/ssh-remote+{host}{path}")
+        ),
+        .init(
+            id: "vscode",
+            bundleIdentifiers: ["com.microsoft.VSCode"],
+            kind: .editor,
+            remote: .url("vscode://vscode-remote/ssh-remote+{host}{path}")
+        ),
+        .init(
+            id: "vscode-insiders",
+            bundleIdentifiers: ["com.microsoft.VSCodeInsiders"],
+            kind: .editor,
+            remote: .url("vscode-insiders://vscode-remote/ssh-remote+{host}{path}")
+        ),
+        .init(
+            id: "zed",
+            bundleIdentifiers: ["dev.zed.Zed"],
+            kind: .editor,
+            remote: .url("ssh://{host}{path}")
+        ),
+        .init(
+            id: "zed-preview",
+            bundleIdentifiers: ["dev.zed.Zed-Preview"],
+            kind: .editor,
+            remote: .url("ssh://{host}{path}")
+        ),
+        .init(
+            id: "zed-nightly",
+            bundleIdentifiers: ["dev.zed.Zed-Nightly"],
+            kind: .editor,
+            remote: .url("ssh://{host}{path}")
+        ),
+        .init(
+            id: "windsurf",
+            bundleIdentifiers: ["com.exafunction.windsurf"],
+            kind: .editor,
+            remote: .url("windsurf://vscode-remote/ssh-remote+{host}{path}")
+        ),
         .init(id: "antigravity", bundleIdentifiers: ["com.google.antigravity-ide"], kind: .editor),
         .init(id: "vscodium", bundleIdentifiers: ["com.vscodium"], kind: .editor),
         .init(id: "sublime-text", bundleIdentifiers: ["com.sublimetext.4", "com.sublimetext.3"], kind: .editor),
         .init(id: "nova", bundleIdentifiers: ["com.panic.Nova"], kind: .editor),
         .init(id: "bbedit", bundleIdentifiers: ["com.barebones.bbedit"], kind: .editor),
         .init(id: "textmate", bundleIdentifiers: ["com.macromates.TextMate"], kind: .editor),
-        .init(id: "intellij-idea", bundleIdentifiers: ["com.jetbrains.intellij", "com.jetbrains.intellij.ce"], kind: .editor),
+        .init(
+            id: "intellij-idea",
+            bundleIdentifiers: ["com.jetbrains.intellij", "com.jetbrains.intellij.ce"],
+            kind: .editor
+        ),
         .init(id: "pycharm", bundleIdentifiers: ["com.jetbrains.pycharm", "com.jetbrains.pycharm.ce"], kind: .editor),
         .init(id: "webstorm", bundleIdentifiers: ["com.jetbrains.WebStorm"], kind: .editor),
         .init(id: "goland", bundleIdentifiers: ["com.jetbrains.goland"], kind: .editor),
@@ -76,7 +115,12 @@ nonisolated extension OpenInTarget {
     private static let terminals: [OpenInTarget] = [
         .init(id: "ghostty", bundleIdentifiers: ["com.mitchellh.ghostty"], kind: .terminal, remote: .sshCommand),
         .init(id: "iterm", bundleIdentifiers: ["com.googlecode.iterm2"], kind: .terminal, remote: .sshCommand),
-        .init(id: "warp", bundleIdentifiers: ["dev.warp.Warp-Stable", "dev.warp.Warp-Preview"], kind: .terminal, remote: .sshCommand),
+        .init(
+            id: "warp",
+            bundleIdentifiers: ["dev.warp.Warp-Stable", "dev.warp.Warp-Preview"],
+            kind: .terminal,
+            remote: .sshCommand
+        ),
         // With `--single-instance`, a running kitty opens the window and the new process exits.
         .init(
             id: "kitty",

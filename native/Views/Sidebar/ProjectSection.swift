@@ -126,12 +126,15 @@ private struct ProjectEmptyRow: View {
             .trackHover($isHovered)
             .help("New session in \(project.name) (⌘N)")
         } else {
-            Text(model.agents.contains { $0.status == .starting } ? "No sessions yet. Agents are starting…" : "No sessions yet. Set up an agent below to start one.")
-                .font(.dsBody)
-                .foregroundStyle(.dsTextTertiary)
-                .padding(.leading, TaskRowIndent.grouped.leading)
-                .padding(.vertical, DS.Space.sm)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            Text(
+                model.agents.contains { $0.status == .starting }
+                    ? "No sessions yet. Agents are starting…" : "No sessions yet. Set up an agent below to start one."
+            )
+            .font(.dsBody)
+            .foregroundStyle(.dsTextTertiary)
+            .padding(.leading, TaskRowIndent.grouped.leading)
+            .padding(.vertical, DS.Space.sm)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }

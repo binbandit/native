@@ -16,22 +16,14 @@ extension Repository {
             let output = try await run(["cat-file", "blob", object], readOnly: true, acceptingStatus: [0, 128])
             return output.status == 0 ? output.stdout : nil
         case .workingTree:
-            let url = root.appending(path: path, directoryHint: .notDirectory)
-            let fileManager = FileManager.default
-            // git stores a symlink as its target path.
-            if let destination = try? fileManager.destinationOfSymbolicLink(atPath: url.path(percentEncoded: false)) {
-                return Data(destination.utf8)
-            }
-            var isDirectory: ObjCBool = false
-            guard fileManager.fileExists(atPath: url.path(percentEncoded: false), isDirectory: &isDirectory),
-                !isDirectory.boolValue
-            else {
-                return nil
-            }
-            do {
-                return try Data(contentsOf: url)
-            } catch {
-                throw .launchFailed("Couldn't read \(path): \(error.localizedDescription)")
+            // Read on the machine the repository is on. git stores a symlink as its target path,
+            // so a link reads as that; a missing file or a folder exits 3.
+            let script = #"if [ -L "$1" ]; then printf '%s' "$(readlink -- "$1")"; elif [ -f "$1" ]; then cat -- "$1"; else exit 3; fi"#
+            let output = try await git.runTool("sh", ["-c", script, "sh", path], in: root)
+            switch output.status {
+            case 0: return output.stdout
+            case 3: return nil
+            default: throw .launchFailed("Couldn't read \(path): \(output.stderr)")
             }
         }
     }
@@ -77,18 +69,12 @@ extension Repository {
             )
             patch = output.text
         }
-        for path in untracked.sorted() {
-            guard let data = try await contents(of: path, at: .workingTree) else { continue }
-            patch += "diff --git a/\(path) b/\(path)\nnew file\n--- /dev/null\n+++ b/\(path)\n"
-            if FileVersions.isBinary(data) {
-                patch += "Binary file\n"
-            } else {
-                for line in String(decoding: data, as: UTF8.self).split(
-                    separator: "\n", omittingEmptySubsequences: false)
-                {
-                    patch += "+\(line)\n"
-                }
-            }
+        if !untracked.isEmpty {
+            let output = try await diffUntracked(
+                untracked.sorted(),
+                ["-U\(contextLines)", "--no-color", "--no-ext-diff", "--no-textconv"]
+            )
+            patch += output.text
         }
         return patch
     }

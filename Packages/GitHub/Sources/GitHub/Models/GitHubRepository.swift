@@ -13,7 +13,10 @@ public struct GitHubRepository: Sendable, Hashable, Decodable {
     /// ADMIN, MAINTAIN, WRITE, TRIAGE or READ.
     public var viewerPermission: String?
 
-    public init(name: String, nameWithOwner: String, url: URL, defaultBranch: String? = nil, isPrivate: Bool = false, isFork: Bool = false, description: String? = nil, viewerPermission: String? = nil) {
+    public init(
+        name: String, nameWithOwner: String, url: URL, defaultBranch: String? = nil, isPrivate: Bool = false,
+        isFork: Bool = false, description: String? = nil, viewerPermission: String? = nil
+    ) {
         self.name = name
         self.nameWithOwner = nameWithOwner
         self.url = url

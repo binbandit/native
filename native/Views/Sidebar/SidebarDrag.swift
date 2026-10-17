@@ -41,7 +41,8 @@ final class SidebarDragState {
         let provider = NSItemProvider()
         // The payload is empty: the drop reads `dragged`. Keeping it in-process means it never
         // lands in another app either.
-        provider.registerDataRepresentation(forTypeIdentifier: Self.contentType.identifier, visibility: .ownProcess) { completion in
+        provider.registerDataRepresentation(forTypeIdentifier: Self.contentType.identifier, visibility: .ownProcess) {
+            completion in
             completion(Data(), nil)
             return nil
         }
@@ -124,7 +125,11 @@ private struct SidebarDropTargetModifier: ViewModifier {
     func body(content: Content) -> some View {
         let edge = state.indicatorEdge(for: item)
         content
-            .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height = $0 }
+            .onGeometryChange(for: CGFloat.self) {
+                $0.size.height
+            } action: {
+                height = $0
+            }
             .onDrop(
                 of: isActive ? [SidebarDragState.contentType] : [],
                 delegate: SidebarDropDelegate(item: item, height: height, state: state, onDrop: onDrop)

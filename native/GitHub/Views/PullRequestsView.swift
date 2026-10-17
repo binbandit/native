@@ -17,13 +17,18 @@ struct PullRequestsView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(.dsBackground)
-        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+        .onGeometryChange(for: CGFloat.self) {
+            $0.size.width
+        } action: {
+            width = $0
+        }
         .onAppear { model.isWatching = true }
         .onDisappear { model.isWatching = false }
         .task { await model.refreshIfDue() }
         .confirmationDialog(
             openAsTaskTitle,
-            isPresented: Binding(get: { model.openAsTaskCandidate != nil }, set: { if !$0 { model.openAsTaskCandidate = nil } }),
+            isPresented: Binding(
+                get: { model.openAsTaskCandidate != nil }, set: { if !$0 { model.openAsTaskCandidate = nil } }),
             titleVisibility: .visible
         ) {
             Button("Check Out in New Worktree") {
@@ -31,9 +36,14 @@ struct PullRequestsView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: {
-            Text("Native checks the pull request's branch out into a new worktree and starts a task there. Your current checkout isn't touched.")
+            Text(
+                "Native checks the pull request's branch out into a new worktree and starts a task there. Your current checkout isn't touched."
+            )
         }
-        .alert("Something went wrong", isPresented: Binding(get: { model.actionError != nil }, set: { if !$0 { model.actionError = nil } })) {
+        .alert(
+            "Something went wrong",
+            isPresented: Binding(get: { model.actionError != nil }, set: { if !$0 { model.actionError = nil } })
+        ) {
             Button("OK", role: .cancel) {}
         } message: {
             Text(model.actionError ?? "")
@@ -68,7 +78,8 @@ struct PullRequestsView: View {
                     EmptyStateView(
                         "No Open Pull Requests",
                         systemImage: "arrow.triangle.pull",
-                        message: "Pull requests you open, are asked to review, or are assigned show up here, from every repository you can see. Open one from a task's branch with Create Pull Request."
+                        message:
+                            "Pull requests you open, are asked to review, or are assigned show up here, from every repository you can see. Open one from a task's branch with Create Pull Request."
                     ) {
                         Button("Open GitHub") {
                             if let url = URL(string: "https://github.com/pulls") { openURL(url) }
@@ -76,8 +87,13 @@ struct PullRequestsView: View {
                         .buttonStyle(.ds(.secondary, size: .medium))
                     }
                     .frame(minHeight: PullRequestsLayout.emptyHeight)
-                } else if groups.allSatisfy(\.pullRequests.isEmpty), model.filter.isNarrowing || model.filter.grouping == .repository {
-                    EmptyStateView("No Matching Pull Requests", systemImage: "line.3.horizontal.decrease", message: filterExplanation) {
+                } else if groups.allSatisfy(\.pullRequests.isEmpty),
+                    model.filter.isNarrowing || model.filter.grouping == .repository
+                {
+                    EmptyStateView(
+                        "No Matching Pull Requests", systemImage: "line.3.horizontal.decrease",
+                        message: filterExplanation
+                    ) {
                         Button("Clear Filters") {
                             model.filter.query = ""
                             model.filter.includesDrafts = true
@@ -88,7 +104,9 @@ struct PullRequestsView: View {
                     .frame(minHeight: PullRequestsLayout.emptyHeight)
                 } else {
                     ForEach(groups) { group in
-                        PullRequestGroupSection(group: group, isCollapsed: collapsed(group.id), showsRepository: model.filter.grouping != .repository)
+                        PullRequestGroupSection(
+                            group: group, isCollapsed: collapsed(group.id),
+                            showsRepository: model.filter.grouping != .repository)
                     }
                 }
             }
@@ -120,7 +138,8 @@ struct PullRequestsView: View {
         if !query.isEmpty {
             return "Nothing matches \u{201C}\(query)\u{201D} in its title, number, branch, author or labels."
         }
-        return model.filter.includesDrafts ? "Nothing here with these filters." : "Only drafts are left, and drafts are hidden."
+        return model.filter.includesDrafts
+            ? "Nothing here with these filters." : "Only drafts are left, and drafts are hidden."
     }
 
     private var openAsTaskTitle: String {

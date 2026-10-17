@@ -11,8 +11,8 @@ extension ContextIndicator where Source == SessionContextSource {
 }
 
 extension UsageLimitBanner {
-    init(session: SessionModel, chrome: UsageBannerChrome = .section) {
-        self.init(agent: session.agent.id, session: session.id, chrome: chrome, limits: BuiltInPlugins.usage.limits)
+    init(session: SessionModel) {
+        self.init(agent: session.agent.id, session: session.id, limits: BuiltInPlugins.usage.limits)
     }
 }
 

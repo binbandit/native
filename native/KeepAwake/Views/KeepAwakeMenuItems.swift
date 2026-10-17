@@ -10,8 +10,12 @@ struct KeepAwakeMenuItems: View {
         Section(controller.status.description(keepsDisplayOn: controller.keepsDisplayOn)) {
             Picker("Keep Mac Awake", selection: $controller.mode) {
                 ForEach(KeepAwakeMode.allCases.reversed()) { mode in
-                    Text(mode.title)
-                    Text(mode.explanation)
+                    // Two texts make a menu item with Orca's description as its subtitle.
+                    VStack {
+                        Text(mode.title)
+                        Text(mode.explanation)
+                    }
+                    .tag(mode)
                 }
             }
             .pickerStyle(.inline)

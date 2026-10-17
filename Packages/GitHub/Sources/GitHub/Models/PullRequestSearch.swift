@@ -26,7 +26,10 @@ public struct PullRequestSearch: Sendable, Hashable {
     /// GitHub's search budget is 30 requests a minute, whatever the limit.
     public var limit: Int
 
-    public init(_ involvement: Involvement, user: String = "@me", state: State = .open, repositories: [String] = [], keywords: String? = nil, limit: Int = 50) {
+    public init(
+        _ involvement: Involvement, user: String = "@me", state: State = .open, repositories: [String] = [],
+        keywords: String? = nil, limit: Int = 50
+    ) {
         self.involvement = involvement
         self.user = user
         self.state = state

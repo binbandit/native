@@ -19,10 +19,12 @@ public struct PullRequestSearchResult: Sendable, Hashable, Decodable, Identifiab
     public var createdAt: Date
     public var updatedAt: Date
 
-    static let fields = "id,number,title,url,state,isDraft,repository,author,assignees,labels,commentsCount,createdAt,updatedAt"
+    static let fields =
+        "id,number,title,url,state,isDraft,repository,author,assignees,labels,commentsCount,createdAt,updatedAt"
 
     private enum CodingKeys: String, CodingKey {
-        case id, number, title, url, state, isDraft, repository, author, assignees, labels, commentsCount, createdAt, updatedAt
+        case id, number, title, url, state, isDraft, repository, author, assignees, labels, commentsCount, createdAt,
+            updatedAt
     }
 
     private struct RepositoryRef: Decodable {

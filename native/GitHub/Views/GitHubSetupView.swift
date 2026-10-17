@@ -102,9 +102,9 @@ struct GitHubSetupView: View {
         }
     }
 
-    /// "at 3:05 PM, in 42 minutes", the exact time and how long that is.
+    /// "at 3:05 PM, in 42 min": the exact time and how long that is.
     static func whenText(_ date: Date) -> String {
         guard date > .now.addingTimeInterval(30) else { return "shortly" }
-        return "at \(date.formatted(date: .omitted, time: .shortened)), \(date.formatted(.relative(presentation: .named)))"
+        return "at \(DSFormat.timeAndCountdown(date, now: .now))"
     }
 }

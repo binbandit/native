@@ -60,22 +60,22 @@ final class OpenInModel {
         }
     }
 
-    /// Opens `folder` in `app` and makes it the default.
-    func open(_ folder: URL, in app: OpenInApp) {
+    /// Opens the location in `app` and makes it the default.
+    func open(_ location: OpenInLocation, in app: OpenInApp) {
         defaultID = app.id
         Task {
             do {
-                try await app.open(folder)
+                try await app.open(location)
             } catch {
                 NSApplication.shared.presentError(error)
             }
         }
     }
 
-    /// Opens `folder` in the default app.
-    func openInDefaultApp(_ folder: URL) {
+    /// Opens the location in the default app.
+    func openInDefaultApp(_ location: OpenInLocation) {
         guard let app = defaultApp else { return }
-        open(folder, in: app)
+        open(location, in: app)
     }
 
     /// Makes `app` the default without opening anything.
@@ -83,9 +83,9 @@ final class OpenInModel {
         defaultID = app.id
     }
 
-    func copyPath(of folder: URL) {
+    func copyPath(of location: OpenInLocation) {
         NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(folder.path(percentEncoded: false), forType: .string)
+        NSPasteboard.general.setString(location.path, forType: .string)
     }
 
     /// The app's own icon, read from the installed bundle at menu-icon size (16pt). Native never

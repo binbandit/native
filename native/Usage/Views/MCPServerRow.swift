@@ -21,7 +21,7 @@ struct MCPServerRow: View {
                 ContributorRow(
                     title: server.name,
                     detail: server.tools.count == 1 ? "1 tool" : "\(server.tools.count) tools",
-                    tokens: TokenFormat.compact(tokens)
+                    tokens: DSFormat.tokens(tokens)
                 ) {
                     Image(systemName: "chevron.right")
                         .font(.system(size: DS.Space.md, weight: .semibold))
@@ -37,7 +37,7 @@ struct MCPServerRow: View {
             if isExpanded {
                 let tools = showsAllTools ? server.tools : Array(server.tools.prefix(Self.previewCount))
                 ForEach(tools, id: \.name) { tool in
-                    ContributorRow(title: tool.shortName, tokens: TokenFormat.compact(tool.tokens), isMono: true)
+                    ContributorRow(title: tool.shortName, tokens: DSFormat.tokens(tool.tokens), isMono: true)
                         .padding(.leading, UsageMetrics.swatchSize + DS.Space.md)
                         .help(tool.name)
                 }

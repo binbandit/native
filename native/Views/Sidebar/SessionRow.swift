@@ -82,12 +82,13 @@ extension TaskStatus {
             self = .needsPermission
             return
         }
-        self = switch session.phase {
-        case .loading: .starting
-        case .prompting: .working
-        case .disconnected: .failed
-        case .idle: .idle
-        }
+        self =
+            switch session.phase {
+            case .loading: .starting
+            case .prompting: .working
+            case .disconnected: .failed
+            case .idle: .idle
+            }
     }
 }
 

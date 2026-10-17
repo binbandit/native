@@ -13,31 +13,22 @@ struct CreatePullRequestRequest: Identifiable, Hashable, Sendable {
     var commits: String
     /// `git diff base...head`, if the caller has it.
     var diff: String?
+    /// The repository's pull request template (`.github/pull_request_template.md` and the other
+    /// places GitHub looks), read on the machine that hosts the checkout.
+    var template: String?
 
-    init(directory: URL, head: String, base: String? = nil, commits: String, diff: String? = nil) {
+    init(
+        directory: URL, head: String, base: String? = nil, commits: String, diff: String? = nil, template: String? = nil
+    ) {
         self.directory = directory
         self.head = head
         self.base = base
         self.commits = commits
         self.diff = diff
+        self.template = template
     }
 
     var branch: BranchReference {
         BranchReference(directory: directory, branch: head)
-    }
-
-    /// The repository's pull request template, in the places GitHub looks for one.
-    func template() -> String? {
-        let candidates = [
-            ".github/pull_request_template.md", ".github/PULL_REQUEST_TEMPLATE.md",
-            "pull_request_template.md", "PULL_REQUEST_TEMPLATE.md",
-            "docs/pull_request_template.md", "docs/PULL_REQUEST_TEMPLATE.md",
-        ]
-        for path in candidates {
-            if let text = try? String(contentsOf: directory.appending(path: path), encoding: .utf8) {
-                return text
-            }
-        }
-        return nil
     }
 }

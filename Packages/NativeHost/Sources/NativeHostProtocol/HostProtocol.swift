@@ -61,8 +61,32 @@ public struct InitializeParams: Codable, Sendable {
     }
 }
 
+/// A machine's host, as clients address it. Stable for the life of the host's store, so a project
+/// on a Mac mini stays on that Mac mini whatever network path reaches it.
+public struct HostID: Hashable, Sendable, Codable, CustomStringConvertible {
+    public let rawValue: UUID
+
+    public init(_ rawValue: UUID = UUID()) {
+        self.rawValue = rawValue
+    }
+
+    public init(from decoder: any Decoder) throws {
+        rawValue = try decoder.singleValueContainer().decode(UUID.self)
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.singleValueContainer()
+        try container.encode(rawValue)
+    }
+
+    public var description: String { rawValue.uuidString }
+}
+
 public struct HostInfo: Codable, Hashable, Sendable {
     public var protocolVersion: Int
+    public var hostID: HostID
+    /// The machine's name, for telling hosts apart ("Brayden's MacBook Pro", "mini").
+    public var machineName: String
     public var hostInfo: PeerInfo
     /// Changes every time the host process starts; session sequence numbers are only comparable
     /// within one epoch.
@@ -71,8 +95,10 @@ public struct HostInfo: Codable, Hashable, Sendable {
     public var startedAt: Date
     public var channel: String
 
-    public init(protocolVersion: Int, hostInfo: PeerInfo, epoch: UUID, processID: Int32, startedAt: Date, channel: String) {
+    public init(protocolVersion: Int, hostID: HostID, machineName: String, hostInfo: PeerInfo, epoch: UUID, processID: Int32, startedAt: Date, channel: String) {
         self.protocolVersion = protocolVersion
+        self.hostID = hostID
+        self.machineName = machineName
         self.hostInfo = hostInfo
         self.epoch = epoch
         self.processID = processID

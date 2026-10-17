@@ -27,7 +27,7 @@ struct ContextIndicator<Source: ContextSource>: View {
             .buttonStyle(.plain)
             .help(tooltip)
             .accessibilityLabel("Context")
-            .accessibilityValue(source.fractionUsed.map { "\(TokenFormat.percent($0)) full" } ?? "Not reported yet")
+            .accessibilityValue(source.fractionUsed.map { "\(DSFormat.percent($0)) full" } ?? "Not reported yet")
             .accessibilityHint("Shows what fills the context window")
             .popover(isPresented: $isShowingBreakdown, arrowEdge: arrowEdge) {
                 ContextBreakdownView(source: source)
@@ -55,7 +55,7 @@ struct ContextIndicator<Source: ContextSource>: View {
             let shape = RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous)
             HStack(spacing: DS.Space.sm) {
                 ring
-                Text(source.fractionUsed.map(TokenFormat.percent) ?? "Context")
+                Text(source.fractionUsed.map(DSFormat.percent) ?? "Context")
                     .monospacedDigit()
                     .contentTransition(.numericText(value: source.fractionUsed ?? 0))
             }
@@ -76,8 +76,8 @@ struct ContextIndicator<Source: ContextSource>: View {
         }
         let cost = usage.cost.map { " · \($0.amount.formatted(.currency(code: $0.currency))) spent" } ?? ""
         return """
-        Context \(TokenFormat.percent(usage.fractionUsed)) full
-        \(TokenFormat.compact(usage.used)) of \(TokenFormat.compact(usage.size)) tokens\(cost)
+        Context \(DSFormat.percent(usage.fractionUsed)) full
+        \(DSFormat.tokens(usage.used)) of \(DSFormat.tokens(usage.size)) tokens\(cost)
         Click for a breakdown
         """
     }

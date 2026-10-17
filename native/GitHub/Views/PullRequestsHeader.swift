@@ -72,7 +72,9 @@ struct PullRequestsHeader: View {
         .buttonStyle(.plain)
         .menuIndicator(.hidden)
         .fixedSize()
-        .foregroundStyle(model.filter.grouping == .repository || !model.filter.includesDrafts ? .dsTextPrimary : .dsTextSecondary)
+        .foregroundStyle(
+            model.filter.grouping == .repository || !model.filter.includesDrafts ? .dsTextPrimary : .dsTextSecondary
+        )
         .background {
             RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous)
                 .fill(model.filter.grouping == .repository || !model.filter.includesDrafts ? .dsSelected : .clear)

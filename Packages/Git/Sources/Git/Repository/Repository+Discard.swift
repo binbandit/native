@@ -10,6 +10,12 @@ extension Repository {
     @discardableResult
     public func discard(_ changes: [FileChange]) async throws(GitError) -> Checkpoint? {
         guard !changes.isEmpty else { return nil }
+        // An untracked folder is a nested repository: a checkpoint can't save what's inside it.
+        if let nested = changes.first(where: { $0.path.hasSuffix("/") }) {
+            throw .failed(
+                arguments: ["clean"], status: 1,
+                stderr: "\(nested.path) is a separate repository; Native won't delete it. Remove it in Finder if you mean to.")
+        }
         let checkpoint = try await checkpoint(named: "discard")
         let hasHead = try await resolve("HEAD") != nil
         var restoreFromIndex: [String] = []
@@ -49,9 +55,7 @@ extension Repository {
             }
         }
 
-        for path in delete.sorted() {
-            try removeFile(path)
-        }
+        try await removeFiles(delete.sorted())
         if !removeFromIndex.isEmpty {
             try await runWithPaths(["rm", "--cached", "--quiet", "--force", "--ignore-unmatch", "-r"], removeFromIndex)
         }
@@ -68,20 +72,15 @@ extension Repository {
         try await run(["cat-file", "-e", "\(revision):\(path)"], readOnly: true, acceptingStatus: [0, 128]).status == 0
     }
 
-    private func removeFile(_ path: String) throws(GitError) {
-        let url = root.appending(path: path, directoryHint: .notDirectory)
-        let fileManager = FileManager.default
-        // A dangling symlink isn't "reachable" but still has to go.
-        guard
-            (try? url.checkResourceIsReachable()) == true
-                || (try? fileManager.destinationOfSymbolicLink(atPath: url.path(percentEncoded: false))) != nil
-        else {
-            return
-        }
-        do {
-            try fileManager.removeItem(at: url)
-        } catch {
-            throw .launchFailed("Couldn't remove \(path): \(error.localizedDescription)")
+    /// Deletes working tree files on the machine the repository is on.
+    private func removeFiles(_ paths: [String]) async throws(GitError) {
+        // Chunks keep the argument list well under the system's limit.
+        for start in stride(from: 0, to: paths.count, by: 500) {
+            let chunk = Array(paths[start..<min(start + 500, paths.count)])
+            let output = try await git.runTool("rm", ["-f", "--"] + chunk, in: root)
+            guard output.status == 0 else {
+                throw .failed(arguments: ["rm"], status: output.status, stderr: output.stderr)
+            }
         }
     }
 }

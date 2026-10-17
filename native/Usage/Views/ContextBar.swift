@@ -22,10 +22,10 @@ struct ContextBar: View {
         .clipShape(.rect(cornerRadius: DS.Radius.small, style: .continuous))
         .accessibilityElement(children: .ignore)
         .accessibilityLabel("Context window")
-        .accessibilityValue("\(TokenFormat.compact(composition.usedTokens)) of \(TokenFormat.compact(composition.windowTokens)) tokens in use")
+        .accessibilityValue("\(DSFormat.tokens(composition.usedTokens)) of \(DSFormat.tokens(composition.windowTokens)) tokens in use")
     }
 
     private func tooltip(for piece: ContextBarLayout.Piece) -> String {
-        "\(piece.names.joined(separator: ", ")) · \(TokenFormat.compact(piece.tokens)) · \(TokenFormat.share(piece.tokens, of: composition.windowTokens))"
+        "\(piece.names.joined(separator: ", ")) · \(DSFormat.tokens(piece.tokens)) · \(DSFormat.share(piece.tokens, of: composition.windowTokens))"
     }
 }

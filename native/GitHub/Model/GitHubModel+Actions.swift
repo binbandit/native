@@ -14,7 +14,8 @@ extension GitHubModel {
         let checksTab = pullRequest.url.appending(path: "checks")
         var destination = checksTab
         if pullRequest.checks?.state == .failing,
-           let checks = try? await cli().checks(.number(pullRequest.number), in: location(of: pullRequest)) {
+            let checks = try? await cli().checks(.number(pullRequest.number), in: location(of: pullRequest))
+        {
             destination = checks.first { $0.outcome == .failed && $0.link != nil }?.link ?? checksTab
         }
         NSWorkspace.shared.open(destination)

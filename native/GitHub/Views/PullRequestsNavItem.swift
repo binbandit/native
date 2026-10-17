@@ -8,7 +8,9 @@ struct PullRequestsNavItem: View {
     @Environment(GitHubModel.self) private var model
 
     var body: some View {
-        SidebarNavItem("Pull Requests", systemImage: "arrow.triangle.pull", isSelected: isSelected, shortcut: "⌘⇧P", action: action) {
+        SidebarNavItem(
+            "Pull Requests", systemImage: "arrow.triangle.pull", isSelected: isSelected, shortcut: "⌘⇧P", action: action
+        ) {
             if model.reviewRequestCount > 0 {
                 Text("\(model.reviewRequestCount)")
                     .font(.dsMonoMicro)

@@ -134,10 +134,9 @@ private struct NavItem: View {
             .background(isSelected || isHovered ? Color.dsHover : .clear, in: shape)
             .overlay {
                 if showsFocusRing {
-                    // Conductor's `ring-2 ring-offset-2`, in the color macOS draws focus rings.
-                    RoundedRectangle(cornerRadius: DS.Radius.row + DS.Space.xs, style: .continuous)
-                        .strokeBorder(Color(nsColor: .keyboardFocusIndicatorColor), lineWidth: 2)
-                        .padding(-DS.Space.xs)
+                    // Conductor's 2pt ring, in the color macOS draws focus rings. It sits on the
+                    // row's edge rather than outside it, where the nav's scroll view would clip it.
+                    shape.strokeBorder(Color(nsColor: .keyboardFocusIndicatorColor), lineWidth: 2)
                 }
             }
             .contentShape(shape)

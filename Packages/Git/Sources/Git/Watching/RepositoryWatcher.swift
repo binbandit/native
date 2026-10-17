@@ -1,11 +1,11 @@
 import CoreServices
 import Foundation
 
-/// Watches a working tree with FSEvents. Changes inside git directories are dropped, except the
+/// Watches a working tree with FSEvents, for `FSEventsRepositoryMonitor`. Changes inside git directories are dropped, except the
 /// ones that change what `status()` reports: HEAD, the index and branch refs.
-public final class RepositoryWatcher: Sendable {
+final class RepositoryWatcher: Sendable {
     /// Batches of changes, already coalesced by FSEvents over `latency`.
-    public let changes: AsyncStream<RepositoryChange>
+    let changes: AsyncStream<RepositoryChange>
 
     // Only touched in init and deinit, and on `queue` by FSEvents itself.
     nonisolated(unsafe) private let stream: FSEventStreamRef
@@ -13,7 +13,7 @@ public final class RepositoryWatcher: Sendable {
     private let context: Unmanaged<WatcherContext>
 
     /// `nil` when FSEvents can't create a stream for the repository's folders.
-    public init?(repository: Repository, latency: TimeInterval = 0.2) {
+    init?(repository: Repository, latency: TimeInterval) {
         let (changes, continuation) = AsyncStream.makeStream(
             of: RepositoryChange.self, bufferingPolicy: .bufferingNewest(64))
         self.changes = changes

@@ -43,6 +43,8 @@ these rules exist to keep changes small, isolated and easy to review.
 - **Keyboard.** `docs/keyboard.md` is the source of truth for shortcuts. Change it first, and every
   new action needs a menu command or a shortcut.
 - **Swift.** Swift 6 language mode with strict concurrency; the app target defaults to MainActor.
+  Swift filenames and type names must be unique across the app target (it's one module until the
+  migration to packages), so prefix feature-specific types: `UsageLimitBanner`, not `LimitBanner`.
   Type safety over stringly-typed data (`SessionID`, `AgentDefinition.ID`, enums with an
   unknown case for wire values). No force unwraps, `try!` or `as!`. One primary type per file, and
   split files that pass about 400 lines. Comments say why, not what.

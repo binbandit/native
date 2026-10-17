@@ -4,12 +4,12 @@ import SwiftUI
 /// The left half opens the folder in the default app and shows that app's real icon; the chevron
 /// lists every installed editor, terminal and git client (see `OpenInMenu`).
 ///
-///     ToolbarItem { OpenInButton(folder: session.cwd) }
+///     ToolbarItem { OpenInButton(location: .local(session.cwd)) }
 ///         .sharedBackgroundVisibility(.hidden)
 ///
 /// It draws its own outline, so in a toolbar hide the shared glass background as above.
 struct OpenInButton: View {
-    let folder: URL
+    let location: OpenInLocation
     private let model: OpenInModel
 
     @Environment(\.isEnabled) private var isEnabled
@@ -17,8 +17,8 @@ struct OpenInButton: View {
     @State private var isChevronHovered = false
     @State private var isMenuOpen = false
 
-    init(folder: URL, model: OpenInModel = .shared) {
-        self.folder = folder
+    init(location: OpenInLocation, model: OpenInModel = .shared) {
+        self.location = location
         self.model = model
     }
 
@@ -45,7 +45,7 @@ struct OpenInButton: View {
         let app = model.defaultApp
         let title = app.map { "Open in \($0.name)" } ?? "Open"
         return Button {
-            model.openInDefaultApp(folder)
+            model.openInDefaultApp(location)
         } label: {
             Group {
                 if let app {
@@ -72,7 +72,7 @@ struct OpenInButton: View {
     private var chevron: some View {
         let isHighlighted = isEnabled && (isChevronHovered || isMenuOpen)
         return OpenInMenuTrigger(label: "Open In…", isHovered: $isChevronHovered, isOpen: $isMenuOpen) {
-            OpenInMenu.make(folder: folder, model: model)
+            OpenInMenu.make(for: location, model: model)
         }
         .frame(width: DS.Size.rowLeading + 2 * DS.Space.sm + 1)
         .background(isMenuOpen ? .dsPressed : isHighlighted ? .dsHover : .clear)
@@ -101,8 +101,8 @@ private struct SegmentButtonStyle: ButtonStyle {
 #Preview("Open In") {
     DSPreviewPair {
         HStack(spacing: DS.Space.md) {
-            OpenInButton(folder: URL(filePath: NSTemporaryDirectory()))
-            OpenInButton(folder: URL(filePath: NSTemporaryDirectory()))
+            OpenInButton(location: .local(URL(filePath: NSTemporaryDirectory())))
+            OpenInButton(location: .local(URL(filePath: NSTemporaryDirectory())))
                 .disabled(true)
         }
     }

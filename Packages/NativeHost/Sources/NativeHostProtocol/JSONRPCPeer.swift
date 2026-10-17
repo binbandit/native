@@ -1,6 +1,5 @@
 import ACP
 import Foundation
-import os
 import Synchronization
 
 /// One end of a newline-delimited JSON-RPC 2.0 connection, the framing ACP uses over stdio. The host
@@ -38,11 +37,11 @@ public final class JSONRPCPeer: Sendable {
 
     public typealias Handler = @Sendable (Event) async -> Void
 
-    private let channel: ByteChannel
+    private let channel: any ByteStream
     private let handler: Handler
     private let label: String
     private let state = Mutex(State())
-    private let logger = Logger(subsystem: "Native", category: "JSONRPC")
+    private let logger = HostLogger(category: "JSONRPC")
 
     private struct State {
         var nextID = 0
@@ -51,7 +50,7 @@ public final class JSONRPCPeer: Sendable {
         var reading: Task<Void, Never>?
     }
 
-    public init(channel: ByteChannel, label: String, handler: @escaping Handler) {
+    public init(channel: any ByteStream, label: String, handler: @escaping Handler) {
         self.channel = channel
         self.label = label
         self.handler = handler
@@ -164,7 +163,7 @@ public final class JSONRPCPeer: Sendable {
         do {
             envelope = try Self.makeDecoder().decode(IncomingEnvelope.self, from: line)
         } catch {
-            logger.error("\(self.label, privacy: .public): dropping malformed message: \(String(decoding: line.prefix(512), as: UTF8.self), privacy: .public)")
+            logger.error("\(label): dropping malformed message: \(String(decoding: line.prefix(512), as: UTF8.self))")
             return
         }
         switch (envelope.method, envelope.id) {

@@ -27,21 +27,23 @@ final class UserNotificationAlerts: NSObject, LimitAlerting {
         case .reached(let limit, let sessions):
             guard !NSApplication.shared.isActive else { return }
             identifier = Self.identifier(for: limit.agent)
-            content.title = limit.headline
-            content.body = Self.reachedBody(limit, sessions: sessions, now: now)
+            let status = limit.limitStatus()
+            content.title = status.headline
+            content.body = Self.reachedBody(status, sessions: sessions, now: now)
             content.categoryIdentifier = (limit.resetsAt != nil && !sessions.isEmpty ? Category.reached : .snoozable).rawValue
             content.userInfo = Payload(agent: limit.agent, target: sessions.first).userInfo
         case .warning(let limit):
             guard !NSApplication.shared.isActive else { return }
             identifier = Self.identifier(for: limit.agent)
-            content.title = limit.headline
-            content.body = limit.resetsAt.map { LimitWording.reset($0, now: now).capitalizedFirst + "." } ?? "Requests may stop soon."
+            let status = limit.limitStatus()
+            content.title = status.headline
+            content.body = status.resetText(now: now).map { $0.capitalizedFirst + "." } ?? "Requests may stop soon."
             content.categoryIdentifier = Category.snoozable.rawValue
             content.userInfo = Payload(agent: limit.agent, target: nil).userInfo
         case .availableAgain(let limit):
             identifier = Self.identifier(for: limit.agent)
             content.title = "\(limit.agentName) is available again"
-            content.body = "\(LimitWording.availableAgain(agentName: limit.agentName, window: limit.window)). Nothing was sent while you were snoozed."
+            content.body = "\(limit.limitStatus().availableAgainText). Nothing was sent while you were snoozed."
             content.userInfo = Payload(agent: limit.agent, target: nil).userInfo
         case .resumeFailed(let target):
             identifier = "\(Self.identifier(for: target.agent)).resume.\(target.session.rawValue)"
@@ -59,11 +61,11 @@ final class UserNotificationAlerts: NSObject, LimitAlerting {
         "native.usage-limit.\(agent.rawValue)"
     }
 
-    private static func reachedBody(_ limit: ProviderLimit, sessions: [LimitTarget], now: Date) -> String {
-        guard let resetsAt = limit.resetsAt else {
-            return limit.message ?? "Native can’t tell when it resets."
+    private static func reachedBody(_ status: LimitStatus, sessions: [LimitTarget], now: Date) -> String {
+        guard let reset = status.resetText(now: now) else {
+            return status.message ?? "Native can’t tell when it resets."
         }
-        let resets = LimitWording.reset(resetsAt, now: now).capitalizedFirst + "."
+        let resets = reset.capitalizedFirst + "."
         switch sessions.count {
         case 0: return resets
         case 1: return "\(resets) \(sessions[0].title.map { "“\($0)”" } ?? "Your session") stopped and can pick up then."

@@ -30,14 +30,17 @@ enum PullRequestDrafter {
     }
 
     /// Streams the draft into `update` as it's written: title first, then the description.
-    static func draft(_ prompt: PullRequestDraftPrompt, update: (_ title: String?, _ body: String?) -> Void) async throws {
+    static func draft(
+        _ prompt: PullRequestDraftPrompt, update: (_ title: String?, _ body: String?) -> Void
+    ) async throws {
         let model = SystemLanguageModel.default
         // About 2.5 characters per token for code, leaving room for the instructions and the answer.
         var budget = max(Int(Double(model.contextSize - 1_500) * 2.5), 2_000)
         for attempt in 0..<2 {
             let session = LanguageModelSession(model: model, instructions: PullRequestDraftPrompt.instructions)
             do {
-                let stream = session.streamResponse(to: prompt.text(characterBudget: budget), generating: PullRequestDraft.self)
+                let stream = session.streamResponse(
+                    to: prompt.text(characterBudget: budget), generating: PullRequestDraft.self)
                 for try await snapshot in stream {
                     update(snapshot.content.title, snapshot.content.body)
                 }

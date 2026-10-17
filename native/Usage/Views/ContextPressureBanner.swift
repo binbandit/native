@@ -14,7 +14,7 @@ struct ContextPressureBanner<Source: ContextSource>: View {
             UsageBannerRow(
                 systemImage: "exclamationmark.circle",
                 tint: .dsWarning,
-                title: "Context \(TokenFormat.percent(fraction)) full",
+                title: "Context \(DSFormat.percent(fraction)) full",
                 detail: "\(source.agentName) compacts the conversation when it runs out of room"
             ) {
                 Button("Breakdown") { isShowingBreakdown = true }

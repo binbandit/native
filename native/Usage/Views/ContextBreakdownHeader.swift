@@ -25,11 +25,11 @@ struct ContextBreakdownHeader<Source: ContextSource>: View {
             }
             if let totals {
                 HStack(alignment: .firstTextBaseline, spacing: DS.Space.sm) {
-                    Text(TokenFormat.percent(totals.fraction))
+                    Text(DSFormat.percent(totals.fraction))
                         .font(.dsTitle2)
                         .foregroundStyle(.dsTextPrimary)
                         .contentTransition(.numericText(value: totals.fraction))
-                    Text("\(TokenFormat.compact(totals.used)) of \(TokenFormat.compact(totals.window)) tokens")
+                    Text("\(DSFormat.tokens(totals.used)) of \(DSFormat.tokens(totals.window)) tokens")
                         .font(.dsBody)
                         .foregroundStyle(.dsTextSecondary)
                     Spacer(minLength: DS.Space.md)

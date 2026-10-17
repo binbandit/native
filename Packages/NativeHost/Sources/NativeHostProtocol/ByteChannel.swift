@@ -2,10 +2,20 @@ import Dispatch
 import Foundation
 import Synchronization
 
-/// A byte stream in both directions (a socket, or an agent's stdout and stdin) that never blocks
+/// A byte stream in both directions that JSON-RPC runs over: a local socket, an agent's stdio, an
+/// SSH bridge's stdio, and later a WebSocket. Writes must never block the caller.
+public protocol ByteStream: Sendable {
+    /// The bytes the other end sends, until it closes its end. Call once.
+    func incoming() -> AsyncStream<Data>
+    /// Queues `data` for the other end; false when the stream is closed.
+    @discardableResult func write(_ data: Data) -> Bool
+    func close()
+}
+
+/// A file-descriptor stream in both directions (a socket, or an agent's stdout and stdin) that never blocks
 /// its caller: reads arrive as chunks, and writes queue up in the order they were made. A peer that
 /// stops reading can't stall the host; once its backlog passes `backlogLimit` the channel closes.
-public final class ByteChannel: Sendable {
+public final class ByteChannel: ByteStream {
     public static let backlogLimit = 64 << 20
 
     private let reader: DispatchIO
@@ -24,8 +34,8 @@ public final class ByteChannel: Sendable {
     public init(reading readDescriptor: Int32, writing writeDescriptor: Int32, label: String) {
         let queue = DispatchQueue(label: "Native.ByteChannel.\(label)")
         self.queue = queue
-        reader = DispatchIO(type: .stream, fileDescriptor: readDescriptor, queue: queue) { _ in Darwin.close(readDescriptor) }
-        writer = DispatchIO(type: .stream, fileDescriptor: writeDescriptor, queue: queue) { _ in Darwin.close(writeDescriptor) }
+        reader = DispatchIO(type: .stream, fileDescriptor: readDescriptor, queue: queue) { _ in closeDescriptor(readDescriptor) }
+        writer = DispatchIO(type: .stream, fileDescriptor: writeDescriptor, queue: queue) { _ in closeDescriptor(writeDescriptor) }
         // Deliver whatever has arrived rather than waiting to fill a buffer.
         reader.setLimit(lowWater: 1)
     }
@@ -90,9 +100,13 @@ public final class ByteChannel: Sendable {
         if alreadyClosed { action() }
     }
 
+    public func close() {
+        close(discardingPendingWrites: false)
+    }
+
     /// Stops reading. Queued writes still go out before the descriptors close, unless the other end
     /// has stopped listening anyway (`discardingPendingWrites`).
-    public func close(discardingPendingWrites: Bool = false) {
+    public func close(discardingPendingWrites: Bool) {
         let actions: [@Sendable () -> Void]? = state.withLock { state in
             guard !state.isClosed else { return nil }
             state.isClosed = true

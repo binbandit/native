@@ -35,7 +35,8 @@ struct CreatePullRequestSheet: View {
             SeparatorLine()
             Group {
                 if let created {
-                    CreatedPullRequestView(url: created, onCopy: { model.copy(created.absoluteString) }, onDone: { dismiss() })
+                    CreatedPullRequestView(
+                        url: created, onCopy: { model.copy(created.absoluteString) }, onDone: { dismiss() })
                 } else if let blocker {
                     GitHubSetupView(problem: blocker) { await load() }
                         .frame(minHeight: CreatePullRequestLayout.descriptionHeight * 1.5)
@@ -71,7 +72,9 @@ struct CreatePullRequestSheet: View {
 
     private var form: some View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
-            BranchFlowRow(head: request.head, base: $base, placeholder: defaultBase ?? "default branch", focus: $focus, field: .base)
+            BranchFlowRow(
+                head: request.head, base: $base, placeholder: defaultBase ?? "default branch", focus: $focus,
+                field: .base)
             if let existing {
                 ExistingPullRequestNotice(pullRequest: existing)
             }
@@ -214,7 +217,7 @@ struct CreatePullRequestSheet: View {
             base: base.isEmpty ? defaultBase : base,
             commits: request.commits,
             diff: request.diff,
-            template: request.template()
+            template: request.template
         )
         drafting = Task {
             defer { drafting = nil }

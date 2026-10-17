@@ -22,7 +22,10 @@ public struct StatusCheck: Sendable, Hashable, Decodable {
     public var startedAt: Date?
     public var completedAt: Date?
 
-    public init(kind: Kind, name: String, workflow: String? = nil, status: String?, conclusion: String? = nil, detailsURL: URL? = nil, startedAt: Date? = nil, completedAt: Date? = nil) {
+    public init(
+        kind: Kind, name: String, workflow: String? = nil, status: String?, conclusion: String? = nil,
+        detailsURL: URL? = nil, startedAt: Date? = nil, completedAt: Date? = nil
+    ) {
         self.kind = kind
         self.name = name
         self.workflow = workflow

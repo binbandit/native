@@ -27,7 +27,9 @@ public struct GitHubCLI: Sendable {
 
     /// Where package managers put gh, appended to the PATH: an app's fallback environment (when the
     /// login shell couldn't be read) may lack them.
-    static let wellKnownDirectories = ["/opt/homebrew/bin", "/usr/local/bin", "/opt/local/bin", "/run/current-system/sw/bin", "/usr/bin", "/bin"]
+    static let wellKnownDirectories = [
+        "/opt/homebrew/bin", "/usr/local/bin", "/opt/local/bin", "/run/current-system/sw/bin", "/usr/bin", "/bin",
+    ]
 
     /// What gh runs with: the given environment, made non-interactive and quiet.
     var processEnvironment: [String: String] {
@@ -65,7 +67,9 @@ public struct GitHubCLI: Sendable {
     // MARK: - Running
 
     /// Runs a command and returns its stdout, throwing gh's classified failure otherwise.
-    public func run(_ command: GitHubCommand, acceptingExitCodes accepted: Set<Int32> = [0]) async throws(GitHubError) -> Data {
+    public func run(
+        _ command: GitHubCommand, acceptingExitCodes accepted: Set<Int32> = [0]
+    ) async throws(GitHubError) -> Data {
         let result: CommandResult
         do {
             result = try await runner.run(self.command(for: command))
@@ -169,9 +173,15 @@ public struct GitHubCLI: Sendable {
     /// each with CI and review state. Three searches (GitHub allows 30 a minute) and one GraphQL
     /// request.
     public func inbox(limit: Int = 50) async throws(GitHubError) -> PullRequestInbox {
-        async let authored = result { () async throws(GitHubError) in try await search(PullRequestSearch(.author, limit: limit)) }
-        async let reviewRequested = result { () async throws(GitHubError) in try await search(PullRequestSearch(.reviewRequested, limit: limit)) }
-        async let assigned = result { () async throws(GitHubError) in try await search(PullRequestSearch(.assignee, limit: limit)) }
+        async let authored = result { () async throws(GitHubError) in
+            try await search(PullRequestSearch(.author, limit: limit))
+        }
+        async let reviewRequested = result { () async throws(GitHubError) in
+            try await search(PullRequestSearch(.reviewRequested, limit: limit))
+        }
+        async let assigned = result { () async throws(GitHubError) in
+            try await search(PullRequestSearch(.assignee, limit: limit))
+        }
         let sections = try await (authored.get(), reviewRequested.get(), assigned.get())
 
         var ids = [String]()
@@ -192,28 +202,39 @@ public struct GitHubCLI: Sendable {
     }
 
     /// `gh pr list` for one repository.
-    public func pullRequests(_ filter: PullRequestListFilter = PullRequestListFilter(), in location: RepositoryLocation) async throws(GitHubError) -> [PullRequest] {
+    public func pullRequests(
+        _ filter: PullRequestListFilter = PullRequestListFilter(), in location: RepositoryLocation
+    ) async throws(GitHubError) -> [PullRequest] {
         try await decode([PullRequest].self, from: .listPullRequests(filter, in: location))
     }
 
-    public func pullRequest(_ pullRequest: PullRequestSelector, in location: RepositoryLocation) async throws(GitHubError) -> PullRequest {
+    public func pullRequest(
+        _ pullRequest: PullRequestSelector, in location: RepositoryLocation
+    ) async throws(GitHubError) -> PullRequest {
         try await decode(PullRequest.self, from: .viewPullRequest(pullRequest, in: location))
     }
 
     /// The pull request for a branch, preferring an open one over the most recently updated closed
     /// or merged one; `nil` when the branch has none.
-    public func pullRequest(forBranch branch: String, in location: RepositoryLocation) async throws(GitHubError) -> PullRequest? {
-        let candidates = try await pullRequests(PullRequestListFilter(state: .all, head: branch, limit: 10), in: location)
+    public func pullRequest(
+        forBranch branch: String, in location: RepositoryLocation
+    ) async throws(GitHubError) -> PullRequest? {
+        let candidates = try await pullRequests(
+            PullRequestListFilter(state: .all, head: branch, limit: 10), in: location)
         return candidates.max { lhs, rhs in
             (lhs.state == .open ? 1 : 0, lhs.updatedAt) < (rhs.state == .open ? 1 : 0, rhs.updatedAt)
         }
     }
 
     /// Every check on the pull request's head commit; empty when it has none.
-    public func checks(_ pullRequest: PullRequestSelector, in location: RepositoryLocation) async throws(GitHubError) -> [PullRequestCheck] {
+    public func checks(
+        _ pullRequest: PullRequestSelector, in location: RepositoryLocation
+    ) async throws(GitHubError) -> [PullRequestCheck] {
         do {
             // gh exits with 8 while checks are pending, after printing them.
-            return try GitHubJSON.decode([PullRequestCheck].self, from: try await run(.checks(pullRequest, in: location), acceptingExitCodes: [0, 8]))
+            return try GitHubJSON.decode(
+                [PullRequestCheck].self,
+                from: try await run(.checks(pullRequest, in: location), acceptingExitCodes: [0, 8]))
         } catch .failed(_, let message) where message.contains("no checks reported") {
             return []
         }
@@ -221,7 +242,9 @@ public struct GitHubCLI: Sendable {
 
     /// Opens the pull request in gh's configured browser. When the URL is at hand, opening it
     /// directly (`NSWorkspace`) is faster and needs no subprocess.
-    public func openInBrowser(_ pullRequest: PullRequestSelector, in location: RepositoryLocation) async throws(GitHubError) {
+    public func openInBrowser(
+        _ pullRequest: PullRequestSelector, in location: RepositoryLocation
+    ) async throws(GitHubError) {
         _ = try await run(.openInBrowser(pullRequest, in: location))
     }
 
@@ -232,7 +255,9 @@ public struct GitHubCLI: Sendable {
         let output = String(decoding: try await run(.createPullRequest(pullRequest, in: directory)), as: UTF8.self)
         // gh prints the new pull request's URL as its last line when not attached to a terminal.
         let lines = output.split(whereSeparator: \.isNewline).map { $0.trimmingCharacters(in: .whitespaces) }
-        guard let line = lines.last(where: { $0.hasPrefix("https://") || $0.hasPrefix("http://") }), let url = URL(string: line) else {
+        guard let line = lines.last(where: { $0.hasPrefix("https://") || $0.hasPrefix("http://") }),
+            let url = URL(string: line)
+        else {
             throw .unexpectedOutput(output)
         }
         return url
@@ -240,14 +265,22 @@ public struct GitHubCLI: Sendable {
 
     /// Checks the pull request out in `directory`, changing its working tree. Use a fresh worktree;
     /// see `GitHubCommand.checkout`.
-    public func checkout(_ pullRequest: PullRequestSelector, in directory: URL, localBranch: String? = nil, detach: Bool = false) async throws(GitHubError) {
+    public func checkout(
+        _ pullRequest: PullRequestSelector, in directory: URL, localBranch: String? = nil, detach: Bool = false
+    ) async throws(GitHubError) {
         _ = try await run(.checkout(pullRequest, in: directory, localBranch: localBranch, detach: detach))
     }
 
     /// Merges the pull request. Pass a `.remote` location so `deleteBranch` only deletes the remote
     /// branch and leaves local checkouts alone.
-    public func merge(_ pullRequest: PullRequestSelector, in location: RepositoryLocation, method: MergeMethod, deleteBranch: Bool = false, matchHeadCommit: String? = nil) async throws(GitHubError) {
-        _ = try await run(.merge(pullRequest, in: location, method: method, deleteBranch: deleteBranch, matchHeadCommit: matchHeadCommit))
+    public func merge(
+        _ pullRequest: PullRequestSelector, in location: RepositoryLocation, method: MergeMethod,
+        deleteBranch: Bool = false, matchHeadCommit: String? = nil
+    ) async throws(GitHubError) {
+        _ = try await run(
+            .merge(
+                pullRequest, in: location, method: method, deleteBranch: deleteBranch, matchHeadCommit: matchHeadCommit)
+        )
     }
 }
 
