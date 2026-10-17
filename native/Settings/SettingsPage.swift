@@ -34,7 +34,7 @@ struct SettingsHeader<Actions: View>: View {
                         .fixedSize(horizontal: false, vertical: true)
                 }
             }
-            Spacer(minLength: 0)
+            .frame(maxWidth: .infinity, alignment: .leading)
             HStack(spacing: DS.Space.md) {
                 actions
             }

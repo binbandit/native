@@ -116,9 +116,11 @@ enum JSONRPC {
         encode(["jsonrpc": "2.0", "method": .string(method), "params": params])
     }
 
-    /// The reply Native gives to requests from the server: it offers no client features.
-    static func unsupported(id: JSON) -> Data {
-        encode(["jsonrpc": "2.0", "id": id, "error": ["code": -32601, "message": "Native's probe doesn't support this."]])
+    /// Native's reply to a request from the server: `ping` gets its empty result; everything else
+    /// is a client feature the probe doesn't offer.
+    static func reply(to method: String, id: JSON) -> Data {
+        guard method != "ping" else { return encode(["jsonrpc": "2.0", "id": id, "result": [:]]) }
+        return encode(["jsonrpc": "2.0", "id": id, "error": ["code": -32601, "message": "Native's probe doesn't support \(method)."]])
     }
 
     static func encode(_ message: JSON) -> Data {
