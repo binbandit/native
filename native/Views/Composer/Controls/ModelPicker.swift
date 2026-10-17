@@ -102,8 +102,8 @@ struct ModelPicker: View {
                     Badge("Recommended", tone: .neutral, style: .soft)
                 }
                 Spacer(minLength: 0)
-                if let description = choice.description, description != choice.name {
-                    Text(description)
+                if let detail = model?.detail(of: choice) {
+                    Text(detail)
                         .font(.dsBody)
                         .foregroundStyle(.dsTextTertiary)
                         .lineLimit(1)

@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!-- Merged into the app's generated Info.plist. Values come from Config/*.xcconfig; see
+     docs/releasing.md. -->
+<plist version="1.0">
+<dict>
+	<key>SUFeedURL</key>
+	<string>$(NATIVE_FEED_URL)</string>
+	<key>SUPublicEDKey</key>
+	<string>$(NATIVE_SPARKLE_PUBLIC_KEY)</string>
+	<key>SUEnableAutomaticChecks</key>
+	<true/>
+	<key>SUAutomaticallyUpdate</key>
+	<true/>
+	<key>SUVerifyUpdateBeforeExtraction</key>
+	<true/>
+	<key>NativeGitHubRepository</key>
+	<string>$(NATIVE_GITHUB_REPOSITORY)</string>
+</dict>
+</plist>

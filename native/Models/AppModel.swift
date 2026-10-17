@@ -51,6 +51,7 @@ final class AppModel {
     @ObservationIgnored var restartPolicies: [AgentDefinition.ID: AgentRestartPolicy] = [:]
     @ObservationIgnored private let services: SessionServices
     @ObservationIgnored private let launcher: SessionLauncher
+    @ObservationIgnored private let taskRecords = TaskSessionRecords()
     @ObservationIgnored private let environment = ShellEnvironment()
     @ObservationIgnored private let pluginEvents: AsyncStream<SessionEvent>
     @ObservationIgnored private var isStarted = false
@@ -299,8 +300,11 @@ final class AppModel {
         Self.logger.debug("\(runtime.agent.displayName, privacy: .public) lists \(fetched.count) sessions in \(project.path, privacy: .public)")
         guard projects.project(project.id) != nil, runtimes[agent] === runtime else { return }
         // Only the user's own sessions are listed: subagents belong under their parent, and task
-        // sessions to whatever started them.
-        let topLevel = fetched.filter { (sessions.session(SessionKey(agent: agent, id: $0.sessionId))?.origin ?? .user) == .user }
+        // sessions to whatever started them, in this run or an earlier one.
+        let topLevel = fetched.filter { info in
+            let key = SessionKey(agent: agent, id: info.sessionId)
+            return !taskRecords.contains(key) && (sessions.session(key)?.origin ?? .user) == .user
+        }
         catalog.replace(agent, in: project.id, with: topLevel) { sessions.session(SessionKey(agent: agent, id: $0)) != nil }
         if let selection, selection.agent == agent, !catalog.contains(selection) {
             self.selection = nil
@@ -351,11 +355,31 @@ final class AppModel {
             throw SessionLauncher.LaunchError.failed(agent: runtime.agent.displayName, underlying: CocoaError(.fileNoSuchFile))
         }
         do {
-            return try await launcher.start(on: runtime, cwd: cwd, origin: .task, parent: parentSession)
+            let session = try await launcher.start(on: runtime, cwd: cwd, origin: .task, parent: parentSession)
+            taskRecords.add(TaskSessionRecords.Record(key: session.key, cwd: cwd, parent: parentSession?.key))
+            return session
         } catch {
             runtime.noteSignInRequired(by: error)
             throw SessionLauncher.LaunchError.failed(agent: runtime.agent.displayName, underlying: error)
         }
+    }
+
+    /// Reopens a task session Native started, in this run or an earlier one, replaying its history
+    /// and keeping it out of the sidebar. A delegated one rejoins its parent when that's open.
+    /// Returns the open session if it already is.
+    func reopenTaskSession(agent: AgentDefinition.ID, id: SessionID, cwd: URL) async throws -> SessionModel {
+        let key = SessionKey(agent: agent, id: id)
+        if let session = sessions.session(key) {
+            return session
+        }
+        guard let runtime = runtimes[agent], runtime.isReady else {
+            throw SessionLauncher.LaunchError.agentUnavailable(runtimes[agent]?.agent.displayName ?? agent.rawValue)
+        }
+        let record = taskRecords.record(key)
+        let parent = record?.parent.flatMap(sessions.session)
+        let session = try await launcher.load(key, cwd: cwd, on: runtime, origin: .task, parent: parent)
+        taskRecords.add(TaskSessionRecords.Record(key: key, cwd: cwd, parent: record?.parent))
+        return session
     }
 
     /// Starts a fresh session in an empty one's place, for one the agent never saved (it had no turn
@@ -373,6 +397,6 @@ final class AppModel {
     /// Opens a listed session, replaying its history from the agent the first time.
     func loadSession(_ key: SessionKey) async {
         guard sessions.session(key) == nil, let runtime = runtimes[key.agent], let info = catalog.lookup(key)?.info else { return }
-        await launcher.load(key, info: info, on: runtime)
+        _ = try? await launcher.load(key, cwd: URL(filePath: info.cwd, directoryHint: .isDirectory), title: info.title, on: runtime)
     }
 }
