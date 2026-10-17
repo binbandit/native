@@ -99,9 +99,9 @@ struct TranscriptView: View {
     }
 
     /// View ▸ Jump to Latest, while the session's own transcript has scrolled away from it.
-    private var jumpCommand: (@MainActor () -> Void)? {
+    private var jumpCommand: TranscriptJumpCommand? {
         guard isPrimary, isAwayFromLatest else { return nil }
-        return jumpToLatest
+        return TranscriptJumpCommand(sessionID: session.id, action: jumpToLatest)
     }
 
     private func jumpToLatest() {

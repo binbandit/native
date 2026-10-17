@@ -7,7 +7,8 @@ and nothing outside this table claims a key.
 Standard macOS behavior comes for free and must not be broken: Tab / Shift-Tab move focus through
 controls (with Full Keyboard Access on), arrow keys move within lists and menus, Space activates the
 focused control, Escape dismisses popovers and sheets, ⌘W closes the window, ⌘Q quits, ⌘, opens
-Settings.
+Settings. In every sheet and dialog, Return activates the default (highlighted) button and Escape
+cancels, so those keys don't get rows of their own.
 
 ## Sending
 
@@ -49,6 +50,13 @@ only while the card has focus; ⌘1 – ⌘9 stay session navigation.
 | --- | --- |
 | ⌘Return | Commit the selected files |
 | Escape | Close the popover |
+
+## Git sheets
+
+| Keys | Action |
+| --- | --- |
+| ⌘Return in Smart Commit | Commit the planned groups |
+| ⌘Return in the setup-script editor | Save the script new worktrees run (Settings ▸ Git) |
 
 ## Slash commands
 
@@ -95,6 +103,7 @@ expedition's lead (the composer key, on a page without a composer).
 | ⌥⌘N | New session with… (agent picker) | File |
 | ⌥⌘E | New expedition (`docs/expeditions.md`) | File |
 | ⌘O | Open folder | File |
+| ⇧⌘O | Open the task's folder in the default app (Open In) | Session |
 | ⌘L | Focus the composer | Session |
 | ⌘[ / ⌘] | Back / forward through the sessions you've viewed | Go |
 | ⌘1 – ⌘9 | Go to the Nth session in the sidebar | Session |
@@ -119,6 +128,15 @@ expedition's lead (the composer key, on a page without a composer).
 | ⌘⇧E | Model picker | Session |
 | ⌥⌘G | Set or edit the session's goal | Session |
 | ⌥⌘R | Run a workflow | Session |
+
+## Settings
+
+| Keys | Action |
+| --- | --- |
+| ⌘F | Focus the search field |
+| ↑ / ↓ | Move through the search results |
+| Return | Open the highlighted result |
+| Escape | Clear the search; with it empty, close Settings |
 
 ## Terminal
 
@@ -146,7 +164,7 @@ While a terminal has focus, keys go to its shell, except ⌘ shortcuts that Nati
 ## Ownership
 
 Menu commands live in `NativeApp`; composer keys in `native/Views/Composer*`; permission keys in
-`native/Views/Transcript/ToolCallView.swift`; sidebar keys in `SidebarView`; terminal commands in
+`native/Views/Transcript/ToolCallView.swift`; sidebar keys in `SidebarView`; Settings keys in
+`SettingsScreen` and `SettingsSearchField`; terminal commands in
 `native/Terminal/Views/TerminalCommands.swift` and keys inside a terminal in
-`GhosttyConfiguration.keybinds` (`Packages/Terminal`). Change a key here first,
-then in code.
+`GhosttyConfiguration.keybinds` (`Packages/Terminal`). Change a key here first, then in code.

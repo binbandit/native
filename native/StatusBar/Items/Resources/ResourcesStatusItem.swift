@@ -35,7 +35,7 @@ private struct ResourcesSegment: View {
 
     private var summary: String {
         guard hasSample else { return "Measuring…" }
-        return "\(ResourceFormat.memory(snapshot.memory)) of memory (\(ResourceFormat.shareOfPhysicalMemory(snapshot.memory))) and \(ResourceFormat.cpu(snapshot.cpu)) CPU"
+        return "\(DSFormat.memory(snapshot.memory)) of memory (\(ResourceFormat.shareOfPhysicalMemory(snapshot.memory))) and \(DSFormat.cpu(snapshot.cpu)) CPU"
     }
 
     var body: some View {
@@ -47,11 +47,11 @@ private struct ResourcesSegment: View {
         ) {
             HStack(spacing: DS.Space.sm) {
                 StatusBarGlyph("memorychip")
-                Text(hasSample ? ResourceFormat.memory(snapshot.memory) : "–")
+                Text(hasSample ? DSFormat.memory(snapshot.memory) : "–")
                     .modifier(Tint(color: memoryTint))
                 StatusBarDivider()
                 StatusBarGlyph("cpu")
-                Text(hasSample ? ResourceFormat.cpu(snapshot.cpu) : "–")
+                Text(hasSample ? DSFormat.cpu(snapshot.cpu) : "–")
             }
         } details: {
             ResourcesPanel(monitor: monitor)

@@ -1,7 +1,10 @@
-import AppKit
 import Observation
 
-/// Samples Native's and its agents' processes every couple of seconds while the status bar is on
+#if os(macOS)
+import AppKit
+#endif
+
+/// Samples Native's and its agents' processes every few seconds while the status bar's item is on
 /// screen, keeping a short history for sparklines.
 @Observable
 final class ResourceMonitor {
@@ -11,17 +14,27 @@ final class ResourceMonitor {
     /// The total's memory over the same samples.
     private(set) var totalHistory: [UInt64] = []
 
-    static let interval = Duration.seconds(2)
-    /// Two minutes at the sampling interval.
+    /// Often enough for a live feel; each sample costs about a millisecond off the main actor.
+    static let interval = Duration.seconds(3)
+    /// Three minutes at the sampling interval.
     static let historyLength = 60
 
-    @ObservationIgnored private let sampler = ProcessSampler()
+    @ObservationIgnored private let sampler: any ResourceSampling
+    @ObservationIgnored private let isVisible: @MainActor () -> Bool
 
-    /// Samples until the calling task is cancelled. Sampling pauses while no Native window is
-    /// visible (hidden, minimized or covered), where nobody would see the numbers.
+    /// - Parameters:
+    ///   - sampler: Where the numbers come from: this Mac's processes, or later, a host's.
+    ///   - isVisible: Whether anyone could see the numbers now; sampling pauses while not.
+    init(sampler: any ResourceSampling = ProcessSampler(), isVisible: @escaping @MainActor () -> Bool = ResourceMonitor.isAppVisible) {
+        self.sampler = sampler
+        self.isVisible = isVisible
+    }
+
+    /// Samples until the calling task is cancelled, which happens when the item leaves the screen
+    /// (hidden from the bar, or the bar's window closed).
     func run(roots: @escaping @MainActor () -> [ProcessSampler.Root]) async {
         while !Task.isCancelled {
-            if NSApplication.shared.occlusionState.contains(.visible) {
+            if isVisible() {
                 await sample(roots: roots())
             }
             try? await Task.sleep(for: Self.interval)
@@ -38,5 +51,14 @@ final class ResourceMonitor {
         }
         self.history = history
         totalHistory = Array((totalHistory + [snapshot.memory]).suffix(Self.historyLength))
+    }
+
+    /// No numbers for a hidden, minimized or fully covered app.
+    static func isAppVisible() -> Bool {
+        #if os(macOS)
+        NSApplication.shared.occlusionState.contains(.visible)
+        #else
+        true
+        #endif
     }
 }
