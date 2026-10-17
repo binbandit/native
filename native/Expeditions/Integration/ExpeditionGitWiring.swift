@@ -1,4 +1,3 @@
-#if EXPEDITIONS_WIP
 import Foundation
 import Git
 import GitHub
@@ -24,4 +23,3 @@ enum ExpeditionGitWiring {
         return ExpeditionProjectProbe(isRepository: model.repository != nil, hasUncommittedChanges: !model.changes.isEmpty, gitHubReady: ready)
     }
 }
-#endif

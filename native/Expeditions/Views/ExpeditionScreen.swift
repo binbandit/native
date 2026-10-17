@@ -1,4 +1,3 @@
-#if EXPEDITIONS_WIP
 import NativeAutomation
 import NativeExpeditions
 import SwiftUI
@@ -96,4 +95,3 @@ private struct ExpeditionPlanningView: View {
         .background(.dsBackground)
     }
 }
-#endif

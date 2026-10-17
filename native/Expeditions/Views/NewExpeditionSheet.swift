@@ -1,4 +1,3 @@
-#if EXPEDITIONS_WIP
 import NativeAutomation
 import NativeExpeditions
 import SwiftUI
@@ -242,4 +241,3 @@ struct NewExpeditionSheet: View {
         onStart(id)
     }
 }
-#endif

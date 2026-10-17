@@ -74,8 +74,9 @@ recently mentioned files first), narrowing as you type. The chosen file goes int
 
 ## Permission requests
 
-The oldest pending request in the visible session answers these: a tool's permission request or a
-workflow step waiting for approval. They're chosen not to collide with text editing in the composer.
+The oldest pending request in the visible session answers these: a tool's permission request, a
+workflow step waiting for approval, or an expedition's route (or route change) waiting for review.
+They're chosen not to collide with text editing in the composer.
 
 | Keys | Action |
 | --- | --- |
@@ -83,12 +84,16 @@ workflow step waiting for approval. They're chosen not to collide with text edit
 | ⌥⌘Y | Allow always (when offered) |
 | ⌘⇧⌫ | Reject |
 
+On an expedition's route review, ⌘Return approves too, and ⌘L focuses the message field for the
+expedition's lead (the composer key, on a page without a composer).
+
 ## Sessions and navigation
 
 | Keys | Action | Menu |
 | --- | --- | --- |
 | ⌘N | New session with the last-used agent | File |
 | ⌥⌘N | New session with… (agent picker) | File |
+| ⌥⌘E | New expedition (`docs/expeditions.md`) | File |
 | ⌘O | Open folder | File |
 | ⌘L | Focus the composer | Session |
 | ⌘[ / ⌘] | Back / forward through the sessions you've viewed | Go |
@@ -100,6 +105,7 @@ workflow step waiting for approval. They're chosen not to collide with text edit
 | ⇧⌘A | Archive the selected task (Undo brings it back) | Session |
 | ⌥⌘J | Show only tasks that need you | View |
 | ⌘⇧P | Pull requests | Go |
+| ⌘⇧X | Expeditions | Go |
 | ⌥⌘I | Show or hide the subagent inspector | View |
 | ⌘⇧D | Show or hide the changes inspector (the task's uncommitted git changes) | View |
 | ⌃⌘M | Show the session's MCP servers | View |
