@@ -13,6 +13,14 @@ struct WorkflowStepRow: View {
     let send: (WorkflowEvent) -> Void
     let onOpen: () -> Void
 
+    @State private var isHovered = false
+
+    /// Steps that are working or stopped keep their actions in view; settled ones show theirs on
+    /// hover, in the header, so a long run doesn't read as a wall of buttons.
+    private var hasActionRow: Bool {
+        step.status.isActive || step.status.isStopped
+    }
+
     var body: some View {
         HStack(alignment: .top, spacing: DS.Space.md) {
             AutomationStatusGlyph(glyph: AutomationGlyph(step: step.status, needsApproval: report?.needsApproval == true))
@@ -45,6 +53,7 @@ struct WorkflowStepRow: View {
         .padding(DS.Space.md)
         .background(isSelected ? Color.dsSelected : .clear, in: .rect(cornerRadius: DS.Radius.card))
         .contentShape(.rect)
+        .trackHover($isHovered)
         .accessibilityElement(children: .contain)
         .accessibilityLabel("\(step.step.title), \(step.status.label)")
     }
@@ -62,6 +71,9 @@ struct WorkflowStepRow: View {
                 Badge("Goal · \(budget.maxIterations.map { "\($0) turns" } ?? "no limit")", tone: .accent, style: .soft)
             }
             Spacer(minLength: DS.Space.md)
+            if !hasActionRow, isHovered || isSelected {
+                hoverActions
+            }
             Text(step.status.label)
                 .font(.dsCaptionMedium)
                 .foregroundStyle(AutomationGlyph(step: step.status, needsApproval: report?.needsApproval == true).tint)
@@ -168,9 +180,20 @@ struct WorkflowStepRow: View {
 
     // MARK: - Ways on
 
+    private var hoverActions: some View {
+        HStack(spacing: DS.Space.xxs) {
+            ForEach(WorkflowStepAction.available(for: step, isRunCancelled: run.isCancelled).others) { action in
+                IconButton(action.title, systemImage: action.systemImage) { send(action.event(for: step.id)) }
+            }
+            if step.task != nil {
+                IconButton("Open Session", systemImage: "sidebar.right", action: onOpen)
+            }
+        }
+    }
+
     @ViewBuilder private var actions: some View {
         let available = WorkflowStepAction.available(for: step, isRunCancelled: run.isCancelled)
-        if available.primary != nil || !available.others.isEmpty || step.task != nil {
+        if hasActionRow {
             HStack(spacing: DS.Space.sm) {
                 if let primary = available.primary {
                     button(primary, style: .ds(.secondary))
