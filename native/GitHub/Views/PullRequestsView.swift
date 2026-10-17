@@ -6,16 +6,18 @@ import SwiftUI
 struct PullRequestsView: View {
     @Environment(GitHubModel.self) private var model
     @Environment(\.openURL) private var openURL
+    @State private var width: CGFloat = 0
 
     var body: some View {
         @Bindable var model = model
         VStack(spacing: 0) {
-            PullRequestsHeader()
+            PullRequestsHeader(sideInset: sideInset)
             SeparatorLine()
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .background(.dsBackground)
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
         .onAppear { model.isWatching = true }
         .onDisappear { model.isWatching = false }
         .task { await model.refreshIfDue() }
@@ -86,16 +88,22 @@ struct PullRequestsView: View {
                     .frame(minHeight: PullRequestsLayout.emptyHeight)
                 } else {
                     ForEach(groups) { group in
-                        PullRequestGroupSection(group: group, isCollapsed: collapsed(group.id))
+                        PullRequestGroupSection(group: group, isCollapsed: collapsed(group.id), showsRepository: model.filter.grouping != .repository)
                     }
                 }
             }
-            .padding(.horizontal, DS.Space.xl)
+            .padding(.leading, sideInset)
+            .padding(.trailing, sideInset)
             .padding(.vertical, DS.Space.xl)
-            .frame(maxWidth: PullRequestsLayout.contentWidth)
-            .frame(maxWidth: .infinity)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .scrollContentBackground(.hidden)
+    }
+
+    /// Centers a column no wider than `contentWidth`, measured on the whole pane rather than inside
+    /// the scroll view, so a legacy scroll bar can't shift the list against the header.
+    private var sideInset: CGFloat {
+        max((width - PullRequestsLayout.contentWidth) / 2, 0) + DS.Space.xl
     }
 
     private func collapsed(_ id: PullRequestGroup.ID) -> Binding<Bool> {

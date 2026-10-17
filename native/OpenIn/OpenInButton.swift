@@ -57,6 +57,8 @@ struct OpenInButton: View {
             }
             .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
             .padding(.horizontal, DS.Space.sm)
+            // Clear of the outline, so the icon sits in the middle of what's visible.
+            .padding(.leading, 1)
             .frame(maxHeight: .infinity)
             .contentShape(.rect)
         }
@@ -72,12 +74,13 @@ struct OpenInButton: View {
         return OpenInMenuTrigger(label: "Open In…", isHovered: $isChevronHovered, isOpen: $isMenuOpen) {
             OpenInMenu.make(folder: folder, model: model)
         }
-        .frame(width: DS.Size.rowLeading + 2 * DS.Space.sm)
+        .frame(width: DS.Size.rowLeading + 2 * DS.Space.sm + 1)
         .background(isMenuOpen ? .dsPressed : isHighlighted ? .dsHover : .clear)
         .overlay {
             Image(systemName: "chevron.down")
-                .font(.dsCaptionMedium)
+                .font(.dsCaption)
                 .imageScale(.small)
+                .padding(.trailing, 1)
                 .foregroundStyle(isHighlighted ? .dsTextPrimary : .dsTextSecondary)
                 .allowsHitTesting(false)
         }

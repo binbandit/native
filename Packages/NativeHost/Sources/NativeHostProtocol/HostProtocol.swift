@@ -241,7 +241,7 @@ public struct ShutdownParams: Codable, Sendable {
     }
 }
 
-public struct Empty: Codable, Sendable {
+public struct EmptyMessage: Codable, Sendable {
     public init() {}
 }
 

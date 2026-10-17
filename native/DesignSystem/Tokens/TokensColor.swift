@@ -97,6 +97,14 @@ nonisolated extension ShapeStyle where Self == Color {
     public static var dsDangerFillHover: Color { DSPalette.dangerFillHover }
     public static var dsDangerFillPressed: Color { DSPalette.dangerFillPressed }
 
+    // MARK: Charts
+
+    /// Categorical series colors, always used in this order (first series `dsChart1`). Validated
+    /// color-vision-safe (all pairs, protanopia and deuteranopia) on #FFFFFF and #171717.
+    public static var dsChart1: Color { DSPalette.chart1 }
+    public static var dsChart2: Color { DSPalette.chart2 }
+    public static var dsChart3: Color { DSPalette.chart3 }
+
     /// Usage meters past 80% (the reference app `warning/fill`).
     public static var dsWarningFill: Color { DSPalette.warningFill }
     /// Usage meters at 100% (the reference app `error/fill`).
@@ -139,6 +147,9 @@ nonisolated private enum DSPalette {
     static let dangerFillHover = dynamic("dangerFillHover", light: 0xA91F10, dark: 0xA91F10)
     static let dangerFillPressed = dynamic("dangerFillPressed", light: 0x741B12, dark: 0x741B12)
     static let warningFill = dynamic("warningFill", light: 0xEE9611, dark: 0xEE9611)
+    static let chart1 = dynamic("chart1", light: 0x2A78D6, dark: 0x3987E5)
+    static let chart2 = dynamic("chart2", light: 0xEB6834, dark: 0xD95926)
+    static let chart3 = dynamic("chart3", light: 0x1BAF7A, dark: 0x199E70)
 
     /// An sRGB color that picks its light or dark value from the resolving appearance (high-contrast
     /// variants map to their base appearance).

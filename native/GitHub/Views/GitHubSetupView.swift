@@ -76,7 +76,9 @@ struct GitHubSetupView: View {
         case .failed(.rateLimited):
             "GitHub limits how often your account can search. Native waits and refreshes on its own \(Self.whenText(model.schedule.nextRefresh(.watching)))."
         case .failed(.notARepository(let detail)):
-            "None of this folder's git remotes point to a GitHub host gh knows. \(detail)"
+            detail.localizedCaseInsensitiveContains("not a git repository")
+                ? "This folder isn't a git repository yet, so it has no branch to open a pull request from."
+                : "None of this folder's git remotes point to GitHub. Add one (git remote add origin …), then check again."
         case .failed(let error):
             "\(error.stderr.flatMap { $0.isEmpty ? nil : $0 } ?? error.localizedDescription) Native tries again \(Self.whenText(model.schedule.nextRefresh(.watching)))."
         }
@@ -94,7 +96,8 @@ struct GitHubSetupView: View {
     private var primaryAction: String? {
         switch problem {
         case .notInstalled, .notAuthenticated: "Check Again"
-        case .failed(.rateLimited), .failed(.notARepository): nil
+        case .failed(.rateLimited): nil
+        case .failed(.notARepository): "Check Again"
         case .failed: "Try Now"
         }
     }

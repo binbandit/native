@@ -69,6 +69,7 @@ struct ComposerView: View {
                 }
                 .padding(.bottom, DS.Space.md)
                 .frame(height: 0, alignment: .bottom)
+                .animation(.dsQuick, value: feedback)
             }
             .frame(maxWidth: transcriptColumnWidth)
             .padding(.horizontal, DS.Space.xxl)
@@ -169,7 +170,7 @@ struct ComposerView: View {
                 .padding(DS.Space.md)
                 .transition(.opacity)
             } else if !session.draft.isEmpty {
-                // Disabled rather than hidden when something blocks sending; the status line says what.
+                // Disabled rather than hidden when something blocks sending; the toast says why.
                 ComposerSendButton { submit(followUp) }
                     .disabled(!session.canSend && blocker != nil)
                     .padding(DS.Space.md)
@@ -195,7 +196,8 @@ struct ComposerView: View {
     @ViewBuilder
     private var toast: some View {
         if let feedback {
-            ComposerToast(message: feedback.message, tone: feedback.tone, onUndo: feedback.canUndo ? { undoManager?.undo() } : nil)
+            let onUndo: (() -> Void)? = feedback.canUndo ? { undo() } : nil
+            ComposerToast(message: feedback.message, tone: feedback.tone, onUndo: onUndo)
                 .id(feedback.id)
                 .transition(.opacity)
         } else if let blocker, !session.draft.isEmpty {
@@ -333,6 +335,11 @@ struct ComposerView: View {
         }
         session.removeQueued(id, undoManager: undoManager)
         feedback = .removedFromQueue
+    }
+
+    private func undo() {
+        undoManager?.undo()
+        feedback = nil
     }
 
     private func set(_ setting: SelectSetting, to value: String) {

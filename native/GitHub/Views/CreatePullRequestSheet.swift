@@ -118,24 +118,36 @@ struct CreatePullRequestSheet: View {
                     .fixedSize(horizontal: false, vertical: true)
             }
         }
-        .disabled(isCreating)
+        .disabled(isCreating || existing != nil)
     }
 
     private var footer: some View {
         HStack(spacing: DS.Space.md) {
-            Toggle("Create as draft", isOn: $isDraft)
-                .toggleStyle(.checkbox)
-                .font(.dsBody)
-                .foregroundStyle(.dsTextSecondary)
+            if existing == nil {
+                Toggle("Create as draft", isOn: $isDraft)
+                    .toggleStyle(.checkbox)
+                    .font(.dsBody)
+                    .foregroundStyle(.dsTextSecondary)
+            }
             Spacer(minLength: DS.Space.md)
             Button("Cancel") { dismiss() }
                 .buttonStyle(.ds(.ghost, size: .medium))
-            Button(isCreating ? "Creating…" : isDraft ? "Create Draft" : "Create Pull Request") {
-                Task { await create() }
+            if let existing {
+                // GitHub allows one open pull request per branch, so the way forward is that one.
+                Button("Open \(existing.reference)") {
+                    model.openInBrowser(existing)
+                    dismiss()
+                }
+                .buttonStyle(.ds(.primary, size: .medium))
+                .keyboardShortcut(.defaultAction)
+            } else {
+                Button(isCreating ? "Creating…" : isDraft ? "Create Draft" : "Create Pull Request") {
+                    Task { await create() }
+                }
+                .buttonStyle(.ds(.primary, size: .medium))
+                .keyboardShortcut(.defaultAction)
+                .disabled(isCreating || title.trimmingCharacters(in: .whitespaces).isEmpty)
             }
-            .buttonStyle(.ds(.primary, size: .medium))
-            .keyboardShortcut(.defaultAction)
-            .disabled(isCreating || title.trimmingCharacters(in: .whitespaces).isEmpty)
         }
         .padding(.horizontal, DS.Space.xl)
         .padding(.vertical, DS.Space.lg)

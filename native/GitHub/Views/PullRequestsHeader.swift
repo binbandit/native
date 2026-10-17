@@ -4,6 +4,9 @@ import SwiftUI
 /// The list's title row and controls: refresh with the time of the last update, then scope tabs,
 /// a search field and the grouping and drafts options.
 struct PullRequestsHeader: View {
+    /// Space on each side, so the header's edges line up with the list's.
+    let sideInset: CGFloat
+
     @Environment(GitHubModel.self) private var model
 
     var body: some View {
@@ -34,18 +37,19 @@ struct PullRequestsHeader: View {
                 }
             }
 
-            HStack(spacing: DS.Space.md) {
-                PullRequestScopeTabs(scope: $model.filter.scope, inbox: model.inbox)
-                Spacer(minLength: DS.Space.md)
-                PullRequestSearchField(query: $model.filter.query)
-                optionsMenu
+            // Filters only mean something once there's a list to filter.
+            if model.inbox != nil {
+                HStack(spacing: DS.Space.md) {
+                    PullRequestScopeTabs(scope: $model.filter.scope, inbox: model.inbox)
+                    Spacer(minLength: DS.Space.md)
+                    PullRequestSearchField(query: $model.filter.query)
+                    optionsMenu
+                }
             }
         }
-        .padding(.horizontal, DS.Space.xl + DS.Space.md)
+        .padding(.horizontal, sideInset + DS.Space.md)
         .padding(.top, DS.Space.xl)
         .padding(.bottom, DS.Space.lg)
-        .frame(maxWidth: PullRequestsLayout.contentWidth)
-        .frame(maxWidth: .infinity)
     }
 
     private var optionsMenu: some View {

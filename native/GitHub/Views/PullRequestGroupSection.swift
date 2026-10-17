@@ -6,6 +6,8 @@ import SwiftUI
 struct PullRequestGroupSection: View {
     let group: PullRequestGroup
     @Binding var isCollapsed: Bool
+    /// Off when the group is a repository, which its title already names.
+    var showsRepository = true
 
     @State private var isHovered = false
 
@@ -50,7 +52,7 @@ struct PullRequestGroupSection: View {
                 } else {
                     LazyVStack(spacing: 0) {
                         ForEach(group.pullRequests) { pullRequest in
-                            PullRequestRow(pullRequest: pullRequest)
+                            PullRequestRow(pullRequest: pullRequest, showsRepository: showsRepository)
                         }
                     }
                     .transition(.opacity)
