@@ -17,7 +17,8 @@ struct AutomationTextField: View {
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous)
-        TextField(label, text: $text, axis: axis)
+        // An empty title: macOS would show a title as a second placeholder under ours.
+        TextField("", text: $text, axis: axis)
             .lineLimit(lines)
             .textFieldStyle(.plain)
             .font(font)

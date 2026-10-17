@@ -17,6 +17,14 @@ struct GitBranchBadge: View {
     var style = Style.regular
 
     var body: some View {
+        if style == .compact {
+            badge.help(accessibilityText)
+        } else {
+            badge
+        }
+    }
+
+    private var badge: some View {
         HStack(spacing: DS.Space.xs) {
             if style == .regular {
                 Image(systemName: branch.isDetached ? "smallcircle.filled.circle" : "arrow.triangle.branch")
@@ -49,7 +57,6 @@ struct GitBranchBadge: View {
         .monospacedDigit()
         .tracking(DS.Tracking.tight)
         .foregroundStyle(.dsTextTertiary)
-        .help(style == .compact ? accessibilityText : "")
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityText)
     }

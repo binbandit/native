@@ -193,7 +193,7 @@ fn evaluate(
                 if !bridge::bridge(scope).outstanding.remove(&id) {
                     return protocol_error("The host answered a tool call that isn't in flight");
                 }
-                let Some(id_value) = Some(v8::Integer::new_from_unsigned(scope, id).into()) else { unreachable!() };
+                let id_value = v8::Integer::new_from_unsigned(scope, id).into();
                 let is_error = v8::Boolean::new(scope, is_error).into();
                 let Ok(content) = v8_string(scope, &content.to_string()) else {
                     return protocol_error("A tool result is too large");

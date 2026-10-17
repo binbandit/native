@@ -62,6 +62,7 @@ final class HostHarness: @unchecked Sendable {
     func connect() async throws -> Recorder {
         let client = NativeHostClient(transport: LocalSocketTransport(location: location), clientInfo: PeerInfo(name: "tests", version: "1", build: "1"))
         let recorder = Recorder(client: client)
+        await recorder.listen()
         await client.start()
         _ = try await recorder.wait("connect", timeout: .seconds(10)) { _ in await client.hostInfo != nil }
         try await client.syncAgents([agentSpec])
@@ -79,6 +80,10 @@ actor Recorder {
 
     init(client: NativeHostClient) {
         self.client = client
+    }
+
+    func listen() {
+        let client = client
         listening = Task { [weak self] in
             for await event in client.events {
                 await self?.record(event)
