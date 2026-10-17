@@ -64,7 +64,7 @@ private struct ExpeditionPlanningView: View {
                 }
                 if expedition.attention.isEmpty {
                     HStack(alignment: .top, spacing: DS.Space.lg) {
-                        DotGridLoader(pattern: .working)
+                        DotGridLoader(pattern: .typing)
                             .foregroundStyle(.dsAccent)
                             .frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
                         VStack(alignment: .leading, spacing: DS.Space.xs) {

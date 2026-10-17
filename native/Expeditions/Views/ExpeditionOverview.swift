@@ -97,7 +97,7 @@ private struct ExpeditionDebriefCard: View {
                     Spacer()
                 }
             } else {
-                DotGridLoader(pattern: .working)
+                DotGridLoader(pattern: .typing)
                     .foregroundStyle(.dsAccent)
                     .frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
             }
