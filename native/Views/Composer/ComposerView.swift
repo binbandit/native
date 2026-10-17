@@ -1,5 +1,4 @@
 import ACP
-import AppKit
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -82,6 +81,7 @@ struct ComposerView: View {
                 if session.state.items.isEmpty, session.phase != .loading {
                     isFocused = true
                 }
+                takeFocusIfWanted()
             }
             .onChange(of: session.draft) { draftChanged() }
             .task(id: feedback?.id) {
@@ -91,8 +91,8 @@ struct ComposerView: View {
                     feedback = nil
                 }
             }
-            // ⌘L and ⇧⌘E are menu commands; they reach the composer through the session.
-            .onChange(of: session.focusComposerRequest) { isFocused = true }
+            // ⌘L, mouse selection in the sidebar and ⇧⌘E reach the composer through the session.
+            .onChange(of: session.wantsComposerFocus) { takeFocusIfWanted() }
             .onChange(of: session.isModelPickerRequested, initial: true) { _, isRequested in
                 guard isRequested else { return }
                 isModelPickerOpen = true
@@ -140,7 +140,8 @@ struct ComposerView: View {
             ComposerControlsRow(
                 settings: settings,
                 resumedAutonomy: autonomyBeforePlan,
-                usage: session.state.usage,
+
+                context: { ContextIndicator(session: session, style: .labeled) },
                 followUpHint: isWorking ? FollowUpHint(preferred: followUp, supportsSteering: session.supportsSteering, agentName: session.agentName) : nil,
                 isModelPickerOpen: $isModelPickerOpen,
                 onAttach: { isAttaching = true },
@@ -168,32 +169,22 @@ struct ComposerView: View {
                 handleKey(press, commands: commands)
             }
             .disabled(!canEdit)
-            // Factory shows Send only once there's something to send, and Stop while the agent works.
-            if session.canCancel {
-                ComposerStopButton(isEscapeEnabled: commands.isEmpty) {
-                    Task { await session.cancel() }
+            // One slot for Send and Stop, always reserved, so neither moves nor reflows the text when
+            // they swap (Factory shows Send only once there's a draft, Stop while the agent works).
+            ZStack {
+                if session.canCancel {
+                    ComposerStopButton(isEscapeEnabled: commands.isEmpty) {
+                        Task { await session.cancel() }
+                    }
+                } else if !session.draft.isEmpty {
+                    // Disabled rather than hidden when something blocks sending; the toast says why.
+                    ComposerSendButton { submit(followUp) }
+                        .disabled(!session.canSend && blocker != nil)
                 }
-                .padding(DS.Space.md)
-                .transition(.opacity)
-            } else if !session.draft.isEmpty {
-                // Disabled rather than hidden when something blocks sending; the toast says why.
-                ComposerSendButton { submit(followUp) }
-                    .disabled(!session.canSend && blocker != nil)
-                    .padding(DS.Space.md)
-                    .transition(.opacity)
-            } else if !isFocused, canEdit {
-                // As in Conductor: how to get back here without the mouse.
-                HStack(spacing: DS.Space.xs) {
-                    Kbd("⌘L")
-                    Text("to focus")
-                        .font(.dsBody)
-                        .foregroundStyle(.dsTextTertiary)
-                }
-                .padding(DS.Space.md)
-                .frame(minHeight: DS.Size.composerInputMinHeight)
-                .accessibilityHidden(true)
-                .transition(.opacity)
             }
+            .frame(width: DS.Size.composerAction, height: DS.Size.composerAction)
+            .padding(DS.Space.md)
+            .transition(.opacity)
         }
         .frame(minHeight: DS.Size.composerInputMinHeight)
         .background {
@@ -207,7 +198,6 @@ struct ComposerView: View {
             }
         }
         .animation(.dsQuick, value: session.draft.isEmpty)
-        .animation(.dsQuick, value: isFocused)
         .animation(.dsQuick, value: session.canCancel)
     }
 
@@ -225,16 +215,28 @@ struct ComposerView: View {
         }
     }
 
+    /// Says what typing here will do: start work, queue or steer a follow-up, or nothing yet and why.
     private var placeholder: String {
         let agent = session.agentName
-        return switch session.phase {
+        let text = switch session.phase {
         case .loading: "Waiting for session…"
         case .disconnected: "\(agent) isn’t running"
         case .prompting where session.needsApproval: "\(agent) is waiting for your approval…"
-        case .prompting: "Write a follow-up for \(agent)…"
+        case .prompting where followUp == .steer && session.supportsSteering: "Steer \(agent)’s current turn…"
+        case .prompting: "Queue a follow-up for \(agent)…"
         case .idle where session.state.items.isEmpty: "What would you like \(agent) to work on?"
         case .idle: "Message \(agent), or type / for commands"
         }
+        // As in Conductor: how to get back here without the mouse.
+        guard canEdit, !isFocused, ComposerPlatform.showsKeyboardHints else { return text }
+        return "\(text)  ⌘L to focus"
+    }
+
+    /// Takes focus when the app asks (⌘L, a click on the session in the sidebar), then clears the ask.
+    private func takeFocusIfWanted() {
+        guard session.wantsComposerFocus else { return }
+        isFocused = true
+        session.wantsComposerFocus = false
     }
 
     // MARK: - Keyboard
@@ -276,11 +278,7 @@ struct ComposerView: View {
         case .submit(let behavior):
             submit(behavior)
         case .moveFocus(let forward):
-            if forward {
-                NSApp.keyWindow?.selectNextKeyView(nil)
-            } else {
-                NSApp.keyWindow?.selectPreviousKeyView(nil)
-            }
+            ComposerPlatform.moveKeyFocus(forward: forward)
         case .swallow:
             break
         }

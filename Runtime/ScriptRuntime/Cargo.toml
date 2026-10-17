@@ -1,0 +1,24 @@
+[package]
+name = "native-script-runtime"
+version = "0.1.0"
+edition = "2024"
+publish = false
+description = "Runs one untrusted script in a V8 isolate; every effect goes through tools the host binds."
+
+[[bin]]
+name = "native-script-runtime"
+path = "src/main.rs"
+
+[features]
+# V8's memory sandbox. Needs V8 built from source: scripts/build-script-runtime.sh --sandbox.
+sandbox = ["v8/v8_enable_sandbox"]
+
+[dependencies]
+v8 = { version = "=150.4.0", features = ["v8_enable_pointer_compression"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = { version = "1.0", features = ["preserve_order"] }
+
+[profile.release]
+lto = "thin"
+strip = true
+panic = "abort"
