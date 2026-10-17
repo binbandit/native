@@ -28,6 +28,21 @@ don't support steering queue it instead, and the hint says so.
 The composer always shows the current mapping as a hint while the agent works, e.g.
 "↩ Queue · ⌘↩ Steer".
 
+## Agent questions
+
+When an agent asks structured questions (Claude Code's AskUserQuestion, ACP form elicitation), they
+dock above the composer as a card: the question, a `1/3` pager, options, a free-text row, and Skip /
+Next. The card takes focus when it appears and the composer is empty. Plain digits pick options
+only while the card has focus; ⌘1 – ⌘9 stay session navigation.
+
+| Keys (card focused) | Action |
+| --- | --- |
+| 1 – 9 | Pick that option (toggle it, for questions that take several) |
+| ↑ / ↓ | Move between options |
+| Space | Pick the highlighted option |
+| Return | Next question, or send the answers after the last |
+| Tab / Shift-Tab | Move between the card, its free-text field and the composer |
+
 ## Commit popover
 
 | Keys | Action |

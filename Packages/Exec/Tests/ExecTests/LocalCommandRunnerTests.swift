@@ -45,6 +45,22 @@ struct LocalCommandRunnerTests {
         }
     }
 
+    /// Under parallel load, output that arrived while the pipes were being drained used to go missing.
+    @Test func parallelCommandsKeepEveryByte() async throws {
+        let runner = runner
+        let environment = environment
+        let script = "head -c 100000 /dev/zero | tr '\\0' x; printf err >&2"
+        try await withThrowingTaskGroup { group in
+            for _ in 0..<50 {
+                group.addTask { try await runner.run(Command("sh", ["-c", script], environment: environment)) }
+            }
+            for try await result in group {
+                #expect(result.standardOutput == Data(repeating: UInt8(ascii: "x"), count: 100_000))
+                #expect(result.errorOutput == "err")
+            }
+        }
+    }
+
     /// Cancellation that arrives before launch used to call `terminate()` on a process that never ran,
     /// which raises an Objective-C exception and crashes the app.
     @Test func alreadyCancelledTaskDoesNotLaunch() async {
