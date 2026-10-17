@@ -82,6 +82,10 @@ screenshot with `screencapture -x -l <windowid>`, and quit with `kill <pid>`. Qu
 render harness) as soon as a check is done; never leave apps running between checks, since many
 agents share one Mac.
 
+When a check needs a real agent session, use Codex with `gpt-6.1-sol` (it's the cheapest): launch with
+`-agentDefaults.codex.model gpt-6.1-sol`, or pick it in the composer's model picker. Use another
+agent only when the behavior under test belongs to that agent (Claude Code's questions, say).
+
 Design references: Factory (`~/developer/reverse/factory`, runnable rebuild `factory-clone`) and
 Conductor (`~/developer/reverse/conductor`, runnable rebuild `rebuild`). Read-only.
 

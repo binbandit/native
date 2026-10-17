@@ -45,8 +45,9 @@ public nonisolated enum RouteParser {
         var lines = body.components(separatedBy: .newlines).map { $0.trimmingCharacters(in: .whitespaces) }
         lines.removeAll { $0.hasPrefix("```") }
         let text = lines.joined(separator: "\n").trimmingCharacters(in: .whitespacesAndNewlines)
-        // Prose the lead wrapped around the object stays out.
-        guard let start = text.firstIndex(of: "{"), let end = text.lastIndex(of: "}"), start < end else { return nil }
+        // Prose the lead wrapped around the object stays out; without an object, the decoder says
+        // what's wrong.
+        guard let start = text.firstIndex(of: "{"), let end = text.lastIndex(of: "}"), start < end else { return text }
         return String(text[start...end])
     }
 
@@ -76,7 +77,7 @@ public nonisolated enum RouteParser {
                 let doneWhen = (item.doneWhen ?? []).compactMap { $0.trimmed.nilIfEmpty }
                 let brief = item.brief?.trimmed.nilIfEmpty ?? title
                 assignments.append(Route.Assignment(
-                    id: id, title: title, brief: brief, doneWhen: doneWhen.isEmpty ? [wireLeg.outcome?.trimmed ?? title] : doneWhen,
+                    id: id, title: title, brief: brief, doneWhen: doneWhen.isEmpty ? [wireLeg.outcome?.trimmed.nilIfEmpty ?? legTitle] : doneWhen,
                     assignee: assignee, after: (item.after ?? []).map { slug($0.trimmed) }))
             }
             guard !assignments.isEmpty else { continue }

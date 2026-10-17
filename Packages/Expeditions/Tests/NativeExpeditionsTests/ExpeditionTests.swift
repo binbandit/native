@@ -58,7 +58,7 @@ import Testing
         #expect(draft.body.hasPrefix("## Summary\nCSV export is in."))
         #expect(draft.cwd == URL(filePath: "/worktrees/app/csv"))
 
-        driver.send(.pullRequestOpened(WorkflowPullRequestResult(url: URL(string: "https://github.com/o/r/pull/7")!, number: 7)))
+        driver.send(.pullRequestOpened(WorkflowPullRequestResult(url: try #require(URL(string: "https://github.com/o/r/pull/7")), number: 7)))
         #expect(driver.expedition.phase == .complete)
         #expect(driver.expedition.cost.map { abs($0 - 0.9) < 0.0001 } == true)
         #expect(driver.expedition.log.last?.text == "The expedition is complete.")
@@ -96,13 +96,13 @@ import Testing
         #expect(driver.expedition.route?.changedAssignments(since: driver.expedition.previousRoutes[0]) == ["stream"])
     }
 
-    @Test func discardingTheRouteStops() {
+    @Test func discardingTheRouteStops() throws {
         var driver = ExpeditionDriver()
         driver.send(.start)
         driver.end(.lead, "<route>\(ExpeditionDriver.twoLegs)</route>")
         driver.send(.discard)
         #expect(driver.expedition.phase == .stopped)
-        driver.send(.approve(driver.expedition.route!))
+        driver.send(.approve(try #require(driver.expedition.route)))
         #expect(driver.expedition.approvedAt == nil)
     }
 
@@ -267,7 +267,7 @@ import Testing
         driver.setOut()
         driver.end(.assignment("writer"), nil, outcome: .limited("Codex · 5-hour limit reached · resets 3:05 PM"))
         #expect(driver.expedition.phase == .limited)
-        #expect(driver.expedition.attention.allSatisfy(\.isLimit))
+        #expect(driver.expedition.attention.allSatisfy { $0.isLimit })
         driver.send(.limitReset(.assignment("writer")))
         #expect(driver.status(.assignment("writer")) == .running)
     }
