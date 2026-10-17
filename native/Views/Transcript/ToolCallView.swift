@@ -1,5 +1,4 @@
 import ACP
-import AppKit
 import SwiftUI
 
 /// One tool call, modeled on the reference app's tool rows: a dense one-line row (icon, verb, subject) without
@@ -21,6 +20,7 @@ struct ToolCallView: View {
             ToolRow(
                 presentation: presentation,
                 phase: phase,
+                startedAt: call.startedAt,
                 isExpandable: hasDetails && phase != .awaitingApproval,
                 isExpanded: showsDetails,
                 toggle: {
@@ -80,6 +80,8 @@ enum ToolPhase: Equatable {
 private struct ToolRow<Accessory: View>: View {
     let presentation: ToolPresentation
     let phase: ToolPhase
+    /// When a live call started, for the running clock.
+    let startedAt: Date?
     let isExpandable: Bool
     let isExpanded: Bool
     let toggle: () -> Void
@@ -107,6 +109,9 @@ private struct ToolRow<Accessory: View>: View {
             .accessibilityValue(accessibilityValue)
 
             accessory
+            if phase == .running, let startedAt {
+                ToolRunningClock(since: startedAt)
+            }
             stateLabel
         }
         .padding(.vertical, 5)
@@ -224,6 +229,27 @@ private struct ToolRow<Accessory: View>: View {
     }
 }
 
+/// A running call's elapsed time, from its third second on: sooner it's noise, later it's the
+/// cheapest proof the tool isn't stuck.
+private struct ToolRunningClock: View {
+    let start: Date
+
+    init(since start: Date) {
+        self.start = start
+    }
+
+    var body: some View {
+        TimelineView(.periodic(from: start, by: 1)) { context in
+            if context.date.timeIntervalSince(start) >= 3 {
+                ElapsedTimeText(since: start)
+                    .font(.dsBody)
+                    .foregroundStyle(.dsTextTertiary)
+                    .transition(.opacity)
+            }
+        }
+    }
+}
+
 /// The framed panel a row's details open into, capped in height and scrolling beyond that.
 private struct ToolDetailFrame<Content: View>: View {
     let isEmphasized: Bool
@@ -251,8 +277,7 @@ private struct CopyButton: View {
 
     var body: some View {
         Button {
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(text, forType: .string)
+            DSPasteboard.copy(text)
             didCopy = true
             Task {
                 try? await Task.sleep(for: .seconds(1.5))

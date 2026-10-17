@@ -3,6 +3,7 @@ import Foundation
 
 /// How a tool call reads as a single transcript row, modeled on the reference app's tool rows: a verb in
 /// secondary text, the subject after it in tertiary, a per-tool icon, and per-tool failure wording.
+/// The verb's tense follows the call: "Reading" while it runs, "Read" once it's done.
 ///
 /// Claude Code names its tools (`call.name`), so known tools get tailored rows; other agents fall
 /// back to the ACP kind and the agent's own title.
@@ -32,7 +33,7 @@ struct ToolPresentation {
     }
 
     var symbol: String
-    var verb: String?
+    var verbs: ToolVerb?
     var subject: String
     var subtitle: String?
     var subjectStyle = SubjectStyle.plain
@@ -41,10 +42,50 @@ struct ToolPresentation {
     var body = Body.generic
     /// Subagent rows show their own status in place of the tool icon.
     var showsStatusIcon = false
+    /// Where the call is, which picks the verb's tense.
+    var phase = ToolPhase.completed
+
+    var verb: String? {
+        verbs?.form(for: phase)
+    }
+}
+
+/// A tool's verb in each tense a row needs: "Edit 3 lines" waiting for approval, "Editing 3 lines"
+/// while it runs, "Edited 3 lines" once it's done.
+struct ToolVerb {
+    var base: String
+    var progressive: String
+    var past: String
+
+    func form(for phase: ToolPhase) -> String {
+        switch phase {
+        case .running: progressive
+        case .completed: past
+        // Not done: the row names what was asked, and the trailing label says what happened.
+        case .awaitingApproval, .failed, .cancelled: base
+        }
+    }
+
+    /// The same verb with an object or preposition after it in every tense: "Read" + "for".
+    func appending(_ words: String) -> ToolVerb {
+        ToolVerb(base: "\(base) \(words)", progressive: "\(progressive) \(words)", past: "\(past) \(words)")
+    }
+
+    static let read = ToolVerb(base: "Read", progressive: "Reading", past: "Read")
+    static let edit = ToolVerb(base: "Edit", progressive: "Editing", past: "Edited")
+    static let write = ToolVerb(base: "Write", progressive: "Writing", past: "Wrote")
+    static let delete = ToolVerb(base: "Delete", progressive: "Deleting", past: "Deleted")
+    static let grep = ToolVerb(base: "Grep for", progressive: "Grepping for", past: "Grepped for")
+    static let search = ToolVerb(base: "Search", progressive: "Searching", past: "Searched")
 }
 
 extension ToolPresentation {
     init(_ call: ToolCallState) {
+        self.init(describing: call)
+        phase = ToolPhase(call)
+    }
+
+    private init(describing call: ToolCallState) {
         let input = call.rawInput
         let name = call.name ?? ""
 
@@ -55,7 +96,7 @@ extension ToolPresentation {
 
         switch name {
         case "Read":
-            self.init(symbol: "book", verb: "Read", subject: Self.readSubject(input) ?? call.title.dropping(prefix: "Read "))
+            self.init(symbol: "book", verbs: .read, subject: Self.readSubject(input) ?? call.title.dropping(prefix: "Read "))
         case "Edit", "MultiEdit", "Write", "NotebookEdit":
             self = .fileChange(call)
         case "Bash":
@@ -69,13 +110,13 @@ extension ToolPresentation {
             body = .command(command ?? call.title)
         case "Grep":
             let pattern = input?["pattern"]?.stringValue.map { "\"\($0)\"" }
-            self.init(symbol: "magnifyingglass", verb: "Grepped for", subject: Self.join(pattern, in: input?["path"]?.stringValue) ?? call.title, body: .lines)
+            self.init(symbol: "magnifyingglass", verbs: .grep, subject: Self.join(pattern, in: input?["path"]?.stringValue) ?? call.title, body: .lines)
         case "Glob":
             let pattern = input?["pattern"]?.stringValue
-            self.init(symbol: "doc.text.magnifyingglass", verb: "Searched files for", subject: Self.join(pattern, in: input?["path"]?.stringValue) ?? call.title, body: .lines)
+            self.init(symbol: "doc.text.magnifyingglass", verbs: ToolVerb.search.appending("files for"), subject: Self.join(pattern, in: input?["path"]?.stringValue) ?? call.title, body: .lines)
         case "WebSearch":
             let query = input?["query"]?.stringValue.map { "\"\($0)\"" }
-            self.init(symbol: "globe", verb: "Searched the web for", subject: query ?? call.title)
+            self.init(symbol: "globe", verbs: ToolVerb.search.appending("the web for"), subject: query ?? call.title)
         case "WebFetch":
             self.init(symbol: "globe", subject: "Fetch Content", subtitle: input?["url"]?.stringValue)
         case "Task", "Agent":
@@ -95,12 +136,12 @@ extension ToolPresentation {
         }
         let stats = diffs.reduce(DiffStats()) { $0 + $1.stats }
         let isNewFile = diffs.first.map { $0.oldText == nil } ?? (call.name == "Write")
-        let verb = isNewFile ? "Write" : "Edit"
+        let verb = isNewFile ? ToolVerb.write : .edit
         let lines = stats.added + stats.removed
         let path = diffs.first?.path ?? call.rawInput?["file_path"]?.stringValue ?? call.locations.first?.path
         return ToolPresentation(
             symbol: isNewFile ? "doc.badge.plus" : "pencil.line",
-            verb: lines > 0 ? "\(verb) \(lines) \(lines == 1 ? "line" : "lines")" : "\(verb) file",
+            verbs: verb.appending(lines > 0 ? "\(lines) \(lines == 1 ? "line" : "lines")" : "file"),
             subject: path.map { ($0 as NSString).lastPathComponent } ?? call.title,
             subjectStyle: path == nil ? .plain : .chip,
             stats: lines > 0 ? stats : nil,
@@ -112,9 +153,9 @@ extension ToolPresentation {
     private static func byKind(_ call: ToolCallState) -> ToolPresentation {
         let title = call.title
         return switch call.kind {
-        case .read: ToolPresentation(symbol: "book", verb: "Read", subject: title.dropping(prefix: "Read "))
+        case .read: ToolPresentation(symbol: "book", verbs: .read, subject: title.dropping(prefix: "Read "))
         case .edit: fileChange(call)
-        case .delete: ToolPresentation(symbol: "trash", verb: "Delete", subject: title.dropping(prefix: "Delete "))
+        case .delete: ToolPresentation(symbol: "trash", verbs: .delete, subject: title.dropping(prefix: "Delete "))
         case .move: ToolPresentation(symbol: "arrow.right.doc.on.clipboard", subject: title)
         case .search: ToolPresentation(symbol: "magnifyingglass", subject: title, body: .lines)
         case .execute: ToolPresentation(symbol: "terminal", subject: title, subjectStyle: .command, failureLabel: "Command failed", body: .command(title))
