@@ -1,18 +1,30 @@
 import ACP
-import AppKit
 import SwiftUI
 
-/// A session in the sidebar (Conductor's workspace row): the agent's glyph, the session's status, its
-/// title and age, and `accessory` (the context-usage ring, or whatever the Usage feature supplies)
-/// at the trailing edge. Double-click, Return or the context menu renames it in place.
+/// A session in the sidebar (Conductor's workspace row): the agent's icon or the session's status,
+/// its title and age, and `accessory` (pull request, branch state and context usage, as the app
+/// wires it) at the trailing edge. One line always; what a waiting session asks goes in its tooltip
+/// and VoiceOver label. Every action is in the context menu, hover shows Archive, and on touch the
+/// row swipes. Double-click, Return or the menu renames it in place.
 struct SessionRow<Accessory: View>: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.undoManager) private var undoManager
     let summary: SessionSummary
     let accessory: Accessory
     let select: () -> Void
 
+    @State private var isConfirmingDelete = false
+
     private var session: SessionModel? {
         model.session(summary.id)
+    }
+
+    private var title: String {
+        model.title(for: summary)
+    }
+
+    private var isUnread: Bool {
+        model.isUnread(summary.id)
     }
 
     var body: some View {
@@ -20,30 +32,52 @@ struct SessionRow<Accessory: View>: View {
             SessionTitleField(summary: summary, status: TaskStatus(session))
         } else {
             TaskRow(
-                title: model.title(for: summary),
+                title: title,
                 status: TaskStatus(session),
                 isSelected: model.selection == summary.id,
+                isUnread: isUnread,
                 date: session?.lastActivity ?? summary.info.updatedDate,
                 badge: badge,
-                leadingSymbol: summary.agent.symbolName,
+                leading: AgentIcon(agent: summary.agent),
                 accessory: accessory,
-                action: select
+                action: select,
+                onArchive: archive
             )
-            .help("\(summary.agent.displayName) · \(model.title(for: summary))")
+            .help(tooltip)
             // Double-clicking renames, like a file in the Finder.
             .simultaneousGesture(TapGesture(count: 2).onEnded(rename))
             .contextMenu { menu }
+            .sidebarSwipeActions(
+                leading: [readAction],
+                trailing: [
+                    SidebarSwipeAction("Archive", systemImage: "archivebox", tint: .dsInfo, action: archive),
+                    SidebarSwipeAction("Delete", systemImage: "trash", tint: .dsDanger) { isConfirmingDelete = true },
+                ]
+            )
+            .accessibilityLabel(accessibilityLabel)
             .accessibilityHint("\(summary.agent.displayName) session. Return renames it.")
             .accessibilityActions {
                 Button("Rename", action: rename)
+                Button(isUnread ? "Mark as Read" : "Mark as Unread", action: toggleUnread)
+                Button("Archive", action: archive)
                 Button("Move Up") { model.move(target, .up) }
                 Button("Move Down") { model.move(target, .down) }
+            }
+            .confirmationDialog("Delete “\(title)”?", isPresented: $isConfirmingDelete) {
+                Button("Delete Task", role: .destructive) {
+                    model.deleteSession(summary.id, undoManager: undoManager)
+                }
+            } message: {
+                Text(
+                    "Its history goes from Native and, if \(summary.agent.displayName) supports it, from \(summary.agent.displayName) too. You can undo for a few seconds. To keep it out of sight instead, archive it."
+                )
             }
         }
     }
 
     @ViewBuilder private var menu: some View {
         Button("Rename…", action: rename)
+        Button(isUnread ? "Mark as Read" : "Mark as Unread", action: toggleUnread)
         Divider()
         Button("Move Up") { model.move(target, .up) }
             .disabled(!model.canMove(target, .up))
@@ -51,9 +85,20 @@ struct SessionRow<Accessory: View>: View {
             .disabled(!model.canMove(target, .down))
         Divider()
         Button("Copy Session ID") {
-            NSPasteboard.general.clearContents()
-            NSPasteboard.general.setString(summary.info.sessionId.rawValue, forType: .string)
+            PlatformPasteboard.copy(summary.info.sessionId.rawValue)
         }
+        Divider()
+        Button("Archive", action: archive)
+        Button("Delete…", role: .destructive) { isConfirmingDelete = true }
+    }
+
+    private var readAction: SidebarSwipeAction {
+        SidebarSwipeAction(
+            isUnread ? "Read" : "Unread",
+            systemImage: isUnread ? "envelope.open" : "envelope.badge",
+            tint: .dsAccent,
+            action: toggleUnread
+        )
     }
 
     private var target: SidebarMoveTarget {
@@ -66,8 +111,25 @@ struct SessionRow<Accessory: View>: View {
         return .count(count)
     }
 
+    /// The agent and title, then what the session is waiting on, so triage needs no click.
+    private var tooltip: String {
+        ["\(summary.agent.displayName) · \(title)", session?.sidebarAsk].compactMap(\.self).joined(separator: "\n")
+    }
+
+    private var accessibilityLabel: String {
+        [title, session?.sidebarAsk].compactMap(\.self).joined(separator: ", ")
+    }
+
     private func rename() {
         model.renaming = summary.id
+    }
+
+    private func toggleUnread() {
+        model.setUnread(summary.id, !isUnread)
+    }
+
+    private func archive() {
+        Task { await model.archiveSession(summary.id, undoManager: undoManager) }
     }
 }
 
@@ -89,6 +151,22 @@ extension TaskStatus {
             case .disconnected: .failed
             case .idle: .idle
             }
+    }
+}
+
+extension SessionModel {
+    /// What the session is waiting on the user for, in a few words: "Allow Run `rm -rf build`?", or
+    /// nil when it isn't waiting.
+    var sidebarAsk: String? {
+        let pending = state.pendingPermissions
+        if let first = pending.first {
+            let title = state.items.lazy.compactMap { item -> String? in
+                if case .toolCall(let call) = item, call.id == first.toolCallID { call.title } else { nil }
+            }.first
+            let ask = "Allow \(title ?? "a tool call")?"
+            return pending.count > 1 ? "\(ask) (\(pending.count - 1) more)" : ask
+        }
+        return needsApproval ? "A subagent is waiting for approval" : nil
     }
 }
 
