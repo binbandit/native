@@ -11,6 +11,8 @@ final class WorkflowRunner {
     }
 
     @ObservationIgnored var host: (any WorkflowHost)?
+    /// Called after every change to a run, for whoever follows runs from outside (automations).
+    @ObservationIgnored var onRunChange: ((WorkflowRun) -> Void)?
     @ObservationIgnored private let store: WorkflowRunStore?
     @ObservationIgnored private let now: () -> Date
 
@@ -43,6 +45,7 @@ final class WorkflowRunner {
     func send(_ event: WorkflowEvent, to id: WorkflowRun.ID) {
         guard let index = runs.firstIndex(where: { $0.id == id }) else { return }
         let effects = runs[index].handle(event, at: now())
+        onRunChange?(runs[index])
         perform(effects, for: id)
     }
 

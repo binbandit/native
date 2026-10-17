@@ -151,6 +151,8 @@ enum Wire {
             return .sessionUpdate(try params(SessionNotification.self, of: line))
         case ("session/request_permission", let id?):
             return .permissionRequest(id, try params(RequestPermissionRequest.self, of: line))
+        case ("elicitation/create", let id?):
+            return .elicitationRequest(id, try params(CreateElicitationRequest.self, of: line))
         default:
             throw UnroutableLine(line: line)
         }

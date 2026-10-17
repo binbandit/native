@@ -24,6 +24,8 @@ struct TranscriptStyleConfiguration {
     let session: SessionModel
     let rows: [TranscriptRow]
     let openSubagent: (SessionID) -> Void
+    /// Another session's title, for naming the tasks this one exchanges messages with.
+    let sessionTitle: (SessionID) -> String?
 
     /// Only the oldest pending request answers the permission shortcuts, so they're never ambiguous.
     var shortcutTarget: String? {
@@ -41,6 +43,9 @@ struct TranscriptStyleConfiguration {
         }
         if let id, id == session.parentID {
             return "the parent session"
+        }
+        if let id, let title = sessionTitle(id) {
+            return title
         }
         // A sibling task, or a session this one can't name yet.
         return "another task"

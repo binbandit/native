@@ -86,10 +86,18 @@ struct AgentManifest: Codable, Hashable, Sendable {
     /// Where the agent keeps its own MCP configuration ("claude-code", "codex" or "cursor"), so the
     /// MCP feature can show and import the servers it already loads. Nil when unknown.
     var mcpConfig: String?
+    /// Where the agent's icon comes from. Nil, or nothing found, draws a monogram of its name.
+    var icon: AgentIconSource?
+    /// Commands besides `command` that must be on the user's PATH for the agent to count as
+    /// installed, such as the CLI an adapter drives (`claude` for an `npx` adapter).
+    var requires: [String] = []
+    /// How to install the agent and sign in, for the Add Agent list and the not-installed state.
+    var setup: AgentSetupGuide?
 
     init(
         id: String, name: String, symbol: String? = nil, command: String, args: [String] = [],
-        env: [String: String] = [:], resolveExecutables: [String: String] = [:], mcpConfig: String? = nil
+        env: [String: String] = [:], resolveExecutables: [String: String] = [:], mcpConfig: String? = nil,
+        icon: AgentIconSource? = nil, requires: [String] = [], setup: AgentSetupGuide? = nil
     ) {
         self.id = id
         self.name = name
@@ -99,6 +107,9 @@ struct AgentManifest: Codable, Hashable, Sendable {
         self.env = env
         self.resolveExecutables = resolveExecutables
         self.mcpConfig = mcpConfig
+        self.icon = icon
+        self.requires = requires
+        self.setup = setup
     }
 
     init(from decoder: any Decoder) throws {
@@ -111,7 +122,49 @@ struct AgentManifest: Codable, Hashable, Sendable {
         env = try container.decodeIfPresent([String: String].self, forKey: .env) ?? [:]
         resolveExecutables = try container.decodeIfPresent([String: String].self, forKey: .resolveExecutables) ?? [:]
         mcpConfig = try container.decodeIfPresent(String.self, forKey: .mcpConfig)
+        icon = try container.decodeIfPresent(AgentIconSource.self, forKey: .icon)
+        requires = try container.decodeIfPresent([String].self, forKey: .requires) ?? []
+        setup = try container.decodeIfPresent(AgentSetupGuide.self, forKey: .setup)
     }
+}
+
+/// Where an agent's icon comes from, tried in this order. Native never ships other products'
+/// artwork: it uses the copy already on the user's machine, or fetches the registry's at runtime.
+struct AgentIconSource: Codable, Hashable, Sendable {
+    /// An image file: an SVG, drawn in the text color like a glyph, or a bitmap. Relative paths
+    /// are inside the plugin's folder. In `plugin.json`, `"icon": "icon.svg"` is short for this.
+    var path: String?
+    /// Apps whose icon stands for the agent, by bundle identifier; the first one installed wins.
+    var apps: [String] = []
+    /// The agent's id in the ACP registry, whose monochrome icon is fetched and cached.
+    var registry: String?
+
+    init(path: String? = nil, apps: [String] = [], registry: String? = nil) {
+        self.path = path
+        self.apps = apps
+        self.registry = registry
+    }
+
+    init(from decoder: any Decoder) throws {
+        if let path = try? decoder.singleValueContainer().decode(String.self) {
+            self.init(path: path)
+            return
+        }
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        path = try container.decodeIfPresent(String.self, forKey: .path)
+        apps = try container.decodeIfPresent([String].self, forKey: .apps) ?? []
+        registry = try container.decodeIfPresent(String.self, forKey: .registry)
+    }
+}
+
+/// How a user gets an agent going. Native shows these and never runs them.
+struct AgentSetupGuide: Codable, Hashable, Sendable {
+    /// A command to paste in a terminal that installs the agent without replacing anything else.
+    var install: String?
+    /// The agent's own install and sign-in docs.
+    var docs: URL?
+    /// A terminal command that signs in, for agents whose sign-in can't happen over ACP.
+    var signIn: String?
 }
 
 /// An MCP server every agent session should get: `command` for a local (stdio) server, or `url`

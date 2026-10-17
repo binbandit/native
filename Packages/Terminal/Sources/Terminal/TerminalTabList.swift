@@ -5,9 +5,7 @@ public enum TerminalStatus: Hashable, Sendable {
     case running
     /// The shell ended (`exit`, ⌃D, or its process was killed).
     case exited
-    /// The shell ended so soon after starting that it most likely never ran: a missing shell or
-    /// command, or a directory it can't enter.
-    case failedToStart
+    case failedToStart(TerminalStartFailure)
 
     /// How long a shell has to run before its exit counts as normal rather than a failed start;
     /// Ghostty's `abnormal-command-exit-runtime` default.
@@ -15,8 +13,18 @@ public enum TerminalStatus: Hashable, Sendable {
 
     /// The status of a shell that ran for `runtime` and then exited.
     public init(exitedAfter runtime: Duration) {
-        self = runtime <= Self.failedStartThreshold ? .failedToStart : .exited
+        self = runtime <= Self.failedStartThreshold ? .failedToStart(.exitedImmediately) : .exited
     }
+}
+
+/// Why a terminal's shell never ran.
+public enum TerminalStartFailure: Error, Hashable, Sendable {
+    /// The folder it was to start in is gone, such as a task worktree that was removed.
+    case directoryMissing
+    /// The shell ended right after starting: a missing shell or command, or a broken profile.
+    case exitedImmediately
+    /// The terminal engine couldn't create the terminal.
+    case engineFailed
 }
 
 /// One task's terminal tabs: their order, names and which one is showing.

@@ -52,6 +52,12 @@ nonisolated struct Automation: Codable, Hashable, Sendable, Identifiable {
         if let repository = occurrence.repository {
             return repository.caseInsensitiveCompare(self.repository ?? "") == .orderedSame
         }
-        return occurrence.project?.standardizedFileURL == project.standardizedFileURL
+        return occurrence.project.map(Self.folderPath) == Self.folderPath(project)
+    }
+
+    /// A folder's path without a trailing slash, so "/work/app" and "/work/app/" match.
+    private static func folderPath(_ url: URL) -> String {
+        let path = url.standardizedFileURL.path(percentEncoded: false)
+        return path.count > 1 && path.hasSuffix("/") ? String(path.dropLast()) : path
     }
 }
