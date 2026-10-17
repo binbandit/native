@@ -26,18 +26,7 @@ struct TranscriptView: View {
             sessionTitle: { model.session(id: $0)?.displayTitle }
         )
         ScrollView {
-            AnyView(style.makeBody(transcript))
-                // Invariant: the rows' height must never depend on whether the vertical scroller is
-                // showing. Legacy (mouse) scrollers take layout width, and they appear whenever the
-                // content overflows, even for one pass. If the column followed the content width,
-                // a scroller flash would rewrap and re-estimate the lazy rows, the new height could
-                // hide the scroller again, and the two states fed each other forever: a 100% CPU
-                // hang on the main thread. So the column is sized from the scroll container, which
-                // a scroller doesn't change.
-                .containerRelativeFrame(.horizontal) { containerWidth, _ in column(in: containerWidth) }
-                .padding(.top, DS.Space.xl)
-                .padding(.bottom, DS.Space.lg)
-                .frame(maxWidth: .infinity)
+            column(transcript)
         }
         // Start at the latest message and stay there as rows grow. Short transcripts sit at the top,
         // as in the reference app: bottom-aligning them (the `.alignment` role) pads the top by an inset that
@@ -76,10 +65,24 @@ struct TranscriptView: View {
         }
     }
 
-    /// The column's width in a scroll container `containerWidth` wide: as wide as the width setting
-    /// allows, with a margin on each side.
-    private func column(in containerWidth: CGFloat) -> CGFloat {
-        max(min(columnWidth, containerWidth - 2 * DS.Space.xxl), 0)
+    /// The rows in a centered column: as wide as the width setting allows, with a margin each side.
+    private func column(_ transcript: TranscriptStyleConfiguration) -> some View {
+        let maxWidth = columnWidth
+        let margin = DS.Space.xxl
+        return AnyView(style.makeBody(transcript))
+            // Invariant: the rows' height must never depend on whether the vertical scroller is
+            // showing. Legacy (mouse) scrollers take layout width, and they appear whenever the
+            // content overflows, even for one pass. If the column followed the content width, a
+            // scroller flash would rewrap and re-estimate the lazy rows, the new height could hide
+            // the scroller again, and the two states fed each other forever: a 100% CPU hang on the
+            // main thread. So the column is sized from the scroll container, which a scroller
+            // doesn't change.
+            .containerRelativeFrame(.horizontal) { containerWidth, _ in
+                max(min(maxWidth, containerWidth - 2 * margin), 0)
+            }
+            .padding(.top, DS.Space.xl)
+            .padding(.bottom, DS.Space.lg)
+            .frame(maxWidth: .infinity)
     }
 
     /// Only while a turn runs: afterwards the latest is the turn's end, and scrolling up is reading.
