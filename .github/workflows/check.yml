@@ -1,0 +1,26 @@
+# Compiles the Release and Nightly configurations on every pull request and push to main, so a
+# break that only shows up outside Debug is caught before a release needs it.
+name: Check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  release-configurations:
+    runs-on: ${{ vars.MACOS_RUNNER || 'macos-26' }}
+    timeout-minutes: 60
+    env:
+      DEVELOPER_DIR: ${{ vars.XCODE_DEVELOPER_DIR || '/Applications/Xcode_27.1.app/Contents/Developer' }}
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build Release and Nightly
+        run: scripts/release/check.sh --derived-data "$RUNNER_TEMP/DerivedData"

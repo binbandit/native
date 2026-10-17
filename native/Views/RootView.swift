@@ -110,6 +110,9 @@ struct RootView: View {
                 await model.loadSession(key)
             }
         }
+        .sheet(item: $model.terminalSignIn) { request in
+            AgentTerminalSignInSheet(request: request) { await model.finishTerminalSignIn($0) }
+        }
         .sheet(isPresented: $model.isAddingAgent) {
             AddAgentSheet(agents: model.agentsToAdd, summaries: model.plugins.descriptions) {
                 await model.checkForAgents()
@@ -148,7 +151,7 @@ struct RootView: View {
             ForEach(runtime.authMethods, id: \.id) { method in
                 Button(method.name) {
                     Task {
-                        if await model.signIn(to: runtime.agent.id, with: method) {
+                        if await model.signIn(to: runtime.agent.id, with: method, thenStartSession: true) {
                             await model.newSession(with: runtime.agent.id)
                         }
                     }

@@ -12,4 +12,13 @@ extension AppModel {
             runtime: runtimes[agent.id]
         )
     }
+
+    /// After signing in from a terminal: restarts the agent with a fresh environment so it picks up
+    /// the login, then starts the session the user was starting, if it no longer needs a sign-in.
+    func finishTerminalSignIn(_ request: AgentTerminalSignIn) async {
+        let agent = request.agent.id
+        await restart(agent)
+        guard request.startsSession, let runtime = runtime(agent), runtime.isReady, !runtime.needsSignIn else { return }
+        await newSession(with: agent)
+    }
 }

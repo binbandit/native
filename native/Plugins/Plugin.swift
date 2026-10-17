@@ -166,7 +166,8 @@ struct AgentSetupGuide: Codable, Hashable, Sendable {
     var install: String?
     /// The agent's own install and sign-in docs.
     var docs: URL?
-    /// A terminal command that signs in, for agents whose sign-in can't happen over ACP.
+    /// A terminal command that signs in, for agents whose sign-in only works in a terminal. When
+    /// set, Sign In runs it in a terminal instead of asking the agent over ACP.
     var signIn: String?
 }
 

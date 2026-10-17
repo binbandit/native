@@ -8,6 +8,7 @@ struct BubbleMessageView: View {
     let side: BubbleSide
     let position: BubbleGroupPosition
 
+    @Environment(\.dsAccentPalette) private var palette
     @State private var isHovering = false
     @State private var showsTime = false
 
@@ -16,7 +17,7 @@ struct BubbleMessageView: View {
             .padding(.vertical, BubbleMetrics.verticalPadding)
             .padding(.leading, BubbleMetrics.horizontalPadding + (side == .leading ? BubbleMetrics.tailWidth : 0))
             .padding(.trailing, BubbleMetrics.horizontalPadding + (side == .trailing ? BubbleMetrics.tailWidth : 0))
-            .background(side == .trailing ? BubblePalette.outgoing : BubblePalette.incoming, in: shape)
+            .background(side == .trailing ? BubblePalette.outgoing(palette) : BubblePalette.incoming, in: shape)
             // Code blocks inside round concentrically with the bubble.
             .containerShape(.rect(cornerRadius: BubbleMetrics.radius, style: .continuous))
             .contentShape(shape)
@@ -38,7 +39,7 @@ struct BubbleMessageView: View {
         case .trailing:
             // Prompts are shown as typed; Markdown syntax in them stays literal.
             Text(verbatim: message.text)
-                .foregroundStyle(BubblePalette.outgoingText)
+                .foregroundStyle(BubblePalette.outgoingText(palette))
                 .textSelection(.enabled)
         case .leading:
             MarkdownView(message.text)

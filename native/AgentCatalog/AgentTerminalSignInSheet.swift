@@ -62,7 +62,8 @@ struct AgentTerminalSignInSheet: View {
                 TerminalSurfaceHost(surface: surface)
                     .overlay(alignment: .bottom) { outcome.padding(DS.Space.md) }
                 #endif
-            } else if let run, case .failedToStart = run.status {
+            } else if run?.outcome != .running {
+                // The terminal never started, or the user closed it after a failed sign-in.
                 failure
             }
         case .notBuilt, .failed:
@@ -83,8 +84,8 @@ struct AgentTerminalSignInSheet: View {
         if case .failed(let code) = run?.outcome {
             ErrorState(
                 "Signing in didn't finish",
-                recovery: code.map { "`\(request.command)` exited with code \($0); its output is above." },
-                suggestion: "Fix what it reported, then try again.",
+                suggestion: [code.map { "“\(request.command)” exited with code \($0)." }, "Its output is above; fix what it reported, then try again."]
+                    .compactMap(\.self).joined(separator: " "),
                 primary: .init("Try Again") { run?.restart() },
                 secondary: .init("Cancel") { dismiss() }
             )
@@ -93,8 +94,8 @@ struct AgentTerminalSignInSheet: View {
 
     private var failure: some View {
         ErrorState(
-            "The terminal couldn't run the sign-in",
-            suggestion: "Run `\(request.command)` in your own terminal, then choose Check Again.",
+            "Signing in didn't finish",
+            suggestion: "Try again here, or run “\(request.command)” in your own terminal and choose Check Again.",
             primary: .init("Try Again") { run?.restart() },
             secondary: .init("Cancel") { dismiss() },
             layout: .pane

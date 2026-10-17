@@ -1,5 +1,4 @@
 import ACP
-import AppKit
 import FoundationModels
 import UserNotifications
 
@@ -47,8 +46,7 @@ enum BuiltInPlugins {
             requires: ["codex"],
             setup: AgentSetupGuide(
                 install: "npm install -g @openai/codex",
-                docs: URL(string: "https://developers.openai.com/codex/cli"),
-                signIn: "codex login"
+                docs: URL(string: "https://developers.openai.com/codex/cli")
             )
         )]
     ))
@@ -116,7 +114,7 @@ struct NotificationsPlugin: NativePlugin {
         default:
             return
         }
-        guard !NSApplication.shared.isActive else { return }
+        guard !PlatformApplication.isActive else { return }
         let center = UNUserNotificationCenter.current()
         guard (try? await center.requestAuthorization(options: [.alert, .sound])) == true else { return }
         try? await center.add(UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
