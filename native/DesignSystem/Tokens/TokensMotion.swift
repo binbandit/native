@@ -21,11 +21,16 @@ extension Animation {
 
 extension View {
     /// Tracks hover the way Factory does: highlights appear instantly and fade out over 100ms.
+    /// On iPadOS the pointer drives the same hover, so the system's own pointer highlight is turned
+    /// off to keep one treatment; touch uses the components' pressed states.
     public func trackHover(_ isHovered: Binding<Bool>) -> some View {
         onHover { hovering in
             withAnimation(hovering ? nil : .dsHoverOut) {
                 isHovered.wrappedValue = hovering
             }
         }
+        #if os(iOS)
+        .hoverEffectDisabled()
+        #endif
     }
 }

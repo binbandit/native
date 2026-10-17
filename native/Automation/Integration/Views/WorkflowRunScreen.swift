@@ -1,3 +1,4 @@
+import ACP
 import SwiftUI
 
 /// A workflow run in the window's detail column, with the open step's session in the inspector.

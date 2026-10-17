@@ -22,11 +22,15 @@ struct NativeApp: App {
                 .environment(model)
                 .environment(git)
                 .environment(gitHub)
+                .environment(BuiltInPlugins.automation.center)
                 .createPullRequestSheet(gitHub)
                 .dsAccentPalette(themeID: iconPreferences.theme.rawValue)
                 .task {
                     OrchestrationPlugin.connect(to: model)
                     BuiltInPlugins.usage.limits.host = model
+                    BuiltInPlugins.automation.center.connect(to: model) { [git, gitHub] draft in
+                        try await AutomationGitHubWiring.openPullRequest(draft, git: git, gitHub: gitHub)
+                    }
                     iconPreferences.start()
                     await model.start()
                 }
@@ -37,6 +41,9 @@ struct NativeApp: App {
                     }
                     await gitHub.keepFresh()
                 }
+                .task(id: model.plugins.enabledPlugins.map(\.manifest)) {
+                    BuiltInPlugins.automation.center.reloadLibrary(from: model.plugins)
+                }
         }
         .defaultSize(width: 1120, height: 780)
         .commands {
@@ -44,6 +51,13 @@ struct NativeApp: App {
             ViewCommands()
             GoCommands(model: model)
             SessionCommands(model: model)
+            HostCommands()
+        }
+
+        Window("Durable Sessions", id: HostPreviewWindow.id) {
+            HostPreviewWindow()
+                .environment(model)
+                .dsAccentPalette(themeID: iconPreferences.theme.rawValue)
         }
 
         Settings {
@@ -167,6 +181,10 @@ private struct SessionCommands: Commands {
             }
             .keyboardShortcut("e", modifiers: [.command, .shift])
             .disabled(session.map { ComposerSettings($0.state.configOptions).model == nil } ?? true)
+
+            Divider()
+
+            AutomationMenuItems(center: BuiltInPlugins.automation.center, session: session)
 
             Divider()
 

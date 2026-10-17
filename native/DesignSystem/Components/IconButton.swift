@@ -59,6 +59,7 @@ public struct IconButton: View {
                 .font(.system(size: size.glyph, weight: .regular))
                 .frame(width: size.side, height: size.side)
                 .contentShape(.rect)
+                .dsHitTarget(size.side)
         }
         .buttonStyle(IconButtonStyle(isHovered: isHovered && isEnabled, isActive: isActive))
         .opacity(isEnabled ? 1 : 0.5)

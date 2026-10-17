@@ -18,6 +18,7 @@ public struct ComposerSendButton: View {
                 .font(.system(size: 11, weight: .semibold))
                 .foregroundStyle(.dsTextOnAccent)
                 .frame(width: DS.Size.composerAction, height: DS.Size.composerAction)
+                .dsHitTarget(DS.Size.composerAction)
         }
         .buttonStyle(ComposerActionStyle(kind: .send, isHovered: isHovered && isEnabled))
         .opacity(isEnabled ? 1 : 0.5)
@@ -48,6 +49,7 @@ public struct ComposerStopButton: View {
                 .fill(.dsTextInverse)
                 .frame(width: 8, height: 8)
                 .frame(width: DS.Size.composerAction, height: DS.Size.composerAction)
+                .dsHitTarget(DS.Size.composerAction)
         }
         .buttonStyle(ComposerActionStyle(kind: .stop, isHovered: isHovered && isEnabled))
         .keyboardShortcut(isEscapeEnabled ? .cancelAction : nil)

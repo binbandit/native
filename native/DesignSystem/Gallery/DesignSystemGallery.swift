@@ -1,5 +1,8 @@
-import AppKit
 import SwiftUI
+
+#if canImport(AppKit)
+import AppKit
+#endif
 
 /// Every token and component, in light and dark side by side, for review. Open it from anywhere
 /// with `DesignSystemGallery.showWindow()` (e.g. a debug menu item), or use the "Gallery" preview.
@@ -8,16 +11,25 @@ public struct DesignSystemGallery: View {
 
     public var body: some View {
         ScrollView {
-            HStack(alignment: .top, spacing: 0) {
-                DesignSystemGalleryColumn()
-                    .environment(\.colorScheme, .light)
-                DesignSystemGalleryColumn()
-                    .environment(\.colorScheme, .dark)
+            // Side by side where there's room, stacked on a narrower iPad.
+            ViewThatFits(in: .horizontal) {
+                HStack(alignment: .top, spacing: 0) { columns }
+                VStack(spacing: 0) { columns }
             }
         }
+        #if os(macOS)
         .frame(minWidth: 1280, minHeight: 720)
+        #endif
     }
 
+    @ViewBuilder private var columns: some View {
+        DesignSystemGalleryColumn()
+            .environment(\.colorScheme, .light)
+        DesignSystemGalleryColumn()
+            .environment(\.colorScheme, .dark)
+    }
+
+    #if canImport(AppKit)
     /// Opens the gallery in its own window, or brings the open one forward.
     public static func showWindow() {
         if let window = NSApp.windows.first(where: { $0.identifier == windowID }) {
@@ -34,6 +46,7 @@ public struct DesignSystemGallery: View {
     }
 
     private static let windowID = NSUserInterfaceItemIdentifier("native.design-system-gallery")
+    #endif
 }
 
 /// One appearance's column of the gallery.

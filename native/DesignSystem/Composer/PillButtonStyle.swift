@@ -76,6 +76,7 @@ private struct PillChrome: ViewModifier {
                 )
             }
             .contentShape(shape)
+            .dsHitTarget(DS.Size.composerPill)
             .contentShape(.focusEffect, shape)
             .opacity(isEnabled ? 1 : 0.5)
             .trackHover($isHovered)

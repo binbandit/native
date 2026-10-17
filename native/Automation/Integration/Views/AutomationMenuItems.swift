@@ -31,7 +31,7 @@ struct AutomationMenuItems: View {
         .disabled(goal == nil)
 
         Button("Run Workflow…") {
-            center.isWorkflowPickerRequested = true
+            center.requestPicker()
         }
         .keyboardShortcut("r", modifiers: [.command, .option])
     }

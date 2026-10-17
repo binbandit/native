@@ -11,6 +11,8 @@ final class AutomationCenter {
     private(set) var library = WorkflowLibrary()
     /// Set to ask the window to show the workflow picker; the view clears it.
     var isWorkflowPickerRequested = false
+    /// The workflow the picker opens with, when it was asked for from a library card.
+    var pickerSelection: String?
 
     /// The app, once it's wired up. Until then goals and workflows stay idle.
     @ObservationIgnored var host: AppAutomationHost? {
@@ -27,6 +29,22 @@ final class AutomationCenter {
 
     init(goalStore: GoalStore = .standard) {
         self.goalStore = goalStore
+    }
+
+    /// Wires the center to the app: workflow steps run as the app's task sessions, pull request steps
+    /// go through `openPullRequest` (the Git and GitHub features), and provider limits read the way
+    /// the rest of Native words them.
+    func connect(to model: AppModel, openPullRequest: @escaping (WorkflowPullRequestDraft) async throws -> WorkflowPullRequestResult) {
+        let host = AppAutomationHost(model: model)
+        host.openPullRequestHandler = openPullRequest
+        self.host = host
+        describeLimit = { UsageLimitHit(error: $0)?.message }
+    }
+
+    /// Opens the workflow picker, with `workflow` chosen if given.
+    func requestPicker(selecting workflow: String? = nil) {
+        pickerSelection = workflow
+        isWorkflowPickerRequested = true
     }
 
     /// The goal controller for a session the user can prompt; nil for subagents and task sessions,

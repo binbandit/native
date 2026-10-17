@@ -25,8 +25,13 @@ struct TranscriptView: View {
                 .padding(.bottom, 12)
                 .frame(maxWidth: .infinity)
         }
-        .defaultScrollAnchor(.bottom)
-        .defaultScrollAnchor(.bottom, for: .sizeChanges)
+        .defaultScrollAnchor(UserDefaults.standard.bool(forKey: "HANG_noAnchor") ? nil : .bottom)
+        .defaultScrollAnchor(UserDefaults.standard.bool(forKey: "HANG_noSizeAnchor") || UserDefaults.standard.bool(forKey: "HANG_noAnchor") ? nil : .bottom, for: .sizeChanges)
+        .onScrollGeometryChange(for: String.self) { g in
+            "content \(g.contentSize) insets \(g.contentInsets) container \(g.containerSize) offset \(g.contentOffset)"
+        } action: { _, new in
+            FileHandle.standardError.write(Data("HANG \(Date().timeIntervalSince1970) \(new)\n".utf8))
+        }
         .overlay {
             if session.phase == .loading {
                 ProgressView("Loading session…")
