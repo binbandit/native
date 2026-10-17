@@ -9,12 +9,12 @@ enum ServerMap {
     /// SDK servers) become problems instead.
     static func servers(in map: JSON?, file: URL, problems: inout [ConfigProblem]) -> [MCPServerConfig] {
         guard let entries = map?.objectValue else { return [] }
-        return entries.keys.sorted().compactMap { name in
+        return entries.keys.sorted().compactMap { name -> MCPServerConfig? in
             guard let entry = entries[name]?.objectValue else {
                 problems.append(ConfigProblem(file: file, message: "\"\(name)\" isn't an object."))
                 return nil
             }
-            do {
+            do throws(Unsupported) {
                 return try server(named: name, entry)
             } catch {
                 problems.append(ConfigProblem(file: file, message: "\"\(name)\": \(error.message)"))

@@ -57,13 +57,18 @@ struct ComposerView: View {
         let commands = commandMatches
         surface(settings, commands: commands)
             .overlay(alignment: .top) {
-                if !commands.isEmpty {
-                    // Float above the composer instead of growing it, so the transcript doesn't move:
-                    // a zero-height frame on the top edge, with the list hanging up out of it.
-                    SlashCommandList(commands: commands, highlighted: $highlighted, onChoose: insert)
-                        .padding(.bottom, DS.Space.md)
-                        .frame(height: 0, alignment: .bottom)
+                // Float above the composer instead of growing it, so the transcript doesn't move:
+                // a zero-height frame on the top edge, with the list or toast hanging up out of it.
+                Group {
+                    if !commands.isEmpty {
+                        SlashCommandList(commands: commands, highlighted: $highlighted, onChoose: insert)
+                    } else {
+                        toast
+                            .frame(maxWidth: .infinity, alignment: .trailing)
+                    }
                 }
+                .padding(.bottom, DS.Space.md)
+                .frame(height: 0, alignment: .bottom)
             }
             .frame(maxWidth: transcriptColumnWidth)
             .padding(.horizontal, DS.Space.xxl)
@@ -129,12 +134,7 @@ struct ComposerView: View {
                 settings: settings,
                 resumedAutonomy: autonomyBeforePlan,
                 usage: session.state.usage,
-                status: ComposerStatusLine(
-                    feedback: feedback,
-                    blocker: session.draft.isEmpty ? nil : blocker,
-                    followUpHint: isWorking ? FollowUpHint(preferred: followUp, supportsSteering: session.supportsSteering, agentName: session.agentName) : nil,
-                    onUndo: { undoManager?.undo() }
-                ),
+                followUpHint: isWorking ? FollowUpHint(preferred: followUp, supportsSteering: session.supportsSteering, agentName: session.agentName) : nil,
                 isModelPickerOpen: $isModelPickerOpen,
                 onAttach: { isAttaching = true },
                 onSet: set,
@@ -189,6 +189,19 @@ struct ComposerView: View {
         }
         .animation(.dsQuick, value: session.draft.isEmpty)
         .animation(.dsQuick, value: session.canCancel)
+    }
+
+    /// What the last action did; else, while there's a draft, why it can't go out.
+    @ViewBuilder
+    private var toast: some View {
+        if let feedback {
+            ComposerToast(message: feedback.message, tone: feedback.tone, onUndo: feedback.canUndo ? { undoManager?.undo() } : nil)
+                .id(feedback.id)
+                .transition(.opacity)
+        } else if let blocker, !session.draft.isEmpty {
+            ComposerToast(message: blocker.message, tone: .problem)
+                .transition(.opacity)
+        }
     }
 
     private var placeholder: String {

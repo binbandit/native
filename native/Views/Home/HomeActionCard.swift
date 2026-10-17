@@ -65,6 +65,9 @@ struct HomeActionCard<Accessory: View>: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .leading)
         }
         .buttonStyle(HomeCardButtonStyle(isHovered: isHovered && isEnabled))
+        // The label is a layout of glyphs and text, which VoiceOver doesn't name on its own.
+        .accessibilityLabel(title)
+        .accessibilityValue(detail ?? "")
         .trackHover($isHovered)
     }
 }

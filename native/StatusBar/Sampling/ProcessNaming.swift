@@ -13,7 +13,9 @@ nonisolated enum ProcessNaming {
         guard let first = arguments.first, !first.isEmpty else { return fallback }
         let words = first.split(separator: " ").map(String.init)
         if words.count > 1, let tool = words.first, ["npm", "npx", "pnpm", "bunx"].contains(tool) {
-            return words.dropFirst().last(where: { !$0.hasPrefix("-") }).map(packageName) ?? tool
+            // "npm exec <package> <args>": the package is the first word after the subcommand.
+            let rest = words.dropFirst().drop { $0 == "exec" || $0 == "x" || $0 == "dlx" }
+            return rest.first(where: { !$0.hasPrefix("-") }).map(packageName) ?? tool
         }
         let executable = (first as NSString).lastPathComponent
         guard runtimes.contains(executable) else { return executable.isEmpty ? fallback : executable }
@@ -36,7 +38,8 @@ nonisolated enum ProcessNaming {
         let components = path.split(separator: "/").map(String.init)
         if let index = components.lastIndex(of: "node_modules"), index + 1 < components.count {
             let package = components[index + 1]
-            if package.hasPrefix("@"), index + 2 < components.count {
+            // `node_modules/.bin/<command>` and `node_modules/@scope/<package>/…`.
+            if package == ".bin" || package.hasPrefix("@"), index + 2 < components.count {
                 return components[index + 2]
             }
             return package

@@ -1,24 +1,37 @@
 import SwiftUI
 
 /// The three optional limits of a goal's budget, each a short field that's empty for "no limit".
+/// The fields keep their own text, so a half-typed "2." stays as typed while the budget follows.
 struct GoalBudgetFields: View {
     @Binding var budget: GoalBudget
 
+    @State private var iterations = ""
+    @State private var minutes = ""
+    @State private var cost = ""
+
     var body: some View {
         HStack(alignment: .top, spacing: DS.Space.lg) {
-            field("Iterations", unit: "turns", value: iterations, prompt: "No limit")
-            field("Time", unit: "min", value: minutes, prompt: "No limit")
-            field("Spend", unit: "USD", value: cost, prompt: "No limit")
+            field("Iterations", unit: "turns", text: $iterations)
+            field("Time", unit: "min", text: $minutes)
+            field("Spend", unit: "USD", text: $cost)
         }
+        .onAppear {
+            iterations = budget.maxIterations.map(String.init) ?? ""
+            minutes = budget.maxDuration.map { String(Int(($0 / 60).rounded())) } ?? ""
+            cost = budget.maxCost.map { $0.formatted(.number.precision(.fractionLength(0...2))) } ?? ""
+        }
+        .onChange(of: iterations) { budget.maxIterations = Self.positive(iterations).map { Int($0) } }
+        .onChange(of: minutes) { budget.maxDuration = Self.positive(minutes).map { $0 * 60 } }
+        .onChange(of: cost) { budget.maxCost = Self.positive(cost) }
     }
 
-    private func field(_ title: String, unit: String, value: Binding<String>, prompt: String) -> some View {
+    private func field(_ title: String, unit: String, text: Binding<String>) -> some View {
         VStack(alignment: .leading, spacing: DS.Space.xs) {
             Text(title)
                 .font(.dsCaptionMedium)
                 .foregroundStyle(.dsTextSecondary)
             HStack(spacing: DS.Space.sm) {
-                TextField(title, text: value, prompt: Text(prompt).foregroundStyle(.dsTextQuaternary))
+                TextField(title, text: text, prompt: Text("No limit").foregroundStyle(.dsTextQuaternary))
                     .automationField()
                     .monospacedDigit()
                     .labelsHidden()
@@ -31,30 +44,9 @@ struct GoalBudgetFields: View {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    // Each field edits text and keeps the budget in step; anything that isn't a positive number
-    // means no limit.
-    private var iterations: Binding<String> {
-        Binding {
-            budget.maxIterations.map(String.init) ?? ""
-        } set: {
-            budget.maxIterations = Int($0.trimmingCharacters(in: .whitespaces)).flatMap { $0 > 0 ? $0 : nil }
-        }
-    }
-
-    private var minutes: Binding<String> {
-        Binding {
-            budget.maxDuration.map { String(Int(($0 / 60).rounded())) } ?? ""
-        } set: {
-            budget.maxDuration = Double($0.trimmingCharacters(in: .whitespaces)).flatMap { $0 > 0 ? $0 * 60 : nil }
-        }
-    }
-
-    private var cost: Binding<String> {
-        Binding {
-            budget.maxCost.map { $0.formatted(.number.precision(.fractionLength(0...2))) } ?? ""
-        } set: {
-            let text = $0.trimmingCharacters(in: .whitespaces).trimmingCharacters(in: CharacterSet(charactersIn: "$"))
-            budget.maxCost = Double(text).flatMap { $0 > 0 ? $0 : nil }
-        }
+    /// Anything that isn't a positive number means no limit.
+    private static func positive(_ text: String) -> Double? {
+        let trimmed = text.trimmingCharacters(in: .whitespaces).trimmingCharacters(in: CharacterSet(charactersIn: "$"))
+        return Double(trimmed).flatMap { $0 > 0 ? $0 : nil }
     }
 }
