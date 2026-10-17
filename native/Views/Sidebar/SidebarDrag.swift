@@ -38,7 +38,14 @@ final class SidebarDragState {
     func begin(_ item: Item) -> NSItemProvider {
         dragged = item
         drop = nil
-        return NSItemProvider(item: Data() as NSData, typeIdentifier: Self.contentType.identifier)
+        let provider = NSItemProvider()
+        // The payload is empty: the drop reads `dragged`. Keeping it in-process means it never
+        // lands in another app either.
+        provider.registerDataRepresentation(forTypeIdentifier: Self.contentType.identifier, visibility: .ownProcess) { completion in
+            completion(Data(), nil)
+            return nil
+        }
+        return provider
     }
 
     /// Whether `dragged` may land next to `item`.

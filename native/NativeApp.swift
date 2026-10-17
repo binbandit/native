@@ -13,6 +13,7 @@ struct NativeApp: App {
                 .dsAccentPalette(themeID: iconPreferences.theme.rawValue)
                 .task {
                     OrchestrationPlugin.connect(to: model)
+                    BuiltInPlugins.usage.limits.host = model
                     iconPreferences.start()
                     await model.start()
                 }

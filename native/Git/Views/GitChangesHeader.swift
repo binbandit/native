@@ -15,8 +15,10 @@ struct GitChangesHeader: View {
             }
             Spacer(minLength: DS.Space.md)
             if model.isWorking {
-                ProgressView()
-                    .controlSize(.small)
+                DotGridLoader(pattern: .typing)
+                    .foregroundStyle(.dsTextSecondary)
+                    .frame(width: GitMetrics.loaderSmall, height: GitMetrics.loaderSmall)
+                    .help("Working…")
             }
             IconButton("Refresh", systemImage: "arrow.clockwise") {
                 Task { await model.refreshNow() }

@@ -22,6 +22,11 @@ nonisolated enum GitMetrics {
     static let commitWidth: CGFloat = 420
     static let commitMessageHeight: CGFloat = 96
     static let commitFileListMaxHeight: CGFloat = 200
+    /// Git's own output inside a notice scrolls past this height.
+    static let noticeDetailMaxHeight: CGFloat = 96
+    /// The dot-grid loader in headers and buttons, and in an empty pane.
+    static let loaderSmall: CGFloat = DS.Size.statusGlyph
+    static let loaderLarge: CGFloat = DS.Size.controlXS
     /// The checkbox square in the commit file list.
     static let checkbox: CGFloat = DS.Size.statusGlyph
     static let checkboxGlyph: CGFloat = 9

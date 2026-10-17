@@ -12,7 +12,7 @@ struct HomeActionCard<Accessory: View>: View {
     let systemImage: String
     /// A second line under the label, such as why an agent can't start tasks.
     var detail: String?
-    /// Whether the detail asks something of the user, which sets it in the accent.
+    /// Whether the detail asks something of the user, which sets it in the attention color.
     var isDetailUrgent = false
     let action: () -> Void
     @ViewBuilder var accessory: Accessory
@@ -54,7 +54,7 @@ struct HomeActionCard<Accessory: View>: View {
                     if let detail {
                         Text(detail)
                             .font(.dsBody)
-                            .foregroundStyle(isDetailUrgent && isEnabled ? .dsAccentText : .dsTextTertiary)
+                            .foregroundStyle(isDetailUrgent && isEnabled ? .dsAttention : .dsTextTertiary)
                             .lineLimit(1)
                             .truncationMode(.middle)
                     }

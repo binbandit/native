@@ -49,9 +49,11 @@ public struct HomeView<AgentID: Hashable, ProjectID: Hashable, TaskID: Hashable>
             HomeProjectMenu(projects: projects, selection: $project, onAddProject: onAddProject)
         } content: {
             if recentTasks.isEmpty {
-                HomeNoTasks(projectName: projectName, agent: firstTaskAgent) { agent in
-                    onNewTask(agent, project)
-                }
+                HomeNoTasks(
+                    projectName: projectName,
+                    newTaskShortcut: readyAgents.lazy.compactMap(\.shortcut).first,
+                    isAnyAgentReady: !readyAgents.isEmpty
+                )
                 .padding(.top, HomeLayout.sectionSpacing)
             } else {
                 HomeRecentTasks(
@@ -72,9 +74,7 @@ public struct HomeView<AgentID: Hashable, ProjectID: Hashable, TaskID: Hashable>
         projects.first { $0.id == project }?.name ?? "this project"
     }
 
-    /// The agent the empty list offers: the ⌘N agent when it's ready, else the first ready one.
-    private var firstTaskAgent: HomeAgent<AgentID>? {
-        let ready = agents.filter { $0.availability == .available }
-        return ready.first { $0.shortcut != nil } ?? ready.first
+    private var readyAgents: [HomeAgent<AgentID>] {
+        agents.filter { $0.availability == .available }
     }
 }
