@@ -12,6 +12,14 @@ struct ToolCallView: View {
     @State private var isExpanded = false
 
     var body: some View {
+        if let questions = AskedQuestions(call), !questions.entries.isEmpty {
+            AskedQuestionsView(questions: questions)
+        } else {
+            row
+        }
+    }
+
+    @ViewBuilder private var row: some View {
         let presentation = ToolPresentation(call)
         let phase = ToolPhase(call)
         let hasDetails = detailsAvailable(for: presentation)

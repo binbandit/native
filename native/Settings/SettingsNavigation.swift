@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 
 /// The left column of Settings after Conductor's settings nav: the search field, then pages under
@@ -134,9 +133,9 @@ private struct NavItem: View {
             .background(isSelected || isHovered ? Color.dsHover : .clear, in: shape)
             .overlay {
                 if showsFocusRing {
-                    // Conductor's 2pt ring, in the color macOS draws focus rings. It sits on the
-                    // row's edge rather than outside it, where the nav's scroll view would clip it.
-                    shape.strokeBorder(Color(nsColor: .keyboardFocusIndicatorColor), lineWidth: 2)
+                    // Conductor's 2pt ring, in the accent color the system draws focus rings in. It
+                    // sits on the row's edge rather than outside it, where the scroll view would clip it.
+                    shape.strokeBorder(.tint, lineWidth: 2)
                 }
             }
             .contentShape(shape)

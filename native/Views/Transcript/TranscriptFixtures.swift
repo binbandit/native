@@ -56,6 +56,26 @@ enum TranscriptFixtures {
         }
     }()
 
+    /// Claude Code's AskUserQuestion, captured from claude-agent-acp 0.93: waiting for the user,
+    /// answered, and skipped.
+    static let askedQuestions: [ToolCallState] = {
+        var waiting = SessionState(), answered = SessionState(), skipped = SessionState()
+        for update in [askAnnounced, askQuestions] {
+            waiting.apply(.toolCallUpdate(decode(update)))
+            answered.apply(.toolCallUpdate(decode(update)))
+            skipped.apply(.toolCallUpdate(decode(update)))
+        }
+        answered.apply(.toolCallUpdate(decode(askAnswered)))
+        answered.apply(.toolCallUpdate(decode(askCompleted)))
+        skipped.apply(.toolCallUpdate(decode(askSkipped)))
+        skipped.apply(.toolCallUpdate(decode(askCompleted)))
+        return [waiting, answered, skipped].flatMap { state in
+            state.items.compactMap { item in
+                if case .toolCall(let call) = item { call } else { nil }
+            }
+        }
+    }()
+
     static let notices: [TranscriptNotice] = {
         var state = SessionState()
         state.appendNotice("Stopped.", isError: false)
@@ -192,6 +212,22 @@ enum TranscriptFixtures {
         """
 
     // MARK: - Helpers
+
+    private static let askAnnounced = """
+        {"_meta":{"claudeCode":{"toolName":"AskUserQuestion"}},"toolCallId":"toolu_016PGc48eyfVKaczjHf1iguq","name":"AskUserQuestion","rawInput":{},"status":"pending","title":"Asking for your input","kind":"other","content":[]}
+        """
+    private static let askQuestions = """
+        {"_meta":{"claudeCode":{"toolName":"AskUserQuestion"}},"toolCallId":"toolu_016PGc48eyfVKaczjHf1iguq","rawInput":{"questions":[{"question":"Which color do you prefer?","header":"Color","multiSelect":false,"options":[{"label":"Red","description":"A warm, bold color"},{"label":"Blue","description":"A cool, calm color"}]},{"question":"Which sizes should ship?","header":"Sizes","multiSelect":true,"options":[{"label":"Small","description":"For phones"},{"label":"Large","description":"For desktops"}]}]},"title":"Which color do you prefer?"}
+        """
+    private static let askAnswered = """
+        {"_meta":{"claudeCode":{"toolResponse":{"questions":[{"question":"Which color do you prefer?","header":"Color","options":[{"label":"Red","description":"A warm, bold color"},{"label":"Blue","description":"A cool, calm color"}],"multiSelect":false},{"question":"Which sizes should ship?","header":"Sizes","options":[{"label":"Small","description":"For phones"},{"label":"Large","description":"For desktops"}],"multiSelect":true}],"answers":{"Which color do you prefer?":"Red","Which sizes should ship?":"Small, Large"},"annotations":{"Which color do you prefer?":{"notes":"Matches the logo"}}},"toolName":"AskUserQuestion"}},"toolCallId":"toolu_016PGc48eyfVKaczjHf1iguq"}
+        """
+    private static let askSkipped = """
+        {"_meta":{"claudeCode":{"toolResponse":{"questions":[{"question":"Which color do you prefer?","header":"Color","options":[],"multiSelect":false}],"answers":{}},"toolName":"AskUserQuestion"}},"toolCallId":"toolu_016PGc48eyfVKaczjHf1iguq"}
+        """
+    private static let askCompleted = """
+        {"_meta":{"claudeCode":{"toolName":"AskUserQuestion"}},"toolCallId":"toolu_016PGc48eyfVKaczjHf1iguq","status":"completed","rawOutput":"Your questions have been answered."}
+        """
 
     private static func decode<T: Decodable>(_ json: String) -> T {
         do {

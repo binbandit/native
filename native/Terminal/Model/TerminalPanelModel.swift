@@ -122,6 +122,11 @@ final class TerminalPanelModel: TerminalSurfaceEvents {
         isVisible = false
     }
 
+    /// Whether the selected tab has a terminal that can take keyboard focus.
+    var canFocus: Bool {
+        tabs.selectedID.flatMap { surfaces[$0] } != nil
+    }
+
     func focusSelected() {
         guard let id = tabs.selectedID else { return }
         surfaces[id]?.focus()

@@ -1,128 +1,123 @@
-import AppKit
 import SwiftUI
 
 extension SettingsPane.ID {
-    static let plugins = Self("plugins")
+    static let extensions = Self("extensions")
 }
 
 extension SettingsPane {
-    static func plugins(registry: PluginRegistry) -> SettingsPane {
+    static func extensions(registry: PluginRegistry) -> SettingsPane {
         SettingsPane(
-            id: .plugins,
-            title: "Plugins",
+            id: .extensions,
+            title: "Extensions",
             systemImage: "puzzlepiece.extension",
-            group: .agents,
-            order: 10,
-            keywords: ["mcp", "reload", "folder", "plugin.json"],
+            group: .extensions,
+            order: 0,
+            keywords: ["plugins", "plugin.json", "reload", "folder", "minimal"],
             searchEntries: {
                 registry.plugins.map { loaded in
                     let manifest = loaded.plugin.manifest
-                    return SettingsSearchEntry(id: PluginsSettingsPage.rowID(manifest.id), title: manifest.name, description: manifest.description ?? "", keywords: [manifest.id])
+                    return SettingsSearchEntry(
+                        id: ExtensionsSettingsPage.rowID(manifest.id), title: manifest.name,
+                        description: manifest.description ?? "", keywords: [manifest.id])
                 }
             },
-            content: { PluginsSettingsPage() }
+            content: { ExtensionsSettingsPage(registry: registry) }
         )
     }
 }
 
-struct PluginsSettingsPage: View {
-    @Environment(PluginRegistry.self) private var registry
+/// Every plugin, built in or installed, with a switch. This is where the user turns on what Native
+/// adds beyond the agents: Native starts minimal, so some built-ins start off.
+struct ExtensionsSettingsPage: View {
+    let registry: PluginRegistry
+
+    #if os(macOS)
+        @Environment(\.openURL) private var openURL
+    #endif
 
     static func rowID(_ pluginID: String) -> SettingsRowID {
         SettingsRowID("plugin.\(pluginID)")
     }
 
+    private var builtIn: [PluginRegistry.LoadedPlugin] {
+        registry.plugins.filter { $0.source == .builtIn }
+    }
+
+    private var installed: [PluginRegistry.LoadedPlugin] {
+        registry.plugins.filter { $0.source != .builtIn }
+    }
+
     var body: some View {
         SettingsPage {
             SettingsHeader(
-                title: "Plugins",
-                description: Text("Changes apply to sessions started afterwards. Agents start or stop right away.")
+                title: "Extensions",
+                description: Text("Turn on what you use. Changes apply to sessions started afterwards; agents start or stop right away.")
             ) {
                 Button("Reload", systemImage: "arrow.clockwise") { registry.reload() }
                     .buttonStyle(.ds(.secondary, size: .medium))
-                Button("Open Plugins Folder", systemImage: "folder", action: openFolder)
-                    .buttonStyle(.ds(.secondary, size: .medium))
+                    .help("Read the plugins folder again")
+                #if os(macOS)
+                    Button("Open Plugins Folder", systemImage: "folder", action: openFolder)
+                        .buttonStyle(.ds(.secondary, size: .medium))
+                #endif
             }
             SettingsRowGroup {
-                ForEach(registry.plugins) { loaded in
-                    PluginRow(loaded: loaded, isEnabled: Binding(
-                        get: { registry.isEnabled(loaded.id) },
-                        set: { registry.setEnabled($0, for: loaded.id) }
-                    ))
+                ForEach(builtIn) { loaded in
+                    ExtensionRow(loaded: loaded, isEnabled: binding(for: loaded))
+                }
+            }
+            VStack(alignment: .leading, spacing: DS.Space.lg) {
+                SettingsSubheading("Your plugins", note: "Plugins in ~/.native/plugins, each a folder with a plugin.json.")
+                if installed.isEmpty {
+                    installedEmptyState
+                } else {
+                    SettingsRowGroup {
+                        ForEach(installed) { loaded in
+                            ExtensionRow(loaded: loaded, isEnabled: binding(for: loaded))
+                        }
+                    }
                 }
             }
             if !registry.failures.isEmpty {
-                VStack(alignment: .leading, spacing: DS.Space.md) {
-                    SettingsSubheading("Couldn't load")
+                VStack(alignment: .leading, spacing: DS.Space.lg) {
+                    SettingsSubheading("Couldn't load", note: "Fix the file, then Reload.")
                     SettingsRowGroup {
                         ForEach(registry.failures) { failure in
                             SettingsRow(
                                 failure.url.deletingLastPathComponent().lastPathComponent,
+                                icon: "exclamationmark.triangle",
                                 description: Text(failure.message).foregroundStyle(.dsDanger),
-                                detail: Text(abbreviated(failure.url)).font(SettingsTextStyle.mono.font)
+                                detail: Text(ExtensionRow.displayPath(failure.url)).font(SettingsTextStyle.mono.font)
                             ) { EmptyView() }
                         }
                     }
                 }
             }
-            Text("Add a plugin by creating \(Text(verbatim: "~/.native/plugins/<id>/plugin.json").font(SettingsTextStyle.mono.font)). Manifests can contribute agents that speak ACP and MCP servers for every session.")
-                .settingsText(.body)
-                .foregroundStyle(.dsTextSecondary)
-                .fixedSize(horizontal: false, vertical: true)
         }
     }
 
-    private func openFolder() {
-        let folder = PluginRegistry.directory
-        try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        NSWorkspace.shared.open(folder)
-    }
-
-    private func abbreviated(_ url: URL) -> String {
-        (url.path(percentEncoded: false) as NSString).abbreviatingWithTildeInPath
-    }
-}
-
-private struct PluginRow: View {
-    let loaded: PluginRegistry.LoadedPlugin
-    @Binding var isEnabled: Bool
-
-    private var manifest: PluginManifest { loaded.plugin.manifest }
-
-    var body: some View {
+    private var installedEmptyState: some View {
         SettingsRow(
-            id: PluginsSettingsPage.rowID(manifest.id),
-            title: Text(manifest.name),
-            description: manifest.description.map(Text.init),
-            detail: contributions.isEmpty ? nil : Text(contributions.joined(separator: " · "))
-        ) {
-            if let version = manifest.version {
-                Text(version)
-                    .settingsText(.caption)
-                    .foregroundStyle(.dsTextSecondary)
-            }
-            if case .builtIn = loaded.source {
-                SettingsBadge("Built-in")
-            }
-        } control: {
-            SettingsSwitch(manifest.name, isOn: $isEnabled)
-        }
+            "No plugins yet",
+            icon: "shippingbox",
+            description: Text(
+                "A plugin.json can add agents that speak ACP, MCP servers for every session, and workflows."
+            )
+        ) { EmptyView() }
     }
 
-    private var contributions: [String] {
-        var parts: [String] = []
-        if !manifest.agents.isEmpty {
-            parts.append("Agents: " + manifest.agents.map(\.name).joined(separator: ", "))
-        }
-        if !manifest.mcpServers.isEmpty {
-            parts.append("MCP: " + manifest.mcpServers.map(\.name).joined(separator: ", "))
-        }
-        if loaded.plugin.titler != nil {
-            parts.append("Names sessions")
-        }
-        if case .manifest(let url) = loaded.source {
-            parts.append((url.deletingLastPathComponent().path(percentEncoded: false) as NSString).abbreviatingWithTildeInPath)
-        }
-        return parts
+    private func binding(for loaded: PluginRegistry.LoadedPlugin) -> Binding<Bool> {
+        Binding(
+            get: { registry.isEnabled(loaded.id) },
+            set: { registry.setEnabled($0, for: loaded.id) }
+        )
     }
+
+    #if os(macOS)
+        private func openFolder() {
+            let folder = PluginRegistry.directory
+            try? FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
+            openURL(folder)
+        }
+    #endif
 }

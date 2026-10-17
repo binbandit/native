@@ -19,6 +19,16 @@ public enum JSONValue: Hashable, Sendable {
         return string
     }
 
+    /// `other` laid over this value: objects merge key by key, all the way down; anything else is
+    /// replaced.
+    public func merging(_ other: JSONValue) -> JSONValue {
+        guard case .object(var object) = self, case .object(let overlay) = other else { return other }
+        for (key, value) in overlay {
+            object[key] = object[key]?.merging(value) ?? value
+        }
+        return .object(object)
+    }
+
     public var isEmptyObject: Bool {
         if case .object(let object) = self { object.isEmpty } else { false }
     }

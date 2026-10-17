@@ -3,7 +3,7 @@ import SwiftUI
 /// A list floating above the composer, like Factory's suggestion lists: slash commands, files to
 /// mention. The editor keeps focus and drives the highlight with the arrow keys; Return or Tab
 /// inserts the highlighted item, a click inserts any.
-struct ComposerSuggestionList<Item: Identifiable, Row: View>: View {
+struct ComposerSuggestionList<Item, Row: View>: View {
     let items: [Item]
     @Binding var highlighted: Int
     let onChoose: (Item) -> Void
@@ -14,7 +14,8 @@ struct ComposerSuggestionList<Item: Identifiable, Row: View>: View {
             ScrollViewReader { proxy in
                 CappedHeightScrollView(maxHeight: ComposerMetrics.suggestionListMaxHeight) {
                     VStack(spacing: 0) {
-                        ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
+                        // By position: the list is rebuilt with every keystroke anyway.
+                        ForEach(Array(items.enumerated()), id: \.offset) { index, item in
                             button(item, at: index)
                                 .id(index)
                         }

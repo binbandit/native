@@ -28,10 +28,11 @@ public struct TerminalRGB: Hashable, Sendable, CustomStringConvertible {
 
     /// `#rrggbb`, as Ghostty's config reads colors.
     public var description: String {
-        "#" + [red, green, blue].map { byte in
-            let hex = String(byte, radix: 16)
-            return hex.count == 1 ? "0" + hex : hex
-        }.joined()
+        "#"
+            + [red, green, blue].map { byte in
+                let hex = String(byte, radix: 16)
+                return hex.count == 1 ? "0" + hex : hex
+            }.joined()
     }
 
     /// This color laid over `background` at `opacity` (0...1), the way a translucent fill composites.
@@ -40,6 +41,7 @@ public struct TerminalRGB: Hashable, Sendable, CustomStringConvertible {
         func mix(_ top: UInt8, _ bottom: UInt8) -> UInt8 {
             UInt8((Double(top) * alpha + Double(bottom) * (1 - alpha)).rounded())
         }
-        return TerminalRGB(red: mix(red, background.red), green: mix(green, background.green), blue: mix(blue, background.blue))
+        return TerminalRGB(
+            red: mix(red, background.red), green: mix(green, background.green), blue: mix(blue, background.blue))
     }
 }

@@ -285,6 +285,8 @@ public struct ToolCallState: Hashable, Sendable {
     public var rawOutput: JSONValue?
     /// Set while the agent waits for the user to approve this call.
     public var permission: PendingPermission?
+    /// The agent's `_meta` for the call, every update's merged in.
+    public var meta: JSONValue?
     /// When a live call was first announced and when it finished; nil for replayed history.
     public var startedAt: Date?
     public var finishedAt: Date?
@@ -298,6 +300,7 @@ public struct ToolCallState: Hashable, Sendable {
         if let locations = update.locations { self.locations = locations }
         if let rawInput = update.rawInput { self.rawInput = rawInput }
         if let rawOutput = update.rawOutput { self.rawOutput = rawOutput }
+        if let meta = update.meta { self.meta = self.meta?.merging(meta) ?? meta }
     }
 }
 
