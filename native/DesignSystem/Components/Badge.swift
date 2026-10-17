@@ -5,6 +5,8 @@ import SwiftUI
 public struct Badge: View {
     public enum Tone: Sendable {
         case neutral, accent, success, warning, danger, info
+        /// Blocked on the user: approval gates, questions, plans to review.
+        case attention
 
         var color: Color {
             switch self {
@@ -14,6 +16,7 @@ public struct Badge: View {
             case .warning: .dsWarning
             case .danger: .dsDanger
             case .info: .dsInfo
+            case .attention: .dsAttention
             }
         }
     }

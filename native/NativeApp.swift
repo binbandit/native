@@ -30,7 +30,7 @@ struct NativeApp: App {
                     iconPreferences.start()
                     await model.start()
                 }
-                .task {
+                .task { [gitHub] in
                     gitHub.openAsTask = { [model, git, weak gitHub] pullRequest in
                         guard let gitHub else { return }
                         try await GitHubGitWiring.openAsTask(pullRequest, app: model, git: git, gitHub: gitHub)
