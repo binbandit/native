@@ -24,9 +24,12 @@ final class MCPLibrary {
     private(set) var probing: Set<MCPServerKey> = []
     /// Something that went wrong saving or reading, shown on the page until dismissed.
     var problem: String?
+    /// The agent CLI command running now, and how the last one went (set by `run(_:)`).
+    var runningCommand: AgentCLICommand?
+    var lastCommandRun: MCPCommandRun?
 
     /// The app, once `MCPServersPlugin.connect` has run.
-    @ObservationIgnored weak var host: (any MCPLibraryHost)?
+    @ObservationIgnored var host: (any MCPLibraryHost)?
     @ObservationIgnored let runner: any CommandRunner
     @ObservationIgnored let launcher: any StdioLauncher
     @ObservationIgnored let files: any ConfigFileSystem

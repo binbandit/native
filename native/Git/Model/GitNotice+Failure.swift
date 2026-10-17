@@ -4,7 +4,7 @@ import Git
 extension GitNotice {
     /// What a git operation is, in the words a failure message uses.
     enum Operation {
-        case stage, unstage, discard, restore, commit, push, pull, initialize
+        case stage, unstage, discard, restore, commit, push, pull, initialize, undoCommits
 
         var failureTitle: String {
             switch self {
@@ -16,6 +16,7 @@ extension GitNotice {
             case .push: "Couldn't push"
             case .pull: "Couldn't pull"
             case .initialize: "Couldn't create the repository"
+            case .undoCommits: "Couldn't undo the commits"
             }
         }
     }

@@ -143,3 +143,24 @@ Code that agents or plugins hand Native to run (code mode's `run_script`, later 
 scripted workflow steps) runs in a separate Rust helper embedding V8, never in the app. It is jitless,
 sees only the tools it was given, and is signed into an App Sandbox with no file or network access.
 Why Rust and V8, and the protocol, are in `docs/script-runtime.md` ("Decision: a Rust and V8 runtime").
+
+## 2026-10-18: Sparkle for updates
+
+Native updates itself with Sparkle 2, pinned to an exact version (2.10.0) and added through SwiftPM.
+It's the standard for apps distributed outside the App Store: EdDSA-signed feeds and archives
+(verified before extraction), an installer that replaces the bundle atomically and relaunches,
+delta updates, and channels. Writing our own installer would mean owning the most
+security-sensitive code in the app; the App Store is out because Native can't be sandboxed;
+Squirrel.Mac is unmaintained. A custom user driver keeps Sparkle's windows out, so every update
+state is Native's own UI (`native/Updates`). Sparkle is macOS-only and stays behind that folder:
+only one file imports it, and iPad builds simply have no updater. Builds are Developer ID signed
+and notarized. See `docs/releasing.md`.
+
+## 2026-10-18: Nightly beside stable, beta as a channel
+
+Native Nightly is a separate app (its own name, bundle id, feed and host) that installs beside
+Native, like VS Code Insiders, so trying tonight's build never puts your daily driver at risk.
+Beta is a Sparkle channel inside the stable feed: opting in from Settings costs nothing, and beta
+users still get stable releases. Both feeds are GitHub release assets: stable and beta at
+`releases/latest/download/appcast.xml`, nightly on a rolling `nightly` release. Release notes are
+drafted from conventional commits; there's no hand-written changelog.

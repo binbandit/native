@@ -4,7 +4,7 @@ import FoundationModels
 import UserNotifications
 
 enum BuiltInPlugins {
-    static let all: [any NativePlugin] = [claudeCode, codex, cursor, openCode, pi, copilot, OnDeviceTitlesPlugin(), NotificationsPlugin(), SoundsPlugin(), OrchestrationPlugin(), usage, automation, automations]
+    static let all: [any NativePlugin] = [claudeCode, codex, cursor, openCode, pi, copilot, OnDeviceTitlesPlugin(), NotificationsPlugin(), SoundsPlugin(), OrchestrationPlugin(), MCPServersPlugin(), usage, automation, automations]
 
     /// Claude Code through its ACP adapter, running the user's own `claude`. Adapter versions are
     /// pinned so upgrades are deliberate; the adapters move fast.
@@ -19,7 +19,14 @@ enum BuiltInPlugins {
             command: "npx",
             args: ["--yes", "@agentclientprotocol/claude-agent-acp@0.93.0"],
             resolveExecutables: ["CLAUDE_CODE_EXECUTABLE": "claude"],
-            mcpConfig: "claude-code"
+            mcpConfig: "claude-code",
+            icon: AgentIconSource(apps: ["com.anthropic.claudefordesktop"], registry: "claude-acp"),
+            requires: ["claude"],
+            setup: AgentSetupGuide(
+                install: "npm install -g @anthropic-ai/claude-code",
+                docs: URL(string: "https://code.claude.com/docs/en/setup"),
+                signIn: "claude"
+            )
         )]
     ))
 
@@ -35,7 +42,14 @@ enum BuiltInPlugins {
             command: "npx",
             args: ["--yes", "@agentclientprotocol/codex-acp@2.2.2"],
             resolveExecutables: ["CODEX_PATH": "codex"],
-            mcpConfig: "codex"
+            mcpConfig: "codex",
+            icon: AgentIconSource(apps: ["com.openai.codex", "com.openai.chat"], registry: "codex-acp"),
+            requires: ["codex"],
+            setup: AgentSetupGuide(
+                install: "npm install -g @openai/codex",
+                docs: URL(string: "https://developers.openai.com/codex/cli"),
+                signIn: "codex login"
+            )
         )]
     ))
 }

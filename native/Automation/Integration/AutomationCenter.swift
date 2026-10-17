@@ -32,6 +32,8 @@ final class AutomationCenter {
     init(goalStore: GoalStore = .standard) {
         self.goalStore = goalStore
         workflows.onRunChange = { [automations] in automations.workflowRunChanged($0) }
+        // Off until the app reports the Automations plugin's state.
+        automations.isEnabled = false
     }
 
     /// Wires Automations to the app's features; until then it keeps its schedule but starts nothing.

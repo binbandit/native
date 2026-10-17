@@ -5,6 +5,8 @@ import SwiftUI
 /// own page, with the way back in the toolbar.
 struct WorkflowsPage<Transcript: View>: View {
     @Binding var path: [WorkflowRun.ID]
+    /// Opens Automations, turning it on first; nil once it's in the sidebar anyway.
+    var onSetUpAutomations: (() -> Void)?
     @ViewBuilder let transcript: (SessionModel) -> Transcript
 
     @Environment(AutomationCenter.self) private var center
@@ -18,6 +20,9 @@ struct WorkflowsPage<Transcript: View>: View {
                         runs
                     }
                     library
+                    if let onSetUpAutomations {
+                        automationsTeaser(onSetUpAutomations)
+                    }
                 }
                 .frame(maxWidth: DS.Size.contentColumn, alignment: .leading)
                 .padding(DS.Space.xxl)
@@ -74,5 +79,27 @@ struct WorkflowsPage<Transcript: View>: View {
                 }
             }
         }
+    }
+
+    private func automationsTeaser(_ setUp: @escaping () -> Void) -> some View {
+        HStack(alignment: .center, spacing: DS.Space.lg) {
+            Image(systemName: "clock.arrow.circlepath")
+                .font(.system(size: 14))
+                .foregroundStyle(.dsTextSecondary)
+            VStack(alignment: .leading, spacing: DS.Space.xxs) {
+                Text("Run workflows on their own")
+                    .font(.dsBodyMedium)
+                    .foregroundStyle(.dsTextPrimary)
+                Text("Automations start a prompt, goal or workflow on a schedule, or when a pull request changes or CI fails.")
+                    .font(.dsCaption)
+                    .foregroundStyle(.dsTextSecondary)
+            }
+            Spacer(minLength: DS.Space.lg)
+            Button("Set Up Automations", action: setUp)
+                .buttonStyle(.ds(.secondary, size: .medium))
+        }
+        .padding(DS.Space.lg)
+        .background(.dsSurface, in: .rect(cornerRadius: DS.Radius.card))
+        .overlay { RoundedRectangle(cornerRadius: DS.Radius.card).strokeBorder(.dsSeparator, lineWidth: 1) }
     }
 }

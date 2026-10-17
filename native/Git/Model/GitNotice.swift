@@ -16,6 +16,8 @@ struct GitNotice: Identifiable, Equatable {
         case restore(Checkpoint, paths: [String])
         /// Selects the first conflicted file.
         case showConflicts
+        /// Takes back the commits a smart commit made.
+        case undoCommits(CommitPlanReceipt)
 
         var title: String {
             switch self {
@@ -23,6 +25,7 @@ struct GitNotice: Identifiable, Equatable {
             case .push: "Try Again"
             case .restore: "Restore"
             case .showConflicts: "Show Conflicts"
+            case .undoCommits: "Undo"
             }
         }
     }
