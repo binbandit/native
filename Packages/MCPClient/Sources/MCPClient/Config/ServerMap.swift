@@ -30,23 +30,27 @@ enum ServerMap {
     static func server(named name: String, _ entry: [String: JSON]) throws(Unsupported) -> MCPServerConfig {
         let type = entry["type"]?.stringValue?.lowercased()
         if let command = entry["command"]?.stringValue, type == nil || type == "stdio" {
-            return MCPServerConfig(name: name, transport: .stdio(
-                command: command,
-                arguments: strings(entry["args"]),
-                environment: dictionary(entry["env"]),
-                workingDirectory: entry["cwd"]?.stringValue
-            ))
+            return MCPServerConfig(
+                name: name,
+                transport: .stdio(
+                    command: command,
+                    arguments: strings(entry["args"]),
+                    environment: dictionary(entry["env"]),
+                    workingDirectory: entry["cwd"]?.stringValue
+                ))
         }
         if let text = entry["url"]?.stringValue ?? entry["serverUrl"]?.stringValue {
             guard let url = URL(string: text) else { throw Unsupported(message: "the URL \"\(text)\" isn't valid.") }
             let headers = dictionary(entry["headers"])
             switch type {
-            case nil, "http", "streamable-http", "streamable_http", "streamablehttp": return MCPServerConfig(name: name, transport: .http(url: url, headers: headers))
+            case nil, "http", "streamable-http", "streamable_http", "streamablehttp":
+                return MCPServerConfig(name: name, transport: .http(url: url, headers: headers))
             case "sse": return MCPServerConfig(name: name, transport: .sse(url: url, headers: headers))
             case let type?: throw Unsupported(message: "the \(type) transport isn't supported.")
             }
         }
-        throw Unsupported(message: type.map { "the \($0) transport isn't supported." } ?? "it has neither a command nor a URL.")
+        throw Unsupported(
+            message: type.map { "the \($0) transport isn't supported." } ?? "it has neither a command nor a URL.")
     }
 
     static func strings(_ value: JSON?) -> [String] {
@@ -64,7 +68,8 @@ extension JSON {
     var scalarText: String? {
         switch self {
         case .string(let string): string
-        case .number(let number): number.rounded() == number && abs(number) < 1e15 ? String(Int64(number)) : String(number)
+        case .number(let number):
+            number.rounded() == number && abs(number) < 1e15 ? String(Int64(number)) : String(number)
         case .bool(let bool): String(bool)
         case .null, .array, .object: nil
         }

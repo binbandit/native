@@ -11,7 +11,8 @@ struct MCPServersPlugin: NativePlugin {
     let manifest = PluginManifest(
         id: Self.id,
         name: "MCP Servers",
-        description: "Gives every agent the MCP servers you set up in Native, and shows the servers each agent loads on its own."
+        description:
+            "Gives every agent the MCP servers you set up in Native, and shows the servers each agent loads on its own."
     )
 
     /// One for the app: the settings page, the session list and this plugin read the same servers.

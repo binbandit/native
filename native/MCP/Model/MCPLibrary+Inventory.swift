@@ -17,7 +17,9 @@ extension MCPLibrary {
                 groups.append(MCPAgentServerGroup(endpoint: entry.server.endpoint, entries: [entry]))
             }
         }
-        return groups.sorted { ($0.isLoaded ? 0 : 1, $0.name.lowercased()) < ($1.isLoaded ? 0 : 1, $1.name.lowercased()) }
+        return groups.sorted {
+            ($0.isLoaded ? 0 : 1, $0.name.lowercased()) < ($1.isLoaded ? 0 : 1, $1.name.lowercased())
+        }
     }
 
     /// The managed server with the same command line or URL, if one exists.
@@ -28,11 +30,13 @@ extension MCPLibrary {
     /// Agents that don't get a managed server from Native (outside any project) and why.
     func skippedAgents(for server: ManagedServer) -> [(agent: MCPAgent, reason: String)] {
         agents.compactMap { agent in
-            let target = ManagedServerDelivery.Target(agentID: agent.id.rawValue, directory: nil, transports: agent.transports, agentServers: agentServers(agent.format, in: nil))
+            let target = ManagedServerDelivery.Target(
+                agentID: agent.id.rawValue, directory: nil, transports: agent.transports,
+                agentServers: agentServers(agent.format, in: nil))
             var everywhere = server
             everywhere.projects = .all
             guard let outcome = ManagedServerDelivery.plan([everywhere], for: target).first?.outcome,
-                  let reason = outcome.inactiveReason(agentName: agent.name), outcome != .disabled
+                let reason = outcome.inactiveReason(agentName: agent.name), outcome != .disabled
             else { return nil }
             return (agent, reason)
         }

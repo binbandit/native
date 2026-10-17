@@ -76,8 +76,9 @@ formatting pass has landed.
 
 Verify UI changes in the running app, not just the build. Several agents may run Native at once:
 use your own DerivedData path, launch with `open -n`, automate only your own process (System Events
-`first process whose unix id is <pid>`, never global keystrokes), screenshot with
-`screencapture -x -l <windowid>`, and quit with `kill <pid>`.
+`first process whose unix id is <pid>`, never global keystrokes or coordinate clicks like
+`click at`, which land on whatever window is on top; for synthetic events use `CGEvent.postToPid`),
+screenshot with `screencapture -x -l <windowid>`, and quit with `kill <pid>`.
 
 Design references: Factory (`~/developer/reverse/factory`, runnable rebuild `factory-clone`) and
 Conductor (`~/developer/reverse/conductor`, runnable rebuild `rebuild`). Read-only.

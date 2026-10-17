@@ -118,6 +118,7 @@ private struct ViewCommands: Commands {
     @FocusedValue(\.sidebarVisibility) private var sidebarVisibility
     @FocusedValue(\.activeSession) private var session
     @FocusedValue(\.mcpServersPopover) private var mcpServersPopover
+    @FocusedValue(\.sidebarNeedsYouFilter) private var needsYouFilter
 
     var body: some Commands {
         CommandGroup(replacing: .sidebar) {
@@ -143,6 +144,13 @@ private struct ViewCommands: Commands {
             }
             .keyboardShortcut("m", modifiers: [.command, .control])
             .disabled(mcpServersPopover == nil)
+
+            Toggle("Show Only Tasks That Need You", isOn: Binding(
+                get: { needsYouFilter?.wrappedValue ?? false },
+                set: { needsYouFilter?.wrappedValue = $0 }
+            ))
+            .keyboardShortcut("j", modifiers: [.command, .option])
+            .disabled(needsYouFilter == nil)
         }
     }
 }
@@ -174,6 +182,7 @@ private struct SessionCommands: Commands {
     let model: AppModel
     @FocusedValue(\.activeSession) private var session
     @FocusedValue(\.sidebarReorder) private var reorder
+    @FocusedValue(\.windowUndoManager) private var undoManager
 
     var body: some Commands {
         CommandMenu("Session") {
@@ -213,6 +222,25 @@ private struct SessionCommands: Commands {
 
             Button("Rename Session…") {
                 model.renaming = model.selection
+            }
+            .disabled(model.selection == nil)
+
+            Button("Archive Task") {
+                guard let key = model.selection else { return }
+                Task { await model.archiveSession(key, undoManager: undoManager) }
+            }
+            .keyboardShortcut("a", modifiers: [.command, .shift])
+            .disabled(model.selection == nil)
+
+            Button(model.selection.map(model.isPinned) == true ? "Unpin Task" : "Pin Task") {
+                guard let key = model.selection else { return }
+                model.setPinned(key, !model.isPinned(key), undoManager: undoManager)
+            }
+            .disabled(model.selection == nil)
+
+            Button(model.selection.map(model.isUnread) == true ? "Mark as Read" : "Mark as Unread") {
+                guard let key = model.selection else { return }
+                model.setUnread(key, !model.isUnread(key))
             }
             .disabled(model.selection == nil)
 

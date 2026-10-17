@@ -84,6 +84,8 @@ workflow step waiting for approval. They're chosen not to collide with text edit
 | Return on a selected sidebar session | Rename it (Escape cancels, Return commits) | Session |
 | ⌃⌘S | Show or hide the sidebar | View |
 | ⌥⌘↑ / ⌥⌘↓ | Move the selected project or session up / down | Session |
+| ⇧⌘A | Archive the selected task (Undo brings it back) | Session |
+| ⌥⌘J | Show only tasks that need you | View |
 | ⌘⇧P | Pull requests | Go |
 | ⌥⌘I | Show or hide the subagent inspector | View |
 | ⌘⇧D | Show or hide the changes inspector (the task's uncommitted git changes) | View |

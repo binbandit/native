@@ -20,18 +20,26 @@ struct CodexConfigTests {
         #expect(user.first { $0.name == "tracker" }?.status == .disabled)
 
         let inspector = try #require(user.first { $0.name == "inspector" })
-        #expect(inspector.server.transport == .stdio(
-            command: "npx",
-            arguments: ["-y", "example-inspector@2.1.0", "mcp"],
-            environment: ["INSPECTOR_HOME": "/Applications/Example Inspector.app", "QUOTED": "tab\there \"quoted\" é"]
-        ))
+        #expect(
+            inspector.server.transport
+                == .stdio(
+                    command: "npx",
+                    arguments: ["-y", "example-inspector@2.1.0", "mcp"],
+                    environment: [
+                        "INSPECTOR_HOME": "/Applications/Example Inspector.app", "QUOTED": "tab\there \"quoted\" é",
+                    ]
+                ))
         #expect(inspector.notes == ["Passes through $INSPECTOR_LICENSE", "Only tools: open, decompile"])
     }
 
     @Test func resolvesPassThroughAndBearerTokens() throws {
         let config = read()
         let inspector = try #require(config.servers.first { $0.name == "inspector" })
-        guard case .stdio(_, _, let environment, _) = inspector.resolved(environment: ["INSPECTOR_LICENSE": "L-1", "OTHER": "x"], project: nil).transport else {
+        guard
+            case .stdio(_, _, let environment, _) = inspector.resolved(
+                environment: ["INSPECTOR_LICENSE": "L-1", "OTHER": "x"], project: nil
+            ).transport
+        else {
             Issue.record("Expected stdio")
             return
         }
@@ -39,8 +47,13 @@ struct CodexConfigTests {
         #expect(environment["OTHER"] == nil)
 
         let docs = try #require(config.servers.first { $0.name == "docs" })
-        let headers = docs.resolved(environment: ["DOCS_TOKEN": "t0k", "DOCS_WORKSPACE": "acme"], project: nil).transport
-        #expect(headers == .http(url: URL(string: "https://docs.example.com/mcp")!, headers: ["Authorization": "Bearer t0k", "X-Workspace": "acme"]))
+        let headers = docs.resolved(environment: ["DOCS_TOKEN": "t0k", "DOCS_WORKSPACE": "acme"], project: nil)
+            .transport
+        #expect(
+            headers
+                == .http(
+                    url: URL(string: "https://docs.example.com/mcp")!,
+                    headers: ["Authorization": "Bearer t0k", "X-Workspace": "acme"]))
     }
 
     @Test func projectConfigNeedsTrust() {
@@ -71,7 +84,8 @@ struct CodexConfigTests {
 
     @Test func followsCodexHome() {
         let moved = FakeFiles(["/opt/codex/config.toml": "codex-config.toml"])
-        let config = AgentConfigReader(files: moved, home: .testHome, environment: ["CODEX_HOME": "/opt/codex"]).read(.codex, projects: [])
+        let config = AgentConfigReader(files: moved, home: .testHome, environment: ["CODEX_HOME": "/opt/codex"]).read(
+            .codex, projects: [])
         #expect(config.servers.count == 3)
     }
 }
@@ -90,14 +104,24 @@ struct CursorConfigTests {
 
         let docs = try #require(effective.first { $0.name == "docs" })
         #expect(docs.scope == .project(.app))
-        #expect(docs.resolved(environment: [:], project: .app).transport.url?.absoluteString == "https://docs.example.com/app/mcp")
+        #expect(
+            docs.resolved(environment: [:], project: .app).transport.url?.absoluteString
+                == "https://docs.example.com/app/mcp")
 
         let files = try #require(effective.first { $0.name == "files" })
-        #expect(files.resolved(environment: [:], project: .app).transport == .stdio(command: "files-mcp", arguments: ["/work/app"]))
+        #expect(
+            files.resolved(environment: [:], project: .app).transport
+                == .stdio(command: "files-mcp", arguments: ["/work/app"]))
 
         let inspector = try #require(effective.first { $0.name == "inspector" })
-        #expect(inspector.resolved(environment: ["INSPECTOR_LICENSE": "L-2"], project: .app).transport.summary == "npx -y example-inspector@2.1.0 mcp")
-        guard case .stdio(_, _, let environment, _) = inspector.resolved(environment: ["INSPECTOR_LICENSE": "L-2"], project: .app).transport else { return }
+        #expect(
+            inspector.resolved(environment: ["INSPECTOR_LICENSE": "L-2"], project: .app).transport.summary
+                == "npx -y example-inspector@2.1.0 mcp")
+        guard
+            case .stdio(_, _, let environment, _) = inspector.resolved(
+                environment: ["INSPECTOR_LICENSE": "L-2"], project: .app
+            ).transport
+        else { return }
         #expect(environment == ["INSPECTOR_LICENSE": "L-2"])
     }
 }

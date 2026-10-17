@@ -19,7 +19,9 @@ struct MCPServerEditor: View {
                 .foregroundStyle(.dsTextPrimary)
             ScrollView {
                 VStack(alignment: .leading, spacing: DS.Space.xl) {
-                    field("Name", note: "Agents show its tools as mcp__\(draft.name.isEmpty ? "name" : draft.name)__tool.") {
+                    field(
+                        "Name", note: "Agents show its tools as mcp__\(draft.name.isEmpty ? "name" : draft.name)__tool."
+                    ) {
                         TextField("Name", text: $draft.name, prompt: Text("linear"))
                             .mcpFieldStyle()
                     }
@@ -30,22 +32,33 @@ struct MCPServerEditor: View {
                     .pickerStyle(.segmented)
                     .labelsHidden()
                     if draft.kind == .stdio {
-                        field("Command", note: "Runs with your shell's environment, so npx, uvx and anything on your PATH work.") {
+                        field(
+                            "Command",
+                            note: "Runs with your shell's environment, so npx, uvx and anything on your PATH work."
+                        ) {
                             TextField("Command", text: $draft.commandLine, prompt: Text("npx -y @example/mcp-server"))
                                 .mcpFieldStyle()
                                 .font(.dsMono)
                         }
-                        MCPSecretList(title: "Environment variables", addTitle: "Add Variable", namePrompt: "API_KEY", pairs: $draft.environment)
+                        MCPSecretList(
+                            title: "Environment variables", addTitle: "Add Variable", namePrompt: "API_KEY",
+                            pairs: $draft.environment)
                     } else {
                         field("URL", note: "A Streamable HTTP endpoint. Agents that can't use HTTP don't get it.") {
                             TextField("URL", text: $draft.url, prompt: Text("https://mcp.example.com/mcp"))
                                 .mcpFieldStyle()
                                 .font(.dsMono)
                         }
-                        MCPSecretList(title: "Headers", addTitle: "Add Header", namePrompt: "Authorization", pairs: $draft.headers)
+                        MCPSecretList(
+                            title: "Headers", addTitle: "Add Header", namePrompt: "Authorization", pairs: $draft.headers
+                        )
                     }
-                    MCPChoiceList(title: "Agents", allTitle: "All agents", isAll: $draft.allAgents, chosen: $draft.agents, options: library.agents.map { ($0.id.rawValue, $0.name) })
-                    MCPChoiceList(title: "Projects", allTitle: "All projects", isAll: $draft.allProjects, chosen: $draft.projects, options: (library.host?.mcpProjects ?? []).map { (ProjectPath.key($0), $0.lastPathComponent) })
+                    MCPChoiceList(
+                        title: "Agents", allTitle: "All agents", isAll: $draft.allAgents, chosen: $draft.agents,
+                        options: library.agents.map { ($0.id.rawValue, $0.name) })
+                    MCPChoiceList(
+                        title: "Projects", allTitle: "All projects", isAll: $draft.allProjects, chosen: $draft.projects,
+                        options: (library.host?.mcpProjects ?? []).map { (ProjectPath.key($0), $0.lastPathComponent) })
                 }
                 .padding(.vertical, DS.Space.xs)
             }
@@ -93,14 +106,22 @@ struct MCPServerEditor: View {
     private var validationError: String? {
         let name = draft.name.trimmingCharacters(in: .whitespaces)
         if !ManagedServer.isValidName(name) { return "Give it a name of letters, digits, - and _." }
-        if library.availableName(for: name, excluding: id) != name { return "Another server is already called \(name)." }
+        if library.availableName(for: name, excluding: id) != name {
+            return "Another server is already called \(name)."
+        }
         switch draft.kind {
         case .stdio:
-            guard let words = ShellQuoting.split(draft.commandLine), !words.isEmpty else { return "Enter the command that starts the server; check its quotes." }
+            guard let words = ShellQuoting.split(draft.commandLine), !words.isEmpty else {
+                return "Enter the command that starts the server; check its quotes."
+            }
         case .http, .sse:
-            guard let url = URL(string: draft.url.trimmingCharacters(in: .whitespaces)), ["http", "https"].contains(url.scheme?.lowercased()) else { return "Enter an http or https URL." }
+            guard let url = URL(string: draft.url.trimmingCharacters(in: .whitespaces)),
+                ["http", "https"].contains(url.scheme?.lowercased())
+            else { return "Enter an http or https URL." }
         }
-        if draft.environment.contains(where: { $0.name.isEmpty != $0.value.isEmpty }) || draft.headers.contains(where: { $0.name.isEmpty != $0.value.isEmpty }) {
+        if draft.environment.contains(where: { $0.name.isEmpty != $0.value.isEmpty })
+            || draft.headers.contains(where: { $0.name.isEmpty != $0.value.isEmpty })
+        {
             return "Every variable and header needs a name and a value."
         }
         if !draft.allAgents, draft.agents.isEmpty { return "Choose at least one agent." }
@@ -169,7 +190,11 @@ struct MCPServerDraft {
 
     /// Keeps what the editor doesn't show (working directory, origin, exclusions) from `existing`.
     func server(id: UUID, keeping existing: ManagedServer?) -> (ManagedServer, ManagedServerSecrets) {
-        let filled = { (pairs: [Pair]) in Dictionary(pairs.filter { !$0.name.isEmpty }.map { ($0.name.trimmingCharacters(in: .whitespaces), $0.value) }, uniquingKeysWith: { $1 }) }
+        let filled = { (pairs: [Pair]) in
+            Dictionary(
+                pairs.filter { !$0.name.isEmpty }.map { ($0.name.trimmingCharacters(in: .whitespaces), $0.value) },
+                uniquingKeysWith: { $1 })
+        }
         let transport: ManagedServer.Transport
         let secrets: ManagedServerSecrets
         if kind == .stdio {
@@ -177,11 +202,15 @@ struct MCPServerDraft {
             var directory: String?
             if case .stdio(_, _, _, let existingDirectory)? = existing?.transport { directory = existingDirectory }
             let variables = filled(environment)
-            transport = .stdio(command: words.first ?? "", arguments: Array(words.dropFirst()), environmentNames: variables.keys.sorted(), workingDirectory: directory)
+            transport = .stdio(
+                command: words.first ?? "", arguments: Array(words.dropFirst()),
+                environmentNames: variables.keys.sorted(), workingDirectory: directory)
             secrets = ManagedServerSecrets(environment: variables)
         } else {
             let values = filled(headers)
-            transport = .http(url: URL(string: url.trimmingCharacters(in: .whitespaces)) ?? URL(filePath: "/"), headerNames: values.keys.sorted())
+            transport = .http(
+                url: URL(string: url.trimmingCharacters(in: .whitespaces)) ?? URL(filePath: "/"),
+                headerNames: values.keys.sorted())
             secrets = ManagedServerSecrets(headers: values)
         }
         var server = existing ?? ManagedServer(id: id, name: name, transport: transport)

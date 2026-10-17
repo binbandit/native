@@ -18,8 +18,16 @@ extension SettingsPane {
             keywords: ["mcp", "tools", "context", "oauth", "sign in", ".mcp.json", "config.toml", "mcp.json"],
             searchEntries: {
                 guard let library = MCPServersPlugin.library(in: registry) else { return [] }
-                return library.servers.map { SettingsSearchEntry(id: MCPServersSettingsPage.rowID(.managed($0.id)), title: $0.name, description: $0.transport.summary) }
-                    + library.agentServerGroups(in: nil).map { SettingsSearchEntry(id: MCPServersSettingsPage.rowID($0.key), title: $0.name, description: $0.primary.server.transport.summary) }
+                return library.servers.map {
+                    SettingsSearchEntry(
+                        id: MCPServersSettingsPage.rowID(.managed($0.id)), title: $0.name,
+                        description: $0.transport.summary)
+                }
+                    + library.agentServerGroups(in: nil).map {
+                        SettingsSearchEntry(
+                            id: MCPServersSettingsPage.rowID($0.key), title: $0.name,
+                            description: $0.primary.server.transport.summary)
+                    }
             },
             content: { MCPServersSettingsPage() }
         )
@@ -61,7 +69,9 @@ struct MCPServersSettingsPage: View {
         if let library = MCPServersPlugin.library(in: registry) {
             page(library)
         } else {
-            EmptyStateView("MCP servers aren't available", systemImage: "server.rack", message: "The MCP Servers plugin isn't loaded in this build.")
+            EmptyStateView(
+                "MCP servers aren't available", systemImage: "server.rack",
+                message: "The MCP Servers plugin isn't loaded in this build.")
         }
     }
 
@@ -69,7 +79,9 @@ struct MCPServersSettingsPage: View {
         SettingsPage {
             SettingsHeader(
                 title: "MCP Servers",
-                description: Text("Servers give agents tools. Set one up here once and every agent gets it in every session. Agents also load servers from their own configuration, listed below; Native doesn't hand them a second copy.")
+                description: Text(
+                    "Servers give agents tools. Set one up here once and every agent gets it in every session. Agents also load servers from their own configuration, listed below; Native doesn't hand them a second copy."
+                )
             ) {
                 Button("Check All", systemImage: "stethoscope") { Task { await library.probeAll() } }
                     .buttonStyle(.ds(.secondary, size: .medium))
@@ -78,13 +90,18 @@ struct MCPServersSettingsPage: View {
                     .buttonStyle(.ds(.primary, size: .medium))
             }
             if !registry.isEnabled(MCPServersPlugin.id) {
-                MCPNotice(text: "The MCP Servers plugin is off, so agents don't get the servers set up here. Turn it on in Plugins.", tone: .warning)
+                MCPNotice(
+                    text:
+                        "The MCP Servers plugin is off, so agents don't get the servers set up here. Turn it on in Plugins.",
+                    tone: .warning)
             }
             if let problem = library.problem {
                 MCPNotice(text: problem, tone: .danger, actionTitle: "Dismiss") { library.problem = nil }
             }
             if let removed {
-                MCPNotice(text: "Removed \(removed.server.name).", tone: .neutral, actionTitle: "Undo") { undo(removed, in: library) }
+                MCPNotice(text: "Removed \(removed.server.name).", tone: .neutral, actionTitle: "Undo") {
+                    undo(removed, in: library)
+                }
             }
             managedSection(library)
             agentsSection(library)
@@ -102,7 +119,9 @@ struct MCPServersSettingsPage: View {
 
     private func managedSection(_ library: MCPLibrary) -> some View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
-            SettingsSubheading("Set up in Native", note: "Handed to the agents and projects you choose, in every session they start or reopen.")
+            SettingsSubheading(
+                "Set up in Native",
+                note: "Handed to the agents and projects you choose, in every session they start or reopen.")
             if library.servers.isEmpty {
                 MCPEmptyRow(
                     title: "No servers yet",
@@ -133,7 +152,11 @@ struct MCPServersSettingsPage: View {
         let groups = library.agentServerGroups(in: project)
         return VStack(alignment: .leading, spacing: DS.Space.lg) {
             HStack(alignment: .firstTextBaseline) {
-                SettingsSubheading("Loaded by your agents", note: "From each agent's own configuration. Changes go through the agent's CLI, never by editing its files.")
+                SettingsSubheading(
+                    "Loaded by your agents",
+                    note:
+                        "From each agent's own configuration. Changes go through the agent's CLI, never by editing its files."
+                )
                 Spacer(minLength: DS.Space.xl)
                 SettingsSelect(label: "Project", selection: $projectPath, options: projectOptions(library), width: 180)
                 IconButton("Read Again", systemImage: "arrow.clockwise") { Task { await library.readConfigurations() } }
@@ -141,11 +164,18 @@ struct MCPServersSettingsPage: View {
                     .help("Read every agent's MCP configuration again")
             }
             if library.agents.isEmpty {
-                MCPEmptyRow(title: "No agents with MCP settings", message: "Claude Code, Codex and Cursor keep their own MCP servers; turn one on in Agents to see what it loads.")
+                MCPEmptyRow(
+                    title: "No agents with MCP settings",
+                    message:
+                        "Claude Code, Codex and Cursor keep their own MCP servers; turn one on in Agents to see what it loads."
+                )
             } else if groups.isEmpty {
                 MCPEmptyRow(
-                    title: library.isReadingConfigurations ? "Reading your agents' configuration…" : "Your agents load no servers of their own",
-                    message: project == nil ? "Servers you add with an agent's CLI, or in its config file, show here." : "Nothing in this project. Choose All Projects to see every scope."
+                    title: library.isReadingConfigurations
+                        ? "Reading your agents' configuration…" : "Your agents load no servers of their own",
+                    message: project == nil
+                        ? "Servers you add with an agent's CLI, or in its config file, show here."
+                        : "Nothing in this project. Choose All Projects to see every scope."
                 )
             } else {
                 SettingsRowGroup {
@@ -165,7 +195,9 @@ struct MCPServersSettingsPage: View {
 
     private func projectOptions(_ library: MCPLibrary) -> [SettingsSelect<String>.Option] {
         [SettingsSelect<String>.Option(value: "", title: "All Projects")]
-            + (library.host?.mcpProjects ?? []).map { SettingsSelect<String>.Option(value: ProjectPath.key($0), title: $0.lastPathComponent) }
+            + (library.host?.mcpProjects ?? []).map {
+                SettingsSelect<String>.Option(value: ProjectPath.key($0), title: $0.lastPathComponent)
+            }
     }
 
     private func binding(for key: MCPServerKey) -> Binding<Bool> {

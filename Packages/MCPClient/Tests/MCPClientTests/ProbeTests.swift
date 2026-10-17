@@ -9,14 +9,22 @@ struct ProbeTests {
     let environment = ["PATH": "/usr/bin:/bin"]
 
     private func fake(_ mode: String? = nil) -> MCPServerConfig {
-        MCPServerConfig(name: "fake", transport: .stdio(command: "/bin/sh", arguments: [Fixture.url("fake-mcp-server.sh").path(percentEncoded: false)] + (mode.map { [$0] } ?? [])))
+        MCPServerConfig(
+            name: "fake",
+            transport: .stdio(
+                command: "/bin/sh",
+                arguments: [Fixture.url("fake-mcp-server.sh").path(percentEncoded: false)] + (mode.map { [$0] } ?? [])))
     }
 
     @Test func listsAStdioServersToolsAcrossPages() async throws {
         let report = await probe.probe(fake(), environment: environment, directory: nil)
         #expect(report.status == .connected)
         #expect(report.transport == .stdio)
-        #expect(report.server == MCPServerInfo(name: "fake", title: "Fake Server", version: "1.2.3", protocolVersion: "2025-06-18", instructions: "Use the fake tools."))
+        #expect(
+            report.server
+                == MCPServerInfo(
+                    name: "fake", title: "Fake Server", version: "1.2.3", protocolVersion: "2025-06-18",
+                    instructions: "Use the fake tools."))
         #expect(report.tools.map(\.name) == ["search", "delete"])
         let search = try #require(report.tools.first)
         #expect(search.parameters == ["query", "limit"])
@@ -55,11 +63,13 @@ struct ProbeTests {
     }
 
     @Test func listsAStreamableHTTPServersTools() async throws {
-        let server = MCPHTTPServer<String>(name: "native-test", version: "2.0", instructions: "Hi.", tools: [Self.echo]) { $0 == "token" ? $0 : nil }
+        let server = MCPHTTPServer<String>(name: "native-test", version: "2.0", instructions: "Hi.", tools: [Self.echo])
+        { $0 == "token" ? $0 : nil }
         try await server.start()
         defer { server.stop() }
         let url = try #require(server.url(for: "token"))
-        let report = await probe.probe(MCPServerConfig(name: "native", transport: .http(url: url)), environment: [:], directory: nil)
+        let report = await probe.probe(
+            MCPServerConfig(name: "native", transport: .http(url: url)), environment: [:], directory: nil)
         #expect(report.status == .connected)
         #expect(report.server?.name == "native-test")
         #expect(report.tools.map(\.name) == ["echo"])
@@ -71,32 +81,55 @@ struct ProbeTests {
         try await server.start()
         defer { server.stop() }
         let url = try #require(server.url(for: "unknown"))
-        let failure = Self.failure(await probe.probe(MCPServerConfig(name: "native", transport: .http(url: url)), environment: [:], directory: nil))
+        let failure = Self.failure(
+            await probe.probe(
+                MCPServerConfig(name: "native", transport: .http(url: url)), environment: [:], directory: nil))
         #expect(failure?.message == "The server answered HTTP 404 and doesn't speak SSE either.")
     }
 
     @Test func aServerAskingForSignInNeedsAuth() async throws {
         let stub = try await StubHTTPServer { _ in
-            .init(status: 401, headers: ["WWW-Authenticate": #"Bearer error="invalid_token", resource_metadata="https://auth.example.com/.well-known/oauth-protected-resource""#])
+            .init(
+                status: 401,
+                headers: [
+                    "WWW-Authenticate":
+                        #"Bearer error="invalid_token", resource_metadata="https://auth.example.com/.well-known/oauth-protected-resource""#
+                ])
         }
         defer { stub.stop() }
-        let report = await probe.probe(MCPServerConfig(name: "docs", transport: .http(url: stub.url)), environment: [:], directory: nil)
-        #expect(report.status == .needsAuth(MCPAuthChallenge(statusCode: 401, resourceMetadata: URL(string: "https://auth.example.com/.well-known/oauth-protected-resource"), sentCredentials: false)))
+        let report = await probe.probe(
+            MCPServerConfig(name: "docs", transport: .http(url: stub.url)), environment: [:], directory: nil)
+        #expect(
+            report.status
+                == .needsAuth(
+                    MCPAuthChallenge(
+                        statusCode: 401,
+                        resourceMetadata: URL(string: "https://auth.example.com/.well-known/oauth-protected-resource"),
+                        sentCredentials: false)))
     }
 
     @Test func readsRepliesFromEventStreamsAndKeepsTheSession() async throws {
         let stub = try await StubHTTPServer { request in
             if request.body.contains(#""method":"initialize""#) {
-                let event = #"{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-06-18","capabilities":{"tools":{}},"serverInfo":{"name":"streamer"}}}"#
-                return .init(status: 200, headers: ["Content-Type": "text/event-stream", "Mcp-Session-Id": "s-1"], body: ": comment\nevent: message\ndata: \(event)\n\n")
+                let event =
+                    #"{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-06-18","capabilities":{"tools":{}},"serverInfo":{"name":"streamer"}}}"#
+                return .init(
+                    status: 200, headers: ["Content-Type": "text/event-stream", "Mcp-Session-Id": "s-1"],
+                    body: ": comment\nevent: message\ndata: \(event)\n\n")
             }
             if request.body.contains("notifications/initialized") { return .init(status: 202) }
-            guard request.headers["mcp-session-id"] == "s-1", request.headers["mcp-protocol-version"] == "2025-06-18" else { return .init(status: 400) }
+            guard request.headers["mcp-session-id"] == "s-1", request.headers["mcp-protocol-version"] == "2025-06-18"
+            else { return .init(status: 400) }
             if request.method == "DELETE" { return .init(status: 200) }
-            return .init(status: 200, headers: ["Content-Type": "application/json"], body: #"{"jsonrpc":"2.0","id":2,"result":{"tools":[{"name":"stream","inputSchema":{"type":"object"}}]}}"#)
+            return .init(
+                status: 200, headers: ["Content-Type": "application/json"],
+                body:
+                    #"{"jsonrpc":"2.0","id":2,"result":{"tools":[{"name":"stream","inputSchema":{"type":"object"}}]}}"#)
         }
         defer { stub.stop() }
-        let report = await probe.probe(MCPServerConfig(name: "streamer", transport: .http(url: stub.url, headers: ["X-Key": "k"])), environment: [:], directory: nil)
+        let report = await probe.probe(
+            MCPServerConfig(name: "streamer", transport: .http(url: stub.url, headers: ["X-Key": "k"])),
+            environment: [:], directory: nil)
         #expect(report.status == .connected)
         #expect(report.tools.map(\.name) == ["stream"])
         #expect(stub.requests.allSatisfy { $0.headers["x-key"] == "k" })

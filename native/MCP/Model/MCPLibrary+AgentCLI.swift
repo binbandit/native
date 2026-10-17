@@ -13,7 +13,8 @@ extension MCPLibrary {
         let run: MCPCommandRun
         do {
             let result = try await runner.run(command.command(environment: environment))
-            let output = [result.output, result.errorOutput].map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }.joined(separator: "\n")
+            let output = [result.output, result.errorOutput].map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }.joined(separator: "\n")
             run = MCPCommandRun(command: command, succeeded: result.succeeded, output: output)
         } catch {
             run = MCPCommandRun(command: command, succeeded: false, output: error.localizedDescription)
@@ -29,8 +30,12 @@ extension MCPLibrary {
     func importServer(_ entry: ConfiguredServer) async -> ManagedServer? {
         let environment = await host?.mcpEnvironment() ?? [:]
         let projects: ManagedServer.Selection = entry.scope.project.map { .only([ProjectPath.key($0)]) } ?? .all
-        guard case (var server, let secrets)? = ManagedServer.importing(entry, resolvedWith: environment, projects: projects) else {
-            problem = "\(entry.name) uses the SSE transport, which Native can't hand to agents. Ask its maker for a Streamable HTTP URL."
+        guard
+            case (var server, let secrets)? = ManagedServer.importing(
+                entry, resolvedWith: environment, projects: projects)
+        else {
+            problem =
+                "\(entry.name) uses the SSE transport, which Native can't hand to agents. Ask its maker for a Streamable HTTP URL."
             return nil
         }
         server.name = availableName(for: server.name)

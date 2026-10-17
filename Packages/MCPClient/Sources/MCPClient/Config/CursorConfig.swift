@@ -14,16 +14,21 @@ struct CursorConfig {
         var servers = servers(in: userFile, scope: .user, problems: &problems)
         for project in projects {
             let file = project.appending(path: ".cursor/mcp.json")
-            files.append(ConfigFile(url: file, role: "Project servers for \(project.lastPathComponent)", exists: reader.exists(file)))
+            files.append(
+                ConfigFile(
+                    url: file, role: "Project servers for \(project.lastPathComponent)", exists: reader.exists(file)))
             servers += self.servers(in: file, scope: .project(project), problems: &problems)
         }
         return AgentMCPConfiguration(format: .cursor, servers: servers, files: files, problems: problems)
     }
 
-    private func servers(in file: URL, scope: ConfiguredServer.Scope, problems: inout [ConfigProblem]) -> [ConfiguredServer] {
+    private func servers(
+        in file: URL, scope: ConfiguredServer.Scope, problems: inout [ConfigProblem]
+    ) -> [ConfiguredServer] {
         let json = reader.json(at: file, problems: &problems)
         return ServerMap.servers(in: json?["mcpServers"], file: file, problems: &problems).map { server in
-            var entry = ConfiguredServer(server: server, format: .cursor, scope: scope, source: file, resolution: .cursor)
+            var entry = ConfiguredServer(
+                server: server, format: .cursor, scope: scope, source: file, resolution: .cursor)
             // Cursor works out which of the two HTTP transports a URL speaks; so does the probe.
             if case .http = server.transport {
                 entry.notes.append("Cursor picks Streamable HTTP or SSE for this URL itself.")
@@ -61,7 +66,9 @@ public struct AgentConfigReader: Sendable {
         let projects = projects.map { ProjectPath.url(ProjectPath.key($0)) }
         let reader = ConfigFileReader(files: files)
         return switch format {
-        case .claudeCode: ClaudeCodeConfig(home: home, environment: environment, managedFile: claudeManagedFile, reader: reader).read(projects: projects)
+        case .claudeCode:
+            ClaudeCodeConfig(home: home, environment: environment, managedFile: claudeManagedFile, reader: reader).read(
+                projects: projects)
         case .codex: CodexConfig(home: home, environment: environment, reader: reader).read(projects: projects)
         case .cursor: CursorConfig(home: home, reader: reader).read(projects: projects)
         }

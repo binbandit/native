@@ -48,7 +48,12 @@ final class StubHTTPServer: Sendable {
     }
 
     var url: URL {
-        URL(string: "http://127.0.0.1:\(port)/mcp")!
+        var components = URLComponents()
+        components.scheme = "http"
+        components.host = "127.0.0.1"
+        components.port = Int(port)
+        components.path = "/mcp"
+        return components.url ?? URL(filePath: "/")
     }
 
     var requests: [Request] {
@@ -71,9 +76,12 @@ final class StubHTTPServer: Sendable {
             if let request = Self.parse(buffer) {
                 received.withLock { $0.append(request) }
                 let response = handler(request)
-                var head = "HTTP/1.1 \(response.status) Stub\r\nContent-Length: \(response.body.utf8.count)\r\nConnection: close\r\n"
+                var head =
+                    "HTTP/1.1 \(response.status) Stub\r\nContent-Length: \(response.body.utf8.count)\r\nConnection: close\r\n"
                 for (name, value) in response.headers { head += "\(name): \(value)\r\n" }
-                connection.send(content: Data((head + "\r\n" + response.body).utf8), completion: .contentProcessed { _ in connection.cancel() })
+                connection.send(
+                    content: Data((head + "\r\n" + response.body).utf8),
+                    completion: .contentProcessed { _ in connection.cancel() })
             } else if isComplete || error != nil {
                 connection.cancel()
             } else {
@@ -89,10 +97,13 @@ final class StubHTTPServer: Sendable {
         var headers: [String: String] = [:]
         for line in head.dropFirst() {
             guard let colon = line.firstIndex(of: ":") else { continue }
-            headers[line[..<colon].lowercased()] = line[line.index(after: colon)...].trimmingCharacters(in: .whitespaces)
+            headers[line[..<colon].lowercased()] = line[line.index(after: colon)...].trimmingCharacters(
+                in: .whitespaces)
         }
         let body = data[separator.upperBound...]
         guard body.count >= Int(headers["content-length"] ?? "0") ?? 0 else { return nil }
-        return Request(method: start.first.map(String.init) ?? "", path: start.dropFirst().first.map(String.init) ?? "", headers: headers, body: String(decoding: body, as: UTF8.self))
+        return Request(
+            method: start.first.map(String.init) ?? "", path: start.dropFirst().first.map(String.init) ?? "",
+            headers: headers, body: String(decoding: body, as: UTF8.self))
     }
 }

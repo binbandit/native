@@ -83,10 +83,12 @@ struct MCPConfigFilesFooter: View {
                                 .foregroundStyle(.dsDanger)
                         }
                         if !configuration.accountConnectors.isEmpty {
-                            Text("Also connectors from your claude.ai account: \(configuration.accountConnectors.map { $0.replacingOccurrences(of: "claude.ai ", with: "") }.joined(separator: ", ")). Claude Code loads them when you sign in with that account.")
-                                .settingsText(.caption)
-                                .foregroundStyle(.dsTextTertiary)
-                                .fixedSize(horizontal: false, vertical: true)
+                            Text(
+                                "Also connectors from your claude.ai account: \(configuration.accountConnectors.map { $0.replacingOccurrences(of: "claude.ai ", with: "") }.joined(separator: ", ")). Claude Code loads them when you sign in with that account."
+                            )
+                            .settingsText(.caption)
+                            .foregroundStyle(.dsTextTertiary)
+                            .fixedSize(horizontal: false, vertical: true)
                         }
                     }
                 }

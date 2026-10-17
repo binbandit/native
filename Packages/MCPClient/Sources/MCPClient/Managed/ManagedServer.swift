@@ -33,9 +33,15 @@ public struct ManagedServer: Identifiable, Hashable, Sendable, Codable {
         func config(name: String, secrets: ManagedServerSecrets) -> MCPServerConfig {
             switch self {
             case .stdio(let command, let arguments, let names, let directory):
-                MCPServerConfig(name: name, transport: .stdio(command: command, arguments: arguments, environment: secrets.environment.filter { names.contains($0.key) }, workingDirectory: directory))
+                MCPServerConfig(
+                    name: name,
+                    transport: .stdio(
+                        command: command, arguments: arguments,
+                        environment: secrets.environment.filter { names.contains($0.key) }, workingDirectory: directory)
+                )
             case .http(let url, let names):
-                MCPServerConfig(name: name, transport: .http(url: url, headers: secrets.headers.filter { names.contains($0.key) }))
+                MCPServerConfig(
+                    name: name, transport: .http(url: url, headers: secrets.headers.filter { names.contains($0.key) }))
             }
         }
     }
@@ -89,7 +95,9 @@ public struct ManagedServer: Identifiable, Hashable, Sendable, Codable {
     /// Whether a session working in `directory` is in one of the chosen projects.
     public func includes(directory: URL?) -> Bool {
         let path = directory.map(ProjectPath.key)
-        let contains = { (paths: [String]) in path.map { path in paths.contains { path == $0 || path.hasPrefix($0 == "/" ? $0 : $0 + "/") } } ?? false }
+        let contains = { (paths: [String]) in
+            path.map { path in paths.contains { path == $0 || path.hasPrefix($0 == "/" ? $0 : $0 + "/") } } ?? false
+        }
         if contains(excludedProjects) { return false }
         guard case .only(let paths) = projects else { return true }
         return contains(paths)
@@ -98,7 +106,10 @@ public struct ManagedServer: Identifiable, Hashable, Sendable, Codable {
     /// Names agents accept: letters, digits, `-` and `_`. Claude Code joins the name into tool
     /// names, so anything else would break them.
     public static func isValidName(_ name: String) -> Bool {
-        !name.isEmpty && name.unicodeScalars.allSatisfy { $0.isASCII && (CharacterSet.alphanumerics.contains($0) || $0 == "-" || $0 == "_") }
+        !name.isEmpty
+            && name.unicodeScalars.allSatisfy {
+                $0.isASCII && (CharacterSet.alphanumerics.contains($0) || $0 == "-" || $0 == "_")
+            }
     }
 }
 
@@ -120,15 +131,21 @@ public struct ManagedServerSecrets: Hashable, Sendable, Codable {
 extension ManagedServer {
     /// A managed copy of an agent's server, so every agent gets it. Values move to `secrets`.
     /// Nil for SSE servers, which agents can't be handed over ACP.
-    public static func importing(_ entry: ConfiguredServer, resolvedWith environment: [String: String] = [:], projects: Selection = .all) -> (ManagedServer, ManagedServerSecrets)? {
+    public static func importing(
+        _ entry: ConfiguredServer, resolvedWith environment: [String: String] = [:], projects: Selection = .all
+    ) -> (ManagedServer, ManagedServerSecrets)? {
         // Variables the agent fills in at launch (Codex's pass-through names, bearer tokens) are
         // resolved now, so the copy works for agents that don't know the convention.
-        let config = entry.resolution.isLiteral ? entry.server : entry.resolved(environment: environment, project: entry.scope.project)
+        let config =
+            entry.resolution.isLiteral
+            ? entry.server : entry.resolved(environment: environment, project: entry.scope.project)
         let transport: Transport
         let secrets: ManagedServerSecrets
         switch config.transport {
         case .stdio(let command, let arguments, let variables, let directory):
-            transport = .stdio(command: command, arguments: arguments, environmentNames: variables.keys.sorted(), workingDirectory: directory)
+            transport = .stdio(
+                command: command, arguments: arguments, environmentNames: variables.keys.sorted(),
+                workingDirectory: directory)
             secrets = ManagedServerSecrets(environment: variables)
         case .http(let url, let headers):
             transport = .http(url: url, headerNames: headers.keys.sorted())
@@ -136,8 +153,12 @@ extension ManagedServer {
         case .sse:
             return nil
         }
-        let name = entry.name.hasPrefix("plugin:") ? String(entry.name.split(separator: ":").last ?? Substring(entry.name)) : entry.name
-        let server = ManagedServer(name: name, transport: transport, projects: projects, origin: "\(entry.format.displayName) · \(entry.scope.displayName)")
+        let name =
+            entry.name.hasPrefix("plugin:")
+            ? String(entry.name.split(separator: ":").last ?? Substring(entry.name)) : entry.name
+        let server = ManagedServer(
+            name: name, transport: transport, projects: projects,
+            origin: "\(entry.format.displayName) · \(entry.scope.displayName)")
         return (server, secrets)
     }
 }

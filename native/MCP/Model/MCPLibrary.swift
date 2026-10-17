@@ -50,7 +50,8 @@ final class MCPLibrary {
         launcher: any StdioLauncher = LocalStdioLauncher(),
         files: any ConfigFileSystem = LocalConfigFiles(),
         secretStore: any SecretStore = KeychainSecretStore(),
-        storeURL: URL = URL.applicationSupportDirectory.appending(path: "Native/mcp-servers.json", directoryHint: .notDirectory)
+        storeURL: URL = URL.applicationSupportDirectory.appending(
+            path: "Native/mcp-servers.json", directoryHint: .notDirectory)
     ) {
         self.runner = runner
         self.launcher = launcher
@@ -99,7 +100,8 @@ final class MCPLibrary {
 
     func restore(_ removed: MCPRemovedServer) {
         guard server(removed.server.id) == nil else { return }
-        try? secretStore.setSecrets(removed.secrets, for: removed.server.id, label: "Native MCP server \(removed.server.name)")
+        try? secretStore.setSecrets(
+            removed.secrets, for: removed.server.id, label: "Native MCP server \(removed.server.name)")
         secretCache[removed.server.id] = removed.secrets
         servers.insert(removed.server, at: min(removed.index, servers.count))
         persist()
@@ -150,7 +152,8 @@ final class MCPLibrary {
     /// One small JSON file in Application Support, rewritten on every change. Secrets aren't in it.
     private func persist() {
         do {
-            try FileManager.default.createDirectory(at: storeURL.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(
+                at: storeURL.deletingLastPathComponent(), withIntermediateDirectories: true)
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
             try encoder.encode(servers).write(to: storeURL, options: .atomic)
@@ -194,7 +197,9 @@ final class MCPLibrary {
         var read = await Task.detached {
             Dictionary(uniqueKeysWithValues: formats.map { ($0, reader.read($0, projects: projects)) })
         }.value
-        if formats.contains(.codex), let codex = read[.codex], let listing = await codexListing(environment: environment) {
+        if formats.contains(.codex), let codex = read[.codex],
+            let listing = await codexListing(environment: environment)
+        {
             read[.codex] = codex.merging(listing)
         }
         configurations = read
@@ -207,24 +212,36 @@ final class MCPLibrary {
     /// What `format`'s agent loads in `directory`. Projects come from the last read; other folders
     /// (worktrees, subfolders) are read once and kept until the next.
     func agentServers(_ format: AgentConfigFormat, in directory: URL?) -> [ConfiguredServer] {
-        guard let configuration = configurations[format] else { return [] }
-        guard let directory, !readProjects.contains(ProjectPath.key(directory)) else { return configuration.effective(in: directory) }
+        // Sessions reopen at launch, before the first full read: read what's needed now, so the
+        // agent isn't handed a copy of a server it already loads.
+        let configuration =
+            configurations[format]
+            ?? AgentConfigReader(
+                files: files, home: home(in: readEnvironment),
+                environment: readEnvironment.isEmpty ? ProcessInfo.processInfo.environment : readEnvironment
+            ).read(format, projects: directory.map { [$0] } ?? [])
+        guard let directory, !readProjects.contains(ProjectPath.key(directory)) else {
+            return configuration.effective(in: directory)
+        }
         let key = "\(format.rawValue)|\(ProjectPath.key(directory))"
         if let cached = directoryCache[key] { return cached }
-        let fresh = AgentConfigReader(files: files, home: home(in: readEnvironment), environment: readEnvironment).read(format, projects: [directory])
+        let fresh = AgentConfigReader(files: files, home: home(in: readEnvironment), environment: readEnvironment).read(
+            format, projects: [directory])
         let servers = fresh.withPlugins(of: configuration).effective(in: directory)
         directoryCache[key] = servers
         return servers
     }
 
     private func home(in environment: [String: String]) -> URL {
-        environment["HOME"].map { URL(filePath: $0, directoryHint: .isDirectory) } ?? FileManager.default.homeDirectoryForCurrentUser
+        environment["HOME"].map { URL(filePath: $0, directoryHint: .isDirectory) }
+            ?? FileManager.default.homeDirectoryForCurrentUser
     }
 
     /// `codex mcp list --json`: read-only, and the only way to see what Codex's plugins add.
     private func codexListing(environment: [String: String]) async -> CodexListing? {
         do {
-            let result = try await runner.run(Command("codex", ["mcp", "list", "--json"], environment: environment, timeout: .seconds(20)))
+            let result = try await runner.run(
+                Command("codex", ["mcp", "list", "--json"], environment: environment, timeout: .seconds(20)))
             guard result.succeeded else { return nil }
             return try CodexListing.decode(result.standardOutput)
         } catch {

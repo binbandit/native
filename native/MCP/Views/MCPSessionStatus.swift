@@ -39,8 +39,15 @@ struct MCPSessionStatusButton: View {
                 .accessibilityValue(summary.help)
                 .focusedSceneValue(\.mcpServersPopover, $isPresented)
                 .popover(isPresented: $isPresented, arrowEdge: .bottom) {
-                    MCPSessionPanel(library: library, session: session, entries: entries, onManage: onManage.map { manage in { isPresented = false; manage() } })
-                        .presentationBackground(.dsOverlay)
+                    MCPSessionPanel(
+                        library: library, session: session, entries: entries,
+                        onManage: onManage.map { manage in
+                            {
+                                isPresented = false; manage()
+                            }
+                        }
+                    )
+                    .presentationBackground(.dsOverlay)
                 }
             }
         }
@@ -57,9 +64,11 @@ struct MCPSessionSummary {
         let activeEntries = entries.filter(\.isActive)
         active = activeEntries.count
         attention = activeEntries.count { library.health(of: $0.key).needsAttention }
-        help = active == 0
+        help =
+            active == 0
             ? "This session has no MCP servers."
-            : "\(active) MCP \(active == 1 ? "server" : "servers")" + (attention > 0 ? ", \(attention) need attention" : "") + ". Click to see them."
+            : "\(active) MCP \(active == 1 ? "server" : "servers")"
+                + (attention > 0 ? ", \(attention) need attention" : "") + ". Click to see them."
     }
 }
 
@@ -80,7 +89,10 @@ struct MCPSessionPanel: View {
         } content: {
             VStack(alignment: .leading, spacing: 0) {
                 if entries.isEmpty {
-                    EmptyStateView("No MCP servers", systemImage: "server.rack", message: "\(session.agentName) loads none here, and none are set up in Native.") {
+                    EmptyStateView(
+                        "No MCP servers", systemImage: "server.rack",
+                        message: "\(session.agentName) loads none here, and none are set up in Native."
+                    ) {
                         if let onManage {
                             Button("Add a Server…", action: onManage)
                                 .buttonStyle(.ds(.secondary, size: .medium))
@@ -182,9 +194,13 @@ struct MCPSessionPanel: View {
                 }
                 if configured.format == .claudeCode {
                     // Claude Code's own per-project switch, remembered in its configuration.
-                    Button("Disable in \(session.cwd.lastPathComponent)") { Task { await disableInClaude(configured.name) } }
-                        .buttonStyle(.ds(.ghost, size: .small))
-                        .help("Runs /mcp disable \(configured.name) in this session; Claude Code remembers it for the project.")
+                    Button("Disable in \(session.cwd.lastPathComponent)") {
+                        Task { await disableInClaude(configured.name) }
+                    }
+                    .buttonStyle(.ds(.ghost, size: .small))
+                    .help(
+                        "Runs /mcp disable \(configured.name) in this session; Claude Code remembers it for the project."
+                    )
                 }
             case .plugin:
                 EmptyView()
@@ -202,7 +218,9 @@ struct MCPSessionPanel: View {
     private func disableInClaude(_ name: String) async {
         do {
             let reply = try await session.runHiddenCommand("/mcp disable \(name)")
-            note = reply.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Claude Code turned \(name) off in this project." : reply
+            note =
+                reply.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                ? "Claude Code turned \(name) off in this project." : reply
             await library.readConfigurations()
         } catch {
             note = "Couldn't ask Claude Code: \(error.localizedDescription)"
