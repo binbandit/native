@@ -14,7 +14,9 @@ extension SettingsPane {
         keywords: ["keys", "hotkeys"],
         searchEntries: {
             ShortcutReference.groups(followUp: .defaultValue).flatMap(\.shortcuts).map { shortcut in
-                SettingsSearchEntry(id: ShortcutReference.rowID(shortcut), title: shortcut.title, description: shortcut.note ?? "", keywords: shortcut.keywords)
+                SettingsSearchEntry(
+                    id: ShortcutReference.rowID(shortcut), title: shortcut.title, description: shortcut.note ?? "",
+                    keywords: shortcut.keywords)
             }
         },
         content: { KeyboardShortcutsSettingsPage() }

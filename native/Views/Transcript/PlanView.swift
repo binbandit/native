@@ -80,12 +80,20 @@ private struct PlanEntryRow: View {
         .font(.callout)
     }
 
-    private var glyph: some View {
-        Image(systemName: symbolName)
-            .symbolRenderingMode(.hierarchical)
-            .foregroundStyle(entry.status == .inProgress ? AnyShapeStyle(.tint) : AnyShapeStyle(.secondary))
-            .contentTransition(.symbolEffect(.replace))
-            .animation(.smooth, value: entry.status)
+    @ViewBuilder private var glyph: some View {
+        if entry.status == .inProgress {
+            // The step being worked on is live, in the one loader family.
+            DotGridLoader(pattern: .waiting)
+                .foregroundStyle(.dsAccent)
+                .frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
+                .accessibilityLabel("In progress")
+        } else {
+            Image(systemName: symbolName)
+                .symbolRenderingMode(.hierarchical)
+                .foregroundStyle(.secondary)
+                .contentTransition(.symbolEffect(.replace))
+                .animation(.smooth, value: entry.status)
+        }
     }
 
     private var symbolName: String {

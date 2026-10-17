@@ -23,9 +23,12 @@ final class AgentRuntimes {
     }
 
     /// Creates runtimes for agents the plugins added and stops those of agents they took away.
-    /// Returns the new runtimes, not yet started, and the ids of the removed ones.
-    func sync() -> (added: [AgentRuntime], removed: [AgentDefinition.ID]) {
-        let definitions = plugins.agents
+    /// Agents `isIncluded` turns down (ones that aren't installed) get no runtime. Returns the new
+    /// runtimes, not yet started, and the ids of the removed ones.
+    func sync(
+        including isIncluded: (AgentDefinition.ID) -> Bool = { _ in true }
+    ) -> (added: [AgentRuntime], removed: [AgentDefinition.ID]) {
+        let definitions = plugins.agents.filter { isIncluded($0.id) }
         let current = Set(definitions.map(\.id))
         let removed = runtimes.keys.filter { !current.contains($0) }
         for id in removed {

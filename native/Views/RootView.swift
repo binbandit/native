@@ -100,6 +100,11 @@ struct RootView: View {
                 await model.loadSession(key)
             }
         }
+        .sheet(isPresented: $model.isAddingAgent) {
+            AddAgentSheet(agents: model.agentsToAdd, summaries: model.plugins.descriptions) {
+                await model.checkForAgents()
+            }
+        }
         .confirmationDialog("New Session With", isPresented: $model.isChoosingAgent) {
             ForEach(model.agents, id: \.agent.id) { runtime in
                 Button(runtime.agent.displayName) {

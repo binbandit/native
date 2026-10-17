@@ -11,7 +11,7 @@ extension CodeTheme {
             string: CodeColor(rgb: 0x0B7A34),
             constant: CodeColor(rgb: 0xA35200),
             function: CodeColor(rgb: 0x2463EB),
-            variable: CodeColor(rgb: 0x1D65B7),
+            variable: CodeColor(rgb: 0x181818),
             tag: CodeColor(rgb: 0xDC2828),
             type: CodeColor(rgb: 0x9A6700),
             operator: CodeColor(rgb: 0x8250DF),

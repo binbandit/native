@@ -39,6 +39,10 @@ final class AppModel {
     var isAddingProject = false
     /// Whether the agent picker for a new session is showing.
     var isChoosingAgent = false
+    /// Whether Add Agent (agents that aren't installed, and how to install them) is showing.
+    var isAddingAgent = false
+    /// Which agents are installed. Ones that aren't are offered in Add Agent and never started.
+    let installations = AgentInstallations()
     /// An agent that wants the user to sign in before it starts a session.
     var signInPrompt: AgentDefinition.ID?
     var errorMessage: String?
@@ -179,6 +183,17 @@ final class AppModel {
         return true
     }
 
+    /// Looks for agents again after the user installed one or signed in from a terminal, with a
+    /// fresh login-shell environment, and starts the ones now installed. Returns those.
+    @discardableResult
+    func checkForAgents() async -> [AgentDefinition] {
+        let missing = Set(agentsToAdd.map(\.id))
+        _ = await environment.current(refresh: true)
+        AgentIconStore.shared.reset()
+        await syncAgents()
+        return plugins.agents.filter { missing.contains($0.id) && installations.isInstalled($0.id) }
+    }
+
     private func observeAgents() {
         withObservationTracking {
             _ = plugins.agents
@@ -191,7 +206,9 @@ final class AppModel {
     }
 
     private func syncAgents() async {
-        let (added, removed) = runtimes.sync()
+        let environment = await self.environment.current()
+        installations.check(plugins.agents, environment: environment)
+        let (added, removed) = runtimes.sync(including: installations.isInstalled)
         for agent in removed {
             sessions.removeAll(of: agent)
             catalog.remove(agent: agent)
@@ -199,7 +216,6 @@ final class AppModel {
                 selection = nil
             }
         }
-        let environment = await self.environment.current()
         await withTaskGroup(of: Void.self) { group in
             for runtime in added {
                 group.addTask { await self.start(runtime, environment: environment) }

@@ -53,7 +53,10 @@ struct SettingsTextStyle {
     let tracking: CGFloat
     let leading: CGFloat
 
-    private init(_ font: Font, size: CGFloat, weight: DSTypography.Weight = .regular, design: DSTypography.Design = .sans, lineHeight: CGFloat, trackingEm: CGFloat = 0) {
+    private init(
+        _ font: Font, size: CGFloat, weight: DSTypography.Weight = .regular, design: DSTypography.Design = .sans,
+        lineHeight: CGFloat, trackingEm: CGFloat = 0
+    ) {
         let metrics = DSTypography.platformFont(size: size, weight: weight, design: design)
         self.font = font
         tracking = trackingEm * size
@@ -68,7 +71,8 @@ struct SettingsTextStyle {
     static let bodyMedium = SettingsTextStyle(.dsHeadline, size: 14, weight: .medium, lineHeight: 20)
     /// `text-2xl`: page titles. the reference app asks for medium, but its web view draws Geist at this size
     /// as light as 300 (measured against the shipped app), and that lightness is the look.
-    static let title = SettingsTextStyle(.ds(24, weight: .light), size: 24, weight: .light, lineHeight: 32, trackingEm: -0.024)
+    static let title = SettingsTextStyle(
+        .ds(24, weight: .light), size: 24, weight: .light, lineHeight: 32, trackingEm: -0.024)
     /// `font-mono text-xs`: commands and paths.
     static let mono = SettingsTextStyle(.dsMono, size: 12, design: .mono, lineHeight: 16)
 }
@@ -87,9 +91,9 @@ extension View {
     @ViewBuilder
     func settingsFocusShape(_ shape: some Shape) -> some View {
         #if os(macOS)
-            contentShape(.focusEffect, shape)
+        contentShape(.focusEffect, shape)
         #else
-            self
+        self
         #endif
     }
 }

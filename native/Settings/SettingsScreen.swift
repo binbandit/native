@@ -72,7 +72,7 @@ struct SettingsScreen: View {
         .toolbar(removing: .sidebarToggle)
         .toolbar(removing: .title)
         #if os(macOS)
-            .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
+        .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
         #endif
         .navigationTitle("Settings")
         .background {

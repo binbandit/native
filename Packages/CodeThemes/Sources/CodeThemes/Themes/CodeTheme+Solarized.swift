@@ -4,20 +4,21 @@ extension CodeTheme {
         name: "Solarized",
         // solarized-light.json
         light: CodePalette(
-            foreground: CodeColor(rgb: 0x586E75),  // Derived: darker upstream base01 preserves AA contrast.
+            // base00 body text is only 4.1:1 here; base01, Solarized's emphasis tone, reaches AA.
+            foreground: CodeColor(rgb: 0x586E75),
             background: CodeColor(rgb: 0xFDF6E3),
             comment: CodeColor(rgb: 0x93A1A1),
             keyword: CodeColor(rgb: 0x859900),
             string: CodeColor(rgb: 0x2AA198),
             constant: CodeColor(rgb: 0xD33682),
             function: CodeColor(rgb: 0x268BD2),
-            variable: CodeColor(rgb: 0x657B83),  // Fallback: foreground.
+            variable: CodeColor(rgb: 0x586E75),  // Fallback: foreground.
             tag: CodeColor(rgb: 0x268BD2),
             type: CodeColor(rgb: 0xCB4B16),
             operator: CodeColor(rgb: 0x859900),
             regex: CodeColor(rgb: 0xDC322F),
             invalid: CodeColor(rgb: 0xDC322F),
-            punctuation: CodeColor(rgb: 0x657B83),  // Fallback: foreground.
+            punctuation: CodeColor(rgb: 0x586E75),  // Fallback: foreground.
             insertedForeground: CodeColor(rgb: 0x859900),
             insertedBackground: CodeColor(rgb: 0x859900, alpha: 0x26),  // Derived: inserted foreground.
             deletedForeground: CodeColor(rgb: 0xDC322F),

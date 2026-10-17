@@ -24,6 +24,7 @@ struct SessionView: View {
             .safeAreaBar(edge: .top, spacing: 0) {
                 GitTaskSetupBanner(store: git, folder: session.cwd)
             }
+            .terminalPanel(for: session)
             .focusedSceneValue(\.activeSession, session)
             .navigationTitle(session.displayTitle)
             .navigationSubtitle(

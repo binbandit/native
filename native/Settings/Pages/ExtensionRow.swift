@@ -44,7 +44,8 @@ struct ExtensionRow: View {
         var effects: [String] = []
         if !manifest.agents.isEmpty {
             let names = ListFormatter.localizedString(byJoining: manifest.agents.map(\.name))
-            effects.append("\(names) \(manifest.agents.count == 1 ? "stops and isn't" : "stop and aren't") offered for new tasks")
+            effects.append(
+                "\(names) \(manifest.agents.count == 1 ? "stops and isn't" : "stop and aren't") offered for new tasks")
         }
         if !manifest.mcpServers.isEmpty {
             effects.append("new sessions don't get its MCP \(manifest.mcpServers.count == 1 ? "server" : "servers")")

@@ -62,7 +62,9 @@ extension SettingsRow where Accessory == EmptyView {
         detail: Text? = nil,
         @ViewBuilder control: () -> Control
     ) {
-        self.init(id: id, title: Text(title), icon: icon, description: description, detail: detail, accessory: { EmptyView() }, control: control)
+        self.init(
+            id: id, title: Text(title), icon: icon, description: description, detail: detail,
+            accessory: { EmptyView() }, control: control)
     }
 }
 
@@ -86,19 +88,25 @@ struct SettingsRowGroup<Content: View>: View {
     }
 }
 
-/// A bordered tile holding a glyph (the reference app `size-10 rounded-lg border bg-muted`).
-struct SettingsIconTile: View {
-    let systemImage: String
+/// A bordered tile holding a glyph or an icon (the reference app `size-10 rounded-lg border bg-muted`).
+struct SettingsIconTile<Content: View>: View {
+    @ViewBuilder var content: Content
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
-        Image(systemName: systemImage)
+        content
             .font(.system(size: SettingsMetrics.tileGlyph, weight: .thin))
             .foregroundStyle(.dsTextPrimary)
             .frame(width: SettingsMetrics.iconTile, height: SettingsMetrics.iconTile)
             .background(.dsSurfaceSunken, in: shape)
             .overlay { shape.strokeBorder(.dsSeparator, lineWidth: 1) }
             .accessibilityHidden(true)
+    }
+}
+
+extension SettingsIconTile where Content == Image {
+    init(systemImage: String) {
+        self.init { Image(systemName: systemImage) }
     }
 }
 

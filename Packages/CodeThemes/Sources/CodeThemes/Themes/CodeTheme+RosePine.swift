@@ -20,7 +20,8 @@ extension CodeTheme {
             punctuation: CodeColor(rgb: 0x797593),
             insertedForeground: CodeColor(rgb: 0x56949F),  // Fallback: gitDecoration.addedResourceForeground.
             insertedBackground: CodeColor(rgb: 0x56949F, alpha: 0x26),
-            deletedForeground: CodeColor(rgb: 0x797593),  // Fallback: gitDecoration.deletedResourceForeground.
+            // The git decoration is muted gray; love matches the removed-line background.
+            deletedForeground: CodeColor(rgb: 0xB4637A),
             deletedBackground: CodeColor(rgb: 0xB4637A, alpha: 0x26),
             changedForeground: CodeColor(rgb: 0xD7827E),  // Fallback: gitDecoration.modifiedResourceForeground.
             changedBackground: CodeColor(rgb: 0xD7827E, alpha: 0x26),  // Derived: no VS Code changed-text background.
@@ -45,7 +46,8 @@ extension CodeTheme {
             punctuation: CodeColor(rgb: 0x908CAA),
             insertedForeground: CodeColor(rgb: 0x9CCFD8),  // Fallback: gitDecoration.addedResourceForeground.
             insertedBackground: CodeColor(rgb: 0x9CCFD8, alpha: 0x26),
-            deletedForeground: CodeColor(rgb: 0x908CAA),  // Fallback: gitDecoration.deletedResourceForeground.
+            // The git decoration is muted gray; love matches the removed-line background.
+            deletedForeground: CodeColor(rgb: 0xEB6F92),
             deletedBackground: CodeColor(rgb: 0xEB6F92, alpha: 0x26),
             changedForeground: CodeColor(rgb: 0xEBBCBA),  // Fallback: gitDecoration.modifiedResourceForeground.
             changedBackground: CodeColor(rgb: 0xEBBCBA, alpha: 0x26),  // Derived: no VS Code changed-text background.

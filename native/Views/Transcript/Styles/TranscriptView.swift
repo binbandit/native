@@ -48,7 +48,7 @@ struct TranscriptView: View {
             }
         }
         .animation(.dsStandard, value: showsJumpToLatest)
-        .focusedSceneValue(\.transcriptJumpToLatest, isPrimary && isAwayFromLatest ? { jumpToLatest() } : nil)
+        .focusedSceneValue(\.transcriptJumpToLatest, jumpCommand)
         .onScrollGeometryChange(for: String.self) { g in
             "content \(g.contentSize) insets \(g.contentInsets) container \(g.containerSize) offset \(g.contentOffset)"
         } action: { _, new in
@@ -88,6 +88,12 @@ struct TranscriptView: View {
     /// Only while a turn runs: afterwards the latest is the turn's end, and scrolling up is reading.
     private var showsJumpToLatest: Bool {
         isAwayFromLatest && session.phase == .prompting
+    }
+
+    /// View ▸ Jump to Latest, while the session's own transcript has scrolled away from it.
+    private var jumpCommand: (@MainActor () -> Void)? {
+        guard isPrimary, isAwayFromLatest else { return nil }
+        return jumpToLatest
     }
 
     private func jumpToLatest() {
