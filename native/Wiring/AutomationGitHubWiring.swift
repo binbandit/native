@@ -31,7 +31,9 @@ enum AutomationGitHubWiring {
             await model.refreshNow()
         }
         guard let repository = model.repository, let head = model.branch?.name else { throw PullRequestError.notARepository }
-        let base = (try? await gitHub.repository(of: repository.root))?.defaultBranch
+        // Asked before pushing, so a checkout that isn't on GitHub is refused without a push to its
+        // remote; the error carries GitHub's own reason and fix.
+        let base = try await gitHub.repository(of: repository.root).defaultBranch
         if head == base {
             throw PullRequestError.onDefaultBranch(head)
         }

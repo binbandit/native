@@ -3,7 +3,7 @@ import Foundation
 
 /// A local project's files from git: tracked and untracked ones, without what .gitignore excludes,
 /// which stays fast on large repositories. Outside a repository it has no files to offer.
-struct GitProjectFileIndex: ProjectFileIndex {
+nonisolated struct GitProjectFileIndex: ProjectFileIndex {
     let root: URL
 
     @concurrent
