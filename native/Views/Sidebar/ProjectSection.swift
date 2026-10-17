@@ -11,6 +11,10 @@ struct ProjectSection<TaskAccessory: View>: View {
     let project: Project
     /// The sessions to show: all of them, or those the Needs You filter keeps.
     let sessions: [SessionSummary]
+    /// Every session's place in the project's order, filtered out or not.
+    let order: [SessionKey: Int]
+    /// The project's place among the projects, and how many there are.
+    let position: (index: Int, count: Int)
     let isFiltered: Bool
     let isExpanded: Binding<Bool>
     let drag: SidebarDragState
@@ -34,11 +38,17 @@ struct ProjectSection<TaskAccessory: View>: View {
             taskCount: sessions.count,
             onNewTask: { Task { await model.newSession(in: project.id) } }
         ) {
-            ProjectMenu(project: project, isPickingIcon: $isPickingIcon, isConfirmingDelete: $isConfirmingDelete)
+            ProjectMenu(
+                project: project, position: position, isPickingIcon: $isPickingIcon,
+                isConfirmingDelete: $isConfirmingDelete)
         } content: {
             ForEach(sessions) { summary in
                 let row = SidebarDragState.Item.session(summary.id, in: project.id)
-                SessionRow(summary: summary, accessory: taskAccessory(summary)) {
+                let index = order[summary.id] ?? 0
+                SessionRow(
+                    summary: summary, canMoveUp: index > 0, canMoveDown: index < order.count - 1,
+                    accessory: taskAccessory(summary)
+                ) {
                     select(summary.id)
                 }
                 .sidebarDraggable(row, title: model.title(for: summary), state: drag)
@@ -80,6 +90,7 @@ private struct ProjectMenu: View {
     @Environment(\.displayScale) private var displayScale
     @Environment(\.colorScheme) private var colorScheme
     let project: Project
+    let position: (index: Int, count: Int)
     @Binding var isPickingIcon: Bool
     @Binding var isConfirmingDelete: Bool
 
@@ -127,9 +138,9 @@ private struct ProjectMenu: View {
         }
         Divider()
         Button("Move Up") { model.move(.project(project.id), .up) }
-            .disabled(!model.canMove(.project(project.id), .up))
+            .disabled(position.index == 0)
         Button("Move Down") { model.move(.project(project.id), .down) }
-            .disabled(!model.canMove(.project(project.id), .down))
+            .disabled(position.index >= position.count - 1)
         Divider()
         Button("Archive Project") {
             model.archiveProject(project.id, undoManager: undoManager)

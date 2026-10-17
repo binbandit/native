@@ -12,6 +12,12 @@ struct SessionRow<Accessory: View>: View {
     let summary: SessionSummary
     /// Grouped under a project header, or flush in the Pinned section.
     var indent: TaskRowIndent = .grouped
+    /// Whether the row is in the Pinned section.
+    var isPinned = false
+    /// Where the row can move, worked out once by its list: the context menu is built on every
+    /// update of any session, so it must not query the model's ordering itself.
+    let canMoveUp: Bool
+    let canMoveDown: Bool
     let accessory: Accessory
     let select: () -> Void
 
@@ -27,10 +33,6 @@ struct SessionRow<Accessory: View>: View {
 
     private var isUnread: Bool {
         model.isUnread(summary.id)
-    }
-
-    private var isPinned: Bool {
-        model.isPinned(summary.id)
     }
 
     var body: some View {
@@ -89,9 +91,9 @@ struct SessionRow<Accessory: View>: View {
         Button(isPinned ? "Unpin" : "Pin", action: togglePinned)
         Divider()
         Button("Move Up") { model.move(target, .up) }
-            .disabled(!model.canMove(target, .up))
+            .disabled(!canMoveUp)
         Button("Move Down") { model.move(target, .down) }
-            .disabled(!model.canMove(target, .down))
+            .disabled(!canMoveDown)
         Divider()
         Button("Copy Session ID") {
             DSPasteboard.copy(summary.info.sessionId.rawValue)

@@ -14,11 +14,15 @@ struct ProjectList<TaskAccessory: View>: View {
     @State private var drag = SidebarDragState()
 
     var body: some View {
-        let groups = model.projects.all.map { project in (project, visible(model.sessions(in: project.id))) }
-        let pinned = visible(model.pinnedSessions)
+        // Each project's order is worked out once per update and handed to its rows as plain values.
+        let groups = model.projects.all.map { project in (project, model.sessions(in: project.id)) }
+        let allPinned = model.pinnedSessions
+        let pinned = visible(allPinned)
         VStack(alignment: .leading, spacing: DS.Space.xxs) {
             if !pinned.isEmpty {
-                PinnedSection(sessions: pinned, drag: drag, taskAccessory: taskAccessory, select: select)
+                PinnedSection(
+                    sessions: pinned, order: Self.positions(allPinned), drag: drag, taskAccessory: taskAccessory,
+                    select: select)
             }
             SectionHeader(showsOnlyNeedsYou ? "Needs You" : "Projects") {
                 IconButton(
@@ -37,14 +41,18 @@ struct ProjectList<TaskAccessory: View>: View {
 
             if model.projects.all.isEmpty {
                 AddProjectPrompt()
-            } else if showsOnlyNeedsYou, pinned.isEmpty, groups.allSatisfy({ $0.1.isEmpty }) {
+            } else if showsOnlyNeedsYou, pinned.isEmpty, groups.allSatisfy({ visible($0.1).isEmpty }) {
                 NothingNeedsYou { showsOnlyNeedsYou = false }
             }
-            ForEach(groups, id: \.0.id) { project, sessions in
+            ForEach(Array(groups.enumerated()), id: \.element.0.id) { index, group in
+                let (project, all) = group
+                let sessions = visible(all)
                 if !showsOnlyNeedsYou || !sessions.isEmpty {
                     ProjectSection(
                         project: project,
                         sessions: sessions,
+                        order: Self.positions(all),
+                        position: (index, groups.count),
                         isFiltered: showsOnlyNeedsYou,
                         isExpanded: Binding(
                             get: { showsOnlyNeedsYou || !collapsed.contains(project.id) },
@@ -69,6 +77,10 @@ struct ProjectList<TaskAccessory: View>: View {
                 collapsed.set(project, collapsed: false)
             }
         }
+    }
+
+    private static func positions(_ sessions: [SessionSummary]) -> [SessionKey: Int] {
+        Dictionary(sessions.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { first, _ in first })
     }
 
     /// Sessions as the list shows them: all of them, or with the filter on, only those waiting on

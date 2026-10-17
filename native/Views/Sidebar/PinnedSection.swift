@@ -6,6 +6,8 @@ struct PinnedSection<TaskAccessory: View>: View {
     @Environment(AppModel.self) private var model
     /// The pinned tasks to show: all of them, or those the Needs You filter keeps.
     let sessions: [SessionSummary]
+    /// Every pinned task's place in the pin order, filtered out or not.
+    let order: [SessionKey: Int]
     let drag: SidebarDragState
     let taskAccessory: (SessionSummary) -> TaskAccessory
     let select: (SessionKey) -> Void
@@ -15,7 +17,12 @@ struct PinnedSection<TaskAccessory: View>: View {
             SectionHeader("Pinned")
             ForEach(sessions) { summary in
                 let row = SidebarDragState.Item.pinned(summary.id)
-                SessionRow(summary: summary, indent: .flat, accessory: taskAccessory(summary)) {
+                let index = order[summary.id] ?? 0
+                SessionRow(
+                    summary: summary, indent: .flat, isPinned: true,
+                    canMoveUp: index > 0, canMoveDown: index < order.count - 1,
+                    accessory: taskAccessory(summary)
+                ) {
                     select(summary.id)
                 }
                 .sidebarDraggable(row, title: model.title(for: summary), state: drag)
