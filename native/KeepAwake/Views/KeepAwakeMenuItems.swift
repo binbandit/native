@@ -8,18 +8,14 @@ struct KeepAwakeMenuItems: View {
     var body: some View {
         @Bindable var controller = controller
         Section(controller.status.description(keepsDisplayOn: controller.keepsDisplayOn)) {
-            Picker("Keep Mac Awake", selection: $controller.mode) {
-                ForEach(KeepAwakeMode.allCases.reversed()) { mode in
-                    // Two texts make a menu item with the reference app's description as its subtitle.
-                    VStack {
-                        Text(mode.title)
-                        Text(mode.explanation)
-                    }
-                    .tag(mode)
+            // Toggles rather than a picker: their two-text labels become a title and the reference app's
+            // description as a subtitle, which a picker's options drop.
+            ForEach(KeepAwakeMode.allCases.reversed()) { mode in
+                Toggle(isOn: Binding { controller.mode == mode } set: { if $0 { controller.setMode(mode) } }) {
+                    Text(mode.title)
+                    Text(mode.explanation)
                 }
             }
-            .pickerStyle(.inline)
-            .labelsHidden()
         }
         Section {
             Menu("Stay Awake For") {

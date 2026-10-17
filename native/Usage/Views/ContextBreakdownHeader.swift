@@ -89,7 +89,7 @@ struct ContextBreakdownHeader<Source: ContextSource>: View {
         HStack(spacing: DS.Space.md) {
             Image(systemName: "exclamationmark.circle")
                 .foregroundStyle(.dsWarning)
-            Text("\(summary). \(source.agentName) compacts the conversation when it runs out of room.")
+            Text("\(summary). \(source.agentName) compacts on its own when it runs out of room.")
                 .foregroundStyle(.dsTextSecondary)
                 .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: 0)

@@ -18,7 +18,8 @@ extension Repository {
         case .workingTree:
             // Read on the machine the repository is on. git stores a symlink as its target path,
             // so a link reads as that; a missing file or a folder exits 3.
-            let script = #"if [ -L "$1" ]; then printf '%s' "$(readlink -- "$1")"; elif [ -f "$1" ]; then cat -- "$1"; else exit 3; fi"#
+            let script =
+                #"if [ -L "$1" ]; then printf '%s' "$(readlink -- "$1")"; elif [ -f "$1" ]; then cat -- "$1"; else exit 3; fi"#
             let output = try await git.runTool("sh", ["-c", script, "sh", path], in: root)
             switch output.status {
             case 0: return output.stdout

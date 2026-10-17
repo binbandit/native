@@ -64,7 +64,8 @@ extension Repository {
     /// Line counts of files git doesn't track, from one diff rather than reading each file.
     private func untrackedStats(_ paths: [String]) async throws(GitError) -> [String: LineStats] {
         guard !paths.isEmpty else { return [:] }
-        let output = try await diffUntracked(paths, ["--numstat", "-z", "--no-ext-diff", "--no-textconv", "--no-color"])
+        let output = try await diffUntracked(
+            paths, ["--numstat", "-z", "--no-ext-diff", "--no-textconv", "--no-color"])
         return NumstatParser.parse(output.text)
     }
 

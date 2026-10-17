@@ -25,7 +25,7 @@ struct ComposerView: View {
     @State private var editingQueued: SessionModel.QueuedPrompt.ID?
     /// The autonomy level Plan Mode returns to, remembered from before it started.
     @State private var autonomyBeforePlan: String?
-    /// What the last action did, shown for a moment in the controls row.
+    /// What the last action did, shown for a moment just above the composer.
     @State private var feedback: ComposerFeedback?
 
     private var canEdit: Bool {

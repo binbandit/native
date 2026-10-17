@@ -76,7 +76,8 @@ public struct Repository: Sendable, Hashable {
         copyingIndex: Bool,
         _ body: ([String: String]) async throws(GitError) -> Result
     ) async throws(GitError) -> Result {
-        let scratch = gitDirectory.appending(path: "native-scratch-\(UUID().uuidString).index").path(percentEncoded: false)
+        let scratch = gitDirectory.appending(path: "native-scratch-\(UUID().uuidString).index").path(
+            percentEncoded: false)
         if copyingIndex {
             let index = try await run(["rev-parse", "--path-format=absolute", "--git-path", "index"], readOnly: true)
                 .text.trimmingCharacters(in: .whitespacesAndNewlines)

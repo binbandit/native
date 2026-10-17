@@ -105,18 +105,11 @@ struct PullRequestRow: View {
                 model.openInBrowser(pullRequest)
             }
         }
-        .padding(.leading, DS.Space.xl)
-        // Fades the metadata out under the buttons rather than cutting it off.
-        .background {
-            LinearGradient(
-                stops: [.init(color: .clear, location: 0), .init(color: .dsBackground, location: 0.35)],
-                startPoint: .leading, endPoint: .trailing
-            )
-            .overlay(
-                Color.dsHover.mask(
-                    LinearGradient(
-                        stops: [.init(color: .clear, location: 0), .init(color: .black, location: 0.35)],
-                        startPoint: .leading, endPoint: .trailing)))
+        // A small floating toolbar, opaque so the metadata under it doesn't show through.
+        .background(.dsSurface, in: RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous))
+        .overlay {
+            RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
+                .strokeBorder(.dsSeparator, lineWidth: 1)
         }
     }
 

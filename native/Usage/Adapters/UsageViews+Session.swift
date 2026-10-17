@@ -17,7 +17,7 @@ extension UsageLimitBanner {
 }
 
 extension ContextPressureBanner where Source == SessionContextSource {
-    init(session: SessionModel, chrome: UsageBannerChrome = .section) {
+    init(session: SessionModel, chrome: UsageBannerChrome = .card) {
         self.init(source: SessionContextSource(session: session), chrome: chrome)
     }
 }

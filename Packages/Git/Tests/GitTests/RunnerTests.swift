@@ -37,8 +37,10 @@ struct RunnerTests {
         #expect(executables.isSubset(of: ["git", "sh", "rm", "cp"]))
         #expect(runner.commands.withLock { $0.allSatisfy { $0.environment["GIT_CONFIG_NOSYSTEM"] == "1" } })
         // Scratch indexes are cleaned up.
-        let leftovers = try FileManager.default.contentsOfDirectory(atPath: repository.gitDirectory.path(percentEncoded: false))
-            .filter { $0.hasPrefix("native-scratch-") }
+        let leftovers = try FileManager.default.contentsOfDirectory(
+            atPath: repository.gitDirectory.path(percentEncoded: false)
+        )
+        .filter { $0.hasPrefix("native-scratch-") }
         #expect(leftovers.isEmpty)
     }
 
