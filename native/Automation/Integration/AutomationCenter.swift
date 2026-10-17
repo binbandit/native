@@ -91,7 +91,7 @@ final class AutomationCenter {
     }
 
     private func turnEnded(_ context: SessionContext, outcome: TurnOutcome) async {
-        workflows.turnEnded(task: context.clientID, outcome: outcome)
+        workflows.turnEnded(task: host?.task(forClient: context.clientID) ?? context.clientID, outcome: outcome)
         await existingGoal(for: context)?.turnDidEnd(outcome)
     }
 
