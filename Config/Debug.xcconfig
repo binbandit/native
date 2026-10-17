@@ -1,0 +1,5 @@
+#include "Shared.xcconfig"
+
+// Development builds don't update themselves: the stable feed would replace a dev build with a
+// release. Pass NATIVE_FEED_URL on the xcodebuild command line to test updates locally.
+NATIVE_FEED_URL =

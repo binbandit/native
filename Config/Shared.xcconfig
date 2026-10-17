@@ -1,0 +1,34 @@
+// Release settings every configuration shares. docs/releasing.md explains how they're used.
+// Note: "//" starts a comment in xcconfig files, so URLs write it as "/$()/".
+
+// TODO(release): the GitHub repository Native publishes to, as owner/name. While this placeholder
+// is set, the app reports "Updates aren't set up for this build" and scripts/release refuses to
+// publish.
+NATIVE_GITHUB_REPOSITORY = PLACEHOLDER-OWNER/native
+
+// TODO(release): replace Xcode's placeholder with Native's real reverse-DNS identifier. Nightly
+// appends ".nightly" and the host helper ".Host", so this is the only place it's spelled out.
+NATIVE_BUNDLE_IDENTIFIER_BASE = devplaceholder.$(PROJECT_UNIQUE_VALUE:identifier).Native
+NATIVE_BUNDLE_IDENTIFIER_SUFFIX =
+NATIVE_BUNDLE_IDENTIFIER = $(NATIVE_BUNDLE_IDENTIFIER_BASE)$(NATIVE_BUNDLE_IDENTIFIER_SUFFIX)
+
+NATIVE_PRODUCT_NAME = Native
+NATIVE_APP_ICON_NAME = AppIcon
+
+// TODO(release): Sparkle's EdDSA public key, as printed by `generate_keys` (docs/releasing.md,
+// "One-time setup"). One key signs every channel. Empty means updates aren't set up.
+NATIVE_SPARKLE_PUBLIC_KEY =
+
+// The feeds live on GitHub Releases, with no servers of our own. Stable and beta share the latest
+// release's appcast (beta items carry a Sparkle channel); nightly has a rolling release of its own.
+NATIVE_STABLE_FEED_URL = https:/$()/github.com/$(NATIVE_GITHUB_REPOSITORY)/releases/latest/download/appcast.xml
+NATIVE_NIGHTLY_FEED_URL = https:/$()/github.com/$(NATIVE_GITHUB_REPOSITORY)/releases/download/nightly/appcast.xml
+
+// Which channel the build is: empty for stable, NATIVE_BETA or NATIVE_NIGHTLY (ReleaseChannel).
+// scripts/release/build.sh passes NATIVE_CHANNEL_CONDITION=NATIVE_BETA for beta builds.
+NATIVE_CHANNEL_CONDITION =
+SWIFT_ACTIVE_COMPILATION_CONDITIONS = $(inherited) $(NATIVE_CHANNEL_CONDITION)
+
+// The host's launchd channel (docs/durability.md, "Development builds"). Release builds use the
+// standard location; Nightly gets its own so it never shares a host with the stable app.
+NATIVE_HOST_CHANNEL =

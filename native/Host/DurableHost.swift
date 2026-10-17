@@ -34,8 +34,10 @@ final class DurableHost {
     @ObservationIgnored private var listening: Task<Void, Never>?
     @ObservationIgnored private var agents: [AgentSpec] = []
 
-    private static let enabledKey = "NativeHostEnabled"
-    private static let seenActivityKey = "NativeHostSeenActivity"
+    /// Per channel: every development build shares one defaults domain but has a host of its own, so
+    /// turning one build's host on mustn't register the others'.
+    private static let enabledKey = "NativeHostEnabled.\(HostRegistration().location.channel)"
+    private static let seenActivityKey = "NativeHostSeenActivity.\(HostRegistration().location.channel)"
 
     private(set) var isEnabled = UserDefaults.standard.bool(forKey: DurableHost.enabledKey)
 

@@ -54,21 +54,34 @@ final class SessionLauncher {
         return session
     }
 
-    /// Reopens a session the agent listed, replaying its history into a new model.
-    func load(_ key: SessionKey, info: SessionInfo, on runtime: AgentRuntime) async {
-        guard let connection = runtime.connection, runtime.capabilities?.loadSession == true else { return }
+    /// Reopens a session the agent has, replaying its history into a new model. On failure the
+    /// model stays registered with what went wrong in its transcript, and the error is rethrown.
+    @discardableResult
+    func load(
+        _ key: SessionKey, cwd: URL, title: String? = nil, on runtime: AgentRuntime,
+        origin: SessionModel.Origin = .user, parent: SessionModel? = nil
+    ) async throws -> SessionModel {
+        guard let connection = runtime.connection else {
+            throw LaunchError.agentUnavailable(runtime.agent.displayName)
+        }
+        guard runtime.capabilities?.loadSession == true else {
+            throw LaunchError.failed(agent: runtime.agent.displayName, underlying: CocoaError(.featureUnsupported))
+        }
         let session = SessionModel(
-            agent: runtime.agent, id: key.id, cwd: URL(filePath: info.cwd), connection: connection, services: services,
-            supportsSteering: runtime.capabilities?.steering == true, phase: .loading, title: info.title
+            agent: runtime.agent, id: key.id, cwd: cwd, connection: connection, services: services,
+            supportsSteering: runtime.capabilities?.steering == true, phase: .loading, title: title,
+            origin: origin, parent: parent
         )
         store.register(session)
         do {
-            let request = LoadSessionRequest(sessionId: key.id, cwd: info.cwd, mcpServers: plugins.mcpServers(for: session.context))
+            let request = LoadSessionRequest(sessionId: key.id, cwd: cwd.folderPath, mcpServers: plugins.mcpServers(for: session.context))
             let response = try await connection.send(request)
             session.finishLoading(configOptions: response.configOptions)
+            return session
         } catch {
             runtime.noteSignInRequired(by: error)
             session.failLoading(error)
+            throw error
         }
     }
 }

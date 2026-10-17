@@ -28,3 +28,13 @@ extension SelectSetting {
         return nil
     }
 }
+
+extension SelectSetting {
+    /// A choice's one-line purpose, without the name the agent repeats at its start ("Opus 5.5 ·
+    /// Best for everyday, complex tasks"); nil when it says nothing the name doesn't.
+    func detail(of choice: Choice) -> String? {
+        guard let description = choice.description, description != choice.name else { return nil }
+        let prefix = "\(displayName(of: choice)) · "
+        return description.hasPrefix(prefix) ? String(description.dropFirst(prefix.count)) : description
+    }
+}

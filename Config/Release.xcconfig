@@ -1,0 +1,6 @@
+#include "Shared.xcconfig"
+
+NATIVE_FEED_URL = $(NATIVE_STABLE_FEED_URL)
+
+// Notarization requires the hardened runtime on every executable, the host helper's included.
+ENABLE_HARDENED_RUNTIME = YES
