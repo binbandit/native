@@ -1,29 +1,13 @@
 import Foundation
 
-/// A goal's spend against its budget, worded for people: the status bar, the continuation prompt and
-/// the agent all read the same figures.
+/// A goal's spend against its budget. The wording here is for the engine's own text (the agent's
+/// prompts and stop reasons), which can't depend on the design system; views format the same
+/// figures with `DSFormat`.
 nonisolated struct GoalUsage: Hashable, Sendable {
     var iterations: Int
     var elapsed: TimeInterval
     var cost: Double?
     var budget: GoalBudget
-
-    /// "3/10", or "3" without an iteration limit.
-    var iterationsText: String {
-        budget.maxIterations.map { "\(iterations)/\($0)" } ?? "\(iterations)"
-    }
-
-    /// "4m/30m", or "4m".
-    var elapsedText: String {
-        let spent = Self.durationText(elapsed)
-        return budget.maxDuration.map { "\(spent)/\(Self.durationText($0))" } ?? spent
-    }
-
-    /// "$0.42/$5.00", "$0.42", or nil when the agent hasn't reported a cost.
-    var costText: String? {
-        guard let cost else { return budget.maxCost.map { "–/\(Self.costText($0))" } }
-        return budget.maxCost.map { "\(Self.costText(cost))/\(Self.costText($0))" } ?? Self.costText(cost)
-    }
 
     /// The share of the tightest limit used, for a progress bar; nil without limits.
     var fractionUsed: Double? {

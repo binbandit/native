@@ -69,7 +69,7 @@ export RUSTC_WRAPPER=""
 
 export CARGO_TARGET_DIR="$cache/target"
 mkdir -p "$cache"
-cargo_args=(--release --manifest-path "$crate/Cargo.toml")
+cargo_args=(--release --locked --manifest-path "$crate/Cargo.toml")
 
 if [ "$sandbox" = 1 ]; then
     v8_dir="${NATIVE_V8_SANDBOX_DIR:-$CARGO_TARGET_DIR/v8-sandbox/release/gn_out}"

@@ -99,7 +99,7 @@ struct WorkflowStepRow: View {
     }
 
     @ViewBuilder private var metrics: some View {
-        let parts = [duration, step.cost.map(GoalUsage.costText)].compactMap(\.self)
+        let parts = [duration, step.cost.map { DSFormat.cost($0) }].compactMap(\.self)
         if !parts.isEmpty {
             Text(parts.joined(separator: " · "))
                 .font(.dsMonoCaption)
@@ -110,7 +110,7 @@ struct WorkflowStepRow: View {
 
     private var duration: String? {
         guard let start = step.startedAt, let end = step.endedAt else { return nil }
-        return GoalUsage.durationText(end.timeIntervalSince(start))
+        return DSFormat.duration(end.timeIntervalSince(start))
     }
 
     // MARK: - What it's doing

@@ -23,11 +23,7 @@ struct WorkflowRunRow: View {
     }
 
     private var status: TaskStatus {
-        switch AutomationGlyph(run: run.phase) {
-        case .task(let status): status
-        // The sidebar's status vocabulary has no paused or limited; idle reads as "not working".
-        case .paused, .limited, .interrupted: .idle
-        }
+        AutomationGlyph(run: run.phase).taskStatus
     }
 
     private var badge: TaskBadge? {

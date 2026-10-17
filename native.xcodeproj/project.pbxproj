@@ -15,6 +15,7 @@
 		0000000000000000004E4814 /* NativeHostClient in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000004E4813 /* NativeHostClient */; };
 		000000000000000000617320 /* Git in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000617310 /* Git */; };
 		000000000000000000E10320 /* Experiments in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000E10310 /* Experiments */; };
+		0000000000000000005C5220 /* ScriptRuntime in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000005C5210 /* ScriptRuntime */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -87,6 +88,7 @@
 				000000000000000000617320 /* Git in Frameworks */,
 				000000000000000000E10320 /* Experiments in Frameworks */,
 				0000000000000000004E4814 /* NativeHostClient in Frameworks */,
+				0000000000000000005C5220 /* ScriptRuntime in Frameworks */,
 			);
 		};
 /* End PBXFrameworksBuildPhase section */
@@ -143,6 +145,7 @@
 				000000000000000140000000 /* Resources */,
 				0000000000000000004E480D /* Embed Login Items */,
 				0000000000000000004E480F /* Install Launch Agent */,
+				0000000000000000005C5230 /* Embed Script Runtime */,
 			);
 			buildRules = (
 			);
@@ -160,6 +163,7 @@
 				000000000000000000617310 /* Git */,
 				000000000000000000E10310 /* Experiments */,
 				0000000000000000004E4813 /* NativeHostClient */,
+				0000000000000000005C5210 /* ScriptRuntime */,
 			);
 			productName = Native;
 			productReference = 000000000000000000000120 /* native.app */;
@@ -196,6 +200,7 @@
 				000000000000000000617300 /* XCLocalSwiftPackageReference "Packages/Git" */,
 				000000000000000000E10300 /* XCLocalSwiftPackageReference "Packages/Experiments" */,
 				0000000000000000004E4810 /* XCLocalSwiftPackageReference "Packages/NativeHost" */,
+				0000000000000000005C5200 /* XCLocalSwiftPackageReference "Packages/ScriptRuntime" */,
 			);
 			preferredProjectObjectVersion = 90;
 			productRefGroup = 000000000000000000000020 /* Products */;
@@ -235,6 +240,23 @@
 			shellPath = /bin/sh;
 			shellScript = (
 				"/bin/sh \"$SCRIPT_INPUT_FILE_1\"",
+			);
+		};
+		0000000000000000005C5230 /* Embed Script Runtime */ = {
+			isa = PBXShellScriptBuildPhase;
+			inputFileListPaths = (
+				"$(SRCROOT)/Runtime/ScriptRuntime/Sources.xcfilelist",
+			);
+			inputPaths = (
+				"$(SRCROOT)/scripts/build-script-runtime.sh",
+			);
+			name = "Embed Script Runtime";
+			outputPaths = (
+				"$(TARGET_BUILD_DIR)/$(CONTENTS_FOLDER_PATH)/Helpers/native-script-runtime",
+			);
+			shellPath = /bin/sh;
+			shellScript = (
+				"\"$SCRIPT_INPUT_FILE_0\" --optional --output \"$SCRIPT_OUTPUT_FILE_0\" --identity \"$EXPANDED_CODE_SIGN_IDENTITY\"",
 			);
 		};
 /* End PBXShellScriptBuildPhase section */
@@ -535,6 +557,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Experiments;
 		};
+		0000000000000000005C5200 /* XCLocalSwiftPackageReference "Packages/ScriptRuntime" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/ScriptRuntime;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -565,6 +591,10 @@
 		000000000000000000E10310 /* Experiments */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Experiments;
+		};
+		0000000000000000005C5210 /* ScriptRuntime */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ScriptRuntime;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
