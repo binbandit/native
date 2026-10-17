@@ -35,7 +35,7 @@ public nonisolated struct WorkflowStep: Hashable, Sendable, Identifiable {
     /// The source a script step runs.
     public var script: String?
 
-    init(
+    public init(
         id: String, title: String, kind: Kind = .agent, agent: WorkflowAgentChoice? = nil, continues: String? = nil,
         prompt: String = "", after: [String]? = nil, approval: WorkflowApproval? = nil, goal: GoalBudget? = nil,
         pullRequest: WorkflowPullRequestTemplate? = nil, script: String? = nil

@@ -16,7 +16,7 @@ public nonisolated struct Automation: Codable, Hashable, Sendable, Identifiable 
     public var isPaused: Bool
     public let createdAt: Date
 
-    init(
+    public init(
         id: UUID = UUID(), name: String, triggers: [AutomationTrigger], action: AutomationAction, agent: WorkflowAgent.ID? = nil,
         project: URL, repository: String? = nil, placement: AutomationPlacement = .worktree, isPaused: Bool = false, createdAt: Date
     ) {

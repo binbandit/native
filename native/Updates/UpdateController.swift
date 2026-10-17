@@ -78,7 +78,7 @@ final class UpdateController {
         switch state {
         case .available:
             pendingRestart = timing
-            driver.reply(.install)
+            driver.install()
         case .downloading, .preparing:
             pendingRestart = timing
         case .ready:
@@ -99,14 +99,14 @@ final class UpdateController {
     /// Not now: the next scheduled check offers it again.
     func remindLater() {
         #if canImport(Sparkle)
-        driver?.reply(.dismiss)
+        driver?.remindLater()
         #endif
     }
 
     /// Never offer this version again; a newer one still shows up.
     func skipVersion() {
         #if canImport(Sparkle)
-        driver?.reply(.skip)
+        driver?.skip()
         #endif
     }
 
@@ -133,7 +133,7 @@ final class UpdateController {
         #if canImport(Sparkle)
         // An offer from the old channel no longer applies; look again on the new one.
         if case .available = state {
-            driver?.reply(.dismiss)
+            driver?.remindLater()
         }
         driver?.checkInBackground()
         #endif
