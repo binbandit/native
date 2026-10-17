@@ -69,6 +69,7 @@ private struct AgentHealthChip: View {
                 }
                 .foregroundStyle(isHovered || isShowingDetails ? .dsTextPrimary : .dsTextSecondary)
                 .contentShape(.rect)
+                .dsHitTarget(DS.Size.rowLeading)
             }
             .buttonStyle(.plain)
             .trackHover($isHovered)

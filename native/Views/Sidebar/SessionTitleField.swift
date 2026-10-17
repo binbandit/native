@@ -47,8 +47,9 @@ struct SessionTitleField: View {
             isFocused = true
         }
         .onSubmit(commit)
-        .onExitCommand {
+        .onKeyPress(.escape) {
             model.renaming = nil
+            return .handled
         }
         .onChange(of: isFocused) {
             if !isFocused {

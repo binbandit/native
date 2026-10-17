@@ -37,6 +37,12 @@ public nonisolated enum TeamworkEvent: Codable, Hashable, Sendable {
     case messageLead(String)
     /// Opens the pull request again after it failed.
     case retryPullRequest
+    /// Finishes without the pull request that failed to open.
+    case finishWithoutPullRequest
+    /// Applies the lead's revision of the legs ahead that waits for the user.
+    case approveRouteChange
+    /// Turns that revision down; the approved route stands.
+    case keepRoute
 
     // The user, on one assignment or checkpoint.
     case message(CrewSlot, text: String)
@@ -50,6 +56,8 @@ public nonisolated enum TeamworkEvent: Codable, Hashable, Sendable {
     case reassign(String, agent: WorkflowAgent)
     /// Grants a failing checkpoint one more round of fixes.
     case anotherRound(String)
-    /// The provider limit that stopped an assignment has reset.
-    case limitReset(String)
+    /// When the provider limit that stopped a seat resets, as the Usage feature knows it.
+    case limitResets(CrewSlot, at: Date)
+    /// That limit has reset: the seat picks back up.
+    case limitReset(CrewSlot)
 }
