@@ -6,7 +6,10 @@ fn main() {
         return;
     }
     let plist = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("Info.plist");
-    println!("cargo:rustc-link-arg-bins=-Wl,-sectcreate,__TEXT,__info_plist,{}", plist.display());
+    println!(
+        "cargo:rustc-link-arg-bins=-Wl,-sectcreate,__TEXT,__info_plist,{}",
+        plist.display()
+    );
     // V8 built with its sandbox uses PartitionAlloc, which checks the process's JIT entitlement.
     if std::env::var_os("CARGO_FEATURE_SANDBOX").is_some() {
         println!("cargo:rustc-link-lib=framework=Security");

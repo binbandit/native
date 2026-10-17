@@ -30,14 +30,22 @@ enum Mode {
 
 fn parse_arguments() -> Result<Mode, String> {
     let mut arguments = std::env::args().skip(1);
-    let mut mode = Mode::Run { heap_mib: DEFAULT_HEAP_MIB };
+    let mut mode = Mode::Run {
+        heap_mib: DEFAULT_HEAP_MIB,
+    };
     while let Some(argument) = arguments.next() {
         match argument.as_str() {
             "--max-heap-mib" => {
-                let value = arguments.next().and_then(|value| value.parse::<usize>().ok());
+                let value = arguments
+                    .next()
+                    .and_then(|value| value.parse::<usize>().ok());
                 match value {
                     Some(heap_mib @ 16..=MAX_HEAP_MIB) => mode = Mode::Run { heap_mib },
-                    _ => return Err(format!("--max-heap-mib takes a number from 16 to {MAX_HEAP_MIB}")),
+                    _ => {
+                        return Err(format!(
+                            "--max-heap-mib takes a number from 16 to {MAX_HEAP_MIB}"
+                        ));
+                    }
                 }
             }
             "--probe-sandbox" => {
@@ -71,7 +79,12 @@ fn main() {
     v8::V8::initialize();
     #[cfg(feature = "sandbox")]
     if !unsafe { v8__V8__IsSandboxEnabled() } {
-        emit(&Outbound::Error { error: &Failure::new(FailureKind::Internal, "This runtime requires V8's memory sandbox") });
+        emit(&Outbound::Error {
+            error: &Failure::new(
+                FailureKind::Internal,
+                "This runtime requires V8's memory sandbox",
+            ),
+        });
         std::process::exit(1);
     }
 
@@ -97,9 +110,19 @@ fn main() {
         }
     });
 
-    emit(&Outbound::Ready { protocol_version: protocol::PROTOCOL_VERSION });
+    emit(&Outbound::Ready {
+        protocol_version: protocol::PROTOCOL_VERSION,
+    });
     let evaluation = match receiver.recv() {
-        Ok(Input::Frame(Inbound::Evaluate { code, bindings, inputs })) => Evaluation { code, bindings, inputs },
+        Ok(Input::Frame(Inbound::Evaluate {
+            code,
+            bindings,
+            inputs,
+        })) => Evaluation {
+            code,
+            bindings,
+            inputs,
+        },
         Ok(Input::Closed) | Err(_) => return,
         Ok(Input::Frame(Inbound::ToolResult { .. })) => fail("Expected a script to evaluate"),
         Ok(Input::Invalid(reason)) => fail(&reason),
@@ -111,6 +134,8 @@ fn main() {
 }
 
 fn fail(reason: &str) -> ! {
-    emit(&Outbound::Error { error: &Failure::new(FailureKind::Internal, reason) });
+    emit(&Outbound::Error {
+        error: &Failure::new(FailureKind::Internal, reason),
+    });
     std::process::exit(1)
 }

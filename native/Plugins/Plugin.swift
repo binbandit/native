@@ -87,7 +87,10 @@ struct AgentManifest: Codable, Hashable, Sendable {
     /// MCP feature can show and import the servers it already loads. Nil when unknown.
     var mcpConfig: String?
 
-    init(id: String, name: String, symbol: String? = nil, command: String, args: [String] = [], env: [String: String] = [:], resolveExecutables: [String: String] = [:], mcpConfig: String? = nil) {
+    init(
+        id: String, name: String, symbol: String? = nil, command: String, args: [String] = [],
+        env: [String: String] = [:], resolveExecutables: [String: String] = [:], mcpConfig: String? = nil
+    ) {
         self.id = id
         self.name = name
         self.symbol = symbol

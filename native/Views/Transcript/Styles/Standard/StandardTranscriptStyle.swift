@@ -12,16 +12,10 @@ nonisolated struct StandardTranscriptStyle: TranscriptStyle {
         LazyVStack(alignment: .leading, spacing: 0) {
             ForEach(Array(zip(rows, spacings)), id: \.0.id) { row, spacing in
                 self.row(row, in: transcript)
-                    .onGeometryChange(for: CGSize.self, of: \.size) { size in
-                        FileHandle.standardError.write(Data("ROW \(Date().timeIntervalSince1970) \(row.id.prefix(12)) \(size)\n".utf8))
-                    }
                     .padding(.top, spacing)
             }
             if transcript.isWorking {
                 WorkingIndicator()
-                    .onGeometryChange(for: CGSize.self, of: \.size) { size in
-                        FileHandle.standardError.write(Data("ROW \(Date().timeIntervalSince1970) working \(size)\n".utf8))
-                    }
                     .padding(.top, 16)
             }
         }

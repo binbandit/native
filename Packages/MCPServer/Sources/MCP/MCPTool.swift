@@ -47,7 +47,8 @@ public struct MCPTool<Context: Sendable>: Sendable {
         }
     }
 
-    func callAsFunction(_ context: Context, arguments: JSON) async -> MCPToolResult {
+    /// Calls the tool directly, for servers that let one tool call others (such as a script).
+    public func callAsFunction(_ context: Context, arguments: JSON) async -> MCPToolResult {
         await call(context, arguments)
     }
 

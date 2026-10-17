@@ -29,8 +29,10 @@ final class PluginRegistry {
 
     /// `~/.native/plugins`, unless the `pluginsDirectory` default names another folder: launch with
     /// `-pluginsDirectory <path>` to try plugins without touching the user's own.
-    static let directory = UserDefaults.standard.string(forKey: "pluginsDirectory").map { URL(filePath: $0, directoryHint: .isDirectory) }
-        ?? FileManager.default.homeDirectoryForCurrentUser.appending(path: ".native/plugins", directoryHint: .isDirectory)
+    static let directory =
+        UserDefaults.standard.string(forKey: "pluginsDirectory").map { URL(filePath: $0, directoryHint: .isDirectory) }
+        ?? FileManager.default.homeDirectoryForCurrentUser.appending(
+            path: ".native/plugins", directoryHint: .isDirectory)
 
     private(set) var plugins: [LoadedPlugin] = []
     private(set) var failures: [LoadFailure] = []
@@ -59,7 +61,9 @@ final class PluginRegistry {
     func reload() {
         var loaded = builtIns.map { LoadedPlugin(plugin: $0, source: .builtIn) }
         var failures: [LoadFailure] = []
-        let folders = (try? FileManager.default.contentsOfDirectory(at: Self.directory, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)) ?? []
+        let folders =
+            (try? FileManager.default.contentsOfDirectory(
+                at: Self.directory, includingPropertiesForKeys: nil, options: .skipsHiddenFiles)) ?? []
         for folder in folders.sorted(by: { $0.lastPathComponent < $1.lastPathComponent }) {
             let url = folder.appending(path: "plugin.json")
             do {
@@ -131,10 +135,12 @@ final class PluginRegistry {
         }
         let agentIDs = Set(loaded.flatMap { $0.plugin.manifest.agents.map(\.id) })
         if let duplicate = manifest.agents.first(where: { agentIDs.contains($0.id) }) {
-            throw InvalidManifest(errorDescription: "Another plugin already provides an agent with the id \"\(duplicate.id)\".")
+            throw InvalidManifest(
+                errorDescription: "Another plugin already provides an agent with the id \"\(duplicate.id)\".")
         }
         if let server = manifest.mcpServers.first(where: { $0.server == nil }) {
-            throw InvalidManifest(errorDescription: "MCP server \"\(server.name)\" needs exactly one of \"command\" or \"url\".")
+            throw InvalidManifest(
+                errorDescription: "MCP server \"\(server.name)\" needs exactly one of \"command\" or \"url\".")
         }
     }
 

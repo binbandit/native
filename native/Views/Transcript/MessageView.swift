@@ -7,12 +7,6 @@ struct MessageView: View {
 
     var body: some View {
         switch message.role {
-        case .user where UserDefaults.standard.bool(forKey: "HANG_plainUser"):
-            Text(verbatim: message.text)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .background(.fill.tertiary, in: .rect(cornerRadius: 16, style: .continuous))
-                .frame(maxWidth: .infinity, alignment: .trailing)
         case .user:
             TrailingFractionLayout(fraction: 0.85) {
                 // Prompts are shown as typed; Markdown syntax in them stays literal.
