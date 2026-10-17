@@ -128,7 +128,7 @@ private struct StepSegments: View {
         case .starting, .running: .dsAccent
         case .awaitingApproval, .blocked: .dsAttention
         case .paused, .cancelled: .dsTextQuaternary
-        case .limited: .dsWarningFill
+        case .limited, .interrupted: .dsWarningFill
         case .failed: .dsDanger
         }
     }

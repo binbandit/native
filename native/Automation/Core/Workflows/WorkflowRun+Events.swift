@@ -78,7 +78,8 @@ extension WorkflowRun {
                 let text = steps[index].goal?.nextPrompt(at: now) ?? Self.continuePrompt
                 return send(text, to: index, origin: .goal, at: now)
             }
-            return send(Self.continuePrompt, to: index, origin: .user, at: now)
+            let text = steps[index].status == .interrupted ? Self.interruptedPrompt : Self.continuePrompt
+            return send(text, to: index, origin: .user, at: now)
         case .reply(let step, let text):
             let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
             guard let index = index(of: step), steps[index].status.isStopped, !text.isEmpty, steps[index].task != nil else { return [] }
@@ -103,6 +104,9 @@ extension WorkflowRun {
     }
 
     static let continuePrompt = "Continue where you left off."
+    /// Sent when the user resumes a step that was cut off, so the agent checks what its last turn
+    /// actually finished before carrying on.
+    static let interruptedPrompt = "Native quit while you were working on this, so your last turn was cut off. Check what it finished, then continue where you left off."
 
     private mutating func turnEnded(_ step: String, outcome: TurnOutcome, reply: String?, cost: Double?, at now: Date) -> [WorkflowEffect] {
         guard let index = index(of: step), steps[index].status == .running else { return [] }

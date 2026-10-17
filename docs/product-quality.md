@@ -43,7 +43,7 @@ design system and used everywhere:
 | Errors | What happened, what Native already did about it, what the user can do, and one primary action |
 | Loading | One loader family (`DotGridLoader`), never ad-hoc spinners |
 | Empty states | `EmptyStateView`: what this is, why it's empty, one action |
-| Counts, sizes and times | One formatter each (relative times, token counts like 228k, diff stats like +12 −3) |
+| Counts, sizes and times | One formatter each, in `DSFormat`: relative times, elapsed work time (`duration`: 8s, 1m 12s, 1h 4m, "Thought for 12s"; `ElapsedTimeText` ticks), token counts like 228k, diff stats like +12 −3, cost ($0.42), memory and CPU |
 
 Before calling a feature done, use Native for an hour as a real user would and write down every
 spot where it stops feeling like the same product.

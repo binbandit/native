@@ -147,6 +147,8 @@ struct WorkflowStepRow: View {
             return reason
         case .failed(let reason):
             return reason
+        case .interrupted:
+            return "Native quit while this step was working. Resume picks it up in the same session; nothing resumes on its own."
         case .cancelled:
             return "Stopped." + (step.task == nil ? "" : " Resume to continue in its session, or retry from the start.")
         case .skipped:
@@ -157,7 +159,7 @@ struct WorkflowStepRow: View {
     private var detailColor: Color {
         switch step.status {
         case .failed: .dsDanger
-        case .limited: .dsWarning
+        case .limited, .interrupted: .dsWarning
         case .blocked: .dsAttention
         default: .dsTextSecondary
         }

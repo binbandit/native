@@ -105,6 +105,18 @@ nonisolated struct WorkflowRun: Codable, Hashable, Sendable, Identifiable {
         endedAt = now
     }
 
+    /// The run as found on the next launch. Turns that were in flight died with the host, so their
+    /// steps are interrupted until the user resumes them; goals inside stop their clocks.
+    func restored() -> WorkflowRun {
+        var run = self
+        for index in run.steps.indices where run.steps[index].status.isActive {
+            run.steps[index].status = .interrupted
+            run.steps[index].goal = run.steps[index].goal?.restored()
+            run.steps[index].waitingSince = run.steps[index].startedAt
+        }
+        return run
+    }
+
     mutating func setPaused(_ paused: Bool) {
         isPaused = paused && !isCancelled
     }

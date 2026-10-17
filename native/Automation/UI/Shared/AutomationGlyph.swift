@@ -7,6 +7,8 @@ enum AutomationGlyph: Hashable {
     case task(TaskStatus)
     case paused
     case limited
+    /// Cut off when the host quit.
+    case interrupted
 
     init(step status: WorkflowStepStatus, needsApproval: Bool = false) {
         switch status {
@@ -19,6 +21,7 @@ enum AutomationGlyph: Hashable {
         case .limited: self = .limited
         case .failed: self = .task(.failed)
         case .cancelled: self = .task(.cancelled)
+        case .interrupted: self = .interrupted
         case .succeeded: self = .task(.done)
         }
     }
@@ -50,7 +53,7 @@ enum AutomationGlyph: Hashable {
         switch self {
         case .task(let status): status.tint
         case .paused: .dsTextTertiary
-        case .limited: .dsWarning
+        case .limited, .interrupted: .dsWarning
         }
     }
 }
@@ -67,6 +70,8 @@ struct AutomationStatusGlyph: View {
             symbol("pause.circle", label: "Paused")
         case .limited:
             symbol("gauge.with.dots.needle.100percent", label: "Limited")
+        case .interrupted:
+            symbol("bolt.horizontal.circle", label: "Interrupted")
         }
     }
 

@@ -6,13 +6,20 @@ import Observation
 @MainActor
 @Observable
 final class WorkflowRunner {
-    private(set) var runs: [WorkflowRun] = []
+    private(set) var runs: [WorkflowRun] = [] {
+        didSet { store?.save(runs) }
+    }
 
     @ObservationIgnored var host: (any WorkflowHost)?
+    @ObservationIgnored private let store: WorkflowRunStore?
     @ObservationIgnored private let now: () -> Date
 
-    init(now: @escaping () -> Date = Date.init) {
+    /// With a store, runs from earlier launches come back (interrupted where they were working) and
+    /// every change is saved.
+    init(store: WorkflowRunStore? = nil, now: @escaping () -> Date = Date.init) {
+        self.store = store
         self.now = now
+        runs = store?.load() ?? []
     }
 
     func run(_ id: WorkflowRun.ID) -> WorkflowRun? {
