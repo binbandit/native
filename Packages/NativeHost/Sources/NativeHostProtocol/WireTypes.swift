@@ -81,7 +81,7 @@ public enum HostSessionPhase: String, WireEnum {
 }
 
 /// How a message sent while a turn runs should be delivered.
-public enum FollowUpBehavior: String, WireEnum {
+public enum PromptBehavior: String, WireEnum {
     /// Wait for the running turn to end.
     case queue
     /// Join the running turn, where the agent supports it; otherwise queue.

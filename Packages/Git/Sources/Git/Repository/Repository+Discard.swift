@@ -11,9 +11,7 @@ extension Repository {
     public func discard(_ changes: [FileChange]) async throws(GitError) -> Checkpoint? {
         guard !changes.isEmpty else { return nil }
         let checkpoint = try await checkpoint(named: "discard")
-        let hasHead =
-            try await run(["rev-parse", "--verify", "--quiet", "HEAD"], readOnly: true, acceptingStatus: [0, 1]).status
-            == 0
+        let hasHead = try await resolve("HEAD") != nil
         var restoreFromIndex: [String] = []
         var restoreFromHead: [String] = []
         var removeFromIndex: [String] = []

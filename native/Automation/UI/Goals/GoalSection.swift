@@ -84,8 +84,8 @@ struct GoalSection: View {
                 EmptyView()
             }
             Menu {
+                // ⌥⌘G belongs to the Session menu's item (docs/keyboard.md), not this copy of it.
                 Button("Edit Goal…", action: actions.edit)
-                    .keyboardShortcut("g", modifiers: [.command, .option])
                 if goal.status == .active {
                     Button("Pause Goal", action: actions.pause)
                 } else if goal.status.isResumable {

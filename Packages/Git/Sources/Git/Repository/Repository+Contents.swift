@@ -67,10 +67,7 @@ extension Repository {
             .sorted()
         var patch = ""
         if !tracked.isEmpty {
-            let isUnborn =
-                try await run(["rev-parse", "--verify", "--quiet", "HEAD"], readOnly: true, acceptingStatus: [0, 1])
-                .status != 0
-            let base = isUnborn ? try await emptyTree() : "HEAD"
+            let base = try await resolve("HEAD") == nil ? try await emptyTree() : "HEAD"
             let output = try await run(
                 [
                     "--literal-pathspecs", "diff", base, "-M", "-U\(contextLines)", "--no-color", "--no-ext-diff",
