@@ -7,7 +7,8 @@ extension Repository {
     public func commit(
         _ plan: CommitPlan, changes: [FileChange]
     ) async throws(GitError) -> (receipt: CommitPlanReceipt, failure: GitError?) {
-        let branch = try await run(["symbolic-ref", "--quiet", "--short", "HEAD"], readOnly: true, acceptingStatus: [0, 1])
+        let branch = try await run(
+            ["symbolic-ref", "--quiet", "--short", "HEAD"], readOnly: true, acceptingStatus: [0, 1])
         var receipt = CommitPlanReceipt(
             branch: branch.status == 0 ? branch.text.trimmingCharacters(in: .whitespacesAndNewlines) : nil,
             originalHead: try await resolve("HEAD"),
