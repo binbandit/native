@@ -86,7 +86,7 @@ struct GoalEditor: View {
             }
         }
         .padding(DS.Space.xl)
-        .frame(width: 420)
+        .frame(width: AutomationMetrics.goalEditorWidth)
         .background(.dsOverlay)
         .onAppear { isObjectiveFocused = true }
     }

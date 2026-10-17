@@ -6,6 +6,7 @@ import SwiftUI
 /// opens it on GitHub, the checks glyph opens the failing check, and hovering offers the rest.
 struct PullRequestRow: View {
     let pullRequest: PullRequestSummary
+    var showsRepository = true
 
     @Environment(GitHubModel.self) private var model
     @State private var isHovered = false
@@ -54,7 +55,7 @@ struct PullRequestRow: View {
 
     private var metadata: some View {
         HStack(spacing: DS.Space.lg) {
-            Text(pullRequest.reference)
+            Text(showsRepository ? pullRequest.reference : "#\(pullRequest.number)")
                 .foregroundStyle(.dsTextTertiary)
                 .lineLimit(1)
                 .fixedSize()

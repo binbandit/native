@@ -77,7 +77,7 @@ struct CommitMessageDrafter {
         }
         if !style.examples.isEmpty {
             lines.append(
-                "Recent subjects in this repository, for style:\n"
+                "Recent subjects in this repository. Match their style only; describe the diff below, not these:\n"
                     + style.examples.map { "- \($0)" }.joined(separator: "\n"))
         }
         return lines.joined(separator: "\n\n")

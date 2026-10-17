@@ -45,6 +45,8 @@ struct HomePage<Cards: View, Footer: View, Content: View>: View {
         }
         .scrollBounceBehavior(.basedOnSize)
         .background(.dsBackground)
+        // The lockup names the window here; the toolbar repeating "Native" over it would stutter.
+        .toolbar(removing: .title)
         .onGeometryChange(for: Viewport.self) { proxy in
             Viewport(height: proxy.size.height + proxy.safeAreaInsets.top, safeAreaTop: proxy.safeAreaInsets.top)
         } action: {
