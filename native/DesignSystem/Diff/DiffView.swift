@@ -43,9 +43,11 @@ public struct DiffView: View {
         return HStack(spacing: DS.Space.sm) {
             Image(systemName: oldText == nil ? "doc.badge.plus" : "doc.text")
                 .foregroundStyle(.dsTextTertiary)
-            Text("\(Text(directory.isEmpty ? "" : directory + "/").foregroundStyle(.dsTextTertiary))\(Text(file).foregroundStyle(.dsTextPrimary))")
-                .lineLimit(1)
-                .truncationMode(.head)
+            Text(
+                "\(Text(directory.isEmpty ? "" : directory + "/").foregroundStyle(.dsTextTertiary))\(Text(file).foregroundStyle(.dsTextPrimary))"
+            )
+            .lineLimit(1)
+            .truncationMode(.head)
             Spacer(minLength: DS.Space.md)
             DiffStatsText(stats: stats)
         }
@@ -154,8 +156,10 @@ private struct DiffRowView: View {
         VStack(spacing: DS.Space.lg) {
             DiffView(
                 path: "native/Views/SidebarView.swift",
-                oldText: "struct SidebarView {\n    let title = \"Tasks\"\n    var body: some View {\n        List {}\n    }\n}\n",
-                newText: "struct SidebarView {\n    let title = \"Projects\"\n    var body: some View {\n        List {}\n            .listStyle(.sidebar)\n    }\n}\n"
+                oldText:
+                    "struct SidebarView {\n    let title = \"Tasks\"\n    var body: some View {\n        List {}\n    }\n}\n",
+                newText:
+                    "struct SidebarView {\n    let title = \"Projects\"\n    var body: some View {\n        List {}\n            .listStyle(.sidebar)\n    }\n}\n"
             )
             DiffView(path: "README.md", oldText: nil, newText: "# Native\n\nRun coding agents side by side.\n")
         }

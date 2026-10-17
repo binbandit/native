@@ -37,7 +37,7 @@ private struct SettingsSwitchStyle: ToggleStyle {
                 .contentShape(Capsule())
         }
         .buttonStyle(.plain)
-        .contentShape(.focusEffect, Capsule())
+        .settingsFocusShape(Capsule())
         .accessibilityRepresentation {
             Toggle(isOn: configuration.$isOn) { configuration.label }
         }

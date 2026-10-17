@@ -29,7 +29,8 @@ nonisolated struct Crescent: Shape {
     // sit on the cut's vertical diameter.
     private static let outer = (x: 814.45, y: 174.0, r: 45.0)
     private static let cut = (x: 833.0, y: 174.0, r: 41.0)
-    private static let bounds = CGRect(x: outer.x - outer.r, y: outer.y - outer.r, width: cut.x - (outer.x - outer.r), height: outer.r * 2)
+    private static let bounds = CGRect(
+        x: outer.x - outer.r, y: outer.y - outer.r, width: cut.x - (outer.x - outer.r), height: outer.r * 2)
 
     /// Width over height.
     static let aspectRatio = bounds.width / bounds.height
@@ -41,12 +42,13 @@ nonisolated struct Crescent: Shape {
             y: rect.midY - Self.bounds.height * scale / 2
         )
         func disk(_ circle: (x: Double, y: Double, r: Double)) -> Path {
-            Path(ellipseIn: CGRect(
-                x: origin.x + (circle.x - circle.r - Self.bounds.minX) * scale,
-                y: origin.y + (circle.y - circle.r - Self.bounds.minY) * scale,
-                width: circle.r * 2 * scale,
-                height: circle.r * 2 * scale
-            ))
+            Path(
+                ellipseIn: CGRect(
+                    x: origin.x + (circle.x - circle.r - Self.bounds.minX) * scale,
+                    y: origin.y + (circle.y - circle.r - Self.bounds.minY) * scale,
+                    width: circle.r * 2 * scale,
+                    height: circle.r * 2 * scale
+                ))
         }
         return disk(Self.outer).subtracting(disk(Self.cut))
     }

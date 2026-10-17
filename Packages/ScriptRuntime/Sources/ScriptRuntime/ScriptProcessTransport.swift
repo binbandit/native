@@ -65,7 +65,9 @@ final class ScriptProcessTransport: ScriptTransport {
         }
         process.terminationHandler = { process in
             let crash = process.terminationReason == .uncaughtSignal ? Crashed(signal: process.terminationStatus) : nil
-            finish { $0.exited = true; $0.crash = crash }
+            finish {
+                $0.exited = true; $0.crash = crash
+            }
         }
         continuation.onTermination = { _ in
             if process.isRunning { process.terminate() }

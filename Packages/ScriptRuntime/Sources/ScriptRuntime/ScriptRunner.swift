@@ -46,7 +46,8 @@ public struct ScriptRunner: Sendable {
         _ = try ScriptSession.index(bindings)
         let transport: ScriptProcessTransport
         do {
-            transport = try ScriptProcessTransport(helper: helper, arguments: ["--max-heap-mib", String(limits.heapMiB)])
+            transport = try ScriptProcessTransport(
+                helper: helper, arguments: ["--max-heap-mib", String(limits.heapMiB)])
         } catch {
             throw ScriptRunnerError.launchFailed(error.localizedDescription)
         }

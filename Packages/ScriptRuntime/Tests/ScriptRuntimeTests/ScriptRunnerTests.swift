@@ -54,7 +54,8 @@ struct ScriptRunnerTests {
     }
 
     @Test func failedToolCallsRejectWhereTheyWereMade() async throws {
-        let result = try await runner.run("text('looking');\nawait tools.get_task({ task_id: 'nope' });", bindings: tasks)
+        let result = try await runner.run(
+            "text('looking');\nawait tools.get_task({ task_id: 'nope' });", bindings: tasks)
         #expect(result.output == ["looking"])
         #expect(result.failure?.kind == .exception)
         #expect(result.failure?.line == 2)
@@ -89,7 +90,8 @@ struct ScriptRunnerTests {
         #expect(!result.text.contains("escaped"), "\(result.text)")
         #expect(result.output.count == 7)
 
-        let imported = try await runner.run("import { readFileSync } from 'node:fs';\ntext(readFileSync('/etc/passwd'))")
+        let imported = try await runner.run(
+            "import { readFileSync } from 'node:fs';\ntext(readFileSync('/etc/passwd'))")
         #expect(imported.failure?.kind == .syntax)
     }
 
@@ -111,7 +113,8 @@ struct ScriptRunnerTests {
     }
 
     @Test func refusesAnUnsandboxedRuntime() throws {
-        let unsigned = FileManager.default.temporaryDirectory.appending(path: "native-script-runtime-\(UUID().uuidString)")
+        let unsigned = FileManager.default.temporaryDirectory.appending(
+            path: "native-script-runtime-\(UUID().uuidString)")
         try FileManager.default.copyItem(at: helper, to: unsigned)
         defer { try? FileManager.default.removeItem(at: unsigned) }
         let strip = Process()
@@ -124,7 +127,8 @@ struct ScriptRunnerTests {
 
     @Test func stopsAScriptThatRunsTooLong() async throws {
         let started = ContinuousClock.now
-        let result = try await runner.run("text('spinning'); while (true) {}", limits: ScriptLimits(time: .milliseconds(500)))
+        let result = try await runner.run(
+            "text('spinning'); while (true) {}", limits: ScriptLimits(time: .milliseconds(500)))
         #expect(result.failure?.kind == .timedOut)
         #expect(result.output == ["spinning"])
         #expect(ContinuousClock.now - started < .seconds(5))

@@ -63,7 +63,9 @@ extension ProjectGroup where MenuContent == EmptyView {
         onNewTask: (() -> Void)? = nil,
         @ViewBuilder content: () -> Content
     ) {
-        self.init(name: name, icon: icon, isExpanded: isExpanded, taskCount: taskCount, onNewTask: onNewTask, menu: { EmptyView() }, content: content)
+        self.init(
+            name: name, icon: icon, isExpanded: isExpanded, taskCount: taskCount, onNewTask: onNewTask,
+            menu: { EmptyView() }, content: content)
     }
 }
 

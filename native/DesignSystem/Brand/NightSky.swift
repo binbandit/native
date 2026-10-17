@@ -46,8 +46,11 @@ private struct NightSkyField: View {
                 let center = CGPoint(x: star.x * unit.width, y: star.y * unit.height)
                 let radius = max(star.radius * shapeScale, star.isDot ? 0.75 : 2)
                 context.opacity = Self.brightness(index: index, time: time)
-                let path = star.isDot
-                    ? Path(ellipseIn: CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2))
+                let path =
+                    star.isDot
+                    ? Path(
+                        ellipseIn: CGRect(
+                            x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2))
                     : Self.sparkle(center: center, radius: radius)
                 context.fill(path, with: .foreground)
             }

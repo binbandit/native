@@ -44,9 +44,16 @@ import Testing
         let line = String(decoding: try evaluate.line(), as: UTF8.self)
         #expect(line.hasSuffix("\n"))
         let object = try JSONDecoder().decode(ScriptJSON.self, from: Data(line.utf8))
-        #expect(object == ["type": "evaluate", "code": "text(1)", "bindings": [["path": ["a", "b"], "toolName": "a.b"]], "inputs": ["x": "y"]])
+        #expect(
+            object == [
+                "type": "evaluate", "code": "text(1)", "bindings": [["path": ["a", "b"], "toolName": "a.b"]],
+                "inputs": ["x": "y"],
+            ])
         let result = try ScriptInboundFrame.toolResult(id: 7, isError: true, content: "nope").line()
-        #expect(try JSONDecoder().decode(ScriptJSON.self, from: result) == ["type": "tool_result", "id": 7, "isError": true, "content": "nope"])
+        #expect(
+            try JSONDecoder().decode(ScriptJSON.self, from: result) == [
+                "type": "tool_result", "id": 7, "isError": true, "content": "nope",
+            ])
     }
 
     @Test func splitsLinesAcrossChunksAndRefusesHugeOnes() throws {
@@ -72,7 +79,9 @@ import Testing
                 "required": ["task_id", "status"],
             ]
         ) { _ in nil }
-        let listAgents = ScriptBinding(path: ["list_agents"], inputSchema: ["type": "object", "properties": [:]]) { _ in nil }
+        let listAgents = ScriptBinding(path: ["list_agents"], inputSchema: ["type": "object", "properties": [:]]) { _ in
+            nil
+        }
         #expect(
             ScriptReference.declarations(for: [getTask, listAgents]) == """
                 // Check a task's status and its latest reply without waiting.
@@ -86,7 +95,8 @@ import Testing
             output: ["2 tasks"], toolCalls: [],
             failure: ScriptFailure(kind: .syntax, message: "SyntaxError: Unexpected token ';'", line: 2, column: 11),
             duration: .zero)
-        #expect(failed.report == "2 tasks\n\nScript didn't compile at line 2, column 11: SyntaxError: Unexpected token ';'")
+        #expect(
+            failed.report == "2 tasks\n\nScript didn't compile at line 2, column 11: SyntaxError: Unexpected token ';'")
         let silent = ScriptRunResult(output: [], toolCalls: [], failure: nil, duration: .zero)
         #expect(silent.report.contains("without output"))
         #expect(failed.summary["failure"]?["line"] == 2)

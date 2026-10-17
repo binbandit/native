@@ -47,7 +47,8 @@ enum ScriptSession {
                             let wire = bindings.map { ScriptInboundFrame.Binding(path: $0.path, toolName: $0.toolName) }
                             try transport.send(.evaluate(code: code, bindings: wire, inputs: inputs))
                         case .ready(let version):
-                            failure = runtimeFailure("The script runtime speaks protocol \(version), not \(scriptProtocolVersion)")
+                            failure = runtimeFailure(
+                                "The script runtime speaks protocol \(version), not \(scriptProtocolVersion)")
                             break frames
                         case .evaluationStarted:
                             break
@@ -64,16 +65,19 @@ enum ScriptSession {
                             }
                         case .toolCall(let id, let toolName, let input):
                             guard let binding = byName[toolName] else {
-                                failure = runtimeFailure("The script runtime called a tool that isn't bound: \(toolName)")
+                                failure = runtimeFailure(
+                                    "The script runtime called a tool that isn't bound: \(toolName)")
                                 break frames
                             }
                             let index = shared.calls.withLock { calls in
-                                calls.append(ScriptToolCall(path: binding.path, input: input, isError: false, duration: .zero))
+                                calls.append(
+                                    ScriptToolCall(path: binding.path, input: input, isError: false, duration: .zero))
                                 return calls.count - 1
                             }
                             guard index < limits.toolCalls else {
                                 failure = ScriptFailure(
-                                    kind: .toolCallLimit, message: "The script made more than \(limits.toolCalls) tool calls")
+                                    kind: .toolCallLimit,
+                                    message: "The script made more than \(limits.toolCalls) tool calls")
                                 break frames
                             }
                             group.addTask {
@@ -110,7 +114,8 @@ enum ScriptSession {
             failure = runtimeFailure("The script runtime stopped before the script finished")
         }
         return ScriptRunResult(
-            output: output, toolCalls: shared.calls.withLock { $0 }, failure: failure, duration: ContinuousClock.now - started)
+            output: output, toolCalls: shared.calls.withLock { $0 }, failure: failure,
+            duration: ContinuousClock.now - started)
     }
 
     /// Bindings by the tool name the runtime reports, after checking their paths make sense.

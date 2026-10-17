@@ -2,7 +2,7 @@ import SwiftUI
 
 // The editor's keys (docs/keyboard.md), mapped by the pure `ComposerKeyMap`.
 extension ComposerView {
-    private func handleKey(_ press: KeyPress, suggestions: ComposerSuggestions?) -> KeyPress.Result {
+    func handleKey(_ press: KeyPress, suggestions: ComposerSuggestions?) -> KeyPress.Result {
         guard let key = ComposerKeyMap.Key(press.key) else { return .ignored }
         let context = ComposerKeyMap.Context(
             isSuggestionListOpen: suggestions != nil,

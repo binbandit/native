@@ -104,7 +104,8 @@ extension LimitStatus {
     public func compactText(now: Date) -> String {
         switch level {
         case .reached:
-            let countdown = resetsAt
+            let countdown =
+                resetsAt
                 .flatMap { DSFormat.countdown(to: $0, now: now) }
                 .map { $0.replacingOccurrences(of: "in ", with: "") }
             return [limitName, countdown].compactMap(\.self).joined(separator: " · ")

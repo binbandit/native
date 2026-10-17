@@ -19,9 +19,12 @@ public struct LimitChip: View {
     public var body: some View {
         TimelineView(.everyMinute) { context in
             let label = HStack(spacing: DS.Space.xs) {
-                Image(systemName: status.level == .reached ? "exclamationmark.octagon.fill" : "gauge.with.dots.needle.67percent")
-                    .font(.system(size: 10))
-                    .foregroundStyle(tone)
+                Image(
+                    systemName: status.level == .reached
+                        ? "exclamationmark.octagon.fill" : "gauge.with.dots.needle.67percent"
+                )
+                .font(.system(size: 10))
+                .foregroundStyle(tone)
                 Text(status.compactText(now: context.date))
                     .font(.dsCaption)
                     .monospacedDigit()

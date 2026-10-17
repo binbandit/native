@@ -6,12 +6,15 @@ struct GalleryPatterns: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
-            NoticeBanner(tone: .info, title: "You're offline", detail: "Your message is queued and sends when the network returns.")
+            NoticeBanner(
+                tone: .info, title: "You're offline",
+                detail: "Your message is queued and sends when the network returns.")
             ErrorState(
                 "The GitHub MCP server didn't start",
                 recovery: "Native kept the session running without it.",
                 suggestion: "Check the server's command, then retry.",
-                details: "Error: spawn npx ENOENT\n    at ChildProcess._handle.onexit (node:internal/child_process:286:19)",
+                details:
+                    "Error: spawn npx ENOENT\n    at ChildProcess._handle.onexit (node:internal/child_process:286:19)",
                 primary: .init("Retry") {},
                 secondary: .init("Disable for This Project") {}
             )
@@ -43,7 +46,8 @@ struct GalleryPatterns: View {
             DiffView(
                 path: "native/Views/SidebarView.swift",
                 oldText: "let title = \"Tasks\"\nvar body: some View {\n    List {}\n}\n",
-                newText: "let title = \"Projects\"\nvar body: some View {\n    List {}\n        .listStyle(.sidebar)\n}\n"
+                newText:
+                    "let title = \"Projects\"\nvar body: some View {\n    List {}\n        .listStyle(.sidebar)\n}\n"
             )
             HStack(spacing: DS.Space.md) {
                 ElapsedTimeText(since: Self.started)

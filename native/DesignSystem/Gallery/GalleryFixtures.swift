@@ -15,9 +15,15 @@ enum GalleryFixtures {
 
     static let tasks: [SampleTask] = [
         SampleTask(id: "tokens", title: "Design system tokens", status: .working, age: 90),
-        SampleTask(id: "focus", title: "Fix composer focus ring", status: .needsPermission, isUnread: true, badge: .attention("Approve")),
-        SampleTask(id: "polish", title: "Sidebar polish", status: .done, isUnread: true, diff: (added: 128, removed: 14), badge: .dot),
-        SampleTask(id: "flaky", title: "Investigate flaky test", status: .failed, subtitle: "Codex · fix/flaky-ui-test", age: 3600 * 26),
+        SampleTask(
+            id: "focus", title: "Fix composer focus ring", status: .needsPermission, isUnread: true,
+            badge: .attention("Approve")),
+        SampleTask(
+            id: "polish", title: "Sidebar polish", status: .done, isUnread: true, diff: (added: 128, removed: 14),
+            badge: .dot),
+        SampleTask(
+            id: "flaky", title: "Investigate flaky test", status: .failed, subtitle: "Codex · fix/flaky-ui-test",
+            age: 3600 * 26),
     ]
 
     static let limits: [LimitStatus] = [

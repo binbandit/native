@@ -66,17 +66,20 @@ final class AgentIconStore {
         let key = ImageKey(agent: agent.id, size: size, scale: scale)
         if let image = images[key] { return image }
         let artwork = artwork(for: agent)
-        let renderer = ImageRenderer(content: AgentIconArtworkView(artwork: artwork, size: size).foregroundStyle(.black))
+        let renderer = ImageRenderer(
+            content: AgentIconArtworkView(artwork: artwork, size: size).foregroundStyle(.black))
         renderer.scale = scale
         guard let cgImage = renderer.cgImage else { return Image(systemName: agent.symbolName) }
-        let image = Image(decorative: cgImage, scale: scale).renderingMode(artwork.isTemplate ? .template : .original)
+        let image = AgentIconMenuImage.image(cgImage, scale: scale, isTemplate: artwork.isTemplate)
         // Monograms are placeholders; only keep what `resolve` settled on.
         if artworks[agent.id] != nil { images[key] = image }
         return image
     }
 
     private func load(_ agent: AgentDefinition) async {
-        guard let source = agent.manifest.icon, let artwork = await find(source, pluginID: agent.pluginID) else { return }
+        guard let source = agent.manifest.icon, let artwork = await find(source, pluginID: agent.pluginID) else {
+            return
+        }
         guard !Task.isCancelled else { return }
         images = images.filter { $0.key.agent != agent.id }
         artworks[agent.id] = artwork
@@ -98,7 +101,8 @@ final class AgentIconStore {
     /// A plugin's image file: an SVG becomes a glyph, anything else a picture.
     private func file(_ path: String, pluginID: String) async -> AgentIconArtwork? {
         let expanded = NSString(string: path).expandingTildeInPath
-        let url = expanded.hasPrefix("/")
+        let url =
+            expanded.hasPrefix("/")
             ? URL(filePath: expanded)
             : pluginsDirectory.appending(path: pluginID, directoryHint: .isDirectory).appending(path: expanded)
         guard let data = await Self.contents(of: url) else { return nil }
