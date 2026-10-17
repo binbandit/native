@@ -67,7 +67,7 @@ public nonisolated enum GoalPrompt: Hashable, Sendable {
     }
 
     /// `reminder` follows a reply that had no status line, so the agent knows Native couldn't read it.
-    static func continuationText(objective: String, usage: GoalUsage, reminder: Bool, resumed: Bool) -> String {
+    public static func continuationText(objective: String, usage: GoalUsage, reminder: Bool, resumed: Bool) -> String {
         var notes: [String] = [resumed ? "Pick the goal back up where you left off." : "Keep working toward the goal."]
         if let remaining = usage.remainingText {
             notes.append("Budget: \(remaining).")

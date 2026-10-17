@@ -22,7 +22,7 @@ public nonisolated struct WorkflowRun: Codable, Hashable, Sendable, Identifiable
     public private(set) var isPaused = false
     public private(set) var endedAt: Date?
 
-    init(
+    public init(
         id: UUID = UUID(), definition: WorkflowDefinition, input: String, cwd: URL,
         assignments: [String: WorkflowAssignment], at now: Date
     ) {

@@ -48,8 +48,17 @@ final class SparkleUpdateDriver: NSObject {
         updater?.checkForUpdatesInBackground()
     }
 
-    /// Answers the offer Sparkle is waiting on: install (download first if needed), skip or later.
-    func reply(_ choice: SPUUserUpdateChoice) {
+    /// Downloads the offered update if needed, then installs it.
+    func install() { reply(.install) }
+
+    /// Not now: Sparkle offers it again at the next scheduled check.
+    func remindLater() { reply(.dismiss) }
+
+    /// Never offer this version again.
+    func skip() { reply(.skip) }
+
+    /// Answers the offer Sparkle is waiting on.
+    private func reply(_ choice: SPUUserUpdateChoice) {
         if let reply = choiceReply ?? readyReply {
             choiceReply = nil
             readyReply = nil
@@ -229,7 +238,7 @@ extension SparkleUpdateDriver: SPUUpdaterDelegate {
         controller.channel.sparkleChannels
     }
 
-    func updaterShouldPromptForPermissionToCheckForUpdates(_ updater: SPUUpdater) -> Bool {
+    func updaterShouldPromptForPermissionToCheck(forUpdates updater: SPUUpdater) -> Bool {
         false
     }
 
