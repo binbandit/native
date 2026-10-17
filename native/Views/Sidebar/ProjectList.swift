@@ -94,7 +94,8 @@ private struct AddProjectPrompt: View {
                 .contentShape(.rect)
                 .overlay {
                     RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
-                        .strokeBorder(.dsSeparator, style: StrokeStyle(lineWidth: 1, dash: [DS.Space.xs, DS.Space.xxs]))
+                        .strokeBorder(
+                            .dsSeparator, style: StrokeStyle(lineWidth: 1, dash: [DS.Space.xs, DS.Space.xxs]))
                 }
         }
         .buttonStyle(SidebarRowButtonStyle())

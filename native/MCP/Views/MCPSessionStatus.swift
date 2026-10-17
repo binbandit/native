@@ -20,26 +20,28 @@ struct MCPSessionStatusButton: View {
         if let library = MCPServersPlugin.library(in: model.plugins) {
             let entries = library.entries(for: session.context)
             let summary = MCPSessionSummary(library: library, entries: entries)
-            Button {
-                isPresented.toggle()
-            } label: {
-                HStack(spacing: DS.Space.sm) {
-                    StatusBarGlyph("server.rack")
-                    Text("MCP \(summary.active)")
-                    if summary.attention > 0 {
-                        StatusDot(color: .dsDanger)
+            // Quiet when the session has no servers at all.
+            if !entries.isEmpty {
+                Button {
+                    isPresented.toggle()
+                } label: {
+                    HStack(spacing: DS.Space.sm) {
+                        Image(systemName: "server.rack")
+                        Text("\(summary.active)")
+                            .monospacedDigit()
+                        if summary.attention > 0 {
+                            StatusDot(color: .dsDanger)
+                        }
                     }
                 }
-                .statusBarSegmentChrome(isActive: isPresented)
-            }
-            .buttonStyle(.plain)
-            .help(summary.help)
-            .accessibilityLabel("MCP servers")
-            .accessibilityValue(summary.help)
-            .focusedSceneValue(\.mcpServersPopover, $isPresented)
-            .popover(isPresented: $isPresented, arrowEdge: .top) {
-                MCPSessionPanel(library: library, session: session, entries: entries, onManage: onManage.map { manage in { isPresented = false; manage() } })
-                    .presentationBackground(.dsOverlay)
+                .help(summary.help + " (⌃⌘M)")
+                .accessibilityLabel("MCP servers")
+                .accessibilityValue(summary.help)
+                .focusedSceneValue(\.mcpServersPopover, $isPresented)
+                .popover(isPresented: $isPresented, arrowEdge: .bottom) {
+                    MCPSessionPanel(library: library, session: session, entries: entries, onManage: onManage.map { manage in { isPresented = false; manage() } })
+                        .presentationBackground(.dsOverlay)
+                }
             }
         }
     }

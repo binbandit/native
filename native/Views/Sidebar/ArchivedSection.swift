@@ -134,7 +134,9 @@ private struct ArchivedTaskRow: View {
                 model.deleteSession(summary.id, undoManager: undoManager)
             }
         } message: {
-            Text("Its history goes from Native and, if \(summary.agent.displayName) supports it, from \(summary.agent.displayName) too. You can undo for a few seconds.")
+            Text(
+                "Its history goes from Native and, if \(summary.agent.displayName) supports it, from \(summary.agent.displayName) too. You can undo for a few seconds."
+            )
         }
     }
 
