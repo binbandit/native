@@ -14,7 +14,6 @@ struct WorkflowPickerView: View {
     @State private var selectedID: String?
     @State private var input = ""
     @State private var overrides: [String: WorkflowAgent.ID] = [:]
-    @FocusState private var isInputFocused: Bool
 
     init(
         entries: [WorkflowLibrary.Entry], agents: [WorkflowAgent], projectName: String,
@@ -58,7 +57,6 @@ struct WorkflowPickerView: View {
         .frame(width: AutomationMetrics.pickerWidth)
         .background(.dsBackground)
         .onChange(of: selectedID) { overrides = [:] }
-        .onAppear { isInputFocused = true }
     }
 
     private var header: some View {
@@ -93,11 +91,8 @@ struct WorkflowPickerView: View {
                 Text(definition.input.label)
                     .font(.dsBodyMedium)
                     .foregroundStyle(.dsTextPrimary)
-                TextField(definition.input.label, text: $input, prompt: Text(definition.input.placeholder ?? "").foregroundStyle(.dsTextQuaternary), axis: .vertical)
-                    .lineLimit(2...6)
-                    .automationField()
-                    .focused($isInputFocused)
-                    .labelsHidden()
+                AutomationTextField(label: definition.input.label, text: $input, placeholder: definition.input.placeholder ?? "", axis: .vertical, lines: 2...6)
+                    .focusedOnAppear()
             }
             VStack(alignment: .leading, spacing: DS.Space.xs) {
                 SectionHeader("Steps")

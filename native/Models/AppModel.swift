@@ -278,8 +278,21 @@ final class AppModel {
     }
 
     /// Gives the session the user's own title; an empty one goes back to the automatic title.
-    func rename(_ key: SessionKey, to title: String) {
+    /// With an undo manager, ⌘Z restores the title exactly, automatic or the user's.
+    func rename(_ key: SessionKey, to title: String, undoManager: UndoManager? = nil) {
+        let previous = userTitle(for: key) ?? ""
         titles.rename(SessionTitles.Key(agent: key.agent, session: key.id), to: title)
+        undoManager?.registerUndo(withTarget: self) { model in
+            MainActor.assumeIsolated {
+                model.rename(key, to: previous, undoManager: undoManager)
+            }
+        }
+        undoManager?.setActionName("Rename Session")
+    }
+
+    /// The title the user gave the session, or nil while it goes by an automatic one.
+    func userTitle(for key: SessionKey) -> String? {
+        titles.userTitle(for: SessionTitles.Key(agent: key.agent, session: key.id))
     }
 
     var isCreatingSession: Bool {
@@ -360,6 +373,7 @@ final class AppModel {
         do {
             let session = try await launcher.start(on: runtime, cwd: project.url)
             catalog.add(SessionInfo(sessionId: session.id, cwd: project.path, updatedAt: .now), for: agent, in: project.id)
+            session.wantsComposerFocus = true
             selection = session.key
             lastUsedAgent = agent
             UserDefaults.standard.set(agent.rawValue, forKey: Self.lastUsedAgentKey)

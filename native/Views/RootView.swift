@@ -4,6 +4,7 @@ import UniformTypeIdentifiers
 
 struct RootView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.releaseChannel) private var releaseChannel
     @State private var columnVisibility = NavigationSplitViewVisibility.all
 
     var body: some View {
@@ -25,6 +26,13 @@ struct RootView: View {
                         }
                     }
                     .sharedBackgroundVisibility(.hidden)
+                    if releaseChannel.isNightly {
+                        ToolbarItem {
+                            NightlyMark()
+                                .foregroundStyle(.dsTextTertiary)
+                        }
+                        .sharedBackgroundVisibility(.hidden)
+                    }
                     // Pushes the toggle to the sidebar's leading edge, next to the window controls, and
                     // back and forward to its trailing edge, where Conductor has them.
                     ToolbarSpacer(.flexible)

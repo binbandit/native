@@ -11,7 +11,6 @@ struct GoalEditor: View {
 
     @State private var objective: String
     @State private var budget: GoalBudget
-    @FocusState private var isObjectiveFocused: Bool
 
     init(goal: Goal?, agentName: String, onSave: @escaping (_ objective: String, _ budget: GoalBudget) -> Void, onCancel: @escaping () -> Void) {
         self.goal = goal
@@ -44,16 +43,14 @@ struct GoalEditor: View {
                 Text("Objective")
                     .font(.dsCaptionMedium)
                     .foregroundStyle(.dsTextSecondary)
-                TextField(
-                    "Objective",
+                AutomationTextField(
+                    label: "Objective",
                     text: $objective,
-                    prompt: Text("Every test in ExportTests passes, and the CSV matches the spec").foregroundStyle(.dsTextQuaternary),
-                    axis: .vertical
+                    placeholder: "Every test in ExportTests passes, and the CSV matches the spec",
+                    axis: .vertical,
+                    lines: 3...8
                 )
-                .lineLimit(3...8)
-                .automationField()
-                .focused($isObjectiveFocused)
-                .labelsHidden()
+                .focusedOnAppear()
                 Text("Say how to tell it's done; the agent verifies that before it reports the goal complete.")
                     .font(.dsCaption)
                     .foregroundStyle(.dsTextTertiary)
@@ -88,7 +85,6 @@ struct GoalEditor: View {
         .padding(DS.Space.xl)
         .frame(width: AutomationMetrics.goalEditorWidth)
         .background(.dsOverlay)
-        .onAppear { isObjectiveFocused = true }
     }
 
     private var budgetNote: String {

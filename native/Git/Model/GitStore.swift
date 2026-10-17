@@ -11,13 +11,23 @@ final class GitStore {
     typealias EnvironmentProvider = () async -> [String: String]
 
     @ObservationIgnored private let environmentProvider: EnvironmentProvider
+    /// Builds git for the host the projects are on; a client passes one that runs on its host.
+    @ObservationIgnored private let makeGit: ([String: String]) -> Git
     @ObservationIgnored private var git: Git?
     // Not observed: models are created lazily from view bodies, which mustn't mutate observed state.
     @ObservationIgnored private var models: [URL: GitRepositoryModel] = [:]
 
-    init(environment: @escaping EnvironmentProvider = { await LoginShell.environment() }) {
+    init(environment: @escaping EnvironmentProvider, makeGit: @escaping ([String: String]) -> Git) {
         environmentProvider = environment
+        self.makeGit = makeGit
     }
+
+    #if os(macOS)
+    /// Git on this Mac.
+    convenience init(environment: @escaping EnvironmentProvider = { await LoginShell.environment() }) {
+        self.init(environment: environment, makeGit: { Git(environment: $0) })
+    }
+    #endif
 
     /// The model for the working tree containing `folder`. It starts loading and watching right away.
     func model(for folder: URL) -> GitRepositoryModel {
@@ -72,7 +82,7 @@ final class GitStore {
 
     private func resolveGit() async -> Git {
         if let git { return git }
-        let resolved = Git(environment: await environmentProvider())
+        let resolved = makeGit(await environmentProvider())
         git = resolved
         return resolved
     }

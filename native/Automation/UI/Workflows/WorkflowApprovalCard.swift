@@ -48,11 +48,7 @@ struct WorkflowApprovalCard: View {
 
     @ViewBuilder private var promptView: some View {
         if isEditing {
-            TextField("Prompt", text: $draft, axis: .vertical)
-                .lineLimit(4...14)
-                .font(.dsMonoCaption)
-                .automationField()
-                .labelsHidden()
+            AutomationTextField(label: "Prompt", text: $draft, axis: .vertical, lines: 4...14, font: .dsMonoCaption)
         } else {
             CappedHeightScrollView(maxHeight: 160) {
                 Text(step.prompt ?? "")
