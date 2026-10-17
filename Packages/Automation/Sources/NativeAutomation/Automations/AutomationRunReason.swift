@@ -12,7 +12,7 @@ public nonisolated enum AutomationRunReason: Codable, Hashable, Sendable {
         switch self {
         case .scheduled(let date): "Scheduled for \(date.formatted(date: .abbreviated, time: .shortened))"
         case .missed(let date): "Missed \(date.formatted(date: .abbreviated, time: .shortened)) while Native was closed"
-        case .event(let occurrence): occurrence.context
+        case .event(let occurrence): occurrence.headline
         case .manual: "Run by you"
         }
     }

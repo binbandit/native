@@ -175,20 +175,28 @@ final class GhosttyRuntime: TerminalEngine {
 
     private func observeApp() {
         let center = NotificationCenter.default
-        let app = self.app
         observers = [
             center.addObserver(forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main) { _ in
-                MainActor.assumeIsolated { ghostty_app_set_focus(app, true) }
+                MainActor.assumeIsolated { GhosttyRuntime.shared?.setFocus(true) }
             },
             center.addObserver(forName: NSApplication.didResignActiveNotification, object: nil, queue: .main) { _ in
-                MainActor.assumeIsolated { ghostty_app_set_focus(app, false) }
+                MainActor.assumeIsolated { GhosttyRuntime.shared?.setFocus(false) }
             },
             center.addObserver(
                 forName: NSTextInputContext.keyboardSelectionDidChangeNotification, object: nil, queue: .main
             ) { _ in
-                MainActor.assumeIsolated { ghostty_app_keyboard_changed(app) }
+                MainActor.assumeIsolated { GhosttyRuntime.shared?.keyboardDidChange() }
             },
         ]
+    }
+
+    private func setFocus(_ focused: Bool) {
+        ghostty_app_set_focus(app, focused)
+    }
+
+    /// The input source changed; libghostty reloads its keyboard layout.
+    private func keyboardDidChange() {
+        ghostty_app_keyboard_changed(app)
     }
 
     // MARK: Callbacks

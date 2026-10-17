@@ -12,15 +12,21 @@ public nonisolated enum AutomationEventKind: String, Codable, Hashable, Sendable
     /// Native pushed a branch.
     case branchPushed
 
-    public var label: String {
+    /// The event as the end of "When …": "CI fails on a pull request".
+    public var clause: String {
         switch self {
-        case .pullRequestOpened: "A pull request is opened"
-        case .pullRequestUpdated: "A pull request is updated"
-        case .reviewRequested: "Your review is requested"
+        case .pullRequestOpened: "a pull request is opened"
+        case .pullRequestUpdated: "a pull request is updated"
+        case .reviewRequested: "your review is requested"
         case .checksFailed: "CI fails on a pull request"
-        case .taskFinished: "A task finishes"
-        case .branchPushed: "A branch is pushed"
+        case .taskFinished: "a task finishes"
+        case .branchPushed: "a branch is pushed"
         }
+    }
+
+    /// The event on its own, for menus: "CI fails on a pull request".
+    public var label: String {
+        clause.prefix(1).uppercased() + clause.dropFirst()
     }
 
     public var systemImage: String {

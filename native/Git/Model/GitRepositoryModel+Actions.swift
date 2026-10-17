@@ -112,7 +112,9 @@ extension GitRepositoryModel {
     func undoCommits(_ receipt: CommitPlanReceipt) async {
         await perform(.undoCommits) { repository in
             try await repository.undo(receipt)
-            return GitNotice(tone: .success, title: receipt.commits.count == 1 ? "Undid 1 commit" : "Undid \(receipt.commits.count) commits")
+            return GitNotice(
+                tone: .success,
+                title: receipt.commits.count == 1 ? "Undid 1 commit" : "Undid \(receipt.commits.count) commits")
         }
     }
 

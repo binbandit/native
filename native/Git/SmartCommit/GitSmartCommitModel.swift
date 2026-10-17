@@ -49,14 +49,17 @@ final class GitSmartCommitModel {
         failure = nil
         let paths = files.map(\.path)
         do {
-            guard let source = repository.repository else { throw GitError.unexpectedOutput("The repository isn't loaded.") }
+            guard let source = repository.repository else {
+                throw GitError.unexpectedOutput("The repository isn't loaded.")
+            }
             async let patch = source.patch(for: repository.changes)
             async let subjects = source.recentCommitSubjects()
             let style = CommitStyle(subjects: try await subjects)
             let plan = try await SmartCommitPlanner().plan(files: files, patch: try await patch, style: style)
             groups = plan.groups
             note =
-                SmartCommitPlanner.isAvailable ? nil : "Apple Intelligence isn't available on this Mac, so changes are grouped by folder."
+                SmartCommitPlanner.isAvailable
+                ? nil : "Apple Intelligence isn't available on this Mac, so changes are grouped by folder."
         } catch {
             groups = SmartCommitPlanner.fallback(paths).groups
             note = "Couldn't draft a plan (\(error.localizedDescription)), so changes are grouped by folder."
@@ -80,7 +83,8 @@ final class GitSmartCommitModel {
         if let id, groups.contains(where: { $0.id == id }) {
             update(id) { $0.paths.append(path) }
         } else {
-            groups.append(CommitPlan.Group(message: "Update \(file(path)?.path.split(separator: "/").last ?? "")", paths: [path]))
+            groups.append(
+                CommitPlan.Group(message: "Update \(file(path)?.path.split(separator: "/").last ?? "")", paths: [path]))
         }
         dropEmptyGroups()
     }

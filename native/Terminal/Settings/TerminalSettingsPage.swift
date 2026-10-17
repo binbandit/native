@@ -94,10 +94,10 @@ private struct TerminalSettingsPreview: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.xxs) {
-            (color(2, "native") + color(nil, " % git status"))
+            Text("\(color(2, "native"))\(color(nil, " % git status"))")
             color(nil, "On branch main")
-            (color(nil, "  modified:   ") + color(1, "docs/terminal.md"))
-            (color(nil, "  new file:   ") + color(2, "native/Terminal/"))
+            Text("\(color(nil, "  modified:   "))\(color(1, "docs/terminal.md"))")
+            Text("\(color(nil, "  new file:   "))\(color(2, "native/Terminal/"))")
         }
         .font(font)
         .frame(maxWidth: .infinity, alignment: .leading)

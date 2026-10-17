@@ -88,7 +88,8 @@ final class GitStore {
             archivedBranch = (try? await requireRepository(at: main).archiveBranch(branch)) != nil
         }
         return RemovedTaskWorktree(
-            path: repository.root, mainRoot: main, branch: branch, checkpoint: checkpoint, archivedBranch: archivedBranch)
+            path: repository.root, mainRoot: main, branch: branch, checkpoint: checkpoint,
+            archivedBranch: archivedBranch)
     }
 
     /// Checks a removed task worktree's branch out where it was and restores its uncommitted work.

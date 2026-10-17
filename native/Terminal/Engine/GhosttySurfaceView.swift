@@ -1,6 +1,7 @@
 #if canImport(GhosttyKit) && TERMINAL_ENGINE_WIP
 import AppKit
 import GhosttyKit
+import OSLog
 import Terminal
 
 /// One terminal: the AppKit view libghostty draws a surface into, and the surface itself. Created
@@ -42,7 +43,7 @@ final class GhosttySurfaceView: NSView, TerminalSurface {
         config.platform = ghostty_platform_u(
             macos: ghostty_platform_macos_s(nsview: Unmanaged.passUnretained(self).toOpaque()))
         config.userdata = Unmanaged.passUnretained(self).toOpaque()
-        config.scale_factor = NSScreen.main?.backingScaleFactor ?? 2
+        config.scale_factor = Double(NSScreen.main?.backingScaleFactor ?? 2)
         config.context = GHOSTTY_SURFACE_CONTEXT_WINDOW
         // Keep the last output on screen when the shell exits; Native shows what happened.
         config.wait_after_command = true

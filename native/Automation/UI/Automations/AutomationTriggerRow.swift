@@ -50,7 +50,7 @@ struct AutomationTriggerRow: View {
         case .event(let kind):
             Picker("Event", selection: Binding(get: { kind }, set: { trigger = .event($0) })) {
                 ForEach(AutomationEventKind.allCases, id: \.self) { kind in
-                    Text("When " + kind.label.prefix(1).lowercased() + kind.label.dropFirst()).tag(kind)
+                    Text("When " + kind.clause).tag(kind)
                 }
             }
             .pickerStyle(.menu)

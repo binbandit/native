@@ -20,8 +20,9 @@ final class MCPLibrary {
     private(set) var configurations: [AgentConfigFormat: AgentMCPConfiguration] = [:]
     private(set) var isReadingConfigurations = false
     private(set) var lastRead: Date?
-    private(set) var reports: [MCPServerKey: MCPProbeReport] = [:]
-    private(set) var probing: Set<MCPServerKey> = []
+    /// The latest probe of each server, and the ones being probed (set by `probe`).
+    var reports: [MCPServerKey: MCPProbeReport] = [:]
+    var probing: Set<MCPServerKey> = []
     /// Something that went wrong saving or reading, shown on the page until dismissed.
     var problem: String?
     /// The agent CLI command running now, and how the last one went (set by `run(_:)`).

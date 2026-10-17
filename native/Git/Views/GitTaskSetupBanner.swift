@@ -104,18 +104,25 @@ struct GitTaskSetupBanner: View {
         var parts: [String] = []
         switch run.state {
         case .running:
-            parts.append("Running \(run.projectRoot.lastPathComponent)'s setup script. You can start working; the agent sees the files as they appear.")
+            parts.append(
+                "Running \(run.projectRoot.lastPathComponent)'s setup script. You can start working; the agent sees the files as they appear."
+            )
         case .failed(let reason):
             parts.append(reason)
         case .finished(let result) where result.timedOut:
-            parts.append("It was stopped after \(GitStore.setupTimeout.formatted(.units(allowed: [.minutes], width: .wide))). The task can still run; retry once the script is faster.")
+            parts.append(
+                "It was stopped after \(GitStore.setupTimeout.formatted(.units(allowed: [.minutes], width: .wide))). The task can still run; retry once the script is faster."
+            )
         case .finished(let result) where !result.succeeded:
-            parts.append("The task can still run, but may be missing what the script installs. Fix the script, then retry.")
+            parts.append(
+                "The task can still run, but may be missing what the script installs. Fix the script, then retry.")
         case .finished:
             break
         }
         if !run.copiedFiles.isEmpty {
-            parts.append("Copied \(run.copiedFiles.count == 1 ? run.copiedFiles[0] : "\(run.copiedFiles.count) env files") from the project.")
+            parts.append(
+                "Copied \(run.copiedFiles.count == 1 ? run.copiedFiles[0] : "\(run.copiedFiles.count) env files") from the project."
+            )
         }
         if let copyFailure = run.copyFailure {
             parts.append("Couldn't copy the project's env files: \(copyFailure)")

@@ -17,12 +17,13 @@ extension MCPLibrary {
 
     /// The managed servers to hand the agent in `session/new` and `session/load`.
     func mcpServers(for session: SessionContext) -> [MCPServer] {
-        deliveries(for: session).filter(\.outcome.isDelivered).map { decision in
+        deliveries(for: session).filter(\.outcome.isDelivered).map { decision -> MCPServer in
+            let name = decision.server.name
             switch decision.server.config(with: secrets(for: decision.server.id)).transport {
             case .stdio(let command, let arguments, let environment, _):
-                .stdio(name: decision.server.name, command: command, arguments: arguments, environment: environment)
+                return .stdio(name: name, command: command, arguments: arguments, environment: environment)
             case .http(let url, let headers), .sse(let url, let headers):
-                .http(name: decision.server.name, url: url, headers: headers)
+                return .http(name: name, url: url, headers: headers)
             }
         }
     }

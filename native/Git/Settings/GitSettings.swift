@@ -65,9 +65,11 @@ final class GitSettings {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        branchPrefixMode = defaults.string(forKey: Key.branchPrefixMode.name).flatMap(BranchPrefixMode.init) ?? .gitHubUsername
+        branchPrefixMode =
+            defaults.string(forKey: Key.branchPrefixMode.name).flatMap(BranchPrefixMode.init) ?? .gitHubUsername
         customBranchPrefix = defaults.string(forKey: Key.customBranchPrefix.name) ?? ""
-        newTaskWorkspace = defaults.string(forKey: Key.newTaskWorkspace.name).flatMap(NewTaskWorkspace.init) ?? .worktree
+        newTaskWorkspace =
+            defaults.string(forKey: Key.newTaskWorkspace.name).flatMap(NewTaskWorkspace.init) ?? .worktree
         renamesBranches = defaults.object(forKey: Key.renamesBranches.name) as? Bool ?? true
         envFilePatterns = defaults.stringArray(forKey: Key.envFilePatterns.name) ?? Self.defaultEnvFilePatterns
         setupScripts = defaults.dictionary(forKey: Key.setupScripts.name) as? [String: String] ?? [:]
