@@ -45,7 +45,7 @@ while [ $# -gt 0 ]; do
         --build-setting) settings+=("$2"); shift ;;
         --output) output=$2; shift ;;
         --no-dmg) make_dmg=0 ;;
-        -h | --help) sed -n '2,30p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h | --help) sed -n '2,29p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) die "unknown option $1 (see --help)" ;;
     esac
     shift
