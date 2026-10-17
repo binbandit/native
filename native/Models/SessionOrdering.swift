@@ -36,6 +36,15 @@ final class SessionOrdering {
         orders[project] = keys
     }
 
+    /// The project's sessions in the order the user put them, if they did.
+    func order(in project: Project.ID) -> [SessionKey]? {
+        orders[project]
+    }
+
+    func restore(_ order: [SessionKey]?, in project: Project.ID) {
+        orders[project] = order
+    }
+
     func forget(_ project: Project.ID) {
         orders[project] = nil
     }

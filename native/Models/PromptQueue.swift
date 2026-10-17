@@ -44,6 +44,16 @@ nonisolated struct PromptQueue: Equatable, Sendable {
         }
     }
 
+    /// Puts a removed message back where it was, for undo.
+    mutating func restore(_ item: Item, at index: Int) {
+        guard !items.contains(where: { $0.id == item.id }) else { return }
+        items.insert(item, at: min(index, items.count))
+    }
+
+    func index(of id: Item.ID) -> Int? {
+        items.firstIndex { $0.id == id }
+    }
+
     @discardableResult
     mutating func remove(_ id: Item.ID) -> Item? {
         guard let index = items.firstIndex(where: { $0.id == id }) else { return nil }

@@ -58,6 +58,12 @@ final class Projects {
         all.removeAll { $0.id == id }
     }
 
+    /// Puts a removed project back where it was, for undo.
+    func restore(_ project: Project, at index: Int) {
+        guard self.project(project.id) == nil else { return }
+        all.insert(project, at: min(index, all.count))
+    }
+
     func move(fromOffsets source: IndexSet, toOffset destination: Int) {
         all.move(fromOffsets: source, toOffset: destination)
     }
