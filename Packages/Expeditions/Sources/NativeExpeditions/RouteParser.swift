@@ -22,8 +22,9 @@ public nonisolated enum RouteParser {
         reply.range(of: openTag, options: [.caseInsensitive, .backwards]) != nil
     }
 
-    /// The route in `reply`, with assignees outside `builders` moved onto them in turn.
-    public static func parse(_ reply: String, builders: [String]) -> Result<Route, Problem> {
+    /// The route in `reply`, with assignees outside `builders` moved onto them in turn. `earlier`
+    /// names assignments from legs before the ones in `reply`, which its work may come after.
+    public static func parse(_ reply: String, builders: [String], earlier: Set<String> = []) -> Result<Route, Problem> {
         guard let json = block(in: reply) else {
             return .failure(Problem("Your reply has no \(openTag) block. End it with the route as JSON inside \(openTag) and \(closeTag)."))
         }
@@ -33,7 +34,7 @@ public nonisolated enum RouteParser {
         } catch {
             return .failure(Problem("The \(openTag) block isn't valid JSON in the expected shape: \(describe(error))"))
         }
-        return validate(wire, builders: builders)
+        return validate(wire, builders: builders, earlier: earlier)
     }
 
     /// The JSON between the last route tags, without code fences.
@@ -49,9 +50,9 @@ public nonisolated enum RouteParser {
         return String(text[start...end])
     }
 
-    private static func validate(_ wire: WireRoute, builders: [String]) -> Result<Route, Problem> {
-        var seen = Set<String>()
-        var earlier = Set<String>()
+    private static func validate(_ wire: WireRoute, builders: [String], earlier known: Set<String>) -> Result<Route, Problem> {
+        var seen = known
+        var earlier = known
         var legs: [Route.Leg] = []
         var nextBuilder = 0
         for (legIndex, wireLeg) in (wire.legs ?? []).enumerated() {

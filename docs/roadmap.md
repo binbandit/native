@@ -38,4 +38,4 @@ coordinator keeps this current.
 | Built-in skills, starting with "build a Native plugin" | orchestration (Native's MCP server) | |
 | Minimal by default | plugins, settings | `docs/decisions.md` |
 | iPad app | app target | After the host protocol lands (`docs/architecture.md`) |
-| Missions, rebranded (working name "Expeditions") | new feature + package | Factory's concept under Native's own name, composed from orchestration, goals, workflows and worktrees |
+| Expeditions (Factory's missions, rebranded) | `Packages/Expeditions`, `native/Expeditions` | Factory's concept under Native's own name, composed from orchestration, goals, workflows and worktrees |

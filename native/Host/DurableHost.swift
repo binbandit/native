@@ -189,10 +189,11 @@ final class DurableHost {
             sessions = try await client.sessions().filter { $0.origin != .announced }
             let seen = UserDefaults.standard.object(forKey: Self.seenActivityKey) as? Int64
             let entries = try await client.activity(after: seen)
-            // Only what happened while nothing was watching; the first run has nothing to report.
-            awayActivity = seen == nil ? [] : entries
-            if seen == nil, let last = entries.last {
-                UserDefaults.standard.set(last.id, forKey: Self.seenActivityKey)
+            if seen == nil {
+                // The first connection only sets the baseline; there's no "away" before it.
+                UserDefaults.standard.set(entries.last?.id ?? 0, forKey: Self.seenActivityKey)
+            } else {
+                awayActivity = entries.filter { $0.kind != .unknown }
             }
         } catch {
             errorMessage = error.localizedDescription

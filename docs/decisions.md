@@ -184,3 +184,11 @@ Ghostty's terminfo and shell integration, which the build phase copies into the 
 built or fetched lives in the repo. A build without it still compiles (`canImport(GhosttyKit)`) and
 the terminal says how to enable it. Native writes the whole libghostty config itself and never
 reads the user's Ghostty config, so the terminal follows Native's design system and settings.
+
+## 2026-10-18: Expeditions
+
+Native's take on long, multi-agent projects (Factory calls theirs missions) is called Expeditions. A
+lead agent proposes a route of assignments, the user approves it, and a crew of agents from any
+providers works through it with review checkpoints, ending in a debrief and a pull request. It is
+built from Native's own pieces (orchestration, goals, the workflow engine, worktrees, the durable
+host) under its own vocabulary, never Factory's. Design: `docs/expeditions.md`.

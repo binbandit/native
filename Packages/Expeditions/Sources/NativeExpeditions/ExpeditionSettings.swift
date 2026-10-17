@@ -1,7 +1,7 @@
 import Foundation
 
 /// How an expedition runs, chosen when it starts.
-public nonisolated struct TeamworkSettings: Codable, Hashable, Sendable {
+public nonisolated struct ExpeditionSettings: Codable, Hashable, Sendable {
     /// Review rounds a checkpoint gets before it waits on the user.
     public var fixRounds: Int
     /// Turns each assignment's goal may take.

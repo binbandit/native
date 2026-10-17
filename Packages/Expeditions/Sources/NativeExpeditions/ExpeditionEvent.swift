@@ -2,7 +2,7 @@ import Foundation
 import NativeAutomation
 
 /// Something that happened to an expedition: the user acting on it, or its crew reporting back.
-public nonisolated enum TeamworkEvent: Codable, Hashable, Sendable {
+public nonisolated enum ExpeditionEvent: Codable, Hashable, Sendable {
     /// Begins: makes the base, then starts planning.
     case start
     case baseReady(URL)
@@ -56,8 +56,6 @@ public nonisolated enum TeamworkEvent: Codable, Hashable, Sendable {
     case reassign(String, agent: WorkflowAgent)
     /// Grants a failing checkpoint one more round of fixes.
     case anotherRound(String)
-    /// When the provider limit that stopped a seat resets, as the Usage feature knows it.
-    case limitResets(CrewSlot, at: Date)
-    /// That limit has reset: the seat picks back up.
+    /// The provider limit that stopped a seat has reset: it picks back up.
     case limitReset(CrewSlot)
 }

@@ -3,13 +3,13 @@ import NativeAutomation
 
 /// What Native says to each member of the crew. Everything an agent needs is in its prompt, and
 /// everything it hands back comes in its reply, so no agent ever has to write Native's files.
-public nonisolated enum TeamworkPrompt {
+public nonisolated enum ExpeditionPrompt {
     /// The most of one report or reply that goes into another prompt.
     static let reportLimit = 4_000
 
     // MARK: - Lead
 
-    static func planning(_ expedition: Teamwork) -> String {
+    static func planning(_ expedition: Expedition) -> String {
         """
         You're leading an expedition in Native: a crew of coding agents working through one large objective \
         together. Right now your job is to plan the route. Read whatever you need, but don't change any files yet.
@@ -76,7 +76,7 @@ public nonisolated enum TeamworkPrompt {
         """
     }
 
-    static func legReview(_ expedition: Teamwork, passed leg: Route.Leg) -> String {
+    static func legReview(_ expedition: Expedition, passed leg: Route.Leg) -> String {
         let ahead = expedition.route?.legs.drop { $0.id != leg.id }.dropFirst() ?? []
         let legsAhead = ahead.map { leg in
             "- \(leg.title): \(leg.outcome)\n" + leg.assignments.map { "  - \($0.id): \($0.title) (\($0.assignee))" }.joined(separator: "\n")
@@ -97,7 +97,7 @@ public nonisolated enum TeamworkPrompt {
             """
     }
 
-    static func debrief(_ expedition: Teamwork) -> String {
+    static func debrief(_ expedition: Expedition) -> String {
         let legs = (expedition.route?.legs ?? []).map { leg in
             let verdict = expedition.checkpoint(leg.id).map { checkpoint in
                 checkpoint.status == .skipped ? "not checked" : (checkpoint.latestVerdict?.note ?? checkpoint.status.label)
@@ -125,7 +125,7 @@ public nonisolated enum TeamworkPrompt {
     }
 
     /// The context a builder gets with its first prompt, before the goal.
-    static func assignmentBriefing(_ expedition: Teamwork, _ run: AssignmentRun) -> String {
+    static func assignmentBriefing(_ expedition: Expedition, _ run: AssignmentRun) -> String {
         let leg = expedition.leg(run.leg)
         var sections = [
             """
@@ -164,7 +164,7 @@ public nonisolated enum TeamworkPrompt {
         "Address the reviewer's findings for the leg \"\(leg.title)\", so that: \(leg.outcome)"
     }
 
-    static func fixBriefing(_ expedition: Teamwork, leg: Route.Leg, verdict: CheckpointVerdict, round: Int) -> String {
+    static func fixBriefing(_ expedition: Expedition, leg: Route.Leg, verdict: CheckpointVerdict, round: Int) -> String {
         """
         The reviewer checked the leg "\(leg.title)" and asked for changes (round \(round)):
 
@@ -189,7 +189,7 @@ public nonisolated enum TeamworkPrompt {
 
     // MARK: - Reviewer
 
-    static func checkpoint(_ expedition: Teamwork, leg: Route.Leg) -> String {
+    static func checkpoint(_ expedition: Expedition, leg: Route.Leg) -> String {
         """
         You're the reviewer on an expedition in Native: a crew of agents working through an approved route. The \
         builders have finished the leg "\(leg.title)"; check it before the crew moves on. Review only: don't change \
@@ -215,7 +215,7 @@ public nonisolated enum TeamworkPrompt {
         """
     }
 
-    static func recheck(_ expedition: Teamwork, leg: Route.Leg, fix: AssignmentRun?) -> String {
+    static func recheck(_ expedition: Expedition, leg: Route.Leg, fix: AssignmentRun?) -> String {
         """
         The builder addressed your findings for "\(leg.title)". It reported:
 
@@ -234,7 +234,7 @@ public nonisolated enum TeamworkPrompt {
 
     // MARK: - Parts
 
-    private static func crewLines(_ expedition: Teamwork) -> String {
+    private static func crewLines(_ expedition: Expedition) -> String {
         let crew = expedition.crew
         let builders = crew.builders.map { "- \($0.id): \($0.name)" }.joined(separator: "\n")
         return """
@@ -244,23 +244,23 @@ public nonisolated enum TeamworkPrompt {
             """
     }
 
-    private static func budgetLine(_ expedition: Teamwork) -> String {
+    private static func budgetLine(_ expedition: Expedition) -> String {
         var parts: [String] = []
         if let cost = expedition.budget.maxCost {
-            parts.append(TeamworkBudget.costText(cost))
+            parts.append(ExpeditionBudget.costText(cost))
         }
         if let duration = expedition.budget.maxDuration {
-            parts.append("\(TeamworkBudget.durationText(duration)) of working time")
+            parts.append("\(ExpeditionBudget.durationText(duration)) of working time")
         }
         return parts.isEmpty ? "" : "\n- The budget for the whole expedition is \(parts.joined(separator: " and ")); plan for it."
     }
 
-    static func reports(_ expedition: Teamwork, in leg: String) -> String {
+    static func reports(_ expedition: Expedition, in leg: String) -> String {
         let runs = expedition.assignments(in: leg)
         return runs.isEmpty ? "(none)" : runs.map { report(expedition, $0) }.joined(separator: "\n\n")
     }
 
-    private static func report(_ expedition: Teamwork, _ run: AssignmentRun) -> String {
+    private static func report(_ expedition: Expedition, _ run: AssignmentRun) -> String {
         let body = run.status == .skipped ? "(skipped)" : String((run.report ?? run.latestReply ?? "(no report)").prefix(reportLimit))
         return "### \(run.assignment.title) (\(expedition.crew.agent(run.assignment.assignee)?.name ?? run.assignment.assignee))\n\(body)"
     }

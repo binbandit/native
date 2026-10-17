@@ -1,7 +1,7 @@
 import Foundation
 
 /// Where an expedition stands, computed from its parts, never stored.
-public nonisolated enum TeamworkPhase: String, Codable, Hashable, Sendable {
+public nonisolated enum ExpeditionPhase: String, Codable, Hashable, Sendable {
     /// Making the base, or the lead drafting or revising the route.
     case planning
     /// A route waits for the user.
