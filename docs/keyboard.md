@@ -59,6 +59,19 @@ only while the card has focus; ⌘1 – ⌘9 stay session navigation.
 | Return or Tab | Insert the selected command |
 | Escape | Close the list |
 
+## File mentions
+
+Typing `@` at the start of a word lists the project's files (ignored files left out; changed and
+recently mentioned files first), narrowing as you type. The chosen file goes into the draft as
+`@path`.
+
+| Keys | Action |
+| --- | --- |
+| @ | Open the file list |
+| ↑ / ↓ | Move the selection |
+| Return or Tab | Insert the selected file |
+| Escape | Close the list |
+
 ## Permission requests
 
 The oldest pending request in the visible session answers these: a tool's permission request or a

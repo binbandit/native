@@ -1,17 +1,17 @@
 import Foundation
 import NativeAutomation
 
-extension Teamwork {
+extension Expedition {
     /// Applies `event` and returns the work the host should do next. Events that don't fit the
     /// state they arrive in (a late turn end, a double click) change nothing.
-    public mutating func handle(_ event: TeamworkEvent, at now: Date) -> [TeamworkEffect] {
+    public mutating func handle(_ event: ExpeditionEvent, at now: Date) -> [ExpeditionEffect] {
         let effects = isStopped && !event.reachesStopped ? [] : apply(event, at: now)
         updatedAt = now
         updateClock(at: now)
         return effects
     }
 
-    private mutating func apply(_ event: TeamworkEvent, at now: Date) -> [TeamworkEffect] {
+    private mutating func apply(_ event: ExpeditionEvent, at now: Date) -> [ExpeditionEffect] {
         switch event {
         case .start:
             guard base == nil, lead.status == .waiting else { return [] }
@@ -61,7 +61,7 @@ extension Teamwork {
         }
     }
 
-    private mutating func userAction(_ event: TeamworkEvent, at now: Date) -> [TeamworkEffect] {
+    private mutating func userAction(_ event: ExpeditionEvent, at now: Date) -> [ExpeditionEffect] {
         switch event {
         case .approve(let edited):
             guard approvedAt == nil, lead.status == .succeeded, route != nil, base != nil else { return [] }
@@ -117,7 +117,7 @@ extension Teamwork {
             guard !text.isEmpty, let task = lead.task else { return [] }
             note(.user, "You messaged the lead.", slot: .lead, at: now)
             if lead.status.isActive {
-                return [.prompt(.lead, task: task, text: text)]
+                return [.message(.lead, task: task, text: text)]
             }
             if approvedAt != nil, !legsSettled {
                 lead.job = .conversation
@@ -141,31 +141,24 @@ extension Teamwork {
             lead.waitingSince = nil
             note(.user, "You kept the route as approved.", slot: .lead, at: now)
             return advance(at: now)
-        case .limitResets(let slot, let date):
-            if case .assignment(let id) = slot, let index = assignmentIndex(id) {
-                assignments[index].resumeAt = date
-            }
-            return []
         default:
             return slotAction(event, at: now)
         }
     }
 
     /// Stops every turn and holds everything else. Sessions, reports and the base stay.
-    mutating func stopAll(at now: Date) -> [TeamworkEffect] {
+    mutating func stopAll(at now: Date) -> [ExpeditionEffect] {
         guard !isStopped else { return [] }
         isStopped = true
         isPaused = false
         isOpeningPullRequest = false
-        var effects: [TeamworkEffect] = []
+        var effects: [ExpeditionEffect] = []
         for slot in allSlots {
             guard let status = status(of: slot), !status.isFinished, status != .cancelled else { continue }
             if status == .running, let task = task(of: slot) {
                 effects.append(.cancelTask(task))
             }
-            if status != .succeeded {
-                set(slot, status: .cancelled, at: now)
-            }
+            set(slot, status: .cancelled, at: now)
         }
         return effects
     }
@@ -205,7 +198,7 @@ extension Teamwork {
     /// The expedition as found on the next launch. Turns in flight died with Native, so their seats
     /// are interrupted until the user resumes them, goals stop their clocks, and the active clock
     /// stops at the last thing that happened.
-    public func restored() -> Teamwork {
+    public func restored() -> Expedition {
         var expedition = self
         if let since = expedition.activeSince {
             expedition.bankedActive += max(0, updatedAt.timeIntervalSince(since))
@@ -232,7 +225,7 @@ extension Teamwork {
     }
 }
 
-extension TeamworkEvent {
+extension ExpeditionEvent {
     /// Results that still count after a stop: what was already under way finishing.
     var reachesStopped: Bool {
         switch self {

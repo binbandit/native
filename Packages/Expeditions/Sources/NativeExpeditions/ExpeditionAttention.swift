@@ -3,7 +3,7 @@ import NativeAutomation
 
 /// Something an expedition needs from the user, derived from its state so it can't go stale: the
 /// overview's cards, the sidebar's count and the notifications all read these.
-public nonisolated struct TeamworkAttention: Hashable, Sendable, Identifiable {
+public nonisolated struct ExpeditionAttention: Hashable, Sendable, Identifiable {
     public enum Kind: Hashable, Sendable {
         /// The lead's route waits for review.
         case routeReady
@@ -45,34 +45,34 @@ public nonisolated struct TeamworkAttention: Hashable, Sendable, Identifiable {
     }
 }
 
-extension Teamwork {
+extension Expedition {
     /// Everything waiting on the user, oldest first.
-    public var attention: [TeamworkAttention] {
+    public var attention: [ExpeditionAttention] {
         guard !isStopped, endedAt == nil else { return [] }
-        var items: [TeamworkAttention] = []
+        var items: [ExpeditionAttention] = []
         if let baseError {
-            items.append(TeamworkAttention(kind: .baseFailed(baseError), since: updatedAt))
+            items.append(ExpeditionAttention(kind: .baseFailed(baseError), since: updatedAt))
         }
         if approvedAt == nil, lead.status == .succeeded, route != nil {
-            items.append(TeamworkAttention(kind: .routeReady, since: lead.waitingSince ?? updatedAt))
+            items.append(ExpeditionAttention(kind: .routeReady, since: lead.waitingSince ?? updatedAt))
         }
         if pendingRouteChange != nil {
-            items.append(TeamworkAttention(kind: .routeChange, since: lead.waitingSince ?? updatedAt))
+            items.append(ExpeditionAttention(kind: .routeChange, since: lead.waitingSince ?? updatedAt))
         }
         if lead.status.isStopped {
-            items.append(TeamworkAttention(kind: .stopped(.lead, lead.status), since: lead.waitingSince ?? updatedAt))
+            items.append(ExpeditionAttention(kind: .stopped(.lead, lead.status), since: lead.waitingSince ?? updatedAt))
         }
         for run in assignments where run.status.isStopped {
-            items.append(TeamworkAttention(kind: .stopped(.assignment(run.id), run.status), since: run.waitingSince ?? run.endedAt ?? updatedAt))
+            items.append(ExpeditionAttention(kind: .stopped(.assignment(run.id), run.status), since: run.waitingSince ?? run.endedAt ?? updatedAt))
         }
         for run in checkpoints where run.status.isStopped {
-            items.append(TeamworkAttention(kind: .stopped(.checkpoint(run.leg), run.status), since: run.waitingSince ?? run.endedAt ?? updatedAt))
+            items.append(ExpeditionAttention(kind: .stopped(.checkpoint(run.leg), run.status), since: run.waitingSince ?? run.endedAt ?? updatedAt))
         }
         if approvedAt != nil, !legsSettled, let reason = exhaustedBudget(at: updatedAt) {
-            items.append(TeamworkAttention(kind: .budgetReached(reason), since: updatedAt))
+            items.append(ExpeditionAttention(kind: .budgetReached(reason), since: updatedAt))
         }
         if let pullRequestError {
-            items.append(TeamworkAttention(kind: .pullRequestFailed(pullRequestError), since: updatedAt))
+            items.append(ExpeditionAttention(kind: .pullRequestFailed(pullRequestError), since: updatedAt))
         }
         return items.sorted { $0.since < $1.since }
     }

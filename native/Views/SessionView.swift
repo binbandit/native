@@ -1,4 +1,5 @@
 import ACP
+import Git
 import SwiftUI
 
 struct SessionView: View {
@@ -13,6 +14,8 @@ struct SessionView: View {
 
     var body: some View {
         TranscriptView(session: session) { openSubagent = $0 }
+            .environment(\.turnChangesActions, turnChangesActions)
+            .environment(\.isPrimaryTranscript, true)
             // A bar rather than an inset, so the transcript gets the system scroll edge effect under it.
             .safeAreaBar(edge: .bottom, spacing: 0) {
                 ComposerView(session: session)
@@ -62,6 +65,26 @@ struct SessionView: View {
 
     private var repository: GitRepositoryModel {
         git.model(for: session.cwd)
+    }
+
+    /// Review and Commit on the transcript's files-changed card. Commit only shows while there's
+    /// something uncommitted.
+    private var turnChangesActions: TurnChangesActions {
+        let repository = repository
+        let gitHub = gitHub
+        let canCommit = repository.status.map { !$0.isClean && $0.conflicted.isEmpty } ?? false
+        return TurnChangesActions(
+            review: { showsChanges = true },
+            commitForm: canCommit
+                ? { isPresented in
+                    AnyView(
+                        GitCommitPopover(
+                            model: repository, isPresented: isPresented,
+                            onCreatePullRequest: {
+                                Task { await GitHubGitWiring.createPullRequest(from: repository, gitHub: gitHub) }
+                            }))
+                } : nil
+        )
     }
 
     private var isInspectorPresented: Binding<Bool> {

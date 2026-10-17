@@ -13,6 +13,10 @@ struct TranscriptView: View {
     @Experiment(.unfoldExploration) private var unfoldsExploration
     @Environment(\.transcriptColumnMaxWidth) private var columnWidth
     @Environment(AppModel.self) private var model
+    @Environment(\.isPrimaryTranscript) private var isPrimary
+    @State private var position = ScrollPosition(edge: .bottom)
+    /// Whether the newest output is out of view.
+    @State private var isAwayFromLatest = false
 
     var body: some View {
         let items = session.state.items
@@ -30,9 +34,7 @@ struct TranscriptView: View {
                 // hide the scroller again, and the two states fed each other forever: a 100% CPU
                 // hang on the main thread. So the column is sized from the scroll container, which
                 // a scroller doesn't change.
-                .containerRelativeFrame(.horizontal) { containerWidth, _ in
-                    max(min(columnWidth, containerWidth - 2 * DS.Space.xxl), 0)
-                }
+                .containerRelativeFrame(.horizontal) { containerWidth, _ in column(in: containerWidth) }
                 .padding(.top, DS.Space.xl)
                 .padding(.bottom, DS.Space.lg)
                 .frame(maxWidth: .infinity)
@@ -43,6 +45,21 @@ struct TranscriptView: View {
         // legacy scroller.
         .defaultScrollAnchor(.bottom, for: .initialOffset)
         .defaultScrollAnchor(.bottom, for: .sizeChanges)
+        .scrollPosition($position)
+        .onScrollGeometryChange(for: Bool.self) { geometry in
+            geometry.visibleRect.maxY < geometry.contentSize.height - DS.Space.xxxl
+        } action: { _, isAway in
+            isAwayFromLatest = isAway
+        }
+        .overlay(alignment: .bottom) {
+            if showsJumpToLatest {
+                JumpToLatestButton(action: jumpToLatest)
+                    .padding(.bottom, DS.Space.md)
+                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
+            }
+        }
+        .animation(.dsStandard, value: showsJumpToLatest)
+        .focusedSceneValue(\.transcriptJumpToLatest, isPrimary && isAwayFromLatest ? jumpToLatest : nil)
         .onScrollGeometryChange(for: String.self) { g in
             "content \(g.contentSize) insets \(g.contentInsets) container \(g.containerSize) offset \(g.contentOffset)"
         } action: { _, new in
@@ -57,5 +74,20 @@ struct TranscriptView: View {
                 )
             }
         }
+    }
+
+    /// The column's width in a scroll container `containerWidth` wide: as wide as the width setting
+    /// allows, with a margin on each side.
+    private func column(in containerWidth: CGFloat) -> CGFloat {
+        max(min(columnWidth, containerWidth - 2 * DS.Space.xxl), 0)
+    }
+
+    /// Only while a turn runs: afterwards the latest is the turn's end, and scrolling up is reading.
+    private var showsJumpToLatest: Bool {
+        isAwayFromLatest && session.phase == .prompting
+    }
+
+    private func jumpToLatest() {
+        withAnimation(.dsStandard) { position.scrollTo(edge: .bottom) }
     }
 }

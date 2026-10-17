@@ -24,12 +24,13 @@ public nonisolated struct AssignmentRun: Codable, Hashable, Sendable, Identifiab
     public var waitingSince: Date?
     /// Failed turns Native resumed on its own. One per assignment, so a crashing agent can't loop.
     public var automaticRecoveries = 0
-    /// For a provider limit: when the provider said it resets, so work resumes then.
-    public var resumeAt: Date?
+    /// For a fix round a checkpoint asked for, which round it is; nil for work from the route.
+    public let fixRound: Int?
 
-    public init(assignment: Route.Assignment, leg: String) {
+    public init(assignment: Route.Assignment, leg: String, fixRound: Int? = nil) {
         self.assignment = assignment
         self.leg = leg
+        self.fixRound = fixRound
     }
 
     public var id: String {
@@ -42,6 +43,6 @@ public nonisolated struct AssignmentRun: Codable, Hashable, Sendable, Identifiab
 
     /// A fix round from a checkpoint, rather than work from the route.
     public var isFix: Bool {
-        assignment.continues != nil
+        fixRound != nil
     }
 }

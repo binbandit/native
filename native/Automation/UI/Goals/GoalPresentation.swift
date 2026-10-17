@@ -25,7 +25,7 @@ struct GoalPresentation: Hashable {
         let isBudgetSpent = goal.exhaustedBudget(at: now, iterationCeiling: GoalLoop.safetyIterationCeiling) != nil
         glyph = AutomationGlyph(goal: goal.status, isWorking: isWorking)
         // A cost of nothing against no cost budget says nothing, so it's left out.
-        let iterations = usage.budget.maxIterations.map { "\(usage.iterations)/\($0)" } ?? "\(usage.iterations) iterations"
+        let iterations = usage.budget.maxIterations.map { "\(usage.iterations)/\($0)" } ?? "\(usage.iterations) \(usage.iterations == 1 ? "iteration" : "iterations")"
         // Whole minutes past the first: the bar refreshes every 15 seconds, and ticking seconds are noise.
         let elapsed = DSFormat.duration(usage.elapsed < 60 ? usage.elapsed : (usage.elapsed / 60).rounded(.down) * 60)
             + (usage.budget.maxDuration.map { "/" + DSFormat.duration($0) } ?? "")

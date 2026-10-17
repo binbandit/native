@@ -66,9 +66,7 @@ private struct BubbleRowView: View {
     var body: some View {
         switch row {
         case .message(let message, let side, let position):
-            // Measuring Markdown's lists and tables at their ideal width leaves them a stale height,
-            // so only one-line replies hug; anything with structure takes the full share.
-            BubbleLane(side: side, hugsContent: side == .trailing || !message.text.contains("\n")) {
+            BubbleLane(side: side, hugsContent: true) {
                 BubbleMessageView(message: message, side: side, position: position)
             }
         case .thought(let message):

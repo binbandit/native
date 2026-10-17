@@ -78,7 +78,9 @@ Verify UI changes in the running app, not just the build. Several agents may run
 use your own DerivedData path, launch with `open -n`, automate only your own process (System Events
 `first process whose unix id is <pid>`, never global keystrokes or coordinate clicks like
 `click at`, which land on whatever window is on top; for synthetic events use `CGEvent.postToPid`),
-screenshot with `screencapture -x -l <windowid>`, and quit with `kill <pid>`.
+screenshot with `screencapture -x -l <windowid>`, and quit with `kill <pid>`. Quit your instance (and any
+render harness) as soon as a check is done; never leave apps running between checks, since many
+agents share one Mac.
 
 Design references: the reference app (`<local reference>`, runnable rebuild `factory-clone`) and
 the reference app (`<local reference>`, runnable rebuild `rebuild`). Read-only.

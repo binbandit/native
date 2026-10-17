@@ -2,7 +2,7 @@ import Foundation
 
 /// What a whole crew may spend: cost across every member's session, and active time. Both
 /// optional. Checked between turns, never mid-turn, like a goal's budget.
-public nonisolated struct TeamworkBudget: Codable, Hashable, Sendable {
+public nonisolated struct ExpeditionBudget: Codable, Hashable, Sendable {
     /// In the sessions' billing currency. Agents that don't report cost don't count toward it.
     public var maxCost: Double?
     /// Wall time with any member working.
@@ -13,7 +13,7 @@ public nonisolated struct TeamworkBudget: Codable, Hashable, Sendable {
         self.maxDuration = maxDuration
     }
 
-    public static let unlimited = TeamworkBudget()
+    public static let unlimited = ExpeditionBudget()
 
     public var isUnlimited: Bool {
         maxCost == nil && maxDuration == nil
@@ -31,8 +31,8 @@ public nonisolated struct TeamworkBudget: Codable, Hashable, Sendable {
     }
 
     /// The same budget again on top of what's been spent.
-    public func extended(cost: Double?, active: TimeInterval) -> TeamworkBudget {
-        TeamworkBudget(maxCost: maxCost.map { (cost ?? 0) + $0 }, maxDuration: maxDuration.map { active + $0 })
+    public func extended(cost: Double?, active: TimeInterval) -> ExpeditionBudget {
+        ExpeditionBudget(maxCost: maxCost.map { (cost ?? 0) + $0 }, maxDuration: maxDuration.map { active + $0 })
     }
 
     static func costText(_ amount: Double) -> String {

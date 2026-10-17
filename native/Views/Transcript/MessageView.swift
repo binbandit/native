@@ -1,4 +1,5 @@
 import ACP
+import NativeAutomation
 import SwiftUI
 
 /// A user prompt, an agent reply, or the agent's reasoning.
@@ -10,6 +11,11 @@ struct MessageView: View {
 
     var body: some View {
         switch message.role {
+        case .user where GoalPrompt(parsing: message.text) != nil:
+            // Native's own goal prompts read as one quiet line, not a wall of instructions.
+            if let goal = GoalPrompt(parsing: message.text) {
+                GoalPromptRow(prompt: goal, text: message.text)
+            }
         case .user:
             TrailingFractionLayout(fraction: 0.85) {
                 // Prompts are shown as typed; Markdown syntax in them stays literal.

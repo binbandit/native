@@ -1,4 +1,5 @@
-/// The composer editor's keys, as docs/keyboard.md lays them out (Sending and Slash commands).
+/// The composer editor's keys, as docs/keyboard.md lays them out (Sending, Slash commands, File
+/// mentions).
 /// Pure, so the table can be tested without a text view.
 enum ComposerKeyMap {
     enum Key {
@@ -16,7 +17,8 @@ enum ComposerKeyMap {
 
     /// What the composer knows when a key comes in.
     struct Context {
-        var isCommandListOpen: Bool
+        /// The slash-command or file-mention list.
+        var isSuggestionListOpen: Bool
         var isDraftEmpty: Bool
         var isWorking: Bool
         var hasQueuedPrompts: Bool
@@ -26,8 +28,8 @@ enum ComposerKeyMap {
 
     enum Action: Equatable {
         case moveHighlight(by: Int)
-        case insertHighlightedCommand
-        case closeCommandList
+        case insertHighlightedSuggestion
+        case closeSuggestionList
         case recallLastPrompt
         case editLastQueuedPrompt
         case submit(FollowUpBehavior)
@@ -39,12 +41,12 @@ enum ComposerKeyMap {
 
     /// The action for a key, or nil to let the text view handle it. `isRepeat` is a held key.
     static func action(for key: Key, modifiers: Modifiers, isRepeat: Bool, in context: Context) -> Action? {
-        if context.isCommandListOpen, modifiers.isEmpty || key == .escape {
+        if context.isSuggestionListOpen, modifiers.isEmpty || key == .escape {
             switch key {
             case .up: return .moveHighlight(by: -1)
             case .down: return .moveHighlight(by: 1)
-            case .return, .tab: return isRepeat ? .swallow : .insertHighlightedCommand
-            case .escape: return .closeCommandList
+            case .return, .tab: return isRepeat ? .swallow : .insertHighlightedSuggestion
+            case .escape: return .closeSuggestionList
             }
         }
         switch key {

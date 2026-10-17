@@ -10,7 +10,7 @@ import NativeAutomation
 /// order, assignments within a leg as their dependencies finish, each driven as a goal; a leg's
 /// checkpoint runs once its assignments are done, and asks for fix rounds until it passes or its
 /// rounds run out. Then the lead writes the debrief and the pull request opens.
-public nonisolated struct Teamwork: Codable, Hashable, Sendable, Identifiable {
+public nonisolated struct Expedition: Codable, Hashable, Sendable, Identifiable {
     public let id: UUID
     /// What the user wants done, in their words.
     public let objective: String
@@ -21,8 +21,8 @@ public nonisolated struct Teamwork: Codable, Hashable, Sendable, Identifiable {
     public let usesWorktree: Bool
     public let createdAt: Date
     public internal(set) var crew: Crew
-    public internal(set) var budget: TeamworkBudget
-    public let settings: TeamworkSettings
+    public internal(set) var budget: ExpeditionBudget
+    public let settings: ExpeditionSettings
 
     /// Where the crew works; nil until it's made.
     public internal(set) var base: URL?
@@ -54,8 +54,8 @@ public nonisolated struct Teamwork: Codable, Hashable, Sendable, Identifiable {
     public internal(set) var activeSince: Date?
 
     public init(
-        id: UUID = UUID(), objective: String, project: URL, usesWorktree: Bool, crew: Crew, budget: TeamworkBudget = .unlimited,
-        settings: TeamworkSettings = TeamworkSettings(), at now: Date
+        id: UUID = UUID(), objective: String, project: URL, usesWorktree: Bool, crew: Crew, budget: ExpeditionBudget = .unlimited,
+        settings: ExpeditionSettings = ExpeditionSettings(), at now: Date
     ) {
         self.id = id
         self.objective = objective.trimmed
@@ -180,7 +180,7 @@ public nonisolated struct Teamwork: Codable, Hashable, Sendable, Identifiable {
             && !assignments.contains { $0.status.isActive }
     }
 
-    public var phase: TeamworkPhase {
+    public var phase: ExpeditionPhase {
         if isStopped { return .stopped }
         if endedAt != nil { return .complete }
         if baseError != nil { return .needsYou }
@@ -202,7 +202,7 @@ public nonisolated struct Teamwork: Codable, Hashable, Sendable, Identifiable {
     }
 
     /// The item waiting on the user the longest; it answers the approval shortcuts.
-    public var oldestAttention: TeamworkAttention? {
+    public var oldestAttention: ExpeditionAttention? {
         attention.min { $0.since < $1.since }
     }
 }

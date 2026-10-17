@@ -33,6 +33,16 @@ enum ComposerPlatform {
         #endif
     }
 
+    /// Where `@` mentions find files: git on the Mac. An iPad has no local checkout; it will ask its
+    /// host instead.
+    static func fileIndex(for root: URL) -> (any ProjectFileIndex)? {
+        #if os(macOS)
+        GitProjectFileIndex(root: root)
+        #else
+        nil
+        #endif
+    }
+
     /// Keyboard hints in placeholders only make sense where a keyboard is the norm.
     static var showsKeyboardHints: Bool {
         #if os(iOS)

@@ -4,6 +4,8 @@ import SwiftUI
 /// to `onKey` first, so the composer can send, recall and drive its lists.
 struct ComposerEditor: View {
     @Binding var text: String
+    /// Where the cursor is, for `@` mentions in the middle of the draft.
+    @Binding var selection: TextSelection?
     let placeholder: String
     var isFocused: FocusState<Bool>.Binding
     let onKey: (KeyPress) -> KeyPress.Result
@@ -21,7 +23,7 @@ struct ComposerEditor: View {
             .fixedSize(horizontal: false, vertical: true)
             .hidden()
             .overlay {
-                TextEditor(text: $text)
+                TextEditor(text: $text, selection: $selection)
                     .font(.dsCallout)
                     .lineSpacing(ComposerMetrics.editorLineSpacing)
                     .foregroundStyle(.dsTextPrimary)
