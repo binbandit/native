@@ -9,33 +9,6 @@ struct TerminalTabContent: View {
 
     var body: some View {
         switch tab.status {
-        case .running:
-            surface
-        case .exited:
-            surface.overlay(alignment: .bottom) {
-                NoticeBanner(
-                    tone: .info,
-                    systemImage: "checkmark.circle",
-                    title: "The shell exited",
-                    detail: "Press any key to close this tab, or start a new shell here."
-                ) {
-                    Button("Restart Shell") { panel.restart(tab.id) }
-                        .buttonStyle(.ds(.secondary))
-                }
-                .padding(DS.Space.md)
-            }
-        case .failedToStart(.exitedImmediately):
-            // The shell's own error output stays visible above.
-            surface.overlay(alignment: .bottom) {
-                ErrorState(
-                    "The shell didn't start",
-                    suggestion: "It quit as soon as it launched; its output is above. Check your shell and its "
-                        + "startup files, then try again.",
-                    primary: .init("Try Again") { panel.restart(tab.id) },
-                    secondary: .init("Close Tab") { panel.close(tab.id) }
-                )
-                .padding(DS.Space.md)
-            }
         case .failedToStart(.directoryMissing):
             ErrorState(
                 "This task's folder is gone",
@@ -53,6 +26,38 @@ struct TerminalTabContent: View {
                 secondary: .init("Close Tab") { panel.close(tab.id) },
                 layout: .pane
             )
+        case .running, .exited, .failedToStart(.exitedImmediately):
+            // One branch for every state with a terminal on screen, so the terminal view keeps its
+            // identity (and keyboard focus) when its shell ends.
+            surface.overlay(alignment: .bottom) {
+                outcome.padding(DS.Space.md)
+            }
+        }
+    }
+
+    /// What happened to the shell, over its last output.
+    @ViewBuilder private var outcome: some View {
+        switch tab.status {
+        case .exited:
+            NoticeBanner(
+                tone: .info,
+                systemImage: "checkmark.circle",
+                title: "The shell exited",
+                detail: "Press any key to close this tab, or start a new shell here."
+            ) {
+                Button("Restart Shell") { panel.restart(tab.id) }
+                    .buttonStyle(.ds(.secondary))
+            }
+        case .failedToStart:
+            ErrorState(
+                "The shell didn't start",
+                suggestion: "It quit as soon as it launched; its output is above. Check your shell and its "
+                    + "startup files, then try again.",
+                primary: .init("Try Again") { panel.restart(tab.id) },
+                secondary: .init("Close Tab") { panel.close(tab.id) }
+            )
+        case .running:
+            EmptyView()
         }
     }
 

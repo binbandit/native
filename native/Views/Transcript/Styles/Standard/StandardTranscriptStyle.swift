@@ -2,32 +2,64 @@ import ACP
 import SwiftUI
 
 /// The default transcript, Factory style: agent replies and tool activity in one column, tool
-/// activity as one dense block, and the user's prompts in trailing bubbles.
+/// activity as one dense block, and the user's prompts in trailing bubbles. The turn that's running
+/// (or ran last) keeps every row; earlier turns fold their tool work into one line.
 nonisolated struct StandardTranscriptStyle: TranscriptStyle {
     @MainActor func makeBody(_ transcript: TranscriptStyleConfiguration) -> some View {
-        let rows = transcript.rows
-        let spacings = zip([nil] + rows.dropLast(), rows).map { previous, row in
-            previous.map { spacing(between: $0, and: row) } ?? 0
-        }
+        StandardTranscript(transcript: transcript)
+    }
+}
+
+private struct StandardTranscript: View {
+    let transcript: TranscriptStyleConfiguration
+
+    @AppStorage(TranscriptPreferences.foldsEarlierTurnsKey) private var foldsEarlierTurns = true
+    /// Earlier turns the user opened back up.
+    @State private var unfoldedTurns: Set<TranscriptTurn.ID> = []
+
+    var body: some View {
+        let lines = StandardTranscriptLine.plan(transcript, folding: foldsEarlierTurns, unfolded: unfoldedTurns)
         LazyVStack(alignment: .leading, spacing: 0) {
-            ForEach(Array(zip(rows, spacings)), id: \.0.id) { row, spacing in
-                self.row(row, in: transcript)
-                    .padding(.top, spacing)
+            ForEach(lines) { line in
+                self.line(line)
+                    .padding(.top, line.spacing)
             }
             if transcript.isWorking {
                 WorkingIndicator()
-                    .padding(.top, 16)
+                    .padding(.top, DS.Space.xl)
             }
         }
     }
 
-    @MainActor @ViewBuilder
-    private func row(_ row: TranscriptRow, in transcript: TranscriptStyleConfiguration) -> some View {
+    @ViewBuilder private func line(_ line: StandardTranscriptLine) -> some View {
+        switch line.kind {
+        case .row(let row, let itemIndex):
+            self.row(row, itemIndex: itemIndex)
+        case .fold(let turn, let summary, let isUnfolded):
+            TurnActivityFold(summary: summary, isUnfolded: isUnfolded) {
+                withAnimation(.reveal) {
+                    if isUnfolded {
+                        unfoldedTurns.remove(turn.id)
+                    } else {
+                        unfoldedTurns.insert(turn.id)
+                    }
+                }
+            }
+        case .footer(let turn, let summary, let ending, let showsChanges):
+            TurnFooter(
+                turn: turn, summary: summary, ending: ending, showsChanges: showsChanges,
+                subagents: subagents(in: turn), openSubagent: transcript.openSubagent)
+        case .changes(let summary):
+            TurnChangesCard(summary: summary)
+        }
+    }
+
+    @ViewBuilder private func row(_ row: TranscriptRow, itemIndex: Int) -> some View {
         switch row {
         case .exploration(let calls):
             transcript.exploration(calls)
         case .item(.message(let message)):
-            MessageView(message: message)
+            MessageView(message: message, thinking: transcript.session.state.thinkingInterval(at: itemIndex))
         case .item(.toolCall(let call)):
             transcript.toolCall(call)
         case .item(.notice(let notice)):
@@ -39,9 +71,10 @@ nonisolated struct StandardTranscriptStyle: TranscriptStyle {
         }
     }
 
-    /// Tool activity reads as one dense block, Factory style; everything else gets room to breathe.
-    @MainActor private func spacing(between previous: TranscriptRow, and next: TranscriptRow) -> CGFloat {
-        previous.isToolActivity && next.isToolActivity ? 2 : 16
+    private func subagents(in turn: TranscriptTurn) -> [SubagentState] {
+        transcript.session.state.items[turn.items].compactMap { item in
+            if case .subagent(let subagent) = item { subagent } else { nil }
+        }
     }
 }
 
@@ -57,12 +90,12 @@ extension TranscriptRow {
 
 private struct WorkingIndicator: View {
     var body: some View {
-        HStack(spacing: 8) {
-            ProgressView()
-                .controlSize(.small)
+        HStack(spacing: DS.Space.md) {
+            DotGridLoader(pattern: .typing)
+                .frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
             Text("Working…")
-                .foregroundStyle(.secondary)
         }
-        .font(.callout)
+        .font(.dsCallout)
+        .foregroundStyle(.dsTextSecondary)
     }
 }

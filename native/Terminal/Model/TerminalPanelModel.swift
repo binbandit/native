@@ -148,6 +148,10 @@ final class TerminalPanelModel: TerminalSurfaceEvents {
 
     func surface(_ id: UUID, didChangeStatus status: TerminalStatus) {
         tabs.setStatus(status, of: id)
+        if status != .running {
+            // The last title is the command that ended the shell ("exit"); the tab's name reads better.
+            tabs.setTitle(nil, of: id)
+        }
     }
 
     func surfaceDidRequestClose(_ id: UUID) {

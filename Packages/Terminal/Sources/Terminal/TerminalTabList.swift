@@ -57,6 +57,14 @@ public struct TerminalTabList: Hashable, Sendable {
 
     public var isEmpty: Bool { tabs.isEmpty }
 
+    /// What a tab's button says: its display title, numbered when another tab shows the same one
+    /// (two shells in the same folder, say).
+    public func label(of tab: Tab) -> String {
+        let title = tab.displayTitle
+        let isShared = tabs.contains { $0.id != tab.id && $0.displayTitle == title }
+        return isShared ? "\(title) · \(tab.number)" : title
+    }
+
     /// Adds a tab after the others and selects it.
     @discardableResult
     public mutating func add(id: UUID = UUID()) -> Tab {

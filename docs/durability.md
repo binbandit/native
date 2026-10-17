@@ -61,7 +61,8 @@ worst bugs were the opposite: daemons from old versions piling up, and an app th
 unreachable" as "gone" and started a second copy of a running conversation. The lock and the
 single launchd label make both impossible.)
 
-**Start.** The app registers the agent on launch (idempotent) and connects. If the user disabled
+**Start.** The app registers the agent on launch (idempotent) and connects. (Development builds
+start a session-only launchd job instead; see "Development builds".) If the user disabled
 Native under System Settings › Login Items › Allow in the Background, `status` is
 `.requiresApproval`: Native says so, offers to open that pane, and runs an *attached* host instead
 (Phase 2): the same binary started by the app, which stops its agents when the app quits. We respect
@@ -340,8 +341,9 @@ Every phase ships with the app working and feature agents unblocked.
 core (`HostCore`, `HostStore`, recovery, socket server), `NativeHostMac`, the protocol and
 `SessionMirror`, `NativeHostClient` (reconnecting, iOS-compatible), the `native-host` binary (`serve`,
 `attach`), and tests that kill the host and the agent mid-turn. The `NativeHostHelper` target, the
-generated launchd plist and `SMAppService` registration. `native/Host/`: registration, connection and
-a "Durable Sessions (Preview)" window, opt-in. Nothing else in the app changes.
+generated launchd plist, `SMAppService` registration (session-only `LaunchdSessionJob` for Debug
+builds) and `scripts/dev/clean-host-channels.sh`. `native/Host/`: registration, connection and the
+Window › Durable Sessions preview, opt-in per channel. Nothing else in the app changes.
 
 **Phase 2: the app becomes a client** (models agent, against `NativeHostClient`). The public API of
 `AppModel` and `SessionModel` stays as it is; their insides change:

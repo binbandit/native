@@ -1,4 +1,5 @@
 import ACP
+import NativeAutomation
 import SwiftUI
 
 @main
@@ -44,7 +45,7 @@ struct NativeApp: App {
                     BuiltInPlugins.automation.center.connectAutomations(
                         repository: { [gitHub] in await AutomationGitHubWiring.repository(of: $0, gitHub: gitHub) },
                         worktree: { [git] in try await AutomationGitHubWiring.worktree(for: $0, title: $1, git: git) },
-                        pullRequests: { [gitHub] in await AutomationGitHubWiring.pullRequestSnapshots(gitHub: gitHub) }
+                        pullRequests: { [gitHub] in try await AutomationGitHubWiring.pullRequestSnapshots(gitHub: gitHub) }
                     )
                     iconPreferences.start()
                     await model.start()
