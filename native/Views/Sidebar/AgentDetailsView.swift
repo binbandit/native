@@ -15,11 +15,8 @@ struct AgentDetailsView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
             HStack(spacing: DS.Space.md) {
-                Image(systemName: runtime.agent.symbolName)
-                    .font(.dsHeadline)
+                AgentIcon(agent: runtime.agent, size: DS.Size.controlXS)
                     .foregroundStyle(.dsTextSecondary)
-                    .frame(width: DS.Size.controlXS, height: DS.Size.controlXS)
-                    .background(.dsSelected, in: .rect(cornerRadius: DS.Radius.control, style: .continuous))
                 VStack(alignment: .leading, spacing: DS.Space.xxs) {
                     Text(runtime.agent.displayName)
                         .font(.dsHeadline)

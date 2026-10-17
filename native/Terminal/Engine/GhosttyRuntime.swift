@@ -212,7 +212,6 @@ final class GhosttyRuntime: TerminalEngine {
     /// Actions arrive on the main thread, from inside `ghostty_app_tick` or a surface call.
     private nonisolated static func perform(_ action: ghostty_action_s, target: ghostty_target_s) -> Bool {
         guard Thread.isMainThread else { return false }
-        nonisolated(unsafe) let (action, target) = (action, target)
         return MainActor.assumeIsolated {
             guard target.tag == GHOSTTY_TARGET_SURFACE, let view = GhosttySurfaceView.from(target.target.surface) else {
                 return false

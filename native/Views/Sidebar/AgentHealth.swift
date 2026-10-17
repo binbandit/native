@@ -56,9 +56,7 @@ private struct AgentHealthChip: View {
                 isShowingDetails.toggle()
             } label: {
                 HStack(spacing: DS.Space.sm) {
-                    Image(systemName: runtime.agent.symbolName)
-                        .font(.dsCaption)
-                        .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
+                    AgentIcon(agent: runtime.agent)
                         .overlay(alignment: .bottomTrailing) {
                             AgentStatusDot(health: health, limit: detail == .glyphs ? limit : nil)
                                 .offset(x: DS.Space.xxs, y: DS.Space.xxs)

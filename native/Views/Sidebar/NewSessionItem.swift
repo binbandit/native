@@ -4,6 +4,7 @@ import SwiftUI
 /// project with the default agent, with a menu at its end for picking another agent.
 struct NewSessionItem: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.displayScale) private var displayScale
 
     var body: some View {
         SidebarNavItem("New Session", systemImage: "plus", shortcut: "⌘N") {
@@ -12,8 +13,15 @@ struct NewSessionItem: View {
             SidebarRowMenu(label: "New Session With") {
                 Section("New Session With") {
                     ForEach(model.agents, id: \.agent.id) { runtime in
-                        Button(runtime.agent.displayName, systemImage: runtime.agent.symbolName) {
+                        Button {
                             Task { await model.newSession(with: runtime.agent.id) }
+                        } label: {
+                            Label {
+                                Text(runtime.agent.displayName)
+                            } icon: {
+                                // Menus draw only an `Image`.
+                                AgentIconStore.shared.image(for: runtime.agent, size: DS.Size.rowLeading, scale: displayScale)
+                            }
                         }
                         .disabled(!model.canCreateSession(with: runtime.agent.id))
                     }

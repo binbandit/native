@@ -15,12 +15,9 @@ struct SessionTitleField: View {
     var body: some View {
         // Mirrors `TaskRow`'s layout so the title doesn't jump when editing starts.
         HStack(alignment: .top, spacing: DS.Space.sm) {
-            Image(systemName: summary.agent.symbolName)
-                .font(.dsCaption)
+            AgentIcon(agent: summary.agent)
                 .foregroundStyle(.dsTextTertiary)
-                .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
                 .padding(.top, DS.Space.xxs)
-                .accessibilityHidden(true)
             StatusIndicator(status: status)
                 .padding(.top, DS.Space.xxs)
                 .padding(.trailing, DS.Space.xxs)
@@ -35,6 +32,7 @@ struct SessionTitleField: View {
         .padding(.vertical, DS.Space.md)
         .padding(.leading, TaskRowIndent.grouped.leading)
         .padding(.trailing, DS.Space.sm)
+        .frame(minHeight: DS.Size.rowMinHeight)
         .background(.dsSelected, in: .rect(cornerRadius: DS.Radius.row, style: .continuous))
         // Outlined so editing reads differently from plain selection.
         .overlay {
