@@ -13,8 +13,8 @@ enum StatusBarMetrics {
     static let segmentPadding = EdgeInsets(top: DS.Space.xxs, leading: DS.Space.xs, bottom: DS.Space.xxs, trailing: DS.Space.xs)
     /// Glyphs in segments: SF Symbols at this size match Lucide's `size-3` (12px).
     static let glyph: CGFloat = 10
-    /// A task-status glyph in a segment.
-    static let statusGlyph: CGFloat = 12
+    /// A task-status glyph in a segment; the dot-grid loader needs this much to read.
+    static let statusGlyph = DS.Size.statusGlyph
     /// Detail panels (the reference app's Resource Manager is `w-[26rem]`).
     static let panelWidth: CGFloat = 400
     /// The tallest a panel's list grows before it scrolls.

@@ -20,6 +20,7 @@ struct SessionTitleField: View {
                 .foregroundStyle(.dsTextTertiary)
                 .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
                 .padding(.top, DS.Space.xxs)
+                .accessibilityHidden(true)
             StatusIndicator(status: status)
                 .padding(.top, DS.Space.xxs)
                 .padding(.trailing, DS.Space.xxs)
@@ -35,6 +36,11 @@ struct SessionTitleField: View {
         .padding(.leading, TaskRowIndent.grouped.leading)
         .padding(.trailing, DS.Space.sm)
         .background(.dsSelected, in: .rect(cornerRadius: DS.Radius.row, style: .continuous))
+        // Outlined so editing reads differently from plain selection.
+        .overlay {
+            RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
+                .strokeBorder(.dsBorderHover)
+        }
         .onAppear {
             draft = model.title(for: summary)
         }

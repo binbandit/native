@@ -101,3 +101,12 @@ default) and toggled in Settings ▸ Labs. An alternative design is its own impl
 small style protocol (for example a bubble-style transcript beside the standard one), never `if`
 branches scattered through shared views, so an experiment can be promoted, kept as a choice, or
 deleted without touching the default path.
+
+## 2026-10-17: Any machine can be a host
+
+Agents can run on other machines: a Mac mini, a Linux server, later cloud sandboxes, like the reference app's
+computers and droids. Each machine runs the same Native Host; the app connects to several hosts at
+once, and every project belongs to one. Remote hosts are reached over SSH first (the user's own
+keys, nothing new to trust), with other transports later. To keep this possible, nothing outside a
+host runs commands or touches project files directly: code that shells out takes a `CommandRunner`
+(`Packages/Exec`), so the same code runs on whichever machine owns the project.

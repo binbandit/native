@@ -7,7 +7,12 @@ struct ResourcesPanel: View {
     let monitor: ResourceMonitor
 
     @State private var sort = ResourceSort.memory
-    @State private var expanded: Set<ProcessGroup.Kind> = []
+    @State private var expanded: Set<ProcessGroup.Kind>
+
+    init(monitor: ResourceMonitor, expanded: Set<ProcessGroup.Kind> = []) {
+        self.monitor = monitor
+        _expanded = State(initialValue: expanded)
+    }
 
     private var snapshot: ResourceSnapshot {
         monitor.snapshot
@@ -15,11 +20,9 @@ struct ResourcesPanel: View {
 
     var body: some View {
         StatusBarPanel(title: "Memory and CPU", systemImage: "memorychip") {
-            Button("Activity Monitor") {
+            IconButton("Open Activity Monitor", systemImage: "arrow.up.forward.app") {
                 openActivityMonitor()
             }
-            .buttonStyle(.ds(.ghost))
-            .help("Open Activity Monitor")
         } content: {
             summary
             SeparatorLine()
