@@ -2,8 +2,8 @@ extension CodeTheme {
     public static let tokyoNight = CodeTheme(
         id: "tokyo-night",
         name: "Tokyo Night",
+        // tokyo-night.json
         dark: CodePalette(
-            // tokyo-night.json
             foreground: CodeColor(rgb: 0xA9B1D6),
             background: CodeColor(rgb: 0x1A1B26),
             comment: CodeColor(rgb: 0x51597D),

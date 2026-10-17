@@ -2,8 +2,8 @@ extension CodeTheme {
     public static let dracula = CodeTheme(
         id: "dracula",
         name: "Dracula",
+        // dracula.json
         dark: CodePalette(
-            // dracula.json
             foreground: CodeColor(rgb: 0xF8F8F2),
             background: CodeColor(rgb: 0x282A36),
             comment: CodeColor(rgb: 0x6272A4),

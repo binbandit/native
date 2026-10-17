@@ -2,9 +2,9 @@ extension CodeTheme {
     public static let solarized = CodeTheme(
         id: "solarized",
         name: "Solarized",
+        // solarized-light.json
         light: CodePalette(
-            // solarized-light.json
-            foreground: CodeColor(rgb: 0x657B83),
+            foreground: CodeColor(rgb: 0x586E75), // Derived: darker upstream base01 preserves AA contrast.
             background: CodeColor(rgb: 0xFDF6E3),
             comment: CodeColor(rgb: 0x93A1A1),
             keyword: CodeColor(rgb: 0x859900),
@@ -27,8 +27,8 @@ extension CodeTheme {
             selection: CodeColor(rgb: 0xEEE8D5),
             lineHighlight: CodeColor(rgb: 0xEEE8D5)
         ),
+        // solarized-dark.json
         dark: CodePalette(
-            // solarized-dark.json
             foreground: CodeColor(rgb: 0x839496),
             background: CodeColor(rgb: 0x002B36),
             comment: CodeColor(rgb: 0x586E75),

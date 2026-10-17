@@ -2,8 +2,8 @@ extension CodeTheme {
     public static let gruvboxDark = CodeTheme(
         id: "gruvbox-dark",
         name: "Gruvbox Dark",
+        // gruvbox-dark-medium.json
         dark: CodePalette(
-            // gruvbox-dark-medium.json
             foreground: CodeColor(rgb: 0xEBDBB2),
             background: CodeColor(rgb: 0x282828),
             comment: CodeColor(rgb: 0x928374),

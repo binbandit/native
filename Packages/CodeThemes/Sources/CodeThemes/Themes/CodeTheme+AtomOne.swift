@@ -2,8 +2,8 @@ extension CodeTheme {
     public static let atomOne = CodeTheme(
         id: "atom-one",
         name: "Atom One",
+        // one-light.json
         light: CodePalette(
-            // one-light.json
             foreground: CodeColor(rgb: 0x383A42),
             background: CodeColor(rgb: 0xFAFAFA),
             comment: CodeColor(rgb: 0xA0A1A7),
@@ -27,8 +27,8 @@ extension CodeTheme {
             selection: CodeColor(rgb: 0xE5E5E6),
             lineHighlight: CodeColor(rgb: 0x383A42, alpha: 0x0C) // Derived: missing line highlight background.
         ),
+        // one-dark-pro.json
         dark: CodePalette(
-            // one-dark-pro.json
             foreground: CodeColor(rgb: 0xABB2BF),
             background: CodeColor(rgb: 0x282C34),
             comment: CodeColor(rgb: 0x7F848E),
