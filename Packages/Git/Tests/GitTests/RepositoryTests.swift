@@ -11,7 +11,7 @@ struct RepositoryTests {
         try test.write("Sources/Deep/File.swift", "let x = 1\n")
 
         let repository = try #require(try await test.git.repository(at: test.folder.appending(path: "Sources/Deep")))
-        #expect(Repository.canonicalPath(repository.root) == Repository.canonicalPath(test.folder))
+        #expect(repository.root.resolvingSymlinksInPath() == test.folder.resolvingSymlinksInPath())
         #expect(repository.name == "repo")
         #expect(!repository.isLinkedWorktree)
 

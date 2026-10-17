@@ -76,7 +76,13 @@ struct ComposerView: View {
             .padding(.top, DS.Space.md)
             .padding(.bottom, DS.Space.xl)
             .frame(maxWidth: .infinity)
-            .onAppear { isFocused = true }
+            // Only a brand-new session takes focus on its own (⌘N, then type). Others wait for ⌘L or a
+            // click, so arrowing through the sidebar doesn't hand Return to a composer.
+            .onAppear {
+                if session.state.items.isEmpty, session.phase != .loading {
+                    isFocused = true
+                }
+            }
             .onChange(of: session.draft) { draftChanged() }
             .task(id: feedback?.id) {
                 guard let shown = feedback else { return }
@@ -175,6 +181,18 @@ struct ComposerView: View {
                     .disabled(!session.canSend && blocker != nil)
                     .padding(DS.Space.md)
                     .transition(.opacity)
+            } else if !isFocused, canEdit {
+                // As in the reference app: how to get back here without the mouse.
+                HStack(spacing: DS.Space.xs) {
+                    Kbd("⌘L")
+                    Text("to focus")
+                        .font(.dsBody)
+                        .foregroundStyle(.dsTextTertiary)
+                }
+                .padding(DS.Space.md)
+                .frame(minHeight: DS.Size.composerInputMinHeight)
+                .accessibilityHidden(true)
+                .transition(.opacity)
             }
         }
         .frame(minHeight: DS.Size.composerInputMinHeight)
@@ -189,6 +207,7 @@ struct ComposerView: View {
             }
         }
         .animation(.dsQuick, value: session.draft.isEmpty)
+        .animation(.dsQuick, value: isFocused)
         .animation(.dsQuick, value: session.canCancel)
     }
 

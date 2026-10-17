@@ -41,7 +41,7 @@ extension Repository {
         }
 
         let untracked = try await untrackedStats(changes.filter { $0.area == .untracked }.map(\.path))
-        var totals = (total.values + untracked.values).reduce(LineStats.zero, +)
+        let totals = (Array(total.values) + Array(untracked.values)).reduce(LineStats.zero, +)
         for index in changes.indices {
             switch changes[index].area {
             case .staged:

@@ -175,11 +175,11 @@ struct BranchAndWorktreeTests {
         let test = try await TestRepository.make()
         defer { test.remove() }
         let repository = try await test.repository
-        let watcher = try #require(RepositoryWatcher(repository: repository, latency: 0.05))
+        let changes = FSEventsRepositoryMonitor(latency: 0.05).changes(in: repository)
         let received = Mutex<[RepositoryChange]>([])
         // One consumer for the whole test: cancelling an iteration would end the stream.
         let collector = Task {
-            for await change in watcher.changes {
+            for await change in changes {
                 received.withLock { $0.append(change) }
             }
         }

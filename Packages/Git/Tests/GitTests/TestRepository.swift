@@ -1,3 +1,4 @@
+import Exec
 import Foundation
 import Testing
 
@@ -23,17 +24,19 @@ struct TestRepository {
     }()
 
     /// An empty folder; `initialize` makes it a repository.
-    init(name: String = "repo") throws {
+    init(name: String = "repo", runner: any CommandRunner = LocalCommandRunner()) throws {
         let base = FileManager.default.temporaryDirectory.appending(
             path: "native-git-tests/\(UUID().uuidString)", directoryHint: .isDirectory)
         folder = base.appending(path: name, directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
-        git = try Git(environment: Self.environment)
+        git = Git(environment: Self.environment, runner: runner)
     }
 
     /// `git init` with a `main` branch, optionally committing a README.
-    static func make(name: String = "repo", commit: Bool = true) async throws -> TestRepository {
-        let test = try TestRepository(name: name)
+    static func make(
+        name: String = "repo", commit: Bool = true, runner: any CommandRunner = LocalCommandRunner()
+    ) async throws -> TestRepository {
+        let test = try TestRepository(name: name, runner: runner)
         try await test.git("init", "--quiet", "--initial-branch=main")
         if commit {
             try test.write("README.md", "# Test\n\nHello.\n")
