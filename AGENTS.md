@@ -44,7 +44,8 @@ these rules exist to keep changes small, isolated and easy to review.
   and shared views compile for both: no AppKit in them, and no process spawning outside
   `Packages/Exec` and the host. Platform-specific code goes behind an adapter in `native/Platform/`.
   Every action works with pointer, touch and keyboard, so hover-only affordances need a touch
-  equivalent.
+  equivalent. The design system has the adapters: `DSPasteboard`, `DSTypography.platformFont`,
+  `.dsHitTarget`, `DS.isTouchPlatform`.
 - **Keyboard.** `docs/keyboard.md` is the source of truth for shortcuts. Change it first, and every
   new action needs a menu command or a shortcut.
 - **Swift.** Swift 6 language mode with strict concurrency; the app target defaults to MainActor.

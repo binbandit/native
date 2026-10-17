@@ -51,7 +51,6 @@ struct NativeApp: App {
             ViewCommands()
             GoCommands(model: model)
             SessionCommands(model: model)
-            HostCommands()
         }
 
         Window("Durable Sessions", id: HostPreviewWindow.id) {

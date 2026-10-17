@@ -146,15 +146,6 @@ extension ToolPresentation {
     }
 }
 
-struct DiffStats: Equatable {
-    var added = 0
-    var removed = 0
-
-    static func + (lhs: DiffStats, rhs: DiffStats) -> DiffStats {
-        DiffStats(added: lhs.added + rhs.added, removed: lhs.removed + rhs.removed)
-    }
-}
-
 /// Claude Code names MCP tools `mcp__<server>__<tool>`: the server runs to the next `__` and the
 /// tool is the rest.
 private struct MCPToolName {

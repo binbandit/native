@@ -56,7 +56,6 @@ struct HostPreviewWindow: View {
 
     private var header: some View {
         HStack(spacing: DS.Space.md) {
-            Text("Durable Sessions").font(.dsHeadline)
             Text(connectionText)
                 .font(.dsCaption)
                 .foregroundStyle(Color.dsTextSecondary)
