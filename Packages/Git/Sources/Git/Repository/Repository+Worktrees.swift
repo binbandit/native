@@ -115,7 +115,7 @@ extension Repository {
 
     /// Local and remote branch names; remote ones count so a first push never lands on someone
     /// else's branch.
-    private func takenBranchNames() async throws(GitError) -> Set<String> {
+    func takenBranchNames() async throws(GitError) -> Set<String> {
         let refs = try await run(["for-each-ref", "--format=%(refname)", "refs/heads", "refs/remotes"], readOnly: true)
         var taken: Set<String> = []
         for reference in refs.text.split(separator: "\n") {
