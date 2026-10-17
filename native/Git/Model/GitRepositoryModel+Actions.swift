@@ -50,7 +50,8 @@ extension GitRepositoryModel {
     func pull() async {
         await perform(.pull) { repository in
             try await repository.pull()
-            return GitNotice(tone: .success, title: "Pulled from \(repository.name)'s upstream")
+            let upstream = try await repository.status().branch.upstream ?? "the remote"
+            return GitNotice(tone: .success, title: "Pulled from \(upstream)")
         }
     }
 

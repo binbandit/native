@@ -1,34 +1,23 @@
 import SwiftUI
 
-/// What stands in for the recent tasks while the project has none: what goes here, and the one
-/// action that starts the first.
-struct HomeNoTasks<ID: Hashable>: View {
+/// What stands in for the recent tasks while there are none: what goes here, and how to start the
+/// first. The agent cards right above are the action, so this points at them instead of repeating
+/// one as a button.
+struct HomeNoTasks: View {
     let projectName: String
-    /// The agent ⌘N starts a task with, once one is ready.
-    let agent: HomeAgent<ID>?
-    let onNewTask: (ID) -> Void
+    /// The ⌘N shortcut, while an agent is ready to take it.
+    let newTaskShortcut: KeyboardShortcut?
+    let isAnyAgentReady: Bool
 
     var body: some View {
-        EmptyStateView(
-            "No tasks in \(projectName) yet",
-            message: agent == nil
-                ? "Your agents are still getting ready. Tasks you start here are listed here and in the sidebar."
-                : "Tasks you start here, with any agent, are listed here and in the sidebar."
-        ) {
-            if let agent {
-                Button {
-                    onNewTask(agent.id)
-                } label: {
-                    HStack(spacing: DS.Space.sm) {
-                        Text("New \(agent.name) task")
-                        if let shortcut = agent.shortcut {
-                            Text(shortcut.displayString)
-                                .foregroundStyle(.dsTextTertiary)
-                        }
-                    }
-                }
-                .buttonStyle(.ds(.secondary, size: .medium))
-            }
+        EmptyStateView("No tasks in \(projectName) yet", message: message)
+    }
+
+    private var message: String {
+        guard isAnyAgentReady else {
+            return "Your agents are still getting ready. Tasks you start here will be listed here."
         }
+        let shortcut = newTaskShortcut.map { ", or press \($0.displayString)" } ?? ""
+        return "Pick an agent above to start one\(shortcut)."
     }
 }

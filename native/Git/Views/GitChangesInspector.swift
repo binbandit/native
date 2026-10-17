@@ -16,11 +16,20 @@ struct GitChangesInspector: View {
         VStack(spacing: 0) {
             switch model.state {
             case .loading:
-                ProgressView()
-                    .controlSize(.small)
+                DotGridLoader(pattern: .settingUp)
+                    .foregroundStyle(.dsTextTertiary)
+                    .frame(width: GitMetrics.loaderLarge, height: GitMetrics.loaderLarge)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
             case .notRepository:
-                EmptyStateView("Not a Git repository", systemImage: "folder", message: model.folder.path(percentEncoded: false))
+                noticeBanner
+                EmptyStateView(
+                    "Not a Git repository",
+                    systemImage: "folder",
+                    message: "\(model.folder.lastPathComponent) isn't tracked by git yet. Create a repository to review and commit changes here."
+                ) {
+                    Button("Create Repository") { Task { await model.initializeRepository() } }
+                        .buttonStyle(.ds(.secondary))
+                }
             case .failed(let message):
                 EmptyStateView("Couldn't read the repository", systemImage: "exclamationmark.triangle", message: message) {
                     Button("Try Again") { model.refresh() }
@@ -46,10 +55,11 @@ struct GitChangesInspector: View {
     @ViewBuilder private var ready: some View {
         GitChangesHeader(model: model, isCommitting: $isCommitting, onCreatePullRequest: onCreatePullRequest)
         SeparatorLine()
-        if let error = model.actionError {
-            errorBanner(error)
-        }
+        noticeBanner
         if let status = model.status, !status.isClean {
+            if !status.conflicted.isEmpty {
+                conflictsBanner(count: status.conflicted.count)
+            }
             summary(status)
             SeparatorLine()
             // The list takes what it needs, up to a share of the column, and the diff the rest.
@@ -62,8 +72,39 @@ struct GitChangesInspector: View {
                 }
             }
         } else {
-            EmptyStateView("No changes", systemImage: "checkmark.circle", message: cleanMessage)
+            EmptyStateView("No changes", systemImage: "checkmark.circle", message: cleanMessage) {
+                if let branch = model.branch, branch.ahead > 0 || (branch.upstream == nil && !branch.isDetached && !branch.isUnborn) {
+                    Button(branch.upstream == nil ? "Publish Branch" : "Push", systemImage: "arrow.up") {
+                        Task { await model.push() }
+                    }
+                    .buttonStyle(.ds(.secondary))
+                }
+            }
         }
+    }
+
+    @ViewBuilder private var noticeBanner: some View {
+        if let notice = model.notice {
+            GitNoticeBanner(notice: notice, onAction: run, onDismiss: model.dismissNotice)
+            SeparatorLine()
+        }
+    }
+
+    private func conflictsBanner(count: Int) -> some View {
+        let notice = GitNotice(
+            tone: .failure,
+            title: count == 1 ? "1 file has conflicts" : "\(count) files have conflicts",
+            message: "Edit each one to resolve the conflict markers, then stage it to mark it resolved.",
+            action: .showConflicts
+        )
+        return VStack(spacing: 0) {
+            GitNoticeBanner(notice: notice, onAction: run)
+            SeparatorLine()
+        }
+    }
+
+    private func run(_ action: GitNotice.Action) {
+        Task { await model.run(action) }
     }
 
     private func summary(_ status: RepositoryStatus) -> some View {
@@ -78,27 +119,19 @@ struct GitChangesInspector: View {
         .frame(height: GitMetrics.summaryHeight)
     }
 
-    private func errorBanner(_ message: String) -> some View {
-        HStack(alignment: .top, spacing: DS.Space.sm) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(.dsDanger)
-            Text(message)
-                .font(.dsBody)
-                .foregroundStyle(.dsTextPrimary)
-                .textSelection(.enabled)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            IconButton("Dismiss", systemImage: "xmark") { model.actionError = nil }
-        }
-        .padding(DS.Space.md)
-        .background(.dsDanger.opacity(0.08))
-    }
-
     private var cleanMessage: String {
         guard let branch = model.branch else { return "" }
-        if branch.ahead > 0 {
-            return branch.ahead == 1 ? "1 commit to push." : "\(branch.ahead) commits to push."
+        if branch.isUnborn {
+            return "This repository has no commits yet. Changes appear here as files are added."
         }
-        return "The working tree matches the last commit on \(branch.displayName)."
+        if branch.ahead > 0 {
+            let commits = branch.ahead == 1 ? "1 commit is" : "\(branch.ahead) commits are"
+            return "Everything is committed, and \(commits) ready to push."
+        }
+        if branch.upstream == nil, !branch.isDetached {
+            return "Everything is committed. \(branch.displayName) isn't on a remote yet."
+        }
+        return "Everything on \(branch.displayName) is committed. Changes show up here as files are edited."
     }
 
     private var isConfirmingDiscard: Binding<Bool> {

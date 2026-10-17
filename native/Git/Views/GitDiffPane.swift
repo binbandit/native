@@ -40,8 +40,9 @@ struct GitDiffPane: View {
     @ViewBuilder private var lines: some View {
         switch content {
         case nil:
-            ProgressView()
-                .controlSize(.small)
+            DotGridLoader(pattern: .waiting)
+                .foregroundStyle(.dsTextTertiary)
+                .frame(width: GitMetrics.loaderLarge, height: GitMetrics.loaderLarge)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .text(let diff):
             // Lines wrap rather than scroll sideways: the column is narrow, and `DiffView` keeps its
