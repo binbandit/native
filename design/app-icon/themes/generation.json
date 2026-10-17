@@ -83,5 +83,17 @@
       "../composer/*.icon"
     ],
     "note": "Original is the compiled native AppIcon.icon asset and follows macOS Default, Dark, Clear and Tinted appearances. Other themes are Dock image overrides with light/dark artwork. Glass PNGs and Glass.icon remain archived design explorations."
+  },
+  "channel_assets": {
+    "stable": "native/AppIcon.icon",
+    "beta": "native/AppIconBeta.icon",
+    "nightly": "native/AppIconNightly.icon",
+    "halloween_sources": [
+      "design/app-icon/HalloweenRegular.icon",
+      "design/app-icon/HalloweenBeta.icon",
+      "design/app-icon/HalloweenNightly.icon"
+    ],
+    "renderer": "Apple Icon Composer ictool, layered SVG sources",
+    "availability": "October 1 through November 7, inclusive, in the local Gregorian calendar; optional seasonal Dock overrides restore the selected base icon afterwards."
   }
 }
