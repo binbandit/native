@@ -25,7 +25,8 @@ struct PullRequestDiffLineRow: View {
                 .foregroundStyle(tint ?? .dsTextTertiary)
                 .frame(width: DS.Space.lg)
             Group {
-                if let text, line.kind != .noNewline {
+                // Blank lines draw from their plain text: highlighting gives them no height.
+                if let text, line.kind != .noNewline, !line.text.isEmpty {
                     Text(text)
                 } else {
                     Text(verbatim: line.text.isEmpty ? " " : line.text)
@@ -37,13 +38,15 @@ struct PullRequestDiffLineRow: View {
         }
         .padding(.trailing, DS.Space.md)
         .padding(.vertical, 1)
-        .background(background)
+        .background { Rectangle().fill(background) }
         .overlay(alignment: .leading) {
             if let tint {
                 Rectangle().fill(tint).frame(width: 2)
             }
         }
         .trackHover($isHovered)
+        // A square shape, or the menu rounds the row's ends.
+        .contentShape(.contextMenuPreview, Rectangle())
         .contextMenu { menu }
     }
 

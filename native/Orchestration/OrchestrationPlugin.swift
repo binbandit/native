@@ -37,7 +37,9 @@ struct OrchestrationPlugin: NativePlugin {
             version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0",
             instructions: OrchestrationTools.instructions + (script == nil ? "" : OrchestrationScriptTool.instructions),
             tools: tools + [script].compactMap { $0 }
-                + SkillTools.all(NativeSkill.bundled(), pluginsFolder: PluginRegistry.directory)
+                + SkillTools.all(NativeSkill.bundled(), pluginsFolder: PluginRegistry.directory) { skills, caller in
+                    await orchestrator.skills(skills, for: caller)
+                }
         ) { token in
             await orchestrator.caller(for: token)
         }

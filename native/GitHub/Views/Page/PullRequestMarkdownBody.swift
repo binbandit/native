@@ -8,7 +8,7 @@ struct PullRequestMarkdownBody: View {
     var original: String?
 
     var body: some View {
-        let segments = SuggestionBlock.segments(of: source)
+        let segments = SuggestionBlock.segments(of: GitHubMarkdown.removingComments(source))
         VStack(alignment: .leading, spacing: DS.Space.md) {
             ForEach(segments.indices, id: \.self) { index in
                 switch segments[index] {

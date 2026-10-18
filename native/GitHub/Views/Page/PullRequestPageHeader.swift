@@ -20,7 +20,7 @@ struct PullRequestPageHeader: View {
                     .foregroundStyle(.dsTextPrimary)
                     .lineLimit(2)
                     .textSelection(.enabled)
-                Text("#\(page.reference.number)")
+                Text(verbatim: "#\(page.reference.number)")
                     .font(.dsTitle3)
                     .foregroundStyle(.dsTextTertiary)
                 Spacer(minLength: DS.Space.lg)
