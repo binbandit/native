@@ -44,19 +44,12 @@ struct TranscriptView: View {
             geometry.containerSize
         } action: { _, size in
             // A view that's just been made (a session reopened, or back from Settings) is first laid
-            // out at a sliver with no height. Rows measured that narrow come out thousands of points
-            // tall, and the lazy stack keeps them as its estimates, so the transcript opened mid-way
-            // or past its end, blank. The rows wait for the real size instead.
-            guard size.height > 0 else { return }
+            // out at a sliver with no height or no width. Rows measured that narrow come out
+            // thousands of points tall, and the lazy stack keeps them as its estimates, so the
+            // transcript opened mid-way or past its end, blank. The rows wait for a real size.
+            guard size.width > 0, size.height > 0 else { return }
             containerWidth = size.width
         }
-        .onScrollGeometryChange(for: String.self) { g in
-            "content \(g.contentSize.height) container \(g.containerSize.width)x\(g.containerSize.height) offset \(g.contentOffset.y) insets \(g.contentInsets.top),\(g.contentInsets.bottom) visible \(g.visibleRect.minY)-\(g.visibleRect.maxY)"
-        } action: { _, new in
-            stabLog(new)
-        }
-        .onAppear { stabLog("appear \(session.id) items \(session.state.items.count)") }
-        .onDisappear { stabLog("disappear \(session.id)") }
         .onScrollGeometryChange(for: Bool.self) { [threshold = DS.Space.xxxl] geometry in
             geometry.visibleRect.maxY < geometry.contentSize.height - threshold
         } action: { _, isAway in
@@ -116,8 +109,4 @@ struct TranscriptView: View {
     private func jumpToLatest() {
         withAnimation(.dsStandard) { position.scrollTo(edge: .bottom) }
     }
-}
-
-func stabLog(_ s: String) {
-    if let h = FileHandle(forWritingAtPath: "/tmp/stabilize-tools/geo.log") { h.seekToEndOfFile(); h.write(Data("STABDBG \(Date().timeIntervalSince1970) \(s)\n".utf8)); try? h.close() }
 }

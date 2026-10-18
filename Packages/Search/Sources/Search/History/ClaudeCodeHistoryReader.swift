@@ -33,10 +33,10 @@ public struct ClaudeCodeHistoryReader: SessionHistoryReader {
         HistorySource.jsonlFiles(under: root, maxDepth: 2)
     }
 
-    public func read(_ source: HistorySource) throws -> HistorySession? {
+    public func read(_ source: HistorySource, resuming resume: HistoryResume?) throws -> HistoryRead {
         var builder = HistoryTranscriptBuilder()
-        var sessionID = source.url.deletingPathExtension().lastPathComponent
-        var cwd: String?
+        var sessionID = resume?.sessionID ?? source.url.deletingPathExtension().lastPathComponent
+        var cwd = resume?.cwd
         var aiTitle: String?
         var customTitle: String?
         var summary: String?
@@ -47,7 +47,7 @@ public struct ClaudeCodeHistoryReader: SessionHistoryReader {
             #""type":"user""#, #""type":"assistant""#, #""type":"ai-title""#, #""type":"custom-title""#,
             #""type":"summary""#,
         ]
-        try JSONLines.forEach(in: source.url, containing: markers) { record in
+        let offset = try JSONLines.forEach(in: source.url, from: resume?.offset ?? 0, containing: markers) { record in
             switch record["type"] as? String {
             case "ai-title": aiTitle = record["aiTitle"] as? String ?? aiTitle
             case "custom-title": customTitle = record["customTitle"] as? String ?? customTitle
@@ -75,10 +75,13 @@ public struct ClaudeCodeHistoryReader: SessionHistoryReader {
                 break
             }
         }
-        guard let cwd, !builder.documents.isEmpty else { return nil }
-        return HistorySession(
-            sessionID: sessionID, title: customTitle ?? aiTitle ?? summary ?? firstPrompt, cwd: cwd, createdAt: firstDate,
-            updatedAt: lastDate, documents: builder.documents)
+        // A resumed read only adds to a session; a new one needs a conversation to be one.
+        guard let cwd, resume != nil || !builder.documents.isEmpty else { return HistoryRead(session: nil, offset: offset) }
+        let title = customTitle ?? aiTitle ?? summary ?? (resume == nil ? firstPrompt : nil)
+        let session = HistorySession(
+            sessionID: sessionID, title: title, cwd: cwd, createdAt: resume == nil ? firstDate : nil, updatedAt: lastDate,
+            documents: builder.documents)
+        return HistoryRead(session: session, offset: offset)
     }
 
     private func readUser(_ content: Any?, date: Date?, into builder: inout HistoryTranscriptBuilder) {

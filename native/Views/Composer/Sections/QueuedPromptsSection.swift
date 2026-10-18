@@ -1,9 +1,9 @@
 import ACP
 import SwiftUI
 
-/// Follow-ups waiting for the turn to end, as the composer's top section, after Factory's queued
-/// messages panel. The first goes out next. Each can be sent right away (steered into the running
-/// turn, when the agent supports it), edited in the composer, or removed.
+/// Follow-ups waiting for the turn to end, as the composer's top section. The first goes out next.
+/// Each can be sent right away (steered into the running turn, when the agent supports it), edited
+/// in the composer, or removed.
 struct QueuedPromptsSection: View {
     typealias Prompt = SessionModel.QueuedPrompt
 
@@ -90,7 +90,7 @@ private struct QueuedPromptRow: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            // Like Factory's, the actions show on hover, and while one of them has keyboard focus.
+            // The actions show on hover, and while one of them has keyboard focus, so rows stay quiet.
             HStack(spacing: DS.Space.xxs) {
                 switch sendNow {
                 case .steer: action("Steer Now", systemImage: "chevron.up") { onSendNow(prompt.id) }
@@ -133,7 +133,7 @@ private struct QueuedPromptRow: View {
     }
 }
 
-/// An 18pt icon button that brightens on hover (Factory `QueuedMessageActionButton`).
+/// An 18pt icon button that brightens on hover.
 private struct ActionIcon: View {
     let title: String
     let systemImage: String

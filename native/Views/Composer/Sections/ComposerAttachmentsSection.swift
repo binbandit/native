@@ -17,7 +17,7 @@ struct ComposerAttachmentsSection: View {
 
     var body: some View {
         CappedHeightScrollView(maxHeight: ComposerMetrics.attachmentsMaxHeight) {
-            ComposerAttachmentFlow(spacing: DS.Space.sm) {
+            FlowLayout(spacing: DS.Space.sm) {
                 ForEach(attachments) { attachment in
                     ComposerAttachmentChip(
                         attachment: attachment,

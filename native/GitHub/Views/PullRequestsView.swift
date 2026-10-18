@@ -157,7 +157,7 @@ struct PullRequestsView: View {
 
 /// Layout shared by the list's header and content, so their edges line up.
 enum PullRequestsLayout {
-    /// Factory's chat column (`CHAT_CONTENT_MAX_WIDTH`), which its pull request inbox reuses.
+    /// The width of a reading column, the same as the transcript's.
     static let contentWidth: CGFloat = 760
     static let emptyHeight: CGFloat = 320
 }

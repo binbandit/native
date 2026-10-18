@@ -1,6 +1,6 @@
 import ACP
 
-/// The agent's plan as the composer shows it, after Factory's plan visualizer.
+/// The agent's plan as the composer shows it.
 struct PlanProgress: Equatable {
     let entries: [PlanEntry]
 

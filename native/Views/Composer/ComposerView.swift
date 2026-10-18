@@ -2,7 +2,7 @@ import ACP
 import NativeAutomation
 import SwiftUI
 
-/// The prompt composer, after Factory's: one surface pinned under the transcript that stacks queued
+/// The prompt composer: one surface pinned under the transcript that stacks queued
 /// follow-ups, the agent's plan, the draft and a row of session controls, with slash commands and
 /// `@` file mentions floating above it. Its keys follow docs/keyboard.md.
 struct ComposerView: View {
@@ -245,7 +245,7 @@ struct ComposerView: View {
             .disabled(!canEdit)
             .onAttachmentPaste(isEnabled: isFocused && canEdit, perform: attach)
             // Send and Stop keep their places, so neither moves nor reflows the text: Send alone while
-            // idle (once there's a draft, as in Factory); while the agent works, Stop, with a slot
+            // idle (once there's a draft); while the agent works, Stop, with a slot
             // beside it where Send appears to queue or steer what's typed, by pointer or touch too.
             HStack(spacing: DS.Space.sm) {
                 if session.canCancel {

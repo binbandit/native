@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// The model picker's chip, with the effort meter inside it; clicking the meter steps the effort up,
-/// as in Factory's model selector.
+/// The model picker's chip, with the effort meter inside it; clicking the meter steps the effort up.
 struct ModelPill: View {
     let model: SelectSetting?
     let effort: SelectSetting?

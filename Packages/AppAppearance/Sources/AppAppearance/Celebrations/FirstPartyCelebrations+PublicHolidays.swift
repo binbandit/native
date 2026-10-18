@@ -36,11 +36,13 @@ extension FirstPartyCelebrations {
             holidays: ["mid-autumn", "new-year", "spring-festival"]),
         "DE": PublicHolidayCalendar(
             authority: "Bundesministerium des Innern",
-            source: "https://www.bmi.bund.de/DE/themen/verfassung/staatliche-symbole/nationale-feiertage/nationale-feiertage-node.html",
+            source:
+                "https://www.bmi.bund.de/DE/themen/verfassung/staatliche-symbole/nationale-feiertage/nationale-feiertage-node.html",
             holidays: ["christmas", "easter", "new-year"]),
         "EG": PublicHolidayCalendar(
             authority: "Presidency of the Arab Republic of Egypt",
-            source: "https://www.presidency.eg/en/%D9%85%D8%B5%D8%B1/%D8%A7%D9%84%D8%B9%D8%B7%D9%84%D8%A7%D8%AA-%D8%A7%D9%84%D8%B1%D8%B3%D9%85%D9%8A%D8%A9/",
+            source:
+                "https://www.presidency.eg/en/%D9%85%D8%B5%D8%B1/%D8%A7%D9%84%D8%B9%D8%B7%D9%84%D8%A7%D8%AA-%D8%A7%D9%84%D8%B1%D8%B3%D9%85%D9%8A%D8%A9/",
             holidays: ["christmas-julian", "eid-al-adha", "eid-al-fitr"]),
         "ES": PublicHolidayCalendar(
             authority: "BOE (Resolución fiestas laborales 2026)",
@@ -68,11 +70,13 @@ extension FirstPartyCelebrations {
             holidays: ["christmas", "easter", "mid-autumn", "new-year", "spring-festival"]),
         "ID": PublicHolidayCalendar(
             authority: "Coordinating Ministry for Human Development and Culture (SKB 3 Menteri 2026)",
-            source: "https://www.kemenkopmk.go.id/pemerintah-tetapkan-17-hari-libur-nasional-dan-8-hari-cuti-bersama-tahun-2026",
+            source:
+                "https://www.kemenkopmk.go.id/pemerintah-tetapkan-17-hari-libur-nasional-dan-8-hari-cuti-bersama-tahun-2026",
             holidays: ["christmas", "easter", "eid-al-adha", "eid-al-fitr", "new-year", "spring-festival", "vesak"]),
         "IE": PublicHolidayCalendar(
             authority: "Citizens Information (Irish state information service)",
-            source: "https://www.citizensinformation.ie/en/employment/employment-rights-and-conditions/leave-and-holidays/public-holidays/",
+            source:
+                "https://www.citizensinformation.ie/en/employment/employment-rights-and-conditions/leave-and-holidays/public-holidays/",
             holidays: ["christmas", "easter", "new-year", "st-patricks-day"]),
         "IN": PublicHolidayCalendar(
             authority: "Government of India, DoPT Office Memorandum (holidays for central government offices)",
@@ -124,7 +128,8 @@ extension FirstPartyCelebrations {
             holidays: ["christmas", "diwali", "eid-al-adha", "eid-al-fitr", "holi", "vesak"]),
         "NZ": PublicHolidayCalendar(
             authority: "Employment New Zealand (MBIE)",
-            source: "https://www.employment.govt.nz/leave-and-holidays/public-holidays/public-holidays-and-anniversary-dates",
+            source:
+                "https://www.employment.govt.nz/leave-and-holidays/public-holidays/public-holidays-and-anniversary-dates",
             holidays: ["christmas", "easter", "matariki", "new-year"]),
         "PH": PublicHolidayCalendar(
             authority: "Philippine Embassy Madrid list, citing Proclamation No. 1006 (2025)",
@@ -168,7 +173,8 @@ extension FirstPartyCelebrations {
             holidays: ["christmas", "juneteenth", "new-year", "thanksgiving-us", "us-independence-day"]),
         "VN": PublicHolidayCalendar(
             authority: "Công báo (Labour Code 2019, art. 112)",
-            source: "https://congbaocdn.chinhphu.vn/180507251028987904/2026/3/5/468971-1772684381_v1_1772690833_signed.pdf",
+            source:
+                "https://congbaocdn.chinhphu.vn/180507251028987904/2026/3/5/468971-1772684381_v1_1772690833_signed.pdf",
             holidays: ["new-year", "tet"]),
         "ZA": PublicHolidayCalendar(
             authority: "South African Government (Public Holidays Act 36 of 1994)",

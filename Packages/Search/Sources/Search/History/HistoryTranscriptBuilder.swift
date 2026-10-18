@@ -1,34 +1,66 @@
 import Foundation
 
-/// Reads a JSONL file one record at a time, without loading it whole: history files run to
-/// hundreds of megabytes, mostly lines search doesn't need.
+/// Reads a JSONL file one record at a time, a megabyte at a time: history files run to hundreds
+/// of megabytes, mostly lines search doesn't need, and the memory used stays the same whatever
+/// their size.
 enum JSONLines {
-    /// Calls `body` with each line that contains one of `markers` and parses as a JSON object.
-    /// The markers are a cheap first cut (`"type":"user"`); the caller still checks the record.
-    static func forEach(in url: URL, containing markers: [String], _ body: ([String: Any]) throws -> Void) throws {
-        let data = try Data(contentsOf: url, options: .alwaysMapped)
+    /// Calls `body` with each complete line from `offset` on that contains one of `markers` and
+    /// parses as a JSON object. Returns the offset just past the last complete line, so a line
+    /// still being written is read next time. Lines longer than `maxLine` (an image pasted into a
+    /// tool result) are skipped whole.
+    @discardableResult
+    static func forEach(
+        in url: URL, from offset: Int = 0, containing markers: [String], maxLine: Int = 4 << 20,
+        _ body: ([String: Any]) throws -> Void
+    ) throws -> Int {
+        let file = try FileHandle(forReadingFrom: url)
+        defer { try? file.close() }
+        try file.seek(toOffset: UInt64(offset))
         let needles = markers.map { Array($0.utf8) }
-        try data.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) throws -> Void in
-            guard let base = buffer.baseAddress else { return }
-            var start = 0
-            while start < buffer.count {
-                let newline: UnsafeMutableRawPointer? = memchr(base + start, 0x0A, buffer.count - start)
-                let end = newline.map { UnsafeRawPointer($0) - base } ?? buffer.count
-                let line = UnsafeRawBufferPointer(start: base + start, count: end - start)
-                if needles.contains(where: { contains($0, in: line) }),
-                    let object = try? JSONSerialization.jsonObject(with: Data(line)) as? [String: Any]
-                {
-                    try body(object)
+        var line: [UInt8] = []
+        var isOversized = false
+        var position = offset
+        var consumed = offset
+        while let chunk = try autoreleasepool(invoking: { try file.read(upToCount: 1 << 20) }), !chunk.isEmpty {
+            try chunk.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) throws -> Void in
+                guard let base = buffer.baseAddress else { return }
+                var start = 0
+                while start < buffer.count {
+                    let newline: UnsafeMutableRawPointer? = memchr(base + start, 0x0A, buffer.count - start)
+                    let end = newline.map { UnsafeRawPointer($0) - base } ?? buffer.count
+                    if !isOversized {
+                        if line.count + end - start > maxLine {
+                            isOversized = true
+                            line.removeAll(keepingCapacity: false)
+                        } else {
+                            line.append(contentsOf: UnsafeRawBufferPointer(rebasing: buffer[start..<end]))
+                        }
+                    }
+                    guard newline != nil else { break }
+                    if !isOversized, needles.contains(where: { contains($0, in: line) }) {
+                        try autoreleasepool {
+                            if let object = try? JSONSerialization.jsonObject(with: Data(line)) as? [String: Any] {
+                                try body(object)
+                            }
+                        }
+                    }
+                    line.removeAll(keepingCapacity: line.capacity <= 1 << 20)
+                    isOversized = false
+                    consumed = position + end + 1
+                    start = end + 1
                 }
-                start = end + 1
+                position += buffer.count
             }
         }
+        return consumed
     }
 
-    private static func contains(_ needle: [UInt8], in line: UnsafeRawBufferPointer) -> Bool {
-        guard let base = line.baseAddress else { return false }
-        return needle.withUnsafeBytes { needle in
-            memmem(base, line.count, needle.baseAddress, needle.count) != nil
+    private static func contains(_ needle: [UInt8], in line: [UInt8]) -> Bool {
+        line.withUnsafeBytes { line in
+            needle.withUnsafeBytes { needle in
+                guard let base = line.baseAddress else { return false }
+                return memmem(base, line.count, needle.baseAddress, needle.count) != nil
+            }
         }
     }
 

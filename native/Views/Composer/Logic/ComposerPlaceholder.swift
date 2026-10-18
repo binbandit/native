@@ -8,7 +8,7 @@ struct ComposerPlaceholder {
     var followUp: FollowUpBehavior
     var supportsSteering: Bool
     var isNewSession: Bool
-    /// Adds how to get back to the composer without the mouse, as Conductor does.
+    /// Adds how to get back to the composer without the mouse.
     var showsFocusHint: Bool
 
     var text: String {

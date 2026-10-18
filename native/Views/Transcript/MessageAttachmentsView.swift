@@ -13,15 +13,16 @@ struct MessageAttachmentsView: View {
         let images = attachments.filter(\.isImage)
         let files = attachments.filter { !$0.isImage }
         VStack(alignment: .trailing, spacing: DS.Space.sm) {
+            // Rows wrap, so a message with many files stays inside the column.
             if !images.isEmpty {
-                HStack(spacing: DS.Space.sm) {
+                FlowLayout(spacing: DS.Space.sm, alignment: .trailing) {
                     ForEach(images) { image in
                         imageTile(image)
                     }
                 }
             }
             if !files.isEmpty {
-                HStack(spacing: DS.Space.sm) {
+                FlowLayout(spacing: DS.Space.sm, alignment: .trailing) {
                     ForEach(files) { file in
                         fileChip(file)
                     }

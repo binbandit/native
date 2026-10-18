@@ -1,7 +1,7 @@
 import ACP
 import SwiftUI
 
-/// The composer's bottom row, after Factory's: attach, model with its effort meter, autonomy, plan
+/// The composer's bottom row: attach, model with its effort meter, autonomy, plan
 /// mode and help leading; the follow-up hint (while it fits) and context usage trailing.
 struct ComposerControlsRow<Extras: View, Context: View>: View {
     let settings: ComposerSettings

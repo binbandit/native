@@ -19,7 +19,7 @@ public enum FirstPartyCelebrations {
     /// One set per pack: Julian Christmas shares Christmas's.
     public static let iconSets: [IconSetContribution] =
         [halloweenIcons, diaDeMuertosIcons, sugarSkullIcons]
-        + catalogue.map(\.icons).reduce(into: []) { sets, set in
+        + catalogue.flatMap(\.icons).reduce(into: []) { sets, set in
             if !sets.contains(where: { $0.id == set.id }) { sets.append(set) }
         }
 

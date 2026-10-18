@@ -28,17 +28,15 @@ public final class SearchIndex: Sendable {
 
     // MARK: - Indexing
 
-    /// Indexes a session's transcript, replacing what was indexed for it before. `source` is the
-    /// history file it was read from, if any, so an unchanged file isn't read again.
-    public func replace(
-        _ session: SearchSessionRecord, documents: [SearchDocument], source: SearchSourceStamp? = nil
-    ) async throws {
-        try await writer.replace([SearchIndexEntry(session: session, documents: documents, source: source)])
+    /// Indexes a session's transcript, replacing what was indexed for it before.
+    public func replace(_ session: SearchSessionRecord, documents: [SearchDocument]) async throws {
+        try await writer.write(SearchIndexBatch(replacing: [SearchIndexEntry(session: session, documents: documents)]))
     }
 
-    /// Indexes several sessions in one transaction, for backfilling.
-    public func replace(_ entries: [SearchIndexEntry]) async throws {
-        try await writer.replace(entries)
+    /// Applies a batch of writes in one transaction, for backfilling.
+    public func write(_ batch: SearchIndexBatch) async throws {
+        guard !batch.isEmpty else { return }
+        try await writer.write(batch)
     }
 
     /// Updates a session's title, project or dates, leaving its transcript as indexed.
@@ -69,9 +67,23 @@ public final class SearchIndex: Sendable {
         try await writer.removeAll()
     }
 
-    /// The stamp each indexed history file had when it was read, by path.
-    public func sourceStamps() async throws -> [String: String] {
-        try await writer.sourceStamps()
+    /// How far each history file has been read, by path.
+    public func checkpoints() async throws -> [String: HistoryCheckpoint] {
+        try await writer.checkpoints()
+    }
+
+    /// Reads the history files of sessions in `folder` again on the next pass.
+    public func removeCheckpoints(under folder: String) async throws {
+        try await writer.removeCheckpoints(under: folder)
+    }
+
+    /// Whether a pass over the agents' history has ever finished.
+    public func isFilled() async throws -> Bool {
+        try await writer.isFilled()
+    }
+
+    public func markFilled() async throws {
+        try await writer.markFilled()
     }
 
     public func statistics() async throws -> SearchIndexStatistics {

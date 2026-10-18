@@ -1,8 +1,8 @@
 import GitHub
 import SwiftUI
 
-/// Conversation, Files Changed and Checks, with their counts (Conductor's right panel tabs: ghost
-/// buttons, the active one filled).
+/// Conversation, Files Changed and Checks, with their counts: ghost buttons, the active one
+/// filled.
 struct PullRequestPageTabBar: View {
     let model: PullRequestPageModel
     let page: PullRequestPage

@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// One setting, laid out like Conductor's settings rows: a medium title with optional accessories,
-/// a muted description and smaller detail, and the control on the right. Rows with a detail line
-/// pin the control to the top, as Conductor's do, so it lines up with the title.
+/// One setting: a medium title with optional accessories, a muted description and smaller detail,
+/// and the control on the right. Rows with a detail line pin the control to the top, so it lines up
+/// with the title.
 ///
 /// The trailing edge says what kind of row it is, so a glance tells them apart:
 /// - a control (`SettingsSwitch`, `SettingsSelect`, a field) is a setting the user can change;
@@ -16,7 +16,7 @@ struct SettingsRow<Accessory: View, Control: View>: View {
     /// Where search reveals the row.
     var id: SettingsRowID?
     let title: Text
-    /// An SF Symbol shown in a tile before the text (Conductor's integration cards).
+    /// An SF Symbol shown in a tile before the text, for rows that stand for a thing (an agent, a server).
     var icon: String?
     var description: Text?
     var detail: Text?
@@ -151,7 +151,7 @@ extension SettingsRow where Accessory == EmptyView, Control == EmptyView {
     }
 }
 
-/// Rows with a hairline between each (Conductor gives every row but the first a top border with
+/// Rows with a hairline between each (every row but the first gets a top border with
 /// 20pt either side).
 struct SettingsRowGroup<Content: View>: View {
     @ViewBuilder var content: Content
@@ -171,7 +171,7 @@ struct SettingsRowGroup<Content: View>: View {
     }
 }
 
-/// A bordered tile holding a glyph or an icon (Conductor `size-10 rounded-lg border bg-muted`).
+/// A bordered 40pt tile with an 8pt radius on the sunken fill, holding a glyph or an icon.
 struct SettingsIconTile<Content: View>: View {
     @ViewBuilder var content: Content
 
@@ -193,7 +193,7 @@ extension SettingsIconTile where Content == Image {
     }
 }
 
-/// An outlined tag beside a row title (Conductor's "Managed"/"Local" source badge).
+/// An outlined tag beside a row title: where a setting comes from ("Managed", "Local") or its state.
 struct SettingsBadge: View {
     let text: String
     var systemImage: String?

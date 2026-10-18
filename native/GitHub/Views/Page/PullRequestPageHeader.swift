@@ -1,7 +1,7 @@
 import GitHub
 import SwiftUI
 
-/// The top of a pull request's page (Factory `PullRequestHeader`): back, the title and number, then
+/// The top of a pull request's page: back, the title and number, then
 /// one line of where it stands: state, branch into base, checks, review decision and whether it can
 /// merge. The review and merge actions sit on the right.
 struct PullRequestPageHeader: View {

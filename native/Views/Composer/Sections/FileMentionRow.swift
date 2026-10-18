@@ -31,7 +31,7 @@ struct FileMentionRow: View {
                 .truncationMode(.head)
             Spacer(minLength: 0)
             if isChanged {
-                // Factory marks uncommitted files the same way in its file list.
+                // Uncommitted files are marked, since they're often the ones being worked on.
                 StatusDot(color: .dsWarning)
                     .help("Changed")
             }

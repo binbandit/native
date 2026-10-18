@@ -6,7 +6,7 @@ import Foundation
 /// soon and can't be turned on.
 extension FirstPartyCelebrations {
     /// The editions, in catalogue order, each with its icon set.
-    static let catalogue: [(celebration: CelebrationContribution, icons: IconSetContribution)] = [
+    static let catalogue: [(celebration: CelebrationContribution, icons: [IconSetContribution])] = [
         edition("new-year", "New Year", ["New Year's Eve", "New Year's Day"], "cultural", .fixed(12, 31, to: 1, 1)),
         edition("valentines-day", "Valentine's Day", ["Saint Valentine's Day"], "cultural", .fixed(2, 14)),
         edition(
@@ -31,7 +31,14 @@ extension FirstPartyCelebrations {
         edition("kwanzaa", "Kwanzaa", [], "cultural", .fixed(12, 26, to: 1, 1)),
         edition(
             "australia-day", "Australia Day", [], "community", .fixed(1, 26), tradition: "Australia",
-            hasArtwork: false),
+            styles: [
+                Style(pack: "australia-day-wattle", name: "Wattle"),
+                Style(pack: "australia-day", name: "Southern Cross"),
+                Style(
+                    pack: "australia-day-boxing-kangaroo", name: "Boxing kangaroo",
+                    caption: "A boxing kangaroo instead of Native's interlock."),
+                Style(pack: "australia-day-reflection", name: "Reflection"),
+            ]),
         edition("pride", "Pride Month", ["Pride"], "community", .fixed(6, 1, to: 6, 30)),
         edition(
             "carnival", "Mardi Gras", ["Carnival", "Fat Tuesday", "Shrove Tuesday"], "cultural",
@@ -95,6 +102,13 @@ extension FirstPartyCelebrations {
             tradition: "The second Tuesday in October"),
     ]
 
+    /// One of an edition's icon styles, by its artwork folder; the first is the default.
+    struct Style {
+        let pack: String
+        let name: LocalizedText
+        var caption: LocalizedText?
+    }
+
     /// How an edition's dates come about, written compactly.
     enum Dates {
         case rule(CelebrationRule)
@@ -141,21 +155,24 @@ extension FirstPartyCelebrations {
 
     private static func edition(
         _ slug: String, _ title: LocalizedText, _ aliases: [String], _ tag: String, _ dates: Dates,
-        tradition: String? = nil, icons pack: String? = nil, hasArtwork: Bool = true
-    ) -> (celebration: CelebrationContribution, icons: IconSetContribution) {
-        let pack = pack ?? slug
+        tradition: String? = nil, icons pack: String? = nil, hasArtwork: Bool = true, styles: [Style] = []
+    ) -> (celebration: CelebrationContribution, icons: [IconSetContribution]) {
+        let styles = styles.isEmpty ? [Style(pack: pack ?? slug, name: title)] : styles
         let (calendar, provenance) = dates.calendar(slug, tradition: tradition)
+        // Until its artwork lands in design/app-icon/celebrations/<edition>, an edition's icon is
+        // forthcoming and its preview is the plain mark.
+        let sets = styles.map { style in
+            IconSetContribution(
+                id: IconSetID("native.\(style.pack)"), name: style.name,
+                icons: hasArtwork ? .pack(style.pack) : .forthcoming,
+                thumbnail: hasArtwork ? thumbnail(style.pack) : nil, caption: style.caption)
+        }
         return (
             CelebrationContribution(
                 id: CelebrationID("native.\(slug)"), title: title, aliases: aliases, tags: [tag],
                 provenance: provenance,
-                calendar: calendar,
-                iconSet: IconSetID("native.\(pack)")),
-            // Until its artwork lands in design/app-icon/celebrations/<edition>, an edition's icon is
-            // forthcoming and its preview is the plain mark.
-            IconSetContribution(
-                id: IconSetID("native.\(pack)"), name: title, icons: hasArtwork ? .pack(pack) : .forthcoming,
-                thumbnail: hasArtwork ? thumbnail(pack) : nil)
+                calendar: calendar, iconSet: sets.first?.id, alternateIconSets: sets.dropFirst().map(\.id)),
+            sets
         )
     }
 }

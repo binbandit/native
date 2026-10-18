@@ -20,18 +20,20 @@
 #       "holidays": [edition slugs]}}}. Only statutory, nationwide public holidays belong in it.
 #       The researched data, with notes and sources, is scripts/release/data/public-holidays.json.
 #
-# Editions in PENDING are left out until their artwork is chosen or delivered.
+# Editions in PENDING are left out until their artwork is chosen or delivered; EXCLUDED never ship.
 set -euo pipefail
 
 root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
 art="$root/design/app-icon/celebrations"
-PENDING=(personal-celebration australia-day)
+PENDING=(personal-celebration)
+# Never shipped: artwork that imitates another culture's art form isn't Native's to use.
+EXCLUDED=(australia-day-ochre-dots)
 CHANNELS=(stable beta nightly dev)
 
 editions() {
     for dir in "$art"/*/; do
         slug=$(basename "$dir")
-        [[ " ${PENDING[*]} " == *" $slug "* ]] && continue
+        [[ " ${PENDING[*]} ${EXCLUDED[*]} " == *" $slug "* ]] && continue
         complete=1
         for channel in "${CHANNELS[@]}"; do
             for appearance in light dark; do
@@ -63,6 +65,8 @@ pack() {
     local version=${2:-$(date -u +%Y.%m.%d)}
     : "${CELEBRATION_ASSETS_SIGN:?set CELEBRATION_ASSETS_SIGN to a command that prints the base64 Ed25519 signature of a file}"
     mkdir -p "$out"
+    # A clean slate, so a pack dropped since the last run (an excluded edition) is never uploaded.
+    rm -f "$out"/celebration-*.json "$out/celebration-assets.json.sig"
     # shellcheck disable=SC2046
     python3 -I - "$art" "$out" "$version" $(editions) <<'PY'
 import base64, hashlib, json, os, sys

@@ -1,7 +1,7 @@
 import GitHub
 import SwiftUI
 
-/// One pull request in the list (Factory `PullRequestSummaryRow`): state glyph, title, size and
+/// One pull request in the list: state glyph, title, size and
 /// checks on the first line; reference, branch, author, age and review status under it. Clicking
 /// opens it (in Native or on GitHub, as Settings say), the checks glyph opens the failing check, and hovering offers the rest.
 struct PullRequestRow: View {

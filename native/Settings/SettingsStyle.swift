@@ -1,9 +1,9 @@
 import SwiftUI
 
-/// Conductor's settings metrics. Most map onto design-system sizes; the rest are the few layout
+/// Settings' metrics. Most map onto design-system sizes; the rest are the few layout
 /// values only this window uses, kept here so pages don't repeat them.
 enum SettingsMetrics {
-    /// The nav column (Conductor `w-64`).
+    /// The nav column, 256pt.
     static let navWidth = DS.Size.sidebarWidth
     /// Page content: inset 40pt (`px-10`), 24pt below the toolbar, at most 896pt wide.
     static let pageInset: CGFloat = 40
@@ -31,7 +31,7 @@ enum SettingsMetrics {
     static let navItemSpacing = DS.Space.xs
     static let navGroupSpacing: CGFloat = 20
     static let navIcon: CGFloat = 16
-    /// SF Symbol point sizes that match Lucide's 1pt-stroke glyphs at Conductor's icon sizes.
+    /// SF Symbol point sizes that match thin 1pt-stroke glyphs at the nav's and tiles' icon sizes.
     static let navGlyph: CGFloat = 14
     static let tileGlyph: CGFloat = 17
     static let searchGlyph: CGFloat = 12
@@ -49,7 +49,7 @@ enum SettingsMetrics {
     static let revealRingOutset: CGFloat = 10
 }
 
-/// Conductor's Tailwind text styles in the design system's fonts, with CSS line heights: the
+/// Settings' text styles in the design system's fonts, with CSS-style line heights: the
 /// leading a line box adds beyond the font's own height goes half above and half below, and
 /// between wrapped lines.
 struct SettingsTextStyle {
@@ -75,8 +75,8 @@ struct SettingsTextStyle {
     static let bodyMedium = SettingsTextStyle(.dsHeadline, size: 14, weight: .medium, lineHeight: 20)
     /// `text-base font-medium`: section headings, a step above row titles.
     static let heading = SettingsTextStyle(.dsTitle3, size: 16, weight: .medium, lineHeight: 24)
-    /// `text-2xl`: page titles. Conductor asks for medium, but its web view draws Geist at this size
-    /// as light as 300 (measured against the shipped app), and that lightness is the look.
+    /// `text-2xl`: page titles, in Geist at 300, light enough that the title sits back from the
+    /// rows under it.
     static let title = SettingsTextStyle(
         .ds(24, weight: .light), size: 24, weight: .light, lineHeight: 32, trackingEm: -0.024)
     /// `font-mono text-xs`: commands and paths.

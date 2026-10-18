@@ -1,8 +1,8 @@
 import GitHub
 import SwiftUI
 
-/// Every changed file's diff, with a file tree beside them when there's room (Factory's review
-/// layout). Viewed and generated files start folded; diffs load as the list reaches them.
+/// Every changed file's diff, with a file tree beside them when there's room. Viewed and
+/// generated files start folded; diffs load as the list reaches them.
 struct PullRequestFilesTab: View {
     let model: PullRequestPageModel
     let page: PullRequestPage

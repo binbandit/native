@@ -1,7 +1,7 @@
 import GitHub
 import SwiftUI
 
-/// A 12pt glyph for a pull request's CI (Factory `PullRequestCheckIndicator`): a check when
+/// A 12pt glyph for a pull request's CI: a check when
 /// passing, an x when failing, a dot while pending. Hover shows the counts.
 struct ChecksIndicator: View {
     let checks: CheckSummary

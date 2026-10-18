@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A list floating above the composer, like Factory's suggestion lists: slash commands, files to
+/// A list floating above the composer, for what the draft is asking for: slash commands, files to
 /// mention. The editor keeps focus and drives the highlight with the arrow keys; Return or Tab
 /// inserts the highlighted item, a click inserts any.
 struct ComposerSuggestionList<Item, Row: View>: View {

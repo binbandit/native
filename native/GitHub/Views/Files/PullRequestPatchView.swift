@@ -62,16 +62,19 @@ struct PullRequestPatchView: View {
         }
     }
 
-    /// The shown lines cut after every line that has something under it.
+    static let blockLines = 48
+
+    /// The shown lines cut after every line that has something under it, and into short blocks.
     private func segments(of hunk: DiffHunk, shown: Range<Int>, threads: [ReviewThread]) -> [Range<Int>] {
         let anchored = Set(threads.compactMap(\.anchor).map { "\($0.side.rawValue)\($0.line)" })
         let draft = model.draft.flatMap { $0.anchor.path == path ? "\($0.anchor.side.rawValue)\($0.anchor.line)" : nil }
         var segments: [Range<Int>] = []
         var start = shown.lowerBound
         for index in shown {
-            guard let anchor = hunk.lines[index].anchor else { continue }
-            let key = "\(anchor.side.rawValue)\(anchor.line)"
-            if anchored.contains(key) || key == draft {
+            let key = hunk.lines[index].anchor.map { "\($0.side.rawValue)\($0.line)" }
+            // Blocks stay short, so scrolling lays out a little at a time, never a whole long hunk.
+            let isFull = index + 1 - start >= Self.blockLines
+            if isFull || key.map({ anchored.contains($0) || $0 == draft }) == true {
                 segments.append(start..<(index + 1))
                 start = index + 1
             }

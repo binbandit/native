@@ -2,7 +2,7 @@ import ACP
 import Foundation
 
 /// An `@` mention being typed: the word from an `@` at the start of the draft or after whitespace up
-/// to the cursor, as in Factory's composer. Its text is what's typed after the `@`.
+/// to the cursor. Its text is what's typed after the `@`.
 struct FileMentionQuery: Equatable {
     /// The `@` and what follows it, up to the cursor.
     let range: Range<String.Index>

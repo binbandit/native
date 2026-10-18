@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Every keyboard shortcut in docs/keyboard.md, opened from the composer's help button like Factory's
-/// shortcuts sheet. Keep it in step with that table.
+/// Every keyboard shortcut in docs/keyboard.md, opened from the composer's help button. Keep it in
+/// step with that table.
 struct KeyboardShortcutsView: View {
     @AppStorage(FollowUpBehavior.storageKey) private var followUp = FollowUpBehavior.defaultValue
     @Environment(\.dismiss) private var dismiss

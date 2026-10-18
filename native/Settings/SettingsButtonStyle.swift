@@ -1,9 +1,8 @@
 import SwiftUI
 
-/// An action in Settings: Conductor's outline button (`variant="outline"`), 32pt like every other
-/// control so rows line up, with 14pt text and a 6pt radius. Its label is a verb ("Reset ID",
-/// "Show Log"), which with the missing chevron tells it apart from a `SettingsSelect`. A
-/// destructive role draws the label in red.
+/// An action in Settings: an outlined button, 32pt like every other control so rows line up, with
+/// 14pt text and a 6pt radius. Its label is a verb ("Reset ID", "Show Log"), which with the missing
+/// chevron tells it apart from a `SettingsSelect`. A destructive role draws the label in red.
 ///
 ///     Button("Clear Index") { … }.buttonStyle(.settings)
 struct SettingsButtonStyle: ButtonStyle {
@@ -34,7 +33,7 @@ private struct SettingsButtonBody: View {
             .background(fill, in: shape)
             .overlay { shape.strokeBorder(.dsBorder, lineWidth: 1) }
             .contentShape(shape)
-            // Conductor's `disabled:opacity-50`, so an action that can't run now looks it.
+            // Half strength while disabled, so an action that can't run now looks it.
             .opacity(isEnabled ? 1 : 0.5)
             .dsHitTarget(SettingsMetrics.controlHeight)
             .dsFocusShape(shape)

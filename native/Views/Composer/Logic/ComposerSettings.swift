@@ -1,7 +1,7 @@
 import ACP
 
 /// The session settings the composer's controls show, picked out by their ACP category and read the
-/// way Factory presents its own: a model with an effort meter, an autonomy meter, and Plan Mode.
+/// way the controls row presents them: a model with an effort meter, an autonomy meter, and Plan Mode.
 /// Every method answers which setting to change to what; the view applies it.
 struct ComposerSettings: Equatable {
     struct Change: Equatable {

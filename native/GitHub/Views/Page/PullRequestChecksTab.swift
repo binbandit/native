@@ -1,8 +1,7 @@
 import GitHub
 import SwiftUI
 
-/// Every check on the head commit, problems first, each linking to its log (Factory
-/// `PullRequestChecks`).
+/// Every check on the head commit, problems first, each linking to its log.
 struct PullRequestChecksTab: View {
     let model: PullRequestPageModel
     let page: PullRequestPage
@@ -59,7 +58,7 @@ struct PullRequestChecksTab: View {
         }
     }
 
-    /// Failures first, then what's running, then the rest, as Factory orders check groups.
+    /// Failures first, then what's running, then the rest: what needs attention leads.
     private func sorted(_ checks: [PullRequestCheck]) -> [PullRequestCheck] {
         let order: [CheckOutcome] = [.failed, .pending, .passed, .skipped]
         return checks.sorted { lhs, rhs in

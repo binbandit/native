@@ -2,7 +2,7 @@ import ACP
 import NativeCommands
 import SwiftUI
 
-/// Factory's autonomy meter over the agent's permission modes; a click steps up a level, wrapping
+/// An autonomy meter over the agent's permission modes; a click steps up a level, wrapping
 /// back to the lowest, and a right-click picks one. When Plan Mode stands in for the permission mode,
 /// the meter dims and shows the level that resumes afterwards.
 struct AutonomyPill: View {

@@ -13,7 +13,7 @@ struct SlashCommandQuery: Equatable {
         "/\(command.name) "
     }
 
-    /// The commands matching the query, as Factory ranks them: exact names first, then prefixes,
+    /// The commands matching the query, best first: exact names, then prefixes,
     /// then word prefixes, then names containing the query, keeping the agent's order within each.
     func matches(in commands: [ComposerSlashCommand]) -> [ComposerSlashCommand] {
         let query = text.lowercased()

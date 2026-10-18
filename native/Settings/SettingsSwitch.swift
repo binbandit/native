@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Conductor's switch: a 40x20 track filled with the foreground when on, and a thumb that slides
+/// A switch: a 40x20 track filled with the foreground when on, and a thumb that slides
 /// across in 150ms. The label is for accessibility; the row shows the title.
 struct SettingsSwitch: View {
     let label: String
@@ -45,8 +45,8 @@ private struct SettingsSwitchBody: View {
                 }
                 .animation(.dsStandard, value: configuration.isOn)
                 .contentShape(Capsule())
-                // Conductor's `data-disabled:opacity-50`: a switch that can't change looks it,
-                // whichever way it's set.
+                // Half strength while disabled: a switch that can't change looks it, whichever way
+                // it's set.
                 .opacity(isEnabled ? 1 : 0.5)
         }
         .buttonStyle(SettingsSwitchButtonStyle())

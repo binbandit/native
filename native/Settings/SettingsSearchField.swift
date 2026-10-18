@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Conductor's settings search: the design system's `SearchField` with the ⌘F hint, and results in
-/// a popup under it. ↑ and ↓ move through results, Return opens one, Escape clears the search.
+/// Settings search: the design system's `SearchField` with the ⌘F hint, and results in a popup
+/// under it. ↑ and ↓ move through results, Return opens one, Escape clears the search.
 struct SettingsSearchField: View {
     @Binding var query: String
     let results: [SettingsSearchIndex.Result]
@@ -44,8 +44,7 @@ struct SettingsSearchField: View {
     }
 }
 
-/// The popup under the field (Conductor: anchor-wide, 8pt radius, sidebar fill, at most 480pt
-/// tall, results with the matched letters at full strength and the rest dimmed).
+/// The popup under the field (as wide as it, 8pt radius, sidebar fill, at most 480pt tall, results with the matched letters at full strength and the rest dimmed).
 private struct SettingsSearchResults: View {
     let query: String
     let results: [SettingsSearchIndex.Result]
@@ -131,7 +130,7 @@ private struct ResultRow: View {
             result.item.rowID == nil ? result.item.title : "\(result.item.title), \(result.item.paneTitle)")
     }
 
-    /// Matched letters at full strength, the rest at half, as Conductor highlights matches. A
+    /// Matched letters at full strength, the rest at half. A
     /// result found through its description or keywords is all dimmed.
     private var highlightedTitle: AttributedString {
         var title = AttributedString()
