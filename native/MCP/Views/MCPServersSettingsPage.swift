@@ -98,6 +98,16 @@ struct MCPServersSettingsPage: View {
             if let problem = library.problem {
                 MCPNotice(text: problem, tone: .danger, actionTitle: "Dismiss") { library.problem = nil }
             }
+            let waiting = library.host?.mcpAgentsAwaitingRestart ?? []
+            if !waiting.isEmpty {
+                MCPNotice(
+                    text:
+                        "\(waiting.map(\.name).joined(separator: " and ")) still starts sessions with the old switches. It restarts to pick them up as soon as none of its sessions is working.",
+                    tone: .neutral, actionTitle: "Apply to Running Sessions"
+                ) {
+                    Task { await library.host?.mcpApplyLaunchPolicies(force: true) }
+                }
+            }
             if let removed {
                 MCPNotice(text: "Removed \(removed.server.name).", tone: .neutral, actionTitle: "Undo") {
                     undo(removed, in: library)
@@ -183,6 +193,7 @@ struct MCPServersSettingsPage: View {
                         MCPAgentServerRow(
                             library: library,
                             group: group,
+                            project: project,
                             isExpanded: binding(for: group.key),
                             onCommand: { pendingCommand = $0 }
                         )

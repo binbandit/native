@@ -24,7 +24,7 @@ struct ToolCallView: View {
         let phase = ToolPhase(call)
         let hasDetails = detailsAvailable(for: presentation)
         let showsDetails = hasDetails && (isExpanded || phase == .awaitingApproval)
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: DS.Space.xxs) {
             ToolRow(
                 presentation: presentation,
                 phase: phase,
@@ -48,11 +48,11 @@ struct ToolCallView: View {
             }
             if let permission = call.permission {
                 PermissionButtons(options: permission.options, onChoose: onChoose)
-                    .padding(.top, 6)
+                    .padding(.top, DS.Space.sm)
                     .transition(.opacity)
             }
         }
-        .animation(.smooth, value: phase)
+        .animation(.dsStandard, value: phase)
     }
 
     private func detailsAvailable(for presentation: ToolPresentation) -> Bool {
@@ -99,9 +99,9 @@ private struct ToolRow<Accessory: View>: View {
     @State private var isHovering = false
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: DS.Space.sm) {
             Button(action: toggle) {
-                HStack(spacing: 6) {
+                HStack(spacing: DS.Space.sm) {
                     icon
                     title
                     if isExpandable {
@@ -123,9 +123,9 @@ private struct ToolRow<Accessory: View>: View {
             }
             stateLabel
         }
-        .padding(.vertical, 5)
+        .padding(.vertical, DS.Space.sm)
         .onHover { isHovering = $0 }
-        .animation(.easeOut(duration: 0.1), value: isHovering)
+        .animation(.dsQuick, value: isHovering)
     }
 
     private var icon: some View {
@@ -137,16 +137,16 @@ private struct ToolRow<Accessory: View>: View {
                         .variableColor.iterative.dimInactiveLayers.nonReversing, options: .repeat(.continuous),
                         isActive: phase == .running
                     )
-                    .foregroundStyle(phase == .failed ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
+                    .foregroundStyle(phase == .failed ? Color.dsDanger : .dsTextSecondary)
                     .contentTransition(.symbolEffect(.replace))
             } else {
                 Image(systemName: presentation.symbol)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.dsTextSecondary)
             }
         }
         .symbolRenderingMode(.hierarchical)
-        .font(.callout)
-        .frame(width: 16)
+        .font(.dsBody)
+        .frame(width: DS.Size.rowLeading)
     }
 
     private var statusSymbol: String {
@@ -159,17 +159,17 @@ private struct ToolRow<Accessory: View>: View {
     }
 
     private var title: some View {
-        HStack(spacing: 6) {
+        HStack(spacing: DS.Space.sm) {
             if let verb = presentation.verb {
                 Text(verb)
-                    .foregroundStyle(isHovering && isExpandable ? .primary : .secondary)
+                    .foregroundStyle(isHovering && isExpandable ? Color.dsTextPrimary : .dsTextSecondary)
                     .shimmering(phase == .running)
                     .layoutPriority(1)
             }
             subject
             if let subtitle = presentation.subtitle {
                 Text(subtitle)
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.dsTextTertiary)
             }
         }
         .lineLimit(1)
@@ -185,46 +185,48 @@ private struct ToolRow<Accessory: View>: View {
             text.foregroundStyle(subjectStyle)
         case .command:
             text
-                .font(.callout.monospaced())
+                .font(.dsMono)
                 .foregroundStyle(subjectStyle)
         case .emphasized:
-            text.foregroundStyle(.primary)
+            text.foregroundStyle(.dsTextPrimary)
         case .chip:
-            HStack(spacing: 7) {
-                text.foregroundStyle(isHovering && isExpandable ? .primary : .secondary)
+            HStack(spacing: DS.Space.sm) {
+                text.foregroundStyle(isHovering && isExpandable ? Color.dsTextPrimary : .dsTextSecondary)
                 if let stats = presentation.stats {
                     Rectangle()
-                        .fill(.separator)
+                        .fill(.dsSeparator)
                         .frame(width: 1, height: 11)
                     DiffStatsText(stats: stats)
                 }
             }
-            .font(.callout)
-            .padding(.horizontal, 7)
-            .padding(.vertical, 2)
-            .background(.fill.tertiary, in: .rect(cornerRadius: 6, style: .continuous))
+            .font(.dsBody)
+            .padding(.horizontal, DS.Space.md)
+            .padding(.vertical, DS.Space.xxs)
+            .background(.dsSurfaceSunken, in: .rect(cornerRadius: DS.Radius.row, style: .continuous))
         }
     }
 
     /// A subject reads tertiary after a verb and secondary on its own; hover lifts it to primary.
-    private var subjectStyle: HierarchicalShapeStyle {
-        if isHovering, isExpandable { .primary } else if presentation.verb == nil { .secondary } else { .tertiary }
+    private var subjectStyle: Color {
+        if isHovering, isExpandable { .dsTextPrimary } else if presentation.verb == nil { .dsTextSecondary } else {
+            .dsTextTertiary
+        }
     }
 
     @ViewBuilder private var stateLabel: some View {
         switch phase {
         case .awaitingApproval:
             Text("Approval required")
-                .font(.subheadline)
-                .foregroundStyle(.tint)
+                .font(.dsCaption)
+                .foregroundStyle(.dsAccentText)
         case .failed where !presentation.showsStatusIcon:
             Text(presentation.failureLabel)
-                .font(.subheadline)
-                .foregroundStyle(.tertiary)
+                .font(.dsCaption)
+                .foregroundStyle(.dsTextTertiary)
         case .cancelled:
             Text("Interrupted")
-                .font(.subheadline)
-                .foregroundStyle(.tertiary)
+                .font(.dsCaption)
+                .foregroundStyle(.dsTextTertiary)
         default:
             EmptyView()
         }
@@ -268,14 +270,14 @@ private struct ToolDetailFrame<Content: View>: View {
     @ViewBuilder let content: Content
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: 8, style: .continuous)
-        HeightCappedScrollView(maxHeight: 266) {
+        let shape = RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
+        HeightCappedScrollView(maxHeight: TranscriptMetrics.toolDetailMaxHeight) {
             content
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(.fill.quinary, in: shape)
+        .background(.dsSurfaceSunken, in: shape)
         .overlay {
-            shape.strokeBorder(isEmphasized ? AnyShapeStyle(.tint.opacity(0.5)) : AnyShapeStyle(.separator))
+            shape.strokeBorder(isEmphasized ? Color.dsAccent.opacity(0.5) : .dsSeparator)
         }
         .clipShape(shape)
         .containerShape(shape)
@@ -298,9 +300,9 @@ private struct CopyButton: View {
         } label: {
             Image(systemName: didCopy ? "checkmark" : "doc.on.doc")
                 .contentTransition(.symbolEffect(.replace))
-                .font(.caption)
-                .foregroundStyle(.tertiary)
-                .frame(width: 16, height: 16)
+                .font(.dsMicro)
+                .foregroundStyle(.dsTextTertiary)
+                .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)
@@ -321,12 +323,12 @@ private struct PermissionButtons: View {
     var body: some View {
         // Long option names ("Yes, allow all edits in … during this session") may not fit in a row.
         ViewThatFits(in: .horizontal) {
-            HStack(spacing: 8) {
+            HStack(spacing: DS.Space.md) {
                 buttons
-                Spacer(minLength: 12)
+                Spacer(minLength: DS.Space.lg)
                 shortcutHint
             }
-            VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: DS.Space.md) {
                 buttons
                 shortcutHint
             }
@@ -351,8 +353,8 @@ private struct PermissionButtons: View {
         if shortcutsEnabled {
             let hints = options.compactMap { option in Self.symbols(for: option.kind).map { "\($0) \(option.name)" } }
             Text(hints.joined(separator: "  ·  "))
-                .font(.subheadline)
-                .foregroundStyle(.tertiary)
+                .font(.dsCaption)
+                .foregroundStyle(.dsTextTertiary)
                 .lineLimit(1)
         }
     }

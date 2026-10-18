@@ -241,7 +241,8 @@ final class MCPLibrary {
         guard configurations.isEmpty, let host else { return }
         let environment = ProcessInfo.processInfo.environment
         let reader = AgentConfigReader(files: files, home: home(in: environment), environment: environment)
-        configurations = Dictionary(uniqueKeysWithValues: AgentConfigFormat.allCases.map { ($0, reader.read($0, projects: host.mcpProjects)) })
+        configurations = Dictionary(
+            uniqueKeysWithValues: AgentConfigFormat.allCases.map { ($0, reader.read($0, projects: host.mcpProjects)) })
         readProjects = Set(host.mcpProjects.map(ProjectPath.key))
         readEnvironment = environment
     }

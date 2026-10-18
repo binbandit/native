@@ -9,37 +9,37 @@ struct SubagentCard: View {
 
     var body: some View {
         Button(action: onOpen) {
-            HStack(alignment: .firstTextBaseline, spacing: 10) {
+            HStack(alignment: .firstTextBaseline, spacing: DS.Space.md) {
                 Image(systemName: "person.2.fill")
                     .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(.secondary)
-                VStack(alignment: .leading, spacing: 2) {
+                    .foregroundStyle(.dsTextSecondary)
+                VStack(alignment: .leading, spacing: DS.Space.xxs) {
                     Text(subagent.title ?? "Subagent")
                         .fontWeight(.medium)
                         .lineLimit(1)
                     if let description = subagent.description, !description.isEmpty {
                         Text(description)
-                            .font(.callout)
-                            .foregroundStyle(.secondary)
+                            .font(.dsBody)
+                            .foregroundStyle(.dsTextSecondary)
                             .lineLimit(2)
                     }
                 }
-                Spacer(minLength: 8)
+                Spacer(minLength: DS.Space.md)
                 SubagentStatusLabel(state: subagent.workState)
                 Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(.tertiary)
+                    .font(.ds(10, weight: .semibold))
+                    .foregroundStyle(.dsTextTertiary)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 10)
-            .background(.quaternary.opacity(0.5), in: .rect(cornerRadius: 10))
+            .padding(.horizontal, DS.Space.lg)
+            .padding(.vertical, DS.Space.xl)
+            .background(Color.dsSurfaceSunken.opacity(0.5), in: .rect(cornerRadius: DS.Radius.card))
             .overlay {
-                RoundedRectangle(cornerRadius: 10)
+                RoundedRectangle(cornerRadius: DS.Radius.card)
                     .strokeBorder(
                         subagent.workState == .requiresAction
-                            ? AnyShapeStyle(.orange.opacity(0.6)) : AnyShapeStyle(.separator))
+                            ? Color.dsAttention.opacity(0.6) : .dsSeparator)
             }
-            .contentShape(.rect(cornerRadius: 10))
+            .contentShape(.rect(cornerRadius: DS.Radius.card))
         }
         .buttonStyle(.plain)
         .help("Show this subagent's conversation")
@@ -75,7 +75,7 @@ struct SubagentStatusLabel: View {
     }
 
     var body: some View {
-        HStack(spacing: 5) {
+        HStack(spacing: DS.Space.xs) {
             switch state {
             case .running:
                 DotGridLoader(pattern: .typing)
@@ -84,13 +84,13 @@ struct SubagentStatusLabel: View {
                 Text("Working")
             case .requiresAction:
                 Image(systemName: "exclamationmark.circle.fill")
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(.dsAttention)
                 Text("Needs approval")
             case .idle(let stopReason, let error):
                 switch stopReason {
                 case .error:
                     Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.red)
+                        .foregroundStyle(.dsDanger)
                     Text("Failed")
                         .help(error?.message ?? "The subagent's work failed.")
                 case .cancelled:
@@ -98,7 +98,7 @@ struct SubagentStatusLabel: View {
                     Text("Stopped")
                 default:
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
+                        .foregroundStyle(.dsSuccess)
                     Text("Done")
                 }
             case .unknown, .other, nil:
@@ -106,10 +106,10 @@ struct SubagentStatusLabel: View {
                 Text("Unknown")
             }
         }
-        .font(.caption)
-        .foregroundStyle(.secondary)
+        .font(.dsMicro)
+        .foregroundStyle(.dsTextSecondary)
         .symbolRenderingMode(.hierarchical)
-        .animation(.smooth, value: state)
+        .animation(.dsStandard, value: state)
     }
 }
 
@@ -122,17 +122,17 @@ struct SessionMessageView: View {
     let text: String
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: DS.Space.sm) {
             Label(title, systemImage: isOutgoing ? "arrow.up.right" : "arrow.down.left")
-                .font(.caption.weight(.medium))
-                .foregroundStyle(.secondary)
+                .font(.ds(10, weight: .medium))
+                .foregroundStyle(.dsTextSecondary)
             MarkdownView(text)
         }
-        .padding(.leading, 12)
+        .padding(.leading, DS.Space.lg)
         .overlay(alignment: .leading) {
             Capsule()
-                .fill(.tint.opacity(0.5))
-                .frame(width: 3)
+                .fill(Color.dsAccent.opacity(0.5))
+                .frame(width: TranscriptMetrics.sessionMessageRailWidth)
         }
     }
 }

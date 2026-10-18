@@ -14,7 +14,7 @@ struct PlanView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Button {
-                withAnimation(.smooth(duration: 0.25)) { isExpanded.toggle() }
+                withAnimation(.dsDisclosure) { isExpanded.toggle() }
             } label: {
                 header
             }
@@ -22,14 +22,14 @@ struct PlanView: View {
 
             if isExpanded {
                 Divider()
-                HeightCappedScrollView(maxHeight: 220) {
-                    VStack(alignment: .leading, spacing: 6) {
+                HeightCappedScrollView(maxHeight: TranscriptMetrics.planMaxHeight) {
+                    VStack(alignment: .leading, spacing: DS.Space.sm) {
                         ForEach(entries.indices, id: \.self) { index in
                             PlanEntryRow(entry: entries[index])
                         }
                     }
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 8)
+                    .padding(.horizontal, DS.Space.xl)
+                    .padding(.vertical, DS.Space.md)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
@@ -38,28 +38,28 @@ struct PlanView: View {
     }
 
     private var header: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: DS.Space.md) {
             Image(systemName: "checklist")
                 .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.dsTextSecondary)
             Text("Plan")
-                .fontWeight(.medium)
+                .font(.dsBodyMedium)
             Text(verbatim: "\(completedCount)/\(entries.count)")
                 .monospacedDigit()
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.dsTextSecondary)
             // Collapsed, the header still says what the agent is working on.
             if !isExpanded, let current = entries.first(where: { $0.status == .inProgress }) {
                 Text(current.content)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.dsTextSecondary)
                     .lineLimit(1)
                     .truncationMode(.tail)
             }
-            Spacer(minLength: 8)
+            Spacer(minLength: DS.Space.md)
             DisclosureChevron(isExpanded: isExpanded)
         }
-        .font(.callout)
-        .padding(.horizontal, 10)
-        .padding(.vertical, 7)
+        .font(.dsBody)
+        .padding(.horizontal, DS.Space.xl)
+        .padding(.vertical, DS.Space.md)
         .contentShape(.rect)
     }
 }
@@ -68,16 +68,16 @@ private struct PlanEntryRow: View {
     let entry: PlanEntry
 
     var body: some View {
-        HStack(alignment: .firstTextBaseline, spacing: 8) {
+        HStack(alignment: .firstTextBaseline, spacing: DS.Space.md) {
             glyph
-                .frame(width: 14)
+                .frame(width: DS.Size.statusGlyph)
             Text(entry.content)
-                .strikethrough(entry.status == .completed, color: .secondary)
-                .foregroundStyle(entry.status == .completed ? .secondary : .primary)
-                .fontWeight(entry.status == .inProgress ? .medium : nil)
+                .strikethrough(entry.status == .completed, color: .dsTextSecondary)
+                .foregroundStyle(entry.status == .completed ? Color.dsTextSecondary : .dsTextPrimary)
+                .font(entry.status == .inProgress ? .dsBodyMedium : .dsBody)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .font(.callout)
+        .font(.dsBody)
     }
 
     @ViewBuilder private var glyph: some View {
@@ -90,9 +90,9 @@ private struct PlanEntryRow: View {
         } else {
             Image(systemName: symbolName)
                 .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.dsTextSecondary)
                 .contentTransition(.symbolEffect(.replace))
-                .animation(.smooth, value: entry.status)
+                .animation(.dsStandard, value: entry.status)
         }
     }
 
