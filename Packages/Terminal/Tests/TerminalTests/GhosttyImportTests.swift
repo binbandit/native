@@ -17,14 +17,16 @@ struct GhosttyImportTests {
 
     @Test func findsTheDefaultFilesWhereGhosttyLooks() {
         let xdg = GhosttyConfigLocations(environment: ["XDG_CONFIG_HOME": "/tmp/xdg"], home: home, bundledThemes: nil)
-        #expect(xdg.defaultFiles.map(\.path) == [
-            "/tmp/xdg/ghostty/config", "/tmp/xdg/ghostty/config.ghostty",
-            "/Users/someone/Library/Application Support/com.mitchellh.ghostty/config",
-            "/Users/someone/Library/Application Support/com.mitchellh.ghostty/config.ghostty",
-        ])
-        #expect(locations.themeFiles(named: "Dracula").map(\.path) == [
-            "/Users/someone/.config/ghostty/themes/Dracula", "/Applications/Ghostty.app/themes/Dracula",
-        ])
+        #expect(
+            xdg.defaultFiles.map(\.path) == [
+                "/tmp/xdg/ghostty/config", "/tmp/xdg/ghostty/config.ghostty",
+                "/Users/someone/Library/Application Support/com.mitchellh.ghostty/config",
+                "/Users/someone/Library/Application Support/com.mitchellh.ghostty/config.ghostty",
+            ])
+        #expect(
+            locations.themeFiles(named: "Dracula").map(\.path) == [
+                "/Users/someone/.config/ghostty/themes/Dracula", "/Applications/Ghostty.app/themes/Dracula",
+            ])
         #expect(locations.themeFiles(named: "/tmp/mine").map(\.path) == ["/tmp/mine"])
     }
 
@@ -40,9 +42,10 @@ struct GhosttyImportTests {
         #expect(config.entries.map(\.key) == ["font-family", "config-file", "config-file"])
         #expect(config.entries[0].value == "JetBrains Mono")
         #expect(config.entries[0].line == 2)
-        #expect(config.includes(home: home).map(\.path) == [
-            "/Users/someone/.config/ghostty/local.conf", "/Users/someone/shared/ghostty",
-        ])
+        #expect(
+            config.includes(home: home).map(\.path) == [
+                "/Users/someone/.config/ghostty/local.conf", "/Users/someone/shared/ghostty",
+            ])
     }
 
     @Test func loadsIncludesAfterTheFilesThatNameThem() throws {
@@ -50,7 +53,8 @@ struct GhosttyImportTests {
         let config = directory.appending(path: "ghostty")
         try FileManager.default.createDirectory(at: config, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: directory) }
-        try "config-file = extra\nfont-size = 13\n".write(to: config.appending(path: "config"), atomically: true, encoding: .utf8)
+        try "config-file = extra\nfont-size = 13\n".write(
+            to: config.appending(path: "config"), atomically: true, encoding: .utf8)
         try "font-size = 15\n".write(to: config.appending(path: "extra"), atomically: true, encoding: .utf8)
         let locations = GhosttyConfigLocations(
             environment: ["XDG_CONFIG_HOME": directory.path], home: home, bundledThemes: nil)
@@ -82,7 +86,8 @@ struct GhosttyImportTests {
     }
 
     @Test func importsAThemeAndLetsTheConfigsOwnColorsWin() {
-        let dracula = "palette = 1=#ff5555\nbackground = #282a36\nforeground = #f8f8f2\nselection-background = #44475a\n"
+        let dracula =
+            "palette = 1=#ff5555\nbackground = #282a36\nforeground = #f8f8f2\nselection-background = #44475a\n"
         var asked: [String] = []
         let result = GhosttyImporter.read(
             [file("theme = light:GitHub Light,dark:Dracula\nbackground = #101010\n")], locations: locations,

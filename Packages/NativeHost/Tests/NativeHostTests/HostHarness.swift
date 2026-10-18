@@ -54,6 +54,14 @@ final class HostHarness: @unchecked Sendable {
         self.process = nil
     }
 
+    /// Waits for the host to exit on its own and returns its exit status.
+    func waitForExit() -> Int32? {
+        guard let process else { return nil }
+        process.waitUntilExit()
+        self.process = nil
+        return process.terminationStatus
+    }
+
     var hostProcessID: Int32? {
         process?.processIdentifier
     }

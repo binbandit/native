@@ -165,10 +165,14 @@ extension MCPAgentServerRow {
         library.agents.filter { group.formats.contains($0.format) }.compactMap { agent in
             switch library.host?.mcpPolicySupport(for: agent.id) {
             case .perSession?, nil: nil
-            case .atLaunch?:
-                project != nil
-                    ? "\(agent.name) can only switch it for all projects"
-                    : isOn ? nil : "\(agent.name) applies the switch when it restarts"
+            case .atLaunch(let caveat)?:
+                if project != nil {
+                    "\(agent.name) can only switch it for all projects"
+                } else if isOn {
+                    nil
+                } else {
+                    caveat ?? "\(agent.name) applies the switch when it restarts"
+                }
             case .unsupported(let reason)?: reason
             }
         }

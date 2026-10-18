@@ -24,7 +24,8 @@ extension SettingsPane {
                     ),
                     SettingsSearchEntry(
                         id: TerminalSettingsPage.importRow, title: "Import from Ghostty", keywords: ["ghostty", "copy"]),
-                    SettingsSearchEntry(id: TerminalSettingsPage.cursorRow, title: "Cursor", keywords: ["blink", "caret"]),
+                    SettingsSearchEntry(
+                        id: TerminalSettingsPage.cursorRow, title: "Cursor", keywords: ["blink", "caret"]),
                     SettingsSearchEntry(
                         id: TerminalSettingsPage.colorsRow, title: "Terminal colors", keywords: ["theme", "palette"]),
                     SettingsSearchEntry(

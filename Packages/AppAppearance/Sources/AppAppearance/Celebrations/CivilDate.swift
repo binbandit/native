@@ -176,6 +176,12 @@ public struct MonthDay: Hashable, Comparable, Sendable, CustomStringConvertible 
         self.init(month: month, day: day)
     }
 
+    /// For literals in Native's own catalogue, which the tests check resolve.
+    init(literal month: Int, _ day: Int) {
+        self.month = month
+        self.day = day
+    }
+
     /// This day in `year`, or nil for 29 February in a common year.
     public func date(in year: Int) -> CivilDate? {
         CivilDate(year: year, month: month, day: day)

@@ -28,7 +28,9 @@ public struct GhosttyConfigLocations: Hashable, Sendable {
     /// The files Ghostty loads at startup, in its order (later ones win): the XDG files, then
     /// Application Support's, each as `config` then `config.ghostty`.
     public var defaultFiles: [URL] {
-        [configDirectory, appSupportDirectory].flatMap { [$0.appending(path: "config"), $0.appending(path: "config.ghostty")] }
+        [configDirectory, appSupportDirectory].flatMap {
+            [$0.appending(path: "config"), $0.appending(path: "config.ghostty")]
+        }
     }
 
     /// The user's own themes, which Ghostty searches before its bundled ones.

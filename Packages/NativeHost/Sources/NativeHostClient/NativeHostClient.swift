@@ -16,8 +16,10 @@ public actor NativeHostClient {
         case reconnecting(attempt: Int, reason: String)
         /// Nothing answered for a while; still trying, less often.
         case unreachable(reason: String)
-        /// The host speaks another protocol version. The app updates the host (or itself).
-        case incompatible(hostVersion: Int)
+        /// The host speaks another protocol version. An older host has been asked to restart onto
+        /// this app's binary once it's idle; a newer one means this app should update. `host` names
+        /// the host's version and build.
+        case incompatible(protocolVersion: Int, host: PeerInfo)
     }
 
     public enum Event: Sendable {
@@ -161,8 +163,15 @@ public actor NativeHostClient {
     }
 
     /// Stops the host and its agents for good, or (`stopAgents: false`) restarts it once idle.
-    public func shutdownHost(stopAgents: Bool) async throws {
-        let _: EmptyMessage = try await call(HostProtocol.Method.shutdown, ShutdownParams(stopAgents: stopAgents))
+    /// Stops the host and its agents (`stopAgents`), or restarts it onto the binary the app
+    /// carries: once it's idle, or `immediately`, interrupting turns that then resume.
+    public func shutdownHost(stopAgents: Bool, immediately: Bool = false) async throws {
+        do {
+            let _: EmptyMessage = try await call(
+                HostProtocol.Method.shutdown, ShutdownParams(stopAgents: stopAgents, immediately: immediately))
+        } catch PeerError.closed {
+            // The host can exit before its answer gets out; that's the request working.
+        }
     }
 
     private func call<Result: Decodable & Sendable>(
@@ -183,7 +192,12 @@ public actor NativeHostClient {
                 await peer?.closed()
                 setState(.reconnecting(attempt: 0, reason: "The connection to the host closed."))
             } catch let error as VersionMismatch {
-                setState(.incompatible(hostVersion: error.hostVersion))
+                setState(
+                    .incompatible(protocolVersion: error.handshake.protocolVersion, host: error.handshake.hostInfo))
+                // Check again now and then: an older host comes back on the new binary once idle,
+                // and the drop while it restarts reads as reconnecting, not unreachable.
+                failures = 0
+                try? await Task.sleep(for: .seconds(5))
             } catch {
                 failures += 1
                 let reason = error.localizedDescription
@@ -212,12 +226,20 @@ public actor NativeHostClient {
         }
         self.peer = peer
         peer.start()
-        let info: HostInfo = try await peer.request(
-            HostProtocol.Method.initialize, InitializeParams(clientInfo: clientInfo), as: HostInfo.self)
-        guard info.protocolVersion == HostProtocol.version else {
+        // Only the frozen part of the answer is read until the versions are known to match.
+        let answer = try await peer.request(
+            HostProtocol.Method.initialize, InitializeParams(clientInfo: clientInfo), as: JSONValue.self)
+        let handshake = try Self.decode(FrozenHandshake.self, from: answer)
+        guard handshake.protocolVersion == HostProtocol.version else {
+            if handshake.protocolVersion < HostProtocol.version {
+                // An older host moves onto this app's binary once nothing is running.
+                _ = try? await peer.request(
+                    HostProtocol.Method.shutdown, ShutdownParams(stopAgents: false), as: JSONValue.self)
+            }
             peer.close()
-            throw VersionMismatch(hostVersion: info.protocolVersion)
+            throw VersionMismatch(handshake: handshake)
         }
+        let info = try Self.decode(HostInfo.self, from: answer)
         if epoch != info.epoch {
             // A new host process: sequence numbers start over, so re-attach from the beginning.
             for session in attachments.keys {
@@ -268,6 +290,12 @@ public actor NativeHostClient {
     }
 
     private struct VersionMismatch: Error {
-        var hostVersion: Int
+        var handshake: FrozenHandshake
+    }
+
+    private static func decode<Value: Decodable>(_ type: Value.Type, from json: JSONValue) throws -> Value {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .millisecondsSince1970
+        return try decoder.decode(type, from: JSONEncoder().encode(json))
     }
 }

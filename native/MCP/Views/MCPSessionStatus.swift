@@ -132,7 +132,7 @@ struct MCPSessionPanel: View {
                 }
                 SeparatorLine()
                 HStack {
-                    Text("Changes apply to sessions started or reopened after them.")
+                    Text("Switches apply to the next session in this folder.")
                         .font(.dsCaption)
                         .foregroundStyle(.dsTextTertiary)
                     Spacer(minLength: DS.Space.md)
@@ -164,6 +164,16 @@ struct MCPSessionPanel: View {
                     .foregroundStyle(.dsTextTertiary)
                 Spacer(minLength: DS.Space.md)
                 MCPHealthLabel(health: health)
+                if let key = entry.switchKey {
+                    // For the next session here: this one keeps what it started with.
+                    SettingsSwitch(
+                        "\(entry.name) in \(session.cwd.lastPathComponent)",
+                        isOn: Binding(
+                            get: { library.mode(of: key, in: session.cwd) == .on },
+                            set: { library.setMode($0 ? .on : .off, of: key, in: session.cwd) })
+                    )
+                    .help("Switch \(entry.name) for new sessions in \(session.cwd.lastPathComponent)")
+                }
             }
             if let cost = library.contextCost(of: entry.name, in: session.key) {
                 MCPContextCostLabel(cost: cost)
