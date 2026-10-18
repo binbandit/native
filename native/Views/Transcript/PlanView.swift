@@ -28,7 +28,7 @@ struct PlanView: View {
                             PlanEntryRow(entry: entries[index])
                         }
                     }
-                    .padding(.horizontal, DS.Space.xl)
+                    .padding(.horizontal, DS.Space.lg)
                     .padding(.vertical, DS.Space.md)
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -43,7 +43,7 @@ struct PlanView: View {
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(.dsTextSecondary)
             Text("Plan")
-                .font(.dsBodyMedium)
+                .fontWeight(.medium)
             Text(verbatim: "\(completedCount)/\(entries.count)")
                 .monospacedDigit()
                 .foregroundStyle(.dsTextSecondary)
@@ -58,7 +58,7 @@ struct PlanView: View {
             DisclosureChevron(isExpanded: isExpanded)
         }
         .font(.dsBody)
-        .padding(.horizontal, DS.Space.xl)
+        .padding(.horizontal, DS.Space.lg)
         .padding(.vertical, DS.Space.md)
         .contentShape(.rect)
     }
@@ -74,7 +74,7 @@ private struct PlanEntryRow: View {
             Text(entry.content)
                 .strikethrough(entry.status == .completed, color: .dsTextSecondary)
                 .foregroundStyle(entry.status == .completed ? Color.dsTextSecondary : .dsTextPrimary)
-                .font(entry.status == .inProgress ? .dsBodyMedium : .dsBody)
+                .fontWeight(entry.status == .inProgress ? .medium : nil)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
         .font(.dsBody)
@@ -92,7 +92,7 @@ private struct PlanEntryRow: View {
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(.dsTextSecondary)
                 .contentTransition(.symbolEffect(.replace))
-                .animation(.dsStandard, value: entry.status)
+                .animation(.smooth, value: entry.status)
         }
     }
 
