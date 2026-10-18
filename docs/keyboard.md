@@ -84,6 +84,8 @@ sidebar, the projects and the Settings pages, recently used ones first. With a t
 | --- | --- |
 | ⌘Return in a comment box | Send it: comment, reply, add to the review, or save an edit |
 | Escape in a new line comment | Discard it |
+| Click a line number | Comment on that line |
+| Drag across line numbers | Comment on the lines dragged over, within one hunk and one side (on iPad: touch and hold a line number, then drag) |
 | Shift-click a line number | Widen the line comment to a range (on iPad: "Extend Comment to Here" in the line's menu) |
 | Return in the review sheet | Submit the review (merging always takes a click) |
 | Escape in the review or merge sheet | Close it without submitting |
