@@ -7,6 +7,10 @@ struct StandardTranscriptLine: Identifiable {
     enum Kind {
         /// A transcript row and the index of its first item, which times reasoning.
         case row(TranscriptRow, itemIndex: Int)
+        /// A section of an agent's reply (`String.markdownSections`), the reply being the item at
+        /// `itemIndex`. A long reply is a line per section, so the lazy stack lays out and draws only
+        /// the sections on screen, and while it streams only the last one changes.
+        case replySection(String, isFirst: Bool, itemIndex: Int)
         /// An earlier turn's tool work as one line ("Explored 6 files, edited 3 files").
         case fold(TranscriptTurn, TurnSummary, isUnfolded: Bool)
         /// How a finished turn went: how it ended, how long it took, what it changed, its agents.
@@ -26,7 +30,7 @@ struct StandardTranscriptLine: Identifiable {
         switch kind {
         case .row(let row, _): row.isToolActivity
         case .fold: true
-        case .footer, .changes, .usageLimit: false
+        case .replySection, .footer, .changes, .usageLimit: false
         }
     }
 
@@ -79,7 +83,7 @@ struct StandardTranscriptLine: Identifiable {
                     }
                     guard isUnfolded else { continue }
                 }
-                lines.append(Self(id: row.id, kind: .row(row, itemIndex: index)))
+                lines += Self.lines(for: row, itemIndex: index)
             }
             if let limitStop {
                 lines.append(Self(id: "limit-\(turn.id)", kind: .usageLimit(limitStop, isLatestTurn: isLatest)))
@@ -100,7 +104,7 @@ struct StandardTranscriptLine: Identifiable {
             }
         }
         // Rows past the last turn can't happen (every item is in a turn), but never drop any.
-        lines += rows.map { Self(id: $0.id, kind: .row($0, itemIndex: itemIndex)) }
+        lines += rows.flatMap { Self.lines(for: $0, itemIndex: itemIndex) }
 
         for index in lines.indices.dropFirst() {
             lines[index].spacing = spacing(between: lines[index - 1], and: lines[index])
@@ -108,10 +112,46 @@ struct StandardTranscriptLine: Identifiable {
         return lines
     }
 
+    /// A row's lines: a line per section of an agent's reply, otherwise the row itself.
+    private static func lines(for row: TranscriptRow, itemIndex: Int) -> [Self] {
+        guard case .item(.message(let message)) = row, message.role == .agent else {
+            return [Self(id: row.id, kind: .row(row, itemIndex: itemIndex))]
+        }
+        return ReplySections.sections(of: message).enumerated().map { index, section in
+            Self(
+                id: index == 0 ? row.id : "\(row.id)-\(index)",
+                kind: .replySection(section, isFirst: index == 0, itemIndex: itemIndex))
+        }
+    }
+
     private static func spacing(between previous: Self, and next: Self) -> CGFloat {
         switch next.kind {
+        // A reply's later sections space themselves, as in the reply as a whole.
+        case .replySection(_, isFirst: false, _): 0
         case .footer, .changes: DS.Space.md
-        case .row, .fold, .usageLimit: previous.isDense && next.isDense ? DS.Space.xxs : DS.Space.xl
+        case .row, .replySection, .fold, .usageLimit: previous.isDense && next.isDense ? DS.Space.xxs : DS.Space.xl
         }
+    }
+}
+
+/// Agents' replies in Markdown sections, kept per message so planning the transcript, which happens
+/// on every streamed chunk, splits only the reply that changed. Replies only grow, so a reply's
+/// length says whether its sections are still current.
+private enum ReplySections {
+    private static var sections: [UUID: (length: Int, sections: [String])] = [:]
+    /// Past this many replies the cache starts over rather than tracking age.
+    private static let capacity = 512
+
+    static func sections(of message: TranscriptMessage) -> [String] {
+        let length = message.text.utf8.count
+        if let cached = sections[message.id], cached.length == length {
+            return cached.sections
+        }
+        let split = message.text.markdownSections.map(String.init)
+        if sections.count >= capacity {
+            sections.removeAll(keepingCapacity: true)
+        }
+        sections[message.id] = (length, split)
+        return split
     }
 }

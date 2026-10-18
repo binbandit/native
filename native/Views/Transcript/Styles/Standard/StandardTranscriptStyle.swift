@@ -64,8 +64,11 @@ private struct StandardTranscript: View {
         try? await Task.sleep(for: .milliseconds(80))
         let lines = StandardTranscriptLine.plan(transcript, folding: foldsEarlierTurns, unfolded: unfoldedTurns)
         let line = lines.first { line in
-            guard case .row(let row, let start) = line.kind else { return false }
-            return (start..<start + row.itemCount).contains(index)
+            switch line.kind {
+            case .row(let row, let start): (start..<start + row.itemCount).contains(index)
+            case .replySection(_, _, let start): start == index
+            default: false
+            }
         }
         guard let line else { return }
         withAnimation(.dsStandard) {
@@ -82,6 +85,10 @@ private struct StandardTranscript: View {
         switch line.kind {
         case .row(let row, let itemIndex):
             self.row(row, itemIndex: itemIndex)
+        case .replySection(let source, let isFirst, _):
+            MarkdownSectionView(source: source, isFirst: isFirst)
+                .equatable()
+                .frame(maxWidth: .infinity, alignment: .leading)
         case .fold(let turn, let summary, let isUnfolded):
             TurnActivityFold(summary: summary, isUnfolded: isUnfolded) {
                 withAnimation(.reveal) {

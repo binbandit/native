@@ -25,31 +25,35 @@ struct MarkdownView: View, Equatable {
                     .equatable()
             }
         }
-        .textSelection(.enabled)
     }
 }
 
-/// One section of `MarkdownView`'s source: its blocks, spaced as they would be in the whole.
-private struct MarkdownSectionView: View, Equatable {
+/// One section of a Markdown document (`String.markdownSections`): its blocks, spaced as they are
+/// in the whole. The standard transcript shows each section of a reply as a row of its own.
+struct MarkdownSectionView: View, Equatable {
     let source: String
+    /// Whether the section opens its document, so has no space above it.
     let isFirst: Bool
 
     var body: some View {
         #if DEBUG
         let _ = RenderProbe.hit("MarkdownSection")
         #endif
-        // A stack of its own, so a change in another section doesn't lay this one out again.
-        if let blocks = MarkdownParseCache.blocks(for: source) {
-            VStack(alignment: .leading, spacing: 0) {
-                ForEach(blocks) { block in
-                    MarkdownBlockView(node: block)
-                        .padding(.top, block.id == blocks.first?.id ? 0 : block.spacingAbove)
+        Group {
+            // A stack of its own, so a change in another section doesn't lay this one out again.
+            if let blocks = MarkdownParseCache.blocks(for: source) {
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(blocks) { block in
+                        MarkdownBlockView(node: block)
+                            .padding(.top, block.id == blocks.first?.id ? 0 : block.spacingAbove)
+                    }
                 }
+                .padding(.top, isFirst ? 0 : blocks.first?.spacingAbove ?? 0)
+            } else {
+                Text(verbatim: source)
             }
-            .padding(.top, isFirst ? 0 : blocks.first?.spacingAbove ?? 0)
-        } else {
-            Text(verbatim: source)
         }
+        .textSelection(.enabled)
     }
 }
 
@@ -81,7 +85,7 @@ extension String {
     /// The source as consecutive top-level sections that parse the same apart as together. A section
     /// ends at a blank line outside fenced code when the next line starts a block at the margin;
     /// never before a list item or an indented line, which can continue the block above.
-    fileprivate var markdownSections: [Substring] {
+    var markdownSections: [Substring] {
         var sections: [Substring] = []
         var start = startIndex
         var fence: Substring?
