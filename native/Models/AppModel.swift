@@ -161,9 +161,10 @@ final class AppModel {
         // show from the first frame instead of after the login shell answers; checking for agents
         // drops any that went away since.
         _ = runtimes.sync(including: catalog.hasSessions)
+        let early = runtimes.all
         observeAgents()
         parkAgentsWhenIdle()
-        await syncAgents()
+        await syncAgents(alsoStarting: early)
     }
 
     func restart(_ agent: AgentDefinition.ID) async {
@@ -227,7 +228,9 @@ final class AppModel {
         }
     }
 
-    private func syncAgents() async {
+    /// Creates and removes runtimes as plugins and installations say, and starts the new ones (and
+    /// `alsoStarting`, ones made earlier) that are worth starting.
+    private func syncAgents(alsoStarting earlier: [AgentRuntime] = []) async {
         let environment = await self.environment.current()
         installations.check(plugins.agents, environment: environment)
         let (added, removed) = runtimes.sync(including: installations.isInstalled)
@@ -240,7 +243,10 @@ final class AppModel {
             }
         }
         await withTaskGroup(of: Void.self) { group in
-            for runtime in added where worthStarting.contains(runtime.agent.id) {
+            for runtime in added + earlier
+            where runtimes[runtime.agent.id] === runtime && runtime.status == .idle
+                && worthStarting.contains(runtime.agent.id)
+            {
                 group.addTask { await self.start(runtime, environment: environment) }
             }
         }

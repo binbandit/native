@@ -24,7 +24,7 @@ struct TurnChangesCard: View {
                 .transition(RevealTransition())
             }
         }
-        .background(.dsSurfaceRaised, in: .rect(cornerRadius: DS.Radius.card, style: .continuous))
+        .background(.dsHover, in: .rect(cornerRadius: DS.Radius.card, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
                 .strokeBorder(.dsSeparator)
