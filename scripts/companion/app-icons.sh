@@ -74,7 +74,7 @@ flat_icon() {
             read -r points scale <<<"$size"
             local file="$appearance-$points@${scale}x.png"
             sips -Z $((points * scale)) "$master" --out "$set/$file" >/dev/null
-            images+=("{ \"filename\" : \"$file\", \"idiom\" : \"iphone\", \"scale\" : \"${scale}x\", \"size\" : \"${points}x$points\"$luminosity }")
+            images+=("{ \"filename\" : \"$file\", \"idiom\" : \"universal\", \"platform\" : \"ios\", \"scale\" : \"${scale}x\", \"size\" : \"${points}x$points\"$luminosity }")
         done
         rm "$master"
     done
