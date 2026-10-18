@@ -11,6 +11,9 @@ struct MCPManagedServerRow: View {
     let onCommand: (AgentCLICommand) -> Void
 
     private var key: MCPServerKey { .managed(server.id) }
+    private var lock: String? {
+        library.organizationLock(for: server.config(with: library.secrets(for: server.id)))
+    }
     private var mode: MCPServerSwitches.Mode { library.mode(of: server.transport.endpoint.key, in: nil) }
     private var isOn: Bool { mode != .off }
 
@@ -55,11 +58,12 @@ struct MCPManagedServerRow: View {
                     SettingsSwitch(
                         server.name,
                         isOn: Binding(
-                            get: { isOn },
+                            // A server policy keeps from running shows as off, whatever its switch says.
+                            get: { isOn && lock == nil },
                             set: { library.setMode($0 ? .on : .off, of: server.transport.endpoint.key, in: nil) }))
                 }
             }
-            .settingsLocked(library.organizationLock(for: server.config(with: library.secrets(for: server.id))))
+            .settingsLocked(lock)
             if isExpanded {
                 MCPServerDetails(library: library, key: key, name: server.name, project: nil, onCommand: onCommand)
             }
@@ -99,6 +103,7 @@ struct MCPAgentServerRow: View {
     let onCommand: (AgentCLICommand) -> Void
 
     private var switchKey: String { group.endpoint.key }
+    private var lock: String? { library.organizationLock(for: group.primary.server) }
     private var mode: MCPServerSwitches.Mode { library.mode(of: switchKey, in: project) }
     private var isOn: Bool { mode != .off }
 
@@ -126,10 +131,11 @@ struct MCPAgentServerRow: View {
                     SettingsSwitch(
                         group.name,
                         isOn: Binding(
-                            get: { isOn }, set: { library.setMode($0 ? .on : .off, of: switchKey, in: project) }))
+                            get: { isOn && lock == nil },
+                            set: { library.setMode($0 ? .on : .off, of: switchKey, in: project) }))
                 }
             }
-            .settingsLocked(library.organizationLock(for: group.primary.server))
+            .settingsLocked(lock)
             if isExpanded {
                 MCPServerDetails(
                     library: library, key: group.key, name: group.name, project: group.primary.scope.project,

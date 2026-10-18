@@ -22,8 +22,8 @@ extension CommandID {
 }
 
 extension NativeCommand {
-    /// Starting, opening, archiving and moving between tasks.
-    static func tasks(model: AppModel) -> [NativeCommand] {
+    /// Starting tasks and opening projects.
+    static func newTasks(model: AppModel) -> [NativeCommand] {
         [
             NativeCommand(.sessionNew, title: "New Session", category: .tasks, systemImage: "square.and.pencil") { _ in
                 Task { await model.newSession() }
@@ -46,7 +46,12 @@ extension NativeCommand {
             ) { _ in
                 model.isAddingProject = true
             },
+        ]
+    }
 
+    /// What to do with the selected task, and moving between tasks.
+    static func taskActions(model: AppModel) -> [NativeCommand] {
+        [
             NativeCommand(.sessionRename, title: "Rename Session…", category: .tasks, systemImage: "pencil") { _ in
                 model.renaming = model.selection
             }

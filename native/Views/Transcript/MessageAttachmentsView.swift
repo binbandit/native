@@ -37,14 +37,15 @@ struct MessageAttachmentsView: View {
             previewing = attachment.previewURL
         } label: {
             if let data = attachment.imageData {
-                AttachmentImage(data: data, maxSide: TranscriptMetrics.attachmentImageMaxWidth, contentMode: .fit)
-                    .frame(
-                        maxWidth: TranscriptMetrics.attachmentImageMaxWidth,
-                        maxHeight: TranscriptMetrics.attachmentImageHeight
-                    )
-                    .clipShape(shape)
-                    .overlay { shape.strokeBorder(.dsBorder) }
-                    .contentShape(shape)
+                AttachmentImage(
+                    data: data, maxSide: TranscriptMetrics.attachmentImageMaxWidth,
+                    fitting: CGSize(
+                        width: TranscriptMetrics.attachmentImageMaxWidth,
+                        height: TranscriptMetrics.attachmentImageHeight)
+                )
+                .clipShape(shape)
+                .overlay { shape.strokeBorder(.dsBorder) }
+                .contentShape(shape)
             }
         }
         .buttonStyle(.plain)

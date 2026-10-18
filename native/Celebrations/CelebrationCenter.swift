@@ -189,6 +189,13 @@ final class CelebrationCenter {
         }
     }
 
+    /// Turns on the celebrations that are public holidays in `country`, which the user picked.
+    func turnOnPublicHolidays(of country: String) {
+        let events = catalog.celebrations
+        let day = today
+        change { $0.enablePublicHolidays(of: country, in: events, on: day) }
+    }
+
     /// Puts back earlier choices, for Undo.
     func restore(_ earlier: CelebrationPreferences) {
         change { $0 = earlier }

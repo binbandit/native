@@ -45,8 +45,6 @@ struct PullRequestDiffLineRow: View {
             }
         }
         .trackHover($isHovered)
-        // A square shape, or the menu rounds the row's ends.
-        .contentShape(.contextMenuPreview, Rectangle())
         .contextMenu { menu }
     }
 

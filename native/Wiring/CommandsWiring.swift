@@ -22,13 +22,14 @@ enum CommandsWiring {
         let terminals = features.terminals
         registry.register(
             [.palette(palette, stepsAsideWhen: { NativeCommand.terminalHasFocus(terminals, in: $0) })])
-        registry.register(NativeCommand.tasks(model: model))
+        registry.register(NativeCommand.newTasks(model: model))
         registry.register(NativeCommand.expeditions(model: model))
         registry.register([
             .openInDefaultApp { context in
                 context.session.map { OpenInLocation(folder: $0.cwd, host: model.currentProject?.host ?? .local) }
             }
         ])
+        registry.register(NativeCommand.taskActions(model: model))
         registry.register(NativeCommand.navigation(model: model, settings: settings))
         registry.register([.searchShow])
         registry.register(NativeCommand.composer)

@@ -56,7 +56,7 @@ struct RealHistoryCheck {
         print("index: \(try await index.statistics())")
         let queries = [
             "Orca now has the ability", "native/Models/SessionCatalog.swift", "swift format lint --strict",
-            "SessionCatalog", "catalog", "xcodebuild", "rollb", "agent:codex test", "role:user search",
+            "SessionCatalog", "catalog", "xcodebuild", "xcodebuild derivedDataPath", "the", "rollb", "agent:codex test", "role:user search",
         ]
         for text in queries {
             var best = Double.infinity

@@ -128,7 +128,7 @@ struct AgentsSettingsPage: View {
                 SettingsSwitch(
                     entry.agent.name,
                     isOn: Binding(
-                        get: { registry.isEnabled(entry.plugin.id) },
+                        get: { registry.isEnabled(entry.plugin.id) && isAllowed(entry) },
                         set: { registry.setEnabled($0, for: entry.plugin.id) }
                     ))
             }
@@ -136,7 +136,11 @@ struct AgentsSettingsPage: View {
     }
 
     private func detail(for entry: Entry) -> Text {
-        var lines = ["When off, Native stops \(entry.agent.name) and doesn't offer it for new tasks."]
+        var lines = [
+            isAllowed(entry)
+                ? "When off, Native stops \(entry.agent.name) and doesn't offer it for new tasks."
+                : "Your organization doesn't allow \(entry.agent.name), so Native doesn't start it or offer it for new tasks."
+        ]
         // The switch is the plugin's, so it also covers the plugin's other agents.
         let siblings = entry.plugin.agents.filter { $0.id != entry.agent.id }.map(\.name)
         if !siblings.isEmpty {

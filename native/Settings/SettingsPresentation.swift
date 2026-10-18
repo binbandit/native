@@ -1,3 +1,4 @@
+import NativeTelemetry
 import Observation
 
 /// Whether Settings has taken over the main window, and on which page. Settings is part of the
@@ -6,7 +7,13 @@ import Observation
 @Observable
 final class SettingsPresentation {
     /// The page shown; nil while Settings is closed.
-    var pane: SettingsPane.ID?
+    var pane: SettingsPane.ID? {
+        didSet {
+            if oldValue == nil, pane != nil {
+                Telemetry.record(.featureUsed(.settings))
+            }
+        }
+    }
 
     var isShown: Bool { pane != nil }
 

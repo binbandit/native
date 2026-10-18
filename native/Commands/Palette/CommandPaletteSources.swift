@@ -37,8 +37,8 @@ extension CommandPaletteSource {
                     id: .init("query:\(command.id)"),
                     kind: .query,
                     title: "\(name) for \u{201C}\(text)\u{201D}",
-                    systemImage: command.systemImage ?? "magnifyingglass",
-                    shortcut: registry.shortcut(for: command.id)
+                    // Its shortcut wouldn't search for the text, so the row doesn't show one.
+                    systemImage: command.systemImage ?? "magnifyingglass"
                 ) {
                     perform(text, context)
                 }

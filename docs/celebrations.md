@@ -150,6 +150,17 @@ Each selection needs:
 - A temporary **Skip this occurrence** action and an immediate way to restore the base appearance.
 
 Packs help people browse; installing or enabling a pack must not turn on every celebration it contains.
+
+The chooser offers two shortcuts, both explicit and both undoable (⌘Z). **Turn All On** and **Turn
+All Off** change every celebration at once, keeping each one's style, surfaces and window; turning
+them all on downloads nothing immediately, since each icon pack arrives a week before its dates.
+**Turn On a Country's Holidays** turns on, in one step, the catalogue's celebrations that are official
+public holidays in a country the user picks, so someone in the United States can get Thanksgiving and
+Juneteenth without hunting for them. It is opt-in by design: the Mac's region only puts that country
+at the top of the list as "Your region", and nothing is enabled until the person picks a country. A
+country's list comes from its government's published public-holiday calendar (statutory, nationwide
+days off, cited per country), never from a judgement of what is "widely celebrated" there, so the
+shortcut states a fact about a calendar rather than inferring anyone's religion or culture.
 Search should recognise common English names, local names and spelling variants. Locale may format
 dates and language, but must not infer someone's religion, ethnicity or celebrations. No location access
 is needed for browsing or ordinary civil-date themes.

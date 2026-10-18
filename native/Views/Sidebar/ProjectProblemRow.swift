@@ -17,11 +17,14 @@ struct ProjectProblemRow: View {
             Button {
                 isShowingDetails = true
             } label: {
-                HStack(spacing: DS.Space.sm) {
+                // Spaced like `TaskRow`, so the glyph and title line up with the task rows'.
+                HStack(alignment: .top, spacing: DS.Space.sm) {
                     Image(systemName: "exclamationmark.triangle")
                         .font(.dsCaption)
                         .foregroundStyle(.dsWarning)
                         .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
+                        .padding(.top, DS.Space.xxs)
+                        .padding(.trailing, DS.Space.xxs)
                         .accessibilityHidden(true)
                     Text(problem.title)
                         .font(.dsCalloutBook)
@@ -30,6 +33,7 @@ struct ProjectProblemRow: View {
                         .lineLimit(2)
                     Spacer(minLength: 0)
                 }
+                .padding(.vertical, DS.Space.md)
                 .frame(minHeight: DS.Size.rowMinHeight)
                 .contentShape(.rect)
             }
