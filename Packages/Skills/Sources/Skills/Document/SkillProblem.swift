@@ -34,7 +34,8 @@ public enum SkillProblem: Hashable, Sendable {
         case .missingSkillFile: "There's no SKILL.md in this folder, so agents ignore it."
         case .unreadable: "Native couldn't read its SKILL.md."
         case .noFrontmatter: "SKILL.md doesn't start with a `---` frontmatter block, so agents can't tell what it is."
-        case .malformedFrontmatter(let line, let reason): "SKILL.md's frontmatter is malformed at line \(line): \(reason)"
+        case .malformedFrontmatter(let line, let reason):
+            "SKILL.md's frontmatter is malformed at line \(line): \(reason)"
         case .missingName: "SKILL.md's frontmatter has no name."
         case .missingDescription: "SKILL.md's frontmatter has no description, so agents won't know when to use it."
         case .invalidName(let name):

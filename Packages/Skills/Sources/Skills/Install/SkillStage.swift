@@ -45,12 +45,15 @@ public enum SkillInstallError: Error, Hashable, Sendable, LocalizedError {
 
     public var errorDescription: String? {
         switch self {
-        case .gitMissing: "git isn't installed, so Native can't fetch the repository. Install the Xcode Command Line Tools (xcode-select --install) and try again."
-        case .offline(let detail): "You're offline, so the skill couldn't be fetched. Try again when you're connected.\n\(detail)"
+        case .gitMissing:
+            "git isn't installed, so Native can't fetch the repository. Install the Xcode Command Line Tools (xcode-select --install) and try again."
+        case .offline(let detail):
+            "You're offline, so the skill couldn't be fetched. Try again when you're connected.\n\(detail)"
         case .fetchFailed(let output): "The skill couldn't be fetched.\n\(output)"
         case .noSkills: "There's no SKILL.md there, so it isn't a skill (or a collection of skills)."
         case .unsafePath(let path): "The skill has a file outside its own folder (\(path)), so Native won't install it."
-        case .alreadyInstalled(let paths): "It's already installed at \(paths.joined(separator: ", ")). Update it from its row instead."
+        case .alreadyInstalled(let paths):
+            "It's already installed at \(paths.joined(separator: ", ")). Update it from its row instead."
         case .missing(let path): "\(path) isn't there anymore."
         case .failed(let reason): reason
         }
@@ -75,7 +78,8 @@ struct SkillStager: Sendable {
                 let checkout = SkillPaths.join(staging, "checkout")
                 let revision = try await clone(url, ref: ref, into: checkout)
                 let base = subpath.map { SkillPaths.join(checkout, $0) } ?? checkout
-                return SkillStage(source: source, stagingPath: staging, revision: revision, skills: try skills(in: base))
+                return SkillStage(
+                    source: source, stagingPath: staging, revision: revision, skills: try skills(in: base))
             } catch {
                 try? files.removeItem(atPath: staging)
                 throw error
@@ -97,7 +101,9 @@ struct SkillStager: Sendable {
                     guard !file.path.hasPrefix("/"), !components.contains(".."), !components.isEmpty else {
                         throw SkillInstallError.unsafePath(file.path)
                     }
-                    try write(Data(file.contents.utf8), to: SkillPaths.join(folder, file.path), script: file.contents.hasPrefix("#!"))
+                    try write(
+                        Data(file.contents.utf8), to: SkillPaths.join(folder, file.path),
+                        script: file.contents.hasPrefix("#!"))
                 }
                 return SkillStage(source: source, stagingPath: staging, revision: nil, skills: try skills(in: folder))
             } catch {
@@ -123,7 +129,9 @@ struct SkillStager: Sendable {
         }
         guard result.succeeded else {
             let output = result.errorOutput.trimmingCharacters(in: .whitespacesAndNewlines)
-            let offline = ["Could not resolve host", "Failed to connect", "Network is unreachable", "Operation timed out"]
+            let offline = [
+                "Could not resolve host", "Failed to connect", "Network is unreachable", "Operation timed out",
+            ]
             throw offline.contains(where: output.contains) ? .offline(output) : .fetchFailed(output)
         }
         let revision = try? await runner.run(

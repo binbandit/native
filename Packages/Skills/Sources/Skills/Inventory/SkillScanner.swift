@@ -113,7 +113,10 @@ public struct SkillFile: Hashable, Sendable, Identifiable {
         self.size = size
         self.isExecutable = isExecutable
         self.text = text
-        let scriptExtensions: Set<String> = ["sh", "bash", "zsh", "fish", "py", "js", "mjs", "cjs", "ts", "rb", "pl", "php", "swift", "go", "rs", "ps1", "bat", "cmd", "applescript", "lua"]
+        let scriptExtensions: Set<String> = [
+            "sh", "bash", "zsh", "fish", "py", "js", "mjs", "cjs", "ts", "rb", "pl", "php", "swift", "go", "rs", "ps1",
+            "bat", "cmd", "applescript", "lua",
+        ]
         isScript =
             isExecutable || scriptExtensions.contains(URL(filePath: relativePath).pathExtension.lowercased())
             || text?.hasPrefix("#!") == true

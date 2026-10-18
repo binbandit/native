@@ -35,7 +35,9 @@ public struct SkillsRegistry: Sendable {
     /// The most-installed skills matching `query`.
     public func search(_ query: String, limit: Int = 20) async throws(SkillsRegistryError) -> [RegistrySkill] {
         var components = URLComponents(url: base.appending(path: "api/search"), resolvingAgainstBaseURL: false)
-        components?.queryItems = [URLQueryItem(name: "q", value: query), URLQueryItem(name: "limit", value: "\(limit)")]
+        components?.queryItems = [
+            URLQueryItem(name: "q", value: query), URLQueryItem(name: "limit", value: "\(limit)"),
+        ]
         guard let url = components?.url else { throw .badResponse }
         let response: SearchResponse = try await get(url)
         return response.skills.sorted { ($0.installs ?? 0) > ($1.installs ?? 0) }

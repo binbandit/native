@@ -73,7 +73,9 @@ public struct SkillInstaller: Sendable {
         let base = project.map(SkillPaths.key) ?? home
         let shared = [
             SkillPaths.join(
-                project == nil ? (environment["CLAUDE_CONFIG_DIR"] ?? SkillPaths.join(home, ".claude")) : SkillPaths.join(base, ".claude"),
+                project == nil
+                    ? (environment["CLAUDE_CONFIG_DIR"] ?? SkillPaths.join(home, ".claude"))
+                    : SkillPaths.join(base, ".claude"),
                 "skills"),
             SkillPaths.join(base, ".agents", "skills"),
         ]
@@ -82,8 +84,10 @@ public struct SkillInstaller: Sendable {
         }
         var uncovered = agents
         var targets: [SkillInstallTarget] = []
-        for directory in shared + own where !uncovered.isEmpty && !targets.contains(where: { $0.directory == directory }) {
-            let readers = Set(agents.filter { $0.reads(directory, home: home, environment: environment, project: project) })
+        for directory in shared + own
+        where !uncovered.isEmpty && !targets.contains(where: { $0.directory == directory }) {
+            let readers = Set(
+                agents.filter { $0.reads(directory, home: home, environment: environment, project: project) })
             guard !readers.isDisjoint(with: uncovered) else { continue }
             targets.append(SkillInstallTarget(directory: directory, agents: readers))
             uncovered.subtract(readers)
@@ -92,7 +96,8 @@ public struct SkillInstaller: Sendable {
     }
 
     /// Copies `skill` into each target. Checks every destination first, so a clash writes nothing.
-    public func install(_ skill: StagedSkill, into targets: [SkillInstallTarget]) throws(SkillInstallError) -> [String] {
+    public func install(_ skill: StagedSkill, into targets: [SkillInstallTarget]) throws(SkillInstallError) -> [String]
+    {
         let destinations = targets.map { SkillPaths.join($0.directory, skill.installName) }
         let taken = destinations.filter(files.exists)
         guard taken.isEmpty else { throw .alreadyInstalled(taken) }
@@ -116,7 +121,8 @@ public struct SkillInstaller: Sendable {
             try files.copyItem(atPath: skill.folderPath, toPath: path)
         } catch {
             try? restore(entry)
-            throw .failed("Native couldn't write the update, so it put the old version back: \(error.localizedDescription)")
+            throw .failed(
+                "Native couldn't write the update, so it put the old version back: \(error.localizedDescription)")
         }
         return entry
     }

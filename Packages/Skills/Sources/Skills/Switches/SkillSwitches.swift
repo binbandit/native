@@ -120,7 +120,8 @@ extension SkillSwitches {
                 return "\(agent.displayName) can't leave a skill out of a session, so it still loads it."
             case .perSession:
                 guard places.contains(where: { !agent.canSwitch($0.root.scope) }) else { return nil }
-                return "\(agent.displayName) can't hide skills from its plugins; turn the plugin off in \(agent.displayName)."
+                return
+                    "\(agent.displayName) can't hide skills from its plugins; turn the plugin off in \(agent.displayName)."
             case .perProcess:
                 let reachesEveryCopy = places.allSatisfy { $0.root.scope.project != nil }
                 guard isOffInAProjectOnly, !reachesEveryCopy else { return nil }

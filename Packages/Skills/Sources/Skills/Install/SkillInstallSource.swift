@@ -25,7 +25,8 @@ public enum SkillInstallSource: Hashable, Sendable, Codable {
                 return .registry(source: "\(parts[0])/\(parts[1])", skill: parts[2])
             }
             if host == "github.com", parts.count >= 2 {
-                let repository = "https://github.com/\(parts[0])/\(parts[1].replacingOccurrences(of: ".git", with: "")).git"
+                let repository =
+                    "https://github.com/\(parts[0])/\(parts[1].replacingOccurrences(of: ".git", with: "")).git"
                 if parts.count >= 4, parts[2] == "tree" || parts[2] == "blob" {
                     let folder = parts.dropFirst(4).joined(separator: "/")
                     return .git(url: repository, ref: parts[3], subpath: folder.isEmpty ? nil : folder)
