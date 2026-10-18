@@ -51,7 +51,8 @@ struct ComposerMoreMenu: View {
         .fixedSize()
         .help("More controls")
         .popover(isPresented: includesModel ? $isModelPickerOpen : .constant(false), arrowEdge: .top) {
-            ModelPicker(model: settings.model, effort: settings.effort, switches: settings.modelSwitches, onSet: onSet) {
+            ModelPicker(model: settings.model, effort: settings.effort, switches: settings.modelSwitches, onSet: onSet)
+            {
                 isModelPickerOpen = false
             }
             .dsPopoverBackground()

@@ -260,8 +260,10 @@ struct ComposerView: View {
 
     func inputSection(suggestions: ComposerSuggestions?) -> some View {
         HStack(alignment: .bottom, spacing: 0) {
-            ComposerEditor(text: $session.draft, selection: $selection, placeholder: placeholder, isFocused: $isFocused)
-            { press in
+            ComposerEditor(
+                text: $session.draft, selection: $selection, placeholder: placeholder, isFocused: $isFocused,
+                hidesCaret: selectedAttachmentIndex != nil
+            ) { press in
                 handleKey(press, suggestions: suggestions)
             }
             .disabled(!canEdit)
@@ -274,7 +276,7 @@ struct ComposerView: View {
                     actionSlot { if hasContent { sendButton } }
                     actionSlot {
                         // Escape deselects a chip before it stops anything.
-                        ComposerStopButton(isEscapeEnabled: suggestions == nil && selectedAttachment == nil) {
+                        ComposerStopButton(isEscapeEnabled: suggestions == nil && selectedAttachmentIndex == nil) {
                             Task { await session.cancel() }
                         }
                     }
