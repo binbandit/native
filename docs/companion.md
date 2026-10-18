@@ -113,20 +113,19 @@ celebrations).
 - **Approvals** are the one approval card, weighted by what the agent offers: its "allow once" is
   the filled primary button, other allows are outlined, rejections are plain text last. Option names
   wrap (up to three lines) with their `code` spans in the mono face. A shell command shows as typed
-  under a dimmed `$`: `ToolCallState.shellCommand` (`Packages/ACP`) reads it however the agent sent
-  it, including codex-acp 2.2.2's permission requests, which carry it JSON-encoded a second time
-  ("printf 'ship\\n' > todo.txt" in quotes) and retitle the call "Run command", and argv arrays
-  (`bash -lc <script>` is the script). The Mac's `ToolPresentation` uses the same property, so its
-  Codex rows show the command, not "Run command".
-- **Which host.** A host's color and symbol (its page, "On This Phone") are a quiet, always-on
-  accent: the home screen's header chip shows the active host (its mark and name, or "All Hosts"
-  with every host's marks) and switches it, along with Needs You Only; that host's color tints the
-  home list and toolbar buttons; a task's header carries its host's mark, and the task, its
-  sheets and the host's page tint with its color. Filled actions (Yes, proceed, New Task) keep the
-  app's accent, and a host left on Original has no color of its own, so with one uncolored host
-  nothing changes. "App Icon While Connected" on a host's page switches the app icon when that
+  after a dimmed `$` (still 4.5:1 or better, on a translucent fill that shows on any row):
+  `ToolCallState.shellCommand` (`Packages/ACP`) reads it however the agent sent it, including
+  codex-acp 2.2.2's permission requests, which carry it JSON-encoded a second time ("printf
+  'ship\\n' > todo.txt" in quotes) and retitle the call "Run command", and argv arrays (`bash -lc
+  <script>` is the script). The Mac's `ToolPresentation` uses the same property, so its Codex rows
+  show the command, not "Run command".
+- **Which host.** A host's color and symbol (its page, "On This Phone") mark identity only: the
+  home screen's header chip shows the active host (its mark and name, or "All Hosts" with every
+  host's marks) and switches it, along with Needs You Only; host rows and a task's header carry
+  the host's mark, and the home list's links take its color. Controls keep their own color: Stop
+  is neutral, switches, approvals and Settings follow the app, and a host left on Original has no
+  color of its own. "App Icon While Connected" on a host's page switches the app icon when that
   host becomes the active one (picked in the chip, or the only host).
-
 - **Later, with a developer team:** APNs push (the categories in the research doc, threaded per
   host) and one Live Activity per host; `CompanionNotifications` is the seam. The full
   `TranscriptView` stays Mac-only until it no longer needs `SessionModel`/`AppModel`; the phone's

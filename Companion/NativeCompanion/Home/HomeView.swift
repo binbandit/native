@@ -32,7 +32,6 @@ struct HomeView: View {
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Settings", systemImage: "gearshape") { isShowingSettings = true }
-                    .hostTint(store.activeHost?.preferences)
                     .accessibilityIdentifier("settings")
             }
         }

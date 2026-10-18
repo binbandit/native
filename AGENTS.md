@@ -96,7 +96,9 @@ agents share one Mac.
 
 Builds are about 6 GB each and the disk is shared: when your task is done, run
 `scripts/dev/run-isolated.sh <name> --remove` for each instance you used and delete your
-`/tmp/native-dd/<you>-build`, and keep extra scratch builds to the minute you need them.
+`/tmp/native-dd/<you>-build`, and keep extra scratch builds to the minute you need them. Profiling
+with `xctrace` leaves 8-13 GB `instruments*.ktrace` files in `$TMPDIR` and large `.trace` bundles:
+delete yours as soon as you've read the numbers.
 
 When a check needs a real agent session, use Codex with `gpt-6.1-sol` (it's the cheapest): launch with
 `-agentDefaults.codex.model gpt-6.1-sol`, or pick it in the composer's model picker. Use another

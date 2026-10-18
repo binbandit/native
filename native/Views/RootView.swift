@@ -12,6 +12,11 @@ struct RootView: View {
     /// The sidebar's width as the user left it. Settings replaces the split view, and a new one opens
     /// at its ideal width, so this is the ideal.
     @State private var sidebarWidth = RootSidebarWidth()
+    /// The window, for whether an inspector would make it grow.
+    @State private var windowRoom = PlatformWindowRoom()
+    /// The window's width when the sidebar stepped aside for an inspector, while it's aside; nil
+    /// once the user shows or hides the sidebar themselves.
+    @State private var sidebarAsideAt: CGFloat?
     @State private var undoToast: UndoToastItem?
     @State private var showsPullRequests = false
     @Environment(GitHubModel.self) private var gitHub
@@ -228,8 +233,34 @@ struct RootView: View {
                     if let updates { durableHost?.connectUpdates(updates) }
                     await durableHost?.start(plugins: model.plugins.agents)
                 }
+                .environment(\.inspectorRoom, inspectorRoom)
         }
         .toolbar(removing: .sidebarToggle)
+        .tracksWindowRoom(windowRoom)
+        .onChange(of: columnVisibility) { _, visibility in
+            // The user showed the sidebar again: it's theirs, and stays as they leave it.
+            if visibility != .detailOnly { sidebarAsideAt = nil }
+        }
+    }
+
+    /// Opening an inspector never widens the window: the sidebar steps aside instead, and comes back
+    /// when the inspector closes, unless the user showed or hid it meanwhile or the window got
+    /// narrower than it was (the sidebar would widen it then).
+    private var inspectorRoom: InspectorRoom {
+        InspectorRoom(
+            prepare: { width in
+                guard columnVisibility != .detailOnly, windowRoom.wouldGrow(adding: width) else { return }
+                sidebarAsideAt = windowRoom.width
+                columnVisibility = .detailOnly
+            },
+            release: {
+                guard let width = sidebarAsideAt, columnVisibility == .detailOnly else { return }
+                sidebarAsideAt = nil
+                if windowRoom.width >= width {
+                    withAnimation { columnVisibility = .all }
+                }
+            }
+        )
     }
 
     /// Says when the background host runs another version than this app, above whatever the

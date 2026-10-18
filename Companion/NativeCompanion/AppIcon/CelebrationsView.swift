@@ -25,8 +25,10 @@ struct CelebrationsView: View {
         List {
             if on.isEmpty, query.isEmpty {
                 Section {
-                    Text("Turn one on and the icon changes on its dates, then goes back. Nothing is on until you pick it.")
-                        .font(CompanionType.subheadline).foregroundStyle(.dsTextSecondary)
+                    Text(
+                        "Turn one on and the icon changes on its dates, then goes back. Nothing is on until you pick it."
+                    )
+                    .font(CompanionType.subheadline).foregroundStyle(.dsTextSecondary)
                 }
             }
             if !on.isEmpty {

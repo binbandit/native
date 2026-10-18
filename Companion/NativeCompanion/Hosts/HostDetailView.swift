@@ -57,6 +57,8 @@ struct HostDetailView: View {
                         Image(systemName: symbol).tag(symbol)
                     }
                 }
+                // The host's mark as it'll look, so in its color.
+                .hostTint(host.preferences)
             } header: {
                 Text("On This Phone")
             } footer: {
@@ -110,7 +112,6 @@ struct HostDetailView: View {
         .background(.dsBackground)
         .navigationTitle(host.name)
         .navigationBarTitleDisplayMode(.inline)
-        .hostTint(host.preferences)
         .confirmationDialog("Unpair \(host.name)?", isPresented: $isConfirmingUnpair, titleVisibility: .visible) {
             Button("Unpair", role: .destructive) {
                 store.unpair(host)
@@ -142,7 +143,6 @@ private struct HostAppIconPicker: View {
         .background(.dsBackground)
         .navigationTitle("App Icon While Connected")
         .navigationBarTitleDisplayMode(.inline)
-        .hostTint(host.preferences)
     }
 
     private func row(_ icon: CompanionAppIcon?, title: String) -> some View {
