@@ -70,7 +70,7 @@ struct WhatsNewSheet: View {
                 .foregroundStyle(.dsTextPrimary)
                 .accessibilityAddTraits(.isHeader)
             if releases.count > 1, let oldest = releases.last {
-                Text("Everything worth knowing since \(oldest.version), in one place.")
+                Text("Highlights from Native \(oldest.version) onward, in one place.")
                     .font(.dsBody)
                     .foregroundStyle(.dsTextSecondary)
             }
