@@ -33,7 +33,9 @@ struct QRScannerView: UIViewControllerRepresentable {
             self.onCode = onCode
         }
 
-        func dataScanner(_ dataScanner: DataScannerViewController, didAdd addedItems: [RecognizedItem], allItems: [RecognizedItem]) {
+        func dataScanner(
+            _ dataScanner: DataScannerViewController, didAdd addedItems: [RecognizedItem], allItems: [RecognizedItem]
+        ) {
             for case .barcode(let barcode) in addedItems {
                 if let payload = barcode.payloadStringValue { onCode(payload) }
             }

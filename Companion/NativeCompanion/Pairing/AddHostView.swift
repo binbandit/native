@@ -20,7 +20,9 @@ struct AddHostView: View {
                 if !Self.policy.companionEnabled {
                     EmptyStateView(
                         "Pairing is turned off", systemImage: "building.2",
-                        message: "The organization that manages this iPhone turned off pairing with hosts. Hosts already paired keep working.")
+                        message:
+                            "The organization that manages this iPhone turned off pairing with hosts. Hosts already paired keep working."
+                    )
                 } else if flow.step == .idle {
                     chooser
                 } else {
@@ -116,7 +118,10 @@ struct AddHostView: View {
         }
         .scrollContentBackground(.hidden)
         .font(CompanionType.body)
-        .alert("Enter the code from \(codeHost?.name ?? "your Mac")", isPresented: Binding(get: { codeHost != nil }, set: { if !$0 { codeHost = nil } })) {
+        .alert(
+            "Enter the code from \(codeHost?.name ?? "your Mac")",
+            isPresented: Binding(get: { codeHost != nil }, set: { if !$0 { codeHost = nil } })
+        ) {
             TextField("K7Q 4MX", text: $typedCode)
                 .textInputAutocapitalization(.characters)
                 .autocorrectionDisabled()
@@ -157,7 +162,8 @@ struct AddHostView: View {
 
     private func pasteLink() {
         guard let text = UIPasteboard.general.string, let invite = try? PairingInvite(url: text) else {
-            store.problem = "The clipboard doesn't hold a Native pairing link. Copy it from the Mac's Pair iPhone sheet."
+            store.problem =
+                "The clipboard doesn't hold a Native pairing link. Copy it from the Mac's Pair iPhone sheet."
             return
         }
         flow.pair(invite: invite, discovered: store.discovered, store: store)

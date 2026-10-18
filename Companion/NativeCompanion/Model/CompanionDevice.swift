@@ -6,7 +6,8 @@ import UIKit
 enum CompanionDevice {
     static var info: LinkDeviceInfo {
         let device = UIDevice.current
-        return LinkDeviceInfo(name: device.name, model: device.model, system: "\(device.systemName) \(device.systemVersion)")
+        return LinkDeviceInfo(
+            name: device.name, model: device.model, system: "\(device.systemName) \(device.systemVersion)")
     }
 
     static var peerInfo: PeerInfo {

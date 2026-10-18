@@ -31,7 +31,9 @@ final class PairingFlow {
     }
 
     func pair(code: PairingCode, with host: DiscoveredHost, store: CompanionStore) {
-        run(hostName: host.name, credential: .code(code), endpoints: [(host.endpoint, "\(host.name) (Bonjour)")], store: store)
+        run(
+            hostName: host.name, credential: .code(code), endpoints: [(host.endpoint, "\(host.name) (Bonjour)")],
+            store: store)
     }
 
     func cancel() {

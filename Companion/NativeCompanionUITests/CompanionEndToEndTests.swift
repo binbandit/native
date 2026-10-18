@@ -63,7 +63,8 @@ final class CompanionEndToEndTests: XCTestCase {
         XCTAssertTrue(allow.waitForExistence(timeout: 240), "the agent asked for permission")
         attachScreenshot(app, named: "approval")
         allow.tap()
-        XCTAssertTrue(app.staticTexts["Allowed from this iPhone"].waitForExistence(timeout: 30), "the answer reached the host")
+        XCTAssertTrue(
+            app.staticTexts["Allowed from this iPhone"].waitForExistence(timeout: 30), "the answer reached the host")
         attachScreenshot(app, named: "answered")
     }
 
@@ -75,7 +76,8 @@ final class CompanionEndToEndTests: XCTestCase {
         XCTAssertTrue(choice.waitForExistence(timeout: 5), "the agent offers \(wanted)")
         choice.tap()
         let chosen = app.descendants(matching: .any)
-            .matching(NSPredicate(format: "identifier == %@ AND label CONTAINS[c] %@", "config-\(category)", wanted)).firstMatch
+            .matching(NSPredicate(format: "identifier == %@ AND label CONTAINS[c] %@", "config-\(category)", wanted))
+            .firstMatch
         XCTAssertTrue(chosen.waitForExistence(timeout: 15), "the host applied \(wanted)")
     }
 

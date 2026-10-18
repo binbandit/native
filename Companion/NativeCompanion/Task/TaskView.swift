@@ -51,7 +51,8 @@ struct TaskView: View {
         .toolbar {
             ToolbarItem(placement: .principal) {
                 VStack(spacing: 0) {
-                    Text(session.displayTitle(mirror)).font(CompanionType.captionMedium).foregroundStyle(.dsTextPrimary).lineLimit(1)
+                    Text(session.displayTitle(mirror)).font(CompanionType.captionMedium).foregroundStyle(.dsTextPrimary)
+                        .lineLimit(1)
                     Text("\(session.agentName) · \(session.projectName) · \(host.name)")
                         .font(CompanionType.caption).foregroundStyle(.dsTextSecondary).lineLimit(1)
                 }
@@ -76,8 +77,9 @@ struct TaskView: View {
         if !host.phase.isConnected {
             NoticeBanner(
                 tone: .warning, title: host.phase.title,
-                detail: host.phase.detail(hostName: host.name) ?? "The agent keeps working on \(host.name).")
-                .padding(DS.Space.md)
+                detail: host.phase.detail(hostName: host.name) ?? "The agent keeps working on \(host.name)."
+            )
+            .padding(DS.Space.md)
         } else if let stopFailure {
             NoticeBanner(tone: .danger, title: "Couldn't stop it", detail: stopFailure).padding(DS.Space.md)
         } else if session.isWorking {
@@ -104,8 +106,9 @@ struct TaskView: View {
             if let pending = mirror?.state.pendingPermissions.first {
                 ApprovalCard(
                     host: host, sessionID: sessionID, toolCallID: pending.toolCallID, permission: pending.permission,
-                    call: mirror?.state.toolCall(id: pending.toolCallID))
-                    .padding(.horizontal, DS.Space.lg)
+                    call: mirror?.state.toolCall(id: pending.toolCallID)
+                )
+                .padding(.horizontal, DS.Space.lg)
             } else {
                 if !session.queue.isEmpty {
                     QueuedMessagesView(host: host, session: session)
@@ -133,9 +136,11 @@ private struct QueuedMessagesView: View {
                     Spacer()
                     Button("Send Now") { Task { _ = await host.sendQueuedNow(item.id, in: session.id) } }
                         .font(CompanionType.caption)
-                    Button("Remove", systemImage: "xmark") { Task { _ = await host.removeQueued(item.id, in: session.id) } }
-                        .labelStyle(.iconOnly)
-                        .dsHitTarget(DS.Size.composerAction)
+                    Button("Remove", systemImage: "xmark") {
+                        Task { _ = await host.removeQueued(item.id, in: session.id) }
+                    }
+                    .labelStyle(.iconOnly)
+                    .dsHitTarget(DS.Size.composerAction)
                 }
                 .font(CompanionType.subheadline)
             }

@@ -31,7 +31,9 @@ struct HostUpdateSection: View {
             Button("Install Now, Interrupt Tasks", role: .destructive) { install(.now) }
             Button("Install When Idle") { install(.idle) }
         } message: {
-            Text("\(host.name) restarts to update. Interrupted tasks are told what happened and pick up where they left off.")
+            Text(
+                "\(host.name) restarts to update. Interrupted tasks are told what happened and pick up where they left off."
+            )
         }
     }
 
@@ -41,7 +43,9 @@ struct HostUpdateSection: View {
         if let rollback = status.lastRollback {
             NoticeBanner(
                 tone: .warning, title: "Went back to \(rollback.to)",
-                detail: "Native \(rollback.from) didn't start properly, so \(host.name) returned to \(rollback.to) at \(rollback.at.formatted(date: .omitted, time: .shortened)). Tasks resumed.")
+                detail:
+                    "Native \(rollback.from) didn't start properly, so \(host.name) returned to \(rollback.to) at \(rollback.at.formatted(date: .omitted, time: .shortened)). Tasks resumed."
+            )
         }
         switch status.state {
         case .checking:
@@ -54,14 +58,16 @@ struct HostUpdateSection: View {
         case .installing:
             HStack(spacing: DS.Space.md) {
                 DotGridLoader(pattern: .settingUp)
-                Text("Installing. \(host.name) restarts, and this phone reconnects on its own.").foregroundStyle(.dsTextSecondary)
+                Text("Installing. \(host.name) restarts, and this phone reconnects on its own.").foregroundStyle(
+                    .dsTextSecondary)
             }
         case .failed:
             ErrorState(
                 "The update didn't install", recovery: "\(host.name) kept running \(status.current.version).",
                 suggestion: status.message, primary: status.canInstall ? .init("Try Again") { install(.idle) } : nil)
         case .unavailable:
-            Text(status.message ?? "Updates for \(host.name) are managed outside Native.").foregroundStyle(.dsTextSecondary)
+            Text(status.message ?? "Updates for \(host.name) are managed outside Native.").foregroundStyle(
+                .dsTextSecondary)
         case .upToDate, .idle, .unknown:
             HStack {
                 Text(upToDateLine(status)).foregroundStyle(.dsTextSecondary)
@@ -103,8 +109,10 @@ struct HostUpdateSection: View {
             }
             .accessibilityIdentifier("updateNow")
         } else {
-            Text("This iPhone can't install updates on \(host.name). Allow it on the Mac in Settings › Paired Devices, or update there.")
-                .font(CompanionType.caption).foregroundStyle(.dsTextSecondary)
+            Text(
+                "This iPhone can't install updates on \(host.name). Allow it on the Mac in Settings › Paired Devices, or update there."
+            )
+            .font(CompanionType.caption).foregroundStyle(.dsTextSecondary)
         }
     }
 

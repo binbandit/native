@@ -44,7 +44,10 @@ struct CompanionToolSummary {
         let diffs = call.content.compactMap { content -> DiffStats? in
             if case .diff(let diff) = content { DiffStats(oldText: diff.oldText, newText: diff.newText) } else { nil }
         }
-        stats = diffs.isEmpty ? nil : diffs.reduce(DiffStats()) { DiffStats(added: $0.added + $1.added, removed: $0.removed + $1.removed) }
+        stats =
+            diffs.isEmpty
+            ? nil
+            : diffs.reduce(DiffStats()) { DiffStats(added: $0.added + $1.added, removed: $0.removed + $1.removed) }
     }
 
     /// The headline for the detail sheet.

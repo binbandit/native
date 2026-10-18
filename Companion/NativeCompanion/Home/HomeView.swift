@@ -80,7 +80,10 @@ struct HomeView: View {
             }
             Toggle("Needs You Only", isOn: $needsYouOnly)
         } label: {
-            Label("Filter", systemImage: hostFilter == nil && !needsYouOnly ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
+            Label(
+                "Filter",
+                systemImage: hostFilter == nil && !needsYouOnly
+                    ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
         }
         .accessibilityIdentifier("filter")
     }
@@ -132,9 +135,11 @@ private struct HostSection: View {
                     .font(CompanionType.subheadline)
                 }
                 if host.sessions.isEmpty, host.phase.isConnected {
-                    Text("No tasks on \(host.name) yet. Start the first one on the Mac; then you can start more from here.")
-                        .font(CompanionType.subheadline)
-                        .foregroundStyle(.dsTextSecondary)
+                    Text(
+                        "No tasks on \(host.name) yet. Start the first one on the Mac; then you can start more from here."
+                    )
+                    .font(CompanionType.subheadline)
+                    .foregroundStyle(.dsTextSecondary)
                 }
             }
         }

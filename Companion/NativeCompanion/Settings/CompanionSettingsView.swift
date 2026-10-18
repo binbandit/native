@@ -43,8 +43,10 @@ struct CompanionSettingsView: View {
                     Picker("App Icon", selection: $iconTheme) {
                         ForEach(CompanionAppIcon.allCases) { theme in
                             HStack {
-                                Circle().fill(.dsAccent).frame(width: CompanionMetrics.hostMarkSmall, height: CompanionMetrics.hostMarkSmall)
-                                    .dsAccentPalette(themeID: theme.rawValue)
+                                Circle().fill(.dsAccent).frame(
+                                    width: CompanionMetrics.hostMarkSmall, height: CompanionMetrics.hostMarkSmall
+                                )
+                                .dsAccentPalette(themeID: theme.rawValue)
                                 Text(theme.title)
                             }
                             .tag(theme.rawValue)
@@ -65,8 +67,11 @@ struct CompanionSettingsView: View {
                         Task { notificationsAllowed = await CompanionNotifications.requestAuthorization() }
                     }
                     if let notificationsAllowed {
-                        Text(notificationsAllowed ? "Notifications are on." : "Notifications are off. Turn them on in the Settings app.")
-                            .font(CompanionType.caption).foregroundStyle(.dsTextSecondary)
+                        Text(
+                            notificationsAllowed
+                                ? "Notifications are on." : "Notifications are off. Turn them on in the Settings app."
+                        )
+                        .font(CompanionType.caption).foregroundStyle(.dsTextSecondary)
                     }
                 }
                 Section("About") {

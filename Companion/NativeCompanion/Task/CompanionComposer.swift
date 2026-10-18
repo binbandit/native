@@ -75,7 +75,9 @@ struct CompanionComposer: View {
     }
 
     private var hint: String {
-        guard session.supportsSteering else { return "Queues until this turn ends. \(session.agentName) can't take messages mid-turn." }
+        guard session.supportsSteering else {
+            return "Queues until this turn ends. \(session.agentName) can't take messages mid-turn."
+        }
         return behavior == .steer ? "Joins the running turn." : "Queues until this turn ends."
     }
 
@@ -91,11 +93,12 @@ struct CompanionComposer: View {
             isSending = false
             switch outcome {
             case .delivered(let delivery):
-                delivered = switch delivery {
-                case .queued: "Queued. It goes out when this turn ends."
-                case .steered: "Joined the running turn."
-                case .prompted, .unknown: nil
-                }
+                delivered =
+                    switch delivery {
+                    case .queued: "Queued. It goes out when this turn ends."
+                    case .steered: "Joined the running turn."
+                    case .prompted, .unknown: nil
+                    }
             case .notSent(let reason):
                 // Back into the draft, ahead of anything typed meanwhile.
                 draft = draft.isEmpty ? text : "\(text)\n\(draft)"
