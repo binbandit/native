@@ -43,6 +43,17 @@ instead of failing the app.
 
 ## Build and run
 
+With [just](https://github.com/casey/just) (`brew install just`):
+
+```sh
+just install                          # builds Release and installs it in /Applications
+just build                            # a Debug build; `just build release` for Release
+just run me                           # an isolated instance with its own settings and data
+```
+
+A fresh clone signs to run locally. To sign with your own team, put `DEVELOPMENT_TEAM = <team id>`
+in `Config/Local.xcconfig`, which is never committed. Without just:
+
 ```sh
 xcodebuild -project native.xcodeproj -scheme native -derivedDataPath /tmp/native-dd/me build
 scripts/dev/run-isolated.sh me        # builds, launches an isolated instance, prints pid and window id

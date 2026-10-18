@@ -22,6 +22,24 @@ build configuration="Debug":
     esac
     xcodebuild -project native.xcodeproj -scheme native -configuration "$configuration" -derivedDataPath "{{derived}}" build
 
+# Build Release (or `just install nightly`) into /Applications, replacing the old copy; settings and tasks carry over.
+install configuration="Release":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    configuration='{{capitalize(configuration)}}'
+    case "$configuration" in
+        Release) product="Native"; id="dev.binbandit.native" ;;
+        Nightly) product="Native Nightly"; id="dev.binbandit.native.nightly" ;;
+        *) echo "error: install Release or Nightly, not '{{configuration}}'." >&2; exit 2 ;;
+    esac
+    just build "$configuration"
+    # Quit only the installed app, by bundle id; test instances share its name.
+    osascript -e "quit app id \"$id\"" 2>/dev/null || true
+    rm -rf "/Applications/$product.app"
+    ditto "{{derived}}/Build/Products/$configuration/$product.app" "/Applications/$product.app"
+    echo "Installed /Applications/$product.app"
+    open "/Applications/$product.app"
+
 # Build and run an isolated instance with its own settings and data (`just run mine -- -nativeDate 2026-10-31`).
 run name="dev" *args:
     scripts/dev/run-isolated.sh {{name}} {{args}}
