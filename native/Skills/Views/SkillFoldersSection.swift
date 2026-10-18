@@ -63,10 +63,13 @@ struct SkillFoldersSection: View {
                 Text(title)
                     .settingsText(.caption)
                     .foregroundStyle(.dsTextSecondary)
-                SettingsRowGroup {
-                    ForEach(byProject[title] ?? []) { row in
+                // A dense list: reference rows, not settings, so they sit closer than settings rows.
+                VStack(alignment: .leading, spacing: 0) {
+                    ForEach(Array((byProject[title] ?? []).enumerated()), id: \.element.id) { index, row in
+                        if index > 0 { SeparatorLine() }
                         SkillFolderRow(row: row, agents: library.agents)
                     }
+                }
                 }
             }
         }
@@ -186,20 +189,22 @@ struct SkillFolderRow: View {
 
     var body: some View {
         HStack(spacing: DS.Space.lg) {
-            Text(row.label)
-                .settingsText(.mono)
-                .foregroundStyle(row.exists ? .dsTextSecondary : .dsTextTertiary)
-                .textSelection(.enabled)
-                .help(row.paths.joined(separator: "\n"))
+            HStack(alignment: .firstTextBaseline, spacing: DS.Space.md) {
+                Text(row.label)
+                    .settingsText(.mono)
+                    .foregroundStyle(row.exists ? .dsTextSecondary : .dsTextTertiary)
+                    .textSelection(.enabled)
+                    .help(row.paths.joined(separator: "\n"))
+                Text(count)
+                    .settingsText(.caption)
+                    .foregroundStyle(.dsTextTertiary)
+            }
             Spacer(minLength: DS.Space.md)
             if let revealPath, isHovered || DS.isTouchPlatform {
                 Button("Show") { PlatformFileBrowser.reveal(URL(filePath: revealPath)) }
                     .buttonStyle(.ds(.ghost, size: .small))
                     .accessibilityLabel("Show \(row.label) in Finder")
             }
-            Text(count)
-                .settingsText(.caption)
-                .foregroundStyle(.dsTextTertiary)
             HStack(spacing: DS.Space.xs) {
                 ForEach(readers) { agent in
                     AgentIcon(agent: agent.definition)
@@ -208,6 +213,7 @@ struct SkillFolderRow: View {
                 }
             }
         }
+        .frame(minHeight: DS.Size.rowMinHeight)
         .contentShape(.rect)
         .onHover { isHovered = $0 }
         .contextMenu {
