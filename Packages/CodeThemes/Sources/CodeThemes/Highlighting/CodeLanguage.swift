@@ -20,7 +20,7 @@ public struct CodeLanguage: Sendable, Hashable {
         var maxLength: Int?
     }
 
-    public let id: String
+    public internal(set) var id: String
     let grammar: Grammar
     var lineComments: [String] = []
     var blockComment: [String] = []
