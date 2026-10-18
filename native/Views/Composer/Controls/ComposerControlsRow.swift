@@ -77,7 +77,9 @@ struct ComposerControlsRow<Extras: View, Context: View>: View {
                     .help(followUpHint.help)
                     .transition(.opacity)
             }
+            // Never squeezed into an ellipsis; the pills scroll instead.
             context()
+                .fixedSize()
         }
         .animation(.dsQuick, value: followUpHint)
     }

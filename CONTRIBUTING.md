@@ -43,3 +43,10 @@ compile. See [docs/releasing.md](docs/releasing.md) for the release workflows.
 
 Follow the Kite rules in AGENTS.md: save with a bare `kt`, never stage, and leave history rewriting
 to the coordinator. Outside this repo's shared working tree, normal git and PRs apply.
+
+## How CI builds
+
+`ci.yml` runs on `macos-26` with Xcode 27.1 (override with the `MACOS_RUNNER` and `XCODE_DEVELOPER_DIR`
+repository variables). It does not install Rust or Zig: it uses the `cargo` already on the runner and
+lets the build phases fetch V8 and the Ghostty toolchain into `.ci-cache/`, which is cached. If a
+phase fails it warns and the feature is skipped, as on a contributor's machine.

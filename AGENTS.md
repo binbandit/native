@@ -3,7 +3,8 @@
 Native is a native macOS app for running coding agents (Claude Code, Codex, Cursor, and any agent a
 plugin adds) side by side. It is a client of the [Agent Client Protocol](https://agentclientprotocol.com):
 every agent runs as an ACP subprocess, and Native turns their sessions into tasks, transcripts,
-approvals, goals and workflows. Many people and many agents contribute here, often in parallel, so
+approvals, goals and workflows. Many people and many agents contribute here, often in parallel (see
+[CONTRIBUTING.md](CONTRIBUTING.md) and [README.md](README.md)), so
 these rules exist to keep changes small, isolated and easy to review.
 
 ## Map
