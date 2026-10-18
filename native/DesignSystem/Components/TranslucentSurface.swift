@@ -70,9 +70,10 @@ private struct GlassBackground<GlassShape: Shape>: ViewModifier {
     let shape: GlassShape
 
     @Environment(\.dsTransparency) private var transparency
+    @Environment(\.colorScheme) private var colorScheme
 
     func body(content: Content) -> some View {
-        if let glass = transparency.controlGlass {
+        if let glass = transparency.controlGlass(colorScheme: colorScheme) {
             content
                 .environment(\.dsOnGlass, true)
                 .glassEffect(glass, in: shape)
