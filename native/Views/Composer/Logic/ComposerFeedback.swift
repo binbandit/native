@@ -47,8 +47,8 @@ struct ComposerFeedback: Equatable, Identifiable {
         self.canUndo = canUndo
     }
 
-    static func blocked(_ blocker: SendBlocker) -> ComposerFeedback {
-        ComposerFeedback(tone: .problem, message: blocker.message)
+    static func blocked(_ reason: String) -> ComposerFeedback {
+        ComposerFeedback(tone: .problem, message: reason)
     }
 
     static func failed(_ error: any Error) -> ComposerFeedback {

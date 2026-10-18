@@ -19,18 +19,19 @@ extension ComposerView {
     /// being edited. Says what happened, or why nothing could.
     func submit(_ behavior: FollowUpBehavior) {
         let text = session.draft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { return }
+        let attachments = session.attachments
+        guard !text.isEmpty || !attachments.isEmpty else { return }
         // `/goal …` is Native's own; it never reaches the agent.
         if let command = GoalCommand(parsing: session.draft), let goal = automation.goal(for: session) {
             session.draft = ""
             Task { await goal.perform(command) }
             return
         }
-        if let blocker {
-            feedback = .blocked(blocker)
+        if let blocked = session.sendBlockedReason {
+            feedback = .blocked(blocked)
             return
         }
-        if let id = editingQueued, session.queuedPrompts.contains(where: { $0.id == id }) {
+        if let id = editingQueued, !text.isEmpty, session.queuedPrompts.contains(where: { $0.id == id }) {
             session.updateQueued(id, text: text)
             editingQueued = nil
             session.draft = ""
@@ -46,18 +47,20 @@ extension ComposerView {
             return
         }
         session.draft = ""
+        session.attachments = []
         let wasWorking = isWorking
         Task {
             do {
-                let delivery = try await session.submit(text, behavior)
+                let delivery = try await session.submit(text, attaching: attachments, behavior)
                 feedback = ComposerFeedback(
                     delivery: delivery, requested: behavior, wasWorking: wasWorking,
                     supportsSteering: session.supportsSteering, agentName: session.agentName)
             } catch {
-                // Nothing went out, so the message comes back to be sent again.
+                // Nothing went out, so the message and its files come back to be sent again.
                 if session.draft.isEmpty {
                     session.draft = text
                 }
+                session.attachments = attachments + session.attachments
                 feedback = .failed(error)
             }
         }
@@ -104,10 +107,5 @@ extension ComposerView {
         if let change {
             set(change.setting, to: change.value)
         }
-    }
-
-    func insertMentions(_ urls: [URL]) {
-        session.draft = FileMentions.draft(session.draft, mentioning: urls, relativeTo: session.cwd)
-        isFocused = true
     }
 }

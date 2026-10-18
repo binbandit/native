@@ -5,9 +5,10 @@ import Testing
 
 @Suite struct NativePolicyTests {
     private func load(managed: [PolicyKey: Any] = [:], user: [PolicyKey: Any] = [:]) -> NativePolicy {
-        PolicyLoader.load(from: StaticPolicySource(
-            managed: Dictionary(uniqueKeysWithValues: managed.map { ($0.key.rawValue, $0.value) }),
-            user: Dictionary(uniqueKeysWithValues: user.map { ($0.key.rawValue, $0.value) })))
+        PolicyLoader.load(
+            from: StaticPolicySource(
+                managed: Dictionary(uniqueKeysWithValues: managed.map { ($0.key.rawValue, $0.value) }),
+                user: Dictionary(uniqueKeysWithValues: user.map { ($0.key.rawValue, $0.value) })))
     }
 
     @Test func defaultsAllowEverything() {
@@ -89,11 +90,16 @@ import Testing
     @Test func telemetry() {
         let policy = load(managed: [
             .telemetryNative: "off",
-            .telemetryEndpoints: [["url": "https://otel.example.com", "headers": ["x-key": "k"], "attributes": ["team": "web"]]],
+            .telemetryEndpoints: [
+                ["url": "https://otel.example.com", "headers": ["x-key": "k"], "attributes": ["team": "web"]]
+            ],
         ])
         #expect(policy.telemetry.native == .off)
-        #expect(policy.telemetry.endpoints == [TelemetryEndpoint(
-            url: URL(string: "https://otel.example.com")!, headers: ["x-key": "k"], attributes: ["team": "web"])])
+        #expect(
+            policy.telemetry.endpoints == [
+                TelemetryEndpoint(
+                    url: URL(string: "https://otel.example.com")!, headers: ["x-key": "k"], attributes: ["team": "web"])
+            ])
     }
 
     @Test func badValuesAreReportedAndIgnored() {
@@ -112,9 +118,12 @@ import Testing
         #expect(policy.updates.allowedChannels == ["stable"])
         #expect(policy.mcp.required.isEmpty)
         let keys = Set(policy.diagnostics.map(\.key))
-        #expect(keys == [
-            PolicyKey.scriptsEnabled, .updatesFeedURL, .searchRetentionDays, .telemetryNative, .updatesChannels, .mcpRequired,
-        ].map(\.rawValue).reduce(into: Set()) { $0.insert($1) })
+        #expect(
+            keys
+                == [
+                    PolicyKey.scriptsEnabled, .updatesFeedURL, .searchRetentionDays, .telemetryNative, .updatesChannels,
+                    .mcpRequired,
+                ].map(\.rawValue).reduce(into: Set()) { $0.insert($1) })
         #expect(!policy.isManaged(.scriptsEnabled))
         #expect(policy.isManaged(.updatesChannels))
     }
@@ -152,7 +161,8 @@ import Testing
         defer { defaults.removePersistentDomain(forName: suite) }
         defaults.set(false, forKey: PolicyKey.scriptsEnabled.rawValue)
         defaults.set(false, forKey: PolicyKey.labsEnabled.rawValue)
-        let source = UserDefaultsPolicySource(defaults: defaults, simulatedManagedKeys: [PolicyKey.scriptsEnabled.rawValue])
+        let source = UserDefaultsPolicySource(
+            defaults: defaults, simulatedManagedKeys: [PolicyKey.scriptsEnabled.rawValue])
         let policy = PolicyLoader.load(from: source)
         #expect(policy.isManaged(.scriptsEnabled) && !policy.scriptsEnabled)
         #expect(!policy.isManaged(.labsEnabled) && !policy.labsEnabled)
@@ -163,8 +173,10 @@ import Testing
         let defaults = try #require(UserDefaults(suiteName: suite))
         defer { defaults.removePersistentDomain(forName: suite) }
         let center = NotificationCenter()
-        var updates = PolicyLoader.updates(from: UserDefaultsPolicySource(defaults: defaults), notificationCenter: center)
-            .makeAsyncIterator()
+        var updates = PolicyLoader.updates(
+            from: UserDefaultsPolicySource(defaults: defaults), notificationCenter: center
+        )
+        .makeAsyncIterator()
         #expect(await updates.next()?.scriptsEnabled == true)
         defaults.set(false, forKey: PolicyKey.scriptsEnabled.rawValue)
         center.post(name: UserDefaults.didChangeNotification, object: defaults)

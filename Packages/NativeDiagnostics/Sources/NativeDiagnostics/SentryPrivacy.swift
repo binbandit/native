@@ -85,6 +85,7 @@ public enum SentryPrivacy {
             guard let id = original.debugID, UUID(uuidString: id) != nil else { return nil }
             let image = DebugMeta()
             image.type = "macho"
+            image.codeFile = "image"
             image.debugID = id
             image.imageAddress = address(original.imageAddress)
             image.imageVmAddress = address(original.imageVmAddress)

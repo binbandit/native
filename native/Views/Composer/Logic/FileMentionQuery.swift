@@ -1,3 +1,4 @@
+import ACP
 import Foundation
 
 /// An `@` mention being typed: the word from an `@` at the start of the draft or after whitespace up
@@ -21,7 +22,7 @@ struct FileMentionQuery: Equatable {
 
     /// The draft with the mention replaced by `path`, and where the cursor goes after it.
     func draft(_ draft: String, inserting path: String) -> (text: String, cursor: String.Index) {
-        let mention = FileMentions.mention(of: path) + " "
+        let mention = FileMention.mention(of: path) + " "
         var text = draft
         text.replaceSubrange(range, with: mention)
         let cursor = text.index(range.lowerBound, offsetBy: mention.count)
