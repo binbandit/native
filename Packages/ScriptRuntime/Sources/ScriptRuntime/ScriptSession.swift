@@ -38,7 +38,7 @@ enum ScriptSession {
             await withTaskGroup(of: Void.self) { group in
                 group.addTask {
                     // The limit is the script's: a busy Mac can take a while just to start the runtime.
-                    guard await started(evaluation) else {
+                    guard await Self.evaluationStarts(evaluation) else {
                         guard !Task.isCancelled else { return }
                         shared.failedToStart.withLock { $0 = true }
                         transport.terminate()
@@ -153,7 +153,7 @@ enum ScriptSession {
     static let startupLimit: Duration = .seconds(15)
 
     /// Whether evaluation started (the stream finished) within `startupLimit`; false when cancelled.
-    private static func started(_ evaluation: AsyncStream<Void>) async -> Bool {
+    private static func evaluationStarts(_ evaluation: AsyncStream<Void>) async -> Bool {
         await withTaskGroup(of: Bool.self) { race in
             race.addTask {
                 for await _ in evaluation {}
