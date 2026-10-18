@@ -21,7 +21,7 @@ final class CompanionEndToEndTests: XCTestCase {
         // iOS asks before a link opens an app.
         let open = XCUIApplication(bundleIdentifier: "com.apple.springboard").buttons["Open"]
         if open.waitForExistence(timeout: 5) { open.tap() }
-        let code = app.descendants(matching: .any)["verificationCode"]
+        let code = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Confirm on'")).firstMatch
         if !code.waitForExistence(timeout: 30) { print("HIERARCHY\n\(app.debugDescription)") }
         XCTAssertTrue(code.exists, "the phone shows the verification code")
         // Someone clicks Pair on the Mac now.

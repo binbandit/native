@@ -38,7 +38,8 @@ extension NativeCommand {
                 return status == .active || status.isResumable
             },
 
-            NativeCommand(.goalClear, title: "Clear Goal", category: .composer, systemImage: "xmark.circle") { context in
+            NativeCommand(.goalClear, title: "Clear Goal", category: .composer, systemImage: "xmark.circle") {
+                context in
                 guard let controller = goal(context) else { return }
                 Task { await controller.clear() }
             }

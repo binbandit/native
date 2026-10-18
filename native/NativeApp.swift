@@ -1,6 +1,7 @@
 import ACP
 import AppKit
 import NativeAutomation
+import NativeCommands
 import SwiftUI
 
 @main

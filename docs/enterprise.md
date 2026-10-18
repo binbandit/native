@@ -41,6 +41,7 @@ shipped as a sample `.mobileconfig` in `docs/enterprise/`.
 | `policy.companion.enabled` / `policy.remoteHosts.enabled` | Pairing devices; connecting to hosts other than this Mac. |
 | `policy.updates.feedURL` / `policy.updates.enabled` / `policy.updates.channels` | An internal update feed, or updates off; which channels are allowed. |
 | `policy.search.retentionDays` | How long the search index keeps sessions. |
+| `policy.shortcuts.bindings` | Keyboard shortcuts by command id, as Settings ▸ Keyboard Shortcuts exports them (`docs/commands.md`); they replace the user's changes and lock the page. |
 | `policy.telemetry.native` | `on`, `off`, or `user` (the user chooses; the default). |
 | `policy.telemetry.endpoints` | The organization's own collectors (see below). |
 

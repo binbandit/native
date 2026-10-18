@@ -44,10 +44,13 @@ struct PullRequestPageView: View {
             }
         }
         // Pull request links in comments open their page here (per the setting); others the browser.
-        .environment(\.openURL, OpenURLAction { url in
-            gitHub.open(url)
-            return .handled
-        })
+        .environment(
+            \.openURL,
+            OpenURLAction { url in
+                gitHub.open(url)
+                return .handled
+            }
+        )
         .undoToast($model.undo)
         .sheet(isPresented: $model.isReviewSheetPresented) {
             SubmitReviewSheet(model: model)

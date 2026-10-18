@@ -21,11 +21,15 @@ public struct FuzzyMatch: Equatable, Sendable {
             return
         }
         let keywords = keywords.map(Self.folded)
-        if keywords.contains(where: { $0.starts(with: query) || Self.wordStarts(in: $0).contains { Array($0).starts(with: query) } }) {
+        if keywords.contains(where: {
+            $0.starts(with: query) || Self.wordStarts(in: $0).contains { Array($0).starts(with: query) }
+        }) {
             self.init(score: Tier.keywordPrefix, highlights: [])
         } else if keywords.contains(where: { $0.firstRange(of: query) != nil }) {
             self.init(score: Tier.keywordSubstring, highlights: [])
-        } else if terms.count > 1, terms.allSatisfy({ term in ([text] + keywords).contains { $0.firstRange(of: term) != nil } }) {
+        } else if terms.count > 1,
+            terms.allSatisfy({ term in ([text] + keywords).contains { $0.firstRange(of: term) != nil } })
+        {
             self.init(score: Tier.allTermsAnywhere, highlights: Self.termRanges(terms, in: text))
         } else if let subsequence = Self.subsequence(query.filter { $0 != " " }, in: text) {
             self = subsequence

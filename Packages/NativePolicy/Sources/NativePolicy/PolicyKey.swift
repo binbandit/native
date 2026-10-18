@@ -17,6 +17,7 @@ public enum PolicyKey: String, CaseIterable, Hashable, Sendable {
     case updatesEnabled = "policy.updates.enabled"
     case updatesChannels = "policy.updates.channels"
     case searchRetentionDays = "policy.search.retentionDays"
+    case shortcutBindings = "policy.shortcuts.bindings"
     case telemetryNative = "policy.telemetry.native"
     case telemetryEndpoints = "policy.telemetry.endpoints"
 

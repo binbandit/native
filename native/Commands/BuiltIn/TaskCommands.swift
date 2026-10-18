@@ -32,7 +32,8 @@ extension NativeCommand {
             .available { _ in !model.isCreatingSession },
 
             NativeCommand(
-                .sessionNewWithAgent, title: "New Session With…", category: .tasks, systemImage: "plus.square.on.square",
+                .sessionNewWithAgent, title: "New Session With…", category: .tasks,
+                systemImage: "plus.square.on.square",
                 keywords: ["agent"]
             ) { _ in
                 model.isChoosingAgent = true
@@ -51,13 +52,15 @@ extension NativeCommand {
             }
             .available { _ in model.selection != nil },
 
-            NativeCommand(.sessionArchive, title: "Archive Task", category: .tasks, systemImage: "archivebox") { context in
+            NativeCommand(.sessionArchive, title: "Archive Task", category: .tasks, systemImage: "archivebox") {
+                context in
                 guard let key = model.selection else { return }
                 Task { await model.archiveSession(key, undoManager: context.undoManager) }
             }
             .available { _ in model.selection != nil },
 
-            NativeCommand(.sessionTogglePin, title: "Pin or Unpin Task", category: .tasks, systemImage: "pin") { context in
+            NativeCommand(.sessionTogglePin, title: "Pin or Unpin Task", category: .tasks, systemImage: "pin") {
+                context in
                 guard let key = model.selection else { return }
                 model.setPinned(key, !model.isPinned(key), undoManager: context.undoManager)
             }
@@ -85,7 +88,8 @@ extension NativeCommand {
             }
             .available { _ in model.sidebarMoveTarget.map { model.canMove($0, .down) } == true },
 
-            NativeCommand(.sessionNext, title: "Next Session", category: .navigation, systemImage: "chevron.down") { _ in
+            NativeCommand(.sessionNext, title: "Next Session", category: .navigation, systemImage: "chevron.down") {
+                _ in
                 model.selectSession(offset: 1)
             }
             .available { _ in !model.sessionList.isEmpty },
@@ -96,15 +100,17 @@ extension NativeCommand {
                 model.selectSession(offset: -1)
             }
             .available { _ in !model.sessionList.isEmpty },
-        ] + CommandID.sessionSelectPositions.map { position in
-            NativeCommand(.sessionSelect(position), title: "Go to Session \(position)", category: .navigation) { _ in
-                guard let listed = model.sessionList.dropFirst(position - 1).first else { return }
-                model.selection = listed.id
+        ]
+            + CommandID.sessionSelectPositions.map { position in
+                NativeCommand(.sessionSelect(position), title: "Go to Session \(position)", category: .navigation) {
+                    _ in
+                    guard let listed = model.sessionList.dropFirst(position - 1).first else { return }
+                    model.selection = listed.id
+                }
+                .menuTitle { _ in model.sessionList.dropFirst(position - 1).first.map(model.title(for:)) ?? "" }
+                .available { _ in model.sessionList.count >= position }
+                // The palette lists the tasks themselves, by name.
+                .hiddenFromPalette()
             }
-            .menuTitle { _ in model.sessionList.dropFirst(position - 1).first.map(model.title(for:)) ?? "" }
-            .available { _ in model.sessionList.count >= position }
-            // The palette lists the tasks themselves, by name.
-            .hiddenFromPalette()
-        }
     }
 }

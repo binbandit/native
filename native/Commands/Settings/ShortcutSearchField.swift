@@ -20,8 +20,9 @@ struct ShortcutFilter {
         if let shortcut {
             return bound == shortcut
         }
-        return matches([command.title, command.id.rawValue, command.category.title] + command.keywords
-            + (bound?.searchTerms ?? []))
+        return matches(
+            [command.title, command.id.rawValue, command.category.title] + command.keywords
+                + (bound?.searchTerms ?? []))
     }
 
     func matches(_ reference: ShortcutReference.Shortcut) -> Bool {

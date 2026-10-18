@@ -82,7 +82,9 @@ extension CommandPaletteSource {
     }
 
     /// Settings' pages, each its own feature's included.
-    static func settingsPages(_ panes: @escaping @MainActor () -> [SettingsPane], settings: SettingsPresentation)
+    static func settingsPages(
+        _ panes: @escaping @MainActor () -> [SettingsPane], settings: SettingsPresentation
+    )
         -> Self
     {
         Self { _, _ in

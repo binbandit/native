@@ -35,7 +35,10 @@ struct RootView: View {
         @Bindable var automation = automation
         // The status bar is part of the layout, under everything, so nothing ends up beneath it.
         VStack(spacing: 0) {
+            // Search's panel hangs off the content, out of the long chain below, which the type
+            // checker already finds heavy.
             content
+                .transcriptSearchPanel()
             StatusBar(registry: statusBar)
         }
             // After an update with highlights, once nothing waits on the user.
@@ -80,7 +83,6 @@ struct RootView: View {
                 }
             }
             .newExpeditionSheet()
-            .transcriptSearchPanel()
             .sheet(isPresented: $automation.isWorkflowPickerRequested) {
                 WorkflowPickerSheet(cwd: model.currentProject?.url, onAddProject: { model.isAddingProject = true }) {
                     run in

@@ -31,6 +31,7 @@ struct PullRequestConversationTab: View {
                 if page.threadsTotal > 0 {
                     unresolvedThreadsLink
                 }
+                PullRequestMergeBox(model: model, page: page)
                 SeparatorLine()
                     .padding(.vertical, DS.Space.xs)
                 PullRequestConversationComposer(model: model, page: page)

@@ -44,23 +44,14 @@ An edition is in a pack once its folder has all eight PNGs; the script names any
 incomplete. Its icon set in `FirstPartyCelebrations` uses `icons: .pack("<edition>")` and its
 thumbnail; the catalogue entry exists already for every edition in `docs/celebrations.md`.
 
-## Día de Muertos (waiting on a choice)
+## Día de Muertos
 
-Two drafts exist: `dia-de-muertos` (painted floral links) and `dia-de-muertos-sugar-skull`. Brayden
-chooses, with cultural review; both are in the script's `PENDING` list until then. To switch it on:
-
-1. Keep the chosen draft as `design/app-icon/celebrations/dia-de-muertos/` and remove both names
-   from `PENDING` in `scripts/release/celebration-assets.sh` (drop the unchosen folder or leave it
-   pending).
-2. Re-run `celebration-assets.sh thumbnails`.
-3. In `FirstPartyCelebrations.diaDeMuertosIcons`, replace `icons: .forthcoming` with
-   `icons: .pack("dia-de-muertos")` and add its `thumbnail`, as the catalogue editions do.
-4. In the AppAppearance tests, expect `muertos.appIcon == .downloadable(.notDownloaded)` in
-   `firstPartyCatalogueIsValid`; run `swift test`.
-5. Check a release-built pack, or a local one (below), with
-   `scripts/dev/run-isolated.sh celebrations -- -nativeDate 2026-11-01`.
-
-The Home edition (`NativeMuertosMark`) ships already and can take the chosen icon's palette.
+Both drafts ship as styles of the one celebration: the painted interlock
+(`design/app-icon/celebrations/dia-de-muertos/`, icon set `native.dia-de-muertos`) is the default,
+and the sugar skull (`dia-de-muertos-sugar-skull/`, icon set `native.dia-de-muertos-sugar-skull`) is
+an alternate the user picks under Style in Settings ▸ Celebrations, captioned as not keeping the
+interlock. Each is its own pack with its own thumbnail, and only the chosen style downloads. Home
+uses the design system's edition (`NativeMuertosMark`) for both.
 
 ## Checking packs locally
 

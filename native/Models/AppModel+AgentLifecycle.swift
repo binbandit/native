@@ -171,10 +171,12 @@ extension AppModel {
         sessions.removeAll(of: runtime.agent.id)
     }
 
-    /// Whether stopping `agent` would lose something: a session it's starting or signing in for,
-    /// or an open session (or the one that started it) that's busy, showing or holding a draft.
+    /// Whether stopping `agent` would lose something: a session it's starting or signing in for, a
+    /// listing under way, or an open session (or the one that started it) that's busy, showing or holding a draft.
     private func isInUse(_ agent: AgentDefinition.ID) -> Bool {
-        if creatingSessionWith == agent || runtimes[agent]?.isSigningIn == true {
+        if creatingSessionWith == agent || runtimes[agent]?.isSigningIn == true
+            || listingsInFlight[agent, default: 0] > 0
+        {
             return true
         }
         return sessions.open(of: agent).contains { isBusy($0) || isBusy($0.root) }

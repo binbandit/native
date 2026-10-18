@@ -16,20 +16,25 @@ extension NativeCommand {
             context.session.map(store.panel(for:))
         }
         return [
-            NativeCommand(.terminalToggle, title: "Show or Hide Terminal", category: .terminal, systemImage: "terminal") {
+            NativeCommand(.terminalToggle, title: "Show or Hide Terminal", category: .terminal, systemImage: "terminal")
+            {
                 guard let session = $0.session else { return }
                 store.toggle(for: session)
             }
             .menuTitle { panel($0)?.isVisible == true ? "Hide Terminal" : "Show Terminal" }
             .available { $0.session != nil },
 
-            NativeCommand(.terminalNewTab, title: "New Terminal Tab", category: .terminal, systemImage: "plus.rectangle") {
+            NativeCommand(
+                .terminalNewTab, title: "New Terminal Tab", category: .terminal, systemImage: "plus.rectangle"
+            ) {
                 guard let session = $0.session else { return }
                 store.newTab(for: session)
             }
             .available { $0.session != nil && store.availability == .available },
 
-            NativeCommand(.terminalCloseTab, title: "Close Terminal Tab", category: .terminal, systemImage: "xmark.rectangle") {
+            NativeCommand(
+                .terminalCloseTab, title: "Close Terminal Tab", category: .terminal, systemImage: "xmark.rectangle"
+            ) {
                 guard let panel = panel($0), let id = panel.tabs.selectedID else { return }
                 panel.requestClose(id)
             }
