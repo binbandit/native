@@ -46,7 +46,7 @@ struct MCPSessionStatusButton: View {
                         }
                     }
                 }
-                .help(summary.help + " (⌃⌘M)")
+                .help(CommandRegistry.shared.help(summary.help, for: .viewMCPServers))
                 .accessibilityLabel("MCP servers")
                 .accessibilityValue(summary.help)
                 .focusedSceneValue(\.mcpServersPopover, $isPresented)

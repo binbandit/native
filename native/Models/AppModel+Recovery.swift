@@ -49,7 +49,7 @@ extension AppModel {
             if interrupted.contains(key) {
                 do {
                     try await session.submit(Self.interruptedTurnPrompt, .queue, echo: false)
-                    session.addNotice("Native restarted \(runtime.agent.displayName) and asked it to continue where it left off. Press ⌘. to stop it.", isError: false)
+                    session.addNotice("Native restarted \(runtime.agent.displayName) and asked it to continue where it left off. Use Stop if you'd rather it didn't.", isError: false)
                 } catch {
                     session.addNotice("Native restarted \(runtime.agent.displayName), but couldn't ask it to continue: \(error.localizedDescription) Send a message to carry on.", isError: true)
                 }
