@@ -20,7 +20,7 @@ clear it and cannot start the SDK. Runtime reporting is controlled by Native's t
 organization policy, through `SentryTelemetry.start(dsn:)` and `stop()`.
 Keep **Security & Privacy → Prevent Storing of IP Addresses** enabled in the Sentry project; SDK PII
 settings alone do not prevent server-side IP enrichment. Keep the advanced rule **Remove Anything
-from `user`** as well, to discard geography added by Sentry before IP scrubbing.
+from `$user.geo.**`** as well, to discard geography added by Sentry before IP scrubbing.
 
 Both publishing workflows read the protected `SENTRY_AUTH_TOKEN` repository secret. This is Sentry's
 organization CI token named **Native GitHub release symbols**. Keep it out of source and app bundles.

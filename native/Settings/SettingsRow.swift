@@ -14,6 +14,8 @@ struct SettingsRow<Accessory: View, Control: View>: View {
     @ViewBuilder var accessory: Accessory
     @ViewBuilder var control: Control
 
+    @Environment(\.settingsLockReason) private var lockReason
+
     var body: some View {
         HStack(alignment: detail == nil ? .center : .top, spacing: SettingsMetrics.rowControlSpacing) {
             HStack(spacing: DS.Space.lg) {
@@ -26,6 +28,9 @@ struct SettingsRow<Accessory: View, Control: View>: View {
                             .settingsText(.bodyMedium)
                             .foregroundStyle(.dsTextPrimary)
                         accessory
+                        if let lockReason {
+                            SettingsBadge(lockReason, systemImage: "lock")
+                        }
                     }
                     .frame(minHeight: SettingsMetrics.rowTitleHeight)
                     if let description {
@@ -48,6 +53,7 @@ struct SettingsRow<Accessory: View, Control: View>: View {
             .accessibilityElement(children: .combine)
             control
                 .fixedSize()
+                .disabled(lockReason != nil)
         }
         .settingsRevealTarget(id)
     }
@@ -113,19 +119,28 @@ extension SettingsIconTile where Content == Image {
 /// An outlined tag beside a row title (Conductor's "Managed"/"Local" source badge).
 struct SettingsBadge: View {
     let text: String
+    var systemImage: String?
 
-    init(_ text: String) {
+    init(_ text: String, systemImage: String? = nil) {
         self.text = text
+        self.systemImage = systemImage
     }
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
-        Text(text)
-            .settingsText(.caption)
-            .foregroundStyle(.dsTextSecondary)
-            .padding(.horizontal, DS.Space.md)
-            .frame(height: SettingsMetrics.badgeHeight)
-            .overlay { shape.strokeBorder(.dsSeparator, lineWidth: 1) }
-            .fixedSize()
+        HStack(spacing: DS.Space.xs) {
+            if let systemImage {
+                Image(systemName: systemImage)
+                    .imageScale(.small)
+                    .accessibilityHidden(true)
+            }
+            Text(text)
+        }
+        .settingsText(.caption)
+        .foregroundStyle(.dsTextSecondary)
+        .padding(.horizontal, DS.Space.md)
+        .frame(height: SettingsMetrics.badgeHeight)
+        .overlay { shape.strokeBorder(.dsSeparator, lineWidth: 1) }
+        .fixedSize()
     }
 }

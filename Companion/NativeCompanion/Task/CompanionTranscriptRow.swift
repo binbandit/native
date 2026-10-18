@@ -89,7 +89,7 @@ struct CompanionTranscriptRow: View {
                         .lineLimit(1)
                     Spacer(minLength: 0)
                     if let stats = presentation.stats {
-                        DiffStatsText(stats)
+                        DiffStatsText(stats: stats)
                     }
                 }
                 .font(CompanionType.subheadline)
