@@ -16,7 +16,8 @@ public enum MacHostUpdates {
         let info = bundle.infoDictionary ?? [:]
         let channel = info["NativeChannel"] as? String ?? (location.channel.isEmpty ? "stable" : location.channel)
         let current = HostUpdateStatus.Build(
-            version: info["CFBundleShortVersionString"] as? String ?? "0", build: info["CFBundleVersion"] as? String ?? "0",
+            version: info["CFBundleShortVersionString"] as? String ?? "0",
+            build: info["CFBundleVersion"] as? String ?? "0",
             channel: channel)
         if location.isDevelopment {
             return .none(current: current, reason: "Updates are off in development builds.")
@@ -59,7 +60,8 @@ public enum MacHostUpdates {
     private static func openToInstall(_ app: URL) async throws {
         let result = try await LocalCommandRunner().run(
             Command(
-                "/usr/bin/open", ["-g", "-j", app.path(percentEncoded: false), "--args", "-NativeInstallUpdateAndQuit", "YES"],
+                "/usr/bin/open",
+                ["-g", "-j", app.path(percentEncoded: false), "--args", "-NativeInstallUpdateAndQuit", "YES"],
                 environment: ProcessInfo.processInfo.environment, timeout: .seconds(30)))
         guard result.succeeded else { throw CommandError.unavailable("Couldn't open Native: \(result.errorOutput)") }
     }

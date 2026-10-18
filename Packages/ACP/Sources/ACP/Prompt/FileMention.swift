@@ -47,7 +47,8 @@ extension PromptAttachment {
                     candidate.hasPrefix("/")
                     ? URL(filePath: String(candidate)) : root.appending(path: String(candidate))
                 if FileManager.default.fileExists(atPath: url.path(percentEncoded: false)) {
-                    return PromptAttachment(url: url.standardizedFileURL, content: .reference, byteCount: nil, origin: .mentioned)
+                    return PromptAttachment(
+                        url: url.standardizedFileURL, content: .reference, byteCount: nil, origin: .mentioned)
                 }
                 guard let last = candidate.last, ".,;:!?)]}'\"".contains(last) else { return nil }
                 candidate = candidate.dropLast()

@@ -38,10 +38,30 @@ let location =
 
 switch command {
 case "serve":
-    let info = PeerInfo(name: "native-host", version: "1.0", build: "dev")
+    // A release binary carries its version in an embedded Info.plist (scripts/release/host.sh).
+    let bundleInfo = Bundle.main.infoDictionary ?? [:]
+    let info = PeerInfo(
+        name: "native-host", version: bundleInfo["CFBundleShortVersionString"] as? String ?? "0",
+        build: bundleInfo["CFBundleVersion"] as? String ?? "dev")
     let configuration = MacHost.configuration(
         location: location, info: info, inheritEnvironment: arguments.contains("--inherit-environment"),
         pluginsDirectory: option("--plugins", in: arguments).map { URL(filePath: $0, directoryHint: .isDirectory) })
+    // A standalone host just updated gets two launches to come up; one that crashed is rolled back.
+    let standalone = configuration.updates.selfUpdater as? StandaloneHostUpdater
+    var onTrial = false
+    if let standalone {
+        do {
+            switch try standalone.installer.startupCheck(runningBuild: info.build) {
+            case .rolledBack: exit(HostCore.ExitStatus.restart)
+            case .trial: onTrial = true
+            case .normal: break
+            }
+        } catch {
+            FileHandle.standardError.write(
+                Data("native-host: update check failed: \(error.localizedDescription)\n".utf8))
+        }
+    }
+    let confirmTrial = onTrial
     Task { @HostActor in
         do {
             _ = try HostMain.start(configuration, verifier: CodeSignatureVerifier())
@@ -51,6 +71,9 @@ case "serve":
             fail(error.localizedDescription)
         } catch {
             fail(error.localizedDescription)
+        }
+        if confirmTrial, let standalone, await !standalone.confirmWhenServing(at: location) {
+            fail("the new build didn't come up within a minute", status: 1)
         }
     }
     dispatchMain()

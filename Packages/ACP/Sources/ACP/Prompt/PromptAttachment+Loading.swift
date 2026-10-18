@@ -54,7 +54,9 @@ extension PromptAttachment {
 
     /// `existing` with `attachment` added, or as it is when that file is already there. Throws when
     /// the message would pass `Limits`.
-    public static func adding(_ attachment: PromptAttachment, to existing: [PromptAttachment]) throws -> [PromptAttachment] {
+    public static func adding(
+        _ attachment: PromptAttachment, to existing: [PromptAttachment]
+    ) throws -> [PromptAttachment] {
         guard !existing.contains(where: { $0.url.standardizedFileURL == attachment.url.standardizedFileURL }) else {
             return existing
         }
@@ -91,7 +93,8 @@ extension PromptAttachment {
     /// Saves pasted image data to a file of its own, so it has a path like any attachment, then
     /// loads it.
     public static func pasted(_ data: Data, type: UTType) throws -> PromptAttachment {
-        let folder = URL.temporaryDirectory.appending(path: "Native Attachments/\(UUID().uuidString)", directoryHint: .isDirectory)
+        let folder = URL.temporaryDirectory.appending(
+            path: "Native Attachments/\(UUID().uuidString)", directoryHint: .isDirectory)
         let url = folder.appending(path: "Pasted Image.\(type.preferredFilenameExtension ?? "png")")
         do {
             try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
@@ -142,7 +145,9 @@ extension PromptAttachment {
             return (png, "image/png")
         }
         for quality in [0.85, 0.7, 0.5] {
-            if let jpeg = encode(flattened(image) ?? image, as: .jpeg, quality: quality), jpeg.count <= Limits.imageBytes {
+            if let jpeg = encode(flattened(image) ?? image, as: .jpeg, quality: quality),
+                jpeg.count <= Limits.imageBytes
+            {
                 return (jpeg, "image/jpeg")
             }
         }

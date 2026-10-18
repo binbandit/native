@@ -115,6 +115,21 @@ struct SessionStateTests {
         #expect(state.pendingPermissions.isEmpty)
     }
 
+    @Test func clientRaisedApprovalAddsItsOwnToolCall() {
+        // Native asking about a call a script makes for the session: no agent request behind it.
+        var state = SessionState()
+        var call = ToolCallUpdate(toolCallId: "native-script-1", title: "rea · rename", status: .pending)
+        call.meta = .object(["native": .object(["script": .object(["line": .number(3)])])])
+        let allow = PermissionOption(optionId: "once", name: "Allow Once", kind: .allowOnce)
+        state.requestPermission(
+            RequestPermissionRequest(sessionId: SessionID("s"), toolCall: call, options: [allow]),
+            id: .string("native-script-approval"))
+
+        #expect(state.toolCall("native-script-1")?.title == "rea · rename")
+        #expect(state.toolCall("native-script-1")?.meta?["native"]?["script"]?["line"] == .number(3))
+        #expect(state.resolvePermission(toolCallID: "native-script-1")?.options == [allow])
+    }
+
     @Test func cancelledTurnClosesOpenToolCalls() throws {
         var state = folded(
             try [Wire.readToolCall, Wire.readCompletedUpdate, Wire.writeToolCall, Wire.bashToolCall].map(Wire.update))
@@ -189,5 +204,35 @@ private extension SessionState {
             guard case .toolCall(let call) = item, call.id == id else { return nil }
             return call
         }.first
+    }
+}
+
+struct SessionStateAttachmentTests {
+    @Test func liveMessagesKeepWhatWasAttached() {
+        var state = SessionState()
+        let shot = MessageAttachment(name: "shot.png", url: URL(filePath: "/tmp/shot.png"), imageData: Data([1]))
+        state.appendUserMessage("What's this?", attachments: [shot])
+        guard case .message(let message) = state.items.last else {
+            Issue.record("no message")
+            return
+        }
+        #expect(message.attachments.map(\.name) == ["shot.png"])
+        #expect(message.attachments.first?.isImage == true)
+    }
+
+    /// A replayed prompt's image and file show with it rather than as text.
+    @Test func replayedBlocksBecomeAttachments() {
+        var state = SessionState()
+        state.apply(.userMessageChunk(ContentChunk(content: .text("Look at these"))))
+        state.apply(.userMessageChunk(ContentChunk(content: .image(data: "AQID", mimeType: "image/png"))))
+        state.apply(.userMessageChunk(ContentChunk(content: .resourceLink(uri: "file:///repo/a.swift", name: "a.swift"))))
+        #expect(state.items.count == 1)
+        guard case .message(let message) = state.items.last else {
+            Issue.record("no message")
+            return
+        }
+        #expect(message.text == "Look at these")
+        #expect(message.attachments.map(\.name) == ["Image", "a.swift"])
+        #expect(message.attachments.first?.imageData == Data([1, 2, 3]))
     }
 }
