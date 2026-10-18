@@ -161,8 +161,16 @@ Measured with `SEARCH_BENCH=1 swift test -c release --filter benchmark` in `Pack
 | phrase | < 1 ms |
 | word plus `agent:` filter | 14 ms |
 
-Queries stay well under the 50 ms budget. Indexing is the heavy part and runs at background
-priority in batches; see the real-history numbers in the PR that landed this.
+On real history (this Mac's, read-only into a throwaway index with
+`SEARCH_REAL_HISTORY=1 swift test -c release --filter RealHistoryCheck`, which prints counts and
+timings only): Claude Code 379 files, 870 MB, read in 6 s (235 conversations; the other 144 files
+hold only slash commands); Codex 112 rollouts, 581 MB, read in 3 s. 344 sessions became 26,700
+documents in a 55 MB index. A known phrase, a file path and a command each found their task in
+0–2 ms; the broadest queries (`agent:codex test`, 34 tasks) took 15 ms.
+
+Indexing is the heavy part, so it runs at background priority, off the main thread, in batches,
+and stops on battery. The history files are memory-mapped and most lines are skipped by a byte
+search before any JSON is parsed, which is why 1.4 GB reads in under ten seconds.
 
 ## Not yet
 

@@ -56,7 +56,7 @@ struct PullRequestPatchView: View {
         }
         .codeTextStyle(.compact)
         .foregroundStyle(colors.isNative ? Color.dsTextPrimary : colors.color(.foreground))
-        .onModifierKeysChanged(mask: .shift) { _, keys in isShiftDown = keys.contains(.shift) }
+        .trackingShift($isShiftDown)
         .task(id: path) { await highlight() }
     }
 
@@ -123,5 +123,17 @@ private struct PullRequestHunkHeader: View {
             .padding(.vertical, DS.Space.xs)
             .frame(maxWidth: .infinity, alignment: .leading)
             .background(.dsHover)
+    }
+}
+
+extension View {
+    /// Follows the Shift key, for shift-click ranges. iPadOS has no modifier tracking here; there,
+    /// "Extend Comment to Here" in a line's menu does the same.
+    fileprivate func trackingShift(_ isDown: Binding<Bool>) -> some View {
+        #if os(macOS)
+        onModifierKeysChanged(mask: .shift) { _, keys in isDown.wrappedValue = keys.contains(.shift) }
+        #else
+        self
+        #endif
     }
 }

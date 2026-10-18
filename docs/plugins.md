@@ -288,13 +288,16 @@ decorative window, then the user's order decides, so two editions are never blen
 
 Calendar kinds this version resolves:
 
-- `fixed`: the same civil dates every year. `start` and optional `end` as `MM-dd`; an `end` before
-  `start` crosses New Year (`"12-26"` to `"01-01"`). `02-29` occurs only in leap years.
+| `kind` | Fields | Example |
+| --- | --- | --- |
+| `fixed` | `start`, optional `end` (`MM-dd`). An `end` before `start` crosses New Year; `02-29` occurs only in leap years. | `{"kind": "fixed", "start": "12-26", "end": "01-01"}` |
+| `nth-weekday` | `month`, `weekday` (`"monday"`…), `ordinal` (1–5, or -1 for the last), optional `length` in days | US Thanksgiving: `{"kind": "nth-weekday", "month": 11, "weekday": "thursday", "ordinal": 4}` |
+| `day-of-year` | `day`, optional `length` | Programmers' Day: `{"kind": "day-of-year", "day": 256}` |
+| `western-easter`, `orthodox-pascha` | optional `offset` from Easter Sunday in days, `length` | Mardi Gras: `{"kind": "western-easter", "offset": -47}` |
+| `table` | `occurrences`: `[{"start": "yyyy-MM-dd", "end": "yyyy-MM-dd"}]`, published annual dates | Lunisolar, Hebrew and Islamic dates from a named authority; cite it in `provenance` and mark moon-sighting dates `provisional`. After the last year, nothing shows and the catalogue says the dates have ended. |
 
-Other kinds (`western-easter`, `orthodox-pascha`, `hebrew`, `islamic`, `chinese-lunisolar`,
-`table`, ...) are accepted and listed, with a note that Native can't work out their dates yet; they
-never change anything until a version that resolves them. Days are always local calendar days,
-never multiples of 24 hours, so daylight saving and travel don't shift them.
+Any other `kind` is accepted and listed as coming soon, never applied. Days are always local
+calendar days, never multiples of 24 hours, so daylight saving and travel don't shift them.
 
 Choices stay out of the manifest: which celebrations are on, which surfaces they change, the window,
 the overlap order and skips are the user's, and updating a plugin never changes them. Turning a

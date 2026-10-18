@@ -1,85 +1,75 @@
-# Celebration artwork: what the icon work delivers
+# Celebration artwork: what the icon work delivers, and how it ships
 
 The Celebrations plugin (`docs/celebrations.md`, `native/Celebrations/`) applies a celebration's app
-icon only when its icon set is complete: four build channels, each in light and dark. Until then the
-catalogue shows "Artwork forthcoming" and only Home changes. This file is the hand-off from the
-plugin to the icon work: the files each edition needs, where they go, and how an edition is switched
-on once they exist. The plugin never creates or edits icon artwork.
+icon only when its icon set is complete: four build channels (Regular `stable`, `beta`, `nightly`,
+`dev`), each in light and dark. Until then the icon stays as it is and only Home can change. This is
+the hand-off between the icon work, which owns the artwork, and the plugin, which never creates or
+edits it.
 
-## Día de Muertos (needed now)
+## What the icon work delivers
 
-Icon set `native.dia-de-muertos`, used by the celebration `native.dia-de-muertos` (1 and 2
-November, optional 28 October to 3 November). Its Home edition already ships
-(`native/DesignSystem/Brand/NativeMuertosMark.swift`); the icon is the missing half.
+Per edition, in `design/app-icon/celebrations/<edition>/` (the edition is the celebration id
+without `native.`, such as `valentines-day`):
 
-### Sources
+- `{stable,beta,nightly,dev}.icon`: the Icon Composer sources.
+- `{stable,beta,nightly,dev}-{light,dark}.png`: eight flattened renders, 1024×1024 sRGB RGBA, with
+  the macOS icon shape, transparent margins and its own shadow, like the Halloween images. These are
+  what the Mac applies at runtime (`NSApplication.applicationIconImage`), so they must look right at
+  Dock sizes (16 to 128 points) in both appearances.
+- Clear and Tinted previews for review only: runtime images can't carry those appearances.
 
-Icon Composer documents, one per channel, beside the drafts already in progress:
+Every channel keeps its cue: Nightly's large, high-contrast stars uncovered, Beta's β, Dev's code
+and blueprint character. Artwork is original and reviewed for the celebration's meaning.
 
+## How it ships
+
+Bundling every edition would add over 100 MB, so only Halloween's icons are compiled into the app.
+The rest ship in two parts, both built by `scripts/release/celebration-assets.sh` from the folder
+above:
+
+1. **Thumbnails, bundled.** `celebration-assets.sh thumbnails` renders each edition's Regular light
+   and dark icon at 128 px into `native/Celebrations/CelebrationThumbnails.xcassets`
+   (`CelebrationThumbnail-<edition>-<light|dark>`), about 1.5 MB in all, so the catalogue previews
+   work offline. Re-run it when artwork changes and commit the result.
+2. **Packs, downloaded.** `celebration-assets.sh pack <dir>` writes `celebration-<edition>.json` (the
+   eight PNGs) per edition, the index `celebration-assets.json` (each pack's SHA-256 and size) and
+   `celebration-assets.json.sig`, the index's Ed25519 signature made with the update key. The release
+   workflow uploads them beside the app. Native fetches an edition's pack from the latest release
+   when someone chooses it (or a week before its dates, if it was chosen earlier), checks the index
+   signature with `SUPublicEDKey` and the pack against the index, and caches it in Application
+   Support per bundle id. Offline or failed downloads keep the base icon; the chooser says
+   "Downloads when you're online" or shows the error with Retry.
+
+An edition is in a pack once its folder has all eight PNGs; the script names any that are
+incomplete. Its icon set in `FirstPartyCelebrations` uses `icons: .pack("<edition>")` and its
+thumbnail; the catalogue entry exists already for every edition in `docs/celebrations.md`.
+
+## Día de Muertos (waiting on a choice)
+
+Two drafts exist: `dia-de-muertos` (painted floral links) and `dia-de-muertos-sugar-skull`. Brayden
+chooses, with cultural review; both are in the script's `PENDING` list until then. To switch it on:
+
+1. Keep the chosen draft as `design/app-icon/celebrations/dia-de-muertos/` and remove both names
+   from `PENDING` in `scripts/release/celebration-assets.sh` (drop the unchosen folder or leave it
+   pending).
+2. Re-run `celebration-assets.sh thumbnails`.
+3. In `FirstPartyCelebrations.diaDeMuertosIcons`, replace `icons: .forthcoming` with
+   `icons: .pack("dia-de-muertos")` and add its `thumbnail`, as the catalogue editions do.
+4. In the AppAppearance tests, expect `muertos.appIcon == .downloadable(.notDownloaded)` in
+   `firstPartyCatalogueIsValid`; run `swift test`.
+5. Check a release-built pack, or a local one (below), with
+   `scripts/dev/run-isolated.sh celebrations -- -nativeDate 2026-11-01`.
+
+The Home edition (`NativeMuertosMark`) ships already and can take the chosen icon's palette.
+
+## Checking packs locally
+
+Never with the real key. Make a throwaway Ed25519 key, sign a local pack with it, serve it, and point
+a Debug build at it (only Debug reads these overrides):
+
+```sh
+CELEBRATION_ASSETS_SIGN=/path/to/throwaway-signer scripts/release/celebration-assets.sh pack /tmp/packs
+(cd /tmp/packs && python3 -m http.server 8765)
+scripts/dev/run-isolated.sh celebrations -- -celebrationAssetsURL http://127.0.0.1:8765/ \
+    -celebrationAssetsKey <throwaway public key, base64>
 ```
-design/app-icon/celebrations/dia-de-muertos/stable.icon
-design/app-icon/celebrations/dia-de-muertos/beta.icon
-design/app-icon/celebrations/dia-de-muertos/nightly.icon
-design/app-icon/celebrations/dia-de-muertos/dev.icon
-```
-
-### Compiled images (eight)
-
-The Mac applies a celebration icon at runtime (`NSApplication.applicationIconImage`), so each
-channel and appearance is one flattened image in the asset catalog, named exactly like Halloween's:
-
-| Channel | Light | Dark |
-| --- | --- | --- |
-| Regular (`stable`) | `AppIcon-dia-de-muertos-stable-light` | `AppIcon-dia-de-muertos-stable-dark` |
-| Beta (`beta`) | `AppIcon-dia-de-muertos-beta-light` | `AppIcon-dia-de-muertos-beta-dark` |
-| Nightly (`nightly`) | `AppIcon-dia-de-muertos-nightly-light` | `AppIcon-dia-de-muertos-nightly-dark` |
-| Dev (`dev`) | `AppIcon-dia-de-muertos-dev-light` | `AppIcon-dia-de-muertos-dev-dark` |
-
-Each is `native/Assets.xcassets/<name>.imageset/` holding `icon.png` and the same `Contents.json` as
-`AppIcon-halloween-stable-light.imageset` (one universal image). `icon.png` is 1024×1024, sRGB, RGBA,
-rendered from the `.icon` document with the macOS icon shape, its margins transparent and its own
-shadow, exactly as the Halloween images are, so the Dock shows it at the same size as the compiled
-icon.
-
-### What each must keep
-
-- The Native interlock recognisable at Dock sizes; check 16, 32, 64 and 128 points in light and dark
-  (a `dock-sizes.png` preview like Halloween's).
-- Regular: the warm celebration palette. Beta: its β cue. Nightly: large, high-contrast stars that
-  no marigold, paper edge or flame covers. Dev: its code and blueprint character.
-- Light and dark as real pairs, not one image darkened. Clear and Tinted can't be carried by runtime
-  images (`PlatformAppIcon`); keep their previews for review, but only the eight images above ship.
-- Original artwork, reviewed for the celebration's meaning: remembrance and affection, cempasúchil,
-  candlelight and papel picado. Two drafts exist (`dia-de-muertos`, `dia-de-muertos-sugar-skull`);
-  choosing one is Brayden's call with that review, and the Home edition can take the chosen icon's
-  palette afterwards (`NativeMuertosEdition`).
-
-### Switching the icon on
-
-When all eight images are in the asset catalog, in one change:
-
-1. In `Packages/AppAppearance/Sources/AppAppearance/Celebrations/FirstPartyCelebrations.swift`,
-   replace `icons: .forthcoming` in `diaDeMuertosIcons` with the channel images, as Halloween does:
-
-   ```swift
-   icons: .channels(
-       Dictionary(
-           uniqueKeysWithValues: AppIconVariant.allCases.map { variant in
-               let name = "AppIcon-dia-de-muertos-\(variant.rawValue)"
-               return (variant, IconSetImagePair(light: .asset("\(name)-light"), dark: .asset("\(name)-dark")))
-           })),
-   ```
-
-2. In `Packages/AppAppearance/Tests/AppAppearanceTests`, expect `muertos.appIcon == .ready` in
-   `firstPartyCatalogueIsValid`, and in `halloweenAndMuertosOverlap` expect the icon to follow
-   Día de Muertos on 1 and 2 November (`appliesToAppIcon == true`). Run `swift test`.
-3. Check the running app: `scripts/dev/run-isolated.sh celebrations -- -nativeDate 2026-11-01` with
-   Halloween and Día de Muertos on shows the Día de Muertos icon in the Dock and on Home; a build
-   missing any one image keeps the icon as it was and Settings ▸ Celebrations names the missing file.
-
-## Every later edition
-
-The same shape, by the edition's slug (the celebration id without `native.`): sources in
-`design/app-icon/celebrations/<slug>/{stable,beta,nightly,dev}.icon`, images
-`AppIcon-<slug>-<channel>-<light|dark>`, and an icon set `native.<slug>` in `FirstPartyCelebrations`.
-An edition without all eight images stays "forthcoming" and never applies its icon.
