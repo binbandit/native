@@ -35,8 +35,20 @@ extension AppModel {
         do {
             // The project's own folder, and the folders Native made for its tasks (worktrees).
             let folders = [project.path] + (await taskWorkspaces?.taskFolders(of: project) ?? []).map(\.folderPath)
+            var positions: [SessionID: Int] = [:]
             for folder in Set(folders).sorted() {
-                fetched += try await SessionCatalog.fetch(cwd: folder, from: connection)
+                for info in try await SessionCatalog.fetch(cwd: folder, from: connection) {
+                    // Some agents list a repository's sessions from each of its worktrees; keep one
+                    // copy, the one fetched for the session's own folder.
+                    if let position = positions[info.sessionId] {
+                        if info.cwd == folder {
+                            fetched[position] = info
+                        }
+                    } else {
+                        positions[info.sessionId] = fetched.count
+                        fetched.append(info)
+                    }
+                }
             }
         } catch {
             if !runtime.noteSignInRequired(by: error) {

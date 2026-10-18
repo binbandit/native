@@ -39,9 +39,7 @@ extension MCPServersPlugin {
         _ = NotificationCenter.default.addObserver(
             forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main
         ) { _ in
-            MainActor.assumeIsolated {
-                Task { await library.readConfigurationsIfStale() }
-            }
+            Task { @MainActor in await library.readConfigurationsIfStale() }
         }
         #endif
     }
