@@ -55,7 +55,6 @@ struct PullRequestDiffBlock: View {
                 .clipped()
         }
         .background(alignment: .topLeading) { tints }
-        .modifier(PullRequestExperimentDrawingGroup())
         .onContinuousHover(coordinateSpace: .local) { phase in
             switch phase {
             case .active(let location): hovered = index(at: location.y)
@@ -72,6 +71,13 @@ struct PullRequestDiffBlock: View {
         .accessibilityElement(children: .contain)
         .accessibilityAction(named: "Comment on These Lines") {
             if let last = range.last, let anchor = anchor(last) { model.beginComment(at: anchor) }
+        }
+        .accessibilityActions {
+            if !text.cutOff.isEmpty {
+                Button("Show Whole Lines") {
+                    for index in text.cutOff { model.expandLine(path, hunk, range.lowerBound + index) }
+                }
+            }
         }
     }
 
@@ -167,29 +173,13 @@ private struct PullRequestDiffBlockCode: View, Equatable {
     let key: String
 
     var body: some View {
-        if UserDefaults.standard.bool(forKey: "gitHubExperimentNoSelection") {
-            Text(text.code)
-                .fixedSize()
-                .accessibilityRepresentation { Text(verbatim: text.plain) }
-        } else {
-            Text(text.code)
-                .fixedSize()
-                .textSelection(.enabled)
-                .accessibilityRepresentation { Text(verbatim: text.plain) }
-        }
+        Text(text.code)
+            .fixedSize()
+            .textSelection(.enabled)
+            .accessibilityRepresentation { Text(verbatim: text.plain) }
     }
 
     nonisolated static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.key == rhs.key
-    }
-}
-
-private struct PullRequestExperimentDrawingGroup: ViewModifier {
-    func body(content: Content) -> some View {
-        if UserDefaults.standard.bool(forKey: "gitHubExperimentDrawingGroup") {
-            content.drawingGroup()
-        } else {
-            content
-        }
     }
 }
