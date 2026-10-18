@@ -45,6 +45,8 @@ struct KeyboardShortcutsView: View {
                     header("Attachments")
                     row("Attach files", ["⌘U"])
                     row("Paste files or an image", ["⌘V"])
+                    row("Remove the last file", ["⌫"], note: "With nothing typed")
+                    row("Put back a removed file", ["⌘Z"])
                 }
             }
             HStack {

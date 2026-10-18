@@ -34,7 +34,7 @@ private struct SettingsSwitchBody: View {
             configuration.isOn.toggle()
         } label: {
             Capsule()
-                .fill(configuration.isOn ? Color.dsTextPrimary : Color.dsBorder)
+                .fill(configuration.isOn ? Color.dsTextPrimary : Color.dsSwitchOff)
                 .frame(width: SettingsMetrics.switchSize.width, height: SettingsMetrics.switchSize.height)
                 .overlay(alignment: configuration.isOn ? .trailing : .leading) {
                     Circle()

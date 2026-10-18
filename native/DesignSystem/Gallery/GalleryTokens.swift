@@ -16,7 +16,7 @@ struct GalleryColors: View {
             "Borders",
             [
                 ("dsSeparator", .dsSeparator), ("dsBorder", .dsBorder), ("dsBorderHover", .dsBorderHover),
-                ("dsBorderStrong", .dsBorderStrong), ("dsBorderInner", .dsBorderInner),
+                ("dsBorderStrong", .dsBorderStrong), ("dsBorderInner", .dsBorderInner), ("dsSwitchOff", .dsSwitchOff),
             ]
         ),
         (

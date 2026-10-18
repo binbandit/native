@@ -115,14 +115,18 @@ recently mentioned files first), narrowing as you type. The chosen file goes int
 Files and images go out with the message as chips above the text: picked with the "+" chip or
 ⌘U, pasted, or dropped on the composer or the transcript. Images go to agents that take them
 (scaled to fit 2048 pixels); small text files are embedded for agents that take embedded context;
-anything else goes as its path, and the composer says so when an agent will get a path instead of
-an image.
+anything else goes as its path. A picture that will reach the agent as a path (the agent takes no
+images, or it's over 50 MB) says so on its chip before anything is sent. A message carries up to 20
+files; a file moved or deleted before sending is marked on its chip and holds the message.
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
 | ⌘U | Attach files | File | `composer.attachFiles` |
 | ⌘V | Paste copied files or an image as attachments (text pastes as text) | | |
 | Space or Return on a chip | Open it in Quick Look | | |
+| Delete on a chip | Remove it from the message | | |
+| Delete in an empty draft | Remove the last file (a held key doesn't) | | |
+| ⌘Z | Put back a removed file | Edit | |
 
 ## Permission requests
 

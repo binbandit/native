@@ -63,6 +63,9 @@ nonisolated extension ShapeStyle where Self == Color {
     public static var dsBorderStrong: Color { DSPalette.borderStrong }
     /// Outline of keyboard hints and unlit level bars (the reference app `border/inner`).
     public static var dsBorderInner: Color { DSPalette.borderInner }
+    /// The track of a switch that's off: at least 3:1 against the background and the surface in
+    /// every appearance and tone (WCAG's contrast for controls), so an off switch still reads as one.
+    public static var dsSwitchOff: Color { DSPalette.switchOff }
 
     // MARK: Text
 
@@ -128,16 +131,27 @@ nonisolated private enum DSPalette {
     static let overlay = toned(dynamic("overlay", light: 0xFFFFFF, dark: 0x171717), wool: 0xFBF9F5)
     static let sidebarSolid = toned(dynamic("sidebarSolid", light: 0xF0F0F0, dark: 0x1F1F1F), wool: 0xEEEAE2)
 
-    static let hover = toned(dynamic("hover", light: 0x000000, lightAlpha: 0.045, dark: 0xFFFFFF, darkAlpha: 0.06), wool: 0x3B2B14, woolAlpha: 0.045)
-    static let selected = toned(dynamic("selected", light: 0x000000, lightAlpha: 0.08, dark: 0xFFFFFF, darkAlpha: 0.1), wool: 0x3B2B14, woolAlpha: 0.08)
-    static let pressed = toned(dynamic("pressed", light: 0x000000, lightAlpha: 0.11, dark: 0xFFFFFF, darkAlpha: 0.13), wool: 0x3B2B14, woolAlpha: 0.11)
-    static let fill = toned(dynamic("fill", light: 0x000000, lightAlpha: 0.07, dark: 0xFFFFFF, darkAlpha: 0.07), wool: 0x3B2B14, woolAlpha: 0.07)
+    static let hover = toned(
+        dynamic("hover", light: 0x000000, lightAlpha: 0.045, dark: 0xFFFFFF, darkAlpha: 0.06), wool: 0x3B2B14,
+        woolAlpha: 0.045)
+    static let selected = toned(
+        dynamic("selected", light: 0x000000, lightAlpha: 0.08, dark: 0xFFFFFF, darkAlpha: 0.1), wool: 0x3B2B14,
+        woolAlpha: 0.08)
+    static let pressed = toned(
+        dynamic("pressed", light: 0x000000, lightAlpha: 0.11, dark: 0xFFFFFF, darkAlpha: 0.13), wool: 0x3B2B14,
+        woolAlpha: 0.11)
+    static let fill = toned(
+        dynamic("fill", light: 0x000000, lightAlpha: 0.07, dark: 0xFFFFFF, darkAlpha: 0.07), wool: 0x3B2B14,
+        woolAlpha: 0.07)
 
     static let separator = toned(dynamic("separator", light: 0xE8E8E8, dark: 0x2C2C2C), wool: 0xE6E1D8)
     static let border = toned(dynamic("border", light: 0xCBCBCB, dark: 0x3E3E3E), wool: 0xCDC7BC)
     static let borderHover = toned(dynamic("borderHover", light: 0x949494, dark: 0x4F4F4F), wool: 0x979084)
     static let borderStrong = toned(dynamic("borderStrong", light: 0x767676, dark: 0x616161), wool: 0x797266)
     static let borderInner = toned(dynamic("borderInner", light: 0xB2B2B2, dark: 0x2F2F2F), wool: 0xB4AEA3)
+    // 3.3:1 on Paper's background, 3.4:1 on dark's, 3.5:1 on Wool's; the thumb (`surface`) keeps the
+    // same contrast against it.
+    static let switchOff = toned(dynamic("switchOff", light: 0x8A8A8A, dark: 0x6B6B6B), wool: 0x878177)
 
     static let textPrimary = dynamic("textPrimary", light: 0x181818, dark: 0xFFFFFF)
     static let textSecondary = toned(dynamic("textSecondary", light: 0x505050, dark: 0xAFAFAF), wool: 0x4B4B4B)
