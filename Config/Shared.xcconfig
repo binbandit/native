@@ -18,6 +18,11 @@ NATIVE_BUNDLE_IDENTIFIER = $(NATIVE_BUNDLE_IDENTIFIER_BASE)$(NATIVE_BUNDLE_IDENT
 NATIVE_PRODUCT_NAME = Native
 NATIVE_APP_ICON_NAME = AppIcon
 
+// The signing team for every target and configuration: the app's embedded host helper must be
+// signed with the app's certificate (Xcode's ValidateEmbeddedBinary), so the team is set only here.
+// scripts/release/release.sh overrides it from NATIVE_TEAM_ID or its signing identity.
+DEVELOPMENT_TEAM = 43TJNHX42U
+
 // TODO(release): Sparkle's EdDSA public key, as printed by `generate_keys` (docs/releasing.md,
 // "One-time setup"). One key signs every channel. Empty means updates aren't set up.
 NATIVE_SPARKLE_PUBLIC_KEY =
