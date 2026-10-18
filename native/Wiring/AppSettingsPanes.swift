@@ -7,7 +7,7 @@ enum AppSettingsPanes {
     static func all(plugins: PluginRegistry, terminals: TerminalStore, keepAwake: KeepAwakeController) -> [SettingsPane]
     {
         [
-            .labs, .git, .mcpServers(registry: plugins), .skills(registry: plugins), .terminal(terminals.preferences),
+            .labs, .git, .mcpServers(registry: plugins), .skills(registry: plugins), .terminal(terminals),
             .sounds(), .keepAwake(keepAwake), .updates, .usage(registry: plugins), .notifications,
         ]
     }

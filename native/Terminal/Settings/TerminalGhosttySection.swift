@@ -6,7 +6,13 @@ import Terminal
 struct TerminalGhosttySection: View {
     let store: TerminalStore
 
-    @State private var pendingImport: TerminalImport?
+    /// The import being previewed.
+    @State private var pendingImport: PendingImport?
+
+    private struct PendingImport: Identifiable {
+        let id = UUID()
+        let value: TerminalImport
+    }
 
     var body: some View {
         @Bindable var preferences = store.preferences
@@ -30,7 +36,7 @@ struct TerminalGhosttySection: View {
                         "Copy your Ghostty font, colors, cursor and scrollback into Native's settings once, "
                             + "without a live link. You'll see what changes first.")
                 ) {
-                    Button("Import…") { pendingImport = store.readGhosttyImport() }
+                    Button("Import…") { pendingImport = PendingImport(value: store.readGhosttyImport()) }
                         .buttonStyle(.ds(.secondary, size: .large))
                         .disabled(usesGhostty)
                 }
@@ -47,12 +53,12 @@ struct TerminalGhosttySection: View {
                 }
             }
         }
-        .sheet(item: $pendingImport) { ghosttyImport in
+        .sheet(item: $pendingImport) { pending in
             TerminalImportSheet(
-                ghosttyImport: ghosttyImport,
+                ghosttyImport: pending.value,
                 current: preferences.settings,
                 apply: {
-                    store.applyImport(ghosttyImport)
+                    store.applyImport(pending.value)
                     pendingImport = nil
                 },
                 cancel: { pendingImport = nil }
@@ -74,7 +80,7 @@ struct TerminalGhosttySection: View {
         case .ghosttyNotFound(let searched):
             NoticeBanner(
                 tone: .info, title: "No Ghostty config found",
-                detail: "Native looks in \(searched.map(\.deletingLastPathComponent).uniqued.map(\.abbreviatedPath).joined(separator: " and ")). "
+                detail: "Native looks in \(searched.map { $0.deletingLastPathComponent() }.uniqued.map(\.abbreviatedPath).joined(separator: " and ")). "
                     + "Its own settings apply until you create one there; you don't need Ghostty installed.",
                 footnote: themesNote
             ) {
@@ -115,10 +121,6 @@ struct TerminalGhosttySection: View {
         let themes = GhosttyConfigLocations.current.userThemes.abbreviatedPath
         return "Ghostty isn't installed, so theme names are found only in \(themes)."
     }
-}
-
-extension TerminalImport: @retroactive Identifiable {
-    public var id: Int { hashValue }
 }
 
 extension Sequence where Element: Hashable {
