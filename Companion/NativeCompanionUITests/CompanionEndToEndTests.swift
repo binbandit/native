@@ -30,8 +30,10 @@ final class CompanionEndToEndTests: XCTestCase {
         // Someone clicks Pair on the Mac now.
         XCTAssertTrue(name.waitForExistence(timeout: 180), "the Mac confirmed")
         if let label = environment["COMPANION_HOST_LABEL"] {
+            // Pairing a host again keeps its old name in the field.
+            let current = name.value as? String ?? ""
             name.tap()
-            name.typeText(label)
+            name.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: current.count) + label)
         }
         app.buttons["pairingDone"].tap()
         XCTAssertTrue(app.navigationBars["Tasks"].waitForExistence(timeout: 10))

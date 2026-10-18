@@ -82,6 +82,12 @@ struct PairingProgressView: View {
             .buttonStyle(.ds(.primary, size: .large))
             .accessibilityIdentifier("pairingDone")
         }
+        // Pairing a host again keeps what this phone already calls it.
+        .onAppear {
+            guard let preferences = store.host(host.hostID)?.preferences else { return }
+            label = preferences.label ?? ""
+            themeID = preferences.themeID
+        }
     }
 
     private var logText: String {

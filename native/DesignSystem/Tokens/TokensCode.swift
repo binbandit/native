@@ -106,9 +106,9 @@ public struct HighlightedCode: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dsLightTone) private var lightTone
     @Environment(\.dsCodeThemes) private var codeThemes
-    /// The last highlighting, for the code and language it was made from; a streaming block keeps
-    /// its old colors only while they still describe its text.
-    @State private var highlighted: (code: String, language: CodeLanguage?, segments: [CodeSegment])?
+    /// The last highlighting, for the code it was made from; a streaming block keeps its old colors
+    /// only while they still describe its text.
+    @State private var highlighted: (code: String, segments: [CodeSegment])?
 
     /// - Parameter language: A Markdown fence's info string (`swift`, `ts`…), or nil for a file's
     ///   extension to decide via `CodeLanguage.forPath`; unknown languages draw plain.
@@ -123,12 +123,11 @@ public struct HighlightedCode: View {
     }
 
     public var body: some View {
-        let colors = DSCodeColors(
-            .code(colorScheme: colorScheme, lightTone: lightTone, themes: codeThemes), on: .sunken)
+        let colors = DSCodeColors(.code(colorScheme: colorScheme, lightTone: lightTone, themes: codeThemes), on: .sunken)
         // Plain text at once (or the cached colors), then the colors from a background thread.
         let segments =
-            highlighted.flatMap { $0.code == code && $0.language == language ? $0.segments : nil }
-            ?? CodeHighlightCache.shared.cached(code, language: language)
+            highlighted?.code == code
+            ? highlighted?.segments : CodeHighlightCache.shared.cached(code, language: language)
         Group {
             if let segments {
                 Text(colors.text(segments))
@@ -137,13 +136,10 @@ public struct HighlightedCode: View {
                     .foregroundStyle(colors.isNative ? Color.dsTextPrimary : colors.color(.foreground))
             }
         }
-        // Keyed by the language too: a block can keep its text while its fence's language changes.
-        .task(id: [code, language?.id]) {
-            // The state, not `segments` above: that may come from an older body, or from a cache
-            // entry since dropped, and a block left without its colors never asks again.
-            guard language != nil, highlighted?.code != code || highlighted?.language != language else { return }
+        .task(id: code) {
+            guard language != nil, segments == nil else { return }
             let result = await CodeHighlightCache.shared.highlight(code, language: language)
-            highlighted = (code, language, result)
+            highlighted = (code, result)
         }
     }
 }
@@ -151,9 +147,7 @@ public struct HighlightedCode: View {
 extension EnvironmentValues {
     /// Just what code colors depend on, so views read three values rather than the whole
     /// environment.
-    nonisolated static func code(
-        colorScheme: ColorScheme, lightTone: DSLightTone, themes: DSCodeThemes
-    )
+    nonisolated static func code(colorScheme: ColorScheme, lightTone: DSLightTone, themes: DSCodeThemes)
         -> EnvironmentValues
     {
         var environment = EnvironmentValues()
@@ -182,8 +176,7 @@ extension CodeColor {
             intent: .defaultIntent, options: nil)
         let components = srgb?.components ?? [0, 0, 0, 1]
         self.init(
-            red: channel(Float(components[0])),
-            green: channel(Float(components.count > 2 ? components[1] : components[0])),
+            red: channel(Float(components[0])), green: channel(Float(components.count > 2 ? components[1] : components[0])),
             blue: channel(Float(components.count > 2 ? components[2] : components[0])),
             alpha: channel(resolved.opacity))
     }
