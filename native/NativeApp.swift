@@ -136,7 +136,8 @@ struct NativeApp: App {
                     }
                     gitHub.askAgent = { [model, git, weak gitHub] prompt, destination in
                         guard let gitHub else { return }
-                        try await GitHubAgentWiring.ask(prompt, destination: destination, app: model, git: git, gitHub: gitHub)
+                        try await GitHubAgentWiring.ask(
+                            prompt, destination: destination, app: model, git: git, gitHub: gitHub)
                     }
                     gitHub.hasCurrentTask = { [model] in GitHubAgentWiring.currentTask(app: model) != nil }
                     await gitHub.keepFresh()

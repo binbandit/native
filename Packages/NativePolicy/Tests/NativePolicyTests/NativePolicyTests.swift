@@ -211,7 +211,8 @@ import Testing
         let profile = try #require(
             try PropertyListSerialization.propertyList(from: Data(contentsOf: url), format: nil) as? [String: Any])
         let payload = try #require((profile["PayloadContent"] as? [[String: Any]])?.first)
-        let policy = PolicyLoader.load(from: StaticPolicySource(managed: payload.filter { $0.key.hasPrefix(PolicyKey.prefix) }))
+        let managed = payload.filter { $0.key.hasPrefix(PolicyKey.prefix) }
+        let policy = PolicyLoader.load(from: StaticPolicySource(managed: managed))
         #expect(policy.diagnostics.isEmpty, "\(policy.diagnostics)")
         #expect(policy.managedKeys == Set(PolicyKey.allCases))
     }

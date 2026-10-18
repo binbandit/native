@@ -193,7 +193,7 @@ extension SessionModel {
                 // Already in the transcript, so it goes back without showing again.
                 queue.prepend(text, attachments: attachments, isEchoed: false)
                 scheduleRetry(after: delay)
-                state.appendNotice("\(agentName) couldn't be reached (\(error.localizedDescription.withoutTerminalEscapes)). Native kept your message and will try again in \(delay.components.seconds) seconds. Press ⌘. to stop.", isError: true)
+                state.appendNotice("\(agentName) couldn't be reached (\(error.localizedDescription.withoutTerminalEscapes)). Native kept your message and will try again in \(delay.components.seconds) seconds. Use Stop to cancel.", isError: true)
             } else {
                 // Agents pass their terminal-colored logs along in error messages.
                 let message = UsageLimitHit(error: error).map(\.message) ?? error.localizedDescription
