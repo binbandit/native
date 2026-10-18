@@ -94,7 +94,7 @@ extension TranscriptSearchCenter {
         }
     }
 
-    private func refreshStatistics() async {
+    func refreshStatistics() async {
         statistics = try? await index?.statistics()
     }
 }

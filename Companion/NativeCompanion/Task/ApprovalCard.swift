@@ -24,18 +24,12 @@ struct ApprovalCard: View {
                     .foregroundStyle(.dsAttention)
             }
             if let call {
-                let presentation = CompanionToolSummary(call)
-                Text(presentation.request)
+                let summary = CompanionToolSummary(call)
+                Text(summary.request)
                     .font(CompanionType.bodyMedium)
                     .foregroundStyle(.dsTextPrimary)
-                if let command = presentation.detail {
-                    Text(command)
-                        .font(CompanionType.mono)
-                        .foregroundStyle(.dsTextPrimary)
-                        .lineLimit(isCompact ? 2 : 6)
-                        .padding(DS.Space.md)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(.dsSurfaceSunken, in: .rect(cornerRadius: DS.Radius.card))
+                if let detail = summary.detail {
+                    ApprovalCommandBlock(text: detail, isCommand: summary.command != nil, isCompact: isCompact)
                 }
             }
             if let failure {
@@ -43,39 +37,52 @@ struct ApprovalCard: View {
                     .font(CompanionType.caption)
                     .foregroundStyle(.dsDanger)
             }
-            // Side by side when the agent's words fit, otherwise one full-width button each.
-            ViewThatFits(in: .horizontal) {
-                HStack(spacing: DS.Space.md) { optionButtons }
-                VStack(spacing: DS.Space.sm) { optionButtons }
+            VStack(spacing: DS.Space.sm) {
+                ForEach(rankedOptions, id: \.option.id) { ranked in
+                    optionButton(ranked.option, prominence: ranked.prominence)
+                }
             }
         }
         .padding(isCompact ? 0 : DS.Space.lg)
         .background(isCompact ? Color.clear : Color.dsSurfaceRaised, in: .rect(cornerRadius: DS.Radius.panel))
     }
 
-    private var optionButtons: some View {
-        ForEach(orderedOptions) { option in
-            Button {
-                answer(option)
-            } label: {
-                Text(sending == option.optionId ? "Sending…" : option.name)
-                    .font(CompanionType.subheadline)
-                    .lineLimit(2)
-                    .multilineTextAlignment(.center)
-                    .padding(.vertical, DS.Space.xs)
-                    .padding(.horizontal, DS.Space.md)
-                    .frame(maxWidth: .infinity, minHeight: DS.Size.minimumHitTarget)
+    private func optionButton(_ option: PermissionOption, prominence: ApprovalOptionProminence) -> some View {
+        Button {
+            answer(option)
+        } label: {
+            Group {
+                if sending == option.optionId {
+                    Text("Sending…")
+                } else {
+                    Text(ApprovalOptionLabel(option.name).attributed)
+                }
             }
-            .buttonStyle(.ds(option.kind.isAllow ? .primary : .secondary, size: .large))
-            .disabled(sending != nil)
-            .accessibilityIdentifier("permission-\(option.kind.rawValue)")
+            .font(prominence == .primary ? CompanionType.bodyMedium : CompanionType.callout)
+            .lineLimit(3)
+            .multilineTextAlignment(.center)
+            .fixedSize(horizontal: false, vertical: true)
+            .padding(.vertical, DS.Space.sm)
+            .frame(maxWidth: .infinity, minHeight: DS.Size.minimumHitTarget)
         }
+        .buttonStyle(.ds(prominence.variant, size: .large))
+        .disabled(sending != nil)
+        .accessibilityLabel(option.name)
+        .accessibilityIdentifier("permission-\(option.kind.rawValue)")
     }
 
-    /// Rejecting first, allowing last, so the thumb's natural spot is the agent's "allow once".
-    private var orderedOptions: [PermissionOption] {
-        let rank: [PermissionOption.Kind: Int] = [.rejectAlways: 0, .rejectOnce: 1, .allowAlways: 2, .allowOnce: 3]
-        return permission.options.sorted { (rank[$0.kind] ?? 0) < (rank[$1.kind] ?? 0) }
+    /// One primary answer (the agent's "allow once"), other allows as secondary, rejections as plain
+    /// text last: the weight says which answer is the usual one.
+    private var rankedOptions: [(option: PermissionOption, prominence: ApprovalOptionProminence)] {
+        let primary =
+            permission.options.first { $0.kind == .allowOnce } ?? permission.options.first { $0.kind.isAllow }
+        return permission.options
+            .map { option in
+                let prominence: ApprovalOptionProminence =
+                    option.id == primary?.id ? .primary : option.kind.isAllow ? .secondary : .tertiary
+                return (option, prominence)
+            }
+            .sorted { $0.prominence < $1.prominence }
     }
 
     private func answer(_ option: PermissionOption) {
@@ -85,5 +92,59 @@ struct ApprovalCard: View {
             failure = await host.respond(sessionID, toolCallID: toolCallID, option: option)
             sending = nil
         }
+    }
+}
+
+private enum ApprovalOptionProminence: Int, Comparable {
+    case primary, secondary, tertiary
+
+    var variant: DSButtonStyle.Variant {
+        switch self {
+        case .primary: .primary
+        case .secondary: .secondary
+        case .tertiary: .ghost
+        }
+    }
+
+    static func < (lhs: Self, rhs: Self) -> Bool { lhs.rawValue < rhs.rawValue }
+}
+
+/// The command as typed, in a sunken block with a dimmed prompt, or a path without one.
+private struct ApprovalCommandBlock: View {
+    let text: String
+    let isCommand: Bool
+    let isCompact: Bool
+
+    var body: some View {
+        Group {
+            if isCommand {
+                Text("\(Text(verbatim: "$").foregroundStyle(.dsTextTertiary)) \(Text(verbatim: text))")
+            } else {
+                Text(verbatim: text)
+            }
+        }
+        .font(CompanionType.mono)
+        .foregroundStyle(.dsTextPrimary)
+        .lineLimit(isCompact ? 2 : 6)
+        .textSelection(.enabled)
+        .padding(DS.Space.md)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.dsSurfaceSunken, in: .rect(cornerRadius: DS.Radius.card))
+    }
+}
+
+/// An option's name with its `code` spans in the mono face: Codex quotes the command prefix it
+/// would stop asking about ("…commands that start with `npm test`").
+private struct ApprovalOptionLabel {
+    let attributed: AttributedString
+
+    init(_ name: String) {
+        var result = AttributedString()
+        for (index, part) in name.split(separator: "`", omittingEmptySubsequences: false).enumerated() {
+            var run = AttributedString(part)
+            if index.isMultiple(of: 2) == false { run.font = CompanionType.mono }
+            result += run
+        }
+        attributed = result
     }
 }

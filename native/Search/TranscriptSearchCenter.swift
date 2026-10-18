@@ -30,10 +30,12 @@ final class TranscriptSearchCenter {
     private(set) var results = SearchResults.empty
     /// The query `results` answer.
     private(set) var answeredQuery: SearchQuery?
-    private(set) var indexing = TranscriptSearchIndexing.idle
+    /// Set only by TranscriptSearchCenter+History.swift.
+    var indexing = TranscriptSearchIndexing.idle
     /// Why search can't run right now (the index couldn't be opened), in plain words.
     private(set) var failure: String?
-    private(set) var statistics: SearchIndexStatistics?
+    /// Set only by TranscriptSearchCenter+History.swift.
+    var statistics: SearchIndexStatistics?
     /// The last search that failed, which the panel says rather than showing no results.
     private(set) var searchFailure: String?
 
