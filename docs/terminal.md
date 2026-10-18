@@ -144,7 +144,9 @@ Everything lives in `~/Library/Caches/native-build` (about 2 GB, mostly Zig's ca
 about 130 MB before dead-stripping; about 18 MB linked), and `share/` (terminfo, shell
 integration, Ghostty's license).
 
-The **Build libghostty** phase runs first in the app target (`--xcode`). It never touches the
+The **Build libghostty** phase runs first in the app target (`--xcode`), and only when its inputs
+changed: the script (which holds the pin), `libghostty/VERSION` (rewritten by every staged build,
+from any checkout or by hand), or the bundle's copies of the resources. It never touches the
 network: when the staged build matches the pin it only syncs the resources into the bundle
 (about 30 ms); when the pin changed and the toolchain and source are present, it rebuilds; when
 they're missing it warns ("Terminal isn't available in this build: ...") and exits 0. The app finds

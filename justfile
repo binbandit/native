@@ -10,9 +10,17 @@ derived := "/tmp/native-dd/" + env_var_or_default("USER", "dev")
 default:
     @just --list --unsorted
 
-# Build the app (Debug, or `just build Release` / `just build Nightly`).
+# Build the app (Debug, or `just build release` / `just build nightly`, in any case).
 build configuration="Debug":
-    xcodebuild -project native.xcodeproj -scheme native -configuration {{configuration}} -derivedDataPath {{derived}} build
+    #!/usr/bin/env bash
+    set -euo pipefail
+    # Xcode takes `release` too, but then mixes Products/release and Products/Release paths.
+    configuration='{{capitalize(configuration)}}'
+    case "$configuration" in
+        Debug | Release | Nightly) ;;
+        *) echo "error: unknown configuration '{{configuration}}'. Use Debug, Release or Nightly." >&2; exit 2 ;;
+    esac
+    xcodebuild -project native.xcodeproj -scheme native -configuration "$configuration" -derivedDataPath "{{derived}}" build
 
 # Build and run an isolated instance with its own settings and data (`just run mine -- -nativeDate 2026-10-31`).
 run name="dev" *args:
