@@ -8,6 +8,7 @@ struct TelemetrySessionPlugin: NativePlugin {
     func handle(_ event: SessionEvent) async {
         // Subagents are counted with the session that started them.
         guard case .sessionStarted(let session) = event, session.parentID == nil else { return }
+        TelemetryCenter.shared.noteSessionStarted()
         let version = TelemetryCenter.shared.version(of: session.agent)
         Telemetry.record(
             .sessionStarted(
