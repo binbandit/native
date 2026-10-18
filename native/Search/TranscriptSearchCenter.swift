@@ -345,7 +345,7 @@ final class TranscriptSearchCenter {
 }
 
 /// How far indexing past sessions has got.
-enum TranscriptSearchIndexing: Equatable, Sendable {
+nonisolated enum TranscriptSearchIndexing: Equatable, Sendable {
     case idle
     case indexing(done: Int, total: Int)
     /// Waiting to continue until the Mac is on power again (or leaves Low Power Mode).

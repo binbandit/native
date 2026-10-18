@@ -76,7 +76,6 @@ struct TranscriptSearchPanel: View {
             }
             Button("Close") { center.isPresented = false }
                 .buttonStyle(.ds(.ghost))
-                .keyboardShortcut(.cancelAction)
         }
         .padding(.horizontal, DS.Space.lg)
         .padding(.vertical, DS.Space.md)
