@@ -25,10 +25,10 @@ struct ApprovalCard: View {
             }
             if let call {
                 let presentation = CompanionToolSummary(call)
-                Text([presentation.verbs?.base, presentation.subject].compactMap { $0 }.joined(separator: " "))
+                Text(presentation.request)
                     .font(CompanionType.bodyMedium)
                     .foregroundStyle(.dsTextPrimary)
-                if let command = call.rawInput?["command"]?.stringValue ?? presentation.subtitle {
+                if let command = presentation.detail {
                     Text(command)
                         .font(CompanionType.mono)
                         .foregroundStyle(.dsTextPrimary)

@@ -45,8 +45,7 @@ extension HostSessionSummary {
             if let call = mirror?.state.items.reversed().lazy.compactMap({ item -> ToolCallState? in
                 if case .toolCall(let call) = item, call.status == .inProgress || call.status == .pending { call } else { nil }
             }).first {
-                let presentation = CompanionToolSummary(call)
-                return [presentation.verbs?.progressive, presentation.subject].compactMap { $0 }.joined(separator: " ")
+                return CompanionToolSummary(call).line
             }
             return queue.isEmpty ? "Working" : "Working · \(queue.count) queued"
         }

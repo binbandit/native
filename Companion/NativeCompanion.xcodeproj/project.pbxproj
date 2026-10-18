@@ -14,6 +14,7 @@
 		C0C000000000000000000080 /* MarkdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C000000000000000000070 /* MarkdownView.swift */; };
 		C0C000000000000000000081 /* TranscriptMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C000000000000000000071 /* TranscriptMetrics.swift */; };
 		C0C000000000000000000082 /* TranscriptFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C000000000000000000072 /* TranscriptFixtures.swift */; };
+		C0C000000000000000000084 /* TranscriptStyle.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C000000000000000000074 /* TranscriptStyle.swift */; };
 		C0C000000000000000000083 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = C0C000000000000000000073 /* AppIcon.icon */; };
 /* End PBXBuildFile section */
 
@@ -33,6 +34,7 @@
 		C0C000000000000000000070 /* MarkdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MarkdownView.swift; path = ../native/Views/Transcript/MarkdownView.swift; sourceTree = SOURCE_ROOT; };
 		C0C000000000000000000071 /* TranscriptMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TranscriptMetrics.swift; path = ../native/Views/Transcript/TranscriptMetrics.swift; sourceTree = SOURCE_ROOT; };
 		C0C000000000000000000072 /* TranscriptFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TranscriptFixtures.swift; path = ../native/Views/Transcript/TranscriptFixtures.swift; sourceTree = SOURCE_ROOT; };
+		C0C000000000000000000074 /* TranscriptStyle.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TranscriptStyle.swift; path = ../native/Views/Transcript/TranscriptStyle.swift; sourceTree = SOURCE_ROOT; };
 		C0C000000000000000000073 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; name = AppIcon.icon; path = ../native/AppIcon.icon; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
@@ -127,6 +129,7 @@
 				C0C000000000000000000070 /* MarkdownView.swift */,
 				C0C000000000000000000071 /* TranscriptMetrics.swift */,
 				C0C000000000000000000072 /* TranscriptFixtures.swift */,
+				C0C000000000000000000074 /* TranscriptStyle.swift */,
 				C0C000000000000000000073 /* AppIcon.icon */,
 			);
 			name = Shared;
@@ -254,6 +257,7 @@
 				C0C000000000000000000080 /* MarkdownView.swift in Sources */,
 				C0C000000000000000000081 /* TranscriptMetrics.swift in Sources */,
 				C0C000000000000000000082 /* TranscriptFixtures.swift in Sources */,
+				C0C000000000000000000084 /* TranscriptStyle.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

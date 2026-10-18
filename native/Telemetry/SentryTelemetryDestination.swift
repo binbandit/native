@@ -1,5 +1,6 @@
 import NativeTelemetry
-import Sentry
+// The Swift 5 SDK synchronizes its mutable metrics singleton internally.
+@preconcurrency import Sentry
 
 /// Sentry receives diagnostics and timing metrics; product-use events remain separate.
 nonisolated struct SentryTelemetryDestination: TelemetryDestination {
