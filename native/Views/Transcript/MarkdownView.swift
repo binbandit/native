@@ -215,7 +215,7 @@ private struct CodeBlockView: View {
                     .foregroundStyle(.dsTextSecondary)
             }
             ScrollView(.horizontal) {
-                Text(verbatim: code.hasSuffix("\n") ? String(code.dropLast()) : code)
+                HighlightedCode(code.hasSuffix("\n") ? String(code.dropLast()) : code, language: language)
                     .font(.dsMono)
                     .lineSpacing(TranscriptMetrics.codeLineSpacing)
             }
@@ -225,7 +225,7 @@ private struct CodeBlockView: View {
         .padding(.horizontal, DS.Space.lg)
         .padding(.vertical, DS.Space.lg)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .nestedSurface(.dsSurfaceSunken, minimumRadius: DS.Radius.card)
+        .nestedSurface(.dsCodeBlockBackground, minimumRadius: DS.Radius.card)
     }
 }
 

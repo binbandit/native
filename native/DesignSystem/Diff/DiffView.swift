@@ -170,21 +170,21 @@ private struct DiffRowView: View {
         }
     }
 
+    /// The change marker: the design system's statuses for Native, the theme's own otherwise.
     private var tint: Color? {
         switch row.kind {
-        case .added: .dsSuccess
-        case .removed: .dsDanger
+        case .added: colors.isNative ? .dsSuccess : colors.color(.insertedForeground)
+        case .removed: colors.isNative ? .dsDanger : colors.color(.deletedForeground)
         case .context, .gap: nil
         }
     }
 
     private var background: Color {
-        if let tint {
-            tint.opacity(0.12)
-        } else if row.kind == .gap {
-            .dsHover
-        } else {
-            .clear
+        switch row.kind {
+        case .added: colors.isNative ? Color.dsSuccess.opacity(0.12) : colors.color(.insertedBackground)
+        case .removed: colors.isNative ? Color.dsDanger.opacity(0.12) : colors.color(.deletedBackground)
+        case .gap: colors.isNative ? .dsHover : colors.color(.lineHighlight)
+        case .context: .clear
         }
     }
 }

@@ -11,7 +11,9 @@ struct HostPreviewWindow: View {
     static let id = "host-preview"
 
     @Environment(AppModel.self) private var model
-    @State private var host = DurableHost()
+    @Environment(DurableHost.self) private var shared: DurableHost?
+    /// Until the app injects its shared host, the window keeps its own.
+    @State private var fallback = DurableHost()
     @State private var selection: HostSessionID?
     @State private var draft = ""
 
@@ -44,7 +46,7 @@ struct HostPreviewWindow: View {
         .frame(minWidth: 820, minHeight: 520)
         .background(Color.dsBackground)
         .task {
-            await host.start(agents: model.plugins.agents.map(Self.spec))
+            await host.start(agents: model.plugins.agents.map(AgentSpec.init))
         }
         .alert("Durable Sessions", isPresented: isShowingError, presenting: host.errorMessage) { _ in
             Button("OK") {}
@@ -88,7 +90,7 @@ struct HostPreviewWindow: View {
         case .connected(let info): "Connected to \(info.machineName) · host pid \(info.processID)"
         case .reconnecting(let attempt, _): attempt == 0 ? "Reconnecting…" : "Reconnecting (attempt \(attempt))…"
         case .unreachable(let reason): "The host isn't reachable: \(reason)"
-        case .incompatible(let version): "The host speaks protocol \(version); restart it to update"
+        case .incompatible(_, let host): "The host is from Native \(host.version) (build \(host.build))"
         }
     }
 
@@ -213,6 +215,10 @@ struct HostPreviewWindow: View {
         }
     }
 
+    private var host: DurableHost {
+        shared ?? fallback
+    }
+
     private var isShowingError: Binding<Bool> {
         Binding {
             host.errorMessage != nil
@@ -233,13 +239,6 @@ struct HostPreviewWindow: View {
     }
 
     // MARK: - Mapping
-
-    private static func spec(_ agent: AgentDefinition) -> AgentSpec {
-        AgentSpec(
-            id: agent.id.rawValue, name: agent.displayName, command: agent.manifest.command, args: agent.manifest.args,
-            env: agent.manifest.env, resolveExecutables: agent.manifest.resolveExecutables
-        )
-    }
 
     private static func status(of session: HostSessionSummary) -> TaskStatus {
         if session.needsApproval { return .needsPermission }

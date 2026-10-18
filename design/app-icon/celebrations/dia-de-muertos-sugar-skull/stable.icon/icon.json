@@ -1,90 +1,97 @@
 {
-  "features": [
+  "features" : [
     "refractivity"
   ],
-  "fill-specializations": [
+  "fill-specializations" : [
     {
-      "value": {
-        "automatic-gradient": "srgb:0.93333,0.88627,0.81569,1.00000"
+      "value" : {
+        "automatic-gradient" : "srgb:0.93333,0.88627,0.81569,1.00000"
       }
     },
     {
-      "appearance": "dark",
-      "value": {
-        "automatic-gradient": "srgb:0.12941,0.07451,0.13333,1.00000"
+      "appearance" : "dark",
+      "value" : {
+        "automatic-gradient" : "srgb:0.12941,0.07451,0.13333,1.00000"
       }
     },
     {
-      "appearance": "tinted",
-      "value": "automatic"
+      "appearance" : "tinted",
+      "value" : "automatic"
     }
   ],
-  "groups": [
+  "groups" : [
     {
-      "blur-material-specializations": [
+      "blur-material-specializations" : [
         {
-          "appearance": "tinted",
-          "value": 0.25
+          "appearance" : "tinted",
+          "value" : 0.25
         }
       ],
-      "layers": [
+      "layers" : [
         {
-          "glass-specializations": [
+          "glass-specializations" : [
             {
-              "value": false
+              "value" : false
             },
             {
-              "appearance": "tinted",
-              "value": true
+              "appearance" : "tinted",
+              "value" : true
             }
           ],
-          "image-name": "painted-calavera.png",
-          "name": "Hand painted calavera"
-        }
-      ],
-      "lighting": "individual",
-      "name": "Fully painted calavera",
-      "refractivity-specializations": [
-        {
-          "appearance": "tinted",
-          "value": {
-            "enabled": true,
-            "depth": 0.3,
-            "strength": 0.75
+          "image-name" : "painted-calavera.png",
+          "name" : "Hand painted calavera",
+          "position" : {
+            "scale" : 0.66,
+            "translation-in-points" : [
+              0,
+              0
+            ]
           }
         }
       ],
-      "shadow": {
-        "kind": "neutral",
-        "opacity": 0.22
+      "lighting" : "individual",
+      "name" : "Fully painted calavera",
+      "refractivity-specializations" : [
+        {
+          "appearance" : "tinted",
+          "value" : {
+            "depth" : 0.3,
+            "enabled" : true,
+            "strength" : 0.75
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.22
       },
-      "translucency-specializations": [
+      "specular-specializations" : [
         {
-          "value": {
-            "enabled": false,
-            "value": 0
-          }
+          "value" : false
         },
         {
-          "appearance": "tinted",
-          "value": {
-            "enabled": true,
-            "value": 0.25
-          }
+          "appearance" : "tinted",
+          "value" : true
         }
       ],
-      "specular-specializations": [
+      "translucency-specializations" : [
         {
-          "value": false
+          "value" : {
+            "enabled" : false,
+            "value" : 0
+          }
         },
         {
-          "appearance": "tinted",
-          "value": true
+          "appearance" : "tinted",
+          "value" : {
+            "enabled" : true,
+            "value" : 0.25
+          }
         }
       ]
     }
   ],
-  "supported-platforms": {
-    "squares": "shared"
+  "supported-platforms" : {
+    "squares" : "shared"
   }
 }
