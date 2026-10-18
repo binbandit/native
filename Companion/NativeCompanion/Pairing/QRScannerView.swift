@@ -1,4 +1,5 @@
 import SwiftUI
+import Vision
 import VisionKit
 
 /// The camera, looking for a pairing QR code. Reports each code it reads; the caller decides

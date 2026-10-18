@@ -65,7 +65,7 @@ public actor TelemetryPipeline {
     public func record(_ event: TelemetryEvent, at time: Date = .now) {
         guard !destinations.isEmpty else { return }
         let record = TelemetryRecord(event, at: time)
-        for id in destinations.keys {
+        for (id, destination) in destinations where destination.accepts(record.name) {
             var queue = queues[id, default: []]
             queue.append(record)
             if queue.count > configuration.backlogLimit {

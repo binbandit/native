@@ -1,4 +1,6 @@
+import ACP
 import NativeHostProtocol
+import NativeLink
 import SwiftUI
 
 /// A host's plugins. They run on the host; this phone sees them and, if the Mac allowed it when

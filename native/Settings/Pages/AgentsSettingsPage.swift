@@ -50,6 +50,7 @@ struct AgentsSettingsPage: View {
     let registry: PluginRegistry
 
     @Environment(AppModel.self) private var model
+    @Environment(PolicyCenter.self) private var policy
 
     static func entries(in registry: PluginRegistry) -> [Entry] {
         registry.plugins.flatMap { loaded in
@@ -63,10 +64,10 @@ struct AgentsSettingsPage: View {
                 "Agents",
                 description: Text("Agents Native can run tasks with. Each comes from an extension and speaks ACP."))
             SettingsRowGroup {
-                // Agents that aren't installed are under Add an Agent instead, unless turned off.
                 ForEach(shownEntries) { entry in
                     agentRow(entry)
-                    if registry.isEnabled(entry.plugin.id) {
+                        .settingsLocked(isAllowed(entry) ? nil : Self.notAllowed)
+                    if registry.isEnabled(entry.plugin.id), isAllowed(entry) {
                         AgentDefaultsRow(agentName: entry.agent.name, agentID: entry.definition.id)
                             // Under the agent's name, past its icon.
                             .padding(.leading, SettingsMetrics.iconTile + DS.Space.lg)
@@ -84,10 +85,18 @@ struct AgentsSettingsPage: View {
         }
     }
 
+    /// Agents that aren't installed are under Add an Agent instead, unless they're off or the
+    /// organization doesn't allow them, which the row explains.
     private var shownEntries: [Entry] {
         Self.entries(in: registry).filter {
-            model.installations.isInstalled($0.definition.id) || !registry.isEnabled($0.plugin.id)
+            model.installations.isInstalled($0.definition.id) || !registry.isEnabled($0.plugin.id) || !isAllowed($0)
         }
+    }
+
+    static let notAllowed = "Not allowed by your organization"
+
+    private func isAllowed(_ entry: Entry) -> Bool {
+        policy.policy.agents.allows(entry.agent.id)
     }
 
     private func agentRow(_ entry: Entry) -> some View {

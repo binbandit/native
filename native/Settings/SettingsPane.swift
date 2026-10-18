@@ -95,6 +95,9 @@ extension SettingsPane {
     /// The panes Settings itself provides. `registry` is the host's: a client of several hosts
     /// passes the one the pages should describe.
     static func builtIn(registry: PluginRegistry) -> [SettingsPane] {
-        [.general, .keyboardShortcuts, .agents(registry: registry), .extensions(registry: registry), .appearance]
+        [
+            .general, .keyboardShortcuts, .agents(registry: registry), .extensions(registry: registry), .appearance,
+            .privacy,
+        ]
     }
 }

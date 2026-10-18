@@ -23,9 +23,15 @@ public enum SentryPrivacy {
         options.enableMetricKit = false
         options.enableMetricKitRawPayload = false
         options.enableLogs = false
-        options.enableMetrics = false
+        options.enableMetrics = true
         options.beforeSendLog = { _ in nil }
-        options.beforeSendMetric = { _ in nil }
+        options.beforeSendMetric = { metric in
+            guard allowsPerformanceMetric(name: metric.name, value: metric.value, unit: metric.unit) else { return nil }
+            var clean = metric
+            clean.attributes = [:]
+            clean.spanId = nil
+            return clean
+        }
         options.beforeSendSpan = { _ in nil }
         options.sendClientReports = false
         options.maxAttachmentSize = 0
@@ -94,6 +100,13 @@ public enum SentryPrivacy {
             return image
         }
         return event
+    }
+
+    static func allowsPerformanceMetric(name: String, value: SentryMetricValue, unit: SentryUnit?) -> Bool {
+        guard ["native.launch.duration_ms", "native.hang.duration_ms"].contains(name),
+            unit == .millisecond, case .distribution(let milliseconds) = value
+        else { return false }
+        return milliseconds.isFinite && milliseconds >= 0 && milliseconds <= 86_400_000
     }
 
     private static func stacktrace(_ source: SentryStacktrace?) -> SentryStacktrace? {

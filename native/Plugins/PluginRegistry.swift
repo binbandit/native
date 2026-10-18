@@ -155,7 +155,9 @@ final class PluginRegistry {
         return enabledPlugins.flatMap { plugin in
             plugin.manifest.mcpServers.compactMap(\.server) + plugin.mcpServers(for: session)
         }
-        .filter { required.contains($0.policyName) || policy.allows(name: $0.policyName, command: $0.policyCommandLine) }
+        .filter {
+            required.contains($0.policyName) || policy.allows(name: $0.policyName, command: $0.policyCommandLine)
+        }
     }
 
     // MARK: - Session policy

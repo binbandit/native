@@ -74,7 +74,7 @@ struct CompanionTranscriptRow: View {
     }
 
     private func toolCall(_ call: ToolCallState) -> some View {
-        let presentation = ToolPresentation(call)
+        let presentation = CompanionToolSummary(call)
         let verb = call.status == .inProgress || call.status == .pending ? presentation.verbs?.progressive : presentation.verbs?.past
         return Button {
             openToolCall(call)
@@ -84,7 +84,7 @@ struct CompanionTranscriptRow: View {
                     Image(systemName: presentation.symbol)
                         .foregroundStyle(call.status == .failed ? .dsDanger : .dsTextTertiary)
                         .frame(width: DS.Size.statusGlyph)
-                    Text([verb?.capitalizingFirstLetter, presentation.subject].compactMap { $0 }.joined(separator: " "))
+                    Text([verb?, presentation.subject].compactMap { $0 }.joined(separator: " "))
                         .foregroundStyle(.dsTextSecondary)
                         .lineLimit(1)
                     Spacer(minLength: 0)
@@ -97,7 +97,7 @@ struct CompanionTranscriptRow: View {
                     Text(answer).font(CompanionType.caption).foregroundStyle(.dsTextTertiary)
                 }
             }
-            .frame(minHeight: DS.minimumHitTarget)
+            .frame(minHeight: DS.Size.minimumHitTarget)
         }
         .buttonStyle(.plain)
     }
@@ -131,7 +131,7 @@ struct ToolCallDetailSheet: View {
                 .padding(DS.Space.lg)
             }
             .background(.dsBackground)
-            .navigationTitle(ToolPresentation(call).subject)
+            .navigationTitle(CompanionToolSummary(call).subject)
             .navigationBarTitleDisplayMode(.inline)
         }
         .presentationDetents([.medium, .large])

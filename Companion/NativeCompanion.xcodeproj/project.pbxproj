@@ -13,7 +13,7 @@
 		C0C000000000000000000059 /* CodeThemes in Frameworks */ = {isa = PBXBuildFile; productRef = C0C00000000000000000005C /* CodeThemes */; };
 		C0C000000000000000000080 /* MarkdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C000000000000000000070 /* MarkdownView.swift */; };
 		C0C000000000000000000081 /* TranscriptMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C000000000000000000071 /* TranscriptMetrics.swift */; };
-		C0C000000000000000000082 /* ToolPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C000000000000000000072 /* ToolPresentation.swift */; };
+		C0C000000000000000000082 /* TranscriptFixtures.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C000000000000000000072 /* TranscriptFixtures.swift */; };
 		C0C000000000000000000083 /* AppIcon.icon in Resources */ = {isa = PBXBuildFile; fileRef = C0C000000000000000000073 /* AppIcon.icon */; };
 /* End PBXBuildFile section */
 
@@ -32,7 +32,7 @@
 		C0C000000000000000000005 /* NativeCompanionUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = NativeCompanionUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		C0C000000000000000000070 /* MarkdownView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = MarkdownView.swift; path = ../native/Views/Transcript/MarkdownView.swift; sourceTree = SOURCE_ROOT; };
 		C0C000000000000000000071 /* TranscriptMetrics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TranscriptMetrics.swift; path = ../native/Views/Transcript/TranscriptMetrics.swift; sourceTree = SOURCE_ROOT; };
-		C0C000000000000000000072 /* ToolPresentation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = ToolPresentation.swift; path = ../native/Views/Transcript/ToolPresentation.swift; sourceTree = SOURCE_ROOT; };
+		C0C000000000000000000072 /* TranscriptFixtures.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = TranscriptFixtures.swift; path = ../native/Views/Transcript/TranscriptFixtures.swift; sourceTree = SOURCE_ROOT; };
 		C0C000000000000000000073 /* AppIcon.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; name = AppIcon.icon; path = ../native/AppIcon.icon; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
@@ -126,7 +126,7 @@
 				C0C000000000000000000011 /* DesignSystem */,
 				C0C000000000000000000070 /* MarkdownView.swift */,
 				C0C000000000000000000071 /* TranscriptMetrics.swift */,
-				C0C000000000000000000072 /* ToolPresentation.swift */,
+				C0C000000000000000000072 /* TranscriptFixtures.swift */,
 				C0C000000000000000000073 /* AppIcon.icon */,
 			);
 			name = Shared;
@@ -253,7 +253,7 @@
 			files = (
 				C0C000000000000000000080 /* MarkdownView.swift in Sources */,
 				C0C000000000000000000081 /* TranscriptMetrics.swift in Sources */,
-				C0C000000000000000000082 /* ToolPresentation.swift in Sources */,
+				C0C000000000000000000082 /* TranscriptFixtures.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

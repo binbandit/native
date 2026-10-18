@@ -251,7 +251,9 @@ extension SessionModel {
             let response = try await connection.send(SteerRequest(sessionId: id, prompt: prompt))
             switch response.outcome {
             case .injected:
-                if echo { state.appendUserMessage(text, attachments: MessageAttachment.shown(attachments), steered: true) }
+                if echo {
+                    state.appendUserMessage(text, attachments: MessageAttachment.shown(attachments), steered: true)
+                }
                 delivery = .steered
             case .startedNewTurn:
                 // An older agent took it as a new prompt of its own; it's been delivered.

@@ -50,7 +50,7 @@ struct CompanionComposer: View {
                 } label: {
                     Image(systemName: "arrow.up")
                         .font(CompanionType.bodyMedium)
-                        .frame(width: DS.minimumHitTarget, height: DS.minimumHitTarget)
+                        .frame(width: DS.Size.minimumHitTarget, height: DS.Size.minimumHitTarget)
                 }
                 .buttonStyle(.ds(.primary, size: .large))
                 .clipShape(.circle)

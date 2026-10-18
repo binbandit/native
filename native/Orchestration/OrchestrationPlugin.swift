@@ -10,7 +10,8 @@ struct OrchestrationPlugin: NativePlugin {
     let manifest = PluginManifest(
         id: "orchestration",
         name: "Orchestration",
-        description: "Lets agents hand tasks to other agents, such as Claude Code asking Codex for a review, and shows those tasks as subagents."
+        description:
+            "Lets agents hand tasks to other agents, such as Claude Code asking Codex for a review, and shows those tasks as subagents."
     )
 
     /// Set its `host` to let the tools run tasks.
@@ -48,7 +49,8 @@ struct OrchestrationPlugin: NativePlugin {
             do {
                 try await server.start()
             } catch {
-                Logger(subsystem: "Native", category: "Orchestration").error("Couldn't start the orchestration MCP server: \(error)")
+                Logger(subsystem: "Native", category: "Orchestration").error(
+                    "Couldn't start the orchestration MCP server: \(error)")
             }
         }
     }

@@ -11,5 +11,7 @@ enum AppSettingsPanes {
             .sounds(), .keepAwake(keepAwake), .updates, .usage(registry: plugins), .notifications, .pairedDevices,
             .celebrations(registry: plugins),
         ]
+        // Labs goes away when the organization turns experiments off.
+        .filter { $0.id != .labs || PolicyCenter.shared.policy.labsEnabled }
     }
 }

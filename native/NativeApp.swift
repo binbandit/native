@@ -65,6 +65,8 @@ struct NativeApp: App {
                 .environment(whatsNew)
                 .environment(settings)
                 .environment(model.plugins)
+                .environment(PolicyCenter.shared)
+                .environment(TelemetryCenter.shared)
                 .environment(git.settings)
                 .environment(iconPreferences)
                 .environment(celebrations)
@@ -95,6 +97,8 @@ struct NativeApp: App {
                     CelebrationsWiring.connect(
                         celebrations, plugins: model.plugins, icons: iconPreferences, settings: settings)
                     iconPreferences.start()
+                    PolicyCenter.shared.start()
+                    TelemetryCenter.shared.start { [model] in model.runtime($0)?.info?.version }
                     updates.restartContext = { [model] in model.updateRestartContext }
                     updates.start()
                     whatsNew.start()
