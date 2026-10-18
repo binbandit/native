@@ -72,6 +72,7 @@ Mac) to see everything in light and dark side by side.
 | `SidebarCollapseButton`, `HistoryNavigationButtons`, `WindowToolbarButton` | Factory's toggle placement; Conductor's ghost glyphs and arrows (color-only hover, safe in a macOS toolbar) |
 | `UpdateButton` | Factory's accent update tag right of the sidebar toggle |
 | `UsageMeter` | Factory's usage bar (accent, warning at 80%, error at 100%) |
+| `ActivityHeatmap` | GitHub's contribution graph: 53 weeks of days, month and weekday labels, five accent steps over a neutral empty square; hover, tap or arrow keys pick a day, and every square tells VoiceOver its exact count |
 | `ProjectGroup`, `ProjectRow`, `ProjectAvatar` | Conductor's repository groups |
 | `TaskRow` (+ `leading`/`accessory` slots), `TaskBadge`, `DiffStatLabel`, `CompactAgeText` | Conductor's workspace rows: one leading visual, trailing badge, diff or age |
 | `TaskStatus`, `StatusIndicator`, `DotGridLoader` | Conductor's statuses and Lottie dot-grid loaders (ported keyframes) |

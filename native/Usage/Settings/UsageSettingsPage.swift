@@ -27,7 +27,9 @@ struct UsageSettingsPage: View {
                 ))
             UsageActivityCard(activity: activity, onOpen: onOpen)
             if accounts.isEmpty {
-                EmptyStateView("No agents yet", systemImage: "gauge.with.dots.needle.33percent", message: "Agents you add show their limits here.")
+                EmptyStateView(
+                    "No agents yet", systemImage: "gauge.with.dots.needle.33percent",
+                    message: "Agents you add show their limits here.")
             }
             ForEach(accounts) { account in
                 UsageAccountCard(
@@ -38,7 +40,9 @@ struct UsageSettingsPage: View {
         .task {
             activity.refreshBackfill()
             for account in accounts where reports.status(of: account.id) == .ready {
-                let isStale = reports.reports[account.id].map { Date.now.timeIntervalSince($0.capturedAt) > Self.staleAfter } ?? true
+                let isStale =
+                    reports.reports[account.id].map { Date.now.timeIntervalSince($0.capturedAt) > Self.staleAfter }
+                    ?? true
                 if isStale {
                     await reports.refresh(account.id)
                 }

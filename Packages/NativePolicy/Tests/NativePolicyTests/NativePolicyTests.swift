@@ -190,3 +190,19 @@ import Testing
         #expect(Wildcard.matches("*", "", caseSensitive: true))
     }
 }
+
+@Suite struct SampleProfileTests {
+    /// docs/enterprise/native-policy.mobileconfig sets every key with a valid value.
+    @Test func sampleProfileIsValidAndComplete() throws {
+        let url = URL(filePath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent().deletingLastPathComponent()
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appending(path: "docs/enterprise/native-policy.mobileconfig")
+        let profile = try #require(
+            try PropertyListSerialization.propertyList(from: Data(contentsOf: url), format: nil) as? [String: Any])
+        let payload = try #require((profile["PayloadContent"] as? [[String: Any]])?.first)
+        let policy = PolicyLoader.load(from: StaticPolicySource(managed: payload.filter { $0.key.hasPrefix(PolicyKey.prefix) }))
+        #expect(policy.diagnostics.isEmpty, "\(policy.diagnostics)")
+        #expect(policy.managedKeys == Set(PolicyKey.allCases))
+    }
+}

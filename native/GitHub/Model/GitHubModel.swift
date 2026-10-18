@@ -1,4 +1,3 @@
-import AppKit
 import Exec
 import GitHub
 import Network
@@ -38,6 +37,22 @@ final class GitHubModel {
 
     var actionError: String?
 
+    /// Where clicking a pull request goes (Settings › GitHub).
+    var pullRequestOpening = GitHubPullRequestOpening.stored {
+        didSet { UserDefaults.standard.set(pullRequestOpening.rawValue, forKey: GitHubPullRequestOpening.defaultsKey) }
+    }
+    /// The pull request page on screen, inside the Pull Requests pane.
+    var presentedPullRequest: PullRequestReference?
+    /// Pages opened this run, so going back and forth doesn't reload them.
+    @ObservationIgnored var pages: [PullRequestReference: PullRequestPageModel] = [:]
+    /// Starts a task about lines of a pull request, or sends them to the task on screen. Set by the
+    /// app, which owns tasks; "Ask an Agent" is hidden while it's `nil`.
+    @ObservationIgnored var askAgent: (@MainActor (ReviewAgentPrompt, GitHubAgentDestination) async throws -> Void)?
+    /// Whether a task is on screen to send to, for "Send to Current Task".
+    @ObservationIgnored var hasCurrentTask: @MainActor () -> Bool = { false }
+    /// Opens web links; the platform's browser unless a test swaps it.
+    @ObservationIgnored var openExternally: @MainActor (URL) -> Void = { PlatformURLOpener.open($0) }
+
     @ObservationIgnored private let pathMonitor = NWPathMonitor()
     @ObservationIgnored private var isOnline = true
     @ObservationIgnored private let environment: @MainActor (_ refresh: Bool) async -> [String: String]
@@ -49,11 +64,18 @@ final class GitHubModel {
     ///   - runner: Runs gh on the machine that hosts the projects.
     init(
         environment: @escaping @MainActor (_ refresh: Bool) async -> [String: String],
-        runner: any CommandRunner = LocalCommandRunner()
+        runner: any CommandRunner
     ) {
         self.environment = environment
         self.runner = runner
     }
+
+    #if os(macOS)
+    /// gh on this Mac.
+    convenience init(environment: @escaping @MainActor (_ refresh: Bool) async -> [String: String]) {
+        self.init(environment: environment, runner: LocalCommandRunner())
+    }
+    #endif
 
     var canOpenAsTask: Bool {
         openAsTask != nil
@@ -77,9 +99,9 @@ final class GitHubModel {
     func keepFresh() async {
         watchNetwork()
         defer { pathMonitor.cancel() }
-        var wasActive = NSApplication.shared.isActive
+        var wasActive = PlatformApplication.isActive
         while !Task.isCancelled {
-            let isActive = NSApplication.shared.isActive
+            let isActive = PlatformApplication.isActive
             let returned = isActive && !wasActive
             wasActive = isActive
             let activity: RefreshSchedule.Activity = isWatching && isActive ? .watching : .background

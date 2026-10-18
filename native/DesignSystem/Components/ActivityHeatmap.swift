@@ -89,7 +89,8 @@ public struct ActivityHeatmap: View {
                 case .upArrow: -1
                 default: 1
                 }
-            selection = layout.clamped(selection.flatMap { calendar.date(byAdding: .day, value: days, to: $0) } ?? layout.end)
+            selection = layout.clamped(
+                selection.flatMap { calendar.date(byAdding: .day, value: days, to: $0) } ?? layout.end)
             return .handled
         }
         .onKeyPress(.escape) {
@@ -179,7 +180,9 @@ extension ActivityHeatmap {
         }
 
         func day(week: Int, weekday: Int) -> Date? {
-            guard let day = calendar.date(byAdding: .day, value: week * 7 + weekday, to: start), day <= end else { return nil }
+            guard let day = calendar.date(byAdding: .day, value: week * 7 + weekday, to: start), day <= end else {
+                return nil
+            }
             return day
         }
 

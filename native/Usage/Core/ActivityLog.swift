@@ -82,13 +82,19 @@ final class ActivityLog {
             guard let first = group.first else { continue }
             let key = dayKey(for: first.updatedAt)
             var day = days[key] ?? ActivityDay(day: key)
-            let current = day.entries.first { $0.agent == first.agent && $0.project == first.project }?.counts.listedSessions ?? 0
+            let current =
+                day.entries.first { $0.agent == first.agent && $0.project == first.project }?.counts.listedSessions ?? 0
             if group.count > current {
-                day.add(ActivityCounts(listedSessions: group.count - current), agent: first.agent, agentName: first.agentName, project: first.project)
+                day.add(
+                    ActivityCounts(listedSessions: group.count - current), agent: first.agent,
+                    agentName: first.agentName, project: first.project)
                 changed = true
             }
             for session in group {
-                day.touch(.init(agent: session.agent, agentName: session.agentName, session: session.session, title: session.title, project: session.project))
+                day.touch(
+                    .init(
+                        agent: session.agent, agentName: session.agentName, session: session.session,
+                        title: session.title, project: session.project))
             }
             days[key] = day
         }
@@ -105,7 +111,10 @@ final class ActivityLog {
         let project = context.cwd.path(percentEncoded: false)
         day.add(counts, agent: context.agent.rawValue, agentName: context.agentName, project: project)
         if touchesTask, let session = context.sessionID, context.parentID == nil {
-            day.touch(.init(agent: context.agent.rawValue, agentName: context.agentName, session: session.rawValue, title: context.title, project: project))
+            day.touch(
+                .init(
+                    agent: context.agent.rawValue, agentName: context.agentName, session: session.rawValue,
+                    title: context.title, project: project))
         }
         days[key] = day
         scheduleSave()
@@ -141,7 +150,11 @@ final class ActivityLog {
         let entries = days.values.filter { $0.day >= first }.flatMap(\.entries).filter { $0.agent == agent }
         return Dictionary(grouping: entries, by: \.project)
             .map { (project: $0.key, counts: $0.value.reduce(ActivityCounts()) { $0 + $1.counts }) }
-            .sorted { ($0.counts.cost, $0.counts.tokens, $0.counts.prompts) > ($1.counts.cost, $1.counts.tokens, $1.counts.prompts) }
+            .sorted {
+                ($0.counts.cost, $0.counts.tokens, $0.counts.prompts) > (
+                    $1.counts.cost, $1.counts.tokens, $1.counts.prompts
+                )
+            }
     }
 
     /// The agents and projects with any activity, for the graph's filter: (id, name).

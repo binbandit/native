@@ -23,7 +23,8 @@ struct UsageActivityCard: View {
                 header
                 stats(ActivityStats(values: values.mapValues(\.value), today: today, calendar: calendar))
                 ActivityHeatmap(
-                    values: values.mapValues(\.value), estimated: Set(values.filter(\.value.isEstimate).keys), endingOn: today,
+                    values: values.mapValues(\.value), estimated: Set(values.filter(\.value.isEstimate).keys),
+                    endingOn: today,
                     selection: $selection, hovered: $hovered
                 ) { day in
                     describe(day, values[day])
@@ -48,7 +49,8 @@ struct UsageActivityCard: View {
                     + activity.agents.map { .init(value: .agent($0.id), title: $0.name) }
                     + activity.projects.map { .init(value: .project($0.id), title: $0.name) })
             SettingsSelect(
-                label: "Count", selection: $metric, options: ActivityMetric.allCases.map { .init(value: $0, title: $0.title) },
+                label: "Count", selection: $metric,
+                options: ActivityMetric.allCases.map { .init(value: $0, title: $0.title) },
                 width: UsageMetrics.metricSelectWidth)
         }
     }
@@ -59,7 +61,9 @@ struct UsageActivityCard: View {
             stat("Longest streak", days(stats.longestStreak))
             stat(
                 "Busiest day",
-                stats.busiest.map { "\($0.day.formatted(.dateTime.month(.abbreviated).day())) · \(metric.describe($0.value))" } ?? "–")
+                stats.busiest.map {
+                    "\($0.day.formatted(.dateTime.month(.abbreviated).day())) · \(metric.describe($0.value))"
+                } ?? "–")
             stat("Past year", metric.describe(stats.total))
         }
     }
@@ -81,7 +85,8 @@ struct UsageActivityCard: View {
         let day = hovered ?? selection
         let text: String =
             if let day {
-                describe(day, values[day]) + (values[day]?.isEstimate == true ? ", estimated from the agents’ session lists" : "")
+                describe(day, values[day])
+                    + (values[day]?.isEstimate == true ? ", estimated from the agents’ session lists" : "")
             } else if values.isEmpty {
                 filter == .all
                     ? "Each day you work with agents fills in a square. Days before Native counted are estimated from the agents’ session lists."
@@ -114,9 +119,11 @@ struct UsageActivityCard: View {
                     settings.close()
                 } label: {
                     ContributorRow(
-                        title: task.title ?? "Untitled task", detail: "\(task.agentName) · \(URL(filePath: task.project).lastPathComponent)",
-                        tokens: "Open")
-                        .contentShape(.rect)
+                        title: task.title ?? "Untitled task",
+                        detail: "\(task.agentName) · \(URL(filePath: task.project).lastPathComponent)",
+                        tokens: "Open"
+                    )
+                    .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
                 .help("Open this task")

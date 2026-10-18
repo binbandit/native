@@ -7,6 +7,7 @@ enum BuiltInPlugins {
     static let all: [any NativePlugin] = [
         claudeCode, codex, cursor, openCode, pi, copilot, OnDeviceTitlesPlugin(), SoundsPlugin(),
         OrchestrationPlugin(), MCPServersPlugin(), SkillsPlugin(), usage, automation, automations, expeditions, search,
+        CelebrationsPlugin(),
     ]
 
     /// Claude Code through its ACP adapter, running the user's own `claude`. Adapter versions are

@@ -1,11 +1,45 @@
-import AppKit
 import GitHub
+import SwiftUI
 
-/// What the user can do with a pull request. Views call these rather than gh or AppKit, so other
-/// clients can drive the same actions.
+/// What the user can do with a pull request. Views call these rather than gh or the platform, so
+/// other clients can drive the same actions.
 extension GitHubModel {
+    /// Opens the pull request where the user's setting says: its page in Native, or GitHub.
+    func open(_ pullRequest: PullRequestSummary) {
+        guard pullRequestOpening == .native, let reference = PullRequestReference(pullRequest) else {
+            openInBrowser(pullRequest)
+            return
+        }
+        open(reference)
+    }
+
+    /// Opens a pull request link where the user's setting says; other links go to the browser.
+    func open(_ url: URL) {
+        guard pullRequestOpening == .native, let reference = PullRequestReference(url: url) else {
+            openExternally(url)
+            return
+        }
+        open(reference)
+    }
+
+    func open(_ reference: PullRequestReference) {
+        presentedPullRequest = reference
+    }
+
+    func closePullRequestPage() {
+        presentedPullRequest = nil
+    }
+
+    /// The page's model, kept for the run so returning to a pull request shows it at once.
+    func pageModel(for reference: PullRequestReference) -> PullRequestPageModel {
+        if let page = pages[reference] { return page }
+        let page = PullRequestPageModel(reference: reference, gitHub: self)
+        pages[reference] = page
+        return page
+    }
+
     func openInBrowser(_ pullRequest: PullRequestSummary) {
-        NSWorkspace.shared.open(pullRequest.url)
+        openExternally(pullRequest.url)
     }
 
     /// Opens the first failing check's log, so a red x leads straight to the failure; otherwise, or
@@ -18,7 +52,7 @@ extension GitHubModel {
         {
             destination = checks.first { $0.outcome == .failed && $0.link != nil }?.link ?? checksTab
         }
-        NSWorkspace.shared.open(destination)
+        openExternally(destination)
     }
 
     /// Where gh finds a pull request's repository without a local checkout.
@@ -38,8 +72,7 @@ extension GitHubModel {
     }
 
     func copy(_ text: String) {
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(text, forType: .string)
+        DSPasteboard.copy(text)
     }
 
     /// Asks the user to confirm before anything touches a working tree.
