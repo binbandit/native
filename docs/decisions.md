@@ -310,7 +310,8 @@ Highlightr (BSD-3/MIT, a JS engine per highlight, ~1 MB of scripts, slower); Spl
 only). A lexer covers what transcripts show, short self-contained fragments, without the build and
 size cost. The seam is `CodeHighlighter.segments(_:language:)`; if accuracy falls short for a
 language (TSX, C++ templates, nested string interpolation), tree-sitter is the upgrade, behind the
-same seam, with a decision record for the dependency. The terminal takes the theme through its one
+same seam, with a decision record for the dependency (it came: see "Tree-sitter for highlighting"
+below). The terminal takes the theme through its one
 input, `TerminalStore.appTheme`: chrome from the theme, ANSI colors from its roles.
 
 ## 2026-10-18: Hosts report and install their own updates
@@ -363,3 +364,43 @@ and pairing by a short typed code needs a PSK or PAKE that Network.framework's T
 cleanly. Noise gives mutual authentication with pinned keys, forward secrecy and a pre-shared
 pairing secret in one small, testable state machine that runs the same over TCP today and a
 ciphertext-only relay later. No third-party code. See `docs/companion.md`.
+
+## 2026-10-18: Tree-sitter for highlighting
+
+Brayden chose accuracy, so code is now colored from a parse: `CodeHighlighter.segments(_:language:)`
+keeps its seam, cache and background thread, and parses with tree-sitter through SwiftTreeSitter.
+The lexer stays as the fallback, for languages without a grammar and for code a grammar loses its
+place in (half the text in error nodes, or about one error per line). Each grammar's highlight and
+injection queries are copied into the package, pinned to the grammar's release, so precedence is
+under our control: tree-sitter 0.25 lets the later pattern win, and several grammars still order
+theirs for the old first-match rule (each copy says what changed). Injections color Markdown fences,
+the inline half of Markdown, HTML scripts and styles, and Rust macro bodies; an embedded language
+without a grammar uses the lexer for its range.
+
+Dependencies, all exact pins through SwiftPM: tree-sitter runtime 0.25.10 (MIT), SwiftTreeSitter
+0.10.0 (BSD-3-Clause), and grammars (MIT) for Swift, TypeScript and TSX, JavaScript, Python, Rust,
+Go, JSON, Bash, YAML, TOML, HTML, CSS, Markdown, C, C++, Java, Kotlin and Ruby. JavaScript, Python,
+CSS and YAML are pinned to their last releases whose Package.swift finds the external scanner
+(later ones look it up relative to the working directory and fail as a dependency). The Markdown
+and Kotlin queries derive from nvim-treesitter (Apache-2.0). `Packages/CodeThemes/NOTICE.md` lists
+them all.
+
+Cost, measured on an arm64 Release build: the app binary grows from 70.9 MB to 94.6 MB (`__TEXT`
+32.1 MB to 54.7 MB), nearly all parse tables, which compress about tenfold (roughly 2.3 MB more to
+download). By grammar: Swift 4.0 MB, Kotlin 3.9, C++ 3.3, Ruby 2.0, TSX 1.4, TypeScript 1.3, Bash
+1.3, Rust 1.1, Markdown 0.7, C 0.6, Python, Java and JavaScript 0.4 each, the rest under 0.2; the
+runtime and Swift API 0.25. Highlighting a 2,000-line TypeScript file takes about 35-45 ms against
+the lexer's 12-14 ms (the parse is 6-7 ms; most of the rest is SwiftTreeSitter building Swift
+objects per capture, which the C API does in about 5 ms), and a 50-line fragment about 1 ms
+against 0.3 ms. A grammar's queries compile on first use: Swift's in about 100 ms, the others under
+40 ms. Compiled queries for every grammar add about 7 MB of footprint, 6.3 MB of it Swift's (scratch
+memory from tree-sitter's query analysis that malloc keeps); highlighting repeatedly stays flat.
+
+Considered: keeping the lexer (it can't tell a TSX tag from a comparison, or code inside an
+interpolation from the string around it); the C API without a wrapper (about twice as fast per
+highlight, but our own predicate evaluation and pointer handling); SwiftTreeSitterLayer or Neon (an
+incremental editing model a transcript doesn't need); the grammars' own query bundles (TypeScript
+needs JavaScript's joined in, and their precedence varies); and an SQL grammar, left on the lexer:
+its releases don't include the generated parser, and it alone would add 10.5 MB. Proposed, for
+Brayden: leave Kotlin, C++ and Ruby on the lexer too, 9.2 MB for languages agents rarely write;
+each comes out with its line in Package.swift, its case in `TreeSitterGrammar` and its queries.

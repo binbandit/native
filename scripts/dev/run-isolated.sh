@@ -5,6 +5,7 @@
 #   scripts/dev/run-isolated.sh <name> [--no-build] [-- app arguments…]
 #   scripts/dev/run-isolated.sh <name> --quit     # quit this instance and its host
 #   scripts/dev/run-isolated.sh <name> --reset    # also forget its defaults and Application Support
+#   scripts/dev/run-isolated.sh <name> --remove   # reset, then delete its build (about 6 GB); run when done
 #
 # The build goes to /tmp/native-dd/<name> with the bundle id suffixed `.dev.<name>`, so the instance
 # gets its own defaults domain and its own Application Support folder, and its host its own launchd
@@ -14,7 +15,7 @@
 set -euo pipefail
 
 usage() {
-    echo "usage: $0 <name> [--no-build | --quit | --reset] [-- app arguments…]" >&2
+    echo "usage: $0 <name> [--no-build | --quit | --reset | --remove] [-- app arguments…]" >&2
     exit 2
 }
 
@@ -30,6 +31,7 @@ while [ $# -gt 0 ]; do
     case "$1" in
         --quit) action=quit ;;
         --reset) action=reset ;;
+        --remove) action=remove ;;
         --no-build) build=0 ;;
         --) shift; app_args=("$@"); break ;;
         *) usage ;;
@@ -45,8 +47,17 @@ process="native-dd/$name/Build/Products/Debug/Native.app/Contents/MacOS/Native"
 support="$HOME/Library/Application Support"
 worktrees="$HOME/.native/worktrees-dev/$name"
 
+# The built app's bundle id, only when it's this instance's own (suffixed `.dev.<name>`). A plain
+# build into the same folder carries the shared development id, and --quit or --reset must never
+# touch that domain's defaults, data or host.
 bundle_id() {
-    /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$app/Contents/Info.plist" 2>/dev/null
+    local id
+    id=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$app/Contents/Info.plist" 2>/dev/null) || return 1
+    if [[ $id != *".dev.$name" ]]; then
+        echo "the app in $derived is not $name's isolated build (bundle id $id); leaving that id's data alone" >&2
+        return 1
+    fi
+    printf '%s\n' "$id"
 }
 
 quit_app() {
@@ -56,7 +67,7 @@ quit_app() {
 quit() {
     quit_app
     local id
-    id=$(bundle_id) || return 0
+    id=$(bundle_id 2>/dev/null) || return 0
     # The instance's development host, if it was turned on (Window › Durable Sessions).
     for label in $(launchctl list | awk '{print $3}' | grep -F "$id.host." || true); do
         launchctl bootout "gui/$(id -u)/$label" 2>/dev/null || true
@@ -69,7 +80,7 @@ quit)
     echo "quit $name"
     exit 0
     ;;
-reset)
+reset | remove)
     quit
     if id=$(bundle_id); then
         defaults delete "$id" 2>/dev/null || true
@@ -80,7 +91,11 @@ reset)
         rm -rf "$worktrees"
         echo "reset $name ($id)"
     else
-        echo "nothing to reset: $name was never built" >&2
+        echo "nothing reset for $name" >&2
+    fi
+    if [ "$action" = remove ]; then
+        rm -rf "$derived"
+        echo "removed $derived"
     fi
     exit 0
     ;;
@@ -98,6 +113,7 @@ if [ "$build" = 1 ]; then
     fi
 fi
 [ -d "$app" ] || { echo "no build at $app; run without --no-build" >&2; exit 1; }
+bundle_id >/dev/null || { echo "run without --no-build to rebuild it as $name" >&2; exit 1; }
 
 # Relaunching replaces the app but leaves its host running, so durability and host handoffs can be
 # tested by relaunching; --quit and --reset stop the host too.

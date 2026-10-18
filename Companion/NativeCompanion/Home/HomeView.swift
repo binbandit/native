@@ -6,7 +6,6 @@ import SwiftUI
 /// in their own sections: nothing from one host mixes into another's.
 struct HomeView: View {
     @Environment(CompanionStore.self) private var store
-    @State private var hostFilter: HostID?
     @State private var needsYouOnly = false
     @State private var isShowingSettings = false
     @State private var isStartingTask = false
@@ -28,7 +27,7 @@ struct HomeView: View {
         }
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {
-                filterMenu
+                HostChip(needsYouOnly: $needsYouOnly)
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Settings", systemImage: "gearshape") { isShowingSettings = true }
@@ -60,33 +59,16 @@ struct HomeView: View {
             }
         }
         .sheet(isPresented: $isStartingTask) {
-            NewTaskSheet(preferredHost: hostFilter)
+            NewTaskSheet(preferredHost: store.activeHost?.id)
         }
         .sheet(isPresented: $isShowingSettings) {
             CompanionSettingsView()
         }
+        .hostTint(store.activeHost?.preferences)
     }
 
     private var visibleHosts: [HostConnection] {
-        store.hosts.filter { hostFilter == nil || $0.id == hostFilter }
-    }
-
-    private var filterMenu: some View {
-        Menu {
-            Picker("Host", selection: $hostFilter) {
-                Text("All Hosts").tag(HostID?.none)
-                ForEach(store.hosts) { host in
-                    Text(host.name).tag(Optional(host.id))
-                }
-            }
-            Toggle("Needs You Only", isOn: $needsYouOnly)
-        } label: {
-            Label(
-                "Filter",
-                systemImage: hostFilter == nil && !needsYouOnly
-                    ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill")
-        }
-        .accessibilityIdentifier("filter")
+        store.hosts.filter { store.activeHostID == nil || $0.id == store.activeHostID }
     }
 }
 

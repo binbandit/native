@@ -54,8 +54,13 @@ struct TaskView: View {
                 VStack(spacing: 0) {
                     Text(session.displayTitle(mirror)).font(CompanionType.captionMedium).foregroundStyle(.dsTextPrimary)
                         .lineLimit(1)
-                    Text("\(session.agentName) · \(session.projectName) · \(host.name)")
-                        .font(CompanionType.caption).foregroundStyle(.dsTextSecondary).lineLimit(1)
+                    HStack(spacing: DS.Space.xs) {
+                        Text("\(session.agentName) · \(session.projectName) ·").lineLimit(1)
+                        HostMark(preferences: host.preferences, size: CompanionMetrics.hostMarkTiny)
+                        Text(host.name).lineLimit(1).layoutPriority(1)
+                    }
+                    .font(CompanionType.caption).foregroundStyle(.dsTextSecondary)
+                    .accessibilityElement(children: .combine)
                 }
             }
             if session.isWorking {
@@ -70,6 +75,7 @@ struct TaskView: View {
         .sheet(item: $selectedCall) { call in
             ToolCallDetailSheet(call: call)
         }
+        .hostTint(host.preferences)
         .onAppear { host.attach(sessionID) }
     }
 
