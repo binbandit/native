@@ -7,6 +7,9 @@ protocol UsageReportingHost: AnyObject {
     func reportingSession(for agent: AgentDefinition.ID) -> (any ContextReporting)?
     /// The agent's open tasks with what they've used so far, the most expensive first.
     func taskUsage(of agent: AgentDefinition.ID) -> [UsageTaskSpend]
+    /// Every session the agents list, with when each was last active, for filling in activity
+    /// from before Native recorded it.
+    func activityBackfill() -> [ActivityBackfill]
 }
 
 /// Everything Usage needs from the app.

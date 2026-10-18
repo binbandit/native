@@ -198,7 +198,8 @@ host) under its own vocabulary, never Factory's. Design: `docs/expeditions.md`.
 ## 2026-10-18: Seasonal channel icons are opt-in and expire locally
 
 Beta has a dedicated amber/ivory compiled icon; Nightly uses its moon and starfield as the compiled
-channel icon. Halloween editions are opt-in from October 1 through November 7, inclusive, for
+channel icon. (Superseded in part by "Celebrations are a plugin, and icons come in sets": the
+Halloween switch and its timer are now the Celebrations plugin.) Halloween editions are opt-in from October 1 through November 7, inclusive, for
 stable, beta and Nightly. They preserve the user's base icon and restore it at the closing boundary,
 including when an app stays running or wakes after the season. The Gregorian date policy lives in
 AppAppearance, with calendar boundary and time-zone tests. Mac Dock access and environment
@@ -208,6 +209,25 @@ Debug builds use a separate development icon identity, including its Halloween e
 identity lives in AppAppearance and stays separate from ReleaseChannel so a development build can
 preview Nightly behavior without taking on a shipping build's icon. Original restores the compiled
 development icon, retaining the system's Default, Dark, Clear and Tinted appearances.
+
+## 2026-10-18: Celebrations are a plugin, and icons come in sets
+
+Halloween moved out of the app icon preferences into the Celebrations plugin (`docs/celebrations.md`).
+Plugins contribute two kinds of appearance data: `iconSets` (an icon per build channel in light and
+dark, plus a Home mark or palette) and `celebrations` (identity, provenance, a calendar rule, display
+windows and the icon set they use). A set no celebration uses is a plain app icon theme. Each entry
+validates on its own, so a broken one never costs the plugin its other contributions.
+
+One resolved celebration drives both the icon and Home, so two editions are never blended: a skip or
+the user's choice first, then core dates over another's decorative window, then the user's order, then
+the base. Dates are civil days with no time zone (`CivilDate`), so windows are counted in calendar
+days and recomputed at midnight, on time-zone and clock changes, wake and activation. The engine,
+validation and migration live in `Packages/AppAppearance` with the icon identity they build on;
+coordination is `native/Celebrations/`, and only `native/Platform/PlatformAppIcon` touches the Dock.
+The old `appIconHalloweenEnabled` switch becomes Halloween's selection, and turns the plugin on for
+the people who had it. Halloween keeps its 1 October to 7 November window; Día de Muertos shows on
+1 and 2 November, with 28 October to 3 November as a labelled decorative option, and changes only
+Home until its icons exist (`docs/celebrations-artwork.md`).
 
 ## 2026-10-18: Fair source under the Functional Source License
 
@@ -284,3 +304,14 @@ size cost. The seam is `CodeHighlighter.segments(_:language:)`; if accuracy fall
 language (TSX, C++ templates, nested string interpolation), tree-sitter is the upgrade, behind the
 same seam, with a decision record for the dependency. The terminal takes the theme through its one
 input, `TerminalStore.appTheme`: chrome from the theme, ANSI colors from its roles.
+
+## 2026-10-18: Hosts report and install their own updates
+
+Update status is a property of a host, served over the host protocol, so an iPad or iPhone can see
+and install updates for any host, including headless ones. On a Mac with the app, Sparkle updates the
+whole app, host included; a standalone `native-host` (Linux, or a Mac without the app) updates
+itself from a signed JSON host feed published beside the appcast, signed with the same Ed25519 key,
+installing atomically through a symlink swap and rolling back a build that doesn't come up. Clients
+can trigger an install but never choose what's installed. No new dependency: CryptoKit verifies on
+Apple platforms; Linux will need swift-crypto, recorded when the host first builds there. See
+`docs/releasing.md` ("Remote updates").

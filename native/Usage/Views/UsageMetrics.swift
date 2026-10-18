@@ -13,4 +13,6 @@ enum UsageMetrics {
     static let swatchSize: CGFloat = DS.Space.md
     /// The share column of the category table.
     static let shareColumnWidth: CGFloat = DS.Space.xxxl + DS.Space.lg
+    /// The activity graph's metric picker: "Agent time" and its chevron.
+    static let metricSelectWidth: CGFloat = DS.Size.sidebarWidth / 2
 }

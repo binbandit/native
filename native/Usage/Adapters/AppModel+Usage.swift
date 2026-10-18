@@ -81,4 +81,18 @@ extension AppModel: UsageReportingHost {
             }
             .sorted { ($0.cost?.amount ?? 0, $0.contextUsed) > ($1.cost?.amount ?? 0, $1.contextUsed) }
     }
+
+    func activityBackfill() -> [ActivityBackfill] {
+        projects.all.flatMap { project in
+            agents.flatMap { runtime in
+                catalog.sessions(in: project.id, of: runtime.agent.id).compactMap { info in
+                    info.updatedDate.map { date in
+                        ActivityBackfill(
+                            agent: runtime.agent.id.rawValue, agentName: runtime.agent.displayName,
+                            session: info.sessionId.rawValue, title: info.title, project: info.cwd, updatedAt: date)
+                    }
+                }
+            }
+        }
+    }
 }

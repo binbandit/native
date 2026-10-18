@@ -172,8 +172,8 @@ Menu commands live in `NativeApp`; composer keys in `native/Views/Composer*`; pe
 `native/Terminal/Views/TerminalCommands.swift` and keys inside a terminal in
 `GhosttyConfiguration.keybinds` (`Packages/Terminal`). Change a key here first, then in code.
 
-## Seasonal app icons
+## Celebrations
 
 | Keys | Action |
 | --- | --- |
-| ⌥⇧⌘H | Toggle the Halloween edition (View menu, October 1 through November 7) |
+| ⌥⇧⌘H | Restore the usual icon and Home while a celebration shows (skips it until it next occurs), or bring a skipped one back (View menu) |
