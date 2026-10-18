@@ -42,3 +42,41 @@ public enum StoredValue: Hashable, Sendable {
         }
     }
 }
+
+extension StoredValue: Codable {
+    /// A JSON scalar: `true`, `3`, `1.5` or `"roomy"`.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.singleValueContainer()
+        if let value = try? container.decode(Bool.self) {
+            self = .bool(value)
+        } else if let value = try? container.decode(Int.self) {
+            self = .int(value)
+        } else if let value = try? container.decode(Double.self) {
+            self = .double(value)
+        } else {
+            self = .string(try container.decode(String.self))
+        }
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.singleValueContainer()
+        switch self {
+        case .bool(let value): try container.encode(value)
+        case .int(let value): try container.encode(value)
+        case .double(let value): try container.encode(value)
+        case .string(let value): try container.encode(value)
+        }
+    }
+}
+
+extension StoredValue {
+    /// The value as text, for an environment variable or an argument.
+    public var text: String {
+        switch self {
+        case .bool(let value): String(value)
+        case .int(let value): String(value)
+        case .double(let value): value.formatted(.number.grouping(.never))
+        case .string(let value): value
+        }
+    }
+}

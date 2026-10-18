@@ -10,6 +10,17 @@ public struct ExperimentID: Hashable, Sendable, CustomStringConvertible, Express
         self.init(value)
     }
 
+    /// A plugin's experiment: `name` prefixed with the plugin's id, so plugins' ids never collide
+    /// with Native's or each other's (`acme.fast-mode`).
+    public init(namespace: String, _ name: String) {
+        self.init("\(namespace).\(name)")
+    }
+
+    /// Whether the id is in a plugin's namespace.
+    public func isNamespaced(by namespace: String) -> Bool {
+        rawValue.hasPrefix("\(namespace).") && rawValue.count > namespace.count + 1
+    }
+
     public var description: String { rawValue }
 }
 

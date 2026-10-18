@@ -244,3 +244,43 @@ contributions split by where they run:
 A client can also hold appearance-only plugins of its own, for use without a host. Plugin code
 never runs on iOS: built-in code plugins ship inside each app binary, and sandboxed code plugins
 need the V8 runtime, which only hosts have.
+
+## 2026-10-18: Transparency is three levels, Standard the clearest
+
+Settings ▸ Appearance ▸ Transparency offers Solid, Subtle and Standard (the default, today's
+look), read by every translucent surface through `\.dsTransparency` (`DesignSystem/Tokens`): the
+sidebar lays its solid color over the system material, overlays (popovers, the undo toast, drag
+previews) lay the overlay color over a blur, and floating controls (the composer, glass buttons)
+use tinted, regular or no glass. Content stays opaque at every level. There is no level clearer
+than the system's: on macOS 27 the split-view sidebar is an `NSGlassEffectView` tinted by the
+wallpaper rather than showing windows through it, and its `.clear` style changes nothing visible
+(checked in the running app); clear glass under the composer's text stops it reading. Reduce
+Transparency always wins and forces Solid, and the row says so.
+
+## 2026-10-18: Wool, a second light tone
+
+Light mode can be drawn on Paper (white, the default) or Wool, a warm off-white (#F6F3EE page).
+Wool is a token set, not a tint: every light neutral has its own Wool value, and text and status
+colors step darker just enough to keep Paper's contrast on Wool's background (accent text still
+clears 4.5:1 for every palette). Tokens resolve the tone from `\.dsLightTone`; dark mode is the same
+under both. Plugin tone sets were left out: a tone is some twenty coordinated values plus text and
+status shifts that must each keep their contrast, and Native has no way yet to check a set as a
+whole beyond the per-value rules, so a broken one would degrade every screen.
+
+## 2026-10-18: Code themes and a small lexer for highlighting
+
+Code blocks, diffs and tool output use the code theme the user picks for each appearance
+(`Packages/CodeThemes`, Native by default; Native's text roles keep their contrast on the design
+system's surfaces, so it follows Wool). Highlighting is `CodeHighlighter` in that package: a
+hand-written lexer per language family (comments, strings with escapes and multi-line forms,
+numbers, keywords, types, calls, markup tags, Markdown structure, diff lines) for the 26 languages
+agents write most, with no dependencies. It runs off the main thread, cached by content, and views
+draw plain text first. Considered: tree-sitter (MIT, accurate incremental parsing, but a C library
+plus a generated grammar per language, several MB each for TypeScript and C++, and highlight queries
+to maintain; SwiftTreeSitter/Neon wrappers are BSD-3); highlight.js through JavaScriptCore or
+Highlightr (BSD-3/MIT, a JS engine per highlight, ~1 MB of scripts, slower); Splash (MIT, Swift
+only). A lexer covers what transcripts show, short self-contained fragments, without the build and
+size cost. The seam is `CodeHighlighter.segments(_:language:)`; if accuracy falls short for a
+language (TSX, C++ templates, nested string interpolation), tree-sitter is the upgrade, behind the
+same seam, with a decision record for the dependency. The terminal takes the theme through its one
+input, `TerminalStore.appTheme`: chrome from the theme, ANSI colors from its roles.

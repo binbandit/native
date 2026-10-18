@@ -69,18 +69,25 @@ struct CelebrationStatusCard: View {
         guard let active = resolution.active else {
             return resolution.skipped.isEmpty ? nil : "Your usual icon and Home are back until it next occurs."
         }
-        let name = title(active.eventID)
-        switch active.reason {
-        case .only:
-            return active.appliesToAppIcon || !(center.activeEvent?.appIcon.isReady == false)
-                ? nil : "Its app icon is still being drawn, so only Home changes."
-        case .chosen(let other):
-            return "You chose it over \(title(other)) for now."
-        case .coreDates(let other):
-            return "It's \(name) itself, so it shows instead of \(title(other))'s longer window."
-        case .priority(let other):
-            return "It comes before \(title(other)) in your order below."
-        }
+        let why: String? =
+            switch active.reason {
+            case .only: nil
+            case .chosen(let other): "You chose it over \(title(other)) for now."
+            case .coreDates(let other):
+                "These are its own dates, so it shows instead of \(title(other))'s longer window."
+            case .priority(let other): "It comes before \(title(other)) in your order below."
+            }
+        let parts = [why, iconNote(active)].compactMap { $0 }
+        return parts.isEmpty ? nil : parts.joined(separator: " ")
+    }
+
+    /// Why the icon isn't changing with Home, when that's not the user's own choice.
+    private func iconNote(_ active: CelebrationResolution.Active) -> String? {
+        guard !active.appliesToAppIcon, let event = center.activeEvent,
+            center.preferences.selection(for: event.id).appIcon
+        else { return nil }
+        if !PlatformAppIcon.canApplyAnyImage { return "The app icon can't change on this device." }
+        return event.appIcon == .forthcoming ? "Its app icon is still being drawn, so the icon stays as it is." : nil
     }
 
     @ViewBuilder private var actions: some View {

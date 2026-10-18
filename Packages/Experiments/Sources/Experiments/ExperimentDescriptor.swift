@@ -22,6 +22,15 @@ public struct ExperimentDescriptor: Identifiable, Sendable {
     /// Whether a change takes effect only the next time the app opens.
     public let requiresRelaunch: Bool
     public let tier: Tier
+    /// Who declared it: Native, or a plugin (Labs groups plugins' experiments under their names).
+    public private(set) var origin: ExperimentOrigin = .native
+
+    /// The same experiment, declared by a plugin.
+    public func contributed(byPlugin id: String, named name: String) -> ExperimentDescriptor {
+        var descriptor = self
+        descriptor.origin = .plugin(id: id, name: name)
+        return descriptor
+    }
 
     /// The gates, parameters and extension points it changes.
     public var touches: [TouchPoint] {
@@ -49,6 +58,12 @@ public struct ExperimentDescriptor: Identifiable, Sendable {
         case .parameter(let spec): spec.accepts(value)
         }
     }
+}
+
+/// Who declared an experiment.
+public enum ExperimentOrigin: Hashable, Sendable {
+    case native
+    case plugin(id: String, name: String)
 }
 
 /// Something an experiment changes, for Labs to name.

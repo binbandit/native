@@ -50,7 +50,12 @@ actor LinkFrameReader {
                     return LinkFrame(kind: kind, body: body)
                 }
             }
-            guard let chunk = await chunks.next(isolation: self) else { throw LinkError.closed }
+            // The iterator shares its stream's storage, so a copy advanced here is the same stream.
+            // One reader at a time is the contract: a frame stream has one consumer.
+            var iterator = chunks
+            let chunk = await iterator.next(isolation: self)
+            chunks = iterator
+            guard let chunk else { throw LinkError.closed }
             buffer += chunk
         }
     }

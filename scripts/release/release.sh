@@ -222,10 +222,23 @@ else
     run "$sparkle_bin/generate_appcast" "${appcast_args[@]}" "$output/appcast"
 fi
 
+# MARK: - Host
+
+# The standalone native-host and its signed feed, for hosts that update themselves.
+host_args=(--channel "$channel" --version "$version" --build-number "$build_number" --output "$output"
+    --identity "$identity" --notes "$notes")
+[ -n "$key_file" ] && host_args+=(--ed-key-file "$key_file")
+case $MODE in plan) host_args+=(--plan) ;; notarize | publish) host_args+=(--notarize) ;; esac
+SPARKLE_BIN=$sparkle_bin "$ROOT/scripts/release/host.sh" "${host_args[@]}"
+host_feed="host-feed.json"
+[ "$channel" = beta ] && host_feed="host-feed-beta.json"
+host_files=()
+[ -f "$output/host/$host_feed" ] && host_files=("$output/host/$host_feed" "$output/host/$host_feed.sig")
+
 # MARK: - Publish
 
 log "Publishing to $repo"
-assets=("$output/appcast/$zip_name")
+assets=("$output/appcast/$zip_name" "$output/host/native-host-$build_number-macos-universal")
 [ "$make_dmg" = 1 ] && assets+=("$output/$dmg_name")
 notes_flag=(--notes-file "$notes")
 
@@ -239,11 +252,12 @@ if [ "$channel" = nightly ]; then
     fi
     # Archives first, so the appcast never points at a file that isn't there yet.
     remote gh release upload nightly --repo "$repo" --clobber "${assets[@]}"
-    remote gh release upload nightly --repo "$repo" --clobber "$output/appcast/appcast.xml"
+    remote gh release upload nightly --repo "$repo" --clobber "$output/appcast/appcast.xml" ${host_files[@]+"${host_files[@]}"}
     if [ "$MODE" = publish ]; then
-        # Keep the newest two archives so downloads already in flight still finish.
-        gh release view nightly --repo "$repo" --json assets --jq '.assets[].name' |
-            grep -E "^$asset_base-[0-9]+\.zip$" | sort -t- -k3 -n | awk '{ a[NR] = $0 } END { for (i = 1; i <= NR - 2; i++) print a[i] }' |
+        # Keep the newest two archives and hosts so downloads already in flight still finish.
+        names=$(gh release view nightly --repo "$repo" --json assets --jq '.assets[].name')
+        { grep -E "^$asset_base-[0-9]+\.zip$" <<<"$names" | sort -t- -k3 -n | keep_all_but_two
+          grep -E "^native-host-[0-9]+-" <<<"$names" | sort -t- -k3 -n | keep_all_but_two; } |
             while read -r old; do run gh release delete-asset nightly "$old" --repo "$repo" --yes; done
     fi
 else
@@ -251,7 +265,8 @@ else
     [ "$channel" = beta ] && prerelease=(--prerelease)
     # A draft with every asset, then published at once: the feed never sees a half-made release.
     remote gh release create "$tag" --repo "$repo" --draft --verify-tag --title "Native $version" \
-        ${prerelease[@]+"${prerelease[@]}"} "${notes_flag[@]}" "${assets[@]}" "$output/appcast/appcast.xml"
+        ${prerelease[@]+"${prerelease[@]}"} "${notes_flag[@]}" "${assets[@]}" "$output/appcast/appcast.xml" \
+        ${host_files[@]+"${host_files[@]}"}
     remote gh release edit "$tag" --repo "$repo" --draft=false
     if [ "$channel" = beta ]; then
         # Betas are prereleases, so releases/latest still points at the newest stable release.
@@ -259,7 +274,8 @@ else
         latest=""
         [ "$MODE" = publish ] && latest=$(gh api "repos/$repo/releases/latest" --jq .tag_name 2>/dev/null || true)
         if [ -n "$latest" ] || [ "$MODE" != publish ]; then
-            remote gh release upload "${latest:-<latest stable tag>}" --repo "$repo" --clobber "$output/appcast/appcast.xml"
+            remote gh release upload "${latest:-<latest stable tag>}" --repo "$repo" --clobber "$output/appcast/appcast.xml" \
+                ${host_files[@]+"${host_files[@]}"}
         else
             warn "there's no stable release yet, so beta users can't receive this update until there is one"
         fi

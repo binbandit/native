@@ -62,3 +62,8 @@ github_repository() {
 require_tool() {
     command -v "$1" >/dev/null 2>&1 || die "$1 isn't installed. $2"
 }
+
+# Prints all but the last two lines: the old assets to prune, oldest first.
+keep_all_but_two() {
+    awk '{ a[NR] = $0 } END { for (i = 1; i <= NR - 2; i++) print a[i] }'
+}

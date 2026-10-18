@@ -204,6 +204,9 @@ final class DurableHost {
         case .sessionClosed(let session):
             sessions.removeAll { $0.id == session }
             mirrors[session] = nil
+        case .pluginsChanged:
+            // The app still reads its plugins from its own registry until Phase 2.
+            break
         case .activity(let entry):
             // Seen as it happens, so it isn't news the next time the app connects.
             if awayActivity.isEmpty {
