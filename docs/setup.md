@@ -1,9 +1,9 @@
 # Set up Native
 
-How to set Native up for an engineer, on one Mac or across their devices, and how to fix what isn't
-working: installing it, getting agents installed and signed in, projects, MCP servers, skills, the
-terminal, appearance, notifications, shortcuts, the iPhone companion, organization policy and
-troubleshooting. Agents start with the `setup_status` tool.
+How to set Native up for an engineer, on one Mac or across their devices, and fix what isn't
+working. It covers installing, agents and signing in, projects, MCP servers, skills, the terminal,
+appearance, notifications, shortcuts, the iPhone companion, organization policy and
+troubleshooting, starting from the `setup_status` tool.
 
 This file is the canonical setup guide. Native serves it to agents as the `set-up-native` skill (the
 `get_skill` tool of its `native` MCP server), so it's written for an agent doing the setup with a

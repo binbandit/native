@@ -42,7 +42,8 @@ struct PullRequestsHeader: View {
                 HStack(spacing: DS.Space.md) {
                     PullRequestScopeTabs(scope: $model.filter.scope, inbox: model.inbox)
                     Spacer(minLength: DS.Space.md)
-                    PullRequestSearchField(query: $model.filter.query)
+                    SearchField("Filter pull requests", text: $model.filter.query)
+                        .frame(width: DS.Size.sidebarWidth - DS.Space.xxxl)
                     optionsMenu
                 }
             }

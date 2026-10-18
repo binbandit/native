@@ -155,7 +155,10 @@ public struct SessionState: Sendable {
             if case .message(var last) = items.last, last.role == .user,
                 chunk.messageId == nil || chunk.messageId == last.messageID
             {
-                last.attachments.append(attachment)
+                // Claude Code replays an embedded file as its link, then its contents: one file.
+                if attachment.url == nil || !last.attachments.contains(where: { $0.url == attachment.url }) {
+                    last.attachments.append(attachment)
+                }
                 items[items.count - 1] = .message(last)
             } else {
                 var message = TranscriptMessage(

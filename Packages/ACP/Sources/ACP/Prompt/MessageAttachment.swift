@@ -28,7 +28,8 @@ public struct MessageAttachment: Identifiable, Hashable, Sendable {
         }
     }
 
-    /// A replayed block that stands for an attachment rather than text.
+    /// A replayed block that stands for an attachment rather than text, including the text forms
+    /// agents fold attachments into (`init(replayedText:)`).
     init?(_ block: ContentBlock) {
         switch block {
         case .image(let base64, _):
@@ -38,7 +39,9 @@ public struct MessageAttachment: Identifiable, Hashable, Sendable {
         case .resource(let uri, _):
             let url = URL(string: uri)
             self.init(name: url?.lastPathComponent ?? uri, url: url)
-        case .text, .unsupported:
+        case .text(let text):
+            self.init(replayedText: text)
+        case .unsupported:
             return nil
         }
     }
