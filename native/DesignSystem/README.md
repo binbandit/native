@@ -74,6 +74,7 @@ Mac) to see everything in light and dark side by side.
 | Component | What it is |
 | --- | --- |
 | `SidebarNavItem`, `SidebarRowMenu` | The sidebar's navigation rows: icon, label, a shortcut hint on hover, an optional trailing menu |
+| `.buttonStyle(.header(isOn:iconOnly:))` (`HeaderButtonStyle`) | The window header's outlined controls: 24pt, surface fill, 1pt border, 4pt radius, selected while what they toggle is open; the same chrome as Open In |
 | `SidebarCollapseButton`, `HistoryNavigationButtons`, `WindowToolbarButton` | The sidebar toggle right after the window controls, and back and forward arrows, as ghost glyphs (color-only hover, safe in a macOS toolbar) |
 | `UpdateButton` | The accent update tag right of the sidebar toggle |
 | `UsageMeter` | A usage bar (accent, warning at 80%, error at 100%) |
@@ -113,6 +114,11 @@ Mac) to see everything in light and dark side by side.
 
 ## Do and don't
 
+- Do give the window header's controls one look: a control that acts on the session (Open In, Show
+  Changes, the terminal) is an outlined `.buttonStyle(.header(isOn:iconOnly:))`, in a `ToolbarItem`
+  with `.sharedBackgroundVisibility(.hidden)`. Window chrome (the sidebar toggle, back and forward)
+  stays a ghost `WindowToolbarButton`. Leave the system's toolbar glass to system controls, and put
+  status that belongs to the conversation (MCP servers, context) in the composer instead.
 - Do put a hand-built toolbar control in a `ToolbarItem` with `.sharedBackgroundVisibility(.hidden)`;
   don't add your own fill on top of a system control.
 - Do give rows `SidebarRowButtonStyle` (pressed wash) and let the row own hover and selection.

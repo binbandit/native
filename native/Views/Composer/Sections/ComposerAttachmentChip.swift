@@ -27,10 +27,7 @@ struct ComposerAttachmentChip: View {
             .help(help)
             .accessibilityLabel("\(attachment.name), \(detail)")
             .accessibilityHint(isWarning ? help : "Opens it in Quick Look")
-            .onKeyPress(keys: [.delete, .deleteForward]) { _ in
-                onRemove()
-                return .handled
-            }
+            .onDeleteKey(perform: onRemove)
 
             Button("Remove \(attachment.name)", systemImage: "xmark", action: onRemove)
                 .labelStyle(.iconOnly)

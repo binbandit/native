@@ -31,6 +31,7 @@ struct NativeApp: App {
     init() {
         LaunchMetrics.mark(.appInit)
         // Before any window exists, so the first one opens in the user's appearance.
+        AppearancePreferences.migrateDottedKeys()
         let appearance = AppearanceModeController()
         _appearance = State(initialValue: appearance)
         // Git and GitHub run with the login-shell environment the agents get.

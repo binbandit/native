@@ -1,3 +1,4 @@
+import ACP
 import SwiftUI
 
 // The editor's keys (docs/keyboard.md), mapped by the pure `ComposerKeyMap`.
@@ -25,6 +26,18 @@ extension ComposerView {
         }
         perform(action, suggestions: suggestions)
         return .handled
+    }
+
+    /// Backspace as the Mac's text view gets it, before it deletes anything; true when the
+    /// composer took it.
+    func handleBackspace(_ key: DraftBackspaceKey) -> Bool {
+        let action = DraftBackspace(
+            isDraftEmpty: key.isTextEmpty, isComposing: key.isComposing,
+            hasAttachments: !session.attachments.isEmpty, isRepeat: key.isRepeat)
+        if action == .removeLastAttachment {
+            removeLastAttachment()
+        }
+        return action != nil
     }
 
     func perform(_ action: ComposerKeyMap.Action, suggestions: ComposerSuggestions?) {

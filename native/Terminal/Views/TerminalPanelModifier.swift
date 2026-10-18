@@ -36,7 +36,9 @@ private struct TerminalPanelModifier: ViewModifier {
                     store.toggle(for: session)
                 }
                 .buttonStyle(.header(isOn: panel.isVisible, iconOnly: true))
-                .help(CommandRegistry.shared.help(panel.isVisible ? "Hide Terminal" : "Show Terminal", for: .terminalToggle))
+                .help(
+                    CommandRegistry.shared.help(
+                        panel.isVisible ? "Hide Terminal" : "Show Terminal", for: .terminalToggle))
             }
             .sharedBackgroundVisibility(.hidden)
         }
