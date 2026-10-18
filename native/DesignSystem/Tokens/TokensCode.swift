@@ -6,17 +6,17 @@ import SwiftUI
 // system's own surfaces, so it follows the light tone (Paper or Wool) with its text roles adjusted
 // to keep their contrast there; other themes bring their own background.
 
-/// The code theme chosen for light mode and for dark mode.
+/// The code theme chosen for light mode and for dark mode: a built-in theme or a plugin's.
 public nonisolated struct DSCodeThemes: Hashable, Sendable {
-    public var light: CodeTheme.ID
-    public var dark: CodeTheme.ID
+    public var light: CodeTheme
+    public var dark: CodeTheme
 
-    public init(light: CodeTheme.ID, dark: CodeTheme.ID) {
+    public init(light: CodeTheme, dark: CodeTheme) {
         self.light = light
         self.dark = dark
     }
 
-    public static let native = DSCodeThemes(light: CodeTheme.native.id, dark: CodeTheme.native.id)
+    public static let native = DSCodeThemes(light: .native, dark: .native)
 }
 
 nonisolated extension EnvironmentValues {
@@ -47,9 +47,9 @@ public nonisolated struct DSCodeColors: Sendable {
 
     public init(_ environment: EnvironmentValues, on surface: Surface) {
         let appearance: CodeAppearance = environment.colorScheme == .dark ? .dark : .light
-        let id = appearance == .dark ? environment.dsCodeThemes.dark : environment.dsCodeThemes.light
-        // A theme without this appearance (or one since removed) falls back to Native.
-        let chosen = CodeTheme.theme(id: id).flatMap { theme in theme.palette(for: appearance).map { (theme.id, $0) } }
+        let theme = appearance == .dark ? environment.dsCodeThemes.dark : environment.dsCodeThemes.light
+        // A theme without this appearance falls back to Native.
+        let chosen = theme.palette(for: appearance).map { (theme.id, $0) }
         guard let resolved = chosen ?? CodeTheme.native.palette(for: appearance).map({ (CodeTheme.native.id, $0) })
         else { preconditionFailure("Native has a palette for both appearances") }
         let (themeID, palette) = resolved

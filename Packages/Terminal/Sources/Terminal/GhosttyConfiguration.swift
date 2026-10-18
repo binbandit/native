@@ -8,6 +8,7 @@ public struct GhosttyConfiguration: Hashable, Sendable {
     public var defaultFont: DefaultFont
     /// Space between the text and the edge of the terminal, in points.
     public var padding: Padding
+    public var transparency: TerminalTransparency
 
     public struct Padding: Hashable, Sendable {
         public var horizontal: Int
@@ -31,11 +32,15 @@ public struct GhosttyConfiguration: Hashable, Sendable {
         }
     }
 
-    public init(settings: TerminalSettings, colors: TerminalColors, defaultFont: DefaultFont, padding: Padding) {
+    public init(
+        settings: TerminalSettings, colors: TerminalColors, defaultFont: DefaultFont, padding: Padding,
+        transparency: TerminalTransparency = .opaque
+    ) {
         self.settings = settings
         self.colors = colors
         self.defaultFont = defaultFont
         self.padding = padding
+        self.transparency = transparency
     }
 
     /// The config file's contents.
@@ -65,6 +70,7 @@ public struct GhosttyConfiguration: Hashable, Sendable {
         for (index, color) in colors.palette.enumerated() {
             set("palette", "\(index)=\(color)")
         }
+        set("background-opacity", Self.number(transparency.backgroundOpacity))
         set("cursor-style", settings.cursor.style.rawValue)
         set("cursor-style-blink", settings.cursor.blinks ? "true" : "false")
         set("window-padding-x", String(padding.horizontal))
@@ -112,6 +118,12 @@ public struct GhosttyConfiguration: Hashable, Sendable {
         clipboard-write = allow
 
         """
+
+    /// Applied after the user's Ghostty config: `embeddingOverrides`, and opaque when the system's
+    /// Reduce Transparency is on, whatever the config's `background-opacity` says.
+    public static func userConfigOverrides(_ transparency: TerminalTransparency) -> String {
+        embeddingOverrides + (transparency.forcesOpaque ? "background-opacity = 1\n" : "")
+    }
 
     /// Ghostty's default bindings would take keys the app owns (⌘N, ⌘W, ⌘Q, ⌘T, ⌘D, ...), so
     /// they're cleared, and only these terminal-local ones come back (docs/keyboard.md, Terminal).

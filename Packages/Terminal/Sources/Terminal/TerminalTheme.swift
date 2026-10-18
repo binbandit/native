@@ -91,28 +91,50 @@ public struct TerminalTheme: Identifiable, Hashable, Sendable {
     )
 }
 
-/// How every terminal draws: the user's settings, plus the colors for the app's current appearance.
+/// How see-through the terminal's background is, from the app's transparency setting.
+public struct TerminalTransparency: Hashable, Sendable {
+    /// 1 is opaque.
+    public var backgroundOpacity: Double
+    /// The system's Reduce Transparency is on: opaque, whatever any config says.
+    public var forcesOpaque: Bool
+
+    public init(backgroundOpacity: Double = 1, forcesOpaque: Bool = false) {
+        self.backgroundOpacity = forcesOpaque ? 1 : min(max(backgroundOpacity, 0), 1)
+        self.forcesOpaque = forcesOpaque
+    }
+
+    public static let opaque = TerminalTransparency()
+}
+
+/// How every terminal draws: the user's settings, plus the colors and transparency for the app's
+/// current appearance.
 public struct TerminalStyle: Hashable, Sendable {
     public var settings: TerminalSettings
     public var appearance: TerminalAppearance
     public var colors: TerminalColors
+    public var transparency: TerminalTransparency
 
-    public init(settings: TerminalSettings, appearance: TerminalAppearance, colors: TerminalColors) {
+    public init(
+        settings: TerminalSettings, appearance: TerminalAppearance, colors: TerminalColors,
+        transparency: TerminalTransparency = .opaque
+    ) {
         self.settings = settings
         self.appearance = appearance
         self.colors = colors
+        self.transparency = transparency
     }
 
     /// The style for `settings` in `appearance`: colors imported from Ghostty when the user did
     /// that, otherwise the app's theme over the design system's chrome.
     public init(
-        settings: TerminalSettings, appearance: TerminalAppearance, appTheme: TerminalTheme, appChrome: TerminalChrome
+        settings: TerminalSettings, appearance: TerminalAppearance, appTheme: TerminalTheme, appChrome: TerminalChrome,
+        transparency: TerminalTransparency = .opaque
     ) {
         let colors =
             switch settings.colors {
             case .app: appTheme.colors(for: appearance, appChrome: appChrome)
             case .imported(let imported): imported.colors(for: appearance)
             }
-        self.init(settings: settings, appearance: appearance, colors: colors)
+        self.init(settings: settings, appearance: appearance, colors: colors, transparency: transparency)
     }
 }

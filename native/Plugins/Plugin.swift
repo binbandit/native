@@ -1,4 +1,5 @@
 import ACP
+import CodeThemes
 import Foundation
 import NativeAutomation
 
@@ -55,10 +56,14 @@ struct PluginManifest: Codable, Hashable, Sendable, Identifiable {
     /// Multi-agent workflows the plugin offers (`WorkflowDefinition`'s JSON). A broken one is listed
     /// with its problems rather than failing the plugin.
     var workflows: [WorkflowDefinition] = []
+    /// Code themes and accent palettes (`docs/plugins.md`, Themes). Data only, checked one by one
+    /// when used, so a broken theme is reported rather than failing the plugin.
+    var themes = ThemeContributions()
 
     init(
         id: String, name: String, version: String? = nil, description: String? = nil, agents: [AgentManifest] = [],
-        mcpServers: [MCPServerManifest] = [], workflows: [WorkflowDefinition] = []
+        mcpServers: [MCPServerManifest] = [], workflows: [WorkflowDefinition] = [],
+        themes: ThemeContributions = ThemeContributions()
     ) {
         self.id = id
         self.name = name
@@ -67,6 +72,7 @@ struct PluginManifest: Codable, Hashable, Sendable, Identifiable {
         self.agents = agents
         self.mcpServers = mcpServers
         self.workflows = workflows
+        self.themes = themes
     }
 
     init(from decoder: any Decoder) throws {
@@ -78,6 +84,7 @@ struct PluginManifest: Codable, Hashable, Sendable, Identifiable {
         agents = try container.decodeIfPresent([AgentManifest].self, forKey: .agents) ?? []
         mcpServers = try container.decodeIfPresent([MCPServerManifest].self, forKey: .mcpServers) ?? []
         workflows = try container.decodeIfPresent([WorkflowDefinition].self, forKey: .workflows) ?? []
+        themes = try container.decodeIfPresent(ThemeContributions.self, forKey: .themes) ?? ThemeContributions()
     }
 }
 

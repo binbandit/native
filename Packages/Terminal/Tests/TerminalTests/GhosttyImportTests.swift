@@ -48,6 +48,31 @@ struct GhosttyImportTests {
             ])
     }
 
+    @Test func namesTheLineADiagnosticIsAbout() {
+        let config = file("theme = Nope\nwindow-padding-x = banana\n")
+        #expect(
+            GhosttyConfigFile.locate("window-padding-x: invalid value \"banana\"", in: [config])
+                == "/Users/someone/.config/ghostty/config:2: window-padding-x: invalid value \"banana\"")
+        #expect(
+            GhosttyConfigFile.locate("theme \"Nope\" not found, tried path \"x\"", in: [config])
+                .hasPrefix("/Users/someone/.config/ghostty/config:1: "))
+        #expect(GhosttyConfigFile.locate("something else", in: [config]) == "something else")
+    }
+
+    @Test func quotesTheShellAndResolvesTheLoginShell() {
+        #expect(TerminalShell.command(for: "/opt/homebrew/bin/fish") == "'/opt/homebrew/bin/fish'")
+        #expect(TerminalShell.command(for: "/a b/it's") == "'/a b/it'\\''s'")
+        #expect(TerminalShell.login.path(loginShell: "/bin/zsh") == "/bin/zsh")
+        #expect(TerminalShell.path("/bin/bash").path(loginShell: "/bin/zsh") == "/bin/bash")
+    }
+
+    @Test func reduceTransparencyMakesTheTerminalOpaque() {
+        #expect(TerminalTransparency(backgroundOpacity: 0.8, forcesOpaque: true).backgroundOpacity == 1)
+        let forced = GhosttyConfiguration.userConfigOverrides(TerminalTransparency(forcesOpaque: true))
+        #expect(forced.contains("background-opacity = 1"))
+        #expect(!GhosttyConfiguration.userConfigOverrides(.opaque).contains("background-opacity"))
+    }
+
     @Test func loadsIncludesAfterTheFilesThatNameThem() throws {
         let directory = FileManager.default.temporaryDirectory.appending(path: "ghostty-import-\(UUID())")
         let config = directory.appending(path: "ghostty")

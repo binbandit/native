@@ -21,7 +21,9 @@ public enum TerminalStatus: Hashable, Sendable {
 public enum TerminalStartFailure: Error, Hashable, Sendable {
     /// The folder it was to start in is gone, such as a task worktree that was removed.
     case directoryMissing
-    /// The shell ended right after starting: a missing shell or command, or a broken profile.
+    /// The shell at this path isn't there or can't be run.
+    case shellNotFound(String)
+    /// The shell ended right after starting: a broken profile, or a command that doesn't exist.
     case exitedImmediately
     /// The terminal engine couldn't create the terminal.
     case engineFailed

@@ -18,6 +18,7 @@ struct CodeThemeSettingsRow: View {
 
     @AppStorage(AppearancePreferences.lightCodeThemeKey) private var light = CodeTheme.native.id.rawValue
     @AppStorage(AppearancePreferences.darkCodeThemeKey) private var dark = CodeTheme.native.id.rawValue
+    @Environment(PluginRegistry.self) private var plugins
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
@@ -29,8 +30,9 @@ struct CodeThemeSettingsRow: View {
                 EmptyView()
             }
             HStack(alignment: .top, spacing: DS.Space.lg) {
-                CodeThemePreview(appearance: .light, selection: $light)
-                CodeThemePreview(appearance: .dark, selection: $dark)
+                let themes = PluginThemeCatalog(plugins).allCodeThemes
+                CodeThemePreview(appearance: .light, selection: $light, themes: themes)
+                CodeThemePreview(appearance: .dark, selection: $dark, themes: themes)
             }
         }
     }
@@ -41,7 +43,10 @@ private struct CodeThemePreview: View {
     let appearance: CodeAppearance
     @Binding var selection: String
 
-    @Environment(\.dsCodeThemes) private var themes
+    /// Built-in and plugin themes, labelled with their plugin's name.
+    let themes: [CodeTheme]
+
+    @Environment(\.dsCodeThemes) private var windowThemes
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.md) {
@@ -53,7 +58,7 @@ private struct CodeThemePreview: View {
                 SettingsSelect(
                     label: appearance == .light ? "Light mode code theme" : "Dark mode code theme",
                     selection: $selection,
-                    options: CodeTheme.all.filter { $0.palette(for: appearance) != nil }
+                    options: themes.filter { $0.palette(for: appearance) != nil }
                         .map { .init(value: $0.id.rawValue, title: $0.name) }
                 )
             }
@@ -79,11 +84,12 @@ private struct CodeThemePreview: View {
 
     /// The window's themes with this appearance's choice in place, so the preview follows the picker.
     private var previewThemes: DSCodeThemes {
-        var preview = themes
+        var preview = windowThemes
+        let theme = themes.first { $0.id.rawValue == selection } ?? .native
         if appearance == .light {
-            preview.light = .init(rawValue: selection)
+            preview.light = theme
         } else {
-            preview.dark = .init(rawValue: selection)
+            preview.dark = theme
         }
         return preview
     }

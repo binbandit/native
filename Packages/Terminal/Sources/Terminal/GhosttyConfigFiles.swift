@@ -133,3 +133,27 @@ extension Array where Element == GhosttyConfigFile {
         entries(key).last.map(\.value)
     }
 }
+
+extension GhosttyConfigFile {
+    /// A libghostty diagnostic with where it is. The C API gives `key: message` without a
+    /// location, so this names the last line in the user's files that sets that key, as
+    /// `path:line: key: message`. A theme that can't be found is reported against `theme`.
+    public static func locate(_ diagnostic: String, in files: [GhosttyConfigFile]) -> String {
+        let key: Substring
+        if let colon = diagnostic.range(of: ": "),
+            diagnostic[..<colon.lowerBound].allSatisfy({ $0.isLetter || $0.isNumber || $0 == "-" })
+        {
+            key = diagnostic[..<colon.lowerBound]
+        } else if diagnostic.hasPrefix("theme ") || diagnostic.hasPrefix("failed to load theme") {
+            key = "theme"
+        } else {
+            return diagnostic
+        }
+        for file in files.reversed() {
+            if let entry = file.entries.last(where: { $0.key == key }) {
+                return "\(file.url.path(percentEncoded: false)):\(entry.line): \(diagnostic)"
+            }
+        }
+        return diagnostic
+    }
+}
