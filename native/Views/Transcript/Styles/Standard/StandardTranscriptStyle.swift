@@ -49,7 +49,12 @@ private struct StandardTranscript: View {
     /// Scrolls to the line showing the requested item (unfolding its turn first) and highlights it.
     private func reveal(_ request: TranscriptReveal?, with proxy: ScrollViewProxy) async {
         guard let request else { return }
-        transcript.session.transcriptReveal = nil
+        defer {
+            // Done with it, unless a newer request replaced it meanwhile.
+            if transcript.session.transcriptReveal == request {
+                transcript.session.transcriptReveal = nil
+            }
+        }
         let state = transcript.session.state
         guard let index = state.items.firstIndex(where: { $0.id == request.itemID }) else { return }
         if let turn = state.turns.first(where: { $0.items.contains(index) }) {
