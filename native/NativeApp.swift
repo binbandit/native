@@ -121,6 +121,7 @@ struct NativeApp: App {
                         celebrations, plugins: model.plugins, icons: iconPreferences, settings: settings)
                     iconPreferences.start()
                     PolicyCenter.shared.start()
+                    ExperimentsPolicyWiring.connect()
                     TelemetryCenter.shared.start { [model] in model.runtime($0)?.info?.version }
                     updates.restartContext = { [model] in model.updateRestartContext }
                     updates.start()

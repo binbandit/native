@@ -39,6 +39,10 @@ struct RootView: View {
             // checker already finds heavy.
             content
                 .transcriptSearchPanel()
+                // Opening a pull request (from a badge, a link or the list) shows its page there.
+                .onChange(of: gitHub.presentedPullRequest) { _, reference in
+                    if reference != nil { showsPullRequests = true }
+                }
             StatusBar(registry: statusBar)
         }
             // After an update with highlights, once nothing waits on the user.
@@ -58,10 +62,6 @@ struct RootView: View {
                     automationPage = nil
                     expeditions.isPageShown = false
                 }
-            }
-            // Opening a pull request (from a badge, a link or the list) shows its page there.
-            .onChange(of: gitHub.presentedPullRequest) { _, reference in
-                if reference != nil { showsPullRequests = true }
             }
             .onChange(of: automationPage) { _, page in
                 if page != nil {
