@@ -56,15 +56,16 @@ struct SkillSwitchesTests {
         switches.set(.off, for: "review", in: app)
         let limits = switches.limitations(
             of: review, agents: [.claudeCode: .perSession, .codex: .perProcess, .pi: .unsupported])
-        #expect(limits.count == 2)
-        #expect(limits.contains { $0.hasPrefix("Codex can only turn it off in every project") })
-        #expect(limits.contains { $0.hasPrefix("Pi can't leave a skill out") })
+        #expect(limits == [.loadsEverySkill([.pi]), .everyProjectOnly(.codex)])
+        #expect(
+            SkillSwitchLimitation.loadsEverySkill([.openCode, .pi]).message.hasPrefix(
+                "OpenCode and Pi load every skill"))
 
         let plugin = SkillItem(
             key: "helping", name: "helping", description: nil,
             places: [place("/p/skills/helping", scope: .plugin("helper"), agents: [.claudeCode])], problems: [],
             agents: [.claudeCode])
-        #expect(switches.limitations(of: plugin, agents: [.claudeCode: .perSession]).first?.contains("plugins") == true)
+        #expect(switches.limitations(of: plugin, agents: [.claudeCode: .perSession]) == [.pluginSkill(.claudeCode)])
     }
 
     @Test func roundTripsThroughJSON() throws {
