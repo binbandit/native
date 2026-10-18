@@ -55,8 +55,7 @@ final class MCPLibrary {
         launcher: any StdioLauncher = LocalStdioLauncher(),
         files: any ConfigFileSystem = LocalConfigFiles(),
         secretStore: any SecretStore = KeychainSecretStore(),
-        storeURL: URL = URL.applicationSupportDirectory.appending(
-            path: "Native/mcp-servers.json", directoryHint: .notDirectory)
+        storeURL: URL = MCPLibrary.defaultStoreURL
     ) {
         self.runner = runner
         self.launcher = launcher
@@ -64,6 +63,13 @@ final class MCPLibrary {
         self.secretStore = secretStore
         self.storeURL = storeURL
         servers = load()
+    }
+
+    /// Application Support, per bundle id like the other stores, so dev instances keep their own.
+    static var defaultStoreURL: URL {
+        URL.applicationSupportDirectory
+            .appending(path: Bundle.main.bundleIdentifier ?? "Native", directoryHint: .isDirectory)
+            .appending(path: "mcp-servers.json")
     }
 
     // MARK: - Managed servers
