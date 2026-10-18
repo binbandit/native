@@ -46,7 +46,7 @@ instead of failing the app.
 With [just](https://github.com/casey/just) (`brew install just`):
 
 ```sh
-just install                          # builds Release and installs it in /Applications
+just install                          # builds Release into ~/Applications, replacing the old copy
 just build                            # a Debug build; `just build release` for Release
 just run me                           # an isolated instance with its own settings and data
 ```
