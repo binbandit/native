@@ -14,7 +14,9 @@ struct GitChangesToolbarButton: View {
         } label: {
             Label {
                 if totals.additions > 0 || totals.deletions > 0 {
+                    // The button says it in words (its value), so the counts' own label stays quiet.
                     DiffStatLabel(added: totals.additions, removed: totals.deletions)
+                        .accessibilityHidden(true)
                 }
             } icon: {
                 Image(systemName: "plus.forwardslash.minus")
