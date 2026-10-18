@@ -99,7 +99,7 @@ nonisolated extension EnvironmentValues {
 
 extension DSCodeFont {
     /// 'wght' as a four-character code.
-    private static let weightAxis = 0x7767_6874
+    private nonisolated static let weightAxis = 0x7767_6874
 
     /// `font` in `weight`: a variable font (Geist Mono) moved along its weight axis, otherwise its
     /// family's bold member, the nearest most monospaced families have.
