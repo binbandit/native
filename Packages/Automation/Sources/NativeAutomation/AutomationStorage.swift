@@ -8,7 +8,10 @@ public nonisolated enum AutomationStorage {
         if let path = UserDefaults.standard.string(forKey: "automationDataDirectory"), !path.isEmpty {
             return URL(filePath: path, directoryHint: .isDirectory)
         }
-        return URL.applicationSupportDirectory.appending(path: "Native", directoryHint: .isDirectory)
+        // Per bundle id, like the app's other stores, so separate builds (nightly, isolated dev
+        // instances) keep separate automations.
+        let folder = Bundle.main.bundleIdentifier ?? "Native"
+        return URL.applicationSupportDirectory.appending(path: folder, directoryHint: .isDirectory)
     }
 
     public static func file(_ name: String) -> URL {
