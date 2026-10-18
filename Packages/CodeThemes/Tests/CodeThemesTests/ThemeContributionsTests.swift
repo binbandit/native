@@ -73,7 +73,7 @@ struct ThemeContributionsTests {
         }
         #expect(problem(.keyword, "purple").contains("isn't a color"))
         #expect(problem(.foreground, "#F0F0F0").contains("text is too faint"))
-        #expect(problem(.comment, "#EEEEEE").contains("\"comment\" color is too faint"))
+        #expect(problem(.comment, "#F4F4F4").contains("\"comment\" color is too faint"))
     }
 
     @Test func accentsNeedBothAppearancesAndReadableText() throws {

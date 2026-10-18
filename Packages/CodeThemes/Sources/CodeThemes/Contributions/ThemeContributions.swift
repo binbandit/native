@@ -51,9 +51,10 @@ public struct AccentContribution: Hashable, Sendable {
 
 extension ThemeContributions {
     /// Text roles must reach these against the theme's background, as every built-in theme does:
-    /// body text AA, syntax colors the 3:1 large-text and graphics minimum.
+    /// body text AA, syntax colors no fainter than the faintest built-in one (Rosé Pine Dawn's
+    /// strings, 2.05:1). Upstream themes treat syntax color as a hint over the body text.
     public static let foregroundContrast = 4.5
-    public static let syntaxContrast = 3.0
+    public static let syntaxContrast = 2.0
     /// Accent text on the background, and text on an accent fill.
     public static let accentContrast = 4.5
 
