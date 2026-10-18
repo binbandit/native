@@ -4,11 +4,14 @@ import Terminal
 extension TerminalChrome {
     /// The terminal's background, text, cursor and selection from the design system, so it sits
     /// in the window like the rest of the content: the sunken surface code blocks use, primary
-    /// text, an accent cursor, and an accent-tinted selection.
-    static func designSystem(appearance: TerminalAppearance, palette: DSAccentPalette) -> TerminalChrome {
+    /// text, an accent cursor, and an accent-tinted selection, in the window's light tone.
+    static func designSystem(
+        appearance: TerminalAppearance, palette: DSAccentPalette, lightTone: DSLightTone
+    ) -> TerminalChrome {
         var environment = EnvironmentValues()
         environment.colorScheme = appearance == .dark ? .dark : .light
         environment.dsAccentPalette = palette
+        environment.dsLightTone = lightTone
         let background = TerminalRGB(Color.dsSurfaceSunken, in: environment)
         let accent = TerminalRGB(Color.dsAccent, in: environment)
         return TerminalChrome(
@@ -63,5 +66,6 @@ extension TerminalTransparency {
 struct TerminalAppearanceKey: Equatable {
     let colorScheme: ColorScheme
     let palette: DSAccentPalette
+    let lightTone: DSLightTone
     let transparency: TerminalTransparency
 }
