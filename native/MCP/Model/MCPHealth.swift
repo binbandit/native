@@ -58,7 +58,7 @@ extension ManagedServerDelivery.Outcome {
     func inactiveReason(agentName: String) -> String? {
         switch self {
         case .deliver: nil
-        case .disabled: "Turned off"
+        case .switchedOff: "Switched off in Native"
         case .notForAgent: "Not for \(agentName)"
         case .notForProject: "Off in this project"
         case .unsupportedTransport(let kind): "\(agentName) can't use \(kind.displayName)"

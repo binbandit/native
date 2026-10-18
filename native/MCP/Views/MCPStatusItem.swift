@@ -42,7 +42,7 @@ private struct MCPStatusSegment: View {
                 MCPSessionPanel(library: library, session: session, entries: entries, onManage: onManage)
             }
         } else if let library = MCPServersPlugin.library(in: model.plugins) {
-            let count = library.servers.count(where: \.isEnabled)
+            let count = library.servers.count { library.mode(of: $0.transport.endpoint.key, in: nil) == .on }
             StatusBarSegment(
                 help:
                     "\(count) MCP \(count == 1 ? "server" : "servers") set up in Native. Open a session to see what it loads.",

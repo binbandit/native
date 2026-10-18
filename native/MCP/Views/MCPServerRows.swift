@@ -11,6 +11,7 @@ struct MCPManagedServerRow: View {
     let onCommand: (AgentCLICommand) -> Void
 
     private var key: MCPServerKey { .managed(server.id) }
+    private var isOn: Bool { library.mode(of: server.transport.endpoint.key, in: nil) == .on }
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.md) {
@@ -21,7 +22,7 @@ struct MCPManagedServerRow: View {
                 detail: Text(detail)
             ) {
                 Badge(server.transport.kind.displayName)
-                MCPHealthLabel(health: library.health(of: key, inactive: server.isEnabled ? nil : "Turned off"))
+                MCPHealthLabel(health: library.health(of: key, inactive: isOn ? nil : "Switched off"))
             } control: {
                 HStack(spacing: DS.Space.md) {
                     MCPExpandButton(isExpanded: $isExpanded, name: server.name)
@@ -50,7 +51,7 @@ struct MCPManagedServerRow: View {
                     .accessibilityLabel("Actions for \(server.name)")
                     SettingsSwitch(
                         server.name,
-                        isOn: Binding(get: { server.isEnabled }, set: { library.setEnabled($0, for: server.id) }))
+                        isOn: Binding(get: { isOn }, set: { library.setMode($0 ? .on : .off, of: server.transport.endpoint.key, in: nil) }))
                 }
             }
             if isExpanded {
@@ -73,10 +74,6 @@ struct MCPManagedServerRow: View {
             case .only(let paths): paths.map { URL(filePath: $0).lastPathComponent }.joined(separator: ", ")
             }
         var parts = ["\(agents) · \(projects)"]
-        if !server.excludedProjects.isEmpty {
-            parts.append(
-                "Off in " + server.excludedProjects.map { URL(filePath: $0).lastPathComponent }.joined(separator: ", "))
-        }
         parts += library.skippedAgents(for: server).map(\.reason)
         if let cost = library.contextCost(of: server.name) {
             parts.append("\(DSFormat.tokens(cost.tokens)) tokens of Claude Code's context")

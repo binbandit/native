@@ -39,9 +39,13 @@ final class AgentRuntime {
         status == .ready
     }
 
-    /// Whether sessions can start on the agent: it's running, or idle and starts when asked.
+    /// Whether sessions can start on the agent: it's running, on its way, or idle and starts when
+    /// asked. `AppModel.ensureRunning` waits for it either way.
     var isAvailable: Bool {
-        status == .ready || status == .idle
+        switch status {
+        case .idle, .starting, .ready: true
+        case .notInstalled, .failed: false
+        }
     }
 
     /// The agent's launched process (env, which execs the agent), for resource reporting; nil while

@@ -102,6 +102,7 @@ struct NativeApp: App {
             SessionCommands(model: model)
             TerminalCommands(store: terminals)
             KeepAwakeCommands(controller: keepAwake)
+            StatusBarCommands(registry: statusBar)
         }
 
         Window("Durable Sessions", id: HostPreviewWindow.id) {
@@ -124,7 +125,8 @@ private struct FileCommands: Commands {
                 Task { await model.newSession() }
             }
             .keyboardShortcut("n")
-            .disabled(!model.canCreateSession())
+            // Never disabled otherwise: without a project or an agent, New Session says what's missing.
+            .disabled(model.isCreatingSession)
 
             Button("New Session With…") {
                 model.isChoosingAgent = true

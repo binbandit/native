@@ -88,6 +88,10 @@ final class AppModel {
         let title: String
     }
     @ObservationIgnored private var isStarted = false
+    /// Whether the first check for installed agents has made their runtimes. Internal only for
+    /// AppModel+AgentLifecycle.swift, as is `agentCheckWaiters`.
+    private(set) var hasCheckedAgents = false
+    @ObservationIgnored var agentCheckWaiters: [CheckedContinuation<Void, Never>] = []
 
     private static let lastUsedAgentKey = "defaultAgent"
     static let logger = Logger(subsystem: "Native", category: "Sessions")
@@ -123,15 +127,6 @@ final class AppModel {
     }
 
     // MARK: - Agents
-
-    /// The agents' runtimes, in plugin order.
-    var agents: [AgentRuntime] {
-        runtimes.all
-    }
-
-    func runtime(_ agent: AgentDefinition.ID) -> AgentRuntime? {
-        runtimes[agent]
-    }
 
     /// The agent new sessions start with unless the user picks another: the one used last, or
     /// while that one can't start sessions, the first that can.
@@ -235,6 +230,11 @@ final class AppModel {
         installations.check(plugins.agents, environment: environment)
         let (added, removed) = runtimes.sync(including: installations.isInstalled)
         let worthStarting = agentsWorthStarting()
+        if !hasCheckedAgents {
+            hasCheckedAgents = true
+            agentCheckWaiters.forEach { $0.resume() }
+            agentCheckWaiters = []
+        }
         for agent in removed {
             sessions.removeAll(of: agent)
             catalog.remove(agent: agent)
@@ -318,13 +318,6 @@ final class AppModel {
         creatingSessionWith != nil
     }
 
-    /// Whether a session can start now in `project` with `agent`, defaulting to the current project
-    /// and the default agent.
-    func canCreateSession(in project: Project.ID? = nil, with agent: AgentDefinition.ID? = nil) -> Bool {
-        guard let agent = agent ?? defaultAgent?.id, (project ?? currentProject?.id) != nil else { return false }
-        return !isCreatingSession && runtimes[agent]?.isAvailable == true
-    }
-
     private func lastActive(_ summary: SessionSummary) -> Date {
         sessions.session(summary.id)?.lastActivity ?? summary.info.updatedDate ?? .distantPast
     }
@@ -336,9 +329,20 @@ final class AppModel {
             isAddingProject = true
             return
         }
-        guard let agent = agent ?? defaultAgent?.id, canCreateSession(in: project.id, with: agent) else { return }
+        // One at a time; the one under way shows its progress.
+        guard !isCreatingSession else { return }
+        // Right after launch there may be no default agent yet, until the check for agents is done.
+        if agent ?? defaultAgent?.id == nil {
+            await agentsChecked()
+        }
+        guard let agent = agent ?? defaultAgent?.id else {
+            // No agent is installed; Add Agent says how to get one.
+            isAddingAgent = true
+            return
+        }
         creatingSessionWith = agent
         defer { creatingSessionWith = nil }
+        // Waits for an agent that's still starting, and starts an idle one.
         guard let runtime = await ensureRunning(agent) else {
             errorMessage = startFailure(of: agent)
             return

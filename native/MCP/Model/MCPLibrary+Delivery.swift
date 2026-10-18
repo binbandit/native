@@ -10,7 +10,8 @@ extension MCPLibrary {
             agentID: session.agent.rawValue,
             directory: session.cwd,
             transports: agent?.transports,
-            agentServers: agent.map { agentServers($0.format, in: session.cwd) } ?? []
+            agentServers: agent.map { agentServers($0.format, in: session.cwd) } ?? [],
+            switches: switches
         )
         return ManagedServerDelivery.plan(servers, for: target)
     }
@@ -35,7 +36,7 @@ extension MCPLibrary {
         let own = agent.map { agentServers($0.format, in: session.cwd) } ?? []
         let managed = deliveries(for: session).filter { decision in
             switch decision.outcome {
-            case .notForAgent, .disabled: false
+            case .notForAgent: false
             default: true
             }
         }
