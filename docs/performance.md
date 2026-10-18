@@ -111,7 +111,7 @@ history, telemetry, the command palette), so not every difference is this work's
   never stops. Native can now close sessions nobody has used for a while (`session/close`, which
   codex-acp and claude-agent-acp both support) and drop their transcripts; selecting one loads it
   back. It's off by default (the `sessionIdleTimeout` default, in seconds, turns it on) because
-  in testing it didn't pay and reopening wasn't faithful:
+  in testing it didn't pay, and at first reopening wasn't faithful:
   - Codex's app-server only unsubscribes a closed thread and keeps it loaded, MCP servers and all:
     the closed sessions' servers were still running 11 minutes later. It unloads a thread after
     `thread_unload_delay_secs`, a top-level Codex setting. Native now sends
@@ -120,10 +120,13 @@ history, telemetry, the command palette), so not every difference is this work's
     session's config and starts the app-server as a plain `codex app-server` (only `hooks` become
     `-c` arguments), so the delay never applies: three minutes after closing two of three
     sessions, all 33 processes were still there.
-  - A session loaded back shows its transcript correctly, but with the agent's default model
-    (6 Astra instead of the 6.1 Sol it ran with) and the agent's own title ("Reply with OK2"
-    instead of "OK2"). The same happens today whenever an agent restarts; closing idle sessions
-    would make it routine.
+  - A session loaded back showed its transcript correctly, but codex-acp 2.2.2 reopens it on its
+    default model and mode (6 Astra and Auto review instead of the 6.1 Sol and Full access it ran
+    with), and the same happened whenever an agent restarted. Native now remembers the settings
+    chosen for each session (`ConfigChoices`, kept by `SessionTitles`) and sets them back after
+    `session/load`, before anything queued goes out (`SessionModel+ConfigRestore.swift`). The
+    title was never the agent's: Native's own wins on load too, and the on-device titler had
+    named that session "Reply with OK2" itself.
 - **npx sat between Native and every adapter.** `npx --yes <adapter>@<version>` keeps an
   `npm exec` Node process alive as the adapter's parent (52–118 MB each) and adds 0.8–2.7 s to
   every agent start. When npx has already installed that exact version, Native now runs the
@@ -174,8 +177,7 @@ history, telemetry, the command palette), so not every difference is this work's
 | What | Why | Owner |
 | --- | --- | --- |
 | Let Codex unload closed threads | Codex keeps an unsubscribed thread, with its MCP servers (about 1 GB each here), for `thread_unload_delay_secs`. Native already sends 60 s in `CODEX_CONFIG`; codex-acp has to pass top-level settings to `codex app-server` (as `-c`, as it does for `hooks`) for it to apply | Upstream codex-acp, then the Codex plugin |
-| Make `session/load` faithful | A loaded session must keep the model, mode and title it had: remember them when a session closes or the agent stops, and set them back after loading if the agent reports others | App model, Codex plugin |
-| Turn on closing idle sessions | Once both rows above are done: default `sessionIdleTimeout` to 10 minutes. Also check claude-agent-acp, where each session is its own Claude Code process | App model |
+| Turn on closing idle sessions | Once the row above is done (reopening is faithful now): default `sessionIdleTimeout` to 10 minutes. Also check claude-agent-acp, where each session is its own Claude Code process | App model |
 | Cache the applied plugin list itself | Only the experiment scan is cached; `plugins` still maps every loaded plugin on every read | Experiments / plugins |
 | "Couldn't run git: The file “project” doesn't exist" alert | New Session in a project whose folder is gone shows a modal; the sidebar already says "Can't find this project's folder" with Retry | Failures |
 | Narrow what the composer and sidebar rows observe | While a reply streams, `ModelPill`, `ComposerView`, `SessionRow` and `AppModel.statusBarTasks` re-render on every chunk because they read `session.state`; they need the mirrored `configOptions`, status and title only | Composer, sidebar |
