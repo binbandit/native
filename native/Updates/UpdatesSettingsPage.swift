@@ -26,8 +26,22 @@ extension SettingsPane {
                         id: UpdatesSettingsPage.versionRow, title: "Version", keywords: ["build", "release notes"]),
                 ]
             },
-            content: { UpdatesSettingsPage() }
+            content: { UpdatesSettingsEntry() }
         )
+}
+
+/// Finds the app's `UpdateController`, which `NativeApp` puts in the environment.
+private struct UpdatesSettingsEntry: View {
+    @Environment(UpdateController.self) private var controller: UpdateController?
+
+    var body: some View {
+        if let controller {
+            UpdatesSettingsPage(controller: controller)
+        } else {
+            SettingsPage {
+                SettingsHeader("Updates", description: Text("The updater isn't running in this window."))
+            }
+        }
     }
 }
 
@@ -37,7 +51,7 @@ struct UpdatesSettingsPage: View {
     static let downloadsRow = SettingsRowID("updates.automatic-downloads")
     static let versionRow = SettingsRowID("updates.version")
 
-    @Environment(UpdateController.self) private var controller
+    let controller: UpdateController
 
     @Environment(\.openURL) private var openURL
 

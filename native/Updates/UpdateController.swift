@@ -243,13 +243,12 @@ final class UpdateController {
     #endif
 
     private static func unavailableReason(for version: AppVersion) -> UpdateUnavailableReason? {
-        #if !canImport(Sparkle)
-        return .unsupportedPlatform
-        #elseif DEBUG
-        // Local update tests pass a feed URL to a Debug build (docs/releasing.md).
-        return version.isUpdateConfigured ? nil : .developmentBuild
-        #else
+        #if canImport(Sparkle)
+        // A build run from source has no feed: a release would replace it.
+        if version.channel == .dev { return .developmentBuild }
         return version.isUpdateConfigured ? nil : .notConfigured
+        #else
+        return .unsupportedPlatform
         #endif
     }
 }

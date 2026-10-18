@@ -148,7 +148,7 @@ struct UpdateStatusView: View {
             case .developmentBuild:
                 (
                     "Updates are off in development builds",
-                    "A development build would replace itself with a release. Pull and rebuild to get new changes."
+                    "This build runs from source, so it has no update feed: a release would replace it. Pull and rebuild to get new changes."
                 )
             case .notConfigured:
                 (
