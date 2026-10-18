@@ -23,19 +23,12 @@ extension PromptAttachment {
     public enum LoadError: LocalizedError, Equatable {
         case missing(name: String)
         case unreadable(name: String)
-        case imageTooLarge(name: String, byteCount: Int)
 
         public var errorDescription: String? {
             switch self {
             case .missing(let name): "\(name) isn’t there anymore."
             case .unreadable(let name): "Native couldn’t read \(name)."
-            case .imageTooLarge(let name, let byteCount):
-                "\(name) is \(Self.size(byteCount)); images can be up to \(Self.size(Limits.imageFileBytes))."
             }
-        }
-
-        private static func size(_ bytes: Int) -> String {
-            ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)
         }
     }
 
@@ -47,9 +40,14 @@ extension PromptAttachment {
             switch self {
             case .tooMany: "A message can carry up to \(Limits.count) files."
             case .tooMuchInline(let name):
-                "\(name) would take this message past \(ByteCountFormatter.string(fromByteCount: Int64(Limits.inlineBytes), countStyle: .file)) of images and files. Send it in the next message."
+                "\(name) would take this message past \(size(Limits.inlineBytes)) of images and files. "
+                    + "Send it in the next message."
             }
         }
+    }
+
+    static func size(_ bytes: Int) -> String {
+        ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)
     }
 
     /// `existing` with `attachment` added, or as it is when that file is already there. Throws when
@@ -78,7 +76,7 @@ extension PromptAttachment {
             return PromptAttachment(url: url, content: .reference, byteCount: values.fileSize, origin: origin)
         }
         let byteCount = values.fileSize ?? 0
-        if values.contentType?.conforms(to: .image) == true, let image = try image(at: url, byteCount: byteCount) {
+        if values.contentType?.conforms(to: .image) == true, let image = image(at: url, byteCount: byteCount) {
             return PromptAttachment(url: url, content: image, byteCount: byteCount, origin: origin)
         }
         if byteCount <= Limits.embeddedTextBytes {
@@ -106,14 +104,11 @@ extension PromptAttachment {
     }
 
     /// The image's content: as it is when agents take it as is, otherwise scaled and re-encoded.
-    /// Nil when ImageIO can't read it, so it goes as a file.
-    private static func image(at url: URL, byteCount: Int) throws -> Content? {
-        guard let source = CGImageSourceCreateWithURL(url as CFURL, nil), CGImageSourceGetCount(source) > 0 else {
-            return nil
-        }
-        guard byteCount <= Limits.imageFileBytes else {
-            throw LoadError.imageTooLarge(name: url.lastPathComponent, byteCount: byteCount)
-        }
+    /// Nil when it's past `Limits.imageFileBytes` or ImageIO can't draw it, so it goes as a file.
+    private static func image(at url: URL, byteCount: Int) -> Content? {
+        guard byteCount <= Limits.imageFileBytes, let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+            CGImageSourceGetCount(source) > 0
+        else { return nil }
         let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any]
         let width = properties?[kCGImagePropertyPixelWidth] as? Int ?? 0
         let height = properties?[kCGImagePropertyPixelHeight] as? Int ?? 0
@@ -125,8 +120,7 @@ extension PromptAttachment {
         {
             return .image(data, mimeType: mimeType)
         }
-        guard let scaled = scaled(source) else { throw LoadError.unreadable(name: url.lastPathComponent) }
-        return encoded(scaled).map { .image($0.data, mimeType: $0.mimeType) }
+        return scaled(source).flatMap(encoded).map { .image($0.data, mimeType: $0.mimeType) }
     }
 
     /// The image upright and fitting `Limits.imagePixels`.

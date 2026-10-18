@@ -100,6 +100,16 @@ struct PromptAttachmentLoadingTests {
         #expect(attachment.isImage)
     }
 
+    /// Files that only look like images (an SVG, a broken PNG) go as text or by path, never fail.
+    @Test func filesImageIOCantDrawStillAttach() throws {
+        let svg = folder.appending(path: "logo.svg")
+        try Data(#"<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"/>"#.utf8).write(to: svg)
+        #expect(try PromptAttachment.load(svg).content == .text(#"<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"/>"#))
+        let broken = folder.appending(path: "broken.png")
+        try Data([0x89, 0x50, 0x4E, 0x47, 0, 1, 2, 3]).write(to: broken)
+        #expect(try PromptAttachment.load(broken).content == .reference)
+    }
+
     @Test func missingFilesSaySo() {
         #expect(throws: PromptAttachment.LoadError.missing(name: "gone.txt")) {
             try PromptAttachment.load(folder.appending(path: "gone.txt"))

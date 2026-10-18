@@ -90,6 +90,14 @@ struct TreeSitterHighlighterTests {
         #expect(roles(of: "// yes", in: code, "md") == [.comment])
     }
 
+    @Test func keysInDataFilesDifferFromValues() {
+        #expect(roles(of: "\"name\"", in: "{\"name\": \"native\"}", "json") == [.tag])
+        #expect(roles(of: "\"native\"", in: "{\"name\": \"native\"}", "json") == [.string])
+        #expect(roles(of: "name", in: "name = \"native\"\nbuild.target = 1", "toml") == [.tag])
+        #expect(roles(of: "target", in: "name = \"native\"\nbuild.target = 1", "toml") == [.tag])
+        #expect(roles(of: "name", in: "name: native\nsteps: [a]", "yaml") == [.tag])
+    }
+
     @Test func htmlScriptsAndStylesAreTheirOwnLanguages() {
         let code = "<script>const n = 1;</script><style>p { color: red; }</style>"
         #expect(roles(of: "script", in: code, "html") == [.tag, .tag])

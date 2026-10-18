@@ -80,11 +80,12 @@ enum TreeSitterGrammar: String, CaseIterable, Sendable {
     }
 
     /// Where a capture's meaning depends on the language: keys are the structure of data and style
-    /// files, an HTML or JSX attribute is a name rather than a decorator.
+    /// files, an HTML or JSX attribute is a name rather than a decorator, a shell's `property` is a
+    /// variable.
     func role(forCapture name: String) -> CodeTokenRole? {
         switch (self, name) {
         case (.yaml, "property"), (.toml, "property"), (.css, "property"): .tag
-        case (.css, "variable"): .variable
+        case (.css, "variable"), (.bash, "property"): .variable
         case (.html, "attribute"), (.javascript, "attribute"), (.tsx, "attribute"): .variable
         case (.javascript, "string.special"), (.typescript, "string.special"), (.tsx, "string.special"): .regex
         default: CodeTokenRole(capture: name)
