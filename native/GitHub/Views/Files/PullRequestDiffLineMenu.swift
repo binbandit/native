@@ -9,6 +9,8 @@ struct PullRequestDiffLineMenu: View {
     let hunk: DiffHunk
     /// The line's index in the hunk.
     let line: Int
+    /// Whether the line is cut off at the edge, so "Show Whole Line" applies.
+    var isCutOff = false
 
     var body: some View {
         let diffLine = hunk.lines[line]
@@ -37,6 +39,11 @@ struct PullRequestDiffLineMenu: View {
                 model: model, anchor: isInDraft ? (model.draft?.anchor ?? anchor) : anchor, thread: nil)
         }
         Divider()
+        if isCutOff {
+            Button("Show Whole Line", systemImage: "arrow.left.and.right.text.vertical") {
+                model.expandLine(path, hunk, line)
+            }
+        }
         Button("Copy Line", systemImage: "doc.on.doc") { model.gitHub?.copy(diffLine.text) }
     }
 }

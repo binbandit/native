@@ -88,6 +88,12 @@ extension PullRequestPageModel {
         lineCounts[path] ?? 0
     }
 
+    /// Digits in the file's largest line number, so its gutters line up.
+    func numberWidth(_ path: String) -> Int {
+        let largest = hunks[path]?.flatMap(\.lines).compactMap { max($0.oldNumber ?? 0, $0.newNumber ?? 0) }.max() ?? 0
+        return max(String(largest).count, 2)
+    }
+
     static func hunkKey(_ path: String, _ hunk: DiffHunk) -> String {
         "\(path)#\(hunk.id)"
     }

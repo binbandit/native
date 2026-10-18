@@ -14,29 +14,33 @@ private struct PullRequestFileCardSlice: ViewModifier {
 
     func body(content: Content) -> some View {
         let radius = DS.Radius.card
-        let top: CGFloat = slice == .top || slice == .single ? radius : 0
-        let bottom: CGFloat = slice == .bottom || slice == .single ? radius : 0
+        let hasTop = slice == .top || slice == .single
+        let hasBottom = slice == .bottom || slice == .single
+        let top: CGFloat = hasTop ? radius : 0
+        let bottom: CGFloat = hasBottom ? radius : 0
         let shape = UnevenRoundedRectangle(
             topLeadingRadius: top, bottomLeadingRadius: bottom, bottomTrailingRadius: bottom,
             topTrailingRadius: top, style: .continuous)
         content
             .background(.dsDiffBackground, in: shape)
             .clipShape(shape)
-            .overlay { PullRequestFileCardBorder(slice: slice, radius: radius).stroke(.dsSeparator, lineWidth: 1) }
+            .overlay {
+                PullRequestFileCardBorder(hasTop: hasTop, hasBottom: hasBottom, radius: radius)
+                    .stroke(.dsSeparator, lineWidth: 1)
+            }
             // Space between files.
-            .padding(.bottom, slice == .bottom || slice == .single ? DS.Space.lg : 0)
+            .padding(.bottom, hasBottom ? DS.Space.lg : 0)
     }
 }
 
 /// The card's border for one slice: the sides always, the top and bottom only at the ends.
 private struct PullRequestFileCardBorder: Shape {
-    let slice: PullRequestFilesRow.Slice
+    let hasTop: Bool
+    let hasBottom: Bool
     let radius: CGFloat
 
     nonisolated func path(in rect: CGRect) -> Path {
         let rect = rect.insetBy(dx: 0.5, dy: 0)
-        let hasTop = slice == .top || slice == .single
-        let hasBottom = slice == .bottom || slice == .single
         var path = Path()
         // Left side, from the bottom up, rounding into the top if it's there.
         path.move(to: CGPoint(x: rect.minX, y: hasBottom ? rect.maxY - radius : rect.maxY))

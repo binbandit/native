@@ -14,6 +14,8 @@ struct PullRequestDiffBlock: View {
     /// Changes when the text does; compared instead of the texts themselves.
     let textKey: String
     let isShiftDown: Bool
+    /// Where a cut-off line's "…" starts, from the code's leading edge.
+    let markerOffset: CGFloat
 
     @State private var rowHeight: CGFloat = 0
     @State private var hovered: Int?
@@ -38,6 +40,16 @@ struct PullRequestDiffBlock: View {
             // mouse wheel meant for the page. Long lines stay selectable and copyable.
             PullRequestDiffBlockCode(text: text, key: textKey)
                 .equatable()
+                // A click on a cut-off line's "…" shows the line whole; selection still works.
+                .simultaneousGesture(
+                    SpatialTapGesture().onEnded { value in
+                        if let index = index(at: value.location.y), text.cutOff.contains(index),
+                            value.location.x >= markerOffset
+                        {
+                            model.expandLine(path, hunk, range.lowerBound + index)
+                        }
+                    }
+                )
                 .padding(.horizontal, DS.Space.md)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .clipped()
@@ -51,7 +63,9 @@ struct PullRequestDiffBlock: View {
         }
         .contextMenu {
             if let index = hovered ?? range.last.map({ $0 - range.lowerBound }) {
-                PullRequestDiffLineMenu(model: model, path: path, hunk: hunk, line: range.lowerBound + index)
+                PullRequestDiffLineMenu(
+                    model: model, path: path, hunk: hunk, line: range.lowerBound + index,
+                    isCutOff: text.cutOff.contains(index))
             }
         }
         .accessibilityElement(children: .contain)
