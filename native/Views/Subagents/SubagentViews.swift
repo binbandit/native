@@ -15,7 +15,7 @@ struct SubagentCard: View {
                     .foregroundStyle(.dsTextSecondary)
                 VStack(alignment: .leading, spacing: DS.Space.xxs) {
                     Text(subagent.title ?? "Subagent")
-                        .font(.dsCalloutMedium)
+                        .fontWeight(.medium)
                         .lineLimit(1)
                     if let description = subagent.description, !description.isEmpty {
                         Text(description)
@@ -31,8 +31,8 @@ struct SubagentCard: View {
                     .foregroundStyle(.dsTextTertiary)
             }
             .padding(.horizontal, DS.Space.lg)
-            .padding(.vertical, DS.Space.xl)
-            .background(Color.dsSurfaceSunken.opacity(0.5), in: .rect(cornerRadius: DS.Radius.card))
+            .padding(.vertical, DS.Space.lg)
+            .background(.dsSurfaceSunken, in: .rect(cornerRadius: DS.Radius.card))
             .overlay {
                 RoundedRectangle(cornerRadius: DS.Radius.card)
                     .strokeBorder(
@@ -109,7 +109,7 @@ struct SubagentStatusLabel: View {
         .font(.dsMicro)
         .foregroundStyle(.dsTextSecondary)
         .symbolRenderingMode(.hierarchical)
-        .animation(.dsStandard, value: state)
+        .animation(.smooth, value: state)
     }
 }
 

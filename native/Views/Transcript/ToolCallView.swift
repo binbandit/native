@@ -52,7 +52,7 @@ struct ToolCallView: View {
                     .transition(.opacity)
             }
         }
-        .animation(.dsStandard, value: phase)
+        .animation(.smooth, value: phase)
     }
 
     private func detailsAvailable(for presentation: ToolPresentation) -> Bool {

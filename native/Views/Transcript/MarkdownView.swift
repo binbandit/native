@@ -217,13 +217,13 @@ private struct CodeBlockView: View {
             ScrollView(.horizontal) {
                 Text(verbatim: code.hasSuffix("\n") ? String(code.dropLast()) : code)
                     .font(.dsMono)
-                    .lineSpacing(1)
+                    .lineSpacing(TranscriptMetrics.codeLineSpacing)
             }
             .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
             .fixedSize(horizontal: false, vertical: true)
         }
         .padding(.horizontal, DS.Space.lg)
-        .padding(.vertical, DS.Space.xl)
+        .padding(.vertical, DS.Space.lg)
         .frame(maxWidth: .infinity, alignment: .leading)
         .nestedSurface(.dsSurfaceSunken, minimumRadius: DS.Radius.card)
     }
@@ -242,7 +242,7 @@ private struct MarkdownTableView: View {
                     let cells = row.cellsByColumn
                     ForEach(columns.indices, id: \.self) { column in
                         Text(cells[column] ?? AttributedString())
-                            .font(isHeader ? .dsCalloutSemibold : .dsCallout)
+                            .fontWeight(isHeader ? .semibold : nil)
                             .gridColumnAlignment(Self.alignment(columns[column].alignment))
                     }
                 }

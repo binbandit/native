@@ -10,4 +10,7 @@ nonisolated enum TranscriptMetrics {
     static let toolDetailMaxHeight: CGFloat = 266
     static let toolImageMaxHeight: CGFloat = 200
     static let planMaxHeight: CGFloat = 220
+    /// Leading between lines of a Markdown code block and of a tool's output.
+    static let codeLineSpacing: CGFloat = 1
+    static let outputLineSpacing: CGFloat = 3
 }

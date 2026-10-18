@@ -144,7 +144,7 @@ private struct ContentBlockView: View {
                     .scaledToFit()
                     .frame(maxHeight: TranscriptMetrics.toolImageMaxHeight, alignment: .leading)
                     .clipShape(.rect(cornerRadius: DS.Radius.row))
-                    .padding(DS.Space.xl)
+                    .padding(DS.Space.lg)
             } else {
                 placeholder("Image (\(mimeType))", systemImage: "photo")
             }
@@ -159,7 +159,7 @@ private struct ContentBlockView: View {
                 } else {
                     MarkdownView(text)
                         .font(.dsBody)
-                        .padding(DS.Space.xl)
+                        .padding(DS.Space.lg)
                 }
             } else if case .resource(let uri, _) = block {
                 placeholder(uri, systemImage: "doc")
@@ -179,7 +179,7 @@ private struct ContentBlockView: View {
         Label(title, systemImage: systemImage)
             .font(.dsCaption)
             .foregroundStyle(.dsTextSecondary)
-            .padding(DS.Space.xl)
+            .padding(DS.Space.lg)
     }
 }
 
@@ -187,10 +187,10 @@ private extension View {
     /// Tool output type: small monospaced text with roomy lines, padded inside the detail panel.
     func monospacedOutput() -> some View {
         font(.dsMonoCaption)
-            .lineSpacing(DS.Space.xxs)
+            .lineSpacing(TranscriptMetrics.outputLineSpacing)
             .textSelection(.enabled)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, DS.Space.xl)
+            .padding(.horizontal, DS.Space.lg)
             .padding(.vertical, DS.Space.md)
     }
 }
