@@ -107,12 +107,12 @@ same extension points later, as a second source. See "Experiments" in `docs/arch
 
 ## 2026-10-17: Any machine can be a host
 
-Agents can run on other machines: a Mac mini, a Linux server, later cloud sandboxes.
-Each machine runs the same Native Host; the app connects to several hosts at
-once, and every project belongs to one. Remote hosts are reached over SSH first (the user's own
-keys, nothing new to trust), with other transports later. To keep this possible, nothing outside a
-host runs commands or touches project files directly: code that shells out takes a `CommandRunner`
-(`Packages/Exec`), so the same code runs on whichever machine owns the project.
+Agents can run on other machines: a Mac mini, a Linux server, later cloud sandboxes. Each machine
+runs the same Native Host; the app connects to several hosts at once, and every project belongs to
+one. Remote hosts are reached over SSH first (the user's own keys, nothing new to trust), with other
+transports later. To keep this possible, nothing outside a host runs commands or touches project
+files directly: code that shells out takes a `CommandRunner` (`Packages/Exec`), so the same code
+runs on whichever machine owns the project.
 
 ## 2026-10-17: Native runs on iPad, connected to a host
 
@@ -189,10 +189,11 @@ Ghostty" copies it into Native's settings once (`docs/terminal.md`).
 
 ## 2026-10-18: Expeditions
 
-Native's take on long, multi-agent projects is called Expeditions. A lead agent proposes a route of assignments, the user approves it, and a crew of agents from any
-providers works through it with review checkpoints, ending in a debrief and a pull request. It is
-built from Native's own pieces (orchestration, goals, the workflow engine, worktrees, the durable
-host) under its own vocabulary. Design: `docs/expeditions.md`.
+Native's take on long, multi-agent projects is called Expeditions. A lead agent proposes a route of
+assignments, the user approves it, and a crew of agents from any providers works through it with
+review checkpoints, ending in a debrief and a pull request. It is built from Native's own pieces
+(orchestration, goals, the workflow engine, worktrees, the durable host) under its own vocabulary.
+Design: `docs/expeditions.md`.
 
 ## 2026-10-18: Seasonal channel icons are opt-in and expire locally
 
