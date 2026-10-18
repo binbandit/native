@@ -14,11 +14,18 @@ public struct GitHubCLI: Sendable {
     public let host: String?
     public let runner: any CommandRunner
 
-    public init(environment: [String: String], host: String? = nil, runner: any CommandRunner = LocalCommandRunner()) {
+    public init(environment: [String: String], host: String? = nil, runner: any CommandRunner) {
         self.environment = environment
         self.host = host
         self.runner = runner
     }
+
+    #if os(macOS)
+    /// gh on this Mac.
+    public init(environment: [String: String], host: String? = nil) {
+        self.init(environment: environment, host: host, runner: LocalCommandRunner())
+    }
+    #endif
 
     /// The same gh, aimed at another host.
     public func targeting(host: String?) -> GitHubCLI {

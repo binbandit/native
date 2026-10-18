@@ -46,33 +46,6 @@ public struct PullRequestStatus: Sendable, Hashable, Decodable {
         case id, headRefName, baseRefName, reviewDecision, mergeable, additions, deletions, commits
     }
 
-    private struct Commits: Decodable {
-        struct Node: Decodable {
-            struct Commit: Decodable {
-                var statusCheckRollup: Rollup?
-            }
-
-            var commit: Commit
-        }
-
-        var nodes: [Node]
-    }
-
-    private struct Rollup: Decodable {
-        struct Contexts: Decodable {
-            var checkRunCountsByState: [Tally]?
-            var statusContextCountsByState: [Tally]?
-        }
-
-        struct Tally: Decodable {
-            var state: String
-            var count: Int
-        }
-
-        var state: String
-        var contexts: Contexts?
-    }
-
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(String.self, forKey: .id)
@@ -82,32 +55,7 @@ public struct PullRequestStatus: Sendable, Hashable, Decodable {
         mergeable = try container.decodeEnum(PullRequest.Mergeable.self, forKey: .mergeable)
         additions = try container.decodeIfPresent(Int.self, forKey: .additions) ?? 0
         deletions = try container.decodeIfPresent(Int.self, forKey: .deletions) ?? 0
-        let rollup = try container.decodeIfPresent(Commits.self, forKey: .commits)?.nodes.last?.commit.statusCheckRollup
-        checks = rollup.map(Self.summary)
-    }
-
-    /// GitHub's own rollup state (it knows about required checks that haven't reported), with
-    /// counts from its per-state tallies.
-    private static func summary(_ rollup: Rollup) -> CheckSummary {
-        var counts = [CheckOutcome: Int]()
-        let tallies =
-            (rollup.contexts?.checkRunCountsByState ?? []) + (rollup.contexts?.statusContextCountsByState ?? [])
-        for tally in tallies where tally.count > 0 {
-            counts[CheckOutcome(state: tally.state), default: 0] += tally.count
-        }
-        let state: CheckSummary.State =
-            switch rollup.state.uppercased() {
-            case "SUCCESS": .passing
-            case "FAILURE", "ERROR": .failing
-            default: .pending
-            }
-        return CheckSummary(
-            state: state,
-            passed: counts[.passed] ?? 0,
-            failed: counts[.failed] ?? 0,
-            pending: counts[.pending] ?? 0,
-            skipped: counts[.skipped] ?? 0
-        )
+        checks = try container.decodeIfPresent(CheckRollup.LastCommit.self, forKey: .commits)?.rollup?.summary
     }
 
     /// The GraphQL response around a batch of statuses.

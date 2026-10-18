@@ -1,3 +1,4 @@
+import NativePolicy
 import NativeTelemetry
 
 /// Counts sessions started, by agent and the agent's version, for whichever destinations are on.

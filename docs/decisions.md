@@ -342,3 +342,15 @@ Release publishing uploads dSYMs to FoxyCorps / `native` before publishing, usin
 `SENTRY_AUTH_TOKEN` secret and checksum-verified official CLI **3.8.0**. It never uploads source bundles.
 Dry runs don't upload; failed symbol uploads stop publication. Server-side IP scrubbing and a rule
 removing `$user.geo.**` discard IP/geography enrichment Sentry adds after SDK filtering. See `docs/releasing.md`.
+
+## 2026-10-18: Companion transport: Noise over TCP
+
+Paired devices reach a host over TCP with a Noise handshake (`XX`, and `XXpsk3` with the one-time
+pairing secret), built on CryptoKit (`Packages/NativeLink`, checked against the cacophony vectors).
+TLS with pinned certificates through Network.framework was the alternative and lost on three
+counts: CryptoKit can't make the self-signed certificates it needs (we'd hand-encode X.509), the
+identities would live in the keychain, which prompts for every development build's new signature,
+and pairing by a short typed code needs a PSK or PAKE that Network.framework's TLS doesn't offer
+cleanly. Noise gives mutual authentication with pinned keys, forward secrecy and a pre-shared
+pairing secret in one small, testable state machine that runs the same over TCP today and a
+ciphertext-only relay later. No third-party code. See `docs/companion.md`.
