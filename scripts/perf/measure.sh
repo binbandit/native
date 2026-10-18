@@ -50,11 +50,11 @@ trap '"$run" "$name" --quit >/dev/null 2>&1 || true' EXIT
 # A scratch project and Codex as the default agent, once the instance has been built; it keeps them.
 seed() {
     local plist="/tmp/native-dd/$name/Build/Products/Debug/Native.app/Contents/Info.plist" bundle
-    bundle=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$plist" 2>/dev/null) || return 0
-    defaults read "$bundle" projects >/dev/null 2>&1 && return 0
     local project=/tmp/native-perf/project
     mkdir -p "$project"
-    printf '# Scratch project\n\nA throwaway folder for measuring Native.\n' >"$project/README.md"
+    [ -f "$project/README.md" ] || printf '# Scratch project\n\nA throwaway folder for measuring Native.\n' >"$project/README.md"
+    bundle=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$plist" 2>/dev/null) || return 0
+    defaults read "$bundle" projects >/dev/null 2>&1 && return 0
     defaults write "$bundle" workspace "$project"
     defaults write "$bundle" defaultAgent codex
 }

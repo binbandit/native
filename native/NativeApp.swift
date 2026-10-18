@@ -99,7 +99,7 @@ struct NativeApp: App {
                 .appearancePreferences(plugins: model.plugins)
                 .dsAccentPalette(themeID: iconPreferences.theme.rawValue)
                 .task {
-                    OrchestrationPlugin.connect(to: model)
+                    OrchestrationPlugin.connect(to: model, updates: updates, durableHost: durableHost)
                     MCPServersPlugin.connect(to: model) { BuiltInPlugins.usage.contextReports.reports }
                     SkillsPlugin.connect(to: model)
                     BuiltInPlugins.search.center.connect(to: model)

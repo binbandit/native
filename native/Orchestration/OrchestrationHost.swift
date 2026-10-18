@@ -1,4 +1,5 @@
 import Foundation
+import NativeSetup
 
 /// What the orchestration tools need from the app: sessions they can start, reopen, watch, message
 /// and cancel on behalf of an agent. Sessions are named by their `SessionKey`, which outlives a
@@ -40,4 +41,8 @@ protocol OrchestrationHost: AnyObject, Sendable {
     /// Names of the skills switched off for the session with this client id (Settings ▸ Skills),
     /// which the skill tools leave out for it.
     func disabledSkills(of clientID: UUID) -> Set<String>
+
+    /// How Native is set up on this Mac, for `setup_status`: only what Settings shows, with the
+    /// caller's agent marked.
+    func setupReport(callerAgent: AgentDefinition.ID) async -> SetupReport
 }

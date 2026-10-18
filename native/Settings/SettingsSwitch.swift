@@ -19,6 +19,16 @@ struct SettingsSwitch: View {
 
 private struct SettingsSwitchStyle: ToggleStyle {
     func makeBody(configuration: Configuration) -> some View {
+        SettingsSwitchBody(configuration: configuration)
+    }
+}
+
+private struct SettingsSwitchBody: View {
+    let configuration: ToggleStyleConfiguration
+
+    @Environment(\.isEnabled) private var isEnabled
+
+    var body: some View {
         // A button, so the switch takes keyboard focus and toggles with Space.
         Button {
             configuration.isOn.toggle()
@@ -35,11 +45,21 @@ private struct SettingsSwitchStyle: ToggleStyle {
                 }
                 .animation(.dsStandard, value: configuration.isOn)
                 .contentShape(Capsule())
+                // Conductor's `data-disabled:opacity-50`: a switch that can't change looks it,
+                // whichever way it's set.
+                .opacity(isEnabled ? 1 : 0.5)
         }
-        .buttonStyle(.plain)
+        .buttonStyle(SettingsSwitchButtonStyle())
         .settingsFocusShape(Capsule())
         .accessibilityRepresentation {
             Toggle(isOn: configuration.$isOn) { configuration.label }
         }
+    }
+}
+
+/// No pressed or disabled styling of its own: the switch draws both.
+private struct SettingsSwitchButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
     }
 }

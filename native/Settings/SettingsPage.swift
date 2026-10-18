@@ -48,7 +48,9 @@ extension SettingsHeader where Actions == EmptyView {
     }
 }
 
-/// A heading over part of a page (Conductor's muted `text-sm font-medium` group headings).
+/// A heading over part of a page. It's a step larger than a row title, in the primary color, with
+/// extra room above, so it reads as the start of a section rather than a dimmed row; the note under
+/// it is the section's description.
 struct SettingsSubheading: View {
     let title: String
     var note: String?
@@ -61,14 +63,16 @@ struct SettingsSubheading: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.xxs) {
             Text(title)
-                .settingsText(.bodyMedium)
-                .foregroundStyle(.dsTextSecondary)
+                .settingsText(.heading)
+                .foregroundStyle(.dsTextPrimary)
                 .accessibilityAddTraits(.isHeader)
             if let note {
                 Text(note)
-                    .settingsText(.caption)
-                    .foregroundStyle(.dsTextTertiary)
+                    .settingsText(.body)
+                    .foregroundStyle(.dsTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
             }
         }
+        .padding(.top, SettingsMetrics.sectionTopInset)
     }
 }

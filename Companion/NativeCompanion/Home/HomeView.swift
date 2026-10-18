@@ -41,6 +41,7 @@ struct HomeView: View {
             } label: {
                 Label("New Task", systemImage: "plus")
                     .font(CompanionType.bodyMedium)
+                    .foregroundStyle(.dsTextOnAccent)
                     .padding(.horizontal, DS.Space.xl)
                     .frame(minHeight: CompanionMetrics.pill)
             }
