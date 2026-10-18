@@ -2,71 +2,133 @@ import AppKit
 import SwiftUI
 import Terminal
 
-/// Settings › Terminal: the font, its size and how much scrollback each terminal keeps, with a
-/// preview in the terminal's own colors. Changes apply to open terminals right away.
+/// Settings › Terminal: where the terminal's settings come from (Native's or the user's Ghostty
+/// config), then Native's own font, cursor, scrollback and colors, with a preview in the
+/// terminal's colors. Changes apply to open terminals right away.
 struct TerminalSettingsPage: View {
+    static let ghosttyRow = SettingsRowID("terminal.ghostty")
+    static let importRow = SettingsRowID("terminal.import")
     static let fontRow = SettingsRowID("terminal.font")
     static let sizeRow = SettingsRowID("terminal.size")
+    static let cursorRow = SettingsRowID("terminal.cursor")
     static let scrollbackRow = SettingsRowID("terminal.scrollback")
+    static let colorsRow = SettingsRowID("terminal.colors")
 
     /// Wide enough for most font family names.
     static let fontSelectWidth: CGFloat = 220
 
-    let preferences: TerminalPreferences
+    let store: TerminalStore
 
     @State private var families: [String] = []
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dsAccentPalette) private var palette
 
     var body: some View {
-        @Bindable var preferences = preferences
+        @Bindable var preferences = store.preferences
+        let usesGhostty = preferences.settings.usesGhosttyConfig
         SettingsPage {
             SettingsHeader("Terminal", description: Text("Each task's terminal, opened with ⌃` in its folder."))
-            TerminalSettingsPreview(settings: preferences.settings, colors: colors)
-            SettingsRowGroup {
-                SettingsRow(id: Self.fontRow, "Font", description: Text("Any monospaced font on this Mac.")) {
-                    SettingsSelect(
-                        label: "Font",
-                        selection: $preferences.settings.fontFamily,
-                        options: [.init(value: nil, title: "Geist Mono (Default)")]
-                            + families.map { .init(value: $0, title: $0) },
-                        width: Self.fontSelectWidth
-                    )
-                }
-                SettingsRow(id: Self.sizeRow, "Font size") {
-                    SettingsSelect(
-                        label: "Font size",
-                        selection: $preferences.settings.fontSize,
-                        options: stride(
-                            from: TerminalSettings.fontSizes.lowerBound, through: TerminalSettings.fontSizes.upperBound,
-                            by: 1
-                        ).map { .init(value: $0, title: "\(Int($0)) pt") }
-                    )
-                }
-                SettingsRow(
-                    id: Self.scrollbackRow,
-                    "Scrollback",
-                    description: Text("Lines each terminal keeps above the screen. Applies to new terminals.")
-                ) {
-                    SettingsSelect(
-                        label: "Scrollback",
-                        selection: $preferences.settings.scrollback,
-                        options: TerminalScrollback.allCases.map { .init(value: $0, title: $0.title) }
-                    )
+            TerminalGhosttySection(store: store)
+            VStack(alignment: .leading, spacing: DS.Space.lg) {
+                SettingsSubheading(
+                    "Native's terminal settings",
+                    note: usesGhostty ? "Not in use while your Ghostty settings are on." : nil)
+                TerminalSettingsPreview(settings: preferences.settings, colors: colors)
+                SettingsRowGroup {
+                    SettingsRow(id: Self.fontRow, "Font", description: Text("Any monospaced font on this Mac.")) {
+                        SettingsSelect(
+                            label: "Font",
+                            selection: $preferences.settings.fontFamily,
+                            options: fontOptions(current: preferences.settings.fontFamily),
+                            width: Self.fontSelectWidth
+                        )
+                    }
+                    SettingsRow(id: Self.sizeRow, "Font size") {
+                        SettingsSelect(
+                            label: "Font size",
+                            selection: $preferences.settings.fontSize,
+                            options: stride(
+                                from: TerminalSettings.fontSizes.lowerBound,
+                                through: TerminalSettings.fontSizes.upperBound, by: 1
+                            ).map { .init(value: $0, title: "\(Int($0)) pt") }
+                        )
+                    }
+                    SettingsRow(id: Self.cursorRow, "Cursor") {
+                        HStack(spacing: DS.Space.lg) {
+                            SettingsSwitch("Blink", isOn: $preferences.settings.cursor.blinks)
+                            SettingsSelect(
+                                label: "Cursor",
+                                selection: $preferences.settings.cursor.style,
+                                options: TerminalCursorStyle.allCases.map { .init(value: $0, title: $0.title) }
+                            )
+                        }
+                    }
+                    SettingsRow(
+                        id: Self.scrollbackRow,
+                        "Scrollback",
+                        description: Text("Lines each terminal keeps above the screen. Applies to new terminals.")
+                    ) {
+                        SettingsSelect(
+                            label: "Scrollback",
+                            selection: $preferences.settings.scrollback,
+                            options: scrollbackOptions(current: preferences.settings.scrollback)
+                        )
+                    }
+                    colorsRow
                 }
             }
+            .disabled(usesGhostty)
+            .opacity(usesGhostty ? 0.5 : 1)
         }
         .task { families = Self.monospacedFamilies() }
+        .onChange(of: AppearanceKey(colorScheme: colorScheme, palette: palette), initial: true) { _, key in
+            let appearance = TerminalAppearance(key.colorScheme)
+            store.prepareSettings(appearance, chrome: .designSystem(appearance: appearance, palette: key.palette))
+        }
+    }
+
+    @ViewBuilder private var colorsRow: some View {
+        switch store.preferences.settings.colors {
+        case .app:
+            SettingsRow(
+                id: Self.colorsRow, "Colors",
+                description: Text("Native's colors, in light and dark. Import from Ghostty to use your theme instead.")
+            ) {
+                EmptyView()
+            }
+        case .imported(let imported):
+            SettingsRow(
+                id: Self.colorsRow, "Colors",
+                description: Text("Imported from Ghostty\(imported.themeName.map { ": \($0)" } ?? "").")
+            ) {
+                Button("Use Native's Colors") { store.preferences.settings.colors = .app }
+                    .buttonStyle(.ds(.secondary, size: .large))
+            }
+        }
     }
 
     private var colors: TerminalColors {
         let appearance = TerminalAppearance(colorScheme)
-        return TerminalTheme.named(preferences.settings.themeID).colors(
-            for: appearance, appChrome: .designSystem(appearance: appearance, palette: palette))
+        return TerminalStyle(
+            settings: store.preferences.settings, appearance: appearance, appTheme: store.appTheme,
+            appChrome: .designSystem(appearance: appearance, palette: palette)
+        ).colors
+    }
+
+    private func fontOptions(current: String?) -> [SettingsSelect<String?>.Option] {
+        // An imported family that isn't installed still shows, so the select never goes blank.
+        let names = families + (current.map { families.contains($0) ? [] : [$0] } ?? [])
+        return [.init(value: nil, title: "Geist Mono (Default)")] + names.map { .init(value: $0, title: $0) }
+    }
+
+    private func scrollbackOptions(current: TerminalScrollback) -> [SettingsSelect<TerminalScrollback>.Option] {
+        let choices = TerminalScrollback.choices.contains(current)
+            ? TerminalScrollback.choices : TerminalScrollback.choices + [current]
+        return choices.map { .init(value: $0, title: $0.title) }
     }
 
     /// Installed monospaced families other than the default, by name.
-    private static func monospacedFamilies() -> [String] {
+    static func monospacedFamilies() -> [String] {
         let manager = NSFontManager.shared
         let fixedPitch = NSFontTraitMask.fixedPitchFontMask.rawValue
         return manager.availableFontFamilies.filter { family in
@@ -75,6 +137,11 @@ struct TerminalSettingsPage: View {
             else { return false }
             return traits.uintValue & fixedPitch != 0
         }
+    }
+
+    private struct AppearanceKey: Equatable {
+        let colorScheme: ColorScheme
+        let palette: DSAccentPalette
     }
 }
 
@@ -87,46 +154,12 @@ extension TerminalScrollback {
     }
 }
 
-/// A few lines of a shell session in the chosen font and the terminal's colors.
-private struct TerminalSettingsPreview: View {
-    let settings: TerminalSettings
-    let colors: TerminalColors
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: DS.Space.xxs) {
-            Text("\(color(2, "native"))\(color(nil, " % git status"))")
-            color(nil, "On branch main")
-            Text("\(color(nil, "  modified:   "))\(color(1, "docs/terminal.md"))")
-            Text("\(color(nil, "  new file:   "))\(color(2, "native/Terminal/"))")
+extension TerminalCursorStyle {
+    var title: String {
+        switch self {
+        case .block: "Block"
+        case .bar: "Bar"
+        case .underline: "Underline"
         }
-        .font(font)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(DS.Space.lg)
-        .background(Color(colors.chrome.background), in: .rect(cornerRadius: DS.Radius.card, style: .continuous))
-        .overlay {
-            RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous).strokeBorder(.dsSeparator)
-        }
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("Preview of the terminal font")
-    }
-
-    private var font: Font {
-        let size = settings.fontSize
-        guard let family = settings.fontFamily else {
-            return Font(DSTypography.nsFont(size: size, design: .mono))
-        }
-        return .custom(family, fixedSize: size)
-    }
-
-    /// `text` in palette color `index`, or the default text color.
-    private func color(_ index: Int?, _ text: String) -> Text {
-        let rgb = index.map { colors.palette[$0] } ?? colors.chrome.foreground
-        return Text(text).foregroundStyle(Color(rgb))
-    }
-}
-
-extension Color {
-    init(_ rgb: TerminalRGB) {
-        self.init(.sRGB, red: Double(rgb.red) / 255, green: Double(rgb.green) / 255, blue: Double(rgb.blue) / 255)
     }
 }

@@ -26,11 +26,12 @@ final class NotificationSounds {
 
     @ObservationIgnored private let isAppActive: @MainActor () -> Bool
     @ObservationIgnored private let player = SoundPlayer()
-    @ObservationIgnored private var lastPlayed = Date.distantPast
+    @ObservationIgnored private var lastPlayed: (date: Date, trigger: SoundTrigger)?
     /// What played and why something didn't, for "why didn't it chime?" (`log stream --predicate
     /// 'subsystem == "Native" AND category == "Sounds"' --info`).
     @ObservationIgnored private let logger = Logger(subsystem: "Native", category: "Sounds")
-    /// Several sessions often finish together; one sound says so.
+    /// Several sessions often finish together; one sound says so. Within it, only news more urgent
+    /// than what just played gets through (a turn ending into a blocked goal sounds as "needs you").
     private static let burstInterval: TimeInterval = 1.5
 
     init(
@@ -77,8 +78,11 @@ final class NotificationSounds {
             logger.info("Quiet for \(trigger.rawValue, privacy: .public): \(self.preferences.timing.rawValue, privacy: .public)")
             return false
         }
-        guard Date.now.timeIntervalSince(lastPlayed) >= Self.burstInterval, let option = option(for: trigger) else { return false }
-        lastPlayed = .now
+        if let lastPlayed, Date.now.timeIntervalSince(lastPlayed.date) < Self.burstInterval, trigger.urgency <= lastPlayed.trigger.urgency {
+            return false
+        }
+        guard let option = option(for: trigger) else { return false }
+        lastPlayed = (.now, trigger)
         logger.info("Playing \(option.title, privacy: .public) for \(trigger.rawValue, privacy: .public)")
         await player.play(option, volume: preferences.volume)
         return true
