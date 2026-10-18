@@ -70,7 +70,6 @@ struct SkillFoldersSection: View {
                         SkillFolderRow(row: row, agents: library.agents)
                     }
                 }
-                }
             }
         }
     }

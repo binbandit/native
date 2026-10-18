@@ -1,11 +1,12 @@
 import ACP
 import Foundation
 import FoundationModels
+import Search
 
 enum BuiltInPlugins {
     static let all: [any NativePlugin] = [
         claudeCode, codex, cursor, openCode, pi, copilot, OnDeviceTitlesPlugin(), SoundsPlugin(),
-        OrchestrationPlugin(), MCPServersPlugin(), SkillsPlugin(), usage, automation, automations, expeditions,
+        OrchestrationPlugin(), MCPServersPlugin(), SkillsPlugin(), usage, automation, automations, expeditions, search,
     ]
 
     /// Claude Code through its ACP adapter, running the user's own `claude`. Adapter versions are
@@ -33,7 +34,7 @@ enum BuiltInPlugins {
                     )
                 )
             ]
-        ), policyTranslator: ClaudeCodePolicyTranslator())
+        ), policyTranslator: ClaudeCodePolicyTranslator(), historyReader: ClaudeCodeHistoryReader.standard())
 
     /// OpenAI's Codex CLI through its ACP adapter, running the user's own `codex`.
     static let codex = ManifestPlugin(
@@ -58,7 +59,7 @@ enum BuiltInPlugins {
                     )
                 )
             ]
-        ), policyTranslator: CodexPolicyTranslator())
+        ), policyTranslator: CodexPolicyTranslator(), historyReader: CodexHistoryReader.standard())
 }
 
 // MARK: - Titles

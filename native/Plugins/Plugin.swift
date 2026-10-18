@@ -4,6 +4,7 @@ import CodeThemes
 import Experiments
 import Foundation
 import NativeAutomation
+import Search
 
 /// Extends Native. Native's own agents and features are plugins too, so every extension point is
 /// exercised by built-in code before anything else depends on it.
@@ -36,6 +37,10 @@ protocol NativePlugin: Sendable {
     /// parameters its code reads, and variants claiming extension points. Ids start with the
     /// plugin's id (`acme.fast-mode`). They're gone while the plugin is off.
     var experiments: [any ExperimentDeclaration] { get }
+    /// For a plugin that provides agents: a reader for `agent`'s own record of its past sessions, so
+    /// search covers sessions Native never loaded (docs/search.md). Nil means they're indexed as
+    /// Native loads them.
+    func historyReader(for agent: AgentDefinition.ID) -> (any SessionHistoryReader)?
 }
 
 extension NativePlugin {
@@ -47,6 +52,7 @@ extension NativePlugin {
     func launchPolicy(for agent: AgentDefinition.ID) -> SessionPolicy { .none }
     var policyTranslator: (any SessionPolicyTranslator)? { nil }
     var experiments: [any ExperimentDeclaration] { [] }
+    func historyReader(for agent: AgentDefinition.ID) -> (any SessionHistoryReader)? { nil }
 }
 
 // MARK: - Manifest

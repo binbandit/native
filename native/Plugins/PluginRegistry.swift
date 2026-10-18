@@ -4,6 +4,7 @@ import Foundation
 import NativePolicy
 import Observation
 import os
+import Search
 
 /// The plugins Native runs with: the built-in ones plus any manifests in `~/.native/plugins`, each on
 /// or off by the user's choice, or by its default until they choose. Everything else asks this for
@@ -187,6 +188,16 @@ final class PluginRegistry {
         policyTranslator(for: agent)?.launchEnvironment(for: launchPolicy(for: agent)) ?? [:]
     }
 
+    /// Readers for enabled agents' past sessions, for search (docs/search.md).
+    var historyReaders: [(agent: AgentDefinition.ID, reader: any SessionHistoryReader)] {
+        enabledPlugins.flatMap { plugin in
+            plugin.manifest.agents.compactMap { manifest in
+                let agent = AgentDefinition.ID(rawValue: manifest.id)
+                return plugin.historyReader(for: agent).map { (agent, $0) }
+            }
+        }
+    }
+
     /// The first enabled plugin that can title sessions.
     var titler: (any SessionTitler)? {
         enabledPlugins.lazy.compactMap(\.titler).first
@@ -235,9 +246,19 @@ struct ManifestPlugin: NativePlugin {
     let manifest: PluginManifest
     /// Built-in agents' own way of applying session policy; manifests from disk have none.
     var policyTranslator: (any SessionPolicyTranslator)?
+    /// Built-in agents' reader for their past sessions (docs/search.md); manifests from disk have none.
+    var historyReader: (any SessionHistoryReader)?
 
-    init(manifest: PluginManifest, policyTranslator: (any SessionPolicyTranslator)? = nil) {
+    init(
+        manifest: PluginManifest, policyTranslator: (any SessionPolicyTranslator)? = nil,
+        historyReader: (any SessionHistoryReader)? = nil
+    ) {
         self.manifest = manifest
         self.policyTranslator = policyTranslator
+        self.historyReader = historyReader
+    }
+
+    func historyReader(for agent: AgentDefinition.ID) -> (any SessionHistoryReader)? {
+        manifest.agents.contains { $0.id == agent.rawValue } ? historyReader : nil
     }
 }
