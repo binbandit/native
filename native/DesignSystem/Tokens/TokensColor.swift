@@ -36,7 +36,7 @@ nonisolated extension ShapeStyle where Self == Color {
     /// system sidebar material reads. Draw it only through `DSTransparency`, never as a row fill.
     public static var dsSidebarSolid: Color { DSPalette.sidebarSolid }
 
-    // MARK: Interaction fills (translucent, so they work on any layer, glass included)
+    // MARK: Translucent fills (they work on any layer, glass included)
 
     /// Hovered rows and ghost buttons (measured: Conductor's hovered row is ~7% white over its
     /// sidebar, Factory's hover a 6% mix).
@@ -45,6 +45,9 @@ nonisolated extension ShapeStyle where Self == Color {
     public static var dsSelected: Color { DSPalette.selected }
     /// A control while the mouse is down.
     public static var dsPressed: Color { DSPalette.pressed }
+    /// A quiet tint behind content set apart inline, such as inline code and the user's prompt in
+    /// the transcript. Translucent, so it reads on any layer.
+    public static var dsFill: Color { DSPalette.fill }
 
     // MARK: Borders
 
@@ -126,6 +129,7 @@ nonisolated private enum DSPalette {
     static let hover = dynamic("hover", light: 0x000000, lightAlpha: 0.045, dark: 0xFFFFFF, darkAlpha: 0.06)
     static let selected = dynamic("selected", light: 0x000000, lightAlpha: 0.08, dark: 0xFFFFFF, darkAlpha: 0.1)
     static let pressed = dynamic("pressed", light: 0x000000, lightAlpha: 0.11, dark: 0xFFFFFF, darkAlpha: 0.13)
+    static let fill = dynamic("fill", light: 0x000000, lightAlpha: 0.07, dark: 0xFFFFFF, darkAlpha: 0.07)
 
     static let separator = dynamic("separator", light: 0xE8E8E8, dark: 0x2C2C2C)
     static let border = dynamic("border", light: 0xCBCBCB, dark: 0x3E3E3E)

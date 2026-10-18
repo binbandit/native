@@ -63,6 +63,9 @@ public nonisolated enum DS {
         #else
         public static let chromeBar: CGFloat = 32
         #endif
+        /// Glyphs in the window's bottom chrome: the sidebar footer's and the status bar's
+        /// (Conductor's footer, `size-4`).
+        public static let chromeGlyph: CGFloat = 16
         /// Popover panels that hold a list or a table (Orca's Resource Manager, `w-[26rem]`).
         public static let popoverWidth: CGFloat = 400
     }

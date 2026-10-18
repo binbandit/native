@@ -3,16 +3,21 @@ import SwiftUI
 
 /// The sidebar's footer, after Conductor's: a hairline, then Help and Settings at the trailing edge
 /// (Conductor's `px-4 py-3`, 20pt between the icons). Agents' health lives on Home, in Settings ▸
-/// Agents and in the Help menu, not here.
+/// Agents and in the Help menu, not here. While the status bar shows, the footer shrinks to the
+/// bar's height, so the two stack as one quiet band with their glyphs at the same size.
 struct SidebarFooter: View {
+    @Environment(StatusBarRegistry.self) private var statusBar: StatusBarRegistry?
+
     var body: some View {
+        let isAboveStatusBar = statusBar?.isVisible == true
         HStack(spacing: DS.Space.xl + DS.Space.xs) {
             Spacer(minLength: 0)
             SidebarHelpMenu()
             SettingsButton()
         }
         .padding(.horizontal, DS.Space.xl)
-        .padding(.vertical, DS.Space.lg)
+        .padding(.vertical, isAboveStatusBar ? 0 : DS.Space.lg)
+        .frame(height: isAboveStatusBar ? DS.Size.chromeBar : nil)
         .overlay(alignment: .top) {
             SeparatorLine()
                 .padding(.horizontal, DS.Space.lg)
@@ -104,7 +109,8 @@ private struct SidebarHelpMenu: View {
     }
 }
 
-/// A footer icon: Conductor's 16pt muted glyphs that brighten on hover, with no fill.
+/// A footer icon: Conductor's 16pt muted glyphs that brighten on hover, with no fill. The status
+/// bar's glyphs (`StatusBarGlyph`) are the same size.
 private struct FooterGlyph: View {
     let systemImage: String
 
@@ -114,9 +120,9 @@ private struct FooterGlyph: View {
         Image(systemName: systemImage)
             .font(.dsCallout)
             .foregroundStyle(isHovered ? .dsTextPrimary : .dsTextSecondary)
-            .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
+            .frame(width: DS.Size.chromeGlyph, height: DS.Size.chromeGlyph)
             .contentShape(.rect)
-            .dsHitTarget(DS.Size.rowLeading)
+            .dsHitTarget(DS.Size.chromeGlyph)
             .trackHover($isHovered)
     }
 }
