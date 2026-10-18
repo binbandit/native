@@ -11,6 +11,7 @@ struct SessionView: View {
     @Environment(GitStore.self) private var git
     @Environment(GitHubModel.self) private var gitHub
     @Environment(SettingsPresentation.self) private var settings
+    @Environment(AppModel.self) private var model
     @Experiment(.transcriptWidth) private var columnWidth: TranscriptWidth
 
     var body: some View {
@@ -52,6 +53,11 @@ struct SessionView: View {
                 if shows { openSubagent = nil }
             }
             .toolbar {
+                // Draws its own outline, like Conductor's header control, rather than sitting on glass.
+                ToolbarItem {
+                    OpenInButton(location: OpenInLocation(folder: session.cwd, host: projectHost))
+                }
+                .sharedBackgroundVisibility(.hidden)
                 ToolbarItem {
                     GitChangesToolbarButton(model: repository, isPresented: $showsChanges)
                 }
@@ -63,6 +69,11 @@ struct SessionView: View {
             .focusedSceneValue(\.gitChangesInspector, $showsChanges)
             .refreshesGitStatus(of: session, in: git)
             .environment(\.transcriptColumnMaxWidth, columnWidth.maxWidth)
+    }
+
+    /// The machine the task's project is on (the selected task's project is the current one).
+    private var projectHost: HostID {
+        model.currentProject?.host ?? .local
     }
 
     private var repository: GitRepositoryModel {

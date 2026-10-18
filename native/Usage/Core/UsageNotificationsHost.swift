@@ -6,6 +6,9 @@ import Foundation
 protocol UsageNotificationsHost: AnyObject {
     /// Whether the task is the one on screen.
     func isShowing(_ ref: UsageSessionRef) -> Bool
+    /// Whether the user started the task, as opposed to Native's tools (workflows, expeditions) or
+    /// an agent announcing a subagent.
+    func isUserTask(_ ref: UsageSessionRef) -> Bool
     func lastTurnSummary(of ref: UsageSessionRef) -> TurnSummary?
     /// Whether the task's open question takes a single line of text.
     func canReplyInText(_ ref: UsageSessionRef) -> Bool
