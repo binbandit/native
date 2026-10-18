@@ -76,7 +76,9 @@ public struct SkillDocument: Hashable, Sendable {
         var problems: [SkillProblem] = []
         if let name = frontmatter.name {
             if !isValidName(name) { problems.append(.invalidName(name)) }
-            if let folderName, folderName != name { problems.append(.nameDiffersFromFolder(name: name, folder: folderName)) }
+            if let folderName, folderName != name {
+                problems.append(.nameDiffersFromFolder(name: name, folder: folderName))
+            }
         } else {
             problems.append(.missingName)
         }

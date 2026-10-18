@@ -88,11 +88,18 @@ enum FrontmatterParser {
         guard rest.isEmpty || hasCommentOnly(rest) else {
             // A scalar, possibly continued on indented lines (YAML folds them with spaces).
             let continuation = block.map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+            if !rest.hasPrefix("\""), !rest.hasPrefix("'"),
+                continuation.contains(where: { keySeparator(in: $0) != nil })
+            {
+                throw Failure(line: line, reason: "A key is nested under a value that already has one.")
+            }
             return .scalar(unquote(([stripComment(rest)] + continuation).joined(separator: " ")))
         }
         let items = block.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
         guard let first = items.first else { return .scalar("") }
-        if first.trimmingCharacters(in: .whitespaces).hasPrefix("- ") || first.trimmingCharacters(in: .whitespaces) == "-" {
+        if first.trimmingCharacters(in: .whitespaces).hasPrefix("- ")
+            || first.trimmingCharacters(in: .whitespaces) == "-"
+        {
             return .list(listItems(items))
         }
         var map: [String: String] = [:]
