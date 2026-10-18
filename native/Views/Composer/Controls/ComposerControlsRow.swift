@@ -71,8 +71,8 @@ struct ComposerControlsRow<Extras: View, Context: View>: View {
                         }
                     }
                     .buttonStyle(.pill(isOn: plan.isOn, isSquare: density.showsIcons))
-                        .help(plan.plan.description ?? "Plan before making changes")
-                        .accessibilityAddTraits(plan.isOn ? .isSelected : [])
+                    .help(plan.plan.description ?? "Plan before making changes")
+                    .accessibilityAddTraits(plan.isOn ? .isSelected : [])
                 }
                 ForEach(settings.others, id: \.option.id) { setting in
                     SettingMenuPill(setting: setting, onSet: onSet)
@@ -107,4 +107,3 @@ struct ComposerControlsRow<Extras: View, Context: View>: View {
         .animation(.dsQuick, value: followUpHint)
     }
 }
-

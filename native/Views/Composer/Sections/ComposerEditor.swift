@@ -8,6 +8,8 @@ struct ComposerEditor: View {
     @Binding var selection: TextSelection?
     let placeholder: String
     var isFocused: FocusState<Bool>.Binding
+    /// While an attachment chip is selected the keys are its, so the caret steps aside.
+    var hidesCaret = false
     let onKey: (KeyPress) -> KeyPress.Result
 
     var body: some View {
@@ -27,6 +29,8 @@ struct ComposerEditor: View {
                     .font(.dsCallout)
                     .lineSpacing(ComposerMetrics.editorLineSpacing)
                     .foregroundStyle(.dsTextPrimary)
+                    // The window's tint (`dsAccentPalette`) colors the caret; nil would reset it to blue.
+                    .tint(hidesCaret ? .clear : .dsAccent)
                     .textEditorStyle(.plain)
                     .scrollIndicators(.never)
                     .focused(isFocused)
