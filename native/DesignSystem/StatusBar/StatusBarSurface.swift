@@ -28,7 +28,7 @@ public struct StatusBarSurface<Leading: View, Trailing: View>: View {
         .foregroundStyle(.dsTextTertiary)
         .padding(.horizontal, DS.StatusBar.edgeInset)
         .frame(maxWidth: .infinity)
-        .frame(height: DS.Window.footerHeight)
+        .frame(height: DS.Size.chromeBar)
         // Dropped items wait just past the trailing edge.
         .clipped()
         .dsSidebarBackground()
@@ -49,7 +49,7 @@ public struct StatusBarSurface<Leading: View, Trailing: View>: View {
 }
 
 extension DS {
-    /// The status bar's own spacing. Its height is `DS.Window.footerHeight`.
+    /// The status bar's own spacing. Its height is `DS.Size.chromeBar`.
     public enum StatusBar {
         /// Between the window's edges and the outermost items (Orca `px-3`).
         public static let edgeInset = Space.lg

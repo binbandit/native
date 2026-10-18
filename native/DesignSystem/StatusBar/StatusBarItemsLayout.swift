@@ -1,12 +1,12 @@
 import SwiftUI
 
 /// Where a view in the status bar goes: an item, or the hairline before one, at either end.
-enum StatusBarSlotRole: Equatable {
+nonisolated enum StatusBarSlotRole: Equatable {
     case item(HorizontalEdge)
     case separator(HorizontalEdge)
 }
 
-struct StatusBarSlot: LayoutValueKey {
+nonisolated struct StatusBarSlot: LayoutValueKey {
     static let defaultValue = StatusBarSlotRole.item(.leading)
 }
 
