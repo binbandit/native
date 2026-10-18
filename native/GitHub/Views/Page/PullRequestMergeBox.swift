@@ -38,7 +38,13 @@ struct PullRequestMergeBox: View {
         case .changesRequested: ("exclamationmark.circle", .dsDanger, "Changes requested")
         case .reviewRequired:
             ("person.crop.circle.badge.questionmark", .dsWarning, "Review required" + requestedSuffix)
-        case .other, nil: ("person.crop.circle", .dsTextTertiary, "No review required" + requestedSuffix)
+        case .other, nil:
+            page.requestedReviewers.isEmpty
+                ? ("person.crop.circle", .dsTextTertiary, "No review required")
+                : (
+                    "person.crop.circle.badge.questionmark", .dsTextTertiary,
+                    "Waiting on a review from \(page.requestedReviewers.joined(separator: ", "))"
+                )
         }
     }
 
