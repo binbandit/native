@@ -40,12 +40,16 @@ actor ProcessSampler {
         let now = mach_absolute_time()
         let app = getpid()
         var claimed: Set<Int32> = [app]
-        var groups = [group(for: Root(pid: app, kind: .app, title: "Native"), descendants: false, claimed: &claimed, now: now)]
+        var groups = [
+            group(for: Root(pid: app, kind: .app, title: "Native"), descendants: false, claimed: &claimed, now: now)
+        ]
         for agent in agents where !claimed.contains(agent.pid) {
             groups.append(group(for: agent, descendants: true, claimed: &claimed, now: now))
         }
         // Whatever else Native started: shells resolving the environment, git, helpers.
-        let others = tree(from: app, excluding: claimed).dropFirst().compactMap { usage(of: $0.pid, depth: $0.depth - 1, now: now) }
+        let others = tree(from: app, excluding: claimed).dropFirst().compactMap {
+            usage(of: $0.pid, depth: $0.depth - 1, now: now)
+        }
         if !others.isEmpty {
             groups.append(ProcessGroup(kind: .other, title: "Other", processes: others))
         }
@@ -124,7 +128,8 @@ actor ProcessSampler {
         if let name = names[identity] {
             return name
         }
-        let name = ProcessNaming.name(arguments: Self.arguments(of: identity.pid), fallback: Self.shortName(of: identity.pid))
+        let name = ProcessNaming.name(
+            arguments: Self.arguments(of: identity.pid), fallback: Self.shortName(of: identity.pid))
         names[identity] = name
         return name
     }

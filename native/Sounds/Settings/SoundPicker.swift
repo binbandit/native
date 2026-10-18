@@ -11,7 +11,11 @@ struct SoundPicker: View {
     @State private var isHovered = false
 
     private var selection: Binding<SoundID> {
-        Binding { sounds.preferences.sound(for: trigger) } set: { sounds.select($0, for: trigger) }
+        Binding {
+            sounds.preferences.sound(for: trigger)
+        } set: {
+            sounds.select($0, for: trigger)
+        }
     }
 
     private var title: String {

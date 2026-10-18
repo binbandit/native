@@ -11,7 +11,13 @@ struct KeepAwakeMenuItems: View {
             // Toggles rather than a picker: their two-text labels become a title and the
             // description as a subtitle, which a picker's options drop.
             ForEach(KeepAwakeMode.allCases.reversed()) { mode in
-                Toggle(isOn: Binding { controller.mode == mode } set: { if $0 { controller.setMode(mode) } }) {
+                Toggle(
+                    isOn: Binding {
+                        controller.mode == mode
+                    } set: {
+                        if $0 { controller.setMode(mode) }
+                    }
+                ) {
                     Text(mode.title)
                     Text(mode.explanation)
                 }

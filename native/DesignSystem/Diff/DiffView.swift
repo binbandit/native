@@ -40,7 +40,8 @@ public struct DiffView: View {
         let key = HighlightKey(path: path, oldText: oldText, newText: newText)
         let current = highlighted?.key == key ? highlighted : nil
         let lines = DiffHighlightedLines(
-            colors: DSCodeColors(.code(colorScheme: colorScheme, lightTone: lightTone, themes: codeThemes), on: .surface),
+            colors: DSCodeColors(
+                .code(colorScheme: colorScheme, lightTone: lightTone, themes: codeThemes), on: .surface),
             new: current?.new ?? [],
             old: current?.old ?? []
         )
@@ -118,7 +119,9 @@ private struct DiffLines: View {
         let numberTemplate = String(repeating: "8", count: max(String(largest).count, 2))
         VStack(alignment: .leading, spacing: 0) {
             ForEach(rows.indices, id: \.self) { index in
-                DiffRowView(row: rows[index], numberTemplate: numberTemplate, text: lines.text(for: rows[index]), colors: lines.colors)
+                DiffRowView(
+                    row: rows[index], numberTemplate: numberTemplate, text: lines.text(for: rows[index]),
+                    colors: lines.colors)
             }
         }
         .padding(.vertical, DS.Space.xs)
@@ -168,7 +171,7 @@ private struct DiffRowView: View {
                     }
                 }
                 .padding(.leading, 10)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
         .padding(.trailing, 10)

@@ -27,7 +27,9 @@ nonisolated struct KeepAwakeStatus: Hashable, Sendable {
 
     static let off = KeepAwakeStatus(reason: .off, assertions: [])
 
-    static func evaluate(_ policy: KeepAwakePolicy, activity: KeepAwakeActivity, power: PowerState, now: Date) -> KeepAwakeStatus {
+    static func evaluate(
+        _ policy: KeepAwakePolicy, activity: KeepAwakeActivity, power: PowerState, now: Date
+    ) -> KeepAwakeStatus {
         let wanted: Reason
         if let until = policy.timer(at: now) {
             wanted = .timer(until: until)
@@ -36,7 +38,9 @@ nonisolated struct KeepAwakeStatus: Hashable, Sendable {
             case .off: return .off
             case .on: wanted = .alwaysOn
             case .whileAgentsWork:
-                guard activity.workingAgents > 0 else { return KeepAwakeStatus(reason: .waitingForAgents, assertions: []) }
+                guard activity.workingAgents > 0 else {
+                    return KeepAwakeStatus(reason: .waitingForAgents, assertions: [])
+                }
                 wanted = .agentsWorking(activity.workingAgents)
             }
         }

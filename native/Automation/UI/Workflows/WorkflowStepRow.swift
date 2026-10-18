@@ -24,8 +24,10 @@ struct WorkflowStepRow: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: DS.Space.md) {
-            AutomationStatusGlyph(glyph: AutomationGlyph(step: step.status, needsApproval: report?.needsApproval == true))
-                .padding(.top, DS.Space.xxs)
+            AutomationStatusGlyph(
+                glyph: AutomationGlyph(step: step.status, needsApproval: report?.needsApproval == true)
+            )
+            .padding(.top, DS.Space.xxs)
             VStack(alignment: .leading, spacing: DS.Space.sm) {
                 header
                 if let detail {
@@ -46,7 +48,9 @@ struct WorkflowStepRow: View {
                     )
                 }
                 if case .blocked = step.status {
-                    WorkflowReplyField(agentName: step.assignment.agent?.name ?? "the agent") { send(.reply(step: step.id, text: $0)) }
+                    WorkflowReplyField(agentName: step.assignment.agent?.name ?? "the agent") {
+                        send(.reply(step: step.id, text: $0))
+                    }
                 }
                 actions
             }
@@ -93,9 +97,12 @@ struct WorkflowStepRow: View {
                 .font(.dsCaption)
                 .foregroundStyle(.dsTextTertiary)
         } else if let agent = step.assignment.agent {
-            Label(step.step.continues.flatMap(run.stepRun).map { "\(agent.name) · in \($0.step.title)'s session" } ?? agent.name, systemImage: agent.symbol)
-                .font(.dsCaption)
-                .foregroundStyle(.dsTextTertiary)
+            Label(
+                step.step.continues.flatMap(run.stepRun).map { "\(agent.name) · in \($0.step.title)'s session" }
+                    ?? agent.name, systemImage: agent.symbol
+            )
+            .font(.dsCaption)
+            .foregroundStyle(.dsTextTertiary)
         }
     }
 
@@ -121,7 +128,8 @@ struct WorkflowStepRow: View {
         switch step.status {
         case .waiting:
             let waitingFor = run.definition.dependencies(of: step.step).compactMap { run.stepRun($0)?.step.title }
-            return waitingFor.isEmpty ? "Starts with the run" : "Starts after \(waitingFor.formatted(.list(type: .and)))"
+            return waitingFor.isEmpty
+                ? "Starts with the run" : "Starts after \(waitingFor.formatted(.list(type: .and)))"
         case .awaitingApproval, .succeeded:
             return step.assignment.note
         case .starting:
@@ -136,7 +144,8 @@ struct WorkflowStepRow: View {
             }
             if let loop = step.goal {
                 let goal = loop.goal
-                let iteration = "Iteration \(goal.iterations + 1)" + (goal.budget.maxIterations.map { " of \($0)" } ?? "")
+                let iteration =
+                    "Iteration \(goal.iterations + 1)" + (goal.budget.maxIterations.map { " of \($0)" } ?? "")
                 return [iteration, goal.lastReason ?? "working toward the step's goal"].joined(separator: " · ")
             }
             return "\(agent) is working"
@@ -149,7 +158,8 @@ struct WorkflowStepRow: View {
         case .failed(let reason):
             return reason
         case .interrupted:
-            return "Native quit while this step was working. Resume picks it up in the same session; nothing resumes on its own."
+            return
+                "Native quit while this step was working. Resume picks it up in the same session; nothing resumes on its own."
         case .cancelled:
             return "Stopped." + (step.task == nil ? "" : " Resume to continue in its session, or retry from the start.")
         case .skipped:
@@ -167,9 +177,13 @@ struct WorkflowStepRow: View {
     }
 
     @ViewBuilder private var preview: some View {
-        if step.step.kind == .pullRequest, step.status == .succeeded, let output = step.output, let url = URL(string: output) {
+        if step.step.kind == .pullRequest, step.status == .succeeded, let output = step.output,
+            let url = URL(string: output)
+        {
             Link(destination: url) {
-                Label(url.lastPathComponent.isEmpty ? output : "Pull request #\(url.lastPathComponent)", systemImage: "arrow.up.right.square")
+                Label(
+                    url.lastPathComponent.isEmpty ? output : "Pull request #\(url.lastPathComponent)",
+                    systemImage: "arrow.up.right.square")
             }
             .font(.dsBody)
             .foregroundStyle(.dsAccentText)
@@ -184,7 +198,8 @@ struct WorkflowStepRow: View {
     }
 
     private var previewText: String? {
-        let text = step.status == .succeeded ? step.output : (report?.reply ?? step.latestReply).map(GoalMarker.stripping)
+        let text =
+            step.status == .succeeded ? step.output : (report?.reply ?? step.latestReply).map(GoalMarker.stripping)
         return text?.split(whereSeparator: \.isNewline).prefix(3).joined(separator: " ")
     }
 

@@ -57,7 +57,9 @@ struct AutomationRow: View {
         }
         .contextMenu {
             Button("Run Now", systemImage: "play.fill", action: onRunNow)
-            Button(automation.isPaused ? "Resume" : "Pause", systemImage: automation.isPaused ? "play.circle" : "pause.circle", action: onTogglePause)
+            Button(
+                automation.isPaused ? "Resume" : "Pause",
+                systemImage: automation.isPaused ? "play.circle" : "pause.circle", action: onTogglePause)
             Button("Edit…", systemImage: "pencil", action: onEdit)
             Divider()
             Button("Delete", systemImage: "trash", role: .destructive, action: onDelete)

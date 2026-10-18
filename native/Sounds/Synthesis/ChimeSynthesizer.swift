@@ -88,10 +88,15 @@ nonisolated struct ChimeSynthesizer: Sendable {
             let frequency = strike.frequency * partial.ratio
             // Past Nyquist a partial folds back as an unrelated, unpleasant pitch.
             guard frequency < sampleRate * 0.45 else { continue }
-            var wave = vDSP.multiply(Self.amplitude(decibels: partial.level), vForce.sin(vDSP.multiply(2 * .pi * frequency / sampleRate, time)))
+            var wave = vDSP.multiply(
+                Self.amplitude(decibels: partial.level),
+                vForce.sin(vDSP.multiply(2 * .pi * frequency / sampleRate, time)))
             if partial.twin != 0 {
                 let twinStep = 2 * .pi * (frequency + partial.twin) / sampleRate
-                wave = vDSP.add(wave, vDSP.multiply(Self.amplitude(decibels: partial.twinLevel), vForce.sin(vDSP.multiply(twinStep, time))))
+                wave = vDSP.add(
+                    wave,
+                    vDSP.multiply(
+                        Self.amplitude(decibels: partial.twinLevel), vForce.sin(vDSP.multiply(twinStep, time))))
             }
             let decay = vForce.exp(vDSP.multiply(-6.907_755 / (partial.t60 * strike.t60Scale * sampleRate), time))
             tone = vDSP.add(tone, vDSP.multiply(wave, decay))
@@ -129,12 +134,14 @@ nonisolated struct ChimeSynthesizer: Sendable {
 
     /// Sets the loudness, trims what's inaudible and fades the end so nothing is cut mid-ring.
     private func finish(left: inout [Float], right: inout [Float]) {
-        let measured = LoudnessMeter(sampleRate: sampleRate).loudness(left: left, right: right, window: Self.loudnessWindow)
+        let measured = LoudnessMeter(sampleRate: sampleRate).loudness(
+            left: left, right: right, window: Self.loudnessWindow)
         let peak = max(vDSP.maximumMagnitude(left), vDSP.maximumMagnitude(right), .leastNonzeroMagnitude)
-        let scale = Float(min(
-            Self.amplitude(decibels: Self.loudness - measured),
-            Self.amplitude(decibels: Self.peakCeiling) / Double(peak)
-        ))
+        let scale = Float(
+            min(
+                Self.amplitude(decibels: Self.loudness - measured),
+                Self.amplitude(decibels: Self.peakCeiling) / Double(peak)
+            ))
         left = vDSP.multiply(scale, left)
         right = vDSP.multiply(scale, right)
         let floor = Float(Self.amplitude(decibels: -72))

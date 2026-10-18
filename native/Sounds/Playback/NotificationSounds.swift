@@ -75,10 +75,14 @@ final class NotificationSounds {
         }
         let isViewingSession = session.map(isViewing) ?? false
         guard preferences.timing.allows(isAppActive: isAppActive(), isViewingSession: isViewingSession) else {
-            logger.info("Quiet for \(trigger.rawValue, privacy: .public): \(self.preferences.timing.rawValue, privacy: .public)")
+            logger.info(
+                "Quiet for \(trigger.rawValue, privacy: .public): \(self.preferences.timing.rawValue, privacy: .public)"
+            )
             return false
         }
-        if let lastPlayed, Date.now.timeIntervalSince(lastPlayed.date) < Self.burstInterval, trigger.urgency <= lastPlayed.trigger.urgency {
+        if let lastPlayed, Date.now.timeIntervalSince(lastPlayed.date) < Self.burstInterval,
+            trigger.urgency <= lastPlayed.trigger.urgency
+        {
             return false
         }
         guard let option = option(for: trigger) else { return false }

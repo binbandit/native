@@ -25,7 +25,8 @@ final class SoundPlayer {
                 player.volume = Float(min(volume * Self.fileGain, 1))
             }
         } catch {
-            logger.error("Couldn't play \(option.title, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            logger.error(
+                "Couldn't play \(option.title, privacy: .public): \(error.localizedDescription, privacy: .public)")
             return
         }
         current?.stop()

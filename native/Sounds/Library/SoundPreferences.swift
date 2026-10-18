@@ -69,16 +69,22 @@ final class SoundPreferences {
         // The one sound earlier versions played stays the task-finished sound; the others get
         // their own new defaults.
         let legacy = defaults.string(forKey: Key.legacySelection).flatMap(SoundID.init(rawValue:))
-        sounds = Dictionary(uniqueKeysWithValues: SoundTrigger.allCases.map { trigger in
-            let stored = defaults.string(forKey: Key.sound(trigger)).flatMap(SoundID.init(rawValue:))
-            return (trigger, stored ?? (trigger == .taskFinished ? legacy : nil) ?? trigger.defaultSound)
-        })
+        sounds = Dictionary(
+            uniqueKeysWithValues: SoundTrigger.allCases.map { trigger in
+                let stored = defaults.string(forKey: Key.sound(trigger)).flatMap(SoundID.init(rawValue:))
+                return (trigger, stored ?? (trigger == .taskFinished ? legacy : nil) ?? trigger.defaultSound)
+            })
         volume = defaults.object(forKey: Key.volume) as? Double ?? Self.defaultVolume
-        triggers = defaults.stringArray(forKey: Key.triggers).map { Set($0.compactMap(SoundTrigger.init(storedValue:))) }
+        triggers =
+            defaults.stringArray(forKey: Key.triggers).map { Set($0.compactMap(SoundTrigger.init(storedValue:))) }
             ?? Set(SoundTrigger.allCases)
         timing = defaults.string(forKey: Key.timing).flatMap(SoundTiming.init(rawValue:)) ?? .unlessViewing
-        customSounds = defaults.data(forKey: Key.customSounds).flatMap { try? JSONDecoder().decode([CustomSound].self, from: $0) } ?? []
-        soundsFolder = defaults.data(forKey: Key.soundsFolder).flatMap { try? JSONDecoder().decode(SoundsFolder.self, from: $0) }
+        customSounds =
+            defaults.data(forKey: Key.customSounds).flatMap { try? JSONDecoder().decode([CustomSound].self, from: $0) }
+            ?? []
+        soundsFolder = defaults.data(forKey: Key.soundsFolder).flatMap {
+            try? JSONDecoder().decode(SoundsFolder.self, from: $0)
+        }
     }
 
     /// Remembers files the user picked and returns them, skipping ones already added.
