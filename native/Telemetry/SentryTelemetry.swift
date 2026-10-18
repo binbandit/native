@@ -23,6 +23,9 @@ enum SentryTelemetry {
         else { return }
         SentrySDK.start { options in
             options.dsn = dsn
+            let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0.0.0"
+            let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0"
+            options.releaseName = "native@\(version)+\(build)"
             if let cacheDirectory { options.cacheDirectoryPath = cacheDirectory.path }
             #if NATIVE_NIGHTLY
             options.environment = "nightly"
