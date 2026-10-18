@@ -204,11 +204,11 @@ plugin off takes them away at once, and a window using one goes back to the defa
 | Field | Meaning |
 | --- | --- |
 | `code[].id`, `name` | The theme's id (no slashes; unique within the plugin) and what the user sees. |
-| `code[].light`, `dark` | One or both palettes, each with every role as `#RRGGBB` or `#RRGGBBAA`: `foreground`, `background`, `comment`, `keyword`, `string`, `constant`, `function`, `variable`, `tag`, `type`, `operator`, `regex`, `invalid`, `punctuation`, `insertedForeground`, `insertedBackground`, `deletedForeground`, `deletedBackground`, `changedForeground`, `changedBackground`, `selection`, `lineHighlight`. `foreground` must reach 4.5:1 on `background`, the syntax colors 2:1 (no fainter than the faintest built-in theme). The terminal takes its ANSI colors from these roles. |
+| `code[].light`, `dark` | One or both palettes, each with every role as `#RRGGBB` or `#RRGGBBAA`: `foreground`, `background`, `comment`, `keyword`, `string`, `constant`, `function`, `variable`, `tag`, `type`, `operator`, `regex`, `invalid`, `punctuation`, `insertedForeground`, `insertedBackground`, `deletedForeground`, `deletedBackground`, `changedForeground`, `changedBackground`, `selection`, `lineHighlight`. `foreground` must reach 4.5:1 on `background`, the syntax colors 2:1 (no fainter than the faintest built-in theme). The terminal takes its ANSI colors from these roles. An optional `strong` list names roles set a heavier weight, as Native's dark keywords are: `"strong": ["keyword"]`. |
 | `accents[].id`, `name` | As for code themes. Accents appear under Settings ▸ Appearance ▸ Accent, beside “Match app icon”. |
-| `accents[].light`, `dark` | Both, each with `accent`, `hover`, `pressed`, `text`, `onAccent` and `subtle` as opaque `#RRGGBB`. `onAccent` must reach 4.5:1 on `accent`, and `text` 4.5:1 on Native's background in each tone (Paper, Wool) and in dark mode. |
+| `accents[].light`, `dark` | Both, each with `accent`, `hover`, `pressed`, `text`, `onAccent` and `subtle` as opaque `#RRGGBB`. `onAccent` must reach 4.5:1 on `accent`, and `text` 4.5:1 on Native's background in each tone (Paper and Wool in light mode, Standard and True Black in dark). |
 
-Light-mode tone sets like Paper and Wool aren't open to plugins yet (see `docs/decisions.md`).
+Tone sets like Paper and Wool, or Standard and True Black, aren't open to plugins yet (see `docs/decisions.md`).
 
 ## Icon sets
 

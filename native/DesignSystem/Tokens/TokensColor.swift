@@ -5,15 +5,20 @@ import SwiftUI
 // `Color.dsTextSecondary` work.
 //
 // Sources:
-// - Neutrals are oklab mixes of the foreground into the background (light: background #ffffff,
-//   foreground #181818; dark: background #121212, foreground #ffffff), so every step keeps the same
-//   hue. In dark mode the content is #171717, the sidebar edge #2c2c2c and the composer outline
-//   #3e3e3e.
+// - Light neutrals are oklab mixes of the foreground into the background (background #ffffff,
+//   foreground #181818), so every step keeps the same hue.
+// - Dark is the Instrument palette: a near-black content pane (#0D0D0E) with the sidebar, the
+//   window's chrome and code wells a step deeper (#070708), hairlines at #1F1F22, control outlines
+//   at #2E2E32, raised surfaces stepping up (#141416, #18181B), and warm off-white text in four
+//   tiers (#E9E9E6, #A5A5A8, #85858A, #5C5C61). Every text tier but the disabled one clears 4.5:1
+//   on every dark layer.
 // - The sidebar is translucent (`.dsSidebarBackground()` or the system sidebar), so everything drawn
-//   on it is either text or a translucent fill. `dsSidebarSolid` is only its backdrop when the user
-//   turns transparency down (TokensTransparency.swift).
-// - Light mode has two tones (TokensLightTone.swift): Paper, the values below, and Wool, a warm
-//   off-white set that resolves against the environment's `dsLightTone` (`toned(_:wool:)`).
+//   on it is either text or a translucent fill. `dsSidebarSolid` is its backdrop as far as the
+//   user's transparency lets it cover the material (TokensTransparency.swift); dark mode keeps it
+//   mostly opaque, as the system's dark material is lighter than the content.
+// - Light and dark each have two tones: Paper and Wool (TokensLightTone.swift), Standard and True
+//   Black (TokensDarkTone.swift). Paper and Standard are the values below; Wool and True Black are
+//   their own sets that resolve against the environment's tones (`toned(_:wool:trueBlack:)`).
 // - The accent follows the app-icon theme: it resolves against the environment's
 //   `DSAccentPalette` (see AccentPalette.swift), `original` (graphite / off-white) by default.
 // - `dsAttention` is the one status hue for "needs you" states, so they stand out under any accent.
@@ -108,7 +113,8 @@ nonisolated extension ShapeStyle where Self == Color {
     // MARK: Charts
 
     /// Categorical series colors, always used in this order (first series `dsChart1`). Validated
-    /// color-vision-safe (all pairs, protanopia and deuteranopia) on #FFFFFF and #171717.
+    /// color-vision-safe (all pairs, protanopia and deuteranopia) on #FFFFFF and #171717; on dark's
+    /// #0D0D0E and black each keeps at least 5:1.
     public static var dsChart1: Color { DSPalette.chart1 }
     public static var dsChart2: Color { DSPalette.chart2 }
     public static var dsChart3: Color { DSPalette.chart3 }
@@ -121,54 +127,66 @@ nonisolated extension ShapeStyle where Self == Color {
 
 /// Backing storage for the tokens: each dynamic color is built once.
 nonisolated private enum DSPalette {
-    static let background = toned(dynamic("background", light: 0xFBFBFB, dark: 0x171717), wool: 0xF6F3EE)
-    static let surface = toned(dynamic("surface", light: 0xFFFFFF, dark: 0x171717), wool: 0xFBF9F5)
-    static let surfaceRaised = toned(dynamic("surfaceRaised", light: 0xF8F8F8, dark: 0x191919), wool: 0xF3F0EA)
-    static let surfaceSunken = toned(dynamic("surfaceSunken", light: 0xF6F6F6, dark: 0x1D1D1D), wool: 0xF1EDE6)
-    static let overlay = toned(dynamic("overlay", light: 0xFFFFFF, dark: 0x171717), wool: 0xFBF9F5)
-    static let sidebarSolid = toned(dynamic("sidebarSolid", light: 0xF0F0F0, dark: 0x1F1F1F), wool: 0xEEEAE2)
+    static let background = toned(
+        dynamic("background", light: 0xFBFBFB, dark: 0x0D0D0E), wool: 0xF6F3EE, trueBlack: 0x000000)
+    static let surface = toned(dynamic("surface", light: 0xFFFFFF, dark: 0x141416), wool: 0xFBF9F5, trueBlack: 0x0E0E10)
+    static let surfaceRaised = toned(
+        dynamic("surfaceRaised", light: 0xF8F8F8, dark: 0x18181B), wool: 0xF3F0EA, trueBlack: 0x141416)
+    static let surfaceSunken = toned(
+        dynamic("surfaceSunken", light: 0xF6F6F6, dark: 0x070708), wool: 0xF1EDE6, trueBlack: 0x000000)
+    static let overlay = toned(dynamic("overlay", light: 0xFFFFFF, dark: 0x18181B), wool: 0xFBF9F5, trueBlack: 0x0E0E10)
+    static let sidebarSolid = toned(
+        dynamic("sidebarSolid", light: 0xF0F0F0, dark: 0x070708), wool: 0xEEEAE2, trueBlack: 0x000000)
 
+    // Dark's selection lands on #18181B over the sidebar (#070708), and True Black's on #141416
+    // over black, while staying translucent so it reads on every other layer too.
     static let hover = toned(
-        dynamic("hover", light: 0x000000, lightAlpha: 0.045, dark: 0xFFFFFF, darkAlpha: 0.06), wool: 0x3B2B14,
-        woolAlpha: 0.045)
+        dynamic("hover", light: 0x000000, lightAlpha: 0.045, dark: 0xFFFFFF, darkAlpha: 0.045),
+        wool: 0x3B2B14, woolAlpha: 0.045, trueBlack: 0xFFFFFF, trueBlackAlpha: 0.05)
     static let selected = toned(
-        dynamic("selected", light: 0x000000, lightAlpha: 0.08, dark: 0xFFFFFF, darkAlpha: 0.1), wool: 0x3B2B14,
-        woolAlpha: 0.08)
+        dynamic("selected", light: 0x000000, lightAlpha: 0.08, dark: 0xFFFFFF, darkAlpha: 0.07),
+        wool: 0x3B2B14, woolAlpha: 0.08, trueBlack: 0xFFFFFF, trueBlackAlpha: 0.08)
     static let pressed = toned(
-        dynamic("pressed", light: 0x000000, lightAlpha: 0.11, dark: 0xFFFFFF, darkAlpha: 0.13), wool: 0x3B2B14,
-        woolAlpha: 0.11)
+        dynamic("pressed", light: 0x000000, lightAlpha: 0.11, dark: 0xFFFFFF, darkAlpha: 0.1),
+        wool: 0x3B2B14, woolAlpha: 0.11, trueBlack: 0xFFFFFF, trueBlackAlpha: 0.11)
+    // The user's prompt sits on it: #191919 on dark's background, #0E0E0E on black.
     static let fill = toned(
-        dynamic("fill", light: 0x000000, lightAlpha: 0.07, dark: 0xFFFFFF, darkAlpha: 0.07), wool: 0x3B2B14,
-        woolAlpha: 0.07)
+        dynamic("fill", light: 0x000000, lightAlpha: 0.07, dark: 0xFFFFFF, darkAlpha: 0.05),
+        wool: 0x3B2B14, woolAlpha: 0.07, trueBlack: 0xFFFFFF, trueBlackAlpha: 0.055)
 
-    static let separator = toned(dynamic("separator", light: 0xE8E8E8, dark: 0x2C2C2C), wool: 0xE6E1D8)
+    static let separator = toned(
+        dynamic("separator", light: 0xE8E8E8, dark: 0x1F1F22), wool: 0xE6E1D8, trueBlack: 0x1A1A1D)
     // On glass, the same step from the surface as a translucent wash (`DSGlassAwareStyle`). Dark
     // glass renders a mid gray, where a faint white wash all but disappears, so dark's is stronger:
     // the composer's pills and outline keep 3:1 against the glass, active window or not (measured
     // #989897 on #4F4C4B active, 3.0:1; #949292 on #444241 inactive, 3.2:1).
     static let border = onGlass(
-        toned(dynamic("border", light: 0xCBCBCB, dark: 0x3E3E3E), wool: 0xCDC7BC),
+        toned(dynamic("border", light: 0xCBCBCB, dark: 0x2E2E32), wool: 0xCDC7BC, trueBlack: 0x2A2A2E),
         glass: toned(
             dynamic("borderOnGlass", light: 0x000000, lightAlpha: 0.2, dark: 0xFFFFFF, darkAlpha: 0.38),
             wool: 0x3B2B14, woolAlpha: 0.245))
     static let borderHover = onGlass(
-        toned(dynamic("borderHover", light: 0x949494, dark: 0x4F4F4F), wool: 0x979084),
+        toned(dynamic("borderHover", light: 0x949494, dark: 0x3A3A3F), wool: 0x979084, trueBlack: 0x36363B),
         glass: toned(
             dynamic("borderHoverOnGlass", light: 0x000000, lightAlpha: 0.42, dark: 0xFFFFFF, darkAlpha: 0.55),
             wool: 0x3B2B14, woolAlpha: 0.51))
-    static let borderStrong = toned(dynamic("borderStrong", light: 0x767676, dark: 0x616161), wool: 0x797266)
-    static let borderInner = toned(dynamic("borderInner", light: 0xB2B2B2, dark: 0x2F2F2F), wool: 0xB4AEA3)
-    // 3.3:1 on Paper's background, 3.4:1 on dark's, 3.5:1 on Wool's; the thumb (`surface`) keeps the
-    // same contrast against it.
-    static let switchOff = toned(dynamic("switchOff", light: 0x8A8A8A, dark: 0x6B6B6B), wool: 0x878177)
+    // Unchecked checkboxes and focused fields: 3:1 on every dark layer up to the raised surface.
+    static let borderStrong = toned(dynamic("borderStrong", light: 0x767676, dark: 0x66666B), wool: 0x797266)
+    static let borderInner = toned(
+        dynamic("borderInner", light: 0xB2B2B2, dark: 0x28282C), wool: 0xB4AEA3, trueBlack: 0x242428)
+    // 3.3:1 on Paper's background, 3.5:1 on Wool's, 3.7:1 on dark's and 4:1 on black; at least 3.3:1
+    // on every surface below the raised one, and the thumb (`surface`) keeps the same contrast
+    // against it.
+    static let switchOff = toned(dynamic("switchOff", light: 0x8A8A8A, dark: 0x6B6B70), wool: 0x878177)
 
-    static let textPrimary = dynamic("textPrimary", light: 0x181818, dark: 0xFFFFFF)
-    static let textSecondary = toned(dynamic("textSecondary", light: 0x505050, dark: 0xAFAFAF), wool: 0x4B4B4B)
-    static let textTertiary = toned(dynamic("textTertiary", light: 0x8D8D8D, dark: 0x717171), wool: 0x888888)
-    static let textQuaternary = toned(dynamic("textQuaternary", light: 0xB2B2B2, dark: 0x4B4B4B), wool: 0xACACAC)
-    static let textInverse = toned(dynamic("textInverse", light: 0xFFFFFF, dark: 0x121212), wool: 0xFBF9F5)
+    static let textPrimary = dynamic("textPrimary", light: 0x181818, dark: 0xE9E9E6)
+    static let textSecondary = toned(dynamic("textSecondary", light: 0x505050, dark: 0xA5A5A8), wool: 0x4B4B4B)
+    static let textTertiary = toned(dynamic("textTertiary", light: 0x8D8D8D, dark: 0x85858A), wool: 0x888888)
+    static let textQuaternary = toned(dynamic("textQuaternary", light: 0xB2B2B2, dark: 0x5C5C61), wool: 0xACACAC)
+    static let textInverse = toned(
+        dynamic("textInverse", light: 0xFFFFFF, dark: 0x0D0D0E), wool: 0xFBF9F5, trueBlack: 0x000000)
 
-    static let attention = toned(dynamic("attention", light: 0xA35200, dark: 0xF59E3B), wool: 0x9C4E00)
+    static let attention = toned(dynamic("attention", light: 0xA35200, dark: 0xFFB000), wool: 0x9C4E00)
 
     static let success = toned(dynamic("success", light: 0x16A249, dark: 0x4ADE80), wool: 0x159C46)
     static let warning = toned(dynamic("warning", light: 0x9A6700, dark: 0xD29922), wool: 0x936200)
@@ -184,20 +202,29 @@ nonisolated private enum DSPalette {
     static let chart2 = dynamic("chart2", light: 0xEB6834, dark: 0xD95926)
     static let chart3 = dynamic("chart3", light: 0x1BAF7A, dark: 0x199E70)
 
-    /// `base` with its own value for Wool (TokensLightTone.swift). Wool's text and status values are
-    /// a step darker than Paper's so each keeps Paper's contrast on Wool's background (#F6F3EE); its
-    /// fills are a warm brown rather than black.
-    static func toned(_ base: Color, wool: UInt32, woolAlpha: Float = 1) -> Color {
+    /// `base` with its own value for Wool (TokensLightTone.swift) and, where it differs, True Black
+    /// (TokensDarkTone.swift). Wool's text and status values are a step darker than Paper's so each
+    /// keeps Paper's contrast on Wool's background (#F6F3EE); its fills are a warm brown rather than
+    /// black. True Black only moves the layers and the lines between them: text, accent and status
+    /// colors are dark's, which have more contrast on black.
+    static func toned(
+        _ base: Color, wool: UInt32, woolAlpha: Float = 1, trueBlack: UInt32? = nil, trueBlackAlpha: Float = 1
+    ) -> Color {
         Color(
             DSTonedStyle(
                 base: base,
-                wool: Color.Resolved(
-                    red: Float((wool >> 16) & 0xFF) / 255,
-                    green: Float((wool >> 8) & 0xFF) / 255,
-                    blue: Float(wool & 0xFF) / 255,
-                    opacity: woolAlpha
-                )
+                wool: resolved(wool, opacity: woolAlpha),
+                trueBlack: trueBlack.map { resolved($0, opacity: trueBlackAlpha) }
             ))
+    }
+
+    private static func resolved(_ hex: UInt32, opacity: Float) -> Color.Resolved {
+        Color.Resolved(
+            red: Float((hex >> 16) & 0xFF) / 255,
+            green: Float((hex >> 8) & 0xFF) / 255,
+            blue: Float(hex & 0xFF) / 255,
+            opacity: opacity
+        )
     }
 
     /// `base`, with `glass` in its place on Liquid Glass.
@@ -220,5 +247,22 @@ nonisolated private enum DSPalette {
                 light: .dsSRGB(light, alpha: lightAlpha),
                 dark: .dsSRGB(dark, alpha: darkAlpha)
             ))
+    }
+}
+
+/// A token whose value depends on the window's tones: Wool's own in light mode on Wool, True Black's
+/// own in dark mode on True Black, and the base color's otherwise (Paper, Standard dark, and tokens
+/// True Black leaves alone).
+nonisolated struct DSTonedStyle: ShapeStyle, Hashable {
+    let base: Color
+    let wool: Color.Resolved
+    let trueBlack: Color.Resolved?
+
+    func resolve(in environment: EnvironmentValues) -> Color.Resolved {
+        switch environment.colorScheme {
+        case .light where environment.dsLightTone == .wool: wool
+        case .dark where environment.dsDarkTone == .trueBlack: trueBlack ?? base.resolve(in: environment)
+        default: base.resolve(in: environment)
+        }
     }
 }

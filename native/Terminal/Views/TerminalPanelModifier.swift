@@ -15,6 +15,7 @@ private struct TerminalPanelModifier: ViewModifier {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dsAccentPalette) private var palette
     @Environment(\.dsLightTone) private var lightTone
+    @Environment(\.dsDarkTone) private var darkTone
     @Environment(\.dsTransparency) private var transparency
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @State private var availableHeight: CGFloat = 0
@@ -51,7 +52,8 @@ private struct TerminalPanelModifier: ViewModifier {
             let appearance = TerminalAppearance(key.colorScheme)
             store.setAppearance(
                 appearance,
-                chrome: .designSystem(appearance: appearance, palette: key.palette, lightTone: key.lightTone),
+                chrome: .designSystem(
+                    appearance: appearance, palette: key.palette, lightTone: key.lightTone, darkTone: key.darkTone),
                 transparency: key.transparency)
         }
     }
@@ -63,7 +65,9 @@ private struct TerminalPanelModifier: ViewModifier {
 
     private var appearanceKey: TerminalAppearanceKey {
         TerminalAppearanceKey(
-            colorScheme: colorScheme, palette: palette, lightTone: lightTone,
-            transparency: TerminalTransparency(transparency, reduceTransparency: reduceTransparency))
+            colorScheme: colorScheme, palette: palette, lightTone: lightTone, darkTone: darkTone,
+            transparency: TerminalTransparency(
+                transparency, reduceTransparency: reduceTransparency,
+                isTrueBlack: colorScheme == .dark && darkTone == .trueBlack))
     }
 }

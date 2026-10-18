@@ -24,6 +24,7 @@ struct TerminalSettingsPage: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dsAccentPalette) private var palette
     @Environment(\.dsLightTone) private var lightTone
+    @Environment(\.dsDarkTone) private var darkTone
     @Environment(\.dsTransparency) private var transparency
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
@@ -92,7 +93,8 @@ struct TerminalSettingsPage: View {
             let appearance = TerminalAppearance(key.colorScheme)
             store.setAppearance(
                 appearance,
-                chrome: .designSystem(appearance: appearance, palette: key.palette, lightTone: key.lightTone),
+                chrome: .designSystem(
+                    appearance: appearance, palette: key.palette, lightTone: key.lightTone, darkTone: key.darkTone),
                 transparency: key.transparency)
         }
     }
@@ -120,7 +122,8 @@ struct TerminalSettingsPage: View {
         let appearance = TerminalAppearance(colorScheme)
         return TerminalStyle(
             settings: store.preferences.settings, appearance: appearance, appTheme: store.appTheme,
-            appChrome: .designSystem(appearance: appearance, palette: palette, lightTone: lightTone)
+            appChrome: .designSystem(
+                appearance: appearance, palette: palette, lightTone: lightTone, darkTone: darkTone)
         ).colors
     }
 
@@ -151,8 +154,10 @@ struct TerminalSettingsPage: View {
 
     private var appearanceKey: TerminalAppearanceKey {
         TerminalAppearanceKey(
-            colorScheme: colorScheme, palette: palette, lightTone: lightTone,
-            transparency: TerminalTransparency(transparency, reduceTransparency: reduceTransparency))
+            colorScheme: colorScheme, palette: palette, lightTone: lightTone, darkTone: darkTone,
+            transparency: TerminalTransparency(
+                transparency, reduceTransparency: reduceTransparency,
+                isTrueBlack: colorScheme == .dark && darkTone == .trueBlack))
     }
 }
 

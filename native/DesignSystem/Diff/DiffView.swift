@@ -13,6 +13,7 @@ public struct DiffView: View {
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dsLightTone) private var lightTone
+    @Environment(\.dsDarkTone) private var darkTone
     @Environment(\.dsCodeThemes) private var codeThemes
     /// Both files highlighted off the main thread, for the texts they were made from; until then
     /// the lines draw plain.
@@ -41,7 +42,8 @@ public struct DiffView: View {
         let current = highlighted?.key == key ? highlighted : nil
         let lines = DiffHighlightedLines(
             colors: DSCodeColors(
-                .code(colorScheme: colorScheme, lightTone: lightTone, themes: codeThemes), on: .surface),
+                .code(colorScheme: colorScheme, lightTone: lightTone, darkTone: darkTone, themes: codeThemes),
+                on: .surface),
             new: current?.new ?? [],
             old: current?.old ?? []
         )
@@ -102,10 +104,10 @@ private struct DiffHighlightedLines {
     let old: [[CodeSegment]]
 
     /// A row's text in color: removed lines come from the old file, the rest from the new one.
-    func text(for row: DiffRow) -> AttributedString? {
+    func text(for row: DiffRow, strongFont: Font?) -> AttributedString? {
         guard let number = row.number, row.kind != .gap else { return nil }
         let file = row.kind == .removed ? old : new
-        return file.indices.contains(number - 1) ? colors.text(file[number - 1]) : nil
+        return file.indices.contains(number - 1) ? colors.text(file[number - 1], strongFont: strongFont) : nil
     }
 }
 
@@ -119,14 +121,12 @@ private struct DiffLines: View {
         let numberTemplate = String(repeating: "8", count: max(String(largest).count, 2))
         VStack(alignment: .leading, spacing: 0) {
             ForEach(rows.indices, id: \.self) { index in
-                DiffRowView(
-                    row: rows[index], numberTemplate: numberTemplate, text: lines.text(for: rows[index]),
-                    colors: lines.colors)
+                DiffRowView(row: rows[index], numberTemplate: numberTemplate, lines: lines)
             }
         }
         .padding(.vertical, DS.Space.xs)
         .codeTextStyle(.compact)
-        .foregroundStyle(lines.colors.isNative ? Color.dsTextPrimary : lines.colors.color(.foreground))
+        .foregroundStyle(lines.colors.color(.foreground))
         // A themed diff draws on its theme's background wherever it's embedded.
         .background(lines.colors.isNative ? AnyShapeStyle(.clear) : AnyShapeStyle(.dsDiffBackground))
         .textSelection(.enabled)
@@ -137,11 +137,16 @@ private struct DiffLines: View {
 private struct DiffRowView: View {
     let row: DiffRow
     let numberTemplate: String
-    /// The line in the code theme's colors, when it's a line of the file.
-    let text: AttributedString?
-    let colors: DSCodeColors
+    let lines: DiffHighlightedLines
+
+    /// Set by `DiffLines`' `.codeTextStyle(_:)`, around this row.
+    @Environment(\.dsCodeStrongFont) private var strongFont
+
+    private var colors: DSCodeColors { lines.colors }
 
     var body: some View {
+        // The line in the code theme's colors, when it's a line of the file.
+        let text = lines.text(for: row, strongFont: strongFont)
         HStack(alignment: .firstTextBaseline, spacing: 0) {
             Text(verbatim: numberTemplate)
                 .hidden()

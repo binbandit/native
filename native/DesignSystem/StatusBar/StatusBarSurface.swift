@@ -53,18 +53,21 @@ public struct StatusBarSurface<Leading: View, Trailing: View>: View {
 /// sidebar column, where `dsSidebarBackground`'s `.sidebar` vibrancy renders a step lighter.
 private struct StatusBarBackdrop: View {
     @Environment(\.dsTransparency) private var transparency
+    @Environment(\.dsDarkTone) private var darkTone
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
+        let tint = transparency.sidebarTint(colorScheme: colorScheme, darkTone: darkTone)
         ZStack {
-            if transparency != .solid {
+            if tint < 1 {
                 Rectangle().fill(.ultraThinMaterial)
             }
             Rectangle()
                 .fill(.dsSidebarSolid)
-                .opacity(transparency.sidebarTint)
+                .opacity(tint)
         }
         .ignoresSafeArea()
-        .animation(.dsStandard, value: transparency)
+        .animation(.dsStandard, value: tint)
     }
 }
 

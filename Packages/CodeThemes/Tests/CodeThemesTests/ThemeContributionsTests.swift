@@ -5,7 +5,12 @@ import Testing
 
 struct ThemeContributionsTests {
     private func object(_ palette: CodePalette) -> ThemeJSON {
-        .object(Dictionary(uniqueKeysWithValues: CodeTokenRole.allCases.map { ($0.rawValue, .string(palette[$0].description)) }))
+        var members = Dictionary(
+            uniqueKeysWithValues: CodeTokenRole.allCases.map { ($0.rawValue, ThemeJSON.string(palette[$0].description)) })
+        if !palette.strong.isEmpty {
+            members["strong"] = .array(palette.strong.map { .string($0.rawValue) })
+        }
+        return .object(members)
     }
 
     private func codeEntry(_ theme: CodeTheme, id: String = "mine") -> ThemeJSON {
@@ -72,6 +77,10 @@ struct ThemeContributionsTests {
             return "\(ThemeContributions(code: [entry]).codeThemes(namespace: "p")[0])"
         }
         #expect(problem(.keyword, "purple").contains("isn't a color"))
+        guard case .object(var members) = object(native) else { return }
+        members["strong"] = .array([.string("keyword"), .string("bold")])
+        let strong = ThemeJSON.object(["id": .string("x"), "name": .string("X"), "light": .object(members)])
+        #expect("\(ThemeContributions(code: [strong]).codeThemes(namespace: "p")[0])".contains("\"bold\" that isn't a role"))
         #expect(problem(.foreground, "#F0F0F0").contains("text is too faint"))
         #expect(problem(.comment, "#F4F4F4").contains("\"comment\" color is too faint"))
     }

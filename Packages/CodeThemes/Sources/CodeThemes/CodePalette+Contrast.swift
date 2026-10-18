@@ -29,7 +29,8 @@ extension CodePalette {
             changedForeground: adjusted(changedForeground),
             changedBackground: changedBackground,
             selection: selection,
-            lineHighlight: lineHighlight
+            lineHighlight: lineHighlight,
+            strong: strong
         )
     }
 }

@@ -112,7 +112,7 @@ extension ThemeContributions {
             }
             colors[role] = color
         }
-        let palette = CodePalette(colors)
+        let palette = CodePalette(colors, strong: try strongRoles(value["strong"], theme: theme, appearance: appearance))
         let background = palette.background
         if palette.foreground.contrastRatio(with: background) < foregroundContrast {
             throw ThemeProblemError(
@@ -161,6 +161,23 @@ extension ThemeContributions {
             dark: try swatch("dark", backgrounds: darkBackgrounds))
     }
 
+    /// The optional `"strong"` list: role names set a heavier weight (`CodePalette.strong`).
+    private static func strongRoles(_ value: ThemeJSON?, theme: String, appearance: String) throws -> Set<CodeTokenRole> {
+        guard let value else { return [] }
+        guard let items = value.array else {
+            throw ThemeProblemError(theme: theme, reason: "its \(appearance) \"strong\" isn't a list of role names")
+        }
+        return Set(
+            try items.map { item in
+                guard let name = item.string, let role = CodeTokenRole(rawValue: name) else {
+                    throw ThemeProblemError(
+                        theme: theme,
+                        reason: "its \(appearance) \"strong\" lists \(item.string.map { "\"\($0)\"" } ?? "a value") that isn't a role")
+                }
+                return role
+            })
+    }
+
     private static func identity(of entry: ThemeJSON, fallback: String) throws -> (id: String, name: String) {
         guard case .object = entry else { throw ThemeProblemError(theme: fallback, reason: "it isn't a JSON object") }
         let name = entry["name"]?.string ?? entry["id"]?.string ?? fallback
@@ -184,7 +201,7 @@ public struct ThemeProblemError: Error, Hashable, Sendable, CustomStringConverti
 
 extension CodePalette {
     /// A palette from a complete role table.
-    init(_ colors: [CodeTokenRole: CodeColor]) {
+    init(_ colors: [CodeTokenRole: CodeColor], strong: Set<CodeTokenRole> = []) {
         func color(_ role: CodeTokenRole) -> CodeColor { colors[role] ?? CodeColor(rgb: 0) }
         self.init(
             foreground: color(.foreground), background: color(.background), comment: color(.comment),
@@ -194,7 +211,7 @@ extension CodePalette {
             insertedForeground: color(.insertedForeground), insertedBackground: color(.insertedBackground),
             deletedForeground: color(.deletedForeground), deletedBackground: color(.deletedBackground),
             changedForeground: color(.changedForeground), changedBackground: color(.changedBackground),
-            selection: color(.selection), lineHighlight: color(.lineHighlight))
+            selection: color(.selection), lineHighlight: color(.lineHighlight), strong: strong)
     }
 }
 

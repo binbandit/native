@@ -36,15 +36,18 @@ private struct SidebarBackdrop: View {
     let blending: DSSidebarBlending
 
     @Environment(\.dsTransparency) private var transparency
+    @Environment(\.dsDarkTone) private var darkTone
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
+        let tint = transparency.sidebarTint(colorScheme: colorScheme, darkTone: darkTone)
         ZStack {
-            if transparency != .solid {
+            if tint < 1 {
                 material
             }
             Rectangle()
                 .fill(.dsSidebarSolid)
-                .opacity(transparency.sidebarTint)
+                .opacity(tint)
         }
     }
 
@@ -66,6 +69,7 @@ private struct SidebarBackdrop: View {
 private struct SidebarColumnTransparency: ViewModifier {
     @Environment(\.dsTransparency) private var transparency
     @Environment(\.dsLightTone) private var lightTone
+    @Environment(\.dsDarkTone) private var darkTone
     @Environment(\.colorScheme) private var colorScheme
 
     /// The system's light sidebar is a cool gray; on Wool a little of Wool's own sidebar color
@@ -73,8 +77,9 @@ private struct SidebarColumnTransparency: ViewModifier {
     private static let woolWarmth = 0.4
 
     private var tint: Double {
+        let tint = transparency.sidebarTint(colorScheme: colorScheme, darkTone: darkTone)
         let isWool = colorScheme == .light && lightTone == .wool
-        return isWool ? max(transparency.sidebarTint, Self.woolWarmth) : transparency.sidebarTint
+        return isWool ? max(tint, Self.woolWarmth) : tint
     }
 
     func body(content: Content) -> some View {

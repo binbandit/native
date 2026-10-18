@@ -54,14 +54,19 @@ struct PluginThemeCatalog {
     }
 }
 
-/// The backgrounds accent text must read on: light mode's in every tone, and dark mode's, taken
-/// from the design system so the check follows the tokens.
+/// The backgrounds accent text must read on: light and dark mode's in every tone, taken from the
+/// design system so the check follows the tokens.
 private enum AccentBackgrounds {
     @MainActor static let current: (light: [CodeColor], dark: [CodeColor]) = {
-        func background(_ scheme: ColorScheme, _ tone: DSLightTone) -> CodeColor {
-            CodeColor(Color.dsBackground.resolve(in: .code(colorScheme: scheme, lightTone: tone, themes: .native)))
+        func background(_ scheme: ColorScheme, _ light: DSLightTone, _ dark: DSDarkTone) -> CodeColor {
+            CodeColor(
+                Color.dsBackground.resolve(
+                    in: .code(colorScheme: scheme, lightTone: light, darkTone: dark, themes: .native)))
         }
-        return (DSLightTone.allCases.map { background(.light, $0) }, [background(.dark, .paper)])
+        return (
+            DSLightTone.allCases.map { background(.light, $0, .standard) },
+            DSDarkTone.allCases.map { background(.dark, .paper, $0) }
+        )
     }()
 }
 

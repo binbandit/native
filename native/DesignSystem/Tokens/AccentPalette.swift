@@ -46,8 +46,9 @@ public nonisolated struct DSAccentPalette: Hashable, Identifiable, Sendable {
         id: "original", name: "Original",
         light: Swatch(
             accent: 0x202226, hover: 0x35383E, pressed: 0x111214, text: 0x202226, onAccent: 0xFFFFFF, subtle: 0xE8E9EA),
+        // Dark mode's primary text, so primary buttons and the text around them are one off-white.
         dark: Swatch(
-            accent: 0xECEDEF, hover: 0xFFFFFF, pressed: 0xC1C2C4, text: 0xECEDEF, onAccent: 0x121316, subtle: 0x2E2F31)
+            accent: 0xE9E9E6, hover: 0xF7F7F5, pressed: 0xC4C4C1, text: 0xE9E9E6, onAccent: 0x0D0D0E, subtle: 0x1F1F22)
     )
     public static let cobalt = DSAccentPalette(
         id: "cobalt", name: "Cobalt",
