@@ -1,19 +1,24 @@
 {
-  "families": 53,
-  "expectedVariants": 424,
-  "editableSVGCompositions": 424,
+  "families": 51,
+  "defaultFallbacks": [
+    "australia-day-boxing-kangaroo",
+    "dia-de-muertos-sugar-skull"
+  ],
+  "expectedVariants": 408,
+  "editableSVGCompositions": 408,
   "pureVectorSVGs": 408,
-  "illustratedSVGs": 16,
-  "transparentPNGs": 424,
-  "catalogueMatchesAppIcons": true,
+  "illustratedSVGs": 0,
+  "transparentPNGs": 408,
+  "catalogueCoveredByArtworkOrDefaultFallback": true,
   "errors": [],
   "checks": [
     "SVG parse and local references",
-    "All app-icon artwork families covered",
+    "All app-icon families have Home artwork or an explicit normal-appearance fallback",
+    "Rejected custom Home artwork directories are removed",
     "Four channels and both appearances",
     "Release-channel layers present",
     "No scripts, live text or external raster dependencies",
-    "Two illustrated editions embed their unchanged original app foreground; others remain pure vector",
+    "All remaining Home artwork is pure vector",
     "RGBA 1280×1080 exports",
     "Transparent outer edges; no clipping",
     "More than 55% transparent canvas",
@@ -789,102 +794,6 @@
       "transparentFraction": 0.717
     },
     {
-      "id": "dia-de-muertos-sugar-skull",
-      "channel": "stable",
-      "appearance": "light",
-      "inkBoundsPixels": [
-        211,
-        146,
-        1042,
-        950
-      ],
-      "transparentFraction": 0.708
-    },
-    {
-      "id": "dia-de-muertos-sugar-skull",
-      "channel": "stable",
-      "appearance": "dark",
-      "inkBoundsPixels": [
-        211,
-        146,
-        1042,
-        950
-      ],
-      "transparentFraction": 0.708
-    },
-    {
-      "id": "dia-de-muertos-sugar-skull",
-      "channel": "beta",
-      "appearance": "light",
-      "inkBoundsPixels": [
-        211,
-        146,
-        1215,
-        950
-      ],
-      "transparentFraction": 0.706
-    },
-    {
-      "id": "dia-de-muertos-sugar-skull",
-      "channel": "beta",
-      "appearance": "dark",
-      "inkBoundsPixels": [
-        211,
-        146,
-        1215,
-        950
-      ],
-      "transparentFraction": 0.706
-    },
-    {
-      "id": "dia-de-muertos-sugar-skull",
-      "channel": "nightly",
-      "appearance": "light",
-      "inkBoundsPixels": [
-        55,
-        32,
-        1235,
-        950
-      ],
-      "transparentFraction": 0.703
-    },
-    {
-      "id": "dia-de-muertos-sugar-skull",
-      "channel": "nightly",
-      "appearance": "dark",
-      "inkBoundsPixels": [
-        55,
-        32,
-        1235,
-        950
-      ],
-      "transparentFraction": 0.703
-    },
-    {
-      "id": "dia-de-muertos-sugar-skull",
-      "channel": "dev",
-      "appearance": "light",
-      "inkBoundsPixels": [
-        29,
-        140,
-        1251,
-        950
-      ],
-      "transparentFraction": 0.702
-    },
-    {
-      "id": "dia-de-muertos-sugar-skull",
-      "channel": "dev",
-      "appearance": "dark",
-      "inkBoundsPixels": [
-        29,
-        140,
-        1251,
-        950
-      ],
-      "transparentFraction": 0.702
-    },
-    {
       "id": "new-year",
       "channel": "stable",
       "appearance": "light",
@@ -4915,102 +4824,6 @@
         949
       ],
       "transparentFraction": 0.77
-    },
-    {
-      "id": "australia-day-boxing-kangaroo",
-      "channel": "stable",
-      "appearance": "light",
-      "inkBoundsPixels": [
-        248,
-        55,
-        1108,
-        958
-      ],
-      "transparentFraction": 0.873
-    },
-    {
-      "id": "australia-day-boxing-kangaroo",
-      "channel": "stable",
-      "appearance": "dark",
-      "inkBoundsPixels": [
-        248,
-        55,
-        1108,
-        958
-      ],
-      "transparentFraction": 0.873
-    },
-    {
-      "id": "australia-day-boxing-kangaroo",
-      "channel": "beta",
-      "appearance": "light",
-      "inkBoundsPixels": [
-        248,
-        55,
-        1215,
-        958
-      ],
-      "transparentFraction": 0.872
-    },
-    {
-      "id": "australia-day-boxing-kangaroo",
-      "channel": "beta",
-      "appearance": "dark",
-      "inkBoundsPixels": [
-        248,
-        55,
-        1215,
-        958
-      ],
-      "transparentFraction": 0.872
-    },
-    {
-      "id": "australia-day-boxing-kangaroo",
-      "channel": "nightly",
-      "appearance": "light",
-      "inkBoundsPixels": [
-        55,
-        32,
-        1235,
-        958
-      ],
-      "transparentFraction": 0.868
-    },
-    {
-      "id": "australia-day-boxing-kangaroo",
-      "channel": "nightly",
-      "appearance": "dark",
-      "inkBoundsPixels": [
-        55,
-        32,
-        1235,
-        958
-      ],
-      "transparentFraction": 0.868
-    },
-    {
-      "id": "australia-day-boxing-kangaroo",
-      "channel": "dev",
-      "appearance": "light",
-      "inkBoundsPixels": [
-        29,
-        55,
-        1251,
-        958
-      ],
-      "transparentFraction": 0.868
-    },
-    {
-      "id": "australia-day-boxing-kangaroo",
-      "channel": "dev",
-      "appearance": "dark",
-      "inkBoundsPixels": [
-        29,
-        55,
-        1251,
-        958
-      ],
-      "transparentFraction": 0.868
     },
     {
       "id": "australia-day-ochre-dots",

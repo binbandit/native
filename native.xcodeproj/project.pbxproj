@@ -7,31 +7,31 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		00000000000000005E171003 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000005E171002 /* Sentry */; };
-		00000000000000005E171013 /* NativeDiagnostics in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000005E171012 /* NativeDiagnostics */; };
 		000000000000000000000320 /* ACP in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000000310 /* ACP */; };
 		000000000000000000000420 /* MCP in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000000410 /* MCP */; };
 		000000000000000000474820 /* GitHub in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000474810 /* GitHub */; };
 		0000000000000000004E480E /* Native Host.app in Embed Login Items */ = {isa = PBXBuildFile; fileRef = 0000000000000000004E480A /* Native Host.app */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		0000000000000000004E4812 /* NativeHost in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000004E4811 /* NativeHost */; };
 		0000000000000000004E4814 /* NativeHostClient in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000004E4813 /* NativeHostClient */; };
-		0000000000000000117C0020 /* NativeLink in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000117C0010 /* NativeLink */; };
-		0000000000000000117C0021 /* NativeLink in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000117C0011 /* NativeLink */; };
 		0000000000000000005C5220 /* ScriptRuntime in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000005C5210 /* ScriptRuntime */; };
+		0000000000000000005E7020 /* NativeSetup in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000005E7010 /* NativeSetup */; };
 		000000000000000000617320 /* Git in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000617310 /* Git */; };
 		000000000000000000E10320 /* Experiments in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000E10310 /* Experiments */; };
+		000000000000000005EA2C20 /* Search in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000005EA2C10 /* Search */; };
 		00000000000000000A070020 /* NativeAutomation in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000000A070010 /* NativeAutomation */; };
 		00000000000000000B5C1020 /* Skills in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000000B5C1010 /* Skills */; };
-		0000000000000000005E7020 /* NativeSetup in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000005E7010 /* NativeSetup */; };
-		000000000000000005EA2C20 /* Search in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000005EA2C10 /* Search */; };
-		0000000000000000C0DC1020 /* NativeCommands in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000C0DC1010 /* NativeCommands */; };
-		0000000000000000901C0020 /* NativePolicy in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000901C0010 /* NativePolicy */; };
-		00000000000000007E1E0020 /* NativeTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000007E1E0010 /* NativeTelemetry */; };
 		00000000000000000E0ED020 /* NativeExpeditions in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000000E0ED010 /* NativeExpeditions */; };
+		0000000000000000117C0020 /* NativeLink in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000117C0010 /* NativeLink */; };
+		0000000000000000117C0021 /* NativeLink in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000117C0011 /* NativeLink */; };
+		00000000000000005E171003 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000005E171002 /* Sentry */; };
+		00000000000000005E171013 /* NativeDiagnostics in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000005E171012 /* NativeDiagnostics */; };
 		00000000000000005E1EA503 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; platformFilters = (macos, ); productRef = 00000000000000005E1EA502 /* Sparkle */; };
 		00000000000000005E1EA531 /* LICENSE.md in Resources */ = {isa = PBXBuildFile; fileRef = 00000000000000005E1EA530 /* LICENSE.md */; };
 		000000000000000071E10020 /* Terminal in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000071E10010 /* Terminal */; };
+		00000000000000007E1E0020 /* NativeTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000007E1E0010 /* NativeTelemetry */; };
+		0000000000000000901C0020 /* NativePolicy in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000901C0010 /* NativePolicy */; };
 		0000000000000000A99A0020 /* AppAppearance in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000A99A0010 /* AppAppearance */; };
+		0000000000000000C0DC1020 /* NativeCommands in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000C0DC1010 /* NativeCommands */; };
 		0000000000000000C0DE0020 /* CodeThemes in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000C0DE0010 /* CodeThemes */; };
 		54227E023083ADA900D7771F /* MCPClient in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000000AC10010 /* MCPClient */; };
 /* End PBXBuildFile section */
@@ -680,6 +680,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = "$(NATIVE_APP_ICON_NAME)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 43TJNHX42U;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -711,6 +712,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = "$(NATIVE_APP_ICON_NAME)";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 43TJNHX42U;
 				ENABLE_APP_SANDBOX = NO;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -769,10 +771,6 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
-		00000000000000005E171011 /* XCLocalSwiftPackageReference "Packages/NativeDiagnostics" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = Packages/NativeDiagnostics;
-		};
 		000000000000000000000300 /* XCLocalSwiftPackageReference "Packages/ACP" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/ACP;
@@ -789,13 +787,13 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/NativeHost;
 		};
-		0000000000000000117C0000 /* XCLocalSwiftPackageReference "Packages/NativeLink" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = Packages/NativeLink;
-		};
 		0000000000000000005C5200 /* XCLocalSwiftPackageReference "Packages/ScriptRuntime" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/ScriptRuntime;
+		};
+		0000000000000000005E7000 /* XCLocalSwiftPackageReference "Packages/NativeSetup" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/NativeSetup;
 		};
 		000000000000000000617300 /* XCLocalSwiftPackageReference "Packages/Git" */ = {
 			isa = XCLocalSwiftPackageReference;
@@ -804,6 +802,10 @@
 		000000000000000000E10300 /* XCLocalSwiftPackageReference "Packages/Experiments" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Experiments;
+		};
+		000000000000000005EA2C00 /* XCLocalSwiftPackageReference "Packages/Search" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Search;
 		};
 		00000000000000000A070000 /* XCLocalSwiftPackageReference "Packages/Automation" */ = {
 			isa = XCLocalSwiftPackageReference;
@@ -817,37 +819,37 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Skills;
 		};
-		0000000000000000005E7000 /* XCLocalSwiftPackageReference "Packages/NativeSetup" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = Packages/NativeSetup;
-		};
-		0000000000000000C0DC1000 /* XCLocalSwiftPackageReference "Packages/NativeCommands" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = Packages/NativeCommands;
-		};
-		000000000000000005EA2C00 /* XCLocalSwiftPackageReference "Packages/Search" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = Packages/Search;
-		};
-		0000000000000000901C0000 /* XCLocalSwiftPackageReference "Packages/NativePolicy" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = Packages/NativePolicy;
-		};
-		00000000000000007E1E0000 /* XCLocalSwiftPackageReference "Packages/Telemetry" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = Packages/Telemetry;
-		};
 		00000000000000000E0ED000 /* XCLocalSwiftPackageReference "Packages/Expeditions" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Expeditions;
+		};
+		0000000000000000117C0000 /* XCLocalSwiftPackageReference "Packages/NativeLink" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/NativeLink;
+		};
+		00000000000000005E171011 /* XCLocalSwiftPackageReference "Packages/NativeDiagnostics" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/NativeDiagnostics;
 		};
 		000000000000000071E10000 /* XCLocalSwiftPackageReference "Packages/Terminal" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Terminal;
 		};
+		00000000000000007E1E0000 /* XCLocalSwiftPackageReference "Packages/Telemetry" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Telemetry;
+		};
+		0000000000000000901C0000 /* XCLocalSwiftPackageReference "Packages/NativePolicy" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/NativePolicy;
+		};
 		0000000000000000A99A0000 /* XCLocalSwiftPackageReference "Packages/AppAppearance" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/AppAppearance;
+		};
+		0000000000000000C0DC1000 /* XCLocalSwiftPackageReference "Packages/NativeCommands" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/NativeCommands;
 		};
 		0000000000000000C0DE0000 /* XCLocalSwiftPackageReference "Packages/CodeThemes" */ = {
 			isa = XCLocalSwiftPackageReference;
@@ -875,16 +877,6 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		00000000000000005E171002 /* Sentry */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 00000000000000005E171001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
-			productName = Sentry;
-		};
-		00000000000000005E171012 /* NativeDiagnostics */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 00000000000000005E171011 /* XCLocalSwiftPackageReference "Packages/NativeDiagnostics" */;
-			productName = NativeDiagnostics;
-		};
 		000000000000000000000310 /* ACP */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = ACP;
@@ -905,17 +897,13 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = NativeHostClient;
 		};
-		0000000000000000117C0010 /* NativeLink */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = NativeLink;
-		};
-		0000000000000000117C0011 /* NativeLink */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = NativeLink;
-		};
 		0000000000000000005C5210 /* ScriptRuntime */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = ScriptRuntime;
+		};
+		0000000000000000005E7010 /* NativeSetup */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = NativeSetup;
 		};
 		000000000000000000617310 /* Git */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -924,6 +912,10 @@
 		000000000000000000E10310 /* Experiments */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Experiments;
+		};
+		000000000000000005EA2C10 /* Search */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Search;
 		};
 		00000000000000000A070010 /* NativeAutomation */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -937,30 +929,28 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = Skills;
 		};
-		0000000000000000005E7010 /* NativeSetup */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = NativeSetup;
-		};
-		0000000000000000C0DC1010 /* NativeCommands */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = NativeCommands;
-		};
-		000000000000000005EA2C10 /* Search */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = Search;
-		};
-		0000000000000000901C0010 /* NativePolicy */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = NativePolicy;
-		};
-		00000000000000007E1E0010 /* NativeTelemetry */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = NativeTelemetry;
-		};
 		00000000000000000E0ED010 /* NativeExpeditions */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 00000000000000000E0ED000 /* XCLocalSwiftPackageReference "Packages/Expeditions" */;
 			productName = NativeExpeditions;
+		};
+		0000000000000000117C0010 /* NativeLink */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = NativeLink;
+		};
+		0000000000000000117C0011 /* NativeLink */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = NativeLink;
+		};
+		00000000000000005E171002 /* Sentry */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 00000000000000005E171001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
+			productName = Sentry;
+		};
+		00000000000000005E171012 /* NativeDiagnostics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 00000000000000005E171011 /* XCLocalSwiftPackageReference "Packages/NativeDiagnostics" */;
+			productName = NativeDiagnostics;
 		};
 		00000000000000005E1EA502 /* Sparkle */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -971,10 +961,22 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = Terminal;
 		};
+		00000000000000007E1E0010 /* NativeTelemetry */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = NativeTelemetry;
+		};
+		0000000000000000901C0010 /* NativePolicy */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = NativePolicy;
+		};
 		0000000000000000A99A0010 /* AppAppearance */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 0000000000000000A99A0000 /* XCLocalSwiftPackageReference "Packages/AppAppearance" */;
 			productName = AppAppearance;
+		};
+		0000000000000000C0DC1010 /* NativeCommands */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = NativeCommands;
 		};
 		0000000000000000C0DE0010 /* CodeThemes */ = {
 			isa = XCSwiftPackageProductDependency;

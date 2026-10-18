@@ -45,7 +45,8 @@ struct KeyboardShortcutsView: View {
                     header("Attachments")
                     row("Attach files", ["⌘U"])
                     row("Paste files or an image", ["⌘V"])
-                    row("Remove the last file", ["⌫"], note: "With nothing typed")
+                    row("Select a file", ["←"], note: "From the start of the message; → returns")
+                    row("Remove the selected file", ["⌫"], note: "Or the last file, with nothing typed")
                     row("Put back a removed file", ["⌘Z"])
                 }
             }

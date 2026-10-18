@@ -8,6 +8,8 @@ struct ComposerAttachmentsSection: View {
     let attachments: [PromptAttachment]
     let pending: [ComposerPendingAttachment]
     let missing: Set<PromptAttachment.ID>
+    /// The chip the keyboard has selected, from the text with ←.
+    let selected: PromptAttachment.ID?
     /// What the agent takes, so a picture that will go as a path says so before it's sent.
     let capabilities: PromptCapabilities
     let agentName: String
@@ -24,6 +26,7 @@ struct ComposerAttachmentsSection: View {
                         pathOnlyReason: ComposerAttachmentNote.pathOnlyReason(
                             for: attachment, capabilities: capabilities, agentName: agentName),
                         isMissing: missing.contains(attachment.id),
+                        isSelected: attachment.id == selected,
                         onPreview: { previewing = attachment.url },
                         onRemove: { onRemove(attachment.id) }
                     )

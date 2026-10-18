@@ -1,16 +1,16 @@
 {
-  "version": 2,
+  "version": 3,
   "kind": "native-home-artwork",
-  "familyCount": 53,
+  "familyCount": 51,
   "channelCount": 4,
   "appearances": [
     "light",
     "dark"
   ],
-  "svgCount": 424,
+  "svgCount": 408,
   "pureVectorSVGCount": 408,
-  "illustratedSVGCount": 16,
-  "pngCount": 424,
+  "illustratedSVGCount": 0,
+  "pngCount": 408,
   "families": [
     {
       "id": "original",
@@ -528,71 +528,6 @@
             "png": "dia-de-muertos/dev-dark.png",
             "sha256": "f2b210b3f83351e4735d55d168f9a762de8b5b5e00b3c3c147494ebf1c893711",
             "sourceSha256": "d7716dbfd0ed1af5c6de64844714e30b6207e27c6493b105c37fc5d23a460b9d"
-          }
-        }
-      }
-    },
-    {
-      "id": "dia-de-muertos-sugar-skull",
-      "name": "Día de Muertos · Sugar Skull",
-      "intent": "The original fully painted dark calavera from the app artwork: dense turquoise, coral, marigold and cobalt scrollwork, scalloped floral eye sockets, two rows of ivory teeth and the exact Native forehead inlay.",
-      "sourceType": "raster illustration + vector brand and channel layers",
-      "revision": 2,
-      "variants": {
-        "stable": {
-          "light": {
-            "svg": "dia-de-muertos-sugar-skull/stable-light.svg",
-            "png": "dia-de-muertos-sugar-skull/stable-light.png",
-            "sha256": "d431ae6a87523c921ea41c9d4bb89e4ad7b36bad148a915bb09c44a3a468cbd1",
-            "sourceSha256": "41679ee6b8a63c25107b817e0d1ef8f5bda1952ef2a6dc101b26ffd18190b7b0"
-          },
-          "dark": {
-            "svg": "dia-de-muertos-sugar-skull/stable-dark.svg",
-            "png": "dia-de-muertos-sugar-skull/stable-dark.png",
-            "sha256": "c1102195a712d30976072ae466e79ad3ba592d005f15d46865c9482f3049a07c",
-            "sourceSha256": "f6e85c4a15b26abbd49e898e16b9b178fa36f3d61e3a7ba419802c8a33b22573"
-          }
-        },
-        "beta": {
-          "light": {
-            "svg": "dia-de-muertos-sugar-skull/beta-light.svg",
-            "png": "dia-de-muertos-sugar-skull/beta-light.png",
-            "sha256": "748223707c313c7b2f93b99b0571d451dfdddd420087a8517e41c1ffca7eef0b",
-            "sourceSha256": "407d97e4552491d4372cc7d12a3c14db57696f33e5d6b5a4833e0eed87be5550"
-          },
-          "dark": {
-            "svg": "dia-de-muertos-sugar-skull/beta-dark.svg",
-            "png": "dia-de-muertos-sugar-skull/beta-dark.png",
-            "sha256": "143be21adcc234675eef268630af4d255e591662c549b8dbde31a06baeb996cd",
-            "sourceSha256": "715e205b9822513eaa0be1950a96dd5101fcac04f992361ed5a1a86f3713b9e8"
-          }
-        },
-        "nightly": {
-          "light": {
-            "svg": "dia-de-muertos-sugar-skull/nightly-light.svg",
-            "png": "dia-de-muertos-sugar-skull/nightly-light.png",
-            "sha256": "a0b9166678f9878e53cfff2372514c0f1918f4daaf99ccec080e7824fdcf9996",
-            "sourceSha256": "e9b21dc254ca2c89369d9ec97350d97718f72d672a9a2e8cc68d681a47578a27"
-          },
-          "dark": {
-            "svg": "dia-de-muertos-sugar-skull/nightly-dark.svg",
-            "png": "dia-de-muertos-sugar-skull/nightly-dark.png",
-            "sha256": "4d3ae365c94522a5c60e3e006f44823d3ee60ef2f0e8ce7bac7b0f71c4121809",
-            "sourceSha256": "34554c4daa8af72c3a12689c1f0f393b41565e569bd6a88893a4386dcf29e9df"
-          }
-        },
-        "dev": {
-          "light": {
-            "svg": "dia-de-muertos-sugar-skull/dev-light.svg",
-            "png": "dia-de-muertos-sugar-skull/dev-light.png",
-            "sha256": "38a184e4c5dcf29e8e997cf23fb7c9e7d9bce282af4bcb277160f64982f951f1",
-            "sourceSha256": "8a62d8c9475857b71cf7d10997abf861098d499a73023a393f358dbe956a9235"
-          },
-          "dark": {
-            "svg": "dia-de-muertos-sugar-skull/dev-dark.svg",
-            "png": "dia-de-muertos-sugar-skull/dev-dark.png",
-            "sha256": "3330397596809a4d2f13e16e33cb09b29b65437152a819bdc787ff7c7719c11f",
-            "sourceSha256": "29fa24dd15071749b28354002859e222c2faeb857e5522ed22f392235c985584"
           }
         }
       }
@@ -3328,71 +3263,6 @@
       }
     },
     {
-      "id": "australia-day-boxing-kangaroo",
-      "name": "Boxing Kangaroo",
-      "intent": "The original app-icon kangaroo illustration, with its upright boxing guard, muscular haunches, long sweeping tail, red gloves and exact Native belly inlay. Preserves the original face and proportions.",
-      "sourceType": "raster illustration + vector brand and channel layers",
-      "revision": 2,
-      "variants": {
-        "stable": {
-          "light": {
-            "svg": "australia-day-boxing-kangaroo/stable-light.svg",
-            "png": "australia-day-boxing-kangaroo/stable-light.png",
-            "sha256": "1a108ed8caec76bd0dc557ad361d58331cb3a0f00ab21b283a24cd66e141644e",
-            "sourceSha256": "02ebad8e1909428fb0df1ce216e22a13d612c46a9a1b5382188cc7bc16590301"
-          },
-          "dark": {
-            "svg": "australia-day-boxing-kangaroo/stable-dark.svg",
-            "png": "australia-day-boxing-kangaroo/stable-dark.png",
-            "sha256": "61fb9540df38af0885839b0d09028946ca843668fa89ca1ffbe788d14f4ced29",
-            "sourceSha256": "309c48a6679160bb07d613fee7847ffccbae05d9c3f4077a4d8fba0c18d5e3a8"
-          }
-        },
-        "beta": {
-          "light": {
-            "svg": "australia-day-boxing-kangaroo/beta-light.svg",
-            "png": "australia-day-boxing-kangaroo/beta-light.png",
-            "sha256": "34c7c1e5f5dbfd4ae4300f3c5547018201dd641dd1cf222f30b5d1d8554df495",
-            "sourceSha256": "a0dfd08e0281de2975e271a3d92dbe1764d1d7abc58e74fbee33a55a4851ddc1"
-          },
-          "dark": {
-            "svg": "australia-day-boxing-kangaroo/beta-dark.svg",
-            "png": "australia-day-boxing-kangaroo/beta-dark.png",
-            "sha256": "1d8fc47690bdc28582ebcd0fbe864298d2a20c15436017571670cc8630d72661",
-            "sourceSha256": "6194ae461f4dcbc1c55b2b8826f093f085563a9bcc28a42daeffb02645201844"
-          }
-        },
-        "nightly": {
-          "light": {
-            "svg": "australia-day-boxing-kangaroo/nightly-light.svg",
-            "png": "australia-day-boxing-kangaroo/nightly-light.png",
-            "sha256": "edff09bbc3a0ca9879070839734a0fc5629f7ed76f862c3f46e3df9fc01d977a",
-            "sourceSha256": "fc9f46595f1098c8c93e5f12065af8a01c0b6581f2f45a526b1b97e3e4ee81a3"
-          },
-          "dark": {
-            "svg": "australia-day-boxing-kangaroo/nightly-dark.svg",
-            "png": "australia-day-boxing-kangaroo/nightly-dark.png",
-            "sha256": "e0af3ad5e595dcd3225c81552a47d47670dac34f0c532a40e23bc3beed9f0c45",
-            "sourceSha256": "770553d19b7376f4551182f5fc17aa7f3fd6d0925658d86d0cc86bc14a05cdeb"
-          }
-        },
-        "dev": {
-          "light": {
-            "svg": "australia-day-boxing-kangaroo/dev-light.svg",
-            "png": "australia-day-boxing-kangaroo/dev-light.png",
-            "sha256": "dbb2638920778c21afa24c5d737bb22536a421ecc0ef3f3e6b66b435163f735e",
-            "sourceSha256": "d59ef49cc3500195da21c3f78481b2c007dbedd39aa27eb6fcdbd18533c73434"
-          },
-          "dark": {
-            "svg": "australia-day-boxing-kangaroo/dev-dark.svg",
-            "png": "australia-day-boxing-kangaroo/dev-dark.png",
-            "sha256": "3f844104b8f332b149088f85df4372e761128654198e36dd98b3fe6b657050c3",
-            "sourceSha256": "6c6562021e03dd39cd23869999c006e9b39b5feaab42ea912c05f74efebe1534"
-          }
-        }
-      }
-    },
-    {
       "id": "australia-day-ochre-dots",
       "name": "Ochre Dots · Original Study",
       "intent": "Original abstract ochre dot-pattern study on the Native links. No Aboriginal authorship claim, cultural symbols, stories or copied pattern.",
@@ -3492,12 +3362,12 @@
   },
   "layerOrder": [
     "supporting-art",
-    "native-links / ghost-links / painted-calavera / boxing-kangaroo",
+    "native-links / ghost-links",
     "integrated-details",
     "overhanging-details",
     "channel-beta / channel-nightly-stars / channel-dev-construction"
   ],
-  "integration": "Artwork delivery only. App and plugin code are unchanged. These Home images have no macOS tile, shadow, or Icon Composer material; keep their transparent canvas and Native emblem anchor when integrating. The kangaroo and sugar skull reuse the original app illustrations as embedded PNGs in editable SVG compositions, with separate vector brand and channel layers. Other editions remain pure vector.",
+  "integration": "Artwork delivery only. App and plugin code are unchanged. These Home images have no macOS tile, shadow, or Icon Composer material; keep their transparent canvas and Native emblem anchor when integrating. Entries in defaultFallbacks deliberately have no custom Home artwork: use the user’s normal Home appearance for the running release channel.",
   "sourceNotes": {
     "all": {
       "source": "../../../docs/celebrations.md",
@@ -3521,12 +3391,6 @@
         "role": "Factual Southern Cross star arrangement and point counts, drawn as new SVG geometry."
       }
     ],
-    "australia-day-boxing-kangaroo": [
-      {
-        "source": "User-supplied green-and-gold Boxing Kangaroo flag reference",
-        "role": "Color and subject inspiration only. Original flat kangaroo, not the flag artwork."
-      }
-    ],
     "australia-day-ochre-dots": [
       {
         "source": "../celebrations/australian-editions.artwork.json",
@@ -3534,6 +3398,22 @@
       }
     ]
   },
+  "defaultFallbacks": [
+    {
+      "id": "australia-day-boxing-kangaroo",
+      "iconSetId": "native.australia-day-boxing-kangaroo",
+      "mode": "base-home-look",
+      "reason": "Custom Home artwork removed at the user’s request. Leave the normal Home appearance in place, respecting the user’s base theme, release channel and light/dark setting.",
+      "artworkOverride": null
+    },
+    {
+      "id": "dia-de-muertos-sugar-skull",
+      "iconSetId": "native.dia-de-muertos-sugar-skull",
+      "mode": "base-home-look",
+      "reason": "Custom Home artwork removed at the user’s request. Leave the normal Home appearance in place, respecting the user’s base theme, release channel and light/dark setting.",
+      "artworkOverride": null
+    }
+  ],
   "previewFiles": [
     "featured-dark.png",
     "featured-light.png",
@@ -3541,9 +3421,6 @@
     "overview-light.png",
     "overview-nightly.png",
     "channel-overview.png",
-    "size-check.png",
-    "reworked-home-dark.png",
-    "reworked-home-light.png",
-    "reworked-illustration-detail.png"
+    "size-check.png"
   ]
 }

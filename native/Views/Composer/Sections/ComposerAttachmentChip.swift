@@ -10,12 +10,14 @@ struct ComposerAttachmentChip: View {
     let pathOnlyReason: String?
     /// Gone from disk since it was attached, found when the user tried to send.
     let isMissing: Bool
+    /// Selected from the text with ←, so Delete takes it off.
+    var isSelected = false
     let onPreview: () -> Void
     let onRemove: () -> Void
 
     var body: some View {
         // Only a file that can't go is outlined; a picture going as its path just says so.
-        ComposerAttachmentChipFrame(isOutlined: isMissing) {
+        ComposerAttachmentChipFrame(state: isSelected ? .selected : isMissing ? .warning : .normal) {
             Button(action: onPreview) {
                 HStack(spacing: DS.Space.sm) {
                     AttachmentGlyph(attachment: attachment, isWarning: isWarning)
@@ -26,6 +28,7 @@ struct ComposerAttachmentChip: View {
             .buttonStyle(.plain)
             .help(help)
             .accessibilityLabel("\(attachment.name), \(detail)")
+            .accessibilityAddTraits(isSelected ? .isSelected : [])
             .accessibilityHint(isWarning ? help : "Opens it in Quick Look")
             .onDeleteKey(perform: onRemove)
 
@@ -33,7 +36,8 @@ struct ComposerAttachmentChip: View {
                 .labelStyle(.iconOnly)
                 .buttonStyle(.plain)
                 .font(.dsCaption)
-                .foregroundStyle(.dsTextTertiary)
+                // A control, so it keeps 3:1 against the chip in every appearance.
+                .foregroundStyle(.dsTextSecondary)
                 .frame(width: ComposerMetrics.rowActionSize, height: ComposerMetrics.rowActionSize)
                 .contentShape(.rect)
                 .dsHitTarget(DS.Size.controlXS)
@@ -79,7 +83,7 @@ struct ComposerPendingAttachmentChip: View {
     let pending: ComposerPendingAttachment
 
     var body: some View {
-        ComposerAttachmentChipFrame(isOutlined: false) {
+        ComposerAttachmentChipFrame(state: .normal) {
             HStack(spacing: DS.Space.sm) {
                 DotGridLoader(pattern: .waiting)
                     .frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
@@ -99,8 +103,15 @@ struct ComposerPendingAttachmentChip: View {
 
 /// The chip's shape, shared by attached and pending files.
 private struct ComposerAttachmentChipFrame<Content: View>: View {
-    /// In the warning color, for a file that stops the message going.
-    let isOutlined: Bool
+    enum State {
+        case normal
+        /// Selected from the keyboard: the selected fill, outlined in the text color.
+        case selected
+        /// Outlined in the warning color, for a file that stops the message going.
+        case warning
+    }
+
+    let state: State
     @ViewBuilder let content: Content
 
     var body: some View {
@@ -113,8 +124,16 @@ private struct ComposerAttachmentChipFrame<Content: View>: View {
         .padding(.vertical, DS.Space.xs)
         .frame(maxWidth: ComposerMetrics.attachmentChipMaxWidth, alignment: .leading)
         .fixedSize(horizontal: true, vertical: false)
-        .background(.dsFill, in: shape)
-        .overlay { shape.strokeBorder(isOutlined ? Color.dsWarning : .dsBorder) }
+        .background(state == .selected ? Color.dsSelected : .dsFill, in: shape)
+        .overlay { shape.strokeBorder(stroke) }
+    }
+
+    private var stroke: Color {
+        switch state {
+        case .normal: .dsBorder
+        case .selected: .dsTextPrimary
+        case .warning: .dsWarning
+        }
     }
 }
 
@@ -131,7 +150,7 @@ private struct ComposerAttachmentChipText: View {
                 .truncationMode(.middle)
             Text(detail)
                 .font(.dsCaption)
-                .foregroundStyle(isWarning ? .dsWarning : .dsTextTertiary)
+                .foregroundStyle(isWarning ? .dsWarning : .dsTextSecondary)
         }
         .lineLimit(1)
     }
