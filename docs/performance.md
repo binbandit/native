@@ -74,4 +74,78 @@ there to catch regressions in agent startup.
 - **Growth and leaks.** Note `footprint`, run the workload (open and archive 20 sessions, switch
   tasks, toggle Settings, the terminal and the inspectors), note it again and run `leaks <pid>`.
 
-<!-- results -->
+## Results
+
+2026-10-18, Debug build in the `perf` instance, Codex (`gpt-6.1-sol`) as the default agent, one
+scratch project. The Mac was very busy (load average 150 to 220 on 16 cores, other agents
+compiling), so wall-clock launch numbers are high and noisy; compare the CPU columns.
+
+### Before and after
+
+| Measurement | Before | After |
+| --- | --- | --- |
+| Launch, warm: `appInit` | 44–66 ms | 58–61 ms |
+| Launch, warm: first frame (wall, busy Mac) | 702–1308 ms | <!-- after-frame --> |
+| Launch, warm: main-thread CPU to first frame | not measured (added with this work) | <!-- after-cpu --> |
+| Launch: agents ready (`agentsReady`) | 2471–4242 ms | 2145–2802 ms |
+| Codex adapter start to `initialize` answered | 1085–2185 ms through npx | 287–306 ms direct |
+| Claude adapter start to `initialize` answered | 4018 ms through npx | 1332 ms direct |
+| Idle, visible, no sessions: Native | 0.07% CPU, 0.6 wakeups/s, 111 MB | 0.05% CPU, 0.9 wakeups/s, 101 MB |
+| Idle, hidden: Native | 0.01% CPU, 0.3 wakeups/s | <!-- after-hidden --> |
+| Idle, no sessions: processes under Native | 4, 295 MB footprint (npm wrapper 69 MB) | 3, 205 MB |
+| Idle, 1 session: Native / everything under it | 0.22% CPU, 0.9 wakeups/s, 94 MB / 14 processes, 990 MB | <!-- after-1 --> |
+| Idle, 5 sessions: Native / everything under it | 0.30% CPU, 99 MB / 54 processes, 5.26 GB | <!-- after-5 --> |
+| Streaming a 2,500-word reply: Native CPU | 36.7% over 25 s, 88 wakeups/s, 91 mW | <!-- after-stream --> |
+| Streaming: main-thread time in Keep Awake | 338 ms per 25 s (a power-source IPC per chunk) | 0 (only when the working count changes) |
+| Streaming: footprint | 104 MB → 364 MB (225 MB of it graphics), 138 MB after leaving the session | <!-- after-stream-mem --> |
+| 30 task switches + 10 Settings toggles | +6 MB, 0 leaks | <!-- after-growth --> |
+
+### What the measurements showed
+
+- **Every open Codex session holds the user's MCP servers.** Codex starts each configured MCP server
+  for every session it has open (here twice: `rea` through npx and the ChatGPT computer-use
+  helpers), about 1 GB per session with this Mac's config. Native never closed a session, so five
+  tasks opened once held 54 processes and 5.26 GB until the agent stopped, and the default agent
+  never stops. Native now closes sessions nobody has used for 10 minutes (`session/close`, which
+  codex-acp and claude-agent-acp both support), and drops their transcripts; selecting one loads
+  it back.
+- **npx sat between Native and every adapter.** `npx --yes <adapter>@<version>` keeps an
+  `npm exec` Node process alive as the adapter's parent (52–118 MB each) and adds 0.8–2.7 s to
+  every agent start. When npx has already installed that exact version, Native now runs the
+  installed binary itself (`AgentCommand.skippingNpx()`), with the `PATH` npx would give it.
+- **Keep Awake asked the power source on every streamed chunk.** It follows the number of working
+  tasks, which is re-read on every change; each re-read re-ran the engine, which calls
+  `IOPSCopyPowerSourcesByType` (an IPC to powerd). Now only a changed count reaches the engine.
+- **The hang watchdog woke the app every second.** It pinged the main thread from a background
+  task forever, hidden or not. It now watches the main run loop instead: the same two-second
+  rule, no wakeups.
+- **Polling while hidden.** The GitHub refresh loop woke every 5 s to compare dates, and the
+  status bar's resource sampling checked visibility every 3 s while hidden. Both now sleep until
+  something changes (the next due refresh, coming back to the app, the app becoming visible).
+- **Terminals kept drawing when the window wasn't visible.** libghostty was only told a surface
+  was hidden when its view left the window; it's now also told when the window is minimized,
+  hidden or covered, as Ghostty's own app does.
+- **The Markdown cache could hold a long reply hundreds of times.** It keyed parses by source and
+  capped the count at 512, but every streamed chunk is a new source holding the whole reply so
+  far. It now also caps the total source size at 4 MB.
+- **Launch is mostly the main thread.** Its CPU reaches about a second before the first frame in
+  this Debug build. The biggest app-side pieces in the time profile: plugin manifests rescanned
+  for experiment placeholders (a regex over every argument) on every `PluginRegistry.plugins`
+  read, the MCP config files parsed on the main thread (`~/.claude.json` is 315 KB here), and
+  the home card grid's layout. The rest is SwiftUI and AppKit building the window, plus waiting on
+  system services (LaunchServices check-in, preferences, window restoration), which a busy Mac
+  slows down.
+- **Idle with the window visible was already close to zero.** No animation or clock runs when
+  nothing works: `TimelineView`s stop with their views, and loaders only show for working tasks.
+
+## Still to do
+
+| What | Why | Owner |
+| --- | --- | --- |
+| Cache the applied plugin list in `PluginRegistry` (or at least `usesExperiments` per loaded plugin) | `plugins` re-applies experiments, with a regex scan of every manifest, on every read: tens of ms at launch, and again on every redraw that asks for agents | Experiments / plugins |
+| Narrow what the composer and sidebar rows observe | While a reply streams, `ModelPill`, `ComposerView`, `SessionRow` and `AppModel.statusBarTasks` re-render on every chunk because they read `session.state`; they need the mirrored `configOptions`, status and title only | Composer, sidebar |
+| Render a streaming message in parts | The growing reply is one row; re-rendering it on every chunk is where most streaming CPU and the transient 225 MB of graphics memory go. Split the Markdown at stable block boundaries so finished blocks don't re-render | Transcript |
+| Read MCP config files off the main thread at launch | About 14 ms in Debug before the first frame; agents can wait for it instead | MCP |
+| Park the default agent when it has no open sessions for a long while, or start it on the first New Session | It's kept running so New Session never waits; with direct adapter launch that wait is now about 0.3 s for Codex | App model |
+| Count session listings in flight as in use | So a park never cuts `session/list` short | Failures (agreed, in progress) |
+| Night sky on Nightly's home page | Twinkles at 30 fps for as long as Home is shown; a slower rate would look the same | Brand |

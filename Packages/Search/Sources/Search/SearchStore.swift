@@ -244,6 +244,8 @@ actor SearchStore {
 
     /// How many hits are ranked before grouping; past this, counts are lower bounds.
     static let rankedHitLimit = 600
+    /// How many of the best text matches are weighed by recency and role, without filters.
+    static let weighedMatchLimit = 4_000
 
     private func searchText(
         _ expression: String, parsed: ParsedSearchQuery, query: SearchQuery, now: Date
@@ -251,17 +253,26 @@ actor SearchStore {
         -> SearchResults
     {
         var (conditions, bindings) = filterClauses(parsed, includeItems: true)
-        conditions.insert("items_fts MATCH ?", at: 0)
+        // A word that's everywhere ("the") matches most of the index, and weighing every match by
+        // recency and role means a lookup each. Without narrowing filters, only the best matches
+        // by text alone are weighed; filters must see every match, or they'd miss rarer ones.
+        let matches =
+            parsed.isNarrowed
+            ? "SELECT rowid AS id, bm25(items_fts, 1.0, 0.4) AS relevance FROM items_fts WHERE items_fts MATCH ?"
+            : """
+            SELECT rowid AS id, bm25(items_fts, 1.0, 0.4) AS relevance FROM items_fts WHERE items_fts MATCH ?
+            ORDER BY relevance LIMIT \(Self.weighedMatchLimit)
+            """
         bindings.insert(.text(expression), at: 0)
         // bm25 is negative, more so for better matches. Recent sessions and the user's own words
         // weigh more; reasoning and tool output, which repeat everything, weigh less.
         let sql = """
             SELECT i.id, i.session_row, i.role, i.anchor, i.date, i.has_diff
-            FROM items_fts
-            JOIN items i ON i.id = items_fts.rowid
+            FROM (\(matches)) m
+            JOIN items i ON i.id = m.id
             JOIN sessions s ON s.id = i.session_row
-            WHERE \(conditions.joined(separator: " AND "))
-            ORDER BY bm25(items_fts, 1.0, 0.4)
+            \(conditions.isEmpty ? "" : "WHERE " + conditions.joined(separator: " AND "))
+            ORDER BY m.relevance
                 * (1.0 + 0.5 / (1.0 + max(0.0, ? - coalesce(i.date, s.updated_at, 0)) / 1209600.0))
                 * CASE i.role WHEN 'title' THEN 1.5 WHEN 'user' THEN 1.25 WHEN 'agent' THEN 1.0
                     WHEN 'plan' THEN 1.0 WHEN 'tool' THEN 0.8 ELSE 0.6 END

@@ -59,10 +59,11 @@ public struct SearchSnippet: Hashable, Sendable, Codable {
         let words = words.filter { $0.count > 1 || words.count == 1 }
         // The window centers on the most telling word: the longest one that matches.
         let anchor = words.sorted { $0.count > $1.count }.lazy
-            .compactMap { Self.matches(of: $0, in: text, prefixes: prefixes).first?.lowerBound }.first
+            .compactMap { Self.matches(of: $0, in: text, prefixes: prefixes, limit: 1).first?.lowerBound }.first
         var window = Substring(text)
         var leading = "", trailing = ""
-        if text.count > width {
+        // UTF-8 length is free and never less than the character count.
+        if text.utf8.count > width, text.count > width {
             let lead = width / 3
             let start =
                 anchor.map { text.index($0, offsetBy: -lead, limitedBy: text.startIndex) ?? text.startIndex }
@@ -79,7 +80,9 @@ public struct SearchSnippet: Hashable, Sendable, Codable {
         runs = Self.runs(of: excerpt, marking: words, prefixes: prefixes)
     }
 
-    private static func matches(of word: String, in text: String, prefixes: Set<String>) -> [Range<String.Index>] {
+    private static func matches(
+        of word: String, in text: String, prefixes: Set<String>, limit: Int = .max
+    ) -> [Range<String.Index>] {
         let options: String.CompareOptions = [.caseInsensitive, .diacriticInsensitive]
         let isWhole = word.count <= 3 && !prefixes.contains(word)
         var matches: [Range<String.Index>] = []
@@ -90,6 +93,7 @@ public struct SearchSnippet: Hashable, Sendable, Codable {
                 continue
             }
             matches.append(range)
+            if matches.count == limit { break }
         }
         return matches
     }
