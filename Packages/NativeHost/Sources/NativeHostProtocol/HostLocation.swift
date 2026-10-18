@@ -7,21 +7,27 @@ public struct HostLocation: Hashable, Sendable {
     public let directory: URL
     /// Empty for the standard location.
     public let channel: String
+    /// A development build's host: no login item, and it stops when idle (`docs/durability.md`).
+    public let isDevelopment: Bool
 
-    /// The environment variable the launchd plist sets to the host's channel.
+    /// The environment variable the launchd plist sets to the host's channel: empty for Native,
+    /// `nightly` for Native Nightly, a hash of the build folder for development builds.
     public static let channelVariable = "NATIVE_HOST_CHANNEL"
+    /// Set to `1` by development builds' plists.
+    public static let developmentVariable = "NATIVE_HOST_DEVELOPMENT"
 
-    public init(directory: URL, channel: String = "") {
+    public init(directory: URL, channel: String = "", isDevelopment: Bool = false) {
         self.directory = directory
         self.channel = channel
+        self.isDevelopment = isDevelopment
     }
 
     /// `~/Library/Application Support/Native`, or `…/Native/Channels/<channel>` for a named channel.
-    public static func standard(channel: String = "") -> HostLocation {
+    public static func standard(channel: String = "", isDevelopment: Bool = false) -> HostLocation {
         let support = URL.applicationSupportDirectory.appending(path: "Native", directoryHint: .isDirectory)
         let directory =
             channel.isEmpty ? support : support.appending(path: "Channels/\(channel)", directoryHint: .isDirectory)
-        return HostLocation(directory: directory, channel: channel)
+        return HostLocation(directory: directory, channel: channel, isDevelopment: isDevelopment)
     }
 
     public var socketPath: String {

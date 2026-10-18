@@ -7,6 +7,7 @@ enum MetaKey {
     static let heartbeat = "heartbeat"
     static let bootTime = "boot_time"
     static let cleanShutdown = "clean_shutdown"
+    static let restartReason = "restart_reason"
 }
 
 enum HostError: Error, LocalizedError {

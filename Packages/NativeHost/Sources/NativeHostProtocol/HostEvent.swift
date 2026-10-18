@@ -77,6 +77,8 @@ public struct RecoveryNote: Codable, Hashable, Sendable {
         case agentStopped
         /// The host process itself stopped (crashed or was killed) and launchd restarted it.
         case hostStopped
+        /// The host restarted onto a newer Native ("Restart Host Now" after an update).
+        case hostUpdated
         /// The Mac restarted or the user logged out.
         case systemRestarted
         case unknown
@@ -119,6 +121,7 @@ public struct RecoveryNote: Codable, Hashable, Sendable {
             switch cause {
             case .agentStopped, .unknown: "\(agentName) stopped unexpectedly at \(time)."
             case .hostStopped: "Native's background host stopped unexpectedly at \(time)."
+            case .hostUpdated: "Native's background host restarted at \(time) to update."
             case .systemRestarted: "Your Mac restarted at \(time) while \(agentName) was working."
             }
         let did =

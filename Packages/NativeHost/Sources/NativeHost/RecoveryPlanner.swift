@@ -58,6 +58,7 @@ enum RecoveryPlanner {
             switch cause {
             case .agentStopped, .unknown: "your process stopped unexpectedly"
             case .hostStopped: "Native's background process stopped unexpectedly"
+            case .hostUpdated: "Native's background process restarted to update"
             case .systemRestarted: "the computer restarted"
             }
         return """
