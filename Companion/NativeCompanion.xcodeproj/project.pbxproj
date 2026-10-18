@@ -181,9 +181,9 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = C0C000000000000000000041 /* Build configuration list for PBXNativeTarget "NativeCompanion" */;
 			buildPhases = (
+				C0C0000000000000000000A7 /* Build App Icons */,
 				C0C000000000000000000030 /* Sources */,
 				C0C000000000000000000031 /* Frameworks */,
-				C0C0000000000000000000A7 /* Build App Icons */,
 				C0C000000000000000000032 /* Resources */,
 			);
 			buildRules = (

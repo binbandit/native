@@ -6,8 +6,10 @@ import UniformTypeIdentifiers
 // away, is read off the main actor, then added through the session, and the composer says what it
 // couldn't take or what the agent will get as a path instead.
 extension ComposerView {
+    /// Reads one file or image into an attachment; it blocks, so it runs off the main actor.
+    typealias AttachmentRead = @Sendable () throws -> PromptAttachment
     /// A file or image on its way in: what its chip says while it's read, and how to read it.
-    typealias AttachmentLoader = (name: String, load: @Sendable () throws -> PromptAttachment)
+    typealias AttachmentLoader = (name: String, load: AttachmentRead)
 
     func attach(_ urls: [URL]) {
         load(urls.map { url in (url.lastPathComponent, { try PromptAttachment.load(url) }) })
@@ -78,12 +80,8 @@ extension ComposerView {
 
     /// Reading and scaling a large image takes a moment; never on the main actor.
     @concurrent
-    private nonisolated static func run(
-        _ loader: @Sendable () throws -> PromptAttachment
-    ) async throws
-        -> PromptAttachment
-    {
-        try loader()
+    private nonisolated static func run(_ read: AttachmentRead) async throws -> PromptAttachment {
+        try read()
     }
 
     /// Takes a chip off the message, saying so with an Undo (⌘Z works too).
@@ -101,14 +99,12 @@ extension ComposerView {
         }
     }
 
-    /// Why the draft's files can't go yet, or nil when they can: some are still being read, or
-    /// have gone from disk since they were attached (their chips say so).
+    /// Why the draft can't go yet because of its files, or nil when it can: some are still being
+    /// read, and the message waits for them.
     var attachmentsBlockedReason: String? {
-        if let reading = pendingAttachments.first {
-            let more = pendingAttachments.count - 1
-            return more == 0 ? "Still attaching \(reading.name)" : "Still attaching \(reading.name) and \(more) more"
-        }
-        return nil
+        guard let reading = pendingAttachments.first else { return nil }
+        let more = pendingAttachments.count - 1
+        return more == 0 ? "Still attaching \(reading.name)" : "Still attaching \(reading.name) and \(more) more"
     }
 
     /// Marks attached files that vanished before sending, and says what to do; true when there
