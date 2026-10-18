@@ -1,10 +1,8 @@
 // Release settings every configuration shares. docs/releasing.md explains how they're used.
 // Note: "//" starts a comment in xcconfig files, so URLs write it as "/$()/".
 
-// TODO(release): the GitHub repository Native publishes to, as owner/name. While this placeholder
-// is set, the app reports "Updates aren't set up for this build" and scripts/release refuses to
-// publish.
-NATIVE_GITHUB_REPOSITORY = PLACEHOLDER-OWNER/native
+// The GitHub repository Native publishes to, as owner/name: its releases are the update feeds.
+NATIVE_GITHUB_REPOSITORY = binbandit/native
 
 // TODO(release): replace Xcode's placeholder with Native's real reverse-DNS identifier. Nightly
 // appends ".nightly" and the host helper ".Host", so this is the only place it's spelled out.

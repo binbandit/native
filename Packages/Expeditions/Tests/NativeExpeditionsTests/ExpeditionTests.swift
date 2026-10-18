@@ -206,6 +206,7 @@ import Testing
         #expect(driver.status(.assignment("writer")) == .interrupted)
         #expect(driver.expedition.phase == .needsYou)
         #expect(driver.expedition.activeSince == nil)
+        #expect(driver.expedition.log.last?.text.hasPrefix("Native quit while a crew member was working") == true)
         driver.send(.resumeSlot(.assignment("writer")))
         #expect(driver.status(.assignment("writer")) == .running)
         #expect(driver.lastPrompt?.text.hasPrefix("Your previous turn was cut off") == true)

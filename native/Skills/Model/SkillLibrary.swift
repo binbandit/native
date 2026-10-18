@@ -78,7 +78,8 @@ final class SkillLibrary {
         isReading = true
         defer { isReading = false }
         environment = await host.skillEnvironment()
-        let (roots, items) = await Task.detached { [files, home, environment, formats = Set(agents.map(\.format)), projects = host.skillProjects] in
+        let (roots, items) = await Task.detached {
+            [files, home, environment, formats = Set(agents.map(\.format)), projects = host.skillProjects] in
             Self.scan(files: files, formats: formats, home: home, environment: environment, projects: projects)
         }.value
         apply(roots: roots, items: items)
@@ -98,6 +99,11 @@ final class SkillLibrary {
     func readIfStale() async {
         guard lastRead.map({ Date.now.timeIntervalSince($0) > 10 }) ?? true else { return }
         await read()
+    }
+
+    /// The host's environment, read once before a first install if no read has happened yet.
+    func loadEnvironmentIfNeeded() async {
+        if environment.isEmpty, let host { environment = await host.skillEnvironment() }
     }
 
     private nonisolated static func scan(
@@ -155,7 +161,8 @@ final class SkillLibrary {
         let everywhere = Set(items.filter { switches.mode(of: $0.key, in: nil) == .off }.map(\.name))
         return SessionPolicy(
             disabledSkills: off.names.map {
-                SessionPolicy.DisabledSkill(name: $0, path: nil, scope: everywhere.contains($0) ? .allProjects : .session)
+                SessionPolicy.DisabledSkill(
+                    name: $0, path: nil, scope: everywhere.contains($0) ? .allProjects : .session)
             })
     }
 

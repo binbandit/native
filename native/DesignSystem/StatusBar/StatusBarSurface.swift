@@ -62,51 +62,7 @@ extension DS {
 
 #Preview("Status bar") {
     DSPreviewPair {
-        VStack(spacing: DS.Space.xl) {
-            ForEach([CGFloat(720), 420, 240], id: \.self) { width in
-                StatusBarSurface {
-                    Button {
-                    } label: {
-                        HStack(spacing: DS.Space.sm) {
-                            StatusIndicator(status: .working, size: DS.Size.statusGlyph)
-                            Text("2 working")
-                            Text("4m").foregroundStyle(.dsTextQuaternary)
-                        }
-                    }
-                    .buttonStyle(.statusBarSegment())
-                    Button {
-                    } label: {
-                        HStack(spacing: DS.Space.sm) {
-                            StatusIndicator(status: .needsPermission, size: DS.Size.statusGlyph)
-                            Text("1 needs you")
-                        }
-                    }
-                    .buttonStyle(.statusBarSegment(.attention))
-                    Text("Claude 38% · 5h")
-                } trailing: {
-                    Button {
-                    } label: {
-                        HStack(spacing: DS.Space.xs) {
-                            StatusBarGlyph("cup.and.saucer")
-                            Text("Off")
-                        }
-                    }
-                    .buttonStyle(.statusBarSegment())
-                    Button {
-                    } label: {
-                        HStack(spacing: DS.Space.xs) {
-                            StatusBarGlyph("memorychip")
-                            Text("764.1 MB")
-                            StatusBarDivider()
-                            StatusBarGlyph("cpu")
-                            Text("3%")
-                        }
-                    }
-                    .buttonStyle(.statusBarSegment(isActive: true))
-                }
-                .frame(width: width)
-            }
-        }
-        .padding(DS.Space.xl)
+        GalleryStatusBar()
+            .padding(DS.Space.xl)
     }
 }

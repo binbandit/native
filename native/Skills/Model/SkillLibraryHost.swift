@@ -79,7 +79,8 @@ final class AppSkillsHost: SkillLibraryHost {
     var nativeSkills: [NativeSkillListing] {
         let isServed = model?.plugins.isEnabled("orchestration") ?? false
         return NativeSkill.bundled().map {
-            NativeSkillListing(id: $0.id, title: $0.title, summary: $0.summary, pluginName: "Orchestration", isServed: isServed)
+            NativeSkillListing(
+                id: $0.id, title: $0.title, summary: $0.summary, pluginName: "Orchestration", isServed: isServed)
         }
     }
 

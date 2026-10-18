@@ -12,7 +12,7 @@ extension SkillLibrary {
 
     /// Fetches a source into a staging folder (or reads a local one) to show before installing.
     func stage(_ source: SkillInstallSource) async throws(SkillInstallError) -> SkillStage {
-        if environment.isEmpty, let host { environment = await host.skillEnvironment() }
+        await loadEnvironmentIfNeeded()
         return try await installer.stage(source)
     }
 
@@ -30,9 +30,9 @@ extension SkillLibrary {
     }
 
     /// Writes `skill` into `targets`, remembers where it came from, and reads again.
-    func install(_ skill: StagedSkill, from stage: SkillStage, into targets: [SkillInstallTarget]) async throws(
-        SkillInstallError
-    ) -> SkillInstallRecord {
+    func install(
+        _ skill: StagedSkill, from stage: SkillStage, into targets: [SkillInstallTarget]
+    ) async throws(SkillInstallError) -> SkillInstallRecord {
         let paths = try installer.install(skill, into: targets)
         let record = SkillInstallRecord(
             name: skill.name, source: source(of: skill, in: stage), revision: stage.revision, installedAt: .now,
@@ -58,7 +58,9 @@ extension SkillLibrary {
 
     /// Fetches the latest version of a skill Native installed, with what would change.
     func stageUpdate(of item: SkillItem) async throws(SkillInstallError) -> SkillUpdatePlan {
-        guard let record = record(for: item) else { throw .failed("Native didn't install \(item.name), so it doesn't know where to update it from.") }
+        guard let record = record(for: item) else {
+            throw .failed("Native didn't install \(item.name), so it doesn't know where to update it from.")
+        }
         let stage = try await stage(record.source)
         guard let skill = stage.skills.first(where: { SkillItem.key(for: $0.name) == item.key }) ?? stage.skills.first
         else {

@@ -104,7 +104,9 @@ struct SkillsSettingsPage: View {
                     library: library, project: project, filter: filter, expanded: $expanded,
                     onInstall: { isInstalling = true }, onUpdate: { updating = $0 }, onRemove: { removing = $0 },
                     onToggle: { item, isOn in toggle(item.key, name: item.name, isOn: isOn, in: library) },
-                    onToggleNative: { skill, isOn in toggle(SkillItem.key(for: skill.id), name: skill.title, isOn: isOn, in: library) }
+                    onToggleNative: { skill, isOn in
+                        toggle(SkillItem.key(for: skill.id), name: skill.title, isOn: isOn, in: library)
+                    }
                 )
                 SkillFoldersFooter(library: library)
             }
@@ -161,7 +163,8 @@ struct SkillsSettingsPage: View {
                 .mcpFieldStyle()
                 .frame(maxWidth: 260)
             Spacer(minLength: DS.Space.xl)
-            SettingsSelect(label: "Switches apply to", selection: $projectPath, options: projectOptions(library), width: 200)
+            SettingsSelect(
+                label: "Switches apply to", selection: $projectPath, options: projectOptions(library), width: 200)
             IconButton("Read Again", systemImage: "arrow.clockwise") { Task { await library.read() } }
                 .disabled(library.isReading)
                 .help("Read every agent's skills folders again")

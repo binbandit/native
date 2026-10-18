@@ -73,7 +73,9 @@ extension Expedition {
             parts.append("budget \(DSFormat.cost(max))")
         }
         let active = activeTime(at: now)
-        if active >= 1 {
+        if let max = budget.maxDuration {
+            parts.append("\(DSFormat.duration(active)) of \(DSFormat.duration(max)) working")
+        } else if active >= 1 {
             parts.append("\(DSFormat.duration(active)) working")
         }
         return parts.joined(separator: " · ")

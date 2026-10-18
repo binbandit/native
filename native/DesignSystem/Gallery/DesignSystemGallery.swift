@@ -80,6 +80,9 @@ struct DesignSystemGalleryColumn: View {
             GallerySection("Sidebar", source: "Factory top half, Conductor projects and tasks, translucent") {
                 GallerySidebar()
             }
+            GallerySection("Status bar", source: "Orca's status bar in Factory's chrome") {
+                GalleryStatusBar()
+            }
             GallerySection("Task status", source: "Conductor workspace statuses and dot-grid loaders") {
                 GalleryStatus()
             }

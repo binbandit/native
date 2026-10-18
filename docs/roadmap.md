@@ -41,5 +41,6 @@ coordinator keeps this current.
 | One MCP switch across every agent | `native/MCP` | Session-scoped per-agent overrides, global or per project; no editing each agent's config by hand |
 | Skills: browse, enable and disable, install, update and remove | `native/Skills`, `Packages/Skills` | One list across agents and scopes, in Settings ▸ Skills, as in Factory |
 | Minimal by default | plugins, settings | `docs/decisions.md` |
+| Sounds stay quiet during Focus | `native/Sounds` | Waiting on Developer ID team signing: the Focus Status entitlement can't be added to ad hoc builds. The logic is built and tested; turning it on is step 8 of `docs/releasing.md`'s one-time setup |
 | iPad app | app target | After the host protocol lands (`docs/architecture.md`) |
 | Expeditions (Factory's missions, rebranded) | `Packages/Expeditions`, `native/Expeditions` | Factory's concept under Native's own name, composed from orchestration, goals, workflows and worktrees |

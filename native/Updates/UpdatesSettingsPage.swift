@@ -5,8 +5,9 @@ extension SettingsPane.ID {
 }
 
 extension SettingsPane {
-    /// Settings ▸ Updates. The app adds it with `SettingsView(additionalPanes:)`.
-    static func updates(_ controller: UpdateController) -> SettingsPane {
+    /// Settings ▸ Updates, listed in `AppSettingsPanes`. It reads the app's `UpdateController` from
+    /// the environment.
+    static let updates =
         SettingsPane(
             id: .updates,
             title: "Updates",
@@ -25,7 +26,7 @@ extension SettingsPane {
                         id: UpdatesSettingsPage.versionRow, title: "Version", keywords: ["build", "release notes"]),
                 ]
             },
-            content: { UpdatesSettingsPage(controller: controller) }
+            content: { UpdatesSettingsPage() }
         )
     }
 }
@@ -36,7 +37,7 @@ struct UpdatesSettingsPage: View {
     static let downloadsRow = SettingsRowID("updates.automatic-downloads")
     static let versionRow = SettingsRowID("updates.version")
 
-    let controller: UpdateController
+    @Environment(UpdateController.self) private var controller
 
     @Environment(\.openURL) private var openURL
 
