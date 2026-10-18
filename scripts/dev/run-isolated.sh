@@ -8,8 +8,9 @@
 #
 # The build goes to /tmp/native-dd/<name> with the bundle id suffixed `.dev.<name>`, so the instance
 # gets its own defaults domain and its own Application Support folder, and its host its own launchd
-# label and channel (docs/durability.md, "Development builds"). Codex runs `gpt-6.1-sol` unless the
-# app arguments say otherwise. Prints the instance's pid and window id, for automation scoped to it.
+# label and channel (docs/durability.md, "Development builds"), and its task worktrees go to
+# ~/.native/worktrees-dev/<name> instead of the real ~/.native/worktrees. Codex runs `gpt-6.1-sol`
+# unless the app arguments say otherwise. Prints the instance's pid and window id, for automation scoped to it.
 set -euo pipefail
 
 usage() {
@@ -42,6 +43,7 @@ app="$derived/Build/Products/Debug/Native.app"
 # Matched without the leading /tmp, which macOS reports as /private/tmp.
 process="native-dd/$name/Build/Products/Debug/Native.app/Contents/MacOS/Native"
 support="$HOME/Library/Application Support"
+worktrees="$HOME/.native/worktrees-dev/$name"
 
 bundle_id() {
     /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$app/Contents/Info.plist" 2>/dev/null
@@ -75,6 +77,7 @@ reset)
         channel=$(/usr/libexec/PlistBuddy -c "Print :EnvironmentVariables:NATIVE_HOST_CHANNEL" \
             "$app/Contents/Library/LaunchAgents/NativeHost.plist" 2>/dev/null || true)
         [ -n "$channel" ] && rm -rf "$support/Native/Channels/$channel"
+        rm -rf "$worktrees"
         echo "reset $name ($id)"
     else
         echo "nothing to reset: $name was never built" >&2
@@ -101,6 +104,7 @@ fi
 quit_app
 defaults_args=()
 [[ " ${app_args[*]-} " == *" -agentDefaults.codex.model "* ]] || defaults_args=(-agentDefaults.codex.model gpt-6.1-sol)
+[[ " ${app_args[*]-} " == *" -gitWorktreesFolder "* ]] || defaults_args+=(-gitWorktreesFolder "$worktrees")
 open -n "$app" --args ${defaults_args[@]+"${defaults_args[@]}"} ${app_args[@]+"${app_args[@]}"}
 
 pid=""
