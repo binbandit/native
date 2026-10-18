@@ -17,7 +17,9 @@ extension SessionModel {
             // Read again each time: the user may have changed it meanwhile, and an earlier change
             // (the model) can change what this option offers.
             let choices = services.titles.configChoices(for: titleKey)
-            switch choices.restoration(of: id, in: state.configOptions, allows: { !PolicyPermissionModes.forbids($0, value: $1) }) {
+            switch choices.restoration(
+                of: id, in: state.configOptions, allows: { !PolicyPermissionModes.forbids($0, value: $1) })
+            {
             case .set(let option, let value)?:
                 await setConfigOption(option, to: value)
             case .unavailable(let choice, let kept)?:
@@ -36,7 +38,9 @@ extension SessionModel {
         // The agent may also have reopened the session in a mode that's forbidden now.
         await PolicyPermissionModes.enforce(on: self)
         for (id, choice) in forbidden {
-            notes.append("Your organization doesn't allow \(choice.valueName), so this session uses \(currentValueName(of: id)).")
+            notes.append(
+                "Your organization doesn't allow \(choice.valueName), so this session uses \(currentValueName(of: id))."
+            )
         }
         if !notes.isEmpty {
             addNotice(notes.joined(separator: " "), isError: false)

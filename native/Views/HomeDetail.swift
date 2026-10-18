@@ -42,6 +42,9 @@ struct HomeDetail: View {
 
     /// The one action that makes an agent that can't start tasks able to again.
     private func remedy(for runtime: AgentRuntime) -> HomeAgentRemedy? {
+        if let missingFolder {
+            return HomeAgentRemedy("Look for the Folder Again") { Task { await model.retry(missingFolder) } }
+        }
         let agent = runtime.agent
         switch runtime.status {
         case .notInstalled:
@@ -53,6 +56,11 @@ struct HomeDetail: View {
         case .idle, .starting, .ready:
             return nil
         }
+    }
+
+    /// The chosen project's folder is gone, so no agent can start a task there until it's back.
+    private var missingFolder: ProjectProblem? {
+        model.currentProject.flatMap { model.missingFolder(of: $0.id) }
     }
 
     /// Tasks waiting on the user, the longest-waiting first.
@@ -77,6 +85,7 @@ struct HomeDetail: View {
     }
 
     private func availability(of runtime: AgentRuntime) -> HomeAgent<AgentDefinition.ID>.Availability {
+        if missingFolder != nil { return .unavailable("Can't find the project's folder") }
         if model.creatingSessionWith == runtime.agent.id { return .creatingTask }
         return switch runtime.status {
         case .ready where runtime.needsSignIn: .unavailable("Needs sign-in")
