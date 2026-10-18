@@ -28,6 +28,8 @@ public actor NativeHostClient {
         case sessionChanged(HostSessionSummary)
         case sessionClosed(HostSessionID)
         case activity(ActivityEntry)
+        /// The host's plugin catalog changed.
+        case pluginsChanged([HostPlugin])
     }
 
     public enum Failure: Error, LocalizedError, Equatable {
@@ -163,6 +165,22 @@ public actor NativeHostClient {
     }
 
     /// Stops the host and its agents for good, or (`stopAgents: false`) restarts it once idle.
+    // MARK: - Plugins
+
+    /// The plugins installed on the host. `PluginAssets` fetches and caches their files.
+    public func plugins() async throws -> [HostPlugin] {
+        try await call(HostProtocol.Method.listPlugins, EmptyMessage())
+    }
+
+    /// Turns a plugin on or off for everyone using the host; paired devices need the grant.
+    public func setPluginEnabled(_ pluginID: String, _ isEnabled: Bool) async throws -> [HostPlugin] {
+        try await call(HostProtocol.Method.setPluginEnabled, SetPluginEnabledParams(pluginID: pluginID, isEnabled: isEnabled))
+    }
+
+    public func pluginAsset(_ params: PluginAssetParams) async throws -> PluginAsset {
+        try await call(HostProtocol.Method.pluginAsset, params)
+    }
+
     /// Stops the host and its agents (`stopAgents`), or restarts it onto the binary the app
     /// carries: once it's idle, or `immediately`, interrupting turns that then resume.
     public func shutdownHost(stopAgents: Bool, immediately: Bool = false) async throws {
@@ -277,6 +295,10 @@ public actor NativeHostClient {
         case Method.activity:
             if let entry = try? message.params(as: ActivityEntry.self) {
                 continuation.yield(.activity(entry))
+            }
+        case Method.pluginsChanged:
+            if let notification = try? message.params(as: PluginsChangedNotification.self) {
+                continuation.yield(.pluginsChanged(notification.plugins))
             }
         default:
             break

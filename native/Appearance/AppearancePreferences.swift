@@ -12,6 +12,12 @@ enum AppearancePreferences {
     static let darkCodeThemeKey = "appearance.codeTheme.dark"
     /// A plugin accent palette's id, or empty to follow the app icon's theme.
     static let accentKey = "appearance.accent"
+    /// The code font (`DSCodeFont`): an installed monospaced family (empty for Geist Mono), its size,
+    /// line height and ligatures.
+    static let codeFontFamilyKey = "appearance.codeFont.family"
+    static let codeFontSizeKey = "appearance.codeFont.size"
+    static let codeLineHeightKey = "appearance.codeFont.lineHeight"
+    static let codeLigaturesKey = "appearance.codeFont.ligatures"
 }
 
 extension View {
@@ -31,6 +37,10 @@ private struct AppearancePreferencesModifier: ViewModifier {
     @AppStorage(AppearancePreferences.lightCodeThemeKey) private var lightCodeTheme = CodeTheme.native.id.rawValue
     @AppStorage(AppearancePreferences.darkCodeThemeKey) private var darkCodeTheme = CodeTheme.native.id.rawValue
     @AppStorage(AppearancePreferences.accentKey) private var accent = ""
+    @AppStorage(AppearancePreferences.codeFontFamilyKey) private var codeFamily = DSCodeFont.standard.family
+    @AppStorage(AppearancePreferences.codeFontSizeKey) private var codeSize = DSCodeFont.standard.size
+    @AppStorage(AppearancePreferences.codeLineHeightKey) private var codeLineHeight = DSCodeFont.standard.lineHeight
+    @AppStorage(AppearancePreferences.codeLigaturesKey) private var codeLigatures = DSCodeFont.standard.ligatures
 
     func body(content: Content) -> some View {
         // A theme or accent whose plugin is off (or gone) falls back to the default at once.
@@ -41,7 +51,11 @@ private struct AppearancePreferencesModifier: ViewModifier {
             .dsCodeThemes(
                 DSCodeThemes(
                     light: catalog.codeTheme(id: lightCodeTheme) ?? .native,
-                    dark: catalog.codeTheme(id: darkCodeTheme) ?? .native))
+                    dark: catalog.codeTheme(id: darkCodeTheme) ?? .native)
+            )
+            .dsCodeFont(
+                DSCodeFont(family: codeFamily, size: codeSize, lineHeight: codeLineHeight, ligatures: codeLigatures)
+            )
             .modifier(PluginAccent(palette: catalog.accent(id: accent)))
     }
 }

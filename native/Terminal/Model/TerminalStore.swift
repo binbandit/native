@@ -133,7 +133,7 @@ final class TerminalStore {
     }
 
     private func makePanel(for session: SessionModel) -> TerminalPanelModel {
-        let panel = TerminalPanelModel(workingDirectory: session.cwd, command: Self.debugCommand) { [weak self] in
+        let panel = TerminalPanelModel(workingDirectory: session.cwd) { [weak self] in
             self?.startedEngine()
         }
         panel.reloadConfig = { [weak self] in self?.reloadGhosttyConfig() }
@@ -191,7 +191,7 @@ final class TerminalStore {
     /// by default), launched as a login shell. Nil when the user's Ghostty config, in use, sets its
     /// own `command`; a debug command when one was given.
     private func shellCommand(override: String?) -> Result<String?, TerminalStartFailure> {
-        if let debugCommand = Self.debugCommand {
+        if override == nil, let debugCommand = Self.debugCommand {
             return .success(debugCommand)
         }
         let settings = preferences.settings

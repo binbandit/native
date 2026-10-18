@@ -16,7 +16,7 @@ public enum MacHost {
     }
 
     public static func configuration(
-        location: HostLocation, info: PeerInfo, inheritEnvironment: Bool = false
+        location: HostLocation, info: PeerInfo, inheritEnvironment: Bool = false, pluginsDirectory: URL? = nil
     ) -> HostCore.Configuration {
         HostCore.Configuration(
             location: location,
@@ -29,6 +29,7 @@ public enum MacHost {
             },
             // A development build's host shouldn't outlive interest in it.
             idleExit: location.isDevelopment ? .seconds(15 * 60) : nil,
+            pluginsDirectory: pluginsDirectory,
             exit: { status in Darwin.exit(status) }
         )
     }

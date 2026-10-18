@@ -13,11 +13,14 @@ extension SettingsPane {
         systemImage: "paintpalette",
         group: .personal,
         order: 10,
-        keywords: ["app icon", "dock", "theme", "light", "dark", "transparency", "translucent", "wool", "paper", "code theme", "syntax"],
+        keywords: [
+            "app icon", "dock", "theme", "light", "dark", "transparency", "translucent", "wool", "paper", "code theme",
+            "syntax",
+        ],
         searchEntries: {
             [
                 LightToneSettingsRow.searchEntry, TransparencySettingsRow.searchEntry,
-                CodeThemeSettingsRow.searchEntry, AccentSettingsRow.searchEntry,
+                CodeThemeSettingsRow.searchEntry, CodeFontSettingsRow.searchEntry, AccentSettingsRow.searchEntry,
             ]
         },
         content: {
@@ -30,8 +33,9 @@ extension SettingsPane {
                 SettingsRowGroup {
                     LightToneSettingsRow()
                     TransparencySettingsRow()
-                    CodeThemeSettingsRow()
                     AccentSettingsRow()
+                    CodeFontSettingsRow()
+                    CodeThemeSettingsRow()
                 }
             }
         }

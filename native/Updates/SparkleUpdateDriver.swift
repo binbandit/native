@@ -1,4 +1,5 @@
 #if canImport(Sparkle)
+import AppKit
 import Foundation
 import Sparkle
 
@@ -8,6 +9,8 @@ import Sparkle
 final class SparkleUpdateDriver: NSObject {
     private unowned let controller: UpdateController
     private var updater: SPUUpdater?
+    /// Off when the host installs unattended: the update goes in and Native stays closed.
+    var relaunchesAfterInstall = true
 
     /// The release Sparkle is working on, and the replies it waits for.
     private var release: UpdateRelease?
@@ -80,6 +83,11 @@ final class SparkleUpdateDriver: NSObject {
         } else {
             reply(.install)
         }
+    }
+
+    /// Quits after an unattended install attempt; Sparkle finishes installing as the app exits.
+    func quit() {
+        NSApplication.shared.terminate(nil)
     }
 
     private func show(_ state: UpdateState) {
@@ -242,6 +250,10 @@ extension SparkleUpdateDriver: SPUUserDriver {
 extension SparkleUpdateDriver: SPUUpdaterDelegate {
     func allowedChannels(for updater: SPUUpdater) -> Set<String> {
         controller.channel.sparkleChannels
+    }
+
+    func updaterShouldRelaunchApplication(_ updater: SPUUpdater) -> Bool {
+        relaunchesAfterInstall
     }
 
     func updaterShouldPromptForPermissionToCheck(forUpdates updater: SPUUpdater) -> Bool {
