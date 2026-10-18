@@ -351,9 +351,9 @@
 		};
 		000000000000000071E10030 /* Build libghostty */ = {
 			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
 			inputPaths = (
 				"$(SRCROOT)/scripts/build-libghostty.sh",
+				"$(HOME)/Library/Caches/native-build/libghostty/VERSION",
 			);
 			name = "Build libghostty";
 			outputPaths = (

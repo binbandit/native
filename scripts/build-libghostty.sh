@@ -14,7 +14,9 @@
 # toolchain and source are already here (so changing the pin below rebuilds on the next app
 # build), and copies Ghostty's terminfo and shell integration into the app bundle. When libghostty
 # can't be built it warns and exits 0; the app then compiles without GhosttyKit and the terminal
-# shows "Terminal isn't available in this build".
+# shows "Terminal isn't available in this build". Xcode runs the phase only when this script (the
+# pin) or libghostty/VERSION changed, or the bundle's copies are gone, so every new stage writes a
+# fresh VERSION, and anything else --xcode comes to read must join the phase's inputs.
 set -euo pipefail
 
 # The pin. Ghostty's last release (1.3.1) pins Zig 0.15.2, which can't link on macOS 27 hosts, so
