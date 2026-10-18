@@ -226,11 +226,12 @@ A build without libghostty says "Terminal isn't available in this build". More:
 
 ## Appearance
 
-Light and dark follow macOS. Settings ▸ Appearance: App icon and Icon appearance (Mac only), Light
-mode (Paper, crisp white, or Wool, a warm off-white), Transparency (Reduce Transparency in macOS
-keeps it solid), Accent (Match app icon, or a plugin's accent), Code font (family, size, line height,
-ligatures) and Code theme (one for light mode and one for dark). Plugins can add code themes,
-accents and icon sets.
+Settings ▸ Appearance: Appearance (System, the default, follows macOS; or Light or Dark, also in
+View ▸ Appearance), Light mode (Paper, crisp white, or Wool, a warm off-white), App icon and Icon
+appearance (Mac only; Automatic matches Native's appearance), Transparency (Reduce Transparency in
+macOS keeps it solid), Accent (Match app icon, or a plugin's accent), Code font (family, size, line
+height, ligatures) and Code theme (one for light mode and one for dark). Plugins can add code
+themes, accents and icon sets.
 
 ## Notifications, sounds and keeping awake
 

@@ -53,6 +53,19 @@ struct PullRequestFilesList: View {
     }
 
     @ViewBuilder private func content(_ row: PullRequestFilesRow) -> some View {
+        if UserDefaults.standard.bool(forKey: "gitHubExperimentPlaceholderRows") {
+            switch row.kind {
+            case .block(_, let range): Color.gray.opacity(0.05).frame(height: CGFloat(range.count) * 20.5)
+            case .header: Color.gray.opacity(0.1).frame(height: 36)
+                    .task { await model.loadPatch(for: row.path) }
+            default: Color.gray.opacity(0.02).frame(height: 24)
+            }
+        } else {
+            realContent(row)
+        }
+    }
+
+    @ViewBuilder private func realContent(_ row: PullRequestFilesRow) -> some View {
         switch row.kind {
         case .header(let file):
             PullRequestFileHeader(model: model, file: file)

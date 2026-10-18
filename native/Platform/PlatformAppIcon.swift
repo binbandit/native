@@ -19,7 +19,8 @@ import UIKit
 ///   alternate icons, through `alternateIconName(for:)`.
 @MainActor
 final class PlatformAppIcon {
-    /// Called with whether the system appearance is dark, at start and whenever it changes.
+    /// Called with whether the app's appearance is dark, at start and whenever it changes. That's the
+    /// system's unless Settings ▸ Appearance sets one (`PlatformAppearance`).
     var onAppearanceChange: ((Bool) -> Void)?
     private var observers: [(NotificationCenter, any NSObjectProtocol)] = []
     #if canImport(AppKit)

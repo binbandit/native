@@ -14,6 +14,7 @@ enum CommandsWiring {
         let celebrations: CelebrationCenter
         let updates: UpdateController
         let whatsNew: WhatsNewCenter
+        let appearance: AppearanceModeController
     }
 
     static func connect(_ registry: CommandRegistry, palette: CommandPalette, features: Features) {
@@ -35,6 +36,7 @@ enum CommandsWiring {
         registry.register(NativeCommand.composer)
         registry.register(NativeCommand.automation(BuiltInPlugins.automation.center))
         registry.register(NativeCommand.windowView)
+        registry.register(NativeCommand.appearance(features.appearance))
         registry.register([.gitChanges, .keepAwake(features.keepAwake), .statusBar(features.statusBar)])
         registry.register(NativeCommand.celebrations(features.celebrations, settings: settings))
         registry.register(NativeCommand.terminal(terminals))

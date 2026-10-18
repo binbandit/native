@@ -30,7 +30,7 @@ struct AppearanceSettingsView: View {
             }
             SettingsRow(
                 "Icon appearance",
-                description: Text("Light or dark, for icons other than Original."),
+                description: Text("Light or dark, for icons other than Original. Automatic matches Native’s appearance."),
                 detail: preferences.usesSystemIcon ? Text("Follows macOS") : nil
             ) {
                 SettingsSelect(

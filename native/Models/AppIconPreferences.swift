@@ -40,7 +40,8 @@ final class AppIconPreferences {
         }
     }
 
-    private(set) var systemIsDark = false
+    /// Whether Native's appearance is dark: the system's, unless Settings ▸ Appearance sets one.
+    private(set) var appearanceIsDark = false
 
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored let variant: AppIconVariant
@@ -111,9 +112,9 @@ final class AppIconPreferences {
     }
 
     var isDark: Bool {
-        if usesSystemIcon { return systemIsDark }
+        if usesSystemIcon { return appearanceIsDark }
         return switch appearance {
-        case .system: systemIsDark
+        case .system: appearanceIsDark
         case .light: false
         case .dark: true
         }
@@ -132,7 +133,7 @@ final class AppIconPreferences {
         guard !hasStarted else { return }
         hasStarted = true
         platform.onAppearanceChange = { [weak self] isDark in
-            self?.systemIsDark = isDark
+            self?.appearanceIsDark = isDark
             self?.apply()
         }
         platform.start()
