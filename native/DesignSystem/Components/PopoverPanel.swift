@@ -65,7 +65,8 @@ extension PopoverPanel where Accessory == EmptyView {
 
 extension View {
     /// Presents a popover the design system's way: on the overlay backdrop at the user's
-    /// transparency, and still a popover (not a sheet) in a compact iPad window.
+    /// transparency, and still a popover (not a sheet) in a compact iPad window. Its text starts
+    /// from the body style, whatever its anchor's (a status-bar item's one-line caption, say).
     public func dsPopover(
         isPresented: Binding<Bool>,
         arrowEdge: Edge = .top,
@@ -73,6 +74,9 @@ extension View {
     ) -> some View {
         popover(isPresented: isPresented, arrowEdge: arrowEdge) {
             content()
+                .font(.dsBody)
+                .foregroundStyle(.dsTextPrimary)
+                .lineLimit(nil)
                 .dsPopoverBackground()
                 .presentationCompactAdaptation(.popover)
         }
