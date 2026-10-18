@@ -23,6 +23,7 @@ struct TerminalSettingsPage: View {
     @State private var families: [String] = []
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dsAccentPalette) private var palette
+    @Environment(\.dsLightTone) private var lightTone
     @Environment(\.dsTransparency) private var transparency
     @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
@@ -90,7 +91,8 @@ struct TerminalSettingsPage: View {
         .onChange(of: appearanceKey, initial: true) { _, key in
             let appearance = TerminalAppearance(key.colorScheme)
             store.setAppearance(
-                appearance, chrome: .designSystem(appearance: appearance, palette: key.palette),
+                appearance,
+                chrome: .designSystem(appearance: appearance, palette: key.palette, lightTone: key.lightTone),
                 transparency: key.transparency)
         }
     }
@@ -118,7 +120,7 @@ struct TerminalSettingsPage: View {
         let appearance = TerminalAppearance(colorScheme)
         return TerminalStyle(
             settings: store.preferences.settings, appearance: appearance, appTheme: store.appTheme,
-            appChrome: .designSystem(appearance: appearance, palette: palette)
+            appChrome: .designSystem(appearance: appearance, palette: palette, lightTone: lightTone)
         ).colors
     }
 
@@ -149,7 +151,7 @@ struct TerminalSettingsPage: View {
 
     private var appearanceKey: TerminalAppearanceKey {
         TerminalAppearanceKey(
-            colorScheme: colorScheme, palette: palette,
+            colorScheme: colorScheme, palette: palette, lightTone: lightTone,
             transparency: TerminalTransparency(transparency, reduceTransparency: reduceTransparency))
     }
 }
