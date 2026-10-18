@@ -126,6 +126,18 @@ struct ComposerView: View {
                 takeFocusIfWanted()
             }
             .onChange(of: session.draft) { draftChanged() }
+            // A click in the text, typing, or the editor losing focus hands the keys back to the text.
+            .onChange(of: selection) { selectedAttachment = nil }
+            .onChange(of: isFocused) { _, focused in
+                if !focused { selectedAttachment = nil }
+            }
+            // Undo by any route (⌘Z, Edit ▸ Undo, the toast's button) takes back what the toast offered
+            // to, so the toast goes with it.
+            .onReceive(NotificationCenter.default.publisher(for: .NSUndoManagerDidUndoChange)) { note in
+                if let undoManager, note.object as? UndoManager === undoManager, feedback?.canUndo == true {
+                    feedback = nil
+                }
+            }
             .onChange(of: mentionQuery != nil) { _, isMentioning in
                 guard isMentioning else { return }
                 let source = mentionSource ?? FileMentionSource(root: session.cwd)
