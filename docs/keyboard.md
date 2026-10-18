@@ -224,6 +224,17 @@ bindings (`docs/terminal.md`); otherwise they're these:
 | ⌘← / ⌘→, ⌘⌫ | Start / end of the line, delete to the start of the line (sent to the shell) |
 | ⌥← / ⌥→ | Back / forward one word (sent to the shell) |
 
+## Appearance
+
+Light, dark or the system's, as in Settings ▸ Appearance (View ▸ Appearance). No default keys; give
+them one in Settings ▸ Keyboard Shortcuts.
+
+| Keys | Action | Menu | Command |
+| --- | --- | --- | --- |
+| | Follow the system's light or dark appearance | View | `appearance.system` |
+| | Light | View | `appearance.light` |
+| | Dark | View | `appearance.dark` |
+
 ## Ownership
 
 Commands live with their features and register in `NativeApp` (`docs/commands.md`); the menus place

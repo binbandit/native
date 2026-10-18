@@ -25,9 +25,14 @@ struct NativeApp: App {
     @State private var whatsNew: WhatsNewCenter
     /// ⌘K, over the main window (docs/commands.md).
     @State private var palette: CommandPalette
+    /// Light, dark or the system's, for the whole app.
+    @State private var appearance: AppearanceModeController
 
     init() {
         LaunchMetrics.mark(.appInit)
+        // Before any window exists, so the first one opens in the user's appearance.
+        let appearance = AppearanceModeController()
+        _appearance = State(initialValue: appearance)
         // Git and GitHub run with the login-shell environment the agents get.
         let model = AppModel()
         _model = State(initialValue: model)
@@ -67,7 +72,7 @@ struct NativeApp: App {
             CommandRegistry.shared, palette: palette,
             features: .init(
                 model: model, settings: settings, terminals: terminals, keepAwake: keepAwake, statusBar: statusBar,
-                celebrations: celebrations, updates: updates, whatsNew: whatsNew))
+                celebrations: celebrations, updates: updates, whatsNew: whatsNew, appearance: appearance))
     }
 
     var body: some Scene {
@@ -91,6 +96,7 @@ struct NativeApp: App {
                 .environment(TelemetryCenter.shared)
                 .environment(git.settings)
                 .environment(iconPreferences)
+                .environment(appearance)
                 .environment(celebrations)
                 .environment(keepAwake)
                 .environment(statusBar)
@@ -154,6 +160,7 @@ struct NativeApp: App {
             WhatsNewCommands(commands: CommandRegistry.shared)
             FileCommands(commands: CommandRegistry.shared)
             ViewCommands(commands: CommandRegistry.shared)
+            AppearanceCommands(commands: CommandRegistry.shared)
             SettingsCommands(settings: settings)
             GoCommands(commands: CommandRegistry.shared)
             SessionCommands(model: model, commands: CommandRegistry.shared)

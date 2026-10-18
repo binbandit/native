@@ -3,6 +3,8 @@ import SwiftUI
 
 /// The user's look-and-feel choices from Settings ▸ Appearance, stored in user defaults.
 enum AppearancePreferences {
+    /// Light, dark or the system's (`AppearanceMode`), applied by `AppearanceModeController`.
+    static let modeKey = "appearance.mode"
     /// How see-through the sidebar, overlays and floating controls are (`DSTransparency`).
     static let transparencyKey = "appearance.transparency"
     /// The white light mode is drawn on (`DSLightTone`).

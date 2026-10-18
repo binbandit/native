@@ -405,3 +405,15 @@ needs JavaScript's joined in, and their precedence varies); and an SQL grammar, 
 its releases don't include the generated parser, and it alone would add 10.5 MB. Proposed, for
 Brayden: leave Kotlin, C++ and Ruby on the lexer too, 9.2 MB for languages agents rarely write;
 each comes out with its line in Package.swift, its case in `TreeSitterGrammar` and its queries.
+
+## 2026-10-18: Native's appearance is set on the app, not on views
+
+Settings ▸ Appearance ▸ Appearance (System, Light, Dark) sets the platform's app-wide appearance
+(`PlatformAppearance`): `NSApp.appearance` on the Mac, nil for System, and each window scene's
+`traitOverrides.userInterfaceStyle` on iPad. A SwiftUI `preferredColorScheme` would reach only
+SwiftUI views, leaving AppKit pieces (the sidebar's material, text views, menus, sheets and popovers)
+on the system's appearance, and doesn't reliably return to the system's when cleared. Everything
+that reads the color scheme follows from there: the light tone, code themes, Home's artwork and the
+terminal. The app icon's "Follow System" became "Automatic" and matches Native's appearance rather
+than the Mac's, so a dark Native gets a dark icon. Original is the exception: its compiled icon
+stack keeps following macOS, as decided above.
