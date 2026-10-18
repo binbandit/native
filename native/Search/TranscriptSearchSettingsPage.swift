@@ -1,3 +1,4 @@
+import NativeCommands
 import NativePolicy
 import Search
 import SwiftUI
@@ -50,7 +51,8 @@ struct TranscriptSearchSettingsPage: View {
             SettingsHeader(
                 "Search",
                 description: Text(
-                    "Find any task by what was said in it (⇧⌘F). The index lives on this Mac and is never sent anywhere."
+                    CommandRegistry.shared.help("Find any task by what was said in it", for: .searchShow)
+                        + ". The index lives on this Mac and is never sent anywhere."
                 ))
             SettingsRowGroup {
                 SettingsRow(
@@ -67,7 +69,8 @@ struct TranscriptSearchSettingsPage: View {
                     SettingsRow(
                         id: Self.retentionRow,
                         "Keep tasks for",
-                        description: Text("Tasks with no activity for longer are left out of search and removed from the index.")
+                        description: Text(
+                            "Tasks with no activity for longer are left out of search and removed from the index.")
                     ) {
                         Text(days == 1 ? "1 day" : "\(days) days")
                             .foregroundStyle(.dsTextSecondary)
@@ -91,7 +94,8 @@ struct TranscriptSearchSettingsPage: View {
                 }
             }
             SettingsSubheading(
-                "Excluded projects", note: "Sessions in these folders are never indexed, and are removed from the index.")
+                "Excluded projects",
+                note: "Sessions in these folders are never indexed, and are removed from the index.")
             SettingsRowGroup {
                 ForEach(center.excludedFolders, id: \.self) { folder in
                     SettingsRow(URL(filePath: folder).lastPathComponent, description: Text(folder)) {
@@ -121,16 +125,20 @@ struct TranscriptSearchSettingsPage: View {
     }
 
     private var indexDescription: String {
-        guard let statistics = center.statistics else { return "Native rebuilds it from your tasks whenever it's cleared." }
+        guard let statistics = center.statistics else {
+            return "Native rebuilds it from your tasks whenever it's cleared."
+        }
         let size = DSFormat.memory(UInt64(max(statistics.bytes, 0)))
-        return "\(statistics.sessions) tasks, \(size) on disk. Clearing it forgets everything indexed; Native rebuilds it from your tasks."
+        return
+            "\(statistics.sessions) tasks, \(size) on disk. Clearing it forgets everything indexed; Native rebuilds it from your tasks."
     }
 
     private var indexingDetail: String? {
         switch center.indexing {
         case .idle: nil
         case .indexing(let done, let total): "Indexing: \(done) of \(total) sessions."
-        case .paused(let done, let total): "Paused on battery at \(done) of \(total); continues when your Mac is plugged in."
+        case .paused(let done, let total):
+            "Paused on battery at \(done) of \(total); continues when your Mac is plugged in."
         }
     }
 }

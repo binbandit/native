@@ -35,6 +35,9 @@ public enum HomeLook: Hashable, Sendable {
     case mark(String)
     /// The plain emblem with its two links in the palette's first two colors.
     case palette(IconSetPalette)
+    /// The set's own icon for the running channel, in place of the emblem, for sets with no Home
+    /// edition of their own: Home dresses up whenever the icon does.
+    case artwork([AppIconVariant: AppIconImagePair])
 }
 
 /// An icon set that passed validation, with its images checked and resolved.

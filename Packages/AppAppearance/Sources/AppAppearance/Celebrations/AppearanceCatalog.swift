@@ -140,7 +140,12 @@ public struct AppearanceCatalog: Hashable, Sendable {
             throw Failure("The name is empty.")
         }
         let (appIcon, icons) = try iconStatus(contribution.icons, from: source)
-        let (homeStatus, home) = homeStatus(contribution, marks: source.homeMarks)
+        var (homeStatus, home) = homeStatus(contribution, marks: source.homeMarks)
+        // Without a Home edition of its own, Home shows the set's icon, so it's ready (or on its way)
+        // exactly when the icon is.
+        if homeStatus == .notOffered, contribution.icons != nil {
+            (homeStatus, home) = appIcon.isReady ? (.ready, .artwork(icons)) : (appIcon, nil)
+        }
         let thumbnail = try contribution.thumbnail.flatMap { pair -> AppIconImagePair? in
             let light = try image(pair.light, from: source)
             let dark = try image(pair.dark, from: source)
