@@ -78,12 +78,25 @@ stopped on purpose), the app unregisters and registers again, which starts it.
 | Menu bar extra › Stop All Agents | Same as above, without opening the app. |
 | Logout or shutdown | launchd sends SIGTERM; the host is killed with its agents. Next login it starts and resumes what was running (`systemRestarted`). |
 
-**Updates.** On connect the client compares `protocolVersion` and the host's build with its own.
-A newer app asks an older host to restart (`_native/host/shutdown {stopAgents: false}`): the host
-takes no new turns, exits with status 75 once nothing is running, and launchd starts the new binary
-from the updated bundle. When the user can't wait, "Restart Now" restarts immediately and the new
-host resumes the interrupted turns like any other interruption. An older app facing a newer host
-shows `incompatible` and offers to update itself.
+**Updates.** The app and its host come from one bundle, so after an update the host keeps running
+the old binary until it restarts. On connect the app compares builds (`CFBundleVersion`, the same
+for both) with `HostVersionStatus` and shows `HostVersionNotice` above the detail column:
+
+| Host vs app | What happens | What the user sees |
+| --- | --- | --- |
+| Same build | nothing | nothing |
+| Older host, nothing running | the app asks it to restart (`_native/host/shutdown {stopAgents: false}`); it exits 75 right away and launchd starts the new binary | "Native's background host is restarting onto 1.4…", then nothing |
+| Older host, tasks running | same request; the host exits 75 the first moment nothing is running | "Native updated to 1.4. Its background host switches over when your tasks finish." with **Restart Host Now** |
+| Restart Host Now | `shutdown {stopAgents: false, immediately: true}`: the host exits 75 at once; the new binary resumes interrupted turns as `hostUpdated` | in each transcript: "Native's background host restarted at 2:14 PM to update. Native restarted Claude Code and asked it to pick up where it left off." |
+| Newer host (an older copy of Native was opened) | nothing; the host stays | "This copy of Native (1.3) is older than its background host (1.4)" with **Check for Updates** |
+
+The app asks each host process (each `epoch`) once. **The handshake is frozen**, so this works
+across any two versions: `initialize`, the `protocolVersion` and `hostInfo` of its result
+(`FrozenHandshake`, decoded before anything else), and `_native/host/shutdown` never change. A client
+that meets an older protocol version sends the restart request before disconnecting
+(`NativeHostClient.connectOnce`) and shows `incompatible(protocolVersion, host)`; meeting a newer one
+it only shows the state. Either way it checks again every few seconds, so it reconnects once the
+host is back on a matching binary.
 
 **Login.** `RunAtLoad` starts the host at login. It resumes only sessions that were working (an
 unfinished turn or a non-empty, unpaused queue); idle sessions load lazily when a client opens them,
@@ -102,8 +115,12 @@ branch). One global host would make them fight: an old binary serving a new app,
 registering one launchd label. So each Debug build gets its own **channel**: the plist generator
 hashes `BUILT_PRODUCTS_DIR` into `NATIVE_HOST_CHANNEL`, the label becomes `<bundle id>.host.<channel>`,
 and the host lives in `~/Library/Application Support/Native/Channels/<channel>/`. The app reads the
-channel from its own embedded plist, so app and host always agree. Release builds use no channel and
-the standard location. Host state (socket, database, lock) never lives in the repo tree.
+channel from its own embedded plist, so app and host always agree. Native uses no channel and the
+standard location; Native Nightly sets `NATIVE_HOST_CHANNEL = nightly` (`Config/Nightly.xcconfig`), so
+its label is `<id>.host.nightly`, its host lives in `Channels/nightly/`, and the two installs never
+share a socket, store or lock. The plist also carries `NATIVE_HOST_DEVELOPMENT=1` for Debug builds,
+which is what makes a host a development host (named channels like `nightly` are real installs).
+Host state (socket, database, lock) never lives in the repo tree.
 
 Development hosts must not pile up, so they differ from release in three ways:
 
@@ -225,7 +242,7 @@ process; event numbers are comparable only within one.
 | `_native/session/respond_permission {sessionID, toolCallID, optionID?}` | the first client to answer wins; the rest see it resolved |
 | `_native/queue/update`, `…/remove`, `…/send_now` | edit the queue |
 | `_native/activity/list {after?, limit}` | the activity journal, for "while you were away" |
-| `_native/host/shutdown {stopAgents}` | stop for good, or restart once idle |
+| `_native/host/shutdown {stopAgents, immediately}` | stop for good, or restart (once idle, or now) for an update. Frozen |
 
 Notifications from the host: `_native/session/event {sessionID, event}`, `_native/session/changed
 {summary}`, `_native/session/closed`, `_native/activity {entry}`.
@@ -298,6 +315,7 @@ reloads the session from the agent (`session/load`), then `RecoveryPlanner` deci
 | Agent process exits mid-turn | its stdout closes | restarts the agent, reloads, resumes or resends | "Claude Code stopped unexpectedly at 2:14 PM. Native restarted Claude Code and asked it to pick up where it left off." |
 | Agent exits while idle | same | nothing until the session is used; then reloads quietly | nothing (nothing was lost) |
 | Agent can't start again (uninstalled, signed out) | launch or `initialize` fails | keeps the turn committed, session `disconnected` with the reason; retries on the user's next message or the next host start | "Native couldn't restart Claude Code: <reason>" with the fix (install command, Sign in) |
+| Host restarted for an update (Restart Host Now) | a restart mark in `meta`, written just before exiting | resumes every unfinished turn like a crash | "Native's background host restarted at 2:14 PM to update. …" |
 | Host killed or crashed | unfinished turns at startup, same boot | launchd restarts it; it resumes every unfinished turn, then drains queues | "Native's background host stopped unexpectedly at 2:14 PM. …" |
 | Mac restarted or logged out | boot time differs from the last run's | resumes at login | "Your Mac restarted at 2:14 PM while Codex was working. …" |
 | The prompt never reached the agent | not in the replay | resends with the same request id | "Your message hadn't reached Codex yet, so Native sent it again." |

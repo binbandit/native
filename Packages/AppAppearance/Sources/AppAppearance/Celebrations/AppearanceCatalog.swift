@@ -1,7 +1,7 @@
 import Foundation
 
-/// Where a plugin's celebrations come from, for checking their artwork.
-public struct CelebrationSource {
+/// Where a plugin's contributions come from, for checking their artwork.
+public struct ContributionSource {
     public enum Location: Sendable {
         /// Compiled into Native: artwork names images in the app's asset catalog.
         case builtIn
@@ -33,128 +33,179 @@ public struct CelebrationSource {
     }
 }
 
-/// Every celebration from the loaded plugins, validated one by one: a contribution with a problem is
-/// listed in `problems` and left out, and nothing else is affected.
-public struct CelebrationCatalog: Hashable, Sendable {
+/// The icon sets and celebrations of the enabled plugins, validated one by one: a contribution
+/// with a problem is listed in `problems` and left out, and nothing else is affected.
+public struct AppearanceCatalog: Hashable, Sendable {
+    /// One plugin's contributions, in load order.
+    public struct Plugin {
+        public let source: ContributionSource
+        public let iconSets: IconSetContributions
+        public let celebrations: CelebrationContributions
+
+        public init(source: ContributionSource, iconSets: IconSetContributions, celebrations: CelebrationContributions) {
+            self.source = source
+            self.iconSets = iconSets
+            self.celebrations = celebrations
+        }
+    }
+
+    public private(set) var iconSets: [IconSet] = []
     /// In catalogue order: plugins in load order, each plugin's in manifest order.
-    public private(set) var events: [CelebrationEvent] = []
-    public private(set) var problems: [CelebrationProblem] = []
+    public private(set) var celebrations: [CelebrationEvent] = []
+    public private(set) var problems: [ContributionProblem] = []
 
     public init() {}
 
-    public func event(_ id: CelebrationID) -> CelebrationEvent? {
-        events.first { $0.id == id }
-    }
-
-    /// Only the celebrations of the given plugins, as when some are switched off. Problems stay, so
-    /// the catalogue can still explain them.
-    public func limited(toPlugins pluginIDs: Set<String>) -> CelebrationCatalog {
-        var catalog = self
-        catalog.events = events.filter { pluginIDs.contains($0.pluginID) }
-        return catalog
-    }
-
-    public mutating func add(_ contributions: CelebrationContributions, from source: CelebrationSource) {
-        problems += contributions.malformed.map { problem in
-            var problem = problem
-            problem.pluginID = source.pluginID
-            return problem
+    /// Every icon set first, so a celebration can use one from another plugin.
+    public init(_ plugins: [Plugin]) {
+        for plugin in plugins {
+            collect(plugin.iconSets, from: plugin.source) { try Self.validate($0, from: plugin.source, taken: iconSets) }
+                .forEach { iconSets.append($0) }
         }
-        for contribution in contributions.valid {
-            do {
-                events.append(try Self.validate(contribution, from: source, order: events.count, taken: events))
-            } catch let failure as Failure {
-                problems.append(
-                    CelebrationProblem(
-                        index: nil, id: contribution.id.rawValue, message: failure.message, pluginID: source.pluginID))
-            } catch {
-                problems.append(
-                    CelebrationProblem(
-                        index: nil, id: contribution.id.rawValue, message: "\(error)", pluginID: source.pluginID))
+        for plugin in plugins {
+            collect(plugin.celebrations, from: plugin.source) { contribution in
+                try Self.checkIdentity(contribution.id.rawValue, from: plugin.source)
+                if celebrations.contains(where: { $0.id == contribution.id }) {
+                    throw Failure("Another celebration already uses the id \"\(contribution.id)\".")
+                }
+                return try Self.validate(contribution, from: plugin.source, order: celebrations.count, iconSets: iconSets)
             }
+            .forEach { celebrations.append($0) }
         }
+    }
+
+    public func celebration(_ id: CelebrationID) -> CelebrationEvent? {
+        celebrations.first { $0.id == id }
+    }
+
+    public func iconSet(_ id: IconSetID) -> IconSet? {
+        iconSets.first { $0.id == id }
+    }
+
+    /// Icon sets offered as plain app icon themes: those no celebration uses, with icons ready.
+    public var themes: [IconSet] {
+        let used = Set(celebrations.compactMap(\.contribution.iconSet))
+        return iconSets.filter { !used.contains($0.id) && $0.appIcon.isReady }
     }
 
     // MARK: - Validation
 
     private struct Failure: Error {
         let message: String
+
+        init(_ message: String) {
+            self.message = message
+        }
+    }
+
+    /// Validates each entry on its own, so one problem only costs that entry.
+    private mutating func collect<Element: AppearanceContribution, Valid>(
+        _ list: ContributionList<Element>, from source: ContributionSource, _ validate: (Element) throws -> Valid
+    ) -> [Valid] {
+        problems += list.malformed.map { problem in
+            var problem = problem
+            problem.pluginID = source.pluginID
+            return problem
+        }
+        var valid: [Valid] = []
+        for element in list.valid {
+            do {
+                valid.append(try validate(element))
+            } catch {
+                let id = (try? JSONEncoder().encode(element)).flatMap { Self.id(in: $0) }
+                problems.append(
+                    ContributionProblem(
+                        kind: Element.kind, index: nil, id: id, message: (error as? Failure)?.message ?? "\(error)",
+                        pluginID: source.pluginID))
+            }
+        }
+        return valid
+    }
+
+    private static func id(in json: Data) -> String? {
+        struct Identified: Decodable { let id: String }
+        return try? JSONDecoder().decode(Identified.self, from: json).id
+    }
+
+    private static func validate(_ contribution: IconSetContribution, from source: ContributionSource, taken: [IconSet])
+        throws -> IconSet
+    {
+        try checkIdentity(contribution.id.rawValue, from: source)
+        if taken.contains(where: { $0.id == contribution.id }) {
+            throw Failure("Another icon set already uses the id \"\(contribution.id)\".")
+        }
+        if contribution.name.fallback.trimmingCharacters(in: .whitespaces).isEmpty {
+            throw Failure("The name is empty.")
+        }
+        let (appIcon, icons) = try iconStatus(contribution.icons, from: source)
+        let (homeStatus, home) = homeStatus(contribution, marks: source.homeMarks)
+        return IconSet(
+            contribution: contribution, pluginID: source.pluginID, appIcon: appIcon, icons: icons,
+            homeStatus: homeStatus, home: home)
     }
 
     private static func validate(
-        _ contribution: CelebrationContribution, from source: CelebrationSource, order: Int,
-        taken: [CelebrationEvent]
+        _ contribution: CelebrationContribution, from source: ContributionSource, order: Int, iconSets: [IconSet]
     ) throws -> CelebrationEvent {
-        try checkIdentity(contribution, from: source, taken: taken)
+        if contribution.title.fallback.trimmingCharacters(in: .whitespaces).isEmpty {
+            throw Failure("The title is empty.")
+        }
         try checkCompatibility(contribution.compatibility, nativeVersion: source.nativeVersion)
         try checkWindows(contribution.display)
-        let (appIcon, icons) = try iconStatus(contribution.artwork.appIcon, from: source)
         return CelebrationEvent(
-            contribution: contribution, pluginID: source.pluginID, order: order, appIcon: appIcon,
-            home: homeStatus(contribution.artwork.home, marks: source.homeMarks), icons: icons)
+            contribution: contribution, pluginID: source.pluginID, order: order,
+            iconSet: contribution.iconSet.flatMap { id in iconSets.first { $0.id == id } })
     }
 
-    private static func checkIdentity(
-        _ contribution: CelebrationContribution, from source: CelebrationSource, taken: [CelebrationEvent]
-    ) throws {
-        let id = contribution.id.rawValue
+    private static func checkIdentity(_ id: String, from source: ContributionSource) throws {
         let isWellFormed =
             id.contains(".") && id.first != "." && id.last != "."
             && id.allSatisfy { $0.isASCII && ($0.isLowercase || $0.isNumber || $0 == "." || $0 == "-") }
         guard isWellFormed else {
-            throw Failure(message: "The id should be namespaced lowercase words, like \"\(source.pluginID).diwali\".")
+            throw Failure("The id should be namespaced lowercase words, like \"\(source.pluginID).diwali\".")
         }
         if case .folder = source.location, !id.hasPrefix(source.pluginID + ".") {
-            throw Failure(message: "The id should start with the plugin's id: \"\(source.pluginID).\".")
-        }
-        if taken.contains(where: { $0.id == contribution.id }) {
-            throw Failure(message: "Another celebration already uses the id \"\(id)\".")
-        }
-        if contribution.title.fallback.trimmingCharacters(in: .whitespaces).isEmpty {
-            throw Failure(message: "The title is empty.")
+            throw Failure("The id should start with the plugin's id: \"\(source.pluginID).\".")
         }
     }
 
     private static func checkCompatibility(_ compatibility: CelebrationCompatibility, nativeVersion: String?) throws {
         if compatibility.manifestVersion > CelebrationCompatibility.supportedManifestVersion {
-            throw Failure(message: "It needs a newer version of Native (celebrations format \(compatibility.manifestVersion)).")
+            throw Failure("It needs a newer version of Native (celebrations format \(compatibility.manifestVersion)).")
         }
         if let minimum = compatibility.minimumNativeVersion, let nativeVersion,
             nativeVersion.compare(minimum, options: .numeric) == .orderedAscending
         {
-            throw Failure(message: "It needs Native \(minimum) or later.")
+            throw Failure("It needs Native \(minimum) or later.")
         }
     }
 
     private static func checkWindows(_ display: CelebrationDisplay) throws {
         var seen: Set<CelebrationWindow.ID> = [.core]
+        let reach = 0...CelebrationWindow.maximumReach
         for window in display.windows {
             guard seen.insert(window.id).inserted else {
-                throw Failure(message: "Two display windows use the id \"\(window.id.rawValue)\".")
+                throw Failure("Two display windows use the id \"\(window.id.rawValue)\".")
             }
-            let reach = 0...CelebrationWindow.maximumReach
             guard reach.contains(window.daysBefore), reach.contains(window.daysAfter) else {
-                throw Failure(
-                    message:
-                        "The \"\(window.id.rawValue)\" window can reach 0 to \(CelebrationWindow.maximumReach) days either side."
-                )
+                throw Failure("The \"\(window.id.rawValue)\" window can reach 0 to \(reach.upperBound) days either side.")
             }
         }
         guard seen.contains(display.defaultWindow) else {
-            throw Failure(message: "The default window \"\(display.defaultWindow.rawValue)\" isn't one of its windows.")
+            throw Failure("The default window \"\(display.defaultWindow.rawValue)\" isn't one of its windows.")
         }
     }
 
-    /// Bad references (a path outside the plugin's folder) reject the contribution; missing files only
-    /// keep the icon from applying, and say what's missing.
-    private static func iconStatus(
-        _ artwork: CelebrationIconArtwork?, from source: CelebrationSource
-    ) throws -> (CelebrationEvent.SurfaceStatus, [AppIconVariant: AppIconImagePair]) {
-        switch artwork {
+    /// Bad references (a path outside the plugin's folder) reject the set; missing files only keep its
+    /// icon from applying, and say what's missing.
+    private static func iconStatus(_ icons: IconSetIcons?, from source: ContributionSource) throws
+        -> (AppearanceSurfaceStatus, [AppIconVariant: AppIconImagePair])
+    {
+        switch icons {
         case nil: return (.notOffered, [:])
         case .forthcoming: return (.forthcoming, [:])
         case .channels(let channels):
-            var icons: [AppIconVariant: AppIconImagePair] = [:]
+            var resolved: [AppIconVariant: AppIconImagePair] = [:]
             var missing: [String] = []
             for variant in AppIconVariant.allCases {
                 guard let pair = channels[variant] else {
@@ -165,16 +216,16 @@ public struct CelebrationCatalog: Hashable, Sendable {
                 let dark = try image(pair.dark, from: source)
                 if !exists(light, in: source) { missing.append("\(variant.displayName) light") }
                 if !exists(dark, in: source) { missing.append("\(variant.displayName) dark") }
-                icons[variant] = AppIconImagePair(light: light, dark: dark)
+                resolved[variant] = AppIconImagePair(light: light, dark: dark)
             }
             guard missing.isEmpty else {
                 return (.unavailable("Missing " + missing.formatted(.list(type: .and)) + "."), [:])
             }
-            return (.ready, icons)
+            return (.ready, resolved)
         }
     }
 
-    private static func image(_ reference: CelebrationImageReference, from source: CelebrationSource) throws
+    private static func image(_ reference: IconSetImageReference, from source: ContributionSource) throws
         -> AppIconImage
     {
         switch (reference, source.location) {
@@ -182,17 +233,17 @@ public struct CelebrationCatalog: Hashable, Sendable {
             return .asset(name)
         case (.path(let path), .folder(let folder)):
             guard let url = contained(path, in: folder) else {
-                throw Failure(message: "The artwork path \"\(path)\" isn't inside the plugin's folder.")
+                throw Failure("The image \"\(path)\" isn't inside the plugin's folder.")
             }
             return .file(url)
         case (.asset(let name), .folder):
-            throw Failure(message: "\"\(name)\" names a compiled image; use a path inside the plugin's folder.")
+            throw Failure("\"\(name)\" names a compiled image; use a path inside the plugin's folder.")
         case (.path(let path), .builtIn):
-            throw Failure(message: "Built-in artwork \"\(path)\" should name a compiled image.")
+            throw Failure("Built-in artwork \"\(path)\" should name a compiled image.")
         }
     }
 
-    private static func exists(_ image: AppIconImage, in source: CelebrationSource) -> Bool {
+    private static func exists(_ image: AppIconImage, in source: ContributionSource) -> Bool {
         switch image {
         case .asset(let name): source.assetExists(name)
         case .file(let url): source.fileExists(url)
@@ -210,14 +261,15 @@ public struct CelebrationCatalog: Hashable, Sendable {
         return url.path(percentEncoded: false).hasPrefix(prefix) ? url : nil
     }
 
-    private static func homeStatus(_ artwork: CelebrationHomeArtwork?, marks: Set<String>)
-        -> CelebrationEvent.SurfaceStatus
+    /// A mark this build can't draw falls back to the palette's two-tone emblem when there is one.
+    private static func homeStatus(_ contribution: IconSetContribution, marks: Set<String>)
+        -> (AppearanceSurfaceStatus, HomeLook?)
     {
-        switch artwork {
-        case nil: .notOffered
-        case .forthcoming: .forthcoming
-        case .mark(let mark) where marks.contains(mark): .ready
-        case .mark: .unavailable("This version of Native can't draw its Home edition.")
+        if let mark = contribution.homeMark, marks.contains(mark) { return (.ready, .mark(mark)) }
+        if let palette = contribution.palette, palette.isTwoTone { return (.ready, .palette(palette)) }
+        if contribution.homeMark != nil {
+            return (.unavailable("This version of Native can't draw its Home edition."), nil)
         }
+        return (.notOffered, nil)
     }
 }

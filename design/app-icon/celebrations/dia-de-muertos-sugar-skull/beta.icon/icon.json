@@ -5,13 +5,13 @@
   "fill-specializations": [
     {
       "value": {
-        "automatic-gradient": "srgb:0.94902,0.89020,0.81176,1.00000"
+        "automatic-gradient": "srgb:0.93333,0.90588,0.85882,1.00000"
       }
     },
     {
       "appearance": "dark",
       "value": {
-        "automatic-gradient": "srgb:0.15686,0.13333,0.10588,1.00000"
+        "automatic-gradient": "srgb:0.14510,0.12941,0.11373,1.00000"
       }
     },
     {
@@ -32,13 +32,13 @@
           "fill-specializations": [
             {
               "value": {
-                "solid": "srgb:1.00000,1.00000,1.00000,0.78000"
+                "automatic-gradient": "srgb:0.89020,0.68627,0.34118,1.00000"
               }
             },
             {
               "appearance": "dark",
               "value": {
-                "solid": "srgb:1.00000,1.00000,1.00000,0.78000"
+                "automatic-gradient": "srgb:0.95686,0.78039,0.47451,1.00000"
               }
             },
             {
@@ -55,222 +55,12 @@
               "value": true
             }
           ],
-          "image-name": "ivory-icing-highlights.svg",
-          "name": "Ivory icing highlights"
-        },
-        {
-          "fill-specializations": [
-            {
-              "value": {
-                "automatic-gradient": "srgb:0.81176,0.54118,0.18039,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "automatic-gradient": "srgb:1.00000,0.74902,0.29412,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
-          "glass-specializations": [
-            {
-              "value": false
-            },
-            {
-              "appearance": "tinted",
-              "value": true
-            }
-          ],
-          "image-name": "petal-socket-gilding.svg",
-          "name": "Petal socket gilding"
-        },
-        {
-          "fill-specializations": [
-            {
-              "value": {
-                "automatic-gradient": "srgb:0.63137,0.44314,0.21176,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "automatic-gradient": "srgb:0.96078,0.77255,0.47451,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
-          "glass-specializations": [
-            {
-              "value": false
-            },
-            {
-              "appearance": "tinted",
-              "value": true
-            }
-          ],
-          "image-name": "petal-socket-enamel.svg",
-          "name": "Petal socket enamel"
-        },
-        {
-          "fill-specializations": [
-            {
-              "value": {
-                "solid": "srgb:0.63137,0.44314,0.21176,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "solid": "srgb:0.96078,0.77255,0.47451,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
-          "glass-specializations": [
-            {
-              "value": false
-            },
-            {
-              "appearance": "tinted",
-              "value": true
-            }
-          ],
-          "image-name": "piped-cheek-curls.svg",
-          "name": "Piped cheek curls"
-        },
-        {
-          "fill-specializations": [
-            {
-              "value": {
-                "automatic-gradient": "srgb:0.78039,0.46275,0.17255,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "automatic-gradient": "srgb:0.96078,0.67451,0.29804,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
-          "glass-specializations": [
-            {
-              "value": false
-            },
-            {
-              "appearance": "tinted",
-              "value": true
-            }
-          ],
-          "image-name": "marigold-cheek-flowers.svg",
-          "name": "Marigold cheek flowers"
-        },
-        {
-          "fill-specializations": [
-            {
-              "value": {
-                "solid": "srgb:0.55686,0.38431,0.54902,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "solid": "srgb:0.75294,0.54902,0.74118,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
-          "glass-specializations": [
-            {
-              "value": false
-            },
-            {
-              "appearance": "tinted",
-              "value": true
-            }
-          ],
-          "image-name": "floral-eyebrows.svg",
-          "name": "Floral eyebrows"
-        },
-        {
-          "fill-specializations": [
-            {
-              "value": {
-                "automatic-gradient": "srgb:0.63137,0.44314,0.21176,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "automatic-gradient": "srgb:0.96078,0.77255,0.47451,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
-          "glass-specializations": [
-            {
-              "value": false
-            },
-            {
-              "appearance": "tinted",
-              "value": true
-            }
-          ],
-          "image-name": "native-forehead-inlay.svg",
-          "name": "Native forehead inlay"
-        },
-        {
-          "fill-specializations": [
-            {
-              "value": {
-                "solid": "srgb:0.41176,0.27059,0.30196,0.70000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "solid": "srgb:0.45490,0.27843,0.32549,0.70000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
-          "glass-specializations": [
-            {
-              "value": false
-            },
-            {
-              "appearance": "tinted",
-              "value": true
-            }
-          ],
-          "image-name": "carved-mouth.svg",
-          "name": "Carved mouth"
+          "image-name": "native-inlay.svg",
+          "name": "Native interlock inlay"
         }
       ],
       "lighting": "individual",
-      "name": "Calavera icing and carved details",
+      "name": "Native painted forehead inlay",
       "refractivity-specializations": [
         {
           "appearance": "tinted",
@@ -319,23 +109,6 @@
       ],
       "layers": [
         {
-          "fill-specializations": [
-            {
-              "value": {
-                "automatic-gradient": "srgb:1.00000,0.97647,0.92157,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "automatic-gradient": "srgb:1.00000,0.94118,0.84706,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
           "glass-specializations": [
             {
               "value": false
@@ -345,56 +118,42 @@
               "value": true
             }
           ],
-          "image-name": "ivory-sugar-shell.svg",
-          "name": "Ivory sugar shell"
-        },
-        {
-          "fill-specializations": [
-            {
-              "value": {
-                "solid": "srgb:0.27059,0.18824,0.24314,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "solid": "srgb:0.17647,0.11765,0.19608,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
-          "glass-specializations": [
-            {
-              "value": false
-            },
-            {
-              "appearance": "tinted",
-              "value": true
-            }
-          ],
-          "image-name": "deep-carved-sockets.svg",
-          "name": "Deep carved sockets"
+          "image-name": "painted-calavera.png",
+          "name": "Hand painted calavera",
+          "position": {
+            "scale": 0.66,
+            "translation-in-points": [
+              0,
+              0
+            ]
+          }
         }
       ],
       "lighting": "individual",
-      "name": "Sculpted sugar skull",
+      "name": "Fully painted calavera",
       "refractivity-specializations": [
         {
           "appearance": "tinted",
           "value": {
-            "enabled": true,
             "depth": 0.3,
+            "enabled": true,
             "strength": 0.75
           }
         }
       ],
       "shadow": {
         "kind": "neutral",
-        "opacity": 0.25
+        "opacity": 0.22
       },
+      "specular-specializations": [
+        {
+          "value": false
+        },
+        {
+          "appearance": "tinted",
+          "value": true
+        }
+      ],
       "translucency-specializations": [
         {
           "value": {
@@ -408,125 +167,6 @@
             "enabled": true,
             "value": 0.25
           }
-        }
-      ],
-      "specular-specializations": [
-        {
-          "value": false
-        },
-        {
-          "appearance": "tinted",
-          "value": true
-        }
-      ]
-    },
-    {
-      "blur-material-specializations": [
-        {
-          "appearance": "tinted",
-          "value": 0.25
-        }
-      ],
-      "layers": [
-        {
-          "fill-specializations": [
-            {
-              "value": {
-                "solid": "srgb:0.72157,0.42353,0.16078,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "solid": "srgb:0.61176,0.32941,0.14902,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
-          "glass-specializations": [
-            {
-              "value": false
-            },
-            {
-              "appearance": "tinted",
-              "value": true
-            }
-          ],
-          "image-name": "crown-petal-centres.svg",
-          "name": "Crown petal centres"
-        },
-        {
-          "fill-specializations": [
-            {
-              "value": {
-                "automatic-gradient": "srgb:0.92941,0.63137,0.19608,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "automatic-gradient": "srgb:1.00000,0.77255,0.33333,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
-          "glass-specializations": [
-            {
-              "value": false
-            },
-            {
-              "appearance": "tinted",
-              "value": true
-            }
-          ],
-          "image-name": "crown-petals.svg",
-          "name": "Crown petals"
-        }
-      ],
-      "lighting": "individual",
-      "name": "Layered marigold crown",
-      "refractivity-specializations": [
-        {
-          "appearance": "tinted",
-          "value": {
-            "enabled": true,
-            "depth": 0.3,
-            "strength": 0.75
-          }
-        }
-      ],
-      "shadow": {
-        "kind": "neutral",
-        "opacity": 0.16
-      },
-      "translucency-specializations": [
-        {
-          "value": {
-            "enabled": false,
-            "value": 0
-          }
-        },
-        {
-          "appearance": "tinted",
-          "value": {
-            "enabled": true,
-            "value": 0.25
-          }
-        }
-      ],
-      "specular-specializations": [
-        {
-          "value": false
-        },
-        {
-          "appearance": "tinted",
-          "value": true
         }
       ]
     },

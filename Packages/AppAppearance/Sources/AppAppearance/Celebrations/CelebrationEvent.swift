@@ -1,21 +1,8 @@
 import Foundation
 
-/// A contribution that passed validation, with its artwork checked and resolved: what the catalogue
-/// lists and the policy chooses from.
+/// A celebration that passed validation, with its icon set resolved: what the catalogue lists and
+/// the policy chooses from.
 public struct CelebrationEvent: Hashable, Sendable, Identifiable {
-    /// Whether one surface of an edition can be applied.
-    public enum SurfaceStatus: Hashable, Sendable {
-        case ready
-        /// The contribution doesn't change this surface.
-        case notOffered
-        /// Planned; the catalogue says the artwork is on its way.
-        case forthcoming
-        /// Declared but unusable, such as missing icon files; the reason is for the catalogue.
-        case unavailable(String)
-
-        public var isReady: Bool { self == .ready }
-    }
-
     /// Whether Native can work out the event's dates.
     public enum DateStatus: Hashable, Sendable {
         case resolvable
@@ -29,38 +16,43 @@ public struct CelebrationEvent: Hashable, Sendable, Identifiable {
     public let pluginID: String
     /// Position in the catalogue: the overlap order until the user sets their own.
     public let order: Int
-    public let appIcon: SurfaceStatus
-    public let home: SurfaceStatus
-    /// Each channel's light and dark icons, when `appIcon` is ready.
-    public let icons: [AppIconVariant: AppIconImagePair]
+    /// The icon set it refers to, when an enabled plugin provides it.
+    public let iconSet: IconSet?
 
-    public init(
-        contribution: CelebrationContribution, pluginID: String, order: Int, appIcon: SurfaceStatus,
-        home: SurfaceStatus, icons: [AppIconVariant: AppIconImagePair] = [:]
-    ) {
+    public init(contribution: CelebrationContribution, pluginID: String, order: Int, iconSet: IconSet?) {
         self.contribution = contribution
         self.pluginID = pluginID
         self.order = order
-        self.appIcon = appIcon
-        self.home = home
-        self.icons = icons
+        self.iconSet = iconSet
     }
 
     public var id: CelebrationID { contribution.id }
     public var display: CelebrationDisplay { contribution.display }
 
-    /// The design-system mark Home draws, when that surface is ready.
-    public var homeMark: String? {
-        guard home.isReady, case .mark(let mark) = contribution.artwork.home else { return nil }
-        return mark
+    public var appIcon: AppearanceSurfaceStatus {
+        iconSet?.appIcon ?? missingArtwork
+    }
+
+    public var home: AppearanceSurfaceStatus {
+        iconSet?.homeStatus ?? missingArtwork
+    }
+
+    /// What Home draws, when that surface is ready.
+    public var homeLook: HomeLook? {
+        home.isReady ? iconSet?.home : nil
     }
 
     public func icon(for variant: AppIconVariant, isDark: Bool) -> AppIconImage? {
-        icons[variant]?.image(isDark: isDark)
+        appIcon.isReady ? iconSet?.icon(for: variant, isDark: isDark) : nil
     }
 
     /// Whether anything is ready to apply: an edition with neither surface can be browsed, not used.
     public var isApplicable: Bool { appIcon.isReady || home.isReady }
+
+    private var missingArtwork: AppearanceSurfaceStatus {
+        guard let reference = contribution.iconSet else { return .forthcoming }
+        return .unavailable("Its icon set \"\(reference)\" isn't installed or is turned off.")
+    }
 
     public func dateStatus(on day: CivilDate) -> DateStatus {
         if case .unsupported(let kind) = contribution.calendar.rule { return .unsupportedCalendar(kind) }
