@@ -1,0 +1,367 @@
+{
+  "features": [
+    "refractivity"
+  ],
+  "fill-specializations": [
+    {
+      "value": {
+        "automatic-gradient": "srgb:0.89412,0.89804,0.93333,1.00000"
+      }
+    },
+    {
+      "appearance": "dark",
+      "value": {
+        "automatic-gradient": "srgb:0.07059,0.09020,0.16471,1.00000"
+      }
+    },
+    {
+      "appearance": "tinted",
+      "value": "automatic"
+    }
+  ],
+  "groups": [
+    {
+      "blur-material-specializations": [
+        {
+          "appearance": "tinted",
+          "value": 0.25
+        }
+      ],
+      "layers": [
+        {
+          "glass-specializations": [
+            {
+              "value": false
+            },
+            {
+              "appearance": "tinted",
+              "value": true
+            }
+          ],
+          "image-name": "native-inlay.svg",
+          "name": "Native interlock",
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "srgb:0.09020,0.24314,0.16471,1.00000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "srgb:0.09020,0.24314,0.16471,1.00000"
+              }
+            },
+            {
+              "appearance": "tinted",
+              "value": "automatic"
+            }
+          ]
+        }
+      ],
+      "lighting": "individual",
+      "name": "Native brand inlay",
+      "refractivity-specializations": [
+        {
+          "appearance": "tinted",
+          "value": {
+            "enabled": true,
+            "depth": 0.3,
+            "strength": 0.75
+          }
+        }
+      ],
+      "shadow": {
+        "kind": "none",
+        "opacity": 0
+      },
+      "translucency-specializations": [
+        {
+          "value": {
+            "enabled": false,
+            "value": 0
+          }
+        },
+        {
+          "appearance": "tinted",
+          "value": {
+            "enabled": true,
+            "value": 0.25
+          }
+        }
+      ],
+      "specular-specializations": [
+        {
+          "value": false
+        },
+        {
+          "appearance": "tinted",
+          "value": true
+        }
+      ]
+    },
+    {
+      "blur-material-specializations": [
+        {
+          "appearance": "tinted",
+          "value": 0.25
+        }
+      ],
+      "layers": [
+        {
+          "glass-specializations": [
+            {
+              "value": false
+            },
+            {
+              "appearance": "tinted",
+              "value": true
+            }
+          ],
+          "image-name": "boxing-kangaroo.png",
+          "name": "Australia · Boxing Kangaroo",
+          "position": {
+            "scale": 0.4969485614646905,
+            "translation-in-points": [
+              -91.72101133391456,
+              60.733217088055795
+            ]
+          }
+        }
+      ],
+      "lighting": "individual",
+      "name": "Australia · Boxing Kangaroo",
+      "refractivity-specializations": [
+        {
+          "appearance": "tinted",
+          "value": {
+            "enabled": true,
+            "depth": 0.3,
+            "strength": 0.75
+          }
+        }
+      ],
+      "shadow": {
+        "kind": "none",
+        "opacity": 0
+      },
+      "translucency-specializations": [
+        {
+          "value": {
+            "enabled": false,
+            "value": 0
+          }
+        },
+        {
+          "appearance": "tinted",
+          "value": {
+            "enabled": true,
+            "value": 0.25
+          }
+        }
+      ],
+      "specular-specializations": [
+        {
+          "value": false
+        },
+        {
+          "appearance": "tinted",
+          "value": true
+        }
+      ]
+    },
+    {
+      "blur-material-specializations": [
+        {
+          "appearance": "tinted",
+          "value": 0.25
+        }
+      ],
+      "layers": [
+        {
+          "glass-specializations": [
+            {
+              "value": false
+            },
+            {
+              "appearance": "tinted",
+              "value": true
+            }
+          ],
+          "image-name": "southern-cross.svg",
+          "name": "Five-star Southern Cross",
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "srgb:0.47059,0.38039,0.15294,1.00000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "srgb:0.95686,0.76863,0.28627,1.00000"
+              }
+            },
+            {
+              "appearance": "tinted",
+              "value": "automatic"
+            }
+          ]
+        }
+      ],
+      "lighting": "individual",
+      "name": "Southern Cross",
+      "refractivity-specializations": [
+        {
+          "appearance": "tinted",
+          "value": {
+            "enabled": true,
+            "depth": 0.3,
+            "strength": 0.75
+          }
+        }
+      ],
+      "shadow": {
+        "kind": "none",
+        "opacity": 0
+      },
+      "translucency-specializations": [
+        {
+          "value": {
+            "enabled": false,
+            "value": 0
+          }
+        },
+        {
+          "appearance": "tinted",
+          "value": {
+            "enabled": true,
+            "value": 0.25
+          }
+        }
+      ],
+      "specular-specializations": [
+        {
+          "value": false
+        },
+        {
+          "appearance": "tinted",
+          "value": true
+        }
+      ]
+    },
+    {
+      "blur-material-specializations": [
+        {
+          "appearance": "tinted",
+          "value": 0.25
+        }
+      ],
+      "layers": [
+        {
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "srgb:0.45490,0.39608,0.55294,1.00000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "srgb:1.00000,0.94118,0.79216,1.00000"
+              }
+            },
+            {
+              "appearance": "tinted",
+              "value": "automatic"
+            }
+          ],
+          "glass-specializations": [
+            {
+              "value": false
+            },
+            {
+              "appearance": "tinted",
+              "value": true
+            }
+          ],
+          "image-name": "bright-stars.svg",
+          "name": "Bright Nightly stars"
+        },
+        {
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "srgb:0.58039,0.51373,0.67059,1.00000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "srgb:0.90980,0.86667,0.97647,1.00000"
+              }
+            },
+            {
+              "appearance": "tinted",
+              "value": "automatic"
+            }
+          ],
+          "glass-specializations": [
+            {
+              "value": false
+            },
+            {
+              "appearance": "tinted",
+              "value": true
+            }
+          ],
+          "image-name": "stars.svg",
+          "name": "Nightly star field"
+        }
+      ],
+      "lighting": "individual",
+      "name": "Release channel",
+      "refractivity-specializations": [
+        {
+          "appearance": "tinted",
+          "value": {
+            "enabled": true,
+            "depth": 0.3,
+            "strength": 0.75
+          }
+        }
+      ],
+      "shadow": {
+        "kind": "none",
+        "opacity": 0
+      },
+      "translucency-specializations": [
+        {
+          "value": {
+            "enabled": false,
+            "value": 0
+          }
+        },
+        {
+          "appearance": "tinted",
+          "value": {
+            "enabled": true,
+            "value": 0.25
+          }
+        }
+      ],
+      "specular-specializations": [
+        {
+          "value": false
+        },
+        {
+          "appearance": "tinted",
+          "value": true
+        }
+      ]
+    }
+  ],
+  "supported-platforms": {
+    "squares": "shared"
+  }
+}

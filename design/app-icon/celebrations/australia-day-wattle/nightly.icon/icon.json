@@ -1,0 +1,207 @@
+{
+  "features": [
+    "refractivity"
+  ],
+  "fill-specializations": [
+    {
+      "value": {
+        "automatic-gradient": "srgb:0.89412,0.89804,0.93333,1.00000"
+      }
+    },
+    {
+      "appearance": "dark",
+      "value": {
+        "automatic-gradient": "srgb:0.07059,0.09020,0.16471,1.00000"
+      }
+    },
+    {
+      "appearance": "tinted",
+      "value": "automatic"
+    }
+  ],
+  "groups": [
+    {
+      "blur-material-specializations": [
+        {
+          "appearance": "tinted",
+          "value": 0.25
+        }
+      ],
+      "layers": [
+        {
+          "glass-specializations": [
+            {
+              "value": false
+            },
+            {
+              "appearance": "tinted",
+              "value": true
+            }
+          ],
+          "image-name": "flat-interlock.png",
+          "name": "Australia · Wattle",
+          "position": {
+            "scale": 0.611065235342692,
+            "translation-in-points": [
+              -0.305532617671346,
+              10.166804293971925
+            ]
+          }
+        }
+      ],
+      "lighting": "individual",
+      "name": "Australia · Wattle",
+      "refractivity-specializations": [
+        {
+          "appearance": "tinted",
+          "value": {
+            "enabled": true,
+            "depth": 0.3,
+            "strength": 0.75
+          }
+        }
+      ],
+      "shadow": {
+        "kind": "none",
+        "opacity": 0
+      },
+      "translucency-specializations": [
+        {
+          "value": {
+            "enabled": false,
+            "value": 0
+          }
+        },
+        {
+          "appearance": "tinted",
+          "value": {
+            "enabled": true,
+            "value": 0.25
+          }
+        }
+      ],
+      "specular-specializations": [
+        {
+          "value": false
+        },
+        {
+          "appearance": "tinted",
+          "value": true
+        }
+      ]
+    },
+    {
+      "blur-material-specializations": [
+        {
+          "appearance": "tinted",
+          "value": 0.25
+        }
+      ],
+      "layers": [
+        {
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "srgb:0.45490,0.39608,0.55294,1.00000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "srgb:1.00000,0.94118,0.79216,1.00000"
+              }
+            },
+            {
+              "appearance": "tinted",
+              "value": "automatic"
+            }
+          ],
+          "glass-specializations": [
+            {
+              "value": false
+            },
+            {
+              "appearance": "tinted",
+              "value": true
+            }
+          ],
+          "image-name": "bright-stars.svg",
+          "name": "Bright Nightly stars"
+        },
+        {
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "srgb:0.58039,0.51373,0.67059,1.00000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "srgb:0.90980,0.86667,0.97647,1.00000"
+              }
+            },
+            {
+              "appearance": "tinted",
+              "value": "automatic"
+            }
+          ],
+          "glass-specializations": [
+            {
+              "value": false
+            },
+            {
+              "appearance": "tinted",
+              "value": true
+            }
+          ],
+          "image-name": "stars.svg",
+          "name": "Nightly star field"
+        }
+      ],
+      "lighting": "individual",
+      "name": "Release channel",
+      "refractivity-specializations": [
+        {
+          "appearance": "tinted",
+          "value": {
+            "enabled": true,
+            "depth": 0.3,
+            "strength": 0.75
+          }
+        }
+      ],
+      "shadow": {
+        "kind": "none",
+        "opacity": 0
+      },
+      "translucency-specializations": [
+        {
+          "value": {
+            "enabled": false,
+            "value": 0
+          }
+        },
+        {
+          "appearance": "tinted",
+          "value": {
+            "enabled": true,
+            "value": 0.25
+          }
+        }
+      ],
+      "specular-specializations": [
+        {
+          "value": false
+        },
+        {
+          "appearance": "tinted",
+          "value": true
+        }
+      ]
+    }
+  ],
+  "supported-platforms": {
+    "squares": "shared"
+  }
+}

@@ -10,4 +10,6 @@ public enum NativeMarkStyle: Equatable, Sendable {
     case diaDeMuertos(NativeMuertosEdition)
     /// Each link in its own color, from a plugin icon set's palette.
     case twoTone(NativeTwoTonePalette)
+    /// A celebration's own icon in place of the emblem, for editions without a Home mark.
+    case artwork(NativeEditionArtwork)
 }

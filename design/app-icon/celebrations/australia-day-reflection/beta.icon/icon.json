@@ -1,0 +1,177 @@
+{
+  "features": [
+    "refractivity"
+  ],
+  "fill-specializations": [
+    {
+      "value": {
+        "automatic-gradient": "srgb:0.91373,0.89804,0.85490,1.00000"
+      }
+    },
+    {
+      "appearance": "dark",
+      "value": {
+        "automatic-gradient": "srgb:0.14118,0.16863,0.16471,1.00000"
+      }
+    },
+    {
+      "appearance": "tinted",
+      "value": "automatic"
+    }
+  ],
+  "groups": [
+    {
+      "blur-material-specializations": [
+        {
+          "appearance": "tinted",
+          "value": 0.25
+        }
+      ],
+      "layers": [
+        {
+          "glass-specializations": [
+            {
+              "value": false
+            },
+            {
+              "appearance": "tinted",
+              "value": true
+            }
+          ],
+          "image-name": "flat-interlock.png",
+          "name": "Australia · Reflection",
+          "position": {
+            "scale": 0.5982215036378334,
+            "translation-in-points": [
+              -0.2991107518189167,
+              7.51333872271625
+            ]
+          }
+        }
+      ],
+      "lighting": "individual",
+      "name": "Australia · Reflection",
+      "refractivity-specializations": [
+        {
+          "appearance": "tinted",
+          "value": {
+            "enabled": true,
+            "depth": 0.3,
+            "strength": 0.75
+          }
+        }
+      ],
+      "shadow": {
+        "kind": "none",
+        "opacity": 0
+      },
+      "translucency-specializations": [
+        {
+          "value": {
+            "enabled": false,
+            "value": 0
+          }
+        },
+        {
+          "appearance": "tinted",
+          "value": {
+            "enabled": true,
+            "value": 0.25
+          }
+        }
+      ],
+      "specular-specializations": [
+        {
+          "value": false
+        },
+        {
+          "appearance": "tinted",
+          "value": true
+        }
+      ]
+    },
+    {
+      "blur-material-specializations": [
+        {
+          "appearance": "tinted",
+          "value": 0.25
+        }
+      ],
+      "layers": [
+        {
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "srgb:0.64314,0.47059,0.19608,1.00000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "srgb:0.94902,0.76863,0.42745,1.00000"
+              }
+            },
+            {
+              "appearance": "tinted",
+              "value": "automatic"
+            }
+          ],
+          "glass-specializations": [
+            {
+              "value": false
+            },
+            {
+              "appearance": "tinted",
+              "value": true
+            }
+          ],
+          "image-name": "beta.svg",
+          "name": "Beta signature"
+        }
+      ],
+      "lighting": "individual",
+      "name": "Release channel",
+      "refractivity-specializations": [
+        {
+          "appearance": "tinted",
+          "value": {
+            "enabled": true,
+            "depth": 0.3,
+            "strength": 0.75
+          }
+        }
+      ],
+      "shadow": {
+        "kind": "none",
+        "opacity": 0
+      },
+      "translucency-specializations": [
+        {
+          "value": {
+            "enabled": false,
+            "value": 0
+          }
+        },
+        {
+          "appearance": "tinted",
+          "value": {
+            "enabled": true,
+            "value": 0.25
+          }
+        }
+      ],
+      "specular-specializations": [
+        {
+          "value": false
+        },
+        {
+          "appearance": "tinted",
+          "value": true
+        }
+      ]
+    }
+  ],
+  "supported-platforms": {
+    "squares": "shared"
+  }
+}

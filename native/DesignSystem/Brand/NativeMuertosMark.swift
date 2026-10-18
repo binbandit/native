@@ -48,11 +48,12 @@ public struct NativeMuertosMark: View {
         let painter = Painter(context: context, scale: width)
         let markRect = CGRect(x: 0, y: 0, width: 1, height: 1 / NativeMark.aspectRatio)
 
-        // Candlelight, warm behind the links.
+        // Candlelight, warm behind the links. It fades out well inside the canvas, whose edges would
+        // otherwise clip it into a visible box.
         painter.fill(
-            Path(ellipseIn: CGRect(x: -0.12, y: -0.18, width: 1.24, height: 1.06)),
+            Path(CGRect(x: 0, y: -Self.rise, width: 1, height: Self.rise + markRect.height + Self.fall)),
             radial: [palette.glow.opacity(palette.glowOpacity), palette.glow.opacity(0)],
-            center: CGPoint(x: 0.5, y: 0.36), radius: 0.62)
+            center: CGPoint(x: 0.5, y: 0.34), radius: 0.4)
 
         for (link, colors) in [
             (NativeMark.Link.left, palette.marigoldLink), (NativeMark.Link.right, palette.channelLink),
@@ -166,7 +167,9 @@ public struct NativeMuertosMark: View {
                     x: center.x + offset.x - petal * 0.62, y: center.y + offset.y - petal * 0.62, width: petal * 1.24,
                     height: petal * 1.24))
         }
-        path.addEllipse(in: CGRect(x: center.x - petal * 0.42, y: center.y - petal * 0.42, width: petal * 0.84, height: petal * 0.84))
+        path.addEllipse(
+            in: CGRect(
+                x: center.x - petal * 0.42, y: center.y - petal * 0.42, width: petal * 0.84, height: petal * 0.84))
         path.addPath(pinpricks(in: rect))
         return path
     }
@@ -192,7 +195,8 @@ public struct NativeMuertosMark: View {
         let radius = rect.width * 0.045
         for x in [rect.minX + rect.width * 0.16, rect.maxX - rect.width * 0.16] {
             path.addEllipse(
-                in: CGRect(x: x - radius, y: rect.minY + rect.height * 0.16 - radius, width: radius * 2, height: radius * 2))
+                in: CGRect(
+                    x: x - radius, y: rect.minY + rect.height * 0.16 - radius, width: radius * 2, height: radius * 2))
         }
         return path
     }
@@ -218,7 +222,10 @@ public struct NativeMuertosMark: View {
     private func drawMarigold(_ blossom: Blossom, with painter: Painter, palette: NativeMuertosEdition.Palette) {
         let rings: [(count: Int, distance: CGFloat, size: CGSize, color: Color)] = [
             (13, 0.6, CGSize(width: 0.5, height: 0.66), palette.petals.outer),
-            (11, 0.36, CGSize(width: 0.44, height: 0.54), palette.petals.outer.mix(with: palette.petals.inner, by: 0.55)),
+            (
+                11, 0.36, CGSize(width: 0.44, height: 0.54),
+                palette.petals.outer.mix(with: palette.petals.inner, by: 0.55)
+            ),
             (8, 0.16, CGSize(width: 0.36, height: 0.42), palette.petals.inner),
         ]
         for (ringIndex, ring) in rings.enumerated() {
@@ -227,7 +234,8 @@ public struct NativeMuertosMark: View {
                 let angle = blossom.turn + Double(ringIndex) * 0.4 + Double(index) / Double(ring.count) * 2 * .pi
                 let petal = Path(
                     ellipseIn: CGRect(
-                        x: -ring.size.width * blossom.radius / 2, y: -(ring.distance + ring.size.height / 2) * blossom.radius,
+                        x: -ring.size.width * blossom.radius / 2,
+                        y: -(ring.distance + ring.size.height / 2) * blossom.radius,
                         width: ring.size.width * blossom.radius, height: ring.size.height * blossom.radius))
                 petals.addPath(
                     petal,
@@ -238,7 +246,9 @@ public struct NativeMuertosMark: View {
         }
         let heart = blossom.radius * 0.17
         painter.fill(
-            Path(ellipseIn: CGRect(x: blossom.center.x - heart, y: blossom.center.y - heart, width: heart * 2, height: heart * 2)),
+            Path(
+                ellipseIn: CGRect(
+                    x: blossom.center.x - heart, y: blossom.center.y - heart, width: heart * 2, height: heart * 2)),
             palette.petals.heart)
     }
 
@@ -253,7 +263,8 @@ public struct NativeMuertosMark: View {
         painter.fill(Path(roundedRect: body, cornerRadius: 0.006), palette.wax)
         var flame = Path()
         flame.move(to: flameTip)
-        flame.addQuadCurve(to: CGPoint(x: base.x, y: body.minY - 0.004), control: CGPoint(x: base.x + 0.024, y: body.minY - 0.016))
+        flame.addQuadCurve(
+            to: CGPoint(x: base.x, y: body.minY - 0.004), control: CGPoint(x: base.x + 0.024, y: body.minY - 0.016))
         flame.addQuadCurve(to: flameTip, control: CGPoint(x: base.x - 0.024, y: body.minY - 0.016))
         painter.fill(flame, palette.flame.outer)
         painter.fill(
