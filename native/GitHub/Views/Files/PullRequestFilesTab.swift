@@ -39,41 +39,11 @@ struct PullRequestFilesTab: View {
     }
 
     private var diffs: some View {
-        ScrollViewReader { proxy in
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: DS.Space.lg) {
-                    if let error = model.patchError {
-                        NoticeBanner(
-                            tone: .warning, title: "Some diffs couldn't load", detail: error.localizedDescription
-                        ) {
-                            Button("Try Again") { Task { await model.loadNextPatchPage() } }
-                                .buttonStyle(.ds(.secondary))
-                        }
-                    }
-                    ForEach(model.files) { file in
-                        PullRequestFileSection(model: model, file: file)
-                            .id(file.path)
-                    }
-                    if model.filesCursor != nil {
-                        Text("Loading the rest of the \(model.totalFiles) files…")
-                            .font(.dsBody)
-                            .foregroundStyle(.dsTextTertiary)
-                    }
-                }
-                .padding(DS.Space.lg)
-            }
-            .scrollContentBackground(.hidden)
-            .onChange(of: model.focusedFile) { _, path in
-                guard let path else { return }
-                withAnimation(.dsStandard) { proxy.scrollTo(path, anchor: .top) }
-                model.focusedFile = nil
-            }
-        }
+        PullRequestFilesList(model: model)
+            .codeTextStyle(.compact)
     }
 }
 
 enum PullRequestFilesLayout {
     static let treeWidth: CGFloat = 248
-    /// Past this many lines a file shows the start and a button for the rest.
-    static let initialLineLimit = 400
 }
