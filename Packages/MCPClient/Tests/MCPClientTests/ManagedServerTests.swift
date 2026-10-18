@@ -71,10 +71,17 @@ struct ManagedServerTests {
         #expect(plan["docs"] == .deliver)
     }
 
-    @Test func disabledServersStayHome() {
-        var off = docs
-        off.isEnabled = false
-        #expect(outcomes([off], for: target()) == ["docs": .disabled])
+    @Test func switchedOffServersStayHome() {
+        var switches = MCPServerSwitches()
+        switches.set(.off, for: docs.transport.endpoint.key, in: nil)
+        var here = target()
+        here.switches = switches
+        #expect(outcomes([docs], for: here) == ["docs": .switchedOff])
+        // A project can turn it back on, and its subfolders follow.
+        switches.set(.on, for: docs.transport.endpoint.key, in: .app)
+        here.switches = switches
+        here.directory = URL(filePath: "/work/app/web")
+        #expect(outcomes([docs], for: here) == ["docs": .deliver])
     }
 
     @Test func importingMovesValuesToSecrets() throws {

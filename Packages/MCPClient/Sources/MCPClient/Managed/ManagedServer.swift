@@ -63,27 +63,22 @@ public struct ManagedServer: Identifiable, Hashable, Sendable, Codable {
     /// What agents call it; tools appear to the model as `mcp__<name>__<tool>`.
     public var name: String
     public var transport: Transport
-    public var isEnabled: Bool
     /// Agent ids (`AgentDefinition.ID`).
     public var agents: Selection
     /// Project paths (`ProjectPath.key`); a session in a folder inside one counts as in it.
     public var projects: Selection
-    /// Projects it's turned off in, such as after failing there ("Disable for this project").
-    public var excludedProjects: [String]
     /// Where it was imported from, such as "Claude Code · ~/.claude.json".
     public var origin: String?
 
     public init(
-        id: UUID = UUID(), name: String, transport: Transport, isEnabled: Bool = true,
-        agents: Selection = .all, projects: Selection = .all, excludedProjects: [String] = [], origin: String? = nil
+        id: UUID = UUID(), name: String, transport: Transport,
+        agents: Selection = .all, projects: Selection = .all, origin: String? = nil
     ) {
         self.id = id
         self.name = name
         self.transport = transport
-        self.isEnabled = isEnabled
         self.agents = agents
         self.projects = projects
-        self.excludedProjects = excludedProjects
         self.origin = origin
     }
 
@@ -92,15 +87,12 @@ public struct ManagedServer: Identifiable, Hashable, Sendable, Codable {
         transport.config(name: name, secrets: secrets)
     }
 
-    /// Whether a session working in `directory` is in one of the chosen projects.
+    /// Whether a session working in `directory` is in one of the chosen projects. (Turning it off
+    /// somewhere is `MCPServerSwitches`' job.)
     public func includes(directory: URL?) -> Bool {
-        let path = directory.map(ProjectPath.key)
-        let contains = { (paths: [String]) in
-            path.map { path in paths.contains { path == $0 || path.hasPrefix($0 == "/" ? $0 : $0 + "/") } } ?? false
-        }
-        if contains(excludedProjects) { return false }
         guard case .only(let paths) = projects else { return true }
-        return contains(paths)
+        guard let path = directory.map(ProjectPath.key) else { return false }
+        return paths.contains { path == $0 || path.hasPrefix($0 == "/" ? $0 : $0 + "/") }
     }
 
     /// Names agents accept: letters, digits, `-` and `_`. Claude Code joins the name into tool
