@@ -2,10 +2,48 @@ import Foundation
 
 /// Markdown as GitHub shows it, where that differs from what's written.
 public enum GitHubMarkdown {
-    /// What a comment shows: HTML comments dropped, and the disclosure tags GitHub renders
-    /// (`<details>`, `<summary>`) turned into Markdown, so they don't print as tags.
+    /// What a comment shows: HTML comments dropped, and the HTML GitHub renders (disclosures, links,
+    /// pictures, `<sup>` and the like) turned into Markdown or dropped, so it doesn't print as tags.
     public static func displayed(_ markdown: String) -> String {
-        removingDisclosureTags(removingComments(markdown))
+        removingInlineHTML(removingDisclosureTags(removingComments(markdown)))
+    }
+
+    /// Inline HTML outside code, as bots' footers use it: links become Markdown links, pictures and
+    /// images go (with a link left empty by one), and formatting tags go but keep their text.
+    static func removingInlineHTML(_ markdown: String) -> String {
+        guard markdown.contains("<") || markdown.contains("&nbsp;") else { return markdown }
+        var fence: Substring?
+        let lines = markdown.split(separator: "\n", omittingEmptySubsequences: false).map { line -> String in
+            let trimmed = line.drop { $0 == " " }
+            if let open = fence {
+                if trimmed.hasPrefix(open) { fence = nil }
+                return String(line)
+            }
+            if let marker = ["```", "~~~"].first(where: { trimmed.hasPrefix($0) }) {
+                fence = Substring(marker)
+                return String(line)
+            }
+            // Code spans sit between backticks: every other piece.
+            return line.split(separator: "`", omittingEmptySubsequences: false).enumerated()
+                .map { $0.offset.isMultiple(of: 2) ? markdownForHTML(String($0.element)) : String($0.element) }
+                .joined(separator: "`")
+        }
+        return lines.joined(separator: "\n")
+    }
+
+    private static func markdownForHTML(_ text: String) -> String {
+        guard text.contains("<") || text.contains("&nbsp;") else { return text }
+        let options: String.CompareOptions = [.regularExpression, .caseInsensitive]
+        var text = text.replacingOccurrences(of: #"<picture\b[^>]*>.*?</picture>"#, with: "", options: options)
+        text = text.replacingOccurrences(of: #"<img\b[^>]*>"#, with: "", options: options)
+        text = text.replacingOccurrences(of: #"<a\b[^>]*>\s*</a>"#, with: "", options: options)
+        text = text.replacingOccurrences(
+            of: #"<a\b[^>]*href="([^"]*)"[^>]*>(.*?)</a>"#, with: "[$2]($1)", options: options)
+        text = text.replacingOccurrences(of: #"<br\s*/?>"#, with: "\n", options: options)
+        text = text.replacingOccurrences(
+            of: #"</?(?:a|sup|sub|source|span|div|p|b|i|em|strong|small|ins|del|center|kbd)\b[^>]*>"#, with: "",
+            options: options)
+        return text.replacingOccurrences(of: "&nbsp;", with: " ")
     }
 
     /// `<summary>Title</summary>` becomes a bold line; `<details>` and `</details>` go.
