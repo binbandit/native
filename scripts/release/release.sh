@@ -107,6 +107,7 @@ if [ "$MODE" = publish ]; then
     [ -n "$(xcconfig_value NATIVE_SPARKLE_PUBLIC_KEY Shared.xcconfig)" ] || die "set NATIVE_SPARKLE_PUBLIC_KEY in Config/Shared.xcconfig before publishing"
     [ -z "$(git status --porcelain)" ] || die "the working tree has changes; release from a clean checkout"
     require_tool gh "brew install gh"
+    [ -n "${SENTRY_AUTH_TOKEN:-}" ] || die "set SENTRY_AUTH_TOKEN before publishing (docs/releasing.md, Sentry crash symbols)"
 fi
 
 # Developer ID for anything that leaves this Mac; ad hoc is fine for a local dry run.
