@@ -122,6 +122,7 @@ struct GhosttyImportTests {
             })
         let colors = result.colors
         #expect(colors?.themeName == "light:GitHub Light,dark:Dracula")
+        #expect(colors?.themeTitle == "GitHub Light (light), Dracula (dark)")
         #expect(colors?.dark.palette[1] == TerminalRGB(0xFF5555))
         #expect(colors?.dark.chrome.background == TerminalRGB(0x101010))
         #expect(colors?.dark.chrome.selectionBackground == TerminalRGB(0x44475A))

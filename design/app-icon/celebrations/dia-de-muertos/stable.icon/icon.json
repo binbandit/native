@@ -38,19 +38,19 @@
               "value": true
             }
           ],
-          "image-name": "painted-interlock.png",
-          "name": "Painted Native interlock",
+          "image-name": "flat-interlock.png",
+          "name": "Flat Native interlock",
           "position": {
-            "scale": 0.5182072829131653,
+            "scale": 0.6502636203866432,
             "translation-in-points": [
-              -0.0,
-              11.740896358543417
+              -2.601054481546573,
+              1.92091388400703
             ]
           }
         }
       ],
       "lighting": "individual",
-      "name": "Día de Muertos · painted Native interlock",
+      "name": "Día de Muertos · flat Native interlock",
       "refractivity-specializations": [
         {
           "appearance": "tinted",
@@ -62,8 +62,8 @@
         }
       ],
       "shadow": {
-        "kind": "neutral",
-        "opacity": 0.18
+        "kind": "none",
+        "opacity": 0
       },
       "translucency-specializations": [
         {

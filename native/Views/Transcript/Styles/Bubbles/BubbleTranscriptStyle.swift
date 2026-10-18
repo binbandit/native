@@ -75,7 +75,14 @@ private struct BubbleRowView: View {
             limitCard(for: notice.id.uuidString)
         case .message(let message, let side, let position):
             BubbleLane(side: side, hugsContent: true) {
-                BubbleMessageView(message: message, side: side, position: position)
+                VStack(alignment: .trailing, spacing: DS.Space.sm) {
+                    if !message.attachments.isEmpty {
+                        MessageAttachmentsView(attachments: message.attachments)
+                    }
+                    if !message.text.isEmpty || message.attachments.isEmpty {
+                        BubbleMessageView(message: message, side: side, position: position)
+                    }
+                }
             }
         case .thought(let message):
             agentSide {

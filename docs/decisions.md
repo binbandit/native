@@ -339,5 +339,5 @@ its offline cache. Product usage and performance traces are not collected by thi
 
 Release publishing uploads dSYMs to FoxyCorps / `native` before publishing, using the protected GitHub
 `SENTRY_AUTH_TOKEN` secret and checksum-verified official CLI **3.8.0**. It never uploads source bundles.
-Dry runs don't upload; failed symbol uploads stop publication. Keep server-side IP scrubbing enabled:
-SDK PII settings alone do not prevent connection IP enrichment. See `docs/releasing.md`.
+Dry runs don't upload; failed symbol uploads stop publication. Server-side IP scrubbing and a rule
+removing `user` discard IP/geography enrichment Sentry adds after SDK filtering. See `docs/releasing.md`.

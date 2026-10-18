@@ -7,8 +7,8 @@ symbols=${1:?Pass the archive dSYMs directory}
 mode=${2:-}
 [[ -z "$mode" || "$mode" = --no-upload ]] || { echo "Unknown option: $mode" >&2; exit 2; }
 [[ -d "$symbols" ]] || { echo "Sentry: dSYMs directory is missing: $symbols" >&2; exit 1; }
-if [[ "$mode" != --no-upload && -z "${SENTRY_AUTH_TOKEN:-}" ]]; then
-    echo "Sentry: set SENTRY_AUTH_TOKEN to the release-upload token before publishing." >&2
+if [[ -z "${SENTRY_AUTH_TOKEN:-}" ]]; then
+    echo "Sentry: set SENTRY_AUTH_TOKEN to the release-upload token (also required for --no-upload)." >&2
     exit 1
 fi
 

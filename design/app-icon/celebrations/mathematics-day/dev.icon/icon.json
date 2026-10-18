@@ -38,19 +38,19 @@
               "value": true
             }
           ],
-          "image-name": "painted-interlock.png",
-          "name": "Painted Native interlock",
+          "image-name": "flat-interlock.png",
+          "name": "Flat Native interlock",
           "position": {
-            "scale": 0.5776736924277908,
+            "scale": 0.5674846625766872,
             "translation-in-points": [
-              -0.2888368462138954,
-              11.711163153786105
+              2.2699386503067487,
+              9.730061349693251
             ]
           }
         }
       ],
       "lighting": "individual",
-      "name": "Pi Day · painted Native interlock",
+      "name": "Pi Day · flat Native interlock",
       "refractivity-specializations": [
         {
           "appearance": "tinted",
@@ -62,8 +62,8 @@
         }
       ],
       "shadow": {
-        "kind": "neutral",
-        "opacity": 0.18
+        "kind": "none",
+        "opacity": 0
       },
       "translucency-specializations": [
         {

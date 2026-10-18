@@ -11,7 +11,14 @@ enum SentryTelemetry {
     }
 
     static var configuredDSN: String? {
-        Bundle.main.object(forInfoDictionaryKey: "NativeSentryDSN") as? String
+        #if DEBUG
+        return nil
+        #else
+        guard let dsn = Bundle.main.object(forInfoDictionaryKey: "NativeSentryDSN") as? String, !dsn.isEmpty else {
+            return nil
+        }
+        return dsn
+        #endif
     }
 
     /// Called only after the telemetry gate permits Native's destination.

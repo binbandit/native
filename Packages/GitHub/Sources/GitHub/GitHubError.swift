@@ -31,7 +31,8 @@ public enum GitHubError: Error, Sendable, Hashable {
     public var stderr: String? {
         switch self {
         case .notAuthenticated(let message), .rateLimited(let message), .offline(let message),
-            .notARepository(let message), .notFound(let message), .failed(_, let message):
+            .notARepository(let message), .notFound(let message), .permissionDenied(let message),
+            .failed(_, let message):
             message
         case .notInstalled, .timedOut, .cancelled, .unexpectedOutput:
             nil

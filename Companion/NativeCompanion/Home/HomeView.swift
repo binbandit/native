@@ -169,7 +169,7 @@ struct HostSummaryRow: View {
             }
             Spacer()
             if needsYou > 0 {
-                Badge("\(needsYou) needs you", tone: .attention, style: .filled)
+                Badge("\(needsYou) needs you", tone: .attention, style: .soft)
             } else if working > 0 {
                 Text("\(working) working")
                     .font(CompanionType.caption)
