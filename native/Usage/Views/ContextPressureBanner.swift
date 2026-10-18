@@ -24,6 +24,7 @@ struct ContextPressureBanner<Source: ContextSource>: View {
                     .buttonStyle(.ds(.ghost))
                     .popover(isPresented: $isShowingBreakdown, arrowEdge: .top) {
                         ContextBreakdownView(source: source)
+                            .dsPopoverBackground()
                     }
                 if source.canCompact {
                     Button("Compact Now") {

@@ -15,6 +15,12 @@ protocol MCPLibraryHost: AnyObject {
     var mcpContextReports: [SessionKey: ContextReport] { get }
     /// Servers other plugins hand a session (Orchestration's `native`), or every session when nil.
     func mcpPluginServers(for session: SessionContext?) -> [MCPPluginServer]
+    /// How `agent` applies switches: per session, at launch, or not at all.
+    func mcpPolicySupport(for agent: AgentDefinition.ID) -> SessionPolicySupport
+    /// Agents still running with switches older than the current ones.
+    var mcpAgentsAwaitingRestart: [MCPAgent] { get }
+    /// Restarts those agents: only idle ones, unless `force`.
+    func mcpApplyLaunchPolicies(force: Bool) async
 }
 
 /// An agent whose own MCP configuration Native can read.
@@ -85,6 +91,20 @@ final class AppMCPHost: MCPLibraryHost {
 
     var mcpContextReports: [SessionKey: ContextReport] {
         contextReports()
+    }
+
+    func mcpPolicySupport(for agent: AgentDefinition.ID) -> SessionPolicySupport {
+        model?.plugins.policyTranslator(for: agent)?.support(for: .mcpServers)
+            ?? .unsupported("Native has no way to turn this agent's servers off.")
+    }
+
+    var mcpAgentsAwaitingRestart: [MCPAgent] {
+        let pending = Set(model?.agentsWithPendingLaunchPolicy.map(\.agent.id) ?? [])
+        return mcpAgents.filter { pending.contains($0.id) }
+    }
+
+    func mcpApplyLaunchPolicies(force: Bool) async {
+        await model?.applyLaunchPolicies(force: force)
     }
 
     func mcpPluginServers(for session: SessionContext?) -> [MCPPluginServer] {

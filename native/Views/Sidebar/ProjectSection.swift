@@ -65,6 +65,7 @@ struct ProjectSection<TaskAccessory: View>: View {
                 .allowsHitTesting(false)
                 .popover(isPresented: $isPickingIcon, arrowEdge: .trailing) {
                     ProjectIconPicker(project: project, store: iconStore)
+                        .dsPopoverBackground()
                 }
         }
         .sidebarDraggable(item, title: project.name, state: drag)

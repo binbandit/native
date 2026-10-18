@@ -57,6 +57,7 @@ struct SubagentCountChip: View {
             }
             .padding(DS.Space.sm)
             .frame(minWidth: DS.Size.contentColumn / 3)
+            .dsPopoverBackground()
         }
     }
 }

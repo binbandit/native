@@ -42,7 +42,9 @@ final class SessionLauncher {
             clientID: clientID, agent: runtime.agent.id, agentName: runtime.agent.displayName,
             sessionID: nil, cwd: cwd, parentID: parent?.id
         )
-        let request = NewSessionRequest(cwd: cwd.folderPath, mcpServers: plugins.mcpServers(for: context))
+        let request = NewSessionRequest(
+            cwd: cwd.folderPath, mcpServers: plugins.mcpServers(for: context), meta: plugins.sessionMeta(for: context)
+        )
         let response = try await connection.send(request)
         let session = SessionModel(
             agent: runtime.agent, id: response.sessionId, clientID: clientID, cwd: cwd, connection: connection,
@@ -76,7 +78,10 @@ final class SessionLauncher {
         )
         store.register(session)
         do {
-            let request = LoadSessionRequest(sessionId: key.id, cwd: cwd.folderPath, mcpServers: plugins.mcpServers(for: session.context))
+            let request = LoadSessionRequest(
+                sessionId: key.id, cwd: cwd.folderPath, mcpServers: plugins.mcpServers(for: session.context),
+                meta: plugins.sessionMeta(for: session.context)
+            )
             let response = try await connection.send(request)
             session.finishLoading(configOptions: response.configOptions)
             return session

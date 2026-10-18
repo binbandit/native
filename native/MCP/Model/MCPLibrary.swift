@@ -139,6 +139,8 @@ final class MCPLibrary {
         switches.set(mode, for: server, in: project)
         persist()
         recomputeSessionEntries()
+        // Agents that apply switches at launch restart for them, but only while idle.
+        Task { await host?.mcpApplyLaunchPolicies(force: false) }
     }
 
     /// A server's secret values, from the Keychain the first time.
@@ -231,6 +233,17 @@ final class MCPLibrary {
         readEnvironment = environment
         lastRead = .now
         recomputeSessionEntries()
+    }
+
+    /// The first read, on the main thread before agents launch: just the files, for the projects
+    /// open, with this process's environment (the shell's isn't known yet).
+    func readConfigurationsAtStartup() {
+        guard configurations.isEmpty, let host else { return }
+        let environment = ProcessInfo.processInfo.environment
+        let reader = AgentConfigReader(files: files, home: home(in: environment), environment: environment)
+        configurations = Dictionary(uniqueKeysWithValues: AgentConfigFormat.allCases.map { ($0, reader.read($0, projects: host.mcpProjects)) })
+        readProjects = Set(host.mcpProjects.map(ProjectPath.key))
+        readEnvironment = environment
     }
 
     /// Reads again unless the last read is recent, for when the app comes back to the front.
