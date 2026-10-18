@@ -85,9 +85,9 @@ Verify UI changes in the running app, not just the build. Several agents run Nat
 use an isolated instance: `scripts/dev/run-isolated.sh <name> [-- app arguments…]` builds into
 `/tmp/native-dd/<name>` with its own bundle id, defaults, Application Support and host, launches it,
 and prints its pid and window id (`--quit` stops it, `--reset` also forgets its data). Automate only
-that process (System Events `first process whose unix id is <pid>`, never global keystrokes or
-coordinate clicks like `click at`, which land on whatever window is on top; for synthetic events use
-`CGEvent.postToPid`) and screenshot with `screencapture -x -l <windowid>`. Quit your instance (and
+that process through AX actions on it (`AXPress`, setting `AXValue`) or `CGEvent.postToPid`. Never
+send System Events `keystroke`/`key code`, never bring a window to the front, and never use coordinate
+clicks like `click at`: all of those land on whatever app has focus, often someone else's and screenshot with `screencapture -x -l <windowid>`. Quit your instance (and
 any render harness) as soon as a check is done; never leave apps running between checks, since many
 agents share one Mac.
 
