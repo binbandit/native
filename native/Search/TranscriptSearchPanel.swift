@@ -15,9 +15,11 @@ struct TranscriptSearchPanel: View {
         let rows = TranscriptSearchRow.rows(of: center.results.groups)
         VStack(spacing: 0) {
             field(rows: rows)
-            TranscriptSearchFilterBar(filters: $center.filters, agents: model.plugins.agents, projects: model.projects.all)
-                .padding(.horizontal, DS.Space.lg)
-                .padding(.bottom, DS.Space.md)
+            TranscriptSearchFilterBar(
+                filters: $center.filters, agents: model.plugins.agents, projects: model.projects.all
+            )
+            .padding(.horizontal, DS.Space.lg)
+            .padding(.bottom, DS.Space.md)
             SeparatorLine()
             if let status = indexingStatus {
                 status
@@ -125,7 +127,8 @@ struct TranscriptSearchPanel: View {
                 }
             }
         } else if let searchFailure = center.searchFailure {
-            ErrorState("The search didn't finish", recovery: searchFailure, primary: .init("Try Again") { center.retry() })
+            ErrorState(
+                "The search didn't finish", recovery: searchFailure, primary: .init("Try Again") { center.retry() })
         } else if isWaiting {
             Color.clear
         } else if isBlank {
@@ -166,7 +169,8 @@ struct TranscriptSearchPanel: View {
             EmptyStateView(
                 "Indexing your tasks",
                 systemImage: "magnifyingglass",
-                message: "Native is reading your agents' past sessions so you can search them. Results appear as they're indexed."
+                message:
+                    "Native is reading your agents' past sessions so you can search them. Results appear as they're indexed."
             ) {}
         } else {
             EmptyStateView(
