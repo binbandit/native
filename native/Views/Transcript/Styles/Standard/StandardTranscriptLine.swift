@@ -25,7 +25,7 @@ struct StandardTranscriptLine: Identifiable {
     let kind: Kind
     var spacing: CGFloat = 0
 
-    /// Tool work reads as one dense block, Factory style; everything else gets room to breathe.
+    /// Tool work reads as one dense block; everything else gets room to breathe.
     private var isDense: Bool {
         switch kind {
         case .row(let row, _): row.isToolActivity

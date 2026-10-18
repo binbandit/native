@@ -2,31 +2,29 @@ import CoreText
 import SwiftUI
 import Synchronization
 
-// Typography tokens. Factory and Conductor both set their UI in Geist (Vercel, SIL OFL 1.1; the
-// license ships next to the files in `Fonts/`), and the type is a large part of their look, so the
-// official variable fonts (Geist 1.401) are bundled and registered for the process the first time
-// a token is read. If that fails, every token falls back to the system font at the same size and
-// weight.
+// Typography tokens. The UI is set in Geist (Vercel, SIL OFL 1.1; the license ships next to the
+// files in `Fonts/`), and the type is a large part of the look, so the official variable fonts
+// (Geist 1.401) are bundled and registered for the process the first time a token is read. If that
+// fails, every token falls back to the system font at the same size and weight.
 //
-// Sizes follow Factory's core-ui v2 scale (`--core-v2-font-size-*`, UI text 12px), with 13px for
-// sidebar rows and the composer (Factory's `--font-size-sm`, also the macOS sidebar size) and
-// Factory's weights (300/400/500) plus Conductor's 450 and 600. CSS px map 1:1 to points.
+// UI text is 12pt, with 13pt for sidebar rows and the composer (the macOS sidebar size), in weights
+// 300, 400, 450, 500 and 600.
 
 extension Font {
-    /// 10pt: relative times, counts (Conductor `text-3xs`).
+    /// 10pt: relative times, counts.
     public nonisolated static let dsMicro = DSTypography.font(size: 10)
-    /// 11pt: shortcut hints, badges, secondary metadata (Factory `font-size-11`).
+    /// 11pt: shortcut hints, badges, secondary metadata.
     public nonisolated static let dsCaption = DSTypography.font(size: 11)
     public nonisolated static let dsCaptionMedium = DSTypography.font(size: 11, weight: .medium)
-    /// 12pt: Factory's default UI and control text (`controlText`).
+    /// 12pt: the default UI and control text.
     public nonisolated static let dsBody = DSTypography.font(size: 12)
     public nonisolated static let dsBodyMedium = DSTypography.font(size: 12, weight: .medium)
-    /// 13pt: sidebar rows and the composer's text (Factory `--font-size-sm`).
+    /// 13pt: sidebar rows and the composer's text.
     public nonisolated static let dsCallout = DSTypography.font(size: 13)
-    /// 13pt at Conductor's 450, the weight of a read task title.
+    /// 13pt at 450, the weight of a read task title.
     public nonisolated static let dsCalloutBook = DSTypography.font(size: 13, weight: .book)
     public nonisolated static let dsCalloutMedium = DSTypography.font(size: 13, weight: .medium)
-    /// 13pt semibold: project names and unread task titles (Conductor `font-semibold`).
+    /// 13pt semibold: project names and unread task titles.
     public nonisolated static let dsCalloutSemibold = DSTypography.font(size: 13, weight: .semibold)
     /// 14pt medium: card and dialog titles.
     public nonisolated static let dsHeadline = DSTypography.font(size: 14, weight: .medium)
@@ -37,9 +35,9 @@ extension Font {
     /// 24pt medium.
     public nonisolated static let dsTitle = DSTypography.font(size: 24, weight: .medium)
 
-    /// 10pt Geist Mono: keyboard hints (Factory `Kbd`).
+    /// 10pt Geist Mono: keyboard hints.
     public nonisolated static let dsMonoMicro = DSTypography.font(size: 10, design: .mono)
-    /// 11pt Geist Mono: code and tool output (Factory's default code size).
+    /// 11pt Geist Mono: code and tool output.
     public nonisolated static let dsMonoCaption = DSTypography.font(size: 11, design: .mono)
     /// 12pt Geist Mono.
     public nonisolated static let dsMono = DSTypography.font(size: 12, design: .mono)
@@ -57,11 +55,11 @@ extension Font {
 extension DS {
     /// Letter spacing, in points at the text's size.
     public nonisolated enum Tracking {
-        /// Factory's `--core-v2-tracking-tight` (-0.01em) at 12pt.
+        /// -0.01em at 12pt.
         public static let tight: CGFloat = -0.12
-        /// Factory's sidebar link and update button (-0.26px at 13px, -0.02em).
+        /// Sidebar links and the update button (-0.02em at 13pt).
         public static let snug: CGFloat = -0.26
-        /// Conductor's uppercase mono badges (`tracking-wider`, 0.6px).
+        /// Uppercase mono badges.
         public static let wide: CGFloat = 0.6
     }
 }
@@ -76,7 +74,7 @@ public nonisolated enum DSTypography {
     public enum Weight: CGFloat, Hashable, Sendable {
         case light = 300
         case regular = 400
-        /// Conductor's `font-450`: a touch heavier than regular, for read titles.
+        /// A touch heavier than regular, for read titles.
         case book = 450
         case medium = 500
         case semibold = 600

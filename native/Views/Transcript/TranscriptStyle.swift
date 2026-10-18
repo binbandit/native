@@ -25,7 +25,7 @@ extension View {
     }
 }
 
-/// Details rise into place: a short slide up with a fade and a slight blur, like Factory's reveal.
+/// Details rise into place: a short slide up with a fade and a slight blur.
 struct RevealTransition: Transition {
     func body(content: Content, phase: TransitionPhase) -> some View {
         content
@@ -37,7 +37,7 @@ struct RevealTransition: Transition {
 }
 
 extension Animation {
-    /// Factory's expand curve: fast start, long soft landing.
+    /// The expand curve: fast start, long soft landing, so details arrive quickly without a jolt.
     static let reveal = Animation.timingCurve(0.22, 1, 0.36, 1, duration: 0.28)
 }
 

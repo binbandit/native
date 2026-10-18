@@ -29,7 +29,7 @@ extension DS {
 extension DS.Size {
     /// The smallest comfortable touch target (Apple's 44pt); nothing on the Mac.
     public static let minimumHitTarget: CGFloat = DS.isTouchPlatform ? 44 : 0
-    /// The height of a sidebar task row: Conductor's 36pt on the Mac, a full touch target on iPadOS.
+    /// The height of a sidebar task row: 36pt on the Mac, a full touch target on iPadOS.
     public static let rowMinHeight: CGFloat = DS.isTouchPlatform ? 44 : 36
 }
 

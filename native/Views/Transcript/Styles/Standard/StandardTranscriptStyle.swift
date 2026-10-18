@@ -1,7 +1,7 @@
 import ACP
 import SwiftUI
 
-/// The default transcript, Factory style: agent replies and tool activity in one column, tool
+/// The default transcript: agent replies and tool activity in one column, tool
 /// activity as one dense block, and the user's prompts in trailing bubbles. The turn that's running
 /// (or ran last) keeps every row; earlier turns fold their tool work into one line.
 nonisolated struct StandardTranscriptStyle: TranscriptStyle {

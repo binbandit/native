@@ -1,7 +1,7 @@
 import ACP
 import Foundation
 
-/// How a tool call reads as a single transcript row, modeled on Factory's tool rows: a verb in
+/// How a tool call reads as a single transcript row: a verb in
 /// secondary text, the subject after it in tertiary, a per-tool icon, and per-tool failure wording.
 /// The verb's tense follows the call: "Reading" while it runs, "Read" once it's done.
 ///

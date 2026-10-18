@@ -1,7 +1,7 @@
 import ACP
 import SwiftUI
 
-/// One tool call, modeled on Factory's tool rows: a dense one-line row (icon, verb, subject) without
+/// One tool call as a dense one-line row (icon, verb, subject) without
 /// a card, a shimmer while the tool runs, a trailing word only when something needs attention, and
 /// a chevron that appears on hover. Details open into a framed panel below the row; while the agent
 /// waits for approval they stay open above the permission buttons.
