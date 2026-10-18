@@ -64,6 +64,7 @@ A plugin that fails to load is skipped and listed in Settings ▸ Plugins with t
 | `themes` | no | Code themes and accent palettes, see [Themes](#themes). |
 | `iconSets` | no | App icon families, see [Icon sets](#icon-sets). |
 | `celebrations` | no | Dated celebrations that dress the icon and Home, see [Celebrations](#celebrations). |
+| `experiments` | no | Gates and parameters in Settings ▸ Labs, see [Experiments](#experiments). |
 
 Unknown fields are ignored. Nothing in `plugin.json` is secret: don't put API keys in it.
 
@@ -298,6 +299,78 @@ never multiples of 24 hours, so daylight saving and travel don't shift them.
 Choices stay out of the manifest: which celebrations are on, which surfaces they change, the window,
 the overlap order and skips are the user's, and updating a plugin never changes them. Turning a
 plugin off puts the usual look back at once.
+
+## Experiments
+
+A plugin can try things out before they're finished, the way Native does: it declares experiments,
+and the user turns them on in Settings ▸ Labs, where they're listed under the plugin's name with
+their stage, owner and review date. Turning the plugin off removes its experiments and everything
+they change at once; the user's choices are kept, so they come back with the plugin and survive
+updates. Ids are namespaced by the plugin, so `fast-review` in the `acme` plugin is
+`acme.fast-review` and never collides with Native's or another plugin's.
+
+A `plugin.json` has no code to read an experiment, so its experiments act through the manifest:
+
+- A **gate** (on or off) switches the plugin's own contributions. Mark an agent, MCP server,
+  workflow, code theme, accent, icon set or celebration with `"experiment": "<gate-id>"`, and it's
+  there only while the gate is on.
+- A **parameter** (one of several values, a number from a range, or text) fills
+  `${experiment:<parameter-id>}` placeholders in the plugin's agents' `args` and `env`, and its MCP
+  servers' `args`, `env` and `headers`. Sessions started afterwards get the new value.
+
+```json
+{
+  "id": "acme",
+  "name": "Acme",
+  "experiments": [
+    {
+      "id": "fast-review", "kind": "gate", "title": "Fast review",
+      "summary": "Adds a one-step review workflow.", "stage": "labs", "reviewBy": "2027-01-31"
+    },
+    {
+      "id": "verbosity", "kind": "parameter", "title": "Search verbosity",
+      "summary": "How much detail the search server returns.", "stage": "beta", "reviewBy": "2027-01-31",
+      "default": "normal",
+      "options": [{ "value": "terse", "title": "Terse" }, { "value": "normal", "title": "Normal" }, { "value": "full", "title": "Full" }]
+    }
+  ],
+  "mcpServers": [
+    { "name": "acme-search", "command": "acme-search", "env": { "ACME_VERBOSITY": "${experiment:verbosity}" } }
+  ],
+  "workflows": [
+    {
+      "id": "fast-review", "experiment": "fast-review", "name": "Fast review",
+      "summary": "One agent reviews the current changes.", "symbol": "checkmark.seal",
+      "input": { "label": "What to focus on?", "required": false },
+      "steps": [{ "id": "review", "title": "Review", "prompt": "Review the uncommitted changes in {{cwd}}. {{input}}" }]
+    }
+  ]
+}
+```
+
+| Field | Required | Meaning |
+| --- | --- | --- |
+| `id` | yes | Lowercase words joined with hyphens, unique within the plugin. |
+| `kind` | yes | `gate` or `parameter`. |
+| `title`, `summary` | yes | What Labs shows: a name and one line on what changes. |
+| `reviewBy` | yes | `YYYY-MM-DD`: when you'll make it a default, a setting, or delete it. Labs flags it after. |
+| `stage` | no | `labs` (early, the default) or `beta` (nearly done). |
+| `owner` | no | Who decides what happens to it. Defaults to the plugin's name. |
+| `requiresRelaunch` | no | `true` when a change only applies the next time Native opens. |
+| `default` | parameters | The value until the user picks one; a gate's is `true` or `false` (off if left out). |
+| `options` | one of these, for parameters | `[{"value": "terse", "title": "Terse"}]`: values all text or all numbers. |
+| `range` | | `{"min": 1, "max": 10, "step": 1}`: whole numbers, at most 200 of them. |
+| `text` | | `{"placeholder": "…"}`: anything the user types. |
+
+Each experiment is checked when the plugin loads. One that's malformed, has a value outside its
+own options, or clashes with another experiment's id is listed under the plugin in Labs with its
+problem, and the plugin and its other experiments still work. So is a contribution or placeholder
+that names an experiment the plugin doesn't declare. A contribution behind a missing or broken gate
+stays off, and a placeholder for a missing parameter is empty.
+
+Plugins compiled into Native declare experiments in code instead (`NativePlugin.experiments`): gates
+and parameters their code reads, and variants that replace an extension point's implementation
+(see "Experiments" in `docs/architecture.md`). Their ids must start with the plugin's id.
 
 ## Built-in plugins
 

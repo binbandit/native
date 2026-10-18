@@ -83,7 +83,8 @@ struct CelebrationContributionTests {
         for variant in AppIconVariant.allCases {
             for appearance in ["light", "dark"] {
                 FileManager.default.createFile(
-                    atPath: folder.appending(path: "icons/\(variant.rawValue)-\(appearance).png").path(percentEncoded: false),
+                    atPath: folder.appending(path: "icons/\(variant.rawValue)-\(appearance).png").path(
+                        percentEncoded: false),
                     contents: Data())
             }
         }
@@ -199,7 +200,18 @@ struct CelebrationContributionTests {
     @Test func firstPartyCatalogueIsValid() throws {
         let catalog = F.catalog()
         #expect(catalog.problems.isEmpty)
-        #expect(catalog.celebrations.map(\.id) == [F.halloween, F.muertos])
+        #expect(catalog.celebrations.prefix(2).map(\.id) == [F.halloween, F.muertos])
+        // The rest of the catalogue is listed, dated where it can be, and can't apply until drawn.
+        let forthcoming = catalog.celebrations.dropFirst(2)
+        #expect(forthcoming.count == FirstPartyCelebrations.forthcoming.count)
+        #expect(forthcoming.allSatisfy { !$0.isApplicable && $0.appIcon == .forthcoming })
+        #expect(
+            catalog.celebration(CelebrationID("native.kwanzaa"))?.nextOccurrence(
+                window: nil, from: try F.day("2026-12-30"))?.core.last == (try F.day("2027-01-01")))
+        #expect(
+            catalog.celebration(CelebrationID("native.diwali"))?.dateStatus(on: try F.day("2026-10-18"))
+                == .unsupportedCalendar("hindu-lunisolar"))
+        #expect(catalog.celebrations.contains { $0.contribution.matches("deepavali") })
         let halloween = try #require(catalog.celebration(F.halloween))
         #expect(halloween.appIcon == .ready)
         #expect(halloween.icon(for: .development, isDark: true) == .asset("AppIcon-halloween-dev-dark"))
@@ -211,9 +223,13 @@ struct CelebrationContributionTests {
 
     @Test func contributionsRoundTrip() throws {
         let celebrations = try JSONEncoder().encode(CelebrationContributions(FirstPartyCelebrations.celebrations))
-        #expect(try JSONDecoder().decode(CelebrationContributions.self, from: celebrations).valid == FirstPartyCelebrations.celebrations)
+        #expect(
+            try JSONDecoder().decode(CelebrationContributions.self, from: celebrations).valid
+                == FirstPartyCelebrations.celebrations)
         let iconSets = try JSONEncoder().encode(IconSetContributions(FirstPartyCelebrations.iconSets))
-        #expect(try JSONDecoder().decode(IconSetContributions.self, from: iconSets).valid == FirstPartyCelebrations.iconSets)
+        #expect(
+            try JSONDecoder().decode(IconSetContributions.self, from: iconSets).valid == FirstPartyCelebrations.iconSets
+        )
     }
 
     @Test func halloweenOptInMigrates() throws {

@@ -130,8 +130,17 @@ experiment Native has is declared in `native/Experiments/NativeExperiments.swift
 what it touches and whether it needs a relaunch. Settings ▸ Labs shows all of it, with conflicts,
 experiments past their review date, and Reset All (undoable). Values live in user defaults under
 `experiment.<id>`; experiments that need a relaunch keep their launch value until the next launch.
-Plugins will contribute implementations to the same extension points as a second
-`ContributionSource`, without changing how points resolve.
+Plugins add experiments too, through the same store and the same resolution rules. A code plugin
+declares them in `NativePlugin.experiments` (gates, parameters, and variants claiming extension
+points); a `plugin.json` declares gates that switch its own contributions and parameters that fill
+`${experiment:<id>}` placeholders (`docs/plugins.md`, Experiments). `PluginRegistry` hands enabled
+plugins' experiments to `ExperimentStore` (`PluginExperimentSet` checks them: ids namespaced by
+plugin, `acme.fast-review`, and every problem reported per experiment), and applies manifest
+effects to the manifests it gives everyone else, so turning a plugin off removes its experiments
+and their claims at once. Each variant's claims resolve under its experiment as the
+`ContributionSource`, so a conflict names the exact experiment, and its descriptor's `origin`
+names the plugin; plugins that contribute implementations outside an experiment would add a second
+source without changing how points resolve.
 
 Adding a **gate**:
 

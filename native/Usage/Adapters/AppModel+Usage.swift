@@ -11,6 +11,10 @@ extension AppModel: UsageLimitsHost {
         return session(key)
     }
 
+    func setUsageLimit(_ message: String?, for agent: AgentDefinition.ID) {
+        sendGate.setUsageLimit(message, for: agent)
+    }
+
     func show(_ target: UsageSessionRef) {
         // A subagent shows inside its parent's task.
         selection = SessionKey(agent: target.agent, id: target.parent ?? target.session)

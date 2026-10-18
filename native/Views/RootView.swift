@@ -1,5 +1,6 @@
 import ACP
 import NativeHostClient
+import NativeHostProtocol
 import NativeAutomation
 import SwiftUI
 import UniformTypeIdentifiers

@@ -112,23 +112,51 @@ extension SkillSwitches {
     /// can't leave skills out, plugin skills, and agents that can't do it per project.
     /// `agents` are the running agents and how each can switch skills (the app asks each agent's
     /// plugin; `SkillAgentFormat.switching` is what the built-in ones support).
-    public func limitations(of item: SkillItem, agents: [SkillAgentFormat: SkillSwitching]) -> [String] {
+    public func limitations(of item: SkillItem, agents: [SkillAgentFormat: SkillSwitching]) -> [SkillSwitchLimitation] {
         let isOffInAProjectOnly =
             global[item.key] != .off && projects.values.contains { $0[item.key] == .off }
-        return SkillAgentFormat.allCases.filter { agents[$0] != nil && item.agents.contains($0) }.compactMap { agent in
+        let loading = SkillAgentFormat.allCases.filter { agents[$0] != nil && item.agents.contains($0) }
+        let unreachable = loading.filter { agents[$0] == .unsupported }
+        var limitations: [SkillSwitchLimitation] = unreachable.isEmpty ? [] : [.loadsEverySkill(unreachable)]
+        for agent in loading {
             let places = item.places.filter { $0.root.agents.contains(agent) }
             switch agents[agent] ?? .unsupported {
             case .unsupported:
-                return "\(agent.displayName) can't leave a skill out of a session, so it still loads it."
+                continue
             case .perSession:
-                guard places.contains(where: { !agent.canSwitch($0.root.scope) }) else { return nil }
-                return
-                    "\(agent.displayName) can't hide skills from its plugins; turn the plugin off in \(agent.displayName)."
+                if places.contains(where: { !agent.canSwitch($0.root.scope) }) {
+                    limitations.append(.pluginSkill(agent))
+                }
             case .perProcess:
                 let reachesEveryCopy = places.allSatisfy { $0.root.scope.project != nil }
-                guard isOffInAProjectOnly, !reachesEveryCopy else { return nil }
-                return "\(agent.displayName) can only turn it off in every project, so it still loads it here."
+                if isOffInAProjectOnly, !reachesEveryCopy { limitations.append(.everyProjectOnly(agent)) }
             }
+        }
+        return limitations
+    }
+}
+
+/// Why a switch doesn't reach an agent that loads the skill.
+public enum SkillSwitchLimitation: Hashable, Sendable {
+    /// These agents have no way to leave a skill out, so they load every one.
+    case loadsEverySkill([SkillAgentFormat])
+    /// The skill comes from one of the agent's plugins, which its settings can't reach.
+    case pluginSkill(SkillAgentFormat)
+    /// The agent applies switches to all its sessions at once, so not to one project.
+    case everyProjectOnly(SkillAgentFormat)
+
+    public var message: String {
+        switch self {
+        case .loadsEverySkill(let agents):
+            let names = agents.map(\.displayName).formatted(.list(type: .and))
+            return agents.count == 1
+                ? "\(names) loads every skill, so switching this one off doesn't affect it."
+                : "\(names) load every skill, so switching this one off doesn't affect them."
+        case .pluginSkill(let agent):
+            return
+                "\(agent.displayName) can't hide skills from its plugins; turn the plugin off in \(agent.displayName)."
+        case .everyProjectOnly(let agent):
+            return "\(agent.displayName) can only turn it off in every project, so it still loads it here."
         }
     }
 }
