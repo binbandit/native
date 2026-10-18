@@ -417,3 +417,21 @@ that reads the color scheme follows from there: the light tone, code themes, Hom
 terminal. The app icon's "Follow System" became "Automatic" and matches Native's appearance rather
 than the Mac's, so a dark Native gets a dark icon. Original is the exception: its compiled icon
 stack keeps following macOS, as decided above.
+
+## 2026-10-19: The Instrument dark palette, and True Black
+
+Dark mode keeps its layout but moves to the Instrument palette: content #0D0D0E, with the sidebar,
+the window's chrome (status bar) and code wells a step deeper at #070708; hairlines #1F1F22, control
+outlines #2E2E32 stepping up to #3A3A3F on hover; raised surfaces #141416 and #18181B; text #E9E9E6,
+#A5A5A8, #85858A and #5C5C61 (disabled); "needs you" amber #FFB000. Every text tier but the disabled
+one clears 4.5:1 on every dark layer, the off switch and unchecked checkbox outlines 3:1. The
+selection stays a translucent wash, calibrated to land on #18181B over the sidebar, so it still reads
+on popovers and glass. The system's dark sidebar material is lighter than this content, so dark mode
+lets at most a tenth of it through, and tints the composer's glass toward the surface. Native's dark
+code theme follows: keywords in the primary text color and semibold (`CodePalette.strong`, also open
+to plugin themes), names #C4C4C4, types #94C6D4, strings and numbers muted warm tones.
+
+Dark mode has a second tone, True Black, a sibling of Wool (`\.dsDarkTone`): pure black content,
+sidebar, chrome and terminal for OLED screens, opaque whatever the transparency, with separators
+(#1A1A1D), borders (#2A2A2E), the selection (#141416) and raised surfaces (#0E0E10) lifted just enough
+to stay readable. Text, accent and status colors are Standard's.

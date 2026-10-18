@@ -59,7 +59,7 @@ Mac) to see everything in light and dark side by side.
 
 | File | What |
 | --- | --- |
-| `Tokens/TokensColor.swift` | Layers, translucent fills, borders, text, semantic and chart colors. Dark content is #171717 with a #3e3e3e composer outline |
+| `Tokens/TokensColor.swift` | Layers, translucent fills, borders, text, semantic and chart colors. Dark is the Instrument palette: content #0D0D0E, sidebar, chrome and code wells #070708, hairlines #1F1F22, control outlines #2E2E32, text #E9E9E6 / #A5A5A8 / #85858A |
 | `Tokens/AccentPalette.swift` | `DSAccentPalette` per icon theme (original, cobalt, fern, ember, prism, arcade, glass, nightly), contrast-checked |
 | `Tokens/TokensTypography.swift` | Geist and Geist Mono (bundled, SIL OFL, `Fonts/OFL.txt`), UI text at 12pt, sidebar and composer at 13pt |
 | `Tokens/TokensLayout.swift` | Spacing, radii, sizes (including `contentColumn` 760, `listRow` 26), shadows |
@@ -67,6 +67,7 @@ Mac) to see everything in light and dark side by side.
 | `Tokens/Platform.swift` | macOS/iPadOS adapters and touch metrics |
 | `Tokens/TokensTransparency.swift` | `DSTransparency` (Solid, Subtle, Standard) from `.dsTransparency(_:)`; Reduce Transparency forces Solid |
 | `Tokens/TokensLightTone.swift` | `DSLightTone` (Paper, Wool) from `.dsLightTone(_:)`; neutrals, text and statuses have Wool values |
+| `Tokens/TokensDarkTone.swift` | `DSDarkTone` (Standard, True Black) from `.dsDarkTone(_:)`; True Black puts content, sidebar and chrome on #000 and lifts lines, selection and raised surfaces |
 | `Tokens/TokensCode.swift`, `TokensCodeFont.swift` | Code themes (`.dsCodeThemes`), `HighlightedCode`, `.dsCodeBlockBackground`, and the code font (`.codeTextStyle(_:)`) |
 
 ## Components
