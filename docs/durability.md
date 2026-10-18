@@ -181,12 +181,32 @@ listed in Settings with a last-seen time and can be revoked; a revoked key is re
 handshake. Bonjour finds the host on the LAN; a Tailscale name or a ciphertext-only relay reaches it
 elsewhere (open question in the companion doc).
 
+**Plugins reach every client** (docs/decisions.md, "Plugins live on hosts and reach every client").
+Host-side contributions (agents, MCP servers, engines) run on the host; client-side data (themes,
+icon sets, celebrations, experiments) travels as manifests and assets. `NativeHostClient.PluginAssets`
+keeps each host's assets on the device by content hash, so a client that synced once shows them
+offline. Built-in plugins ship in every binary and aren't sent.
+
 **What a client may do.** Local clients and paired devices are trusted with the full protocol,
 including running commands and reading files on the host, because that's what the full UI needs (an
 iPad running Git and gh against a Mac). Nothing else gets it: no unauthenticated listener ever opens
 on a network interface, the SSH bridge inherits exactly the SSH user's rights, and revoking a device
 cuts it off at the next handshake. Approvals given from a device are recorded in the transcript as
 coming from that device.
+
+**Updating a host remotely.** Any authenticated client may read a host's update status
+(`_native/host/update/status`, `check`, and the `changed` event). Installing
+(`_native/host/update/install {when: idle | now}`) is allowed only for local clients (same uid and,
+in signed builds, the same team), clients over the SSH bridge (that user could replace the binary
+anyway), and paired devices whose pairing allows managing the host (on by default for devices paired
+by QR from that Mac; revocable per device in Settings). There is no unauthenticated way to reach it,
+because no unauthenticated listener exists. The request carries no URL, version or binary: the host
+installs only what its own check found in its own feed, verified with the public key compiled into
+it, and only a build newer than the running one. So the worst a compromised device can do is start
+the install of a genuine signed release, or restart the host. `when: now` interrupts running turns
+and is sent only after the user chose "Install Now, Interrupt Tasks" on the device; `idle` waits.
+Every install request goes into the activity journal with the device that sent it. The provider,
+status shape and install flow are in `docs/releasing.md` ("Remote updates").
 
 ## Host identity and many hosts
 
@@ -242,6 +262,9 @@ process; event numbers are comparable only within one.
 | `_native/session/respond_permission {sessionID, toolCallID, optionID?}` | the first client to answer wins; the rest see it resolved |
 | `_native/queue/update`, `…/remove`, `…/send_now` | edit the queue |
 | `_native/activity/list {after?, limit}` | the activity journal, for "while you were away" |
+| `_native/plugins/list` | the host's installed plugins (`~/.native/plugins/<id>/plugin.json`), manifests verbatim, with on/off state; `_native/plugins/changed` follows any change |
+| `_native/plugins/asset {pluginID, path, knownHash?}` | one file from a plugin's folder: its sha-256 and the data, or no data when `knownHash` is current. Paths can't leave the folder (symlinks resolved); 8 MiB cap |
+| `_native/plugins/set_enabled {pluginID, isEnabled}` | needs the `managePlugins` grant: the owner (local and SSH clients) has it, paired devices only if their pairing grants it |
 | `_native/host/shutdown {stopAgents, immediately}` | stop for good, or restart (once idle, or now) for an update. Frozen |
 
 Notifications from the host: `_native/session/event {sessionID, event}`, `_native/session/changed

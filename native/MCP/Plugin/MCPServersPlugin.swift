@@ -48,6 +48,11 @@ extension MCPServersPlugin {
     static func connect(to model: AppModel, contextReports: @escaping @MainActor () -> [SessionKey: ContextReport]) {
         guard let library = library(in: model.plugins) else { return }
         library.host = AppMCPHost(model: model, contextReports: contextReports)
+        // Servers set to run through scripts are bound into Native's run_script.
+        if let orchestration = model.plugins.plugins.lazy.compactMap({ $0.plugin as? OrchestrationPlugin }).first {
+            library.scriptsAvailable = orchestration.hasScripts
+            orchestration.scriptExtensions.add(MCPScriptBindings(library: library))
+        }
         // Agents launch right after this, and those that apply switches at launch need the
         // configuration already, so the first read happens now; later reads are off the main thread.
         library.readConfigurationsAtStartup()

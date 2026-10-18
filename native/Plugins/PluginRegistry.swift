@@ -1,4 +1,5 @@
 import ACP
+import Experiments
 import Foundation
 import Observation
 import os
@@ -34,7 +35,14 @@ final class PluginRegistry {
         ?? URL.homeDirectory.appending(
             path: ".native/plugins", directoryHint: .isDirectory)
 
-    private(set) var plugins: [LoadedPlugin] = []
+    /// Every loaded plugin, as its experiments leave it (`PluginExperimentSet`).
+    var plugins: [LoadedPlugin] {
+        let values = ExperimentStore.shared.current
+        return loadedPlugins.map { $0.applyingExperiments(values) }
+    }
+    /// What's wrong with enabled plugins' experiments, for Labs.
+    private(set) var experimentProblems: [PluginExperimentProblem] = []
+    private var loadedPlugins: [LoadedPlugin] = []
     private(set) var failures: [LoadFailure] = []
     /// The user's explicit on/off choices; a plugin without one follows `isEnabledByDefault`.
     private var choices: [String: Bool]
@@ -75,12 +83,13 @@ final class PluginRegistry {
                 failures.append(LoadFailure(url: url, message: Self.describe(error)))
             }
         }
-        plugins = loaded
+        loadedPlugins = loaded
         self.failures = failures
+        syncExperiments()
     }
 
     func isEnabled(_ id: String) -> Bool {
-        choices[id] ?? plugins.first { $0.id == id }?.plugin.isEnabledByDefault ?? true
+        choices[id] ?? loadedPlugins.first { $0.id == id }?.plugin.isEnabledByDefault ?? true
     }
 
     /// Whether the user has switched the plugin on or off themselves, rather than it following its default.
@@ -92,6 +101,18 @@ final class PluginRegistry {
     func setEnabled(_ enabled: Bool, for id: String) {
         choices[id] = enabled
         UserDefaults.standard.set(choices, forKey: Self.choicesKey)
+        syncExperiments()
+    }
+
+    /// Hands enabled plugins' experiments to Labs, so a plugin's experiments and their claims come
+    /// and go with it.
+    private func syncExperiments() {
+        let set = PluginExperimentSet(
+            plugins: loadedPlugins.filter { isEnabled($0.id) }.map(\.plugin),
+            reserved: Set(ExperimentCatalog.native.experiments.map(\.id))
+        )
+        experimentProblems = set.problems
+        ExperimentStore.shared.setContributedExperiments(set.descriptors)
     }
 
     // MARK: - Contributions of enabled plugins

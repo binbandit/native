@@ -53,12 +53,12 @@ public struct PluginExperiments: Sendable {
         }
         for use in uses where !seen.contains(use.experiment) {
             problems.append(
-                .init(experiment: use.experiment, message: "\(use.place) refers to it, but plugin.json doesn't declare it.")
+                .init(experiment: use.experiment, message: "Used by \(use.place), but plugin.json doesn't declare it.")
             )
         }
         for use in uses where use.role == .switches && kinds[use.experiment] == .parameter {
             problems.append(
-                .init(experiment: use.experiment, message: "\(use.place) is switched by it, but only gates switch things.")
+                .init(experiment: use.experiment, message: "It switches \(use.place), but only gates can switch things.")
             )
         }
     }

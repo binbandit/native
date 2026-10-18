@@ -63,3 +63,31 @@ jobs:
       - name: Tear down signing
         if: always()
         run: scripts/release/ci-signing.sh teardown
+
+  # TODO(linux): enable once the host core builds on Linux (docs/releasing.md, "Remote updates").
+  # Each runner builds a static native-host for its architecture. To enable: set the
+  # LINUX_HOST_BUILDS repository variable to true, add `needs: linux-host` to the job above,
+  # download these artifacts into a folder there and set NATIVE_LINUX_HOST_DIR to it, so release.sh
+  # signs them into the same host feed.
+  linux-host:
+    if: vars.LINUX_HOST_BUILDS == 'true'
+    strategy:
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    container: swift:6.2
+    steps:
+      - uses: actions/checkout@v5
+      - name: Build native-host
+        run: |
+          swift build -c release --package-path Packages/NativeHost --product native-host --static-swift-stdlib
+          cp "$(swift build -c release --package-path Packages/NativeHost --show-bin-path)/native-host" \
+            "native-host-linux-${{ matrix.arch }}"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: native-host-linux-${{ matrix.arch }}
+          path: native-host-linux-${{ matrix.arch }}

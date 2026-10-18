@@ -1,6 +1,7 @@
 import ACP
 import AppAppearance
 import CodeThemes
+import Experiments
 import Foundation
 import NativeAutomation
 
@@ -31,6 +32,10 @@ protocol NativePlugin: Sendable {
     /// For a plugin that provides agents: how they apply a policy in their own terms. Nil means
     /// they can't, and the UI says so.
     var policyTranslator: (any SessionPolicyTranslator)? { get }
+    /// Experiments the plugin offers in Settings ▸ Labs (docs/plugins.md, Experiments): gates and
+    /// parameters its code reads, and variants claiming extension points. Ids start with the
+    /// plugin's id (`acme.fast-mode`). They're gone while the plugin is off.
+    var experiments: [any ExperimentDeclaration] { get }
 }
 
 extension NativePlugin {
@@ -41,6 +46,7 @@ extension NativePlugin {
     func sessionPolicy(for session: SessionContext) -> SessionPolicy { .none }
     func launchPolicy(for agent: AgentDefinition.ID) -> SessionPolicy { .none }
     var policyTranslator: (any SessionPolicyTranslator)? { nil }
+    var experiments: [any ExperimentDeclaration] { [] }
 }
 
 // MARK: - Manifest
@@ -66,12 +72,16 @@ struct PluginManifest: Codable, Hashable, Sendable, Identifiable {
     /// Celebrations with their calendars, offered in Settings ▸ Celebrations, each off until chosen.
     /// A malformed one is listed with its problem rather than failing the plugin.
     var celebrations = CelebrationContributions()
+    /// Gates and parameters for Settings ▸ Labs, and which contributions each gate switches. A broken
+    /// experiment is listed with its problem rather than failing the plugin.
+    var experiments = ExperimentContributions()
 
     init(
         id: String, name: String, version: String? = nil, description: String? = nil, agents: [AgentManifest] = [],
         mcpServers: [MCPServerManifest] = [], workflows: [WorkflowDefinition] = [],
         themes: ThemeContributions = ThemeContributions(), iconSets: IconSetContributions = IconSetContributions(),
-        celebrations: CelebrationContributions = CelebrationContributions()
+        celebrations: CelebrationContributions = CelebrationContributions(),
+        experiments: ExperimentContributions = ExperimentContributions()
     ) {
         self.id = id
         self.name = name
@@ -83,6 +93,7 @@ struct PluginManifest: Codable, Hashable, Sendable, Identifiable {
         self.themes = themes
         self.iconSets = iconSets
         self.celebrations = celebrations
+        self.experiments = experiments
     }
 
     init(from decoder: any Decoder) throws {
@@ -98,6 +109,7 @@ struct PluginManifest: Codable, Hashable, Sendable, Identifiable {
         // Never fail as a whole: each entry decodes or becomes a listed problem.
         iconSets = try container.decodeIfPresent(IconSetContributions.self, forKey: .iconSets) ?? .init()
         celebrations = try container.decodeIfPresent(CelebrationContributions.self, forKey: .celebrations) ?? .init()
+        experiments = ExperimentContributions(manifest: decoder)
     }
 }
 

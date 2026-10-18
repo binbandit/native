@@ -25,7 +25,8 @@
 #
 # Environment: NATIVE_NOTARY_PROFILE (notarytool keychain profile, default native-notary),
 # NATIVE_KEYCHAIN (keychain holding the identity and profile, for CI), NATIVE_TEAM_ID,
-# NATIVE_GITHUB_REPOSITORY (overrides Config/Shared.xcconfig), GH_TOKEN for --publish in CI.
+# NATIVE_GITHUB_REPOSITORY (overrides Config/Shared.xcconfig), GH_TOKEN for --publish in CI,
+# NATIVE_LINUX_HOST_DIR (native-host-linux-<arch> binaries to add to the host feed).
 set -euo pipefail
 source "$(dirname "$0")/lib.sh"
 
@@ -45,7 +46,7 @@ while [ $# -gt 0 ]; do
         --build-setting) settings+=("$2"); shift ;;
         --output) output=$2; shift ;;
         --no-dmg) make_dmg=0 ;;
-        -h | --help) sed -n '2,28p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h | --help) sed -n '2,29p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) die "unknown option $1 (see --help)" ;;
     esac
     shift
@@ -228,6 +229,7 @@ fi
 host_args=(--channel "$channel" --version "$version" --build-number "$build_number" --output "$output"
     --identity "$identity" --notes "$notes")
 [ -n "$key_file" ] && host_args+=(--ed-key-file "$key_file")
+[ -n "${NATIVE_LINUX_HOST_DIR:-}" ] && host_args+=(--linux "$NATIVE_LINUX_HOST_DIR")
 case $MODE in plan) host_args+=(--plan) ;; notarize | publish) host_args+=(--notarize) ;; esac
 SPARKLE_BIN=$sparkle_bin "$ROOT/scripts/release/host.sh" "${host_args[@]}"
 host_feed="host-feed.json"

@@ -11,7 +11,8 @@ struct MCPManagedServerRow: View {
     let onCommand: (AgentCLICommand) -> Void
 
     private var key: MCPServerKey { .managed(server.id) }
-    private var isOn: Bool { library.mode(of: server.transport.endpoint.key, in: nil) == .on }
+    private var mode: MCPServerSwitches.Mode { library.mode(of: server.transport.endpoint.key, in: nil) }
+    private var isOn: Bool { mode != .off }
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.md) {
@@ -22,6 +23,7 @@ struct MCPManagedServerRow: View {
                 detail: Text(detail)
             ) {
                 Badge(server.transport.kind.displayName)
+                if mode == .scripted { Badge("Scripted", tone: .accent, style: .soft) }
                 MCPHealthLabel(health: library.health(of: key, inactive: isOn ? nil : "Switched off"))
             } control: {
                 HStack(spacing: DS.Space.md) {
@@ -29,6 +31,7 @@ struct MCPManagedServerRow: View {
                     Menu {
                         Button("Edit…", action: onEdit)
                         Button("Check") { Task { await library.probe(key) } }
+                        MCPReachPicker(library: library, switchKey: server.transport.endpoint.key, project: nil)
                         Divider()
                         ForEach(library.agents) { agent in
                             if case .success(let command) = AgentCLI.add(
@@ -76,6 +79,7 @@ struct MCPManagedServerRow: View {
             case .only(let paths): paths.map { URL(filePath: $0).lastPathComponent }.joined(separator: ", ")
             }
         var parts = ["\(agents) · \(projects)"]
+        if mode == .scripted { parts.append(library.scriptNote(for: key)) }
         parts += library.skippedAgents(for: server).map(\.reason)
         if let cost = library.contextCost(of: server.name) {
             parts.append("\(DSFormat.tokens(cost.tokens)) tokens of Claude Code's context")
@@ -94,7 +98,8 @@ struct MCPAgentServerRow: View {
     let onCommand: (AgentCLICommand) -> Void
 
     private var switchKey: String { group.endpoint.key }
-    private var isOn: Bool { library.mode(of: switchKey, in: project) == .on }
+    private var mode: MCPServerSwitches.Mode { library.mode(of: switchKey, in: project) }
+    private var isOn: Bool { mode != .off }
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.md) {
@@ -105,6 +110,7 @@ struct MCPAgentServerRow: View {
                 detail: Text(detail)
             ) {
                 Badge(group.primary.server.transport.kind.displayName)
+                if mode == .scripted { Badge("Scripted", tone: .accent, style: .soft) }
                 MCPHealthLabel(
                     health: library.health(
                         of: group.key,
@@ -115,7 +121,7 @@ struct MCPAgentServerRow: View {
             } control: {
                 HStack(spacing: DS.Space.md) {
                     MCPExpandButton(isExpanded: $isExpanded, name: group.name)
-                    MCPAgentServerMenu(library: library, group: group, onCommand: onCommand)
+                    MCPAgentServerMenu(library: library, group: group, project: project, onCommand: onCommand)
                     SettingsSwitch(
                         group.name,
                         isOn: Binding(
@@ -144,6 +150,7 @@ struct MCPAgentServerRow: View {
         if !group.aliases.isEmpty {
             parts.append("Also named " + group.aliases.joined(separator: ", "))
         }
+        if mode == .scripted { parts.append(library.scriptNote(for: group.key)) }
         parts += switchNotes
         if library.managedServer(matching: group.endpoint) != nil {
             parts.append("Also set up in Native")
@@ -168,7 +175,7 @@ extension MCPAgentServerRow {
             case .atLaunch(let caveat)?:
                 if project != nil {
                     "\(agent.name) can only switch it for all projects"
-                } else if isOn {
+                } else if mode == .on {
                     nil
                 } else {
                     caveat ?? "\(agent.name) applies the switch when it restarts"
@@ -184,11 +191,13 @@ extension MCPAgentServerRow {
 private struct MCPAgentServerMenu: View {
     let library: MCPLibrary
     let group: MCPAgentServerGroup
+    let project: URL?
     let onCommand: (AgentCLICommand) -> Void
 
     var body: some View {
         Menu {
             Button("Check") { Task { await library.probe(group.key) } }
+            MCPReachPicker(library: library, switchKey: group.endpoint.key, project: project)
             if library.managedServer(matching: group.endpoint) == nil {
                 Button("Import into Native") { Task { await library.importServer(group.primary) } }
                     .help("Every agent gets it from Native; agents that load it already keep their own.")

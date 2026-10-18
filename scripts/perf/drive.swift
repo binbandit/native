@@ -2,6 +2,8 @@
 // pid is touched: no keystrokes, nothing brought to the front.
 //
 //   drive <pid> menu <menu> <item>     presses a menu bar item, e.g. `menu File "New Session"`
+//   drive <pid> enabled <menu> <item>  prints whether a menu bar item is enabled (`Session Stop`
+//                                      is while a turn runs)
 //   drive <pid> prompt <text>          writes the composer's draft and presses Send
 //   drive <pid> minimize               minimizes the main window
 //   drive <pid> hide                   hides the app, as ⌘H does
@@ -58,19 +60,25 @@ func mainWindow() -> AXUIElement {
     return window
 }
 
-switch arguments[1] {
-case "menu" where arguments.count == 4:
+func menuItem(_ menuTitle: String, _ itemTitle: String) -> AXUIElement {
     guard let value = attribute(app, kAXMenuBarAttribute), CFGetTypeID(value) == AXUIElementGetTypeID() else {
         fail("no menu bar")
     }
     let bar = unsafeBitCast(value, to: AXUIElement.self)
-    guard let menu = children(bar).first(where: { string($0, kAXTitleAttribute) == arguments[2] }) else {
-        fail("no menu \(arguments[2])")
+    guard let menu = children(bar).first(where: { string($0, kAXTitleAttribute) == menuTitle }) else {
+        fail("no menu \(menuTitle)")
     }
-    guard let item = find(menu, depth: 3, where: { string($0, kAXTitleAttribute) == arguments[3] }) else {
-        fail("no item \(arguments[3])")
+    guard let item = find(menu, depth: 3, where: { string($0, kAXTitleAttribute) == itemTitle }) else {
+        fail("no item \(itemTitle)")
     }
-    press(item)
+    return item
+}
+
+switch arguments[1] {
+case "menu" where arguments.count == 4:
+    press(menuItem(arguments[2], arguments[3]))
+case "enabled" where arguments.count == 4:
+    print((attribute(menuItem(arguments[2], arguments[3]), kAXEnabledAttribute) as? Bool) == true)
 case "prompt" where arguments.count == 3:
     let window = mainWindow()
     guard

@@ -37,48 +37,6 @@ public struct FileKeyStore: LinkKeyStore {
     }
 }
 
-/// The device's key in its keychain, kept on this device only (never synced or backed up to another).
-public struct KeychainKeyStore: LinkKeyStore {
-    public let service: String
-    public let account: String
-
-    public init(service: String, account: String = "device-identity") {
-        self.service = service
-        self.account = account
-    }
-
-    public func identity() throws -> LinkIdentity {
-        var query = baseQuery
-        query[kSecReturnData as String] = true
-        var result: AnyObject?
-        let status = SecItemCopyMatching(query as CFDictionary, &result)
-        if status == errSecSuccess, let data = result as? Data {
-            return try LinkIdentity(rawRepresentation: data)
-        }
-        guard status == errSecItemNotFound else { throw KeychainError(status: status) }
-        let identity = LinkIdentity()
-        var item = baseQuery
-        item[kSecValueData as String] = identity.rawRepresentation
-        item[kSecAttrAccessible as String] = kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
-        let added = SecItemAdd(item as CFDictionary, nil)
-        guard added == errSecSuccess else { throw KeychainError(status: added) }
-        return identity
-    }
-
-    /// Forgets the key, so the next pairing starts from a new identity.
-    public func remove() {
-        SecItemDelete(baseQuery as CFDictionary)
-    }
-
-    private var baseQuery: [String: Any] {
-        [
-            kSecClass as String: kSecClassGenericPassword,
-            kSecAttrService as String: service,
-            kSecAttrAccount as String: account,
-        ]
-    }
-}
-
 public struct KeychainError: Error, LocalizedError, Sendable {
     public let status: OSStatus
 
