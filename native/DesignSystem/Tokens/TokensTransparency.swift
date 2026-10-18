@@ -61,6 +61,22 @@ nonisolated extension EnvironmentValues {
     /// The transparency translucent surfaces draw at: the user's choice, or Solid while the system's
     /// Reduce Transparency setting is on. Set it with `.dsTransparency(_:)`.
     @Entry public var dsTransparency: DSTransparency = .standard
+    /// Whether views draw on Liquid Glass (the floating composer, glass buttons). Set by
+    /// `dsGlassEffect(in:)`; tokens that would blend into the glass resolve to their glass values.
+    @Entry public var dsOnGlass = false
+}
+
+/// A color with its own value on Liquid Glass (`dsOnGlass`). Glass renders what's on it vibrantly,
+/// so an opaque gray there takes on the glass's own shade: on an active window's lighter glass, the
+/// composer's outline, rules and pill borders vanished. A translucent value keeps its contrast with
+/// whatever shade the glass takes.
+nonisolated struct DSGlassAwareStyle: ShapeStyle, Hashable {
+    let base: Color
+    let glass: Color
+
+    func resolve(in environment: EnvironmentValues) -> Color.Resolved {
+        (environment.dsOnGlass ? glass : base).resolve(in: environment)
+    }
 }
 
 extension View {

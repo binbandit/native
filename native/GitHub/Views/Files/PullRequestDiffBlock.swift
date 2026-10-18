@@ -20,8 +20,27 @@ struct PullRequestDiffBlock: View {
     @State private var hovered: Int?
 
     var body: some View {
+        if UserDefaults.standard.bool(forKey: "gitHubExperimentBareBlock") {
+            HStack(alignment: .top, spacing: 0) {
+                PlatformCodeText(
+                    text: text.gutter, key: textKey, lineCount: text.kinds.count, lineHeight: lineHeight,
+                    isSelectable: false
+                )
+                .equatable()
+                .frame(width: gutterWidth, alignment: .leading)
+                PlatformCodeText(text: text.code, key: textKey, lineCount: text.kinds.count, lineHeight: lineHeight)
+                    .equatable()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .frame(height: CGFloat(text.kinds.count) * lineHeight)
+        } else {
+            full
+        }
+    }
+
+    private var full: some View {
         let lines = text.kinds.count
-        HStack(alignment: .top, spacing: 0) {
+        return HStack(alignment: .top, spacing: 0) {
             PlatformCodeText(
                 text: text.gutter, key: textKey, lineCount: lines, lineHeight: lineHeight, isSelectable: false
             )

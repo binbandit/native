@@ -21,7 +21,7 @@ extension View {
 
     /// Sweeps a highlight across text while `isActive`, the way running tool rows read as busy.
     func shimmering(_ isActive: Bool) -> some View {
-        modifier(Shimmer(isActive: isActive))
+        Shimmer(content: self, isActive: isActive)
     }
 }
 
@@ -69,30 +69,20 @@ struct HeightCappedScrollView<Content: View>: View {
     }
 }
 
-private struct Shimmer: ViewModifier {
+/// The highlight sweeping over busy text: a copy of the text in the primary color, drawn once, seen
+/// through a band Core Animation moves (`ShimmerBandLayer`), so it costs nothing per frame.
+private struct Shimmer<Content: View>: View {
+    let content: Content
     let isActive: Bool
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    func body(content: Content) -> some View {
+    var body: some View {
         if isActive, !reduceMotion {
             content.overlay {
-                TimelineView(.animation) { timeline in
-                    // One sweep every 2s; the band travels from just before to just after the text.
-                    let phase = timeline.date.timeIntervalSinceReferenceDate.truncatingRemainder(dividingBy: 2) / 2
-                    let center = -0.3 + phase * 1.6
-                    LinearGradient(
-                        stops: [
-                            .init(color: .clear, location: center - 0.15),
-                            .init(color: .primary, location: center),
-                            .init(color: .clear, location: center + 0.15),
-                        ],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                    .mask { content }
+                LayerMaskedView(content: Rectangle().fill(Color.primary).mask { content }) {
+                    ShimmerBandLayer()
                 }
-                .allowsHitTesting(false)
             }
         } else {
             content

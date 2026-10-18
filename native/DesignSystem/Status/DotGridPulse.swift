@@ -1,131 +1,21 @@
 import QuartzCore
 import SwiftUI
 
-#if canImport(AppKit)
-import AppKit
-#else
-import UIKit
-#endif
-
-/// A dot-grid loader animated by Core Animation, in the render server, rather than redrawn by
-/// SwiftUI every frame: a SwiftUI animation that never stops re-renders the whole window it's in
-/// on every frame, which for one working indicator cost half a CPU core and 225 MB of graphics
-/// memory for as long as an agent worked. The pulsing dots mask a fill in the foreground style,
-/// which SwiftUI draws once.
+/// A dot-grid loader animated by Core Animation (`LayerMaskedView`): the pulsing dots mask a fill in
+/// the foreground style.
 struct DotGridPulse: View {
     let pattern: DotGridLoader.Pattern
 
     var body: some View {
-        DotGridPulseView(pattern: pattern)
-    }
-}
-
-/// The fill the dots show, in whatever foreground style the loader is given.
-private func dotGridFill(in environment: EnvironmentValues) -> AnyView {
-    AnyView(Rectangle().fill(.foreground).environment(\.self, environment))
-}
-
-#if canImport(AppKit)
-private struct DotGridPulseView: NSViewRepresentable {
-    let pattern: DotGridLoader.Pattern
-
-    func makeNSView(context: Context) -> DotGridPulseHost {
-        DotGridPulseHost(pattern: pattern, fill: dotGridFill(in: context.environment))
-    }
-
-    func updateNSView(_ host: DotGridPulseHost, context: Context) {
-        host.update(pattern: pattern, fill: dotGridFill(in: context.environment))
-    }
-
-    func sizeThatFits(_ proposal: ProposedViewSize, nsView: DotGridPulseHost, context: Context) -> CGSize? {
-        proposal.replacingUnspecifiedDimensions()
-    }
-}
-
-final class DotGridPulseHost: NSView {
-    private let fill: NSHostingView<AnyView>
-    private let dots: DotGridPulseLayer
-
-    init(pattern: DotGridLoader.Pattern, fill: AnyView) {
-        self.fill = NSHostingView(rootView: fill)
-        dots = DotGridPulseLayer(pattern: pattern)
-        super.init(frame: .zero)
-        self.fill.sizingOptions = []
-        wantsLayer = true
-        addSubview(self.fill)
-        // AppKit layers count y up; the pattern counts it down, as SwiftUI does.
-        dots.isGeometryFlipped = true
-        layer?.mask = dots
-    }
-
-    @available(*, unavailable)
-    required init?(coder: NSCoder) {
-        nil
-    }
-
-    func update(pattern: DotGridLoader.Pattern, fill: AnyView) {
-        self.fill.rootView = fill
-        if dots.pattern != pattern {
-            dots.pattern = pattern
+        LayerMaskedView(content: Rectangle().fill(.foreground)) {
+            DotGridPulseLayer(pattern: pattern)
+        } update: { dots in
+            if dots.pattern != pattern {
+                dots.pattern = pattern
+            }
         }
     }
-
-    override func layout() {
-        super.layout()
-        fill.frame = bounds
-        dots.frame = bounds
-    }
 }
-#else
-private struct DotGridPulseView: UIViewRepresentable {
-    let pattern: DotGridLoader.Pattern
-
-    func makeUIView(context: Context) -> DotGridPulseHost {
-        DotGridPulseHost(pattern: pattern, fill: dotGridFill(in: context.environment))
-    }
-
-    func updateUIView(_ host: DotGridPulseHost, context: Context) {
-        host.update(pattern: pattern, fill: dotGridFill(in: context.environment))
-    }
-
-    func sizeThatFits(_ proposal: ProposedViewSize, uiView: DotGridPulseHost, context: Context) -> CGSize? {
-        proposal.replacingUnspecifiedDimensions()
-    }
-}
-
-final class DotGridPulseHost: UIView {
-    private let fill: UIHostingController<AnyView>
-    private let dots: DotGridPulseLayer
-
-    init(pattern: DotGridLoader.Pattern, fill: AnyView) {
-        self.fill = UIHostingController(rootView: fill)
-        dots = DotGridPulseLayer(pattern: pattern)
-        super.init(frame: .zero)
-        self.fill.sizingOptions = []
-        self.fill.view.backgroundColor = .clear
-        addSubview(self.fill.view)
-        layer.mask = dots
-    }
-
-    @available(*, unavailable)
-    required init?(coder: NSCoder) {
-        nil
-    }
-
-    func update(pattern: DotGridLoader.Pattern, fill: AnyView) {
-        self.fill.rootView = fill
-        if dots.pattern != pattern {
-            dots.pattern = pattern
-        }
-    }
-
-    override func layoutSubviews() {
-        super.layoutSubviews()
-        fill.view.frame = bounds
-        dots.frame = bounds
-    }
-}
-#endif
 
 /// The nine dots on the loader's 240pt canvas, each pulsing on a loop Core Animation repeats.
 nonisolated final class DotGridPulseLayer: CALayer {
