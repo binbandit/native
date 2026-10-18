@@ -13,7 +13,7 @@ extension SettingsPane {
             systemImage: "speaker.wave.2",
             group: .personal,
             order: 15,
-            keywords: ["chime", "sound", "audio", "notification", "volume", "conductor"],
+            keywords: ["chime", "sound", "audio", "notification", "volume"],
             searchEntries: {
                 [
                     SettingsSearchEntry(id: SoundsSettingsPage.enabledRow, title: "Play sounds", keywords: ["mute", "silence", "off"]),
@@ -24,6 +24,11 @@ extension SettingsPane {
                         keywords: ["do not disturb", "dnd", "focus", "quiet"]
                     ),
                     SettingsSearchEntry(id: SoundsSettingsPage.timingRow, title: "When to play", keywords: ["background", "focus"]),
+                    SettingsSearchEntry(
+                        id: SoundsSettingsPage.folderRow,
+                        title: "Sounds folder",
+                        keywords: ["folder", "files", "custom", "own sounds", "wav", "mp3", "aiff"]
+                    ),
                 ] + SoundTrigger.allCases.map {
                     SettingsSearchEntry(
                         id: SoundsSettingsPage.triggerRow($0),

@@ -52,8 +52,8 @@ nonisolated struct ChimeSynthesizer: Sendable {
     }
 
     /// Every sound's loudness: `LoudnessMeter` over its first 600ms. Set so that at the default 0.7
-    /// volume Native's sounds are as loud as Conductor plays its chime (its file at a fixed 0.5
-    /// gain), and switching sounds never jumps in level.
+    /// volume Native's sounds are about as loud as a typical notification file at half gain
+    /// (`SoundPlayer.fileGain`), and switching sounds never jumps in level.
     static let loudness = -20.4
     static let loudnessWindow = 0.6
     /// Headroom kept whatever the loudness asks for.

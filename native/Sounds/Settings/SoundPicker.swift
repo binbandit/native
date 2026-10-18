@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// One trigger's sound select: Conductor's outlined trigger over a native menu with the sounds
-/// grouped as Conductor groups them (its own under a submenu, when the user has them), the user's
-/// files, and ways to add or remove those.
+/// One trigger's sound select: the settings select's outlined trigger over a native menu with
+/// Native's sounds, the sounds folder's files in a submenu named after it, the files the user added,
+/// and ways to add or remove those.
 struct SoundPicker: View {
     let sounds: NotificationSounds
     let trigger: SoundTrigger
@@ -57,13 +57,10 @@ struct SoundPicker: View {
         Section("Native") {
             picker("Native", sounds.catalog.native)
         }
-        if !sounds.catalog.conductor.isEmpty {
-            Menu("Conductor") {
-                ForEach(sounds.catalog.conductor) { group in
-                    Section(group.title) {
-                        picker(group.title, group.options)
-                    }
-                }
+        // A submenu, so a folder of many files doesn't push the rest of the menu off screen.
+        if let folder = sounds.catalog.folder, !folder.sounds.isEmpty {
+            Menu(folder.name) {
+                picker(folder.name, folder.sounds)
             }
         }
         if !sounds.catalog.custom.isEmpty {

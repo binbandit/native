@@ -42,7 +42,7 @@ final class NotificationSounds {
         self.preferences = preferences
         self.focus = focus
         self.isAppActive = isAppActive
-        catalog = SoundCatalog(customSounds: preferences.customSounds)
+        catalog = SoundCatalog(customSounds: preferences.customSounds, folder: preferences.soundsFolder)
         if preferences.isEnabled {
             let chimes = SoundTrigger.allCases.compactMap { trigger -> NativeChime? in
                 if case .native(let chime) = preferences.sound(for: trigger) { chime } else { nil }
@@ -122,9 +122,23 @@ final class NotificationSounds {
         reloadCatalog()
     }
 
-    /// Looks for Conductor's sounds and the custom files again, for when they've moved.
+    /// Offers the audio files in `url`, or stops offering a folder's files for nil. A trigger that
+    /// played a file the new folder doesn't have goes back to its own default, so its picker never
+    /// shows a sound that isn't on its list.
+    func setSoundsFolder(_ url: URL?) {
+        preferences.soundsFolder = url.map(SoundsFolder.init(url:))
+        reloadCatalog()
+        for trigger in SoundTrigger.allCases {
+            let sound = preferences.sound(for: trigger)
+            if case .folder = sound, catalog.option(for: sound) == nil {
+                preferences.setSound(trigger.defaultSound, for: trigger)
+            }
+        }
+    }
+
+    /// Lists the sounds folder and the custom files again, for when they've changed or moved.
     func reloadCatalog() {
-        catalog = SoundCatalog(customSounds: preferences.customSounds)
+        catalog = SoundCatalog(customSounds: preferences.customSounds, folder: preferences.soundsFolder)
     }
 
     static func isAppActive() -> Bool {

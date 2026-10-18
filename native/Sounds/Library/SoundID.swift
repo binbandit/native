@@ -1,11 +1,12 @@
 import Foundation
 
-/// A sound the user can pick, stored in preferences by its raw value.
+/// A sound the user can pick, stored in preferences by its raw value. A stored value Native can't
+/// read (one from another version, say) falls back to the trigger's default.
 nonisolated enum SoundID: Hashable, Sendable {
     case native(NativeChime)
-    /// One of Conductor's sounds by its own id (`"default"`, `"choo-choo"`), played from the user's
-    /// local copy.
-    case conductor(String)
+    /// A file in the user's sounds folder, by its file name, so a choice follows the file when the
+    /// user points the setting at another copy of the folder.
+    case folder(String)
     case custom(UUID)
 }
 
@@ -17,8 +18,8 @@ extension SoundID: RawRepresentable {
         case ("native", let name?):
             guard let chime = NativeChime(rawValue: name) else { return nil }
             self = .native(chime)
-        case ("conductor", let name?):
-            self = .conductor(name)
+        case ("folder", let name?):
+            self = .folder(name)
         case ("custom", let uuid?):
             guard let id = UUID(uuidString: uuid) else { return nil }
             self = .custom(id)
@@ -30,7 +31,7 @@ extension SoundID: RawRepresentable {
     var rawValue: String {
         switch self {
         case .native(let chime): "native:\(chime.rawValue)"
-        case .conductor(let name): "conductor:\(name)"
+        case .folder(let name): "folder:\(name)"
         case .custom(let id): "custom:\(id.uuidString)"
         }
     }
