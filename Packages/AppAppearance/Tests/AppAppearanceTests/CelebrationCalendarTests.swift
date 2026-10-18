@@ -137,7 +137,7 @@ struct CelebrationCalendarTests {
     }
 
     @Test func unsupportedCalendarsAndExpiredTablesKeepTheBase() throws {
-        var easter = CelebrationContribution(
+        let easter = CelebrationContribution(
             id: CelebrationID("test.easter"), title: "Easter",
             calendar: CelebrationCalendar(rule: .unsupported(kind: "western-easter")),
             artwork: CelebrationArtwork(home: .mark(FirstPartyCelebrations.HomeMark.halloween)))
@@ -151,7 +151,6 @@ struct CelebrationCalendarTests {
         #expect(try F.active(preferences, on: "2027-01-01", events: events) == table.id)
         #expect(try F.active(preferences, on: "2027-12-26", events: events) == nil)
         #expect(catalog.event(table.id)?.dateStatus(on: try F.day("2027-12-26")) == .coverageEnded(lastYear: 2026))
-        easter.title = "Easter again"
         #expect(CelebrationPolicy.resolve(events, preferences: preferences, on: try F.day("2027-12-26")).nextChange == nil)
     }
 }
