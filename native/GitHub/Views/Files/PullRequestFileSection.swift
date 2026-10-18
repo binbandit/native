@@ -129,7 +129,8 @@ struct PullRequestFileSection: View {
         .padding(DS.Space.lg)
     }
 
-    /// Big and minified diffs wait for a click, as on GitHub, so they don't slow the list.
+    /// Big and minified diffs without conversations wait for a click, as on GitHub, so they don't
+    /// slow the list.
     private var largeDiff: some View {
         HStack(spacing: DS.Space.md) {
             Text("Large diff: \(model.lineCount(file.path)) lines. It isn't shown until you load it.")

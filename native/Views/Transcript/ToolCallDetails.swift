@@ -12,8 +12,10 @@ struct ToolCallBody: View {
         case .command(let command):
             // While a command runs Claude Code puts its description in the content, not output.
             CommandOutput(command: command, output: phase == .running ? nil : ToolOutput.text(of: call), phase: phase)
-        case .mcp:
-            MCPOutput(input: call.rawInput, output: ToolOutput.text(of: call), phase: phase)
+        case .mcp(let rawName):
+            MCPOutput(
+                rawName: rawName, input: call.mcpArguments, output: ToolOutput.text(of: call) ?? call.mcpResultText,
+                phase: phase)
         case .lines:
             if let output = ToolOutput.text(of: call) {
                 Text(verbatim: output)
@@ -76,14 +78,20 @@ private struct CommandOutput: View {
     }
 }
 
-/// The call's input as JSON, a hairline, then its output or a word on why there's none yet.
+/// The tool's name as the agent sent it, the call's input as JSON, a hairline, then its output or
+/// a word on why there's none yet.
 private struct MCPOutput: View {
+    let rawName: String
     let input: JSONValue?
     let output: String?
     let phase: ToolPhase
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
+            Text(verbatim: rawName)
+                .foregroundStyle(.dsTextTertiary)
+                .monospacedOutput()
+            Divider()
             if let input, input != .null, !input.isEmptyObject {
                 Text(verbatim: input.prettyPrinted())
                     .foregroundStyle(.dsTextSecondary)
