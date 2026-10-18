@@ -88,8 +88,13 @@ struct MCPManagedServerRow: View {
 struct MCPAgentServerRow: View {
     let library: MCPLibrary
     let group: MCPAgentServerGroup
+    /// The project the page shows, whose switch the row sets; nil for all projects.
+    let project: URL?
     @Binding var isExpanded: Bool
     let onCommand: (AgentCLICommand) -> Void
+
+    private var switchKey: String { group.endpoint.key }
+    private var isOn: Bool { library.mode(of: switchKey, in: project) == .on }
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.md) {
@@ -102,7 +107,8 @@ struct MCPAgentServerRow: View {
                 Badge(group.primary.server.transport.kind.displayName)
                 MCPHealthLabel(
                     health: library.health(
-                        of: group.key, inactive: group.isLoaded ? nil : group.primary.status.inactiveReason))
+                        of: group.key,
+                        inactive: !isOn ? "Switched off" : group.isLoaded ? nil : group.primary.status.inactiveReason))
                 if let cost = library.contextCost(of: group.name) {
                     MCPContextCostLabel(cost: cost)
                 }
@@ -110,6 +116,10 @@ struct MCPAgentServerRow: View {
                 HStack(spacing: DS.Space.md) {
                     MCPExpandButton(isExpanded: $isExpanded, name: group.name)
                     MCPAgentServerMenu(library: library, group: group, onCommand: onCommand)
+                    SettingsSwitch(
+                        group.name,
+                        isOn: Binding(
+                            get: { isOn }, set: { library.setMode($0 ? .on : .off, of: switchKey, in: project) }))
                 }
             }
             if isExpanded {
@@ -134,6 +144,7 @@ struct MCPAgentServerRow: View {
         if !group.aliases.isEmpty {
             parts.append("Also named " + group.aliases.joined(separator: ", "))
         }
+        parts += switchNotes
         if library.managedServer(matching: group.endpoint) != nil {
             parts.append("Also set up in Native")
         }
@@ -145,6 +156,22 @@ struct MCPAgentServerRow: View {
         }
         parts += Array(Set(group.entries.flatMap(\.notes))).sorted()
         return parts.joined(separator: " · ")
+    }
+}
+
+extension MCPAgentServerRow {
+    /// How each agent that loads it applies the switch, where that isn't simply per session.
+    fileprivate var switchNotes: [String] {
+        library.agents.filter { group.formats.contains($0.format) }.compactMap { agent in
+            switch library.host?.mcpPolicySupport(for: agent.id) {
+            case .perSession?, nil: nil
+            case .atLaunch?:
+                project == nil
+                    ? "\(agent.name) applies the switch when it restarts"
+                    : "\(agent.name) can only switch it for all projects"
+            case .unsupported(let reason)?: reason
+            }
+        }
     }
 }
 

@@ -61,6 +61,7 @@ struct NativeApp: App {
                 .environment(statusBar)
                 .createPullRequestSheet(gitHub)
                 .dsAccentPalette(themeID: iconPreferences.theme.rawValue)
+                .appearancePreferences()
                 .task {
                     OrchestrationPlugin.connect(to: model)
                     MCPServersPlugin.connect(to: model) { BuiltInPlugins.usage.contextReports.reports }
@@ -109,6 +110,7 @@ struct NativeApp: App {
             HostPreviewWindow()
                 .environment(model)
                 .dsAccentPalette(themeID: iconPreferences.theme.rawValue)
+                .appearancePreferences()
         }
 
     }

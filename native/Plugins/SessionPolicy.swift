@@ -39,7 +39,8 @@ struct SessionPolicy: Hashable, Sendable {
     /// Everything both policies ask for.
     func merging(_ other: SessionPolicy) -> SessionPolicy {
         SessionPolicy(
-            disabledMCPServers: disabledMCPServers + other.disabledMCPServers.filter { !disabledMCPServers.contains($0) },
+            disabledMCPServers: disabledMCPServers
+                + other.disabledMCPServers.filter { !disabledMCPServers.contains($0) },
             disabledSkills: disabledSkills + other.disabledSkills.filter { !disabledSkills.contains($0) }
         )
     }

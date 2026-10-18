@@ -1,11 +1,10 @@
 import SwiftUI
 
-/// Native's lockup at the top of the home page. It settles in once when the page appears, before
-/// the cards fade in under it, so the page opens on the brand rather than on a flash of controls.
-/// Nightly builds set it in the Nightly icon's sky and say so under the name, so it's always clear
-/// which build is running. While the user has the Halloween app icon, the emblem turns to that
-/// icon's ghosts for this channel (and the Nightly sky gets its orange moon and bats), so the page
-/// always matches the Dock.
+/// Native's lockup at the top of the home page, in the edition that matches the app icon in the
+/// Dock (`HomeLandingEdition`): a channel badge on Beta, Nightly and Dev builds, the night sky on
+/// Nightly, and the Halloween ghosts while the user has the seasonal icon. It settles in once when
+/// the page appears, before the cards fade in under it, so the page opens on the brand rather than
+/// on a flash of controls.
 struct HomeHero: View {
     @Environment(\.releaseChannel) private var releaseChannel
     /// Optional, so previews and other hosts without icon preferences get the everyday mark.
@@ -13,12 +12,17 @@ struct HomeHero: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isShown = false
 
+    private var edition: HomeLandingEdition {
+        HomeLandingEdition(channel: releaseChannel, isHalloween: iconPreferences?.isHalloweenActive == true)
+    }
+
     var body: some View {
+        let edition = edition
         VStack(spacing: DS.Space.md) {
-            NativeLockup(size: HomeLayout.heroSize, layout: .stacked, halloween: halloween)
-                .nightSky(isEnabled: releaseChannel.isNightly, isHalloween: halloween != nil)
-            if releaseChannel.isNightly {
-                Badge("Nightly", style: .mono)
+            NativeLockup(size: HomeLayout.heroSize, layout: .stacked, style: edition.markStyle)
+                .nightSky(isEnabled: edition.showsNightSky, isHalloween: edition.isHalloween)
+            if let badge = edition.badge {
+                Badge(badge.title, tone: badge.tone, style: .mono)
                     // Keeps the sky's stars from showing through the letters.
                     .background(.dsBackground, in: .rect(cornerRadius: DS.Radius.small))
             }
@@ -28,22 +32,13 @@ struct HomeHero: View {
         .scaleEffect(isShown ? 1 : HomeLayout.heroEntranceScale)
         .offset(y: isShown ? 0 : HomeLayout.heroEntranceOffset)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(releaseChannel.displayName)
+        .accessibilityLabel(edition.name)
+        .accessibilityValue(edition.isHalloween ? "Halloween" : "")
         .accessibilityAddTraits(.isHeader)
         .onAppear {
             withAnimation(reduceMotion ? nil : HomeLayout.heroEntrance) {
                 isShown = true
             }
-        }
-    }
-
-    /// The Halloween edition matching the app icon, while the user has it.
-    private var halloween: NativeHalloweenEdition? {
-        guard iconPreferences?.isHalloweenActive == true else { return nil }
-        return switch releaseChannel {
-        case .stable, .dev: .regular
-        case .beta: .beta
-        case .nightly: .nightly
         }
     }
 }
@@ -60,6 +55,13 @@ struct HomeHero: View {
         .padding(DS.Space.xxxl)
         .background(.dsBackground)
         .preferredColorScheme(.dark)
+}
+
+#Preview("Hero - Beta") {
+    HomeHero()
+        .padding(DS.Space.xxxl)
+        .background(.dsBackground)
+        .environment(\.releaseChannel, .beta)
 }
 
 #Preview("Hero - Nightly") {

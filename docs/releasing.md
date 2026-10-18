@@ -203,6 +203,13 @@ credentials in a throwaway keychain and removes it afterwards.
    the Nightly workflow by hand once to create the `nightly` release.
 7. **Nightly icon.** The icon owner adds the Nightly icon to the app target and sets
    `NATIVE_APP_ICON_NAME` in `Config/Nightly.xcconfig`.
+8. **Focus Status capability**, once a development team signs the app, so sounds stay quiet
+   during Do Not Disturb and other Focus modes (`native/Sounds/Focus/SystemFocusStatus.swift`).
+   Enable Focus Status for the App ID, add `com.apple.developer.focus-status` = `true` to the app's
+   entitlements, and set `INFOPLIST_KEY_NSFocusStatusUsageDescription` (for example "Native stays
+   quiet while a Focus is on."). Don't add the entitlement before then: macOS kills an ad hoc
+   signed app that claims it at launch. Without it, Native reports that it can't see Focus, and
+   Settings ▸ Sounds says so.
 
 ## Testing updates locally
 

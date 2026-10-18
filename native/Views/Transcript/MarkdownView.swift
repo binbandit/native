@@ -113,13 +113,13 @@ private struct MarkdownNode: Identifiable {
     private static func styled(_ run: AttributedSubstring) -> AttributedString {
         var text = AttributedString(run)
         if text.inlinePresentationIntent?.contains(.code) == true {
-            text.backgroundColor = Color.primary.opacity(0.07)
+            text.backgroundColor = .dsSurfaceSunken
         }
         return text
     }
 
     var spacingAbove: CGFloat {
-        if case .header = kind { 18 } else { 10 }
+        if case .header = kind { DS.Space.xl } else { DS.Space.md }
     }
 }
 
@@ -142,12 +142,12 @@ private struct MarkdownBlockView: View {
                 .padding(.vertical, 4)
         case .blockQuote:
             children
-                .foregroundStyle(.secondary)
-                .padding(.leading, 13)
+                .foregroundStyle(.dsTextSecondary)
+                .padding(.leading, DS.Space.lg)
                 .overlay(alignment: .leading) {
                     Capsule()
-                        .fill(.tertiary)
-                        .frame(width: 3)
+                        .fill(.dsTextTertiary)
+                        .frame(width: TranscriptMetrics.quoteRailWidth)
                 }
         case .orderedList, .unorderedList:
             list
@@ -165,7 +165,7 @@ private struct MarkdownBlockView: View {
     }
 
     private var children: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: DS.Space.sm) {
             ForEach(node.children) { child in
                 MarkdownBlockView(node: child, listDepth: listDepth)
             }
@@ -173,18 +173,18 @@ private struct MarkdownBlockView: View {
     }
 
     private var list: some View {
-        Grid(alignment: .leading, horizontalSpacing: 6, verticalSpacing: 4) {
+        Grid(alignment: .leading, horizontalSpacing: DS.Space.sm, verticalSpacing: DS.Space.xs) {
             ForEach(node.children) { item in
                 GridRow(alignment: .firstTextBaseline) {
                     Text(marker(for: item))
                         .monospacedDigit()
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.dsTextSecondary)
                         .gridColumnAlignment(.trailing)
                     MarkdownBlockView(node: item, listDepth: listDepth + 1)
                 }
             }
         }
-        .padding(.leading, 4)
+        .padding(.leading, DS.Space.xs)
     }
 
     private func marker(for item: MarkdownNode) -> String {
@@ -196,9 +196,9 @@ private struct MarkdownBlockView: View {
 
     private static func headerFont(_ level: Int) -> Font {
         switch level {
-        case 1: .title2.bold()
-        case 2: .title3.bold()
-        default: .headline
+        case 1: .ds(17, weight: .semibold)
+        case 2: .ds(15, weight: .semibold)
+        default: .dsCalloutSemibold
         }
     }
 }
@@ -208,24 +208,24 @@ private struct CodeBlockView: View {
     let language: String?
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
+        VStack(alignment: .leading, spacing: DS.Space.sm) {
             if let language, !language.isEmpty {
                 Text(language)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .font(.dsMicro)
+                    .foregroundStyle(.dsTextSecondary)
             }
             ScrollView(.horizontal) {
                 Text(verbatim: code.hasSuffix("\n") ? String(code.dropLast()) : code)
-                    .font(.callout.monospaced())
+                    .font(.dsMono)
                     .lineSpacing(1)
             }
             .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
             .fixedSize(horizontal: false, vertical: true)
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
+        .padding(.horizontal, DS.Space.lg)
+        .padding(.vertical, DS.Space.xl)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .nestedSurface(.fill.quinary, minimumRadius: 10)
+        .nestedSurface(.dsSurfaceSunken, minimumRadius: DS.Radius.card)
     }
 }
 
@@ -234,7 +234,7 @@ private struct MarkdownTableView: View {
     let columns: [PresentationIntent.TableColumn]
 
     var body: some View {
-        Grid(alignment: .leading, horizontalSpacing: 18, verticalSpacing: 6) {
+        Grid(alignment: .leading, horizontalSpacing: DS.Space.xl, verticalSpacing: DS.Space.sm) {
             ForEach(rows) { row in
                 let isHeader = row.kind == .tableHeaderRow
                 GridRow {

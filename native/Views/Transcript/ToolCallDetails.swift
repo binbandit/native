@@ -18,7 +18,7 @@ struct ToolCallBody: View {
         case .lines:
             if let output = ToolOutput.text(of: call) {
                 Text(verbatim: output)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.dsTextSecondary)
                     .monospacedOutput()
             } else {
                 GenericOutput(call: call)
@@ -64,13 +64,13 @@ private struct CommandOutput: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text("\(Text(verbatim: "$").foregroundStyle(.tertiary)) \(Text(verbatim: command))")
+            Text("\(Text(verbatim: "$").foregroundStyle(.dsTextTertiary)) \(Text(verbatim: command))")
             if let output, !output.isEmpty {
                 Text(verbatim: output)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.dsTextSecondary)
             } else if phase == .running {
                 Text("Waiting for command output…")
-                    .foregroundStyle(.tertiary)
+                    .foregroundStyle(.dsTextTertiary)
             }
         }
         .monospacedOutput()
@@ -87,17 +87,17 @@ private struct MCPOutput: View {
         VStack(alignment: .leading, spacing: 0) {
             if let input, input != .null, !input.isEmptyObject {
                 Text(verbatim: input.prettyPrinted())
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.dsTextSecondary)
                     .monospacedOutput()
                 Divider()
             }
             if let output, !output.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
                 Text(verbatim: output)
-                    .foregroundStyle(phase == .failed ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
+                    .foregroundStyle(phase == .failed ? Color.dsDanger : .dsTextSecondary)
                     .monospacedOutput()
             } else {
                 Text(placeholder)
-                    .foregroundStyle(phase == .failed ? AnyShapeStyle(.red) : AnyShapeStyle(.tertiary))
+                    .foregroundStyle(phase == .failed ? Color.dsDanger : .dsTextTertiary)
                     .monospacedOutput()
             }
         }
@@ -122,7 +122,7 @@ private struct GenericOutput: View {
         VStack(alignment: .leading, spacing: 0) {
             if call.content.isEmpty, let rawInput = call.rawInput {
                 Text(verbatim: rawInput.prettyPrinted())
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.dsTextSecondary)
                     .monospacedOutput()
             }
             ForEach(call.content.indices, id: \.self) { index in
@@ -142,9 +142,9 @@ private struct ContentBlockView: View {
                 Image(nsImage: image)
                     .resizable()
                     .scaledToFit()
-                    .frame(maxHeight: 200, alignment: .leading)
-                    .clipShape(.rect(cornerRadius: 6))
-                    .padding(10)
+                    .frame(maxHeight: TranscriptMetrics.toolImageMaxHeight, alignment: .leading)
+                    .clipShape(.rect(cornerRadius: DS.Radius.row))
+                    .padding(DS.Space.xl)
             } else {
                 placeholder("Image (\(mimeType))", systemImage: "photo")
             }
@@ -154,12 +154,12 @@ private struct ContentBlockView: View {
             if let text = block.text {
                 if let code = text.unfenced {
                     Text(verbatim: code)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(.dsTextSecondary)
                         .monospacedOutput()
                 } else {
                     MarkdownView(text)
-                        .font(.callout)
-                        .padding(10)
+                        .font(.dsBody)
+                        .padding(DS.Space.xl)
                 }
             } else if case .resource(let uri, _) = block {
                 placeholder(uri, systemImage: "doc")
@@ -177,21 +177,21 @@ private struct ContentBlockView: View {
 
     private func placeholder(_ title: String, systemImage: String) -> some View {
         Label(title, systemImage: systemImage)
-            .font(.subheadline)
-            .foregroundStyle(.secondary)
-            .padding(10)
+            .font(.dsCaption)
+            .foregroundStyle(.dsTextSecondary)
+            .padding(DS.Space.xl)
     }
 }
 
 private extension View {
     /// Tool output type: small monospaced text with roomy lines, padded inside the detail panel.
     func monospacedOutput() -> some View {
-        font(.subheadline.monospaced())
-            .lineSpacing(3)
+        font(.dsMonoCaption)
+            .lineSpacing(DS.Space.xxs)
             .textSelection(.enabled)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 7)
+            .padding(.horizontal, DS.Space.xl)
+            .padding(.vertical, DS.Space.md)
     }
 }
 

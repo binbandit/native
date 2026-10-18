@@ -8,7 +8,8 @@ struct CodexPolicyTranslator: SessionPolicyTranslator {
     func launchEnvironment(for policy: SessionPolicy) -> [String: String] {
         let names = Set(policy.allProjectsOnly.disabledMCPServers.map(\.name)).sorted()
         guard !names.isEmpty else { return [:] }
-        let servers = JSONValue.object(Dictionary(uniqueKeysWithValues: names.map { ($0, JSONValue.object(["enabled": .bool(false)])) }))
+        let servers = JSONValue.object(
+            Dictionary(uniqueKeysWithValues: names.map { ($0, JSONValue.object(["enabled": .bool(false)])) }))
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
         guard let data = try? encoder.encode(JSONValue.object(["mcp_servers": servers])) else { return [:] }

@@ -95,13 +95,6 @@ extension SettingsPane {
     /// The panes Settings itself provides. `registry` is the host's: a client of several hosts
     /// passes the one the pages should describe.
     static func builtIn(registry: PluginRegistry) -> [SettingsPane] {
-        var panes: [SettingsPane] = [
-            .general, .keyboardShortcuts, .agents(registry: registry), .extensions(registry: registry),
-        ]
-        #if os(macOS)
-        // The app icon is the Dock's; iPadOS sets icons another way.
-        panes.append(.appearance)
-        #endif
-        return panes
+        [.general, .keyboardShortcuts, .agents(registry: registry), .extensions(registry: registry), .appearance]
     }
 }

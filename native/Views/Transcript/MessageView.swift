@@ -27,9 +27,11 @@ struct MessageView: View, Equatable {
                 // Prompts are shown as typed; Markdown syntax in them stays literal.
                 Text(verbatim: message.text)
                     .textSelection(.enabled)
-                    .padding(.horizontal, 12)
-                    .padding(.vertical, 8)
-                    .background(.fill.tertiary, in: .rect(cornerRadius: 16, style: .continuous))
+                    .padding(.horizontal, DS.Space.lg)
+                    .padding(.vertical, DS.Space.md)
+                    .background(
+                        .dsSurfaceSunken,
+                        in: .rect(cornerRadius: TranscriptMetrics.promptBubbleRadius, style: .continuous))
             }
         case .agent:
             MarkdownView(message.text)
@@ -47,8 +49,8 @@ struct NoticeView: View {
 
     var body: some View {
         Label(notice.text, systemImage: notice.isError ? "exclamationmark.triangle.fill" : "info.circle")
-            .font(.subheadline)
-            .foregroundStyle(notice.isError ? Color.red : Color.secondary)
+            .font(.dsCaption)
+            .foregroundStyle(notice.isError ? Color.dsDanger : .dsTextSecondary)
             .textSelection(.enabled)
             .frame(maxWidth: .infinity)
     }
@@ -64,28 +66,28 @@ private struct ThoughtView: View {
     @State private var isExpanded = false
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: DS.Space.md) {
             Button {
-                withAnimation(.smooth(duration: 0.25)) { isExpanded.toggle() }
+                withAnimation(.dsDisclosure) { isExpanded.toggle() }
             } label: {
                 HStack(spacing: DS.Space.sm) {
                     label
                     DisclosureChevron(isExpanded: isExpanded)
                 }
-                .font(.callout)
-                .foregroundStyle(.secondary)
+                .font(.dsBody)
+                .foregroundStyle(.dsTextSecondary)
                 .contentShape(.rect)
             }
             .buttonStyle(.plain)
 
             if isExpanded {
                 MarkdownView(text)
-                    .foregroundStyle(.secondary)
-                    .padding(.leading, 12)
+                    .foregroundStyle(.dsTextSecondary)
+                    .padding(.leading, DS.Space.lg)
                     .overlay(alignment: .leading) {
                         Capsule()
-                            .fill(.quaternary)
-                            .frame(width: 2)
+                            .fill(.dsTextQuaternary)
+                            .frame(width: TranscriptMetrics.thoughtRailWidth)
                     }
             }
         }
