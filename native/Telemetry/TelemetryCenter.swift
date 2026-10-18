@@ -49,9 +49,15 @@ final class TelemetryCenter {
                 .appending(path: "Telemetry/sent.jsonl"))
     }
 
-    /// Whether this build has a destination for Native's own telemetry.
+    /// Whether this build has a destination for Native's own telemetry. Debug builds never do; to try
+    /// the Privacy page's states they can pretend with `defaults write <bundle id>
+    /// telemetry.debug.destination -bool YES`, and still send nothing, since `apply()` finds no
+    /// destination to add.
     var isNativeDestinationAvailable: Bool {
-        NativeTelemetryDestination.factory != nil
+        #if DEBUG
+        if defaults.bool(forKey: "telemetry.debug.destination") { return true }
+        #endif
+        return NativeTelemetryDestination.factory != nil
     }
 
     /// Who decides about Native's own telemetry, per the organization's policy.

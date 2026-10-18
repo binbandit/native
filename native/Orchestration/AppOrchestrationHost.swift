@@ -1,12 +1,14 @@
 import ACP
 import Foundation
+import NativeSetup
 import Observation
 
 extension OrchestrationPlugin {
-    /// Lets the tools run tasks as `model`'s sessions.
-    static func connect(to model: AppModel) {
+    /// Lets the tools run tasks as `model`'s sessions, and report how Native is set up.
+    static func connect(to model: AppModel, updates: UpdateController?, durableHost: DurableHost?) {
         let plugin = model.plugins.plugins.lazy.compactMap { $0.plugin as? OrchestrationPlugin }.first
-        plugin?.orchestrator.host = AppOrchestrationHost(model: model)
+        plugin?.orchestrator.host = AppOrchestrationHost(
+            model: model, setup: AppSetupReporter(model: model, updates: updates, durableHost: durableHost))
     }
 }
 
@@ -18,9 +20,11 @@ final class AppOrchestrationHost: OrchestrationHost {
     private weak var model: AppModel?
     /// Tasks whose card already follows them, so reopening one twice doesn't double up.
     private var mirrored: Set<SessionKey> = []
+    private let setup: AppSetupReporter
 
-    init(model: AppModel) {
+    init(model: AppModel, setup: AppSetupReporter) {
         self.model = model
+        self.setup = setup
     }
 
     var taskAgents: [AgentDefinition] {
@@ -34,6 +38,10 @@ final class AppOrchestrationHost: OrchestrationHost {
     func disabledSkills(of clientID: UUID) -> Set<String> {
         guard let model, let session = model.session(clientID: clientID) else { return [] }
         return Set(model.plugins.sessionPolicy(for: session.context).disabledSkills.compactMap(\.name))
+    }
+
+    func setupReport(callerAgent: AgentDefinition.ID) async -> SetupReport {
+        await setup.report(callerAgent: callerAgent)
     }
 
     func startTask(_ request: TaskRequest) async throws -> SessionKey {

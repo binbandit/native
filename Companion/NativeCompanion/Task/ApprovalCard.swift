@@ -60,7 +60,9 @@ struct ApprovalCard: View {
             } label: {
                 Text(sending == option.optionId ? "Sending…" : option.name)
                     .font(CompanionType.subheadline)
-                    .lineLimit(1)
+                    .lineLimit(2)
+                    .multilineTextAlignment(.center)
+                    .padding(.vertical, DS.Space.xs)
                     .padding(.horizontal, DS.Space.md)
                     .frame(maxWidth: .infinity, minHeight: DS.Size.minimumHitTarget)
             }

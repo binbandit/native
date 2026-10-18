@@ -241,6 +241,26 @@ host_feed="host-feed.json"
 host_files=()
 [ -f "$output/host/$host_feed" ] && host_files=("$output/host/$host_feed" "$output/host/$host_feed.sig")
 
+# MARK: - Celebration icons
+
+# One icon pack per celebration and the index that lists them, which the app downloads when someone
+# chooses a celebration (docs/celebrations-artwork.md). The index is signed with the appcast's key,
+# printed bare by `sign_update -p`; --disable-signing-warning keeps it from editing the file.
+celebration_files=()
+celebration_sign="$sparkle_bin/sign_update -p --disable-signing-warning"
+if [ "$MODE" = plan ]; then
+    printf '  [plan] would run: %s\n' "scripts/release/celebration-assets.sh pack $output/celebrations $version" >&2
+elif [ "$key_file" = - ]; then
+    warn "the Sparkle key came on stdin and is already read; not packing celebration icons"
+elif [ -z "$key_file" ] && [ "$MODE" = dry-run ] && ! security find-generic-password -s https://sparkle-project.org -a ed25519 >/dev/null 2>&1; then
+    warn "no Sparkle signing key in the keychain; not packing celebration icons"
+else
+    [ -n "$key_file" ] && celebration_sign+=" --ed-key-file $key_file"
+    export CELEBRATION_ASSETS_SIGN=$celebration_sign
+    run "$ROOT/scripts/release/celebration-assets.sh" pack "$output/celebrations" "$version"
+    celebration_files=("$output/celebrations"/celebration-*.json "$output/celebrations/celebration-assets.json.sig")
+fi
+
 # MARK: - Publish
 
 log "Publishing to $repo"
@@ -257,7 +277,8 @@ if [ "$channel" = nightly ]; then
         remote gh release create nightly --repo "$repo" --prerelease --target "$sha" --title "Native Nightly" "${notes_flag[@]}"
     fi
     # Archives first, so the appcast never points at a file that isn't there yet.
-    remote gh release upload nightly --repo "$repo" --clobber "${assets[@]}"
+    remote gh release upload nightly --repo "$repo" --clobber "${assets[@]}" \
+        ${celebration_files[@]+"${celebration_files[@]}"}
     remote gh release upload nightly --repo "$repo" --clobber "$output/appcast/appcast.xml" ${host_files[@]+"${host_files[@]}"}
     if [ "$MODE" = publish ]; then
         # Keep the newest two archives and hosts so downloads already in flight still finish.
@@ -272,7 +293,7 @@ else
     # A draft with every asset, then published at once: the feed never sees a half-made release.
     remote gh release create "$tag" --repo "$repo" --draft --verify-tag --title "Native $version" \
         ${prerelease[@]+"${prerelease[@]}"} "${notes_flag[@]}" "${assets[@]}" "$output/appcast/appcast.xml" \
-        ${host_files[@]+"${host_files[@]}"}
+        ${host_files[@]+"${host_files[@]}"} ${celebration_files[@]+"${celebration_files[@]}"}
     remote gh release edit "$tag" --repo "$repo" --draft=false
     if [ "$channel" = beta ]; then
         # Betas are prereleases, so releases/latest still points at the newest stable release.

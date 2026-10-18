@@ -21,6 +21,10 @@ enum SettingsMetrics {
     static let switchSize = CGSize(width: 40, height: 20)
     static let switchThumb: CGFloat = 16
     static let iconTile: CGFloat = 40
+    /// A glyph in a settings button, a size below its 14pt title.
+    static let buttonGlyph: CGFloat = 13
+    /// Above a section heading, on top of the page's own spacing, so sections read apart from rows.
+    static let sectionTopInset = DS.Space.xl
     /// Badges beside a row title (`h-5`).
     static let badgeHeight: CGFloat = 20
     /// Nav rows: 32pt tall, 4pt apart, groups 20pt apart, 16pt icons 12pt before the label.
@@ -69,6 +73,8 @@ struct SettingsTextStyle {
     static let body = SettingsTextStyle(.ds(14), size: 14, lineHeight: 20)
     /// `text-sm font-medium`: row titles.
     static let bodyMedium = SettingsTextStyle(.dsHeadline, size: 14, weight: .medium, lineHeight: 20)
+    /// `text-base font-medium`: section headings, a step above row titles.
+    static let heading = SettingsTextStyle(.dsTitle3, size: 16, weight: .medium, lineHeight: 24)
     /// `text-2xl`: page titles. the reference app asks for medium, but its web view draws Geist at this size
     /// as light as 300 (measured against the shipped app), and that lightness is the look.
     static let title = SettingsTextStyle(
