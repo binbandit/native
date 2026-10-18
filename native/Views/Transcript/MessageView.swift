@@ -30,7 +30,7 @@ struct MessageView: View, Equatable {
                     .padding(.horizontal, DS.Space.lg)
                     .padding(.vertical, DS.Space.md)
                     .background(
-                        .dsSurfaceSunken,
+                        .dsFill,
                         in: .rect(cornerRadius: TranscriptMetrics.promptBubbleRadius, style: .continuous))
             }
         case .agent:

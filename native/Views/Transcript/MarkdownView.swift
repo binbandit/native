@@ -113,7 +113,7 @@ private struct MarkdownNode: Identifiable {
     private static func styled(_ run: AttributedSubstring) -> AttributedString {
         var text = AttributedString(run)
         if text.inlinePresentationIntent?.contains(.code) == true {
-            text.backgroundColor = .dsSurfaceSunken
+            text.backgroundColor = .dsFill
         }
         return text
     }
