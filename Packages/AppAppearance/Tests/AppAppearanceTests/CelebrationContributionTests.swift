@@ -211,7 +211,16 @@ struct CelebrationContributionTests {
         #expect(
             catalog.celebration(CelebrationID("native.thanksgiving-us"))?.canBeChosen(on: try F.day("2026-10-18"))
                 == true)
-        #expect(catalog.celebration(CelebrationID("native.diwali"))?.canBeChosen(on: try F.day("2026-10-18")) == false)
+        // Published tables carry their sources and run out after their last year.
+        let hanukkah = try #require(catalog.celebration(CelebrationID("native.hanukkah")))
+        #expect(
+            hanukkah.nextOccurrence(window: nil, from: try F.day("2026-10-18"))?.core.first == (try F.day("2026-12-05"))
+        )
+        #expect(hanukkah.contribution.provenance.sources.first?.host() == "www.chabad.org")
+        #expect(hanukkah.dateStatus(on: try F.day("2031-06-01")) == .coverageEnded(lastYear: 2030))
+        #expect(catalog.celebration(CelebrationID("native.eid-al-fitr"))?.contribution.calendar.isProvisional == true)
+        let today = try F.day("2026-10-18")
+        #expect(catalog.celebrations.allSatisfy { $0.dateStatus(on: today) == .resolvable })
         #expect(
             catalog.celebration(CelebrationID("native.christmas-julian"))?.iconSet?.id == IconSetID("native.christmas"))
         #expect(catalog.celebrations.contains { $0.contribution.matches("deepavali") })

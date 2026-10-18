@@ -65,6 +65,13 @@ extension HostConnection {
         }
     }
 
+    /// Model, effort or mode, as the agent offers them; takes effect from its next turn.
+    func setConfigOption(_ configID: String, to value: String, in sessionID: HostSessionID) async -> String? {
+        await perform {
+            try await $0.setConfigOption(SetConfigOptionParams(sessionID: sessionID, configID: configID, value: value))
+        }
+    }
+
     func checkForUpdate() async -> String? {
         await perform { _ = try await $0.checkForUpdate() }
     }

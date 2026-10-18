@@ -42,6 +42,21 @@ struct CelebrationResolverTests {
         #expect(CelebrationRule.nthWeekday(5, 5, of: 11, in: 2026) == nil)
     }
 
+    /// Meskel (17 Meskerem) and Timkat (11 Tir) from the arithmetic Ethiopian calendar, against the
+    /// US Embassy Addis Ababa's 2026 dates; each moves a day around the Ethiopian leap year.
+    @Test(arguments: [
+        (1, 17, "2026-09-27"), (1, 17, "2027-09-28"), (1, 17, "2028-09-27"), (5, 11, "2026-01-19"),
+        (5, 11, "2028-01-20"),
+        (5, 11, "2029-01-19"),
+    ])
+    func ethiopianDays(month: Int, day: Int, expected: String) throws {
+        let date = try F.day(expected)
+        let span = CivilDayRange(day: date).expanded(before: 3, after: 3)
+        let ranges = try #require(
+            CelebrationRule.ethiopic(month: month, day: day, length: 1).coreRanges(overlapping: span))
+        #expect(ranges.map(\.first) == [date])
+    }
+
     @Test func programmersDayIsDay256() throws {
         let rule = CelebrationRule.dayOfYear(day: 256, length: 1)
         let span = try #require(CivilDayRange(first: try F.day("2026-01-01"), last: try F.day("2028-12-31")))

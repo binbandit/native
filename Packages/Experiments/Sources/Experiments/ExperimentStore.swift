@@ -11,6 +11,10 @@ public final class ExperimentStore {
     /// What the user chose, as Labs shows it.
     public private(set) var saved: ExperimentSnapshot
 
+    /// Whether every experiment reads as its default, such as while an organization turns Labs
+    /// off. The user's saved choices are kept, so they apply again once it's lifted.
+    public var isFrozen = false
+
     @ObservationIgnored private let base: ExperimentCatalog
     @ObservationIgnored private let storage: any ExperimentStorage
     /// The saved values of experiments that need a relaunch, as they were when each first appeared
@@ -46,8 +50,9 @@ public final class ExperimentStore {
     }
 
     /// The values in effect now: the user's choices, except that experiments needing a relaunch
-    /// still have their launch values.
+    /// still have their launch values, and nothing while frozen.
     public var current: ExperimentSnapshot {
+        guard !isFrozen else { return ExperimentSnapshot(catalog: catalog, overrides: [:]) }
         let live = saved.overrides.filter { catalog.descriptor(for: $0.key)?.requiresRelaunch != true }
         return ExperimentSnapshot(catalog: catalog, overrides: live.merging(launchOverrides) { live, _ in live })
     }

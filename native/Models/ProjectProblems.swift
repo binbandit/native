@@ -8,7 +8,7 @@ final class ProjectProblems {
     private(set) var all: [ProjectProblem] = []
     private(set) var retrying: Set<ProjectProblem.ID> = []
 
-    func problems(in project: Project.ID) -> [ProjectProblem] {
+    func list(for project: Project.ID) -> [ProjectProblem] {
         all.filter { $0.project == project }
     }
 

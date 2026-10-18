@@ -190,6 +190,21 @@ struct ExperimentStoreTests {
         #expect(store.isEnabled(.loud))
     }
 
+    @Test func aFrozenStoreReadsDefaultsAndKeepsTheUsersChoices() {
+        let store = ExperimentStore(catalog: catalog, storage: InMemoryExperimentStorage())
+        store.set(true, for: .hideRetry)
+        store.setEnabled(true, for: .loud)
+
+        store.isFrozen = true
+        #expect(!store.value(of: .hideRetry))
+        #expect(store.implementation(of: .greeter).greet("Ada") == "Hello, Ada.")
+        #expect(store.changed == ["hide-retry", "loud"])
+
+        store.isFrozen = false
+        #expect(store.value(of: .hideRetry))
+        #expect(store.isEnabled(.loud))
+    }
+
     @Test func snapshotsResolveContractsOffTheMainActor() async {
         let store = ExperimentStore(catalog: catalog, storage: InMemoryExperimentStorage())
         store.setEnabled(true, for: .polite)
