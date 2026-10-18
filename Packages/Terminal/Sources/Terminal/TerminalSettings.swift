@@ -42,6 +42,31 @@ public struct TerminalCursor: Hashable, Sendable, Codable {
     }
 }
 
+/// Which shell a terminal runs.
+public enum TerminalShell: Hashable, Sendable, Codable {
+    /// The user's login shell from the user database, as Terminal and Ghostty run it.
+    case login
+    /// A shell the user picked.
+    case path(String)
+
+    /// The shell's path, given the user's login shell.
+    public func path(loginShell: String) -> String {
+        switch self {
+        case .login: loginShell
+        case .path(let path): path
+        }
+    }
+
+    /// The command libghostty runs (as a login shell, through `login(1)` and `exec -l`): the path,
+    /// quoted so spaces and quotes in it survive the shell that execs it.
+    public static func command(for path: String) -> String {
+        "'" + path.replacingOccurrences(of: "'", with: "'\\''") + "'"
+    }
+
+    /// What a shell falls back to when the chosen one is missing or fails: every Mac has it.
+    public static let fallback = "/bin/zsh"
+}
+
 /// Where the terminal's colors come from.
 public enum TerminalColorChoice: Hashable, Sendable, Codable {
     /// The app's theme: Native's, or the code theme's terminal palette.
@@ -83,18 +108,21 @@ public struct TerminalSettings: Hashable, Sendable {
     public var scrollback: TerminalScrollback
     public var cursor: TerminalCursor
     public var colors: TerminalColorChoice
+    public var shell: TerminalShell
     /// Whether terminals load the user's own Ghostty config instead of the settings above.
     public var usesGhosttyConfig: Bool
 
     public init(
         fontFamily: String? = nil, fontSize: Double = Self.defaultFontSize, scrollback: TerminalScrollback = .default,
-        cursor: TerminalCursor = TerminalCursor(), colors: TerminalColorChoice = .app, usesGhosttyConfig: Bool = false
+        cursor: TerminalCursor = TerminalCursor(), colors: TerminalColorChoice = .app, shell: TerminalShell = .login,
+        usesGhosttyConfig: Bool = false
     ) {
         self.fontFamily = fontFamily.flatMap { $0.isEmpty ? nil : $0 }
         self.fontSize = Self.clamp(fontSize)
         self.scrollback = scrollback
         self.cursor = cursor
         self.colors = colors
+        self.shell = shell
         self.usesGhosttyConfig = usesGhosttyConfig
     }
 

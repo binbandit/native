@@ -10,26 +10,51 @@ enum AppearancePreferences {
     /// The code themes for light and dark mode (`CodeTheme.ID` raw values).
     static let lightCodeThemeKey = "appearance.codeTheme.light"
     static let darkCodeThemeKey = "appearance.codeTheme.dark"
+    /// A plugin accent palette's id, or empty to follow the app icon's theme.
+    static let accentKey = "appearance.accent"
 }
 
 extension View {
     /// Hands the user's appearance choices to the design system for one window. Put it on each
-    /// window's root, beside `.dsAccentPalette(themeID:)`.
-    func appearancePreferences() -> some View {
-        modifier(AppearancePreferencesModifier())
+    /// window's root, just inside `.dsAccentPalette(themeID:)`, so a plugin accent the user picked
+    /// overrides the icon theme's. `plugins` supplies plugin themes.
+    func appearancePreferences(plugins: PluginRegistry) -> some View {
+        modifier(AppearancePreferencesModifier(plugins: plugins))
     }
 }
 
 private struct AppearancePreferencesModifier: ViewModifier {
+    let plugins: PluginRegistry
+
     @AppStorage(AppearancePreferences.transparencyKey) private var transparency = DSTransparency.standard
     @AppStorage(AppearancePreferences.lightToneKey) private var lightTone = DSLightTone.paper
     @AppStorage(AppearancePreferences.lightCodeThemeKey) private var lightCodeTheme = CodeTheme.native.id.rawValue
     @AppStorage(AppearancePreferences.darkCodeThemeKey) private var darkCodeTheme = CodeTheme.native.id.rawValue
+    @AppStorage(AppearancePreferences.accentKey) private var accent = ""
 
     func body(content: Content) -> some View {
+        // A theme or accent whose plugin is off (or gone) falls back to the default at once.
+        let catalog = PluginThemeCatalog(plugins)
         content
             .dsTransparency(transparency)
             .dsLightTone(lightTone)
-            .dsCodeThemes(DSCodeThemes(light: .init(rawValue: lightCodeTheme), dark: .init(rawValue: darkCodeTheme)))
+            .dsCodeThemes(
+                DSCodeThemes(
+                    light: catalog.codeTheme(id: lightCodeTheme) ?? .native,
+                    dark: catalog.codeTheme(id: darkCodeTheme) ?? .native))
+            .modifier(PluginAccent(palette: catalog.accent(id: accent)))
+    }
+}
+
+/// A plugin accent the user picked, over the icon theme's; nothing when they follow the icon.
+private struct PluginAccent: ViewModifier {
+    let palette: DSAccentPalette?
+
+    func body(content: Content) -> some View {
+        if let palette {
+            content.dsAccentPalette(palette)
+        } else {
+            content
+        }
     }
 }
