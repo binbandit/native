@@ -107,9 +107,32 @@ public struct AuthMethod: Decodable, Hashable, Sendable {
     }
 }
 
+/// What an agent takes in a prompt besides text and `resource_link` blocks, which every agent
+/// takes (`promptCapabilities`).
+public struct PromptCapabilities: Decodable, Hashable, Sendable {
+    public var image = false
+    /// Whether `resource` blocks (a file's contents embedded in the prompt) are understood.
+    public var embeddedContext = false
+
+    public init(image: Bool = false, embeddedContext: Bool = false) {
+        self.image = image
+        self.embeddedContext = embeddedContext
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case image, embeddedContext
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        image = try container.decodeIfPresent(Bool.self, forKey: .image) ?? false
+        embeddedContext = try container.decodeIfPresent(Bool.self, forKey: .embeddedContext) ?? false
+    }
+}
+
 public struct AgentCapabilities: Decodable, Hashable, Sendable {
     public var loadSession = false
-    public var image = false
+    public var prompt = PromptCapabilities()
     /// Optional session methods, which ACP advertises by the presence of an (often empty) object.
     public var listSessions = false
     /// Whether `DeleteSessionRequest` removes sessions from the agent's own store.
@@ -131,10 +154,6 @@ public struct AgentCapabilities: Decodable, Hashable, Sendable {
         var sse: Bool?
     }
 
-    private struct PromptCapabilities: Decodable {
-        var image: Bool?
-    }
-
     private struct SessionCapabilities: Decodable {
         var list: JSONValue?
         var delete: JSONValue?
@@ -143,7 +162,7 @@ public struct AgentCapabilities: Decodable, Hashable, Sendable {
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         loadSession = try container.decodeIfPresent(Bool.self, forKey: .loadSession) ?? false
-        image = try container.decodeIfPresent(PromptCapabilities.self, forKey: .promptCapabilities)?.image ?? false
+        prompt = try container.decodeIfPresent(PromptCapabilities.self, forKey: .promptCapabilities) ?? PromptCapabilities()
         let session = try container.decodeIfPresent(SessionCapabilities.self, forKey: .sessionCapabilities)
         listSessions = session?.list.map { $0 != .null } ?? false
         deleteSessions = session?.delete.map { $0 != .null } ?? false

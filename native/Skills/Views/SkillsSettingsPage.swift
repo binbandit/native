@@ -108,7 +108,7 @@ struct SkillsSettingsPage: View {
                         toggle(SkillItem.key(for: skill.id), name: skill.title, isOn: isOn, in: library)
                     }
                 )
-                SkillFoldersFooter(library: library)
+                SkillFoldersSection(library: library, project: project)
             }
         }
         .task { if library.lastRead == nil || library.items.isEmpty { await library.read() } }

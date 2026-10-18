@@ -24,7 +24,8 @@ struct SkillFoldersSection: View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
             SettingsRow(
                 "Where agents look for skills",
-                description: Text(summary(withSkills: existing.filter { $0.skillCount > 0 }.count, checked: folders.count))
+                description: Text(
+                    summary(withSkills: existing.filter { $0.skillCount > 0 }.count, checked: folders.count))
             ) {
                 MCPExpandButton(isExpanded: $isExpanded, name: "skills folders")
             }
@@ -34,7 +35,10 @@ struct SkillFoldersSection: View {
                         groupView(group, rows: folders.filter { $0.group == group && ($0.exists || showsMissing) })
                     }
                     if missing > 0 {
-                        Button(showsMissing ? "Hide folders that don't exist" : "Show folders that don't exist yet (\(missing))") {
+                        Button(
+                            showsMissing
+                                ? "Hide folders that don't exist" : "Show folders that don't exist yet (\(missing))"
+                        ) {
                             withAnimation(.dsDisclosure) { showsMissing.toggle() }
                         }
                         .buttonStyle(.ds(.ghost, size: .small))
@@ -98,7 +102,9 @@ struct SkillFolderRowModel: Identifiable, Hashable {
             case .project(let url):
                 if let project, SkillPaths.key(project) != SkillPaths.key(url) { return nil }
                 group = .project
-                title = project != nil || projects.count == 1 ? "This project · \(url.lastPathComponent)" : url.lastPathComponent
+                title =
+                    project != nil || projects.count == 1
+                    ? "This project · \(url.lastPathComponent)" : url.lastPathComponent
                 label = String(root.path.dropFirst(SkillPaths.key(url).count + 1))
             case .user, .account:
                 group = .user
@@ -125,7 +131,9 @@ struct SkillFolderRowModel: Identifiable, Hashable {
         var merged: [SkillFolderRowModel] = []
         for row in rows {
             if row.label.hasSuffix("/skill"),
-                let index = merged.firstIndex(where: { $0.sectionTitle == row.sectionTitle && $0.label == row.label + "s" })
+                let index = merged.firstIndex(where: {
+                    $0.sectionTitle == row.sectionTitle && $0.label == row.label + "s"
+                })
             {
                 let plural = merged[index]
                 merged[index] = SkillFolderRowModel(
@@ -162,6 +170,15 @@ struct SkillFolderRow: View {
         agents.filter { row.agents.contains($0.format) }
     }
 
+    private var count: String {
+        guard row.exists else { return "not created" }
+        return switch row.skillCount {
+        case 0: "empty"
+        case 1: "1 skill"
+        default: "\(row.skillCount) skills"
+        }
+    }
+
     private var revealPath: String? {
         guard PlatformFileBrowser.canReveal, row.exists else { return nil }
         return row.paths.first
@@ -180,6 +197,9 @@ struct SkillFolderRow: View {
                     .buttonStyle(.ds(.ghost, size: .small))
                     .accessibilityLabel("Show \(row.label) in Finder")
             }
+            Text(count)
+                .settingsText(.caption)
+                .foregroundStyle(.dsTextTertiary)
             HStack(spacing: DS.Space.xs) {
                 ForEach(readers) { agent in
                     AgentIcon(agent: agent.definition)
@@ -187,10 +207,6 @@ struct SkillFolderRow: View {
                         .accessibilityLabel(agent.name)
                 }
             }
-            Text(row.exists ? (row.skillCount == 1 ? "1 skill" : row.skillCount == 0 ? "empty" : "\(row.skillCount) skills") : "not created")
-                .settingsText(.caption)
-                .foregroundStyle(.dsTextTertiary)
-                .frame(minWidth: 64, alignment: .trailing)
         }
         .contentShape(.rect)
         .onHover { isHovered = $0 }
