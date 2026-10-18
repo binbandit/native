@@ -23,6 +23,8 @@ final class FakeRuntime: ScriptTransport {
 
     func send(_ frame: ScriptInboundFrame) throws {
         received.withLock { $0.append(frame) }
+        // Like the real runtime, which starts the script as soon as it has it.
+        if case .evaluate = frame { emit(.evaluationStarted) }
         react(frame, self)
     }
 
@@ -110,6 +112,21 @@ private let tasks = [
             }
         }
         _ = try await run(bindings: [big], limits: ScriptLimits(toolResultBytes: 50), runtime: runtime)
+    }
+
+    @Test func startingUpDoesNotCountAgainstTheScriptsTime() async throws {
+        let runtime = FakeRuntime { frame, runtime in
+            guard case .evaluate = frame else { return }
+            runtime.emit(.result)
+        }
+        // A slow start: the session hears nothing for longer than the script may run.
+        let delayed = FakeRuntime { _, _ in }
+        Task {
+            try await Task.sleep(for: .milliseconds(300))
+            delayed.emit(.result)
+        }
+        #expect(try await run(limits: ScriptLimits(time: .milliseconds(100)), runtime: runtime).failure == nil)
+        #expect(try await run(limits: ScriptLimits(time: .milliseconds(100)), runtime: delayed).failure?.kind == .timedOut)
     }
 
     @Test func stopsAScriptThatRunsOutOfTime() async throws {

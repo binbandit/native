@@ -9,28 +9,30 @@ struct OpenInMenuContent: View {
 
     var body: some View {
         let defaultID = model.defaultApp(for: location)?.id
-        ForEach(model.appGroups(for: location), id: \.first?.target.kind) { group in
-            ForEach(group) { app in
-                Toggle(
-                    isOn: Binding {
-                        app.id == defaultID
-                    } set: { _ in
-                        model.open(location, in: app)
+        Group {
+            ForEach(model.appGroups(for: location), id: \.first?.target.kind) { group in
+                ForEach(group) { app in
+                    Toggle(
+                        isOn: Binding {
+                            app.id == defaultID
+                        } set: { _ in
+                            model.open(location, in: app)
+                        }
+                    ) {
+                        Label {
+                            Text(app.name)
+                        } icon: {
+                            model.icon(for: app)
+                        }
                     }
-                ) {
-                    Label {
-                        Text(app.name)
-                    } icon: {
-                        model.icon(for: app)
-                    }
-                    // Menus only show item icons when the content asks for them.
-                    .labelStyle(.titleAndIcon)
                 }
+                Divider()
             }
-            Divider()
+            Button("Copy Path", systemImage: "doc.on.doc") {
+                model.copyPath(of: location)
+            }
         }
-        Button("Copy Path", systemImage: "doc.on.doc") {
-            model.copyPath(of: location)
-        }
+        // Menus only show item icons when the content asks for them.
+        .labelStyle(.titleAndIcon)
     }
 }

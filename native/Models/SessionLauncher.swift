@@ -49,7 +49,7 @@ final class SessionLauncher {
         let session = SessionModel(
             agent: runtime.agent, id: response.sessionId, clientID: clientID, cwd: cwd, connection: connection,
             services: services, supportsSteering: runtime.capabilities?.steering == true,
-            supportsImages: runtime.capabilities?.image == true, phase: .idle,
+            promptCapabilities: runtime.capabilities?.prompt ?? PromptCapabilities(), phase: .idle,
             configOptions: response.configOptions ?? [], origin: origin, parent: parent
         )
         store.register(session)
@@ -75,7 +75,7 @@ final class SessionLauncher {
         let session = SessionModel(
             agent: runtime.agent, id: key.id, cwd: cwd, connection: connection, services: services,
             supportsSteering: runtime.capabilities?.steering == true,
-            supportsImages: runtime.capabilities?.image == true, phase: .loading, title: title,
+            promptCapabilities: runtime.capabilities?.prompt ?? PromptCapabilities(), phase: .loading, title: title,
             origin: origin, parent: parent
         )
         store.register(session)

@@ -21,6 +21,8 @@ public final class HostCore {
         public var exit: @Sendable (Int32) -> Void
         /// Where installed plugins live, a folder each: `~/.native/plugins` unless set.
         public var pluginsDirectory: URL
+        /// How this host is updated (docs/releasing.md, "Remote updates").
+        public var updates: HostUpdateEnvironment
         /// Development hosts stop after this long with no clients and nothing running, so hosts of
         /// builds nobody uses don't linger. Nil for release hosts, which stay up.
         public var idleExit: Duration?
@@ -28,8 +30,14 @@ public final class HostCore {
         public init(
             location: HostLocation, hostInfo: PeerInfo, machineName: String, bootTime: Date?,
             environment: @escaping @Sendable () async -> [String: String], heartbeatInterval: Duration = .seconds(30),
-            idleExit: Duration? = nil, pluginsDirectory: URL? = nil, exit: @escaping @Sendable (Int32) -> Void
+            idleExit: Duration? = nil, pluginsDirectory: URL? = nil, updates: HostUpdateEnvironment? = nil,
+            exit: @escaping @Sendable (Int32) -> Void
         ) {
+            self.updates =
+                updates
+                ?? .none(
+                    current: HostUpdateStatus.Build(version: hostInfo.version, build: hostInfo.build, channel: "stable"),
+                    reason: "This host wasn't installed by Native's updater, so it can't update itself.")
             self.pluginsDirectory =
                 pluginsDirectory
                 ?? FileManager.default.homeDirectoryForCurrentUser.appending(
@@ -64,6 +72,13 @@ public final class HostCore {
     var pluginCatalog: PluginCatalog { PluginCatalog(directory: configuration.pluginsDirectory) }
     /// The catalog clients were last told about, to notify them only of real changes.
     var lastPublishedPlugins: [HostPlugin]?
+    /// The update status, without what's computed per client (`HostCore+Updates.swift`).
+    var updateState: HostUpdateStatus
+    /// The Mac app's connection, once it reports Sparkle's status (provider `app`).
+    var appUpdateClient: ClientLink.ID?
+    /// A standalone build to switch to when the host next exits for a restart.
+    var pendingActivation: String?
+    var updateChecks: Task<Void, Never>?
     /// Set once a restart was asked for, to exit when nothing is running.
     var isRestartingWhenIdle = false
     let logger = HostLogger(category: "Host")
@@ -75,6 +90,7 @@ public final class HostCore {
 
     public init(configuration: Configuration) throws {
         self.configuration = configuration
+        updateState = Self.initialUpdateState(configuration.updates)
         try configuration.location.prepare()
         store = try HostStore(url: configuration.location.databaseURL)
         if let id = try store.meta(MetaKey.hostID).flatMap(UUID.init(uuidString:)) {
@@ -105,6 +121,7 @@ public final class HostCore {
         } catch {
             logger.error("Couldn't read what to recover: \(error.localizedDescription)")
         }
+        startUpdates()
         let interval = configuration.heartbeatInterval
         heartbeat = Task { [weak self] in
             while !Task.isCancelled {
@@ -130,6 +147,7 @@ public final class HostCore {
 
     private func beat() {
         try? store.setMeta(MetaKey.heartbeat, String(Date.now.timeIntervalSince1970))
+        restartIfReplacedOnDisk()
         guard let idleExit = configuration.idleExit else { return }
         let isBusy =
             !clients.isEmpty

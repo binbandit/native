@@ -48,7 +48,7 @@ extension SessionModel {
         }
         draft = ""
         self.attachments = []
-        let start = beginTurn(text, echo: true)
+        let start = beginTurn(text, attachments: attachments, echo: true)
         await finishTurn(text, attachments: attachments, itemsStart: start)
     }
 
@@ -142,25 +142,26 @@ extension SessionModel {
     /// Starts a turn and runs it in the background, so the session is prompting by the time this
     /// returns.
     private func startTurn(_ text: String, attachments: [PromptAttachment], echo: Bool) {
-        let start = beginTurn(text, echo: echo)
+        let start = beginTurn(text, attachments: attachments, echo: echo)
         Task { await finishTurn(text, attachments: attachments, itemsStart: start) }
     }
 
     /// Records the prompt and marks the turn as running, before anything suspends. Returns where the
     /// turn's own items begin in the transcript.
-    private func beginTurn(_ text: String, echo: Bool) -> Int {
+    private func beginTurn(_ text: String, attachments: [PromptAttachment], echo: Bool) -> Int {
         cancelRetry()
         let isFirstPrompt = !state.items.contains { item in
             if case .message(let message) = item { message.role == .user } else { false }
         }
         if echo {
-            state.appendUserMessage(text)
+            state.appendUserMessage(text, attachments: MessageAttachment.shown(attachments))
         }
         phase = .prompting
         lastActivity = .now
         if isFirstPrompt {
             // Named alongside the turn rather than before it, so the prompt goes out right away.
-            let request = TitleRequest(projectName: cwd.lastPathComponent, prompt: text)
+            let prompt = text.isEmpty ? attachments.map(\.name).joined(separator: ", ") : text
+            let request = TitleRequest(projectName: cwd.lastPathComponent, prompt: prompt)
             Task {
                 await services.titles.generateIfNeeded(for: titleKey, request: request, using: services.plugins.titler)
                 if let title = services.titles.title(for: titleKey, agentTitle: nil) {
@@ -174,7 +175,7 @@ extension SessionModel {
 
     private func finishTurn(_ text: String, attachments: [PromptAttachment], itemsStart start: Int) async {
         do {
-            let prompt = ContentBlock.prompt(text, attachments: attachments, supportsImages: supportsImages)
+            let prompt = promptBlocks(text, attachments: attachments)
             let response = try await connection.send(PromptRequest(sessionId: id, prompt: prompt))
             state.endTurn(response.stopReason)
             lastStopReason = response.stopReason
@@ -216,6 +217,13 @@ extension SessionModel {
         }
     }
 
+    /// The prompt as the agent takes it: the text, the attachments, and a link to each file the text
+    /// mentions with `@`.
+    private func promptBlocks(_ text: String, attachments: [PromptAttachment]) -> [ContentBlock] {
+        let mentions = PromptAttachment.mentions(in: text, relativeTo: cwd)
+        return ContentBlock.prompt(text, attachments: attachments + mentions, capabilities: promptCapabilities)
+    }
+
     private func scheduleRetry(after delay: Duration) {
         isRetryScheduled = true
         retryTask = Task { [weak self] in
@@ -239,15 +247,15 @@ extension SessionModel {
     private func steer(_ text: String, attachments: [PromptAttachment], echo: Bool) async -> FollowUpDelivery {
         var delivery = FollowUpDelivery.queued
         do {
-            let prompt = ContentBlock.prompt(text, attachments: attachments, supportsImages: supportsImages)
+            let prompt = promptBlocks(text, attachments: attachments)
             let response = try await connection.send(SteerRequest(sessionId: id, prompt: prompt))
             switch response.outcome {
             case .injected:
-                if echo { state.appendUserMessage(text, steered: true) }
+                if echo { state.appendUserMessage(text, attachments: MessageAttachment.shown(attachments), steered: true) }
                 delivery = .steered
             case .startedNewTurn:
                 // An older agent took it as a new prompt of its own; it's been delivered.
-                if echo { state.appendUserMessage(text) }
+                if echo { state.appendUserMessage(text, attachments: MessageAttachment.shown(attachments)) }
                 delivery = .steered
             case .promptRequired, .other:
                 queue.prepend(text, attachments: attachments, isEchoed: echo)

@@ -30,7 +30,18 @@ extension HostCore {
         exitForRestart()
     }
 
-    private func exitForRestart() {
+    func exitForRestart() {
+        if let build = pendingActivation, let updater = configuration.updates.selfUpdater {
+            do {
+                try updater.activate(build: build)
+            } catch {
+                // Stay on this build and say why; the install can be asked for again.
+                pendingActivation = nil
+                isRestartingWhenIdle = false
+                updateFailed(error)
+                return
+            }
+        }
         // Read at the next start, so recovery says the host restarted to update, not that it crashed.
         try? store.setMeta(MetaKey.restartReason, "update")
         for link in agents.values {
