@@ -90,14 +90,15 @@ processes() {
 # Launch: the first launch after a build is the coldest this can get without sudo (no `purge`);
 # the rest are warm.
 echo "== launch (ms from process start)"
-printf "%-6s %8s %8s %18s %11s\n" run appInit firstFrame sidebarInteractive agentsReady
+printf "%-6s %8s %10s %18s %11s %14s %17s\n" run appInit firstFrame sidebarInteractive agentsReady \
+    "main cpu@frame" "process cpu@frame"
 for ((i = 1; i <= launches; i++)); do
     log=$(mktemp)
     /usr/bin/log stream --style compact --predicate 'subsystem == "Native" AND category == "Launch"' >"$log" 2>/dev/null &
     stream=$!
     sleep 1
     if [ "$i" = 1 ] && [ "$build" = 1 ]; then pid=$(launch); else pid=$(launch --no-build); fi
-    # Compact lines read `… Native[<pid>:<thread>] [Native:Launch] launch firstFrame 212 ms`.
+    # Compact lines read `… Native[<pid>:<thread>] [Native:Launch] launch firstFrame 212 ms, main …`.
     value() { grep -F "Native[$pid:" "$log" | grep -oE "launch $1 [0-9]+" | awk '{ print $3 }' | head -1; }
     for _ in $(seq 1 150); do
         [ -n "$(value agentsReady)" ] && break
@@ -107,8 +108,9 @@ for ((i = 1; i <= launches; i++)); do
     wait "$stream" 2>/dev/null || true
     label=$([ "$i" = 1 ] && [ "$build" = 1 ] && echo cold || echo "warm$i")
     seed
-    printf "%-6s %8s %8s %18s %11s\n" "$label" "$(value appInit)" "$(value firstFrame)" \
-        "$(value sidebarInteractive)" "$(value agentsReady)"
+    cpu() { grep -F "Native[$pid:" "$log" | grep -oE "launch firstFrame .* $1 [0-9]+ ms cpu" | grep -oE "$1 [0-9]+" | awk '{ print $2 }'; }
+    printf "%-6s %8s %10s %18s %11s %14s %17s\n" "$label" "$(value appInit)" "$(value firstFrame)" \
+        "$(value sidebarInteractive)" "$(value agentsReady)" "$(cpu main)" "$(cpu process)"
     rm -f "$log"
 done
 

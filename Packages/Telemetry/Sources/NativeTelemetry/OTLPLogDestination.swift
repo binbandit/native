@@ -9,7 +9,10 @@ public struct OTLPLogDestination: TelemetryDestination {
     private let transport: any TelemetryTransport
 
     /// `url` is the collector's logs endpoint; a bare host gets OTLP's `/v1/logs` path.
-    public init(url: URL, headers: [String: String] = [:], attributes: [String: String] = [:], transport: any TelemetryTransport = URLSessionTelemetryTransport()) {
+    public init(
+        url: URL, headers: [String: String] = [:], attributes: [String: String] = [:],
+        transport: any TelemetryTransport = URLSessionTelemetryTransport()
+    ) {
         self.url = url
         self.headers = headers
         self.attributes = attributes

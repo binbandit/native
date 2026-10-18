@@ -66,7 +66,7 @@ Native.app/Contents/Helpers/native-script-runtime --probe-sandbox ~/some-file   
 
 | Limit | Value | Enforced by |
 | --- | --- | --- |
-| Wall-clock time | `ScriptLimits.time`, 60 s by default | Host: SIGKILL |
+| Wall-clock time | `ScriptLimits.time`, 60 s by default, counted from `evaluation_started`; the runtime has 15 s to get there | Host: SIGKILL |
 | Heap | `ScriptLimits.heapMiB`, 128 MiB by default (`--max-heap-mib`, 16 to 4096) | Runtime: a near-heap-limit callback stops the script and reports `memory` instead of aborting |
 | Tool calls per run | `ScriptLimits.toolCalls`, 1000 | Host |
 | Tool result size | `ScriptLimits.toolResultBytes`, 5 MiB of JSON; larger results fail the call | Host |
@@ -108,12 +108,17 @@ Newline-delimited JSON on the runtime's stdin and stdout; one script per process
 runtime → {"type":"ready","protocolVersion":2}
 host    → {"type":"evaluate","code":"…","bindings":[{"path":["tasks","get"],"toolName":"get_task"}],"inputs":{"name":"text"}}
 runtime → {"type":"evaluation_started"}
-runtime → {"type":"tool_call","id":1,"toolName":"get_task","input":{"task_id":"t1"}}
+runtime → {"type":"tool_call","id":1,"toolName":"get_task","input":{"task_id":"t1"},"line":2,"column":15}
 host    → {"type":"tool_result","id":1,"isError":false,"content":{…}}
 runtime → {"type":"text","text":"…","end":true}
 runtime → {"type":"result"}                                   (or)
 runtime → {"type":"error","error":{"kind":"exception","message":"TypeError: …","line":3,"column":9}}
 ```
+
+`tool_call.line` and `column` say where in the script the call was made, when the runtime can
+tell; they're optional, so hosts that ignore them keep working. Tools receive them as a
+`ScriptCallSite` (`ScriptTool.call(_:at:)`, or `ScriptBinding(siteHandler:)`), for showing where a
+call came from, such as on an approval card.
 
 After `result` or `error` the runtime exits. Closing stdin stops the script, even one spinning in
 JavaScript. A host that breaks the protocol gets an `internal` error and exit status 1.
@@ -201,18 +206,38 @@ full results in context.
 - Bindings are named after the MCP tools and take the same arguments, and the tool's description
   includes `ScriptReference` declarations generated from their schemas, so the model writes calls
   it already understands.
-- Only read-only tools are bound. A script's nested calls don't go through the approval the agent's
-  own MCP calls get, so binding `start_task`, `send_message` or `cancel_task` would let a script do
-  unapproved things. Mutating tools become scriptable once each nested call can raise Native's
-  approval card (one pattern for "something needs the user").
+- Only read-only orchestration tools are bound. Mutating ones (`start_task`, `send_message`,
+  `cancel_task`) could go through the same approval as scripted MCP servers' tools (below); until
+  that's wanted, they stay out.
 - `timeout_seconds` (default 60, at most 240) bounds a run below the point where MCP clients give up.
 - The tool exists only when the app has a sandboxed runtime; without one Native doesn't offer it.
 
-The bigger win is next: Native can host other MCP servers' tools behind `run_script` instead of
-handing their schemas to the agent. A server like `rea` costs about 197k tokens of Claude's
-context per session just to list its tools; bound into a script runtime, the agent sees one tool
-and a compact reference it can search, and only the results it prints. `Packages/MCPClient` can
-already connect to those servers; binding its tools is a `ScriptTool` per tool.
+### Scripted MCP servers
+
+A server like `rea` costs about 197k tokens of Claude's context per session just to list its
+tools. In Settings ▸ MCP Servers, a server's ⋯ menu sets how agents reach it: loaded into each
+session, or through Native's scripts. Scripted, agents don't load it at all (the same per-session
+override as switching it off, `docs/agent-session-overrides.md`); Native keeps one connection to it
+(`MCPSession` in `Packages/MCPClient`, opened on a script's first use) and binds its tools into
+`run_script` as `tools.<server>.<tool>`. The pieces:
+
+- Other features bind tools through `OrchestrationScriptBindings`, asked per run with the calling
+  session (`OrchestrationCaller.cwd`, so switches apply per project). run_script's listing
+  (`MCPTool.listing`) names what each session can reach, without a hundred declarations:
+  `tools.search({ query })` resolves with the matching declarations instead.
+- Read-only tools just run. A call to any other tool is approved the way the agent's own calls are,
+  following the calling session's mode: a session that runs tool calls unasked (Claude Code's auto,
+  bypass or don't-ask; Codex's auto review or full access, per `approvesToolCallsUnasked(inMode:)`)
+  doesn't ask, and neither does a tool the user chose "Always Allow" for. Otherwise Native raises
+  its own approval card in that session, one at a time, showing the tool, its arguments and the
+  script line: Allow Once, Allow for This Script (the run's remaining calls), Always Allow <tool>
+  (recorded per server and tool; the ⋯ menu takes it back), or Reject, which fails just that call
+  with a reason the script can catch.
+- A card still open when the run nears its time limit is withdrawn and the call fails, saying the
+  approval is still pending, so the agent hears back before its MCP client gives up.
+- Every call shows in the transcript as a quiet line under the run_script row
+  ("rea · list_functions"), marked by `_meta.native.script` on a tool call Native adds itself.
+- run_script is annotated read-only for a session only while everything bound for it is.
 
 ## Next uses
 
