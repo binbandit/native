@@ -185,11 +185,12 @@ extension LinkGateway {
 
     // MARK: - Listener
 
-    /// Listens while the gateway is on and there's someone to serve: a paired device or an open window.
+    /// Listens while the gateway is on and there's someone to serve: a paired device, an open window,
+    /// or a revoked one that still has to be told it was removed (until Forget Revoked).
     func updateListener() {
         let shouldListen =
             configuration.usesNetwork && isAllowedByPolicy && registry.isEnabled
-            && (!registry.activeDevices.isEmpty || window != nil)
+            && (!registry.devices.isEmpty || window != nil)
         if shouldListen, listener == nil {
             startListener(port: registry.port ?? configuration.preferredPort)
         } else if !shouldListen, let listener {

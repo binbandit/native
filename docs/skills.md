@@ -24,8 +24,24 @@ each. Problems are listed, not hidden: a folder without SKILL.md, malformed fron
 name or description, a name the spec rejects, a name that doesn't match its folder, and one agent
 finding two different skills with the same name.
 
-Native's own skills (Orchestration's `build-a-native-plugin`, served by `list_skills`) are in the
-same page with their own switch.
+Native's own skills are in the same page, under Native's skills, each with its own switch. They're
+Markdown files in `native/Orchestration/Skills/`, listed in `NativeSkill.bundled`, and each is a
+symlink to the doc it is, so the skill and the doc can't drift:
+
+| Skill | Doc | For |
+| --- | --- | --- |
+| `set-up-native` | `docs/setup.md` | Setting Native up for an engineer, on one Mac or several devices, and troubleshooting |
+| `build-a-native-plugin` | `docs/plugins.md` | Writing a `plugin.json` that adds agents, MCP servers, workflows or themes |
+
+The Orchestration plugin's `native` MCP server serves them with `list_skills` and `get_skill`, minus
+the ones switched off for the calling session. Beside them, `setup_status` (`SetupTools`) reports how
+Native is set up on the caller's Mac, read-only: Native's version and channel, each agent (state,
+sign-in, reported version, launch and install commands), the durable host, paired devices, the
+`policy.*` keys the organization manages, and updates. `AppSetupReporter` builds the report from the
+models through `OrchestrationHost.setupReport`; its shape and text (`SetupReport` in
+`Packages/NativeSetup`, tested there) carry nothing Settings doesn't show: no paths, environment
+values, agent logs or transcripts. A new skill is a doc plus a symlink and an entry in
+`NativeSkill.bundled`; Settings ▸ Skills picks it up from there.
 
 ## Switches
 
