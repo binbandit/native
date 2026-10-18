@@ -86,15 +86,15 @@ history, telemetry, the command palette), so not every difference is this work's
 
 | Measurement | Before | After |
 | --- | --- | --- |
-| Launch, warm: `appInit` | 44–66 ms | 58–61 ms |
-| Launch, warm: first frame (wall, busy Mac) | 702–1308 ms | 838–976 ms; 659–680 ms with agent-history search off |
-| Launch, warm: main-thread CPU to first frame | not measured (added with this work) | 585–716 ms main, 804–955 ms process; 402–428 / 533–571 ms with agent-history search off |
-| Launch: agents ready (`agentsReady`) | 2471–4242 ms | 2145–2802 ms |
+| Launch, warm: `appInit` | 44–66 ms | 56–61 ms |
+| Launch, warm: first frame (wall, busy Mac) | 702–1308 ms | 533–534 ms with agent-history search off; 838–976 ms with it on |
+| Launch, warm: main-thread CPU to first frame | not measured (added with this work) | 332–352 ms main, 481–486 ms process, search off (402–428 before the plugin-scan fix; 585–716 with search on) |
+| Launch: agents ready (`agentsReady`) | 2471–4242 ms | 892–914 ms |
 | Codex adapter start to `initialize` answered | 1085–2185 ms through npx | 287–306 ms direct |
 | Claude adapter start to `initialize` answered | 4018 ms through npx | 1332 ms direct |
-| Idle, visible, no sessions: Native | 0.07% CPU, 0.6 wakeups/s, 111 MB | 0.05% CPU, 0.9 wakeups/s, 101 MB |
-| Idle, hidden: Native | 0.01% CPU, 0.3 wakeups/s | 0.14% CPU, 0.6 wakeups/s (one idle-loop tick a minute) |
-| Idle, no sessions: processes under Native | 4, 295 MB footprint (npm wrapper 69 MB) | 3, 205 MB |
+| Idle, visible, no sessions: Native | 0.07% CPU, 0.6 wakeups/s, 111 MB | 0.02% CPU, 0.4 wakeups/s, 115 MB |
+| Idle, minimized / hidden: Native | 0.01% CPU, 0.7 / 0.3 wakeups/s | 0.01% / 0.05% CPU, 0.4 / 0.4 wakeups/s |
+| Idle, no sessions: processes under Native | 4, 295 MB footprint (npm wrapper 69 MB) | 3, 205–233 MB |
 | Idle, 1 session: Native / everything under it | 0.22% CPU, 0.9 wakeups/s, 94 MB / 14 processes, 990 MB | 0.02% CPU, 0.7 wakeups/s, 127 MB / 13 processes, 1.31 GB |
 | Idle, 5 sessions: Native / everything under it | 0.30% CPU, 99 MB / 54 processes, 5.26 GB | 0.42% CPU, 134 MB / 53 processes, 5.29 GB; 4 of the 5 closed after the idle timeout, but Codex keeps their MCP servers (below) |
 | Streaming a 2,500-word reply: Native CPU | 36.7% over 25 s, 88 wakeups/s, 91 mW | 24.5% over a 45 s turn, 67 wakeups/s, 85 mW (measured without a profiler attached; the "before" ran under `sample`, which inflates both) |
