@@ -2,54 +2,26 @@ import CodeThemes
 import SwiftUI
 
 /// The user's look-and-feel choices from Settings ▸ Appearance, stored in user defaults.
-///
-/// Keys have no dots: `@AppStorage` learns of a change through key-value observing, which reads a
-/// dot as a key path, so a dotted key never reported one and other views showing the setting went
-/// stale. `migrateDottedKeys()` moves choices saved under the old dotted keys.
 enum AppearancePreferences {
     /// Light, dark or the system's (`AppearanceMode`), applied by `AppearanceModeController`.
-    static let modeKey = "appearanceMode"
+    static let modeKey = "appearance.mode"
     /// How see-through the sidebar, overlays and floating controls are (`DSTransparency`).
-    static let transparencyKey = "appearanceTransparency"
+    static let transparencyKey = "appearance.transparency"
     /// The white light mode is drawn on (`DSLightTone`).
-    static let lightToneKey = "appearanceLightTone"
+    static let lightToneKey = "appearance.lightTone"
     /// The code themes for light and dark mode (`CodeTheme.ID` raw values).
-    static let lightCodeThemeKey = "appearanceCodeThemeLight"
-    static let darkCodeThemeKey = "appearanceCodeThemeDark"
+    static let lightCodeThemeKey = "appearance.codeTheme.light"
+    static let darkCodeThemeKey = "appearance.codeTheme.dark"
     /// A plugin accent palette's id, or empty to follow the app icon's theme.
-    static let accentKey = "appearanceAccent"
+    static let accentKey = "appearance.accent"
     /// The code font (`DSCodeFont`): an installed monospaced family (empty for Geist Mono), its size,
     /// line height and ligatures.
-    static let codeFontFamilyKey = "appearanceCodeFontFamily"
-    static let codeFontSizeKey = "appearanceCodeFontSize"
-    static let codeLineHeightKey = "appearanceCodeLineHeight"
-    static let codeLigaturesKey = "appearanceCodeLigatures"
+    static let codeFontFamilyKey = "appearance.codeFont.family"
+    static let codeFontSizeKey = "appearance.codeFont.size"
+    static let codeLineHeightKey = "appearance.codeFont.lineHeight"
+    static let codeLigaturesKey = "appearance.codeFont.ligatures"
     /// The terminal uses the code font and size too (`TerminalSettings.fontFamily`, `fontSize`).
-    static let terminalUsesCodeFontKey = "appearanceCodeFontTerminal"
-
-    /// Moves choices saved under the old dotted keys to the current ones, once. Run it before any
-    /// view reads them.
-    static func migrateDottedKeys(in defaults: UserDefaults = .standard) {
-        let renamed = [
-            "appearance.transparency": transparencyKey,
-            "appearance.lightTone": lightToneKey,
-            "appearance.codeTheme.light": lightCodeThemeKey,
-            "appearance.codeTheme.dark": darkCodeThemeKey,
-            "appearance.accent": accentKey,
-            "appearance.codeFont.family": codeFontFamilyKey,
-            "appearance.codeFont.size": codeFontSizeKey,
-            "appearance.codeFont.lineHeight": codeLineHeightKey,
-            "appearance.codeFont.ligatures": codeLigaturesKey,
-            "appearance.codeFont.terminal": terminalUsesCodeFontKey,
-        ]
-        for (old, new) in renamed {
-            guard let value = defaults.object(forKey: old) else { continue }
-            if defaults.object(forKey: new) == nil {
-                defaults.set(value, forKey: new)
-            }
-            defaults.removeObject(forKey: old)
-        }
-    }
+    static let terminalUsesCodeFontKey = "appearance.codeFont.terminal"
 }
 
 extension View {

@@ -1,15 +1,15 @@
 import GitHub
 import SwiftUI
 
-/// A conversation on lines: its comments, a reply box, and Resolve. A resolved one folds to one
-/// line until opened, as on GitHub.
+/// A conversation on lines: its comments, a reply box, and Resolve. It folds to its header and opens
+/// again; a resolved one starts folded, as on GitHub. While it's hovered or being replied to, the
+/// lines it's about are highlighted in the diff above.
 struct PullRequestReviewThreadView: View {
     let model: PullRequestPageModel
     let thread: ReviewThread
     /// Names the lines, for conversations shown away from them (outdated ones).
     let showsAnchor: Bool
 
-    @State private var isExpanded = false
     @State private var isReplying = false
     @State private var editing: ReviewComment.ID?
     @State private var editText = ""
@@ -18,7 +18,7 @@ struct PullRequestReviewThreadView: View {
         let shape = RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
         VStack(alignment: .leading, spacing: 0) {
             header
-            if !thread.isResolved || isExpanded {
+            if model.isExpanded(thread) {
                 ForEach(thread.comments) { comment in
                     SeparatorLine()
                     commentRow(comment)
@@ -33,11 +33,21 @@ struct PullRequestReviewThreadView: View {
         }
         .clipShape(shape)
         .codeTextStyle(.block)
+        .onHover { highlight($0) }
+        .onChange(of: isReplying || editing != nil) { _, working in highlight(working) }
+    }
+
+    private func highlight(_ isOn: Bool) {
+        if isOn {
+            model.highlightedThread = thread.id
+        } else if model.highlightedThread == thread.id, !isReplying, editing == nil {
+            model.highlightedThread = nil
+        }
     }
 
     private var header: some View {
         Button {
-            withAnimation(.dsDisclosure) { isExpanded.toggle() }
+            withAnimation(.dsDisclosure) { model.toggleExpanded(thread) }
         } label: {
             HStack(spacing: DS.Space.sm) {
                 Image(systemName: thread.isResolved ? "checkmark.circle.fill" : "text.bubble")
@@ -48,10 +58,8 @@ struct PullRequestReviewThreadView: View {
                 if thread.isOutdated { Badge("Outdated", tone: .warning, style: .soft) }
                 if thread.isPending { Badge("Pending", tone: .attention, style: .soft) }
                 Spacer(minLength: DS.Space.md)
-                if thread.isResolved {
-                    Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                        .foregroundStyle(.dsTextTertiary)
-                }
+                Image(systemName: model.isExpanded(thread) ? "chevron.up" : "chevron.down")
+                    .foregroundStyle(.dsTextTertiary)
             }
             .font(.dsCaption)
             .padding(.horizontal, DS.Space.md)
@@ -59,7 +67,8 @@ struct PullRequestReviewThreadView: View {
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        .disabled(!thread.isResolved)
+        .accessibilityLabel(model.isExpanded(thread) ? "Fold Conversation" : "Open Conversation")
+        .accessibilityValue(title)
     }
 
     private var title: String {

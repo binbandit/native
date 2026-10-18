@@ -78,7 +78,7 @@ private struct DraftBackspaceMonitor: NSViewRepresentable {
                 monitor = NSEvent.addLocalMonitorForEvents(matching: .keyDown) { [weak self, weak anchor] event in
                     guard let self, let anchor, event.keyCode == Self.backspaceKeyCode,
                         event.modifierFlags.intersection([.command, .option, .control, .shift]).isEmpty,
-                        let window = anchor.window, event.window === window,
+                        let window = anchor.window, event.window == nil || event.window === window,
                         let textView = window.firstResponder as? NSTextView, !textView.isFieldEditor,
                         Self.isEditor(textView, under: anchor)
                     else { return event }

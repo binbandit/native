@@ -17,7 +17,9 @@ struct LightToneSettingsRow: View {
     @AppStorage(AppearancePreferences.lightToneKey) private var lightTone = DSLightTone.paper
 
     var body: some View {
-        let _ = DebugProbe.log.notice("LightToneRow body \(lightTone.rawValue, privacy: .public)")  // DEBUG-PROBE
+        // Read once here: the tiles' ForEach builds its rows after this body returns, when reading
+        // `lightTone` again could still give the value before the change, leaving the old tile checked.
+        let selection = lightTone
         VStack(alignment: .leading, spacing: DS.Space.lg) {
             SettingsRow(
                 id: Self.rowID,
@@ -34,7 +36,7 @@ struct LightToneSettingsRow: View {
             HStack(spacing: DS.Space.lg) {
                 ForEach(DSLightTone.allCases) { tone in
                     AppearanceChoiceTile(
-                        title: tone.title, isSelected: tone == lightTone,
+                        title: tone.title, isSelected: tone == selection,
                         accessibilityLabel: "\(tone.title) light mode"
                     ) {
                         lightTone = tone
@@ -48,6 +50,3 @@ struct LightToneSettingsRow: View {
         }
     }
 }
-
-import OSLog  // DEBUG-PROBE
-enum DebugProbe { static let log = Logger(subsystem: "Native", category: "probe") }  // DEBUG-PROBE
