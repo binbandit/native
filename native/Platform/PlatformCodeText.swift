@@ -111,6 +111,15 @@ private struct PlatformCodeTextRepresentable: NSViewRepresentable {
         view.isHorizontallyResizable = false
         view.isVerticallyResizable = false
         view.clipsToBounds = true
+        // Code isn't prose: nothing to check, correct or detect, and the text is laid out whole up front.
+        view.isContinuousSpellCheckingEnabled = false
+        view.isGrammarCheckingEnabled = false
+        view.isAutomaticSpellingCorrectionEnabled = false
+        view.isAutomaticLinkDetectionEnabled = false
+        view.isAutomaticDataDetectionEnabled = false
+        view.isAutomaticTextReplacementEnabled = false
+        view.enabledTextCheckingTypes = 0
+        view.layoutManager?.backgroundLayoutEnabled = false
         // Links keep the text's own look; only the cursor says they're clickable.
         view.linkTextAttributes = [.cursor: NSCursor.pointingHand]
         view.delegate = context.coordinator
@@ -178,6 +187,7 @@ private struct PlatformCodeTextRepresentable: UIViewRepresentable {
         view.textContainer.widthTracksTextView = false
         view.textContainer.size = CGSize(width: CGFloat.greatestFiniteMagnitude, height: .greatestFiniteMagnitude)
         view.clipsToBounds = true
+        view.dataDetectorTypes = []
         view.linkTextAttributes = [:]
         view.delegate = context.coordinator
         return view
