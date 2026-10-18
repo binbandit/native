@@ -346,6 +346,10 @@ public struct ActivityEntry: Codable, Hashable, Sendable, Identifiable {
         case approvalNeeded
         case recovered
         case hostStarted
+        /// A client asked to install an update (`subject` names the device).
+        case updateRequested
+        /// A new standalone build didn't come up, so the host went back to the one before.
+        case updateRolledBack
         case unknown
     }
 

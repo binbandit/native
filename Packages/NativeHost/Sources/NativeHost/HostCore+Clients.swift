@@ -7,12 +7,19 @@ import NativeHostProtocol
 public struct ClientGrants: Hashable, Sendable {
     /// Turn plugins on or off for everyone using this host.
     public var managePlugins: Bool
+    /// Install updates and restart the host. On by default for devices paired by QR; revocable.
+    public var manageHost: Bool
+    /// The client runs on this machine as this user (the socket's peer checks), or reaches it over
+    /// that user's SSH. Only such a client is the Mac app that reports Sparkle's status.
+    public var isLocal: Bool
 
-    public init(managePlugins: Bool) {
+    public init(managePlugins: Bool, manageHost: Bool, isLocal: Bool) {
         self.managePlugins = managePlugins
+        self.manageHost = manageHost
+        self.isLocal = isLocal
     }
 
-    public static let owner = ClientGrants(managePlugins: true)
+    public static let owner = ClientGrants(managePlugins: true, manageHost: true, isLocal: true)
 }
 
 /// A connected client: the app, later the companion, or a test.
@@ -62,6 +69,9 @@ extension HostCore {
         case .notification:
             break
         case .closed:
+            if appUpdateClient == id {
+                appUpdateClient = nil
+            }
             for sessionID in client.attached {
                 sessions[sessionID]?.subscribers.remove(id)
             }
@@ -148,6 +158,17 @@ extension HostCore {
             try reply(try pluginAsset(try message.params(as: PluginAssetParams.self)))
         case Method.setPluginEnabled:
             try reply(try setPluginEnabled(try message.params(as: SetPluginEnabledParams.self), by: client))
+        case Method.updateStatus:
+            try reply(updateStatus(for: client))
+        case Method.updateCheck:
+            checkForUpdate()
+            try reply(updateStatus(for: client))
+        case Method.updateInstall:
+            try installUpdate(try message.params(as: HostUpdateInstallParams.self).when, by: client)
+            try reply(updateStatus(for: client))
+        case Method.updateReport:
+            try receiveUpdateReport(try message.params(as: HostUpdateStatusMessage.self).status, from: client)
+            try reply(EmptyMessage())
         case Method.shutdown:
             try reply(EmptyMessage())
             let params = try message.params(as: ShutdownParams.self)

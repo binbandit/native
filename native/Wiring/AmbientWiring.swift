@@ -26,10 +26,7 @@ enum AmbientWiring {
             KeepAwakeActivity(workingAgents: model.statusBarTasks.count { $0.status == .working })
         }
         // Workflows, goals and automations announce when they need the user or stop short.
-        BuiltInPlugins.automation.center.post = { [weak model] event in
-            guard let model else { return }
-            Task { await model.plugins.broadcast(event) }
-        }
+        BuiltInPlugins.automation.center.post = { [weak model] in model?.post($0) }
         NotificationSounds.shared.isRetrying = { [weak model] context in
             model?.session(clientID: context.clientID)?.isRetryScheduled == true
         }

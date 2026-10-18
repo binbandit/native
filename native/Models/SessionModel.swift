@@ -45,8 +45,8 @@ final class SessionModel {
     let parentID: SessionID?
     /// Whether messages can join a turn that's running (`SteerRequest`).
     let supportsSteering: Bool
-    /// Whether the agent takes images in prompts (`promptCapabilities.image`).
-    let supportsImages: Bool
+    /// What the agent takes in a prompt besides text: images, embedded files.
+    let promptCapabilities: PromptCapabilities
     var draft = ""
     /// Files and images going out with the draft (SessionModel+Attachments.swift).
     var attachments: [PromptAttachment] = []
@@ -58,6 +58,8 @@ final class SessionModel {
     var wantsComposerFocus = false
     /// Set to ask the session's view to open the model picker; the view clears it.
     var isModelPickerRequested = false
+    /// Set to ask the composer to open its file picker (File ▸ Attach Files…); it clears it.
+    var isAttachmentPickerRequested = false
     /// Set to ask the session's view to show or hide the subagent inspector; the view clears it.
     var isSubagentInspectorToggleRequested = false
 
@@ -97,7 +99,8 @@ final class SessionModel {
     /// `parent` adopts it as a subagent.
     init(
         agent: AgentDefinition, id: SessionID, clientID: UUID = UUID(), cwd: URL, connection: ACPConnection,
-        services: SessionServices, supportsSteering: Bool, supportsImages: Bool = false, phase: Phase,
+        services: SessionServices, supportsSteering: Bool, promptCapabilities: PromptCapabilities = PromptCapabilities(),
+        phase: Phase,
         title: String? = nil, configOptions: [ConfigOption] = [], origin: Origin = .user, parent: SessionModel? = nil
     ) {
         self.agent = agent
@@ -107,7 +110,7 @@ final class SessionModel {
         self.connection = connection
         self.services = services
         self.supportsSteering = supportsSteering
-        self.supportsImages = supportsImages
+        self.promptCapabilities = promptCapabilities
         self.phase = phase
         self.origin = origin
         parentID = parent?.id
@@ -127,7 +130,7 @@ final class SessionModel {
         connection = parent.connection
         services = parent.services
         supportsSteering = false
-        supportsImages = false
+        promptCapabilities = PromptCapabilities()
         phase = .idle
         origin = .announced
         parentID = parent.id

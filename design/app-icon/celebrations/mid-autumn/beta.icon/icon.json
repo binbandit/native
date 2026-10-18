@@ -38,19 +38,19 @@
               "value": true
             }
           ],
-          "image-name": "painted-interlock.png",
-          "name": "Painted Native interlock",
+          "image-name": "flat-interlock.png",
+          "name": "Flat Native interlock",
           "position": {
-            "scale": 0.6445993031358885,
+            "scale": 0.6239460370994941,
             "translation-in-points": [
-              -1.289198606271777,
-              4.587108013937282
+              -0.0,
+              5.760539629005058
             ]
           }
         }
       ],
       "lighting": "individual",
-      "name": "Mid-Autumn Festival · painted Native interlock",
+      "name": "Mid-Autumn Festival · flat Native interlock",
       "refractivity-specializations": [
         {
           "appearance": "tinted",
@@ -62,8 +62,8 @@
         }
       ],
       "shadow": {
-        "kind": "neutral",
-        "opacity": 0.18
+        "kind": "none",
+        "opacity": 0
       },
       "translucency-specializations": [
         {

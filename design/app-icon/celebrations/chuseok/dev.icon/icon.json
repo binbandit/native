@@ -38,19 +38,19 @@
               "value": true
             }
           ],
-          "image-name": "painted-interlock.png",
-          "name": "Painted Native interlock",
+          "image-name": "flat-interlock.png",
+          "name": "Flat Native interlock",
           "position": {
-            "scale": 0.5614567526555387,
+            "scale": 0.6462882096069869,
             "translation-in-points": [
-              -0.5614567526555387,
-              13.122913505311077
+              -0.3231441048034934,
+              9.737991266375547
             ]
           }
         }
       ],
       "lighting": "individual",
-      "name": "Chuseok · painted Native interlock",
+      "name": "Chuseok · flat Native interlock",
       "refractivity-specializations": [
         {
           "appearance": "tinted",
@@ -62,8 +62,8 @@
         }
       ],
       "shadow": {
-        "kind": "neutral",
-        "opacity": 0.18
+        "kind": "none",
+        "opacity": 0
       },
       "translucency-specializations": [
         {
