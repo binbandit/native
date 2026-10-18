@@ -1,0 +1,8 @@
+# Only GitHub Actions: the Swift packages have no third-party dependencies apart from Sparkle,
+# which is pinned in the Xcode project.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly

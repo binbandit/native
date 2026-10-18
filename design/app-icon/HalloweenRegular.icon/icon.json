@@ -5,13 +5,13 @@
   "fill-specializations": [
     {
       "value": {
-        "solid": "srgb:0.93725,0.60392,0.32549,1.00000"
+        "automatic-gradient": "srgb:0.93725,0.60392,0.32549,1.00000"
       }
     },
     {
       "appearance": "dark",
       "value": {
-        "solid": "srgb:0.09804,0.08235,0.10196,1.00000"
+        "automatic-gradient": "srgb:0.09804,0.08235,0.10196,1.00000"
       }
     },
     {
@@ -32,13 +32,73 @@
           "fill-specializations": [
             {
               "value": {
-                "solid": "srgb:1.00000,0.94118,0.84706,1.00000"
+                "solid": "srgb:1.00000,1.00000,1.00000,0.35000"
               }
             },
             {
               "appearance": "dark",
               "value": {
-                "solid": "srgb:1.00000,0.94118,0.84706,1.00000"
+                "solid": "srgb:1.00000,1.00000,1.00000,0.35000"
+              }
+            },
+            {
+              "appearance": "tinted",
+              "value": "automatic"
+            }
+          ],
+          "glass-specializations": [
+            {
+              "value": false
+            },
+            {
+              "appearance": "tinted",
+              "value": true
+            }
+          ],
+          "image-name": "edge-light.svg",
+          "name": "Soft edge light"
+        },
+        {
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "srgb:0.14118,0.12549,0.13333,0.14000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "srgb:0.18431,0.13333,0.22745,0.14000"
+              }
+            },
+            {
+              "appearance": "tinted",
+              "value": "automatic"
+            }
+          ],
+          "glass-specializations": [
+            {
+              "value": false
+            },
+            {
+              "appearance": "tinted",
+              "value": true
+            }
+          ],
+          "image-name": "folds.svg",
+          "name": "Fabric folds"
+        },
+        {
+          "fill-specializations": [
+            {
+              "value": {
+                "automatic-gradient": "srgb:1.00000,0.94118,0.84706,1.00000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "automatic-gradient": "srgb:1.00000,0.94118,0.84706,1.00000"
               }
             },
             {
@@ -62,13 +122,13 @@
           "fill-specializations": [
             {
               "value": {
-                "solid": "srgb:0.26667,0.16471,0.14118,1.00000"
+                "automatic-gradient": "srgb:0.26667,0.16471,0.14118,1.00000"
               }
             },
             {
               "appearance": "dark",
               "value": {
-                "solid": "srgb:1.00000,0.62745,0.32157,1.00000"
+                "automatic-gradient": "srgb:1.00000,0.62745,0.32157,1.00000"
               }
             },
             {
@@ -90,7 +150,87 @@
         }
       ],
       "lighting": "individual",
-      "name": "Haunted interlock",
+      "name": "Haunted interlock with soft lighting",
+      "refractivity-specializations": [
+        {
+          "appearance": "tinted",
+          "value": {
+            "enabled": true,
+            "depth": 0.3,
+            "strength": 0.75
+          }
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.22
+      },
+      "translucency-specializations": [
+        {
+          "value": {
+            "enabled": false,
+            "value": 0
+          }
+        },
+        {
+          "appearance": "tinted",
+          "value": {
+            "enabled": true,
+            "value": 0.25
+          }
+        }
+      ],
+      "specular-specializations": [
+        {
+          "value": false
+        },
+        {
+          "appearance": "tinted",
+          "value": true
+        }
+      ]
+    },
+    {
+      "blur-material-specializations": [
+        {
+          "appearance": "tinted",
+          "value": 0.25
+        }
+      ],
+      "layers": [
+        {
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "srgb:0.37647,0.25098,0.18039,0.55000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "srgb:0.76471,0.55686,0.40000,0.55000"
+              }
+            },
+            {
+              "appearance": "tinted",
+              "value": "automatic"
+            }
+          ],
+          "glass-specializations": [
+            {
+              "value": false
+            },
+            {
+              "appearance": "tinted",
+              "value": true
+            }
+          ],
+          "image-name": "embers.svg",
+          "name": "Floating sparks"
+        }
+      ],
+      "lighting": "individual",
+      "name": "Halloween atmosphere",
       "refractivity-specializations": [
         {
           "appearance": "tinted",

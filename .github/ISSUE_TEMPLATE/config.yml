@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Questions and ideas
+    url: https://github.com/OWNER/native/discussions
+    about: Placeholder URL, replace OWNER once the repository exists.
+  - name: Documentation
+    url: https://github.com/OWNER/native/tree/main/docs
+    about: Architecture, keyboard map, agents and plugins.

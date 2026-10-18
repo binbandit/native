@@ -1,0 +1,8 @@
+# Placeholders until the repository has an org. Last match wins.
+# *                          @owner
+# /native/                   @owner
+# /Packages/                 @owner
+# /Runtime/                  @owner
+# /.github/                  @owner
+# /docs/                     @owner
+# /scripts/release/          @owner

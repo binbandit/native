@@ -1,0 +1,96 @@
+# Package tests, lint on changed Swift files and the unsigned app build. The Release and Nightly
+# compile lives in check.yml.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # Same runner and Xcode defaults as check.yml, overridable with repository variables.
+  DEVELOPER_DIR: ${{ vars.XCODE_DEVELOPER_DIR || '/Applications/Xcode_27.1.app/Contents/Developer' }}
+
+jobs:
+  packages:
+    name: Test ${{ matrix.package }}
+    runs-on: ${{ vars.MACOS_RUNNER || 'macos-26' }}
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        package:
+          - ACP
+          - AppAppearance
+          - Automation
+          - CodeThemes
+          - Exec
+          - Expeditions
+          - Experiments
+          - Git
+          - GitHub
+          - MCPClient
+          - MCPServer
+          - NativeHost
+          - ScriptRuntime
+          - Terminal
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/cache@v4
+        with:
+          path: Packages/${{ matrix.package }}/.build
+          key: spm-${{ matrix.package }}-${{ runner.os }}-${{ hashFiles(format('Packages/{0}/Package.swift', matrix.package)) }}
+          restore-keys: spm-${{ matrix.package }}-${{ runner.os }}-
+      - name: Build the script runtime helper
+        if: matrix.package == 'ScriptRuntime'
+        run: scripts/build-script-runtime.sh
+      - name: swift test
+        working-directory: Packages/${{ matrix.package }}
+        run: swift test
+
+  lint:
+    name: Lint changed Swift files
+    runs-on: ${{ vars.MACOS_RUNNER || 'macos-26' }}
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: swift format lint --strict
+        env:
+          BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
+        run: |
+          # Until the repo-wide formatting pass lands, lint only what this change touched.
+          if [ -z "$BASE" ] || [ "$BASE" = 0000000000000000000000000000000000000000 ]; then
+            BASE=$(git rev-parse HEAD~1 2>/dev/null || git hash-object -t tree /dev/null)
+          fi
+          files=$(git diff --name-only --diff-filter=ACMR "$BASE" HEAD -- '*.swift')
+          if [ -z "$files" ]; then echo "No Swift files changed"; exit 0; fi
+          echo "$files" | tr '\n' '\0' | xargs -0 swift format lint --strict
+
+  app:
+    name: Build app
+    runs-on: ${{ vars.MACOS_RUNNER || 'macos-26' }}
+    timeout-minutes: 60
+    env:
+      # Cargo and Zig outputs (V8, Ghostty) land here, so caching it keeps later builds short.
+      NATIVE_SCRIPT_RUNTIME_CACHE: ${{ github.workspace }}/.ci-cache/ScriptRuntime
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/cache@v4
+        with:
+          path: .ci-cache
+          key: app-cache-${{ runner.os }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'scripts/build-libghostty.sh') }}
+          restore-keys: app-cache-${{ runner.os }}-
+      - name: Build (unsigned)
+        run: |
+          xcodebuild build -project native.xcodeproj -scheme native -configuration Debug \
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" -destination 'platform=macOS' \
+            CODE_SIGNING_ALLOWED=NO -quiet
