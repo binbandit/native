@@ -1,3 +1,5 @@
+import Foundation
+
 /// The rest of Native's first-party catalogue (`docs/celebrations.md`). Each edition's icons are a
 /// pack downloaded when it's chosen (`CelebrationAssets`), with a small thumbnail bundled for the
 /// catalogue. An edition whose calendar has no resolver or verified table yet is listed as coming
@@ -12,20 +14,20 @@ extension FirstPartyCelebrations {
             .fixed(3, 17)),
         edition(
             "spring-festival", "Spring Festival", ["Chinese New Year", "Chūnjié", "Lunar New Year"], "cultural",
-            .soon("chinese-lunisolar")),
-        edition("seollal", "Seollal", ["Korean New Year", "Lunar New Year"], "cultural", .soon("korean-lunisolar")),
+            .published),
+        edition("seollal", "Seollal", ["Korean New Year", "Lunar New Year"], "cultural", .published),
         edition(
             "tet", "Tết Nguyên Đán", ["Tet", "Vietnamese New Year", "Lunar New Year"], "cultural",
-            .soon("vietnamese-lunisolar")),
+            .published),
         edition(
-            "lantern-festival", "Lantern Festival", ["Yuánxiāo", "Yuanxiao"], "cultural", .soon("chinese-lunisolar")),
+            "lantern-festival", "Lantern Festival", ["Yuánxiāo", "Yuanxiao"], "cultural", .published),
         edition(
-            "mid-autumn", "Mid-Autumn Festival", ["Zhōngqiū", "Moon Festival"], "cultural", .soon("chinese-lunisolar")),
-        edition("tet-trung-thu", "Tết Trung Thu", ["Tet Trung Thu"], "cultural", .soon("vietnamese-lunisolar")),
-        edition("chuseok", "Chuseok", ["Hangawi"], "cultural", .soon("korean-lunisolar")),
-        edition("nowruz", "Nowruz", ["Newroz", "Navruz", "Norooz"], "cultural", .soon("march-equinox")),
-        edition("songkran", "Songkran", ["Thai New Year"], "cultural", .soon("thai-official-calendar")),
-        edition("matariki", "Matariki", ["Māori New Year"], "cultural", .soon("matariki-official-dates")),
+            "mid-autumn", "Mid-Autumn Festival", ["Zhōngqiū", "Moon Festival"], "cultural", .published),
+        edition("tet-trung-thu", "Tết Trung Thu", ["Tet Trung Thu"], "cultural", .published),
+        edition("chuseok", "Chuseok", ["Hangawi"], "cultural", .published),
+        edition("nowruz", "Nowruz", ["Newroz", "Navruz", "Norooz"], "cultural", .published),
+        edition("songkran", "Songkran", ["Thai New Year"], "cultural", .published),
+        edition("matariki", "Matariki", ["Māori New Year"], "cultural", .published),
         edition("kwanzaa", "Kwanzaa", [], "cultural", .fixed(12, 26, to: 1, 1)),
         edition("pride", "Pride Month", ["Pride"], "community", .fixed(6, 1, to: 6, 30)),
         edition(
@@ -43,22 +45,27 @@ extension FirstPartyCelebrations {
         edition(
             "orthodox-pascha", "Orthodox Pascha", ["Orthodox Easter", "Pascha"], "religious",
             .rule(.easter(.orthodox, offset: 0, length: 1)), tradition: "Orthodox churches (Julian computus)"),
-        edition("holi", "Holi", [], "religious", .soon("hindu-lunisolar")),
-        edition("diwali", "Diwali", ["Deepavali", "Dipawali"], "religious", .soon("hindu-lunisolar")),
-        edition("vaisakhi", "Vaisakhi", ["Baisakhi"], "religious", .soon("sikh-annual-calendar")),
-        edition("bandi-chhor-divas", "Bandi Chhor Divas", [], "religious", .soon("sikh-annual-calendar")),
+        edition("holi", "Holi", [], "religious", .published),
+        edition("diwali", "Diwali", ["Deepavali", "Dipawali"], "religious", .published),
+        edition("vaisakhi", "Vaisakhi", ["Baisakhi"], "religious", .published),
+        edition("bandi-chhor-divas", "Bandi Chhor Divas", [], "religious", .published),
         edition(
             "guru-nanak-gurpurab", "Guru Nanak's Gurpurab", ["Guru Nanak Jayanti", "Prakash Utsav"], "religious",
-            .soon("sikh-annual-calendar")),
+            .published),
         edition(
             "eid-al-fitr", "Eid al-Fitr", ["Eid ul-Fitr", "Ramazan Bayramı", "Hari Raya Aidilfitri"], "religious",
-            .soon("islamic")),
+            .published),
         edition(
-            "eid-al-adha", "Eid al-Adha", ["Eid ul-Adha", "Kurban Bayramı", "Bakrid"], "religious", .soon("islamic")),
-        edition("hanukkah", "Hanukkah", ["Chanukah", "Hanukah"], "religious", .soon("hebrew")),
-        edition("vesak", "Vesak", ["Wesak", "Buddha Day"], "religious", .soon("buddhist-full-moon")),
-        edition("meskel", "Meskel", ["Finding of the True Cross"], "religious", .soon("ethiopic")),
-        edition("timkat", "Timkat", ["Timket", "Ethiopian Epiphany"], "religious", .soon("ethiopic")),
+            "eid-al-adha", "Eid al-Adha", ["Eid ul-Adha", "Kurban Bayramı", "Bakrid"], "religious", .published),
+        edition("hanukkah", "Hanukkah", ["Chanukah", "Hanukah"], "religious", .published),
+        edition("vesak", "Vesak", ["Wesak", "Buddha Day"], "religious", .published),
+        edition(
+            "meskel", "Meskel", ["Finding of the True Cross", "Demera"], "religious",
+            .rule(.ethiopic(month: 1, day: 17, length: 1)),
+            tradition: "Ethiopian calendar, 17 Meskerem; the Demera bonfire is the evening before"),
+        edition(
+            "timkat", "Timkat", ["Timket", "Ethiopian Epiphany"], "religious", .rule(.ethiopic(month: 5, day: 11, length: 1)),
+            tradition: "Ethiopian calendar, 11 Tir; the Ketera eve is the day before"),
         edition("earth-day", "Earth Day", [], "community", .fixed(4, 22)),
         edition("juneteenth", "Juneteenth", ["Emancipation Day"], "community", .fixed(6, 19)),
         edition(
@@ -87,6 +94,8 @@ extension FirstPartyCelebrations {
     /// How an edition's dates come about, written compactly.
     enum Dates {
         case rule(CelebrationRule)
+        /// The edition's published annual dates (`publishedDates`), by its slug.
+        case published
         /// A calendar awaiting its resolver or verified table.
         case soon(String)
 
@@ -96,23 +105,39 @@ extension FirstPartyCelebrations {
             return .rule(.fixed(start: start, end: end))
         }
 
-        var rule: CelebrationRule {
+        func calendar(_ slug: String, tradition: String?) -> (CelebrationCalendar, CelebrationProvenance) {
             switch self {
-            case .rule(let rule): rule
-            case .soon(let kind): .unsupported(kind: kind)
+            case .rule(let rule):
+                return (CelebrationCalendar(rule: rule, tradition: tradition), CelebrationProvenance())
+            case .soon(let kind):
+                return (CelebrationCalendar(rule: .unsupported(kind: kind), tradition: tradition), CelebrationProvenance())
+            case .published:
+                guard let table = publishedDates[slug] else {
+                    return (CelebrationCalendar(rule: .unsupported(kind: "table"), tradition: tradition), CelebrationProvenance())
+                }
+                let ranges = table.ranges
+                let years = ranges.map(\.first.year)
+                return (
+                    CelebrationCalendar(rule: .table(ranges), tradition: table.tradition, isProvisional: table.isProvisional),
+                    CelebrationProvenance(
+                        sources: table.sources.compactMap(URL.init(string:)), authority: table.authority,
+                        dataVersion: "2026-10-18", reviewed: CivilDate(year: 2026, month: 10, day: 18),
+                        coverage: years.min().flatMap { first in years.max().map { .init(from: first, through: $0) } },
+                        note: table.note)
+                )
             }
         }
-    }
 
     private static func edition(
         _ slug: String, _ title: LocalizedText, _ aliases: [String], _ tag: String, _ dates: Dates,
         tradition: String? = nil, icons pack: String? = nil
     ) -> (celebration: CelebrationContribution, icons: IconSetContribution) {
         let pack = pack ?? slug
+        let (calendar, provenance) = dates.calendar(slug, tradition: tradition)
         return (
             CelebrationContribution(
-                id: CelebrationID("native.\(slug)"), title: title, aliases: aliases, tags: [tag],
-                calendar: CelebrationCalendar(rule: dates.rule, tradition: tradition),
+                id: CelebrationID("native.\(slug)"), title: title, aliases: aliases, tags: [tag], provenance: provenance,
+                calendar: calendar,
                 iconSet: IconSetID("native.\(pack)")),
             IconSetContribution(
                 id: IconSetID("native.\(pack)"), name: title, icons: .pack(pack),

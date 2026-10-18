@@ -47,9 +47,9 @@ final class AppModel {
     var signInPrompt: AgentDefinition.ID?
     /// A sign-in under way in a terminal, for agents that can only sign in there.
     var terminalSignIn: AgentTerminalSignIn?
-    /// Why an action the user just took failed (starting a session, signing in), for the window's
+    /// An action the user just took that failed (starting a session, signing in), for the window's
     /// alert. Work Native does on its own reports to `problems` instead, never here.
-    var errorMessage: String?
+    var actionFailure: ActionFailure?
     /// Background work that failed for a project, shown with the project until it's fixed.
     let problems = ProjectProblems()
     /// The agent a session is being created with, while that's under way.
@@ -99,6 +99,17 @@ final class AppModel {
         let key: SessionKey
         let folder: URL
         let title: String
+    }
+
+    /// What failed, as an alert's title ("Couldn't Start a Session"), and why, as its message.
+    struct ActionFailure {
+        let title: String
+        let message: String
+
+        init(_ title: String, _ message: String) {
+            self.title = title
+            self.message = message
+        }
     }
     @ObservationIgnored private var isStarted = false
     /// Whether the first check for installed agents has made their runtimes. Internal only for
@@ -204,13 +215,13 @@ final class AppModel {
             return false
         }
         guard await ensureRunning(agent) != nil else {
-            errorMessage = startFailure(of: agent)
+            actionFailure = ActionFailure("Couldn't Sign In to \(runtime.agent.displayName)", startFailure(of: agent))
             return false
         }
         do {
             try await runtime.signIn(with: method)
         } catch {
-            errorMessage = "Couldn't sign in to \(runtime.agent.displayName): \(error.localizedDescription)"
+            actionFailure = ActionFailure("Couldn't Sign In to \(runtime.agent.displayName)", error.localizedDescription)
             return false
         }
         await refreshSessions(of: runtime)
@@ -338,7 +349,7 @@ final class AppModel {
         defer { creatingSessionWith = nil }
         // Waits for an agent that's still starting, and starts an idle one.
         guard let runtime = await ensureRunning(agent) else {
-            errorMessage = startFailure(of: agent)
+            actionFailure = ActionFailure("Couldn't Start a Session", startFailure(of: agent))
             return
         }
         do {
@@ -354,8 +365,8 @@ final class AppModel {
             if runtime.noteSignInRequired(by: error), !runtime.authMethods.isEmpty {
                 signInPrompt = agent
             } else {
-                errorMessage =
-                    "Couldn't start a \(runtime.agent.displayName) session: \(error.localizedDescription.withoutTerminalEscapes)"
+                actionFailure = ActionFailure(
+                    "Couldn't Start a \(runtime.agent.displayName) Session", error.localizedDescription.withoutTerminalEscapes)
             }
         }
     }

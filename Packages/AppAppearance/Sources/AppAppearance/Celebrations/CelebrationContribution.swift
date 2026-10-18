@@ -166,6 +166,8 @@ public struct CelebrationProvenance: Codable, Hashable, Sendable {
     public var reviewed: CivilDate?
     /// The years the dates are published for, for annual tables; nil for a rule that holds every year.
     public var coverage: Coverage?
+    /// What a reader should know about the dates: an evening start, a regional difference.
+    public var note: String?
 
     public struct Coverage: Codable, Hashable, Sendable {
         public var from: Int
@@ -179,7 +181,7 @@ public struct CelebrationProvenance: Codable, Hashable, Sendable {
 
     public init(
         sources: [URL] = [], publisher: String? = nil, authority: String? = nil, dataVersion: String? = nil,
-        reviewed: CivilDate? = nil, coverage: Coverage? = nil
+        reviewed: CivilDate? = nil, coverage: Coverage? = nil, note: String? = nil
     ) {
         self.sources = sources
         self.publisher = publisher
@@ -187,6 +189,7 @@ public struct CelebrationProvenance: Codable, Hashable, Sendable {
         self.dataVersion = dataVersion
         self.reviewed = reviewed
         self.coverage = coverage
+        self.note = note
     }
 
     public init(from decoder: any Decoder) throws {
@@ -197,6 +200,7 @@ public struct CelebrationProvenance: Codable, Hashable, Sendable {
         dataVersion = try container.decodeIfPresent(String.self, forKey: .dataVersion)
         reviewed = try container.decodeIfPresent(CivilDate.self, forKey: .reviewed)
         coverage = try container.decodeIfPresent(Coverage.self, forKey: .coverage)
+        note = try container.decodeIfPresent(String.self, forKey: .note)
     }
 }
 
@@ -256,6 +260,10 @@ extension CelebrationCalendar: Codable {
             rule = .easter(
                 CelebrationRule.Computus(rawValue: kind) ?? .western,
                 offset: try container.decodeIfPresent(Int.self, forKey: .offset) ?? 0, length: length)
+        case "ethiopic":
+            rule = .ethiopic(
+                month: try container.decode(Int.self, forKey: .month), day: try container.decode(Int.self, forKey: .day),
+                length: length)
         case "table":
             let occurrences = try container.decode([TabledOccurrence].self, forKey: .occurrences)
             rule = .table(
@@ -296,6 +304,11 @@ extension CelebrationCalendar: Codable {
         case .easter(let computus, let offset, let length):
             try container.encode(computus.rawValue, forKey: .kind)
             try container.encode(offset, forKey: .offset)
+            try container.encode(length, forKey: .length)
+        case .ethiopic(let month, let day, let length):
+            try container.encode("ethiopic", forKey: .kind)
+            try container.encode(month, forKey: .month)
+            try container.encode(day, forKey: .day)
             try container.encode(length, forKey: .length)
         case .table(let occurrences):
             try container.encode("table", forKey: .kind)

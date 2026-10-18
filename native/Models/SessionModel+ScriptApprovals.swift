@@ -21,7 +21,7 @@ extension SessionModel {
     /// of the name or title is what's matched.
     func runningToolCall(named toolName: String) -> String? {
         state.items.reversed().lazy.compactMap { item -> String? in
-            guard case .toolCall(let call) = item, !call.status.isFinished,
+            guard case .toolCall(let call) = item, !call.status.isFinished, call.meta?["native"] == nil,
                 [call.name, call.title].contains(where: { $0?.hasSuffix(toolName) == true })
             else { return nil }
             return call.id

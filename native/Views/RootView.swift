@@ -43,6 +43,8 @@ struct RootView: View {
         }
             // After an update with highlights, once nothing waits on the user.
             .whatsNewSheet(whatsNew, blocked: model.hasWorkNeedingUser)
+            // Asked once, after real use, and never while an agent works (docs/enterprise.md).
+            .telemetryConsentPrompt(isTurnRunning: isAnyTurnRunning)
             .focusedSceneValue(\.sidebarVisibility, $columnVisibility)
             .undoToast($undoToast)
             .onChange(of: model.lastUndoable?.id) {
@@ -119,14 +121,15 @@ struct RootView: View {
                     Task { await model.addProject(url) }
                 }
             }
+            // Only for an action the user just took; background failures stay with their project.
             .alert(
-                "Something Went Wrong",
-                isPresented: Binding(get: { model.errorMessage != nil }, set: { if !$0 { model.errorMessage = nil } }),
-                presenting: model.errorMessage
+                model.actionFailure?.title ?? "",
+                isPresented: Binding(get: { model.actionFailure != nil }, set: { if !$0 { model.actionFailure = nil } }),
+                presenting: model.actionFailure
             ) { _ in
                 Button("OK") {}
-            } message: { message in
-                Text(message)
+            } message: { failure in
+                Text(failure.message)
             }
             .alert(
                 "Sign In to \(signInAgent?.agent.displayName ?? "")",
@@ -146,6 +149,13 @@ struct RootView: View {
             } message: { runtime in
                 Text("\(runtime.agent.displayName) needs you to sign in before it can start a session.")
             }
+    }
+
+    /// Whether any agent is in a turn, so the telemetry question waits for a calm moment.
+    private var isAnyTurnRunning: Bool {
+        model.agents.contains { runtime in
+            model.sessions.open(of: runtime.agent.id).contains { $0.phase == .prompting }
+        }
     }
 
     /// The sidebar with the other features' parts: the pull requests page, and each task row's pull

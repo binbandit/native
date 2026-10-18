@@ -33,8 +33,8 @@ struct ProjectProblem: Identifiable, Hashable {
     let recovery: String
     /// What the user can do, beyond retrying.
     var suggestion: String?
-    /// The underlying error, for Show Details.
-    let details: String
+    /// The underlying error, for Show Details; a failed retry replaces it.
+    var details: String
 
     var id: ID {
         ID(project: project, work: work)

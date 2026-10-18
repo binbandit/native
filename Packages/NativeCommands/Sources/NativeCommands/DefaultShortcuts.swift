@@ -38,6 +38,7 @@ public enum DefaultShortcuts {
         "view.mcpServers": "⌃⌘M",
         "keepAwake.nextMode": "⌃⌘A",
         "palette.show": "⌘K",
+        "search.show": "⇧⌘F",
         // Session settings
         "session.nextPermissionMode": "⇧⌘M",
         "session.chooseModel": "⇧⌘E",

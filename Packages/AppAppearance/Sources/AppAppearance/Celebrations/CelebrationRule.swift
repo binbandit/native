@@ -1,3 +1,5 @@
+import Foundation
+
 /// How a celebration's core observance falls in the year. Every resolver produces the same thing,
 /// core day ranges for a queried span, so display windows, overlap and scheduling work alike for
 /// every calendar.
@@ -18,6 +20,9 @@ public enum CelebrationRule: Hashable, Sendable {
     case dayOfYear(day: Int, length: Int)
     /// Days from an Easter Sunday: 0 is Easter itself, -47 Mardi Gras.
     case easter(Computus, offset: Int, length: Int)
+    /// A day of the Ethiopian calendar (Amete Mihret), which is arithmetic: Meskel is 17 Meskerem,
+    /// Timkat 11 Tir.
+    case ethiopic(month: Int, day: Int, length: Int)
     /// Published occurrences, for calendars resolved from an authority's annual dates.
     case table([CivilDayRange])
     /// A calendar this version can't resolve, by its manifest `kind`.
@@ -61,6 +66,12 @@ public enum CelebrationRule: Hashable, Sendable {
             }
         case .easter(let computus, let offset, let length):
             ranges = years.map { Self.days(Self.easter(computus, in: $0).adding(days: offset), length) }
+        case .ethiopic(let month, let day, let length):
+            ranges = years.flatMap { year in
+                // A Gregorian year holds the end of one Ethiopian year and the start of the next.
+                [year - 8, year - 7].compactMap { Self.ethiopic(month, day, in: $0) }.filter { $0.year == year }
+            }
+            .map { Self.days($0, length) }
         case .table(let occurrences):
             ranges = occurrences.sorted { $0.first < $1.first }
         case .unsupported:
@@ -98,6 +109,15 @@ public enum CelebrationRule: Hashable, Sendable {
         }
         let date = last.adding(days: -((Self.weekday(of: last) - weekday + 7) % 7) + (ordinal + 1) * 7)
         return date.month == month ? date : nil
+    }
+
+    static func ethiopic(_ month: Int, _ day: Int, in year: Int) -> CivilDate? {
+        var calendar = Calendar(identifier: .ethiopicAmeteMihret)
+        calendar.timeZone = .gmt
+        guard let date = calendar.date(from: DateComponents(year: year, month: month, day: day, hour: 12)) else {
+            return nil
+        }
+        return CivilDate(date, in: .gmt)
     }
 
     /// Easter Sunday as a Gregorian date: the anonymous Gregorian algorithm (Meeus, Jones, Butcher)

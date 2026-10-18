@@ -31,6 +31,7 @@ struct ProjectSection<TaskAccessory: View>: View {
 
     var body: some View {
         let item = SidebarDragState.Item.project(project.id)
+        let problems = model.problems(in: project.id)
         ProjectGroup(
             name: project.name,
             icon: iconStore.icon(for: project),
@@ -42,6 +43,12 @@ struct ProjectSection<TaskAccessory: View>: View {
                 project: project, position: position, isPickingIcon: $isPickingIcon,
                 isConfirmingDelete: $isConfirmingDelete)
         } content: {
+            // Work Native did on its own for the project that failed, above the list it may have left stale.
+            if !isFiltered {
+                ForEach(problems) { problem in
+                    ProjectProblemRow(problem: problem)
+                }
+            }
             ForEach(sessions) { summary in
                 let row = SidebarDragState.Item.session(summary.id, in: project.id)
                 let index = order[summary.id] ?? 0
@@ -54,7 +61,8 @@ struct ProjectSection<TaskAccessory: View>: View {
                 .sidebarDraggable(row, title: model.title(for: summary), state: drag)
                 .sidebarDropTarget(row, state: drag, isActive: drag.dragged.isSession, onDrop: model.applySidebarDrop)
             }
-            if sessions.isEmpty, !isFiltered {
+            // A project whose listing failed isn't known to be empty; its problem row says so.
+            if sessions.isEmpty, !isFiltered, !problems.contains(where: \.isListing) {
                 ProjectEmptyRow(project: project)
             }
         }
@@ -241,5 +249,11 @@ private struct ProjectDeletionConfirmation: ViewModifier {
 extension Optional where Wrapped == SidebarDragState.Item {
     fileprivate var isSession: Bool {
         if case .session = self { true } else { false }
+    }
+}
+
+extension ProjectProblem {
+    fileprivate var isListing: Bool {
+        if case .listing = work { true } else { false }
     }
 }

@@ -90,9 +90,13 @@ extension ToolPresentation {
         let name = call.name ?? ""
 
         if let mcp = MCPToolName(name) {
+            // A call a script made through Native's run_script also says where in the script.
+            let line = call.meta?["native"]?["script"]?["line"].flatMap { value -> Int? in
+                if case .number(let number) = value { Int(number) } else { nil }
+            }
             self.init(
-                symbol: "puzzlepiece.extension", subject: mcp.tool.titleCased, subtitle: mcp.server.humanized,
-                body: .mcp)
+                symbol: "puzzlepiece.extension", subject: mcp.tool.titleCased,
+                subtitle: mcp.server.humanized + (line.map { " · script line \($0)" } ?? ""), body: .mcp)
             return
         }
 
