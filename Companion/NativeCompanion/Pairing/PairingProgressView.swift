@@ -24,7 +24,9 @@ struct PairingProgressView: View {
                         detail: "Checking that it's the Mac you scanned, then proving the code.",
                         loader: .settingUp)
                 case .confirming(let name, let code):
-                    status("Confirm on \(name)", detail: "Click Pair on the Mac if it shows these numbers too.", loader: .waiting)
+                    status(
+                        "Confirm on \(name)", detail: "Click Pair on the Mac if it shows these numbers too.",
+                        loader: .waiting)
                     Text(code.description)
                         .font(CompanionType.code)
                         .tracking(4)

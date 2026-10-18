@@ -26,7 +26,10 @@ struct HostDetailView: View {
                     Text(detail).font(CompanionType.subheadline).foregroundStyle(.dsTextSecondary)
                 }
                 if !host.phase.isConnected {
-                    Button(host.phase == .pairingEnded(.revoked) || host.phase == .pairingEnded(.unknownDevice) ? "Pair Again" : "Retry Now") {
+                    Button(
+                        host.phase == .pairingEnded(.revoked) || host.phase == .pairingEnded(.unknownDevice)
+                            ? "Pair Again" : "Retry Now"
+                    ) {
                         if case .pairingEnded = host.phase {
                             store.isAddingHost = true
                         } else {
@@ -41,12 +44,17 @@ struct HostDetailView: View {
                 NavigationLink {
                     PluginCatalogView(host: host)
                 } label: {
-                    LabeledContent("Plugins", value: "\(host.plugins.filter(\.isEnabled).count) of \(host.plugins.count) on")
+                    LabeledContent(
+                        "Plugins", value: "\(host.plugins.filter(\.isEnabled).count) of \(host.plugins.count) on")
                 }
             }
             Section {
-                TextField(host.host.machineName, text: Binding(get: { host.preferences.label ?? "" }, set: { host.preferences.label = $0.isEmpty ? nil : $0 }))
-                    .accessibilityIdentifier("hostLabel")
+                TextField(
+                    host.host.machineName,
+                    text: Binding(
+                        get: { host.preferences.label ?? "" }, set: { host.preferences.label = $0.isEmpty ? nil : $0 })
+                )
+                .accessibilityIdentifier("hostLabel")
                 HostThemePicker(themeID: $host.preferences.themeID)
                 Picker("Symbol", selection: $host.preferences.symbol) {
                     ForEach(HostPreferences.symbols, id: \.self) { symbol in
@@ -56,13 +64,17 @@ struct HostDetailView: View {
             } header: {
                 Text("On This Phone")
             } footer: {
-                Text("Only this phone sees the name, color and symbol. \(host.host.machineName) is the machine's own name.")
+                Text(
+                    "Only this phone sees the name, color and symbol. \(host.host.machineName) is the machine's own name."
+                )
             }
             Section("Notifications") {
                 Toggle("Updates", isOn: $host.preferences.notifiesAboutUpdates)
                 Toggle("Approvals", isOn: $host.preferences.notifiesAboutApprovals)
-                Text("Approval alerts while the app is closed need push notifications, which arrive with a later version.")
-                    .font(CompanionType.caption).foregroundStyle(.dsTextTertiary)
+                Text(
+                    "Approval alerts while the app is closed need push notifications, which arrive with a later version."
+                )
+                .font(CompanionType.caption).foregroundStyle(.dsTextTertiary)
             }
             Section {
                 LabeledContent("Machine", value: host.host.machineName)
@@ -73,7 +85,9 @@ struct HostDetailView: View {
                 LabeledContent("Paired", value: host.host.pairedAt.formatted(date: .abbreviated, time: .shortened))
                 Button("Unpair", role: .destructive) { isConfirmingUnpair = true }
             } footer: {
-                Text("Unpairing forgets this host's key on this phone. Remove the phone on the Mac too (Settings › Paired Devices).")
+                Text(
+                    "Unpairing forgets this host's key on this phone. Remove the phone on the Mac too (Settings › Paired Devices)."
+                )
             }
         }
         .font(CompanionType.body)
@@ -108,14 +122,18 @@ struct ConnectionLogView: View {
         }
         .overlay {
             if host.log.isEmpty {
-                EmptyStateView("Nothing logged yet", systemImage: "list.bullet.rectangle", message: "Connection attempts to \(host.name) show here.")
+                EmptyStateView(
+                    "Nothing logged yet", systemImage: "list.bullet.rectangle",
+                    message: "Connection attempts to \(host.name) show here.")
             }
         }
         .scrollContentBackground(.hidden)
         .background(.dsBackground)
         .navigationTitle("Connection Log")
         .toolbar {
-            ShareLink(item: host.log.map { "\($0.date.formatted(date: .omitted, time: .standard)) \($0.message)" }.joined(separator: "\n"))
+            ShareLink(
+                item: host.log.map { "\($0.date.formatted(date: .omitted, time: .standard)) \($0.message)" }.joined(
+                    separator: "\n"))
         }
     }
 

@@ -43,7 +43,11 @@ extension HostSessionSummary {
         }
         if isWorking {
             if let call = mirror?.state.items.reversed().lazy.compactMap({ item -> ToolCallState? in
-                if case .toolCall(let call) = item, call.status == .inProgress || call.status == .pending { call } else { nil }
+                if case .toolCall(let call) = item, call.status == .inProgress || call.status == .pending {
+                    call
+                } else {
+                    nil
+                }
             }).first {
                 return CompanionToolSummary(call).line
             }

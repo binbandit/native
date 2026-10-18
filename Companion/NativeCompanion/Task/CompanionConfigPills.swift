@@ -11,7 +11,8 @@ struct CompanionConfigPills: View {
     @State private var failure: String?
 
     var body: some View {
-        let options = (host.mirrors[sessionID]?.state.configOptions ?? []).compactMap { option -> (ConfigOption, String, [ConfigOption.SelectOption])? in
+        let options = (host.mirrors[sessionID]?.state.configOptions ?? []).compactMap {
+            option -> (ConfigOption, String, [ConfigOption.SelectOption])? in
             guard case .select(let current, let choices) = option.kind, choices.count > 1 else { return nil }
             return (option, current, choices)
         }
@@ -21,17 +22,21 @@ struct CompanionConfigPills: View {
                     HStack(spacing: DS.Space.sm) {
                         ForEach(options, id: \.0.id) { option, current, choices in
                             Menu {
-                                Picker(option.name, selection: Binding(get: { current }, set: { choose($0, for: option) })) {
+                                Picker(
+                                    option.name, selection: Binding(get: { current }, set: { choose($0, for: option) })
+                                ) {
                                     ForEach(choices) { choice in
                                         Text(choice.name).tag(choice.value)
                                     }
                                 }
                             } label: {
-                                Label(choices.first { $0.value == current }?.name ?? current, systemImage: symbol(option))
-                                    .font(CompanionType.caption)
-                                    .padding(.horizontal, DS.Space.md)
-                                    .frame(minHeight: DS.Size.composerPill)
-                                    .background(.dsSurface, in: .capsule)
+                                Label(
+                                    choices.first { $0.value == current }?.name ?? current, systemImage: symbol(option)
+                                )
+                                .font(CompanionType.caption)
+                                .padding(.horizontal, DS.Space.md)
+                                .frame(minHeight: DS.Size.composerPill)
+                                .background(.dsSurface, in: .capsule)
                             }
                             .accessibilityIdentifier("config-\(option.category ?? option.id)")
                         }

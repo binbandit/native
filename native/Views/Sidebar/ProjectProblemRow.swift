@@ -76,7 +76,9 @@ struct ProjectProblemRow: View {
         .contextMenu {
             Button("Retry") { retry() }
             Button("Show Details") { isShowingDetails = true }
-            Button("Copy Error") { DSPasteboard.copy(problem.details) }
+            if let details = problem.details {
+                Button("Copy Error") { DSPasteboard.copy(details) }
+            }
             Divider()
             Button("Dismiss") { model.dismiss(problem) }
         }

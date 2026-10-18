@@ -13,7 +13,10 @@ struct HostPreferences: Codable, Hashable {
     var notifiesAboutUpdates = true
     var notifiesAboutApprovals = true
 
-    static let symbols = ["desktopcomputer", "laptopcomputer", "macmini", "server.rack", "cube", "circle.hexagongrid", "leaf", "flame", "bolt", "star"]
+    static let symbols = [
+        "desktopcomputer", "laptopcomputer", "macmini", "server.rack", "cube", "circle.hexagongrid", "leaf", "flame",
+        "bolt", "star",
+    ]
 
     static func load(for hostID: HostID, defaults: UserDefaults = .standard) -> HostPreferences {
         guard let data = defaults.data(forKey: key(hostID)),

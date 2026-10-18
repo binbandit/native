@@ -27,9 +27,11 @@ struct NewTaskSheet: View {
                 }
                 if let host {
                     if agents(host).isEmpty {
-                        Text("\(host.name) hasn't run a task yet, so this phone doesn't know its agents and projects. Start the first task on the Mac.")
-                            .font(CompanionType.subheadline)
-                            .foregroundStyle(.dsTextSecondary)
+                        Text(
+                            "\(host.name) hasn't run a task yet, so this phone doesn't know its agents and projects. Start the first task on the Mac."
+                        )
+                        .font(CompanionType.subheadline)
+                        .foregroundStyle(.dsTextSecondary)
                     } else {
                         Picker("Agent", selection: $agentID) {
                             ForEach(agents(host), id: \.id) { agent in

@@ -24,7 +24,8 @@ struct PluginCatalogView: View {
                 Text(
                     host.host.grants.managePlugins
                         ? "Changes apply on \(host.name) for everyone using it."
-                        : "Turning plugins on and off from this iPhone needs permission on the Mac, in Settings › Paired Devices.")
+                        : "Turning plugins on and off from this iPhone needs permission on the Mac, in Settings › Paired Devices."
+                )
             }
         }
         .overlay {
@@ -44,16 +45,26 @@ struct PluginCatalogView: View {
     private func row(_ plugin: HostPlugin) -> some View {
         let label = VStack(alignment: .leading, spacing: DS.Space.xxs) {
             Text(plugin.name).foregroundStyle(.dsTextPrimary)
-            Text([plugin.version, plugin.manifest["description"]?.stringValue].compactMap { $0 }.joined(separator: " · "))
-                .font(CompanionType.caption).foregroundStyle(.dsTextSecondary)
-                .lineLimit(2)
+            Text(
+                [plugin.version, plugin.manifest["description"]?.stringValue].compactMap { $0 }.joined(separator: " · ")
+            )
+            .font(CompanionType.caption).foregroundStyle(.dsTextSecondary)
+            .lineLimit(2)
         }
         if host.host.grants.managePlugins {
-            Toggle(isOn: Binding(get: { plugin.isEnabled }, set: { isOn in
-                Task { failure = await host.setPlugin(plugin.id, enabled: isOn) }
-            })) { label }
+            Toggle(
+                isOn: Binding(
+                    get: { plugin.isEnabled },
+                    set: { isOn in
+                        Task { failure = await host.setPlugin(plugin.id, enabled: isOn) }
+                    })
+            ) { label }
         } else {
-            LabeledContent { Text(plugin.isEnabled ? "On" : "Off").foregroundStyle(.dsTextSecondary) } label: { label }
+            LabeledContent {
+                Text(plugin.isEnabled ? "On" : "Off").foregroundStyle(.dsTextSecondary)
+            } label: {
+                label
+            }
         }
     }
 }
