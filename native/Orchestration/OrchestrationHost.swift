@@ -36,4 +36,8 @@ protocol OrchestrationHost: AnyObject, Sendable {
 
     /// Cancels the task's current turn, answering any permission requests it has open as cancelled.
     func cancelTask(_ task: SessionKey) async
+
+    /// Names of the skills switched off for the session with this client id (Settings ▸ Skills),
+    /// which the skill tools leave out for it.
+    func disabledSkills(of clientID: UUID) -> Set<String>
 }

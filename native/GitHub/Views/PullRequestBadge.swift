@@ -61,7 +61,7 @@ struct PullRequestBadge: View {
             } label: {
                 HStack(spacing: DS.Space.xs) {
                     PullRequestStateIcon(state: pullRequest.state, isDraft: pullRequest.isDraft, size: DS.Size.navIcon)
-                    Text("#\(pullRequest.number)")
+                    Text(verbatim: "#\(pullRequest.number)")
                         .font(.dsMonoCaption)
                         .foregroundStyle(.dsTextPrimary)
                 }

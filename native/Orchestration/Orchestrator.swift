@@ -81,6 +81,12 @@ final class Orchestrator {
         callers[token]
     }
 
+    /// Native's skills the caller's session may read: all but those switched off for it.
+    func skills(_ skills: [NativeSkill], for caller: OrchestrationCaller) -> [NativeSkill] {
+        let disabled = host?.disabledSkills(of: caller.clientID) ?? []
+        return skills.filter { !disabled.contains($0.id) }
+    }
+
     private func reopenTasks(of parent: SessionKey) {
         let children = tasks.filter { $0.parent == parent }
         guard !children.isEmpty else { return }
