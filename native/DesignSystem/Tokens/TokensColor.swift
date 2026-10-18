@@ -5,10 +5,9 @@ import SwiftUI
 // `Color.dsTextSecondary` work.
 //
 // Sources:
-// - Neutrals come from the reference app's default "the reference app" appearance preset (light: background #ffffff,
-//   foreground #181818; dark: background #121212, foreground #ffffff), whose core-ui v2 tokens are
-//   oklab mixes of foreground into background (`PALETTE_TOKEN_MIXES`, contrast 50). Dark values were
-//   checked against screenshots of the reference app: content #171717, sidebar edge #2c2c2c, composer outline
+// - Neutrals are oklab mixes of the foreground into the background (light: background #ffffff,
+//   foreground #181818; dark: background #121212, foreground #ffffff), so every step keeps the same
+//   hue. In dark mode the content is #171717, the sidebar edge #2c2c2c and the composer outline
 //   #3e3e3e.
 // - The sidebar is translucent (`.dsSidebarBackground()` or the system sidebar), so everything drawn
 //   on it is either text or a translucent fill. `dsSidebarSolid` is only its backdrop when the user
@@ -18,21 +17,20 @@ import SwiftUI
 // - The accent follows the app-icon theme: it resolves against the environment's
 //   `DSAccentPalette` (see AccentPalette.swift), `original` (graphite / off-white) by default.
 // - `dsAttention` is the one status hue for "needs you" states, so they stand out under any accent.
-// - Status hues are the reference app's (`--git-green`, `--destructive`, `--checks-pending`,
-//   `--sidebar-blue`), which read well as small glyphs on both appearances.
+// - Status hues are picked to read well as small glyphs on both appearances.
 
 nonisolated extension ShapeStyle where Self == Color {
     // MARK: Layers
 
-    /// The content pane behind the transcript (the reference app `bg/surface`).
+    /// The content pane behind the transcript.
     public static var dsBackground: Color { DSPalette.background }
-    /// Fill of inputs, the composer and cards (the reference app `input/bg`).
+    /// Fill of inputs, the composer and cards.
     public static var dsSurface: Color { DSPalette.surface }
-    /// A step above the surface: hover cards, nested panels (the reference app `bg/surface-raised`).
+    /// A step above the surface: hover cards, nested panels.
     public static var dsSurfaceRaised: Color { DSPalette.surfaceRaised }
-    /// A step below: code blocks, wells, progress tracks (the reference app `code/bg`).
+    /// A step below: code blocks, wells, progress tracks.
     public static var dsSurfaceSunken: Color { DSPalette.surfaceSunken }
-    /// Menus, popovers and tooltips (the reference app `bg/overlay`).
+    /// Menus, popovers and tooltips.
     public static var dsOverlay: Color { DSPalette.overlay }
     /// The sidebar's backdrop when transparency is turned down; a step off the content pane, as the
     /// system sidebar material reads. Draw it only through `DSTransparency`, never as a row fill.
@@ -40,8 +38,7 @@ nonisolated extension ShapeStyle where Self == Color {
 
     // MARK: Translucent fills (they work on any layer, glass included)
 
-    /// Hovered rows and ghost buttons (measured: the reference app's hovered row is ~7% white over its
-    /// sidebar, the reference app's hover a 6% mix).
+    /// Hovered rows and ghost buttons: a faint wash, visible without competing with the selection.
     public static var dsHover: Color { DSPalette.hover }
     /// The selected row.
     public static var dsSelected: Color { DSPalette.selected }
@@ -53,15 +50,15 @@ nonisolated extension ShapeStyle where Self == Color {
 
     // MARK: Borders
 
-    /// Hairlines between regions: sidebar edge, card outlines, section rules (the reference app `border/outer`).
+    /// Hairlines between regions: sidebar edge, card outlines, section rules.
     public static var dsSeparator: Color { DSPalette.separator }
-    /// Outline of the composer and its pills (the reference app `input/border/default`).
+    /// Outline of the composer and its pills.
     public static var dsBorder: Color { DSPalette.border }
-    /// Outline of a hovered control (the reference app `input/border/hover`).
+    /// Outline of a hovered control.
     public static var dsBorderHover: Color { DSPalette.borderHover }
-    /// Outline of secondary buttons (the reference app `button/secondary/border/default`).
+    /// Outline of secondary buttons.
     public static var dsBorderStrong: Color { DSPalette.borderStrong }
-    /// Outline of keyboard hints and unlit level bars (the reference app `border/inner`).
+    /// Outline of keyboard hints and unlit level bars.
     public static var dsBorderInner: Color { DSPalette.borderInner }
     /// The track of a switch that's off: at least 3:1 against the background and the surface in
     /// every appearance and tone (WCAG's contrast for controls), so an off switch still reads as one.
@@ -72,9 +69,9 @@ nonisolated extension ShapeStyle where Self == Color {
     public static var dsTextPrimary: Color { DSPalette.textPrimary }
     public static var dsTextSecondary: Color { DSPalette.textSecondary }
     public static var dsTextTertiary: Color { DSPalette.textTertiary }
-    /// Disabled text and the faintest glyphs (the reference app `text/disabled`).
+    /// Disabled text and the faintest glyphs.
     public static var dsTextQuaternary: Color { DSPalette.textQuaternary }
-    /// Text on a `dsTextPrimary` fill (the reference app `text/inverse`).
+    /// Text on a `dsTextPrimary` fill.
     public static var dsTextInverse: Color { DSPalette.textInverse }
     /// Text and glyphs on an accent fill (from the accent palette).
     public static var dsTextOnAccent: Color { Color(DSAccentStyle(role: .onAccent)) }
@@ -103,7 +100,7 @@ nonisolated extension ShapeStyle where Self == Color {
     /// Merged pull requests and other "landed" states.
     public static var dsMerged: Color { DSPalette.merged }
 
-    /// Fill of solid destructive buttons (the reference app `button/destructive/bg`).
+    /// Fill of solid destructive buttons.
     public static var dsDangerFill: Color { DSPalette.dangerFill }
     public static var dsDangerFillHover: Color { DSPalette.dangerFillHover }
     public static var dsDangerFillPressed: Color { DSPalette.dangerFillPressed }
@@ -116,9 +113,9 @@ nonisolated extension ShapeStyle where Self == Color {
     public static var dsChart2: Color { DSPalette.chart2 }
     public static var dsChart3: Color { DSPalette.chart3 }
 
-    /// Usage meters past 80% (the reference app `warning/fill`).
+    /// Usage meters past 80%.
     public static var dsWarningFill: Color { DSPalette.warningFill }
-    /// Usage meters at 100% (the reference app `error/fill`).
+    /// Usage meters at 100%.
     public static var dsDangerMeterFill: Color { DSPalette.dangerFill }
 }
 

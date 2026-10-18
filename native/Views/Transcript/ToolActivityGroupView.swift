@@ -33,8 +33,8 @@ enum TranscriptRow: Identifiable {
         }
     }
 
-    /// Folds each run of two or more consecutive read/search calls into one row, the way the reference app
-    /// shows "Explored 3 files". Calls waiting for approval stay on their own.
+    /// Folds each run of two or more consecutive read/search calls into one summary row, so a burst
+    /// of exploring doesn't push the work off screen. Calls waiting for approval stay on their own.
     static func rows(from items: [TranscriptItem]) -> [TranscriptRow] {
         var rows: [TranscriptRow] = []
         var run: [ToolCallState] = []
@@ -124,7 +124,7 @@ struct ToolActivityGroupView: View {
 }
 
 private extension ToolCallState {
-    /// Reads and searches: the calls the reference app folds into exploration summaries.
+    /// Reads and searches: the calls that fold into exploration summaries.
     var isExploration: Bool {
         guard permission == nil else { return false }
         switch name {

@@ -174,13 +174,13 @@ enum TranscriptFixtures {
     private static let mcpUpdate = """
         {"toolCallId": "toolu_mcp", "name": "mcp__linear__search_issues", "title": "mcp__linear__search_issues", "kind": "other",
          "status": "completed", "rawInput": {"query": "transcript rendering", "limit": 3},
-         "content": [{"type": "content", "content": {"type": "text", "text": "NAT-42  Render tool calls like the reference app\\nNAT-57  Streaming Markdown flickers"}}]}
+         "content": [{"type": "content", "content": {"type": "text", "text": "NAT-42  Render tool calls as dense rows\\nNAT-57  Streaming Markdown flickers"}}]}
         """
 
     private static let mcpPendingUpdate = """
         {"toolCallId": "toolu_mcp_pending", "name": "mcp__github__create_pull_request", "title": "mcp__github__create_pull_request",
          "kind": "other", "status": "pending",
-         "rawInput": {"title": "fix(transcript): the reference app-style tool rows", "base": "main", "draft": false}}
+         "rawInput": {"title": "fix(transcript): dense tool rows", "base": "main", "draft": false}}
         """
 
     private static let failedBashUpdate = """
