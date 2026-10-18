@@ -3,11 +3,14 @@ import SwiftUI
 /// The window header's outlined control, the same chrome as the Open In split button: 24pt tall,
 /// the surface fill, a 1pt border and a 4pt radius, a hover wash and a pressed fill. `isOn` keeps it
 /// selected and bright while the panel it toggles is open; `isIconOnly` makes it 28pt square-ish, as
-/// wide as Open In's halves. It draws its own outline, so its `ToolbarItem` hides the shared glass:
+/// wide as Open In's halves. It draws its own outline, so its `ToolbarItem` hides the shared glass.
+/// The button itself says it's selected to VoiceOver, and in a toolbar takes a plain stack rather
+/// than a `Label` with a non-text title, which would become the item's name:
 ///
 ///     ToolbarItem {
 ///         Button("Show Terminal", systemImage: "apple.terminal", action: toggle)
 ///             .buttonStyle(.header(isOn: isShowing, iconOnly: true))
+///             .accessibilityAddTraits(isShowing ? .isSelected : [])
 ///     }
 ///     .sharedBackgroundVisibility(.hidden)
 public struct HeaderButtonStyle: ButtonStyle {
