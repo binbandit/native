@@ -8,12 +8,12 @@ enum JSONLines {
     static func forEach(in url: URL, containing markers: [String], _ body: ([String: Any]) throws -> Void) throws {
         let data = try Data(contentsOf: url, options: .alwaysMapped)
         let needles = markers.map { Array($0.utf8) }
-        try data.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) in
+        try data.withUnsafeBytes { (buffer: UnsafeRawBufferPointer) throws -> Void in
             guard let base = buffer.baseAddress else { return }
             var start = 0
             while start < buffer.count {
-                let remaining = buffer.count - start
-                let end = memchr(base + start, 0x0A, remaining).map { $0 - base } ?? buffer.count
+                let newline: UnsafeMutableRawPointer? = memchr(base + start, 0x0A, buffer.count - start)
+                let end = newline.map { UnsafeRawPointer($0) - base } ?? buffer.count
                 let line = UnsafeRawBufferPointer(start: base + start, count: end - start)
                 if needles.contains(where: { contains($0, in: line) }),
                     let object = try? JSONSerialization.jsonObject(with: Data(line)) as? [String: Any]
@@ -32,10 +32,12 @@ enum JSONLines {
         }
     }
 
+    private static let fractionalSeconds = Date.ISO8601FormatStyle(includingFractionalSeconds: true)
+
     /// An ISO 8601 timestamp, as both agents write them (with or without fractional seconds).
     static func date(_ value: Any?) -> Date? {
         guard let string = value as? String else { return nil }
-        return (try? Date(string, strategy: .iso8601WithFractions)) ?? (try? Date(string, strategy: .iso8601))
+        return (try? fractionalSeconds.parse(string)) ?? (try? Date(string, strategy: .iso8601))
     }
 
     /// Every string in a decoded JSON value, depth first, with arrays of strings joined by spaces.
@@ -51,9 +53,6 @@ enum JSONLines {
     }
 }
 
-extension Date.ISO8601FormatStyle {
-    fileprivate static let iso8601WithFractions = Date.ISO8601FormatStyle(includingFractionalSeconds: true)
-}
 
 /// Builds a session's documents the way the ACP reducer builds its transcript, so anchors found in
 /// history match the transcript Native shows after loading the session: consecutive pieces of one

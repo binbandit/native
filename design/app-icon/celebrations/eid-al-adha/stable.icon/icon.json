@@ -38,19 +38,19 @@
               "value": true
             }
           ],
-          "image-name": "painted-interlock.png",
-          "name": "Painted Native interlock",
+          "image-name": "flat-interlock.png",
+          "name": "Flat Native interlock",
           "position": {
-            "scale": 0.5863708399366085,
+            "scale": 0.6508355321020228,
             "translation-in-points": [
-              -0.0,
-              11.706814580031695
+              -1.627088830255057,
+              -9.802990325417763
             ]
           }
         }
       ],
       "lighting": "individual",
-      "name": "Eid al-Adha · painted Native interlock",
+      "name": "Eid al-Adha · flat Native interlock",
       "refractivity-specializations": [
         {
           "appearance": "tinted",
@@ -62,8 +62,8 @@
         }
       ],
       "shadow": {
-        "kind": "neutral",
-        "opacity": 0.18
+        "kind": "none",
+        "opacity": 0
       },
       "translucency-specializations": [
         {
