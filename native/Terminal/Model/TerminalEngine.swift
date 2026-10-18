@@ -20,6 +20,18 @@ protocol TerminalSurfaceEvents: AnyObject {
     /// The terminal asked to go away: its shell exited and the user pressed a key.
     func surfaceDidRequestClose(_ id: UUID)
     func surface(_ id: UUID, didChangeFocus isFocused: Bool)
+    /// A key binding in the user's Ghostty config asked for something Native does with its tabs.
+    func surface(_ id: UUID, didRequest request: TerminalSurfaceRequest)
+}
+
+/// What a terminal's key bindings can ask its panel to do.
+enum TerminalSurfaceRequest: Equatable {
+    case newTab
+    /// Ghostty's `next_tab` and `previous_tab`.
+    case selectTab(offset: Int)
+    /// Ghostty's `goto_tab:N` (1-based) and `last_tab` (`Int.max`).
+    case goToTab(number: Int)
+    case reloadConfig
 }
 
 /// What a terminal starts with.
@@ -37,6 +49,7 @@ protocol TerminalEngine: AnyObject {
         id: UUID, launch: TerminalLaunch, events: TerminalSurfaceEvents
     ) throws(TerminalStartFailure)
         -> TerminalSurface
-    /// Restyles every terminal, running ones included.
-    func apply(_ style: TerminalStyle)
+    /// Restyles every terminal, running ones included. With `ghostty`, the user's Ghostty config
+    /// at those locations replaces `style`'s settings; the result says which applied.
+    func apply(_ style: TerminalStyle, ghostty: GhosttyConfigLocations?) -> TerminalConfigStatus
 }

@@ -27,7 +27,9 @@ final class TerminalPreferences {
         static let fontFamily = "terminal.fontFamily"
         static let fontSize = "terminal.fontSize"
         static let scrollback = "terminal.scrollbackLines"
-        static let theme = "terminal.theme"
+        static let cursor = "terminal.cursor"
+        static let colors = "terminal.colors"
+        static let usesGhosttyConfig = "terminal.usesGhosttyConfig"
         static let panelHeight = "terminal.panelHeight"
     }
 
@@ -38,7 +40,9 @@ final class TerminalPreferences {
             fontSize: defaults.object(forKey: Key.fontSize) as? Double ?? TerminalSettings.defaultFontSize,
             scrollback: (defaults.object(forKey: Key.scrollback) as? Int).map(TerminalScrollback.init(storedValue:))
                 ?? .default,
-            themeID: defaults.string(forKey: Key.theme) ?? TerminalTheme.native.id
+            cursor: Self.decode(TerminalCursor.self, from: defaults.data(forKey: Key.cursor)) ?? TerminalCursor(),
+            colors: Self.decode(TerminalColorChoice.self, from: defaults.data(forKey: Key.colors)) ?? .app,
+            usesGhosttyConfig: defaults.bool(forKey: Key.usesGhosttyConfig)
         )
         panelHeight = defaults.object(forKey: Key.panelHeight) as? Double ?? Self.defaultPanelHeight
     }
@@ -47,6 +51,12 @@ final class TerminalPreferences {
         defaults.set(settings.fontFamily, forKey: Key.fontFamily)
         defaults.set(settings.fontSize, forKey: Key.fontSize)
         defaults.set(settings.scrollback.storedValue, forKey: Key.scrollback)
-        defaults.set(settings.themeID, forKey: Key.theme)
+        defaults.set(try? JSONEncoder().encode(settings.cursor), forKey: Key.cursor)
+        defaults.set(try? JSONEncoder().encode(settings.colors), forKey: Key.colors)
+        defaults.set(settings.usesGhosttyConfig, forKey: Key.usesGhosttyConfig)
+    }
+
+    private static func decode<Value: Decodable>(_ type: Value.Type, from data: Data?) -> Value? {
+        data.flatMap { try? JSONDecoder().decode(type, from: $0) }
     }
 }

@@ -24,6 +24,8 @@ final class TerminalPanelModel: TerminalSurfaceEvents {
     @ObservationIgnored private let engine: () -> TerminalEngine?
     /// Hands focus back to the task's composer when the terminal gives it up.
     @ObservationIgnored var focusComposer: () -> Void = {}
+    /// Rereads the user's Ghostty config (`reload_config` in their key bindings).
+    @ObservationIgnored var reloadConfig: () -> Void = {}
     @ObservationIgnored private let command: String?
 
     init(workingDirectory: URL, command: String? = nil, engine: @escaping () -> TerminalEngine?) {
@@ -161,6 +163,22 @@ final class TerminalPanelModel: TerminalSurfaceEvents {
 
     func surfaceDidRequestClose(_ id: UUID) {
         close(id)
+    }
+
+    func surface(_ id: UUID, didRequest request: TerminalSurfaceRequest) {
+        switch request {
+        case .newTab:
+            newTab()
+        case .selectTab(offset: let offset):
+            selectTab(offset: offset)
+        case .goToTab(number: let number):
+            let index = min(number, tabs.tabs.count) - 1
+            if tabs.tabs.indices.contains(index) {
+                select(tabs.tabs[index].id)
+            }
+        case .reloadConfig:
+            reloadConfig()
+        }
     }
 
     func surface(_ id: UUID, didChangeFocus isFocused: Bool) {

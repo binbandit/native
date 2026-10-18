@@ -42,6 +42,11 @@ final class ProviderUsageReports {
         }
     }
 
+    /// The agent's open tasks with what they've used so far.
+    func taskUsage(of agent: AgentDefinition.ID) -> [UsageTaskSpend] {
+        host?.taskUsage(of: agent) ?? []
+    }
+
     /// Chosen by the commands the agent advertises, never by which agent it is.
     static func command(for session: any ContextReporting) -> String? {
         ["usage", "status"].first(where: session.advertises).map { "/\($0)" }

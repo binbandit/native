@@ -221,23 +221,26 @@ builds and a local feed. Use a test bundle id so it never touches your own Nativ
 host.
 
 ```sh
-work=/tmp/native-update-test && mkdir -p $work/feed && cd $work
-openssl genpkey -algorithm ed25519 -out key.pem
-openssl pkey -in key.pem -outform DER | tail -c 32 | base64 > sparkle.key       # private seed
-public=$(openssl pkey -in key.pem -pubout -outform DER | tail -c 32 | base64)
+work=/tmp/native-update-test && mkdir -p $work/feed $work/install
+openssl genpkey -algorithm ed25519 -out $work/key.pem
+openssl pkey -in $work/key.pem -outform DER | tail -c 32 | base64 > $work/sparkle.key   # private seed
+public=$(openssl pkey -in $work/key.pem -pubout -outform DER | tail -c 32 | base64)
 common=(--channel stable --no-dmg --ed-key-file $work/sparkle.key --download-url-prefix http://127.0.0.1:8765/
   --build-setting NATIVE_FEED_URL=http://127.0.0.1:8765/appcast.xml --build-setting NATIVE_SPARKLE_PUBLIC_KEY=$public
   --build-setting NATIVE_BUNDLE_IDENTIFIER_BASE=dev.native.updatetest)
 scripts/release/release.sh "${common[@]}" --version 1.0.0 --build-number 1000 --output $work/old
 scripts/release/release.sh "${common[@]}" --version 1.1.0 --build-number 1001 --output $work/new
-cp $work/new/appcast/{appcast.xml,*.zip} $work/feed/
+cp $work/new/appcast/appcast.xml $work/new/appcast/*.zip $work/feed/
 (cd $work/feed && python3 -m http.server 8765 --bind 127.0.0.1) &
 ditto $work/old/Native.app $work/install/Native.app && open -n $work/install/Native.app
 ```
 
-Then choose Native ▸ Check for Updates… and Update: the app downloads 1.1.0, verifies it, and
-reopens as 1.1.0. Delete the test app and its defaults (`defaults delete dev.native.updatetest`)
-afterwards.
+The key is a raw Ed25519 seed in a file, so nothing touches the Keychain, and the test bundle id
+keeps the test away from your own Native's settings and host. With automatic downloads on, 1.0.0
+downloads 1.1.0 in the background right after launch; Native ▸ Check for Updates… opens Settings ▸
+Updates showing "Native 1.1.0 is ready to install" with its notes, and Restart to Update relaunches
+as 1.1.0 (verified 2026-10-18, ad hoc signed, arm64). Afterwards stop the server, delete
+`$work`, `defaults delete dev.native.updatetest` and `~/Library/Caches/dev.native.updatetest`.
 
 ## Channel and seasonal icons
 
