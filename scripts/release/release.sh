@@ -152,6 +152,9 @@ run xcodebuild archive \
 run ditto "$archive/Products/Applications/$product.app" "$app"
 run codesign --verify --deep --strict --verbose=2 "$app"
 
+# Symbols must reach Sentry before users can receive this build. Dry runs print the upload only.
+remote bash "$ROOT/scripts/release/sentry.sh" "$archive/dSYMs"
+
 # MARK: - Notarize and staple
 
 notarize() {

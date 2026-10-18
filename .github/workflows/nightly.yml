@@ -57,6 +57,8 @@ jobs:
         run: scripts/release/ci-signing.sh setup
 
       - name: Build, notarize and publish
+        env:
+          SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
         if: steps.changes.outputs.skip != 'true'
         run: scripts/release/release.sh --channel nightly --publish --ed-key-file "$SPARKLE_KEY_FILE"
 

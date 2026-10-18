@@ -23,6 +23,8 @@ struct ComposerView: View {
     @State var isPlanExpanded = false
     @State var isModelPickerOpen = false
     @State var isDropTargeted = false
+    /// The file picker, from the "+" chip or File ▸ Attach Files….
+    @State var isPickingFiles = false
     /// The queued follow-up open in the editor; Return saves it back to the queue.
     @State var editingQueued: SessionModel.QueuedPrompt.ID?
     /// The autonomy level Plan Mode returns to, remembered from before it started.
@@ -38,8 +40,9 @@ struct ComposerView: View {
         session.phase == .prompting
     }
 
-    var blocker: SendBlocker? {
-        SendBlocker(phase: session.phase, acceptsPrompts: session.acceptsPrompts, agentName: session.agentName)
+    /// Whether there's anything to send: text, or files on their own.
+    var hasContent: Bool {
+        !session.draft.isEmpty || !session.attachments.isEmpty
     }
 
     /// After a turn ends normally, until the user starts on the next message.
@@ -133,6 +136,11 @@ struct ComposerView: View {
                 isModelPickerOpen = true
                 session.isModelPickerRequested = false
             }
+            .onChange(of: session.isAttachmentPickerRequested, initial: true) { _, isRequested in
+                guard isRequested else { return }
+                isPickingFiles = true
+                session.isAttachmentPickerRequested = false
+            }
             .onChange(of: settings.autonomy?.value, initial: true) { _, mode in
                 if let mode, mode != ComposerSettings.planValue {
                     autonomyBeforePlan = mode
@@ -171,14 +179,17 @@ struct ComposerView: View {
                     NextStepsSection(steps: nextSteps)
                 }
             }
+            if !session.attachments.isEmpty {
+                ComposerAttachmentsSection(attachments: session.attachments, onRemove: removeAttachment)
+            }
             inputSection(suggestions: suggestions)
             ComposerControlsRow(
                 settings: settings,
                 resumedAutonomy: autonomyBeforePlan,
-
                 followUpHint: isWorking ? FollowUpHint(preferred: followUp, supportsSteering: session.supportsSteering, agentName: session.agentName) : nil,
                 isModelPickerOpen: $isModelPickerOpen,
-                onAttach: insertMentions,
+                isPickingFiles: $isPickingFiles,
+                onAttach: attach,
                 onSet: set,
                 onCycleEffort: { apply(settings.nextEffort) },
                 onCycleAutonomy: { apply(settings.nextAutonomy) },
@@ -188,13 +199,14 @@ struct ComposerView: View {
             )
             .disabled(!canEdit)
         }
-        .dropDestination(for: URL.self) { urls, _ in
-            insertMentions(urls)
-            return !urls.isEmpty
+        .dropDestination(for: ComposerDropItem.self) { items, _ in
+            attach(items)
+            return !items.isEmpty
         } isTargeted: {
             isDropTargeted = $0
         }
         .animation(.dsStandard, value: plan.isActive)
+        .animation(.dsStandard, value: session.attachments.isEmpty)
         .animation(.dsStandard, value: showsNextSteps)
         .animation(.dsStandard, value: session.queuedPrompts)
     }
@@ -205,6 +217,7 @@ struct ComposerView: View {
                 handleKey(press, suggestions: suggestions)
             }
             .disabled(!canEdit)
+            .onAttachmentPaste(isEnabled: isFocused && canEdit, perform: attach)
             // One slot for Send and Stop, always reserved, so neither moves nor reflows the text when
             // they swap (the reference app shows Send only once there's a draft, Stop while the agent works).
             ZStack {
@@ -212,9 +225,9 @@ struct ComposerView: View {
                     ComposerStopButton(isEscapeEnabled: suggestions == nil) {
                         Task { await session.cancel() }
                     }
-                } else if !session.draft.isEmpty {
+                } else if hasContent {
                     // Disabled in place when something blocks sending, saying why.
-                    ComposerSendButton(disabledReason: blocker?.message) { submit(followUp) }
+                    ComposerSendButton(disabledReason: session.sendBlockedReason) { submit(followUp) }
                 }
             }
             .frame(width: DS.Size.composerAction, height: DS.Size.composerAction)
@@ -232,7 +245,7 @@ struct ComposerView: View {
                     .accessibilityHidden(true)
             }
         }
-        .animation(.dsQuick, value: session.draft.isEmpty)
+        .animation(.dsQuick, value: hasContent)
         .animation(.dsQuick, value: session.canCancel)
     }
 
@@ -244,8 +257,8 @@ struct ComposerView: View {
             ComposerToast(message: feedback.message, tone: feedback.tone, onUndo: onUndo)
                 .id(feedback.id)
                 .transition(.opacity)
-        } else if let blocker, !session.draft.isEmpty {
-            ComposerToast(message: blocker.message, tone: .problem)
+        } else if let blocked = session.sendBlockedReason, hasContent {
+            ComposerToast(message: blocked, tone: .problem)
                 .transition(.opacity)
         }
     }

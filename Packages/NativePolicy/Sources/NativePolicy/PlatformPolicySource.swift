@@ -7,9 +7,9 @@ extension NativePolicy {
         defaults: UserDefaults = .standard, simulatedManagedKeys: Set<String> = []
     ) -> any PolicySource {
         #if os(macOS)
-            UserDefaultsPolicySource(defaults: defaults, simulatedManagedKeys: simulatedManagedKeys)
+        UserDefaultsPolicySource(defaults: defaults, simulatedManagedKeys: simulatedManagedKeys)
         #else
-            ManagedAppConfigurationPolicySource(defaults: defaults)
+        ManagedAppConfigurationPolicySource(defaults: defaults)
         #endif
     }
 }

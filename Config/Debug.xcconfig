@@ -1,5 +1,8 @@
 #include "Shared.xcconfig"
 
+// Development instances never send diagnostics, even if their preferences opt in.
+NATIVE_SENTRY_DSN =
+
 NATIVE_APP_ICON_NAME = AppIconDev
 
 // Development builds don't update themselves: the stable feed would replace a dev build with a

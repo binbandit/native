@@ -5,32 +5,47 @@ public enum PolicyLoader {
     public static func load(from source: any PolicySource) -> NativePolicy {
         var resolver = PolicyResolver(source: source)
         var policy = NativePolicy()
-        policy.agents.allowed = resolver.resolve(.agentsAllowed, expecting: "an array of agent ids", PolicyParse.stringSet)
+        policy.agents.allowed = resolver.resolve(
+            .agentsAllowed, expecting: "an array of agent ids", PolicyParse.stringSet)
         policy.agents.environment =
-            resolver.resolve(.agentsEnvironment, expecting: "a dictionary of agent ids to environment dictionaries", PolicyParse.environment) ?? [:]
-        policy.mcp.allowed = resolver.resolve(.mcpAllowed, expecting: "an array of server names or command: patterns", PolicyParse.patterns)
+            resolver.resolve(
+                .agentsEnvironment, expecting: "a dictionary of agent ids to environment dictionaries",
+                PolicyParse.environment) ?? [:]
+        policy.mcp.allowed = resolver.resolve(
+            .mcpAllowed, expecting: "an array of server names or command: patterns", PolicyParse.patterns)
         policy.mcp.blocked =
-            resolver.resolve(.mcpBlocked, expecting: "an array of server names or command: patterns", PolicyParse.patterns) ?? []
+            resolver.resolve(
+                .mcpBlocked, expecting: "an array of server names or command: patterns", PolicyParse.patterns) ?? []
         policy.mcp.required =
-            resolver.resolve(.mcpRequired, expecting: "an array of servers, each with a name and exactly one of command or url", PolicyParse.requiredServers) ?? []
-        policy.allowedPlugins = resolver.resolve(.pluginsAllowed, expecting: "an array of plugin ids", PolicyParse.stringSet)
-        policy.blockedSkills = resolver.resolve(.skillsBlocked, expecting: "an array of skill names", PolicyParse.strings) ?? []
+            resolver.resolve(
+                .mcpRequired, expecting: "an array of servers, each with a name and exactly one of command or url",
+                PolicyParse.requiredServers) ?? []
+        policy.allowedPlugins = resolver.resolve(
+            .pluginsAllowed, expecting: "an array of plugin ids", PolicyParse.stringSet)
+        policy.blockedSkills =
+            resolver.resolve(.skillsBlocked, expecting: "an array of skill names", PolicyParse.strings) ?? []
         policy.forbiddenPermissionModes =
-            resolver.resolve(.forbiddenPermissionModes, expecting: "an array of permission mode ids", PolicyParse.stringSet) ?? []
+            resolver.resolve(
+                .forbiddenPermissionModes, expecting: "an array of permission mode ids", PolicyParse.stringSet) ?? []
         policy.scriptsEnabled = resolver.resolve(.scriptsEnabled, expecting: "a Boolean", PolicyParse.bool) ?? true
         policy.labsEnabled = resolver.resolve(.labsEnabled, expecting: "a Boolean", PolicyParse.bool) ?? true
         policy.companionEnabled = resolver.resolve(.companionEnabled, expecting: "a Boolean", PolicyParse.bool) ?? true
-        policy.remoteHostsEnabled = resolver.resolve(.remoteHostsEnabled, expecting: "a Boolean", PolicyParse.bool) ?? true
+        policy.remoteHostsEnabled =
+            resolver.resolve(.remoteHostsEnabled, expecting: "a Boolean", PolicyParse.bool) ?? true
         policy.updates.isEnabled = resolver.resolve(.updatesEnabled, expecting: "a Boolean", PolicyParse.bool) ?? true
-        policy.updates.feedURL = resolver.resolve(.updatesFeedURL, expecting: "an http or https URL", PolicyParse.webURL)
+        policy.updates.feedURL = resolver.resolve(
+            .updatesFeedURL, expecting: "an http or https URL", PolicyParse.webURL)
         policy.updates.allowedChannels =
             resolver.resolve(.updatesChannels, expecting: "an array of stable, beta or nightly", PolicyParse.channels)
         policy.searchRetentionDays =
-            resolver.resolve(.searchRetentionDays, expecting: "a whole number of days, 1 or more", PolicyParse.positiveInt)
+            resolver.resolve(
+                .searchRetentionDays, expecting: "a whole number of days, 1 or more", PolicyParse.positiveInt)
         policy.telemetry.native =
             resolver.resolve(.telemetryNative, expecting: "on, off or user", PolicyParse.telemetryMode) ?? .user
         policy.telemetry.endpoints =
-            resolver.resolve(.telemetryEndpoints, expecting: "an array of collectors, each with an http or https url", PolicyParse.endpoints) ?? []
+            resolver.resolve(
+                .telemetryEndpoints, expecting: "an array of collectors, each with an http or https url",
+                PolicyParse.endpoints) ?? []
         policy.managedKeys = resolver.managedKeys
         policy.diagnostics = resolver.diagnostics + unknownKeys(in: source)
         return policy
@@ -79,7 +94,8 @@ struct PolicyResolver {
         var problems: [String] = []
         let value = parse(raw, &problems)
         if value == nil {
-            diagnostics.append(PolicyDiagnostic(key: key.rawValue, origin: origin, problem: "should be \(expected); ignored"))
+            diagnostics.append(
+                PolicyDiagnostic(key: key.rawValue, origin: origin, problem: "should be \(expected); ignored"))
         }
         diagnostics += problems.map { PolicyDiagnostic(key: key.rawValue, origin: origin, problem: $0) }
         return value
@@ -171,17 +187,22 @@ enum PolicyParse {
             }
             switch (entry["command"] as? String, entry["url"]) {
             case (let command?, nil) where !command.isEmpty:
-                servers.append(RequiredMCPServer(name: name, transport: .stdio(
-                    command: command,
-                    arguments: entry["args"] as? [String] ?? [],
-                    environment: entry["env"] as? [String: String] ?? [:])))
+                servers.append(
+                    RequiredMCPServer(
+                        name: name,
+                        transport: .stdio(
+                            command: command,
+                            arguments: entry["args"] as? [String] ?? [],
+                            environment: entry["env"] as? [String: String] ?? [:])))
             case (nil, let url?):
                 var ignored: [String] = []
                 guard let url = webURL(url, &ignored) else {
                     problems.append("\(name)'s url isn't an http or https URL; skipped")
                     continue
                 }
-                servers.append(RequiredMCPServer(name: name, transport: .http(url: url, headers: entry["headers"] as? [String: String] ?? [:])))
+                servers.append(
+                    RequiredMCPServer(
+                        name: name, transport: .http(url: url, headers: entry["headers"] as? [String: String] ?? [:])))
             default:
                 problems.append("\(name) needs exactly one of command or url; skipped")
             }
@@ -194,14 +215,16 @@ enum PolicyParse {
         var endpoints: [TelemetryEndpoint] = []
         for (index, element) in array.enumerated() {
             var ignored: [String] = []
-            guard let entry = element as? [String: Any], let rawURL = entry["url"], let url = webURL(rawURL, &ignored) else {
+            guard let entry = element as? [String: Any], let rawURL = entry["url"], let url = webURL(rawURL, &ignored)
+            else {
                 problems.append("collector \(index + 1) has no http or https url; skipped")
                 continue
             }
-            endpoints.append(TelemetryEndpoint(
-                url: url,
-                headers: entry["headers"] as? [String: String] ?? [:],
-                attributes: entry["attributes"] as? [String: String] ?? [:]))
+            endpoints.append(
+                TelemetryEndpoint(
+                    url: url,
+                    headers: entry["headers"] as? [String: String] ?? [:],
+                    attributes: entry["attributes"] as? [String: String] ?? [:]))
         }
         return endpoints
     }
