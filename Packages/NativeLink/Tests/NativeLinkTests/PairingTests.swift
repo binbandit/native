@@ -44,6 +44,10 @@ import Testing
         #expect(LinkMethodPolicy.allows(HostProtocol.Method.setPluginEnabled, with: LinkGrants(managePlugins: true)))
         #expect(!LinkMethodPolicy.allows(HostProtocol.Method.syncAgents, with: LinkGrants(managePlugins: true)))
         #expect(!LinkMethodPolicy.allows("_native/exec/run", with: LinkGrants(managePlugins: true)))
+        #expect(!LinkMethodPolicy.allows(HostProtocol.Method.updateInstall, with: .standard))
+        #expect(LinkMethodPolicy.allows(HostProtocol.Method.updateInstall, with: LinkGrants(manageHost: true)))
+        #expect(LinkMethodPolicy.allows(HostProtocol.Method.updateStatus, with: .standard))
+        #expect(!LinkMethodPolicy.allows(HostProtocol.Method.updateReport, with: LinkGrants(managePlugins: true, manageHost: true)))
     }
 
     @Test func grantsChosenOnTheMacReachTheHost() async throws {

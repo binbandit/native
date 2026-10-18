@@ -13,19 +13,21 @@ public enum LinkMethodPolicy {
             Method.initialize, Method.listSessions, Method.newSession, Method.openSession, Method.attach,
             Method.detach, Method.prompt, Method.cancel, Method.setConfigOption, Method.respondPermission,
             Method.closeSession, Method.updateQueued, Method.removeQueued, Method.sendQueuedNow, Method.listActivity,
-            // Designed with the updates and plugins work: reading state, and installing an update.
-            "_native/host/update/status", "_native/host/update/install", Method.listPlugins, Method.pluginAsset,
+            Method.updateStatus, Method.updateCheck, Method.listPlugins, Method.pluginAsset,
         ]
     }()
 
-    /// Never over a link, whatever the role: stopping or restarting the host belongs to the machine
-    /// (remote updates go through `_native/host/update/install`), and agents come from the host's
-    /// own plugins, so a device never replaces its catalog.
-    static let localOnlyMethods: Set<String> = [HostProtocol.Method.shutdown, HostProtocol.Method.syncAgents]
+    /// Never over a link, whatever the grants: stopping the host belongs to the machine (remote
+    /// updates go through `update/install`), agents come from the host's own plugins so a device
+    /// never replaces its catalog, and only the Mac app on the machine reports Sparkle's status.
+    static let localOnlyMethods: Set<String> = [
+        HostProtocol.Method.shutdown, HostProtocol.Method.syncAgents, HostProtocol.Method.updateReport,
+    ]
 
     public static func allows(_ method: String, with grants: LinkGrants) -> Bool {
         guard !localOnlyMethods.contains(method) else { return false }
         if method == HostProtocol.Method.setPluginEnabled { return grants.managePlugins }
+        if method == HostProtocol.Method.updateInstall { return grants.manageHost }
         return standardMethods.contains(method)
     }
 }

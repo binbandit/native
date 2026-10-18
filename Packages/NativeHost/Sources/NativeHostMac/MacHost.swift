@@ -30,6 +30,7 @@ public enum MacHost {
             // A development build's host shouldn't outlive interest in it.
             idleExit: location.isDevelopment ? .seconds(15 * 60) : nil,
             pluginsDirectory: pluginsDirectory,
+            updates: MacHostUpdates.environment(location: location),
             exit: { status in Darwin.exit(status) }
         )
     }

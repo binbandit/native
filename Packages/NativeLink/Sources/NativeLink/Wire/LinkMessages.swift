@@ -7,17 +7,27 @@ import NativeHostProtocol
 public struct LinkGrants: Codable, Hashable, Sendable {
     /// Turn the host's plugins on and off for everyone using it.
     public var managePlugins: Bool
+    /// Install updates and restart the host. Offered on by default when the device scanned the QR
+    /// code (the host's key was pinned from it), off when it typed the code.
+    public var manageHost: Bool
 
-    public init(managePlugins: Bool = false) {
+    public init(managePlugins: Bool = false, manageHost: Bool = false) {
         self.managePlugins = managePlugins
+        self.manageHost = manageHost
     }
 
-    /// What a device gets unless the Mac's user grants more.
+    /// Following and driving tasks only.
     public static let standard = LinkGrants()
+
+    /// What the Mac's confirmation offers before the user changes anything.
+    public static func suggested(usedCode: Bool) -> LinkGrants {
+        LinkGrants(managePlugins: false, manageHost: !usedCode)
+    }
 
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         managePlugins = try container.decodeIfPresent(Bool.self, forKey: .managePlugins) ?? false
+        manageHost = try container.decodeIfPresent(Bool.self, forKey: .manageHost) ?? false
     }
 }
 

@@ -102,3 +102,34 @@ public struct StandaloneHostUpdater: HostSelfUpdater {
         installer.ledger().lastRollback.map { HostUpdateStatus.Rollback(from: $0.from, to: $0.to, at: $0.at) }
     }
 }
+
+extension StandaloneHostUpdater {
+    /// For a build on trial after an update: shakes hands with the host's own socket, the way a
+    /// client would, and keeps the build once that works. False if it didn't within `deadline`; the
+    /// host should then exit so the supervisor tries again (and the updater rolls back).
+    public func confirmWhenServing(at location: HostLocation, deadline: Duration = .seconds(60)) async -> Bool {
+        let end = ContinuousClock.now + deadline
+        while ContinuousClock.now < end {
+            if let handshake = try? await Self.handshake(location), handshake.hostInfo.build == runningBuild,
+                (try? installer.confirm(runningBuild: runningBuild)) != nil
+            {
+                return true
+            }
+            try? await Task.sleep(for: .seconds(1))
+        }
+        return false
+    }
+
+    private static func handshake(_ location: HostLocation) async throws -> FrozenHandshake {
+        let peer = JSONRPCPeer(
+            channel: ByteChannel.socket(try UnixSocket.connect(to: location.socketPath), label: "self-check"),
+            label: "self-check"
+        ) { _ in }
+        peer.start()
+        defer { peer.close() }
+        return try await peer.request(
+            HostProtocol.Method.initialize,
+            InitializeParams(clientInfo: PeerInfo(name: "native-host self-check", version: "", build: "")),
+            as: FrozenHandshake.self)
+    }
+}
