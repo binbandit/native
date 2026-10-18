@@ -7,7 +7,9 @@ extension CommandID {
 
 extension NativeCommand {
     static func statusBar(_ registry: StatusBarRegistry) -> NativeCommand {
-        NativeCommand(.statusBarToggle, title: "Show or Hide Status Bar", category: .view, systemImage: "menubar.rectangle") {
+        NativeCommand(
+            .statusBarToggle, title: "Show or Hide Status Bar", category: .view, systemImage: "menubar.rectangle"
+        ) {
             _ in
             registry.isShown.toggle()
         }
@@ -25,12 +27,14 @@ struct StatusBarCommands: Commands {
             CommandMenuItem(.statusBarToggle, in: commands)
             Menu("Status Bar Items") {
                 ForEach(registry.orderedItems) { item in
-                    Toggle(item.title, isOn: Binding {
-                        registry.isVisible(item.id)
-                    } set: {
-                        registry.setVisible($0, for: item.id)
-                        if $0 { registry.isShown = true }
-                    })
+                    Toggle(
+                        item.title,
+                        isOn: Binding {
+                            registry.isVisible(item.id)
+                        } set: {
+                            registry.setVisible($0, for: item.id)
+                            if $0 { registry.isShown = true }
+                        })
                 }
             }
         }

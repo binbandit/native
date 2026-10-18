@@ -32,7 +32,9 @@ struct CommandPaletteList: View {
                             .padding(.bottom, DS.Space.xs)
                             .accessibilityAddTraits(.isHeader)
                         ForEach(section.rows) { row in
-                            CommandPaletteRow(row: row, isSelected: row.id == selectedID, showsHighlights: !query.isEmpty) {
+                            CommandPaletteRow(
+                                row: row, isSelected: row.id == selectedID, showsHighlights: !query.isEmpty
+                            ) {
                                 onRun(row.item)
                             }
                             .onHover { if $0 { selection = row.id } }

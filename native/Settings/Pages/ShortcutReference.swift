@@ -102,7 +102,8 @@ enum ShortcutReference {
                     Shortcut(
                         id: "rename-session", title: "Rename the selected session",
                         note: "In the sidebar. Return commits, Escape cancels.", keys: ["↵"]),
-                    Shortcut(id: "palette-move", title: "Move through the palette", note: "Return runs", keys: ["↑", "↓"]),
+                    Shortcut(
+                        id: "palette-move", title: "Move through the palette", note: "Return runs", keys: ["↑", "↓"]),
                     Shortcut(id: "palette-close", title: "Close the palette", keys: ["Esc"]),
                 ]),
             Group(

@@ -1,5 +1,6 @@
 import Foundation
 import NativeCommands
+import NativePolicy
 import Observation
 import SwiftUI
 import os
@@ -23,21 +24,38 @@ final class CommandRegistry {
     /// In the order they were registered: each feature's, in the order the app adds them.
     private(set) var commands: [NativeCommand] = []
     private(set) var userBindings: ShortcutBindings
-    /// The organization's bindings, while it manages them.
-    var managedBindings: ShortcutBindings?
 
     @ObservationIgnored private var positions: [NativeCommand.ID: Int] = [:]
     @ObservationIgnored private let defaults: UserDefaults
+    @ObservationIgnored private let policy: PolicyCenter
+    /// The organization's bindings, parsed once per change of the managed value.
+    @ObservationIgnored private var managedCache: (source: [String: String], bindings: ShortcutBindings)?
     @ObservationIgnored private let logger = Logger(subsystem: "Native", category: "Commands")
 
-    init(defaults: UserDefaults = .standard) {
+    init(defaults: UserDefaults = .standard, policy: PolicyCenter = .shared) {
         self.defaults = defaults
-        let saved = defaults.dictionary(forKey: Self.preferencesKey) as? [String: String] ?? [:]
+        self.policy = policy
+        // A managed value shows through the defaults too; it isn't the user's.
+        let saved =
+            defaults.objectIsForced(forKey: Self.preferencesKey)
+            ? [:] : defaults.dictionary(forKey: Self.preferencesKey) as? [String: String] ?? [:]
         userBindings = ShortcutBindings(propertyList: saved)
     }
 
     var bindings: ShortcutBindings {
         managedBindings ?? userBindings
+    }
+
+    /// The organization's bindings (`policy.shortcuts.bindings`), while it manages them.
+    var managedBindings: ShortcutBindings? {
+        let current = policy.policy
+        guard current.isManaged(.shortcutBindings), let list = current.shortcutBindings else { return nil }
+        if let managedCache, managedCache.source == list {
+            return managedCache.bindings
+        }
+        let bindings = ShortcutBindings(propertyList: list)
+        managedCache = (list, bindings)
+        return bindings
     }
 
     /// Whether the organization decides the shortcuts.

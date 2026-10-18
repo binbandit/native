@@ -98,13 +98,14 @@ public struct KeyShortcut: Hashable, Sendable {
             return special.key
         }
         guard name.count == 1, let character = name.first,
-            !character.isWhitespace, character.unicodeScalars.allSatisfy({ !CharacterSet.controlCharacters.contains($0) })
+            !character.isWhitespace,
+            character.unicodeScalars.allSatisfy({ !CharacterSet.controlCharacters.contains($0) })
         else { return nil }
         return .character(character)
     }
 
-    fileprivate static let modifierNames:
-        [(modifier: Modifiers, glyph: Character, words: [String], spoken: [String])] = [
+    fileprivate static let modifierNames: [(modifier: Modifiers, glyph: Character, words: [String], spoken: [String])] =
+        [
             (.control, "⌃", ["ctrl", "control"], ["control", "ctrl"]),
             (.option, "⌥", ["opt", "option", "alt"], ["option", "opt", "alt"]),
             (.shift, "⇧", ["shift"], ["shift"]),

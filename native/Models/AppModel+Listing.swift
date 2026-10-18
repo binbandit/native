@@ -65,6 +65,8 @@ extension AppModel {
     private func refreshSessions(in project: Project, of runtime: AgentRuntime) async {
         guard let connection = runtime.connection, runtime.capabilities?.listSessions == true else { return }
         let agent = runtime.agent.id
+        listingsInFlight[agent, default: 0] += 1
+        defer { listingsInFlight[agent, default: 1] -= 1 }
         var fetched: [SessionInfo] = []
         var positions: [SessionID: Int] = [:]
         // Some agents list a repository's sessions from each of its worktrees; keep one copy, the
@@ -87,11 +89,15 @@ extension AppModel {
             for folder in Set(folders).sorted() {
                 merge(try await SessionCatalog.fetch(cwd: folder, from: connection), from: folder)
             }
+        } catch ACPConnectionError.disconnected {
+            // The agent stopped mid-listing: parked while idle, restarted, or crashed (which recovery
+            // reports). That isn't the listing's failure; the agent lists again when it next starts.
+            return
         } catch {
-            if !runtime.noteSignInRequired(by: error) {
-                errorMessage =
-                    "Couldn't list \(runtime.agent.displayName) sessions in \(project.name): \(error.localizedDescription)"
-            }
+            // A replaced agent's listing no longer matters, and one that wants the user to sign in
+            // says so itself.
+            guard runtimes[agent] === runtime, !runtime.noteSignInRequired(by: error) else { return }
+            problems.report(listingProblem(in: project, of: runtime.agent, details: error.localizedDescription))
             return
         }
         // Agents that match folders exactly don't list a session whose folder the provider no longer
@@ -123,8 +129,41 @@ extension AppModel {
         catalog.replace(agent, in: project.id, with: topLevel) {
             sessions.session(SessionKey(agent: agent, id: $0)) != nil
         }
+        problems.resolve(.listing(agent), in: project.id)
         if let selection, selection.agent == agent, !catalog.contains(selection) {
             self.selection = nil
         }
+    }
+
+    /// Lists `project` from `agent` again after a failure, starting the agent first if it's stopped.
+    func retryListing(in project: Project, of agent: AgentDefinition.ID) async {
+        guard let runtime = await ensureRunning(agent) else {
+            if let definition = runtimes[agent]?.agent {
+                problems.report(listingProblem(in: project, of: definition, details: startFailure(of: agent)))
+            } else {
+                // The agent went away (uninstalled), and its sessions with it.
+                problems.resolve(.listing(agent), in: project.id)
+            }
+            return
+        }
+        guard runtime.capabilities?.listSessions == true else {
+            // Nothing to list from an agent that no longer lists sessions.
+            problems.resolve(.listing(agent), in: project.id)
+            return
+        }
+        await refreshSessions(in: project, of: runtime)
+    }
+
+    private func listingProblem(in project: Project, of agent: AgentDefinition, details: String) -> ProjectProblem {
+        let hasListed = !catalog.sessions(in: project.id, of: agent.id).isEmpty
+        return ProjectProblem(
+            project: project.id,
+            work: .listing(agent.id),
+            title: "Couldn't list \(agent.displayName) sessions",
+            recovery: hasListed
+                ? "The sidebar shows the sessions \(agent.displayName) listed before."
+                : "\(agent.displayName)'s sessions in \(project.name) show once it can list them.",
+            details: details.withoutTerminalEscapes
+        )
     }
 }

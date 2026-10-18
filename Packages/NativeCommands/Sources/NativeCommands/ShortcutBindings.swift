@@ -61,7 +61,8 @@ public struct ShortcutBindings: Equatable, Sendable {
     }
 
     /// Gives `id` the shortcut (nil removes its shortcut), resolving a conflict as asked.
-    public mutating func assign(_ shortcut: KeyShortcut?, to id: CommandID, resolving resolution: Resolution = .replace) {
+    public mutating func assign(_ shortcut: KeyShortcut?, to id: CommandID, resolving resolution: Resolution = .replace)
+    {
         let previous = self.shortcut(for: id)
         if let shortcut {
             for other in commands(boundTo: shortcut) where other != id {

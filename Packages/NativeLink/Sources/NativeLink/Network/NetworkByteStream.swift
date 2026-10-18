@@ -63,9 +63,11 @@ public final class NetworkByteStream: ByteStream {
         let resumed = LinkLocked(false)
         return try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<NetworkByteStream, any Error>) in
-                @Sendable func finish(_ result: Result<NetworkByteStream, any Error>) {
-                    guard resumed.withLock({ done in defer { done = true }; return !done }) else { return }
+                /// Resumes once; false when the connection already succeeded or failed.
+                @Sendable @discardableResult func finish(_ result: Result<NetworkByteStream, any Error>) -> Bool {
+                    guard resumed.withLock({ done in defer { done = true }; return !done }) else { return false }
                     continuation.resume(with: result)
+                    return true
                 }
                 connection.stateUpdateHandler = { state in
                     switch state {
@@ -83,8 +85,10 @@ public final class NetworkByteStream: ByteStream {
                 }
                 connection.start(queue: queue)
                 queue.asyncAfter(deadline: .now() + .milliseconds(Int(timeout.components.seconds * 1_000))) {
-                    connection.cancel()
-                    finish(.failure(ConnectError.failed("No answer within \(timeout.components.seconds) seconds.")))
+                    // Only a connection still trying is given up on; a ready one is the caller's now.
+                    if finish(.failure(ConnectError.failed("No answer within \(timeout.components.seconds) seconds."))) {
+                        connection.cancel()
+                    }
                 }
             }
         } onCancel: {

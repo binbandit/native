@@ -33,6 +33,8 @@ import Testing
         let device = LinkDeviceInfo(name: "Loopback iPhone", model: "iPhone", system: "iOS 27.1")
         let decide = Task {
             _ = try await waitFor(control) { $0.pairing?.phase == .confirming }
+            // People take a moment to check the numbers: longer than the connect timeout.
+            try await Task.sleep(for: .seconds(5))
             try await control.decidePairing(accept: true, grants: .standard)
         }
         let (host, channel) = try await LinkPairing.pair(

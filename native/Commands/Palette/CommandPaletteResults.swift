@@ -32,7 +32,8 @@ struct CommandPaletteResults {
 
     init(items: [CommandPaletteItem], query: String, recents: [CommandPaletteItem.ID]) {
         let query = query.trimmingCharacters(in: .whitespaces)
-        sections = query.isEmpty ? Self.browse(items, recents: recents) : Self.search(items, query: query, recents: recents)
+        sections =
+            query.isEmpty ? Self.browse(items, recents: recents) : Self.search(items, query: query, recents: recents)
         rows = sections.flatMap(\.rows)
     }
 
@@ -53,7 +54,9 @@ struct CommandPaletteResults {
             .filter { !$0.rows.isEmpty }
     }
 
-    private static func search(_ items: [CommandPaletteItem], query: String, recents: [CommandPaletteItem.ID]) -> [Section] {
+    private static func search(
+        _ items: [CommandPaletteItem], query: String, recents: [CommandPaletteItem.ID]
+    ) -> [Section] {
         let scored = items.enumerated().compactMap { offset, item -> (row: Row, score: Int, offset: Int)? in
             // "Search transcripts for …" always applies; it goes last.
             if item.kind == .query {
@@ -66,10 +69,14 @@ struct CommandPaletteResults {
             return (Row(item: item, highlights: match.highlights), match.score * 10 + recency, offset)
         }
         let grouped = Dictionary(grouping: scored) { $0.row.item.kind }
-        return grouped
+        return
+            grouped
             .map { kind, entries in
                 let sorted = entries.sorted { ($0.score, -$0.offset) > ($1.score, -$1.offset) }
-                return (kind: kind, best: sorted.first?.score ?? 0, section: Section(title: kind.title, rows: sorted.map(\.row)))
+                return (
+                    kind: kind, best: sorted.first?.score ?? 0,
+                    section: Section(title: kind.title, rows: sorted.map(\.row))
+                )
             }
             .sorted { lhs, rhs in
                 if (lhs.kind == .query) != (rhs.kind == .query) { return rhs.kind == .query }

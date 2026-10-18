@@ -1,7 +1,8 @@
+import NativeCommands
+
 #if canImport(AppKit)
 import AppKit
 #endif
-import NativeCommands
 
 /// Captures the keys the user presses while Settings records a shortcut, before the menu bar can
 /// act on them (recording ⌘N mustn't start a session).

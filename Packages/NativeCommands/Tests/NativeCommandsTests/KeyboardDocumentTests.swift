@@ -57,9 +57,10 @@ import Testing
             | ⌘K | Ignored: no Command column |
             """
         let entries = try KeyboardDocument.entries(in: markdown)
-        #expect(entries.map(\.command.rawValue) == [
-            "go.back", "go.forward", "session.select1", "session.select2", "session.select3", "terminal.closeTab",
-        ])
+        #expect(
+            entries.map(\.command.rawValue) == [
+                "go.back", "go.forward", "session.select1", "session.select2", "session.select3", "terminal.closeTab",
+            ])
         #expect(entries[3].shortcut == KeyShortcut("⌘2"))
         #expect(entries[5].shortcut == nil)
     }

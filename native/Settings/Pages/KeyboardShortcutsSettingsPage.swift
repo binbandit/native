@@ -68,7 +68,8 @@ private struct KeyboardShortcutsEditor: View {
         }
         let fixed = ShortcutReference.groups(followUp: followUp).compactMap { group -> ShortcutReference.Group? in
             let shortcuts = group.shortcuts.filter(filter.matches)
-            return shortcuts.isEmpty ? nil : ShortcutReference.Group(title: group.title, note: group.note, shortcuts: shortcuts)
+            return shortcuts.isEmpty
+                ? nil : ShortcutReference.Group(title: group.title, note: group.note, shortcuts: shortcuts)
         }
         SettingsPage {
             SettingsHeader(
@@ -127,7 +128,8 @@ private struct KeyboardShortcutsEditor: View {
             isPresented: $isExporting, document: exported, contentType: .json, defaultFilename: "Native Shortcuts"
         ) { result in
             if case .failure(let error) = result {
-                notice = ShortcutsNotice(severity: .danger, title: "Couldn't export shortcuts", detail: error.localizedDescription)
+                notice = ShortcutsNotice(
+                    severity: .danger, title: "Couldn't export shortcuts", detail: error.localizedDescription)
             }
         }
         .fileImporter(isPresented: $isImporting, allowedContentTypes: [.json]) { result in
@@ -168,7 +170,8 @@ private struct KeyboardShortcutsEditor: View {
             exported = ShortcutsDocument(data: try registry.exportedFile())
             isExporting = true
         } catch {
-            notice = ShortcutsNotice(severity: .danger, title: "Couldn't export shortcuts", detail: error.localizedDescription)
+            notice = ShortcutsNotice(
+                severity: .danger, title: "Couldn't export shortcuts", detail: error.localizedDescription)
         }
     }
 
@@ -187,7 +190,8 @@ private struct KeyboardShortcutsEditor: View {
                     ? "The file is from a newer version of Native. Update Native, then import it again."
                     : "The file isn't a shortcuts file Native exported.")
         } catch {
-            notice = ShortcutsNotice(severity: .danger, title: "Couldn't import shortcuts", detail: error.localizedDescription)
+            notice = ShortcutsNotice(
+                severity: .danger, title: "Couldn't import shortcuts", detail: error.localizedDescription)
         }
     }
 }

@@ -152,6 +152,15 @@
             <key>policy.search.retentionDays</key>
             <integer>90</integer>
 
+            <!-- Keyboard shortcuts by command id (docs/commands.md), in the format Settings ▸ Keyboard
+                 Shortcuts exports; an empty string removes a shortcut. Setting this locks the user's
+                 shortcuts; commands it doesn't name keep Native's defaults. -->
+            <key>policy.shortcuts.bindings</key>
+            <dict>
+                <key>session.archive</key>
+                <string>opt+cmd+a</string>
+            </dict>
+
             <!-- Native's own anonymous telemetry: on, off, or user (the user decides; the default). -->
             <key>policy.telemetry.native</key>
             <string>off</string>

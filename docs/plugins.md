@@ -239,6 +239,7 @@ celebration uses one by its id (any enabled plugin's).
 | `name` | What the user sees. A string, or translations by language: `{"en": "Sunset", "es": "Atardecer"}`. |
 | `icons` | Images by channel, as paths inside the plugin's folder (1024×1024 PNG). The set applies only when all four channels have both images; otherwise it's listed with what's missing. `"forthcoming"` lists it without icons. |
 | `home` | `{"mark": "<id>"}`: one of Native's Home editions (`native.halloween`, `native.dia-de-muertos`). |
+| `caption` | One line shown where the set is picked as a celebration's style, such as "A calavera instead of Native's interlock." |
 | `palette` | Colors per appearance, most prominent first. With two or more, Home draws the emblem's links in the first two when there's no `home` mark, or the mark isn't in this version. |
 
 Each set is checked on its own when the plugin loads: one with an id outside the plugin's namespace,
@@ -284,6 +285,7 @@ decorative window, then the user's order decides, so two editions are never blen
 | `calendar` | `kind` and its rule; `tradition` names the calendar or region; `boundary` is `civil-day` (default), `sunset` or `nightfall`; `provisional` marks dates awaiting confirmation. |
 | `display` | `windows`: decorative spans around the core dates, in calendar days (0 to 60 either side); `defaultWindow`: `core` (default) or one of their ids; `treatment`: `festive` (default) or `quiet` for solemn observances. |
 | `iconSet` | The icon set it shows. Omitted lists it with its artwork forthcoming, changing nothing. |
+| `alternateIconSets` | Other styles of the same celebration, by icon set id, which the user can pick instead. Give each set a `caption` saying how it differs. |
 | `compatibility` | `manifestVersion` (1) and `minimumNativeVersion`; a newer one is listed as needing an update. |
 
 Calendar kinds this version resolves:

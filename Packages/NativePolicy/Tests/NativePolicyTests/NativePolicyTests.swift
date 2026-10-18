@@ -183,6 +183,16 @@ import Testing
         #expect(await updates.next()?.scriptsEnabled == false)
     }
 
+    @Test func shortcutBindings() {
+        #expect(load().shortcutBindings == nil)
+        let managed = load(managed: [.shortcutBindings: ["session.archive": "opt+cmd+a", "palette.show": "", "bad": 3]])
+        #expect(managed.shortcutBindings == ["session.archive": "opt+cmd+a", "palette.show": ""])
+        #expect(managed.isManaged(.shortcutBindings))
+        #expect(managed.diagnostics.map(\.problem) == ["bad should be a string; skipped"])
+        let user = load(user: [.shortcutBindings: ["session.archive": "opt+cmd+a"]])
+        #expect(user.shortcutBindings == ["session.archive": "opt+cmd+a"] && !user.isManaged(.shortcutBindings))
+    }
+
     @Test func wildcards() {
         #expect(Wildcard.matches("npx *@evil/*", "npx -y @evil/x", caseSensitive: true))
         #expect(Wildcard.matches("a?c", "abc", caseSensitive: true))

@@ -1,7 +1,8 @@
+import Foundation
+
 #if canImport(AppKit)
 import AppKit
 #endif
-import Foundation
 
 /// The frontmost window, as the platform sees it.
 @MainActor

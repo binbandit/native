@@ -5,9 +5,10 @@ import NativeTelemetry
 /// exists only when this build carries a Sentry DSN, so a build without one keeps Native's own
 /// telemetry off and never asks for consent. `TelemetryCenter` decides when it's on.
 enum NativeTelemetryDestination {
-    static let factory: (@MainActor () -> any TelemetryDestination)? = dsn.map { dsn in
-        { SentryTelemetryDestination(dsn: dsn) }
-    }
+    static let factory: (@MainActor () -> any TelemetryDestination)? = {
+        guard let dsn = Self.dsn else { return nil }
+        return { SentryTelemetryDestination(dsn: dsn) }
+    }()
 
     /// The DSN from Info.plist, when it's a usable one (the same check `SentryTelemetry` makes).
     private static var dsn: String? {

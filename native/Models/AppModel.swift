@@ -47,7 +47,11 @@ final class AppModel {
     var signInPrompt: AgentDefinition.ID?
     /// A sign-in under way in a terminal, for agents that can only sign in there.
     var terminalSignIn: AgentTerminalSignIn?
+    /// Why an action the user just took failed (starting a session, signing in), for the window's
+    /// alert. Work Native does on its own reports to `problems` instead, never here.
     var errorMessage: String?
+    /// Background work that failed for a project, shown with the project until it's fixed.
+    let problems = ProjectProblems()
     /// The agent a session is being created with, while that's under way.
     private(set) var creatingSessionWith: AgentDefinition.ID?
     /// The project whose home was shown last, for when no session is selected. Internal only for
@@ -77,6 +81,9 @@ final class AppModel {
     /// Task sessions being started, by agent, whose ids aren't known yet. Internal only for
     /// AppModel+TaskSessions.swift and AppModel+Listing.swift.
     @ObservationIgnored var taskStartsInFlight: [AgentDefinition.ID: Int] = [:]
+    /// Listings (`session/list`) under way, by agent, so an idle agent isn't stopped mid-listing.
+    /// Internal only for AppModel+Listing.swift and AppModel+AgentLifecycle.swift.
+    @ObservationIgnored var listingsInFlight: [AgentDefinition.ID: Int] = [:]
     @ObservationIgnored private let environment = ShellEnvironment()
     /// What stops an agent's sessions from taking messages; the Usage feature reports limits here.
     let sendGate: AgentSendGate
@@ -247,6 +254,7 @@ final class AppModel {
         for agent in removed {
             sessions.removeAll(of: agent)
             catalog.remove(agent: agent)
+            problems.resolveAll { $0.work == .listing(agent) }
             if selection?.agent == agent {
                 selection = nil
             }

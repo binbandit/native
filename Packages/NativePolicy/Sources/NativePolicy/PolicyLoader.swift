@@ -40,6 +40,8 @@ public enum PolicyLoader {
         policy.searchRetentionDays =
             resolver.resolve(
                 .searchRetentionDays, expecting: "a whole number of days, 1 or more", PolicyParse.positiveInt)
+        policy.shortcutBindings = resolver.resolve(
+            .shortcutBindings, expecting: "a dictionary of command ids to shortcuts", PolicyParse.stringDictionary)
         policy.telemetry.native =
             resolver.resolve(.telemetryNative, expecting: "on, off or user", PolicyParse.telemetryMode) ?? .user
         policy.telemetry.endpoints =
@@ -142,6 +144,19 @@ enum PolicyParse {
             environment[agent] = variables
         }
         return environment
+    }
+
+    static func stringDictionary(_ raw: Any, _ problems: inout [String]) -> [String: String]? {
+        guard let dictionary = raw as? [String: Any] else { return nil }
+        var strings: [String: String] = [:]
+        for (key, value) in dictionary {
+            guard let string = value as? String else {
+                problems.append("\(key) should be a string; skipped")
+                continue
+            }
+            strings[key] = string
+        }
+        return strings
     }
 
     static func webURL(_ raw: Any, _ problems: inout [String]) -> URL? {
