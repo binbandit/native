@@ -149,12 +149,15 @@ extension SessionMessageView {
     }
 
     /// A task prompt or message replayed by a reloaded session, where it arrives as a framed user
-    /// prompt rather than a session message.
+    /// prompt rather than a session message. Names the sender as a live message does, never by id.
     init(frame: TaskPromptFrame) {
         let sender =
             switch frame.sender {
-            case .parent: "the parent session"
-            case .task(_, let label), .sibling(_, let label): label
+            case .parent:
+                "the parent session"
+            case .task(let id, let label), .sibling(let id, let label):
+                Orchestrator.savedTask(id: id)?.title ?? OrchestrationTask.displayName(fromLabel: label)
+                    ?? "another task"
             }
         self.init(title: "From \(sender)", isOutgoing: false, text: frame.body)
     }

@@ -20,7 +20,8 @@ agent-specific UI baked into the core.
   tasks through the orchestration server.
 - **Goals and workflows.** Give an agent a goal and let Native keep it going, or script a multi-step
   workflow.
-- **Expeditions.** Long-running explorations that fan out and report back. See
+- **Expeditions.** Big jobs for a crew of agents: a lead proposes a route, you approve it, and agents
+  from any provider work through it with review checkpoints, ending in a debrief and a pull request. See
   [docs/expeditions.md](docs/expeditions.md).
 - **Durable host.** Sessions live in a host process that outlasts the window, and the same protocol
   serves remote hosts and the iPad client. See [docs/durability.md](docs/durability.md).
