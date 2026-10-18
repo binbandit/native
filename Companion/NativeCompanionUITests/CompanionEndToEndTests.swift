@@ -22,10 +22,12 @@ final class CompanionEndToEndTests: XCTestCase {
         let open = XCUIApplication(bundleIdentifier: "com.apple.springboard").buttons["Open"]
         if open.waitForExistence(timeout: 5) { open.tap() }
         let code = app.staticTexts.matching(NSPredicate(format: "label BEGINSWITH 'Confirm on'")).firstMatch
-        if !code.waitForExistence(timeout: 30) { print("HIERARCHY\n\(app.debugDescription)") }
-        XCTAssertTrue(code.exists, "the phone shows the verification code")
-        // Someone clicks Pair on the Mac now.
         let name = app.textFields["hostName"]
+        // A quick confirmation on the Mac can come before the code is ever looked for.
+        let shown = XCTNSPredicateExpectation(
+            predicate: NSPredicate { _, _ in code.exists || name.exists }, object: nil)
+        XCTAssertEqual(XCTWaiter.wait(for: [shown], timeout: 30), .completed, "the phone shows the verification code")
+        // Someone clicks Pair on the Mac now.
         XCTAssertTrue(name.waitForExistence(timeout: 180), "the Mac confirmed")
         if let label = environment["COMPANION_HOST_LABEL"] {
             name.tap()

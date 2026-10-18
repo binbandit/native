@@ -57,11 +57,18 @@ extension NativeCommand {
             }
             .available { _ in model.selection != nil },
 
-            NativeCommand(.sessionArchive, title: "Archive Task", category: .tasks, systemImage: "archivebox") {
-                context in
+            // An archived task stays open where it was; the same command brings it back.
+            NativeCommand(
+                .sessionArchive, title: "Archive or Unarchive Task", category: .tasks, systemImage: "archivebox"
+            ) { context in
                 guard let key = model.selection else { return }
-                Task { await model.archiveSession(key, undoManager: context.undoManager) }
+                if model.isArchived(key) {
+                    Task { await model.unarchiveSession(key) }
+                } else {
+                    Task { await model.archiveSession(key, undoManager: context.undoManager) }
+                }
             }
+            .menuTitle { _ in model.selection.map(model.isArchived) == true ? "Unarchive Task" : "Archive Task" }
             .available { _ in model.selection != nil },
 
             NativeCommand(.sessionTogglePin, title: "Pin or Unpin Task", category: .tasks, systemImage: "pin") {

@@ -160,7 +160,7 @@ expedition's lead (the composer key, on a page without a composer).
 | Return on a selected sidebar session | Rename it (Escape cancels, Return commits) | Session | |
 | ⌃⌘S | Show or hide the sidebar | View | `view.toggleSidebar` |
 | ⌥⌘↑ / ⌥⌘↓ | Move the selected project or session up / down | Session | `sidebar.moveUp` / `sidebar.moveDown` |
-| ⇧⌘A | Archive the selected task (Undo brings it back) | Session | `session.archive` |
+| ⇧⌘A | Archive the selected task (Undo brings it back), or unarchive an archived one | Session | `session.archive` |
 | ⌥⌘J | Show only tasks that need you | View | `view.needsYouFilter` |
 | ⌘⇧P | Pull requests | Go | `go.pullRequests` |
 | ⌘⇧X | Expeditions | Go | `go.expeditions` |
