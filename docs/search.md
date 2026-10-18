@@ -112,7 +112,10 @@ are the agents' own (`toolu_…`, `call_…`), which the ACP adapters pass throu
 Readers only read: memory-mapped, line by line, a cheap byte search deciding which lines are worth
 parsing. A pass is **resumable**: each batch (25 sessions or 2,000 documents) commits with its
 files' stamps, so a pass that's cancelled, crashes or quits continues where it stopped, and an
-unchanged file is never read twice. It runs at background priority, and **pauses on battery or in
+unchanged file is never read twice. Files never indexed go first, newest first; changed ones (an
+active session's log, often the biggest file there is) wait until the rest are searchable. It runs
+at utility priority (background priority's I/O throttling stalled it outright on a busy Mac), and
+**pauses on battery or in
 Low Power Mode**, continuing when the power source changes (IOKit's notification, no polling).
 What Native already knows wins over the history: the sidebar's title, the project a session is
 listed in, and whether it's archived.
@@ -174,7 +177,7 @@ was under a load average near 300. The pathological query, a lone stopword match
 document (`the`), took 91 ms under that load; it's the one case past the 50 ms budget, and typing
 a second word brings it back under.
 
-Indexing is the heavy part, so it runs at background priority, off the main thread, in batches,
+Indexing is the heavy part, so it runs at utility priority, off the main thread, in batches,
 and stops on battery. The history files are memory-mapped and most lines are skipped by a byte
 search before any JSON is parsed, which is why 1.4 GB reads in under ten seconds.
 
