@@ -16,4 +16,16 @@ struct OrchestrationTask: Codable, Sendable {
     var label: String {
         "\(id) (\(agentName): \(title))"
     }
+
+    /// "Fix the bug · Codex" from a `label`, for naming a task whose record is gone without showing
+    /// its id; nil when `label` isn't one.
+    static func displayName(fromLabel label: String) -> String? {
+        guard let open = label.range(of: " ("), label.hasSuffix(")") else { return nil }
+        let inner = label[open.upperBound..<label.index(before: label.endIndex)]
+        guard let colon = inner.range(of: ": ") else { return nil }
+        let agent = inner[..<colon.lowerBound]
+        let title = inner[colon.upperBound...]
+        guard !agent.isEmpty, !title.isEmpty else { return nil }
+        return "\(title) · \(agent)"
+    }
 }

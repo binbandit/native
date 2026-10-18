@@ -48,10 +48,17 @@ final class Orchestrator {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        tasks =
-            defaults.data(forKey: Self.tasksKey).flatMap {
-                try? JSONDecoder().decode([OrchestrationTask].self, from: $0)
-            } ?? []
+        tasks = Self.savedTasks(in: defaults)
+    }
+
+    /// The saved record of task `id`, for views that only know the id: a reloaded session replays
+    /// its task prompts with the sender's id in their header.
+    static func savedTask(id: String, defaults: UserDefaults = .standard) -> OrchestrationTask? {
+        savedTasks(in: defaults).first { $0.id == id }
+    }
+
+    private static func savedTasks(in defaults: UserDefaults) -> [OrchestrationTask] {
+        defaults.data(forKey: tasksKey).flatMap { try? JSONDecoder().decode([OrchestrationTask].self, from: $0) } ?? []
     }
 
     /// The token in the MCP URL `session` is given; the same one every time it's asked for. A session
