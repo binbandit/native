@@ -142,16 +142,19 @@ nonisolated private enum DSPalette {
         woolAlpha: 0.07)
 
     static let separator = toned(dynamic("separator", light: 0xE8E8E8, dark: 0x2C2C2C), wool: 0xE6E1D8)
-    // On glass, the same step from the surface as a translucent wash (`DSGlassAwareStyle`).
+    // On glass, the same step from the surface as a translucent wash (`DSGlassAwareStyle`). Dark
+    // glass renders a mid gray, where a faint white wash all but disappears, so dark's is stronger:
+    // the composer's pills and outline keep 3:1 against the glass, active window or not (measured
+    // #9E9C9B on #4F4C4B active, #989695 on #444241 inactive).
     static let border = onGlass(
         toned(dynamic("border", light: 0xCBCBCB, dark: 0x3E3E3E), wool: 0xCDC7BC),
         glass: toned(
-            dynamic("borderOnGlass", light: 0x000000, lightAlpha: 0.2, dark: 0xFFFFFF, darkAlpha: 0.17),
+            dynamic("borderOnGlass", light: 0x000000, lightAlpha: 0.2, dark: 0xFFFFFF, darkAlpha: 0.38),
             wool: 0x3B2B14, woolAlpha: 0.245))
     static let borderHover = onGlass(
         toned(dynamic("borderHover", light: 0x949494, dark: 0x4F4F4F), wool: 0x979084),
         glass: toned(
-            dynamic("borderHoverOnGlass", light: 0x000000, lightAlpha: 0.42, dark: 0xFFFFFF, darkAlpha: 0.24),
+            dynamic("borderHoverOnGlass", light: 0x000000, lightAlpha: 0.42, dark: 0xFFFFFF, darkAlpha: 0.55),
             wool: 0x3B2B14, woolAlpha: 0.51))
     static let borderStrong = toned(dynamic("borderStrong", light: 0x767676, dark: 0x616161), wool: 0x797266)
     static let borderInner = toned(dynamic("borderInner", light: 0xB2B2B2, dark: 0x2F2F2F), wool: 0xB4AEA3)

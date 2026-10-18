@@ -6,64 +6,113 @@ extension FocusedValues {
     @Entry var mcpServersPopover: Binding<Bool>?
 }
 
-/// A session's MCP servers at a glance, for the session header: how many it has and whether any
-/// needs attention. Click (or ⌃⌘M) for the list.
-struct MCPSessionStatusButton: View {
+extension EnvironmentValues {
+    /// Whether the session's MCP list is showing, owned by the session view (`mcpServersPresentation`)
+    /// so ⌃⌘M reaches whichever arrangement of the composer's controls is on screen.
+    @Entry var mcpServersPopover: Binding<Bool>?
+}
+
+extension View {
+    /// Owns whether this session's MCP list is showing, for the composer's MCP chip and ⌃⌘M.
+    func mcpServersPresentation() -> some View {
+        modifier(MCPServersPresentation())
+    }
+}
+
+private struct MCPServersPresentation: ViewModifier {
+    @State private var isPresented = false
+
+    func body(content: Content) -> some View {
+        content.environment(\.mcpServersPopover, $isPresented)
+    }
+}
+
+/// A session's MCP servers in the composer's trailing cluster, beside the context ring: a server
+/// glyph and how many are on, with a warning dot only when one failed or needs sign-in. It stays
+/// quiet (absent) when the session has none. Click, or ⌃⌘M, for the list above it.
+struct MCPComposerChip: View {
     let session: SessionModel
-    /// Opens Settings ▸ MCP Servers.
-    var onManage: (() -> Void)?
+    /// The count beside the glyph; the composer's tighter densities show the glyph alone.
+    var showsCount = true
 
     @Environment(AppModel.self) private var model
-    @State private var isPresented = false
+    @Environment(SettingsPresentation.self) private var settings
+    @Environment(\.mcpServersPopover) private var sharedPresentation
+    @State private var ownPresentation = false
+    @State private var isHovered = false
+
+    private var isPresented: Binding<Bool> {
+        sharedPresentation ?? $ownPresentation
+    }
 
     var body: some View {
         if let library = MCPServersPlugin.library(in: model.plugins) {
             // A real container, so tracking starts even while there's nothing to show.
             HStack(spacing: 0) {
-                button(library)
+                chip(library)
             }
             .task(id: session.clientID) { await library.track(session.context) }
         }
     }
 
     @ViewBuilder
-    private func button(_ library: MCPLibrary) -> some View {
-        do {
-            // Stored values only: the library keeps them current, so streaming updates cost nothing here.
-            let entries = library.entries(forSession: session.clientID)
-            let summary = MCPSessionSummary(library: library, entries: entries)
-            // Quiet when the session has no servers at all.
-            if !entries.isEmpty {
-                Button {
-                    isPresented.toggle()
-                } label: {
-                    HStack(spacing: DS.Space.sm) {
-                        Image(systemName: "server.rack")
-                        Text("\(summary.active)")
-                            .monospacedDigit()
-                        if summary.attention > 0 {
-                            StatusDot(color: .dsDanger)
-                        }
-                    }
-                }
-                .help(CommandRegistry.shared.help(summary.help, for: .viewMCPServers))
-                .accessibilityLabel("MCP servers")
-                .accessibilityValue(summary.help)
-                .focusedSceneValue(\.mcpServersPopover, $isPresented)
-                .popover(isPresented: $isPresented, arrowEdge: .bottom) {
-                    MCPSessionPanel(
-                        library: library, session: session, entries: entries,
-                        onManage: onManage.map { manage in
-                            {
-                                isPresented = false; manage()
-                            }
-                        }
-                    )
-                    .dsPopoverBackground()
-                }
+    private func chip(_ library: MCPLibrary) -> some View {
+        // Stored values only: the library keeps them current, so streaming updates cost nothing here.
+        let entries = library.entries(forSession: session.clientID)
+        let summary = MCPSessionSummary(library: library, entries: entries)
+        if !entries.isEmpty {
+            Button {
+                isPresented.wrappedValue.toggle()
+            } label: {
+                label(summary)
+            }
+            .buttonStyle(.plain)
+            .help(CommandRegistry.shared.help(summary.help, for: .viewMCPServers))
+            .accessibilityLabel("MCP servers")
+            .accessibilityValue(summary.help)
+            .focusedSceneValue(\.mcpServersPopover, isPresented)
+            .popover(isPresented: isPresented, arrowEdge: .top) {
+                MCPSessionPanel(
+                    library: library, session: session, entries: entries,
+                    onManage: {
+                        isPresented.wrappedValue = false
+                        settings.open(.mcpServers)
+                    })
+                .dsPopoverBackground()
             }
         }
     }
+
+    /// Drawn like the context indicator beside it: no outline, a wash on hover and while open.
+    private func label(_ summary: MCPSessionSummary) -> some View {
+        let shape = RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous)
+        let isOpen = isPresented.wrappedValue
+        return HStack(spacing: DS.Space.sm) {
+            PillIcon("server.rack")
+            if showsCount {
+                Text("\(summary.active)")
+                    .monospacedDigit()
+            }
+        }
+        .overlay(alignment: .topTrailing) {
+            if summary.attention > 0 {
+                StatusDot(color: .dsWarning)
+                    .offset(x: MCPChipMetrics.dotOffset, y: -MCPChipMetrics.dotOffset)
+            }
+        }
+        .font(.dsBody)
+        .foregroundStyle(isHovered || isOpen ? .dsTextPrimary : .dsTextSecondary)
+        .padding(.horizontal, DS.Space.sm)
+        .frame(minWidth: DS.Size.composerPill, minHeight: DS.Size.composerPill)
+        .background(isOpen ? Color.dsSelected : isHovered ? .dsHover : .clear, in: shape)
+        .contentShape(shape)
+        .trackHover($isHovered)
+    }
+}
+
+private enum MCPChipMetrics {
+    /// The warning dot sits on the glyph's top-right corner.
+    static let dotOffset: CGFloat = 3
 }
 
 /// Counts for the button's label and tooltip.
