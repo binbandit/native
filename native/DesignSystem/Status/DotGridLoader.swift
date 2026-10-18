@@ -18,10 +18,10 @@ public struct DotGridLoader: View {
     }
 
     public var body: some View {
-        if reduceMotion {
+        if isStill {
             canvas(frame: nil)
         } else {
-            TimelineView(.animation) { timeline in
+            TimelineView(.animation(minimumInterval: 1.0 / 30)) { timeline in
                 let elapsed = timeline.date.timeIntervalSinceReferenceDate
                 let timing = pattern.timing
                 let loop = (timing.end - timing.start) / 60
@@ -29,6 +29,15 @@ public struct DotGridLoader: View {
                 canvas(frame: frame)
             }
         }
+    }
+
+    // TEMPORARY experiment (streaming investigation): `-staticLoaders YES` holds loaders still.
+    private var isStill: Bool {
+        #if DEBUG
+        reduceMotion || RenderProbe.staticLoaders
+        #else
+        reduceMotion
+        #endif
     }
 
     private func canvas(frame: Double?) -> some View {

@@ -125,7 +125,13 @@ extension PullRequestPageModel {
         expandedLines.insert(Self.lineKey(path, hunk, line))
     }
 
-    /// Whether a block draws line by line, wrapping: when its file wraps, or a line in it was opened.
+    /// Whether a line shows whole, wrapping: its file wraps, or it was opened.
+    func isExpanded(_ path: String, _ hunk: DiffHunk, _ line: Int) -> Bool {
+        wraps(path) || expandedLines.contains(Self.lineKey(path, hunk, line))
+    }
+
+    /// Whether a block draws line by line, so a line can wrap: when its file wraps, or a line in it
+    /// was opened.
     func wrapsBlock(_ path: String, _ hunk: DiffHunk, _ range: Range<Int>) -> Bool {
         wraps(path) || range.contains { expandedLines.contains(Self.lineKey(path, hunk, $0)) }
     }
