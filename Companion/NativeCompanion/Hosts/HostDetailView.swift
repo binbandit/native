@@ -8,6 +8,7 @@ struct HostDetailView: View {
     let host: HostConnection
 
     @Environment(CompanionStore.self) private var store
+    @Environment(AppIconController.self) private var icons
     @Environment(\.dismiss) private var dismiss
     @State private var isConfirmingUnpair = false
 
@@ -63,6 +64,31 @@ struct HostDetailView: View {
                     "Only this phone sees the name, color and symbol. \(host.host.machineName) is the machine's own name."
                 )
             }
+            Section {
+                Picker("App Icon While Connected", selection: $host.preferences.appIcon) {
+                    Label {
+                        Text("Don't Change")
+                    } icon: {
+                        AppIconThumbnail(name: icons.theme.iconName, size: CompanionMetrics.hostMarkSmall)
+                    }
+                    .tag(CompanionAppIcon?.none)
+                    ForEach(CompanionAppIcon.allCases) { theme in
+                        Label {
+                            Text(theme.title)
+                        } icon: {
+                            AppIconThumbnail(name: theme.iconName, size: CompanionMetrics.hostMarkSmall)
+                        }
+                        .tag(Optional(theme))
+                    }
+                }
+                .pickerStyle(.navigationLink)
+                .onChange(of: host.preferences.appIcon) { icons.applyNow() }
+                .accessibilityIdentifier("hostAppIcon")
+            } footer: {
+                Text(
+                    "Shows while \(host.name) is the host you're looking at. iOS shows an alert each time the icon changes, and a celebration's icon wins while it lasts."
+                )
+            }
             Section("Notifications") {
                 Toggle("Updates", isOn: $host.preferences.notifiesAboutUpdates)
                 Toggle("Approvals", isOn: $host.preferences.notifiesAboutApprovals)
@@ -90,6 +116,7 @@ struct HostDetailView: View {
         .background(.dsBackground)
         .navigationTitle(host.name)
         .navigationBarTitleDisplayMode(.inline)
+        .hostTint(host.preferences)
         .confirmationDialog("Unpair \(host.name)?", isPresented: $isConfirmingUnpair, titleVisibility: .visible) {
             Button("Unpair", role: .destructive) {
                 store.unpair(host)

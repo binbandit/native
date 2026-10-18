@@ -6,8 +6,9 @@ import SwiftUI
 @main
 struct NativeCompanionApp: App {
     @State private var store: CompanionStore
+    @State private var icons: AppIconController
     @AppStorage(CompanionAppearance.key) private var appearance = CompanionAppearance.system
-    @AppStorage(CompanionAppIcon.key) private var iconTheme = CompanionAppIcon.original.rawValue
+    @Environment(\.scenePhase) private var scenePhase
 
     init() {
         let pairings = KeychainPairedHostStore(service: CompanionDevice.keychainService)
@@ -15,17 +16,26 @@ struct NativeCompanionApp: App {
         if ProcessInfo.processInfo.arguments.contains("-companionForgetPairings") {
             for host in (try? pairings.hosts()) ?? [] { try? pairings.remove(host.hostID) }
         }
-        _store = State(initialValue: CompanionStore(store: pairings))
+        let store = CompanionStore(store: pairings)
+        _store = State(initialValue: store)
+        _icons = State(initialValue: AppIconController(store: store, celebrations: CompanionCelebrations()))
     }
 
     var body: some Scene {
         WindowGroup {
             CompanionRootView()
                 .environment(store)
+                .environment(icons)
                 .preferredColorScheme(appearance.colorScheme)
-                .dsAccentPalette(themeID: iconTheme)
+                .dsAccentPalette(themeID: icons.theme.rawValue)
                 .onOpenURL { store.open($0) }
                 .task { store.startAll() }
+                .onChange(of: scenePhase, initial: true) { _, phase in
+                    if phase == .active { icons.applyDue() }
+                }
+                // Switching hosts is the person's own change; a celebration's dates wait for the
+                // next activation rather than interrupting with the system's alert.
+                .onChange(of: store.activeHostID) { icons.applyNow() }
         }
     }
 }
