@@ -9,6 +9,7 @@ struct CelebrationsSettingsPage: View {
     @Environment(PluginRegistry.self) private var plugins
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var query = ""
+    @State private var showsLater = false
 
     static func rowID(_ id: CelebrationID) -> SettingsRowID {
         SettingsRowID("celebration.\(id.rawValue)")
@@ -19,6 +20,18 @@ struct CelebrationsSettingsPage: View {
     private var matches: [CelebrationEvent] {
         center.catalog.celebrations.filter { $0.contribution.matches(query) }
     }
+
+    /// Ready to use, or already chosen.
+    private var available: [CelebrationEvent] {
+        matches.filter { $0.isApplicable || center.preferences.selection(for: $0.id).isEnabled }
+    }
+
+    /// Listed with their artwork (or calendar) still to come.
+    private var later: [CelebrationEvent] {
+        matches.filter { !$0.isApplicable && !center.preferences.selection(for: $0.id).isEnabled }
+    }
+
+    private var isSearching: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
 
     var body: some View {
         SettingsPage {
@@ -61,7 +74,8 @@ struct CelebrationsSettingsPage: View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
             HStack(spacing: DS.Space.xl) {
                 SettingsSubheading(
-                    "Catalogue", note: "Choose any time of year; each shows only on its dates. Packs never turn one on for you.")
+                    "Catalogue",
+                    note: "Choose any time of year; each shows only on its dates. Packs never turn one on for you.")
                 Spacer(minLength: 0)
                 CelebrationSearchField(query: $query)
             }
@@ -74,13 +88,42 @@ struct CelebrationsSettingsPage: View {
                         .buttonStyle(.ds(.secondary, size: .medium))
                 }
             } else {
+                if !available.isEmpty {
+                    SettingsRowGroup {
+                        ForEach(available) { event in
+                            CelebrationRow(event: event)
+                        }
+                    }
+                }
+                if !later.isEmpty {
+                    comingLater
+                }
+            }
+        }
+    }
+
+    private var comingLater: some View {
+        VStack(alignment: .leading, spacing: DS.Space.lg) {
+            HStack(spacing: DS.Space.xl) {
+                SettingsSubheading(
+                    "Coming later",
+                    note:
+                        "Their dates are researched; their artwork, and some of their calendars, are still being made.")
+                Spacer(minLength: 0)
+                if !isSearching {
+                    Button(showsLater ? "Hide" : "Show \(later.count)") { showsLater.toggle() }
+                        .buttonStyle(.ds(.ghost, size: .medium))
+                }
+            }
+            if showsLater || isSearching {
                 SettingsRowGroup {
-                    ForEach(matches) { event in
+                    ForEach(later) { event in
                         CelebrationRow(event: event)
                     }
                 }
             }
         }
+        .padding(.top, available.isEmpty ? 0 : DS.Space.lg)
     }
 
     private var problems: some View {
@@ -112,29 +155,31 @@ private struct CelebrationSearchField: View {
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
-        TextField("Find a celebration", text: $query, prompt: Text("Find a celebration").foregroundStyle(.dsTextTertiary))
-            .textFieldStyle(.plain)
-            .settingsText(.body)
-            .foregroundStyle(.dsTextPrimary)
-            .focused($isFocused)
-            .padding(.leading, DS.Space.xxxl)
-            .padding(.trailing, DS.Space.md)
-            .frame(width: CelebrationMetrics.searchWidth, height: DS.Size.controlSM)
-            .overlay(alignment: .leading) {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: SettingsMetrics.searchGlyph))
-                    .foregroundStyle(.dsTextSecondary)
-                    .padding(.leading, DS.Space.md + DS.Space.xxs)
-                    .accessibilityHidden(true)
-            }
-            .background(.dsBackground, in: shape)
-            .overlay { shape.strokeBorder(isFocused ? Color.dsAccent : Color.dsBorder, lineWidth: 1) }
-            .onKeyPress(.escape) {
-                guard !query.isEmpty else { return .ignored }
-                query = ""
-                return .handled
-            }
-            .accessibilityLabel("Find a celebration")
+        TextField(
+            "Find a celebration", text: $query, prompt: Text("Find a celebration").foregroundStyle(.dsTextTertiary)
+        )
+        .textFieldStyle(.plain)
+        .settingsText(.body)
+        .foregroundStyle(.dsTextPrimary)
+        .focused($isFocused)
+        .padding(.leading, DS.Space.xxxl)
+        .padding(.trailing, DS.Space.md)
+        .frame(width: CelebrationMetrics.searchWidth, height: DS.Size.controlSM)
+        .overlay(alignment: .leading) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: SettingsMetrics.searchGlyph))
+                .foregroundStyle(.dsTextSecondary)
+                .padding(.leading, DS.Space.md + DS.Space.xxs)
+                .accessibilityHidden(true)
+        }
+        .background(.dsBackground, in: shape)
+        .overlay { shape.strokeBorder(isFocused ? Color.dsAccent : Color.dsBorder, lineWidth: 1) }
+        .onKeyPress(.escape) {
+            guard !query.isEmpty else { return .ignored }
+            query = ""
+            return .handled
+        }
+        .accessibilityLabel("Find a celebration")
     }
 }
 

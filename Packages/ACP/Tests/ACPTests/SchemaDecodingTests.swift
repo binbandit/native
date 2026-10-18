@@ -9,7 +9,7 @@ struct SchemaDecodingTests {
 
         #expect(response.protocolVersion == 1)
         #expect(response.agentCapabilities.loadSession)
-        #expect(response.agentCapabilities.image)
+        #expect(response.agentCapabilities.prompt == PromptCapabilities(image: true, embeddedContext: true))
         // Advertised by an empty `sessionCapabilities.list` object.
         #expect(response.agentCapabilities.listSessions)
         #expect(response.agentCapabilities.deleteSessions)

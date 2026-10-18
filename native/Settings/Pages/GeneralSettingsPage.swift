@@ -64,7 +64,9 @@ struct GeneralSettingsPage: View {
                     SettingsSelect(
                         label: "Dock badge",
                         selection: $dockBadge.mode,
-                        options: DockBadgePreference.Mode.allCases.map { .init(value: $0, title: $0.title) }
+                        options: DockBadgePreference.Mode.allCases.map { .init(value: $0, title: $0.title) },
+                        // Wide enough for "Needs you or unread" in full.
+                        width: SettingsMetrics.selectWidth * 1.3
                     )
                 }
             }
