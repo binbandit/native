@@ -40,7 +40,8 @@ final class PlatformAppIcon {
         observers = [
             (
                 NotificationCenter.default,
-                NotificationCenter.default.addObserver(forName: activation, object: nil, queue: .main) { [weak self] _ in
+                NotificationCenter.default.addObserver(forName: activation, object: nil, queue: .main) {
+                    [weak self] _ in
                     Task { @MainActor [weak self] in self?.notify() }
                 }
             )
@@ -67,13 +68,22 @@ final class PlatformAppIcon {
         #endif
     }
 
+    /// What `image` can't do as the app icon here, for the picker: on the Mac a runtime image has no
+    /// Clear or Tinted look; elsewhere only compiled alternates apply at all.
+    static func limitation(of image: AppIconImage) -> String? {
+        if canApplyAnyImage { return "No Clear or Tinted" }
+        return canApply(image) ? nil : "Mac only"
+    }
+
     /// Shows `image` as the app icon; nil restores the compiled icon.
     func apply(_ image: AppIconImage?) {
         #if canImport(AppKit)
         NSApplication.shared.applicationIconImage = image.flatMap(Self.platformImage)
         #elseif canImport(UIKit)
         let name = image.flatMap(Self.alternateIconName)
-        guard UIApplication.shared.supportsAlternateIcons, UIApplication.shared.alternateIconName != name else { return }
+        guard UIApplication.shared.supportsAlternateIcons, UIApplication.shared.alternateIconName != name else {
+            return
+        }
         UIApplication.shared.setAlternateIconName(name, completionHandler: nil)
         #endif
     }

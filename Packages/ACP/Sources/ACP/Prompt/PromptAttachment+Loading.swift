@@ -39,6 +39,31 @@ extension PromptAttachment {
         }
     }
 
+    public enum LimitError: LocalizedError, Equatable {
+        case tooMany
+        case tooMuchInline(name: String)
+
+        public var errorDescription: String? {
+            switch self {
+            case .tooMany: "A message can carry up to \(Limits.count) files."
+            case .tooMuchInline(let name):
+                "\(name) would take this message past \(ByteCountFormatter.string(fromByteCount: Int64(Limits.inlineBytes), countStyle: .file)) of images and files. Send it in the next message."
+            }
+        }
+    }
+
+    /// `existing` with `attachment` added, or as it is when that file is already there. Throws when
+    /// the message would pass `Limits`.
+    public static func adding(_ attachment: PromptAttachment, to existing: [PromptAttachment]) throws -> [PromptAttachment] {
+        guard !existing.contains(where: { $0.url.standardizedFileURL == attachment.url.standardizedFileURL }) else {
+            return existing
+        }
+        guard existing.count < Limits.count else { throw LimitError.tooMany }
+        let inline = existing.reduce(attachment.inlineByteCount) { $0 + $1.inlineByteCount }
+        guard inline <= Limits.inlineBytes else { throw LimitError.tooMuchInline(name: attachment.name) }
+        return existing + [attachment]
+    }
+
     /// The image types agents take as they are; anything else is converted.
     static let sendableImageTypes: [UTType] = [.png, .jpeg, .gif, .webP]
 

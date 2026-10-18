@@ -15,8 +15,8 @@ final class DockBadgePreference {
 
         var title: String {
             switch self {
-            case .needsYou: "Needs you"
-            case .needsYouOrUnread: "Needs you or unread"
+            case .needsYou: "Tasks that need you"
+            case .needsYouOrUnread: "Needs you and unread"
             case .off: "Off"
             }
         }

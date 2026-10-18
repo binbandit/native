@@ -41,15 +41,16 @@ struct AppIconOption: Identifiable, Hashable {
     let preview: Preview
     /// Nil for built-in themes; the plugin's name for an icon set.
     let pluginName: String?
-    /// Why it can't be the real app icon here, shown under its tile; nil when it can. Home still
-    /// dresses up with it in the app.
+    /// What it can't do as the app icon here ("No Clear or Tinted" on the Mac, "Mac only" for a plugin
+    /// set on iPad), shown in the picker; nil when nothing. Home still dresses up with it in the app.
     let limitation: String?
 
     /// Every built-in theme, then the plain icon sets, previewed for this build's channel.
     static func all(iconSets: [IconSet], pluginNames: [String: String], variant: AppIconVariant) -> [AppIconOption] {
         let themes = AppIconTheme.allCases.map { theme in
             guard theme != .original else {
-                return AppIconOption(id: .theme(theme), title: theme.title, preview: .bundle, pluginName: nil, limitation: nil)
+                return AppIconOption(
+                    id: .theme(theme), title: theme.title, preview: .bundle, pluginName: nil, limitation: nil)
             }
             let icons = theme.images
             return AppIconOption(
@@ -66,6 +67,6 @@ struct AppIconOption: Identifiable, Hashable {
     }
 
     private static func limitation(_ icons: AppIconImagePair) -> String? {
-        PlatformAppIcon.canApply(icons.light) ? nil : "Mac only"
+        PlatformAppIcon.limitation(of: icons.light)
     }
 }

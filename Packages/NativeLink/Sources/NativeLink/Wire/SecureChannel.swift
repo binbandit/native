@@ -86,7 +86,9 @@ public final class SecureChannel: ByteStream {
     /// is handed on; afterwards `incoming()` does.
     func receiveMessage() async throws -> Data {
         let frame = try await reader.next()
-        guard frame.kind == .noise else { throw LinkError.malformed("a refusal after the handshake") }
+        // A wrong pairing code is only noticed by the host after the handshake's last message, so
+        // its refusal can come here, in place of the first encrypted message.
+        guard frame.kind == .noise else { throw LinkError.refused(LinkRefusal(byte: frame.body.first)) }
         return try receiver.withLock { try $0.decrypt(frame.body, associatedData: Data()) }
     }
 

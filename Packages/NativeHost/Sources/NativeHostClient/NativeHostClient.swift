@@ -30,6 +30,12 @@ public actor NativeHostClient {
         case activity(ActivityEntry)
         /// The host's plugin catalog changed.
         case pluginsChanged([HostPlugin])
+        /// The host's update status moved.
+        case updateChanged(HostUpdateStatus)
+        /// For the Mac app only: a device asked its host to check for or install an update, which
+        /// Native.app's updater does.
+        case appUpdateCheckRequested
+        case appUpdateInstallRequested(HostUpdateStatus.When)
     }
 
     public enum Failure: Error, LocalizedError, Equatable {
@@ -165,6 +171,27 @@ public actor NativeHostClient {
     }
 
     /// Stops the host and its agents for good, or (`stopAgents: false`) restarts it once idle.
+    // MARK: - Updates
+
+    public func updateStatus() async throws -> HostUpdateStatus {
+        try await call(HostProtocol.Method.updateStatus, EmptyMessage())
+    }
+
+    public func checkForUpdate() async throws -> HostUpdateStatus {
+        try await call(HostProtocol.Method.updateCheck, EmptyMessage())
+    }
+
+    /// Installs the update the host found: `.idle` waits for running tasks, `.now` interrupts them
+    /// (send it only after the user chose to). Needs the manage-host grant.
+    public func installUpdate(_ when: HostUpdateStatus.When) async throws -> HostUpdateStatus {
+        try await call(HostProtocol.Method.updateInstall, HostUpdateInstallParams(when: when))
+    }
+
+    /// For the Mac app: its updater's status, which the host serves to every client as its own.
+    public func reportUpdateStatus(_ status: HostUpdateStatus) async throws {
+        let _: EmptyMessage = try await call(HostProtocol.Method.updateReport, HostUpdateStatusMessage(status: status))
+    }
+
     // MARK: - Plugins
 
     /// The plugins installed on the host. `PluginAssets` fetches and caches their files.
@@ -296,6 +323,16 @@ public actor NativeHostClient {
         case Method.activity:
             if let entry = try? message.params(as: ActivityEntry.self) {
                 continuation.yield(.activity(entry))
+            }
+        case Method.updateChanged:
+            if let notification = try? message.params(as: HostUpdateStatusMessage.self) {
+                continuation.yield(.updateChanged(notification.status))
+            }
+        case Method.appUpdateCheck:
+            continuation.yield(.appUpdateCheckRequested)
+        case Method.appUpdateInstall:
+            if let params = try? message.params(as: HostUpdateInstallParams.self) {
+                continuation.yield(.appUpdateInstallRequested(params.when))
             }
         case Method.pluginsChanged:
             if let notification = try? message.params(as: PluginsChangedNotification.self) {

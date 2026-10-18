@@ -72,7 +72,9 @@ enum ScriptOutboundFrame: Decodable, Sendable, Equatable {
                 id: try container.decode(UInt32.self, forKey: .id),
                 toolName: try container.decode(String.self, forKey: .toolName),
                 input: try container.decode(ScriptJSON.self, forKey: .input),
-                site: line.map { ScriptCallSite(line: $0, column: try? container.decodeIfPresent(Int.self, forKey: .column)) })
+                site: line.map {
+                    ScriptCallSite(line: $0, column: try? container.decodeIfPresent(Int.self, forKey: .column))
+                })
         case "result": self = .result
         case "error": self = .error(try container.decode(ScriptFailure.self, forKey: .error))
         default:

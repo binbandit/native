@@ -31,6 +31,10 @@ import Testing
     @Test func refusesMethodsBeyondTheDevicesGrants() async throws {
         let harness = try GatewayHarness()
         let (_, channel) = try await harness.pairDevice()
+        // The host reads the device's stream; the policy runs as it does.
+        let (stream, _) = try #require(harness.admitted.withLock { $0.first })
+        let reading = Task { for await _ in stream.incoming() {} }
+        defer { reading.cancel() }
         var replies = channel.incoming().makeAsyncIterator()
         channel.write(Data(#"{"jsonrpc":"2.0","id":7,"method":"_native/host/shutdown","params":{"stopAgents":true}}"#.utf8 + [0x0A]))
         let reply = String(decoding: try #require(await replies.next()), as: UTF8.self)

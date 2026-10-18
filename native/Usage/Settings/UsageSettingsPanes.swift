@@ -30,6 +30,7 @@ extension SettingsPane {
                     SettingsSearchEntry(id: NotificationSettingsPage.thresholdRow, title: "Long means", keywords: ["seconds", "minutes"]),
                     SettingsSearchEntry(id: NotificationSettingsPage.needsYouRow, title: "When a task needs you", keywords: ["permission", "approval", "question"]),
                     SettingsSearchEntry(id: NotificationSettingsPage.limitsRow, title: "Usage limits", keywords: ["reset", "snooze"]),
+                    SettingsSearchEntry(id: NotificationSettingsPage.dockBadgeRow, title: "Dock badge", keywords: ["dock", "badge", "icon", "count", "unread"]),
                 ]
             }
         ) {

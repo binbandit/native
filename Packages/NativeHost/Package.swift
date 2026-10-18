@@ -17,6 +17,7 @@ let package = Package(
     dependencies: [
         .package(path: "../ACP"),
         .package(path: "../Exec"),
+        .package(path: "../HostUpdater"),
     ],
     targets: [
         .target(name: "NativeHostProtocol", dependencies: ["ACP"]),
@@ -24,7 +25,12 @@ let package = Package(
         /// The host's core: portable (Foundation only), so other machines can run it.
         .target(name: "NativeHost", dependencies: ["NativeHostProtocol", "ACP"]),
         /// The Mac's side of the host: code-signature checks, boot time, the login-shell environment.
-        .target(name: "NativeHostMac", dependencies: ["NativeHost", "NativeHostProtocol", "UserShell"]),
+        .target(
+            name: "NativeHostMac",
+            dependencies: [
+                "NativeHost", "NativeHostProtocol", "UserShell", .product(name: "Exec", package: "Exec"),
+                .product(name: "HostUpdater", package: "HostUpdater"),
+            ]),
         .target(name: "NativeHostClient", dependencies: ["NativeHostProtocol", "ACP", .product(name: "Exec", package: "Exec")]),
         .executableTarget(name: "native-host", dependencies: ["NativeHost", "NativeHostMac", "NativeHostProtocol"]),
         /// A scriptable ACP agent for the crash-recovery tests.

@@ -15,12 +15,13 @@ struct CodeFontSettingsRow: View {
     @AppStorage(AppearancePreferences.codeFontSizeKey) private var size = DSCodeFont.standard.size
     @AppStorage(AppearancePreferences.codeLineHeightKey) private var lineHeight = DSCodeFont.standard.lineHeight
     @AppStorage(AppearancePreferences.codeLigaturesKey) private var ligatures = DSCodeFont.standard.ligatures
+    @AppStorage(AppearancePreferences.terminalUsesCodeFontKey) private var terminalUsesCodeFont = false
 
     var body: some View {
         SettingsRowGroup {
             SettingsRow(
                 id: Self.rowID, "Code font",
-                description: Text("For code blocks, diffs and tool output. The terminal has its own font.")
+                description: Text("For code blocks, diffs and tool output.")
             ) {
                 HStack(spacing: DS.Space.md) {
                     SettingsSelect(
@@ -48,6 +49,12 @@ struct CodeFontSettingsRow: View {
                 description: Text("Join character pairs such as -> and != in fonts that have programming ligatures.")
             ) {
                 SettingsSwitch("Ligatures", isOn: $ligatures)
+            }
+            SettingsRow(
+                "Use the same font in the terminal",
+                description: Text("Set the terminal in this font and size too, instead of its own font settings.")
+            ) {
+                SettingsSwitch("Use the same font in the terminal", isOn: $terminalUsesCodeFont)
             }
         }
     }

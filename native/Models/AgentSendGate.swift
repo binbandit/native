@@ -27,7 +27,7 @@ final class AgentSendGate {
 enum SessionSendBlock: Equatable {
     /// An agent's own subagent, which only its parent gives work to.
     case notAcceptingPrompts
-    case disconnected
+    case disconnected(agentName: String)
     case signInNeeded(agentName: String)
     /// The usage limit's message.
     case usageLimit(String)
@@ -35,7 +35,7 @@ enum SessionSendBlock: Equatable {
     var message: String {
         switch self {
         case .notAcceptingPrompts: "This subagent only takes work from the session that started it."
-        case .disconnected: "The session's agent stopped running."
+        case .disconnected(let agentName): "\(agentName) stopped running. Restart it from the sidebar to send."
         case .signInNeeded(let agentName): "Sign in to \(agentName) to send messages."
         case .usageLimit(let message): message
         }

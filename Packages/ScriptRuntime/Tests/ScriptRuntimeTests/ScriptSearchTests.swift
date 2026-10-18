@@ -12,7 +12,10 @@ import Testing
     @Test func labelMatchesRankFirstAndEveryWordMustMatch() {
         let found = ScriptReference.search(bindings, query: "Procedure", limit: 10).map(\.label)
         #expect(found == ["tools.rea.list_procedures", "tools.rea.search_strings"])
-        #expect(ScriptReference.search(bindings, query: "list issues", limit: 10).map(\.label) == ["tools.github.list_issues"])
+        #expect(
+            ScriptReference.search(bindings, query: "list issues", limit: 10).map(\.label) == [
+                "tools.github.list_issues"
+            ])
         #expect(ScriptReference.search(bindings, query: "list nothing", limit: 10).isEmpty)
     }
 
