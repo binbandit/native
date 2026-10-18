@@ -129,6 +129,9 @@ private struct ProjectMenu: View {
         Button("Change Icon…") {
             isPickingIcon = true
         }
+        Menu("Open In") {
+            OpenInMenuContent(location: OpenInLocation(folder: project.url, host: project.host), model: .shared)
+        }
         if PlatformFileBrowser.canReveal {
             Button("Show in Finder") {
                 PlatformFileBrowser.reveal(project.url)

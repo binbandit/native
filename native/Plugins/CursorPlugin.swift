@@ -7,22 +7,25 @@ extension BuiltInPlugins {
     ///
     /// The CLI also installs itself as `agent`, a name other CLIs (Grok's, for one) claim too, so
     /// it's only ever launched as `cursor-agent`.
-    static let cursor = ManifestPlugin(manifest: PluginManifest(
-        id: "cursor",
-        name: "Cursor",
-        description: "Cursor's coding agent, through the Cursor CLI's built-in ACP server.",
-        agents: [AgentManifest(
+    static let cursor = ManifestPlugin(
+        manifest: PluginManifest(
             id: "cursor",
             name: "Cursor",
-            symbol: "cursorarrow",
-            command: "cursor-agent",
-            args: ["acp"],
-            mcpConfig: "cursor",
-            icon: AgentIconSource(apps: ["com.todesktop.230313mzl4w4u92"], registry: "cursor"),
-            setup: AgentSetupGuide(
-                install: "brew install --cask cursor-cli",
-                docs: URL(string: "https://cursor.com/docs/cli/installation")
-            )
-        )]
-    ))
+            description: "Cursor's coding agent, through the Cursor CLI's built-in ACP server.",
+            agents: [
+                AgentManifest(
+                    id: "cursor",
+                    name: "Cursor",
+                    symbol: "cursorarrow",
+                    command: "cursor-agent",
+                    args: ["acp"],
+                    mcpConfig: "cursor",
+                    icon: AgentIconSource(apps: ["com.todesktop.230313mzl4w4u92"], registry: "cursor"),
+                    setup: AgentSetupGuide(
+                        install: "brew install --cask cursor-cli",
+                        docs: URL(string: "https://cursor.com/docs/cli/installation")
+                    )
+                )
+            ]
+        ))
 }

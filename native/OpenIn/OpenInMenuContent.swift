@@ -23,6 +23,8 @@ struct OpenInMenuContent: View {
                     } icon: {
                         model.icon(for: app)
                     }
+                    // Menus only show item icons when the content asks for them.
+                    .labelStyle(.titleAndIcon)
                 }
             }
             Divider()

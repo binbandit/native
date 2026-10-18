@@ -1,11 +1,15 @@
 import ACP
 import Foundation
 
-/// Codex applies a policy when it launches: its ACP adapter merges the JSON in `CODEX_CONFIG` into
-/// every session's config, and `mcp_servers.<name>.enabled = false` keeps that server from starting.
-/// The keys are dotted paths, because the adapter replaces the whole `mcp_servers` table when a
-/// session brings servers of its own (Native's always does). There's no per-session equivalent, so
-/// intents for one project can't be applied.
+/// Codex applies a policy when it launches: its ACP adapter (codex-acp 2.2.2) merges the JSON in
+/// `CODEX_CONFIG` into every session's config, and `mcp_servers.<name>.enabled = false` keeps that
+/// server from starting. The keys are dotted paths, because the adapter replaces the whole
+/// `mcp_servers` table when a session brings servers of its own.
+///
+/// Known limit: when a session does bring servers (Native's orchestration server, say), Codex gets
+/// both that table and the dotted key in one unordered map, and the server stays off only when the
+/// key happens to apply second. docs/agent-session-overrides.md has the details and the fix the
+/// adapter needs. There's no per-session equivalent, so intents for one project can't be applied.
 struct CodexPolicyTranslator: SessionPolicyTranslator {
     func launchEnvironment(for policy: SessionPolicy) -> [String: String] {
         let names = Set(policy.allProjectsOnly.disabledMCPServers.map(\.name)).sorted()

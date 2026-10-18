@@ -296,10 +296,11 @@ private struct SessionCommands: Commands {
 
             Divider()
 
-            // The visible task's folder (its worktree when it has one), else Home's project.
+            // The visible task's folder (its worktree when it has one); disabled while no task is in
+            // view (Home, Settings, Pull Requests).
             OpenInCommands(
-                location: model.currentProject.map {
-                    OpenInLocation(folder: model.selection.flatMap(model.session)?.cwd ?? $0.url, host: $0.host)
+                location: session.map {
+                    OpenInLocation(folder: $0.cwd, host: model.currentProject?.host ?? .local)
                 })
 
             Divider()

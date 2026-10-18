@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import os
 
 #if os(macOS)
 import AppKit
@@ -26,6 +27,9 @@ final class NotificationSounds {
     @ObservationIgnored private let isAppActive: @MainActor () -> Bool
     @ObservationIgnored private let player = SoundPlayer()
     @ObservationIgnored private var lastPlayed = Date.distantPast
+    /// What played and why something didn't, for "why didn't it chime?" (`log stream --predicate
+    /// 'subsystem == "Native" AND category == "Sounds"' --info`).
+    @ObservationIgnored private let logger = Logger(subsystem: "Native", category: "Sounds")
     /// Several sessions often finish together; one sound says so.
     private static let burstInterval: TimeInterval = 1.5
 
@@ -63,14 +67,19 @@ final class NotificationSounds {
         if preferences.staysQuietDuringFocus {
             // The first sound that would play is when Native asks to see Focus, never at launch.
             await focus.requestAccessIfNeeded()
-            if focus.isFocused == true { return false }
+            if focus.isFocused == true {
+                logger.info("Quiet for \(trigger.rawValue, privacy: .public): a Focus is on")
+                return false
+            }
         }
         let isViewingSession = session.map(isViewing) ?? false
-        guard preferences.timing.allows(isAppActive: isAppActive(), isViewingSession: isViewingSession),
-              Date.now.timeIntervalSince(lastPlayed) >= Self.burstInterval,
-              let option = option(for: trigger)
-        else { return false }
+        guard preferences.timing.allows(isAppActive: isAppActive(), isViewingSession: isViewingSession) else {
+            logger.info("Quiet for \(trigger.rawValue, privacy: .public): \(self.preferences.timing.rawValue, privacy: .public)")
+            return false
+        }
+        guard Date.now.timeIntervalSince(lastPlayed) >= Self.burstInterval, let option = option(for: trigger) else { return false }
         lastPlayed = .now
+        logger.info("Playing \(option.title, privacy: .public) for \(trigger.rawValue, privacy: .public)")
         await player.play(option, volume: preferences.volume)
         return true
     }
