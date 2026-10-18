@@ -52,6 +52,11 @@ import Testing
         #expect(log.withLock { $0.last?.kind } == .success)
         stream.close()
         #expect(admitted.withLock { $0 } == 2)
+
+        // A revoked device is told so over TCP, not just hung up on.
+        let deviceID = try #require(try await control.refresh().activeDevices.first?.id)
+        try await control.revoke(deviceID)
+        await #expect(throws: LinkError.revoked) { _ = try await transport.connect() }
         await control.stop()
     }
 

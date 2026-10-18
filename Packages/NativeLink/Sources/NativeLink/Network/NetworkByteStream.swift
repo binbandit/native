@@ -16,6 +16,7 @@ public final class NetworkByteStream: ByteStream {
     private struct State {
         var backlog = 0
         var isClosed = false
+        var isClosing = false
         var onClose: [@Sendable () -> Void] = []
     }
 
@@ -146,9 +147,20 @@ public final class NetworkByteStream: ByteStream {
         return true
     }
 
+    /// Hangs up once what's queued has gone out: the host's last word (a refusal, or "revoked")
+    /// has to reach the device, and cancelling a connection drops its pending sends.
     public func close() {
-        connection.cancel()
+        let isFirst = state.withLock { state in
+            defer { state.isClosing = true }
+            return !state.isClosing
+        }
+        guard isFirst else { return }
         markClosed()
+        connection.send(
+            content: nil, contentContext: .finalMessage, isComplete: true,
+            completion: .contentProcessed { [connection] _ in connection.cancel() })
+        // A peer that stopped reading doesn't get to hold the connection open.
+        queue.asyncAfter(deadline: .now() + .seconds(2)) { [connection] in connection.cancel() }
     }
 
     /// Runs `action` once the connection closes, right away if it already has.
