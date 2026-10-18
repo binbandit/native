@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The table's column titles (Name, CPU, RSS). Each one sorts by its column; the current
+/// The table's column titles (Name, CPU, Memory). Each one sorts by its column; the current
 /// sort is in the primary color.
 struct ResourceTableHeader: View {
     @Binding var sort: ResourceSort
