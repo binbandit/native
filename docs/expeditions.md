@@ -18,16 +18,15 @@ The sub-terms below follow the recommended name. With Constellations or Ensemble
 
 ## What it does, and what it doesn't
 
-- **At its core:** an engine that isn't an LLM runs the queue while an agent plans; structured handoffs
-  (a builder's report says what changed, how it was verified, and what it left undone); review by a
-  different provider than the builder by default; bounded attempts before the user is asked; a
-  guard on scope growth (a lead revision that more than doubles the route needs approval); agent
-  state shown as waiting on you, working, idle; a readiness check before anything starts.
-- **Also:** a budget per expedition; worktree isolation by default;
-  the crew picked by the user across providers; protection that doesn't depend on which tool an
-  agent writes with (Native is the only writer and checks the files); steering a running member
-  without pausing the whole run; a pull request that's part of the finish, not whatever an agent
-  happened to open.
+- **At its core:** an engine that isn't an LLM runs the queue while an agent plans; structured
+  handoffs (a builder's report says what changed, how it was verified, and what it left undone);
+  review by a different provider than the builder by default; bounded attempts before the user is
+  asked; a guard on scope growth (a lead revision that more than doubles the route needs approval);
+  agent state shown as waiting on you, working, idle; a readiness check before anything starts.
+- **Also:** a budget per expedition; worktree isolation by default; the crew picked by the user
+  across providers; protection that doesn't depend on which tool an agent writes with (Native is the
+  only writer and checks the files); steering a running member without pausing the whole run; a pull
+  request that's part of the finish, not whatever an agent happened to open.
 - **Left out:** organization billing and "teams" as attribution; hidden cloud machines; free-text
   dependencies.
 
