@@ -202,7 +202,7 @@ private struct CelebrationOptions: View {
         case .downloadable(.notDownloaded), .downloadable(.ready):
             "Downloads now, or a week before its dates. Until then, your icon stays as it is."
         case .downloadable(.downloading): "Downloading…"
-        case .downloadable(.failed(let reason)): reason
+        case .downloadable(.failed(let reason)), .downloadable(.unavailable(let reason)): reason
         }
     }
 

@@ -8,6 +8,7 @@ struct CelebrationsSettingsPage: View {
     @Environment(CelebrationCenter.self) private var center
     @Environment(PluginRegistry.self) private var plugins
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.undoManager) private var undoManager
     @State private var query = ""
     @State private var showsLater = false
 
@@ -77,6 +78,7 @@ struct CelebrationsSettingsPage: View {
                     "Catalogue",
                     note: "Choose any time of year; each shows only on its dates. Packs never turn one on for you.")
                 Spacer(minLength: 0)
+                bulkControls
                 CelebrationSearchField(query: $query)
             }
             if matches.isEmpty {
@@ -98,6 +100,41 @@ struct CelebrationsSettingsPage: View {
                 if !later.isEmpty {
                     comingLater
                 }
+            }
+        }
+    }
+
+    /// Every celebration on or off in one step, undoable.
+    @ViewBuilder private var bulkControls: some View {
+        let choosable = center.celebrations.filter { $0.canBeChosen(on: center.today) }
+        let enabled = center.celebrations.filter { center.preferences.selection(for: $0.id).isEnabled }
+        Button("Turn All On") { changeAll(to: true) }
+            .buttonStyle(.ds(.ghost, size: .medium))
+            .disabled(choosable.allSatisfy { center.preferences.selection(for: $0.id).isEnabled })
+            .help("Turn on every celebration. Icons download a week before each one's dates.")
+        Button("Turn All Off") { changeAll(to: false) }
+            .buttonStyle(.ds(.ghost, size: .medium))
+            .disabled(enabled.isEmpty)
+            .help("Turn off every celebration. Undo puts your choices back.")
+    }
+
+    private func changeAll(to isOn: Bool) {
+        let before = center.preferences
+        center.setAllAutomatic(isOn)
+        guard let undoManager, before != center.preferences else { return }
+        Self.registerUndo(on: undoManager, center: center, restoring: before)
+        undoManager.setActionName(isOn ? "Turn All Celebrations On" : "Turn All Celebrations Off")
+    }
+
+    /// Undo restores `earlier` and registers restoring what it replaced, so Redo works too.
+    private static func registerUndo(
+        on undoManager: UndoManager, center: CelebrationCenter, restoring earlier: CelebrationPreferences
+    ) {
+        let replaced = center.preferences
+        undoManager.registerUndo(withTarget: center) { center in
+            MainActor.assumeIsolated {
+                center.restore(earlier)
+                registerUndo(on: undoManager, center: center, restoring: replaced)
             }
         }
     }

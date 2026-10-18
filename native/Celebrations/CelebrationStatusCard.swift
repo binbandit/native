@@ -88,7 +88,13 @@ struct CelebrationStatusCard: View {
             center.preferences.selection(for: event.id).appIcon
         else { return nil }
         if !PlatformAppIcon.canApplyAnyImage { return "The app icon can't change on this device." }
-        return event.appIcon == .forthcoming ? "Its app icon is still being drawn, so the icon stays as it is." : nil
+        switch event.appIcon {
+        case .forthcoming: return "Its app icon is still being drawn, so the icon stays as it is."
+        case .downloadable(.unavailable): return "Icons can't download in this build, so the icon stays as it is."
+        case .downloadable(.failed(let reason)): return reason
+        case .downloadable: return "Its icon is downloading; the icon changes when it's here."
+        default: return nil
+        }
     }
 
     @ViewBuilder private var actions: some View {

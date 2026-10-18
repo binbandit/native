@@ -46,7 +46,8 @@ final class HostConnection: Identifiable {
         return label.isEmpty ? host.machineName : label
     }
 
-    var client_: NativeHostClient? { client }
+    /// For the actions extension; nil while disconnected.
+    var activeClient: NativeHostClient? { client }
 
     // MARK: - Connection
 

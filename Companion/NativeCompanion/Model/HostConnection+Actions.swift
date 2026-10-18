@@ -12,7 +12,7 @@ extension HostConnection {
     }
 
     private func connectedClient() throws -> NativeHostClient {
-        guard phase.isConnected, let client = client_ else { throw CompanionActionError.notConnected(name) }
+        guard phase.isConnected, let client = activeClient else { throw CompanionActionError.notConnected(name) }
         return client
     }
 
