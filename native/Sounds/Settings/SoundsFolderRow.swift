@@ -57,7 +57,9 @@ struct SoundsFolderRow: View {
         guard let folder = sounds.preferences.soundsFolder, let listing = sounds.catalog.folder else { return nil }
         guard let url = listing.url else {
             let path = URL(filePath: folder.path).abbreviatedPath
-            return Text("Native can't find \(path). Choose it again or pick another; until then, its sounds play the default.")
+            return Text(
+                "Native can't find \(path). Choose it again or pick another; until then, Native's own sounds play instead."
+            )
         }
         let count = listing.sounds.count
         guard count > 0 else {

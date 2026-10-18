@@ -71,7 +71,8 @@ struct LabsSettingsPage: View {
                 ForEach(sections) { section in
                     VStack(alignment: .leading, spacing: DS.Space.lg) {
                         if let name = section.pluginName {
-                            SettingsSubheading(name, note: "From the \(name) plugin. Turning the plugin off removes these.")
+                            SettingsSubheading(
+                                name, note: "From the \(name) plugin. Turning the plugin off removes these.")
                         }
                         SettingsRowGroup {
                             ForEach(section.experiments) { experiment in

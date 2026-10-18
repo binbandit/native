@@ -28,9 +28,15 @@ struct SoundsSettingsPage: View {
     var body: some View {
         @Bindable var preferences = preferences
         SettingsPage {
-            SettingsHeader("Sounds", description: Text("Hear when an agent finishes, needs you, or runs into trouble, without watching it work."))
+            SettingsHeader(
+                "Sounds",
+                description: Text(
+                    "Hear when an agent finishes, needs you, or runs into trouble, without watching it work."))
             SettingsRowGroup {
-                SettingsRow(id: Self.enabledRow, "Play sounds", description: Text("Turn off to silence every sound Native plays.")) {
+                SettingsRow(
+                    id: Self.enabledRow, "Play sounds",
+                    description: Text("Turn off to silence every sound Native plays.")
+                ) {
                     SettingsSwitch("Play sounds", isOn: $preferences.isEnabled)
                 }
                 SettingsRow(id: Self.volumeRow, "Volume", description: Text("How loud Native's sounds play.")) {
@@ -43,17 +49,23 @@ struct SoundsSettingsPage: View {
                 SettingsRow(
                     id: Self.focusRow,
                     "Stay quiet during Focus",
-                    description: Text("When off, Native plays sounds even while Do Not Disturb or another Focus is on."),
+                    description: Text(
+                        "When off, Native plays sounds even while Do Not Disturb or another Focus is on."),
                     detail: focusNote
                 ) {
-                    SettingsSwitch("Stay quiet during Focus", isOn: Binding {
-                        preferences.staysQuietDuringFocus
-                    } set: {
-                        sounds.setStaysQuietDuringFocus($0)
-                    })
+                    SettingsSwitch(
+                        "Stay quiet during Focus",
+                        isOn: Binding {
+                            preferences.staysQuietDuringFocus
+                        } set: {
+                            sounds.setStaysQuietDuringFocus($0)
+                        })
                 }
                 .disabled(!preferences.isEnabled)
-                SettingsRow(id: Self.timingRow, "When to play", description: Text("Stay quiet for the task you're looking at, or whenever Native is in front.")) {
+                SettingsRow(
+                    id: Self.timingRow, "When to play",
+                    description: Text("Stay quiet for the task you're looking at, or whenever Native is in front.")
+                ) {
                     SettingsSelect(
                         label: "When to play",
                         selection: $preferences.timing,
@@ -77,7 +89,11 @@ struct SoundsSettingsPage: View {
             .disabled(!preferences.isEnabled)
         }
         .fileImporter(
-            isPresented: Binding { addingSoundFor != nil } set: { if !$0 { addingSoundFor = nil } },
+            isPresented: Binding {
+                addingSoundFor != nil
+            } set: {
+                if !$0 { addingSoundFor = nil }
+            },
             allowedContentTypes: [.audio],
             allowsMultipleSelection: true
         ) { result in
@@ -99,11 +115,13 @@ struct SoundsSettingsPage: View {
                 sounds.preview(trigger)
             }
             .disabled(!isOn)
-            SettingsSwitch(trigger.title, isOn: Binding {
-                preferences.isEnabled(trigger)
-            } set: {
-                preferences.setEnabled($0, for: trigger)
-            })
+            SettingsSwitch(
+                trigger.title,
+                isOn: Binding {
+                    preferences.isEnabled(trigger)
+                } set: {
+                    preferences.setEnabled($0, for: trigger)
+                })
         }
     }
 
@@ -114,7 +132,9 @@ struct SoundsSettingsPage: View {
         case .allowed, .notDetermined:
             return nil
         case .denied:
-            return Text("Native can't see your Focus status, so sounds still play during Focus. Allow it in System Settings ▸ Privacy & Security ▸ Focus.")
+            return Text(
+                "Native can't see your Focus status, so sounds still play during Focus. Allow it in System Settings ▸ Privacy & Security ▸ Focus."
+            )
         case .unavailable:
             return Text("This build of Native can't see your Focus status, so sounds still play during Focus.")
         }

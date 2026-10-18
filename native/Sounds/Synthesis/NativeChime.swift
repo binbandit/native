@@ -43,8 +43,12 @@ nonisolated enum NativeChime: String, CaseIterable, Identifiable, Sendable {
             ]
             return .init(
                 strikes: [
-                    .init(time: 0, frequency: Pitch.e5, level: -2.5, pan: -0.18, partials: glass, attack: 0.0025, t60Scale: 0.75, contact: -40),
-                    .init(time: 0.11, frequency: Pitch.b5, level: 0, pan: 0.18, partials: glass, attack: 0.0025, contact: -40),
+                    .init(
+                        time: 0, frequency: Pitch.e5, level: -2.5, pan: -0.18, partials: glass, attack: 0.0025,
+                        t60Scale: 0.75, contact: -40),
+                    .init(
+                        time: 0.11, frequency: Pitch.b5, level: 0, pan: 0.18, partials: glass, attack: 0.0025,
+                        contact: -40),
                 ],
                 room: .init(t60: 1.25, predelay: 0.014, wet: -13, brightness: 7_500)
             )
@@ -59,8 +63,12 @@ nonisolated enum NativeChime: String, CaseIterable, Identifiable, Sendable {
             ]
             return .init(
                 strikes: [
-                    .init(time: 0, frequency: Pitch.g5, level: -3, pan: -0.12, partials: bright, attack: 0.002, t60Scale: 0.3, contact: -40),
-                    .init(time: 0.13, frequency: Pitch.c6, level: 0, pan: 0.12, partials: bright, attack: 0.002, contact: -40),
+                    .init(
+                        time: 0, frequency: Pitch.g5, level: -3, pan: -0.12, partials: bright, attack: 0.002,
+                        t60Scale: 0.3, contact: -40),
+                    .init(
+                        time: 0.13, frequency: Pitch.c6, level: 0, pan: 0.12, partials: bright, attack: 0.002,
+                        contact: -40),
                 ],
                 room: .init(t60: 0.9, predelay: 0.012, wet: -15, brightness: 7_500)
             )
@@ -74,8 +82,12 @@ nonisolated enum NativeChime: String, CaseIterable, Identifiable, Sendable {
             ]
             return .init(
                 strikes: [
-                    .init(time: 0, frequency: Pitch.c5, level: 0, pan: -0.1, partials: damped, attack: 0.005, t60Scale: 0.6, contact: -44, contactBrightness: 2_000),
-                    .init(time: 0.17, frequency: Pitch.a4, level: -1.5, pan: 0.1, partials: damped, attack: 0.006, t60Scale: 0.85, contact: -46, contactBrightness: 1_800),
+                    .init(
+                        time: 0, frequency: Pitch.c5, level: 0, pan: -0.1, partials: damped, attack: 0.005,
+                        t60Scale: 0.6, contact: -44, contactBrightness: 2_000),
+                    .init(
+                        time: 0.17, frequency: Pitch.a4, level: -1.5, pan: 0.1, partials: damped, attack: 0.006,
+                        t60Scale: 0.85, contact: -46, contactBrightness: 1_800),
                 ],
                 room: .init(t60: 0.8, predelay: 0.016, wet: -13, brightness: 4_500)
             )
@@ -92,7 +104,7 @@ nonisolated enum NativeChime: String, CaseIterable, Identifiable, Sendable {
                             .init(ratio: 9.8, level: -40, t60: 0.045),
                         ],
                         attack: 0.006, contact: -44, contactBrightness: 2_400
-                    ),
+                    )
                 ],
                 room: .init(t60: 1.05, predelay: 0.018, wet: -11, brightness: 5_000)
             )
@@ -111,7 +123,7 @@ nonisolated enum NativeChime: String, CaseIterable, Identifiable, Sendable {
                             .init(ratio: 7.31, level: -38, t60: 0.1),
                         ],
                         attack: 0.0015, contact: -36, contactBrightness: 6_500
-                    ),
+                    )
                 ],
                 room: .init(t60: 1.8, predelay: 0.02, wet: -12, brightness: 6_000)
             )

@@ -28,7 +28,9 @@ private struct TasksSegment: View {
         let waiting = tasks.filter(\.needsAttention)
         HStack(spacing: DS.Space.xs) {
             StatusBarSegment(
-                help: working.isEmpty ? "No agent is working on a task." : "\(Self.count(working.count, "task")) working. Click to see them.",
+                help: working.isEmpty
+                    ? "No agent is working on a task."
+                    : "\(Self.count(working.count, "task")) working. Click to see them.",
                 accessibilityLabel: "Working tasks",
                 accessibilityValue: working.isEmpty ? "None" : "\(working.count)"
             ) {

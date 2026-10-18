@@ -15,7 +15,10 @@ struct GoalPillButton: View {
             Label(title, systemImage: "target")
         }
         .buttonStyle(.pill(isOn: status == .active, isSquare: showsIcon))
-        .help(CommandRegistry.shared.help(status == nil ? "Set a goal for the agent to work toward" : "Edit the goal", for: .goalEdit))
+        .help(
+            CommandRegistry.shared.help(
+                status == nil ? "Set a goal for the agent to work toward" : "Edit the goal", for: .goalEdit)
+        )
         .accessibilityLabel(status == nil ? "Set Goal" : "Goal, \(status?.label ?? "")")
     }
 

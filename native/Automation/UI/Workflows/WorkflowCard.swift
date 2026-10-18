@@ -64,7 +64,9 @@ struct WorkflowCard: View {
             // Goals show in the step list; the card keeps to what fits on one line.
             let parts = [
                 "\(steps.count) steps",
-                steps.count(where: { $0.approval != nil }).nonZero.map { "\($0) \($0 == 1 ? "approval" : "approvals")" },
+                steps.count(where: { $0.approval != nil }).nonZero.map {
+                    "\($0) \($0 == 1 ? "approval" : "approvals")"
+                },
                 steps.contains { $0.kind == .pullRequest } ? "PR" : nil,
             ]
             HStack(spacing: DS.Space.xs) {

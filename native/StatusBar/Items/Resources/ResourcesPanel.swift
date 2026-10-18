@@ -48,7 +48,9 @@ struct ResourcesPanel: View {
             }
             .frame(maxHeight: StatusBarMetrics.panelListHeight)
             .fixedSize(horizontal: false, vertical: true)
-            PopoverPanelFootnote("Memory is each process's footprint, as Activity Monitor shows it. CPU is a share of one core. Updated every 2 seconds.")
+            PopoverPanelFootnote(
+                "Memory is each process's footprint, as Activity Monitor shows it. CPU is a share of one core. Updated every 2 seconds."
+            )
         }
     }
 

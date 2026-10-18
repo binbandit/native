@@ -35,7 +35,8 @@ private struct ResourcesSegment: View {
 
     private var summary: String {
         guard hasSample else { return "Measuring…" }
-        return "\(DSFormat.memory(snapshot.memory)) of memory (\(Self.shareOfPhysicalMemory(snapshot.memory))) and \(DSFormat.cpu(snapshot.cpu)) CPU"
+        return
+            "\(DSFormat.memory(snapshot.memory)) of memory (\(Self.shareOfPhysicalMemory(snapshot.memory))) and \(DSFormat.cpu(snapshot.cpu)) CPU"
     }
 
     var body: some View {

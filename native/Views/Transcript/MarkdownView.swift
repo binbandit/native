@@ -38,11 +38,15 @@ private struct MarkdownSectionView: View, Equatable {
         #if DEBUG
         let _ = RenderProbe.hit("MarkdownSection")
         #endif
+        // A stack of its own, so a change in another section doesn't lay this one out again.
         if let blocks = MarkdownParseCache.blocks(for: source) {
-            ForEach(blocks) { block in
-                MarkdownBlockView(node: block)
-                    .padding(.top, isFirst && block.id == blocks.first?.id ? 0 : block.spacingAbove)
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(blocks) { block in
+                    MarkdownBlockView(node: block)
+                        .padding(.top, block.id == blocks.first?.id ? 0 : block.spacingAbove)
+                }
             }
+            .padding(.top, isFirst ? 0 : blocks.first?.spacingAbove ?? 0)
         } else {
             Text(verbatim: source)
         }

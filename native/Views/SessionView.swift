@@ -22,68 +22,68 @@ struct SessionView: View {
         TranscriptView(session: session) { id in
             openInspector(Self.subagentInspectorWidth) { openSubagent = id }
         }
-            .environment(\.turnChangesActions, turnChangesActions)
-            .environment(\.isPrimaryTranscript, true)
-            // A bar rather than an inset, so the transcript gets the system scroll edge effect under it.
-            .safeAreaBar(edge: .bottom, spacing: 0) {
-                VStack(spacing: 0) {
-                    UsageComposerNotices(session: session)
-                    ComposerView(session: session)
+        .environment(\.turnChangesActions, turnChangesActions)
+        .environment(\.isPrimaryTranscript, true)
+        // A bar rather than an inset, so the transcript gets the system scroll edge effect under it.
+        .safeAreaBar(edge: .bottom, spacing: 0) {
+            VStack(spacing: 0) {
+                UsageComposerNotices(session: session)
+                ComposerView(session: session)
+            }
+        }
+        // How the task's worktree setup went: the project's setup script running, or why it failed.
+        .safeAreaBar(edge: .top, spacing: 0) {
+            GitTaskSetupBanner(store: git, folder: session.cwd)
+        }
+        .composerDropTarget(drops)
+        .terminalPanel(for: session)
+        .focusedSceneValue(\.activeSession, session)
+        .navigationTitle(session.displayTitle)
+        .navigationSubtitle(
+            [session.cwd.abbreviatedPath, repository.summary].compactMap(\.self).joined(separator: " · ")
+        )
+        // One inspector, showing a subagent or the task's changes; opening one closes the other.
+        .inspector(isPresented: isInspectorPresented) {
+            if let id = openSubagent, let subagent = session.state.subagents.first(where: { $0.id == id }) {
+                SubagentInspector(subagent: subagent, child: session.child(id))
+                    .sessionInspectorColumn(min: 340, ideal: Self.subagentInspectorWidth, max: 640)
+            } else if showsChanges {
+                GitChangesInspector(model: repository) {
+                    Task { await GitHubGitWiring.createPullRequest(from: repository, gitHub: gitHub) }
                 }
+                .sessionInspectorColumn(
+                    min: GitMetrics.inspectorMinWidth, ideal: GitMetrics.inspectorIdealWidth,
+                    max: GitMetrics.inspectorMaxWidth)
             }
-            // How the task's worktree setup went: the project's setup script running, or why it failed.
-            .safeAreaBar(edge: .top, spacing: 0) {
-                GitTaskSetupBanner(store: git, folder: session.cwd)
+        }
+        .onChange(of: openSubagent) { _, id in
+            if id != nil { showsChanges = false }
+        }
+        .onChange(of: showsChanges) { _, shows in
+            if shows { openSubagent = nil }
+        }
+        .onChange(of: isInspectorPresented.wrappedValue) { _, isPresented in
+            if !isPresented { inspectorRoom.release() }
+        }
+        // Another task or page took the window; the inspector went with this view.
+        .onDisappear { inspectorRoom.release() }
+        .toolbar {
+            // Draws its own outline, like the other header controls, rather than sitting on glass.
+            ToolbarItem {
+                OpenInButton(location: OpenInLocation(folder: session.cwd, host: projectHost))
             }
-            .composerDropTarget(drops)
-            .terminalPanel(for: session)
-            .focusedSceneValue(\.activeSession, session)
-            .navigationTitle(session.displayTitle)
-            .navigationSubtitle(
-                [session.cwd.abbreviatedPath, repository.summary].compactMap(\.self).joined(separator: " · ")
-            )
-            // One inspector, showing a subagent or the task's changes; opening one closes the other.
-            .inspector(isPresented: isInspectorPresented) {
-                if let id = openSubagent, let subagent = session.state.subagents.first(where: { $0.id == id }) {
-                    SubagentInspector(subagent: subagent, child: session.child(id))
-                        .sessionInspectorColumn(min: 340, ideal: Self.subagentInspectorWidth, max: 640)
-                } else if showsChanges {
-                    GitChangesInspector(model: repository) {
-                        Task { await GitHubGitWiring.createPullRequest(from: repository, gitHub: gitHub) }
-                    }
-                    .sessionInspectorColumn(
-                        min: GitMetrics.inspectorMinWidth, ideal: GitMetrics.inspectorIdealWidth,
-                        max: GitMetrics.inspectorMaxWidth)
-                }
+            .sharedBackgroundVisibility(.hidden)
+            ToolbarItem {
+                GitChangesToolbarButton(model: repository, isPresented: showsChangesBinding)
             }
-            .onChange(of: openSubagent) { _, id in
-                if id != nil { showsChanges = false }
+            .visibilityPriority(.high)
+            ToolbarItem {
+                MCPSessionStatusButton(session: session) { settings.open(.mcpServers) }
             }
-            .onChange(of: showsChanges) { _, shows in
-                if shows { openSubagent = nil }
-            }
-            .onChange(of: isInspectorPresented.wrappedValue) { _, isPresented in
-                if !isPresented { inspectorRoom.release() }
-            }
-            // Another task or page took the window; the inspector went with this view.
-            .onDisappear { inspectorRoom.release() }
-            .toolbar {
-                // Draws its own outline, like the other header controls, rather than sitting on glass.
-                ToolbarItem {
-                    OpenInButton(location: OpenInLocation(folder: session.cwd, host: projectHost))
-                }
-                .sharedBackgroundVisibility(.hidden)
-                ToolbarItem {
-                    GitChangesToolbarButton(model: repository, isPresented: showsChangesBinding)
-                }
-                .visibilityPriority(.high)
-                ToolbarItem {
-                    MCPSessionStatusButton(session: session) { settings.open(.mcpServers) }
-                }
-            }
-            .focusedSceneValue(\.gitChangesInspector, showsChangesBinding)
-            .refreshesGitStatus(of: session, in: git)
-            .environment(\.transcriptColumnMaxWidth, columnWidth.maxWidth)
+        }
+        .focusedSceneValue(\.gitChangesInspector, showsChangesBinding)
+        .refreshesGitStatus(of: session, in: git)
+        .environment(\.transcriptColumnMaxWidth, columnWidth.maxWidth)
     }
 
     /// The machine the task's project is on (the selected task's project is the current one).
