@@ -183,37 +183,4 @@ struct SkillFileList: View {
         }
     }
 }
-
-/// Every folder Native reads skills from, with the agents that read each.
-struct SkillFoldersFooter: View {
-    let library: SkillLibrary
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: DS.Space.md) {
-            SettingsSubheading(
-                "Skills folders", note: "Where your agents look. A folder that doesn't exist yet is fine.")
-            ForEach(library.roots.filter { $0.scope.isUserManaged }, id: \.path) { root in
-                HStack(spacing: DS.Space.md) {
-                    Text(SkillPaths.abbreviated(root.path, home: library.home))
-                        .font(SettingsTextStyle.mono.font)
-                        .foregroundStyle(.dsTextPrimary)
-                        .textSelection(.enabled)
-                    Text(library.agents.filter { root.agents.contains($0.format) }.map(\.name).joined(separator: ", "))
-                        .settingsText(.caption)
-                        .foregroundStyle(.dsTextTertiary)
-                    Spacer(minLength: DS.Space.md)
-                }
-            }
-            let unsupported = library.agents.filter { $0.switching == .unsupported }
-            if !unsupported.isEmpty {
-                Text(
-                    "\(unsupported.map(\.name).joined(separator: ", ")) can't leave a skill out of a session, so switches here don't reach \(unsupported.count == 1 ? "it" : "them"). Native never moves or edits skill files to turn one off."
-                )
-                .settingsText(.caption)
-                .foregroundStyle(.dsTextTertiary)
-                .fixedSize(horizontal: false, vertical: true)
-            }
-        }
-    }
-}
 #endif
