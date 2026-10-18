@@ -19,6 +19,15 @@ final class PluginRegistry {
 
         let plugin: any NativePlugin
         let source: Source
+        /// Whether experiments can change it, worked out once: `plugins` applies experiments on
+        /// every read, and finding out scans every setting of the manifest for placeholders.
+        let usesExperiments: Bool
+
+        init(plugin: any NativePlugin, source: Source) {
+            self.plugin = plugin
+            self.source = source
+            usesExperiments = (plugin as? ManifestPlugin)?.manifest.usesExperiments ?? false
+        }
 
         var id: String { plugin.manifest.id }
     }

@@ -68,6 +68,23 @@ final class CompanionEndToEndTests: XCTestCase {
         attachScreenshot(app, named: "answered")
     }
 
+    /// Names the host currently called `COMPANION_HOST_FROM` as `COMPANION_HOST_LABEL`, from its page.
+    func testLabelHost() throws {
+        let from = try XCTUnwrap(environment["COMPANION_HOST_FROM"])
+        let label = try XCTUnwrap(environment["COMPANION_HOST_LABEL"])
+        let app = XCUIApplication()
+        app.launch()
+        let row = app.buttons["host-\(from)"]
+        XCTAssertTrue(row.waitForExistence(timeout: 15))
+        row.tap()
+        let field = app.textFields["hostLabel"]
+        XCTAssertTrue(field.waitForExistence(timeout: 10))
+        field.tap()
+        field.typeText(label)
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertTrue(app.buttons["host-\(label)"].waitForExistence(timeout: 10))
+    }
+
     /// Walks the main screens in `COMPANION_APPEARANCE` (light or dark) and attaches each one.
     func testScreens() throws {
         let app = XCUIApplication()

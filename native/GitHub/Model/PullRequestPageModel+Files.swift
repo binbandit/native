@@ -137,3 +137,28 @@ extension PullRequestPageModel {
         return ""
     }
 }
+
+extension PullRequestPageModel {
+    /// The comment being written widened to `line`, when that makes a valid range: the same hunk
+    /// and side, as GitHub requires.
+    func extendedDraft(to line: DiffHunk.Line, in hunk: DiffHunk, path: String) -> ReviewAnchor? {
+        guard let draft, draft.anchor.path == path, let target = line.anchor, target.side == draft.anchor.side,
+            hunk.index(side: target.side, line: draft.anchor.line) != nil
+        else { return nil }
+        let start = min(draft.anchor.startLine ?? draft.anchor.line, target.line)
+        let end = max(draft.anchor.line, target.line)
+        guard start != end || draft.anchor.startLine != nil else { return nil }
+        return ReviewAnchor(path: path, side: target.side, line: end, startLine: start, startSide: target.side)
+    }
+
+    /// The hunk's line indices the comment being written covers.
+    func draftLines(in path: String, hunk: DiffHunk) -> Set<Int> {
+        guard let draft, draft.anchor.path == path else { return [] }
+        let covered = (draft.anchor.startLine ?? draft.anchor.line)...draft.anchor.line
+        return Set(
+            hunk.lines.indices.filter { index in
+                guard let anchor = hunk.lines[index].anchor else { return false }
+                return anchor.side == draft.anchor.side && covered.contains(anchor.line)
+            })
+    }
+}
