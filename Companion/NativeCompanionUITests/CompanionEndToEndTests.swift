@@ -48,17 +48,13 @@ final class CompanionEndToEndTests: XCTestCase {
         task.tap()
         let composer = app.descendants(matching: .any)["composer"]
         XCTAssertTrue(composer.waitForExistence(timeout: 30))
-        // `COMPANION_MODEL` picks the agent's model from the phone first (the cheap one for checks).
-        if let model = environment["COMPANION_MODEL"] {
-            let pill = app.descendants(matching: .any)["config-model"]
-            XCTAssertTrue(pill.waitForExistence(timeout: 30), "the agent offers models")
-            pill.tap()
-            let choice = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", model)).firstMatch
-            XCTAssertTrue(choice.waitForExistence(timeout: 5), "the agent offers \(model)")
-            choice.tap()
-            let chosen = app.descendants(matching: .any).matching(NSPredicate(format: "identifier == 'config-model' AND label CONTAINS[c] %@", model)).firstMatch
-            XCTAssertTrue(chosen.waitForExistence(timeout: 15), "the host applied \(model)")
+        // `COMPANION_MODEL` and `COMPANION_MODE` pick the agent's model and mode from the phone first
+        // (the cheap model, and a mode that asks before running commands).
+        for (category, key) in [("model", "COMPANION_MODEL"), ("mode", "COMPANION_MODE")] {
+            guard let wanted = environment[key] else { continue }
+            choose(wanted, in: category, app: app)
         }
+        attachScreenshot(app, named: "task")
         composer.tap()
         composer.typeText(prompt)
         app.buttons["send"].tap()
@@ -69,6 +65,18 @@ final class CompanionEndToEndTests: XCTestCase {
         allow.tap()
         XCTAssertTrue(app.staticTexts["Allowed from this iPhone"].waitForExistence(timeout: 30), "the answer reached the host")
         attachScreenshot(app, named: "answered")
+    }
+
+    private func choose(_ wanted: String, in category: String, app: XCUIApplication) {
+        let pill = app.descendants(matching: .any)["config-\(category)"]
+        XCTAssertTrue(pill.waitForExistence(timeout: 30), "the agent offers a \(category)")
+        pill.tap()
+        let choice = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", wanted)).firstMatch
+        XCTAssertTrue(choice.waitForExistence(timeout: 5), "the agent offers \(wanted)")
+        choice.tap()
+        let chosen = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "identifier == %@ AND label CONTAINS[c] %@", "config-\(category)", wanted)).firstMatch
+        XCTAssertTrue(chosen.waitForExistence(timeout: 15), "the host applied \(wanted)")
     }
 
     private func attachScreenshot(_ app: XCUIApplication, named name: String) {

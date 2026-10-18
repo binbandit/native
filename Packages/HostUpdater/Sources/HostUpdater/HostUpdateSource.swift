@@ -30,6 +30,13 @@ public struct HostUpdateSource: Sendable {
         }
     }
 
+    /// An organization's internal feed (`policy.updates.feedURL`) points at its appcast; its host
+    /// feed sits beside it, so one setting moves the app and its standalone hosts together.
+    public static func feedURL(besideAppcast appcast: URL, channel: String) -> URL {
+        appcast.deletingLastPathComponent().appending(
+            path: channel == "beta" ? "host-feed-beta.json" : "host-feed.json")
+    }
+
     /// The newest release on the channel, once its signature checks out.
     public func latest() async throws -> HostUpdateFeed {
         async let feed = fetch(feedURL)

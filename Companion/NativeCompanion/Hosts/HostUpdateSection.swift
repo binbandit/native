@@ -110,7 +110,8 @@ struct HostUpdateSection: View {
 
     private func upToDateLine(_ status: HostUpdateStatus) -> String {
         guard let checked = status.lastChecked else { return "Up to date" }
-        return "Up to date · checked \(DSFormat.compactAge(checked, now: .now)) ago"
+        let age = DSFormat.compactAge(checked, now: .now)
+        return age == "now" ? "Up to date · checked just now" : "Up to date · checked \(age) ago"
     }
 
     private func install(_ when: HostUpdateStatus.When) {

@@ -23,6 +23,7 @@ struct SwitchesTests {
         switches.set(.scripted, for: key, in: .site)
         #expect(switches.mode(of: key, in: .site) == .scripted)
         #expect(!switches.mode(of: key, in: .site).reachesAgents)
+        switches.set(nil, for: key, in: .site)
         switches.set(nil, for: key, in: .app)
         #expect(switches.mode(of: key, in: .app) == .off)
         #expect(!switches.hasProjectOverrides(for: key))
@@ -43,7 +44,7 @@ struct SwitchesTests {
             format: .claudeCode, scope: .user, source: URL(filePath: "/home/tester/.claude.json"))
         var switches = MCPServerSwitches()
         switches.set(.scripted, for: fs.server.endpoint.key, in: .app)
-        var policy = NativePolicy.MCP()
+        var policy = NativePolicy().mcp
         policy.blocked = [try #require(MCPServerPattern("command:npx -y rea-agents*"))]
 
         let inApp = switches.exclusions(of: [rea, fs], in: .app, policy: policy)
@@ -53,9 +54,9 @@ struct SwitchesTests {
         #expect(switches.exclusions(of: [rea, fs], in: nil, policy: policy).map(\.server.name) == ["rea"])
 
         // An allowlist keeps out everything it doesn't name.
-        policy = NativePolicy.MCP()
+        policy = NativePolicy().mcp
         policy.allowed = [try #require(MCPServerPattern("fs"))]
         #expect(switches.exclusions(of: [rea, fs], in: .site, policy: policy).map(\.server.name) == ["rea"])
-        #expect(switches.exclusions(of: [rea, fs], in: .site, policy: NativePolicy.MCP()).isEmpty)
+        #expect(switches.exclusions(of: [rea, fs], in: .site, policy: NativePolicy().mcp).isEmpty)
     }
 }

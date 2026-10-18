@@ -34,6 +34,7 @@ public struct ActivityHeatmap: View {
 
     private static let weeks = 53
     private static let gap: CGFloat = 3
+    private static let ringInset: CGFloat = 2.5
     private static let labelWidth: CGFloat = 28
     private static let monthHeight: CGFloat = 16
 
@@ -115,12 +116,15 @@ public struct ActivityHeatmap: View {
                     shape.fill(.dsAccent.opacity(Levels.opacity(level)))
                 }
             }
+            .frame(width: cell, height: cell)
             .overlay {
+                // Around the square, in the gap, so it shows on the strongest step too.
                 if isPicked {
-                    shape.strokeBorder(day == selection ? Color.dsTextPrimary : .dsTextSecondary, lineWidth: 1.5)
+                    RoundedRectangle(cornerRadius: DS.Radius.small + Self.ringInset, style: .continuous)
+                        .strokeBorder(day == selection ? Color.dsTextPrimary : .dsTextSecondary, lineWidth: 1.5)
+                        .padding(-Self.ringInset)
                 }
             }
-            .frame(width: cell, height: cell)
             .help(describe(day) + (estimated.contains(day) ? " (estimated from the agents’ session lists)" : ""))
             .accessibilityElement()
             .accessibilityLabel(describe(day))

@@ -1,3 +1,5 @@
+import Foundation
+
 /// How well a query matches a title, ranked in tiers as Factory's palette ranks them: the whole
 /// title, its start, a word's start, its initials, anywhere in it, then the keywords, then the
 /// query's letters in order ("nwse" finds "New Session").

@@ -1,9 +1,27 @@
 import Foundation
 import Sentry
 
+/// The metrics Native may send to Sentry and the tags they may carry. Native's telemetry schema
+/// builds it (`TelemetryMetric.allowlist`), so a metric outside the schema is dropped here too.
+public struct SentryMetricAllowlist: Equatable, Sendable {
+    public var counts: Set<String>
+    public var distributions: Set<String>
+    public var tagKeys: Set<String>
+
+    public init(counts: Set<String>, distributions: Set<String>, tagKeys: Set<String>) {
+        self.counts = counts
+        self.distributions = distributions
+        self.tagKeys = tagKeys
+    }
+
+    /// Launch and hang timings, untagged.
+    public static let performance = SentryMetricAllowlist(
+        counts: [], distributions: ["native.launch.duration_ms", "native.hang.duration_ms"], tagKeys: [])
+}
+
 /// Rebuild reports from an allowlist: SDK additions cannot silently introduce user content.
 public enum SentryPrivacy {
-    public static func configure(_ options: Options) {
+    public static func configure(_ options: Options, metrics allowlist: SentryMetricAllowlist = .performance) {
         options.sendDefaultPii = false
         options.enableAutoBreadcrumbTracking = false
         options.enableNetworkBreadcrumbs = false
@@ -25,13 +43,7 @@ public enum SentryPrivacy {
         options.enableLogs = false
         options.enableMetrics = true
         options.beforeSendLog = { _ in nil }
-        options.beforeSendMetric = { metric in
-            guard allowsPerformanceMetric(name: metric.name, value: metric.value, unit: metric.unit) else { return nil }
-            var clean = metric
-            clean.attributes = [:]
-            clean.spanId = nil
-            return clean
-        }
+        options.beforeSendMetric = { metric in sanitize(metric, allowlist: allowlist) }
         options.beforeSendSpan = { _ in nil }
         options.sendClientReports = false
         options.maxAttachmentSize = 0
@@ -102,11 +114,42 @@ public enum SentryPrivacy {
         return event
     }
 
+    /// Keeps an allowlisted metric with only its allowlisted, token-shaped tags; drops anything else,
+    /// including attributes the SDK adds.
+    public static func sanitize(_ metric: SentryMetric, allowlist: SentryMetricAllowlist) -> SentryMetric? {
+        guard allows(name: metric.name, value: metric.value, unit: metric.unit, allowlist: allowlist) else {
+            return nil
+        }
+        var clean = metric
+        clean.attributes = metric.attributes.filter { allowlist.tagKeys.contains($0.key) && isToken($0.value) }
+        clean.spanId = nil
+        return clean
+    }
+
+    static func allows(
+        name: String, value: SentryMetricValue, unit: SentryUnit?, allowlist: SentryMetricAllowlist
+    ) -> Bool {
+        switch value {
+        case .counter(let count): allowlist.counts.contains(name) && (1...1_000_000).contains(count)
+        case .distribution(let milliseconds):
+            allowlist.distributions.contains(name) && unit == .millisecond && milliseconds.isFinite
+                && (0...86_400_000).contains(milliseconds)
+        default: false
+        }
+    }
+
+    /// Enum raw values and versions ("codex", "plan-mode", "0.93.0"), or numbers; never free text.
+    private static func isToken(_ value: SentryAttributeContent) -> Bool {
+        switch value {
+        case .string(let string):
+            string.count <= 40 && string.range(of: #"^[a-z0-9][a-z0-9.-]*$"#, options: .regularExpression) != nil
+        case .integer: true
+        default: false
+        }
+    }
+
     static func allowsPerformanceMetric(name: String, value: SentryMetricValue, unit: SentryUnit?) -> Bool {
-        guard ["native.launch.duration_ms", "native.hang.duration_ms"].contains(name),
-            unit == .millisecond, case .distribution(let milliseconds) = value
-        else { return false }
-        return milliseconds.isFinite && milliseconds >= 0 && milliseconds <= 86_400_000
+        allows(name: name, value: value, unit: unit, allowlist: .performance)
     }
 
     private static func stacktrace(_ source: SentryStacktrace?) -> SentryStacktrace? {

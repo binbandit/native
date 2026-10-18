@@ -184,7 +184,9 @@ struct PairedDevicesSettingsPage: View {
         let paired = "Paired \(DSFormat.time(device.pairedAt, now: .now))"
         if entry.isConnected { return "\(device.model) · \(device.system) · Connected now · \(paired)" }
         guard let lastSeen = device.lastSeen else { return "\(device.model) · \(device.system) · \(paired)" }
-        return "\(device.model) · \(device.system) · Last seen \(DSFormat.compactAge(lastSeen, now: .now)) ago · \(paired)"
+        let age = DSFormat.compactAge(lastSeen, now: .now)
+        let seen = age == "now" ? "Last seen just now" : "Last seen \(age) ago"
+        return "\(device.model) · \(device.system) · \(seen) · \(paired)"
     }
 
     private func grantsLine(_ grants: LinkGrants) -> String {
