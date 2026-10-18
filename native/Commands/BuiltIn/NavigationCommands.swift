@@ -60,7 +60,7 @@ extension NativeCommand {
         ) {
             $0.session?.isSubagentInspectorToggleRequested = true
         }
-        .available { $0.session?.hasSubagents == true },
+        .available { $0.session.map { !$0.state.subagents.isEmpty } ?? false },
 
         NativeCommand(
             .viewMCPServers, title: "Show MCP Servers", category: .view, systemImage: "server.rack",

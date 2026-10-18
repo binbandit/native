@@ -26,8 +26,12 @@ extension SessionModel {
         if let question = pendingQuestion {
             return .input(question.request.message)
         }
-        if let call = permissionRequests.first {
-            return call.kind == .switchMode ? .planReview(call.title) : .permission(call.title)
+        if let toolCallID = state.pendingPermissions.first?.toolCallID {
+            let call = state.items.lazy.compactMap { item -> ToolCallState? in
+                if case .toolCall(let call) = item, call.id == toolCallID { call } else { nil }
+            }.first
+            let title = call?.title ?? "Run a tool"
+            return call?.kind == .switchMode ? .planReview(title) : .permission(title)
         }
         return children.values.lazy.compactMap(\.wait).first
     }

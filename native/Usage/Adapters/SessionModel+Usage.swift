@@ -32,6 +32,6 @@ extension SessionModel: ContextReporting {
 
     /// Whether the agent lists `command` among its slash commands.
     func advertises(_ command: String) -> Bool {
-        availableCommands.contains { $0.name == command }
+        state.availableCommands.contains { $0.name == command }
     }
 }
