@@ -208,6 +208,19 @@ and is sent only after the user chose "Install Now, Interrupt Tasks" on the devi
 Every install request goes into the activity journal with the device that sent it. The provider,
 status shape and install flow are in `docs/releasing.md` ("Remote updates").
 
+How the host enforces it (`HostCore+Updates.swift`, `HostCore+Clients.swift`; tests in
+`HostUpdateTests`): each connection carries `ClientGrants {managePlugins, manageHost, isLocal}`.
+The socket's own clients and SSH bridges are the owner (all three); paired devices come through the
+`NativeLink` gateway with `isLocal: false` and what their pairing grants. `isLocal` is required for
+`_native/host/shutdown`, `_native/agents/sync` and `update/report`; `manageHost` for `update/install`;
+`managePlugins` for `plugins/set_enabled`. The gateway applies the same table before forwarding, and
+the host checks again. The provider comes from where the host runs (`MacHostUpdates`): inside
+Native.app it relays installs to the app (`_native/app/update/install`, or `open -g -j Native.app
+--args -NativeInstallUpdateAndQuit YES` when no app is connected) and restarts once its own bundle's
+`CFBundleVersion` on disk changes (now if a device asked for now, else when idle); under
+`~/.native/host/versions/` it updates itself with `Packages/HostUpdater` (startup check and rollback,
+a self-handshake before `confirm`, a feed check every 24 hours).
+
 ## Host identity and many hosts
 
 Each host has a `HostID` (a UUID kept in its store) and a machine name, returned by `initialize`.

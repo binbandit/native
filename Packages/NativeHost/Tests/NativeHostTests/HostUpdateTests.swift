@@ -170,7 +170,7 @@ struct HostUpdateTests {
         #expect(appHeard.installRequests == [.now])
         #expect(opened.withLock { $0 } == 0)
         #expect(
-            try await rig.core.store.activity(after: nil, limit: 10).contains {
+            try rig.core.store.activity(after: nil, limit: 10).contains {
                 $0.kind == .updateRequested
                     && $0.detail?.hasPrefix("Brayden's iPhone asked to install Native 1.4.0 now") == true
             })

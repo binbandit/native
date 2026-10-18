@@ -27,6 +27,7 @@ struct RootView: View {
     /// The background host and the updater, once the app provides them (docs/durability.md).
     @Environment(DurableHost.self) private var durableHost: DurableHost?
     @Environment(UpdateController.self) private var updates: UpdateController?
+    @Environment(WhatsNewCenter.self) private var whatsNew
 
     var body: some View {
         @Bindable var model = model
@@ -36,6 +37,8 @@ struct RootView: View {
             content
             StatusBar(registry: statusBar)
         }
+            // After an update with highlights, once nothing waits on the user.
+            .whatsNewSheet(whatsNew, blocked: model.hasWorkNeedingUser)
             .focusedSceneValue(\.sidebarVisibility, $columnVisibility)
             .undoToast($undoToast)
             .onChange(of: model.lastUndoable?.id) {

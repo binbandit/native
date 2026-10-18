@@ -74,7 +74,9 @@ struct WhatsNewVersion: Hashable, Sendable, Comparable, CustomStringConvertible 
 enum WhatsNewSchedule {
     /// The releases to show after updating from `lastSeen` to `current`, newest first. Nil
     /// `lastSeen` is a brand-new install, which gets the welcome instead.
-    static func pending(in catalog: [WhatsNewRelease], lastSeen: WhatsNewVersion?, current: WhatsNewVersion)
+    static func pending(
+        in catalog: [WhatsNewRelease], lastSeen: WhatsNewVersion?, current: WhatsNewVersion
+    )
         -> [WhatsNewRelease]
     {
         guard let lastSeen, lastSeen < current else { return [] }

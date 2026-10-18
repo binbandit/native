@@ -122,6 +122,10 @@ final class SQLiteDatabase {
 
     private func prepared(_ sql: String) throws -> OpaquePointer {
         if let statement = statements[sql] { return statement }
+        // Filters make many shapes of the same query; keep the cache from growing without end.
+        if statements.count > 64 {
+            finalizeStatements()
+        }
         var statement: OpaquePointer?
         let result = sqlite3_prepare_v3(handle, sql, -1, UInt32(SQLITE_PREPARE_PERSISTENT), &statement, nil)
         guard result == SQLITE_OK, let statement else { throw failure(result) }

@@ -24,12 +24,23 @@ public enum SentryPrivacy {
         options.enableMetricKitRawPayload = false
         options.enableLogs = false
         options.enableMetrics = false
+        options.beforeSendLog = { _ in nil }
+        options.beforeSendMetric = { _ in nil }
+        options.beforeSendSpan = { _ in nil }
         options.sendClientReports = false
         options.maxAttachmentSize = 0
         options.shutdownTimeInterval = 0
         options.tracesSampleRate = 0
-        options.beforeSendTransaction = { _, _ in nil }
-        options.beforeSend = sanitize
+        let releaseName = options.releaseName
+        let distribution = options.dist
+        let environment = options.environment
+        options.beforeSend = { source in
+            guard let event = sanitize(source) else { return nil }
+            event.releaseName = safeVersion(releaseName)
+            event.dist = safeVersion(distribution)
+            event.environment = environment
+            return event
+        }
         #if os(iOS) || os(tvOS) || os(visionOS)
         options.attachScreenshot = false
         options.attachViewHierarchy = false
@@ -50,10 +61,6 @@ public enum SentryPrivacy {
         event.eventId = source.eventId
         event.timestamp = source.timestamp
         event.platform = "cocoa"
-        event.releaseName = safeVersion(source.releaseName)
-        event.dist = safeVersion(source.dist)
-        event.environment = ["production", "beta", "nightly", "test"].contains(source.environment ?? "")
-            ? source.environment : nil
         event.exceptions = exceptions.map { original in
             let exception = Exception(value: nil, type: exceptionType(original.type))
             exception.threadId = original.threadId

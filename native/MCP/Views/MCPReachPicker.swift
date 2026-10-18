@@ -24,17 +24,30 @@ struct MCPReachPicker: View {
         .pickerStyle(.inline)
         // Off has nothing to reach; a build without scripts can still switch back.
         .disabled(mode == .off || (!library.scriptsAvailable && mode != .scripted))
+        if library.scriptApprovals[switchKey]?.isEmpty == false {
+            Button("Ask Again Before Scripts Make Changes") { library.forgetScriptApprovals(of: switchKey) }
+        }
     }
 }
 
 extension MCPLibrary {
-    /// What running a server through scripts means for it, for its row.
-    func scriptNote(for key: MCPServerKey) -> String {
+    /// What running a server through scripts means for it, for its row: how many of its tools ask
+    /// first, and which the user always allows.
+    func scriptNote(for key: MCPServerKey, switchKey: String) -> String {
         guard scriptsAvailable else { return "Set to run through scripts, but this build of Native can't run them" }
-        guard let tools = reports[key]?.tools, !tools.isEmpty else {
-            return "Through Native's run_script · only its read-only tools run in scripts"
+        var parts = ["Through Native's run_script"]
+        if let tools = reports[key]?.tools, !tools.isEmpty {
+            let asking = tools.filter { $0.isReadOnly != true }.count
+            parts.append(
+                asking == 0
+                    ? "all \(tools.count) tools are read-only"
+                    : "\(asking) of \(tools.count) tools ask first, unless the session runs tools unasked")
+        } else {
+            parts.append("tools that can make changes ask first, unless the session runs tools unasked")
         }
-        let readOnly = tools.filter { $0.isReadOnly == true }.count
-        return "Through Native's run_script · \(readOnly) of \(tools.count) tools run in scripts"
+        if let allowed = scriptApprovals[switchKey], !allowed.isEmpty {
+            parts.append("always allowed: " + allowed.sorted().joined(separator: ", "))
+        }
+        return parts.joined(separator: " · ")
     }
 }

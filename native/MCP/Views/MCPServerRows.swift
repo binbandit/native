@@ -79,7 +79,7 @@ struct MCPManagedServerRow: View {
             case .only(let paths): paths.map { URL(filePath: $0).lastPathComponent }.joined(separator: ", ")
             }
         var parts = ["\(agents) · \(projects)"]
-        if mode == .scripted { parts.append(library.scriptNote(for: key)) }
+        if mode == .scripted { parts.append(library.scriptNote(for: key, switchKey: server.transport.endpoint.key)) }
         parts += library.skippedAgents(for: server).map(\.reason)
         if let cost = library.contextCost(of: server.name) {
             parts.append("\(DSFormat.tokens(cost.tokens)) tokens of Claude Code's context")
@@ -150,7 +150,7 @@ struct MCPAgentServerRow: View {
         if !group.aliases.isEmpty {
             parts.append("Also named " + group.aliases.joined(separator: ", "))
         }
-        if mode == .scripted { parts.append(library.scriptNote(for: group.key)) }
+        if mode == .scripted { parts.append(library.scriptNote(for: group.key, switchKey: switchKey)) }
         parts += switchNotes
         if library.managedServer(matching: group.endpoint) != nil {
             parts.append("Also set up in Native")

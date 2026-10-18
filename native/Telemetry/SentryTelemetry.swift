@@ -17,7 +17,6 @@ enum SentryTelemetry {
         else { return }
         SentrySDK.start { options in
             options.dsn = dsn
-            SentryPrivacy.configure(options)
             #if NATIVE_NIGHTLY
             options.environment = "nightly"
             #elseif NATIVE_BETA
@@ -25,6 +24,7 @@ enum SentryTelemetry {
             #else
             options.environment = "production"
             #endif
+            SentryPrivacy.configure(options)
         }
         #endif
     }
