@@ -127,7 +127,8 @@ extension HostCore {
             try reply(try store.activity(after: params.after, limit: min(params.limit, 1_000)))
         case Method.shutdown:
             try reply(EmptyMessage())
-            await shutdown(stopAgents: try message.params(as: ShutdownParams.self).stopAgents)
+            let params = try message.params(as: ShutdownParams.self)
+            await shutdown(stopAgents: params.stopAgents, immediately: params.immediately)
         default:
             throw RPCError.methodNotFound(message.method)
         }

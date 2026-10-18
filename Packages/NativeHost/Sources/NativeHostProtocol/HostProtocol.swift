@@ -7,6 +7,10 @@ import Foundation
 public enum HostProtocol {
     /// Bumped on any incompatible change. A client that finds an older host asks it to restart
     /// (into the newer binary that came with the app) once it's idle.
+    ///
+    /// The handshake never changes, whatever the version: `initialize`, the `protocolVersion` and
+    /// `hostInfo` of its result (`FrozenHandshake`), and `_native/host/shutdown` with
+    /// `stopAgents: false`. That's what lets any newer app move any older host onto its binary.
     public static let version = 1
 
     public enum Method {
@@ -80,6 +84,18 @@ public struct HostID: Hashable, Sendable, Codable, CustomStringConvertible {
     }
 
     public var description: String { rawValue.uuidString }
+}
+
+/// The part of `initialize`'s result that never changes across protocol versions. Clients decode
+/// this first, so they can talk to a host of any version far enough to update it.
+public struct FrozenHandshake: Codable, Hashable, Sendable {
+    public var protocolVersion: Int
+    public var hostInfo: PeerInfo
+
+    public init(protocolVersion: Int, hostInfo: PeerInfo) {
+        self.protocolVersion = protocolVersion
+        self.hostInfo = hostInfo
+    }
 }
 
 public struct HostInfo: Codable, Hashable, Sendable {
@@ -274,13 +290,24 @@ public struct ListActivityParams: Codable, Sendable {
     }
 }
 
+/// Part of the frozen handshake: older hosts decode it with `stopAgents` alone.
 public struct ShutdownParams: Codable, Sendable {
     /// Stop agents now, cancelling their turns ("Quit Native and Stop Agents"). Otherwise the host
-    /// exits once nothing is running, and launchd brings the new binary up (an update).
+    /// restarts, and launchd brings the new binary up (an update).
     public var stopAgents: Bool
+    /// For a restart: exit now instead of once nothing is running ("Restart Host Now"). Interrupted
+    /// turns resume on the new binary like after any interruption.
+    public var immediately: Bool
 
-    public init(stopAgents: Bool) {
+    public init(stopAgents: Bool, immediately: Bool = false) {
         self.stopAgents = stopAgents
+        self.immediately = immediately
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        stopAgents = try container.decode(Bool.self, forKey: .stopAgents)
+        immediately = try container.decodeIfPresent(Bool.self, forKey: .immediately) ?? false
     }
 }
 

@@ -9,7 +9,10 @@ import UserShell
 public enum MacHost {
     /// Where this process's host lives: the channel its launchd plist set, or the standard location.
     public static func location(environment: [String: String] = ProcessInfo.processInfo.environment) -> HostLocation {
-        HostLocation.standard(channel: environment[HostLocation.channelVariable] ?? "")
+        HostLocation.standard(
+            channel: environment[HostLocation.channelVariable] ?? "",
+            isDevelopment: environment[HostLocation.developmentVariable] == "1"
+        )
     }
 
     public static func configuration(
@@ -24,8 +27,8 @@ public enum MacHost {
             environment: { @Sendable in
                 inheritEnvironment ? ProcessInfo.processInfo.environment : await LoginShell.environment()
             },
-            // A channel means a development build; its host shouldn't outlive interest in it.
-            idleExit: location.channel.isEmpty ? nil : .seconds(15 * 60),
+            // A development build's host shouldn't outlive interest in it.
+            idleExit: location.isDevelopment ? .seconds(15 * 60) : nil,
             exit: { status in Darwin.exit(status) }
         )
     }
