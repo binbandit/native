@@ -98,9 +98,6 @@ When a check needs a real agent session, use Codex with `gpt-6.1-sol` (it's the 
 `-agentDefaults.codex.model gpt-6.1-sol`, or pick it in the composer's model picker. Use another
 agent only when the behavior under test belongs to that agent (Claude Code's questions, say).
 
-Design references: the reference app (`<local reference>`, runnable rebuild `factory-clone`) and
-the reference app (`<local reference>`, runnable rebuild `rebuild`). Read-only.
-
 ## Saving work (Kite)
 
 The repo saves progress continuously with [Kite](https://github.com/binbandit/kite) (`kt`), so no

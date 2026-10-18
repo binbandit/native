@@ -2,8 +2,8 @@ import ACP
 import QuickLook
 import SwiftUI
 
-/// The files and images going out with the draft, as a row of chips above the text, followed by
-/// any still being read.
+/// The files and images going out with the draft, as chips above the text, followed by any still
+/// being read. Past three rows they scroll.
 struct ComposerAttachmentsSection: View {
     let attachments: [PromptAttachment]
     let pending: [ComposerPendingAttachment]
@@ -16,8 +16,8 @@ struct ComposerAttachmentsSection: View {
     @State private var previewing: URL?
 
     var body: some View {
-        ScrollView(.horizontal) {
-            HStack(spacing: DS.Space.sm) {
+        CappedHeightScrollView(maxHeight: ComposerMetrics.attachmentsMaxHeight) {
+            ComposerAttachmentFlow(spacing: DS.Space.sm) {
                 ForEach(attachments) { attachment in
                     ComposerAttachmentChip(
                         attachment: attachment,
@@ -34,10 +34,9 @@ struct ComposerAttachmentsSection: View {
                         .transition(.opacity)
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(DS.Space.md)
         }
-        .scrollIndicators(.never)
-        .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
         .quickLookPreview($previewing, in: attachments.map(\.url))
         .animation(.dsQuick, value: attachments.map(\.id))
         .animation(.dsQuick, value: pending)
