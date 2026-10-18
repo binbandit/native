@@ -28,9 +28,10 @@ struct TranscriptSearchPanel: View {
             SeparatorLine()
             footer
         }
+        // A fixed size on the Mac, so the sheet doesn't grow with its results; full screen on touch.
         .frame(
-            minWidth: DS.isTouchPlatform ? nil : TranscriptSearchMetrics.panelWidth,
-            minHeight: DS.isTouchPlatform ? nil : TranscriptSearchMetrics.panelHeight
+            width: DS.isTouchPlatform ? nil : TranscriptSearchMetrics.panelWidth,
+            height: DS.isTouchPlatform ? nil : TranscriptSearchMetrics.panelHeight
         )
         .background(.dsBackground)
         .onAppear { isFieldFocused = true }

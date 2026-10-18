@@ -64,13 +64,14 @@ nonisolated struct TranscriptSearchBackfill: Sendable {
                 }
                 await report(.indexing(done: offset, total: work.count))
             }
-            guard let entry = entry(for: source, from: reader) else { continue }
-            batch.append(entry)
-            documents += entry.documents.count
-            if batch.count >= Self.batchSessions || documents >= Self.batchDocuments {
-                await write(&batch, documents: &documents)
-                await report(.indexing(done: offset + 1, total: work.count))
+            if let entry = entry(for: source, from: reader) {
+                batch.append(entry)
+                documents += entry.documents.count
+                if batch.count >= Self.batchSessions || documents >= Self.batchDocuments {
+                    await write(&batch, documents: &documents)
+                }
             }
+            await report(.indexing(done: offset + 1, total: work.count))
         }
         await write(&batch, documents: &documents)
         await report(.idle)
