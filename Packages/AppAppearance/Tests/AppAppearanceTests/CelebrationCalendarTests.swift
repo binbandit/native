@@ -91,14 +91,18 @@ struct CelebrationCalendarTests {
 
     @Test func boundariesAreLocalMidnightsAcrossDaylightSaving() throws {
         let melbourne = try F.zone("Australia/Melbourne")
-        // Melbourne moves to daylight time on 4 October, inside the window; the closing boundary is
-        // still midnight local time on 8 November.
-        let resolution = CelebrationPolicy.resolve(
-            F.events, preferences: F.enabled(F.halloween), on: CivilDate(try F.instant("2026-10-01T00:00:00Z"), in: melbourne))
-        let close = try #require(resolution.nextChange)
+        // Melbourne moves to daylight time on 4 October, inside the window; the base still returns at
+        // midnight local time on 8 November.
+        let opening = CivilDate(try F.instant("2026-10-01T00:00:00Z"), in: melbourne)
+        let schedule = CelebrationPolicy.schedule(
+            F.events, preferences: F.enabled(F.halloween), from: opening, through: try F.day("2026-11-30"))
+        #expect(schedule.map(\.occurrence?.eventID) == [F.halloween, nil])
+        let close = try #require(schedule.last?.days.first)
         #expect(close == (try F.day("2026-11-08")))
         #expect(close.start(in: melbourne) == (try F.instant("2026-11-07T13:00:00Z")))
-        #expect(try F.day("2026-10-01").start(in: melbourne) == (try F.instant("2026-09-30T14:00:00Z")))
+        #expect(opening.start(in: melbourne) == (try F.instant("2026-09-30T14:00:00Z")))
+        // The window is 38 calendar days though one of them is only 23 hours long.
+        #expect(schedule.first?.days.dayCount == 38)
     }
 
     @Test func dayStartWhenDaylightSavingSkipsMidnight() throws {
@@ -125,7 +129,8 @@ struct CelebrationCalendarTests {
     @Test func manualClockChangesRecompute() throws {
         let preferences = F.enabled(F.halloween, F.muertos)
         let before = CelebrationPolicy.resolve(F.events, preferences: preferences, on: try F.day("2026-10-15"))
-        #expect(before.nextChange == (try F.day("2026-11-01")))
+        // Halloween's own day is the next change: its tier, and so the chooser's reason, changes then.
+        #expect(before.nextChange == (try F.day("2026-10-31")))
         // The clock is set forward past the season, then back into it: each answer depends only on
         // the new day, and the next boundary is always after it.
         let forward = CelebrationPolicy.resolve(F.events, preferences: preferences, on: try F.day("2026-11-09"))
