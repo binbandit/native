@@ -120,6 +120,20 @@ struct TreeSitterHighlighterTests {
         #expect(CodeHighlighter.segments(prose, language: swift) == CodeLexer.segments(prose, language: swift))
     }
 
+    @Test func aCutOffFragmentStillParses() {
+        // A diff hunk: the function never closes, so tree-sitter wraps all of it in one error node.
+        let hunk = """
+            export function Card({ title }: Props) {
+              const label = `${title} (${n})`;
+              return (
+                <section className="card">
+                  <h2>{label}</h2>
+            """
+        #expect(TreeSitterHighlighter.segments(hunk, grammar: .tsx) != nil)
+        #expect(roles(of: "section", in: hunk, "tsx") == [.tag])
+        #expect(roles(of: "title", in: hunk, "tsx") == [.foreground, .foreground])
+    }
+
     @Test func fencesInLanguagesWithoutAGrammarUseTheLexer() {
         let code = "```diff\n-old\n+new\n```\n"
         #expect(roles(of: "-old", in: code, "md") == [.deletedForeground])

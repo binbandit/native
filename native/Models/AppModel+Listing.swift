@@ -159,6 +159,11 @@ extension AppModel {
         await refreshSessions(in: project, of: runtime)
     }
 
+    /// The problem saying a project's folder is gone, while it is; no task can start there.
+    func missingFolder(of project: Project.ID) -> ProjectProblem? {
+        problems.list(for: project).first { $0.work == .folder }
+    }
+
     /// Says when a project's folder on this Mac is gone, since agents list a missing folder as empty
     /// and starting a task there fails. Agents still list it, for sessions they kept from before.
     /// Internal only for AppModel+Problems.swift.

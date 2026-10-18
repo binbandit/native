@@ -24,11 +24,12 @@ extension AppModel {
     }
 
     /// Whether starting a session makes sense now, in `project` with `agent` (by default the
-    /// current project and the default agent): one isn't already starting, and the agent can take
-    /// it, even if it has to start first. Before the first check for agents, it assumes so; New
-    /// Session waits for the check.
+    /// current project and the default agent): the project's folder is there, one isn't already
+    /// starting, and the agent can take it, even if it has to start first. Before the first check
+    /// for agents, it assumes so; New Session waits for the check.
     func canCreateSession(in project: Project.ID? = nil, with agent: AgentDefinition.ID? = nil) -> Bool {
-        guard (project ?? currentProject?.id) != nil, !isCreatingSession else { return false }
+        guard let project = project ?? currentProject?.id, missingFolder(of: project) == nil, !isCreatingSession
+        else { return false }
         guard let agent = agent ?? defaultAgent?.id, let runtime = runtimes[agent] else { return !hasCheckedAgents }
         return runtime.isAvailable
     }
@@ -87,9 +88,10 @@ extension AppModel {
     /// How long one of the user's sessions sits unused (not shown, not working, no draft) before
     /// Native closes it, here and in the agent's process; nil, the default, keeps sessions open.
     /// Set the `sessionIdleTimeout` default (seconds) to turn it on; it's checked as often as agents
-    /// are, so shorten `agentIdleTimeout` with it. Off until closing pays and reopening is faithful
-    /// (docs/performance.md): Codex keeps a closed session's MCP servers anyway, and a session
-    /// loaded back shows the agent's default model and its own title instead of the user's.
+    /// are, so shorten `agentIdleTimeout` with it. Off until closing pays (docs/performance.md):
+    /// Codex keeps a closed session's MCP servers anyway. Reopening is faithful: a session loaded
+    /// back gets its chosen settings set back (SessionModel+ConfigRestore.swift) and keeps
+    /// Native's title.
     static var sessionIdleTimeout: Duration? {
         let seconds = UserDefaults.standard.double(forKey: "sessionIdleTimeout")
         return seconds > 0 ? .seconds(seconds) : nil

@@ -37,7 +37,8 @@ struct ProjectSection<TaskAccessory: View>: View {
             icon: iconStore.icon(for: project),
             isExpanded: isExpanded,
             taskCount: sessions.count,
-            onNewTask: { Task { await model.newSession(in: project.id) } }
+            // Not while its folder is gone; the problem under it says so, with Retry.
+            onNewTask: model.missingFolder(of: project.id) == nil ? { Task { await model.newSession(in: project.id) } } : nil
         ) {
             ProjectMenu(
                 project: project, position: position, isPickingIcon: $isPickingIcon,

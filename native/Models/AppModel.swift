@@ -335,6 +335,13 @@ final class AppModel {
             isAddingProject = true
             return
         }
+        // A task can't start in a folder that's gone. The project already says so, with Retry, so show
+        // it rather than an alert about git; looking again first lets a folder that's back through.
+        checkFolder(of: project)
+        guard missingFolder(of: project.id) == nil else {
+            focusProject(project.id)
+            return
+        }
         // One at a time; the one under way shows its progress.
         guard !isCreatingSession else { return }
         // Right after launch there may be no default agent yet, until the check for agents is done.
