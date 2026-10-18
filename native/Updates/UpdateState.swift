@@ -62,6 +62,8 @@ enum UpdateUnavailableReason: Equatable, Sendable {
     case notConfigured
     /// iPad builds have no updater; the App Store or TestFlight updates them.
     case unsupportedPlatform
+    /// The organization turned updates off (`policy.updates.enabled`).
+    case managedByOrganization
     /// Sparkle refused to start, with its reason.
     case updaterFailed(String)
 }

@@ -1,3 +1,4 @@
+import NativePolicy
 import SwiftUI
 
 extension SettingsPane.ID {
@@ -81,6 +82,7 @@ struct UpdatesSettingsPage: View {
                     )
                     .disabled(!controller.isAvailable)
                 }
+                .settingsManaged(by: .updatesEnabled)
                 SettingsRow(
                     id: Self.downloadsRow,
                     "Download automatically",
@@ -94,6 +96,7 @@ struct UpdatesSettingsPage: View {
                     )
                     .disabled(!controller.isAvailable || !controller.automaticallyChecks)
                 }
+                .settingsManaged(by: .updatesEnabled)
                 SettingsRow(
                     id: Self.whatsNewRow,
                     "Show What's New",
@@ -136,13 +139,16 @@ struct UpdatesSettingsPage: View {
                 )
                 .disabled(!controller.isAvailable)
             }
+            .settingsManaged(by: .updatesChannels)
         } else {
             SettingsRow(
                 id: Self.channelRow,
                 "Channel",
                 description: Text(controller.channel.summary),
                 detail: Text(
-                    "Native Nightly always follows nightly builds. Install Native for stable releases; the two live side by side."
+                    controller.current.channel.isNightly
+                        ? "Native Nightly always follows nightly builds. Install Native for stable releases; the two live side by side."
+                        : "Your organization chose this channel."
                 )
             ) {
                 Text(controller.channel.title)

@@ -171,6 +171,11 @@ struct UpdateStatusView: View {
                 )
             case .unsupportedPlatform:
                 ("Updates come from the App Store", "On iPad, Native updates through the App Store or TestFlight.")
+            case .managedByOrganization:
+                (
+                    "Updates are managed by your organization",
+                    "Your organization decides when Native updates. Ask your IT team if you need a newer version."
+                )
             case .updaterFailed(let message):
                 (
                     "Native can't check for updates",

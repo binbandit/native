@@ -37,9 +37,10 @@ public struct ActivityHeatmap: View {
     private static let labelWidth: CGFloat = 28
     private static let monthHeight: CGFloat = 16
 
+    /// Fills the width, between a size still worth tapping and GitHub's largest.
     private var cell: CGFloat {
         let available = width - Self.labelWidth - Self.gap * CGFloat(Self.weeks - 1)
-        return min(max((available / CGFloat(Self.weeks)).rounded(.down), 7), 14)
+        return min(max(available / CGFloat(Self.weeks), 7), 14)
     }
 
     public var body: some View {

@@ -249,7 +249,13 @@ extension SparkleUpdateDriver: SPUUserDriver {
 
 extension SparkleUpdateDriver: SPUUpdaterDelegate {
     func allowedChannels(for updater: SPUUpdater) -> Set<String> {
-        controller.channel.sparkleChannels
+        let channels = controller.channel.sparkleChannels
+        return controller.policy.allowedChannels.map { channels.intersection($0) } ?? channels
+    }
+
+    /// An organization's internal feed in place of Info.plist's; nil keeps Native's.
+    func feedURLString(for updater: SPUUpdater) -> String? {
+        controller.policy.feedURL?.absoluteString
     }
 
     func updaterShouldRelaunchApplication(_ updater: SPUUpdater) -> Bool {
