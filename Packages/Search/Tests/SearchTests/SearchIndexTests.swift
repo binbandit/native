@@ -131,6 +131,7 @@ struct SearchIndexTests {
         let vocabulary = (0..<4_000).map { "word\($0)" } + ["timeout", "migration", "SessionStore", "refactor", "deploy"]
         var generator = SystemRandomNumberGenerator()
         let started = Date.now
+        var partsTime: TimeInterval = 0
         for batch in stride(from: 0, to: 3_000, by: 25) {
             let entries = (batch..<batch + 25).map { sessionNumber in
                 let documents = (0..<60).map { position in
@@ -144,8 +145,12 @@ struct SearchIndexTests {
                         daysAgo: Double(sessionNumber % 365)),
                     documents: documents)
             }
+            let partsStarted = Date.now
+            for entry in entries { for document in entry.documents { _ = SearchText.codeParts(of: document.text) } }
+            partsTime += Date.now.timeIntervalSince(partsStarted)
             try await index.replace(entries)
         }
+        print("code parts took \(partsTime)s")
         print("indexed 180k items in \(Date.now.timeIntervalSince(started))s, \(try await index.statistics())")
         for text in ["timeout", "word12 word99", "SessionStore", "store", "dep", "\"word1 word2\"", "timeout agent:claude"] {
             var best = Double.infinity
