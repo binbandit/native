@@ -1,7 +1,7 @@
 import ACP
 import SwiftUI
 
-/// A session in the sidebar (Conductor's workspace row): the agent's icon or the session's status,
+/// A session in the sidebar: the agent's icon or the session's status,
 /// its title and age, and `accessory` (pull request, branch state and context usage, as the app
 /// wires it) at the trailing edge. One line always; what a waiting session asks goes in its tooltip
 /// and VoiceOver label. Every action is in the context menu, hover shows Archive, and on touch the
@@ -194,13 +194,13 @@ extension SessionModel {
     }
 }
 
-/// The trailing indicator task rows show until the Usage feature supplies its own: Conductor's
+/// The trailing indicator task rows show until the Usage feature supplies its own: the
 /// context ring, once a session has used most of its context window.
 struct SessionContextUsage: View {
     @Environment(AppModel.self) private var model
     let summary: SessionSummary
 
-    /// Conductor shows the ring past 70%.
+    /// Below this the ring would be noise: there's plenty of room left.
     private static let threshold = 0.7
 
     var body: some View {

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Settings › Keep Awake, in Conductor's row style, opening with what it's doing right now.
+/// Settings › Keep Awake, opening with what it's doing right now.
 struct KeepAwakeSettingsPage: View {
     static let modeRow = SettingsRowID("keepAwake.mode")
     static let timerRow = SettingsRowID("keepAwake.timer")

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Factory's update button: a small orange tag in the window's toolbar row, right of the sidebar
+/// The update button: a small orange tag in the window's toolbar row, right of the sidebar
 /// toggle. Black 13pt medium text on the accent, 2x10pt padding, 4pt radius; darker on hover and
 /// press.
 public struct UpdateButton: View {

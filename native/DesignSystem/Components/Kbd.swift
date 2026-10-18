@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A keyboard shortcut hint (Factory `Kbd`): Geist Mono 10pt in a 1pt-outlined, 2pt-rounded cap.
+/// A keyboard shortcut hint: Geist Mono 10pt in a 1pt-outlined, 2pt-rounded cap.
 public struct Kbd: View {
     let keys: String
 

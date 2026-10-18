@@ -1,9 +1,8 @@
 import Foundation
 
-/// What settings search can find: every pane, and every row a pane lists. Matching follows
-/// Conductor's settings search: each query word must match a field as a substring or, failing that,
-/// as an in-order subsequence; substrings and word starts rank higher, and titles outrank
-/// descriptions, which outrank keywords.
+/// What settings search can find: every pane, and every row a pane lists. Each query word must
+/// match a field as a substring or, failing that, as an in-order subsequence; substrings and word
+/// starts rank higher, and titles outrank descriptions, which outrank keywords.
 struct SettingsSearchIndex {
     struct Item: Identifiable {
         let paneID: SettingsPane.ID

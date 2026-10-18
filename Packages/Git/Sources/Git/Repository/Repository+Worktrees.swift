@@ -16,7 +16,7 @@ extension Repository {
         return try await requireListedWorktree(at: path)
     }
 
-    /// Gives a task its own worktree, Conductor-style, so parallel agents never edit the same
+    /// Gives a task its own worktree, so parallel agents never edit the same
     /// checkout. The folder (`<location>/<repository>/<slug>`) and the branch (`<prefix><slug>`)
     /// get a numeric suffix when either is taken, locally or on a remote. `location` defaults to
     /// `~/.native/worktrees` in the home folder of the machine git runs on. A `detached` worktree

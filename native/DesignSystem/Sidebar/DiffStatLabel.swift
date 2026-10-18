@@ -1,13 +1,13 @@
 import SwiftUI
 
-/// `+12 −3` in mono, green and red (Conductor `DiffStat`; counts from `DSFormat.lineCount`).
+/// `+12 −3` in mono, green and red (counts from `DSFormat.lineCount`).
 public struct DiffStatLabel: View {
     let added: Int
     let removed: Int
     let isMuted: Bool
 
-    /// - Parameter isMuted: Grays both sides, as Conductor does for unselected rows unless colored
-    ///   diffs are on.
+    /// - Parameter isMuted: Grays both sides, for counts that shouldn't draw the eye (a file
+    ///   already viewed).
     public init(added: Int, removed: Int, isMuted: Bool = false) {
         self.added = added
         self.removed = removed

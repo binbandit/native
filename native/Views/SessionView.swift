@@ -68,7 +68,7 @@ struct SessionView: View {
             // Another task or page took the window; the inspector went with this view.
             .onDisappear { inspectorRoom.release() }
             .toolbar {
-                // Draws its own outline, like Conductor's header control, rather than sitting on glass.
+                // Draws its own outline, like the other header controls, rather than sitting on glass.
                 ToolbarItem {
                     OpenInButton(location: OpenInLocation(folder: session.cwd, host: projectHost))
                 }

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A usage limit as Factory draws it (`UsageProgressRow`, `ProgressBar`): label and percentage over
+/// A usage limit: label and percentage over
 /// an 8pt bar that turns from the accent to warning at 80% and to error at 100%, with an optional
 /// reset time.
 public struct UsageMeter: View {

@@ -12,7 +12,7 @@ struct SettingsPane: Identifiable {
         }
     }
 
-    /// The nav's sections, in order (Conductor's "Personal", "Agents & environment", "More").
+    /// The nav's sections, in order ("Personal", "Agents & environment", "More").
     /// Empty groups are hidden.
     enum Group: Int, CaseIterable, Comparable {
         case personal

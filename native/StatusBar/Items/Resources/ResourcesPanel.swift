@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Every process tree's memory and CPU with its trend, and on expanding a tree, each process in it
-/// (Orca's Resource Manager table). Columns sort by clicking their headers.
+/// as a table. Columns sort by clicking their headers.
 struct ResourcesPanel: View {
     let monitor: ResourceMonitor
 
@@ -52,7 +52,7 @@ struct ResourcesPanel: View {
         }
     }
 
-    /// Orca's summary line: total CPU and memory, with the total's trend.
+    /// The summary line: total CPU and memory, with the total's trend.
     private var summary: some View {
         HStack(spacing: DS.Space.md) {
             Text(DSFormat.cpu(snapshot.cpu))

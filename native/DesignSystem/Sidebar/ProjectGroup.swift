@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// A project header with its tasks underneath, collapsible (Conductor `RepoGroup`: 4pt between
-/// task rows, 2pt above and 4pt below the header).
+/// A project header with its tasks underneath, collapsible: 4pt between task rows, 2pt above and
+/// 4pt below the header.
 public struct ProjectGroup<MenuContent: View, Content: View>: View {
     let name: String
     let icon: ProjectIcon

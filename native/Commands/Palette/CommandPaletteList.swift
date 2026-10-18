@@ -115,8 +115,8 @@ private struct CommandPaletteRow: View {
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
-    /// The title with the matched letters at full strength and the rest dimmed, as Conductor's
-    /// search shows it.
+    /// The title with the matched letters at full strength and the rest dimmed, so it's clear why
+    /// it matched.
     private var title: AttributedString {
         var text = AttributedString(row.item.title)
         guard showsHighlights, !row.highlights.isEmpty else {

@@ -33,7 +33,7 @@ extension SettingsPane {
     )
 }
 
-/// Conductor's Keyboard shortcuts page, editable: every command by category, each shortcut a pill
+/// Settings ▸ Keyboard shortcuts, editable: every command by category, each shortcut a pill
 /// that records a new one, with search by name or by keys, reset, and import and export. Below
 /// them, the keys views answer themselves, which can't be changed.
 struct KeyboardShortcutsSettingsPage: View {
@@ -204,7 +204,7 @@ private struct CategoryCommands: Identifiable {
     var id: CommandCategory { category }
 }
 
-/// Conductor `divide-y rounded-lg border`.
+/// An outlined, rounded box with hairlines between its rows.
 private struct ShortcutOutline<Content: View>: View {
     @ViewBuilder var content: Content
 

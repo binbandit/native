@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A pill that opens a menu: model, mode, autonomy (Factory's selector chips). Pass a level
+/// A pill that opens a menu: model, mode, autonomy. Pass a level
 /// indicator or status dot as `accessory` to show it after the title.
 ///
 ///     PillMenu("Auto Model") { modelButtons } accessory: { EffortBars(level: 2) }

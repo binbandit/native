@@ -68,31 +68,31 @@ struct DesignSystemGalleryColumn: View {
             GallerySection("Accent palettes", source: "One per app-icon theme, set with .dsAccentPalette(themeID:)") {
                 GalleryAccentPalettes()
             }
-            GallerySection("Colors", source: "Factory core-ui v2 neutrals, Conductor statuses, CVD-safe chart series") {
+            GallerySection("Colors", source: "Neutral layers, status colors, CVD-safe chart series") {
                 GalleryColors()
             }
-            GallerySection("Typography", source: "Geist / Geist Mono, Factory scale") {
+            GallerySection("Typography", source: "Geist / Geist Mono, 12pt UI text, 13pt sidebar and composer") {
                 GalleryTypography()
             }
-            GallerySection("Spacing, radii, elevation", source: "Factory spacing, Conductor radii") {
+            GallerySection("Spacing, radii, elevation", source: "Spacing scale, corner radii, shadows") {
                 GalleryMetrics()
             }
-            GallerySection("Sidebar", source: "Factory top half, Conductor projects and tasks, translucent") {
+            GallerySection("Sidebar", source: "Navigation on top, projects and tasks below, translucent") {
                 GallerySidebar()
             }
-            GallerySection("Icon picker", source: "Conductor's settings select, with a popover list") {
+            GallerySection("Icon picker", source: "The settings select, with a popover list") {
                 GalleryIconThemePicker()
             }
-            GallerySection("Status bar", source: "Orca's status bar in Factory's chrome") {
+            GallerySection("Status bar", source: "Quiet segments along the window's bottom edge") {
                 GalleryStatusBar()
             }
-            GallerySection("Task status", source: "Conductor workspace statuses and dot-grid loaders") {
+            GallerySection("Task status", source: "Agent states and dot-grid loaders") {
                 GalleryStatus()
             }
-            GallerySection("Composer", source: "Factory composer") {
+            GallerySection("Composer", source: "Outlined sections and pill controls") {
                 GalleryComposer()
             }
-            GallerySection("Controls", source: "Factory buttons, Kbd; Conductor badges, cards") {
+            GallerySection("Controls", source: "Buttons, Kbd, badges, cards") {
                 GalleryControls()
             }
             GallerySection("Patterns", source: "One per situation (docs/product-quality.md)") {

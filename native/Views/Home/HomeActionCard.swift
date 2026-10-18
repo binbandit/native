@@ -1,12 +1,11 @@
 import SwiftUI
 
-/// One of the home page's big buttons (Conductor's quick-action card): a glyph in the top-left
-/// corner, the label at the bottom, and room top-right for a shortcut hint or progress.
+/// One of the home page's big buttons: a glyph in the top-left corner, the label at the bottom, and
+/// room top-right for a shortcut hint or progress.
 ///
-/// Conductor fills the card with `bg-secondary`, a shade off the background toward the foreground
-/// in both appearances, which `dsSurfaceSunken` matches, and outlines it with its `border`, which is
-/// `dsSeparator`. Hover uses Native's wash instead of Conductor's barely visible 80% fill, so the
-/// cards answer the pointer like every other control here.
+/// The card fills with `dsSurfaceSunken`, a shade off the background toward the foreground in both
+/// appearances, and is outlined in `dsSeparator`. Hover uses the standard wash, so the cards answer
+/// the pointer like every other control here.
 struct HomeActionCard<Accessory: View>: View {
     let title: String
     let systemImage: String

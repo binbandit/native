@@ -1,7 +1,7 @@
 import Foundation
 import NativeAutomation
 
-/// A starting point for a new automation, after Conductor's suggested routines.
+/// A starting point for a new automation, offered as a suggestion.
 struct AutomationTemplate: Identifiable {
     let id: String
     let name: String

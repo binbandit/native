@@ -1,7 +1,7 @@
 import NativeAutomation
 import SwiftUI
 
-/// An automation in the list, after Conductor's routines table: its state, name, triggers, when it
+/// An automation in the list, as a table row: its state, name, triggers, when it
 /// runs next and how it last went, with Run Now always in reach (and everything else in the context
 /// menu, which is also the touch equivalent).
 struct AutomationRow: View {

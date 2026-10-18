@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// A recent task on the home page, laid out like a row of Conductor's workspace overview
-/// (`OverviewRow`): a 16pt leading glyph, the title, then fixed trailing columns so ages line up
+/// A recent task on the home page: a 16pt leading glyph, the title, then fixed trailing columns so ages line up
 /// down the list. The glyph is the agent's, since the list mixes agents.
 struct HomeTaskRow<ID: Hashable>: View {
     let task: HomeTask<ID>

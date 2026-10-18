@@ -1,7 +1,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Picks what leads a project in the sidebar (Conductor's repository icon picker): an emoji, a
+/// Picks what leads a project in the sidebar: an emoji, a
 /// symbol, an image file, or automatic (the icon found in the project, else its initial).
 struct ProjectIconPicker: View {
     let project: Project

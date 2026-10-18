@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// Leaves Settings (Conductor: a muted arrow and "Back" that brighten on hover, Escape as the
-/// shortcut).
+/// Leaves Settings: a muted arrow and "Back" that brighten on hover, Escape as the shortcut.
 struct SettingsBackButton: View {
     let action: () -> Void
 

@@ -75,7 +75,7 @@ struct GallerySidebar: View {
                     }
                 }
                 ProjectGroup(
-                    name: "conductor", icon: .symbol("folder"), isExpanded: $otherExpanded, taskCount: 2, onNewTask: {}
+                    name: "companion", icon: .symbol("folder"), isExpanded: $otherExpanded, taskCount: 2, onNewTask: {}
                 ) {
                     TaskRow(
                         title: "Agent icon and context",

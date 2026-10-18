@@ -6,13 +6,13 @@ nonisolated enum GitMetrics {
     static let inspectorMinWidth: CGFloat = 340
     static let inspectorIdealWidth: CGFloat = 420
     static let inspectorMaxWidth: CGFloat = 720
-    /// The header row, as tall as Conductor's git panel tab row.
+    /// The header row.
     static let headerHeight: CGFloat = 40
-    /// The "N files changed" row (Conductor `ChangesSummary`, h-8).
+    /// The "N files changed" row.
     static let summaryHeight: CGFloat = DS.Size.controlMD
-    /// File rows (Conductor `FileRow`, py-1 around 20pt text).
+    /// File rows, a little padding around 20pt text.
     static let rowHeight: CGFloat = DS.Size.controlSM
-    /// The status glyph at a row's trailing edge (Conductor `size-3`).
+    /// The status glyph at a row's trailing edge.
     static let statusGlyph: CGFloat = DS.Size.navIcon
     /// The file list grows with its content up to this share of the column (at least
     /// `listMinHeight`); the diff takes the rest.

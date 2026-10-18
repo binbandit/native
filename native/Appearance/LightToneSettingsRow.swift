@@ -140,7 +140,7 @@ private struct LightToneTile: View {
         static let height: CGFloat = 132
         static let sidebarWidth: CGFloat = 112
         static let rowHeight: CGFloat = 20
-        /// The selection ring sits this far outside the window, Conductor's theme-card ring.
+        /// The selection ring sits this far outside the window, clear of its edge.
         static let ring: CGFloat = 3
         static let ringWidth: CGFloat = 2
     }

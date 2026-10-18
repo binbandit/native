@@ -109,7 +109,7 @@ private struct TerminalTabCloseButton: View {
     let action: () -> Void
     @State private var isHovered = false
 
-    /// Conductor's tab close button: a 16pt square around a small glyph.
+    /// The tab close button: a 16pt square around a small glyph.
     private static let side: CGFloat = 16
 
     var body: some View {

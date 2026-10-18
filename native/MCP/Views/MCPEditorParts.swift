@@ -1,7 +1,7 @@
 import SwiftUI
 
 extension View {
-    /// Conductor's input: an outlined 32pt field on the background, like `SettingsSelect`. Pass
+    /// The settings input: an outlined 32pt field on the background, like `SettingsSelect`. Pass
     /// `focus` to drive the field's focus from outside.
     func mcpFieldStyle(focus: FocusState<Bool>.Binding? = nil) -> some View {
         modifier(MCPFieldStyle(external: focus))

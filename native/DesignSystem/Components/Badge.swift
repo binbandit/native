@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// A small label: Factory's outlined nav badge ("Beta"), a soft tinted tag, or Conductor's
-/// uppercase mono badge ("NEW", "PRO").
+/// A small label: an outlined badge for navigation ("Beta"), a soft tinted tag, or an uppercase
+/// mono badge ("NEW", "PRO").
 public struct Badge: View {
     public enum Tone: Sendable {
         case neutral, accent, success, warning, danger, info
@@ -22,11 +22,11 @@ public struct Badge: View {
     }
 
     public enum Style: Sendable {
-        /// 1pt border, 2pt radius, 10pt medium (Factory `NavigationBadge`).
+        /// 1pt border, 2pt radius, 10pt medium.
         case outline
         /// A 12% wash of the tone, no border.
         case soft
-        /// Uppercase Geist Mono with wide tracking (Conductor `Badge`).
+        /// Uppercase Geist Mono with wide tracking.
         case mono
     }
 

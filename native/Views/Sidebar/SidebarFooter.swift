@@ -1,8 +1,8 @@
 import ACP
 import SwiftUI
 
-/// The sidebar's footer, after Conductor's: a hairline, then Help and Settings at the trailing edge
-/// (Conductor's `px-4 py-3`, 20pt between the icons). Agents' health lives on Home, in Settings ▸
+/// The sidebar's footer: a hairline, then Help and Settings at the trailing edge, 20pt between the
+/// icons. Agents' health lives on Home, in Settings ▸
 /// Agents and in the Help menu, not here. While the status bar shows, the footer shrinks to the
 /// bar's height, so the two stack as one quiet band with their glyphs at the same size.
 struct SidebarFooter: View {
@@ -25,7 +25,7 @@ struct SidebarFooter: View {
     }
 }
 
-/// Opens the Settings window (Conductor's gear, "Settings ⌘,"). iPadOS has no Settings scene; the
+/// Opens Settings (a gear, "Settings ⌘,"). iPadOS has no Settings scene; the
 /// app presents settings there itself, so the gear isn't shown.
 private struct SettingsButton: View {
     @Environment(SettingsPresentation.self) private var settings
@@ -42,7 +42,7 @@ private struct SettingsButton: View {
     }
 }
 
-/// Conductor's "?" menu: keyboard shortcuts, the protocol's docs, signing in to and restarting each
+/// The "?" menu: keyboard shortcuts, the protocol's docs, signing in to and restarting each
 /// agent, with the versions line at the bottom.
 private struct SidebarHelpMenu: View {
     @Environment(AppModel.self) private var model
@@ -99,7 +99,7 @@ private struct SidebarHelpMenu: View {
 
     private static let protocolDocs = URL(string: "https://agentclientprotocol.com") ?? URL(filePath: "/")
 
-    /// "Native 1.0 · Claude Code 2.1.3 · Codex 0.40", as Conductor ends its help menu.
+    /// "Native 1.0 · Claude Code 2.1.3 · Codex 0.40", so a bug report can quote every version at once.
     private var versions: String {
         let app = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
         let agents = model.agents.map { runtime in
@@ -109,7 +109,7 @@ private struct SidebarHelpMenu: View {
     }
 }
 
-/// A footer icon: Conductor's 16pt muted glyphs that brighten on hover, with no fill. The status
+/// A footer icon: a 16pt muted glyph that brightens on hover, with no fill. The status
 /// bar's glyphs (`StatusBarGlyph`) are the same size.
 private struct FooterGlyph: View {
     let systemImage: String

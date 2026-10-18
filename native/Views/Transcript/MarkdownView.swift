@@ -16,17 +16,35 @@ struct MarkdownView: View, Equatable {
         #if DEBUG
         let _ = RenderProbe.hit("MarkdownView")
         #endif
-        if let blocks = MarkdownParseCache.blocks(for: source) {
-            VStack(alignment: .leading, spacing: 0) {
-                ForEach(blocks) { block in
-                    MarkdownBlockView(node: block)
-                        .padding(.top, block.id == blocks.first?.id ? 0 : block.spacingAbove)
-                }
+        // Section by section: a streaming reply only grows its last section, so the ones before it
+        // are parsed, laid out and drawn once rather than on every chunk.
+        let sections = source.markdownSections
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(sections.indices, id: \.self) { index in
+                MarkdownSectionView(source: String(sections[index]), isFirst: index == 0)
+                    .equatable()
             }
-            .textSelection(.enabled)
+        }
+        .textSelection(.enabled)
+    }
+}
+
+/// One section of `MarkdownView`'s source: its blocks, spaced as they would be in the whole.
+private struct MarkdownSectionView: View, Equatable {
+    let source: String
+    let isFirst: Bool
+
+    var body: some View {
+        #if DEBUG
+        let _ = RenderProbe.hit("MarkdownSection")
+        #endif
+        if let blocks = MarkdownParseCache.blocks(for: source) {
+            ForEach(blocks) { block in
+                MarkdownBlockView(node: block)
+                    .padding(.top, isFirst && block.id == blocks.first?.id ? 0 : block.spacingAbove)
+            }
         } else {
             Text(verbatim: source)
-                .textSelection(.enabled)
         }
     }
 }
@@ -56,6 +74,34 @@ private enum MarkdownParseCache {
 }
 
 extension String {
+    /// The source as consecutive top-level sections that parse the same apart as together. A section
+    /// ends at a blank line outside fenced code when the next line starts a block at the margin;
+    /// never before a list item or an indented line, which can continue the block above.
+    fileprivate var markdownSections: [Substring] {
+        var sections: [Substring] = []
+        var start = startIndex
+        var fence: Substring?
+        var hasContent = false
+        var previousIsBlank = false
+        for line in split(separator: "\n", omittingEmptySubsequences: false) {
+            let isBlank = line.allSatisfy(\.isWhitespace)
+            if let open = fence {
+                if line.drop(while: { $0 == " " }).hasPrefix(open) { fence = nil }
+            } else if !isBlank {
+                if previousIsBlank, hasContent, line.startsBlockAtMargin {
+                    sections.append(self[start..<line.startIndex])
+                    start = line.startIndex
+                }
+                let trimmed = line.drop { $0 == " " }
+                if trimmed.hasPrefix("```") || trimmed.hasPrefix("~~~") { fence = trimmed.prefix(3) }
+                hasContent = true
+            }
+            previousIsBlank = isBlank && fence == nil
+        }
+        sections.append(self[start...])
+        return sections
+    }
+
     /// Agents write chat, where a single newline is a line break (as in GitHub comments): "one
     /// number per line" must not collapse into one line. Markdown would join those lines into a
     /// paragraph, so every line followed by another non-blank line ends in a hard break. Fenced
@@ -80,6 +126,22 @@ extension String {
             }
         }
         return lines.joined(separator: "\n")
+    }
+}
+
+extension Substring {
+    /// Whether this line starts a new block at the left margin rather than possibly continuing one:
+    /// not indented, and not a list item (which may continue a list).
+    fileprivate var startsBlockAtMargin: Bool {
+        guard let first, !first.isWhitespace else { return false }
+        if "-*+".contains(first) {
+            return !(dropFirst().first.map(\.isWhitespace) ?? true)
+        }
+        let digits = prefix { $0.isASCII && $0.isNumber }
+        if !digits.isEmpty, digits.count <= 9, let marker = dropFirst(digits.count).first, ".)".contains(marker) {
+            return !(dropFirst(digits.count + 1).first.map(\.isWhitespace) ?? true)
+        }
+        return true
     }
 }
 

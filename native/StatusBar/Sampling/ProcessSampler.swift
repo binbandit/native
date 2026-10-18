@@ -2,7 +2,7 @@ import Darwin
 import Foundation
 
 /// Samples memory and CPU of Native and its agents' process trees with libproc. A sample costs a
-/// few syscalls per process and spawns nothing (Orca runs `ps` for every sweep), so it can run
+/// few syscalls per process and spawns nothing (no `ps` per sweep), so it can run
 /// every couple of seconds.
 actor ProcessSampler {
     /// A tree to report on: its root process and how to label it.

@@ -7,7 +7,7 @@ import SwiftUI
 /// then Copy Path. It's an NSMenu because SwiftUI menus hide item images on macOS 27, and an app's
 /// icon is how you spot it, as in Finder's Open With.
 ///
-/// Choosing an app opens the folder there and makes it the default, as in Conductor, so setting the
+/// Choosing an app opens the folder there and makes it the default, so setting the
 /// default and using it are one step and the button always shows where you went last.
 enum OpenInMenu {
     static func make(for location: OpenInLocation, model: OpenInModel) -> NSMenu {

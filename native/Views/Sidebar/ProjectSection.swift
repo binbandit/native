@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// One project and its sessions (Conductor's repository group): the header collapses it, "+" starts
+/// One project and its sessions: the header collapses it, "+" starts
 /// a session in it, and its menu (also its context menu) reveals it, changes its icon, archives or
 /// deletes it. The header drags to reorder projects; sessions drag to reorder within the project,
 /// by mouse or by touch.
@@ -94,7 +94,7 @@ struct ProjectSection<TaskAccessory: View>: View {
     }
 }
 
-/// A project's actions, from its "…" button and its context menu (Conductor's repository menu).
+/// A project's actions, from its "…" button and its context menu.
 private struct ProjectMenu: View {
     @Environment(AppModel.self) private var model
     @Environment(\.undoManager) private var undoManager

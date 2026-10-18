@@ -1,7 +1,7 @@
 import Git
 import SwiftUI
 
-/// A changed file in the inspector (Conductor `FileRow`): the path, then its line counts and status
+/// A changed file in the inspector: the path, then its line counts and status
 /// glyph, which give way to stage and discard buttons on hover or selection.
 struct GitChangeRow: View {
     let change: FileChange

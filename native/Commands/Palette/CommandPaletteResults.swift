@@ -28,7 +28,7 @@ struct CommandPaletteResults {
 
     private static let recentLimit = 5
     /// With nothing typed, how many of each kind show (commands show in full).
-    /// With nothing typed, tasks lead, as Conductor's palette leads with recent workspaces.
+    /// With nothing typed, tasks lead: going back to recent work is the most common jump.
     private static let browseOrder: [CommandPaletteItem.Kind] = [.task, .command, .project, .settings]
     private static let browseLimits: [CommandPaletteItem.Kind: Int] = [.task: 6, .project: 6]
 

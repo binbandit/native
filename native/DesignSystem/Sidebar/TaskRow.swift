@@ -14,7 +14,7 @@ public enum TaskRowIndent: Sendable {
 
 /// Something worth a glance at a task row's trailing edge.
 public enum TaskBadge: Equatable, Sendable {
-    /// Factory's 6pt unread dot, in the accent.
+    /// A 6pt unread dot, in the accent.
     case dot
     /// A short label in the accent, e.g. "Approve".
     case attention(String)
@@ -22,14 +22,14 @@ public enum TaskBadge: Equatable, Sendable {
     case count(Int)
 }
 
-/// A task (an agent session) in the sidebar (Conductor `WorkspaceRow`): status glyph, title and a
+/// A task (an agent session) in the sidebar: status glyph, title and a
 /// trailing badge, diff or age; 36pt tall with 6pt-rounded hover and selection fills. Unread tasks
 /// set their title semibold in the primary color. With `onArchive`, an archive button takes the
 /// trailing items' place on hover (and is offered to VoiceOver as an action).
 ///
 /// Two optional slots: `leading`, a 16pt type glyph (the agent: `Image(systemName:)` or any view,
-/// tinted tertiary), and `accessory`, a view after the age (e.g. `ContextUsageRing`). Like
-/// Conductor, the row has one leading visual: the type glyph at rest (idle or done), the status
+/// tinted tertiary), and `accessory`, a view after the age (e.g. `ContextUsageRing`). The
+/// row has one leading visual: the type glyph at rest (idle or done), the status
 /// glyph while something is happening or wants the user. See `TaskRow+Slots.swift` for the
 /// initializers without slots.
 public struct TaskRow<Leading: View, Accessory: View>: View {

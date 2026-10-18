@@ -1,9 +1,8 @@
 import SwiftUI
 
-/// The strip along the window's bottom edge: Orca's status bar, dressed as Factory and
-/// Conductor dress their chrome. It sits on the sidebar's translucency under a hairline,
-/// at the sidebar footer's height, with its items in quiet tertiary caption text and hairlines
-/// between them. When the window is too narrow for every item, whole items drop out, the leading
+/// The strip along the window's bottom edge, dressed like the rest of the window's chrome: it sits
+/// on the sidebar's translucency under a hairline, at the sidebar footer's height, with its items
+/// in quiet tertiary caption text and hairlines between them. When the window is too narrow for every item, whole items drop out, the leading
 /// end's innermost first, so nothing is ever cut mid-word.
 ///
 /// Each top-level view in `leading` and `trailing` is one item. Make clickable items buttons with
@@ -72,7 +71,7 @@ private struct StatusBarBackdrop: View {
 extension DS {
     /// The status bar's own spacing. Its height is `DS.Size.chromeBar`.
     public enum StatusBar {
-        /// Between the window's edges and the outermost items (Orca `px-3`).
+        /// Between the window's edges and the outermost items.
         public static let edgeInset = Space.lg
         /// On each side of the hairline between two items.
         public static let itemSpacing = Space.md

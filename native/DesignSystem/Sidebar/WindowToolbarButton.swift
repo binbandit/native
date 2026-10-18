@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// A 24pt square glyph button for the window's title-bar row: the sidebar toggle, back and
-/// forward. Conductor's ghost style: a muted glyph that brightens on hover, with no fill, so it
+/// forward, in a ghost style: a muted glyph that brightens on hover, with no fill, so it
 /// sits in a macOS toolbar without competing with the system's own button treatment (put it in a
 /// `ToolbarItem` with `.sharedBackgroundVisibility(.hidden)`). The tooltip shows the shortcut.
 public struct WindowToolbarButton: View {
@@ -16,8 +16,7 @@ public struct WindowToolbarButton: View {
     @State private var isHovered = false
 
     /// - Parameters:
-    ///   - glyphSize: The symbol's point size; 13 for panel toggles, 12 for arrows (Conductor
-    ///     `size-4` and `size-3`).
+    ///   - glyphSize: The symbol's point size; 13 for panel toggles, 12 for arrows.
     ///   - isActive: Keeps the glyph bright, for a toggle that is on.
     public init(
         _ label: String,
@@ -64,7 +63,7 @@ private struct WindowToolbarButtonStyle: ButtonStyle {
     }
 }
 
-/// Collapses or shows the sidebar, placed right after the traffic lights as Factory does.
+/// Collapses or shows the sidebar, placed right after the traffic lights.
 public struct SidebarCollapseButton: View {
     let isExpanded: Bool
     let shortcut: KeyboardShortcut?
@@ -87,7 +86,7 @@ public struct SidebarCollapseButton: View {
     }
 }
 
-/// Back and forward through navigation history, bound to ⌘[ and ⌘]: Conductor's pair of 12pt
+/// Back and forward through navigation history, bound to ⌘[ and ⌘]: a pair of 12pt
 /// arrows at the sidebar header's trailing edge.
 public struct HistoryNavigationButtons: View {
     let canGoBack: Bool

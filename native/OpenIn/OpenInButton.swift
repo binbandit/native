@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Conductor's "Open in" control for a project's or task's folder: a split button sized for the
+/// The "Open in" control for a project's or task's folder: a split button sized for the
 /// window toolbar. The left half opens the folder in the default app and shows that app's real
 /// icon; the chevron lists every installed editor, terminal and git client that can open it, and
 /// Copy Path (see `OpenInMenu`).
@@ -91,7 +91,7 @@ struct OpenInButton: View {
 }
 
 /// The left half: filled like an outlined button, with a hover wash and a pressed fill over it. The
-/// chevron half stays unfilled on the toolbar, as in Conductor.
+/// chevron half stays unfilled on the toolbar, so the app's icon reads as the main action.
 private struct SegmentButtonStyle: ButtonStyle {
     let isHovered: Bool
 

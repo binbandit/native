@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Which end of the status bar an item sits at. Leading items give way first when the window is
-/// narrow, as Orca's usage roster does; trailing items never clip.
+/// narrow; trailing items never clip.
 enum StatusBarPlacement: Sendable {
     case leading, trailing
 }

@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// The one empty state: what this is (the title), why it's empty (the message) and the one action
-/// that fills it, centered in the pane (Conductor's empty states: 20pt tertiary glyph, 13pt medium
-/// title, 12pt secondary message, the action below). Never leave a pane blank.
+/// that fills it, centered in the pane: a 20pt tertiary glyph, a 13pt medium title, a 12pt
+/// secondary message and the action below. Never leave a pane blank.
 public struct EmptyStateView<Actions: View>: View {
     let title: String
     let systemImage: String?

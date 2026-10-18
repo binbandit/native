@@ -3,7 +3,7 @@ import SwiftUI
 
 /// A line diff of one file change, shared by the transcript and Git: a header naming the file
 /// with its line counts, then the changed lines with a few lines of context, each marked by a
-/// colored bar, its line number and a tinted background (Factory's diff layout). Lines are
+/// colored bar, its line number and a tinted background. Lines are
 /// highlighted in the user's code theme for the language the path implies.
 public struct DiffView: View {
     let path: String

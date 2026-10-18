@@ -4,9 +4,6 @@ An expedition is a large objective that a crew of agents carries out over hours,
 user approved: a lead plans it, builders do the work in a workspace of its own, a reviewer checks
 each leg, and the user is asked only when it matters. It ends with a debrief and a pull request.
 
-It's Native's take on the idea behind Factory's Missions (`research/factory-missions.md`): learned
-from, not copied. No code, prompts, text, assets or vocabulary of Factory's appear in Native.
-
 ## The name
 
 | Name | Why it fits |
@@ -19,16 +16,14 @@ from, not copied. No code, prompts, text, assets or vocabulary of Factory's appe
 The sub-terms below follow the recommended name. With Constellations or Ensembles they'd change
 (the route becomes a chart or a score), but the concepts don't.
 
-## What we took, and what we didn't
+## What it does, and what it doesn't
 
-From the research (`research/factory-missions.md`):
-
-- **Taken:** an engine that isn't an LLM runs the queue while an agent plans; structured handoffs
+- **At its core:** an engine that isn't an LLM runs the queue while an agent plans; structured handoffs
   (a builder's report says what changed, how it was verified, and what it left undone); review by a
   different provider than the builder by default; bounded attempts before the user is asked; a
   guard on scope growth (a lead revision that more than doubles the route needs approval); agent
   state shown as waiting on you, working, idle; a readiness check before anything starts.
-- **Done differently:** a budget per expedition (Factory has none); worktree isolation by default;
+- **Also:** a budget per expedition; worktree isolation by default;
   the crew picked by the user across providers; protection that doesn't depend on which tool an
   agent writes with (Native is the only writer and checks the files); steering a running member
   without pausing the whole run; a pull request that's part of the finish, not whatever an agent

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Factory's update button in the window's toolbar row, beside the sidebar toggle. It appears only
+/// The update button in the window's toolbar row, beside the sidebar toggle. It appears only
 /// when there's something to do: an update ready to restart into, or one waiting to download when
 /// automatic downloads are off. After a click it shows progress in place until Native restarts.
 struct UpdateToolbarButton: View {

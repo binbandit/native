@@ -55,6 +55,7 @@ struct PullRequestDiffBlock: View {
                 .clipped()
         }
         .background(alignment: .topLeading) { tints }
+        .modifier(PullRequestExperimentDrawingGroup())
         .onContinuousHover(coordinateSpace: .local) { phase in
             switch phase {
             case .active(let location): hovered = index(at: location.y)
@@ -180,5 +181,15 @@ private struct PullRequestDiffBlockCode: View, Equatable {
 
     nonisolated static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.key == rhs.key
+    }
+}
+
+private struct PullRequestExperimentDrawingGroup: ViewModifier {
+    func body(content: Content) -> some View {
+        if UserDefaults.standard.bool(forKey: "gitHubExperimentDrawingGroup") {
+            content.drawingGroup()
+        } else {
+            content
+        }
     }
 }

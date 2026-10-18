@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Factory's buttons (core-ui v2 `Button`): 12pt text, 12pt horizontal padding, 1pt border, 4pt
+/// The standard button: 12pt text, 12pt horizontal padding, 1pt border, 4pt
 /// radius; colors change on hover and press with no motion in and a 100ms fade out.
 ///
 ///     Button("Create") { … }.buttonStyle(.ds(.primary))
@@ -10,20 +10,20 @@ import SwiftUI
 /// repeat. Never give a DS button a bare `Image` label.
 public struct DSButtonStyle: ButtonStyle {
     public enum Variant: Sendable {
-        /// Accent fill, black text (Factory `Primary`).
+        /// Accent fill, black text.
         case primary
-        /// Outlined (Factory `Secondary`).
+        /// Outlined.
         case secondary
-        /// Text only, filling on hover (Factory `Text`, with Conductor's ghost hover wash).
+        /// Text only, with a ghost wash on hover.
         case ghost
-        /// Solid red (Factory `Destructive`).
+        /// Solid red.
         case destructive
-        /// The foreground color as the fill (Factory `NeutralPrimary`).
+        /// The foreground color as the fill.
         case neutral
     }
 
     public enum Size: Sendable {
-        /// 24pt, Factory's default.
+        /// 24pt, the default.
         case small
         /// 28pt.
         case medium

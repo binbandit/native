@@ -18,7 +18,7 @@ extension View {
     }
 }
 
-/// Conductor's reveal: a 2pt ring 8pt outside the row that holds for 55% of 1.4s, then fades.
+/// The reveal: a 2pt ring 8pt outside the row that holds for 55% of 1.4s, then fades.
 private struct SettingsRevealModifier: ViewModifier {
     let rowID: SettingsRowID?
 

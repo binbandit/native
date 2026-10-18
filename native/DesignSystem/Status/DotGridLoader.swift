@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// Conductor's dot-grid loaders: a 3x3 grid of dots that pop in and out in sequence. The patterns
-/// and timings are read from its Lottie files (240pt canvas, dots 40pt across at 50/120/190, 60fps),
-/// so `typing` is "grid-inorder", `waiting` "grid-slow-interpolation" and `settingUp` "grid-bloom".
+/// The dot-grid loaders: a 3x3 grid of dots that pop in and out in sequence, laid out on a 240pt
+/// canvas (dots 40pt across at 50/120/190) and timed in frames at 60fps. `typing` sweeps column by
+/// column, `waiting` circles the border and `settingUp` blooms out from the center.
 /// Draws in the foreground style; with Reduce Motion it holds a still grid.
 public struct DotGridLoader: View {
     public enum Pattern: Sendable {
@@ -62,7 +62,7 @@ extension DotGridLoader.Pattern {
         let y: Double
         let pulses: [(Double, Double, Double)]
 
-        // Lottie's curves: a quick rise, then a slow start into the fall.
+        // A quick rise, then a slow start into the fall.
         private static let rise = UnitCurve.bezier(
             startControlPoint: UnitPoint(x: 0.167, y: 0.177),
             endControlPoint: UnitPoint(x: 0.1, y: 1)
@@ -96,7 +96,7 @@ extension DotGridLoader.Pattern {
     // Dot positions on the canvas.
     private nonisolated static let low = 50.0, mid = 120.0, high = 190.0
 
-    /// `typing.json`: frames 0-64, column by column.
+    /// Frames 0-64, column by column.
     private nonisolated static let typingTiming = Timing(
         start: 0, end: 64,
         dots: [
@@ -111,7 +111,7 @@ extension DotGridLoader.Pattern {
             Dot(x: high, y: high, pulses: [(27, 45, 62)]),
         ])
 
-    /// `waiting.json`: frames 32-128, around the border clockwise; the center stays dark.
+    /// Frames 32-128, around the border clockwise; the center stays dark.
     private nonisolated static let waitingTiming = Timing(
         start: 32, end: 128,
         dots: [
@@ -125,7 +125,7 @@ extension DotGridLoader.Pattern {
             Dot(x: low, y: mid, pulses: [(72, 88, 104)]),
         ])
 
-    /// `setting-up-loader.json`: frames 0-144, blooming out from the center.
+    /// Frames 0-144, blooming out from the center.
     private nonisolated static let settingUpTiming = Timing(
         start: 0, end: 144,
         dots: [

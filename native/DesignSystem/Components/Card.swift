@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A bordered content surface (Conductor's card: surface fill, 1pt separator outline, 8pt radius).
+/// A bordered content surface: surface fill, 1pt separator outline, 8pt radius.
 /// It sets itself as the container shape, so nested `ConcentricRectangle`s round with it.
 public struct Card<Content: View>: View {
     let padding: CGFloat

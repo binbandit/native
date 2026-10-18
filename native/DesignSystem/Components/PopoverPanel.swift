@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The layout of a popover that explains something (Orca's Resource Manager): a header with a
+/// The layout of a popover that explains something (the status bar's memory and CPU): a header with a
 /// glyph, a title and actions on the right, a hairline, then the content. Present it with
 /// `.dsPopover`, which gives it the overlay backdrop.
 public struct PopoverPanel<Accessory: View, Content: View>: View {

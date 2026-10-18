@@ -77,7 +77,7 @@ struct LabsExperimentRow: View {
     }
 }
 
-/// A text parameter's field, outlined like Conductor's settings inputs.
+/// A text parameter's field, outlined like the other settings inputs.
 private struct LabsTextField: View {
     let label: String
     let placeholder: String

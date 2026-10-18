@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The recent tasks under the cards, headed like a group in Conductor's workspace overview: the
+/// The recent tasks under the cards, headed like a group in a list: the
 /// title in medium weight with a fainter count, and rows that fill on hover.
 struct HomeRecentTasks<ID: Hashable>: View {
     let tasks: [HomeTask<ID>]

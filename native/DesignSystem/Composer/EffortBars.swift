@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Factory's level meter (`ReasoningLevelBars`): 6x11pt bars 2pt apart, lit in the accent up to the
+/// A level meter: 6x11pt bars 2pt apart, lit in the accent up to the
 /// current level, e.g. reasoning effort or autonomy. Muted bars mean the level isn't set and the
 /// agent picks it. `tint` recolors the lit bars, e.g. `.dsDanger` so full access stands out.
 public struct EffortBars: View {

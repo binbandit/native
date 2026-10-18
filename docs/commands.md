@@ -111,7 +111,7 @@ Settings, inside a terminal), which can't be changed.
   **tasks**, the **projects** and every **Settings page**. Each kind comes from a
   `CommandPaletteSource`, so a feature can add a kind without touching the palette.
 - **With nothing typed** it shows what was run recently, a few tasks, then everything else by kind.
-  **With text** it ranks with `FuzzyMatch`, in tiers as Factory's palette ranks them: the whole
+  **With text** it ranks with `FuzzyMatch`, in tiers: the whole
   title, its start, a word's start, its initials, anywhere, the keywords, then the letters in order
   (`nwse` finds New Session). Sections are ordered by their best match, and recently used items move
   up within their tier, never into a better one.

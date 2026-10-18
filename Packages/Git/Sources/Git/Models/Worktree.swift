@@ -18,8 +18,7 @@ public struct Worktree: Hashable, Sendable, Identifiable {
 
     /// Where Native keeps task worktrees: `~/.native/worktrees/<repository>/<task>` in the home
     /// folder of the machine the repository is on, outside the repository so the main checkout's
-    /// status, file watchers and searches never see them (Conductor moved its worktrees out of
-    /// repositories for the same reason).
+    /// status, file watchers and searches never see them.
     public static func defaultLocation(home: String?) -> URL {
         URL(filePath: home ?? NSHomeDirectory(), directoryHint: .isDirectory)
             .appending(path: ".native/worktrees", directoryHint: .isDirectory)

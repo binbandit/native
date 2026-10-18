@@ -1,7 +1,7 @@
 import NativeAutomation
 import SwiftUI
 
-/// A workflow in the picker, after Conductor's suggested routines: a round glyph, the name, what it
+/// A workflow in the picker: a round glyph, the name, what it
 /// does, and its shape (steps, goals, gates). One a plugin got wrong says why it can't run.
 struct WorkflowCard: View {
     let entry: WorkflowLibrary.Entry

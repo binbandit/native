@@ -28,7 +28,7 @@ extension SettingsPane {
     )
 }
 
-/// Conductor's Experimental page for Native's experiments: one row per experiment with its stage,
+/// Settings ▸ Labs, Native's experiments: one row per experiment with its stage,
 /// what it changes and its control, conflicts called out above, and Reset All. Every change can be
 /// undone with ⌘Z.
 struct LabsSettingsPage: View {

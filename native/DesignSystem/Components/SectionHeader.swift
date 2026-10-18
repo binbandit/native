@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A list section's title with trailing actions, like Factory's "Projects" row: 12pt tertiary
+/// A list section's title with trailing actions, like the sidebar's "Projects" row: 12pt tertiary
 /// label, small icon buttons for filter and add.
 public struct SectionHeader<Accessory: View>: View {
     let title: String

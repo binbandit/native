@@ -1,8 +1,7 @@
 import SwiftUI
 
-/// A square icon-only button: secondary glyph that turns primary on a hover wash (Factory
-/// `IconButton` text variant, Conductor's `iconXs` ghost button). The label is its tooltip and
-/// accessibility label.
+/// A square icon-only button: a secondary glyph that turns primary on a hover wash. The label is
+/// its tooltip and accessibility label.
 public struct IconButton: View {
     public enum Size: Sendable {
         /// 24pt, 12pt glyph.

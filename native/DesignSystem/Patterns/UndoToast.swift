@@ -20,7 +20,7 @@ public struct UndoToastItem: Identifiable, Equatable {
 
 extension View {
     /// Shows `item` as an undo toast at the bottom trailing corner until the user undoes it,
-    /// dismisses it, or `duration` passes (Conductor's toasts: bottom right, 5 seconds). Setting a
+    /// dismisses it, or `duration` passes. Setting a
     /// new item replaces the current one.
     public func undoToast(_ item: Binding<UndoToastItem?>, duration: Duration = .seconds(5)) -> some View {
         modifier(UndoToastPresenter(item: item, duration: duration))

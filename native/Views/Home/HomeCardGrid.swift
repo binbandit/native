@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Lays cards out as Conductor's quick actions are: up to three to a row, each a third of the
+/// Lays the home cards out up to three to a row, each a third of the
 /// column. A short last row is centered rather than left-aligned, because the cards are agents,
 /// whose number varies, and two cards sitting off to one side under the centered lockup look like a
 /// missing third. Too narrow for two, the cards become a stack of short rows instead of a tower of
