@@ -38,19 +38,19 @@
               "value": true
             }
           ],
-          "image-name": "painted-interlock.png",
-          "name": "Painted Native interlock",
+          "image-name": "flat-interlock.png",
+          "name": "Flat Native interlock",
           "position": {
-            "scale": 0.5657492354740061,
+            "scale": 0.6406926406926406,
             "translation-in-points": [
-              -1.6972477064220184,
-              12.282874617737003
+              -0.0,
+              9.757575757575758
             ]
           }
         }
       ],
       "lighting": "individual",
-      "name": "Lantern Festival · painted Native interlock",
+      "name": "Lantern Festival · flat Native interlock",
       "refractivity-specializations": [
         {
           "appearance": "tinted",
@@ -62,8 +62,8 @@
         }
       ],
       "shadow": {
-        "kind": "neutral",
-        "opacity": 0.18
+        "kind": "none",
+        "opacity": 0
       },
       "translucency-specializations": [
         {

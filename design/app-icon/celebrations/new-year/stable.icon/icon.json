@@ -38,19 +38,19 @@
               "value": true
             }
           ],
-          "image-name": "painted-interlock.png",
-          "name": "Painted Native interlock",
+          "image-name": "flat-interlock.png",
+          "name": "Flat Native interlock",
           "position": {
-            "scale": 0.5614567526555387,
+            "scale": 0.6035889070146819,
             "translation-in-points": [
-              -0.0,
-              12.0
+              -0.6035889070146819,
+              22.26101141924959
             ]
           }
         }
       ],
       "lighting": "individual",
-      "name": "New Year · painted Native interlock",
+      "name": "New Year · flat Native interlock",
       "refractivity-specializations": [
         {
           "appearance": "tinted",
@@ -62,8 +62,8 @@
         }
       ],
       "shadow": {
-        "kind": "neutral",
-        "opacity": 0.18
+        "kind": "none",
+        "opacity": 0
       },
       "translucency-specializations": [
         {
