@@ -19,11 +19,11 @@ struct RealHistoryCheck {
             let sources = reader.sources()
             var sessions = 0, documents = 0, failures = 0, empty = 0
             var readTime: TimeInterval = 0
-            var batch: [SearchIndexEntry] = []
+            var batch = SearchIndexBatch()
             for source in sources {
                 let readStarted = Date.now
                 do {
-                    guard let session = try reader.read(source) else {
+                    guard let session = try reader.read(source, resuming: nil).session else {
                         empty += 1
                         if ProcessInfo.processInfo.environment["SEARCH_LIST_EMPTY"] != nil {
                             print("empty: \(source.url.path(percentEncoded: false))")
@@ -33,21 +33,21 @@ struct RealHistoryCheck {
                     readTime += Date.now.timeIntervalSince(readStarted)
                     sessions += 1
                     documents += session.documents.count
-                    batch.append(
+                    batch.replacing.append(
                         SearchIndexEntry(
                             session: SearchSessionRecord(
                                 key: SearchSessionKey(agent: agent, session: session.sessionID), title: session.title,
                                 cwd: session.cwd, createdAt: session.createdAt, updatedAt: session.updatedAt),
-                            documents: session.documents, source: source.stamp))
-                    if batch.count >= 25 {
-                        try await index.replace(batch)
-                        batch = []
+                            documents: session.documents))
+                    if batch.replacing.count >= 25 {
+                        try await index.write(batch)
+                        batch = SearchIndexBatch()
                     }
                 } catch {
                     failures += 1
                 }
             }
-            try await index.replace(batch)
+            try await index.write(batch)
             let bytes = sources.reduce(0) { $0 + $1.size }
             print(
                 "\(agent): \(sources.count) files (\(bytes / 1_000_000) MB), \(sessions) sessions, \(empty) without a conversation, \(failures) failed, \(documents) documents; read \(Int(readTime))s, total \(Int(Date.now.timeIntervalSince(started)))s"
@@ -55,7 +55,7 @@ struct RealHistoryCheck {
         }
         print("index: \(try await index.statistics())")
         let queries = [
-            "the reference app now has the ability", "native/Models/SessionCatalog.swift", "swift format lint --strict",
+            "now has the ability to search", "native/Models/SessionCatalog.swift", "swift format lint --strict",
             "SessionCatalog", "catalog", "xcodebuild", "xcodebuild derivedDataPath", "the", "rollb", "agent:codex test",
             "role:user search",
         ]

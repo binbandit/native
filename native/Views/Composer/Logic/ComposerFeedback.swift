@@ -33,7 +33,9 @@ struct ComposerFeedback: Equatable, Identifiable {
         case .steered:
             self.init(tone: .done, message: "Added to the running turn")
         case .queued where requested == .steer && !supportsSteering:
-            self.init(tone: .notice, message: "Queued: \(agentName) can’t join a running turn, so it goes when this one ends")
+            self.init(
+                tone: .notice,
+                message: "Queued: \(agentName) can’t join a running turn, so it goes when this one ends")
         case .queued where requested == .steer:
             self.init(tone: .notice, message: "Queued: the turn ended before it could join, so it goes next")
         case .queued:

@@ -23,11 +23,11 @@ struct SlashCommandQuery: Equatable {
                 let name = command.name.lowercased()
                 let words = name.split { !$0.isLetter && !$0.isNumber }
                 let rank: Int? =
-                    if name == query { 0 }
-                    else if name.hasPrefix(query) { 1 }
-                    else if words.contains(where: { $0.hasPrefix(query) }) { 2 }
-                    else if name.contains(query) { 3 }
-                    else { nil }
+                    if name == query { 0 } else if name.hasPrefix(query) {
+                        1
+                    } else if words.contains(where: { $0.hasPrefix(query) }) { 2 } else if name.contains(query) {
+                        3
+                    } else { nil }
                 return rank.map { ($0, offset, command) }
             }
             .sorted { ($0.rank, $0.offset) < ($1.rank, $1.offset) }

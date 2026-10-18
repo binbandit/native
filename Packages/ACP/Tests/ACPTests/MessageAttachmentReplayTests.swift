@@ -23,10 +23,11 @@ struct MessageAttachmentReplayTests {
         let users = state.items.compactMap { item -> TranscriptMessage? in
             if case .message(let message) = item, message.role == .user { message } else { nil }
         }
-        #expect(users.map(\.text) == [
-            "What does this image show? Answer in one short sentence.",
-            "What is the first line of the attached file? Reply with just that line.",
-        ])
+        #expect(
+            users.map(\.text) == [
+                "What does this image show? Answer in one short sentence.",
+                "What is the first line of the attached file? Reply with just that line.",
+            ])
         #expect(users.first?.attachments.first?.imageData == Data([1, 2, 3]))
         #expect(users.last?.attachments.map(\.name) == ["notes.txt"])
         #expect(users.last?.attachments.first?.url == URL(filePath: "/tmp/attachments-probe/project/files/notes.txt"))

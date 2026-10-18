@@ -33,12 +33,13 @@ struct AgentQuestionnaire: Equatable {
         case string, boolean, number, integer
 
         init(schemaType: String?) {
-            self = switch schemaType {
-            case "boolean": .boolean
-            case "number": .number
-            case "integer": .integer
-            default: .string
-            }
+            self =
+                switch schemaType {
+                case "boolean": .boolean
+                case "number": .number
+                case "integer": .integer
+                default: .string
+                }
         }
     }
 
@@ -59,7 +60,8 @@ struct AgentQuestionnaire: Equatable {
                 key: key,
                 header: field["title"]?.stringValue,
                 // One question rides in the message; each of several carries its own text.
-                prompt: field["description"]?.stringValue ?? (fields.count == 1 ? message : field["title"]?.stringValue ?? message),
+                prompt: field["description"]?.stringValue
+                    ?? (fields.count == 1 ? message : field["title"]?.stringValue ?? message),
                 options: Self.options(in: field),
                 allowsMultiple: field["type"]?.stringValue == "array",
                 customKey: customKeys.contains(customKey) ? customKey : nil,
@@ -82,7 +84,9 @@ struct AgentQuestionnaire: Equatable {
             if case .array(let entries)? = source[key] {
                 return entries.compactMap { entry in
                     guard let value = entry["const"]?.stringValue else { return nil }
-                    return Option(value: value, title: entry["title"]?.stringValue ?? value, description: entry["description"]?.stringValue)
+                    return Option(
+                        value: value, title: entry["title"]?.stringValue ?? value,
+                        description: entry["description"]?.stringValue)
                 }
             }
         }
@@ -90,7 +94,10 @@ struct AgentQuestionnaire: Equatable {
             return values.compactMap(\.stringValue).map { Option(value: $0, title: $0, description: nil) }
         }
         if field["type"]?.stringValue == "boolean" {
-            return [Option(value: "true", title: "Yes", description: nil), Option(value: "false", title: "No", description: nil)]
+            return [
+                Option(value: "true", title: "Yes", description: nil),
+                Option(value: "false", title: "No", description: nil),
+            ]
         }
         return []
     }

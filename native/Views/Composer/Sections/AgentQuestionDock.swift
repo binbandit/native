@@ -9,7 +9,9 @@ struct AgentQuestionDock: View {
 
     var body: some View {
         let request = question.request
-        if let schema = request.requestedSchema, let questionnaire = AgentQuestionnaire(message: request.message, schema: schema) {
+        if let schema = request.requestedSchema,
+            let questionnaire = AgentQuestionnaire(message: request.message, schema: schema)
+        {
             AgentQuestionSection(
                 questionnaire: questionnaire,
                 // It takes focus when nothing's being typed.

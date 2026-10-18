@@ -79,7 +79,8 @@ struct ComposerSettings: Equatable {
     func togglingPlan(resumedAutonomy: String?) -> Change? {
         guard let plan else { return nil }
         guard plan.isOn else { return Change(setting: plan.setting, value: plan.plan.value) }
-        let levels = plan.setting.option.id == autonomy?.option.id
+        let levels =
+            plan.setting.option.id == autonomy?.option.id
             ? autonomyLevels
             : plan.setting.choices.filter { $0.value != plan.plan.value }
         let off = levels.first { $0.value == resumedAutonomy } ?? levels.first

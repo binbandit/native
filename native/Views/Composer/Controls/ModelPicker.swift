@@ -119,7 +119,10 @@ struct ModelPicker: View {
             .lineLimit(1)
             .padding(.horizontal, DS.Space.md)
             .frame(height: DS.Size.controlSM)
-            .background(index == highlighted ? Color.dsSelected : .clear, in: .rect(cornerRadius: DS.Radius.control, style: .continuous))
+            .background(
+                index == highlighted ? Color.dsSelected : .clear,
+                in: .rect(cornerRadius: DS.Radius.control, style: .continuous)
+            )
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
@@ -152,10 +155,13 @@ struct ModelPicker: View {
                         }
                     }
                     Spacer()
-                    Toggle(setting.option.name, isOn: Binding(get: { setting.isOn }, set: { onSet(setting, $0 ? "on" : "off") }))
-                        .toggleStyle(.switch)
-                        .controlSize(.small)
-                        .labelsHidden()
+                    Toggle(
+                        setting.option.name,
+                        isOn: Binding(get: { setting.isOn }, set: { onSet(setting, $0 ? "on" : "off") })
+                    )
+                    .toggleStyle(.switch)
+                    .controlSize(.small)
+                    .labelsHidden()
                 }
             }
         }
@@ -169,7 +175,8 @@ struct ModelPicker: View {
     private func effortMenu(_ effort: SelectSetting) -> some View {
         PillMenu(effort.currentName) {
             ForEach(effort.choices) { choice in
-                Toggle(isOn: Binding(get: { choice.value == effort.value }, set: { _ in onSet(effort, choice.value) })) {
+                Toggle(isOn: Binding(get: { choice.value == effort.value }, set: { _ in onSet(effort, choice.value) }))
+                {
                     Text(choice.name)
                     if let note = effort.effortNote(for: choice) {
                         Text(note)

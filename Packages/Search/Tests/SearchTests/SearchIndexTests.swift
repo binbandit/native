@@ -130,13 +130,40 @@ struct SearchIndexTests {
         #expect(try await index.statistics().sessions == 2)
     }
 
-    @Test func remembersWhichHistoryFilesItRead() async throws {
+    @Test func checkpointsAndAppends() async throws {
         let index = try await makeIndex()
-        let source = SearchSourceStamp(path: "/h/a.jsonl", stamp: "10-1")
-        try await index.replace(session("s1", title: "t"), documents: [], source: source)
-        // A live re-index of the same session keeps the stamp.
-        try await index.replace(session("s1", title: "t"), documents: [])
-        #expect(try await index.sourceStamps() == ["/h/a.jsonl": "10-1"])
+        let key = SearchSessionKey(agent: "claude-code", session: "s1")
+        let checkpoint = HistoryCheckpoint(
+            path: "/h/a.jsonl", size: 10, modifiedAt: now, offset: 8, session: key, cwd: "/code/native")
+        try await index.write(
+            SearchIndexBatch(
+                replacing: [
+                    SearchIndexEntry(
+                        session: session("s1", title: "First"),
+                        documents: [SearchDocument(role: .user, text: "first turn", anchor: .session)])
+                ], checkpoints: [checkpoint]))
+        try await index.write(
+            SearchIndexBatch(appending: [
+                SearchIndexEntry(
+                    session: SearchSessionRecord(key: key, cwd: "/code/native", updatedAt: now),
+                    documents: [SearchDocument(role: .agent, text: "second turn", anchor: .session)])
+            ]))
+        let results = try await index.search(SearchQuery("turn "), now: now)
+        #expect(results.groups.first?.hitCount == 2)
+        // Appending without a title keeps the one it had.
+        #expect(results.groups.first?.session.title == "First")
+        let stored = try #require(try await index.checkpoints()["/h/a.jsonl"])
+        #expect(stored.offset == 8 && stored.isSessionIndexed)
+        #expect(
+            stored.resume(for: HistorySource(url: URL(filePath: "/h/a.jsonl"), size: 20, modifiedAt: now))?.offset == 8)
+        // A file that shrank was rewritten: read it from the start.
+        #expect(stored.resume(for: HistorySource(url: URL(filePath: "/h/a.jsonl"), size: 4, modifiedAt: now)) == nil)
+
+        try await index.removeSessions(updatedBefore: now.addingTimeInterval(86_400))
+        #expect(try await index.checkpoints()["/h/a.jsonl"]?.isSessionIndexed == false)
+        #expect(try await index.isFilled() == false)
+        try await index.markFilled()
+        #expect(try await index.isFilled())
     }
 
     /// `SEARCH_BENCH=1 swift test --filter benchmark`: a few thousand sessions, timed queries.
@@ -165,7 +192,7 @@ struct SearchIndexTests {
             let partsStarted = Date.now
             for entry in entries { for document in entry.documents { _ = SearchText.codeParts(of: document.text) } }
             partsTime += Date.now.timeIntervalSince(partsStarted)
-            try await index.replace(entries)
+            try await index.write(SearchIndexBatch(replacing: entries))
         }
         print("code parts took \(partsTime)s")
         print("indexed 180k items in \(Date.now.timeIntervalSince(started))s, \(try await index.statistics())")

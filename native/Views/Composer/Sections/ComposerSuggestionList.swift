@@ -37,7 +37,10 @@ struct ComposerSuggestionList<Item, Row: View>: View {
             row(item, isHighlighted)
                 .padding(.horizontal, DS.Space.lg)
                 .frame(height: DS.Size.listRow)
-                .background(isHighlighted ? Color.dsSelected : .clear, in: .rect(cornerRadius: DS.Radius.control, style: .continuous))
+                .background(
+                    isHighlighted ? Color.dsSelected : .clear,
+                    in: .rect(cornerRadius: DS.Radius.control, style: .continuous)
+                )
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)

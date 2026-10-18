@@ -87,7 +87,9 @@ struct AgentQuestionSection: View {
         }
     }
 
-    private func pagerButton(_ title: String, systemImage: String, isEnabled: Bool, action: @escaping () -> Void) -> some View {
+    private func pagerButton(
+        _ title: String, systemImage: String, isEnabled: Bool, action: @escaping () -> Void
+    ) -> some View {
         Button(title, systemImage: systemImage, action: action)
             .labelStyle(.iconOnly)
             .buttonStyle(.plain)
@@ -119,15 +121,20 @@ struct AgentQuestionSection: View {
                     }
                 }
                 Spacer(minLength: 0)
-                Image(systemName: question.allowsMultiple ? (isPicked ? "checkmark.square.fill" : "square") : "checkmark")
-                    .font(.dsCaption)
-                    .foregroundStyle(isPicked ? .dsAccentText : .dsTextTertiary)
-                    .opacity(question.allowsMultiple || isPicked ? 1 : 0)
+                Image(
+                    systemName: question.allowsMultiple ? (isPicked ? "checkmark.square.fill" : "square") : "checkmark"
+                )
+                .font(.dsCaption)
+                .foregroundStyle(isPicked ? .dsAccentText : .dsTextTertiary)
+                .opacity(question.allowsMultiple || isPicked ? 1 : 0)
             }
             .padding(.horizontal, DS.Space.md)
             .padding(.vertical, DS.Space.sm)
             .frame(minHeight: DS.Size.listRow)
-            .background(rowFill(isPicked: isPicked, isHighlighted: number - 1 == highlighted), in: .rect(cornerRadius: DS.Radius.control, style: .continuous))
+            .background(
+                rowFill(isPicked: isPicked, isHighlighted: number - 1 == highlighted),
+                in: .rect(cornerRadius: DS.Radius.control, style: .continuous)
+            )
             .contentShape(.rect)
         }
         .buttonStyle(.plain)

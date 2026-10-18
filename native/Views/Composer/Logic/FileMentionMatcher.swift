@@ -16,7 +16,8 @@ struct FileMentionMatcher {
             let rest = files.lazy.filter { !seen.contains($0) }.prefix(limit)
             return Array((preferred + rest).prefix(limit))
         }
-        return files
+        return
+            files
             .compactMap { path in score(path, for: query).map { (path, $0) } }
             .sorted { ($0.1, -$0.0.count) > ($1.1, -$1.0.count) }
             .prefix(limit)

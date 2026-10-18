@@ -46,7 +46,8 @@ public struct HistorySource: Hashable, Sendable {
             }
             guard url.pathExtension == "jsonl", values.isRegularFile == true else { continue }
             sources.append(
-                HistorySource(url: url, size: values.fileSize ?? 0, modifiedAt: values.contentModificationDate ?? .distantPast))
+                HistorySource(
+                    url: url, size: values.fileSize ?? 0, modifiedAt: values.contentModificationDate ?? .distantPast))
         }
         return sources.sorted { $0.modifiedAt > $1.modifiedAt }
     }

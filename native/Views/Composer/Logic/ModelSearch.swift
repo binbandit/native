@@ -5,7 +5,9 @@ extension SelectSetting {
     /// the agent's default, the model it resolves to when the agent says (Claude Code's description
     /// is the bare model name then).
     var shortModelName: String {
-        if value == Self.defaultValue, let resolved = current?.description, !resolved.isEmpty, !resolved.contains("·") {
+        if value == Self.defaultValue, let resolved = current?.description, !resolved.isEmpty,
+            !resolved.contains("·")
+        {
             return resolved
         }
         let name = currentName.replacing(/\s*\(.*\)\s*$/, with: "")
