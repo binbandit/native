@@ -1,5 +1,4 @@
 import ACP
-import AppKit
 import SwiftUI
 
 /// What a tool row's detail panel shows, per the presentation's body style.
@@ -138,8 +137,8 @@ private struct ContentBlockView: View {
     var body: some View {
         switch content {
         case .content(.image(let data, let mimeType)):
-            if let image = Data(base64Encoded: data).flatMap(NSImage.init(data:)) {
-                Image(nsImage: image)
+            if let image = Data(base64Encoded: data).flatMap(Image.init(decoding:)) {
+                image
                     .resizable()
                     .scaledToFit()
                     .frame(maxHeight: TranscriptMetrics.toolImageMaxHeight, alignment: .leading)

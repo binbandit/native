@@ -141,3 +141,7 @@ These keys are still answered by their views. They're reserved, so commands can'
 - ⌘Return in sheets and the commit popover. These are sheet defaults, and they stay.
 - ⌘L in an expedition's crew panel (the composer key on a page without a composer) should read
   `composer.focus` from the registry.
+
+Hints that name a shortcut (sidebar items, tooltips, notices) read it from the registry with
+`CommandRegistry.shared.help("Show Terminal", for: .terminalToggle)` or
+`shortcut(for:)?.displayString`, so they follow a remap.
