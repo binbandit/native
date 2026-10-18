@@ -7,7 +7,7 @@ import NativeHostProtocol
 // A Native host for development, tests and other machines. The app embeds its own helper; this is
 // the same host without the app bundle around it.
 //
-//   native-host [serve] [--home <dir>] [--channel <name>] [--inherit-environment]
+//   native-host [serve] [--home <dir>] [--channel <name>] [--plugins <dir>] [--inherit-environment]
 //   native-host attach [--home <dir>] [--channel <name>]
 //
 // `attach` bridges stdin and stdout to a running host's socket, which is how a client reaches a host
@@ -40,7 +40,8 @@ switch command {
 case "serve":
     let info = PeerInfo(name: "native-host", version: "1.0", build: "dev")
     let configuration = MacHost.configuration(
-        location: location, info: info, inheritEnvironment: arguments.contains("--inherit-environment"))
+        location: location, info: info, inheritEnvironment: arguments.contains("--inherit-environment"),
+        pluginsDirectory: option("--plugins", in: arguments).map { URL(filePath: $0, directoryHint: .isDirectory) })
     Task { @HostActor in
         do {
             _ = try HostMain.start(configuration, verifier: CodeSignatureVerifier())

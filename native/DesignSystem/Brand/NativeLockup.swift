@@ -56,16 +56,8 @@ public struct NativeLockup: View {
     }
 
     private func mark(height: CGFloat) -> some View {
-        Group {
-            switch style {
-            case .standard: NativeMark().fill()
-            case .beta: NativeBetaMark()
-            case .halloween(let edition): NativeHalloweenMark(edition: edition)
-            case .diaDeMuertos(let edition): NativeMuertosMark(edition: edition)
-            case .twoTone(let palette): NativeTwoToneMark(palette: palette)
-            }
-        }
-        .frame(width: height * NativeMark.aspectRatio, height: height)
+        NativeEditionMark(style: style)
+            .frame(width: height * NativeMark.aspectRatio, height: height)
     }
 
     private var capHeight: CGFloat {

@@ -30,6 +30,8 @@ final class UpdateController {
     @ObservationIgnored var restartContext: () -> UpdateRestartContext = { .idle }
 
     @ObservationIgnored private var idleWatch: Task<Void, Never>?
+    /// Launched by the host to install while nobody uses the app: check, install, quit.
+    @ObservationIgnored private var isUnattended = false
     #if canImport(Sparkle)
     @ObservationIgnored private var driver: SparkleUpdateDriver?
     #endif
@@ -54,6 +56,13 @@ final class UpdateController {
         do {
             try driver.start()
             self.driver = driver
+            if UserDefaults.standard.bool(forKey: Self.installAndQuitKey) {
+                // The host opened the app hidden to update the Mac (docs/releasing.md, "Remote
+                // updates"); nobody is there to see it relaunch.
+                isUnattended = true
+                driver.relaunchesAfterInstall = false
+                driver.checkForUpdates()
+            }
             automaticallyChecks = driver.automaticallyChecks
             automaticallyDownloads = driver.automaticallyDownloads
             lastChecked = driver.lastChecked
@@ -178,13 +187,18 @@ final class UpdateController {
             pendingRestart = nil
         }
         state = newState
-        if case .ready = newState, let pendingRestart {
-            #if canImport(Sparkle)
-            if let driver {
-                restart(pendingRestart, driver: driver)
+        #if canImport(Sparkle)
+        guard let driver else { return }
+        if isUnattended {
+            continueUnattended(newState, driver: driver)
+        } else if let pendingRestart {
+            switch newState {
+            case .ready: restart(pendingRestart, driver: driver)
+            case .available: driver.install()
+            default: break
             }
-            #endif
         }
+        #endif
     }
 
     func driverDidCheck(at date: Date?) {
@@ -211,9 +225,50 @@ final class UpdateController {
     }
     #endif
 
+    // MARK: - Remote clients
+
+    /// The launch argument the host opens the app with to install an update unattended:
+    /// `open -g -j <Native.app> --args -NativeInstallUpdateAndQuit YES`.
+    static let installAndQuitKey = "NativeInstallUpdateAndQuit"
+
+    /// What the host serves paired devices as this Mac's update status
+    /// (`_native/host/update/status`) while the app is its updater.
+    var snapshot: UpdateSnapshot {
+        UpdateSnapshot(
+            state: state, current: current, channel: channel, lastChecked: lastChecked, pendingRestart: pendingRestart,
+            canInstall: isAvailable)
+    }
+
+    /// An install a paired device asked for through the host (`_native/host/update/install`). The
+    /// host has already checked the device may; `.whenTasksFinish` waits for working tasks, `.now`
+    /// is the device's explicit "Install Now, Interrupt Tasks". With nothing found yet, it checks
+    /// first and installs what it finds.
+    func installForRemote(_ timing: RestartTiming) {
+        switch state {
+        case .available, .downloading, .preparing, .ready:
+            installUpdate(timing)
+        case .idle, .upToDate, .failed:
+            pendingRestart = timing
+            checkForUpdates()
+        case .checking:
+            pendingRestart = timing
+        case .installing, .unavailable:
+            break
+        }
+    }
+
     // MARK: - Restarting
 
     #if canImport(Sparkle)
+    private func continueUnattended(_ state: UpdateState, driver: SparkleUpdateDriver) {
+        switch state {
+        case .available: driver.install()
+        case .ready: driver.installAndRelaunch()
+        case .upToDate, .failed, .unavailable: driver.quit()
+        case .idle, .checking, .downloading, .preparing, .installing: break
+        }
+    }
+
     private func restart(_ timing: RestartTiming, driver: SparkleUpdateDriver) {
         switch timing {
         case .now:

@@ -46,6 +46,6 @@ coordinator keeps this current.
 | Plugin themes and icon sets | plugins, appearance, celebrations | Data only. Code themes, accent palettes and icon sets. Plugin icons apply on the Mac only: iOS can switch only between icons compiled into the app |
 | Plugins on iPad and iPhone | host protocol (`_native/plugins/*`), companion, iPad | Host-side plugin parts run on the host; data parts (themes, icon sets, celebrations, experiments) sync to each client. See decisions |
 | App icon switching on iPad and iPhone | iPad and companion targets | Built-in themes ship as alternate icons (`setAlternateIconName`) once those targets exist |
-| iPhone companion app (several hosts at once, e.g. Personal and Work, kept fully separate) | new target, host client | Designed (`docs/companion.md`, `research/companion-app.md`). Needs durable host Phase 2, paired network transport and QR pairing first |
+| iPhone companion app (several hosts at once, each kept fully separate) | new target, host client | Designed (`docs/companion.md`, `research/companion-app.md`). Needs durable host Phase 2, paired network transport and QR pairing first |
 | iPad app | app target | After the host protocol lands (`docs/architecture.md`) |
 | Expeditions (the reference app's missions, rebranded) | `Packages/Expeditions`, `native/Expeditions` | the reference app's concept under Native's own name, composed from orchestration, goals, workflows and worktrees |
