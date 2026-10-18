@@ -10,6 +10,8 @@ actor SearchStore {
     /// Internal only for SearchStore+Query.swift.
     let database: SQLiteDatabase
 
+    /// Each connection's page cache is capped at 4 MB, so the index's memory stays small whatever
+    /// its size; the OS file cache does the rest.
     init(path: String) throws {
         database = try SQLiteDatabase(path: path)
         try database.execute(
@@ -18,6 +20,7 @@ actor SearchStore {
             PRAGMA synchronous = NORMAL;
             PRAGMA foreign_keys = ON;
             PRAGMA temp_store = MEMORY;
+            PRAGMA cache_size = -4096;
             """)
     }
 

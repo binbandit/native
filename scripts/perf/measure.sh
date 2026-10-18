@@ -2,14 +2,15 @@
 # Measures Native's launch time, idle cost and child processes in its own isolated instance
 # (`just perf`), for the numbers and budgets in docs/performance.md. Never touches another Native.
 #
-#   scripts/perf/measure.sh [--no-build] [--launches N] [--seconds S] [--settle S] [--sessions N] [-- app arguments…]
+#   scripts/perf/measure.sh [--name NAME] [--no-build] [--launches N] [--seconds S] [--settle S] [--sessions N] [-- app arguments…]
 #
 # Launch times come from the app's own `launch <milestone> <ms> ms` log lines (LaunchMetrics), from
 # the moment the kernel started the process. Idle numbers are kernel counters for the app alone and
 # for the app with every process under it, sampled over S seconds: with the window visible,
 # minimized, and the app hidden. `--sessions N` first opens N Codex sessions that each answer one
-# short prompt. The instance works in a scratch project with Codex as its default agent, and is
-# quit at the end.
+# short prompt. The instance (`perf` unless --name gives another, so agents measuring at once don't
+# quit each other's runs) works in a scratch project with Codex as its default agent, and is quit at
+# the end.
 set -euo pipefail
 
 name=perf
@@ -19,9 +20,10 @@ seconds=30
 settle=20
 sessions=0
 app_args=()
-usage="usage: $0 [--no-build] [--launches N] [--seconds S] [--settle S] [--sessions N] [-- app arguments…]"
+usage="usage: $0 [--name NAME] [--no-build] [--launches N] [--seconds S] [--settle S] [--sessions N] [-- app arguments…]"
 while [ $# -gt 0 ]; do
     case "$1" in
+        --name) name=$2; shift ;;
         --no-build) build=0 ;;
         --launches) launches=$2; shift ;;
         --seconds) seconds=$2; shift ;;
@@ -50,7 +52,7 @@ trap '"$run" "$name" --quit >/dev/null 2>&1 || true' EXIT
 # A scratch project and Codex as the default agent, once the instance has been built; it keeps them.
 seed() {
     local plist="/tmp/native-dd/$name/Build/Products/Debug/Native.app/Contents/Info.plist" bundle
-    local project=/tmp/native-perf/project
+    local project=/tmp/native-perf/$name
     mkdir -p "$project"
     [ -f "$project/README.md" ] || printf '# Scratch project\n\nA throwaway folder for measuring Native.\n' >"$project/README.md"
     bundle=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$plist" 2>/dev/null) || return 0
