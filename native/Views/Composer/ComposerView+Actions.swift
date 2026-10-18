@@ -27,8 +27,11 @@ extension ComposerView {
             Task { await goal.perform(command) }
             return
         }
-        if let blocked = session.sendBlockedReason {
+        if let blocked = session.sendBlockedReason ?? attachmentsBlockedReason {
             feedback = .blocked(blocked)
+            return
+        }
+        if flagMissingAttachments() {
             return
         }
         if let id = editingQueued, !text.isEmpty, session.queuedPrompts.contains(where: { $0.id == id }) {

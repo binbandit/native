@@ -3,7 +3,7 @@
 /// Pure, so the table can be tested without a text view.
 enum ComposerKeyMap {
     enum Key {
-        case up, down, `return`, tab, escape
+        case up, down, `return`, tab, escape, delete
     }
 
     struct Modifiers: OptionSet {
@@ -23,6 +23,7 @@ enum ComposerKeyMap {
         var isWorking: Bool
         var hasQueuedPrompts: Bool
         var hasLastPrompt: Bool
+        var hasAttachments: Bool
         var preferredFollowUp: FollowUpBehavior
     }
 
@@ -32,6 +33,8 @@ enum ComposerKeyMap {
         case closeSuggestionList
         case recallLastPrompt
         case editLastQueuedPrompt
+        /// Backspace with nothing typed takes off the last attached file, as in a token field.
+        case removeLastAttachment
         case submit(FollowUpBehavior)
         /// Tab moves on to the controls rather than typing a tab character.
         case moveFocus(forward: Bool)
@@ -47,6 +50,7 @@ enum ComposerKeyMap {
             case .down: return .moveHighlight(by: 1)
             case .return, .tab: return isRepeat ? .swallow : .insertHighlightedSuggestion
             case .escape: return .closeSuggestionList
+            case .delete: return nil
             }
         }
         switch key {
@@ -62,6 +66,9 @@ enum ComposerKeyMap {
             return .submit(modifiers == .command ? preferred.opposite : preferred)
         case .tab where modifiers.isEmpty || modifiers == .shift:
             return isRepeat ? .swallow : .moveFocus(forward: modifiers.isEmpty)
+        // A held key only empties the draft; it takes a fresh press to start on the files.
+        case .delete where modifiers.isEmpty && context.isDraftEmpty && context.hasAttachments:
+            return isRepeat ? .swallow : .removeLastAttachment
         // The Stop button takes Escape through its shortcut; swallowed otherwise, so the text view
         // doesn't open its completion list.
         case .escape:

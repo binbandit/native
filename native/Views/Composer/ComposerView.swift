@@ -33,6 +33,10 @@ struct ComposerView: View {
     @State var autonomyBeforePlan: String?
     /// What the last action did, shown for a moment just above the composer.
     @State var feedback: ComposerFeedback?
+    /// Files still being read, as chips in their places; sending waits for them.
+    @State var pendingAttachments: [ComposerPendingAttachment] = []
+    /// Attached files found gone at the last try to send, marked on their chips.
+    @State var missingAttachments: Set<PromptAttachment.ID> = []
 
     var canEdit: Bool {
         session.phase != .disconnected
@@ -188,8 +192,15 @@ struct ComposerView: View {
                     NextStepsSection(steps: nextSteps)
                 }
             }
-            if !session.attachments.isEmpty {
-                ComposerAttachmentsSection(attachments: session.attachments, onRemove: removeAttachment)
+            if !session.attachments.isEmpty || !pendingAttachments.isEmpty {
+                ComposerAttachmentsSection(
+                    attachments: session.attachments,
+                    pending: pendingAttachments,
+                    missing: missingAttachments,
+                    capabilities: session.promptCapabilities,
+                    agentName: session.agentName,
+                    onRemove: removeAttachment
+                )
             }
             inputSection(suggestions: suggestions)
             ComposerControlsRow(
@@ -220,7 +231,7 @@ struct ComposerView: View {
             isDropTargeted = $0
         }
         .animation(.dsStandard, value: plan.isActive)
-        .animation(.dsStandard, value: session.attachments.isEmpty)
+        .animation(.dsStandard, value: session.attachments.isEmpty && pendingAttachments.isEmpty)
         .animation(.dsStandard, value: showsNextSteps)
         .animation(.dsStandard, value: session.queuedPrompts)
     }
@@ -268,7 +279,7 @@ struct ComposerView: View {
 
     /// Disabled in place when something blocks sending, saying why.
     var sendButton: some View {
-        ComposerSendButton(disabledReason: session.sendBlockedReason) { submit(followUp) }
+        ComposerSendButton(disabledReason: session.sendBlockedReason ?? attachmentsBlockedReason) { submit(followUp) }
             .help(
                 isWorking
                     ? FollowUpHint(
