@@ -189,6 +189,7 @@ messages name other sessions.
 | --- | --- |
 | Conversations | The agent's own store, via `session/list` and `session/load` |
 | Titles, preferences, disabled plugins | `UserDefaults` (typed keys next to their owner) |
+| Settings chosen per session (model, mode, effort), set back after `session/load` | `UserDefaults`, kept with the titles by `SessionTitles` |
 | User plugins | `~/.native/plugins/<id>/plugin.json` |
 | Scheduled resumes and similar durable app state | Application Support, owned by the feature |
 
