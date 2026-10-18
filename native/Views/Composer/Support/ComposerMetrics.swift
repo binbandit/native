@@ -31,4 +31,6 @@ nonisolated enum ComposerMetrics {
     static let attachmentThumbnail: CGFloat = 28
     /// Long names truncate in the middle past this.
     static let attachmentChipMaxWidth: CGFloat = 240
+    /// Three rows of chips (36pt each, 6pt apart, inside 8pt padding); more scroll.
+    static let attachmentsMaxHeight: CGFloat = 136
 }
