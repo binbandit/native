@@ -240,7 +240,7 @@ accents and icon sets.
   task. If nothing ever arrives, macOS notifications for Native are off: System Settings ▸
   Notifications ▸ Native.
 - **Settings ▸ Sounds**: Play sounds, Volume, When to play, and a sound per event under "Play a
-  sound when" (Native's, the user's own with Add Sound…, or the reference app's when it's installed). Stay
+  sound when" (Native's own, or the user's with Add Sound…). Stay
   quiet during Focus works only in builds that can read Focus status; the row says when it can't.
 - **Settings ▸ Keep Awake**: Keep Mac awake (Off, While Agents Work, On), Stay awake for a while (a
   timer), Keep display on, and On battery (Keep awake, Stop below 10%, Don't keep awake). Closing the

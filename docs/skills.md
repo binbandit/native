@@ -1,8 +1,7 @@
 # Skills
 
 Settings ▸ Skills lists every skill the user's agents load, gives each one switch that applies
-across agents, and installs, updates and removes skills. Research and the per-agent evidence are in
-`research/factory-skills.md`.
+across agents, and installs, updates and removes skills.
 
 ## Pieces
 

@@ -14,10 +14,11 @@ struct TranscriptView: View {
     @Environment(\.transcriptColumnMaxWidth) private var columnWidth
     @Environment(AppModel.self) private var model
     @Environment(\.isPrimaryTranscript) private var isPrimary
-    @State private var position = ScrollPosition()
+    @State private var position = ScrollPosition(edge: .bottom)
     /// Whether the newest output is out of view.
     @State private var isAwayFromLatest = false
-    /// The scroll container's width, which a legacy scroller doesn't change.
+    /// The scroll container's width, which a legacy scroller doesn't change; nil until the container
+    /// has a real size.
     @State private var containerWidth: CGFloat?
 
     var body: some View {
@@ -28,7 +29,9 @@ struct TranscriptView: View {
             sessionTitle: { model.session(id: $0)?.displayTitle }
         )
         ScrollView {
-            column(transcript)
+            if let containerWidth {
+                column(transcript, in: containerWidth)
+            }
         }
         // Start at the latest message and stay there as rows grow. Short transcripts sit at the top,
         // as in the reference app: bottom-aligning them (the `.alignment` role) pads the top by an inset that
@@ -37,10 +40,15 @@ struct TranscriptView: View {
         .defaultScrollAnchor(.bottom, for: .initialOffset)
         .defaultScrollAnchor(.bottom, for: .sizeChanges)
         .scrollPosition($position)
-        .onScrollGeometryChange(for: CGFloat.self) { geometry in
-            geometry.containerSize.width
-        } action: { _, width in
-            containerWidth = width
+        .onScrollGeometryChange(for: CGSize.self) { geometry in
+            geometry.containerSize
+        } action: { _, size in
+            // A view that's just been made (a session reopened, or back from Settings) is first laid
+            // out at a sliver with no height. Rows measured that narrow come out thousands of points
+            // tall, and the lazy stack keeps them as its estimates, so the transcript opened mid-way
+            // or past its end, blank. The rows wait for the real size instead.
+            guard size.height > 0 else { return }
+            containerWidth = size.width
         }
         .onScrollGeometryChange(for: String.self) { g in
             "content \(g.contentSize.height) container \(g.containerSize.width)x\(g.containerSize.height) offset \(g.contentOffset.y) insets \(g.contentInsets.top),\(g.contentInsets.bottom) visible \(g.visibleRect.minY)-\(g.visibleRect.maxY)"
@@ -75,9 +83,9 @@ struct TranscriptView: View {
     }
 
     /// The rows in a centered column, as wide as the width setting allows with a margin each side.
-    private func column(_ transcript: TranscriptStyleConfiguration) -> some View {
+    private func column(_ transcript: TranscriptStyleConfiguration, in containerWidth: CGFloat) -> some View {
         AnyView(style.makeBody(transcript))
-            .frame(maxWidth: maxColumnWidth)
+            .frame(maxWidth: maxColumnWidth(in: containerWidth))
             .padding(.top, DS.Space.xl)
             .padding(.bottom, DS.Space.lg)
             .frame(maxWidth: .infinity)
@@ -90,9 +98,8 @@ struct TranscriptView: View {
     /// fed each other forever: a 100% CPU hang on the main thread. So the column's width comes from
     /// the scroll container, which a scroller doesn't change, and its margins are wider than a
     /// scroller. It's a maximum, not a fixed width, so it never holds the window open either.
-    private var maxColumnWidth: CGFloat {
-        guard let containerWidth else { return columnWidth }
-        return max(min(columnWidth, containerWidth - 2 * DS.Space.xxl), 0)
+    private func maxColumnWidth(in containerWidth: CGFloat) -> CGFloat {
+        max(min(columnWidth, containerWidth - 2 * DS.Space.xxl), 0)
     }
 
     /// Only while a turn runs: afterwards the latest is the turn's end, and scrolling up is reading.
