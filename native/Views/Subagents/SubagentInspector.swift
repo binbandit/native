@@ -15,8 +15,11 @@ struct SubagentInspector: View {
             if let child {
                 TranscriptView(session: child) { _ in }
             } else {
-                ContentUnavailableView("Waiting for the subagent", systemImage: "person.2", description: Text("Its conversation appears here as it works."))
-                    .frame(maxHeight: .infinity)
+                ContentUnavailableView(
+                    "Waiting for the subagent", systemImage: "person.2",
+                    description: Text("Its conversation appears here as it works.")
+                )
+                .frame(maxHeight: .infinity)
             }
         }
         .background(.dsBackground)

@@ -16,8 +16,10 @@ struct WorkflowStepInspector<Transcript: View>: View {
                 .frame(maxHeight: .infinity)
             if step.status.isStopped, step.task != nil {
                 SeparatorLine()
-                WorkflowReplyField(agentName: step.assignment.agent?.name ?? "the agent") { send(.reply(step: step.id, text: $0)) }
-                    .padding(DS.Space.lg)
+                WorkflowReplyField(agentName: step.assignment.agent?.name ?? "the agent") {
+                    send(.reply(step: step.id, text: $0))
+                }
+                .padding(DS.Space.lg)
             }
         }
         .background(.dsBackground)
@@ -31,10 +33,13 @@ struct WorkflowStepInspector<Transcript: View>: View {
                 Text(step.step.title)
                     .font(.dsHeadline)
                     .foregroundStyle(.dsTextPrimary)
-                Text([step.assignment.agent?.name, step.status.label, step.status.reason].compactMap(\.self).joined(separator: " · "))
-                    .font(.dsCaption)
-                    .foregroundStyle(.dsTextSecondary)
-                    .lineLimit(2)
+                Text(
+                    [step.assignment.agent?.name, step.status.label, step.status.reason].compactMap(\.self).joined(
+                        separator: " · ")
+                )
+                .font(.dsCaption)
+                .foregroundStyle(.dsTextSecondary)
+                .lineLimit(2)
             }
             .tracking(DS.Tracking.tight)
             Spacer(minLength: DS.Space.md)

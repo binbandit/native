@@ -15,7 +15,9 @@ struct WorkflowReplyField: View {
 
     var body: some View {
         HStack(alignment: .bottom, spacing: DS.Space.md) {
-            AutomationTextField(label: "Reply", text: $text, placeholder: "Reply to \(agentName)…", axis: .vertical, lines: 1...6, onSubmit: send)
+            AutomationTextField(
+                label: "Reply", text: $text, placeholder: "Reply to \(agentName)…", axis: .vertical, lines: 1...6,
+                onSubmit: send)
             Button("Send", systemImage: "arrow.up", action: send)
                 .buttonStyle(.ds(.primary, size: .medium))
                 .disabled(!canSend)

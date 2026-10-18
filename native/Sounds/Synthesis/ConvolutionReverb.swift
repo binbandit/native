@@ -51,7 +51,8 @@ nonisolated struct ConvolutionReverb: Sendable {
         func transform(_ real: inout [Float], _ imaginary: inout [Float], _ direction: FFTDirection) {
             real.withUnsafeMutableBufferPointer { realPointer in
                 imaginary.withUnsafeMutableBufferPointer { imaginaryPointer in
-                    guard let realBase = realPointer.baseAddress, let imaginaryBase = imaginaryPointer.baseAddress else { return }
+                    guard let realBase = realPointer.baseAddress, let imaginaryBase = imaginaryPointer.baseAddress
+                    else { return }
                     var split = DSPSplitComplex(realp: realBase, imagp: imaginaryBase)
                     vDSP_fft_zip(setup, &split, 1, log2n, direction)
                 }

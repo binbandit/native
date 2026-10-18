@@ -26,15 +26,23 @@ enum OrchestrationTools {
             MCPTool(
                 name: "list_agents",
                 title: "List agents",
-                description: "List the coding agents you can hand tasks to with start_task, such as Claude Code and Codex. Each task runs as its own session of that agent, which the user can watch in Native.",
+                description:
+                    "List the coding agents you can hand tasks to with start_task, such as Claude Code and Codex. Each task runs as its own session of that agent, which the user can watch in Native.",
                 inputSchema: ["type": "object", "properties": [:], "additionalProperties": false],
                 outputSchema: [
                     "type": "object",
-                    "properties": ["agents": ["type": "array", "items": [
-                        "type": "object",
-                        "properties": ["id": ["type": "string"], "name": ["type": "string"], "is_you": ["type": "boolean"]],
-                        "required": ["id", "name", "is_you"],
-                    ]]],
+                    "properties": [
+                        "agents": [
+                            "type": "array",
+                            "items": [
+                                "type": "object",
+                                "properties": [
+                                    "id": ["type": "string"], "name": ["type": "string"], "is_you": ["type": "boolean"],
+                                ],
+                                "required": ["id", "name", "is_you"],
+                            ],
+                        ]
+                    ],
                     "required": ["agents"],
                 ],
                 annotations: MCPToolAnnotations(readOnly: true, openWorld: false),
@@ -64,9 +72,21 @@ enum OrchestrationTools {
                 inputSchema: [
                     "type": "object",
                     "properties": [
-                        "agent": ["type": "string", "description": "Id of the agent to run the task, from list_agents, such as \"codex\" or \"claude-code\"."],
-                        "prompt": ["type": "string", "description": "The task, written for a capable colleague who hasn't seen this conversation."],
-                        "title": ["type": "string", "description": "A short title the user sees for the task, in sentence case, like \"Review the auth middleware\"."],
+                        "agent": [
+                            "type": "string",
+                            "description":
+                                "Id of the agent to run the task, from list_agents, such as \"codex\" or \"claude-code\".",
+                        ],
+                        "prompt": [
+                            "type": "string",
+                            "description":
+                                "The task, written for a capable colleague who hasn't seen this conversation.",
+                        ],
+                        "title": [
+                            "type": "string",
+                            "description":
+                                "A short title the user sees for the task, in sentence case, like \"Review the auth middleware\".",
+                        ],
                     ],
                     "required": ["agent", "prompt"],
                     "additionalProperties": false,
@@ -75,7 +95,8 @@ enum OrchestrationTools {
                 annotations: MCPToolAnnotations(readOnly: false, openWorld: false),
                 arguments: StartTaskArguments.self
             ) { caller, arguments in
-                try await orchestrator.startTask(agent: arguments.agent, prompt: arguments.prompt, title: arguments.title, for: caller)
+                try await orchestrator.startTask(
+                    agent: arguments.agent, prompt: arguments.prompt, title: arguments.title, for: caller)
             },
             MCPTool(
                 name: "list_tasks",
@@ -91,17 +112,23 @@ enum OrchestrationTools {
                     "type": "object",
                     "properties": [
                         "you": ["type": "string", "description": "Your own task id, when you're a task."],
-                        "tasks": ["type": "array", "items": [
-                            "type": "object",
-                            "properties": [
-                                "id": ["type": "string"],
-                                "agent": ["type": "string"],
-                                "title": ["type": "string"],
-                                "relation": ["type": "string", "enum": ["parent", "child", "sibling"]],
-                                "status": ["type": "string", "enum": ["running", "needs_approval", "idle", "failed", "cancelled", "closed"]],
+                        "tasks": [
+                            "type": "array",
+                            "items": [
+                                "type": "object",
+                                "properties": [
+                                    "id": ["type": "string"],
+                                    "agent": ["type": "string"],
+                                    "title": ["type": "string"],
+                                    "relation": ["type": "string", "enum": ["parent", "child", "sibling"]],
+                                    "status": [
+                                        "type": "string",
+                                        "enum": ["running", "needs_approval", "idle", "failed", "cancelled", "closed"],
+                                    ],
+                                ],
+                                "required": ["id", "agent", "relation", "status"],
                             ],
-                            "required": ["id", "agent", "relation", "status"],
-                        ]],
+                        ],
                     ],
                     "required": ["tasks"],
                 ],
@@ -130,7 +157,8 @@ enum OrchestrationTools {
                             "type": "integer",
                             "minimum": 1,
                             "maximum": 240,
-                            "description": "The longest to wait, in seconds. Defaults to 120. If the call itself times out before the task finishes, use a lower value.",
+                            "description":
+                                "The longest to wait, in seconds. Defaults to 120. If the call itself times out before the task finishes, use a lower value.",
                         ],
                     ],
                     "required": ["task_id"],
@@ -147,7 +175,8 @@ enum OrchestrationTools {
             MCPTool(
                 name: "get_task",
                 title: "Get task",
-                description: "Check a task's status and its latest reply without waiting. Works on any session list_tasks shows.",
+                description:
+                    "Check a task's status and its latest reply without waiting. Works on any session list_tasks shows.",
                 inputSchema: [
                     "type": "object",
                     "properties": ["task_id": taskID],
@@ -175,7 +204,10 @@ enum OrchestrationTools {
                     "type": "object",
                     "properties": [
                         "to": taskID,
-                        "message": ["type": "string", "description": "The message, written so it makes sense without your conversation."],
+                        "message": [
+                            "type": "string",
+                            "description": "The message, written so it makes sense without your conversation.",
+                        ],
                     ],
                     "required": ["to", "message"],
                     "additionalProperties": false,
@@ -187,7 +219,8 @@ enum OrchestrationTools {
                         "delivery": [
                             "type": "string",
                             "enum": ["steered", "queued", "prompted"],
-                            "description": "steered: added to its running turn; queued: held for its next turn; prompted: started a turn of the idle recipient.",
+                            "description":
+                                "steered: added to its running turn; queued: held for its next turn; prompted: started a turn of the idle recipient.",
                         ],
                     ],
                     "required": ["to", "delivery"],
@@ -200,7 +233,8 @@ enum OrchestrationTools {
             MCPTool(
                 name: "cancel_task",
                 title: "Cancel task",
-                description: "Stop the current turn of a task you started. Its session stays open, so you can give it new instructions with send_message afterwards.",
+                description:
+                    "Stop the current turn of a task you started. Its session stays open, so you can give it new instructions with send_message afterwards.",
                 inputSchema: [
                     "type": "object",
                     "properties": ["task_id": ["type": "string", "description": "The task_id start_task returned."]],
@@ -225,8 +259,14 @@ enum OrchestrationTools {
             "title": ["type": "string"],
             "relation": ["type": "string", "enum": ["parent", "child", "sibling"]],
             "status": ["type": "string", "enum": ["running", "needs_approval", "idle", "failed", "cancelled"]],
-            "reply": ["type": "string", "description": "What the agent said at the end of its latest turn; partial while it's running."],
-            "detail": ["type": "string", "description": "What it's waiting on approval for, or why it failed or stopped early."],
+            "reply": [
+                "type": "string",
+                "description": "What the agent said at the end of its latest turn; partial while it's running.",
+            ],
+            "detail": [
+                "type": "string",
+                "description": "What it's waiting on approval for, or why it failed or stopped early.",
+            ],
         ],
         "required": ["task_id", "agent", "relation", "status"],
     ]

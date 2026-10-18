@@ -14,7 +14,9 @@ struct ActivityStats: Hashable {
         let active = Set(values.filter { $0.value > 0 }.keys)
         total = values.values.reduce(0, +)
         activeDays = active.count
-        busiest = values.filter { $0.value > 0 }.max { ($0.value, $1.key) < ($1.value, $0.key) }.map { ($0.key, $0.value) }
+        busiest = values.filter { $0.value > 0 }.max { ($0.value, $1.key) < ($1.value, $0.key) }.map {
+            ($0.key, $0.value)
+        }
 
         let start = calendar.startOfDay(for: today)
         var day = active.contains(start) ? start : calendar.date(byAdding: .day, value: -1, to: start) ?? start

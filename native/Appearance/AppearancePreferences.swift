@@ -9,6 +9,8 @@ enum AppearancePreferences {
     static let transparencyKey = "appearance.transparency"
     /// The white light mode is drawn on (`DSLightTone`).
     static let lightToneKey = "appearance.lightTone"
+    /// The black dark mode is drawn on (`DSDarkTone`).
+    static let darkToneKey = "appearance.darkTone"
     /// The code themes for light and dark mode (`CodeTheme.ID` raw values).
     static let lightCodeThemeKey = "appearance.codeTheme.light"
     static let darkCodeThemeKey = "appearance.codeTheme.dark"
@@ -38,6 +40,7 @@ private struct AppearancePreferencesModifier: ViewModifier {
 
     @AppStorage(AppearancePreferences.transparencyKey) private var transparency = DSTransparency.standard
     @AppStorage(AppearancePreferences.lightToneKey) private var lightTone = DSLightTone.paper
+    @AppStorage(AppearancePreferences.darkToneKey) private var darkTone = DSDarkTone.standard
     @AppStorage(AppearancePreferences.lightCodeThemeKey) private var lightCodeTheme = CodeTheme.native.id.rawValue
     @AppStorage(AppearancePreferences.darkCodeThemeKey) private var darkCodeTheme = CodeTheme.native.id.rawValue
     @AppStorage(AppearancePreferences.accentKey) private var accent = ""
@@ -52,6 +55,7 @@ private struct AppearancePreferencesModifier: ViewModifier {
         content
             .dsTransparency(transparency)
             .dsLightTone(lightTone)
+            .dsDarkTone(darkTone)
             .dsCodeThemes(
                 DSCodeThemes(
                     light: catalog.codeTheme(id: lightCodeTheme) ?? .native,

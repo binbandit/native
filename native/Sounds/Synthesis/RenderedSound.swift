@@ -23,7 +23,7 @@ nonisolated struct RenderedSound: Sendable {
         append(UInt32(36 + dataSize))
         data.append(contentsOf: Array("WAVEfmt ".utf8))
         append(UInt32(16))
-        append(UInt16(3)) // WAVE_FORMAT_IEEE_FLOAT
+        append(UInt16(3))  // WAVE_FORMAT_IEEE_FLOAT
         append(UInt16(2))
         append(UInt32(sampleRate))
         append(UInt32(sampleRate) * UInt32(bytesPerFrame))

@@ -11,12 +11,13 @@ public struct RateLimitInfo: Hashable, Sendable {
         case other(String)
 
         public init(rawValue: String) {
-            self = switch rawValue {
-            case "allowed": .allowed
-            case "allowed_warning": .allowedWarning
-            case "rejected": .rejected
-            default: .other(rawValue)
-            }
+            self =
+                switch rawValue {
+                case "allowed": .allowed
+                case "allowed_warning": .allowedWarning
+                case "rejected": .rejected
+                default: .other(rawValue)
+                }
         }
     }
 
@@ -33,15 +34,16 @@ public struct RateLimitInfo: Hashable, Sendable {
         case other(String)
 
         public init(rawValue: String) {
-            self = switch rawValue {
-            case "five_hour": .fiveHour
-            case "seven_day": .sevenDay
-            case "seven_day_opus": .sevenDayOpus
-            case "seven_day_sonnet": .sevenDaySonnet
-            case "seven_day_overage_included": .sevenDayOverageIncluded
-            case "overage": .overage
-            default: .other(rawValue)
-            }
+            self =
+                switch rawValue {
+                case "five_hour": .fiveHour
+                case "seven_day": .sevenDay
+                case "seven_day_opus": .sevenDayOpus
+                case "seven_day_sonnet": .sevenDaySonnet
+                case "seven_day_overage_included": .sevenDayOverageIncluded
+                case "overage": .overage
+                default: .other(rawValue)
+                }
         }
 
         public var rawValue: String {
@@ -108,7 +110,8 @@ public struct RateLimitInfo: Hashable, Sendable {
 
 extension RateLimitInfo: Decodable {
     private enum CodingKeys: String, CodingKey {
-        case status, resetsAt, rateLimitType, utilization, overageStatus, overageResetsAt, isUsingOverage, overageDisabledReason
+        case status, resetsAt, rateLimitType, utilization, overageStatus, overageResetsAt, isUsingOverage,
+            overageDisabledReason
     }
 
     public init(from decoder: any Decoder) throws {

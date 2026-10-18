@@ -13,7 +13,10 @@ public nonisolated struct PullRequestSnapshot: Codable, Hashable, Sendable, Iden
     public var isReviewRequested: Bool
     public var hasFailingChecks: Bool
 
-    public init(url: URL, repository: String, number: Int, title: String, updatedAt: Date, isAuthored: Bool, isReviewRequested: Bool, hasFailingChecks: Bool) {
+    public init(
+        url: URL, repository: String, number: Int, title: String, updatedAt: Date, isAuthored: Bool,
+        isReviewRequested: Bool, hasFailingChecks: Bool
+    ) {
         self.url = url
         self.repository = repository
         self.number = number

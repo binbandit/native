@@ -13,7 +13,9 @@ extension NWConnection {
 
     func send(_ response: HTTPResponse) async {
         await withCheckedContinuation { continuation in
-            send(content: response.serialized(), isComplete: true, completion: .contentProcessed { _ in continuation.resume() })
+            send(
+                content: response.serialized(), isComplete: true,
+                completion: .contentProcessed { _ in continuation.resume() })
         }
     }
 }

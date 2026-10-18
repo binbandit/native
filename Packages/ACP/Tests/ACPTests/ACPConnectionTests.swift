@@ -1,7 +1,7 @@
+import ACP
 import Foundation
 import Synchronization
 import Testing
-import ACP
 
 /// Waits are bounded, but a connection stuck in a way they don't cover would otherwise hang the run.
 @Suite(.timeLimit(.minutes(1)))
@@ -78,10 +78,16 @@ struct ACPConnectionTests {
         // Extension notifications are ignored without a reply.
         try agent.write(Wire.authStatusNotification)
         // We advertise no fs capability, so this is unexpected; the string id must come back as is.
-        try agent.write(#"{"jsonrpc":"2.0","id":"fs-1","method":"fs/read_text_file","params":{"sessionId":"59be18cd-5e67-47b1-8562-9996457a07e9","path":"/etc/hosts"}}"#)
+        try agent.write(
+            #"{"jsonrpc":"2.0","id":"fs-1","method":"fs/read_text_file","params":{"sessionId":"59be18cd-5e67-47b1-8562-9996457a07e9","path":"/etc/hosts"}}"#
+        )
 
         let reply = try #require(await agent.message(0))
-        #expect(reply == (try Wire.json(#"{"jsonrpc":"2.0","id":"fs-1","error":{"code":-32601,"message":"Method not found: fs/read_text_file"}}"#)))
+        #expect(
+            reply
+                == (try Wire.json(
+                    #"{"jsonrpc":"2.0","id":"fs-1","error":{"code":-32601,"message":"Method not found: fs/read_text_file"}}"#
+                )))
         #expect(agent.events.all.isEmpty)
     }
 
@@ -253,7 +259,8 @@ private extension AgentEvent {
     }
 
     var agentMessageText: String? {
-        guard case .sessionUpdate(let notification) = self, case .agentMessageChunk(let chunk) = notification.update else { return nil }
+        guard case .sessionUpdate(let notification) = self, case .agentMessageChunk(let chunk) = notification.update
+        else { return nil }
         return chunk.content.text
     }
 

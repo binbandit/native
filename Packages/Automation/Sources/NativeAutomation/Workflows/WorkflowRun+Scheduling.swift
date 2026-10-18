@@ -34,7 +34,8 @@ extension WorkflowRun {
         case .pullRequest:
             steps[index].status = .starting
             let title = WorkflowTemplate.render(step.pullRequest?.title ?? "{{title}}", with: templateValues)
-            let draft = WorkflowPullRequestDraft(title: title, body: prompt, cwd: cwd, isDraft: step.pullRequest?.isDraft ?? false)
+            let draft = WorkflowPullRequestDraft(
+                title: title, body: prompt, cwd: cwd, isDraft: step.pullRequest?.isDraft ?? false)
             return [.openPullRequest(step: step.id, draft)]
         case .script:
             steps[index].status = .starting
@@ -47,7 +48,8 @@ extension WorkflowRun {
                 steps[index].sessionCost = steps[index].costBaseline
             }
             if let budget = step.goal {
-                steps[index].goal = GoalLoop(objective: prompt, budget: budget, at: now, sessionCost: steps[index].costBaseline)
+                steps[index].goal = GoalLoop(
+                    objective: prompt, budget: budget, at: now, sessionCost: steps[index].costBaseline)
             }
             if continuedTask != nil {
                 return send(firstPrompt(index, at: now), to: index, origin: .goal, at: now)
@@ -68,7 +70,8 @@ extension WorkflowRun {
 
     /// Sends `text` into the step's task, telling its goal loop who sent it. While the run is
     /// paused, Native's own prompts wait instead; the user's always go out.
-    public mutating func send(_ text: String, to index: Int, origin: GoalLoop.Origin, at now: Date) -> [WorkflowEffect] {
+    public mutating func send(_ text: String, to index: Int, origin: GoalLoop.Origin, at now: Date) -> [WorkflowEffect]
+    {
         guard let task = steps[index].task else { return [] }
         if isPaused, origin == .goal {
             steps[index].status = .paused

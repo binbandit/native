@@ -14,10 +14,13 @@ public nonisolated enum AutomationSchedule: Codable, Hashable, Sendable {
     public func nextFire(after date: Date, anchor: Date, calendar: Calendar = .current) -> Date {
         switch self {
         case .daily(let hour, let minute):
-            return calendar.nextDate(after: date, matching: DateComponents(hour: hour, minute: minute), matchingPolicy: .nextTime) ?? date.addingTimeInterval(86_400)
+            return calendar.nextDate(
+                after: date, matching: DateComponents(hour: hour, minute: minute), matchingPolicy: .nextTime)
+                ?? date.addingTimeInterval(86_400)
         case .weekly(let weekday, let hour, let minute):
             let components = DateComponents(hour: hour, minute: minute, weekday: weekday)
-            return calendar.nextDate(after: date, matching: components, matchingPolicy: .nextTime) ?? date.addingTimeInterval(7 * 86_400)
+            return calendar.nextDate(after: date, matching: components, matchingPolicy: .nextTime)
+                ?? date.addingTimeInterval(7 * 86_400)
         case .everyHours(let hours):
             let interval = TimeInterval(max(hours, 1) * 3600)
             guard date >= anchor else { return anchor }

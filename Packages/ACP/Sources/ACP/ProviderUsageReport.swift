@@ -33,7 +33,9 @@ public struct ProviderUsageReport: Hashable, Sendable {
 
     /// Returns nil when the text lists no limit windows. Reset times without a zone are read in
     /// `timeZone`, the agent's own (adapters run on the same machine).
-    public static func parse(_ markdown: String, now: Date = .now, timeZone: TimeZone = .current) -> ProviderUsageReport? {
+    public static func parse(
+        _ markdown: String, now: Date = .now, timeZone: TimeZone = .current
+    ) -> ProviderUsageReport? {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = timeZone
         let windows = markdown.split(whereSeparator: \.isNewline).compactMap { line in
@@ -57,7 +59,8 @@ public struct ProviderUsageReport: Hashable, Sendable {
         guard let match = line.wholeMatch(of: pattern), let left = Double(match.2) else { return nil }
         var resetsAt: Date?
         if let hour = match.3.flatMap({ Int($0) }), let minute = match.4.flatMap({ Int($0) }) {
-            resetsAt = codexDate(hour: hour, minute: minute, day: match.5.map(String.init), now: now, calendar: calendar)
+            resetsAt = codexDate(
+                hour: hour, minute: minute, day: match.5.map(String.init), now: now, calendar: calendar)
         }
         return Window(name: windowName(String(match.1)), utilization: (100 - left) / 100, resetsAt: resetsAt)
     }

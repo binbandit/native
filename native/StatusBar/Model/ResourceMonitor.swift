@@ -25,7 +25,10 @@ final class ResourceMonitor {
     /// - Parameters:
     ///   - sampler: Where the numbers come from: this Mac's processes, or later, a host's.
     ///   - isVisible: Whether anyone could see the numbers now; sampling pauses while not.
-    init(sampler: any ResourceSampling = ProcessSampler(), isVisible: @escaping @MainActor () -> Bool = ResourceMonitor.isAppVisible) {
+    init(
+        sampler: any ResourceSampling = ProcessSampler(),
+        isVisible: @escaping @MainActor () -> Bool = ResourceMonitor.isAppVisible
+    ) {
         self.sampler = sampler
         self.isVisible = isVisible
     }
@@ -60,7 +63,8 @@ final class ResourceMonitor {
         self.snapshot = snapshot
         var history: [ProcessGroup.Kind: [UInt64]] = [:]
         for group in snapshot.groups {
-            history[group.kind] = Array((self.history[group.kind, default: []] + [group.memory]).suffix(Self.historyLength))
+            history[group.kind] = Array(
+                (self.history[group.kind, default: []] + [group.memory]).suffix(Self.historyLength))
         }
         self.history = history
         totalHistory = Array((totalHistory + [snapshot.memory]).suffix(Self.historyLength))

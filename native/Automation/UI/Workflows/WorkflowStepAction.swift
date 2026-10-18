@@ -58,7 +58,9 @@ enum WorkflowStepAction: Hashable, Identifiable {
     }
 
     /// The step's main way on, then the rest.
-    static func available(for step: WorkflowStepRun, isRunCancelled: Bool) -> (primary: WorkflowStepAction?, others: [WorkflowStepAction]) {
+    static func available(
+        for step: WorkflowStepRun, isRunCancelled: Bool
+    ) -> (primary: WorkflowStepAction?, others: [WorkflowStepAction]) {
         guard !isRunCancelled else { return (nil, []) }
         let hasTask = step.task != nil
         let hasReply = step.latestReply?.isEmpty == false
@@ -72,14 +74,20 @@ enum WorkflowStepAction: Hashable, Identifiable {
         case .blocked:
             return (nil, [.resume(title: "Continue Without Answering")] + (hasReply ? [.accept] : []) + [.skip])
         case .limited:
-            let resume = WorkflowStepAction.resume(title: step.goal.map { $0.goal.exhaustedBudget(at: .now, iterationCeiling: GoalLoop.safetyIterationCeiling) != nil } == true ? "Extend Budget" : "Resume")
+            let resume = WorkflowStepAction.resume(
+                title: step.goal.map {
+                    $0.goal.exhaustedBudget(at: .now, iterationCeiling: GoalLoop.safetyIterationCeiling) != nil
+                } == true ? "Extend Budget" : "Resume")
             return (hasTask ? resume : .retry, (hasReply ? [.accept] : []) + [.skip])
         case .failed:
             return (.retry, (hasTask ? [.resume(title: "Continue in Session")] : []) + [.skip, .stopWorkflow])
         case .interrupted:
             return (hasTask ? .resume(title: "Resume") : .retry, [.skip, .stopWorkflow])
         case .cancelled:
-            return (hasTask ? .resume(title: "Resume") : .retry, (hasTask ? [.retry] : []) + (hasReply ? [.accept] : []) + [.skip])
+            return (
+                hasTask ? .resume(title: "Resume") : .retry,
+                (hasTask ? [.retry] : []) + (hasReply ? [.accept] : []) + [.skip]
+            )
         }
     }
 }

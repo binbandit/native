@@ -40,7 +40,8 @@ public struct PluginExperiments: Sendable {
             }
             let id = ExperimentID(namespace: plugin, experiment.id)
             guard !reserved.contains(id) else {
-                problems.append(.init(experiment: experiment.id, message: "\(id) is already used by another experiment."))
+                problems.append(
+                    .init(experiment: experiment.id, message: "\(id) is already used by another experiment."))
                 continue
             }
             let places = uses.filter { $0.experiment == experiment.id }.map(\.place)
@@ -58,7 +59,8 @@ public struct PluginExperiments: Sendable {
         }
         for use in uses where use.role == .switches && kinds[use.experiment] == .parameter {
             problems.append(
-                .init(experiment: use.experiment, message: "It switches \(use.place), but only gates can switch things.")
+                .init(
+                    experiment: use.experiment, message: "It switches \(use.place), but only gates can switch things.")
             )
         }
     }

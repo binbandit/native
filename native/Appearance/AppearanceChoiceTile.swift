@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// One choice among Settings ▸ Appearance's looks (light or dark, Paper or Wool): a preview of the
-/// app in that look and its name, ringed in the accent and checked while it's the current one.
+/// One choice among Settings ▸ Appearance's looks (light or dark, Paper or Wool, Standard or True
+/// Black): a preview of the app in that look and its name, ringed in the accent and checked while
+/// it's the current one.
 struct AppearanceChoiceTile<Preview: View>: View {
     let title: String
     let isSelected: Bool

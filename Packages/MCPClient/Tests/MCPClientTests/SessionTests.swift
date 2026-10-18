@@ -9,7 +9,8 @@ import Testing
         let config = MCPServerConfig(
             name: "fake",
             transport: .stdio(
-                command: "/bin/sh", arguments: [Fixture.url("fake-mcp-server.sh").path(percentEncoded: false), "clean"]))
+                command: "/bin/sh", arguments: [Fixture.url("fake-mcp-server.sh").path(percentEncoded: false), "clean"])
+        )
         return try await MCPSession.connect(
             config, environment: ProcessInfo.processInfo.environment, directory: nil, launcher: LocalStdioLauncher())
     }

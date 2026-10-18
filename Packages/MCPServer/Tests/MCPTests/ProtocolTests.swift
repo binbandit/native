@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import MCP
 
 struct ProtocolTests {
@@ -30,9 +31,18 @@ struct ProtocolTests {
 
     @Test func browserRequestsAreForbidden() async {
         // DNS rebinding: a page on another origin, or reaching loopback through its own hostname.
-        #expect(await endpoint.respond(to: post(["jsonrpc": "2.0", "id": 1, "method": "ping"], headers: ["Origin": "https://evil.example"])).status == 403)
-        #expect(await endpoint.respond(to: post(["jsonrpc": "2.0", "id": 1, "method": "ping"], headers: ["Host": "evil.example:4242"])).status == 403)
-        #expect(await endpoint.respond(to: post(["jsonrpc": "2.0", "id": 1, "method": "ping"], headers: ["Host": "localhost:4242"])).status == 200)
+        #expect(
+            await endpoint.respond(
+                to: post(["jsonrpc": "2.0", "id": 1, "method": "ping"], headers: ["Origin": "https://evil.example"])
+            ).status == 403)
+        #expect(
+            await endpoint.respond(
+                to: post(["jsonrpc": "2.0", "id": 1, "method": "ping"], headers: ["Host": "evil.example:4242"])
+            ).status == 403)
+        #expect(
+            await endpoint.respond(
+                to: post(["jsonrpc": "2.0", "id": 1, "method": "ping"], headers: ["Host": "localhost:4242"])
+            ).status == 200)
     }
 
     @Test func notificationsAreAcceptedWithoutABody() async {
@@ -47,18 +57,26 @@ struct ProtocolTests {
         let response = await endpoint.respond(to: request)
         #expect(response.status == 400)
         #expect(response.json?["error"]?["code"] == -32700)
-        #expect(await endpoint.respond(to: post([["jsonrpc": "2.0", "id": 1, "method": "ping"]])).json?["error"]?["code"] == -32600)
+        #expect(
+            await endpoint.respond(to: post([["jsonrpc": "2.0", "id": 1, "method": "ping"]])).json?["error"]?["code"]
+                == -32600)
     }
 
     // MARK: - Initialize-based revisions
 
-    @Test(arguments: [("2025-11-25", "2025-11-25"), ("2025-06-18", "2025-06-18"), ("2025-03-26", "2025-03-26"), ("2024-11-05", "2025-11-25"), ("1999-01-01", "2025-11-25")])
+    @Test(arguments: [
+        ("2025-11-25", "2025-11-25"), ("2025-06-18", "2025-06-18"), ("2025-03-26", "2025-03-26"),
+        ("2024-11-05", "2025-11-25"), ("1999-01-01", "2025-11-25"),
+    ])
     func initializeAgreesOnAVersion(requested: String, agreed: String) async throws {
-        let response = await endpoint.respond(to: legacy("initialize", params: [
-            "protocolVersion": .string(requested),
-            "capabilities": [:],
-            "clientInfo": ["name": "claude-code", "version": "2"],
-        ], version: nil))
+        let response = await endpoint.respond(
+            to: legacy(
+                "initialize",
+                params: [
+                    "protocolVersion": .string(requested),
+                    "capabilities": [:],
+                    "clientInfo": ["name": "claude-code", "version": "2"],
+                ], version: nil))
         let result = try #require(response.json?["result"])
         #expect(response.json?["id"] == 7)
         #expect(result["protocolVersion"] == .string(agreed))
@@ -93,11 +111,14 @@ struct ProtocolTests {
     }
 
     @Test func toolFailuresAreResultsTheModelCanRead() async throws {
-        let failed = try #require(await endpoint.respond(to: legacy("tools/call", params: ["name": "fail"])).json?["result"])
+        let failed = try #require(
+            await endpoint.respond(to: legacy("tools/call", params: ["name": "fail"])).json?["result"])
         #expect(failed["isError"] == true)
         #expect(failed["content"]?[0]?["text"] == "That didn't work.")
 
-        let invalid = try #require(await endpoint.respond(to: legacy("tools/call", params: ["name": "echo", "arguments": ["txt": "hi"]])).json?["result"])
+        let invalid = try #require(
+            await endpoint.respond(to: legacy("tools/call", params: ["name": "echo", "arguments": ["txt": "hi"]]))
+                .json?["result"])
         #expect(invalid["isError"] == true)
         #expect(invalid["content"]?[0]?["text"] == "Invalid arguments for echo: missing required argument \"text\".")
     }
@@ -136,20 +157,25 @@ struct ProtocolTests {
         #expect(list["resultType"] == "complete")
         #expect(list["ttlMs"] != nil)
 
-        let call = try #require(await endpoint.respond(to: modern("tools/call", params: ["name": "echo", "arguments": ["text": "hi"]])).json?["result"])
+        let call = try #require(
+            await endpoint.respond(to: modern("tools/call", params: ["name": "echo", "arguments": ["text": "hi"]]))
+                .json?["result"])
         #expect(call["resultType"] == "complete")
         #expect(call["content"]?[0]?["text"] == "alice: hi")
     }
 
     @Test func encodedToolNamesMatch() async throws {
         let encoded = "=?base64?\(Data("echo".utf8).base64EncodedString())?="
-        let response = await endpoint.respond(to: modern("tools/call", params: ["name": "echo", "arguments": ["text": "hi"]], headers: ["Mcp-Name": encoded]))
+        let response = await endpoint.respond(
+            to: modern(
+                "tools/call", params: ["name": "echo", "arguments": ["text": "hi"]], headers: ["Mcp-Name": encoded]))
         #expect(response.json?["result"]?["content"]?[0]?["text"] == "alice: hi")
     }
 
     @Test(arguments: [["Mcp-Method": "tools/list"], ["Mcp-Name": "fail"], ["MCP-Protocol-Version": "2025-11-25"]])
     func headersThatDisagreeWithTheBodyAreRejected(headers: [String: String]) async {
-        let response = await endpoint.respond(to: modern("tools/call", params: ["name": "echo", "arguments": ["text": "hi"]], headers: headers))
+        let response = await endpoint.respond(
+            to: modern("tools/call", params: ["name": "echo", "arguments": ["text": "hi"]], headers: headers))
         #expect(response.status == 400)
         #expect(response.json?["error"]?["code"] == -32020)
         #expect(response.json?["id"] == 1)
@@ -164,7 +190,9 @@ struct ProtocolTests {
     }
 
     @Test func modernRequestsMustDeclareTheirMetadata() async {
-        let request = post(["jsonrpc": "2.0", "id": 1, "method": "tools/list"], headers: ["MCP-Protocol-Version": "2026-07-28", "Mcp-Method": "tools/list"])
+        let request = post(
+            ["jsonrpc": "2.0", "id": 1, "method": "tools/list"],
+            headers: ["MCP-Protocol-Version": "2026-07-28", "Mcp-Method": "tools/list"])
         let response = await endpoint.respond(to: request)
         #expect(response.status == 400)
         #expect(response.json?["error"]?["code"] == -32602)

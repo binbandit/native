@@ -12,7 +12,9 @@ nonisolated enum LoginShell {
 
     /// What `login(1)` would hand a fresh shell. Starting from this, rather than our own environment,
     /// keeps things like Xcode's debugging variables from leaking into agents.
-    private static let inheritedVariables = ["HOME", "USER", "LOGNAME", "TMPDIR", "SSH_AUTH_SOCK", "LANG", "__CF_USER_TEXT_ENCODING"]
+    private static let inheritedVariables = [
+        "HOME", "USER", "LOGNAME", "TMPDIR", "SSH_AUTH_SOCK", "LANG", "__CF_USER_TEXT_ENCODING",
+    ]
 
     static func environment() async -> [String: String] {
         let shell = userShell()
@@ -62,14 +64,18 @@ nonisolated enum LoginShell {
             let chunk = stdout.fileHandleForReading.availableData
             if chunk.isEmpty { break }
             output.append(chunk)
-            if let first = output.range(of: markerData), output.range(of: markerData, in: first.upperBound..<output.endIndex) != nil {
+            if let first = output.range(of: markerData),
+                output.range(of: markerData, in: first.upperBound..<output.endIndex) != nil
+            {
                 break
             }
         }
 
         let sections = String(decoding: output, as: UTF8.self).components(separatedBy: marker)
         guard sections.count >= 3 else {
-            throw CocoaError(.fileReadCorruptFile, userInfo: [NSDebugDescriptionErrorKey: "The shell exited without printing its environment"])
+            throw CocoaError(
+                .fileReadCorruptFile,
+                userInfo: [NSDebugDescriptionErrorKey: "The shell exited without printing its environment"])
         }
         var environment: [String: String] = [:]
         for entry in sections[1].split(separator: "\0") {

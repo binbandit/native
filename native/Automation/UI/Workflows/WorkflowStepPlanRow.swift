@@ -29,7 +29,9 @@ struct WorkflowStepPlanRow: View {
                 }
                 Spacer(minLength: DS.Space.md)
                 if let budget = step.goal {
-                    Badge("Goal · \(budget.maxIterations.map { "\($0) turns" } ?? "no limit")", tone: .accent, style: .soft)
+                    Badge(
+                        "Goal · \(budget.maxIterations.map { "\($0) turns" } ?? "no limit")", tone: .accent,
+                        style: .soft)
                 }
                 if step.approval != nil {
                     Badge("Approval")
@@ -54,11 +56,14 @@ struct WorkflowStepPlanRow: View {
                 .foregroundStyle(.dsTextSecondary)
                 .pillChrome()
         } else if let continued = step.continues.flatMap(definition.step) {
-            Label("\(assignment?.agent?.name ?? "Same agent") · \(continued.title)'s session", systemImage: "arrow.turn.down.right")
-                .font(.dsBody)
-                .foregroundStyle(.dsTextSecondary)
-                .pillChrome()
-                .help("Continues in \(continued.title)'s session, so the agent keeps its context")
+            Label(
+                "\(assignment?.agent?.name ?? "Same agent") · \(continued.title)'s session",
+                systemImage: "arrow.turn.down.right"
+            )
+            .font(.dsBody)
+            .foregroundStyle(.dsTextSecondary)
+            .pillChrome()
+            .help("Continues in \(continued.title)'s session, so the agent keeps its context")
         } else {
             PillMenu(assignment?.agent?.name ?? "No agent", systemImage: assignment?.agent?.symbol) {
                 ForEach(agents) { agent in

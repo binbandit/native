@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import NativeAutomation
 
 /// Drives a run the way `WorkflowRunner` does: creates tasks right away and records prompts.
@@ -14,9 +15,11 @@ struct RunDriver {
     static let claude = WorkflowAgent(id: "claude-code", name: "Claude Code")
     static let codex = WorkflowAgent(id: "codex", name: "Codex")
 
-    init(_ definition: WorkflowDefinition, input: String = "Add CSV export", agents: [WorkflowAgent] = [claude, codex]) {
+    init(_ definition: WorkflowDefinition, input: String = "Add CSV export", agents: [WorkflowAgent] = [claude, codex])
+    {
         let assignments = WorkflowAssignment.resolve(definition, agents: agents, defaultAgent: agents.first?.id)
-        run = WorkflowRun(definition: definition, input: input, cwd: URL(filePath: "/work/app"), assignments: assignments, at: clock)
+        run = WorkflowRun(
+            definition: definition, input: input, cwd: URL(filePath: "/work/app"), assignments: assignments, at: clock)
     }
 
     mutating func send(_ event: WorkflowEvent) {
@@ -90,11 +93,13 @@ struct RunDriver {
     }
 
     @Test func parallelStepsStartTogether() {
-        let definition = WorkflowDefinition(id: "w", name: "W", summary: "", steps: [
-            WorkflowStep(id: "a", title: "A", prompt: "a"),
-            WorkflowStep(id: "b", title: "B", prompt: "b", after: []),
-            WorkflowStep(id: "c", title: "C", prompt: "{{steps.a.output}} {{steps.b.output}}", after: ["a", "b"]),
-        ])
+        let definition = WorkflowDefinition(
+            id: "w", name: "W", summary: "",
+            steps: [
+                WorkflowStep(id: "a", title: "A", prompt: "a"),
+                WorkflowStep(id: "b", title: "B", prompt: "b", after: []),
+                WorkflowStep(id: "c", title: "C", prompt: "{{steps.a.output}} {{steps.b.output}}", after: ["a", "b"]),
+            ])
         var driver = RunDriver(definition)
         driver.send(.start)
         #expect(driver.status("a") == .running)
@@ -107,11 +112,13 @@ struct RunDriver {
     }
 
     @Test func failedStepHoldsOnlyItsDependentsAndOffersRetrySkip() {
-        let definition = WorkflowDefinition(id: "w", name: "W", summary: "", steps: [
-            WorkflowStep(id: "a", title: "A", prompt: "a"),
-            WorkflowStep(id: "b", title: "B", prompt: "b", after: []),
-            WorkflowStep(id: "c", title: "C", prompt: "c", after: ["a"]),
-        ])
+        let definition = WorkflowDefinition(
+            id: "w", name: "W", summary: "",
+            steps: [
+                WorkflowStep(id: "a", title: "A", prompt: "a"),
+                WorkflowStep(id: "b", title: "B", prompt: "b", after: []),
+                WorkflowStep(id: "c", title: "C", prompt: "c", after: ["a"]),
+            ])
         var driver = RunDriver(definition)
         driver.send(.start)
         driver.end("a", nil, outcome: .failed("Agent crashed"))
@@ -131,7 +138,8 @@ struct RunDriver {
     }
 
     @Test func cancelledTurnStopsTheStepAndResumeContinuesInItsTask() {
-        let definition = WorkflowDefinition(id: "w", name: "W", summary: "", steps: [WorkflowStep(id: "a", title: "A", prompt: "a")])
+        let definition = WorkflowDefinition(
+            id: "w", name: "W", summary: "", steps: [WorkflowStep(id: "a", title: "A", prompt: "a")])
         var driver = RunDriver(definition)
         driver.send(.start)
         driver.send(.stop(step: "a"))
@@ -174,9 +182,11 @@ struct RunDriver {
     }
 
     @Test func goalBudgetLimitsAStepAndResumeGrantsMore() {
-        let definition = WorkflowDefinition(id: "w", name: "W", summary: "", steps: [
-            WorkflowStep(id: "a", title: "A", prompt: "a", goal: GoalBudget(maxIterations: 1)),
-        ])
+        let definition = WorkflowDefinition(
+            id: "w", name: "W", summary: "",
+            steps: [
+                WorkflowStep(id: "a", title: "A", prompt: "a", goal: GoalBudget(maxIterations: 1))
+            ])
         var driver = RunDriver(definition)
         driver.send(.start)
         driver.end("a", "GOAL: continuing - more to do")
@@ -187,7 +197,9 @@ struct RunDriver {
     }
 
     @Test func providerLimitIsLimitedNotRetried() {
-        let definition = WorkflowDefinition(id: "w", name: "W", summary: "", steps: [WorkflowStep(id: "a", title: "A", prompt: "a", goal: GoalBudget(maxIterations: 5))])
+        let definition = WorkflowDefinition(
+            id: "w", name: "W", summary: "",
+            steps: [WorkflowStep(id: "a", title: "A", prompt: "a", goal: GoalBudget(maxIterations: 5))])
         var driver = RunDriver(definition)
         driver.send(.start)
         driver.end("a", nil, outcome: .limited("5-hour limit reached · resets 3:05 PM"))
@@ -206,10 +218,12 @@ struct RunDriver {
     }
 
     @Test func cancelStopsRunningTasks() {
-        let definition = WorkflowDefinition(id: "w", name: "W", summary: "", steps: [
-            WorkflowStep(id: "a", title: "A", prompt: "a"),
-            WorkflowStep(id: "b", title: "B", prompt: "b"),
-        ])
+        let definition = WorkflowDefinition(
+            id: "w", name: "W", summary: "",
+            steps: [
+                WorkflowStep(id: "a", title: "A", prompt: "a"),
+                WorkflowStep(id: "b", title: "B", prompt: "b"),
+            ])
         var driver = RunDriver(definition)
         driver.send(.start)
         driver.send(.cancel)
@@ -222,10 +236,12 @@ struct RunDriver {
     }
 
     @Test func pauseHoldsNewWorkAndResumeReleasesIt() {
-        let definition = WorkflowDefinition(id: "w", name: "W", summary: "", steps: [
-            WorkflowStep(id: "a", title: "A", prompt: "a", goal: GoalBudget(maxIterations: 5)),
-            WorkflowStep(id: "b", title: "B", prompt: "b"),
-        ])
+        let definition = WorkflowDefinition(
+            id: "w", name: "W", summary: "",
+            steps: [
+                WorkflowStep(id: "a", title: "A", prompt: "a", goal: GoalBudget(maxIterations: 5)),
+                WorkflowStep(id: "b", title: "B", prompt: "b"),
+            ])
         var driver = RunDriver(definition)
         driver.send(.start)
         driver.send(.pauseRun)
@@ -258,7 +274,10 @@ struct RunDriver {
         #expect(draft.title == "Add CSV export")
         #expect(draft.body.hasPrefix("Adds CSV export."))
         #expect(draft.body.contains("cross-reviewed (Claude Code)"))
-        driver.send(.pullRequestOpened(step: "pull-request", WorkflowPullRequestResult(url: URL(string: "https://github.com/o/r/pull/7")!, number: 7)))
+        driver.send(
+            .pullRequestOpened(
+                step: "pull-request",
+                WorkflowPullRequestResult(url: URL(string: "https://github.com/o/r/pull/7")!, number: 7)))
         #expect(driver.run.phase == .succeeded)
         #expect(driver.run.stepRun("pull-request")?.output == "https://github.com/o/r/pull/7")
     }
@@ -269,14 +288,18 @@ struct RunDriver {
             .approve(step: "a", prompt: nil), .reply(step: "a", text: "Postgres"), .pauseRun, .cancel,
         ]
         #expect(try JSONDecoder().decode([WorkflowEvent].self, from: JSONEncoder().encode(events)) == events)
-        let effects: [WorkflowEffect] = [.createTask(step: "a", agent: RunDriver.codex, title: "A"), .cancelTask(UUID())]
+        let effects: [WorkflowEffect] = [
+            .createTask(step: "a", agent: RunDriver.codex, title: "A"), .cancelTask(UUID()),
+        ]
         #expect(try JSONDecoder().decode([WorkflowEffect].self, from: JSONEncoder().encode(effects)) == effects)
     }
 
     @Test func scriptStepsNeedASource() {
-        let definition = WorkflowDefinition(id: "w", name: "W", summary: "", steps: [
-            WorkflowStep(id: "s", title: "S", kind: .script, agent: .agent("codex"), prompt: "x"),
-        ])
+        let definition = WorkflowDefinition(
+            id: "w", name: "W", summary: "",
+            steps: [
+                WorkflowStep(id: "s", title: "S", kind: .script, agent: .agent("codex"), prompt: "x")
+            ])
         #expect(WorkflowIssue.find(in: definition).count == 2)
     }
 
@@ -301,7 +324,8 @@ struct RunDriver {
     }
 
     @Test func plainStepsResumeWithTheInterruptionExplained() {
-        let definition = WorkflowDefinition(id: "w", name: "W", summary: "", steps: [WorkflowStep(id: "a", title: "A", prompt: "a")])
+        let definition = WorkflowDefinition(
+            id: "w", name: "W", summary: "", steps: [WorkflowStep(id: "a", title: "A", prompt: "a")])
         var driver = RunDriver(definition)
         driver.send(.start)
         driver.run = driver.run.restored()

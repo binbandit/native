@@ -23,7 +23,9 @@ final class KeepAwakeController {
     }
 
     /// Choices for "Stay awake for": 30 minutes to 8 hours.
-    static let timerDurations: [Duration] = [.seconds(30 * 60), .seconds(3600), .seconds(2 * 3600), .seconds(4 * 3600), .seconds(8 * 3600)]
+    static let timerDurations: [Duration] = [
+        .seconds(30 * 60), .seconds(3600), .seconds(2 * 3600), .seconds(4 * 3600), .seconds(8 * 3600),
+    ]
 
     @ObservationIgnored private let engine: any KeepAwakeEngine
     @ObservationIgnored private let defaults: UserDefaults
@@ -33,7 +35,9 @@ final class KeepAwakeController {
     init(engine: any KeepAwakeEngine = KeepAwake(), defaults: UserDefaults = .standard) {
         self.engine = engine
         self.defaults = defaults
-        policy = defaults.data(forKey: Self.policyKey).flatMap { try? JSONDecoder().decode(KeepAwakePolicy.self, from: $0) } ?? KeepAwakePolicy()
+        policy =
+            defaults.data(forKey: Self.policyKey).flatMap { try? JSONDecoder().decode(KeepAwakePolicy.self, from: $0) }
+            ?? KeepAwakePolicy()
         engine.onChange = { [weak self] status in
             self?.engineChanged(status)
         }

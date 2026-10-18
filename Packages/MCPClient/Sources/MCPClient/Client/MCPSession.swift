@@ -43,14 +43,18 @@ public final class MCPSession: Sendable {
                 transport = StreamableHTTPTransport(url: url, headers: headers, session: MCPSession.urlSession())
                 kind = .http
             case .sse(let url, let headers):
-                transport = try await LegacySSETransport.connect(url: url, headers: headers, session: MCPSession.urlSession())
+                transport = try await LegacySSETransport.connect(
+                    url: url, headers: headers, session: MCPSession.urlSession())
                 kind = .sse
             }
-            let outcome = try await MCPHandshake(clientName: "native", clientTitle: "Native", clientVersion: clientVersion)
-                .run(on: transport)
+            let outcome = try await MCPHandshake(
+                clientName: "native", clientTitle: "Native", clientVersion: clientVersion
+            )
+            .run(on: transport)
             let tools = outcome.tools.map { info in
                 let definition = outcome.definitions[info.name]
-                return Tool(info: info, inputSchema: definition?["inputSchema"], outputSchema: definition?["outputSchema"])
+                return Tool(
+                    info: info, inputSchema: definition?["inputSchema"], outputSchema: definition?["outputSchema"])
             }
             return MCPSession(server: outcome.server, tools: tools, transportKind: kind, transport: transport)
         } catch {
@@ -58,7 +62,9 @@ public final class MCPSession: Sendable {
         }
     }
 
-    private init(server: MCPServerInfo, tools: [Tool], transportKind: MCPTransport.Kind, transport: any MCPClientTransport) {
+    private init(
+        server: MCPServerInfo, tools: [Tool], transportKind: MCPTransport.Kind, transport: any MCPClientTransport
+    ) {
         self.server = server
         self.tools = tools
         self.transportKind = transportKind
@@ -69,7 +75,8 @@ public final class MCPSession: Sendable {
     /// `structuredContent`, `isError`) as it sent it.
     public func call(_ tool: String, arguments: JSON) async throws(MCPSessionError) -> JSON {
         do throws(ProbeError) {
-            return try await transport.request("tools/call", params: ["name": .string(tool), "arguments": arguments], id: ids.next())
+            return try await transport.request(
+                "tools/call", params: ["name": .string(tool), "arguments": arguments], id: ids.next())
         } catch {
             throw MCPSessionError(error)
         }

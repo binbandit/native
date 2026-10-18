@@ -42,10 +42,12 @@ struct WorkflowsPage<Transcript: View>: View {
                 Text("Workflows")
                     .font(.dsTitle2)
                     .foregroundStyle(.dsTextPrimary)
-                Text("Sequences of agent tasks across providers, such as plan with one agent, implement with another and review with the first. Each step runs as its own task.")
-                    .font(.dsBody)
-                    .foregroundStyle(.dsTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                Text(
+                    "Sequences of agent tasks across providers, such as plan with one agent, implement with another and review with the first. Each step runs as its own task."
+                )
+                .font(.dsBody)
+                .foregroundStyle(.dsTextSecondary)
+                .fixedSize(horizontal: false, vertical: true)
             }
             .tracking(DS.Tracking.tight)
             Spacer(minLength: DS.Space.lg)
@@ -73,7 +75,11 @@ struct WorkflowsPage<Transcript: View>: View {
     private var library: some View {
         VStack(alignment: .leading, spacing: DS.Space.md) {
             SectionHeader("Library")
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: AutomationMetrics.cardMinWidth), spacing: DS.Space.md, alignment: .top)], spacing: DS.Space.md) {
+            LazyVGrid(
+                columns: [
+                    GridItem(.adaptive(minimum: AutomationMetrics.cardMinWidth), spacing: DS.Space.md, alignment: .top)
+                ], spacing: DS.Space.md
+            ) {
                 ForEach(center.library.entries) { entry in
                     WorkflowCard(entry: entry, isSelected: false) { center.requestPicker(selecting: entry.id) }
                 }
@@ -90,9 +96,11 @@ struct WorkflowsPage<Transcript: View>: View {
                 Text("Run workflows on their own")
                     .font(.dsBodyMedium)
                     .foregroundStyle(.dsTextPrimary)
-                Text("Automations start a prompt, goal or workflow on a schedule, or when a pull request changes or CI fails.")
-                    .font(.dsCaption)
-                    .foregroundStyle(.dsTextSecondary)
+                Text(
+                    "Automations start a prompt, goal or workflow on a schedule, or when a pull request changes or CI fails."
+                )
+                .font(.dsCaption)
+                .foregroundStyle(.dsTextSecondary)
             }
             Spacer(minLength: DS.Space.lg)
             Button("Set Up Automations", action: setUp)

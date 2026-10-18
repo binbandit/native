@@ -8,7 +8,8 @@ struct AutomationsPlugin: NativePlugin {
     let manifest = PluginManifest(
         id: "automations",
         name: "Automations",
-        description: "Starts tasks on their own: on a schedule, when a pull request changes or CI fails, or when a task finishes."
+        description:
+            "Starts tasks on their own: on a schedule, when a pull request changes or CI fails, or when a task finishes."
     )
 
     let center: AutomationCenter

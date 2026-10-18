@@ -13,7 +13,10 @@ public nonisolated struct WorkflowDefinition: Hashable, Sendable, Identifiable {
     public var input: WorkflowInput
     public var steps: [WorkflowStep]
 
-    public init(id: String, name: String, summary: String, symbol: String = "point.3.connected.trianglepath.dotted", input: WorkflowInput = WorkflowInput(), steps: [WorkflowStep]) {
+    public init(
+        id: String, name: String, summary: String, symbol: String = "point.3.connected.trianglepath.dotted",
+        input: WorkflowInput = WorkflowInput(), steps: [WorkflowStep]
+    ) {
         self.id = id
         self.name = name
         self.summary = summary

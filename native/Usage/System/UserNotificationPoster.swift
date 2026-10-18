@@ -55,7 +55,8 @@ final class UserNotificationPoster: NSObject, NativeNotificationPosting {
             UNNotificationAction(identifier: action.rawValue, title: "Reject", options: .destructive)
         case .reply:
             UNTextInputNotificationAction(
-                identifier: action.rawValue, title: "Reply", textInputButtonTitle: "Send", textInputPlaceholder: "Your answer")
+                identifier: action.rawValue, title: "Reply", textInputButtonTitle: "Send",
+                textInputPlaceholder: "Your answer")
         case .resumeAtReset:
             UNNotificationAction(identifier: action.rawValue, title: "Resume at Reset")
         case .snoozeUntilReset:
@@ -72,7 +73,9 @@ extension UserNotificationPoster: UNUserNotificationCenterDelegate {
         [.banner, .list]
     }
 
-    nonisolated func userNotificationCenter(_ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse) async {
+    nonisolated func userNotificationCenter(
+        _ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse
+    ) async {
         guard let text = response.notification.request.content.userInfo[Self.payloadKey] as? String,
             let notification = try? JSONDecoder().decode(NativeNotification.self, from: Data(text.utf8))
         else { return }

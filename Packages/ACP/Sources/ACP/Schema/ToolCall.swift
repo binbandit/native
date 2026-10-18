@@ -19,12 +19,13 @@ public enum ToolCallStatus: Hashable, Sendable, Decodable {
     case cancelled
 
     public init(from decoder: any Decoder) throws {
-        self = switch try decoder.singleValueContainer().decode(String.self) {
-        case "in_progress": .inProgress
-        case "completed": .completed
-        case "failed": .failed
-        default: .pending
-        }
+        self =
+            switch try decoder.singleValueContainer().decode(String.self) {
+            case "in_progress": .inProgress
+            case "completed": .completed
+            case "failed": .failed
+            default: .pending
+            }
     }
 
     public var isFinished: Bool {
@@ -71,11 +72,12 @@ public enum ToolCallContent: Hashable, Sendable, Decodable {
         case "content":
             self = .content(try container.decode(ContentBlock.self, forKey: .content))
         case "diff":
-            self = .diff(FileDiff(
-                path: try container.decode(String.self, forKey: .path),
-                oldText: try container.decodeIfPresent(String.self, forKey: .oldText),
-                newText: try container.decode(String.self, forKey: .newText)
-            ))
+            self = .diff(
+                FileDiff(
+                    path: try container.decode(String.self, forKey: .path),
+                    oldText: try container.decodeIfPresent(String.self, forKey: .oldText),
+                    newText: try container.decode(String.self, forKey: .newText)
+                ))
         case "terminal":
             self = .terminal(id: try container.decode(String.self, forKey: .terminalId))
         default:

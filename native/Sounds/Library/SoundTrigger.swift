@@ -28,7 +28,8 @@ nonisolated enum SoundTrigger: String, CaseIterable, Identifiable, Sendable {
     var detail: String {
         switch self {
         case .taskFinished: "An agent finished its turn."
-        case .needsYou: "An agent asks permission or a question, a plan or workflow step waits for approval, or a goal is blocked."
+        case .needsYou:
+            "An agent asks permission or a question, a plan or workflow step waits for approval, or a goal is blocked."
         case .wentWrong: "A turn failed or hit a limit, an agent stopped or couldn't start, or a workflow step failed."
         }
     }

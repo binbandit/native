@@ -29,7 +29,9 @@ struct AutomationsPage: View {
                 VStack(alignment: .leading, spacing: DS.Space.xxl) {
                     header
                     if engine.needsPolling, let problem = engine.eventSourceProblem {
-                        NoticeBanner(tone: .warning, systemImage: "exclamationmark.triangle", title: "Pull request events can't fire", detail: problem)
+                        NoticeBanner(
+                            tone: .warning, systemImage: "exclamationmark.triangle",
+                            title: "Pull request events can't fire", detail: problem)
                     }
                     if !engine.automations.isEmpty {
                         list
@@ -62,10 +64,12 @@ struct AutomationsPage: View {
                 Text("Automations")
                     .font(.dsTitle2)
                     .foregroundStyle(.dsTextPrimary)
-                Text("Tasks that start themselves: a prompt, a goal or a workflow, on a schedule or when something happens.")
-                    .font(.dsBody)
-                    .foregroundStyle(.dsTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                Text(
+                    "Tasks that start themselves: a prompt, a goal or a workflow, on a schedule or when something happens."
+                )
+                .font(.dsBody)
+                .foregroundStyle(.dsTextSecondary)
+                .fixedSize(horizontal: false, vertical: true)
             }
             .tracking(DS.Tracking.tight)
             Spacer(minLength: DS.Space.lg)
@@ -87,7 +91,8 @@ struct AutomationsPage: View {
         VStack(alignment: .leading, spacing: 0) {
             ForEach(engine.automations) { automation in
                 AutomationRow(
-                    automation: automation, latest: engine.runs(of: automation.id).first, nextRun: engine.nextFire(of: automation),
+                    automation: automation, latest: engine.runs(of: automation.id).first,
+                    nextRun: engine.nextFire(of: automation),
                     onOpen: { path = [automation.id] }, onRunNow: { engine.runNow(automation.id) },
                     onTogglePause: { engine.setPaused(!automation.isPaused, for: automation.id) },
                     onEdit: { editing = Edit(automation: automation, isNew: false) },
@@ -105,7 +110,11 @@ struct AutomationsPage: View {
     private var templates: some View {
         VStack(alignment: .leading, spacing: DS.Space.md) {
             SectionHeader(engine.automations.isEmpty ? "Start from a template" : "Templates")
-            LazyVGrid(columns: [GridItem(.adaptive(minimum: AutomationMetrics.cardMinWidth), spacing: DS.Space.md, alignment: .top)], spacing: DS.Space.md) {
+            LazyVGrid(
+                columns: [
+                    GridItem(.adaptive(minimum: AutomationMetrics.cardMinWidth), spacing: DS.Space.md, alignment: .top)
+                ], spacing: DS.Space.md
+            ) {
                 ForEach(AutomationTemplate.all) { template in
                     AutomationTemplateCard(template: template) { startNew(from: template) }
                 }
@@ -122,7 +131,9 @@ struct AutomationsPage: View {
         if let automation = engine.automations.first(where: { $0.id == id }) {
             AutomationDetailView(
                 automation: automation, runs: engine.runs(of: id), nextRun: engine.nextFire(of: automation),
-                agentName: automation.agent.flatMap { agent in center.host?.workflowAgents.first { $0.id == agent }?.name },
+                agentName: automation.agent.flatMap { agent in
+                    center.host?.workflowAgents.first { $0.id == agent }?.name
+                },
                 onRunNow: { engine.runNow(id) }, onTogglePause: { engine.setPaused(!automation.isPaused, for: id) },
                 onEdit: { editing = Edit(automation: automation, isNew: false) },
                 onDelete: {
@@ -139,8 +150,11 @@ struct AutomationsPage: View {
 
     private func startNew(from template: AutomationTemplate?) {
         guard let project = model.currentProject?.url ?? model.projects.all.first?.url else { return }
-        let automation = template?.automation(in: project, at: .now)
-            ?? Automation(name: "", triggers: [.schedule(.daily(hour: 9, minute: 0))], action: .prompt(""), project: project, createdAt: .now)
+        let automation =
+            template?.automation(in: project, at: .now)
+            ?? Automation(
+                name: "", triggers: [.schedule(.daily(hour: 9, minute: 0))], action: .prompt(""), project: project,
+                createdAt: .now)
         editing = Edit(automation: automation, isNew: true)
     }
 

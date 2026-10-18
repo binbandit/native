@@ -23,14 +23,18 @@ final class Projects {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        if let data = defaults.data(forKey: Self.key), let projects = try? JSONDecoder().decode([Project].self, from: data) {
+        if let data = defaults.data(forKey: Self.key),
+            let projects = try? JSONDecoder().decode([Project].self, from: data)
+        {
             all = projects
         } else if let path = defaults.string(forKey: Self.legacyWorkspaceKey) {
             all = [Project(id: UUID(), url: URL(filePath: path, directoryHint: .isDirectory))]
             // Assigning in init doesn't run `didSet`, and the project's id has to stick.
             save()
         }
-        if let data = defaults.data(forKey: Self.archivedKey), let projects = try? JSONDecoder().decode([Project].self, from: data) {
+        if let data = defaults.data(forKey: Self.archivedKey),
+            let projects = try? JSONDecoder().decode([Project].self, from: data)
+        {
             archived = projects
         }
     }

@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import ACP
 
 /// Claude Code's AskUserQuestion as claude-agent-acp 0.93 sends it to a client that advertises form
@@ -28,14 +29,17 @@ struct ElicitationTests {
     }
 
     @Test func unknownModesDecodeAsUnsupported() throws {
-        let request = try Wire.decode(CreateElicitationRequest.self, from: #"{"sessionId": "s", "mode": "openai/form", "message": "?"}"#)
+        let request = try Wire.decode(
+            CreateElicitationRequest.self, from: #"{"sessionId": "s", "mode": "openai/form", "message": "?"}"#)
         #expect(request.mode == .unsupported("openai/form"))
         #expect(request.requestedSchema == nil)
     }
 
     @Test func responsesEncodeTheirAction() throws {
         // The answer Claude Code folds back into the tool's input as {"Which color do you prefer?": "Red"}.
-        #expect(try encoded(.accept(content: ["question_0": .string("Red")])) == #"{"action":"accept","content":{"question_0":"Red"}}"#)
+        #expect(
+            try encoded(.accept(content: ["question_0": .string("Red")]))
+                == #"{"action":"accept","content":{"question_0":"Red"}}"#)
         #expect(try encoded(.decline) == #"{"action":"decline"}"#)
         #expect(try encoded(.cancel) == #"{"action":"cancel"}"#)
     }

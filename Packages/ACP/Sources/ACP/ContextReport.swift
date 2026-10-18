@@ -275,7 +275,8 @@ extension ContextReport {
         if multiplier != 1 {
             rest = rest.dropLast()
         }
-        guard !rest.isEmpty, rest.allSatisfy({ $0.isASCII && ($0.isNumber || $0 == ".") }), let number = Double(rest) else { return nil }
+        guard !rest.isEmpty, rest.allSatisfy({ $0.isASCII && ($0.isNumber || $0 == ".") }), let number = Double(rest)
+        else { return nil }
         return TokenCount(Int((number * multiplier).rounded()), bound: bound)
     }
 
@@ -306,7 +307,7 @@ extension ContextReport {
         guard parts.count == 2 else { return nil }
         let windowAndPercent = parts[1].split(separator: "(", maxSplits: 1)
         guard let used = tokenCount(String(parts[0]))?.value,
-              let window = tokenCount(String(windowAndPercent[0]))?.value
+            let window = tokenCount(String(windowAndPercent[0]))?.value
         else { return nil }
         let percentText = windowAndPercent.count > 1 ? windowAndPercent[1].prefix { $0.isNumber || $0 == "." } : ""
         let percentage = Double(percentText) ?? (window > 0 ? (Double(used) / Double(window) * 100).rounded() : 0)
@@ -318,7 +319,10 @@ extension ContextReport {
         guard cells.count >= 3 else { return nil }
         let name = cells[..<(cells.count - 2)].joined(separator: "|")
         let percent = Double(cells[cells.count - 1].filter { $0.isNumber || $0 == "." })
-        guard let tokens = tokenCount(cells[cells.count - 2])?.value ?? percent.map({ Int(($0 / 100 * Double(window)).rounded()) }) else { return nil }
+        guard
+            let tokens = tokenCount(cells[cells.count - 2])?.value
+                ?? percent.map({ Int(($0 / 100 * Double(window)).rounded()) })
+        else { return nil }
         return Category(name: name, tokens: tokens, kind: kind(ofCategory: name))
     }
 
@@ -341,7 +345,9 @@ private extension String {
 
     /// The cells of a markdown table row, trimmed.
     var tableCells: [String] {
-        var cells = split(separator: "|", omittingEmptySubsequences: false).map { $0.trimmingCharacters(in: .whitespaces) }
+        var cells = split(separator: "|", omittingEmptySubsequences: false).map {
+            $0.trimmingCharacters(in: .whitespaces)
+        }
         if cells.first?.isEmpty == true { cells.removeFirst() }
         if cells.last?.isEmpty == true { cells.removeLast() }
         return cells

@@ -12,7 +12,8 @@ struct WorkflowRunList: View {
             EmptyStateView(
                 "No Workflows Running",
                 systemImage: "point.3.connected.trianglepath.dotted",
-                message: "A workflow runs a sequence of agent tasks, such as plan with one agent, implement with another and review with the first."
+                message:
+                    "A workflow runs a sequence of agent tasks, such as plan with one agent, implement with another and review with the first."
             ) {
                 Button("Run Workflow…", action: onNewRun)
                     .buttonStyle(.ds(.primary, size: .medium))

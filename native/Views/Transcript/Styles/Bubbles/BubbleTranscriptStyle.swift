@@ -118,7 +118,8 @@ private struct BubbleRowView: View {
     @ViewBuilder private func limitCard(for itemID: String) -> some View {
         if let entry = limitStops[itemID] {
             agentSide {
-                UsageLimitTranscriptCard(session: transcript.session, stop: entry.stop, isLatestTurn: entry.isLatestTurn)
+                UsageLimitTranscriptCard(
+                    session: transcript.session, stop: entry.stop, isLatestTurn: entry.isLatestTurn)
             }
         }
     }

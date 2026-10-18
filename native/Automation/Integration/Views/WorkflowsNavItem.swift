@@ -11,7 +11,9 @@ struct WorkflowsNavItem: View {
 
     var body: some View {
         let waiting = center.workflows.runs.count { $0.phase.needsUser }
-        SidebarNavItem("Workflows", systemImage: "point.3.connected.trianglepath.dotted", isSelected: isSelected, action: action) {
+        SidebarNavItem(
+            "Workflows", systemImage: "point.3.connected.trianglepath.dotted", isSelected: isSelected, action: action
+        ) {
             if waiting > 0 {
                 Text("\(waiting)")
                     .font(.dsMonoMicro)

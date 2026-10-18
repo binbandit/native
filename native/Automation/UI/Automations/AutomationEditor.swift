@@ -38,7 +38,8 @@ struct AutomationEditor: View {
 
     /// `automation` is the one being edited, or a template's prototype for a new one.
     init(
-        automation: Automation, isNew: Bool, projects: [Project], agents: [WorkflowAgent], workflows: [WorkflowDefinition],
+        automation: Automation, isNew: Bool, projects: [Project], agents: [WorkflowAgent],
+        workflows: [WorkflowDefinition],
         onSave: @escaping (Automation) -> Void, onCancel: @escaping () -> Void
     ) {
         original = automation
@@ -51,7 +52,8 @@ struct AutomationEditor: View {
         _name = State(initialValue: automation.name)
         _triggers = State(initialValue: automation.triggers)
         _agent = State(initialValue: automation.agent)
-        _project = State(initialValue: projects.contains { $0.url == automation.project } ? automation.project : projects.first?.url)
+        _project = State(
+            initialValue: projects.contains { $0.url == automation.project } ? automation.project : projects.first?.url)
         _placement = State(initialValue: automation.placement)
         switch automation.action {
         case .prompt(let prompt):
@@ -149,7 +151,8 @@ struct AutomationEditor: View {
                 .labelsHidden()
                 .fixedSize()
             }
-            AutomationTextField(label: kind.rawValue, text: $text, placeholder: placeholder, axis: .vertical, lines: 3...8)
+            AutomationTextField(
+                label: kind.rawValue, text: $text, placeholder: placeholder, axis: .vertical, lines: 3...8)
             if kind == .goal {
                 GoalBudgetFields(budget: $budget)
             }
@@ -188,9 +191,13 @@ struct AutomationEditor: View {
                 .fixedSize()
             }
             .font(.dsBody)
-            Text(placement == .worktree ? "Each run gets a fresh worktree on its own branch, so it never touches your checkout." : "Runs work in the project folder as it is, alongside you.")
-                .font(.dsCaption)
-                .foregroundStyle(.dsTextTertiary)
+            Text(
+                placement == .worktree
+                    ? "Each run gets a fresh worktree on its own branch, so it never touches your checkout."
+                    : "Runs work in the project folder as it is, alongside you."
+            )
+            .font(.dsCaption)
+            .foregroundStyle(.dsTextTertiary)
         }
     }
 

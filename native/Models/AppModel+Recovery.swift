@@ -6,7 +6,8 @@ import Foundation
 // apart so the durable host can take it over.
 extension AppModel {
     /// Sent (not shown) to a session whose turn a crash cut off, so the agent knows to continue.
-    static let interruptedTurnPrompt = "Your previous turn was interrupted because your process stopped unexpectedly. Continue where you left off."
+    static let interruptedTurnPrompt =
+        "Your previous turn was interrupted because your process stopped unexpectedly. Continue where you left off."
 
     func handleCrash(of agent: AgentDefinition.ID) {
         let isRestarting = restartPolicies[agent, default: AgentRestartPolicy()].allowsRestart()
@@ -49,12 +50,17 @@ extension AppModel {
             if interrupted.contains(key) {
                 do {
                     try await session.submit(Self.interruptedTurnPrompt, .queue, echo: false)
-                    session.addNotice("Native restarted \(runtime.agent.displayName) and asked it to continue where it left off. Use Stop if you'd rather it didn't.", isError: false)
+                    session.addNotice(
+                        "Native restarted \(runtime.agent.displayName) and asked it to continue where it left off. Use Stop if you'd rather it didn't.",
+                        isError: false)
                 } catch {
-                    session.addNotice("Native restarted \(runtime.agent.displayName), but couldn't ask it to continue: \(error.localizedDescription) Send a message to carry on.", isError: true)
+                    session.addNotice(
+                        "Native restarted \(runtime.agent.displayName), but couldn't ask it to continue: \(error.localizedDescription) Send a message to carry on.",
+                        isError: true)
                 }
             } else {
-                session.addNotice("Native restarted \(runtime.agent.displayName) after it stopped unexpectedly.", isError: false)
+                session.addNotice(
+                    "Native restarted \(runtime.agent.displayName) after it stopped unexpectedly.", isError: false)
             }
         }
     }

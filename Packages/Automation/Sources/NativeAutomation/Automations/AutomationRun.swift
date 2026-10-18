@@ -15,7 +15,10 @@ public nonisolated struct AutomationRun: Codable, Hashable, Sendable, Identifiab
     /// A line about how it went: its result, or what went wrong.
     public var summary: String?
 
-    public init(id: UUID = UUID(), automation: Automation.ID, reason: AutomationRunReason, startedAt: Date, status: AutomationRunStatus = .preparing) {
+    public init(
+        id: UUID = UUID(), automation: Automation.ID, reason: AutomationRunReason, startedAt: Date,
+        status: AutomationRunStatus = .preparing
+    ) {
         self.id = id
         self.automation = automation
         self.reason = reason

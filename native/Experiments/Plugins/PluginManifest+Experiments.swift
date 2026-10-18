@@ -12,8 +12,12 @@ extension PluginManifest {
     /// Everything experiments change: the contributions gates switch, and the settings with
     /// `${experiment:<id>}` placeholders.
     var experimentUses: [PluginExperiments.Use] {
-        let switches = experiments.marks.map { PluginExperiments.Use(experiment: $0.gate, role: .switches, place: $0.place) }
-        let agentSettings = agents.map { agent in (place: "the agent “\(agent.name)”", texts: agent.args + agent.env.values) }
+        let switches = experiments.marks.map {
+            PluginExperiments.Use(experiment: $0.gate, role: .switches, place: $0.place)
+        }
+        let agentSettings = agents.map { agent in
+            (place: "the agent “\(agent.name)”", texts: agent.args + agent.env.values)
+        }
         let serverSettings = mcpServers.map { server in
             (
                 place: "the MCP server “\(server.name)”",

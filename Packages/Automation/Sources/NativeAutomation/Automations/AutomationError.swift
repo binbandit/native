@@ -7,7 +7,8 @@ public nonisolated enum AutomationError: LocalizedError {
 
     public var errorDescription: String? {
         switch self {
-        case .workflowMissing: "The workflow this automation runs isn't in the library anymore; the plugin that offered it may be off."
+        case .workflowMissing:
+            "The workflow this automation runs isn't in the library anymore; the plugin that offered it may be off."
         case .interruptedWhileStarting: "Native quit before this run started."
         }
     }

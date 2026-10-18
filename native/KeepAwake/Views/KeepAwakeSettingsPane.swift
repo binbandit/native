@@ -22,9 +22,13 @@ extension SettingsPane {
                         description: "Prevents idle sleep while agents work, or always.",
                         keywords: ["caffeinate", "sleep", "agents"]
                     ),
-                    SettingsSearchEntry(id: KeepAwakeSettingsPage.timerRow, title: "Stay awake for a while", keywords: ["timer", "hours"]),
-                    SettingsSearchEntry(id: KeepAwakeSettingsPage.displayRow, title: "Keep display on", keywords: ["screen", "dim"]),
-                    SettingsSearchEntry(id: KeepAwakeSettingsPage.batteryRow, title: "On battery", keywords: ["power", "plugged in"]),
+                    SettingsSearchEntry(
+                        id: KeepAwakeSettingsPage.timerRow, title: "Stay awake for a while",
+                        keywords: ["timer", "hours"]),
+                    SettingsSearchEntry(
+                        id: KeepAwakeSettingsPage.displayRow, title: "Keep display on", keywords: ["screen", "dim"]),
+                    SettingsSearchEntry(
+                        id: KeepAwakeSettingsPage.batteryRow, title: "On battery", keywords: ["power", "plugged in"]),
                 ]
             },
             content: { KeepAwakeSettingsPage(controller: controller) }

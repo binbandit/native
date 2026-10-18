@@ -6,7 +6,7 @@ let package = Package(
     // iOS too, for the companion app: everything but launching agent processes is shared.
     platforms: [.macOS(.v15), .iOS(.v18)],
     products: [
-        .library(name: "ACP", targets: ["ACP"]),
+        .library(name: "ACP", targets: ["ACP"])
     ],
     targets: [
         .target(name: "ACP"),

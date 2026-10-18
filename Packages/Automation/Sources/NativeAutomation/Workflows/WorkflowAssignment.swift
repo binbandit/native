@@ -50,15 +50,21 @@ public nonisolated struct WorkflowAssignment: Codable, Hashable, Sendable {
             if let agent = agents.first(where: { $0.id == id }) {
                 return WorkflowAssignment(agent: agent)
             }
-            return WorkflowAssignment(agent: fallback, note: "\(id) isn't available, so this runs on \(fallback?.name ?? "the default agent").")
+            return WorkflowAssignment(
+                agent: fallback,
+                note: "\(id) isn't available, so this runs on \(fallback?.name ?? "the default agent").")
         case .sameAs(let step):
             return WorkflowAssignment(agent: assigned[step]?.agent ?? fallback)
         case .differentFrom(let step):
             let avoided = assigned[step]?.agent
-            if let other = agents.first(where: { $0.id != avoided?.id && $0.id == fallback?.id }) ?? agents.first(where: { $0.id != avoided?.id }) {
+            if let other = agents.first(where: { $0.id != avoided?.id && $0.id == fallback?.id })
+                ?? agents.first(where: { $0.id != avoided?.id })
+            {
                 return WorkflowAssignment(agent: other)
             }
-            return WorkflowAssignment(agent: avoided ?? fallback, note: "Only one agent is available, so this runs on the same agent as \"\(step)\".")
+            return WorkflowAssignment(
+                agent: avoided ?? fallback,
+                note: "Only one agent is available, so this runs on the same agent as \"\(step)\".")
         }
     }
 }

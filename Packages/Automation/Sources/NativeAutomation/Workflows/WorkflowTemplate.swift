@@ -50,7 +50,8 @@ public nonisolated enum WorkflowTemplate {
             case .cwd: cwd.path(percentEncoded: false)
             case .project: cwd.lastPathComponent
             // Say so rather than leave a hole, so the agent isn't left guessing at an empty section.
-            case .stepOutput(let step): outputs[step].flatMap { $0.isEmpty ? nil : $0 } ?? "(No output: that step was skipped or didn't reply.)"
+            case .stepOutput(let step):
+                outputs[step].flatMap { $0.isEmpty ? nil : $0 } ?? "(No output: that step was skipped or didn't reply.)"
             case .stepAgent(let step): agents[step] ?? "another agent"
             case .unknown(let name): "{{\(name)}}"
             }

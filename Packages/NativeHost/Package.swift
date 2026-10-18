@@ -31,13 +31,18 @@ let package = Package(
                 "NativeHost", "NativeHostProtocol", "UserShell", .product(name: "Exec", package: "Exec"),
                 .product(name: "HostUpdater", package: "HostUpdater"),
             ]),
-        .target(name: "NativeHostClient", dependencies: ["NativeHostProtocol", "ACP", .product(name: "Exec", package: "Exec")]),
+        .target(
+            name: "NativeHostClient",
+            dependencies: ["NativeHostProtocol", "ACP", .product(name: "Exec", package: "Exec")]),
         .executableTarget(name: "native-host", dependencies: ["NativeHost", "NativeHostMac", "NativeHostProtocol"]),
         /// A scriptable ACP agent for the crash-recovery tests.
         .executableTarget(name: "FakeACPAgent", dependencies: ["NativeHostProtocol", "ACP"]),
         .testTarget(
             name: "NativeHostTests",
-            dependencies: ["NativeHost", "NativeHostMac", "NativeHostClient", "NativeHostProtocol", "ACP", .product(name: "Exec", package: "Exec"), "native-host", "FakeACPAgent"]
+            dependencies: [
+                "NativeHost", "NativeHostMac", "NativeHostClient", "NativeHostProtocol", "ACP",
+                .product(name: "Exec", package: "Exec"), "native-host", "FakeACPAgent",
+            ]
         ),
     ]
 )

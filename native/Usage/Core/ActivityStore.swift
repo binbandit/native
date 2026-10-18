@@ -11,7 +11,8 @@ protocol ActivityStore {
 struct ActivityFileStore: ActivityStore {
     let url: URL
 
-    init(url: URL = UsageLimitsFileStore.defaultURL.deletingLastPathComponent().appending(path: "usage-activity.json")) {
+    init(url: URL = UsageLimitsFileStore.defaultURL.deletingLastPathComponent().appending(path: "usage-activity.json"))
+    {
         self.url = url
     }
 
@@ -22,7 +23,8 @@ struct ActivityFileStore: ActivityStore {
 
     func save(_ days: [ActivityDay]) {
         do {
-            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(
+                at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
             try JSONEncoder().encode(days).write(to: url, options: .atomic)
         } catch {
             Logger(subsystem: "Native", category: "Usage").error("Couldn't save activity: \(error)")

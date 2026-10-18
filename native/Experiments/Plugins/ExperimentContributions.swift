@@ -31,7 +31,9 @@ struct ExperimentContributions: Hashable, Sendable {
         marks = lists.flatMap { kind, entries in
             entries.compactMap { entry in
                 // MCP servers are known by name; everything else by id.
-                guard let gate = entry.experiment, let id = kind == .mcpServer ? entry.name : entry.id else { return nil }
+                guard let gate = entry.experiment, let id = kind == .mcpServer ? entry.name : entry.id else {
+                    return nil
+                }
                 return ContributionMark(kind: kind, id: id, name: entry.name ?? id, gate: gate)
             }
         }

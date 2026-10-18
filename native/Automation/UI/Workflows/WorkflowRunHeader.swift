@@ -28,9 +28,14 @@ struct WorkflowRunHeader: View {
                         .font(.dsTitle3)
                         .foregroundStyle(.dsTextPrimary)
                         .lineLimit(2)
-                    Text([run.definition.name, run.cwd.lastPathComponent, run.startedText(now: now), run.cost.map { DSFormat.cost($0) }].compactMap(\.self).joined(separator: " · "))
-                        .monospacedDigit()
-                        .font(.dsCaption)
+                    Text(
+                        [
+                            run.definition.name, run.cwd.lastPathComponent, run.startedText(now: now),
+                            run.cost.map { DSFormat.cost($0) },
+                        ].compactMap(\.self).joined(separator: " · ")
+                    )
+                    .monospacedDigit()
+                    .font(.dsCaption)
                     .foregroundStyle(.dsTextTertiary)
                 }
                 .tracking(DS.Tracking.tight)
@@ -81,7 +86,9 @@ struct WorkflowRunHeader: View {
         switch run.phase {
         case .paused:
             let finishing = run.steps.count(where: \.status.isActive)
-            return finishing > 0 ? "Paused. \(finishing == 1 ? "One step is" : "\(finishing) steps are") finishing the current turn; nothing new starts until you resume." : "Paused. Nothing new starts until you resume."
+            return finishing > 0
+                ? "Paused. \(finishing == 1 ? "One step is" : "\(finishing) steps are") finishing the current turn; nothing new starts until you resume."
+                : "Paused. Nothing new starts until you resume."
         case .halted:
             return "Nothing is running: a step stopped short. Retry, resume or skip it to go on."
         case .cancelled:

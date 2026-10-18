@@ -38,7 +38,8 @@ import ScriptRuntime
     func begin(_ tool: MCPToolInfo, of server: MCPScriptedServer, input: ScriptJSON, site: ScriptCallSite?) -> String {
         let id = "native-script-call-" + UUID().uuidString
         guard let link else { return id }
-        var call = ToolCallUpdate(toolCallId: id, title: "\(server.name) · \(tool.name)", kind: .other, status: .pending)
+        var call = ToolCallUpdate(
+            toolCallId: id, title: "\(server.name) · \(tool.name)", kind: .other, status: .pending)
         // Named the way agents name MCP tools, so the transcript shows it like the agent's own MCP calls.
         call.name = "mcp__\(server.name)__\(tool.name)"
         call.rawInput = try? JSONValue(convertingFrom: input)

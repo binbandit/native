@@ -73,7 +73,8 @@ extension ParameterDomain where Value == Int {
 extension ParameterDomain where Value == Double {
     /// Numbers from `range`'s lower bound, `step` apart.
     public static func range(_ range: ClosedRange<Double>, step: Double, title: (Double) -> String) -> Self {
-        let values = step > 0 ? Array(stride(from: range.lowerBound, through: range.upperBound, by: step)) : [range.lowerBound]
+        let values =
+            step > 0 ? Array(stride(from: range.lowerBound, through: range.upperBound, by: step)) : [range.lowerBound]
         return .options(values.map { ($0, title($0)) })
     }
 }

@@ -71,7 +71,8 @@ struct HomeLandingEdition: Equatable {
             icons[variant(channel)].map { pair in
                 .artwork(
                     NativeEditionArtwork(
-                        id: "\(pair)", light: PlatformAppIcon.preview(pair.light), dark: PlatformAppIcon.preview(pair.dark)))
+                        id: "\(pair)", light: PlatformAppIcon.preview(pair.light),
+                        dark: PlatformAppIcon.preview(pair.dark)))
             } ?? (channel == .beta ? .beta : .standard)
         case .palette(let palette):
             twoTone(palette).map(NativeMarkStyle.twoTone) ?? (channel == .beta ? .beta : .standard)

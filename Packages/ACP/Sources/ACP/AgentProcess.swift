@@ -11,7 +11,9 @@ public struct AgentCommand: Hashable, Sendable {
     public var environment: [String: String]
     public var workingDirectory: URL?
 
-    public init(executable: String, arguments: [String] = [], environment: [String: String], workingDirectory: URL? = nil) {
+    public init(
+        executable: String, arguments: [String] = [], environment: [String: String], workingDirectory: URL? = nil
+    ) {
         self.executable = executable
         self.arguments = arguments
         self.environment = environment

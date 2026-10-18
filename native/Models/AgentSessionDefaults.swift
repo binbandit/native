@@ -29,7 +29,9 @@ enum AgentSessionDefaults {
 
     /// The choices the agent offered for `setting` the last time one of its sessions said, so
     /// Settings can list them before any session runs.
-    static func offeredChoices(for agent: AgentDefinition.ID, setting: Setting, defaults: UserDefaults = .standard) -> [ConfigOption.SelectOption] {
+    static func offeredChoices(
+        for agent: AgentDefinition.ID, setting: Setting, defaults: UserDefaults = .standard
+    ) -> [ConfigOption.SelectOption] {
         // Stored with the wire's field names, so ACP's own decoding reads them back.
         defaults.data(forKey: setting.key(for: agent) + ".offered")
             .flatMap { try? JSONDecoder().decode([ConfigOption.SelectOption].self, from: $0) } ?? []
@@ -39,8 +41,8 @@ enum AgentSessionDefaults {
     static func remember(_ options: [ConfigOption], for agent: AgentDefinition.ID, defaults: UserDefaults = .standard) {
         for setting in Setting.allCases {
             guard let option = options.first(where: { $0.category == setting.category }),
-                  case .select(_, let choices) = option.kind,
-                  let data = try? JSONEncoder().encode(choices.map(OfferedChoice.init))
+                case .select(_, let choices) = option.kind,
+                let data = try? JSONEncoder().encode(choices.map(OfferedChoice.init))
             else { continue }
             defaults.set(data, forKey: setting.key(for: agent) + ".offered")
         }
@@ -51,13 +53,17 @@ enum AgentSessionDefaults {
             let category = setting.category
             guard let value = defaults.string(forKey: setting.key(for: session.agent.id)) else { continue }
             guard let option = session.state.configOptions.first(where: { $0.category == category }),
-                  case .select(let current, let choices) = option.kind
+                case .select(let current, let choices) = option.kind
             else {
-                logger.info("\(session.agent.displayName, privacy: .public) has no \(category, privacy: .public) setting for the default \(value, privacy: .public)")
+                logger.info(
+                    "\(session.agent.displayName, privacy: .public) has no \(category, privacy: .public) setting for the default \(value, privacy: .public)"
+                )
                 continue
             }
             guard choices.contains(where: { $0.value == value }) else {
-                logger.info("\(session.agent.displayName, privacy: .public) doesn't offer \(value, privacy: .public) for \(option.name, privacy: .public); keeping \(current, privacy: .public)")
+                logger.info(
+                    "\(session.agent.displayName, privacy: .public) doesn't offer \(value, privacy: .public) for \(option.name, privacy: .public); keeping \(current, privacy: .public)"
+                )
                 continue
             }
             await session.setConfigOption(option, to: value)

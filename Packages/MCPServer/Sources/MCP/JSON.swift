@@ -67,7 +67,8 @@ extension JSON: Codable {
         case .null: try container.encodeNil()
         case .bool(let bool): try container.encode(bool)
         // Whole numbers go out without a fraction, so integer request ids echo back unchanged.
-        case .number(let number) where number.rounded() == number && abs(number) < 1e15: try container.encode(Int64(number))
+        case .number(let number) where number.rounded() == number && abs(number) < 1e15:
+            try container.encode(Int64(number))
         case .number(let number): try container.encode(number)
         case .string(let string): try container.encode(string)
         case .array(let array): try container.encode(array)
@@ -77,8 +78,10 @@ extension JSON: Codable {
 }
 
 // Literals make schemas and results readable where they're written.
-extension JSON: ExpressibleByNilLiteral, ExpressibleByBooleanLiteral, ExpressibleByIntegerLiteral, ExpressibleByFloatLiteral,
-    ExpressibleByStringLiteral, ExpressibleByArrayLiteral, ExpressibleByDictionaryLiteral {
+extension JSON: ExpressibleByNilLiteral, ExpressibleByBooleanLiteral, ExpressibleByIntegerLiteral,
+    ExpressibleByFloatLiteral,
+    ExpressibleByStringLiteral, ExpressibleByArrayLiteral, ExpressibleByDictionaryLiteral
+{
     public init(nilLiteral: ()) { self = .null }
     public init(booleanLiteral value: Bool) { self = .bool(value) }
     public init(integerLiteral value: Int) { self = .number(Double(value)) }

@@ -11,7 +11,8 @@ struct ExpeditionsNavItem: View {
     var body: some View {
         let waiting = center.waitingCount
         SidebarNavItem(
-            "Expeditions", systemImage: ExpeditionsMetrics.symbol, isSelected: isSelected, shortcut: CommandRegistry.shared.shortcut(for: .goExpeditions)?.displayString,
+            "Expeditions", systemImage: ExpeditionsMetrics.symbol, isSelected: isSelected,
+            shortcut: CommandRegistry.shared.shortcut(for: .goExpeditions)?.displayString,
             action: action
         ) {
             if waiting > 0 {
