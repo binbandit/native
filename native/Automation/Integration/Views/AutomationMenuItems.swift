@@ -1,39 +1,55 @@
 import NativeAutomation
-import SwiftUI
+import NativeCommands
 
-/// The Session menu's goal and workflow items, for `NativeApp` to place in its Session menu. Their
-/// keys are in docs/keyboard.md.
-struct AutomationMenuItems: View {
-    let center: AutomationCenter
-    /// The session in the focused window.
-    let session: SessionModel?
+extension CommandID {
+    static let goalEdit: Self = "goal.edit"
+    static let goalPauseOrResume: Self = "goal.pauseOrResume"
+    static let goalClear: Self = "goal.clear"
+    static let workflowRun: Self = "workflow.run"
+}
 
-    var body: some View {
-        let controller = session.flatMap(center.goal(for:))
-        let goal = controller?.goal
-        Button(goal == nil ? "Set Goal…" : "Edit Goal…") {
-            controller?.isEditorRequested = true
+extension NativeCommand {
+    /// The Session menu's goal and workflow commands, for the visible session. Their keys are in
+    /// docs/keyboard.md.
+    static func automation(_ center: AutomationCenter) -> [NativeCommand] {
+        func goal(_ context: CommandContext) -> GoalController? {
+            context.session.flatMap(center.goal(for:))
         }
-        .keyboardShortcut("g", modifiers: [.command, .option])
-        .disabled(controller == nil)
-
-        if goal?.status == .active {
-            Button("Pause Goal") { controller?.pause() }
-        } else {
-            Button("Resume Goal") {
-                Task { await controller?.resume() }
+        return [
+            NativeCommand(.goalEdit, title: "Set or Edit Goal…", category: .composer, systemImage: "target") {
+                goal($0)?.isEditorRequested = true
             }
-            .disabled(goal?.status.isResumable != true)
-        }
+            .menuTitle { goal($0)?.goal == nil ? "Set Goal…" : "Edit Goal…" }
+            .available { goal($0) != nil },
 
-        Button("Clear Goal") {
-            Task { await controller?.clear() }
-        }
-        .disabled(goal == nil)
+            NativeCommand(
+                .goalPauseOrResume, title: "Pause or Resume Goal", category: .composer, systemImage: "pause.circle"
+            ) { context in
+                guard let controller = goal(context) else { return }
+                if controller.goal?.status == .active {
+                    controller.pause()
+                } else {
+                    Task { await controller.resume() }
+                }
+            }
+            .menuTitle { goal($0)?.goal?.status == .active ? "Pause Goal" : "Resume Goal" }
+            .available { context in
+                guard let status = goal(context)?.goal?.status else { return false }
+                return status == .active || status.isResumable
+            },
 
-        Button("Run Workflow…") {
-            center.requestPicker()
-        }
-        .keyboardShortcut("r", modifiers: [.command, .option])
+            NativeCommand(.goalClear, title: "Clear Goal", category: .composer, systemImage: "xmark.circle") { context in
+                guard let controller = goal(context) else { return }
+                Task { await controller.clear() }
+            }
+            .available { goal($0)?.goal != nil },
+
+            NativeCommand(
+                .workflowRun, title: "Run Workflow…", category: .composer, systemImage: "flowchart",
+                keywords: ["automation"]
+            ) { _ in
+                center.requestPicker()
+            },
+        ]
     }
 }

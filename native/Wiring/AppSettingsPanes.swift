@@ -10,7 +10,7 @@ enum AppSettingsPanes {
         [
             .labs, .git, .mcpServers(registry: plugins), .skills(registry: plugins), .terminal(terminals),
             .sounds(), .keepAwake(keepAwake), .updates, .usage(registry: plugins), .notifications, .pairedDevices,
-            .celebrations(registry: plugins),
+            .celebrations(registry: plugins), .search(BuiltInPlugins.search.center),
         ]
         // Labs goes away when the organization turns experiments off.
         .filter { $0.id != .labs || PolicyCenter.shared.policy.labsEnabled }

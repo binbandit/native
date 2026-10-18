@@ -31,14 +31,27 @@ final class ResourceMonitor {
     }
 
     /// Samples until the calling task is cancelled, which happens when the item leaves the screen
-    /// (hidden from the bar, or the bar's window closed).
+    /// (hidden from the bar, or the bar's window closed). While nobody could see the numbers it
+    /// sleeps until that changes, rather than checking every few seconds.
     func run(roots: @escaping @MainActor () -> [ProcessSampler.Root]) async {
         while !Task.isCancelled {
             if isVisible() {
                 await sample(roots: roots())
+                try? await Task.sleep(for: Self.interval, tolerance: .seconds(1))
+            } else {
+                await Self.visibilityChange()
             }
-            try? await Task.sleep(for: Self.interval)
         }
+    }
+
+    /// Returns when the app is shown, hidden, minimized or uncovered, or the calling task is cancelled.
+    private static func visibilityChange() async {
+        #if os(macOS)
+        let changes = NotificationCenter.default.notifications(named: NSApplication.didChangeOcclusionStateNotification)
+        for await _ in changes { return }
+        #else
+        try? await Task.sleep(for: interval)
+        #endif
     }
 
     /// Takes a sample now, such as when the details open.

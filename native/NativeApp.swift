@@ -80,6 +80,7 @@ struct NativeApp: App {
                     OrchestrationPlugin.connect(to: model)
                     MCPServersPlugin.connect(to: model) { BuiltInPlugins.usage.contextReports.reports }
                     SkillsPlugin.connect(to: model)
+                    BuiltInPlugins.search.center.connect(to: model)
                     BuiltInPlugins.usage.connect(to: model)
                     BuiltInPlugins.automation.center.connect(to: model) { [git, gitHub] draft in
                         try await AutomationGitHubWiring.openPullRequest(draft, git: git, gitHub: gitHub)
@@ -277,6 +278,7 @@ private struct GoCommands: Commands {
             Divider()
             PullRequestsMenuItem()
             ExpeditionsMenuItem()
+            TranscriptSearchMenuItem()
         }
     }
 }

@@ -84,18 +84,31 @@ extension AppModel {
         return agents
     }
 
-    /// Stops agents that sit unused for `agentIdleTimeout`, for as long as the model lives. The
-    /// default agent keeps running, so a new session never waits for one to start. Internal only
-    /// for AppModel.swift.
+    /// How long one of the user's sessions sits unused (not shown, not working, no draft) before
+    /// Native closes it, here and in the agent's process. An open session costs its transcript
+    /// here and, in the agent, whatever it holds per session (Codex starts the user's MCP servers
+    /// for each one, often hundreds of megabytes); selecting it again loads it back. The
+    /// `sessionIdleTimeout` default (seconds) shortens it, for trying the behavior out; it's checked
+    /// as often as agents are, so shorten `agentIdleTimeout` with it.
+    static var sessionIdleTimeout: Duration {
+        let seconds = UserDefaults.standard.double(forKey: "sessionIdleTimeout")
+        return seconds > 0 ? .seconds(seconds) : .seconds(10 * 60)
+    }
+
+    /// Stops agents that sit unused for `agentIdleTimeout`, and closes sessions that sit unused for
+    /// `sessionIdleTimeout`, for as long as the model lives. The default agent keeps running, so a
+    /// new session never waits for one to start. Internal only for AppModel.swift.
     func parkAgentsWhenIdle() {
         let timeout = Self.agentIdleTimeout
         let interval = min(.seconds(60), timeout / 5)
         Task { [weak self] in
             var idleSince: [AgentDefinition.ID: ContinuousClock.Instant] = [:]
+            var sessionsIdleSince: [SessionKey: ContinuousClock.Instant] = [:]
             while true {
-                try? await Task.sleep(for: interval)
+                try? await Task.sleep(for: interval, tolerance: interval / 10)
                 guard let self else { return }
                 let now = ContinuousClock.now
+                closeIdleSessions(now: now, idleSince: &sessionsIdleSince)
                 for runtime in agents where runtime.isReady {
                     let agent = runtime.agent.id
                     if agent == defaultAgent?.id || isInUse(agent) {
@@ -111,6 +124,45 @@ extension AppModel {
                 }
             }
         }
+    }
+
+    /// Closes the user's sessions that have been unused since `idleSince` for `sessionIdleTimeout`.
+    /// Only ones the sidebar lists, so selecting one loads it back with `session/load`; task
+    /// sessions belong to the engines that started them.
+    private func closeIdleSessions(now: ContinuousClock.Instant, idleSince: inout [SessionKey: ContinuousClock.Instant])
+    {
+        let timeout = Self.sessionIdleTimeout
+        var open: Set<SessionKey> = []
+        for runtime in agents where runtime.isReady {
+            for session in sessions.open(of: runtime.agent.id)
+            where session.root === session && session.origin == .user && catalog.lookup(session.key) != nil {
+                open.insert(session.key)
+                if isInUse(session) {
+                    idleSince[session.key] = nil
+                } else if let since = idleSince[session.key] {
+                    if now - since >= timeout {
+                        close(session, on: runtime)
+                        idleSince[session.key] = nil
+                    }
+                } else {
+                    idleSince[session.key] = now
+                }
+            }
+        }
+        idleSince = idleSince.filter { open.contains($0.key) }
+    }
+
+    private func close(_ session: SessionModel, on runtime: AgentRuntime) {
+        Self.logger.info("Closing a \(runtime.agent.displayName, privacy: .public) session, unused for a while")
+        sessions.remove(session)
+        guard runtime.capabilities?.closeSessions == true, let connection = runtime.connection else { return }
+        let id = session.key.id
+        Task { _ = try? await connection.send(CloseSessionRequest(sessionId: id)) }
+    }
+
+    /// Whether `session` or one of its subagents is busy, so closing it would lose something.
+    private func isInUse(_ session: SessionModel) -> Bool {
+        isBusy(session) || session.children.values.contains(where: isInUse)
     }
 
     private func park(_ runtime: AgentRuntime) {

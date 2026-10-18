@@ -13,9 +13,13 @@ public enum FirstPartyCelebrations {
         public static let diaDeMuertos = "native.dia-de-muertos"
     }
 
-    /// The confirmed editions first, then the rest of the catalogue with its artwork forthcoming.
-    public static let celebrations: [CelebrationContribution] = [halloween, diaDeMuertos] + forthcoming
+    /// The confirmed editions first, then the rest of the catalogue.
+    public static let celebrations: [CelebrationContribution] = [halloween, diaDeMuertos] + catalogue.map(\.celebration)
+    /// One set per pack: Julian Christmas shares Christmas's.
     public static let iconSets: [IconSetContribution] = [halloweenIcons, diaDeMuertosIcons]
+        + catalogue.map(\.icons).reduce(into: []) { sets, set in
+            if !sets.contains(where: { $0.id == set.id }) { sets.append(set) }
+        }
 
     /// The ghost links in every channel, compiled into the app (`design/app-icon/Halloween*.icon`).
     public static let halloweenIcons = IconSetContribution(

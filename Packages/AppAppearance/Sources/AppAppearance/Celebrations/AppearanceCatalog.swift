@@ -18,11 +18,14 @@ public struct ContributionSource {
     /// This build's version, for `minimumNativeVersion`; nil skips the check.
     public var nativeVersion: String?
     public var fileExists: (URL) -> Bool
+    /// Where each downloadable pack stands, for Native's own sets.
+    public var packState: (String) -> IconPackState
 
     public init(
         pluginID: String, location: Location, assetExists: @escaping (String) -> Bool = { _ in false },
         homeMarks: Set<String> = [], nativeVersion: String? = nil,
-        fileExists: @escaping (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path(percentEncoded: false)) }
+        fileExists: @escaping (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path(percentEncoded: false)) },
+        packState: @escaping (String) -> IconPackState = { _ in .notDownloaded }
     ) {
         self.pluginID = pluginID
         self.location = location
@@ -30,6 +33,7 @@ public struct ContributionSource {
         self.homeMarks = homeMarks
         self.nativeVersion = nativeVersion
         self.fileExists = fileExists
+        self.packState = packState
     }
 }
 
@@ -131,9 +135,14 @@ public struct AppearanceCatalog: Hashable, Sendable {
         }
         let (appIcon, icons) = try iconStatus(contribution.icons, from: source)
         let (homeStatus, home) = homeStatus(contribution, marks: source.homeMarks)
+        let thumbnail = try contribution.thumbnail.flatMap { pair -> AppIconImagePair? in
+            let light = try image(pair.light, from: source)
+            let dark = try image(pair.dark, from: source)
+            return exists(light, in: source) && exists(dark, in: source) ? AppIconImagePair(light: light, dark: dark) : nil
+        }
         return IconSet(
             contribution: contribution, pluginID: source.pluginID, appIcon: appIcon, icons: icons,
-            homeStatus: homeStatus, home: home)
+            homeStatus: homeStatus, home: home, thumbnail: thumbnail)
     }
 
     private static func validate(
@@ -201,6 +210,14 @@ public struct AppearanceCatalog: Hashable, Sendable {
         switch icons {
         case nil: return (.notOffered, [:])
         case .forthcoming: return (.forthcoming, [:])
+        case .pack(let edition):
+            guard case .builtIn = source.location else {
+                throw Failure("Only Native's own icon sets download as packs; ship the images in the plugin's folder.")
+            }
+            if case .ready(let icons) = source.packState(edition), icons.count == AppIconVariant.allCases.count {
+                return (.ready, icons)
+            }
+            return (.downloadable(source.packState(edition)), [:])
         case .channels(let channels):
             var resolved: [AppIconVariant: AppIconImagePair] = [:]
             var missing: [String] = []

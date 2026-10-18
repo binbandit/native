@@ -93,6 +93,16 @@ final class TranscriptSearchCenter {
         }
     }
 
+    /// Opens the index again after it failed to open.
+    func reopen() {
+        Task { await openIndex() }
+    }
+
+    /// Runs the current search again.
+    func retry() {
+        scheduleSearch(debounce: false)
+    }
+
     /// Shows the panel, with `query` in its field when given.
     func present(query: String? = nil) {
         if let query {
@@ -190,11 +200,9 @@ final class TranscriptSearchCenter {
         await refreshStatistics()
     }
 
-    nonisolated
-        @concurrent private static func write(
-            _ record: SearchSessionRecord, items: [TranscriptItem], plan: [PlanEntry], to index: SearchIndex
-        ) async
-    {
+    @concurrent nonisolated private static func write(
+        _ record: SearchSessionRecord, items: [TranscriptItem], plan: [PlanEntry], to index: SearchIndex
+    ) async {
         let documents = SearchDocument.documents(transcript: items, plan: plan)
         do {
             try await index.replace(record, documents: documents)

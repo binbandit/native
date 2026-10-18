@@ -185,6 +185,8 @@ private struct WhatsNewSheetModifier: ViewModifier {
         content
             .onAppear { center.presentIfReady(blocked: blocked) }
             .onChange(of: blocked) { center.presentIfReady(blocked: blocked) }
+            // `start()` runs in the app's launch task, after this view first appears.
+            .onChange(of: center.pending) { center.presentIfReady(blocked: blocked) }
             .sheet(isPresented: Binding(get: { center.presented != nil }, set: { if !$0 { center.dismiss() } })) {
                 WhatsNewSheet(
                     releases: center.presented ?? [],

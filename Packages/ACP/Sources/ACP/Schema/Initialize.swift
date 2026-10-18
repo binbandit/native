@@ -137,6 +137,8 @@ public struct AgentCapabilities: Decodable, Hashable, Sendable {
     public var listSessions = false
     /// Whether `DeleteSessionRequest` removes sessions from the agent's own store.
     public var deleteSessions = false
+    /// Whether `CloseSessionRequest` frees a session in the agent's process.
+    public var closeSessions = false
     /// Whether `SteerRequest` works (the `_session/steering` extension).
     public var steering = false
     /// Which remote MCP transports the agent can connect to; every agent supports stdio servers.
@@ -157,6 +159,7 @@ public struct AgentCapabilities: Decodable, Hashable, Sendable {
     private struct SessionCapabilities: Decodable {
         var list: JSONValue?
         var delete: JSONValue?
+        var close: JSONValue?
     }
 
     public init(from decoder: any Decoder) throws {
@@ -166,6 +169,7 @@ public struct AgentCapabilities: Decodable, Hashable, Sendable {
         let session = try container.decodeIfPresent(SessionCapabilities.self, forKey: .sessionCapabilities)
         listSessions = session?.list.map { $0 != .null } ?? false
         deleteSessions = session?.delete.map { $0 != .null } ?? false
+        closeSessions = session?.close.map { $0 != .null } ?? false
         let mcp = try container.decodeIfPresent(MCPCapabilities.self, forKey: .mcpCapabilities)
         mcpHTTP = mcp?.http ?? false
         mcpSSE = mcp?.sse ?? false

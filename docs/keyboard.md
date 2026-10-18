@@ -150,6 +150,7 @@ expedition's lead (the composer key, on a page without a composer).
 | ⌥⌘J | Show only tasks that need you | View | `view.needsYouFilter` |
 | ⌘⇧P | Pull requests | Go | `go.pullRequests` |
 | ⌘⇧X | Expeditions | Go | `go.expeditions` |
+| ⇧⌘F | Search every task (`docs/search.md`) | Go | `search.show` |
 | ⌥⌘I | Show or hide the subagent inspector | View | `view.toggleSubagentInspector` |
 | ⌘⇧D | Show or hide the changes inspector (the task's uncommitted git changes) | View | `view.toggleChanges` |
 | ⌃⌘M | Show the session's MCP servers | View | `view.mcpServers` |
@@ -174,6 +175,16 @@ expedition's lead (the composer key, on a page without a composer).
 | Escape | Clear the search; with it empty, close Settings |
 | ⌘[ | Close Settings, back to where you were (Go menu) |
 | ↑ / ↓ in the page list | Move to the previous / next page |
+
+## Search
+
+The search panel (⇧⌘F) keeps focus in its field, so typing always refines the search.
+
+| Keys (panel open) | Action |
+| --- | --- |
+| ↑ / ↓ | Move through tasks and their matches |
+| Return | Open the selected task, scrolled to the selected match |
+| Escape | Clear the search; with it empty, close the panel |
 
 ## Terminal
 
@@ -204,7 +215,7 @@ bindings (`docs/terminal.md`); otherwise they're these:
 Commands live with their features and register in `NativeApp` (`docs/commands.md`); the menus place
 them. Composer keys in `native/Views/Composer*`; permission keys in
 `native/Views/Transcript/ToolCallView.swift`; sidebar keys in `SidebarView`; Settings keys in
-`SettingsScreen` and `SettingsSearchField`; terminal commands in
+`SettingsScreen` and `SettingsSearchField`; search panel keys in `TranscriptSearchPanel`; terminal commands in
 `native/Terminal/Views/TerminalCommands.swift` and keys inside a terminal in
 `GhosttyConfiguration.keybinds` (`Packages/Terminal`). Change a key here first, then in code.
 

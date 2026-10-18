@@ -18,22 +18,26 @@ public struct IconSetContribution: AppearanceContribution {
     /// Colors for previews, and for Home's two-tone emblem when there's no mark (or this build can't
     /// draw it).
     public var palette: IconSetPalette?
+    /// Small Regular icons for the catalogue, shipped with the app so previews work before (or
+    /// without) downloading the full set. Plugin sets preview their own icons instead.
+    public var thumbnail: IconSetImagePair?
 
     public init(
         id: IconSetID, name: LocalizedText, icons: IconSetIcons? = nil, homeMark: String? = nil,
-        palette: IconSetPalette? = nil
+        palette: IconSetPalette? = nil, thumbnail: IconSetImagePair? = nil
     ) {
         self.id = id
         self.name = name
         self.icons = icons
         self.homeMark = homeMark
         self.palette = palette
+        self.thumbnail = thumbnail
     }
 }
 
 extension IconSetContribution: Codable {
     private enum CodingKeys: String, CodingKey {
-        case id, name, icons, home, palette
+        case id, name, icons, home, palette, thumbnail
     }
 
     private enum HomeKeys: String, CodingKey {
@@ -50,6 +54,7 @@ extension IconSetContribution: Codable {
             ? container.nestedContainer(keyedBy: HomeKeys.self, forKey: .home).decodeIfPresent(String.self, forKey: .mark)
             : nil
         palette = try container.decodeIfPresent(IconSetPalette.self, forKey: .palette)
+        thumbnail = try container.decodeIfPresent(IconSetImagePair.self, forKey: .thumbnail)
     }
 
     public func encode(to encoder: any Encoder) throws {
@@ -62,6 +67,7 @@ extension IconSetContribution: Codable {
             try home.encode(homeMark, forKey: .mark)
         }
         try container.encodeIfPresent(palette, forKey: .palette)
+        try container.encodeIfPresent(thumbnail, forKey: .thumbnail)
     }
 }
 
@@ -70,17 +76,25 @@ extension IconSetContribution: Codable {
 public enum IconSetIcons: Hashable, Sendable {
     case forthcoming
     case channels([AppIconVariant: IconSetImagePair])
+    /// Native's own sets that aren't bundled: a signed pack, by edition, downloaded from the release
+    /// when someone chooses the celebration (`CelebrationAssets`). Built-in plugins only.
+    case pack(String)
 }
 
 extension IconSetIcons: Codable {
+    private static let packPrefix = "pack:"
+
     public init(from decoder: any Decoder) throws {
         let container = try decoder.singleValueContainer()
         if let status = try? container.decode(String.self) {
-            guard status == "forthcoming" else {
+            if status == "forthcoming" {
+                self = .forthcoming
+            } else if status.hasPrefix(Self.packPrefix) {
+                self = .pack(String(status.dropFirst(Self.packPrefix.count)))
+            } else {
                 throw DecodingError.dataCorruptedError(
                     in: container, debugDescription: "\"icons\" is \"forthcoming\" or icons by channel.")
             }
-            self = .forthcoming
             return
         }
         var channels: [AppIconVariant: IconSetImagePair] = [:]
@@ -99,6 +113,8 @@ extension IconSetIcons: Codable {
         switch self {
         case .forthcoming:
             try container.encode("forthcoming")
+        case .pack(let edition):
+            try container.encode(Self.packPrefix + edition)
         case .channels(let channels):
             try container.encode(Dictionary(uniqueKeysWithValues: channels.map { ($0.key.rawValue, $0.value) }))
         }

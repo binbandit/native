@@ -1,3 +1,4 @@
+import NativeCommands
 import SwiftUI
 
 extension FocusedValues {
@@ -6,16 +7,19 @@ extension FocusedValues {
     @Entry var gitChangesInspector: Binding<Bool>?
 }
 
-/// "Show Changes" for the View menu (⇧⌘D, see `docs/keyboard.md`). Disabled when the focused
-/// window has nothing to inspect.
-struct GitChangesMenuItem: View {
-    @FocusedValue(\.gitChangesInspector) private var isPresented
+extension CommandID {
+    static let viewToggleChanges: Self = "view.toggleChanges"
+}
 
-    var body: some View {
-        Button(isPresented?.wrappedValue == true ? "Hide Changes" : "Show Changes") {
-            isPresented?.wrappedValue.toggle()
-        }
-        .keyboardShortcut("d", modifiers: [.command, .shift])
-        .disabled(isPresented == nil)
+extension NativeCommand {
+    /// View ▸ Show Changes (⇧⌘D, see `docs/keyboard.md`). Unavailable when the focused window has
+    /// nothing to inspect.
+    static let gitChanges = NativeCommand(
+        .viewToggleChanges, title: "Show or Hide Changes", category: .view, systemImage: "plusminus",
+        keywords: ["git", "diff", "inspector", "uncommitted"]
+    ) {
+        $0.changesInspector?.wrappedValue.toggle()
     }
+    .menuTitle { $0.changesInspector?.wrappedValue == true ? "Hide Changes" : "Show Changes" }
+    .available { $0.changesInspector != nil }
 }

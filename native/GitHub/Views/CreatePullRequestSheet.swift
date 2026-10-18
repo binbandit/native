@@ -127,10 +127,7 @@ struct CreatePullRequestSheet: View {
     private var footer: some View {
         HStack(spacing: DS.Space.md) {
             if existing == nil {
-                Toggle("Create as draft", isOn: $isDraft)
-                    .toggleStyle(.checkbox)
-                    .font(.dsBody)
-                    .foregroundStyle(.dsTextSecondary)
+                GitHubCheckbox(title: "Create as draft", isOn: $isDraft)
             }
             Spacer(minLength: DS.Space.md)
             Button("Cancel") { dismiss() }

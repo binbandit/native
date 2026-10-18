@@ -38,7 +38,9 @@ enum OpenInMenu {
         item.preferredImageVisibility = .visible
         if isDefault {
             item.state = .on
-            item.setKeyEquivalent(OpenInCommands.shortcut)
+            if let shortcut = OpenInCommands.shortcut {
+                item.setKeyEquivalent(shortcut)
+            }
         }
         return item
     }

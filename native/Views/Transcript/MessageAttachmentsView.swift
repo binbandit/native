@@ -37,8 +37,11 @@ struct MessageAttachmentsView: View {
             previewing = attachment.previewURL
         } label: {
             if let data = attachment.imageData {
-                AttachmentImage(data: data, maxSide: TranscriptMetrics.attachmentImageSide)
-                    .frame(width: TranscriptMetrics.attachmentImageSide, height: TranscriptMetrics.attachmentImageSide)
+                AttachmentImage(data: data, maxSide: TranscriptMetrics.attachmentImageMaxWidth, contentMode: .fit)
+                    .frame(
+                        maxWidth: TranscriptMetrics.attachmentImageMaxWidth,
+                        maxHeight: TranscriptMetrics.attachmentImageHeight
+                    )
                     .clipShape(shape)
                     .overlay { shape.strokeBorder(.dsBorder) }
                     .contentShape(shape)
@@ -80,7 +83,8 @@ extension MessageAttachment {
         }
         guard let imageData else { return nil }
         let copy = URL.temporaryDirectory.appending(path: "Native Attachments/\(id.uuidString)/\(name).png")
-        try? FileManager.default.createDirectory(at: copy.deletingLastPathComponent(), withIntermediateDirectories: true)
+        try? FileManager.default.createDirectory(
+            at: copy.deletingLastPathComponent(), withIntermediateDirectories: true)
         try? imageData.write(to: copy)
         return copy
     }

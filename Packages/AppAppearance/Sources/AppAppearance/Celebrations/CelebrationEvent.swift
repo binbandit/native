@@ -49,6 +49,17 @@ public struct CelebrationEvent: Hashable, Sendable, Identifiable {
     /// Whether anything is ready to apply: an edition with neither surface can be browsed, not used.
     public var isApplicable: Bool { appIcon.isReady || home.isReady }
 
+    /// Whether someone can turn it on: its dates resolve, and it has artwork here or to download.
+    public func canBeChosen(on day: CivilDate) -> Bool {
+        dateStatus(on: day) == .resolvable && (isApplicable || appIcon.isDownloadable)
+    }
+
+    /// The edition whose pack the icon downloads from, if it does.
+    public var iconPack: String? {
+        guard case .pack(let edition)? = iconSet?.contribution.icons else { return nil }
+        return edition
+    }
+
     private var missingArtwork: AppearanceSurfaceStatus {
         guard let reference = contribution.iconSet else { return .forthcoming }
         return .unavailable("Its icon set \"\(reference)\" isn't installed or is turned off.")

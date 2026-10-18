@@ -18,6 +18,9 @@ final class CompanionEndToEndTests: XCTestCase {
         if environment["COMPANION_FORGET"] == "1" { app.launchArguments.append("-companionForgetPairings") }
         app.launch()
         app.open(invite)
+        // iOS asks before a link opens an app.
+        let open = XCUIApplication(bundleIdentifier: "com.apple.springboard").buttons["Open"]
+        if open.waitForExistence(timeout: 5) { open.tap() }
         XCTAssertTrue(app.staticTexts["verificationCode"].waitForExistence(timeout: 30), "the phone shows the verification code")
         // Someone clicks Pair on the Mac now.
         let name = app.textFields["hostName"]

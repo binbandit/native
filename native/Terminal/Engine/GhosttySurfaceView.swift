@@ -21,6 +21,8 @@ final class GhosttySurfaceView: NSView, TerminalSurface {
     /// One cell's size in points, for placing the input method's candidate window.
     var cellSize = CGSize(width: 8, height: 16)
     private var cursorStyle: NSCursor = .iBeam
+    /// Watches the window this view is in for being minimized, hidden or covered.
+    private var occlusionObserver: (any NSObjectProtocol)?
 
     // Keyboard state, used by `GhosttySurfaceView+Keyboard`.
     var markedText = NSMutableAttributedString()
@@ -69,6 +71,7 @@ final class GhosttySurfaceView: NSView, TerminalSurface {
     }
 
     isolated deinit {
+        occlusionObserver.map(NotificationCenter.default.removeObserver)
         if let surface {
             ghostty_surface_free(surface)
         }
@@ -244,11 +247,29 @@ final class GhosttySurfaceView: NSView, TerminalSurface {
 
     // MARK: Window, size and scale
 
+    /// Off screen (panel hidden, another task selected, the window minimized, hidden or fully
+    /// covered) the renderer stops drawing, and the cursor stops blinking.
+    private func observeOcclusion() {
+        occlusionObserver.map(NotificationCenter.default.removeObserver)
+        occlusionObserver = window.map { window in
+            NotificationCenter.default.addObserver(
+                forName: NSWindow.didChangeOcclusionStateNotification, object: window, queue: .main
+            ) { [weak self] _ in
+                MainActor.assumeIsolated { self?.updateOcclusion() }
+            }
+        }
+        updateOcclusion()
+    }
+
+    private func updateOcclusion() {
+        guard let surface else { return }
+        ghostty_surface_set_occlusion(surface, window?.occlusionState.contains(.visible) == true)
+    }
+
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
-        guard let surface else { return }
-        // Off screen (panel hidden, another task selected) the renderer stops drawing.
-        ghostty_surface_set_occlusion(surface, window != nil)
+        guard surface != nil else { return }
+        observeOcclusion()
         if window == nil {
             setFocused(false)
             return

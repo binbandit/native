@@ -7,6 +7,8 @@ struct AttachmentImage: View {
     let data: Data
     /// The longest edge it's drawn at, in points.
     let maxSide: CGFloat
+    /// `.fill` crops it to the frame it's given; `.fit` shows all of it, sized by its own shape.
+    var contentMode: ContentMode = .fill
 
     @Environment(\.displayScale) private var displayScale
     @State private var image: CGImage?
@@ -16,14 +18,21 @@ struct AttachmentImage: View {
             if let image {
                 Image(decorative: image, scale: displayScale)
                     .resizable()
-                    .scaledToFill()
+                    .aspectRatio(contentMode: contentMode)
             } else {
                 Rectangle().fill(.dsFill)
             }
         }
+        .aspectRatio(contentMode == .fit ? aspectRatio : nil, contentMode: .fit)
         .task(id: data) {
             image = await Self.decode(data, maxPixels: Int(maxSide * displayScale))
         }
+    }
+
+    /// Width over height, once it's decoded; a photo's shape until then.
+    private var aspectRatio: CGFloat {
+        guard let image, image.height > 0 else { return 4 / 3 }
+        return CGFloat(image.width) / CGFloat(image.height)
     }
 
     @concurrent
