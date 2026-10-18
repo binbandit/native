@@ -18,6 +18,8 @@ final class MCPLibrary {
     private(set) var servers: [ManagedServer] = []
     /// On/off for every server, Native's and agents', globally and per project.
     private(set) var switches = MCPServerSwitches()
+    /// Tools scripts may call without asking, by server switch key: "Always Allow" on the card.
+    private(set) var scriptApprovals: [String: Set<String>] = [:]
     /// Each agent's own configuration, as last read.
     private(set) var configurations: [AgentConfigFormat: AgentMCPConfiguration] = [:]
     private(set) var isReadingConfigurations = false
@@ -72,6 +74,7 @@ final class MCPLibrary {
         let stored = load()
         servers = stored.servers
         switches = stored.switches
+        scriptApprovals = stored.scriptApprovals
     }
 
     /// Application Support, per bundle id like the other stores, so dev instances keep their own.
@@ -150,6 +153,24 @@ final class MCPLibrary {
         Task { await scriptConnections.keep(only: scripted) }
     }
 
+    // MARK: - Script approvals
+
+    func isAlwaysAllowedInScripts(_ tool: String, of server: String) -> Bool {
+        scriptApprovals[server]?.contains(tool) == true
+    }
+
+    /// Lets scripts call `tool` of `server` (a switch key) without asking again.
+    func alwaysAllowInScripts(_ tool: String, of server: String) {
+        scriptApprovals[server, default: []].insert(tool)
+        persist()
+    }
+
+    /// Scripts ask again before calling any of `server`'s tools that can make changes.
+    func forgetScriptApprovals(of server: String) {
+        scriptApprovals[server] = nil
+        persist()
+    }
+
     /// A server's secret values, from the Keychain the first time.
     func secrets(for id: UUID) -> ManagedServerSecrets {
         if let cached = secretCache[id] { return cached }
@@ -177,7 +198,8 @@ final class MCPLibrary {
                 at: storeURL.deletingLastPathComponent(), withIntermediateDirectories: true)
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-            try encoder.encode(MCPStoreFile(servers: servers, switches: switches)).write(to: storeURL, options: .atomic)
+            try encoder.encode(MCPStoreFile(servers: servers, switches: switches, scriptApprovals: scriptApprovals))
+                .write(to: storeURL, options: .atomic)
         } catch {
             problem = "Couldn't save your MCP servers: \(error.localizedDescription)"
         }
@@ -328,12 +350,6 @@ final class MCPLibrary {
             return nil
         }
     }
-}
-
-/// What `MCPLibrary` keeps on disk: its servers and every switch. Secrets aren't in it.
-struct MCPStoreFile: Codable {
-    var servers: [ManagedServer] = []
-    var switches = MCPServerSwitches()
 }
 
 /// A managed server just removed, kept so the removal can be undone.

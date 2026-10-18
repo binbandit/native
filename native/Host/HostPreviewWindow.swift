@@ -265,6 +265,7 @@ struct HostPreviewWindow: View {
         case .approvalNeeded: "\(time) · \(subject) needs approval: \(entry.detail ?? "a tool call")"
         case .recovered: "\(time) · \(entry.recovery?.sentence() ?? "Native recovered \(subject)")"
         case .hostStarted: "\(time) · \(entry.detail ?? "Native's host started")"
+        case .updateRequested, .updateRolledBack: "\(time) · \(entry.detail ?? "Native's host updated")"
         case .unknown: "\(time) · \(subject)"
         }
     }

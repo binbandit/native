@@ -90,7 +90,7 @@ nonisolated enum OrchestrationScriptTool {
                 }
             }
             // Other features' tools live under their own names; one that would shadow Native's is dropped.
-            let extra = await extensions.bindings(for: caller).filter { !ownNames.contains($0.path[0]) }
+            let extra = await extensions.bindings(for: caller, until: .now + .seconds(seconds)).filter { !ownNames.contains($0.path[0]) }
             if !extra.isEmpty { bindings += extra + [search(extra)] }
             let result = try await runner.run(
                 arguments.code, bindings: bindings, inputs: arguments.inputs ?? [:],

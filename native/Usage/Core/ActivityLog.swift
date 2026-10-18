@@ -59,6 +59,17 @@ final class ActivityLog {
         }
     }
 
+    /// The sessions the agents list now, for `refreshBackfill()`; the app sets it.
+    @ObservationIgnored var backfillSource: (() -> [ActivityBackfill])?
+
+    /// Fills in what the agents list now. Their lists grow as they start and list more projects,
+    /// so this runs at launch and again whenever the graph is shown.
+    func refreshBackfill() {
+        if let sessions = backfillSource?() {
+            backfill(sessions)
+        }
+    }
+
     /// Fills in sessions the agents list as estimates: one per session on the day it was last
     /// active. Running it again changes nothing.
     func backfill(_ sessions: [ActivityBackfill]) {
@@ -141,7 +152,6 @@ final class ActivityLog {
     }
 
     // MARK: - Days
-
 
     func dayKey(for date: Date) -> String {
         date.formatted(Date.ISO8601FormatStyle(timeZone: .current).year().month().day())

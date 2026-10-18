@@ -35,6 +35,7 @@ struct UsageSettingsPage: View {
             }
         }
         .task {
+            activity.refreshBackfill()
             for account in accounts where reports.status(of: account.id) == .ready {
                 let isStale = reports.reports[account.id].map { Date.now.timeIntervalSince($0.capturedAt) > Self.staleAfter } ?? true
                 if isStale {

@@ -32,7 +32,8 @@ struct UsagePlugin: NativePlugin {
         notifications.host = host
         providerReports.host = host
         limits.host = host
-        activity.backfill(host.activityBackfill())
+        activity.backfillSource = { [weak host] in host?.activityBackfill() ?? [] }
+        activity.refreshBackfill()
     }
 
     /// Opens a task from Settings › Usage's day list.

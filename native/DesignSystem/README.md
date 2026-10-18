@@ -77,9 +77,10 @@ Mac) to see everything in light and dark side by side.
 | `TaskStatus`, `StatusIndicator`, `DotGridLoader` | the reference app's statuses and Lottie dot-grid loaders (ported keyframes) |
 | `ContextUsageRing` | the reference app's context ring |
 | `ComposerSurface`, `ComposerControlsBar`, `.pill` / `.pillChrome`, `PillMenu`, `EffortBars`, `ComposerSendButton`, `ComposerStopButton`, `ComposerChip` | the reference app's composer, measured at 1x |
-| `.ds(_:size:)` buttons, `IconButton`, `Badge`, `Kbd`, `Card`, `SeparatorLine`, `SectionHeader`, `StatusDot` | the reference app core-ui v2 buttons and Kbd; the reference app badges and cards |
+| `.ds(_:size:iconOnly:)` buttons, `IconButton`, `Badge`, `Kbd`, `Card`, `SeparatorLine`, `SectionHeader`, `StatusDot` | the reference app core-ui v2 buttons and Kbd; the reference app badges and cards |
 | `DiffView`, `DiffStats`, `DiffStatsText` | the reference app's diff layout; shared by the transcript and Git |
 | `StatusBarSurface`, `.statusBarSegment(_:isActive:)`, `StatusBarGlyph`, `StatusBarDivider`, `StatusBarSeparator` | the reference app's status bar in the reference app's chrome: the sidebar backdrop under a hairline, `DS.Size.chromeBar` tall, tertiary caption text, footer-sized glyphs, hairlines between items, color-only hover. Narrow windows drop whole items |
+| `IconThemePicker`, `IconThemeOption` | the reference app's settings select showing the current app icon; a popover lists each option's thumbnail, name, badge and note, with a checkmark. Options are data, so plugins can add their own |
 | `PopoverPanel`, `PopoverPanelFootnote`, `.dsPopover(isPresented:)` | the reference app's Resource Manager layout (glyph and title header, hairline, content) on the overlay backdrop |
 | `CappedHeightScrollView` | Natural height up to a cap, then scrolls |
 | `NativeMark`, `NativeLockup`, `.nightSky(isEnabled:)`, `NightlyMark` | Native's brand: the interlock emblem from the app icon, the wordmark, and the nightly sky and moon |
@@ -98,6 +99,7 @@ Mac) to see everything in light and dark side by side.
 | Loading | `DotGridLoader`, never ad-hoc spinners |
 | Something blocked on the user, in chrome | `.statusBarSegment(.attention)`: the only boxed item in the status bar, one at a time |
 | Details on click | `.dsPopover` with a `PopoverPanel` |
+| An icon-only button | `Button("Title", systemImage:)` with `.ds(_, iconOnly: true)` or `.pill(isSquare: true)`, or `IconButton`: the title stays VoiceOver's label. Never a bare `Image` label |
 | Elapsed time | `ElapsedTimeText(since:until:)`: ticks while running, a total once done |
 | Counts, sizes, times | `DSFormat`: `compactAge`, `time`, `countdown`, `timeAndCountdown`, `duration`, `thoughtFor`, `tokens`, `percent`, `share`, `lineCount`, `diffStat`, `cost`, `memory`, `cpu` |
 

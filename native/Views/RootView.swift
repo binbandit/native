@@ -211,7 +211,10 @@ struct RootView: View {
         } detail: {
             detail
                 .safeAreaInset(edge: .top, spacing: 0) { hostVersionNotice }
-                .task { await durableHost?.start(plugins: model.plugins.agents) }
+                .task {
+                    if let updates { durableHost?.connectUpdates(updates) }
+                    await durableHost?.start(plugins: model.plugins.agents)
+                }
         }
         .toolbar(removing: .sidebarToggle)
     }
