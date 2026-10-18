@@ -72,7 +72,8 @@ public struct TelemetryRecord: Hashable, Sendable, Codable {
             attributes = [.init(key: .hangDurationMs, value: .int(duration.milliseconds))]
         case .sessionStarted(let agent, let version):
             name = .sessionStarted
-            attributes = [.init(key: .agent, value: .token(agent))]
+            attributes =
+                [.init(key: .agent, value: .token(agent))]
                 + (version.map { [.init(key: .agentVersion, value: .version($0))] } ?? [])
         }
     }
@@ -91,7 +92,10 @@ public struct TelemetryResource: Hashable, Sendable, Codable {
     public var platform: TelemetryPlatform
     public var osVersion: TelemetryVersion?
 
-    public init(installationID: UUID, appVersion: TelemetryVersion?, platform: TelemetryPlatform = .current, osVersion: TelemetryVersion?) {
+    public init(
+        installationID: UUID, appVersion: TelemetryVersion?, platform: TelemetryPlatform = .current,
+        osVersion: TelemetryVersion?
+    ) {
         self.installationID = installationID
         self.appVersion = appVersion
         self.platform = platform

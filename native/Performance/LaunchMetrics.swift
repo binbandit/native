@@ -4,8 +4,11 @@ import Foundation
 import os
 
 /// How long launch takes, from the moment the process started: Points of Interest signposts for
-/// Instruments, and one log line per milestone (`launch firstFrame 212 ms`) that `just perf` reads.
-/// The bar is half a Dock bounce, so launch feels instant (`docs/performance.md`).
+/// Instruments, and one log line per milestone that `just perf` reads, with the wall-clock time and
+/// the CPU time the main thread and the whole process spent getting there
+/// (`launch firstFrame 212 ms, main 150 ms cpu, process 190 ms cpu`). CPU time is the steadier of
+/// the two on a busy Mac. The bar is half a Dock bounce, so launch feels instant
+/// (`docs/performance.md`).
 @MainActor
 enum LaunchMetrics {
     enum Milestone: String {
@@ -37,7 +40,9 @@ enum LaunchMetrics {
             break
         }
         signposter.emitEvent("Launch milestone", "\(milestone.rawValue, privacy: .public)")
-        logger.notice("launch \(milestone.rawValue, privacy: .public) \(milliseconds) ms")
+        logger.notice(
+            "launch \(milestone.rawValue, privacy: .public) \(milliseconds) ms, main \(cpuMilliseconds(CLOCK_THREAD_CPUTIME_ID)) ms cpu, process \(cpuMilliseconds(CLOCK_PROCESS_CPUTIME_ID)) ms cpu"
+        )
     }
 
     /// Marks `milestone` once the frame showing what just appeared is on screen: when the main run
@@ -51,6 +56,12 @@ enum LaunchMetrics {
             MainActor.assumeIsolated { mark(milestone) }
         }
         CFRunLoopAddObserver(CFRunLoopGetMain(), observer, .commonModes)
+    }
+
+    /// CPU time used so far: by the calling thread (the main thread, since milestones are marked
+    /// there) or the whole process.
+    private static func cpuMilliseconds(_ clock: clockid_t) -> Int {
+        Int(clock_gettime_nsec_np(clock) / 1_000_000)
     }
 
     /// When the kernel started this process, which is as close to the Dock click as an app can see.

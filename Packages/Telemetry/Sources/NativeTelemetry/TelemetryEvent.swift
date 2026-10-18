@@ -89,9 +89,9 @@ public enum TelemetryPlatform: String, Codable, Sendable {
 
     public static var current: Self {
         #if os(macOS)
-            .macOS
+        .macOS
         #else
-            .iPadOS
+        .iPadOS
         #endif
     }
 }

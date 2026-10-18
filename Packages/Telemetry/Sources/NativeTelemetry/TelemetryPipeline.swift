@@ -29,7 +29,9 @@ public actor TelemetryPipeline {
     }
 
     /// Who's sending and how; until this is called, nothing is sent.
-    public func configure(resource: TelemetryResource, conditions: any TelemetrySendingConditions, log: TelemetrySentLog?) {
+    public func configure(
+        resource: TelemetryResource, conditions: any TelemetrySendingConditions, log: TelemetrySentLog?
+    ) {
         self.resource = resource
         self.conditions = conditions
         self.log = log

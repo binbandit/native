@@ -26,7 +26,7 @@ actor RecordingDestination: TelemetryDestination {
     }
 }
 
-struct Never: TelemetrySendingConditions {
+struct NeverSend: TelemetrySendingConditions {
     func allowsSending() async -> Bool { false }
 }
 
@@ -40,7 +40,8 @@ final class CapturingTransport: TelemetryTransport, @unchecked Sendable {
 
 @Suite struct NativeTelemetryTests {
     let resource = TelemetryResource(
-        installationID: UUID(), appVersion: TelemetryVersion("1.4.0-nightly.20261018"), osVersion: TelemetryVersion("27.2"))
+        installationID: UUID(), appVersion: TelemetryVersion("1.4.0-nightly.20261018"),
+        osVersion: TelemetryVersion("27.2"))
 
     static let everyEvent: [TelemetryEvent] = [
         .appLaunched(launchDuration: .milliseconds(812)),
@@ -91,13 +92,14 @@ final class CapturingTransport: TelemetryTransport, @unchecked Sendable {
         for event in Self.everyEvent { await pipeline.record(event) }
         #expect(await pipeline.flush() == 5)
         #expect(await destination.batches.map(\.records.count) == [2, 2, 1])
-        #expect(log.entries().flatMap(\.records).map(\.name) == Self.everyEvent.map { TelemetryRecord($0, at: .now).name })
+        #expect(
+            log.entries().flatMap(\.records).map(\.name) == Self.everyEvent.map { TelemetryRecord($0, at: .now).name })
         #expect(await destination.activations == 1)
     }
 
     @Test func holdsBatchesUntilConditionsAllow() async {
         let pipeline = TelemetryPipeline()
-        await pipeline.configure(resource: resource, conditions: Never(), log: nil)
+        await pipeline.configure(resource: resource, conditions: NeverSend(), log: nil)
         let destination = RecordingDestination()
         await pipeline.setDestinations([destination])
         await pipeline.record(.featureUsed(.labs))
@@ -165,7 +167,10 @@ final class CapturingTransport: TelemetryTransport, @unchecked Sendable {
         defer { try? FileManager.default.removeItem(at: url) }
         let log = TelemetrySentLog(url: url, limit: 2)
         for feature in [TelemetryFeature.git, .labs, .search] {
-            log.append(.init(destination: .native, resource: resource, records: [TelemetryRecord(.featureUsed(feature), at: .now)]))
+            log.append(
+                .init(
+                    destination: .native, resource: resource,
+                    records: [TelemetryRecord(.featureUsed(feature), at: .now)]))
         }
         #expect(log.entries().flatMap(\.records).map(\.attributes.first?.value.description) == ["labs", "search"])
     }
