@@ -43,5 +43,8 @@ coordinator keeps this current.
 | Minimal by default | plugins, settings | `docs/decisions.md` |
 | Sounds stay quiet during Focus | `native/Sounds` | Waiting on Developer ID team signing: the Focus Status entitlement can't be added to ad hoc builds. The logic is built and tested; turning it on is step 8 of `docs/releasing.md`'s one-time setup |
 | Celebrations plugin (Halloween, Día de Muertos first; international catalogue later) | `native/Celebrations`, `Packages/AppAppearance` | Spec: `docs/celebrations.md`. Engine, chooser and the two first editions now; the rest in reviewed artwork batches |
+| Plugin themes and icon sets | plugins, appearance, celebrations | Data only. Code themes, accent palettes and icon sets. Plugin icons apply on the Mac only: iOS can switch only between icons compiled into the app |
+| App icon switching on iPad and iPhone | iPad and companion targets | Built-in themes ship as alternate icons (`setAlternateIconName`) once those targets exist |
+| iPhone companion app | new target, host client | Designed (`docs/companion.md`, `research/companion-app.md`). Needs durable host Phase 2, paired network transport and QR pairing first |
 | iPad app | app target | After the host protocol lands (`docs/architecture.md`) |
 | Expeditions (Factory's missions, rebranded) | `Packages/Expeditions`, `native/Expeditions` | Factory's concept under Native's own name, composed from orchestration, goals, workflows and worktrees |
