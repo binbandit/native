@@ -36,10 +36,9 @@ struct TranscriptView: View {
                 Color.clear.frame(maxWidth: .infinity, maxHeight: 0)
             }
         }
-        // Start at the latest message and stay there as rows grow. Short transcripts sit at the top,
-        // as in Factory: bottom-aligning them (the `.alignment` role) pads the top by an inset that
-        // lags the content height by one pass, so every new row briefly overflows and flashes a
-        // legacy scroller.
+        // Start at the latest message and stay there as rows grow. Short transcripts sit at the top:
+        // bottom-aligning them (the `.alignment` role) pads the top by an inset that lags the content
+        // height by one pass, so every new row briefly overflows and flashes a legacy scroller.
         .defaultScrollAnchor(.bottom, for: .initialOffset)
         .defaultScrollAnchor(.bottom, for: .sizeChanges)
         .scrollPosition($position)

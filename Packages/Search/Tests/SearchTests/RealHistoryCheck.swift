@@ -53,7 +53,9 @@ struct RealHistoryCheck {
                 "\(agent): \(sources.count) files (\(bytes / 1_000_000) MB), \(sessions) sessions, \(empty) without a conversation, \(failures) failed, \(documents) documents; read \(Int(readTime))s, total \(Int(Date.now.timeIntervalSince(started)))s"
             )
         }
-        print("index: \(try await index.statistics())")
+        var usage = rusage()
+        getrusage(RUSAGE_SELF, &usage)
+        print("index: \(try await index.statistics()), peak resident \(usage.ru_maxrss / 1_048_576) MB")
         let queries = [
             "now has the ability to search", "native/Models/SessionCatalog.swift", "swift format lint --strict",
             "SessionCatalog", "catalog", "xcodebuild", "xcodebuild derivedDataPath", "the", "rollb", "agent:codex test",

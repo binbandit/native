@@ -52,9 +52,10 @@ SQLite FTS5 from the system's `libsqlite3` (no new dependency), one file per bun
 
 ```
 sessions  (agent, session) unique · title · cwd · project · created_at · updated_at · archived
-          · source_path · source_stamp            -- the history file it came from, and its size+mtime
 items     session_row → sessions (cascade) · ordinal · role · date · has_diff · anchor · body · parts
 items_fts fts5(body, parts, content='items', tokenize='unicode61 remove_diacritics 2'), kept by triggers
+sources   path · size · modified · offset · agent · session · cwd   -- one checkpoint per history file
+meta      'filled' once a pass over the history has finished
 ```
 
 - **Code-aware tokens.** `unicode61` already splits on everything that isn't a letter or digit, so
@@ -80,13 +81,14 @@ items_fts fts5(body, parts, content='items', tokenize='unicode61 remove_diacriti
 
 | Source | When | Notes |
 | --- | --- | --- |
-| Live sessions | 2 s after a turn ends or fails (coalesced, so a draining queue is one write) | the whole transcript from `SessionState`, converted off the main thread; never per streamed chunk |
-| Agents' own history | at launch, when enabled, and when the panel opens if the last pass was over 5 minutes ago | through each agent plugin's `SessionHistoryReader`; newest files first |
+| Live sessions of agents with a reader | 3 s after a turn ends or fails (coalesced) | a pass that reads only the lines the turn added to the agent's log; never per streamed chunk |
+| Live sessions of agents without one (or with history reading off) | 2 s after a turn ends or fails (coalesced) | the whole transcript from `SessionState`, converted off the main thread |
+| Agents' own history | 2 s after launch, when enabled, and when the panel opens if the last pass was over 5 minutes ago | through each agent plugin's `SessionHistoryReader`, from each file's checkpoint |
 | Agents without a reader | when the user opens one of their sessions and it has loaded | the loaded transcript, as for live sessions |
 
 **History readers** are part of the plugin API: `NativePlugin.historyReader(for:)` returns a
-`SessionHistoryReader` (`sources()` lists files without parsing, `read(_:)` turns one into a
-`HistorySession` of documents). Built in:
+`SessionHistoryReader` (`sources()` lists files without parsing; `read(_:resuming:)` turns one
+into a `HistorySession` of documents, or only its new part when resumed from an offset). Built in:
 
 - **Claude Code** (`ClaudeCodeHistoryReader`, `~/.claude/projects/<folder>/<session id>.jsonl`, or
   `$CLAUDE_CONFIG_DIR`). Reads `user` records (a string prompt, `text` blocks, `tool_result`
@@ -109,14 +111,25 @@ their record shapes only; the test fixtures are synthetic files with those shape
 are the ones ACP uses (`session/list` and `session/load` take them as they are), and tool call ids
 are the agents' own (`toolu_…`, `call_…`), which the ACP adapters pass through as `toolCallId`.
 
-Readers only read: memory-mapped, line by line, a cheap byte search deciding which lines are worth
-parsing. A pass is **resumable**: each batch (25 sessions or 2,000 documents) commits with its
-files' stamps, so a pass that's cancelled, crashes or quits continues where it stopped, and an
-unchanged file is never read twice. Files never indexed go first, newest first; changed ones (an
-active session's log, often the biggest file there is) wait until the rest are searchable. It runs
-at utility priority (background priority's I/O throttling stalled it outright on a busy Mac), and
-**pauses on battery or in
-Low Power Mode**, continuing when the power source changes (IOKit's notification, no polling).
+Readers only read, and a pass reads only what's new. Each file has a **checkpoint**: its size and
+modification time when it was read, and the byte offset just past the last complete line indexed.
+A file whose size and time match is skipped without being opened. One that only grew is read from
+its offset, and the new documents are appended to its session (a line still being written is left
+for next time). Anything else (a file that shrank, or whose session a retention policy dropped) is
+read from the start. Files of excluded projects are known by their checkpoint's folder and never
+opened. Files are streamed a megabyte at a time, lines over 4 MB (an image pasted into a tool
+result) are skipped, and each line's JSON is parsed in its own autorelease pool, so memory stays
+flat whatever the file's size. Batches are capped at 25 sessions, 2,000 documents or 4 MB of text,
+and each commits with its files' checkpoints, so a pass that's cancelled, crashes or quits
+continues where it stopped. Files never indexed go first, newest first.
+
+Priority: the first fill runs at utility priority so search is useful soon; once a pass has
+finished (`meta.filled`), later passes run at background priority. Either **pauses on battery or
+in Low Power Mode**, continuing when the power source changes (IOKit's notification, no polling).
+Nothing runs before the window is up: the index opens two seconds after launch, off the main
+thread, and Native's own lists are consulted only for the sessions a pass actually reads.
+Turns of agents with a reader don't re-index the live transcript: a pass a few seconds after the
+turn reads just the lines it added to the agent's log, so each session has one source.
 What Native already knows wins over the history: the sidebar's title, the project a session is
 listed in, and whether it's archived.
 
@@ -177,13 +190,14 @@ was under a load average near 300. The pathological query, a lone stopword match
 document (`the`), took 91 ms under that load; it's the one case past the 50 ms budget, and typing
 a second word brings it back under.
 
-Indexing is the heavy part, so it runs at utility priority, off the main thread, in batches,
-and stops on battery. The history files are memory-mapped and most lines are skipped by a byte
-search before any JSON is parsed, which is why 1.4 GB reads in under ten seconds.
+Indexing is the heavy part: off the main thread, in batches, at background priority once the
+first fill is done, and stopped on battery. Most lines are skipped by a byte search before any
+JSON is parsed, which is why 1.4 GB reads in under ten seconds the first time, and checkpoints mean
+later launches read only what was added since.
 
 ## Not yet
 
 - Subagents' own transcripts as hits of their parent task.
 - Codex's archived threads (zstd).
-- Agents searching the index themselves (an orchestration MCP tool, as Orca offers).
+- Agents searching the index themselves, through an orchestration MCP tool.
 - The host-side index and the protocol above.
