@@ -8,7 +8,7 @@ struct WelcomeView: View {
         VStack(spacing: DS.Space.xxl) {
             Spacer()
             NativeMark()
-                .frame(width: 72, height: 72)
+                .frame(width: CompanionMetrics.welcomeMark, height: CompanionMetrics.welcomeMark)
                 .foregroundStyle(.dsTextPrimary)
             VStack(spacing: DS.Space.md) {
                 Text("Native")

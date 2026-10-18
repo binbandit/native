@@ -19,6 +19,7 @@ enum CompanionType {
 /// The phone's few layout sizes beyond the design system's spacing.
 enum CompanionMetrics {
     static let hostMark: CGFloat = 32
+    static let welcomeMark: CGFloat = 72
     static let hostMarkSmall: CGFloat = 20
     static let scannerHeight: CGFloat = 320
     static let pill: CGFloat = 50

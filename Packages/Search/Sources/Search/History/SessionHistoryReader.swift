@@ -30,7 +30,7 @@ public struct HistorySource: Hashable, Sendable {
         SearchSourceStamp(path: url.path(percentEncoded: false), stamp: "\(size)-\(modifiedAt.timeIntervalSince1970)")
     }
 
-    /// The `.jsonl` files under `root` (no deeper than `maxDepth` folders), newest first.
+    /// The `.jsonl` files under `root`, at most `maxDepth` levels down (1 is `root` itself), newest first.
     public static func jsonlFiles(under root: URL, maxDepth: Int = .max) -> [HistorySource] {
         let keys: [URLResourceKey] = [.fileSizeKey, .contentModificationDateKey, .isRegularFileKey, .isDirectoryKey]
         guard

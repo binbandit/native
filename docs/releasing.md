@@ -18,6 +18,8 @@ The Sentry project is [FoxyCorps / native](https://foxycorps.sentry.io/settings/
 The public ingestion DSN lives in `NATIVE_SENTRY_DSN` (`Config/Shared.xcconfig`); development builds
 clear it and cannot start the SDK. Runtime reporting is controlled by Native's telemetry consent and
 organization policy, through `SentryTelemetry.start(dsn:)` and `stop()`.
+Keep **Security & Privacy → Prevent Storing of IP Addresses** enabled in the Sentry project; SDK PII
+settings alone do not prevent server-side IP enrichment.
 
 Both publishing workflows read the protected `SENTRY_AUTH_TOKEN` repository secret. This is Sentry's
 organization CI token named **Native GitHub release symbols**. Keep it out of source and app bundles.
