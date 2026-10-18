@@ -7,8 +7,8 @@ import ServiceManagement
 /// bundle, generated at build time; it carries the host's channel, so this app and the host it
 /// starts always agree on where the host lives.
 ///
-/// Release builds register a login item with `SMAppService`: the host starts at every login.
-/// Development builds (a channel per build folder) run a launchd job for this login session only,
+/// Native and Native Nightly register a login item with `SMAppService`: the host starts at every
+/// login. Development builds (a channel per build folder) run a launchd job for this login session only,
 /// so the many builds agents make never pile up as login items.
 struct HostRegistration {
     static let plistName = "NativeHost.plist"
@@ -24,11 +24,11 @@ struct HostRegistration {
 
     /// Where this build's host keeps its socket and store.
     var location: HostLocation {
-        HostLocation.standard(channel: Self.channel)
+        HostLocation.standard(channel: Self.channel, isDevelopment: isDevelopmentBuild)
     }
 
     var isDevelopmentBuild: Bool {
-        !Self.channel.isEmpty
+        Self.environment[HostLocation.developmentVariable] == "1"
     }
 
     var status: Status {
@@ -70,13 +70,18 @@ struct HostRegistration {
         Bundle.main.bundleURL.appending(path: "Contents/Library/LaunchAgents/\(plistName)")
     }
 
-    /// The channel the build baked into the plist: empty for release builds, one per build folder for
-    /// development builds.
-    private static var channel: String {
+    /// What the build baked into the plist's environment: the channel (empty for Native, `nightly`
+    /// for Native Nightly, a hash of the build folder for development builds) and whether this is
+    /// a development build.
+    private static let environment: [String: String] = {
         guard let data = try? Data(contentsOf: bundledPlist),
             let plist = try? PropertyListSerialization.propertyList(from: data, format: nil) as? [String: Any],
             let environment = plist["EnvironmentVariables"] as? [String: String]
-        else { return "" }
-        return environment[HostLocation.channelVariable] ?? ""
+        else { return [:] }
+        return environment
+    }()
+
+    private static var channel: String {
+        environment[HostLocation.channelVariable] ?? ""
     }
 }
