@@ -186,16 +186,21 @@ comes from a 10 s `sample` right after. "Before" is the build from the start of 
 | Streaming the reply | 100–107% CPU, main thread 100% busy | 22–25% CPU, main thread 24–29% busy |
 | Streaming: footprint | 210 MB → 477–484 MB peak | 173–187 MB → 184–213 MB peak, 172–190 MB after leaving the session |
 | Codex (`gpt-6.1-sol`), a 2,500-word reply with eight code blocks: main thread | 77% busy | 17% busy (one run each; Codex's pace varies) |
+| A thought running ("Thinking…" shimmer) | 34–38% CPU, 31–33% main thread | 0.9–1.1% CPU, about 1% main thread (the elapsed time ticking each second) |
+| Home on Nightly (the night sky) | 18.6% CPU, +257 MB graphics, for as long as Home shows | 0.02% CPU, no graphics |
 | Re-renders over a Codex reply's 169 chunks | `ComposerView` 340, `ModelPill` 453, `SessionRow` 2,921 | 2, 11 and 309 (two bursts at session events, none per chunk) |
 | Code blocks left without colors (Codex, the same six-block reply) | 4 of 12 replies | none in 6 replies, and no block drops its colors mid-stream |
 
-- **The working indicator re-rendered the window every frame.** `DotGridLoader` animated with
+- **Animations that never stop re-rendered the window every frame.** The dot-grid loaders, the
+  shimmer over "Thinking…" and running tools, and Nightly's night sky animated with
   `TimelineView(.animation)`, and every frame of a SwiftUI animation that never stops runs an
   update of the whole window's view graph and redraws the window: that's the 225 MB of graphics
-  the first measurements blamed on the growing reply, and most of the streaming CPU. A
-  standalone SwiftUI window with one such loader does the same (257 MB). The dots now pulse
-  with Core Animation in the render server (`DotGridPulse`), masking a fill SwiftUI draws once in
-  the foreground style.
+  the first measurements blamed on the growing reply, and most of the streaming CPU. A standalone
+  SwiftUI window with one such loader does the same (257 MB). All three now animate in the render
+  server instead (`LayerMaskedView`): SwiftUI draws the content once (a fill in the foreground
+  style, or the busy text in the primary color) and a Core Animation mask moves over it: the
+  pulsing dots, the sweeping band, the twinkling stars and drifting bats. On the Mac the masks
+  pause while the window is hidden, minimized or covered.
 - **The window measured the transcript at no width on every update.** AppKit asks the window's
   content for its minimum size whenever it changes, and SwiftUI lays the content out at zero width
   to answer, the transcript included: every line of the reply wrapped a character at a time, on
@@ -223,8 +228,6 @@ comes from a 10 s `sample` right after. "Before" is the build from the start of 
 | Turn on closing idle sessions | Once the row above is done (reopening is faithful now): default `sessionIdleTimeout` to 10 minutes. Also check claude-agent-acp, where each session is its own Claude Code process | App model |
 | Cache the applied plugin list itself | Only the experiment scan is cached; `plugins` still maps every loaded plugin on every read | Experiments / plugins |
 | "Couldn't run git: The file “project” doesn't exist" alert | New Session in a project whose folder is gone shows a modal; the sidebar already says "Can't find this project's folder" with Retry | Failures |
-| Animate the shimmer outside SwiftUI | "Thinking…" and running tool rows sweep a highlight with `TimelineView(.animation)`, which re-renders the window every frame like the loaders did ("Streaming" below): 34% CPU and 31% of the main thread for as long as a thought runs. It masks text, so it needs a Core Animation band over the text's own layer rather than `DotGridPulse`'s fill | Transcript |
 | Find what holds memory after a Codex reply | After the first long Codex reply, footprint stayed about 85 MB up (167 MB → 252 MB, mostly Malloc Small) after leaving the session; replies from a fake agent come back within 20 MB | Transcript, app model |
 | Read MCP config files off the main thread at launch | About 14 ms in Debug before the first frame; agents can wait for it instead | MCP |
 | Park the default agent when it has no open sessions for a long while, or start it on the first New Session | It's kept running so New Session never waits; with direct adapter launch that wait is now about 0.3 s for Codex | App model |
-| Night sky on Nightly's home page | Twinkles at 30 fps for as long as Home is shown, and every frame of a SwiftUI animation re-renders the whole window ("Streaming" below); a slower rate would look the same, Core Animation would cost nothing | Brand |

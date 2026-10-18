@@ -16,7 +16,10 @@ Mac) to see everything in light and dark side by side.
 2. **Light and dark.** Every component has a preview showing both (`DSPreviewPair`); check both
    before calling a change done.
 3. **Liquid Glass only for the control layer:** the floating composer
-   (`ComposerSurface(isFloating: true)`) and toolbars. Never for content.
+   (`ComposerSurface(isFloating: true)`) and toolbars. Never for content. Glass renders what's on
+   it vibrantly, and on an active window's lighter glass an opaque gray takes the glass's own shade,
+   so tokens drawn on glass resolve to translucent values there (`\.dsOnGlass`, set by
+   `.dsGlassEffect(in:)`; `.dsBorder` and `.dsBorderHover` do). Check glass with the window active.
 4. **The sidebar is translucent.** Nothing on it paints an opaque background: rows use the
    translucent `.dsHover`/`.dsSelected` fills, and a hand-built sidebar uses `.dsSidebarBackground()`
    (a split-view sidebar column, `.dsSidebarColumnTransparency()`). Anything see-through follows
@@ -24,7 +27,9 @@ Mac) to see everything in light and dark side by side.
    controls `.dsGlassEffect(in:)` or `.dsGlassButtonStyle()`, never a material or glass directly.
    Code is set with `.codeTextStyle(_:)` and colored with `HighlightedCode`, never `.dsMono` alone.
 5. **One pattern per situation.** Use the patterns below; don't invent a new error box, empty state,
-   loader or time format. Agree on a new one here first.
+   loader or time format. Agree on a new one here first. An animation that runs as long as
+   something works or shows goes through `LayerMaskedView` (Core Animation), never a SwiftUI
+   animation or `TimelineView(.animation)`, which re-render the whole window every frame.
 6. **Mac and iPad.** Code here compiles for macOS and iPadOS (`scripts/check-ios.sh
    native/DesignSystem`). Use the adapters in `Tokens/Platform.swift` (`DSPlatformFont`,
    `DSPasteboard`, `.dsFocusShape`, `.dsHitTarget`, `DS.isTouchPlatform`) rather than AppKit. Touch
