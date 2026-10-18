@@ -4,8 +4,117 @@ The iPhone layout of Native, in the spirit of Conductor's and Orca's companions:
 from the Mac, approve permission requests, steer or queue follow-ups, start a task, and get notified
 when something finishes or needs you. The iPad runs the full app instead (see "Clients and hosts" in
 `docs/architecture.md`); both are clients of a host, paired and connected the same way. The host
-keeps agents, worktrees, credentials and plugins. Not built yet; this records the decisions that
-shape the Mac app now.
+keeps agents, worktrees, credentials and plugins.
+
+**Status (2026-10-18):** pairing, the encrypted transport and the host's gateway are built
+(`Packages/NativeLink`); the Mac pairs devices in Settings › Paired Devices (`native/Companion/`);
+the iPhone app is `Companion/NativeCompanion.xcodeproj`. Push, Live Activities and real-device
+installs wait on an Apple developer team.
+
+## Pairing and transport (built)
+
+- **Identity.** The host has a static Curve25519 key (`<host dir>/Link/identity.key`, 0600, in the
+  host's 0700 directory: the keychain would prompt for every development build's new signature).
+  The phone makes a **new key for every host it pairs with**, kept in its keychain with that host's
+  pairing (`KeychainPairedHostStore`, one item per host, this device only), so two hosts can never
+  tell they share a phone.
+- **The QR code** is a `nativecompanion://pair#…` link (the iPhone's Camera opens the app with it):
+  the host's `HostID`, its public key, a 32-byte one-time secret, its name, the expiry (5 minutes)
+  and its addresses (LAN and Tailscale IPs, the Bonjour name, loopback on development hosts; relay
+  entries are reserved). Under it the Mac shows a six-character code for typing instead.
+- **The handshake** is Noise (`Noise_XX_25519_ChaChaPoly_SHA256`) on CryptoKit, checked against the
+  cacophony test vectors. Pairing uses `XXpsk3` with the secret (or the typed code) as the
+  pre-shared key, so only a device that read the Mac's screen can finish it. With the QR code the
+  phone checks the host's key against the one in the code before it reveals its own; with the
+  typed code it learns the key in the handshake, and both screens show a six-digit verification
+  code from the handshake hash that the Mac's user checks before trusting the device (a machine in
+  the middle would make them differ). Every later connection is plain `XX`: both sides prove their
+  static keys and check them against the pinned ones. TLS with pinned certificates was the
+  alternative; see `docs/decisions.md` ("Companion transport: Noise over TCP").
+- **Single use, short lived, three tries.** A window's secret and code die when a device proves
+  them (whatever the Mac's user then decides), when the window expires, or after three wrong
+  codes. Nobody confirming within two minutes declines.
+- **Framing.** TCP (Network.framework, keepalive on) carrying frames of a 2-byte length, a kind
+  byte and a body: the device's hello (link version and mode, also the Noise prologue), Noise
+  messages, and, only before keys exist, a one-byte refusal (no window, wrong code, too many
+  tries, busy). After the handshake the host's first encrypted word is a welcome (`ok`, `paired`,
+  `revoked`, `unknownDevice`, …), then the host protocol's NDJSON runs over the channel unchanged.
+- **Grants.** What a device may do beyond following and driving tasks is chosen on the Mac when it
+  confirms the pairing, and changeable later: install updates (`manageHost`, offered on for QR
+  pairing, off for typed codes) and turn plugins on and off (`managePlugins`, off). The gateway
+  enforces a method allowlist per device (`LinkMethodPolicy`) and hands the grants to the host as
+  its `ClientGrants`; `_native/host/shutdown`, `_native/agents/sync` and `update/report` never
+  cross a link, and anything not listed (future exec and file access) is refused until a grant
+  covers it. The device's `initialize` is renamed to the name the Mac confirmed, so anything the
+  host records as "from <device>" is true.
+- **Off by default.** With nothing paired and no window open, nothing listens on the network.
+  Opening the Pair iPhone sheet turns the gateway on (`devices.json` remembers it and the port);
+  Settings › Paired Devices can switch it off without forgetting devices.
+- **Discovery.** The gateway advertises `_native-link._tcp` over Bonjour with its key fingerprint
+  and `HostID` in the TXT record; the phone tries the Bonjour service first, then the saved
+  addresses. A second Native on the same Mac takes another port and Bonjour renames it.
+- **Revocation.** Revoking a device closes its live connections and refuses its key at the next
+  handshake with an authenticated `revoked`, so the phone says "removed on the Mac" (with Pair
+  Again) instead of retrying forever. Revoked devices stay as tombstones so revoking can be undone.
+
+### Host integration
+
+The gateway lives in the host process (so it works with the Mac app closed) and is plugged in by
+`NativeHostHelper/main.swift`: `LinkGateway(configuration:accept:)` with the host's `HostID`, then
+`start(verifyPeer:)`. Admitted streams go to `HostCore.accept(_:grants:)`. The Mac app drives it over
+`<host dir>/Link/link.sock` (`LinkControlClient`: status, open/close/decide pairing, revoke, restore,
+rename, grants, on/off), with the same uid and code-signature checks as the host socket.
+
+## Many hosts
+
+The phone pairs with host instances, keyed by `HostID`: a Mac, a run box, or two Natives on one Mac
+are separate hosts. Each has its own key, connection, cached data, plugins list, update state,
+connection log, name, color and symbol, and notification choices (`HostPreferences`), and
+unpairing one never touches another. The home screen groups everything by host (filterable to
+one), a task always belongs to one host and its actions go there, and notifications thread per
+host. Names default to the machine's own name; the person names hosts however they like. Add Host
+lives in Settings, and a pairing link opens it from anywhere.
+
+## The iPhone app
+
+`Companion/NativeCompanion.xcodeproj`, its own project so it can never break the Mac scheme. It
+compiles `native/DesignSystem` (a synchronized folder) and a few transcript files by reference
+(`MarkdownView`, `TranscriptStyle`, `TranscriptMetrics`, `TranscriptFixtures`), and links ACP,
+NativeHostClient, NativeLink and CodeThemes. Screens follow `research/companion-app.md`: welcome;
+Add Host (scan with VisionKit's DataScanner, pick a Mac Bonjour found and type its code, or paste
+the link); pairing progress with the verification code and a pairing log; Tasks grouped by host
+(needs you with inline approvals, working, recent); a task's transcript (the shared `SessionState`
+via `SessionMirror`), the docked approval card, queue/steer composer and queued messages; New Task;
+a host's page (connection and log, Native version and updates, plugins, name/color/symbol,
+notifications, unpair); Settings (hosts, appearance, app icon).
+
+- **Unsent messages** go back into the draft marked "Not sent"; nothing is cleared until the host
+  accepts it. **Interrupted turns** show the host's recovery notice in the transcript, and a lost
+  connection says the agent keeps working on the Mac. **Answering on one device clears it on the
+  other**: the host resolves the request for every client.
+- **Updates** follow `docs/releasing.md` ("Remote updates"): "Update available · 1.4.0" on the
+  host row, notes and Update Now on its page, a choice between Install When Idle and Install Now
+  (interrupting N tasks) when tasks run, progress through the restart and reconnection, failures
+  and rollbacks in words. Without the grant it says why instead of hiding the button. A local
+  notification announces a new update while the app runs.
+- **Plugins** are listed from `_native/plugins/list`, with switches only when the pairing granted
+  `managePlugins`. Appearance-only plugins installed on the phone are a second source for the same
+  list later.
+- **App icon** themes set the accent and call `setAlternateIconName("AppIcon-<Theme>")`; the
+  artwork comes from the icon owner, and until a theme's icon ships only the accent changes.
+- **Later, with a developer team:** APNs push (the categories in the research doc, threaded per
+  host) and one Live Activity per host; `CompanionNotifications` is the seam. Reuse of the Mac's
+  `ToolPresentation` waits on `ToolPhase` moving out of `ToolCallView.swift`; until then the phone
+  words tool rows with `CompanionToolSummary`.
+
+### Verifying
+
+`(cd Packages/NativeLink && swift test)` covers the Noise vectors, a full pairing over a socket
+pair, a used or expired secret, wrong codes, a host with the wrong key, an unpaired key, revocation
+(live connection cut, then refused, then restored) and a real TCP pairing through the control
+socket. End to end: two isolated instances (`scripts/dev/run-isolated.sh host-a` and `host-b`,
+Durable Sessions on), each paired from the simulator with `CompanionEndToEndTests`.
+
 ## Architecture
 
 - **The phone is an ACP client of the Mac.** Native already turns many agents into one coherent
@@ -51,6 +160,7 @@ shape the Mac app now.
 
 ## Open questions
 
-- Relay: Tailscale-only first, or build the relay early?
+- Relay: Tailscale-only first, or build the relay early? (Tailscale addresses already ride in the
+  QR code; the relay is a `LinkAddress` kind waiting for a server.)
 - Push: CloudKit (needs a developer team) or a push relay?
 - Should the phone start tasks in new worktrees, or only in existing projects?

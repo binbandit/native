@@ -107,6 +107,8 @@ final class TelemetryCenter {
             OTLPLogDestination(url: $0.url, headers: $0.headers, attributes: $0.attributes)
         }
         await Telemetry.pipeline.setDestinations(destinations)
+        // Consent can change while Native isn't running, with a crash still cached on disk.
+        if !isNativeEnabled { SentryTelemetry.stop() }
         activeDestinations = await Telemetry.pipeline.activeDestinations
     }
 
