@@ -127,6 +127,9 @@ struct GalleryComposer: View {
 }
 
 struct GalleryControls: View {
+    @State private var query = ""
+    @State private var typed = "worktree"
+
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
             HStack(spacing: DS.Space.md) {
@@ -155,6 +158,11 @@ struct GalleryControls: View {
                 Kbd("⌘K")
                 Kbd(KeyboardShortcut("n", modifiers: [.command, .shift]))
             }
+            HStack(spacing: DS.Space.md) {
+                SearchField("Filter pull requests", text: $query)
+                SearchField("Search shortcuts", text: $typed) { Kbd("⌘F") }
+            }
+            .frame(maxWidth: 520)
             SectionHeader("Section header") {
                 IconButton("Filter", systemImage: "line.3.horizontal.decrease") {}
                 IconButton("Add", systemImage: "plus") {}

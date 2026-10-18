@@ -78,6 +78,7 @@ Mac) to see everything in light and dark side by side.
 | `TaskStatus`, `StatusIndicator`, `DotGridLoader` | the reference app's statuses and Lottie dot-grid loaders (ported keyframes) |
 | `ContextUsageRing` | the reference app's context ring |
 | `ComposerSurface`, `ComposerControlsBar`, `.pill` / `.pillChrome`, `PillMenu`, `EffortBars`, `ComposerSendButton`, `ComposerStopButton`, `ComposerChip` | the reference app's composer, measured at 1x |
+| `SearchField` | The one search and filter field: a magnifier, a clear button once something's typed, Escape to clear, an optional trailing accessory (a shortcut hint, a record-keys button), no fill of its own |
 | `.ds(_:size:iconOnly:)` buttons, `IconButton`, `Badge`, `Kbd`, `Card`, `SeparatorLine`, `SectionHeader`, `StatusDot` | the reference app core-ui v2 buttons and Kbd; the reference app badges and cards |
 | `DiffView`, `DiffStats`, `DiffStatsText` | the reference app's diff layout; shared by the transcript and Git |
 | `StatusBarSurface`, `.statusBarSegment(_:isActive:)`, `StatusBarGlyph`, `StatusBarDivider`, `StatusBarSeparator` | the reference app's status bar in the reference app's chrome: the sidebar backdrop under a hairline, `DS.Size.chromeBar` tall, tertiary caption text, footer-sized glyphs, hairlines between items, color-only hover. Narrow windows drop whole items |
@@ -102,6 +103,7 @@ Mac) to see everything in light and dark side by side.
 | Details on click | `.dsPopover` with a `PopoverPanel` |
 | An icon-only button | `Button("Title", systemImage:)` with `.ds(_, iconOnly: true)` or `.pill(isSquare: true)`, or `IconButton`: the title stays VoiceOver's label. Never a bare `Image` label |
 | Elapsed time | `ElapsedTimeText(since:until:)`: ticks while running, a total once done |
+| Searching or filtering a list | `SearchField`, never a hand-built `TextField` with a magnifier |
 | Counts, sizes, times | `DSFormat`: `compactAge`, `time`, `countdown`, `timeAndCountdown`, `duration`, `thoughtFor`, `tokens`, `percent`, `share`, `lineCount`, `diffStat`, `cost`, `memory`, `cpu` |
 
 ## Do and don't

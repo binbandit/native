@@ -43,6 +43,8 @@ design system and used everywhere:
 | Errors | What happened, what Native already did about it, what the user can do, and one primary action |
 | Loading | One loader family (`DotGridLoader`), never ad-hoc spinners |
 | Empty states | `EmptyStateView`: what this is, why it's empty, one action |
+| A Settings row | The trailing edge says what it is: a control (`SettingsSwitch`, `SettingsSelect`, `.settingsField()`) is a setting; a verb button (`.buttonStyle(.settings)`) is an action; plain text (`SettingsValue`) is a value that can't change here; a lock badge and a dimmed control (`.settingsManaged(by:)`) means the organization decides. Anything else is information, in a `SettingsNote` card, never a row without a control |
+| Searching or filtering a list | `SearchField` |
 | Counts, sizes and times | One formatter each, in `DSFormat`: relative times, elapsed work time (`duration`: 8s, 1m 12s, 1h 4m, "Thought for 12s"; `ElapsedTimeText` ticks), token counts like 228k, diff stats like +12 −3, cost ($0.42), memory and CPU |
 
 Before calling a feature done, use Native for an hour as a real user would and write down every

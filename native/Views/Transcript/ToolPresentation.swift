@@ -107,7 +107,7 @@ extension ToolPresentation {
         case "Edit", "MultiEdit", "Write", "NotebookEdit":
             self = .fileChange(call)
         case "Bash":
-            let command = input?["command"]?.stringValue
+            let command = call.shellCommand
             if let description = input?["description"]?.stringValue, !description.isEmpty {
                 self.init(symbol: "terminal", subject: description.capitalizingFirstLetter)
             } else {
@@ -172,9 +172,10 @@ extension ToolPresentation {
         case .move: ToolPresentation(symbol: "arrow.right.doc.on.clipboard", subject: title)
         case .search: ToolPresentation(symbol: "magnifyingglass", subject: title, body: .lines)
         case .execute:
+            // Codex's permission request retitles the call "Run command"; the input still has it.
             ToolPresentation(
-                symbol: "terminal", subject: title, subjectStyle: .command, failureLabel: "Command failed",
-                body: .command(title))
+                symbol: "terminal", subject: call.shellCommand ?? title, subjectStyle: .command,
+                failureLabel: "Command failed", body: .command(call.shellCommand ?? title))
         case .think: ToolPresentation(symbol: "brain", subject: title)
         case .fetch: ToolPresentation(symbol: "globe", subject: title)
         case .switchMode: ToolPresentation(symbol: "arrow.triangle.branch", subject: title)
