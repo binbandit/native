@@ -5,7 +5,7 @@ import Foundation
 actor SearchStore {
     /// Bumped whenever the schema or what's indexed changes. The index is a cache of transcripts
     /// that live elsewhere, so an old one is dropped and refilled rather than migrated.
-    static let schemaVersion = 1
+    static let schemaVersion = 2
 
     private let database: SQLiteDatabase
 

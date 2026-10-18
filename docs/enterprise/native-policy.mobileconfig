@@ -115,12 +115,12 @@
             </array>
 
             <!-- Permission modes users can't pick, by the agent's mode id: Claude Code's
-                 bypassPermissions, Codex's full-access. Sessions that start in one are moved to
+                 bypassPermissions, Codex's agent-full-access. Sessions that start in one are moved to
                  the first allowed mode. -->
             <key>policy.permissions.forbiddenModes</key>
             <array>
                 <string>bypassPermissions</string>
-                <string>full-access</string>
+                <string>agent-full-access</string>
             </array>
 
             <!-- The sandboxed script runtime and its run_script tool. Applies at the next launch. -->
