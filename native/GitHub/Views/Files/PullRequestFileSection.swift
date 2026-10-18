@@ -86,7 +86,9 @@ struct PullRequestFileSection: View {
         if let patch = model.patches[file.path] {
             if let reason = patch.missingPatchReason {
                 missing(reason)
-            } else if model.isLarge(file.path), !model.loadedLargeDiffs.contains(file.path) {
+            } else if model.isLarge(file.path), !model.loadedLargeDiffs.contains(file.path),
+                model.threads(in: file.path).isEmpty
+            {
                 largeDiff
             } else {
                 PullRequestPatchView(model: model, path: file.path, hunks: model.hunks[file.path] ?? [])

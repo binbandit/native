@@ -14,6 +14,8 @@ extension SessionModel {
         var notes: [String] = []
         var forbidden: [(id: String, choice: ConfigChoices.Choice)] = []
         for id in services.titles.configChoices(for: titleKey).restoreOrder(in: state.configOptions) {
+            // The agent went away; reopening the session restores again.
+            guard phase == .loading else { return }
             // Read again each time: the user may have changed it meanwhile, and an earlier change
             // (the model) can change what this option offers.
             let choices = services.titles.configChoices(for: titleKey)

@@ -36,7 +36,7 @@ struct PullRequestPatchView: View {
                     }
                 }
             }
-            if lineCount > PullRequestFilesLayout.initialLineLimit, !showsAllLines {
+            if lineCount > PullRequestFilesLayout.initialLineLimit, !showsEverything {
                 Button("Show All \(lineCount) Lines") { showsAllLines = true }
                     .buttonStyle(.ds(.secondary))
                     .padding(DS.Space.md)
@@ -102,13 +102,18 @@ struct PullRequestPatchView: View {
         return text
     }
 
+    /// Files with conversations show whole, so no comment hides behind "Show All".
+    private var showsEverything: Bool {
+        showsAllLines || !model.threads(in: path).isEmpty
+    }
+
     private var lineCount: Int {
         hunks.reduce(0) { $0 + $1.lines.count }
     }
 
     /// Hunks and the lines of each to draw, up to the line limit; "Show All" lifts it.
     private var visibleHunks: [(hunk: DiffHunk, lines: Range<Int>)] {
-        var budget = showsAllLines ? Int.max : PullRequestFilesLayout.initialLineLimit
+        var budget = showsEverything ? Int.max : PullRequestFilesLayout.initialLineLimit
         var visible: [(hunk: DiffHunk, lines: Range<Int>)] = []
         for hunk in hunks where budget > 0 {
             let count = min(hunk.lines.count, budget)
