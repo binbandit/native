@@ -99,11 +99,11 @@ struct ExpeditionHeader: View {
             Divider()
             Button("Stop Expedition", systemImage: "stop.fill", role: .destructive) { send(.stop) }
         } label: {
-            Image(systemName: "ellipsis")
+            Label("More", systemImage: "ellipsis")
         }
         .menuStyle(.button)
         .menuIndicator(.hidden)
-        .buttonStyle(.ds(.ghost))
+        .buttonStyle(.ds(.ghost, iconOnly: true))
         .fixedSize()
         .help("More")
     }
