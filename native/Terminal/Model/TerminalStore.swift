@@ -9,6 +9,16 @@ final class TerminalStore {
     let preferences: TerminalPreferences
     /// Whether this build can run terminals; `.failed` once the engine refused to start.
     private(set) var availability: TerminalAvailability
+    /// Where the terminals' settings come from: Native's, or the user's Ghostty config.
+    private(set) var configStatus: TerminalConfigStatus = .native
+    /// The settings an import from Ghostty replaced, for Undo; cleared once settings change again.
+    private(set) var settingsBeforeImport: TerminalSettings?
+    /// The app's terminal colors: Native's, or the code theme's terminal palette, which the
+    /// code-theme setting sets here. Colors imported from Ghostty and "Use my Ghostty settings"
+    /// both take precedence over it.
+    var appTheme: TerminalTheme = .native {
+        didSet { applyStyle() }
+    }
 
     @ObservationIgnored private var panels: [SessionKey: TerminalPanelModel] = [:]
     @ObservationIgnored private var engine: TerminalEngine?
@@ -18,6 +28,9 @@ final class TerminalStore {
     @ObservationIgnored private var appearance: (TerminalAppearance, TerminalChrome)?
     @ObservationIgnored private var appliedStyle: TerminalStyle?
     @ObservationIgnored private let makeEngine: @MainActor () -> Result<TerminalEngine, TerminalEngineError>
+    @ObservationIgnored private lazy var watcher = TerminalConfigWatcher { [weak self] in
+        self?.reloadGhosttyConfig()
+    }
 
     /// - Parameter makeEngine: Starts the engine the first time a terminal opens.
     init(
@@ -32,7 +45,10 @@ final class TerminalStore {
         #else
         availability = .notBuilt
         #endif
-        preferences.onChange = { [weak self] in self?.applyStyle() }
+        preferences.onChange = { [weak self] in
+            self?.settingsBeforeImport = nil
+            self?.applyStyle()
+        }
     }
 
     /// The task's panel, created hidden and empty the first time it's asked for.
@@ -80,10 +96,49 @@ final class TerminalStore {
         applyStyle()
     }
 
+    /// Settings ▸ Terminal is showing: records the appearance and, with "Use my Ghostty settings"
+    /// on, starts the engine so the page can say whether the user's config loads.
+    func prepareSettings(_ appearance: TerminalAppearance, chrome: TerminalChrome) {
+        self.appearance = (appearance, chrome)
+        if preferences.settings.usesGhosttyConfig, availability == .available {
+            _ = startedEngine()
+        }
+        applyStyle()
+    }
+
+    /// Rereads the user's Ghostty config and restyles every terminal with it.
+    func reloadGhosttyConfig() {
+        applyStyle(force: true)
+    }
+
+    // MARK: Ghostty config
+
+    /// The user's Ghostty config as a one-time import into Native's settings.
+    func readGhosttyImport() -> TerminalImport {
+        let locations = GhosttyConfigLocations.current
+        let files = GhosttyConfigFile.load(locations, home: .homeDirectory)
+        return GhosttyImporter.read(files, locations: locations) { urls in
+            urls.lazy.compactMap { try? String(contentsOf: $0, encoding: .utf8) }.first
+        }
+    }
+
+    /// Copies an import into Native's settings, remembering the old ones for Undo.
+    func applyImport(_ ghosttyImport: TerminalImport) {
+        let previous = preferences.settings
+        preferences.settings = ghosttyImport.applied(to: previous)
+        settingsBeforeImport = previous
+    }
+
+    func undoImport() {
+        guard let previous = settingsBeforeImport else { return }
+        preferences.settings = previous
+    }
+
     private func makePanel(for session: SessionModel) -> TerminalPanelModel {
         let panel = TerminalPanelModel(workingDirectory: session.cwd, command: Self.debugCommand) { [weak self] in
             self?.startedEngine()
         }
+        panel.reloadConfig = { [weak self] in self?.reloadGhosttyConfig() }
         panels[session.key] = panel
         return panel
     }
@@ -104,14 +159,24 @@ final class TerminalStore {
         return engine
     }
 
-    private func applyStyle() {
-        guard let engine, let (appearance, chrome) = appearance else { return }
+    private func applyStyle(force: Bool = false) {
+        guard let (appearance, chrome) = appearance else { return }
         let settings = preferences.settings
-        let colors = TerminalTheme.named(settings.themeID).colors(for: appearance, appChrome: chrome)
-        let style = TerminalStyle(settings: settings, appearance: appearance, colors: colors)
-        guard style != appliedStyle else { return }
+        guard let engine else {
+            configStatus = settings.usesGhosttyConfig ? .ghosttyPending : .native
+            return
+        }
+        let style = TerminalStyle(settings: settings, appearance: appearance, appTheme: appTheme, appChrome: chrome)
+        guard force || style != appliedStyle else { return }
         appliedStyle = style
-        engine.apply(style)
+        let locations = settings.usesGhosttyConfig ? GhosttyConfigLocations.current : nil
+        configStatus = engine.apply(style, ghostty: locations)
+        if let locations {
+            // The config, its includes, and the user's themes, so edits apply as they're saved.
+            watcher.watch(configStatus.files + locations.defaultFiles + [locations.userThemes])
+        } else {
+            watcher.stop()
+        }
     }
 
     /// A command to run instead of the login shell, for trying failure states by hand:
