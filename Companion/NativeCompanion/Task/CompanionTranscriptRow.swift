@@ -138,7 +138,7 @@ struct ToolCallDetailSheet: View {
 
     private var sections: [(title: String, text: String)] {
         var result: [(String, String)] = []
-        if let command = call.rawInput?["command"]?.stringValue {
+        if let command = call.shellCommand {
             result.append(("Command", command))
         } else if let input = call.rawInput {
             result.append(("Input", input.prettyText))

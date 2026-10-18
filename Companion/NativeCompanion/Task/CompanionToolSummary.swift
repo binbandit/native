@@ -7,8 +7,10 @@ struct CompanionToolSummary {
     let symbol: String
     /// The row text, in the tense of where the call is ("Editing Composer.swift").
     let line: String
-    /// What it asks permission for ("Run pnpm test").
+    /// What it asks permission for ("Edit 3 lines Composer.swift", "Run command").
     let request: String
+    /// The shell command, as typed, when the call runs one.
+    let command: String?
     /// The command or path, for the approval card and the detail sheet.
     let detail: String?
     let stats: DiffStats?
@@ -18,8 +20,15 @@ struct CompanionToolSummary {
         presentation.phase = ToolPhase(call)
         symbol = presentation.symbol
         line = Self.sentence(presentation.verb, presentation.subject)
-        request = Self.sentence(presentation.verbs?.base, presentation.subject)
-        detail = call.rawInput?["command"]?.stringValue ?? presentation.subtitle ?? call.locations.first?.path
+        if case .command(let command) = presentation.body {
+            self.command = command
+            // A row whose subject is the command itself would say it twice above the command block.
+            request = presentation.subjectStyle == .command ? "Run command" : presentation.subject
+        } else {
+            command = nil
+            request = Self.sentence(presentation.verbs?.base, presentation.subject)
+        }
+        detail = command ?? presentation.subtitle ?? call.locations.first?.path
         stats = presentation.stats
     }
 
