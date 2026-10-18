@@ -2,7 +2,7 @@ import ACP
 import Foundation
 
 #if canImport(CryptoKit)
-    import CryptoKit
+import CryptoKit
 #endif
 
 // Plugins live on hosts and reach every client (docs/decisions.md). The host sends each plugin's
@@ -88,9 +88,9 @@ public enum ContentHash {
     /// Lowercase hex SHA-256, the key assets are cached under.
     public static func sha256(_ data: Data) -> String {
         #if canImport(CryptoKit)
-            SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
+        SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
         #else
-            #error("Hosts on other platforms need swift-crypto for content hashes")
+        #error("Hosts on other platforms need swift-crypto for content hashes")
         #endif
     }
 }

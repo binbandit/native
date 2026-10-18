@@ -16,12 +16,14 @@ nonisolated enum OrchestrationScriptTool {
     /// `run_script` over the scriptable `tools`, or nil without a runner: the app has none when it
     /// was built without cargo, or its runtime isn't signed into the App Sandbox.
     static func make(
-        binding tools: [MCPTool<OrchestrationCaller>], runner: ScriptRunner? = try? ScriptRunner.embedded()
+        binding tools: [MCPTool<OrchestrationCaller>], extensions: OrchestrationScriptExtensions,
+        runner: ScriptRunner? = try? ScriptRunner.embedded()
     ) -> MCPTool<OrchestrationCaller>? {
         guard let runner else { return nil }
         let bound = tools.filter { scriptable.contains($0.name) && $0.annotations.readOnly == true }
         let reference = ScriptReference.declarations(for: bound.map { binding($0) { _ in nil } })
-        return MCPTool(
+        let ownNames = Set(bound.map(\.name) + [searchName])
+        var tool = MCPTool(
             name: "run_script",
             title: "Run script",
             description: """
@@ -80,17 +82,66 @@ nonisolated enum OrchestrationScriptTool {
         ) { caller, arguments in
             // MCP clients give up on a silent call after a few minutes (Claude Code after five).
             let seconds = min(max(arguments.timeoutSeconds ?? 60, 1), 240)
-            let bindings = bound.map { tool in
+            var bindings = bound.map { tool in
                 binding(tool) { input in
                     let result = await tool(caller, arguments: try JSON(encoding: input))
                     if result.isError { throw ScriptToolError(result.text) }
                     return try result.structuredContent.map { try ScriptJSON(encoding: $0) } ?? .string(result.text)
                 }
             }
+            // Other features' tools live under their own names; one that would shadow Native's is dropped.
+            let extra = await extensions.bindings(for: caller).filter { !ownNames.contains($0.path[0]) }
+            if !extra.isEmpty { bindings += extra + [search(extra)] }
             let result = try await runner.run(
                 arguments.code, bindings: bindings, inputs: arguments.inputs ?? [:],
                 limits: ScriptLimits(time: .seconds(seconds)))
             return MCPToolResult(text: result.report, structuredContent: try JSON(encoding: result.summary), isError: !result.succeeded)
+        }
+        let declared = tool.description
+        tool.listing = { caller in
+            let summaries = await extensions.summaries(for: caller)
+            guard !summaries.isEmpty else {
+                return .init(description: declared, annotations: MCPToolAnnotations(readOnly: true, openWorld: false))
+            }
+            let description = declared + """
+
+
+                Also bound for this session: \(summaries.map(\.description).joined(separator: " ")) Find those \
+                with tools.\(searchName)({ query }), which resolves with their declarations (query by server name to list \
+                one server's), then call them in a later script.
+                """
+            return .init(
+                description: description, annotations: MCPToolAnnotations(readOnly: summaries.allSatisfy(\.isReadOnly)))
+        }
+        return tool
+    }
+
+    /// The binding scripts find other features' tools with, since their declarations aren't in the
+    /// description: a server can bring a hundred tools.
+    private static let searchName = "search"
+
+    private static func search(_ bindings: [ScriptBinding]) -> ScriptBinding {
+        ScriptBinding(
+            path: [searchName],
+            summary: "Finds bound tools by words in their name or description.",
+            inputSchema: [
+                "type": "object",
+                "properties": ["query": ["type": "string"], "limit": ["type": "integer"]],
+            ],
+            outputSchema: [
+                "type": "object",
+                "properties": [
+                    "tools": ["type": "array", "items": ["type": "string"]],
+                    "more": ["type": "integer"],
+                ],
+            ]
+        ) { input in
+            let query = input["query"]?.stringValue ?? ""
+            let limit: Int
+            if case .number(let number)? = input["limit"] { limit = Int(number) } else { limit = 20 }
+            let all = ScriptReference.search(bindings, query: query, limit: .max)
+            let shown = all.prefix(max(limit, 1)).map { ScriptJSON.string(ScriptReference.declaration(for: $0)) }
+            return ["tools": .array(Array(shown)), "more": .number(Double(all.count - shown.count))]
         }
     }
 
