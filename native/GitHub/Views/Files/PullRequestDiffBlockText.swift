@@ -14,8 +14,9 @@ struct PullRequestDiffBlockText {
     /// far more than reading this.
     let plain: String
 
-    /// Longer lines (minified bundles) show their start; the full line is on GitHub.
-    static let maximumLineLength = 1_000
+    /// Longer lines show their start: they run past the clipped edge anyway, and laying out the
+    /// rest of a minified line costs frames. "Copy Line" copies all of it.
+    static let maximumLineLength = 400
 
     /// - Parameters:
     ///   - highlighted: The hunk's lines as code segments, when highlighting has finished.
