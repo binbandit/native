@@ -36,21 +36,21 @@ final class UsageNotifications: LimitAlerting {
     }
 
     func turnEnded(_ context: SessionContext, reason: StopReason) async {
-        // Sessions Native started (workflow steps, expedition crews) report through their run instead.
-        guard reason == .endTurn, preferences.notifiesLongWork, let ref = UsageSessionRef(context),
-            host?.isUserTask(ref) == true, let summary = host?.lastTurnSummary(of: ref), let duration = summary.duration,
+        // A subagent's turn is part of its parent's, which notifies when it finishes.
+        guard reason == .endTurn, preferences.notifiesLongWork, let ref = UsageSessionRef(context), ref.parent == nil,
+            isUsersTask(ref), let summary = host?.lastTurnSummary(of: ref), let duration = summary.duration,
             duration >= preferences.longWorkThreshold
         else { return }
         await deliver(.turnFinished(ref, summary: summary), unlessShowing: ref)
     }
 
     func permissionRequested(_ context: SessionContext, toolCall: String) async {
-        guard preferences.notifiesNeedsYou, let ref = UsageSessionRef(context) else { return }
+        guard preferences.notifiesNeedsYou, let ref = UsageSessionRef(context), isUsersTask(ref) else { return }
         await deliver(.permission(ref, toolCall: toolCall), unlessShowing: ref)
     }
 
     func questionAsked(_ context: SessionContext, message: String) async {
-        guard preferences.notifiesNeedsYou, let ref = UsageSessionRef(context) else { return }
+        guard preferences.notifiesNeedsYou, let ref = UsageSessionRef(context), isUsersTask(ref) else { return }
         let canReply = host?.canReplyInText(ref) ?? false
         await deliver(.question(ref, message: message, canReply: canReply), unlessShowing: ref)
     }
@@ -58,7 +58,14 @@ final class UsageNotifications: LimitAlerting {
     func needsAttention(_ kind: NativeNotification.Kind, context: SessionContext?, reason: String) async {
         guard preferences.notifiesNeedsYou else { return }
         let ref = context.flatMap(UsageSessionRef.init)
+        if let ref, !isUsersTask(ref) { return }
         await deliver(.attention(kind, ref: ref, reason: reason), unlessShowing: ref)
+    }
+
+    /// Tasks Native's tools started (workflow steps, orchestration, expeditions) report through
+    /// their run instead.
+    private func isUsersTask(_ ref: UsageSessionRef) -> Bool {
+        host?.isNativeTask(ref) != true
     }
 
     /// Skips the notification while the user is in Native looking at the task, or at Native at all

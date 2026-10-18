@@ -64,7 +64,7 @@ public final class HostCore {
 
     let configuration: Configuration
     let store: HostStore
-    let hostID: HostID
+    public let hostID: HostID
     let epoch = UUID()
     let startedAt = Date.now
     var agents: [String: AgentLink] = [:]

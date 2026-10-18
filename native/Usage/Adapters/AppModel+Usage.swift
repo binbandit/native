@@ -26,8 +26,8 @@ extension AppModel: UsageNotificationsHost {
         selection == SessionKey(agent: ref.agent, id: ref.parent ?? ref.session)
     }
 
-    func isUserTask(_ ref: UsageSessionRef) -> Bool {
-        model(for: ref)?.origin == .user
+    func isNativeTask(_ ref: UsageSessionRef) -> Bool {
+        model(for: ref)?.origin == .task
     }
 
     func lastTurnSummary(of ref: UsageSessionRef) -> TurnSummary? {

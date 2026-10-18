@@ -38,19 +38,19 @@
               "value": true
             }
           ],
-          "image-name": "painted-interlock.png",
-          "name": "Painted Native interlock",
+          "image-name": "flat-interlock.png",
+          "name": "Flat Native interlock",
           "position": {
-            "scale": 0.5514157973174366,
+            "scale": 0.6613047363717605,
             "translation-in-points": [
-              -0.0,
-              7.864381520119226
+              -0.33065236818588023,
+              -3.5406613047363713
             ]
           }
         }
       ],
       "lighting": "individual",
-      "name": "Valentine’s Day · painted Native interlock",
+      "name": "Valentine’s Day · flat Native interlock",
       "refractivity-specializations": [
         {
           "appearance": "tinted",
@@ -62,8 +62,8 @@
         }
       ],
       "shadow": {
-        "kind": "neutral",
-        "opacity": 0.18
+        "kind": "none",
+        "opacity": 0
       },
       "translucency-specializations": [
         {

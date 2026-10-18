@@ -11,6 +11,11 @@ struct ClaudeCodePolicyTranslator: SessionPolicyTranslator {
         ).meta
     }
 
+    /// Auto lets a classifier decide and bypass and don't-ask never prompt (claude-agent-acp 0.93.0).
+    func approvesToolCallsUnasked(inMode mode: String) -> Bool {
+        ["auto", "bypassPermissions", "dontAsk"].contains(mode)
+    }
+
     func support(for kind: SessionPolicySupport.Kind) -> SessionPolicySupport {
         switch kind {
         case .mcpServers: .perSession

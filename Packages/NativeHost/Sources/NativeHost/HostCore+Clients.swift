@@ -108,6 +108,8 @@ extension HostCore {
             client.info = params.clientInfo
             try reply(info)
         case Method.syncAgents:
+            // What a host launches is its owner's call, never a paired device's.
+            guard client.grants.isLocal else { throw HostError.notAuthorized("change the agents this host runs") }
             try syncAgents(try message.params(as: SyncAgentsParams.self).agents)
             try reply(EmptyMessage())
         case Method.listSessions:
@@ -170,6 +172,8 @@ extension HostCore {
             try receiveUpdateReport(try message.params(as: HostUpdateStatusMessage.self).status, from: client)
             try reply(EmptyMessage())
         case Method.shutdown:
+            // Devices restart a host only through `update/install`, which installs a signed release.
+            guard client.grants.isLocal else { throw HostError.notAuthorized("stop or restart the host") }
             try reply(EmptyMessage())
             let params = try message.params(as: ShutdownParams.self)
             await shutdown(stopAgents: params.stopAgents, immediately: params.immediately)
