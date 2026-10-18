@@ -1,3 +1,4 @@
+import ACP
 import Foundation
 import Observation
 import SwiftUI
@@ -41,7 +42,7 @@ final class Projects {
     /// Adds a folder at the end, or returns its project if it's already open.
     @discardableResult
     func add(_ url: URL) -> Project {
-        if let existing = all.first(where: { $0.url.standardizedFileURL == url.standardizedFileURL }) {
+        if let existing = all.first(where: { SessionFolder.isSame($0.path, url.folderPath) }) {
             return existing
         }
         let project = Project(id: UUID(), url: url)

@@ -14,8 +14,10 @@ struct CodexPolicyTranslator: SessionPolicyTranslator {
         ).environment
     }
 
-    /// Native closes a session after it's sat unused (`AppModel.sessionIdleTimeout`); a minute later
-    /// Codex lets go of it and its MCP servers too (docs/performance.md).
+    /// How soon Codex should let go of a session Native closed (`AppModel.sessionIdleTimeout`), and
+    /// of the MCP servers it started for it. codex-acp 2.2.2 merges `CODEX_CONFIG` into each
+    /// session's config only, where Codex doesn't read this, so it takes effect once the adapter
+    /// hands it to the app-server (docs/performance.md).
     static let threadUnloadDelay = Duration.seconds(60)
 
     /// Auto review (`agent`) only asks about what its reviewer flags, and full access never asks (codex-acp 2.2.2).

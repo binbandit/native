@@ -10,8 +10,8 @@ extension AppModel {
         if !catalog.contains(key) {
             let folder = URL(filePath: projectFolder, directoryHint: .isDirectory)
             let project =
-                projects.all.first { $0.path == projectFolder }
-                ?? projects.all.first { cwd == $0.path || cwd.hasPrefix($0.path + "/") }
+                projects.all.first { SessionFolder.isSame($0.path, projectFolder) }
+                ?? projects.all.first { SessionFolder.contains($0.path, cwd) }
                 ?? projects.add(folder)
             catalog.add(SessionInfo(sessionId: key.id, cwd: cwd, title: title), for: key.agent, in: project.id)
         }

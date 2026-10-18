@@ -85,8 +85,10 @@ extension AppModel {
             }
         }
         do {
-            // The project's own folder, and the folders Native made for its tasks (worktrees).
-            let folders = [project.path] + (await taskWorkspaces?.taskFolders(of: project) ?? []).map(\.folderPath)
+            // The project's own folder, and the folders Native made for its tasks (worktrees), each
+            // under every spelling an agent may have recorded it by.
+            let folders = ([project.path] + (await taskWorkspaces?.taskFolders(of: project) ?? []).map(\.folderPath))
+                .flatMap(SessionFolder.listingPaths)
             for folder in Set(folders).sorted() {
                 merge(try await SessionCatalog.fetch(cwd: folder, from: connection), from: folder)
             }
