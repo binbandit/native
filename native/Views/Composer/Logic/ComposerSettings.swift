@@ -67,7 +67,10 @@ struct ComposerSettings: Equatable {
     }
 
     var nextAutonomy: Change? {
-        guard let autonomy, !isAutonomySuspended, let next = autonomy.next(in: autonomyLevels) else { return nil }
+        guard let autonomy, !isAutonomySuspended else { return nil }
+        // Cycling skips the levels the organization forbids.
+        let allowed = autonomyLevels.filter { !PolicyPermissionModes.forbids(autonomy.option, value: $0.value) }
+        guard let next = autonomy.next(in: allowed) else { return nil }
         return Change(setting: autonomy, value: next.value)
     }
 

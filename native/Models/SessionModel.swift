@@ -320,6 +320,8 @@ final class SessionModel {
 
     func setConfigOption(_ option: ConfigOption, to value: String) async {
         guard case .select(let current, let choices) = option.kind, current != value else { return }
+        // Every way of changing a setting comes through here, so a forbidden permission mode stops here.
+        guard !PolicyPermissionModes.forbids(option, value: value) else { return }
         // Show the choice right away; the agent's answer is authoritative and replaces it.
         replaceConfigOption(option.id, with: .select(currentValue: value, options: choices))
         do {

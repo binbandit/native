@@ -33,7 +33,12 @@ public final class SearchIndex: Sendable {
     public func replace(
         _ session: SearchSessionRecord, documents: [SearchDocument], source: SearchSourceStamp? = nil
     ) async throws {
-        try await writer.replace(session, documents: documents, source: source)
+        try await writer.replace([SearchIndexEntry(session: session, documents: documents, source: source)])
+    }
+
+    /// Indexes several sessions in one transaction, for backfilling.
+    public func replace(_ entries: [SearchIndexEntry]) async throws {
+        try await writer.replace(entries)
     }
 
     /// Updates a session's title, project or dates, leaving its transcript as indexed.

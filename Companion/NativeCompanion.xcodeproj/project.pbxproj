@@ -10,6 +10,7 @@
 		C0C000000000000000000056 /* ACP in Frameworks */ = {isa = PBXBuildFile; productRef = C0C000000000000000000053 /* ACP */; };
 		C0C000000000000000000057 /* NativeHostClient in Frameworks */ = {isa = PBXBuildFile; productRef = C0C000000000000000000054 /* NativeHostClient */; };
 		C0C000000000000000000058 /* NativeLink in Frameworks */ = {isa = PBXBuildFile; productRef = C0C000000000000000000055 /* NativeLink */; };
+		C0C000000000000000000059 /* CodeThemes in Frameworks */ = {isa = PBXBuildFile; productRef = C0C00000000000000000005C /* CodeThemes */; };
 		C0C000000000000000000080 /* MarkdownView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C000000000000000000070 /* MarkdownView.swift */; };
 		C0C000000000000000000081 /* TranscriptMetrics.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C000000000000000000071 /* TranscriptMetrics.swift */; };
 		C0C000000000000000000082 /* ToolPresentation.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C000000000000000000072 /* ToolPresentation.swift */; };
@@ -86,6 +87,7 @@
 				C0C000000000000000000056 /* ACP in Frameworks */,
 				C0C000000000000000000057 /* NativeHostClient in Frameworks */,
 				C0C000000000000000000058 /* NativeLink in Frameworks */,
+				C0C000000000000000000059 /* CodeThemes in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -154,6 +156,7 @@
 				C0C000000000000000000053 /* ACP */,
 				C0C000000000000000000054 /* NativeHostClient */,
 				C0C000000000000000000055 /* NativeLink */,
+				C0C00000000000000000005C /* CodeThemes */,
 			);
 			productName = NativeCompanion;
 			productReference = C0C000000000000000000004 /* NativeCompanion.app */;
@@ -212,6 +215,7 @@
 				C0C000000000000000000050 /* XCLocalSwiftPackageReference "../Packages/ACP" */,
 				C0C000000000000000000051 /* XCLocalSwiftPackageReference "../Packages/NativeHost" */,
 				C0C000000000000000000052 /* XCLocalSwiftPackageReference "../Packages/NativeLink" */,
+				C0C00000000000000000005B /* XCLocalSwiftPackageReference "../Packages/CodeThemes" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C0C000000000000000000003 /* Products */;
@@ -425,6 +429,10 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
+		C0C00000000000000000005B /* XCLocalSwiftPackageReference "../Packages/CodeThemes" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = ../Packages/CodeThemes;
+		};
 		C0C000000000000000000050 /* XCLocalSwiftPackageReference "../Packages/ACP" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = ../Packages/ACP;
@@ -440,6 +448,11 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		C0C00000000000000000005C /* CodeThemes */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = C0C00000000000000000005B /* XCLocalSwiftPackageReference "../Packages/CodeThemes" */;
+			productName = CodeThemes;
+		};
 		C0C000000000000000000053 /* ACP */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = C0C000000000000000000050 /* XCLocalSwiftPackageReference "C0C000000000000000000050" */;

@@ -2,7 +2,8 @@
 
 Every task has a terminal panel under its composer: tabs of real shells that start in the task's
 folder (its worktree, when it has one), drawn by libghostty, the library inside
-[Ghostty](https://ghostty.org). ⌃` shows and hides it, ⌃⇧` adds a tab (`docs/keyboard.md`).
+[Ghostty](https://ghostty.org). ⌃` shows and hides it, ⌃⇧` adds a tab (`docs/keyboard.md`), and
+the task's toolbar has a terminal button for pointer and touch.
 Why libghostty, and the pin, are in `docs/decisions.md`.
 
 ## How it fits together
