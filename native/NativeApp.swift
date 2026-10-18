@@ -17,6 +17,8 @@ struct NativeApp: App {
     @State private var terminals = TerminalStore()
     @State private var keepAwake: KeepAwakeController
     @State private var statusBar: StatusBarRegistry
+    /// One connection to this build's background host, shared by the main window and Durable Sessions.
+    @State private var durableHost = DurableHost()
 
     init() {
         // Git and GitHub run with the login-shell environment the agents get.
@@ -53,6 +55,7 @@ struct NativeApp: App {
                 .environment(BuiltInPlugins.automation.center)
                 .environment(BuiltInPlugins.expeditions.center)
                 .environment(terminals)
+                .environment(durableHost)
                 .environment(settings)
                 .environment(model.plugins)
                 .environment(git.settings)
@@ -111,6 +114,7 @@ struct NativeApp: App {
         Window("Durable Sessions", id: HostPreviewWindow.id) {
             HostPreviewWindow()
                 .environment(model)
+                .environment(durableHost)
                 .dsAccentPalette(themeID: iconPreferences.theme.rawValue)
                 .appearancePreferences()
         }

@@ -59,18 +59,16 @@ public struct AppearanceCatalog: Hashable, Sendable {
     /// Every icon set first, so a celebration can use one from another plugin.
     public init(_ plugins: [Plugin]) {
         for plugin in plugins {
-            collect(plugin.iconSets, from: plugin.source) { try Self.validate($0, from: plugin.source, taken: iconSets) }
-                .forEach { iconSets.append($0) }
-        }
-        for plugin in plugins {
-            collect(plugin.celebrations, from: plugin.source) { contribution in
-                try Self.checkIdentity(contribution.id.rawValue, from: plugin.source)
-                if celebrations.contains(where: { $0.id == contribution.id }) {
-                    throw Failure("Another celebration already uses the id \"\(contribution.id)\".")
-                }
-                return try Self.validate(contribution, from: plugin.source, order: celebrations.count, iconSets: iconSets)
+            Self.collect(plugin.iconSets, from: plugin.source, into: &iconSets, problems: &problems) { set, taken in
+                try Self.validate(set, from: plugin.source, taken: taken)
             }
-            .forEach { celebrations.append($0) }
+        }
+        let iconSets = iconSets
+        for plugin in plugins {
+            Self.collect(plugin.celebrations, from: plugin.source, into: &celebrations, problems: &problems) {
+                celebration, taken in
+                try Self.validate(celebration, from: plugin.source, taken: taken, iconSets: iconSets)
+            }
         }
     }
 
@@ -98,33 +96,27 @@ public struct AppearanceCatalog: Hashable, Sendable {
         }
     }
 
-    /// Validates each entry on its own, so one problem only costs that entry.
-    private mutating func collect<Element: AppearanceContribution, Valid>(
-        _ list: ContributionList<Element>, from source: ContributionSource, _ validate: (Element) throws -> Valid
-    ) -> [Valid] {
+    /// Validates each entry on its own, so one problem only costs that entry. `validate` sees what's
+    /// been accepted so far, to catch duplicate ids.
+    private static func collect<Element: AppearanceContribution, Valid>(
+        _ list: ContributionList<Element>, from source: ContributionSource, into accepted: inout [Valid],
+        problems: inout [ContributionProblem], _ validate: (Element, [Valid]) throws -> Valid
+    ) {
         problems += list.malformed.map { problem in
             var problem = problem
             problem.pluginID = source.pluginID
             return problem
         }
-        var valid: [Valid] = []
         for element in list.valid {
             do {
-                valid.append(try validate(element))
+                accepted.append(try validate(element, accepted))
             } catch {
-                let id = (try? JSONEncoder().encode(element)).flatMap { Self.id(in: $0) }
                 problems.append(
                     ContributionProblem(
-                        kind: Element.kind, index: nil, id: id, message: (error as? Failure)?.message ?? "\(error)",
-                        pluginID: source.pluginID))
+                        kind: Element.kind, index: nil, id: element.rawID,
+                        message: (error as? Failure)?.message ?? "\(error)", pluginID: source.pluginID))
             }
         }
-        return valid
-    }
-
-    private static func id(in json: Data) -> String? {
-        struct Identified: Decodable { let id: String }
-        return try? JSONDecoder().decode(Identified.self, from: json).id
     }
 
     private static func validate(_ contribution: IconSetContribution, from source: ContributionSource, taken: [IconSet])
@@ -145,15 +137,20 @@ public struct AppearanceCatalog: Hashable, Sendable {
     }
 
     private static func validate(
-        _ contribution: CelebrationContribution, from source: ContributionSource, order: Int, iconSets: [IconSet]
+        _ contribution: CelebrationContribution, from source: ContributionSource, taken: [CelebrationEvent],
+        iconSets: [IconSet]
     ) throws -> CelebrationEvent {
+        try checkIdentity(contribution.id.rawValue, from: source)
+        if taken.contains(where: { $0.id == contribution.id }) {
+            throw Failure("Another celebration already uses the id \"\(contribution.id)\".")
+        }
         if contribution.title.fallback.trimmingCharacters(in: .whitespaces).isEmpty {
             throw Failure("The title is empty.")
         }
         try checkCompatibility(contribution.compatibility, nativeVersion: source.nativeVersion)
         try checkWindows(contribution.display)
         return CelebrationEvent(
-            contribution: contribution, pluginID: source.pluginID, order: order,
+            contribution: contribution, pluginID: source.pluginID, order: taken.count,
             iconSet: contribution.iconSet.flatMap { id in iconSets.first { $0.id == id } })
     }
 

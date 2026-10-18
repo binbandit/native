@@ -9,6 +9,8 @@ public enum ContributionKind: String, Hashable, Sendable {
 /// An entry of a manifest's `iconSets` or `celebrations`.
 public protocol AppearanceContribution: Codable, Hashable, Sendable {
     static var kind: ContributionKind { get }
+    /// Its id as written, for problems.
+    var rawID: String { get }
 }
 
 /// A manifest's list of one kind of contribution, decoded one entry at a time: a malformed entry
