@@ -85,7 +85,7 @@ struct GoalEditor: View {
         }
         .padding(DS.Space.xl)
         .frame(width: AutomationMetrics.goalEditorWidth)
-        .background(.dsOverlay)
+        .dsPopoverBackground()
     }
 
     private var budgetNote: String {

@@ -30,9 +30,10 @@ struct StatusBarSegment<Label: View, Details: View>: View {
         .accessibilityValue(accessibilityValue)
         .accessibilityHint("Shows details")
         .popover(isPresented: $isPresented, arrowEdge: .top) {
-            // Details are content, so they sit on the opaque overlay color rather than glass.
+            // Details are content, so they sit on the overlay color rather than glass, as opaque as
+            // the user's transparency setting allows.
             details
-                .presentationBackground(.dsOverlay)
+                .dsPopoverBackground()
         }
     }
 }

@@ -36,7 +36,7 @@ struct GitCommitPopover: View {
         }
         .padding(DS.Space.lg)
         .frame(width: GitMetrics.commitWidth)
-        .background(.dsOverlay)
+        .dsPopoverBackground()
         .disabled(isCommitting)
         .onAppear {
             selected = GitCommitFile.defaultSelection(from: model.changes)
