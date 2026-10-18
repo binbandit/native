@@ -8,8 +8,11 @@ struct HostPreferences: Codable, Hashable {
     /// Defaults to the machine's own name.
     var label: String?
     /// An accent palette id (`DSAccentPalette.all`), used for the host's mark and its screens.
+    /// `original` is no color of its own: its screens keep the app's accent.
     var themeID = "original"
     var symbol = "desktopcomputer"
+    /// The app icon while this is the active host; nil leaves the icon alone.
+    var appIcon: CompanionAppIcon?
     var notifiesAboutUpdates = true
     var notifiesAboutApprovals = true
 

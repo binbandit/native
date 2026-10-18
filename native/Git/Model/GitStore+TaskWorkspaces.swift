@@ -96,10 +96,16 @@ extension GitStore {
 
     // MARK: - Helpers
 
-    /// Where a repository's task worktrees go, in the home folder of the machine it's on.
+    /// Where a repository's task worktrees go, in the home folder of the machine it's on. On this Mac
+    /// the `gitWorktreesFolder` default can move them, which isolated development instances use so
+    /// their test worktrees never mix with real ones (scripts/dev/run-isolated.sh).
     private static func taskLocation(of repository: Repository) -> URL {
-        Worktree.defaultLocation(home: repository.git.environment["HOME"])
-            .appending(path: Worktree.slug(repository.name, maxLength: 60), directoryHint: .isDirectory)
+        let home = repository.git.environment["HOME"]
+        let isThisMac = home == nil || home == NSHomeDirectory()
+        let override = isThisMac ? UserDefaults.standard.string(forKey: "gitWorktreesFolder") : nil
+        let base =
+            override.map { URL(filePath: $0, directoryHint: .isDirectory) } ?? Worktree.defaultLocation(home: home)
+        return base.appending(path: Worktree.slug(repository.name, maxLength: 60), directoryHint: .isDirectory)
     }
 
     /// `<prefix><code>` with a code no branch uses yet.

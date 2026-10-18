@@ -15,6 +15,13 @@ final class CompanionStore {
     var pendingInvite: PairingInvite?
     var isAddingHost = false
     var problem: String?
+    /// The host the person is looking at, picked from the home screen's host chip; nil is all of
+    /// them. Its color tints the screens and its app icon, if it has one, shows.
+    var activeHostID: HostID? {
+        didSet { UserDefaults.standard.set(activeHostID?.description, forKey: Self.activeHostKey) }
+    }
+
+    private static let activeHostKey = "activeHost"
 
     private static let logger = Logger(subsystem: "Native.Companion", category: "Hosts")
 
@@ -31,6 +38,9 @@ final class CompanionStore {
             problem = "Couldn't read paired hosts: \(error.localizedDescription)"
         }
         for host in hosts { configure(host) }
+        activeHostID = UserDefaults.standard.string(forKey: Self.activeHostKey).flatMap { id in
+            hosts.first { $0.id.description == id }?.id
+        }
         browsing = Task { [weak self] in
             for await found in browser.results {
                 self?.discovered = found
@@ -40,6 +50,11 @@ final class CompanionStore {
 
     func host(_ id: HostID) -> HostConnection? {
         hosts.first { $0.id == id }
+    }
+
+    /// The host in view: the one picked, or the only one.
+    var activeHost: HostConnection? {
+        hosts.count == 1 ? hosts.first : activeHostID.flatMap(host)
     }
 
     func startAll() {
@@ -71,6 +86,7 @@ final class CompanionStore {
         try? store.remove(connection.id)
         HostPreferences.remove(for: connection.id)
         hosts.removeAll { $0.id == connection.id }
+        if activeHostID == connection.id { activeHostID = nil }
     }
 
     /// Opens the add flow for a `nativecompanion://pair#…` link.
