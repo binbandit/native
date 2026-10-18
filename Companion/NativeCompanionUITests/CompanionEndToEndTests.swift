@@ -61,7 +61,10 @@ final class CompanionEndToEndTests: XCTestCase {
         XCTAssertFalse(app.staticTexts["notSent"].waitForExistence(timeout: 3), "the message was accepted")
         let allow = app.buttons["permission-allow_once"]
         XCTAssertTrue(allow.waitForExistence(timeout: 240), "the agent asked for permission")
+        sleep(2)
         attachScreenshot(app, named: "approval")
+        // `COMPANION_LEAVE_PENDING=1` leaves the request for another look (in the other appearance).
+        if environment["COMPANION_LEAVE_PENDING"] == "1" { return }
         allow.tap()
         XCTAssertTrue(
             app.staticTexts["Allowed from this iPhone"].waitForExistence(timeout: 30), "the answer reached the host")
@@ -130,8 +133,9 @@ final class CompanionEndToEndTests: XCTestCase {
             XCTAssertTrue(toggle.waitForExistence(timeout: 5))
             toggle.switches.firstMatch.tap()
             acceptIconAlert()
+            sleep(1)
             attachScreenshot(app, named: "celebration-on")
-            app.navigationBars.buttons.firstMatch.tap()
+            app.navigationBars["Celebrations"].buttons.firstMatch.tap()
             sleep(1)
             attachScreenshot(app, named: "app-icon-celebration")
             if environment["COMPANION_CELEBRATION_OFF"] == "1" {

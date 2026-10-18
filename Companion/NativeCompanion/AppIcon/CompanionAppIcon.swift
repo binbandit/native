@@ -16,8 +16,7 @@ enum CompanionAppIcon: String, CaseIterable, Identifiable, Codable {
     }
 }
 
-/// The alternate icons this build carries, as its Info.plist lists them, and their images for
-/// previews.
+/// The alternate icons this build carries, as its Info.plist lists them.
 enum BundledAppIcons {
     static let names: Set<String> = {
         let icons = Bundle.main.object(forInfoDictionaryKey: "CFBundleIcons") as? [String: Any]
@@ -25,8 +24,11 @@ enum BundledAppIcons {
         return Set(alternates?.keys.map(\.self) ?? [])
     }()
 
-    /// The icon's own artwork, for a picker row; nil is the primary icon.
-    static func image(_ name: String?) -> UIImage? {
-        UIImage(named: name ?? "AppIcon")
+    /// A small light and dark render of an icon for the pickers (`IconPreview-<name>`, made by
+    /// `scripts/companion/app-icons.sh`): iOS can't load app icons themselves as images. Nil is
+    /// the primary icon.
+    static func previewName(_ iconName: String?) -> String? {
+        let name = "IconPreview-" + (iconName.map { String($0.dropFirst("AppIcon-".count)) } ?? "original")
+        return UIImage(named: name) == nil ? nil : name
     }
 }

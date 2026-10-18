@@ -20,7 +20,9 @@ struct PullRequestPatchView: View {
         let colors = DSCodeColors(environment, on: .surface)
         let threads = model.threads(in: path)
         let numberWidth = self.numberWidth
-        LazyVStack(alignment: .leading, spacing: 0) {
+        // Not lazy: the file list around it is, and a lazy stack nested in another leaves blocks
+        // undrawn. Files show at most a few hundred lines here, in blocks of a few dozen.
+        VStack(alignment: .leading, spacing: 0) {
             ForEach(visibleHunks, id: \.hunk.id) { hunk, shown in
                 PullRequestHunkHeader(hunk: hunk)
                 ForEach(segments(of: hunk, shown: shown, threads: threads), id: \.lowerBound) { segment in

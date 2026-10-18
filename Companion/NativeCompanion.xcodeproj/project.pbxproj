@@ -25,7 +25,7 @@
 		C0C0000000000000000000B2 /* AppIcon-ember.icon in Resources */ = {isa = PBXBuildFile; fileRef = C0C0000000000000000000A2 /* AppIcon-ember.icon */; };
 		C0C0000000000000000000B3 /* AppIcon-fern.icon in Resources */ = {isa = PBXBuildFile; fileRef = C0C0000000000000000000A3 /* AppIcon-fern.icon */; };
 		C0C0000000000000000000B4 /* AppIcon-prism.icon in Resources */ = {isa = PBXBuildFile; fileRef = C0C0000000000000000000A4 /* AppIcon-prism.icon */; };
-		C0C0000000000000000000B5 /* CelebrationIcons.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C0C0000000000000000000A5 /* CelebrationIcons.xcassets */; };
+		C0C0000000000000000000B5 /* IconArtwork.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C0C0000000000000000000A5 /* IconArtwork.xcassets */; };
 		C0C0000000000000000000AA /* AppAppearance in Frameworks */ = {isa = PBXBuildFile; productRef = C0C0000000000000000000A9 /* AppAppearance */; };
 		C0C0000000000000000000AC /* CelebrationDates.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C0000000000000000000AB /* CelebrationDates.swift */; };
 /* End PBXBuildFile section */
@@ -56,7 +56,7 @@
 		C0C0000000000000000000A2 /* AppIcon-ember.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon-ember.icon; sourceTree = "<group>"; };
 		C0C0000000000000000000A3 /* AppIcon-fern.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon-fern.icon; sourceTree = "<group>"; };
 		C0C0000000000000000000A4 /* AppIcon-prism.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon-prism.icon; sourceTree = "<group>"; };
-		C0C0000000000000000000A5 /* CelebrationIcons.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = CelebrationIcons.xcassets; sourceTree = "<group>"; };
+		C0C0000000000000000000A5 /* IconArtwork.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = IconArtwork.xcassets; sourceTree = "<group>"; };
 		C0C0000000000000000000AB /* CelebrationDates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CelebrationDates.swift; path = ../native/Celebrations/CelebrationDates.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
@@ -172,7 +172,7 @@
 				C0C0000000000000000000A2 /* AppIcon-ember.icon */,
 				C0C0000000000000000000A3 /* AppIcon-fern.icon */,
 				C0C0000000000000000000A4 /* AppIcon-prism.icon */,
-				C0C0000000000000000000A5 /* CelebrationIcons.xcassets */,
+				C0C0000000000000000000A5 /* IconArtwork.xcassets */,
 			);
 			path = AppIcons;
 			sourceTree = "<group>";
@@ -289,7 +289,7 @@
 				C0C0000000000000000000B2 /* AppIcon-ember.icon in Resources */,
 				C0C0000000000000000000B3 /* AppIcon-fern.icon in Resources */,
 				C0C0000000000000000000B4 /* AppIcon-prism.icon in Resources */,
-				C0C0000000000000000000B5 /* CelebrationIcons.xcassets in Resources */,
+				C0C0000000000000000000B5 /* IconArtwork.xcassets in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -322,7 +322,7 @@
 				"$(SRCROOT)/AppIcons/AppIcon-ember.icon",
 				"$(SRCROOT)/AppIcons/AppIcon-fern.icon",
 				"$(SRCROOT)/AppIcons/AppIcon-prism.icon",
-				"$(SRCROOT)/AppIcons/CelebrationIcons.xcassets",
+				"$(SRCROOT)/AppIcons/IconArtwork.xcassets",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
