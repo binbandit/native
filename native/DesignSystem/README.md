@@ -72,6 +72,7 @@ Mac) to see everything in light and dark side by side.
 | `SidebarCollapseButton`, `HistoryNavigationButtons`, `WindowToolbarButton` | the reference app's toggle placement; the reference app's ghost glyphs and arrows (color-only hover, safe in a macOS toolbar) |
 | `UpdateButton` | the reference app's accent update tag right of the sidebar toggle |
 | `UsageMeter` | the reference app's usage bar (accent, warning at 80%, error at 100%) |
+| `ActivityHeatmap` | GitHub's contribution graph: 53 weeks of days, month and weekday labels, five accent steps over a neutral empty square; hover, tap or arrow keys pick a day, and every square tells VoiceOver its exact count |
 | `ProjectGroup`, `ProjectRow`, `ProjectAvatar` | the reference app's repository groups |
 | `TaskRow` (+ `leading`/`accessory` slots), `TaskBadge`, `DiffStatLabel`, `CompactAgeText` | the reference app's workspace rows: one leading visual, trailing badge, diff or age |
 | `TaskStatus`, `StatusIndicator`, `DotGridLoader` | the reference app's statuses and Lottie dot-grid loaders (ported keyframes) |

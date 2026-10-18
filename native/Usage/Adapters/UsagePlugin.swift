@@ -39,7 +39,8 @@ struct UsagePlugin: NativePlugin {
     /// Opens a task from Settings › Usage's day list.
     func open(_ task: ActivityDay.Task) {
         let ref = UsageSessionRef(
-            agent: AgentDefinition.ID(rawValue: task.agent), agentName: task.agentName, session: SessionID(task.session),
+            agent: AgentDefinition.ID(rawValue: task.agent), agentName: task.agentName,
+            session: SessionID(task.session),
             title: task.title)
         notifications.host?.show(ref)
     }

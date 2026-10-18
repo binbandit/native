@@ -57,7 +57,7 @@ private struct CodeThemePreview: View {
                 Spacer(minLength: DS.Space.md)
                 SettingsSelect(
                     label: appearance == .light ? "Light mode code theme" : "Dark mode code theme",
-                    selection: $selection,
+                    selection: shownSelection,
                     options: themes.filter { $0.palette(for: appearance) != nil }
                         .map { .init(value: $0.id.rawValue, title: $0.name) },
                     width: SettingsMetrics.selectWidth * 1.5
@@ -80,6 +80,15 @@ private struct CodeThemePreview: View {
             .accessibilityLabel("Preview of the \(appearance == .light ? "light" : "dark") mode code theme")
         }
         .frame(maxWidth: .infinity)
+    }
+
+    /// The choice, or Native while the chosen theme's plugin is off (the app falls back the same way).
+    private var shownSelection: Binding<String> {
+        Binding {
+            themes.contains { $0.id.rawValue == selection } ? selection : CodeTheme.native.id.rawValue
+        } set: {
+            selection = $0
+        }
     }
 
     /// The window's themes with this appearance's choice in place, so the preview follows the picker.

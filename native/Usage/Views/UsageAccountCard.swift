@@ -61,7 +61,9 @@ struct UsageAccountCard: View {
         if let report = reports.reports[agent] {
             VStack(alignment: .leading, spacing: DS.Space.lg) {
                 ForEach(report.windows) { window in
-                    UsageMeter(title: window.name, fraction: window.utilization, detail: window.resetsAt.map { reset($0, now: now) })
+                    UsageMeter(
+                        title: window.name, fraction: window.utilization,
+                        detail: window.resetsAt.map { reset($0, now: now) })
                 }
             }
         } else if let limit = limits.limitStatus(for: agent) {
@@ -86,7 +88,8 @@ struct UsageAccountCard: View {
         if !usage.isEmpty {
             VStack(alignment: .leading, spacing: 0) {
                 ContributorSectionHeader(
-                    title: "Past \(Self.recentDays) days", tokens: spent(usage.reduce(ActivityCounts()) { $0 + $1.counts }))
+                    title: "Past \(Self.recentDays) days",
+                    tokens: spent(usage.reduce(ActivityCounts()) { $0 + $1.counts }))
                 ForEach(usage, id: \.project) { entry in
                     ContributorRow(
                         title: URL(filePath: entry.project).lastPathComponent, detail: summary(of: entry.counts),
@@ -121,7 +124,8 @@ struct UsageAccountCard: View {
 
     /// Cost when the agent reports it, tokens otherwise.
     private func spent(_ counts: ActivityCounts) -> String {
-        counts.cost > 0 ? ActivityMetric.cost.describe(counts.cost) : ActivityMetric.tokens.describe(Double(counts.tokens))
+        counts.cost > 0
+            ? ActivityMetric.cost.describe(counts.cost) : ActivityMetric.tokens.describe(Double(counts.tokens))
     }
 
     private func reset(_ date: Date, now: Date) -> String {

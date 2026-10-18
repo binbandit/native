@@ -1,0 +1,166 @@
+import GitHub
+import Observation
+import SwiftUI
+
+/// One pull request's page: what GitHub says about it, loaded in one query and kept fresh, plus
+/// what the user is doing on it (the tab, drafts, collapsed files). Writes live in the
+/// `+Review` extension and files in `+Files`.
+@Observable
+final class PullRequestPageModel {
+    enum Tab: String, CaseIterable, Identifiable {
+        case conversation, files, checks
+
+        var id: Self { self }
+
+        var title: String {
+            switch self {
+            case .conversation: "Conversation"
+            case .files: "Files Changed"
+            case .checks: "Checks"
+            }
+        }
+    }
+
+    let reference: PullRequestReference
+    @ObservationIgnored weak var gitHub: GitHubModel?
+
+    private(set) var page: PullRequestPage?
+    /// Why the last load failed. With a page already shown, the page stays and this explains why
+    /// it may be out of date.
+    private(set) var loadError: GitHubError?
+    private(set) var isLoading = false
+    private(set) var loadedAt: Date?
+    private(set) var isLoadingMoreTimeline = false
+    var tab: Tab = .conversation
+
+    // Files: GraphQL lists them all with the viewed marks; REST brings patches a hundred at a time.
+    var files: [ChangedFile] = []
+    var filesCursor: String?
+    var patches: [String: FilePatch] = [:]
+    var patchPagesLoaded = 0
+    var patchesComplete = false
+    var isLoadingPatches = false
+    var patchError: GitHubError?
+    /// Files the user opened or closed, overriding the default (viewed and generated files closed).
+    var collapseOverrides: [String: Bool] = [:]
+    /// The file the tree asked to scroll to.
+    var focusedFile: String?
+
+    private(set) var checks: [PullRequestCheck]?
+    private(set) var checksError: GitHubError?
+    private(set) var isLoadingChecks = false
+
+    /// The new line comment being written, if any.
+    var draft: ReviewCommentDraft?
+    var replyDrafts: [String: String] = [:]
+    var conversationDraft = ""
+    /// Writes under way, by what they're about, so the right control shows progress.
+    var busy: Set<String> = []
+    var actionError: GitHubError?
+    var undo: UndoToastItem?
+    var isReviewSheetPresented = false
+    var isMergeSheetPresented = false
+
+    init(reference: PullRequestReference, gitHub: GitHubModel) {
+        self.reference = reference
+        self.gitHub = gitHub
+    }
+
+    /// Pages refresh when shown if they're older than this; writes refresh at once.
+    static let freshness: TimeInterval = 60
+
+    var isStale: Bool {
+        loadedAt.map { Date.now.timeIntervalSince($0) > Self.freshness } ?? true
+    }
+
+    // MARK: - Loading
+
+    func loadIfStale() async {
+        if isStale { await load() }
+    }
+
+    /// Loads the page in one query, keeping what's shown on failure.
+    func load() async {
+        guard !isLoading, let gitHub else { return }
+        isLoading = true
+        defer { isLoading = false }
+        do {
+            let page = try await gitHub.cli().pullRequestPage(reference)
+            apply(page)
+            loadError = nil
+        } catch {
+            loadError = error
+        }
+    }
+
+    private func apply(_ page: PullRequestPage) {
+        let headMoved = self.page.map { $0.headRefOid != page.headRefOid } ?? true
+        self.page = page
+        loadedAt = .now
+        // Later file pages and patches belong to the old head; start over when it moves.
+        if headMoved || files.count <= page.files.count {
+            files = page.files
+            filesCursor = page.filesCursor
+        } else {
+            // Keep the pages loaded since, refreshing the viewed marks of the first hundred.
+            let fresh = Dictionary(page.files.map { ($0.path, $0) }, uniquingKeysWith: { first, _ in first })
+            files = files.map { fresh[$0.path] ?? $0 }
+        }
+        if headMoved {
+            patches = [:]
+            patchPagesLoaded = 0
+            patchesComplete = false
+            checks = nil
+        }
+    }
+
+    func loadMoreTimeline() async {
+        guard let gitHub, let cursor = page?.timelineCursor, !isLoadingMoreTimeline else { return }
+        isLoadingMoreTimeline = true
+        defer { isLoadingMoreTimeline = false }
+        do {
+            let next = try await gitHub.cli().timeline(reference, after: cursor)
+            page?.timeline += next.items
+            page?.timelineCursor = next.next
+        } catch {
+            actionError = error
+        }
+    }
+
+    func loadChecks(force: Bool = false) async {
+        guard let gitHub, force || checks == nil, !isLoadingChecks else { return }
+        isLoadingChecks = true
+        defer { isLoadingChecks = false }
+        do {
+            checks = try await gitHub.cli().forPullRequest(reference).checks(.number(reference.number), in: location)
+            checksError = nil
+        } catch {
+            checksError = error
+        }
+    }
+
+    /// Where gh finds the repository without a local checkout.
+    var location: RepositoryLocation {
+        .remote(reference.host == "github.com" ? reference.repository : "\(reference.host)/\(reference.repository)")
+    }
+
+    // MARK: - Threads
+
+    func threads(in path: String) -> [ReviewThread] {
+        page?.threads.filter { $0.path == path } ?? []
+    }
+
+    /// Unresolved threads per file, for the tree.
+    var openThreadCounts: [String: Int] {
+        Dictionary(grouping: (page?.threads ?? []).filter { !$0.isResolved }, by: \.path).mapValues(\.count)
+    }
+
+    /// The viewer's pending comments, which submitting the review publishes.
+    var pendingCommentCount: Int {
+        page?.threads.reduce(0) { $0 + $1.comments.filter(\.isPending).count } ?? 0
+    }
+
+    func open(_ url: URL) {
+        gitHub?.openExternally(url)
+    }
+}

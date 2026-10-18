@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  A sample configuration profile for Native, with every policy key (docs/enterprise.md).
+
+  Deploy it with your device management (Jamf, Kandji, Intune). macOS applies the settings as
+  forced preferences for Native's bundle id, which Native shows as "Managed by your organization".
+  On iPad, deliver the same keys as the app's managed app configuration instead.
+
+  Before deploying:
+  - Replace NATIVE_BUNDLE_ID (twice) with Native's bundle id.
+  - Replace every PayloadUUID with a fresh one (`uuidgen`).
+  - Delete the keys you don't want to manage. A key that's absent leaves the user's choice alone.
+
+  Native validates every value. One it can't use is ignored and logged (subsystem "Native",
+  category "Policy"), never a crash or a lockout.
+-->
+<plist version="1.0">
+<dict>
+    <key>PayloadDisplayName</key>
+    <string>Native</string>
+    <key>PayloadDescription</key>
+    <string>Managed settings for Native.</string>
+    <key>PayloadIdentifier</key>
+    <string>com.example.native.profile</string>
+    <key>PayloadOrganization</key>
+    <string>Example Corp</string>
+    <key>PayloadScope</key>
+    <string>System</string>
+    <key>PayloadType</key>
+    <string>Configuration</string>
+    <key>PayloadUUID</key>
+    <string>8B1E6C7A-2B1C-4E8E-9C0A-3E6B1F7A9D01</string>
+    <key>PayloadVersion</key>
+    <integer>1</integer>
+    <key>PayloadContent</key>
+    <array>
+        <dict>
+            <key>PayloadType</key>
+            <string>NATIVE_BUNDLE_ID</string>
+            <key>PayloadIdentifier</key>
+            <string>com.example.native.profile.settings</string>
+            <key>PayloadUUID</key>
+            <string>2F4C0B7E-6A3D-4C1B-8E2F-7D9A0C5B3E12</string>
+            <key>PayloadVersion</key>
+            <integer>1</integer>
+            <key>PayloadDisplayName</key>
+            <string>Native settings</string>
+
+            <!-- Agents ids that may be listed or started (claude-code, codex, cursor, opencode, pi,
+                 copilot, or a plugin's own). Others show "Not allowed by your organization". -->
+            <key>policy.agents.allowed</key>
+            <array>
+                <string>claude-code</string>
+                <string>codex</string>
+            </array>
+
+            <!-- Extra environment for each agent's process, by agent id. This routes Claude Code
+                 through Amazon Bedrock. -->
+            <key>policy.agents.environment</key>
+            <dict>
+                <key>claude-code</key>
+                <dict>
+                    <key>CLAUDE_CODE_USE_BEDROCK</key>
+                    <string>1</string>
+                    <key>AWS_REGION</key>
+                    <string>us-east-1</string>
+                </dict>
+            </dict>
+
+            <!-- MCP servers that may run: names (wildcards * and ?) or command: patterns over the
+                 server's command line. Omit to allow every server that isn't blocked. -->
+            <key>policy.mcp.allowed</key>
+            <array>
+                <string>internal-*</string>
+                <string>command:npx -y @modelcontextprotocol/*</string>
+            </array>
+
+            <!-- MCP servers no session may use. Plain names also reach servers the agent loads from
+                 its own configuration. -->
+            <key>policy.mcp.blocked</key>
+            <array>
+                <string>filesystem</string>
+                <string>command:* --unsafe*</string>
+            </array>
+
+            <!-- Servers every session gets: a name and exactly one of command (with args and env)
+                 or url (with headers). -->
+            <key>policy.mcp.required</key>
+            <array>
+                <dict>
+                    <key>name</key>
+                    <string>internal-docs</string>
+                    <key>url</key>
+                    <string>https://mcp.example.com/docs</string>
+                    <key>headers</key>
+                    <dict>
+                        <key>Authorization</key>
+                        <string>Bearer REPLACE_ME</string>
+                    </dict>
+                </dict>
+            </array>
+
+            <!-- Ids of plugins installed from ~/.native/plugins that may load. Native's built-in
+                 plugins are governed by their own keys. Omit to allow all. -->
+            <key>policy.plugins.allowed</key>
+            <array>
+                <string>acme-tools</string>
+            </array>
+
+            <!-- Skills, by name, denied in every session. -->
+            <key>policy.skills.blocked</key>
+            <array>
+                <string>deploy-production</string>
+            </array>
+
+            <!-- Permission modes users can't pick, by the agent's mode id: Claude Code's
+                 bypassPermissions, Codex's full-access. Sessions that start in one are moved to
+                 the first allowed mode. -->
+            <key>policy.permissions.forbiddenModes</key>
+            <array>
+                <string>bypassPermissions</string>
+                <string>full-access</string>
+            </array>
+
+            <!-- The sandboxed script runtime and its run_script tool. Applies at the next launch. -->
+            <key>policy.scripts.enabled</key>
+            <true/>
+
+            <!-- Labs and experiments, including plugins' experiments. -->
+            <key>policy.labs.enabled</key>
+            <false/>
+
+            <!-- Pairing iPhones and iPads, and connecting to hosts other than this Mac. -->
+            <key>policy.companion.enabled</key>
+            <true/>
+            <key>policy.remoteHosts.enabled</key>
+            <false/>
+
+            <!-- Updates: off, or from your own feed, and which channels users may pick
+                 (stable, beta, nightly). -->
+            <key>policy.updates.enabled</key>
+            <true/>
+            <key>policy.updates.feedURL</key>
+            <string>https://updates.example.com/native/appcast.xml</string>
+            <key>policy.updates.channels</key>
+            <array>
+                <string>stable</string>
+            </array>
+
+            <!-- How many days search keeps sessions. -->
+            <key>policy.search.retentionDays</key>
+            <integer>90</integer>
+
+            <!-- Native's own anonymous telemetry: on, off, or user (the user decides; the default). -->
+            <key>policy.telemetry.native</key>
+            <string>off</string>
+
+            <!-- Your own OpenTelemetry collectors (OTLP/HTTP, JSON). A bare host gets /v1/logs.
+                 Headers authenticate; attributes are added to every batch, for your collector only.
+                 Events never contain prompts, code, paths or commands. -->
+            <key>policy.telemetry.endpoints</key>
+            <array>
+                <dict>
+                    <key>url</key>
+                    <string>https://otel.example.com</string>
+                    <key>headers</key>
+                    <dict>
+                        <key>x-api-key</key>
+                        <string>REPLACE_ME</string>
+                    </dict>
+                    <key>attributes</key>
+                    <dict>
+                        <key>team</key>
+                        <string>platform</string>
+                    </dict>
+                </dict>
+            </array>
+        </dict>
+    </array>
+</dict>
+</plist>

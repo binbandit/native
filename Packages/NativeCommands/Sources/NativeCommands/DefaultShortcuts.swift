@@ -1,0 +1,55 @@
+/// Native's default shortcuts, by command. `docs/keyboard.md` is the source of truth: change a key
+/// there first, then here. `KeyboardDocumentTests` fails when the two disagree, and no two
+/// commands may share a default.
+public enum DefaultShortcuts {
+    public static let all: [CommandID: KeyShortcut] = table.compactMapValues(KeyShortcut.init)
+
+    /// As `docs/keyboard.md` writes them. Every entry must parse (a test checks).
+    static let table: [CommandID: String] = [
+        // Sessions and navigation
+        "session.new": "⌘N",
+        "session.newWithAgent": "⌥⌘N",
+        "expedition.new": "⌥⌘E",
+        "project.open": "⌘O",
+        "session.openInDefaultApp": "⇧⌘O",
+        "composer.focus": "⌘L",
+        "go.back": "⌘[",
+        "go.forward": "⌘]",
+        "session.select1": "⌘1",
+        "session.select2": "⌘2",
+        "session.select3": "⌘3",
+        "session.select4": "⌘4",
+        "session.select5": "⌘5",
+        "session.select6": "⌘6",
+        "session.select7": "⌘7",
+        "session.select8": "⌘8",
+        "session.select9": "⌘9",
+        "session.next": "⌃Tab",
+        "session.previous": "⌃⇧Tab",
+        "view.toggleSidebar": "⌃⌘S",
+        "sidebar.moveUp": "⌥⌘↑",
+        "sidebar.moveDown": "⌥⌘↓",
+        "session.archive": "⇧⌘A",
+        "view.needsYouFilter": "⌥⌘J",
+        "go.pullRequests": "⇧⌘P",
+        "go.expeditions": "⇧⌘X",
+        "view.toggleSubagentInspector": "⌥⌘I",
+        "view.toggleChanges": "⇧⌘D",
+        "view.mcpServers": "⌃⌘M",
+        "keepAwake.nextMode": "⌃⌘A",
+        "palette.show": "⌘K",
+        // Session settings
+        "session.nextPermissionMode": "⇧⌘M",
+        "session.chooseModel": "⇧⌘E",
+        "goal.edit": "⌥⌘G",
+        "workflow.run": "⌥⌘R",
+        // Sending and attachments
+        "session.stop": "⌘.",
+        "composer.attachFiles": "⌘U",
+        // Terminal
+        "terminal.toggle": "⌃`",
+        "terminal.newTab": "⌃⇧`",
+        // Celebrations
+        "celebration.restore": "⌥⇧⌘H",
+    ]
+}
