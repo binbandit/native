@@ -3,7 +3,7 @@ import Foundation
 /// A development clock for checking seasonal looks (the Halloween icons and landing page) on any
 /// day: launch with `-nativeDate 2026-10-31` and the app's season logic runs as if it were that day,
 /// with time moving on from launch. Without the argument it's the real clock.
-enum HomeDateOverride {
+nonisolated enum HomeDateOverride {
     /// The current date, shifted to the launch argument's day when there is one.
     static func now() -> Date {
         Date.now.addingTimeInterval(offset)

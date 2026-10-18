@@ -9,6 +9,7 @@ extension AppIconVariant {
         case .stable: .stable
         case .beta: .beta
         case .nightly: .nightly
+        case .dev: .development
         }
         #endif
     }

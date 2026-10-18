@@ -10,8 +10,9 @@ import SwiftUI
 //   oklab mixes of foreground into background (`PALETTE_TOKEN_MIXES`, contrast 50). Dark values were
 //   checked against screenshots of Factory: content #171717, sidebar edge #2c2c2c, composer outline
 //   #3e3e3e.
-// - There is no sidebar color: the sidebar is translucent (`.dsSidebarBackground()` or the system
-//   sidebar), so everything drawn on it is either text or a translucent fill.
+// - The sidebar is translucent (`.dsSidebarBackground()` or the system sidebar), so everything drawn
+//   on it is either text or a translucent fill. `dsSidebarSolid` is only its backdrop when the user
+//   turns transparency down (TokensTransparency.swift).
 // - The accent follows the app-icon theme: it resolves against the environment's
 //   `DSAccentPalette` (see AccentPalette.swift), `original` (graphite / off-white) by default.
 // - `dsAttention` is the one status hue for "needs you" states, so they stand out under any accent.
@@ -31,6 +32,9 @@ nonisolated extension ShapeStyle where Self == Color {
     public static var dsSurfaceSunken: Color { DSPalette.surfaceSunken }
     /// Menus, popovers and tooltips (Factory `bg/overlay`).
     public static var dsOverlay: Color { DSPalette.overlay }
+    /// The sidebar's backdrop when transparency is turned down; a step off the content pane, as the
+    /// system sidebar material reads. Draw it only through `DSTransparency`, never as a row fill.
+    public static var dsSidebarSolid: Color { DSPalette.sidebarSolid }
 
     // MARK: Interaction fills (translucent, so they work on any layer, glass included)
 
@@ -117,6 +121,7 @@ nonisolated private enum DSPalette {
     static let surfaceRaised = dynamic("surfaceRaised", light: 0xF8F8F8, dark: 0x191919)
     static let surfaceSunken = dynamic("surfaceSunken", light: 0xF6F6F6, dark: 0x1D1D1D)
     static let overlay = dynamic("overlay", light: 0xFFFFFF, dark: 0x171717)
+    static let sidebarSolid = dynamic("sidebarSolid", light: 0xF0F0F0, dark: 0x1F1F1F)
 
     static let hover = dynamic("hover", light: 0x000000, lightAlpha: 0.045, dark: 0xFFFFFF, darkAlpha: 0.06)
     static let selected = dynamic("selected", light: 0x000000, lightAlpha: 0.08, dark: 0xFFFFFF, darkAlpha: 0.1)

@@ -86,7 +86,7 @@ public struct UndoToast: View {
         .padding(.trailing, DS.Space.md)
         .padding(.vertical, DS.Space.md)
         .frame(width: 356)
-        .background(.dsOverlay, in: shape)
+        .dsOverlayBackground(in: shape)
         .overlay { shape.strokeBorder(.dsSeparator, lineWidth: 1) }
         .dsShadow(.modal)
         .accessibilityElement(children: .contain)

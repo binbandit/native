@@ -27,7 +27,7 @@ enum BuiltInPlugins {
                 signIn: "claude"
             )
         )]
-    ))
+    ), policyTranslator: ClaudeCodePolicyTranslator())
 
     /// OpenAI's Codex CLI through its ACP adapter, running the user's own `codex`.
     static let codex = ManifestPlugin(manifest: PluginManifest(
@@ -49,7 +49,7 @@ enum BuiltInPlugins {
                 docs: URL(string: "https://developers.openai.com/codex/cli")
             )
         )]
-    ))
+    ), policyTranslator: CodexPolicyTranslator())
 }
 
 // MARK: - Titles

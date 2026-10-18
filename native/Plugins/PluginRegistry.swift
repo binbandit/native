@@ -112,6 +112,33 @@ final class PluginRegistry {
         }
     }
 
+    // MARK: - Session policy
+
+    /// What enabled plugins want left out of this session, merged.
+    func sessionPolicy(for session: SessionContext) -> SessionPolicy {
+        enabledPlugins.reduce(.none) { $0.merging($1.sessionPolicy(for: session)) }
+    }
+
+    /// What enabled plugins want left out of every session of `agent`, merged.
+    func launchPolicy(for agent: AgentDefinition.ID) -> SessionPolicy {
+        enabledPlugins.reduce(.none) { $0.merging($1.launchPolicy(for: agent)) }
+    }
+
+    /// How `agent` applies policy: the translator of the plugin that provides it.
+    func policyTranslator(for agent: AgentDefinition.ID) -> (any SessionPolicyTranslator)? {
+        plugins.first { $0.plugin.manifest.agents.contains { $0.id == agent.rawValue } }?.plugin.policyTranslator
+    }
+
+    /// The `_meta` for `session/new` and `session/load` that carries the session's policy.
+    func sessionMeta(for session: SessionContext) -> [String: JSONValue] {
+        policyTranslator(for: session.agent)?.sessionMeta(for: sessionPolicy(for: session)) ?? [:]
+    }
+
+    /// Environment `agent` launches with to carry the policy for all its sessions.
+    func launchEnvironment(for agent: AgentDefinition.ID) -> [String: String] {
+        policyTranslator(for: agent)?.launchEnvironment(for: launchPolicy(for: agent)) ?? [:]
+    }
+
     /// The first enabled plugin that can title sessions.
     var titler: (any SessionTitler)? {
         enabledPlugins.lazy.compactMap(\.titler).first
@@ -158,4 +185,11 @@ final class PluginRegistry {
 /// A plugin that is only a manifest: it contributes data and no behavior.
 struct ManifestPlugin: NativePlugin {
     let manifest: PluginManifest
+    /// Built-in agents' own way of applying session policy; manifests from disk have none.
+    var policyTranslator: (any SessionPolicyTranslator)?
+
+    init(manifest: PluginManifest, policyTranslator: (any SessionPolicyTranslator)? = nil) {
+        self.manifest = manifest
+        self.policyTranslator = policyTranslator
+    }
 }
