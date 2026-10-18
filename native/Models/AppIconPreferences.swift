@@ -31,7 +31,7 @@ final class AppIconPreferences {
 
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let variant: AppIconVariant
-    @ObservationIgnored private let now: () -> Date
+    @ObservationIgnored private let now: @MainActor () -> Date
     @ObservationIgnored private let timeZone: () -> TimeZone
     @ObservationIgnored private let platform = PlatformAppIcon()
     @ObservationIgnored private var seasonalTimer: Timer?
@@ -44,7 +44,7 @@ final class AppIconPreferences {
     init(
         defaults: UserDefaults = .standard,
         variant: AppIconVariant = .current,
-        now: @escaping () -> Date = Date.init,
+        now: @escaping @MainActor () -> Date = Date.init,
         timeZone: @escaping () -> TimeZone = { .current }
     ) {
         self.defaults = defaults

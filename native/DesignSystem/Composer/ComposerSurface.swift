@@ -32,7 +32,7 @@ public struct ComposerSurface<Content: View>: View {
 
     /// - Parameters:
     ///   - isFloating: The composer floats over scrolling content: Liquid Glass replaces the solid
-    ///     fill (glass is for the control layer only).
+    ///     fill, as see-through as the user's transparency (glass is for the control layer only).
     ///   - isDropTargeted: Files are dragged over it: a dashed accent outline (the reference app's drop state).
     public init(isFloating: Bool = false, isDropTargeted: Bool = false, @ViewBuilder content: () -> Content) {
         self.isFloating = isFloating
@@ -73,7 +73,7 @@ private struct ComposerBackground: ViewModifier {
 
     func body(content: Content) -> some View {
         if isFloating {
-            content.glassEffect(.regular, in: shape)
+            content.dsGlassEffect(in: shape)
         } else {
             content.background(.dsSurface, in: shape)
         }

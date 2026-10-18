@@ -21,6 +21,14 @@ protocol NativePlugin: Sendable {
     /// `docs/decisions.md`), so built-ins that add to what a new user sees start off; a manifest the
     /// user installed is on.
     var isEnabledByDefault: Bool { get }
+    /// What the plugin wants left out of a session (MCP servers, skills), as intent. Every enabled
+    /// plugin's policy is merged, and the session's agent applies what it can.
+    func sessionPolicy(for session: SessionContext) -> SessionPolicy
+    /// What it wants left out of every session of `agent`, for agents that apply policy at launch.
+    func launchPolicy(for agent: AgentDefinition.ID) -> SessionPolicy
+    /// For a plugin that provides agents: how they apply a policy in their own terms. Nil means
+    /// they can't, and the UI says so.
+    var policyTranslator: (any SessionPolicyTranslator)? { get }
 }
 
 extension NativePlugin {
@@ -28,6 +36,9 @@ extension NativePlugin {
     var titler: (any SessionTitler)? { nil }
     func mcpServers(for session: SessionContext) -> [MCPServer] { [] }
     func handle(_ event: SessionEvent) async {}
+    func sessionPolicy(for session: SessionContext) -> SessionPolicy { .none }
+    func launchPolicy(for agent: AgentDefinition.ID) -> SessionPolicy { .none }
+    var policyTranslator: (any SessionPolicyTranslator)? { nil }
 }
 
 // MARK: - Manifest
