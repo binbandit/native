@@ -110,14 +110,12 @@ struct UpdatesSettingsPage: View {
     }
 
     private var versionRow: some View {
-        SettingsRow(
-            id: Self.versionRow,
-            "Version",
-            description: Text("\(controller.current.channel.displayName) \(controller.current.displayVersion)")
-        ) {
-            if let url = controller.current.releaseNotesURL {
-                Button("Release Notes") { openURL(url) }
-                    .buttonStyle(.ds(.secondary))
+        SettingsRow(id: Self.versionRow, "Version") {
+            HStack(spacing: DS.Space.lg) {
+                SettingsValue("\(controller.current.channel.displayName) \(controller.current.displayVersion)")
+                if let url = controller.current.releaseNotesURL {
+                    Button("Release Notes") { openURL(url) }
+                }
             }
         }
     }
@@ -151,9 +149,7 @@ struct UpdatesSettingsPage: View {
                         : "Your organization chose this channel."
                 )
             ) {
-                Text(controller.channel.title)
-                    .font(.dsBody)
-                    .foregroundStyle(.dsTextSecondary)
+                SettingsValue(controller.channel.title)
             }
         }
     }

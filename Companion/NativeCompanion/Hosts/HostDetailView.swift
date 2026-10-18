@@ -25,17 +25,12 @@ struct HostDetailView: View {
                 if let detail = host.phase.detail(hostName: host.name) {
                     Text(detail).font(CompanionType.subheadline).foregroundStyle(.dsTextSecondary)
                 }
-                if !host.phase.isConnected {
-                    Button(
-                        host.phase == .pairingEnded(.revoked) || host.phase == .pairingEnded(.unknownDevice)
-                            ? "Pair Again" : "Retry Now"
-                    ) {
-                        if case .pairingEnded = host.phase {
-                            store.isAddingHost = true
-                        } else {
-                            host.reconnect()
-                        }
-                    }
+                if case .pairingEnded = host.phase {
+                    Button("Pair Again") { store.isAddingHost = true }
+                    // Revoking on the Mac can be undone there; then this simply connects again.
+                    Button("Try Again") { host.reconnect() }
+                } else if !host.phase.isConnected {
+                    Button("Retry Now") { host.reconnect() }
                 }
                 NavigationLink("Connection Log") { ConnectionLogView(host: host) }
             }

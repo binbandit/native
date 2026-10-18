@@ -225,7 +225,6 @@ struct CelebrationsSettingsPage: View {
                     tone: .danger, title: "\(problem.identifier) couldn't load", detail: problem.message,
                     footnote: "\(problem.kind.rawValue) from \(pluginName(problem.pluginID))")
             }
-            }
         }
     }
 

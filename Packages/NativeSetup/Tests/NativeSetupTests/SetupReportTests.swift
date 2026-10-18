@@ -55,7 +55,8 @@ struct SetupReportTests {
             summary.contains(
                 "signed out. Sign In… from the ⋯ menu on its row in Settings ▸ Agents, or run `copilot login` in a terminal."
             ))
-        #expect(summary.contains("3. Durable host: off."))
+        #expect(summary.contains("3. Durable host: off, so paired devices can't connect"))
+        #expect(summary.contains("4. Paired devices: unavailable while the durable host is off"))
         #expect(summary.contains("5. Organization: manages `policy.agents.allowed`, `policy.updates.enabled`."))
         #expect(summary.contains("6. Updates: off: Updates are off in development builds."))
     }

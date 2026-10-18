@@ -3,8 +3,9 @@ import SwiftTreeSitter
 
 /// Colors code with a tree-sitter grammar: parses it, runs the grammar's highlight query and paints
 /// each capture's role over the text, inner nodes over the nodes around them, then the languages it
-/// embeds (a Markdown fence, an HTML script) over that. Nil when the parse fails or is mostly
-/// errors, so `CodeHighlighter` can fall back to the lexer.
+/// embeds (a Markdown fence, an HTML script) over that. Nil when the parse fails or the grammar
+/// loses its place, so `CodeHighlighter` can fall back to the lexer; an embedded language falls back
+/// the same way, to the lexer for its range.
 enum TreeSitterHighlighter {
     /// Embedded languages nest at most this deep (Markdown, its HTML block, that block's script).
     static let maximumDepth = 3
@@ -23,7 +24,7 @@ enum TreeSitterHighlighter {
         _ code: String, at offset: Int, grammar: TreeSitterGrammar, on canvas: inout Canvas, depth: Int
     ) -> Bool {
         guard let queries = TreeSitterQueries.shared(grammar), let tree = parse(code, grammar: grammar),
-            let root = tree.rootNode, depth > 0 || !hasLostItsPlace(root)
+            let root = tree.rootNode, !hasLostItsPlace(root)
         else { return false }
 
         let units = canvas.units
@@ -45,10 +46,12 @@ enum TreeSitterHighlighter {
             guard injection.range.length > 0, let embedded = units.text(at: start, length: injection.range.length)
             else { continue }
             let language = CodeLanguage.named(injection.name)
-            let painted = (language?.treeSitter ?? TreeSitterGrammar(rawValue: injection.name)).map {
-                paint(embedded, at: start, grammar: $0, on: &canvas, depth: depth + 1)
+            if let grammar = language?.treeSitter ?? TreeSitterGrammar(rawValue: injection.name),
+                paint(embedded, at: start, grammar: grammar, on: &canvas, depth: depth + 1)
+            {
+                continue
             }
-            if painted != true, let language {
+            if let language {
                 canvas.paint(CodeLexer.segments(embedded, language: language), at: start, depth: depth + 1)
             }
         }

@@ -67,7 +67,6 @@ struct KeepAwakeSettingsPage: View {
             Button("Cancel Timer") {
                 controller.cancelTimer()
             }
-            .buttonStyle(.ds(.secondary, size: .large))
         } else {
             Menu("Start Timer") {
                 ForEach(KeepAwakeController.timerDurations, id: \.self) { duration in
@@ -77,9 +76,7 @@ struct KeepAwakeSettingsPage: View {
                 }
             }
             .menuStyle(.button)
-            .buttonStyle(.ds(.secondary, size: .large))
             .menuIndicator(.hidden)
-            .fixedSize()
         }
     }
 }
