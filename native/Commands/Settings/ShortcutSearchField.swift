@@ -44,54 +44,24 @@ struct ShortcutSearchField: View {
     @Binding var query: String
     @State private var isRecording = false
     @State private var recorder = PlatformKeyRecorder()
-    @FocusState private var isFocused: Bool
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
-        TextField(
+        // The field brings the magnifier, the clear button, Escape to clear and the accent ring,
+        // which stays on while recording.
+        SearchField(
             "Search shortcuts", text: $query,
             prompt: Text(isRecording ? "Press the keys to find" : "Search by name or keys")
-                .foregroundStyle(isRecording ? .dsAccentText : .dsTextTertiary)
-        )
-        .textFieldStyle(.plain)
-        .settingsText(.body)
-        .foregroundStyle(.dsTextPrimary)
-        .focused($isFocused)
-        .padding(.leading, DS.Space.xxxl)
-        .padding(.trailing, DS.Space.xxxl + DS.Space.xl)
-        .frame(height: DS.Size.controlSM)
-        .overlay(alignment: .leading) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: SettingsMetrics.searchGlyph, weight: .regular))
-                .foregroundStyle(.dsTextSecondary)
-                .padding(.leading, DS.Space.md + DS.Space.xxs)
-                .accessibilityHidden(true)
-        }
-        .overlay(alignment: .trailing) {
-            HStack(spacing: DS.Space.xs) {
-                if !query.isEmpty {
-                    Button("Clear Search", systemImage: "xmark") { query = "" }
-                        .buttonStyle(.ds(.ghost, iconOnly: true))
+                .foregroundStyle(isRecording ? .dsAccentText : .dsTextTertiary),
+            font: SettingsTextStyle.body.font, isHighlighted: isRecording
+        ) {
+            if PlatformKeyRecorder.capturesBeforeMenus {
+                Button(isRecording ? "Stop Recording Keys" : "Search by Pressing Keys", systemImage: "keyboard") {
+                    isRecording ? stopRecording() : startRecording()
                 }
-                if PlatformKeyRecorder.capturesBeforeMenus {
-                    Button(isRecording ? "Stop Recording Keys" : "Search by Pressing Keys", systemImage: "keyboard") {
-                        isRecording ? stopRecording() : startRecording()
-                    }
-                    .buttonStyle(.ds(.ghost, iconOnly: true))
-                    .foregroundStyle(isRecording ? .dsAccentText : .dsTextSecondary)
-                    .help("Press a shortcut to find what it does")
-                }
+                .buttonStyle(.ds(.ghost, iconOnly: true))
+                .foregroundStyle(isRecording ? .dsAccentText : .dsTextSecondary)
+                .help("Press a shortcut to find what it does")
             }
-            .padding(.trailing, DS.Space.xs)
-        }
-        .background(.dsBackground, in: shape)
-        .overlay {
-            shape.strokeBorder(isFocused || isRecording ? Color.dsAccent : Color.dsBorder, lineWidth: 1)
-        }
-        .onKeyPress(.escape) {
-            guard !query.isEmpty else { return .ignored }
-            query = ""
-            return .handled
         }
         .onDisappear { stopRecording() }
     }

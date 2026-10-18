@@ -96,7 +96,8 @@ struct CelebrationsSettingsPage: View {
                 }
                 bulkControls
                 Spacer(minLength: DS.Space.xl)
-                CelebrationSearchField(query: $query)
+                SearchField("Find a celebration", text: $query, font: SettingsTextStyle.body.font)
+                    .frame(width: CelebrationMetrics.searchWidth)
             }
             if let lastChange {
                 HStack(spacing: DS.Space.md) {
@@ -219,15 +220,11 @@ struct CelebrationsSettingsPage: View {
     private var problems: some View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
             SettingsSubheading("Couldn't load", note: "Fix the plugin's plugin.json, then Reload in Extensions.")
-            SettingsRowGroup {
-                ForEach(center.catalog.problems, id: \.self) { problem in
-                    SettingsRow(
-                        problem.identifier,
-                        icon: "exclamationmark.triangle",
-                        description: Text(problem.message).foregroundStyle(.dsDanger),
-                        detail: Text("\(problem.kind.rawValue) from \(pluginName(problem.pluginID))")
-                    ) { EmptyView() }
-                }
+            ForEach(center.catalog.problems, id: \.self) { problem in
+                NoticeBanner(
+                    tone: .danger, title: "\(problem.identifier) couldn't load", detail: problem.message,
+                    footnote: "\(problem.kind.rawValue) from \(pluginName(problem.pluginID))")
+            }
             }
         }
     }
@@ -235,41 +232,6 @@ struct CelebrationsSettingsPage: View {
     private func pluginName(_ id: String?) -> String {
         guard let id else { return "a plugin" }
         return plugins.plugins.first { $0.id == id }?.plugin.manifest.name ?? id
-    }
-}
-
-/// Filters the catalogue by name, other names and tags, ignoring accents and case.
-private struct CelebrationSearchField: View {
-    @Binding var query: String
-    @FocusState private var isFocused: Bool
-
-    var body: some View {
-        let shape = RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
-        TextField(
-            "Find a celebration", text: $query, prompt: Text("Find a celebration").foregroundStyle(.dsTextTertiary)
-        )
-        .textFieldStyle(.plain)
-        .settingsText(.body)
-        .foregroundStyle(.dsTextPrimary)
-        .focused($isFocused)
-        .padding(.leading, DS.Space.xxxl)
-        .padding(.trailing, DS.Space.md)
-        .frame(width: CelebrationMetrics.searchWidth, height: DS.Size.controlSM)
-        .overlay(alignment: .leading) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: SettingsMetrics.searchGlyph))
-                .foregroundStyle(.dsTextSecondary)
-                .padding(.leading, DS.Space.md + DS.Space.xxs)
-                .accessibilityHidden(true)
-        }
-        .background(.dsBackground, in: shape)
-        .overlay { shape.strokeBorder(isFocused ? Color.dsAccent : Color.dsBorder, lineWidth: 1) }
-        .onKeyPress(.escape) {
-            guard !query.isEmpty else { return .ignored }
-            query = ""
-            return .handled
-        }
-        .accessibilityLabel("Find a celebration")
     }
 }
 
