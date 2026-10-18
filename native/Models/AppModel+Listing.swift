@@ -159,7 +159,8 @@ extension AppModel {
 
     /// Says when a project's folder on this Mac is gone, since agents list a missing folder as empty
     /// and starting a task there fails. Agents still list it, for sessions they kept from before.
-    private func checkFolder(of project: Project) {
+    /// Internal only for AppModel+Problems.swift.
+    func checkFolder(of project: Project) {
         guard project.host == .local else { return }
         guard !FileManager.default.fileExists(atPath: project.path) else {
             problems.resolve(.folder, in: project.id)

@@ -78,7 +78,8 @@ final class CelebrationAssetStore {
         #if DEBUG
         guard usesRepositoryArtwork else { return nil }
         if let known = repositoryIcons[edition] { return known }
-        let folder = Self.repository.appending(path: "design/app-icon/celebrations/\(edition)", directoryHint: .isDirectory)
+        let folder = Self.repository.appending(
+            path: "design/app-icon/celebrations/\(edition)", directoryHint: .isDirectory)
         var icons: [AppIconVariant: AppIconImagePair]? = [:]
         for variant in AppIconVariant.allCases {
             let light = folder.appending(path: "\(variant.rawValue)-light.png")

@@ -20,7 +20,8 @@ extension AppModel {
         do {
             switch problem.work {
             case .folder:
-                // Looking again is part of listing, which reports how it went.
+                // Looking again, then listing what's there; both report how they went.
+                checkFolder(of: project)
                 await refreshSessions(in: project)
                 return
             case .listing(let agent):

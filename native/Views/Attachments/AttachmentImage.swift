@@ -7,8 +7,9 @@ struct AttachmentImage: View {
     let data: Data
     /// The longest edge it's drawn at, in points.
     let maxSide: CGFloat
-    /// `.fill` crops it to the frame it's given; `.fit` shows all of it, sized by its own shape.
-    var contentMode: ContentMode = .fill
+    /// Shows all of it at its own shape within this size; without one it fills (and crops to) the
+    /// frame it's given.
+    var fitting: CGSize?
 
     @Environment(\.displayScale) private var displayScale
     @State private var image: CGImage?
@@ -18,21 +19,23 @@ struct AttachmentImage: View {
             if let image {
                 Image(decorative: image, scale: displayScale)
                     .resizable()
-                    .aspectRatio(contentMode: contentMode)
+                    .scaledToFill()
             } else {
                 Rectangle().fill(.dsFill)
             }
         }
-        .aspectRatio(contentMode == .fit ? aspectRatio : nil, contentMode: .fit)
+        .frame(width: fittedSize?.width, height: fittedSize?.height)
         .task(id: data) {
             image = await Self.decode(data, maxPixels: Int(maxSide * displayScale))
         }
     }
 
-    /// Width over height, once it's decoded; a photo's shape until then.
-    private var aspectRatio: CGFloat {
-        guard let image, image.height > 0 else { return 4 / 3 }
-        return CGFloat(image.width) / CGFloat(image.height)
+    /// The largest size of the image's shape (a photo's, until it's decoded) within `fitting`.
+    private var fittedSize: CGSize? {
+        guard let fitting else { return nil }
+        let ratio = image.map { CGFloat($0.width) / CGFloat(max($0.height, 1)) } ?? 4 / 3
+        let height = min(fitting.height, fitting.width / ratio)
+        return CGSize(width: height * ratio, height: height)
     }
 
     @concurrent

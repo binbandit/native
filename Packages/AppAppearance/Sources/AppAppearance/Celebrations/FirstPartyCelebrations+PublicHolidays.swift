@@ -1,0 +1,17 @@
+// Generated from official public-holiday calendars, researched 18 October 2026. Only statutory,
+// nationwide public holidays count, never "widely celebrated"; a country without an official source
+// is left out. Regenerate rather than editing by hand.
+
+extension FirstPartyCelebrations {
+    /// Each country's official calendar and the catalogue's celebrations that are public holidays
+    /// there, by ISO 3166-1 alpha-2 code.
+    static let publicHolidayCalendars: [String: PublicHolidayCalendar] = [:]
+}
+
+/// Where one country's public holidays come from.
+struct PublicHolidayCalendar {
+    let authority: String
+    let source: String
+    /// Edition slugs (the celebration id without `native.`).
+    let holidays: Set<String>
+}

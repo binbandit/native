@@ -79,6 +79,21 @@ public struct CelebrationPreferences: Codable, Hashable, Sendable {
         if isEnabled, !priority.contains(id) { priority.append(id) }
     }
 
+    /// Turns on the celebrations that are public holidays in `country` (ISO 3166-1 alpha-2) and can
+    /// be chosen, leaving everything else as it is. Only ever called from the user's own pick.
+    public mutating func enablePublicHolidays(of country: String, in events: [CelebrationEvent], on day: CivilDate) {
+        for event in events where event.contribution.publicHolidays.contains(country) && event.canBeChosen(on: day) {
+            setEnabled(true, for: event.id)
+        }
+    }
+
+    /// The countries the catalogue knows public holidays for, with how many celebrations each.
+    public static func publicHolidayCountries(in events: [CelebrationEvent]) -> [String: Int] {
+        events.reduce(into: [:]) { counts, event in
+            for country in event.contribution.publicHolidays { counts[country, default: 0] += 1 }
+        }
+    }
+
     /// The enabled celebrations in overlap order: the user's order, then the rest by catalogue order.
     public func order(in events: [CelebrationEvent]) -> [CelebrationID] {
         let enabled = events.filter { selection(for: $0.id).isEnabled }

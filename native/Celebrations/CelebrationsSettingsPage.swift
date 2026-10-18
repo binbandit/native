@@ -108,22 +108,23 @@ struct CelebrationsSettingsPage: View {
     @ViewBuilder private var bulkControls: some View {
         let choosable = center.celebrations.filter { $0.canBeChosen(on: center.today) }
         let enabled = center.celebrations.filter { center.preferences.selection(for: $0.id).isEnabled }
-        Button("Turn All On") { changeAll(to: true) }
+        Button("Turn All On") { changeUndoably("Turn All Celebrations On") { center.setAllAutomatic(true) } }
             .buttonStyle(.ds(.ghost, size: .medium))
             .disabled(choosable.allSatisfy { center.preferences.selection(for: $0.id).isEnabled })
             .help("Turn on every celebration. Icons download a week before each one's dates.")
-        Button("Turn All Off") { changeAll(to: false) }
+        Button("Turn All Off") { changeUndoably("Turn All Celebrations Off") { center.setAllAutomatic(false) } }
             .buttonStyle(.ds(.ghost, size: .medium))
             .disabled(enabled.isEmpty)
             .help("Turn off every celebration. Undo puts your choices back.")
     }
 
-    private func changeAll(to isOn: Bool) {
+    /// Makes a change to many celebrations at once that Undo (⌘Z) puts back.
+    private func changeUndoably(_ name: String, _ change: () -> Void) {
         let before = center.preferences
-        center.setAllAutomatic(isOn)
+        change()
         guard let undoManager, before != center.preferences else { return }
         Self.registerUndo(on: undoManager, center: center, restoring: before)
-        undoManager.setActionName(isOn ? "Turn All Celebrations On" : "Turn All Celebrations Off")
+        undoManager.setActionName(name)
     }
 
     /// Undo restores `earlier` and registers restoring what it replaced, so Redo works too.

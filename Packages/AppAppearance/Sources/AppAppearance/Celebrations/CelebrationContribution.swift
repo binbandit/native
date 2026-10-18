@@ -41,6 +41,9 @@ public struct CelebrationContribution: AppearanceContribution {
     /// Discovery groups such as "cultural", "religious" or "community". They help browsing and never
     /// turn anything on.
     public var tags: [String]
+    /// Countries (ISO 3166-1 alpha-2) where it's an official public holiday, from their governments'
+    /// calendars. Offered as a one-step pick the user makes; never applied from the user's region.
+    public var publicHolidays: Set<String>
 
     public var provenance: CelebrationProvenance
     public var calendar: CelebrationCalendar
@@ -55,7 +58,7 @@ public struct CelebrationContribution: AppearanceContribution {
 
     public init(
         id: CelebrationID, title: LocalizedText, aliases: [String] = [], summary: LocalizedText? = nil,
-        tags: [String] = [], provenance: CelebrationProvenance = CelebrationProvenance(),
+        tags: [String] = [], publicHolidays: Set<String> = [], provenance: CelebrationProvenance = CelebrationProvenance(),
         calendar: CelebrationCalendar, display: CelebrationDisplay = CelebrationDisplay(), iconSet: IconSetID? = nil,
         alternateIconSets: [IconSetID] = [],
         compatibility: CelebrationCompatibility = CelebrationCompatibility()
@@ -65,6 +68,7 @@ public struct CelebrationContribution: AppearanceContribution {
         self.aliases = aliases
         self.summary = summary
         self.tags = tags
+        self.publicHolidays = publicHolidays
         self.provenance = provenance
         self.calendar = calendar
         self.display = display
@@ -85,7 +89,7 @@ public struct CelebrationContribution: AppearanceContribution {
 
 extension CelebrationContribution: Codable {
     private enum CodingKeys: String, CodingKey {
-        case id, title, aliases, summary = "description", tags, provenance, calendar, display, iconSet,
+        case id, title, aliases, summary = "description", tags, publicHolidays, provenance, calendar, display, iconSet,
             alternateIconSets, compatibility
     }
 
@@ -96,6 +100,7 @@ extension CelebrationContribution: Codable {
         aliases = try container.decodeIfPresent([String].self, forKey: .aliases) ?? []
         summary = try container.decodeIfPresent(LocalizedText.self, forKey: .summary)
         tags = try container.decodeIfPresent([String].self, forKey: .tags) ?? []
+        publicHolidays = Set(try container.decodeIfPresent([String].self, forKey: .publicHolidays) ?? [])
         provenance = try container.decodeIfPresent(CelebrationProvenance.self, forKey: .provenance) ?? .init()
         calendar = try container.decode(CelebrationCalendar.self, forKey: .calendar)
         display = try container.decodeIfPresent(CelebrationDisplay.self, forKey: .display) ?? .init()

@@ -28,6 +28,8 @@ struct CommandPaletteResults {
 
     private static let recentLimit = 5
     /// With nothing typed, how many of each kind show (commands show in full).
+    /// With nothing typed, tasks lead, as the reference app's palette leads with recent workspaces.
+    private static let browseOrder: [CommandPaletteItem.Kind] = [.task, .command, .project, .settings]
     private static let browseLimits: [CommandPaletteItem.Kind: Int] = [.task: 6, .project: 6]
 
     init(items: [CommandPaletteItem], query: String, recents: [CommandPaletteItem.ID]) {
@@ -44,7 +46,7 @@ struct CommandPaletteResults {
         }
         let recent = recents.compactMap { byID[$0] }.prefix(recentLimit)
         let recentIDs = Set(recent.map(\.id))
-        let kinds = CommandPaletteItem.Kind.allCases.map { kind in
+        let kinds = browseOrder.map { kind in
             let listed = items.filter { $0.kind == kind && !recentIDs.contains($0.id) }
             return Section(
                 title: kind.title,
