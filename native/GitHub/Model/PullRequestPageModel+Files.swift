@@ -167,11 +167,6 @@ extension PullRequestPageModel {
     /// The hunk's line indices the comment being written covers.
     func draftLines(in path: String, hunk: DiffHunk) -> Set<Int> {
         guard let draft, draft.anchor.path == path else { return [] }
-        let covered = (draft.anchor.startLine ?? draft.anchor.line)...draft.anchor.line
-        return Set(
-            hunk.lines.indices.filter { index in
-                guard let anchor = hunk.lines[index].anchor else { return false }
-                return anchor.side == draft.anchor.side && covered.contains(anchor.line)
-            })
+        return lines(covering: draft.anchor, in: hunk)
     }
 }

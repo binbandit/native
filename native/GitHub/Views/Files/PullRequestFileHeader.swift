@@ -10,15 +10,6 @@ struct PullRequestFileHeader: View {
     @Environment(GitHubModel.self) private var gitHub
 
     var body: some View {
-        if UserDefaults.standard.bool(forKey: "gitHubExperimentSimpleHeader") {
-            Text(file.path).frame(maxWidth: .infinity, minHeight: DS.Size.controlMD, alignment: .leading)
-                .task(id: model.isCollapsed(file)) { await model.loadPatch(for: file.path) }
-        } else {
-            full
-        }
-    }
-
-    @ViewBuilder private var full: some View {
         let collapsed = model.isCollapsed(file)
         let folder = (file.path as NSString).deletingLastPathComponent
         let name = (file.path as NSString).lastPathComponent

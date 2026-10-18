@@ -3,8 +3,9 @@ import SwiftUI
 
 /// Lines of a hunk drawn as two platform text views, the gutter and the code, with the per-line
 /// tints painted behind them. Every line is `lineHeight` tall, so the block's size is known without
-/// laying out text. Hovering a line shows "+" in its gutter; clicking the gutter comments on it
-/// (shift-click widens the comment), and the context menu acts on the line under the pointer.
+/// laying out text. Hovering a line shows "+" in its gutter. Clicking the gutter comments on that
+/// line; dragging in it (after a long press on iPad) picks lines across blocks of the hunk, and
+/// shift-click widens the comment being written. The context menu acts on the line under the pointer.
 struct PullRequestDiffBlock: View {
     let model: PullRequestPageModel
     let path: String
@@ -20,27 +21,8 @@ struct PullRequestDiffBlock: View {
     @State private var hovered: Int?
 
     var body: some View {
-        if UserDefaults.standard.bool(forKey: "gitHubExperimentBareBlock") {
-            HStack(alignment: .top, spacing: 0) {
-                PlatformCodeText(
-                    text: text.gutter, key: textKey, lineCount: text.kinds.count, lineHeight: lineHeight,
-                    isSelectable: false
-                )
-                .equatable()
-                .frame(width: gutterWidth, alignment: .leading)
-                PlatformCodeText(text: text.code, key: textKey, lineCount: text.kinds.count, lineHeight: lineHeight)
-                    .equatable()
-                    .frame(maxWidth: .infinity, alignment: .leading)
-            }
-            .frame(height: CGFloat(text.kinds.count) * lineHeight)
-        } else {
-            full
-        }
-    }
-
-    private var full: some View {
         let lines = text.kinds.count
-        return HStack(alignment: .top, spacing: 0) {
+        HStack(alignment: .top, spacing: 0) {
             PlatformCodeText(
                 text: text.gutter, key: textKey, lineCount: lines, lineHeight: lineHeight, isSelectable: false
             )
@@ -51,10 +33,8 @@ struct PullRequestDiffBlock: View {
                 // Above the text view, which lets clicks through, so SwiftUI takes them.
                 Color.clear
                     .contentShape(.rect)
-                    .onTapGesture(coordinateSpace: .local) { location in
-                        if let index = index(at: location.y) { tapGutter(index) }
-                    }
-                    .help("Click a line number to comment on it; shift-click to widen the comment")
+                    .gesture(gutterGesture)
+                    .help("Click a line number to comment on it, or drag across line numbers to comment on several")
             }
             .accessibilityHidden(true)
             SeparatorLine(axis: .vertical)
@@ -71,6 +51,11 @@ struct PullRequestDiffBlock: View {
         }
         .frame(height: CGFloat(lines) * lineHeight)
         .background(alignment: .topLeading) { tints }
+        .onGeometryChange(for: CGFloat.self) {
+            $0.frame(in: .named(PullRequestPageModel.filesSpace)).minY
+        } action: { minY in
+            model.placeBlock(path, hunk, range, minY: minY)
+        }
         .onContinuousHover(coordinateSpace: .local) { phase in
             switch phase {
             case .active(let location): hovered = index(at: location.y)
@@ -107,8 +92,46 @@ struct PullRequestDiffBlock: View {
         hunk.lines[line].anchor.map { ReviewAnchor(path: path, side: $0.side, line: $0.line) }
     }
 
-    private func tapGutter(_ index: Int) {
-        let line = range.lowerBound + index
+    #if os(iOS)
+    /// A tap comments on one line; press and hold, then drag, to pick several.
+    private var gutterGesture: some Gesture {
+        LongPressGesture(minimumDuration: 0.3)
+            .sequenced(
+                before: DragGesture(minimumDistance: 0, coordinateSpace: .named(PullRequestPageModel.filesSpace))
+            )
+            .onChanged { value in
+                if case .second(true, let drag?) = value { follow(drag) }
+            }
+            .onEnded { value in
+                if case .second(true, _) = value { model.endDragSelection() }
+            }
+            .exclusively(
+                before: SpatialTapGesture().onEnded { value in
+                    if let index = index(at: value.location.y) { tapGutter(range.lowerBound + index) }
+                })
+    }
+    #else
+    /// A click comments on one line and a drag picks several; with Shift held, a click widens the
+    /// comment being written instead.
+    private var gutterGesture: some Gesture {
+        DragGesture(minimumDistance: 0, coordinateSpace: .named(PullRequestPageModel.filesSpace))
+            .onChanged { value in
+                if !isShiftDown { follow(value) }
+            }
+            .onEnded { value in
+                guard isShiftDown else { return model.endDragSelection() }
+                let line = model.hunkLine(at: value.location.y, path, hunk, lineHeight: lineHeight)
+                if let line, hunk.lines.indices.contains(line) { tapGutter(line) }
+            }
+    }
+    #endif
+
+    private func follow(_ drag: DragGesture.Value) {
+        model.dragSelection(path, hunk, from: drag.startLocation.y, to: drag.location.y, lineHeight: lineHeight)
+    }
+
+    /// Comments on hunk line `line`, or with Shift held widens the comment being written to it.
+    private func tapGutter(_ line: Int) {
         guard model.page?.isOpen == true, let anchor = anchor(line) else { return }
         if isShiftDown, let extended = model.extendedDraft(to: hunk.lines[line], in: hunk, path: path) {
             model.draft?.anchor = extended
@@ -130,9 +153,11 @@ struct PullRequestDiffBlock: View {
         }
     }
 
-    /// Each line's tint (added, removed, in the comment being written, hovered) and change bar.
+    /// Each line's tint (added, removed, being picked or in the comment being written, under the
+    /// conversation that's highlighted, hovered) and change bar.
     private var tints: some View {
-        let draftLines = model.draftLines(in: path, hunk: hunk)
+        let picked = model.draftLines(in: path, hunk: hunk).union(model.selectedLines(in: path, hunk: hunk))
+        let discussed = model.highlightedThreadLines(in: path, hunk: hunk)
         let kinds = text.kinds
         let height = lineHeight
         let hovered = hovered
@@ -140,8 +165,10 @@ struct PullRequestDiffBlock: View {
         return Canvas { context, size in
             for (index, kind) in kinds.enumerated() {
                 let row = CGRect(x: 0, y: CGFloat(index) * height, width: size.width, height: height)
-                if draftLines.contains(start + index) {
+                if picked.contains(start + index) {
                     context.fill(Path(row), with: .color(.dsAccentSubtle))
+                } else if discussed.contains(start + index) {
+                    context.fill(Path(row), with: .color(Color.dsAttention.opacity(0.16)))
                 } else if let tint = Self.tint(kind) {
                     context.fill(Path(row), with: .color(tint.opacity(0.12)))
                 }

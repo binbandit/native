@@ -35,8 +35,10 @@ struct PullRequestFilesList: View {
                     }
                 }
                 .padding(DS.Space.lg)
+                .coordinateSpace(.named(PullRequestPageModel.filesSpace))
             }
             .scrollContentBackground(.hidden)
+            .overlay(alignment: .bottom) { selectionLimit }
             .onGeometryChange(for: CGFloat.self) {
                 $0.size.width
             } action: {
@@ -53,19 +55,6 @@ struct PullRequestFilesList: View {
     }
 
     @ViewBuilder private func content(_ row: PullRequestFilesRow) -> some View {
-        if UserDefaults.standard.bool(forKey: "gitHubExperimentPlaceholderRows") {
-            switch row.kind {
-            case .block(_, let range): Color.gray.opacity(0.05).frame(height: CGFloat(range.count) * 20.5)
-            case .header: Color.gray.opacity(0.1).frame(height: 36)
-                    .task { await model.loadPatch(for: row.path) }
-            default: Color.gray.opacity(0.02).frame(height: 24)
-            }
-        } else {
-            realContent(row)
-        }
-    }
-
-    @ViewBuilder private func realContent(_ row: PullRequestFilesRow) -> some View {
         switch row.kind {
         case .header(let file):
             PullRequestFileHeader(model: model, file: file)
@@ -90,6 +79,22 @@ struct PullRequestFilesList: View {
                 .padding(DS.Space.md)
         case .footer:
             Color.clear.frame(height: DS.Space.xs)
+        }
+    }
+
+    /// Why a drag in the gutter stops short, while it does.
+    @ViewBuilder private var selectionLimit: some View {
+        if let limit = model.lineSelection?.limit {
+            Text(limit.explanation)
+                .font(.dsCaption)
+                .foregroundStyle(.dsTextSecondary)
+                .padding(.horizontal, DS.Space.md)
+                .padding(.vertical, DS.Space.sm)
+                .background(.dsSurfaceRaised, in: Capsule())
+                .overlay { Capsule().strokeBorder(.dsSeparator) }
+                .padding(DS.Space.lg)
+                .allowsHitTesting(false)
+                .accessibilityAddTraits(.updatesFrequently)
         }
     }
 

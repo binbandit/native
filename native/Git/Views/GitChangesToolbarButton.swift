@@ -12,19 +12,19 @@ struct GitChangesToolbarButton: View {
         Button {
             isPresented.toggle()
         } label: {
-            Label {
-                if totals.additions > 0 || totals.deletions > 0 {
-                    // The button says it in words (its value), so the counts' own label stays quiet.
-                    DiffStatLabel(added: totals.additions, removed: totals.deletions)
-                        .accessibilityHidden(true)
-                }
-            } icon: {
+            // A plain stack rather than a `Label`: in a toolbar, a Label's title becomes the item's
+            // name, which would read "+4" instead of the button's own label.
+            HStack(spacing: DS.Space.sm) {
                 Image(systemName: "plus.forwardslash.minus")
+                if totals.additions > 0 || totals.deletions > 0 {
+                    DiffStatLabel(added: totals.additions, removed: totals.deletions)
+                }
             }
         }
         .buttonStyle(.header(isOn: isPresented, iconOnly: totals.additions == 0 && totals.deletions == 0))
         .help(CommandRegistry.shared.help(isPresented ? "Hide Changes" : "Show Changes", for: .viewToggleChanges))
         .accessibilityLabel(isPresented ? "Hide Changes" : "Show Changes")
+        .accessibilityAddTraits(isPresented ? .isSelected : [])
         .accessibilityValue("\(totals.additions) lines added, \(totals.deletions) removed")
         .disabled(model.state == .notRepository)
     }

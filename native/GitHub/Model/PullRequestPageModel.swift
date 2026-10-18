@@ -80,6 +80,15 @@ final class PullRequestPageModel {
 
     /// The new line comment being written, if any.
     var draft: ReviewCommentDraft?
+    /// Lines being picked for a new comment by dragging in the gutter, highlighted as they're picked.
+    var lineSelection: ReviewLineSelection?
+    /// The conversation under the pointer or being replied to, whose lines are highlighted.
+    var highlightedThread: ReviewThread.ID?
+    /// Conversations folded or opened by hand; the rest follow whether they're resolved.
+    var threadExpansion: [ReviewThread.ID: Bool] = [:]
+    /// Where each block of diff lines sits in the Files Changed list, by hunk then first line, so a
+    /// drag in the gutter can cross from one block to the next.
+    @ObservationIgnored var blockOrigins: [String: [Int: (end: Int, minY: CGFloat)]] = [:]
     var replyDrafts: [String: String] = [:]
     var conversationDraft = ""
     /// Writes under way, by what they're about, so the right control shows progress.

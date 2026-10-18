@@ -22,20 +22,6 @@ struct PullRequestDiffBlockRow: View {
     @Environment(\.dsCodeFont) private var codeFont
 
     var body: some View {
-        content
-            .codeTextStyle(.compact)
-            .environment(\.dsCodeFont, diffFont)
-    }
-
-    /// Diffs set code without ligatures: they read better, and shaping ligatures is a large share
-    /// of laying out a block. The user's choice still applies to code everywhere else.
-    private var diffFont: DSCodeFont {
-        var font = codeFont
-        if !UserDefaults.standard.bool(forKey: "gitHubExperimentLigatures") { font.ligatures = false }
-        return font
-    }
-
-    @ViewBuilder private var content: some View {
         let colors = DSCodeColors(environment, on: .surface)
         let numberWidth = model.numberWidth(path)
         if model.wrapsBlock(path, hunk, range) {
@@ -45,7 +31,7 @@ struct PullRequestDiffBlockRow: View {
                 columns: columns, characterWidth: characterWidth)
         } else {
             let key = blockKey
-            let metrics = Self.metrics(diffFont)
+            let metrics = Self.metrics(codeFont)
             PullRequestDiffBlock(
                 model: model, path: path, hunk: hunk, range: range,
                 text: blockText(key: key, colors: colors, numberWidth: numberWidth, metrics: metrics), textKey: key,
@@ -60,7 +46,7 @@ struct PullRequestDiffBlockRow: View {
     private var blockKey: String {
         let highlighted = model.highlighted[PullRequestPageModel.hunkKey(path, hunk)] != nil
         return
-            "\(path)#\(hunk.id)#\(range)#\(highlighted)#\(colorScheme)#\(codeThemes.hashValue)#\(diffFont.hashValue)#\(columns)"
+            "\(path)#\(hunk.id)#\(range)#\(highlighted)#\(colorScheme)#\(codeThemes.hashValue)#\(codeFont.hashValue)#\(columns)"
     }
 
     private func blockText(

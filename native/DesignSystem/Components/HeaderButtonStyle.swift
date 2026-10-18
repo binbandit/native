@@ -60,7 +60,6 @@ private struct HeaderButtonBody: View {
             .dsHitTarget(DS.Size.controlXS)
             .dsFocusShape(shape)
             .trackHover($isHovered)
-            .accessibilityAddTraits(isOn ? .isSelected : [])
     }
 
     private var wash: Color {

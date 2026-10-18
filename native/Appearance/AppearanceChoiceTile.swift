@@ -1,4 +1,3 @@
-import OSLog  // DEBUG-PROBE
 import SwiftUI
 
 /// One choice among Settings ▸ Appearance's looks (light or dark, Paper or Wool): a preview of the
@@ -14,7 +13,6 @@ struct AppearanceChoiceTile<Preview: View>: View {
     @State private var isHovered = false
 
     var body: some View {
-        let _ = DebugProbe.log.notice("tile \(title, privacy: .public) selected=\(isSelected)")  // DEBUG-PROBE
         Button(action: select) {
             VStack(alignment: .leading, spacing: DS.Space.md) {
                 preview
