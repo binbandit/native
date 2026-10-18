@@ -124,7 +124,7 @@ final class GitHubModel {
                 refreshBranches(olderThan: returned ? 0 : Self.branchMaxAge)
             }
             let delay = max(schedule.nextRefresh(activity).timeIntervalSinceNow, 1)
-            let wait = Task { try? await Task.sleep(for: .seconds(delay), tolerance: .seconds(delay / 10)) }
+            let wait = Task { _ = try? await Task.sleep(for: .seconds(delay), tolerance: .seconds(delay / 10)) }
             refreshWait = wait
             await withTaskCancellationHandler { await wait.value } onCancel: { wait.cancel() }
         }

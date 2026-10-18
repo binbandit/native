@@ -25,6 +25,9 @@ struct RealHistoryCheck {
                 do {
                     guard let session = try reader.read(source) else {
                         empty += 1
+                        if ProcessInfo.processInfo.environment["SEARCH_LIST_EMPTY"] != nil {
+                            print("empty: \(source.url.path(percentEncoded: false))")
+                        }
                         continue
                     }
                     readTime += Date.now.timeIntervalSince(readStarted)

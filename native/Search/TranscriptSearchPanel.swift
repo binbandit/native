@@ -35,7 +35,9 @@ struct TranscriptSearchPanel: View {
         .background(.dsBackground)
         .onAppear { isFieldFocused = true }
         .onChange(of: center.results) { _, results in
-            selection = TranscriptSearchRow.rows(of: results.groups).first?.id
+            // The best match, so Return goes straight to it.
+            let rows = TranscriptSearchRow.rows(of: results.groups)
+            selection = (rows.first { $0.hit != nil } ?? rows.first)?.id
         }
     }
 

@@ -229,6 +229,14 @@ the people who had it. Halloween keeps its 1 October to 7 November window; Día 
 1 and 2 November, with 28 October to 3 November as a labelled decorative option, and changes only
 Home until its icons exist (`docs/celebrations-artwork.md`).
 
+Only Halloween's icons are bundled. Every other edition's icons are a pack published with each
+release beside an index signed with the update key, fetched when the celebration is chosen and cached
+per bundle id; small thumbnails ship in the app so the catalogue works offline. This keeps the app
+over 100 MB lighter. An edition celebrates automatically only once its dates resolve: fixed dates,
+weekday rules, day-of-year and the Easter computus are computed; other calendars come as cited annual
+tables, and until then are listed as coming soon. Signature checking uses CryptoKit with the same
+scheme and key as `HostUpdater`, which AppAppearance can't depend on because HostUpdater is Mac-only.
+
 ## 2026-10-18: Fair source under the Functional Source License
 
 Native is licensed under FSL-1.1-ALv2. Anyone can read, fork, modify and use it, at work too, and
