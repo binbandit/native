@@ -16,7 +16,8 @@ struct PullRequestCommentCard<Accessory: View>: View {
     @Environment(GitHubModel.self) private var gitHub
 
     init(
-        author: String?, date: Date?, body: String, url: URL?, edited: Bool, emptyText: String = "No description provided.",
+        author: String?, date: Date?, body: String, url: URL?, edited: Bool,
+        emptyText: String = "No description provided.",
         badge: (label: String, tone: Badge.Tone)? = nil, @ViewBuilder accessory: () -> Accessory
     ) {
         self.author = author
@@ -90,10 +91,12 @@ struct PullRequestCommentCard<Accessory: View>: View {
 
 extension PullRequestCommentCard where Accessory == EmptyView {
     init(
-        author: String?, date: Date?, body: String, url: URL?, edited: Bool, emptyText: String = "No description provided.",
+        author: String?, date: Date?, body: String, url: URL?, edited: Bool,
+        emptyText: String = "No description provided.",
         badge: (label: String, tone: Badge.Tone)? = nil
     ) {
-        self.init(author: author, date: date, body: body, url: url, edited: edited, emptyText: emptyText, badge: badge) {
+        self.init(author: author, date: date, body: body, url: url, edited: edited, emptyText: emptyText, badge: badge)
+        {
             EmptyView()
         }
     }

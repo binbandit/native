@@ -17,7 +17,9 @@ struct PullRequestTimelineRow: View {
             reviewRow(review)
         case .commit(let commit):
             eventLine(systemImage: "smallcircle.filled.circle", tint: .dsTextTertiary, date: commit.date) {
-                Text("\(Text(commit.headline).foregroundStyle(.dsTextPrimary))  \(Text(commit.abbreviatedOid).font(.dsMonoCaption))")
+                Text(
+                    "\(Text(commit.headline).foregroundStyle(.dsTextPrimary))  \(Text(commit.abbreviatedOid).font(.dsMonoCaption))"
+                )
             }
         case .event(let event):
             eventLine(systemImage: symbol(for: event.kind), tint: tint(for: event.kind), date: event.date) {
@@ -32,7 +34,9 @@ struct PullRequestTimelineRow: View {
         let verdict = verdict(review.state)
         if review.body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             eventLine(systemImage: verdict.symbol, tint: verdict.tint, date: review.submittedAt) {
-                Text("\(Text(review.author ?? "Someone").foregroundStyle(.dsTextPrimary)) \(verdict.phrase)\(commentSuffix(review))")
+                Text(
+                    "\(Text(review.author ?? "Someone").foregroundStyle(.dsTextPrimary)) \(verdict.phrase)\(commentSuffix(review))"
+                )
             }
         } else {
             PullRequestCommentCard(
@@ -65,7 +69,9 @@ struct PullRequestTimelineRow: View {
         .padding(.horizontal, DS.Space.lg)
     }
 
-    private func verdict(_ state: PullRequestReview.State) -> (label: String, phrase: String, symbol: String, tint: Color, tone: Badge.Tone) {
+    private func verdict(
+        _ state: PullRequestReview.State
+    ) -> (label: String, phrase: String, symbol: String, tint: Color, tone: Badge.Tone) {
         switch state {
         case .approved: ("Approved", "approved these changes", "checkmark.circle", .dsSuccess, .success)
         case .changesRequested: ("Changes requested", "requested changes", "exclamationmark.circle", .dsDanger, .danger)

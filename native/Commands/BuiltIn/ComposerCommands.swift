@@ -1,3 +1,4 @@
+import ACP
 import NativeCommands
 
 extension CommandID {

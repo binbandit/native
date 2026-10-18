@@ -36,7 +36,9 @@ struct MergePullRequestSheet: View {
                     if let warning = warning(page) {
                         NoticeBanner(tone: .warning, title: warning) { EmptyView() }
                     }
-                    Picker("Merge method", selection: Binding(get: { method ?? defaultMethod(page) }, set: { method = $0 })) {
+                    Picker(
+                        "Merge method", selection: Binding(get: { method ?? defaultMethod(page) }, set: { method = $0 })
+                    ) {
                         ForEach(page.mergeMethods, id: \.self) { method in
                             Text(title(method)).tag(method)
                         }
@@ -58,11 +60,14 @@ struct MergePullRequestSheet: View {
                         .buttonStyle(.ds(.ghost, size: .medium))
                     Button(model.busy.contains("merge") ? "Merging…" : "Merge Pull Request") {
                         Task {
-                            if await model.merge(method ?? defaultMethod(page), deleteBranch: deletesBranch) { dismiss() }
+                            if await model.merge(method ?? defaultMethod(page), deleteBranch: deletesBranch) {
+                                dismiss()
+                            }
                         }
                     }
                     .buttonStyle(.ds(.primary, size: .medium))
-                    .disabled(page.mergeMethods.isEmpty || model.busy.contains("merge") || page.mergeable == .conflicting)
+                    .disabled(
+                        page.mergeMethods.isEmpty || model.busy.contains("merge") || page.mergeable == .conflicting)
                 }
                 .padding(.horizontal, DS.Space.xl)
                 .padding(.vertical, DS.Space.lg)
@@ -74,12 +79,15 @@ struct MergePullRequestSheet: View {
     }
 
     private func defaultMethod(_ page: PullRequestPage) -> MergeMethod {
-        page.defaultMergeMethod.flatMap { page.mergeMethods.contains($0) ? $0 : nil } ?? page.mergeMethods.first ?? .merge
+        page.defaultMergeMethod.flatMap { page.mergeMethods.contains($0) ? $0 : nil } ?? page.mergeMethods.first
+            ?? .merge
     }
 
     /// What GitHub says stands in the way, before the user tries.
     private func warning(_ page: PullRequestPage) -> String? {
-        if page.mergeable == .conflicting { return "This branch has conflicts with \(page.baseRefName). Resolve them first." }
+        if page.mergeable == .conflicting {
+            return "This branch has conflicts with \(page.baseRefName). Resolve them first."
+        }
         switch page.mergeStatus {
         case .blocked:
             return page.viewerCanMergeAsAdmin

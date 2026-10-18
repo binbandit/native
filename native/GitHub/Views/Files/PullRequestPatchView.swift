@@ -26,7 +26,9 @@ struct PullRequestPatchView: View {
                     let line = hunk.lines[index]
                     PullRequestDiffLineRow(
                         line: line,
-                        text: highlighted[hunk.id].flatMap { $0.indices.contains(index) ? colors.text($0[index]) : nil },
+                        text: highlighted[hunk.id].flatMap {
+                            $0.indices.contains(index) ? colors.text($0[index]) : nil
+                        },
                         numberTemplate: numberWidth,
                         isSelected: isInDraft(line),
                         model: model,
@@ -35,7 +37,8 @@ struct PullRequestPatchView: View {
                         isShiftDown: isShiftDown
                     )
                     if let target = line.anchor {
-                        ForEach(threads.filter { $0.anchor?.side == target.side && $0.anchor?.line == target.line }) { thread in
+                        ForEach(threads.filter { $0.anchor?.side == target.side && $0.anchor?.line == target.line }) {
+                            thread in
                             PullRequestReviewThreadView(model: model, thread: thread, showsAnchor: false)
                                 .padding(DS.Space.md)
                         }
@@ -116,13 +119,15 @@ private struct PullRequestHunkHeader: View {
     let hunk: DiffHunk
 
     var body: some View {
-        Text("\(Text(hunk.header).foregroundStyle(.dsTextTertiary))\(Text(hunk.section.map { "  " + $0 } ?? "").foregroundStyle(.dsTextSecondary))")
-            .font(.dsMonoCaption)
-            .lineLimit(1)
-            .padding(.horizontal, DS.Space.md)
-            .padding(.vertical, DS.Space.xs)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(.dsHover)
+        Text(
+            "\(Text(hunk.header).foregroundStyle(.dsTextTertiary))\(Text(hunk.section.map { "  " + $0 } ?? "").foregroundStyle(.dsTextSecondary))"
+        )
+        .font(.dsMonoCaption)
+        .lineLimit(1)
+        .padding(.horizontal, DS.Space.md)
+        .padding(.vertical, DS.Space.xs)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(.dsHover)
     }
 }
 

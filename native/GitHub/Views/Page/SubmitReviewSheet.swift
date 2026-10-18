@@ -8,7 +8,7 @@ struct SubmitReviewSheet: View {
     let model: PullRequestPageModel
 
     @Environment(\.dismiss) private var dismiss
-    @State private var body_ = ""
+    @State private var summary = ""
     @State private var event = ReviewEvent.comment
     @State private var isConfirmingDiscard = false
 
@@ -28,16 +28,20 @@ struct SubmitReviewSheet: View {
             SeparatorLine()
             VStack(alignment: .leading, spacing: DS.Space.lg) {
                 if model.pendingCommentCount > 0 {
-                    Text("\(model.pendingCommentCount) pending comment\(model.pendingCommentCount == 1 ? "" : "s") will be published with this review.")
-                        .font(.dsBody)
-                        .foregroundStyle(.dsTextSecondary)
+                    Text(
+                        "\(model.pendingCommentCount) pending comment\(model.pendingCommentCount == 1 ? "" : "s") will be published with this review."
+                    )
+                    .font(.dsBody)
+                    .foregroundStyle(.dsTextSecondary)
                 }
-                GitHubCommentComposer(text: $body_, placeholder: "Leave a summary (optional). Markdown works.", focusesOnAppear: true) {
+                GitHubCommentComposer(
+                    text: $summary, placeholder: "Leave a summary (optional). Markdown works.", focusesOnAppear: true
+                ) {
                     EmptyView()
                 }
                 VStack(alignment: .leading, spacing: DS.Space.sm) {
                     ForEach(ReviewEvent.allCases, id: \.self) { option in
-                        option_(option)
+                        eventOption(option)
                     }
                 }
                 if let error = model.actionError {
@@ -58,7 +62,7 @@ struct SubmitReviewSheet: View {
                     .buttonStyle(.ds(.ghost, size: .medium))
                 Button(model.busy.contains("review") ? "Submitting…" : "Submit Review") {
                     Task {
-                        if await model.submitReview(event, body: body_) { dismiss() }
+                        if await model.submitReview(event, body: summary) { dismiss() }
                     }
                 }
                 .buttonStyle(.ds(.primary, size: .medium))
@@ -70,8 +74,13 @@ struct SubmitReviewSheet: View {
         }
         .frame(width: CreatePullRequestLayout.width)
         .background(.dsBackground)
-        .confirmationDialog("Discard your pending review?", isPresented: $isConfirmingDiscard, titleVisibility: .visible) {
-            Button("Discard \(model.pendingCommentCount) Comment\(model.pendingCommentCount == 1 ? "" : "s")", role: .destructive) {
+        .confirmationDialog(
+            "Discard your pending review?", isPresented: $isConfirmingDiscard, titleVisibility: .visible
+        ) {
+            Button(
+                "Discard \(model.pendingCommentCount) Comment\(model.pendingCommentCount == 1 ? "" : "s")",
+                role: .destructive
+            ) {
                 Task {
                     await model.discardReview()
                     dismiss()
@@ -87,10 +96,11 @@ struct SubmitReviewSheet: View {
     private var canSubmit: Bool {
         guard let page = model.page else { return false }
         if event != .comment, !page.viewerCanApprove { return false }
-        return event != .comment || model.pendingCommentCount > 0 || !body_.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        return event != .comment || model.pendingCommentCount > 0
+            || !summary.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    private func option_(_ option: ReviewEvent) -> some View {
+    private func eventOption(_ option: ReviewEvent) -> some View {
         let disabled = option != .comment && model.page?.viewerCanApprove == false
         return Button {
             event = option
@@ -102,9 +112,13 @@ struct SubmitReviewSheet: View {
                     Text(title(option))
                         .font(.dsBodyMedium)
                         .foregroundStyle(disabled ? .dsTextTertiary : .dsTextPrimary)
-                    Text(disabled ? "You can't \(option == .approve ? "approve" : "request changes on") your own pull request." : detail(option))
-                        .font(.dsCaption)
-                        .foregroundStyle(.dsTextTertiary)
+                    Text(
+                        disabled
+                            ? "You can't \(option == .approve ? "approve" : "request changes on") your own pull request."
+                            : detail(option)
+                    )
+                    .font(.dsCaption)
+                    .foregroundStyle(.dsTextTertiary)
                 }
             }
             .contentShape(.rect)

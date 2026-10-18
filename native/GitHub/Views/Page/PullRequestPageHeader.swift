@@ -64,7 +64,10 @@ struct PullRequestPageHeader: View {
                     Button("Merge", systemImage: "arrow.triangle.merge") { model.isMergeSheetPresented = true }
                         .buttonStyle(.ds(.secondary))
                         .disabled(page.isDraft)
-                        .help(page.isDraft ? "Drafts can't be merged; mark it ready for review on GitHub" : "Merge this pull request")
+                        .help(
+                            page.isDraft
+                                ? "Drafts can't be merged; mark it ready for review on GitHub"
+                                : "Merge this pull request")
                 }
             }
         }

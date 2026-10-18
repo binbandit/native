@@ -18,6 +18,10 @@ build configuration="Debug":
 run name="dev" *args:
     scripts/dev/run-isolated.sh {{name}} {{args}}
 
+# Measure launch, idle cost and child processes in the `perf` instance (docs/performance.md).
+perf *args:
+    scripts/perf/measure.sh {{args}}
+
 # Quit an isolated instance and its host.
 quit name="dev":
     scripts/dev/run-isolated.sh {{name}} --quit

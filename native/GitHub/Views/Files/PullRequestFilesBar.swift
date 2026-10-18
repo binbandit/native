@@ -11,7 +11,9 @@ struct PullRequestFilesBar: View {
     var body: some View {
         HStack(spacing: DS.Space.md) {
             if canShowTree {
-                IconButton(showsTree ? "Hide File Tree" : "Show File Tree", systemImage: "sidebar.left", isActive: showsTree) {
+                IconButton(
+                    showsTree ? "Hide File Tree" : "Show File Tree", systemImage: "sidebar.left", isActive: showsTree
+                ) {
                     withAnimation(.dsPanel) { showsTree.toggle() }
                 }
             }
