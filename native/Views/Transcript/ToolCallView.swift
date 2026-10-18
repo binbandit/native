@@ -208,7 +208,11 @@ private struct ToolRow<Accessory: View>: View {
 
     /// A subject reads tertiary after a verb and secondary on its own; hover lifts it to primary.
     private var subjectStyle: Color {
-        if isHovering, isExpandable { .dsTextPrimary } else if presentation.verb == nil { .dsTextSecondary } else {
+        if isHovering, isExpandable {
+            .dsTextPrimary
+        } else if presentation.verb == nil {
+            .dsTextSecondary
+        } else {
             .dsTextTertiary
         }
     }

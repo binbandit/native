@@ -22,7 +22,7 @@ public struct URLSessionSkillsHTTP: SkillsHTTPClient {
 /// indexes skills in public GitHub repositories and serves each skill's files, so Native can show
 /// every file before writing any.
 public struct SkillsRegistry: Sendable {
-    public static let skillsSH = URL(string: "https://skills.sh").map { $0 } ?? URL(filePath: "/")
+    public static let skillsSH = URL(string: "https://skills.sh") ?? URL(filePath: "/")
 
     let base: URL
     let http: any SkillsHTTPClient
