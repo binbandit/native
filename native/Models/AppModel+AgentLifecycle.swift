@@ -172,7 +172,8 @@ extension AppModel {
     }
 
     /// Whether stopping `agent` would lose something: a session it's starting or signing in for, a
-    /// listing under way, or an open session (or the one that started it) that's busy, showing or holding a draft.
+    /// listing under way, or an open session (or the one that started it) that's busy, showing or
+    /// holding a draft.
     private func isInUse(_ agent: AgentDefinition.ID) -> Bool {
         if creatingSessionWith == agent || runtimes[agent]?.isSigningIn == true
             || listingsInFlight[agent, default: 0] > 0
