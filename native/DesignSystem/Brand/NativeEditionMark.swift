@@ -39,27 +39,21 @@ public struct NativeEditionArtwork: Equatable, @unchecked Sendable {
     }
 }
 
-/// An edition's icon in the emblem's frame: square, centered, and enlarged a little because icon
-/// art keeps a transparent margin the emblem doesn't have.
+/// An edition's icon tile, as large as the frame it's given (the stacked lockup gives it a square of
+/// its own). Drawn from the full-size art with high-quality scaling, so the channel's cues stay crisp.
 private struct NativeArtworkMark: View {
     let artwork: NativeEditionArtwork
 
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        Color.clear
-            .aspectRatio(NativeMark.aspectRatio, contentMode: .fit)
-            .overlay {
-                (colorScheme == .dark ? artwork.dark : artwork.light)
-                    .resizable()
-                    .interpolation(.high)
-                    .scaledToFit()
-                    .scaleEffect(Self.marginCompensation)
-            }
+        (colorScheme == .dark ? artwork.dark : artwork.light)
+            .resizable()
+            .interpolation(.high)
+            .antialiased(true)
+            .scaledToFit()
             .accessibilityElement()
             .accessibilityLabel("Native")
             .accessibilityAddTraits(.isImage)
     }
-
-    private static let marginCompensation: CGFloat = 1.25
 }

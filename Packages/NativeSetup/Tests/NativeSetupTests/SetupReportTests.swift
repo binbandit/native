@@ -11,7 +11,8 @@ struct SetupReportTests {
         agents: [
             .init(
                 id: "codex", name: "Codex", state: .ready, signIn: .signedIn,
-                launch: "npx --yes @agentclientprotocol/codex-acp@2.2.2", requires: ["codex"], version: "codex-acp 2.2.2",
+                launch: "npx --yes @agentclientprotocol/codex-acp@2.2.2", requires: ["codex"],
+                version: "codex-acp 2.2.2",
                 isCaller: true),
             .init(
                 id: "claude-code", name: "Claude Code", state: .notInstalled, signIn: .unknown,
@@ -32,7 +33,9 @@ struct SetupReportTests {
 
     @Test func summaryWalksTheChecksInOrder() {
         let summary = report.summary
-        let headings = ["1. Native", "2. Agents", "3. Durable host", "4. Paired devices", "5. Organization", "6. Updates"]
+        let headings = [
+            "1. Native", "2. Agents", "3. Durable host", "4. Paired devices", "5. Organization", "6. Updates",
+        ]
         let positions = headings.compactMap { summary.range(of: $0)?.lowerBound }
         #expect(positions.count == headings.count)
         #expect(positions == positions.sorted())
@@ -41,12 +44,15 @@ struct SetupReportTests {
     @Test func summarySaysWhatToDoForEachAgent() {
         let summary = report.summary
         #expect(summary.contains("2. Agents (1 of 3 ready):"))
-        #expect(summary.contains("- Codex (`codex`): ready and signed in. Reports codex-acp 2.2.2. This session runs on it."))
+        #expect(
+            summary.contains(
+                "- Codex (`codex`): ready and signed in. Reports codex-acp 2.2.2. This session runs on it."))
         #expect(
             summary.contains(
                 "- Claude Code (`claude-code`): not installed: `claude` isn't on the login shell's PATH. Install with `npm install -g @anthropic-ai/claude-code`. Then Settings ▸ Agents ▸ Add an Agent ▸ Check Again."
             ))
-        #expect(summary.contains("signed out. Sign In… on its row in Settings ▸ Agents, or `copilot login` in a terminal."))
+        #expect(
+            summary.contains("signed out. Sign In… on its row in Settings ▸ Agents, or `copilot login` in a terminal."))
         #expect(summary.contains("3. Durable host: off."))
         #expect(summary.contains("5. Organization: manages `policy.agents.allowed`, `policy.updates.enabled`."))
         #expect(summary.contains("6. Updates: off: Updates are off in development builds."))

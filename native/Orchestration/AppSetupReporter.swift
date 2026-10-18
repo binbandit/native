@@ -101,10 +101,12 @@ final class AppSetupReporter {
         }
         return switch durableHost.connection {
         case nil, .connecting: .init(state: .starting)
-        case .connected(let info): .init(state: .connected, version: info.hostInfo.version, versionStatus: versionStatus)
+        case .connected(let info):
+            .init(state: .connected, version: info.hostInfo.version, versionStatus: versionStatus)
         case .reconnecting: .init(state: .reconnecting)
         case .unreachable(let reason): .init(state: .unreachable, problem: SetupReport.headline(of: reason))
-        case .incompatible(_, let host): .init(state: .incompatible, version: host.version, versionStatus: versionStatus)
+        case .incompatible(_, let host):
+            .init(state: .incompatible, version: host.version, versionStatus: versionStatus)
         }
     }
 
@@ -133,7 +135,9 @@ final class AppSetupReporter {
             problem: status.listener.problem.map(SetupReport.headline))
     }
 
-    private static func firstEvent(of client: LinkControlClient, within timeout: Duration) async
+    private static func firstEvent(
+        of client: LinkControlClient, within timeout: Duration
+    ) async
         -> LinkControlClient.Event?
     {
         await withTaskGroup(of: LinkControlClient.Event?.self) { group in
