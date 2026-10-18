@@ -161,11 +161,18 @@ history, telemetry, the command palette), so not every difference is this work's
 - **Idle with the window visible was already close to zero.** No animation or clock runs when
   nothing works: `TimelineView`s stop with their views, and loaders only show for working tasks.
 
+- **The agent-history backfill is incremental.** Per-file checkpoints (size, modification time and
+  the byte offset already indexed) skip unchanged files and resume grown ones; files stream a
+  megabyte at a time; the first fill runs at utility priority on power, later passes at background
+  priority; nothing runs before the first frame. A launch with nothing new to index now costs no
+  main-thread time before the first frame (333-374 ms, the same as search off) and about 0.1 s of
+  extra CPU, down from 15-45% for minutes, and the footprint stays at 88-93 MB instead of up to
+  370 MB. Details in docs/search.md, Performance.
+
 ## Still to do
 
 | What | Why | Owner |
 | --- | --- | --- |
-| Make the agent-history backfill incremental | Skip files whose size and modification date are unchanged, stream lines instead of loading whole files, run at background QoS, and keep its setup off the main thread before the first frame | Search |
 | Let Codex unload closed threads | Codex keeps an unsubscribed thread, with its MCP servers (about 1 GB each here), for `thread_unload_delay_secs`. Native already sends 60 s in `CODEX_CONFIG`; codex-acp has to pass top-level settings to `codex app-server` (as `-c`, as it does for `hooks`) for it to apply | Upstream codex-acp, then the Codex plugin |
 | Make `session/load` faithful | A loaded session must keep the model, mode and title it had: remember them when a session closes or the agent stops, and set them back after loading if the agent reports others | App model, Codex plugin |
 | Turn on closing idle sessions | Once both rows above are done: default `sessionIdleTimeout` to 10 minutes. Also check claude-agent-acp, where each session is its own Claude Code process | App model |
