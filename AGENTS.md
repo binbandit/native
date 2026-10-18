@@ -87,8 +87,9 @@ use an isolated instance: `scripts/dev/run-isolated.sh <name> [-- app argumentsâ
 and prints its pid and window id (`--quit` stops it, `--reset` also forgets its data). Automate only
 that process through AX actions on it (`AXPress`, setting `AXValue`) or `CGEvent.postToPid`. Never
 send System Events `keystroke`/`key code`, never bring a window to the front, and never use coordinate
-clicks like `click at`: all of those land on whatever app has focus, often someone else's and screenshot with `screencapture -x -l <windowid>`. Quit your instance (and
-any render harness) as soon as a check is done; never leave apps running between checks, since many
+clicks like `click at`: all of those land on whatever app has focus,
+often someone else's. Screenshot with `screencapture -x -l <windowid>`. Quit your instance (and any
+render harness) as soon as a check is done; never leave apps running between checks, since many
 agents share one Mac.
 
 When a check needs a real agent session, use Codex with `gpt-6.1-sol` (it's the cheapest): launch with

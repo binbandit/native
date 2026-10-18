@@ -295,6 +295,14 @@ private struct SessionCommands: Commands {
 
             Divider()
 
+            // The visible task's folder (its worktree when it has one), else Home's project.
+            OpenInCommands(
+                location: model.currentProject.map {
+                    OpenInLocation(folder: model.selection.flatMap(model.session)?.cwd ?? $0.url, host: $0.host)
+                })
+
+            Divider()
+
             AutomationMenuItems(center: BuiltInPlugins.automation.center, session: session)
 
             Divider()

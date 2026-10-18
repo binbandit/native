@@ -45,7 +45,7 @@ extension NativeNotification {
         let title = kind == .failed ? "Something stopped" : "Native needs you"
         guard let ref else {
             return NativeNotification(
-                id: "native.\(kind.rawValue).\(reason.hashValue)", kind: kind, agent: "", agentName: "Native",
+                id: "native.attention.\(kind.rawValue)", kind: kind, agent: "", agentName: "Native",
                 title: title, body: reason, sound: kind == .failed ? .none : .needsYou)
         }
         var notification = NativeNotification(

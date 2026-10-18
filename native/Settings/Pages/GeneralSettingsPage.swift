@@ -18,7 +18,13 @@ extension SettingsPane {
                     title: "Follow-up behavior",
                     description: "Queue messages to send after the agent finishes, or steer the agent mid-turn.",
                     keywords: ["queue", "steer", "return", "send", "message"]
-                )
+                ),
+                SettingsSearchEntry(
+                    id: GeneralSettingsPage.dockBadgeRow,
+                    title: "Dock badge",
+                    description: "Show how many tasks need you on Native's icon in the Dock.",
+                    keywords: ["dock", "badge", "icon", "count", "unread", "needs you"]
+                ),
             ]
         },
         content: { GeneralSettingsPage() }
@@ -27,8 +33,10 @@ extension SettingsPane {
 
 struct GeneralSettingsPage: View {
     static let followUpRow = SettingsRowID("general.follow-up")
+    static let dockBadgeRow = SettingsRowID("general.dock-badge")
 
     @AppStorage(FollowUpBehavior.storageKey) private var followUp = FollowUpBehavior.defaultValue
+    @Bindable private var dockBadge = DockBadgePreference.shared
 
     var body: some View {
         SettingsPage {
@@ -46,6 +54,17 @@ struct GeneralSettingsPage: View {
                         label: "Follow-up behavior",
                         selection: $followUp,
                         options: FollowUpBehavior.allCases.map { .init(value: $0, title: $0.title) }
+                    )
+                }
+                SettingsRow(
+                    id: Self.dockBadgeRow,
+                    "Dock badge",
+                    description: Text("Show how many tasks need you on Native's icon in the Dock.")
+                ) {
+                    SettingsSelect(
+                        label: "Dock badge",
+                        selection: $dockBadge.mode,
+                        options: DockBadgePreference.Mode.allCases.map { .init(value: $0, title: $0.title) }
                     )
                 }
             }

@@ -20,6 +20,13 @@ struct HomeDetail: View {
                 onAddProject: { model.isAddingProject = true },
                 onSelectTask: { model.selection = $0 }
             )
+            // The project new tasks start in, as in a task's toolbar.
+            .toolbar {
+                ToolbarItem {
+                    OpenInButton(location: OpenInLocation(folder: current.url, host: current.host))
+                }
+                .sharedBackgroundVisibility(.hidden)
+            }
         } else {
             HomeWelcomeView(
                 agents: agents, addProjectShortcut: KeyboardShortcut("o"),
