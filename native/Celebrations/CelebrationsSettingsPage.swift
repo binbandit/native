@@ -11,6 +11,13 @@ struct CelebrationsSettingsPage: View {
     @Environment(\.undoManager) private var undoManager
     @State private var query = ""
     @State private var showsLater = false
+    /// The last change to many celebrations at once, so its result and Undo show beside the controls.
+    @State private var lastChange: BulkChange?
+
+    private struct BulkChange: Equatable {
+        let summary: String
+        let before: CelebrationPreferences
+    }
 
     static func rowID(_ id: CelebrationID) -> SettingsRowID {
         SettingsRowID("celebration.\(id.rawValue)")
@@ -56,6 +63,7 @@ struct CelebrationsSettingsPage: View {
             }
         }
         .animation(reduceMotion ? nil : .dsQuick, value: center.priority.map(\.id))
+        .animation(reduceMotion ? nil : .dsQuick, value: lastChange)
     }
 
     private var turnOn: some View {
@@ -79,13 +87,27 @@ struct CelebrationsSettingsPage: View {
             HStack(spacing: DS.Space.sm) {
                 CelebrationCountryMenu(counts: CelebrationPreferences.publicHolidayCountries(in: center.celebrations)) {
                     country in
-                    changeUndoably("Turn On \(CelebrationCountryMenu.name(country)) Holidays") {
+                    let name = CelebrationCountryMenu.name(country)
+                    changeUndoably("Turn On \(name) Holidays") {
                         center.turnOnPublicHolidays(of: country)
+                    } summary: {
+                        "Turned on \($0) of \(name)'s public holidays."
                     }
                 }
                 bulkControls
                 Spacer(minLength: DS.Space.xl)
                 CelebrationSearchField(query: $query)
+            }
+            if let lastChange {
+                HStack(spacing: DS.Space.md) {
+                    Text(lastChange.summary)
+                        .settingsText(.body)
+                        .foregroundStyle(.dsTextSecondary)
+                    Button("Undo") { undo(lastChange) }
+                        .buttonStyle(.ds(.secondary, size: .small))
+                        .help("Put your choices back (⌘Z)")
+                }
+                .transition(.opacity)
             }
             if matches.isEmpty {
                 SettingsRow(
@@ -114,23 +136,47 @@ struct CelebrationsSettingsPage: View {
     @ViewBuilder private var bulkControls: some View {
         let choosable = center.celebrations.filter { $0.canBeChosen(on: center.today) }
         let enabled = center.celebrations.filter { center.preferences.selection(for: $0.id).isEnabled }
-        Button("Turn All On") { changeUndoably("Turn All Celebrations On") { center.setAllAutomatic(true) } }
-            .buttonStyle(.ds(.ghost, size: .medium))
-            .disabled(choosable.allSatisfy { center.preferences.selection(for: $0.id).isEnabled })
-            .help("Turn on every celebration. Icons download a week before each one's dates.")
-        Button("Turn All Off") { changeUndoably("Turn All Celebrations Off") { center.setAllAutomatic(false) } }
-            .buttonStyle(.ds(.ghost, size: .medium))
-            .disabled(enabled.isEmpty)
-            .help("Turn off every celebration. Undo puts your choices back.")
+        Button("Turn All On") {
+            changeUndoably("Turn All Celebrations On") {
+                center.setAllAutomatic(true)
+            } summary: {
+                "Turned on \($0) \($0 == 1 ? "celebration" : "celebrations"). Icons download a week before each one's dates."
+            }
+        }
+        .buttonStyle(.ds(.ghost, size: .medium))
+        .disabled(choosable.allSatisfy { center.preferences.selection(for: $0.id).isEnabled })
+        .help("Turn on every celebration. Icons download a week before each one's dates.")
+        Button("Turn All Off") {
+            changeUndoably("Turn All Celebrations Off") {
+                center.setAllAutomatic(false)
+            } summary: { _ in
+                "Turned every celebration off."
+            }
+        }
+        .buttonStyle(.ds(.ghost, size: .medium))
+        .disabled(enabled.isEmpty)
+        .help("Turn off every celebration. Undo puts your choices back.")
     }
 
-    /// Makes a change to many celebrations at once that Undo (⌘Z) puts back.
-    private func changeUndoably(_ name: String, _ change: () -> Void) {
+    /// Makes a change to many celebrations at once, says what changed, and lets Undo (the button or
+    /// ⌘Z) put it back. `summary` gets how many celebrations it turned on.
+    private func changeUndoably(_ name: String, _ change: () -> Void, summary: (Int) -> String) {
         let before = center.preferences
         change()
-        guard let undoManager, before != center.preferences else { return }
+        guard before != center.preferences else { return }
+        let enabled = { (preferences: CelebrationPreferences) in preferences.selections.values.filter(\.isEnabled).count
+        }
+        lastChange = BulkChange(summary: summary(max(enabled(center.preferences) - enabled(before), 0)), before: before)
+        guard let undoManager else { return }
         Self.registerUndo(on: undoManager, center: center, restoring: before)
         undoManager.setActionName(name)
+    }
+
+    /// Puts back the choices from before the change, and drops its ⌘Z entry so it can't be undone twice.
+    private func undo(_ change: BulkChange) {
+        center.restore(change.before)
+        undoManager?.removeAllActions(withTarget: center)
+        lastChange = nil
     }
 
     /// Undo restores `earlier` and registers restoring what it replaced, so Redo works too.

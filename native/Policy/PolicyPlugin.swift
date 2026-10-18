@@ -1,9 +1,12 @@
 import ACP
 import NativePolicy
 
-/// The organization's policy for sessions, applied like any plugin's but never switched off: MCP
-/// servers and skills it blocks are turned off for every session, through each agent's own
-/// mechanism (`SessionPolicyTranslator`), and servers it requires are added.
+/// The organization's policy for sessions, applied like any plugin's but never switched off: skills
+/// it blocks are turned off for every session through each agent's own mechanism
+/// (`SessionPolicyTranslator`), and servers it requires are added. Blocked MCP servers are handled
+/// where Native knows they exist: `PluginRegistry` filters the servers Native hands over, and
+/// `MCPLibrary` turns off agents' own configured ones. Naming a server an agent doesn't define
+/// would break that agent's configuration (Codex rejects a server with no command).
 struct PolicyPlugin: NativePlugin {
     let policy: NativePolicy
 
@@ -18,12 +21,7 @@ struct PolicyPlugin: NativePlugin {
     }
 
     func launchPolicy(for agent: AgentDefinition.ID) -> SessionPolicy {
-        // Agents turn their own servers off by name, so only plain names reach them; patterns
-        // still filter the servers Native hands over (`PluginRegistry.mcpServers(for:)`).
-        SessionPolicy(
-            disabledMCPServers: policy.mcp.blocked.compactMap(\.exactName).map { .init(name: $0, scope: .allProjects) },
-            disabledSkills: policy.blockedSkills.map { .init(name: $0, path: nil, scope: .allProjects) }
-        )
+        SessionPolicy(disabledSkills: policy.blockedSkills.map { .init(name: $0, path: nil, scope: .allProjects) })
     }
 
     func mcpServers(for session: SessionContext) -> [MCPServer] {

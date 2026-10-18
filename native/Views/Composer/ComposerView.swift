@@ -63,7 +63,8 @@ struct ComposerView: View {
     var suggestions: ComposerSuggestions? {
         guard !suggestionsDismissed else { return nil }
         if let query = SlashCommandQuery(draft: session.draft) {
-            let commands = query.matches(in: nativeCommands + session.state.availableCommands.map(ComposerSlashCommand.init))
+            let commands = query.matches(
+                in: nativeCommands + session.state.availableCommands.map(ComposerSlashCommand.init))
             return commands.isEmpty ? nil : .commands(commands)
         }
         if let query = mentionQuery, let mentionSource {
@@ -173,7 +174,8 @@ struct ComposerView: View {
                         prompts: session.queuedPrompts,
                         editing: editingQueued,
                         // After a cancelled turn the queue waits, idle, until one is sent by hand.
-                        sendNow: isWorking ? (session.supportsSteering ? .steer : nil) : session.phase == .idle ? .send : nil,
+                        sendNow: isWorking
+                            ? (session.supportsSteering ? .steer : nil) : session.phase == .idle ? .send : nil,
                         onSendNow: { id in Task { await session.steerQueued(id) } },
                         onEdit: edit,
                         onRemove: remove
@@ -193,7 +195,10 @@ struct ComposerView: View {
             ComposerControlsRow(
                 settings: settings,
                 resumedAutonomy: autonomyBeforePlan,
-                followUpHint: isWorking ? FollowUpHint(preferred: followUp, supportsSteering: session.supportsSteering, agentName: session.agentName) : nil,
+                followUpHint: isWorking
+                    ? FollowUpHint(
+                        preferred: followUp, supportsSteering: session.supportsSteering, agentName: session.agentName)
+                    : nil,
                 isModelPickerOpen: $isModelPickerOpen,
                 isPickingFiles: $isPickingFiles,
                 onAttach: attach,
@@ -222,26 +227,28 @@ struct ComposerView: View {
 
     func inputSection(suggestions: ComposerSuggestions?) -> some View {
         HStack(alignment: .bottom, spacing: 0) {
-            ComposerEditor(text: $session.draft, selection: $selection, placeholder: placeholder, isFocused: $isFocused) { press in
+            ComposerEditor(text: $session.draft, selection: $selection, placeholder: placeholder, isFocused: $isFocused)
+            { press in
                 handleKey(press, suggestions: suggestions)
             }
             .disabled(!canEdit)
             .onAttachmentPaste(isEnabled: isFocused && canEdit, perform: attach)
-            // One slot for Send and Stop, always reserved, so neither moves nor reflows the text when
-            // they swap (the reference app shows Send only once there's a draft, Stop while the agent works).
-            ZStack {
+            // Send and Stop keep their places, so neither moves nor reflows the text: Send alone while
+            // idle (once there's a draft, as in the reference app); while the agent works, Stop, with a slot
+            // beside it where Send appears to queue or steer what's typed, by pointer or touch too.
+            HStack(spacing: DS.Space.sm) {
                 if session.canCancel {
-                    ComposerStopButton(isEscapeEnabled: suggestions == nil) {
-                        Task { await session.cancel() }
+                    actionSlot { if hasContent { sendButton } }
+                    actionSlot {
+                        ComposerStopButton(isEscapeEnabled: suggestions == nil) {
+                            Task { await session.cancel() }
+                        }
                     }
-                } else if hasContent {
-                    // Disabled in place when something blocks sending, saying why.
-                    ComposerSendButton(disabledReason: session.sendBlockedReason) { submit(followUp) }
+                } else {
+                    actionSlot { if hasContent { sendButton } }
                 }
             }
-            .frame(width: DS.Size.composerAction, height: DS.Size.composerAction)
             .padding(DS.Space.md)
-            .transition(.opacity)
         }
         .frame(minHeight: DS.Size.composerInputMinHeight)
         .background {
@@ -257,6 +264,22 @@ struct ComposerView: View {
         }
         .animation(.dsQuick, value: hasContent)
         .animation(.dsQuick, value: session.canCancel)
+    }
+
+    /// Disabled in place when something blocks sending, saying why.
+    var sendButton: some View {
+        ComposerSendButton(disabledReason: session.sendBlockedReason) { submit(followUp) }
+            .help(
+                isWorking
+                    ? FollowUpHint(
+                        preferred: followUp, supportsSteering: session.supportsSteering, agentName: session.agentName
+                    ).help : "Send (↩)")
+    }
+
+    func actionSlot(@ViewBuilder _ content: () -> some View) -> some View {
+        ZStack(content: content)
+            .frame(width: DS.Size.composerAction, height: DS.Size.composerAction)
+            .transition(.opacity)
     }
 
     /// What the last action did; else, while there's a draft, why it can't go out.
