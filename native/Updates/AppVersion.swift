@@ -36,7 +36,7 @@ struct AppVersion: Equatable, Sendable {
 
     /// The release page for this build: its tag for stable and beta, the rolling release for Nightly.
     var releaseNotesURL: URL? {
-        guard let repository else { return nil }
+        guard let repository, channel != .dev else { return nil }
         let tag = channel.isNightly ? "nightly" : "v\(version)"
         return URL(string: "https://github.com/\(repository)/releases/tag/\(tag)")
     }

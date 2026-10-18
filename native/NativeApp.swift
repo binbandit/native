@@ -65,6 +65,7 @@ struct NativeApp: App {
                 .task {
                     OrchestrationPlugin.connect(to: model)
                     MCPServersPlugin.connect(to: model) { BuiltInPlugins.usage.contextReports.reports }
+                    SkillsPlugin.connect(to: model)
                     BuiltInPlugins.usage.limits.host = model
                     BuiltInPlugins.automation.center.connect(to: model) { [git, gitHub] draft in
                         try await AutomationGitHubWiring.openPullRequest(draft, git: git, gitHub: gitHub)
