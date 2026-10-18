@@ -3,7 +3,8 @@ import SwiftUI
 /// The dot-grid loaders: a 3x3 grid of dots that pop in and out in sequence, laid out on a 240pt
 /// canvas (dots 40pt across at 50/120/190) and timed in frames at 60fps. `typing` sweeps column by
 /// column, `waiting` circles the border and `settingUp` blooms out from the center.
-/// Draws in the foreground style; with Reduce Motion it holds a still grid.
+/// Draws in the foreground style; with Reduce Motion it holds a still grid. Core Animation runs the
+/// animation (`DotGridPulse`), so a loader costs nothing per frame.
 public struct DotGridLoader: View {
     public enum Pattern: Sendable {
         case typing, waiting, settingUp
@@ -18,42 +19,27 @@ public struct DotGridLoader: View {
     }
 
     public var body: some View {
-        if isStill {
-            canvas(frame: nil)
-        } else {
-            TimelineView(.animation(minimumInterval: 1.0 / 30)) { timeline in
-                let elapsed = timeline.date.timeIntervalSinceReferenceDate
-                let timing = pattern.timing
-                let loop = (timing.end - timing.start) / 60
-                let frame = timing.start + elapsed.truncatingRemainder(dividingBy: loop) * 60
-                canvas(frame: frame)
+        Group {
+            if reduceMotion {
+                stillGrid
+            } else {
+                DotGridPulse(pattern: pattern)
             }
         }
+        .accessibilityHidden(true)
     }
 
-    // TEMPORARY experiment (streaming investigation): `-staticLoaders YES` holds loaders still.
-    private var isStill: Bool {
-        #if DEBUG
-        reduceMotion || RenderProbe.staticLoaders
-        #else
-        reduceMotion
-        #endif
-    }
-
-    private func canvas(frame: Double?) -> some View {
+    /// Every dot at 60%.
+    private var stillGrid: some View {
         Canvas { context, size in
             let unit = min(size.width, size.height) / 240
+            let radius = 20 * 0.6 * unit
             for dot in pattern.timing.dots {
-                // A still grid shows every dot at 60%.
-                let scale = frame.map { dot.scale(at: $0) } ?? 0.6
-                guard scale > 0.01 else { continue }
-                let radius = 20 * scale * unit
                 let rect = CGRect(
                     x: dot.x * unit - radius, y: dot.y * unit - radius, width: radius * 2, height: radius * 2)
                 context.fill(Path(ellipseIn: rect), with: .foreground)
             }
         }
-        .accessibilityHidden(true)
     }
 }
 
