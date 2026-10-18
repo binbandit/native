@@ -91,7 +91,7 @@ processes() {
 # the rest are warm.
 echo "== launch (ms from process start)"
 printf "%-6s %8s %8s %18s %11s\n" run appInit firstFrame sidebarInteractive agentsReady
-for i in $(seq 1 "$launches"); do
+for ((i = 1; i <= launches; i++)); do
     log=$(mktemp)
     /usr/bin/log stream --style compact --predicate 'subsystem == "Native" AND category == "Launch"' >"$log" 2>/dev/null &
     stream=$!
@@ -104,6 +104,7 @@ for i in $(seq 1 "$launches"); do
         sleep 0.2
     done
     kill "$stream" 2>/dev/null || true
+    wait "$stream" 2>/dev/null || true
     label=$([ "$i" = 1 ] && [ "$build" = 1 ] && echo cold || echo "warm$i")
     seed
     printf "%-6s %8s %8s %18s %11s\n" "$label" "$(value appInit)" "$(value firstFrame)" \
@@ -112,7 +113,7 @@ for i in $(seq 1 "$launches"); do
 done
 
 # Sessions, each answering one prompt; `Session › Stop` is enabled while a turn runs.
-for i in $(seq 1 "$sessions"); do
+for ((i = 1; i <= sessions; i++)); do
     "$tools/drive" "$pid" menu File "New Session"
     sleep 3
     "$tools/drive" "$pid" prompt "Reply with the single word OK. Don't run any tools."

@@ -1,0 +1,177 @@
+{
+  "features": [
+    "refractivity"
+  ],
+  "fill-specializations": [
+    {
+      "value": {
+        "automatic-gradient": "srgb:0.91373,0.88235,0.92157,1.00000"
+      }
+    },
+    {
+      "appearance": "dark",
+      "value": {
+        "automatic-gradient": "srgb:0.14118,0.09412,0.18039,1.00000"
+      }
+    },
+    {
+      "appearance": "tinted",
+      "value": "automatic"
+    }
+  ],
+  "groups": [
+    {
+      "blur-material-specializations": [
+        {
+          "appearance": "tinted",
+          "value": 0.25
+        }
+      ],
+      "layers": [
+        {
+          "glass-specializations": [
+            {
+              "value": false
+            },
+            {
+              "appearance": "tinted",
+              "value": true
+            }
+          ],
+          "image-name": "painted-interlock.png",
+          "name": "Painted Native interlock",
+          "position": {
+            "scale": 0.5785770132916341,
+            "translation-in-points": [
+              -0.28928850664581707,
+              7.371383893666927
+            ]
+          }
+        }
+      ],
+      "lighting": "individual",
+      "name": "Personal Celebration · painted Native interlock",
+      "refractivity-specializations": [
+        {
+          "appearance": "tinted",
+          "value": {
+            "enabled": true,
+            "depth": 0.3,
+            "strength": 0.75
+          }
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.18
+      },
+      "translucency-specializations": [
+        {
+          "value": {
+            "enabled": false,
+            "value": 0
+          }
+        },
+        {
+          "appearance": "tinted",
+          "value": {
+            "enabled": true,
+            "value": 0.25
+          }
+        }
+      ],
+      "specular-specializations": [
+        {
+          "value": false
+        },
+        {
+          "appearance": "tinted",
+          "value": true
+        }
+      ]
+    },
+    {
+      "blur-material-specializations": [
+        {
+          "appearance": "tinted",
+          "value": 0.25
+        }
+      ],
+      "layers": [
+        {
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "srgb:0.64314,0.47059,0.19608,1.00000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "srgb:0.94902,0.76863,0.42745,1.00000"
+              }
+            },
+            {
+              "appearance": "tinted",
+              "value": "automatic"
+            }
+          ],
+          "glass-specializations": [
+            {
+              "value": false
+            },
+            {
+              "appearance": "tinted",
+              "value": true
+            }
+          ],
+          "image-name": "beta.svg",
+          "name": "Beta signature"
+        }
+      ],
+      "lighting": "individual",
+      "name": "Release channel",
+      "refractivity-specializations": [
+        {
+          "appearance": "tinted",
+          "value": {
+            "enabled": true,
+            "depth": 0.3,
+            "strength": 0.75
+          }
+        }
+      ],
+      "shadow": {
+        "kind": "none",
+        "opacity": 0
+      },
+      "translucency-specializations": [
+        {
+          "value": {
+            "enabled": false,
+            "value": 0
+          }
+        },
+        {
+          "appearance": "tinted",
+          "value": {
+            "enabled": true,
+            "value": 0.25
+          }
+        }
+      ],
+      "specular-specializations": [
+        {
+          "value": false
+        },
+        {
+          "appearance": "tinted",
+          "value": true
+        }
+      ]
+    }
+  ],
+  "supported-platforms": {
+    "squares": "shared"
+  }
+}
