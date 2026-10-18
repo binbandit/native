@@ -22,6 +22,9 @@ extension String {
                             break
                         }
                     }
+                case let byte? where (0x20...0x2F).contains(byte.value):
+                    // nF (`ESC ( B`): more intermediate bytes, ended by one final byte.
+                    while let byte = scalars.popFirst(), !(0x30...0x7E).contains(byte.value) {}
                 default:
                     // A two-character sequence, or an escape at the very end.
                     break
