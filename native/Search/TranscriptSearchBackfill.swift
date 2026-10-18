@@ -41,12 +41,17 @@ nonisolated struct TranscriptSearchBackfill: Sendable {
             try? await index.removeSessions(updatedBefore: retainedSince)
         }
         let stamps = (try? await index.sourceStamps()) ?? [:]
-        let work = readers.flatMap { reader in
+        let changed = readers.flatMap { reader in
             reader.reader.sources()
                 .filter { stamps[$0.stamp.path] != $0.stamp.stamp && $0.modifiedAt >= retainedSince ?? .distantPast }
                 .map { (reader, $0) }
         }
-        .sorted { $0.1.modifiedAt > $1.1.modifiedAt }
+        // Files never indexed first, newest first. Changed ones (an active session's log, often
+        // the biggest file there is) wait until the rest are searchable.
+        let work = changed.sorted { lhs, rhs in
+            let lhsSeen = stamps[lhs.1.stamp.path] != nil, rhsSeen = stamps[rhs.1.stamp.path] != nil
+            return lhsSeen == rhsSeen ? lhs.1.modifiedAt > rhs.1.modifiedAt : !lhsSeen
+        }
         guard !work.isEmpty else {
             await report(.idle)
             return

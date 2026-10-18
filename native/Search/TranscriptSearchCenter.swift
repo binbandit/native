@@ -300,7 +300,7 @@ final class TranscriptSearchCenter {
             index: index, readers: readers, known: known, projects: projectFolders, excluded: excludedFolders,
             retainedSince: retainedSince)
         lastBackfill = .now
-        backfillTask = Task(priority: .background) { [weak self] in
+        backfillTask = Task(priority: .utility) { [weak self] in
             await backfill.run { [weak self] state in
                 await self?.update(indexing: state)
             }
