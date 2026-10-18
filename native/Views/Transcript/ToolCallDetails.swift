@@ -63,7 +63,7 @@ private struct CommandOutput: View {
     let phase: ToolPhase
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 2) {
+        VStack(alignment: .leading, spacing: DS.Space.xxs) {
             Text("\(Text(verbatim: "$").foregroundStyle(.dsTextTertiary)) \(Text(verbatim: command))")
             if let output, !output.isEmpty {
                 Text(verbatim: output)

@@ -38,7 +38,10 @@ public nonisolated struct GoalLoop: Codable, Hashable, Sendable {
     /// The goal was picked back up after a pause; the next continuation says so.
     private var isResuming = false
 
-    public init(objective: String, budget: GoalBudget = .unlimited, strategy: Strategy = .native, at now: Date, sessionCost: Double? = nil) {
+    public init(
+        objective: String, budget: GoalBudget = .unlimited, strategy: Strategy = .native, at now: Date,
+        sessionCost: Double? = nil
+    ) {
         goal = Goal(objective: objective, budget: budget, at: now, sessionCost: sessionCost)
         self.strategy = strategy
     }
@@ -52,7 +55,8 @@ public nonisolated struct GoalLoop: Codable, Hashable, Sendable {
             if needsKickoff {
                 return GoalPrompt.kickoffText(objective: goal.objective, usage: usage)
             }
-            return GoalPrompt.continuationText(objective: goal.objective, usage: usage, reminder: unreportedTurns > 0, resumed: isResuming)
+            return GoalPrompt.continuationText(
+                objective: goal.objective, usage: usage, reminder: unreportedTurns > 0, resumed: isResuming)
         case .claudeGoalCommand:
             // The agent's own loop continues on its own; it only needs to be told once.
             return needsKickoff ? "/goal \(goal.objective)" : nil
@@ -82,13 +86,24 @@ public nonisolated struct GoalLoop: Codable, Hashable, Sendable {
 
     /// Records a finished turn and returns the prompt to send next, if the goal goes on. A turn
     /// that ended before the agent heard about the goal doesn't count against it.
-    public mutating func turnDidEnd(_ outcome: TurnOutcome, reply: String?, sessionCost: Double?, at now: Date) -> String? {
+    public mutating func turnDidEnd(
+        _ outcome: TurnOutcome, reply: String?, sessionCost: Double?, at now: Date
+    ) -> String? {
         let origin = turnInFlight
         turnInFlight = nil
         if let sessionCost {
             goal.latestCost = sessionCost
         }
-        guard goal.status == .active else { return nil }
+        guard goal.status == .active else {
+            // A goal that isn't being driven still completes when a turn reports it met: the
+            // user's own message, or an agent restarted mid-goal that finished on its own.
+            if case .ended = outcome, goal.status != .complete,
+                let marker = reply.flatMap(GoalMarker.init(parsing:)), marker.status == .complete
+            {
+                goal.transition(to: .complete, reason: marker.note ?? "The agent reported the goal met", at: now)
+            }
+            return nil
+        }
         if needsKickoff, origin != .goal {
             return handlePreGoalTurn(outcome, at: now)
         }
@@ -197,7 +212,9 @@ public nonisolated struct GoalLoop: Codable, Hashable, Sendable {
 
     /// Applies the agent's own report of its goal (`claudeGoalCommand`). Native still enforces the
     /// budget: when it's spent, the goal is limited and the caller sends `clearPrompt`.
-    public mutating func applyAgentSnapshot(status: GoalStatus, iterations: Int, lastReason: String?, sessionCost: Double?, at now: Date) {
+    public mutating func applyAgentSnapshot(
+        status: GoalStatus, iterations: Int, lastReason: String?, sessionCost: Double?, at now: Date
+    ) {
         guard strategy == .claudeGoalCommand else { return }
         goal.iterations = max(goal.iterations, iterations)
         if let sessionCost {
@@ -206,7 +223,9 @@ public nonisolated struct GoalLoop: Codable, Hashable, Sendable {
         if status != goal.status || lastReason != goal.lastReason {
             goal.transition(to: status, reason: lastReason, at: now)
         }
-        if goal.status == .active, let exhausted = goal.exhaustedBudget(at: now, iterationCeiling: Self.safetyIterationCeiling) {
+        if goal.status == .active,
+            let exhausted = goal.exhaustedBudget(at: now, iterationCeiling: Self.safetyIterationCeiling)
+        {
             goal.transition(to: .limited, reason: exhausted, at: now)
         }
     }

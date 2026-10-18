@@ -139,7 +139,7 @@ private struct MarkdownBlockView: View {
             CodeBlockView(code: String(node.text.characters), language: language)
         case .thematicBreak:
             Divider()
-                .padding(.vertical, 4)
+                .padding(.vertical, DS.Space.xs)
         case .blockQuote:
             children
                 .foregroundStyle(.dsTextSecondary)
@@ -242,7 +242,7 @@ private struct MarkdownTableView: View {
                     let cells = row.cellsByColumn
                     ForEach(columns.indices, id: \.self) { column in
                         Text(cells[column] ?? AttributedString())
-                            .fontWeight(isHeader ? .semibold : nil)
+                            .font(isHeader ? .dsCalloutSemibold : .dsCallout)
                             .gridColumnAlignment(Self.alignment(columns[column].alignment))
                     }
                 }

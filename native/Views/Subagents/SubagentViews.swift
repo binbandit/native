@@ -15,7 +15,7 @@ struct SubagentCard: View {
                     .foregroundStyle(.dsTextSecondary)
                 VStack(alignment: .leading, spacing: DS.Space.xxs) {
                     Text(subagent.title ?? "Subagent")
-                        .fontWeight(.medium)
+                        .font(.dsCalloutMedium)
                         .lineLimit(1)
                     if let description = subagent.description, !description.isEmpty {
                         Text(description)
