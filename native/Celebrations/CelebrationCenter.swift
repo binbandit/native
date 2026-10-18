@@ -112,6 +112,22 @@ final class CelebrationCenter {
         resolution.active.flatMap { catalog.celebration($0.eventID) }.map(preferences.styled)
     }
 
+    /// A chosen celebration whose dates are today but whose icons aren't here (downloading, failed, or
+    /// unavailable in this build), so the chooser can say why it isn't showing.
+    var waitingForIcons: (event: CelebrationEvent, state: IconPackState)? {
+        guard resolution.active == nil else { return nil }
+        for event in celebrations where preferences.selection(for: event.id).isEnabled {
+            guard case .downloadable(let state) = event.appIcon, preferences.selection(for: event.id).appIcon,
+                !event.occurrences(
+                    window: preferences.selection(for: event.id).window, overlapping: CivilDayRange(day: today)
+                )
+                .isEmpty
+            else { continue }
+            return (event, state)
+        }
+        return nil
+    }
+
     /// What Home draws today, or nil for the everyday mark.
     var homeLook: HomeLook? {
         guard resolution.active?.appliesToHome == true else { return nil }

@@ -59,6 +59,9 @@ struct CelebrationStatusCard: View {
             if let skipped = resolution.skipped.first {
                 return "\(title(skipped.eventID)) is skipped this year"
             }
+            if let waiting = center.waitingForIcons {
+                return "\(waiting.event.contribution.title.resolved()) is waiting for its icons"
+            }
             return "Your usual look today"
         }
         let surfaces = [active.appliesToAppIcon ? "app icon" : nil, active.appliesToHome ? "Home" : nil]
@@ -69,6 +72,13 @@ struct CelebrationStatusCard: View {
 
     private var reason: String? {
         guard let active = resolution.active else {
+            if let waiting = center.waitingForIcons, resolution.skipped.isEmpty {
+                return switch waiting.state {
+                case .failed(let reason), .unavailable(let reason): reason + " Your usual look stays meanwhile."
+                case .downloading: "Downloading them now; it shows as soon as they're here."
+                case .notDownloaded, .ready: "They download in a moment; it shows as soon as they're here."
+                }
+            }
             return resolution.skipped.isEmpty ? nil : "Your usual icon and Home are back until it next occurs."
         }
         let why: String? =
@@ -114,6 +124,9 @@ struct CelebrationStatusCard: View {
                     Button("Use My Order") { center.choose(nil) }
                         .buttonStyle(.ds(.ghost, size: .medium))
                 }
+            } else if let waiting = center.waitingForIcons, case .failed = waiting.state {
+                Button("Retry") { center.fetchIcons(for: waiting.event.id) }
+                    .buttonStyle(.ds(.secondary, size: .medium))
             } else if !resolution.skipped.isEmpty {
                 Button("Bring Back") { center.resumeToday() }
                     .buttonStyle(.ds(.secondary, size: .medium))

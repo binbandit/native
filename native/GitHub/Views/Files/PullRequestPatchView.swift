@@ -2,53 +2,35 @@ import CodeThemes
 import GitHub
 import SwiftUI
 
-/// A file's diff from its patch, hunk by hunk, with conversations under the lines they're on and
-/// the new comment under the lines it's for. Clicking a line number starts a comment; shift-click
-/// (or "Extend Comment to Here") widens it to a range, as on GitHub.
+/// A file's diff, hunk by hunk. Each hunk draws as a few text blocks rather than a view per line,
+/// split only where a conversation or the comment being written sits under a line. Lines draw
+/// plain first and pick up highlighting when it arrives from the background.
 struct PullRequestPatchView: View {
     let model: PullRequestPageModel
     let path: String
     let hunks: [DiffHunk]
 
     @Environment(\.self) private var environment
-    @State private var highlighted: [String: [[CodeSegment]]] = [:]
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.dsCodeThemes) private var codeThemes
     @State private var isShiftDown = false
     @State private var showsAllLines = false
 
     var body: some View {
         let colors = DSCodeColors(environment, on: .surface)
         let threads = model.threads(in: path)
-        let numberWidth = numberTemplate
-        // Lazy, so a long file lays out only the lines on screen.
+        let numberWidth = self.numberWidth
         LazyVStack(alignment: .leading, spacing: 0) {
             ForEach(visibleHunks, id: \.hunk.id) { hunk, shown in
                 PullRequestHunkHeader(hunk: hunk)
-                ForEach(shown, id: \.self) { index in
-                    let line = hunk.lines[index]
-                    PullRequestDiffLineRow(
-                        line: line,
-                        text: highlighted[hunk.id].flatMap {
-                            $0.indices.contains(index) ? colors.text($0[index]) : nil
-                        },
-                        numberTemplate: numberWidth,
-                        isSelected: isInDraft(line),
-                        model: model,
-                        anchor: anchor(for: line, in: hunk),
-                        extendAnchor: extended(to: line, in: hunk),
-                        isShiftDown: isShiftDown
-                    )
-                    if let target = line.anchor {
-                        ForEach(threads.filter { $0.anchor?.side == target.side && $0.anchor?.line == target.line }) {
-                            thread in
-                            PullRequestReviewThreadView(model: model, thread: thread, showsAnchor: false)
-                                .padding(DS.Space.md)
-                        }
-                        if let draft = model.draft, draft.anchor.path == path, draft.anchor.side == target.side,
-                            draft.anchor.line == target.line
-                        {
-                            PullRequestCommentDraftView(model: model)
-                                .padding(DS.Space.md)
-                        }
+                ForEach(segments(of: hunk, shown: shown, threads: threads), id: \.lowerBound) { segment in
+                    let key = blockKey(hunk, segment)
+                    PullRequestDiffBlock(
+                        model: model, path: path, hunk: hunk, range: segment,
+                        text: blockText(hunk, segment, key: key, colors: colors, numberWidth: numberWidth),
+                        textKey: key, isShiftDown: isShiftDown)
+                    if let last = segment.last {
+                        attachments(after: hunk.lines[last], threads: threads)
                     }
                 }
             }
@@ -61,15 +43,65 @@ struct PullRequestPatchView: View {
         .codeTextStyle(.compact)
         .foregroundStyle(colors.isNative ? Color.dsTextPrimary : colors.color(.foreground))
         .trackingShift($isShiftDown)
-        .task(id: path) { await highlight() }
+        .task(id: path) { await model.highlight(path) }
+    }
+
+    /// Conversations under the line, then the new comment if it's for this line.
+    @ViewBuilder private func attachments(after line: DiffHunk.Line, threads: [ReviewThread]) -> some View {
+        if let target = line.anchor {
+            ForEach(threads.filter { $0.anchor?.side == target.side && $0.anchor?.line == target.line }) { thread in
+                PullRequestReviewThreadView(model: model, thread: thread, showsAnchor: false)
+                    .padding(DS.Space.md)
+            }
+            if let draft = model.draft, draft.anchor.path == path, draft.anchor.side == target.side,
+                draft.anchor.line == target.line
+            {
+                PullRequestCommentDraftView(model: model)
+                    .padding(DS.Space.md)
+            }
+        }
+    }
+
+    /// The shown lines cut after every line that has something under it.
+    private func segments(of hunk: DiffHunk, shown: Range<Int>, threads: [ReviewThread]) -> [Range<Int>] {
+        let anchored = Set(threads.compactMap(\.anchor).map { "\($0.side.rawValue)\($0.line)" })
+        let draft = model.draft.flatMap { $0.anchor.path == path ? "\($0.anchor.side.rawValue)\($0.anchor.line)" : nil }
+        var segments: [Range<Int>] = []
+        var start = shown.lowerBound
+        for index in shown {
+            guard let anchor = hunk.lines[index].anchor else { continue }
+            let key = "\(anchor.side.rawValue)\(anchor.line)"
+            if anchored.contains(key) || key == draft {
+                segments.append(start..<(index + 1))
+                start = index + 1
+            }
+        }
+        if start < shown.upperBound { segments.append(start..<shown.upperBound) }
+        return segments
+    }
+
+    /// What decides a block's text: its lines, whether they're highlighted yet, and the colors.
+    private func blockKey(_ hunk: DiffHunk, _ segment: Range<Int>) -> String {
+        let highlighted = model.highlighted[PullRequestPageModel.hunkKey(path, hunk)] != nil
+        return "\(path)#\(hunk.id)#\(segment)#\(highlighted)#\(colorScheme)#\(codeThemes.hashValue)"
+    }
+
+    private func blockText(
+        _ hunk: DiffHunk, _ segment: Range<Int>, key: String, colors: DSCodeColors, numberWidth: Int
+    ) -> PullRequestDiffBlockText {
+        if let cached = model.blockTexts[key] { return cached }
+        let text = PullRequestDiffBlockText(
+            lines: hunk.lines[segment], highlighted: model.highlighted[PullRequestPageModel.hunkKey(path, hunk)],
+            colors: colors, numberWidth: numberWidth)
+        model.blockTexts[key] = text
+        return text
     }
 
     private var lineCount: Int {
         hunks.reduce(0) { $0 + $1.lines.count }
     }
 
-    /// Hunks and the lines of each to draw, up to the line limit, so a huge file doesn't stall the
-    /// list; "Show All" lifts it.
+    /// Hunks and the lines of each to draw, up to the line limit; "Show All" lifts it.
     private var visibleHunks: [(hunk: DiffHunk, lines: Range<Int>)] {
         var budget = showsAllLines ? Int.max : PullRequestFilesLayout.initialLineLimit
         var visible: [(hunk: DiffHunk, lines: Range<Int>)] = []
@@ -81,40 +113,9 @@ struct PullRequestPatchView: View {
         return visible
     }
 
-    private var numberTemplate: String {
+    private var numberWidth: Int {
         let largest = hunks.flatMap(\.lines).compactMap { max($0.oldNumber ?? 0, $0.newNumber ?? 0) }.max() ?? 0
-        return String(repeating: "8", count: max(String(largest).count, 2))
-    }
-
-    private func anchor(for line: DiffHunk.Line, in hunk: DiffHunk) -> ReviewAnchor? {
-        line.anchor.map { ReviewAnchor(path: path, side: $0.side, line: $0.line) }
-    }
-
-    /// The draft widened to `line`, when that makes a valid range: same hunk, same side, later line.
-    private func extended(to line: DiffHunk.Line, in hunk: DiffHunk) -> ReviewAnchor? {
-        guard let draft = model.draft, draft.anchor.path == path, let target = line.anchor,
-            target.side == draft.anchor.side, hunk.index(side: target.side, line: draft.anchor.line) != nil
-        else { return nil }
-        let start = min(draft.anchor.startLine ?? draft.anchor.line, target.line)
-        let end = max(draft.anchor.line, target.line)
-        guard start != end || draft.anchor.startLine != nil else { return nil }
-        return ReviewAnchor(path: path, side: target.side, line: end, startLine: start, startSide: target.side)
-    }
-
-    private func isInDraft(_ line: DiffHunk.Line) -> Bool {
-        guard let draft = model.draft, draft.anchor.path == path, let target = line.anchor,
-            target.side == draft.anchor.side
-        else { return false }
-        return ((draft.anchor.startLine ?? draft.anchor.line)...draft.anchor.line).contains(target.line)
-    }
-
-    /// Highlights each hunk as one snippet, off the main thread; lines draw plain until then.
-    private func highlight() async {
-        guard let language = CodeLanguage.forPath(path) else { return }
-        for hunk in hunks where highlighted[hunk.id] == nil {
-            let code = hunk.lines.map { $0.kind == .noNewline ? "" : $0.text }.joined(separator: "\n")
-            highlighted[hunk.id] = await CodeHighlightCache.shared.highlightLines(code, language: language)
-        }
+        return max(String(largest).count, 2)
     }
 }
 

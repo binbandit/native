@@ -52,7 +52,7 @@ extension PluginRegistry.LoadedPlugin {
     /// The plugin as its experiments leave it. Only data-only plugins change; code plugins read
     /// their experiments themselves.
     func applyingExperiments(_ snapshot: ExperimentSnapshot) -> Self {
-        guard let manifestPlugin = plugin as? ManifestPlugin, manifestPlugin.manifest.usesExperiments else { return self }
+        guard usesExperiments, let manifestPlugin = plugin as? ManifestPlugin else { return self }
         let manifest = manifestPlugin.manifest
         let applied = manifest.applyingExperiments { snapshot.value(for: ExperimentID(namespace: manifest.id, $0)) }
         return Self(plugin: ManifestPlugin(manifest: applied, policyTranslator: manifestPlugin.policyTranslator), source: source)
