@@ -24,7 +24,7 @@ struct WorkflowRunRow: View {
     }
 
     private var status: TaskStatus {
-        AutomationGlyph(run: run.phase).taskStatus
+        run.statusGlyph.taskStatus
     }
 
     private var badge: TaskBadge? {

@@ -36,8 +36,13 @@ final class AppAutomationsHost: AutomationHost {
 
     func prepareWorkspace(for automation: Automation, title: String) async throws -> URL {
         switch automation.placement {
-        case .mainCheckout: automation.project
-        case .worktree: try await makeWorktree(automation.project, title)
+        case .mainCheckout: return automation.project
+        case .worktree:
+            do {
+                return try await makeWorktree(automation.project, title)
+            } catch {
+                throw AutomationHostError.worktreeFailed(error.localizedDescription)
+            }
         }
     }
 
