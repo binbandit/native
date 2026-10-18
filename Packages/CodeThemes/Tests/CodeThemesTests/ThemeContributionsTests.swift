@@ -6,7 +6,9 @@ import Testing
 struct ThemeContributionsTests {
     private func object(_ palette: CodePalette) -> ThemeJSON {
         var members = Dictionary(
-            uniqueKeysWithValues: CodeTokenRole.allCases.map { ($0.rawValue, ThemeJSON.string(palette[$0].description)) })
+            uniqueKeysWithValues: CodeTokenRole.allCases.map {
+                ($0.rawValue, ThemeJSON.string(palette[$0].description))
+            })
         if !palette.strong.isEmpty {
             members["strong"] = .array(palette.strong.map { .string($0.rawValue) })
         }
@@ -80,7 +82,9 @@ struct ThemeContributionsTests {
         guard case .object(var members) = object(native) else { return }
         members["strong"] = .array([.string("keyword"), .string("bold")])
         let strong = ThemeJSON.object(["id": .string("x"), "name": .string("X"), "light": .object(members)])
-        #expect("\(ThemeContributions(code: [strong]).codeThemes(namespace: "p")[0])".contains("\"bold\" that isn't a role"))
+        #expect(
+            "\(ThemeContributions(code: [strong]).codeThemes(namespace: "p")[0])".contains("\"bold\" that isn't a role")
+        )
         #expect(problem(.foreground, "#F0F0F0").contains("text is too faint"))
         #expect(problem(.comment, "#F4F4F4").contains("\"comment\" color is too faint"))
     }
@@ -88,7 +92,9 @@ struct ThemeContributionsTests {
     @Test func accentsNeedBothAppearancesAndReadableText() throws {
         let checks = { (entry: ThemeJSON) in
             ThemeContributions(accents: [entry])
-                .accents(namespace: "acme", lightBackgrounds: self.lightBackgrounds, darkBackgrounds: self.darkBackgrounds)[0]
+                .accents(
+                    namespace: "acme", lightBackgrounds: self.lightBackgrounds, darkBackgrounds: self.darkBackgrounds)[
+                    0]
         }
         let good = try checks(accentEntry(light: lightSwatch, dark: darkSwatch)).get()
         #expect(good.id == "acme/sea")
