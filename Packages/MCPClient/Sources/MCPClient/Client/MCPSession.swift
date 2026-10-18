@@ -1,6 +1,7 @@
 import Exec
 import Foundation
 import MCP
+import Synchronization
 
 /// A live connection to one MCP server: initialized, its tools listed, and able to call them. The
 /// "Scripted" switch state builds on it: Native holds the session and exposes the server's tools

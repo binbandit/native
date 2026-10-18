@@ -19,6 +19,7 @@ struct NativeApp: App {
     @State private var statusBar: StatusBarRegistry
     /// One connection to this build's background host, shared by the main window and Durable Sessions.
     @State private var durableHost = DurableHost()
+    @State private var updates = UpdateController()
 
     init() {
         // Git and GitHub run with the login-shell environment the agents get.
@@ -56,6 +57,7 @@ struct NativeApp: App {
                 .environment(BuiltInPlugins.expeditions.center)
                 .environment(terminals)
                 .environment(durableHost)
+                .environment(updates)
                 .environment(settings)
                 .environment(model.plugins)
                 .environment(git.settings)
@@ -84,6 +86,8 @@ struct NativeApp: App {
                     AmbientWiring.connect(model: model, keepAwake: keepAwake)
                     DockBadgeWiring.connect(model: model, workflows: BuiltInPlugins.automation.center.workflows)
                     iconPreferences.start()
+                    updates.restartContext = { [model] in model.updateRestartContext }
+                    updates.start()
                     await model.start()
                 }
                 .task { [gitHub] in
@@ -101,6 +105,7 @@ struct NativeApp: App {
         }
         .defaultSize(width: 1120, height: 780)
         .commands {
+            UpdateCommands(controller: updates, settings: settings)
             FileCommands(model: model)
             ViewCommands(iconPreferences: iconPreferences)
             SettingsCommands(settings: settings)

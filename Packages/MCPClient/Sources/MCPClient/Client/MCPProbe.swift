@@ -120,7 +120,7 @@ public struct MCPProbe: Sendable {
         }
     }
 
-    private static func directory(_ configured: String?, relativeTo base: String?) -> String? {
+    static func directory(_ configured: String?, relativeTo base: String?) -> String? {
         guard let configured, !configured.hasPrefix("/") else { return configured ?? base }
         guard let base else { return configured }
         return URL(filePath: base, directoryHint: .isDirectory).appending(path: configured).standardizedFileURL.path(

@@ -32,7 +32,7 @@ struct CelebrationCalendarTests {
     }
 
     @Test func halloweenCoreIsTheThirtyFirst() throws {
-        let event = try #require(F.catalog().event(F.halloween))
+        let event = try #require(F.catalog().celebration(F.halloween))
         let occurrence = try #require(event.nextOccurrence(window: nil, from: try F.day("2026-10-18")))
         #expect(occurrence.core == CivilDayRange(day: try F.day("2026-10-31")))
         #expect(occurrence.display.first == (try F.day("2026-10-01")))
@@ -44,7 +44,7 @@ struct CelebrationCalendarTests {
     }
 
     @Test func muertosCoreAndExtendedWindows() throws {
-        let event = try #require(F.catalog().event(F.muertos))
+        let event = try #require(F.catalog().celebration(F.muertos))
         let core = try #require(event.nextOccurrence(window: nil, from: try F.day("2026-10-18")))
         #expect(core.display == CivilDayRange(first: try F.day("2026-11-01"), last: try F.day("2026-11-02")))
         let extended = try #require(
@@ -54,7 +54,7 @@ struct CelebrationCalendarTests {
     }
 
     @Test func windowCrossingTheYear() throws {
-        let event = try #require(F.catalog([F.crossYear]).events.first)
+        let event = try #require(F.catalog([F.crossYear]).celebrations.first)
         let newYear = try #require(CivilDayRange(first: try F.day("2026-12-30"), last: try F.day("2027-01-02")))
         let occurrences = event.occurrences(window: nil, overlapping: newYear)
         #expect(occurrences.map(\.id.description) == ["test.cross-year@2026-12-26"])
@@ -77,7 +77,7 @@ struct CelebrationCalendarTests {
     }
 
     @Test func leapDayOnlyInLeapYears() throws {
-        let event = try #require(F.catalog([F.leapDay]).events.first)
+        let event = try #require(F.catalog([F.leapDay]).celebrations.first)
         let decade = try #require(CivilDayRange(first: try F.day("2026-01-01"), last: try F.day("2033-12-31")))
         #expect(event.occurrences(window: nil, overlapping: decade).map(\.core.first.year) == [2028, 2032])
         #expect(event.nextOccurrence(window: nil, from: try F.day("2028-03-01")) == nil)
@@ -140,17 +140,17 @@ struct CelebrationCalendarTests {
         let easter = CelebrationContribution(
             id: CelebrationID("test.easter"), title: "Easter",
             calendar: CelebrationCalendar(rule: .unsupported(kind: "western-easter")),
-            artwork: CelebrationArtwork(home: .mark(FirstPartyCelebrations.HomeMark.halloween)))
+            iconSet: FirstPartyCelebrations.halloweenIcons.id)
         var table = F.crossYear
         table.id = CelebrationID("test.table")
         table.provenance.coverage = .init(from: 2026, through: 2026)
         let catalog = F.catalog([easter, table])
-        let events = catalog.events
+        let events = catalog.celebrations
         let preferences = F.enabled(easter.id, table.id)
-        #expect(catalog.event(easter.id)?.dateStatus(on: try F.day("2027-04-01")) == .unsupportedCalendar("western-easter"))
+        #expect(catalog.celebration(easter.id)?.dateStatus(on: try F.day("2027-04-01")) == .unsupportedCalendar("western-easter"))
         #expect(try F.active(preferences, on: "2027-01-01", events: events) == table.id)
         #expect(try F.active(preferences, on: "2027-12-26", events: events) == nil)
-        #expect(catalog.event(table.id)?.dateStatus(on: try F.day("2027-12-26")) == .coverageEnded(lastYear: 2026))
+        #expect(catalog.celebration(table.id)?.dateStatus(on: try F.day("2027-12-26")) == .coverageEnded(lastYear: 2026))
         #expect(CelebrationPolicy.resolve(events, preferences: preferences, on: try F.day("2027-12-26")).nextChange == nil)
     }
 }

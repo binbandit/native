@@ -13,7 +13,30 @@ public enum FirstPartyCelebrations {
         public static let diaDeMuertos = "native.dia-de-muertos"
     }
 
-    public static let all: [CelebrationContribution] = [halloween, diaDeMuertos]
+    public static let celebrations: [CelebrationContribution] = [halloween, diaDeMuertos]
+    public static let iconSets: [IconSetContribution] = [halloweenIcons, diaDeMuertosIcons]
+
+    /// The ghost links in every channel, compiled into the app (`design/app-icon/Halloween*.icon`).
+    public static let halloweenIcons = IconSetContribution(
+        id: IconSetID("native.halloween"),
+        name: "Halloween",
+        icons: .channels(
+            Dictionary(
+                uniqueKeysWithValues: AppIconVariant.allCases.map { variant in
+                    let name = "AppIcon-halloween-\(variant.rawValue)"
+                    return (variant, IconSetImagePair(light: .asset("\(name)-light"), dark: .asset("\(name)-dark")))
+                })),
+        homeMark: HomeMark.halloween,
+        palette: palette(light: ["#EF9A53", "#442A24"], dark: ["#FFF0D8", "#FFA052"]))
+
+    /// Home only for now: the four channel icons are specified in `docs/celebrations-artwork.md`, and
+    /// the icon applies once they're compiled in and listed here.
+    public static let diaDeMuertosIcons = IconSetContribution(
+        id: IconSetID("native.dia-de-muertos"),
+        name: "Día de Muertos",
+        icons: .forthcoming,
+        homeMark: HomeMark.diaDeMuertos,
+        palette: palette(light: ["#D9660B", "#B8326E"], dark: ["#FFB23F", "#F06AA4"]))
 
     /// 31 October, shown from 1 October through 7 November: the window agreed for the Halloween icons.
     public static let halloween = CelebrationContribution(
@@ -33,15 +56,7 @@ public enum FirstPartyCelebrations {
                 CelebrationWindow(id: season, title: "Halloween season", daysBefore: 30, daysAfter: 7)
             ],
             defaultWindow: season),
-        artwork: CelebrationArtwork(
-            appIcon: .channels(
-                Dictionary(
-                    uniqueKeysWithValues: AppIconVariant.allCases.map { variant in
-                        let name = "AppIcon-halloween-\(variant.rawValue)"
-                        return (variant, CelebrationImagePair(light: .asset("\(name)-light"), dark: .asset("\(name)-dark")))
-                    })),
-            home: .mark(HomeMark.halloween),
-            palette: palette(light: ["#EF9A53", "#442A24"], dark: ["#FFF0D8", "#FFA052"]))
+        iconSet: halloweenIcons.id
     )
 
     /// 1 and 2 November, with an optional decorative window from 28 October through 3 November. The
@@ -63,11 +78,7 @@ public enum FirstPartyCelebrations {
             windows: [
                 CelebrationWindow(id: extended, title: "Extended, decorative", daysBefore: 4, daysAfter: 1)
             ]),
-        artwork: CelebrationArtwork(
-            // Its four channel icons are drawn separately: docs/celebrations-artwork.md.
-            appIcon: .forthcoming,
-            home: .mark(HomeMark.diaDeMuertos),
-            palette: palette(light: ["#D9660B", "#B8326E"], dark: ["#FFB23F", "#F06AA4"]))
+        iconSet: diaDeMuertosIcons.id
     )
 
     public static let season = CelebrationWindow.ID("season")
@@ -83,7 +94,7 @@ public enum FirstPartyCelebrations {
         strings.compactMap(URL.init(string:))
     }
 
-    private static func palette(light: [String], dark: [String]) -> CelebrationPalette {
-        CelebrationPalette(light: light.compactMap(HexColor.init), dark: dark.compactMap(HexColor.init))
+    private static func palette(light: [String], dark: [String]) -> IconSetPalette {
+        IconSetPalette(light: light.compactMap(HexColor.init), dark: dark.compactMap(HexColor.init))
     }
 }
