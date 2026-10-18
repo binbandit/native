@@ -13,6 +13,11 @@ struct CodexPolicyTranslator: SessionPolicyTranslator {
         ).environment
     }
 
+    /// Auto review (`agent`) only asks about what its reviewer flags, and full access never asks (codex-acp 2.2.2).
+    func approvesToolCallsUnasked(inMode mode: String) -> Bool {
+        ["agent", "agent-full-access"].contains(mode)
+    }
+
     func support(for kind: SessionPolicySupport.Kind) -> SessionPolicySupport {
         switch kind {
         case .mcpServers:

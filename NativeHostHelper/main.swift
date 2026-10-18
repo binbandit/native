@@ -2,6 +2,7 @@ import AppKit
 import NativeHost
 import NativeHostMac
 import NativeHostProtocol
+import NativeLink
 import os
 
 // Native's background host: launchd starts it at login and keeps it running, so agents keep working
@@ -22,8 +23,23 @@ let configuration = MacHost.configuration(location: location, info: info)
 
 Task { @HostActor in
     do {
-        _ = try HostMain.start(configuration, verifier: CodeSignatureVerifier())
+        let core = try HostMain.start(configuration, verifier: CodeSignatureVerifier())
         logger.info("Serving at \(location.socketPath, privacy: .public)")
+        // Paired devices (docs/companion.md): nothing listens on the network until one is paired.
+        let gateway = try LinkGateway(
+            configuration: .init(
+                directory: LinkGateway.Configuration.directory(inHostDirectory: location.directory),
+                hostID: core.hostID, machineName: configuration.machineName,
+                includesLoopback: location.isDevelopment),
+            accept: { stream, grants in
+                Task { @HostActor in
+                    core.accept(
+                        stream,
+                        grants: ClientGrants(
+                            managePlugins: grants.managePlugins, manageHost: grants.manageHost, isLocal: false))
+                }
+            })
+        try await gateway.start(verifyPeer: { try CodeSignatureVerifier().verify(socket: $0) })
     } catch HostMain.Failure.alreadyRunning {
         // Another host owns this location; exiting cleanly keeps launchd from restarting this one.
         logger.info("Another host is running at \(location.socketPath, privacy: .public)")
