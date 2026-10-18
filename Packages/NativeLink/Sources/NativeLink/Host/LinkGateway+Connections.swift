@@ -197,7 +197,7 @@ extension LinkGateway {
         listenerStatus = LinkListenerStatus(state: .starting, port: port)
         do {
             listener = try LinkListener(
-                port: port, serviceName: configuration.machineName,
+                port: port, serviceName: configuration.advertisesOverBonjour ? configuration.machineName : nil,
                 txtRecord: ["v": "\(Self.linkVersion)", "k": identity.publicKey.fingerprint, "i": configuration.hostID.description],
                 events: { [weak self] event in Task { await self?.listenerEvent(event, requestedPort: port) } },
                 connections: { [weak self] stream in self?.serve(stream) }
