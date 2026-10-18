@@ -1,7 +1,7 @@
 {
   "id": "dia-de-muertos-sugar-skull",
   "name": "Día de Muertos · Sugar Skull",
-  "intent": "A fully painted flat calavera, with flower eyes, cheek leaves, marigolds and a small Native forehead inlay.",
+  "intent": "The original fully painted dark calavera from the app artwork: dense turquoise, coral, marigold and cobalt scrollwork, scalloped floral eye sockets, two rows of ivory teeth and the exact Native forehead inlay.",
   "channels": [
     "stable",
     "beta",
@@ -12,7 +12,7 @@
     "light",
     "dark"
   ],
-  "source": "Original editable SVG artwork based on NativeMark and the Halloween Home ghosts.",
+  "source": "Original app-icon foreground illustration reused unchanged, with a separately editable Native inlay and channel accents. The source illustration was made with built-in image generation during the app-icon work.",
   "canvas": {
     "viewBox": [
       -140,
@@ -32,11 +32,32 @@
     ]
   },
   "layers": [
-    "supporting-art",
-    "native-links or edition-specific body",
-    "integrated-details",
-    "overhanging-details",
+    "painted-calavera",
+    "original-app-illustration",
+    "native-brand-inlay",
+    "southern-cross (kangaroo)",
     "channel-*"
   ],
-  "transparent": true
+  "transparent": true,
+  "revision": 2,
+  "sourceType": "raster illustration + vector brand and channel layers",
+  "sourceFiles": [
+    "illustration-source.png",
+    "native-inlay-source.svg"
+  ],
+  "placement": {
+    "scale": 0.6845753899480069,
+    "translation": [
+      70.77123050259968,
+      -130.33622183708837
+    ],
+    "inkHeight": 790,
+    "sourceInkBounds": [
+      161,
+      56,
+      1093,
+      1210
+    ]
+  },
+  "notes": "The SVG compositions embed the PNG illustration for portability. They are not pure vector redraws. The existing app icons are unchanged."
 }

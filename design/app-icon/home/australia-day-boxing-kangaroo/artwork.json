@@ -1,7 +1,7 @@
 {
   "id": "australia-day-boxing-kangaroo",
   "name": "Boxing Kangaroo",
-  "intent": "An original flat boxing kangaroo with red gloves, Native belly inlay and a correctly proportioned Southern Cross. Not a traced flag mascot.",
+  "intent": "The original app-icon kangaroo illustration, with its upright boxing guard, muscular haunches, long sweeping tail, red gloves and exact Native belly inlay. Preserves the original face and proportions.",
   "channels": [
     "stable",
     "beta",
@@ -12,7 +12,7 @@
     "light",
     "dark"
   ],
-  "source": "Original editable SVG artwork based on NativeMark and the Halloween Home ghosts.",
+  "source": "Original app-icon foreground illustration reused unchanged, with a separately editable Native inlay and channel accents. The source illustration was made with built-in image generation during the app-icon work.",
   "canvas": {
     "viewBox": [
       -140,
@@ -32,11 +32,32 @@
     ]
   },
   "layers": [
-    "supporting-art",
-    "native-links or edition-specific body",
-    "integrated-details",
-    "overhanging-details",
+    "boxing-kangaroo",
+    "original-app-illustration",
+    "native-brand-inlay",
+    "southern-cross (kangaroo)",
     "channel-*"
   ],
-  "transparent": true
+  "transparent": true,
+  "revision": 2,
+  "sourceType": "raster illustration + vector brand and channel layers",
+  "sourceFiles": [
+    "illustration-source.png",
+    "native-inlay-source.svg"
+  ],
+  "placement": {
+    "scale": 0.6109324758842444,
+    "translation": [
+      92.7491961414791,
+      -59.60771704180064
+    ],
+    "inkHeight": 760,
+    "sourceInkBounds": [
+      44,
+      19,
+      1191,
+      1263
+    ]
+  },
+  "notes": "The SVG compositions embed the PNG illustration for portability. They are not pure vector redraws. The existing app icons are unchanged."
 }

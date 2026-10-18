@@ -92,10 +92,21 @@ extension ComposerView {
         feedback = ComposerFeedback(tone: .done, message: "Removed \(attachment.name)", canUndo: true)
     }
 
-    /// Backspace in an empty draft takes off the last chip, as it would the last token in a field.
-    func removeLastAttachment() {
-        if let last = session.attachments.last {
-            removeAttachment(last.id)
+    /// The chip the keyboard has selected, by its place among the attachments.
+    var selectedAttachmentIndex: Int? {
+        session.attachments.firstIndex { $0.id == selectedAttachment }
+    }
+
+    /// Selects the chip at `index`, or with nil, hands the keys back to the text. VoiceOver hears
+    /// which chip, since the selection is drawn rather than focused.
+    func selectAttachment(at index: Int?) {
+        let attachment = index.flatMap { session.attachments.indices.contains($0) ? session.attachments[$0] : nil }
+        guard attachment?.id != selectedAttachment else { return }
+        selectedAttachment = attachment?.id
+        if let attachment {
+            AccessibilityNotification.Announcement(
+                "\(attachment.name) selected. Delete removes it; Escape returns to the message."
+            ).post()
         }
     }
 

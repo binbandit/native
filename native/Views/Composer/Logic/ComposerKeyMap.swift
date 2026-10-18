@@ -1,11 +1,9 @@
-import ACP
-
 /// The composer editor's keys, as docs/keyboard.md lays them out (Sending, Slash commands, File
 /// mentions).
 /// Pure, so the table can be tested without a text view.
 enum ComposerKeyMap {
     enum Key {
-        case up, down, `return`, tab, escape, delete
+        case up, down, `return`, tab, escape
     }
 
     struct Modifiers: OptionSet {
@@ -25,7 +23,6 @@ enum ComposerKeyMap {
         var isWorking: Bool
         var hasQueuedPrompts: Bool
         var hasLastPrompt: Bool
-        var hasAttachments: Bool
         /// An input method is composing text, so every key is its own.
         var isComposing: Bool
         var preferredFollowUp: FollowUpBehavior
@@ -37,8 +34,6 @@ enum ComposerKeyMap {
         case closeSuggestionList
         case recallLastPrompt
         case editLastQueuedPrompt
-        /// Backspace with nothing typed takes off the last attached file, as in a token field.
-        case removeLastAttachment
         case submit(FollowUpBehavior)
         /// Tab moves on to the controls rather than typing a tab character.
         case moveFocus(forward: Bool)
@@ -55,7 +50,6 @@ enum ComposerKeyMap {
             case .down: return .moveHighlight(by: 1)
             case .return, .tab: return isRepeat ? .swallow : .insertHighlightedSuggestion
             case .escape: return .closeSuggestionList
-            case .delete: return nil
             }
         }
         switch key {
@@ -71,16 +65,6 @@ enum ComposerKeyMap {
             return .submit(modifiers == .command ? preferred.opposite : preferred)
         case .tab where modifiers.isEmpty || modifiers == .shift:
             return isRepeat ? .swallow : .moveFocus(forward: modifiers.isEmpty)
-        // Heard before the text view deletes anything, so an empty draft is empty before the key.
-        case .delete where modifiers.isEmpty:
-            switch DraftBackspace(
-                isDraftEmpty: context.isDraftEmpty, isComposing: context.isComposing,
-                hasAttachments: context.hasAttachments, isRepeat: isRepeat)
-            {
-            case .removeLastAttachment: return .removeLastAttachment
-            case .swallow: return .swallow
-            case nil: return nil
-            }
         // The Stop button takes Escape through its shortcut; swallowed otherwise, so the text view
         // doesn't open its completion list.
         case .escape:

@@ -1,6 +1,7 @@
+import ACP
 import SwiftUI
 
-// Bridges SwiftUI key presses to the composer's pure key map.
+// Bridges SwiftUI key presses to the composer's pure key maps.
 
 extension ComposerKeyMap.Key {
     init?(_ key: KeyEquivalent) {
@@ -11,11 +12,29 @@ extension ComposerKeyMap.Key {
         // Shift-Tab arrives as backtab.
         case .tab, KeyEquivalent("\u{19}"): self = .tab
         case .escape: self = .escape
-        // Backspace: iPadOS reports SwiftUI's `.delete` (U+0008), but the Mac reports the character
-        // its key types (U+007F), which matches neither `.delete` nor `.deleteForward` (U+F728).
-        case .delete, KeyEquivalent("\u{7F}"): self = .delete
         default: return nil
         }
+    }
+}
+
+extension DraftAttachmentKeys.Key {
+    /// Only bare keys reach the chips: Shift-← extends the text's selection, Option-← moves by words.
+    init(_ press: KeyPress) {
+        guard press.modifiers.isDisjoint(with: [.shift, .option, .command, .control]) else {
+            self = .other
+            return
+        }
+        self =
+            switch press.key {
+            case .leftArrow: .left
+            case .rightArrow: .right
+            // Backspace: iPadOS reports SwiftUI's `.delete` (U+0008), but the Mac reports the
+            // character its key types (U+007F), which matches neither `.delete` nor `.deleteForward`.
+            case .delete, KeyEquivalent("\u{7F}"): .backspace
+            case .deleteForward: .forwardDelete
+            case .escape: .escape
+            default: .other
+            }
     }
 }
 
