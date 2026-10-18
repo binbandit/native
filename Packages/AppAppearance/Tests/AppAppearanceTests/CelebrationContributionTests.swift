@@ -8,8 +8,10 @@ import Testing
 struct CelebrationContributionTests {
     typealias F = CelebrationFixtures
 
-    private func decode(_ json: String) throws -> CelebrationContributions {
-        try JSONDecoder().decode(CelebrationContributions.self, from: Data(json.utf8))
+    private func decode<Element: AppearanceContribution>(_ json: String, as _: Element.Type = CelebrationContribution.self)
+        throws -> ContributionList<Element>
+    {
+        try JSONDecoder().decode(ContributionList<Element>.self, from: Data(json.utf8))
     }
 
     private func folder() throws -> URL {
@@ -25,13 +27,29 @@ struct CelebrationContributionTests {
         .joined(separator: ", ")
     }
 
+    private func plugin(
+        _ id: String, folder: URL, iconSets: String = "[]", celebrations: String = "[]", nativeVersion: String? = nil
+    ) throws -> AppearanceCatalog.Plugin {
+        AppearanceCatalog.Plugin(
+            source: ContributionSource(
+                pluginID: id, location: .folder(folder), homeMarks: F.homeMarks, nativeVersion: nativeVersion),
+            iconSets: try decode(iconSets), celebrations: try decode(celebrations))
+    }
+
+    private var builtIn: AppearanceCatalog.Plugin {
+        AppearanceCatalog.Plugin(
+            source: ContributionSource(
+                pluginID: "celebrations", location: .builtIn, assetExists: { _ in true }, homeMarks: F.homeMarks),
+            iconSets: IconSetContributions(FirstPartyCelebrations.iconSets),
+            celebrations: CelebrationContributions(FirstPartyCelebrations.celebrations))
+    }
+
     @Test func malformedEntriesDontStopTheRest() throws {
-        let contributions = try decode(
+        let contributions: CelebrationContributions = try decode(
             """
             [
               {"id": "acme.lanterns", "title": {"en": "Lanterns", "es": "Linternas"}, "aliases": ["Lantern night"],
-               "calendar": {"kind": "fixed", "start": "12-30", "end": "01-02"},
-               "artwork": {"home": {"mark": "native.halloween"}}},
+               "calendar": {"kind": "fixed", "start": "12-30", "end": "01-02"}, "iconSet": "acme.lantern-icons"},
               {"id": "acme.broken", "title": "Broken", "calendar": {"kind": "fixed", "start": "13-40"}},
               {"title": "No id", "calendar": {"kind": "fixed", "start": "01-01"}},
               {"id": "acme.moon", "title": "Moon", "calendar": {"kind": "chinese-lunisolar", "month": 8, "day": 15}}
@@ -49,7 +67,7 @@ struct CelebrationContributionTests {
     }
 
     @Test func notAListIsOneProblem() throws {
-        let contributions = try decode("{\"id\": \"acme.one\"}")
+        let contributions: CelebrationContributions = try decode("{\"id\": \"acme.one\"}")
         #expect(contributions.valid.isEmpty)
         #expect(contributions.malformed.count == 1)
     }
@@ -62,7 +80,7 @@ struct CelebrationContributionTests {
         #expect(!muertos.matches("halloween"))
     }
 
-    @Test func folderArtworkMustStayInsideThePlugin() throws {
+    @Test func iconSetImagesMustStayInsideThePlugin() throws {
         let folder = try folder()
         for variant in AppIconVariant.allCases {
             for appearance in ["light", "dark"] {
@@ -71,57 +89,81 @@ struct CelebrationContributionTests {
                     contents: Data())
             }
         }
-        let json = """
+        let iconSets = """
             [
-              {"id": "acme.good", "title": "Good", "calendar": {"kind": "fixed", "start": "05-05"},
-               "artwork": {"appIcon": {\(icons { "icons/\($0).png" })}}},
-              {"id": "acme.escape", "title": "Escape", "calendar": {"kind": "fixed", "start": "05-05"},
-               "artwork": {"appIcon": {\(icons { "../\($0).png" })}}},
-              {"id": "acme.missing", "title": "Missing", "calendar": {"kind": "fixed", "start": "05-05"},
-               "artwork": {"appIcon": {\(icons { "icons/\($0)-gone.png" })}, "home": {"mark": "acme.unknown"}}},
-              {"id": "other.namespace", "title": "Wrong namespace", "calendar": {"kind": "fixed", "start": "05-05"}},
-              {"id": "acme.good", "title": "Duplicate", "calendar": {"kind": "fixed", "start": "05-05"}}
+              {"id": "acme.good", "name": "Good", "icons": {\(icons { "icons/\($0).png" })},
+               "palette": {"light": ["#112233", "#445566"], "dark": ["#AABBCC", "#DDEEFF"]}},
+              {"id": "acme.escape", "name": "Escape", "icons": {\(icons { "../\($0).png" })}},
+              {"id": "acme.missing", "name": "Missing", "icons": {\(icons { "icons/\($0)-gone.png" })},
+               "home": {"mark": "acme.unknown"}},
+              {"id": "other.namespace", "name": "Wrong namespace"},
+              {"id": "acme.good", "name": "Duplicate"},
+              {"id": "acme.channel", "name": "Channel", "icons": {"canary": {"light": "a.png", "dark": "b.png"}}}
             ]
             """
-        var catalog = CelebrationCatalog()
-        catalog.add(try decode(json), from: CelebrationSource(pluginID: "acme", location: .folder(folder)))
-        #expect(catalog.events.map(\.id.rawValue) == ["acme.good", "acme.missing"])
-        #expect(catalog.problems.map(\.identifier) == ["acme.escape", "other.namespace", "acme.good"])
-        #expect(catalog.problems.allSatisfy { $0.pluginID == "acme" })
+        let catalog = AppearanceCatalog([try plugin("acme", folder: folder, iconSets: iconSets)])
+        #expect(catalog.iconSets.map(\.id.rawValue) == ["acme.good", "acme.missing"])
+        #expect(catalog.problems.map(\.identifier) == ["acme.channel", "acme.escape", "other.namespace", "acme.good"])
+        #expect(catalog.problems.allSatisfy { $0.pluginID == "acme" && $0.kind == .iconSet })
 
-        let good = try #require(catalog.event(CelebrationID("acme.good")))
+        let good = try #require(catalog.iconSet(IconSetID("acme.good")))
         #expect(good.appIcon == .ready)
-        #expect(good.home == .notOffered)
+        #expect(good.homeStatus == .ready)
+        #expect(good.home == .palette(try #require(good.contribution.palette)))
         guard case .file(let url) = good.icon(for: .nightly, isDark: true) else {
             Issue.record("Expected a file icon")
             return
         }
         #expect(url.lastPathComponent == "nightly-dark.png")
+        // No celebration uses it, so it's offered as a plain app icon theme.
+        #expect(catalog.themes.map(\.id) == [good.id])
 
-        let missing = try #require(catalog.event(CelebrationID("acme.missing")))
+        let missing = try #require(catalog.iconSet(IconSetID("acme.missing")))
         guard case .unavailable(let reason) = missing.appIcon else {
             Issue.record("Expected missing icons to be reported")
             return
         }
         #expect(reason.contains("Native Nightly dark"))
-        #expect(missing.home == .unavailable("This version of Native can't draw its Home edition."))
-        #expect(!missing.isApplicable)
+        #expect(missing.homeStatus == .unavailable("This version of Native can't draw its Home edition."))
+    }
+
+    @Test func celebrationsUseIconSetsFromAnyEnabledPlugin() throws {
+        let celebrations = """
+            [
+              {"id": "acme.spooky", "title": "Spooky", "calendar": {"kind": "fixed", "start": "10-13"},
+               "iconSet": "native.halloween"},
+              {"id": "acme.orphan", "title": "Orphan", "calendar": {"kind": "fixed", "start": "10-13"},
+               "iconSet": "acme.uninstalled"},
+              {"id": "acme.someday", "title": "Someday", "calendar": {"kind": "fixed", "start": "10-13"}}
+            ]
+            """
+        let catalog = AppearanceCatalog([builtIn, try plugin("acme", folder: try folder(), celebrations: celebrations)])
+        let spooky = try #require(catalog.celebration(CelebrationID("acme.spooky")))
+        #expect(spooky.appIcon == .ready)
+        #expect(spooky.homeLook == .mark(FirstPartyCelebrations.HomeMark.halloween))
+        #expect(spooky.order == 2)
+        let orphan = try #require(catalog.celebration(CelebrationID("acme.orphan")))
+        #expect(orphan.home == .unavailable("Its icon set \"acme.uninstalled\" isn't installed or is turned off."))
+        #expect(!orphan.isApplicable)
+        #expect(catalog.celebration(CelebrationID("acme.someday"))?.appIcon == .forthcoming)
+        // Sets a celebration uses aren't offered all year as plain themes.
+        #expect(catalog.themes.isEmpty)
     }
 
     @Test func containmentRejectsEscapes() throws {
         let folder = try folder()
-        #expect(CelebrationCatalog.contained("icons/a.png", in: folder) != nil)
-        #expect(CelebrationCatalog.contained("icons/../icons/a.png", in: folder) != nil)
-        #expect(CelebrationCatalog.contained("../a.png", in: folder) == nil)
-        #expect(CelebrationCatalog.contained("/etc/hosts", in: folder) == nil)
-        #expect(CelebrationCatalog.contained("~/a.png", in: folder) == nil)
+        #expect(AppearanceCatalog.contained("icons/a.png", in: folder) != nil)
+        #expect(AppearanceCatalog.contained("icons/../icons/a.png", in: folder) != nil)
+        #expect(AppearanceCatalog.contained("../a.png", in: folder) == nil)
+        #expect(AppearanceCatalog.contained("/etc/hosts", in: folder) == nil)
+        #expect(AppearanceCatalog.contained("~/a.png", in: folder) == nil)
         try FileManager.default.createSymbolicLink(
             at: folder.appending(path: "outside"), withDestinationURL: FileManager.default.temporaryDirectory)
-        #expect(CelebrationCatalog.contained("outside/a.png", in: folder) == nil)
+        #expect(AppearanceCatalog.contained("outside/a.png", in: folder) == nil)
     }
 
     @Test func compatibilityAndWindowsAreChecked() throws {
-        let json = """
+        let celebrations = """
             [
               {"id": "acme.future", "title": "Future", "calendar": {"kind": "fixed", "start": "05-05"},
                "compatibility": {"manifestVersion": 9}},
@@ -135,44 +177,45 @@ struct CelebrationContributionTests {
                "compatibility": {"minimumNativeVersion": "2.9"}}
             ]
             """
-        var catalog = CelebrationCatalog()
-        catalog.add(
-            try decode(json),
-            from: CelebrationSource(pluginID: "acme", location: .folder(try folder()), nativeVersion: "2.9.1"))
-        #expect(catalog.events.map(\.id.rawValue) == ["acme.fine"])
+        let catalog = AppearanceCatalog([
+            try plugin("acme", folder: try folder(), celebrations: celebrations, nativeVersion: "2.9.1")
+        ])
+        #expect(catalog.celebrations.map(\.id.rawValue) == ["acme.fine"])
         #expect(catalog.problems.map(\.identifier) == ["acme.future", "acme.newer", "acme.long", "acme.default"])
     }
 
     @Test func builtInsUseCompiledImagesOnly() throws {
-        var pathBased = FirstPartyCelebrations.halloween
-        pathBased.artwork.appIcon = .channels(
+        var pathBased = FirstPartyCelebrations.halloweenIcons
+        pathBased.icons = .channels(
             Dictionary(
                 uniqueKeysWithValues: AppIconVariant.allCases.map {
-                    ($0, CelebrationImagePair(light: .path("a.png"), dark: .path("b.png")))
+                    ($0, IconSetImagePair(light: .path("a.png"), dark: .path("b.png")))
                 }))
-        let catalog = F.catalog([pathBased])
-        #expect(catalog.events.isEmpty)
+        let catalog = F.catalog(iconSets: [pathBased])
+        #expect(catalog.iconSets.isEmpty)
         #expect(catalog.problems.first?.message.contains("compiled image") == true)
+        // Its celebration stays listed, with the artwork explained.
+        #expect(catalog.celebration(F.halloween)?.isApplicable == false)
     }
 
     @Test func firstPartyCatalogueIsValid() throws {
         let catalog = F.catalog()
         #expect(catalog.problems.isEmpty)
-        #expect(catalog.events.map(\.id) == [F.halloween, F.muertos])
-        let halloween = try #require(catalog.event(F.halloween))
+        #expect(catalog.celebrations.map(\.id) == [F.halloween, F.muertos])
+        let halloween = try #require(catalog.celebration(F.halloween))
         #expect(halloween.appIcon == .ready)
         #expect(halloween.icon(for: .development, isDark: true) == .asset("AppIcon-halloween-dev-dark"))
         #expect(halloween.icon(for: .stable, isDark: false) == .asset("AppIcon-halloween-stable-light"))
-        let muertos = try #require(catalog.event(F.muertos))
+        let muertos = try #require(catalog.celebration(F.muertos))
         #expect(muertos.appIcon == .forthcoming)
-        #expect(muertos.homeMark == FirstPartyCelebrations.HomeMark.diaDeMuertos)
+        #expect(muertos.homeLook == .mark(FirstPartyCelebrations.HomeMark.diaDeMuertos))
     }
 
     @Test func contributionsRoundTrip() throws {
-        let data = try JSONEncoder().encode(CelebrationContributions(FirstPartyCelebrations.all))
-        let decoded = try JSONDecoder().decode(CelebrationContributions.self, from: data)
-        #expect(decoded.valid == FirstPartyCelebrations.all)
-        #expect(decoded.malformed.isEmpty)
+        let celebrations = try JSONEncoder().encode(CelebrationContributions(FirstPartyCelebrations.celebrations))
+        #expect(try JSONDecoder().decode(CelebrationContributions.self, from: celebrations).valid == FirstPartyCelebrations.celebrations)
+        let iconSets = try JSONEncoder().encode(IconSetContributions(FirstPartyCelebrations.iconSets))
+        #expect(try JSONDecoder().decode(IconSetContributions.self, from: iconSets).valid == FirstPartyCelebrations.iconSets)
     }
 
     @Test func halloweenOptInMigrates() throws {

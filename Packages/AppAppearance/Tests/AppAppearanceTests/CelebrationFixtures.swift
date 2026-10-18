@@ -12,18 +12,19 @@ enum CelebrationFixtures {
     ]
 
     static func catalog(
-        _ contributions: [CelebrationContribution] = FirstPartyCelebrations.all,
+        _ celebrations: [CelebrationContribution] = FirstPartyCelebrations.celebrations,
+        iconSets: [IconSetContribution] = FirstPartyCelebrations.iconSets,
         assetExists: @escaping (String) -> Bool = { _ in true }
-    ) -> CelebrationCatalog {
-        var catalog = CelebrationCatalog()
-        catalog.add(
-            CelebrationContributions(contributions),
-            from: CelebrationSource(
-                pluginID: "celebrations", location: .builtIn, assetExists: assetExists, homeMarks: homeMarks))
-        return catalog
+    ) -> AppearanceCatalog {
+        AppearanceCatalog([
+            AppearanceCatalog.Plugin(
+                source: ContributionSource(
+                    pluginID: "celebrations", location: .builtIn, assetExists: assetExists, homeMarks: homeMarks),
+                iconSets: IconSetContributions(iconSets), celebrations: CelebrationContributions(celebrations))
+        ])
     }
 
-    static var events: [CelebrationEvent] { catalog().events }
+    static var events: [CelebrationEvent] { catalog().celebrations }
 
     static func enabled(_ ids: CelebrationID...) -> CelebrationPreferences {
         var preferences = CelebrationPreferences()
@@ -58,13 +59,13 @@ enum CelebrationFixtures {
         id: CelebrationID("test.cross-year"),
         title: "Cross-year fixture",
         calendar: CelebrationCalendar(rule: .fixed(start: MonthDay(literal: 12, 26), end: MonthDay(literal: 1, 1))),
-        artwork: CelebrationArtwork(home: .mark(FirstPartyCelebrations.HomeMark.halloween))
+        iconSet: FirstPartyCelebrations.halloweenIcons.id
     )
 
     static let leapDay = CelebrationContribution(
         id: CelebrationID("test.leap-day"),
         title: "Leap day fixture",
         calendar: CelebrationCalendar(rule: .fixed(start: MonthDay(literal: 2, 29), end: MonthDay(literal: 2, 29))),
-        artwork: CelebrationArtwork(home: .mark(FirstPartyCelebrations.HomeMark.halloween))
+        iconSet: FirstPartyCelebrations.halloweenIcons.id
     )
 }

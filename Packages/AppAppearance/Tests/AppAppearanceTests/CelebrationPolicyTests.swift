@@ -97,9 +97,9 @@ struct CelebrationPolicyTests {
 
     @Test func disabledPluginRestoresTheBase() throws {
         let halloween = F.enabled(F.halloween)
-        let withoutPlugin = F.catalog().limited(toPlugins: [])
+        let withoutPlugin = AppearanceCatalog([])
         let resolution = CelebrationPolicy.resolve(
-            withoutPlugin.events, preferences: halloween, on: try F.day("2026-10-18"))
+            withoutPlugin.celebrations, preferences: halloween, on: try F.day("2026-10-18"))
         #expect(resolution.active == nil)
         #expect(resolution.nextChange == nil)
         // The preference survives, so turning the plugin back on brings Halloween back.
@@ -109,18 +109,18 @@ struct CelebrationPolicyTests {
     @Test func missingArtworkOnlyAffectsItsSurface() throws {
         // No Beta dark icon compiled in: Halloween's icon is unavailable, Home still dresses up.
         let catalog = F.catalog { $0 != "AppIcon-halloween-beta-dark" }
-        let event = try #require(catalog.event(F.halloween))
+        let event = try #require(catalog.celebration(F.halloween))
         #expect(event.appIcon == .unavailable("Missing Native Beta dark."))
         let resolution = CelebrationPolicy.resolve(
-            catalog.events, preferences: F.enabled(F.halloween), on: try F.day("2026-10-18"))
+            catalog.celebrations, preferences: F.enabled(F.halloween), on: try F.day("2026-10-18"))
         #expect(resolution.active?.appliesToAppIcon == false)
         #expect(resolution.active?.appliesToHome == true)
 
         // With Home switched off too, nothing applies, so Halloween can't hide another celebration.
         var iconOnly = F.enabled(F.halloween, F.muertos)
         iconOnly.selections[F.halloween]?.home = false
-        #expect(try F.active(iconOnly, on: "2026-10-18", events: catalog.events) == nil)
-        #expect(try F.active(iconOnly, on: "2026-11-01", events: catalog.events) == F.muertos)
+        #expect(try F.active(iconOnly, on: "2026-10-18", events: catalog.celebrations) == nil)
+        #expect(try F.active(iconOnly, on: "2026-11-01", events: catalog.celebrations) == F.muertos)
     }
 
     @Test func platformsWithoutIconsKeepHome() throws {

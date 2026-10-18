@@ -186,6 +186,14 @@ struct RootView: View {
                     // Pushes the toggle to the sidebar's leading edge, next to the window controls, and
                     // back and forward to its trailing edge, where the reference app has them.
                     ToolbarSpacer(.flexible)
+                    // the reference app's update button: right-aligned before back and forward, and still there when
+                    // the sidebar is hidden. It shows only when an update needs the user.
+                    if let updates, updates.showsToolbarButton {
+                        ToolbarItem {
+                            UpdateToolbarButton(controller: updates)
+                        }
+                        .sharedBackgroundVisibility(.hidden)
+                    }
                     // They belong to the sidebar's header, so they go away with it (⌘[ and ⌘] still work).
                     if columnVisibility != .detailOnly {
                         ToolbarItem {
