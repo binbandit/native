@@ -13,7 +13,8 @@ final class SessionLauncher {
             switch self {
             case .parentClosed: "The session that asked for this is no longer open."
             case .agentUnavailable(let agent): "\(agent) isn't running, so it can't start a session."
-            case .failed(let agent, let underlying): "Couldn't start a \(agent) session: \(underlying.localizedDescription)"
+            case .failed(let agent, let underlying):
+                "Couldn't start a \(agent) session: \(underlying.localizedDescription)"
             }
         }
     }

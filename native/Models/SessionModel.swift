@@ -159,7 +159,9 @@ final class SessionModel {
 
     /// This session as plugins see it.
     var context: SessionContext {
-        SessionContext(clientID: clientID, agent: agent.id, agentName: agent.displayName, sessionID: id, cwd: cwd, title: displayTitle, parentID: parentID)
+        SessionContext(
+            clientID: clientID, agent: agent.id, agentName: agent.displayName, sessionID: id, cwd: cwd,
+            title: displayTitle, parentID: parentID)
     }
 
     var titleKey: SessionTitles.Key {
@@ -172,9 +174,10 @@ final class SessionModel {
 
     /// Whether the session has had a turn, so its agent has saved it and can reopen it.
     var hasStarted: Bool {
-        lastStopReason != nil || phase == .prompting || state.items.contains { item in
-            if case .message(let message) = item { message.role == .user } else { false }
-        }
+        lastStopReason != nil || phase == .prompting
+            || state.items.contains { item in
+                if case .message(let message) = item { message.role == .user } else { false }
+            }
     }
 
     func child(_ id: SessionID) -> SessionModel? {
@@ -194,7 +197,8 @@ final class SessionModel {
 
     /// Whether the user's draft can go out now.
     var canSend: Bool {
-        origin == .user && phase == .idle && !isRunningHiddenCommand && !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        origin == .user && phase == .idle && !isRunningHiddenCommand
+            && !draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     /// Whether `cancel()` would stop anything: the current turn, or for an announced subagent, its
@@ -273,7 +277,8 @@ final class SessionModel {
     }
 
     func failLoading(_ error: any Error) {
-        state.appendNotice("Couldn't load this session: \(error.localizedDescription.withoutTerminalEscapes)", isError: true)
+        state.appendNotice(
+            "Couldn't load this session: \(error.localizedDescription.withoutTerminalEscapes)", isError: true)
         phase = .idle
     }
 
@@ -286,11 +291,13 @@ final class SessionModel {
         // Whatever the subagents were doing is unknown now, and no one is left to answer.
         subagentControls.reset()
         questions.removeAll()
-        let notice = switch (isRestarting, wasWorking) {
-        case (true, true): "\(agentName) stopped unexpectedly in the middle of this turn. Native is restarting it and will ask it to pick up where it left off."
-        case (true, false): "\(agentName) stopped unexpectedly. Native is restarting it."
-        case (false, _): "\(agentName) stopped running. Restart it from the sidebar to continue."
-        }
+        let notice =
+            switch (isRestarting, wasWorking) {
+            case (true, true):
+                "\(agentName) stopped unexpectedly in the middle of this turn. Native is restarting it and will ask it to pick up where it left off."
+            case (true, false): "\(agentName) stopped unexpectedly. Native is restarting it."
+            case (false, _): "\(agentName) stopped running. Restart it from the sidebar to continue."
+            }
         state.appendNotice(notice, isError: true)
     }
 
@@ -328,7 +335,8 @@ final class SessionModel {
         guard !NativeApprovals.isNative(permission.requestID) else {
             return NativeApprovals.answer(permission.requestID, with: option)
         }
-        try? await connection.respond(to: permission.requestID, with: RequestPermissionResponse.selected(optionId: option.optionId))
+        try? await connection.respond(
+            to: permission.requestID, with: RequestPermissionResponse.selected(optionId: option.optionId))
     }
 
     func setConfigOption(_ option: ConfigOption, to value: String) async {
@@ -340,7 +348,8 @@ final class SessionModel {
         // Show the choice right away; the agent's answer is authoritative and replaces it.
         replaceConfigOption(option.id, with: .select(currentValue: value, options: choices))
         do {
-            let response = try await connection.send(SetConfigOptionRequest(sessionId: id, configId: option.id, value: value))
+            let response = try await connection.send(
+                SetConfigOptionRequest(sessionId: id, configId: option.id, value: value))
             state.configOptions = response.configOptions
         } catch {
             replaceConfigOption(option.id, with: option.kind)
