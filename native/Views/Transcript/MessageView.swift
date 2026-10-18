@@ -23,15 +23,23 @@ struct MessageView: View, Equatable {
                 SessionMessageView(frame: frame)
             }
         case .user:
-            TrailingFractionLayout(fraction: 0.85) {
-                // Prompts are shown as typed; Markdown syntax in them stays literal.
-                Text(verbatim: message.text)
-                    .textSelection(.enabled)
-                    .padding(.horizontal, DS.Space.lg)
-                    .padding(.vertical, DS.Space.md)
-                    .background(
-                        .dsFill,
-                        in: .rect(cornerRadius: TranscriptMetrics.promptBubbleRadius, style: .continuous))
+            VStack(alignment: .trailing, spacing: DS.Space.sm) {
+                if !message.attachments.isEmpty {
+                    MessageAttachmentsView(attachments: message.attachments)
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                }
+                if !message.text.isEmpty {
+                    TrailingFractionLayout(fraction: 0.85) {
+                        // Prompts are shown as typed; Markdown syntax in them stays literal.
+                        Text(verbatim: message.text)
+                            .textSelection(.enabled)
+                            .padding(.horizontal, DS.Space.lg)
+                            .padding(.vertical, DS.Space.md)
+                            .background(
+                                .dsFill,
+                                in: .rect(cornerRadius: TranscriptMetrics.promptBubbleRadius, style: .continuous))
+                    }
+                }
             }
         case .agent:
             MarkdownView(message.text)

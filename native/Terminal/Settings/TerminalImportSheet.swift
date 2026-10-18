@@ -74,14 +74,14 @@ struct TerminalImportSheet: View {
         let currentName =
             switch current.colors {
             case .app: "Native's"
-            case .imported(let imported): imported.themeName ?? "Imported"
+            case .imported(let imported): imported.themeTitle ?? "Imported"
             }
         HStack(alignment: .firstTextBaseline, spacing: DS.Space.md) {
             label("Colors")
             if let colors = ghosttyImport.colors {
                 HStack(spacing: DS.Space.sm) {
                     swatches(colors.colors(for: TerminalAppearance(colorScheme)))
-                    Text(colors.themeName ?? "Your config's colors")
+                    Text(colors.themeTitle ?? "Your config's colors")
                         .font(.dsBodyMedium)
                         .foregroundStyle(.dsTextPrimary)
                 }

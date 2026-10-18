@@ -38,6 +38,7 @@ jobs:
           - GitHub
           - MCPClient
           - MCPServer
+          - NativeDiagnostics
           - NativeHost
           - ScriptRuntime
           - Terminal

@@ -60,14 +60,14 @@ struct TerminalSettingsPage: View {
                         )
                     }
                     SettingsRow(id: Self.cursorRow, "Cursor") {
-                        HStack(spacing: DS.Space.lg) {
-                            SettingsSwitch("Blink", isOn: $preferences.settings.cursor.blinks)
-                            SettingsSelect(
-                                label: "Cursor",
-                                selection: $preferences.settings.cursor.style,
-                                options: TerminalCursorStyle.allCases.map { .init(value: $0, title: $0.title) }
-                            )
-                        }
+                        SettingsSelect(
+                            label: "Cursor",
+                            selection: $preferences.settings.cursor.style,
+                            options: TerminalCursorStyle.allCases.map { .init(value: $0, title: $0.title) }
+                        )
+                    }
+                    SettingsRow("Blink the cursor") {
+                        SettingsSwitch("Blink the cursor", isOn: $preferences.settings.cursor.blinks)
                     }
                     SettingsRow(
                         id: Self.scrollbackRow,
@@ -107,7 +107,7 @@ struct TerminalSettingsPage: View {
         case .imported(let imported):
             SettingsRow(
                 id: Self.colorsRow, "Colors",
-                description: Text("Imported from Ghostty\(imported.themeName.map { ": \($0)" } ?? "").")
+                description: Text("Imported from Ghostty\(imported.themeTitle.map { ": \($0)" } ?? "").")
             ) {
                 Button("Use Native's Colors") { store.preferences.settings.colors = .app }
                     .buttonStyle(.ds(.secondary, size: .large))

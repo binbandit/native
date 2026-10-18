@@ -38,19 +38,19 @@
               "value": true
             }
           ],
-          "image-name": "painted-interlock.png",
-          "name": "Painted Native interlock",
+          "image-name": "flat-interlock.png",
+          "name": "Flat Native interlock",
           "position": {
-            "scale": 0.5785770132916341,
+            "scale": 0.6981132075471698,
             "translation-in-points": [
-              -0.28928850664581707,
-              7.371383893666927
+              -0.0,
+              0.13207547169811384
             ]
           }
         }
       ],
       "lighting": "individual",
-      "name": "Personal Celebration · painted Native interlock",
+      "name": "Personal Celebration · flat Native interlock",
       "refractivity-specializations": [
         {
           "appearance": "tinted",
@@ -62,8 +62,8 @@
         }
       ],
       "shadow": {
-        "kind": "neutral",
-        "opacity": 0.18
+        "kind": "none",
+        "opacity": 0
       },
       "translucency-specializations": [
         {

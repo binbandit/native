@@ -9,5 +9,7 @@ nonisolated enum TranscriptMetrics {
     static let sessionMessageRailWidth: CGFloat = 3
     static let toolDetailMaxHeight: CGFloat = 266
     static let toolImageMaxHeight: CGFloat = 200
+    /// The square an image a user sent is shown in.
+    static let attachmentImageSide: CGFloat = 120
     static let planMaxHeight: CGFloat = 220
 }

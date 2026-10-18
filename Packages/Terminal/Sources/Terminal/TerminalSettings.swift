@@ -94,6 +94,14 @@ public struct TerminalImportedColors: Hashable, Sendable, Codable {
     public func colors(for appearance: TerminalAppearance) -> TerminalColors {
         appearance == .dark ? dark : light
     }
+
+    /// The theme as people say it: "Dracula", or "GitHub Light (light), Dracula (dark)" for
+    /// `light:GitHub Light,dark:Dracula`.
+    public var themeTitle: String? {
+        guard let themeName else { return nil }
+        let names = GhosttyImporter.ThemeNames(themeName)
+        return names.light == names.dark ? names.light : "\(names.light) (light), \(names.dark) (dark)"
+    }
 }
 
 /// The user's terminal preferences (Settings ▸ Terminal), independent of how they're stored or drawn.
