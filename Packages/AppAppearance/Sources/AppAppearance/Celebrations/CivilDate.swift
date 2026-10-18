@@ -87,6 +87,11 @@ public struct CivilDate: Hashable, Comparable, Sendable, CustomStringConvertible
         }
     }
 
+    /// For dates computed to be valid (Easter) or written into Native's catalogue.
+    init(literal year: Int, _ month: Int, _ day: Int) {
+        self.init(unchecked: year, month, day)
+    }
+
     private init(unchecked year: Int, _ month: Int, _ day: Int) {
         self.year = year
         self.month = month

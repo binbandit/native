@@ -215,16 +215,51 @@ public struct CelebrationCalendar: Hashable, Sendable {
 
 extension CelebrationCalendar: Codable {
     private enum CodingKeys: String, CodingKey {
-        case kind, start, end, tradition, boundary, provisional
+        case kind, start, end, month, weekday, ordinal, day, offset, length, occurrences, tradition, boundary,
+            provisional
     }
+
+    private struct TabledOccurrence: Codable {
+        let start: CivilDate
+        let end: CivilDate?
+    }
+
+    private static let weekdays = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"]
 
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let kind = try container.decode(String.self, forKey: .kind)
+        let length = try container.decodeIfPresent(Int.self, forKey: .length) ?? 1
         switch kind {
-        case CelebrationRule.fixedKind:
+        case "fixed":
             let start = try container.decode(MonthDay.self, forKey: .start)
             rule = .fixed(start: start, end: try container.decodeIfPresent(MonthDay.self, forKey: .end) ?? start)
+        case "nth-weekday":
+            let name = try container.decode(String.self, forKey: .weekday).lowercased()
+            guard let weekday = Self.weekdays.firstIndex(of: name) else {
+                throw DecodingError.dataCorruptedError(
+                    forKey: .weekday, in: container, debugDescription: "\"\(name)\" isn't a weekday.")
+            }
+            rule = .nthWeekday(
+                month: try container.decode(Int.self, forKey: .month), weekday: weekday + 1,
+                ordinal: try container.decode(Int.self, forKey: .ordinal), length: length)
+        case "day-of-year":
+            rule = .dayOfYear(day: try container.decode(Int.self, forKey: .day), length: length)
+        case CelebrationRule.Computus.western.rawValue, CelebrationRule.Computus.orthodox.rawValue:
+            rule = .easter(
+                CelebrationRule.Computus(rawValue: kind) ?? .western,
+                offset: try container.decodeIfPresent(Int.self, forKey: .offset) ?? 0, length: length)
+        case "table":
+            let occurrences = try container.decode([TabledOccurrence].self, forKey: .occurrences)
+            rule = .table(
+                try occurrences.map { occurrence in
+                    guard let range = CivilDayRange(first: occurrence.start, last: occurrence.end ?? occurrence.start) else {
+                        throw DecodingError.dataCorruptedError(
+                            forKey: .occurrences, in: container,
+                            debugDescription: "An occurrence ends before it starts (\(occurrence.start)).")
+                    }
+                    return range
+                })
         default:
             rule = .unsupported(kind: kind)
         }
@@ -237,9 +272,26 @@ extension CelebrationCalendar: Codable {
         var container = encoder.container(keyedBy: CodingKeys.self)
         switch rule {
         case .fixed(let start, let end):
-            try container.encode(CelebrationRule.fixedKind, forKey: .kind)
+            try container.encode("fixed", forKey: .kind)
             try container.encode(start, forKey: .start)
             try container.encode(end, forKey: .end)
+        case .nthWeekday(let month, let weekday, let ordinal, let length):
+            try container.encode("nth-weekday", forKey: .kind)
+            try container.encode(month, forKey: .month)
+            try container.encode(Self.weekdays[(weekday - 1) % 7], forKey: .weekday)
+            try container.encode(ordinal, forKey: .ordinal)
+            try container.encode(length, forKey: .length)
+        case .dayOfYear(let day, let length):
+            try container.encode("day-of-year", forKey: .kind)
+            try container.encode(day, forKey: .day)
+            try container.encode(length, forKey: .length)
+        case .easter(let computus, let offset, let length):
+            try container.encode(computus.rawValue, forKey: .kind)
+            try container.encode(offset, forKey: .offset)
+            try container.encode(length, forKey: .length)
+        case .table(let occurrences):
+            try container.encode("table", forKey: .kind)
+            try container.encode(occurrences.map { TabledOccurrence(start: $0.first, end: $0.last) }, forKey: .occurrences)
         case .unsupported(let kind):
             try container.encode(kind, forKey: .kind)
         }
