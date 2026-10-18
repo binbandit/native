@@ -60,7 +60,7 @@ public final class NetworkByteStream: ByteStream {
     public static func connect(to endpoint: NWEndpoint, timeout: Duration = .seconds(5)) async throws -> NetworkByteStream {
         let queue = DispatchQueue(label: "Native.Link.connection")
         let connection = NWConnection(to: endpoint, using: parameters)
-        let resumed = Mutex(false)
+        let resumed = LinkLocked(false)
         return try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<NetworkByteStream, any Error>) in
                 @Sendable func finish(_ result: Result<NetworkByteStream, any Error>) {

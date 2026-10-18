@@ -6,7 +6,7 @@ extension SettingsPane.ID {
 }
 
 extension SettingsPane {
-    /// Settings ▸ Labs: every experiment in `ExperimentCatalog.native`, to try and turn off again.
+    /// Settings ▸ Labs: Native's experiments and enabled plugins', to try and turn off again.
     static let labs = SettingsPane(
         id: .labs,
         title: "Labs",
@@ -15,7 +15,7 @@ extension SettingsPane {
         order: 0,
         keywords: ["experiments", "experimental", "beta", "flags", "preview"],
         searchEntries: {
-            ExperimentCatalog.native.experiments.map { experiment in
+            ExperimentStore.shared.catalog.experiments.map { experiment in
                 SettingsSearchEntry(
                     id: LabsSettingsPage.rowID(experiment.id),
                     title: experiment.title,
@@ -37,6 +37,7 @@ struct LabsSettingsPage: View {
     }
 
     @Environment(\.experimentStore) private var storeOverride
+    @Environment(PluginRegistry.self) private var registry
     @Environment(\.undoManager) private var undoManager
 
     private var store: ExperimentStore {
@@ -59,27 +60,42 @@ struct LabsSettingsPage: View {
                     change(id, to: nil, actionName: "Turn Off Experiment")
                 }
             }
-            if store.catalog.experiments.isEmpty {
+            let sections = LabsSection.sections(catalog: store.catalog, problems: registry.experimentProblems)
+            if sections.isEmpty {
                 EmptyStateView(
                     "No experiments right now",
                     systemImage: "flask",
                     message: "New features and designs show up here to try before they're finished."
                 )
             } else {
-                SettingsRowGroup {
-                    ForEach(store.catalog.experiments) { experiment in
-                        LabsExperimentRow(
-                            id: Self.rowID(experiment.id),
-                            experiment: experiment,
-                            value: store.saved.value(for: experiment.id) ?? experiment.defaultValue,
-                            needsRelaunch: store.needsRelaunch(experiment.id),
-                            conflict: store.conflicts.first { $0.sources.contains(.experiment(experiment.id)) }
-                        ) { value in
-                            change(experiment.id, to: value, actionName: "Change \(experiment.title)")
+                ForEach(sections) { section in
+                    VStack(alignment: .leading, spacing: DS.Space.lg) {
+                        if let name = section.pluginName {
+                            SettingsSubheading(name, note: "From the \(name) plugin. Turning the plugin off removes these.")
+                        }
+                        SettingsRowGroup {
+                            ForEach(section.experiments) { experiment in
+                                row(for: experiment)
+                            }
+                            ForEach(section.problems) { problem in
+                                LabsProblemRow(problem: problem)
+                            }
                         }
                     }
                 }
             }
+        }
+    }
+
+    private func row(for experiment: ExperimentDescriptor) -> some View {
+        LabsExperimentRow(
+            id: Self.rowID(experiment.id),
+            experiment: experiment,
+            value: store.saved.value(for: experiment.id) ?? experiment.defaultValue,
+            needsRelaunch: store.needsRelaunch(experiment.id),
+            conflict: store.conflicts.first { $0.sources.contains(.experiment(experiment.id)) }
+        ) { value in
+            change(experiment.id, to: value, actionName: "Change \(experiment.title)")
         }
     }
 

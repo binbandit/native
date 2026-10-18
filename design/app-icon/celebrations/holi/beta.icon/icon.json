@@ -29,23 +29,6 @@
       ],
       "layers": [
         {
-          "fill-specializations": [
-            {
-              "value": {
-                "solid": "srgb:0.78824,0.28627,0.54902,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "solid": "srgb:0.83922,0.45098,0.62353,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
           "glass-specializations": [
             {
               "value": false
@@ -55,212 +38,19 @@
               "value": true
             }
           ],
-          "image-name": "pigment-cloud-0.svg",
-          "name": "Pigment cloud 0"
-        },
-        {
-          "fill-specializations": [
-            {
-              "value": {
-                "solid": "srgb:0.64706,0.48235,0.25098,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "solid": "srgb:0.96078,0.72941,0.33333,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
-          "glass-specializations": [
-            {
-              "value": false
-            },
-            {
-              "appearance": "tinted",
-              "value": true
-            }
-          ],
-          "image-name": "pigment-cloud-1.svg",
-          "name": "Pigment cloud 1"
-        },
-        {
-          "fill-specializations": [
-            {
-              "value": {
-                "solid": "srgb:0.27843,0.45882,0.35294,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "solid": "srgb:0.50196,0.73333,0.50980,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
-          "glass-specializations": [
-            {
-              "value": false
-            },
-            {
-              "appearance": "tinted",
-              "value": true
-            }
-          ],
-          "image-name": "pigment-cloud-2.svg",
-          "name": "Pigment cloud 2"
-        },
-        {
-          "fill-specializations": [
-            {
-              "value": {
-                "solid": "srgb:0.66275,0.27451,0.29804,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "solid": "srgb:0.86275,0.40784,0.43922,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
-          "glass-specializations": [
-            {
-              "value": false
-            },
-            {
-              "appearance": "tinted",
-              "value": true
-            }
-          ],
-          "image-name": "pigment-cloud-3.svg",
-          "name": "Pigment cloud 3"
+          "image-name": "painted-interlock.png",
+          "name": "Painted Native interlock",
+          "position": {
+            "scale": 0.5281941470378301,
+            "translation-in-points": [
+              -0.26409707351891504,
+              10.679514632405425
+            ]
+          }
         }
       ],
       "lighting": "individual",
-      "name": "Holi · decorative craft",
-      "refractivity-specializations": [
-        {
-          "appearance": "tinted",
-          "value": {
-            "enabled": true,
-            "depth": 0.3,
-            "strength": 0.75
-          }
-        }
-      ],
-      "shadow": {
-        "kind": "neutral",
-        "opacity": 0.12
-      },
-      "translucency-specializations": [
-        {
-          "value": {
-            "enabled": false,
-            "value": 0
-          }
-        },
-        {
-          "appearance": "tinted",
-          "value": {
-            "enabled": true,
-            "value": 0.25
-          }
-        }
-      ],
-      "specular-specializations": [
-        {
-          "value": false
-        },
-        {
-          "appearance": "tinted",
-          "value": true
-        }
-      ]
-    },
-    {
-      "blur-material-specializations": [
-        {
-          "appearance": "tinted",
-          "value": 0.25
-        }
-      ],
-      "layers": [
-        {
-          "fill-specializations": [
-            {
-              "value": {
-                "automatic-gradient": "srgb:0.29804,0.23529,0.16863,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "automatic-gradient": "srgb:1.00000,0.94118,0.81961,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
-          "glass-specializations": [
-            {
-              "value": false
-            },
-            {
-              "appearance": "tinted",
-              "value": true
-            }
-          ],
-          "image-name": "upper-fold.svg",
-          "name": "Upper fold"
-        },
-        {
-          "fill-specializations": [
-            {
-              "value": {
-                "automatic-gradient": "srgb:0.78824,0.28627,0.54902,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "automatic-gradient": "srgb:0.96078,0.72941,0.33333,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
-          "glass-specializations": [
-            {
-              "value": false
-            },
-            {
-              "appearance": "tinted",
-              "value": true
-            }
-          ],
-          "image-name": "lower-fold.svg",
-          "name": "Lower fold"
-        }
-      ],
-      "lighting": "individual",
-      "name": "Native interlock",
+      "name": "Holi · painted Native interlock",
       "refractivity-specializations": [
         {
           "appearance": "tinted",
@@ -312,13 +102,13 @@
           "fill-specializations": [
             {
               "value": {
-                "solid": "srgb:0.61176,0.41569,0.16863,1.00000"
+                "solid": "srgb:0.64314,0.47059,0.19608,1.00000"
               }
             },
             {
               "appearance": "dark",
               "value": {
-                "solid": "srgb:0.95294,0.74118,0.37647,1.00000"
+                "solid": "srgb:0.94902,0.76863,0.42745,1.00000"
               }
             },
             {
@@ -335,7 +125,7 @@
               "value": true
             }
           ],
-          "image-name": "beta-signature.svg",
+          "image-name": "beta.svg",
           "name": "Beta signature"
         }
       ],

@@ -1,6 +1,5 @@
 import Foundation
 import Network
-import Synchronization
 
 /// A Native host advertising its gateway on this network.
 public struct DiscoveredHost: Hashable, Sendable, Identifiable {
@@ -20,7 +19,7 @@ public final class LinkBrowser: Sendable {
     public let results: AsyncStream<[DiscoveredHost]>
     private let continuation: AsyncStream<[DiscoveredHost]>.Continuation
     private let browser: NWBrowser
-    private let latest = Mutex<[DiscoveredHost]>([])
+    private let latest = LinkLocked<[DiscoveredHost]>([])
 
     public init() {
         (results, continuation) = AsyncStream.makeStream(of: [DiscoveredHost].self, bufferingPolicy: .bufferingNewest(1))
@@ -47,7 +46,7 @@ public final class LinkBrowser: Sendable {
 
     /// What the browser sees right now.
     public var current: [DiscoveredHost] {
-        latest.withLock { $0 }
+        latest.value
     }
 
     public func cancel() {

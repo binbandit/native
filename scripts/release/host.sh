@@ -66,7 +66,11 @@ fi
 run swift build -c release --package-path Packages/NativeHost --product native-host \
     --arch arm64 --arch x86_64 --scratch-path "$output/host-build" \
     -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __info_plist -Xlinker "$info"
-run cp "$output/host-build/apple/Products/Release/native-host" "$host/$binary_name"
+# Ask SwiftPM where it put the binary; the folder differs between toolchains.
+bin_path=$output/host-build/out/Products/Release
+[ "$MODE" = plan ] || bin_path=$(swift build -c release --package-path Packages/NativeHost --arch arm64 --arch x86_64 \
+    --scratch-path "$output/host-build" --show-bin-path)
+run cp "$bin_path/native-host" "$host/$binary_name"
 if [ "$identity" = "-" ]; then
     run codesign --force --sign - --identifier native-host "$host/$binary_name"
 else

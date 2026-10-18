@@ -23,12 +23,13 @@ public actor LinkGateway {
         public var confirmationTimeout: Duration
         /// Tests serve streams directly and open no listener.
         public var usesNetwork: Bool
+        public var advertisesOverBonjour: Bool
         public var now: @Sendable () -> Date
 
         public init(
             directory: URL, hostID: HostID, machineName: String, includesLoopback: Bool = false,
             preferredPort: UInt16 = 47_118, pairingLifetime: Duration = .seconds(300),
-            confirmationTimeout: Duration = .seconds(120), usesNetwork: Bool = true,
+            confirmationTimeout: Duration = .seconds(120), usesNetwork: Bool = true, advertisesOverBonjour: Bool = true,
             now: @escaping @Sendable () -> Date = { Date() }
         ) {
             self.directory = directory
@@ -39,6 +40,7 @@ public actor LinkGateway {
             self.pairingLifetime = pairingLifetime
             self.confirmationTimeout = confirmationTimeout
             self.usesNetwork = usesNetwork
+            self.advertisesOverBonjour = advertisesOverBonjour
             self.now = now
         }
 
