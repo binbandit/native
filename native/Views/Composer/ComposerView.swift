@@ -50,7 +50,7 @@ struct ComposerView: View {
     /// After a turn ends normally, until the user starts on the next message.
     var showsNextSteps: Bool {
         !nextSteps.isEmpty && session.phase == .idle && session.lastStopReason == .endTurn
-            && session.draft.isEmpty && session.queuedPrompts.isEmpty
+            && !hasContent && session.queuedPrompts.isEmpty
     }
 
     /// The `@` mention at the cursor, if one is being typed.

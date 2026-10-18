@@ -62,6 +62,9 @@ final class SessionModel {
     var isAttachmentPickerRequested = false
     /// Set to ask the session's view to show or hide the subagent inspector; the view clears it.
     var isSubagentInspectorToggleRequested = false
+    /// Set to scroll the transcript to an item and highlight it (search results); the transcript
+    /// clears it.
+    var transcriptReveal: TranscriptReveal?
 
     // Turn state. Internal only so the SessionModel+ extensions in other files can drive turns;
     // everything else changes it through the methods.

@@ -16,18 +16,60 @@ private struct StandardTranscript: View {
     @AppStorage(TranscriptPreferences.foldsEarlierTurnsKey) private var foldsEarlierTurns = true
     /// Earlier turns the user opened back up.
     @State private var unfoldedTurns: Set<TranscriptTurn.ID> = []
+    /// The line a search result opened at, highlighted for a moment.
+    @State private var revealedLine: StandardTranscriptLine.ID?
 
     var body: some View {
         let lines = StandardTranscriptLine.plan(transcript, folding: foldsEarlierTurns, unfolded: unfoldedTurns)
-        LazyVStack(alignment: .leading, spacing: 0) {
-            ForEach(lines) { line in
-                self.line(line)
-                    .padding(.top, line.spacing)
+        ScrollViewReader { proxy in
+            LazyVStack(alignment: .leading, spacing: 0) {
+                ForEach(lines) { line in
+                    self.line(line)
+                        .background {
+                            if line.id == revealedLine {
+                                RoundedRectangle(cornerRadius: DS.Radius.card)
+                                    .fill(Color.dsAccentSubtle)
+                                    .padding(-DS.Space.sm)
+                                    .transition(.opacity)
+                            }
+                        }
+                        .padding(.top, line.spacing)
+                }
+                if transcript.isWorking {
+                    WorkingIndicator()
+                        .padding(.top, DS.Space.xl)
+                }
             }
-            if transcript.isWorking {
-                WorkingIndicator()
-                    .padding(.top, DS.Space.xl)
+            .task(id: transcript.session.transcriptReveal) {
+                await reveal(transcript.session.transcriptReveal, with: proxy)
             }
+        }
+    }
+
+    /// Scrolls to the line showing the requested item (unfolding its turn first) and highlights it.
+    private func reveal(_ request: TranscriptReveal?, with proxy: ScrollViewProxy) async {
+        guard let request else { return }
+        transcript.session.transcriptReveal = nil
+        let state = transcript.session.state
+        guard let index = state.items.firstIndex(where: { $0.id == request.itemID }) else { return }
+        if let turn = state.turns.first(where: { $0.items.contains(index) }) {
+            unfoldedTurns.insert(turn.id)
+        }
+        // Let the unfolded rows lay out before scrolling to one of them.
+        try? await Task.sleep(for: .milliseconds(80))
+        let lines = StandardTranscriptLine.plan(transcript, folding: foldsEarlierTurns, unfolded: unfoldedTurns)
+        let line = lines.first { line in
+            guard case .row(let row, let start) = line.kind else { return false }
+            return (start..<start + row.itemCount).contains(index)
+        }
+        guard let line else { return }
+        withAnimation(.dsStandard) {
+            proxy.scrollTo(line.id, anchor: .center)
+            revealedLine = line.id
+        }
+        try? await Task.sleep(for: .seconds(2.5))
+        withAnimation(.dsStandard) {
+            revealedLine = nil
         }
     }
 

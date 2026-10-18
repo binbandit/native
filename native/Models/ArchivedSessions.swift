@@ -22,6 +22,11 @@ final class ArchivedSessions {
         archived[key] != nil
     }
 
+    /// Every archived session, for keeping search's archived filter in step.
+    var keys: Set<SessionKey> {
+        Set(archived.keys)
+    }
+
     /// When the session was archived, for ordering the Archived view.
     func date(_ key: SessionKey) -> Date? {
         archived[key]
