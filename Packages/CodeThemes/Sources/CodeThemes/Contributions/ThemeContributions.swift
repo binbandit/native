@@ -69,7 +69,9 @@ extension ThemeContributions {
     public func codeThemes(namespace: String) -> [Result<CodeTheme, ThemeProblemError>] {
         code.enumerated().map { index, entry in
             Result { try Self.codeTheme(entry, namespace: namespace, position: index) }
-                .mapError { $0 as? ThemeProblemError ?? ThemeProblemError(theme: "Code theme \(index + 1)", reason: "\($0)") }
+                .mapError {
+                    $0 as? ThemeProblemError ?? ThemeProblemError(theme: "Code theme \(index + 1)", reason: "\($0)")
+                }
         }
     }
 
@@ -97,7 +99,8 @@ extension ThemeContributions {
         case (let light?, let dark?): return CodeTheme(id: themeID, name: name, light: light, dark: dark)
         case (let light?, nil): return CodeTheme(id: themeID, name: name, light: light)
         case (nil, let dark?): return CodeTheme(id: themeID, name: name, dark: dark)
-        case (nil, nil): throw ThemeProblemError(theme: name, reason: "it has neither a \"light\" nor a \"dark\" palette")
+        case (nil, nil):
+            throw ThemeProblemError(theme: name, reason: "it has neither a \"light\" nor a \"dark\" palette")
         }
     }
 
@@ -105,29 +108,38 @@ extension ThemeContributions {
         var colors: [CodeTokenRole: CodeColor] = [:]
         for role in CodeTokenRole.allCases {
             guard let text = value[role.rawValue]?.string else {
-                throw ThemeProblemError(theme: theme, reason: "its \(appearance) palette has no \"\(role.rawValue)\" color")
+                throw ThemeProblemError(
+                    theme: theme, reason: "its \(appearance) palette has no \"\(role.rawValue)\" color")
             }
             guard let color = CodeColor(hex: text) else {
-                throw ThemeProblemError(theme: theme, reason: "\"\(text)\" isn't a color (\(appearance) \(role.rawValue)); use #RRGGBB or #RRGGBBAA")
+                throw ThemeProblemError(
+                    theme: theme,
+                    reason: "\"\(text)\" isn't a color (\(appearance) \(role.rawValue)); use #RRGGBB or #RRGGBBAA")
             }
             colors[role] = color
         }
-        let palette = CodePalette(colors, strong: try strongRoles(value["strong"], theme: theme, appearance: appearance))
+        let palette = CodePalette(
+            colors, strong: try strongRoles(value["strong"], theme: theme, appearance: appearance))
         let background = palette.background
         if palette.foreground.contrastRatio(with: background) < foregroundContrast {
             throw ThemeProblemError(
-                theme: theme, reason: "its \(appearance) text is too faint on its background (needs \(foregroundContrast):1)")
+                theme: theme,
+                reason: "its \(appearance) text is too faint on its background (needs \(foregroundContrast):1)")
         }
-        for role in syntaxRoles where palette[role].composited(over: background).contrastRatio(with: background) < syntaxContrast {
+        for role in syntaxRoles
+        where palette[role].composited(over: background).contrastRatio(with: background) < syntaxContrast {
             throw ThemeProblemError(
                 theme: theme,
-                reason: "its \(appearance) \"\(role.rawValue)\" color is too faint on its background (needs \(syntaxContrast):1)")
+                reason:
+                    "its \(appearance) \"\(role.rawValue)\" color is too faint on its background (needs \(syntaxContrast):1)"
+            )
         }
         return palette
     }
 
     private static func accent(
-        _ entry: ThemeJSON, namespace: String, position: Int, lightBackgrounds: [CodeColor], darkBackgrounds: [CodeColor]
+        _ entry: ThemeJSON, namespace: String, position: Int, lightBackgrounds: [CodeColor],
+        darkBackgrounds: [CodeColor]
     ) throws -> AccentContribution {
         let (id, name) = try identity(of: entry, fallback: "Accent \(position + 1)")
         func swatch(_ appearance: String, backgrounds: [CodeColor]) throws -> AccentContribution.Swatch {
@@ -139,7 +151,8 @@ extension ThemeContributions {
                     throw ThemeProblemError(theme: name, reason: "its \(appearance) colors have no \"\(role)\"")
                 }
                 guard let color = CodeColor(hex: text), color.alpha == 0xFF else {
-                    throw ThemeProblemError(theme: name, reason: "\"\(text)\" isn't an opaque color (\(appearance) \(role)); use #RRGGBB")
+                    throw ThemeProblemError(
+                        theme: name, reason: "\"\(text)\" isn't an opaque color (\(appearance) \(role)); use #RRGGBB")
                 }
                 return color
             }
@@ -148,11 +161,15 @@ extension ThemeContributions {
                 text: try color("text"), onAccent: try color("onAccent"), subtle: try color("subtle"))
             if swatch.onAccent.contrastRatio(with: swatch.accent) < accentContrast {
                 throw ThemeProblemError(
-                    theme: name, reason: "its \(appearance) \"onAccent\" is too faint on the accent (needs \(accentContrast):1)")
+                    theme: name,
+                    reason: "its \(appearance) \"onAccent\" is too faint on the accent (needs \(accentContrast):1)")
             }
             if backgrounds.contains(where: { swatch.text.contrastRatio(with: $0) < accentContrast }) {
                 throw ThemeProblemError(
-                    theme: name, reason: "its \(appearance) accent \"text\" is too faint on Native's background (needs \(accentContrast):1)")
+                    theme: name,
+                    reason:
+                        "its \(appearance) accent \"text\" is too faint on Native's background (needs \(accentContrast):1)"
+                )
             }
             return swatch
         }
@@ -162,7 +179,8 @@ extension ThemeContributions {
     }
 
     /// The optional `"strong"` list: role names set a heavier weight (`CodePalette.strong`).
-    private static func strongRoles(_ value: ThemeJSON?, theme: String, appearance: String) throws -> Set<CodeTokenRole> {
+    private static func strongRoles(_ value: ThemeJSON?, theme: String, appearance: String) throws -> Set<CodeTokenRole>
+    {
         guard let value else { return [] }
         guard let items = value.array else {
             throw ThemeProblemError(theme: theme, reason: "its \(appearance) \"strong\" isn't a list of role names")
@@ -172,7 +190,9 @@ extension ThemeContributions {
                 guard let name = item.string, let role = CodeTokenRole(rawValue: name) else {
                     throw ThemeProblemError(
                         theme: theme,
-                        reason: "its \(appearance) \"strong\" lists \(item.string.map { "\"\($0)\"" } ?? "a value") that isn't a role")
+                        reason:
+                            "its \(appearance) \"strong\" lists \(item.string.map { "\"\($0)\"" } ?? "a value") that isn't a role"
+                    )
                 }
                 return role
             })
