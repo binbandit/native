@@ -1,3 +1,5 @@
+import ACP
+
 /// The composer editor's keys, as docs/keyboard.md lays them out (Sending, Slash commands, File
 /// mentions).
 /// Pure, so the table can be tested without a text view.
@@ -66,9 +68,17 @@ enum ComposerKeyMap {
             return .submit(modifiers == .command ? preferred.opposite : preferred)
         case .tab where modifiers.isEmpty || modifiers == .shift:
             return isRepeat ? .swallow : .moveFocus(forward: modifiers.isEmpty)
-        // A held key only empties the draft; it takes a fresh press to start on the files.
-        case .delete where modifiers.isEmpty && context.isDraftEmpty && context.hasAttachments:
-            return isRepeat ? .swallow : .removeLastAttachment
+        // Where the platform hands Delete to the editor's key handler (iPadOS); the Mac's text view
+        // keeps it, so the composer hears it through `onDraftBackspace` and the same rule.
+        case .delete where modifiers.isEmpty:
+            switch DraftBackspace(
+                isDraftEmpty: context.isDraftEmpty, isComposing: false, hasAttachments: context.hasAttachments,
+                isRepeat: isRepeat)
+            {
+            case .removeLastAttachment: return .removeLastAttachment
+            case .swallow: return .swallow
+            case nil: return nil
+            }
         // The Stop button takes Escape through its shortcut; swallowed otherwise, so the text view
         // doesn't open its completion list.
         case .escape:

@@ -77,7 +77,8 @@ struct MCPComposerChip: View {
                     onManage: {
                         isPresented.wrappedValue = false
                         settings.open(.mcpServers)
-                    })
+                    }
+                )
                 .dsPopoverBackground()
             }
         }
@@ -88,16 +89,17 @@ struct MCPComposerChip: View {
         let shape = RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous)
         let isOpen = isPresented.wrappedValue
         return HStack(spacing: DS.Space.sm) {
+            // The dot rides the glyph's corner, so it reads the same with or without the count.
             PillIcon("server.rack")
+                .overlay(alignment: .topTrailing) {
+                    if summary.attention > 0 {
+                        StatusDot(color: .dsWarning)
+                            .offset(x: MCPChipMetrics.dotOffset, y: -MCPChipMetrics.dotOffset)
+                    }
+                }
             if showsCount {
                 Text("\(summary.active)")
                     .monospacedDigit()
-            }
-        }
-        .overlay(alignment: .topTrailing) {
-            if summary.attention > 0 {
-                StatusDot(color: .dsWarning)
-                    .offset(x: MCPChipMetrics.dotOffset, y: -MCPChipMetrics.dotOffset)
             }
         }
         .font(.dsBody)

@@ -145,7 +145,7 @@ nonisolated private enum DSPalette {
     // On glass, the same step from the surface as a translucent wash (`DSGlassAwareStyle`). Dark
     // glass renders a mid gray, where a faint white wash all but disappears, so dark's is stronger:
     // the composer's pills and outline keep 3:1 against the glass, active window or not (measured
-    // #9E9C9B on #4F4C4B active, #989695 on #444241 inactive).
+    // #989897 on #4F4C4B active, 3.0:1; #949292 on #444241 inactive, 3.2:1).
     static let border = onGlass(
         toned(dynamic("border", light: 0xCBCBCB, dark: 0x3E3E3E), wool: 0xCDC7BC),
         glass: toned(

@@ -167,7 +167,7 @@ expedition's lead (the composer key, on a page without a composer).
 | ⇧⌘F | Search every task (`docs/search.md`) | Go | `search.show` |
 | ⌥⌘I | Show or hide the subagent inspector | View | `view.toggleSubagentInspector` |
 | ⌘⇧D | Show or hide the changes inspector (the task's uncommitted git changes) | View | `view.toggleChanges` |
-| ⌃⌘M | Show the session's MCP servers | View | `view.mcpServers` |
+| ⌃⌘M | Show the session's MCP servers (the server chip beside the composer's context ring) | View | `view.mcpServers` |
 | ⌃⌘A | Keep Mac awake: cycle Off → While agents work → On (View ▸ Keep Mac Awake) | View | `keepAwake.nextMode` |
 
 ## Session settings

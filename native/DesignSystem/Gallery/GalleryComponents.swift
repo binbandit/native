@@ -158,6 +158,19 @@ struct GalleryControls: View {
                 Kbd("⌘K")
                 Kbd(KeyboardShortcut("n", modifiers: [.command, .shift]))
             }
+            HStack(spacing: DS.Space.xs) {
+                Button {
+                } label: {
+                    Label {
+                        DiffStatLabel(added: 4, removed: 2)
+                    } icon: {
+                        Image(systemName: "plus.forwardslash.minus")
+                    }
+                }
+                .buttonStyle(.header())
+                Button("Show Terminal", systemImage: "apple.terminal") {}
+                    .buttonStyle(.header(isOn: true, iconOnly: true))
+            }
             HStack(spacing: DS.Space.md) {
                 SearchField("Filter pull requests", text: $query)
                 SearchField("Search shortcuts", text: $typed) { Kbd("⌘F") }
