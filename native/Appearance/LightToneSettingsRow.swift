@@ -17,6 +17,7 @@ struct LightToneSettingsRow: View {
     @AppStorage(AppearancePreferences.lightToneKey) private var lightTone = DSLightTone.paper
 
     var body: some View {
+        let _ = DebugProbe.log.notice("LightToneRow body \(lightTone.rawValue, privacy: .public)")  // DEBUG-PROBE
         VStack(alignment: .leading, spacing: DS.Space.lg) {
             SettingsRow(
                 id: Self.rowID,
@@ -47,3 +48,6 @@ struct LightToneSettingsRow: View {
         }
     }
 }
+
+import OSLog  // DEBUG-PROBE
+enum DebugProbe { static let log = Logger(subsystem: "Native", category: "probe") }  // DEBUG-PROBE
