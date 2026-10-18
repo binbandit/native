@@ -22,23 +22,32 @@ build configuration="Debug":
     esac
     xcodebuild -project native.xcodeproj -scheme native -configuration "$configuration" -derivedDataPath "{{derived}}" build
 
-# Build Release (or `just install nightly`) into /Applications, replacing the old copy; settings and tasks carry over.
+# Build Release (or `just install nightly`) into ~/Applications (no admin needed), replacing the running copy.
 install configuration="Release":
     #!/usr/bin/env bash
     set -euo pipefail
     configuration='{{capitalize(configuration)}}'
     case "$configuration" in
-        Release) product="Native"; id="dev.binbandit.native" ;;
-        Nightly) product="Native Nightly"; id="dev.binbandit.native.nightly" ;;
+        Release) product="Native" ;;
+        Nightly) product="Native Nightly" ;;
         *) echo "error: install Release or Nightly, not '{{configuration}}'." >&2; exit 2 ;;
     esac
     just build "$configuration"
-    # Quit only the installed app, by bundle id; test instances share its name.
-    osascript -e "quit app id \"$id\"" 2>/dev/null || true
-    rm -rf "/Applications/$product.app"
-    ditto "{{derived}}/Build/Products/$configuration/$product.app" "/Applications/$product.app"
-    echo "Installed /Applications/$product.app"
-    open "/Applications/$product.app"
+    built="{{derived}}/Build/Products/$configuration/$product.app"
+    target="$HOME/Applications/$product.app"
+    # Stop the installed copy only, matched by its path: test instances share its name. Ask it to quit,
+    # then make sure it's gone. Its background host keeps running and hands over to the new version.
+    executable="$target/Contents/MacOS/$product"
+    if pgrep -f "^$executable" >/dev/null; then
+        pkill -TERM -f "^$executable" || true
+        for _ in 1 2 3 4 5 6 7 8 9 10; do pgrep -f "^$executable" >/dev/null || break; sleep 0.5; done
+        pkill -KILL -f "^$executable" 2>/dev/null || true
+    fi
+    mkdir -p "$HOME/Applications"
+    rm -rf "$target"
+    ditto "$built" "$target"
+    echo "Installed $target"
+    open "$target"
 
 # Build and run an isolated instance with its own settings and data (`just run mine -- -nativeDate 2026-10-31`).
 run name="dev" *args:
