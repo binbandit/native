@@ -10,7 +10,9 @@ struct ComposerControlsRow<Extras: View, Context: View>: View {
     /// What Return and ⌘Return do with a follow-up, shown while the agent works.
     let followUpHint: FollowUpHint?
     @Binding var isModelPickerOpen: Bool
-    let onAttach: ([URL]) -> Void
+    /// The "+" chip's file picker, which File ▸ Attach Files… opens too.
+    @Binding var isPickingFiles: Bool
+    let onAttach: (IncomingAttachments) -> Void
     let onSet: (SelectSetting, String) -> Void
     let onCycleEffort: () -> Void
     let onCycleAutonomy: () -> Void
@@ -35,7 +37,7 @@ struct ComposerControlsRow<Extras: View, Context: View>: View {
 
     private func bar(showsHint: Bool) -> some View {
         ComposerControlsBar {
-            AttachButton(onPick: onAttach)
+            AttachButton(isPickingFiles: $isPickingFiles, onPick: onAttach)
             if settings.model != nil || settings.effort != nil {
                 ModelPill(
                     model: settings.model,
