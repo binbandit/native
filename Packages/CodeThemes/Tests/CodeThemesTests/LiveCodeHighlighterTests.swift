@@ -71,7 +71,7 @@ struct LiveCodeHighlighterTests {
     ])
     func reusedSegmentsRebuildTheNewCode(previous: String, code: String) {
         let segments = CodeHighlighter.segments(previous, language: .named("swift"))
-        let reused = CodeHighlighter.segments(segments, of: previous, reusedFor: code)
+        let reused = CodeHighlighter.reused(segments, of: previous, for: code)
         #expect(reused.map(\.text).joined() == code)
         #expect(reused.allSatisfy { !$0.text.isEmpty })
     }
@@ -79,7 +79,7 @@ struct LiveCodeHighlighterTests {
     @Test func reusedSegmentsKeepTheSharedStart() {
         let previous = "let a = 1"
         let segments = CodeHighlighter.segments(previous, language: .named("swift"))
-        let reused = CodeHighlighter.segments(segments, of: previous, reusedFor: "let a = 12")
+        let reused = CodeHighlighter.reused(segments, of: previous, for: "let a = 12")
         #expect(reused.dropLast() == segments[...])
         #expect(reused.last == CodeSegment("2", .foreground))
     }

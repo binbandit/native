@@ -31,7 +31,7 @@ public final class CodeHighlightCache: Sendable {
             return cached
         }
         let segments = await Self.segments(code, language: language)
-        store(segments, for: code, language: language)
+        store(segments, for: code, language: language, replacing: nil)
         return segments
     }
 
@@ -43,7 +43,7 @@ public final class CodeHighlightCache: Sendable {
 
     /// Keeps `segments` for `code`, and drops what was kept for `replaced`: the earlier text of code
     /// that has changed since, which nothing will look up again.
-    func store(_ segments: [CodeSegment], for code: String, language: CodeLanguage?, replacing replaced: String? = nil) {
+    func store(_ segments: [CodeSegment], for code: String, language: CodeLanguage?, replacing replaced: String?) {
         let key = Key(code: code, language: language?.id)
         entries.withLock { entries in
             if let replaced, replaced != code,

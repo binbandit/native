@@ -122,14 +122,10 @@ public struct HighlightedCode: View {
     }
 
     public var body: some View {
-        let colors = DSCodeColors(.code(colorScheme: colorScheme, lightTone: lightTone, themes: codeThemes), on: .sunken)
+        let colors = DSCodeColors(
+            .code(colorScheme: colorScheme, lightTone: lightTone, themes: codeThemes), on: .sunken)
         // Plain or the colors there are at once; the highlighter brings the rest.
         let segments = highlighter.segments(for: code, language: language)
-        #if DEBUG
-        let _ = RenderProbe.note(
-            "hc body id=\(ObjectIdentifier(highlighter).hashValue) lang=\(language?.id ?? "nil") len=\(code.count) colored=\(segments.map { $0.filter { $0.role != .foreground }.count } ?? -1) plainTail=\(segments?.last?.role == .foreground ? segments?.last?.text.count ?? 0 : 0)"
-        )
-        #endif
         if let segments {
             Text(colors.text(segments))
         } else {
@@ -142,7 +138,9 @@ public struct HighlightedCode: View {
 extension EnvironmentValues {
     /// Just what code colors depend on, so views read three values rather than the whole
     /// environment.
-    nonisolated static func code(colorScheme: ColorScheme, lightTone: DSLightTone, themes: DSCodeThemes)
+    nonisolated static func code(
+        colorScheme: ColorScheme, lightTone: DSLightTone, themes: DSCodeThemes
+    )
         -> EnvironmentValues
     {
         var environment = EnvironmentValues()
@@ -171,7 +169,8 @@ extension CodeColor {
             intent: .defaultIntent, options: nil)
         let components = srgb?.components ?? [0, 0, 0, 1]
         self.init(
-            red: channel(Float(components[0])), green: channel(Float(components.count > 2 ? components[1] : components[0])),
+            red: channel(Float(components[0])),
+            green: channel(Float(components.count > 2 ? components[1] : components[0])),
             blue: channel(Float(components.count > 2 ? components[2] : components[0])),
             alpha: channel(resolved.opacity))
     }
