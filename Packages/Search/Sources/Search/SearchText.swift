@@ -15,49 +15,87 @@ public enum SearchText {
 
     /// The camelCase pieces of the identifiers in `text`, each once, lowercased and space-separated:
     /// `SessionStore.swift parseHTTPHeader` gives `session store parse http header`.
+    ///
+    /// Runs over every indexed character, so it works on Unicode scalars with an ASCII fast path
+    /// rather than on `Character`s.
     static func codeParts(of text: String, limit: Int = 4_096) -> String {
         var seen = Set<String>()
         var parts: [String] = []
         var length = 0
-        for word in text.split(whereSeparator: { !isWordCharacter($0) }) {
-            let humps = humps(of: word)
-            guard humps.count > 1 else { continue }
+        var word: [Unicode.Scalar] = []
+        var classes: [ScalarClass] = []
+
+        func finishWord() {
+            defer {
+                word.removeAll(keepingCapacity: true)
+                classes.removeAll(keepingCapacity: true)
+            }
+            var start = 0
+            var humps: [Range<Int>] = []
+            for index in classes.indices.dropLast() where isBoundary(at: index, in: classes) {
+                humps.append(start..<index + 1)
+                start = index + 1
+            }
+            guard !humps.isEmpty, length <= limit else { return }
+            humps.append(start..<classes.count)
             for hump in humps where hump.count > 1 {
-                let lowered = hump.lowercased()
-                guard seen.insert(lowered).inserted else { continue }
-                length += lowered.count + 1
-                guard length <= limit else { return parts.joined(separator: " ") }
-                parts.append(lowered)
+                var scalars = String.UnicodeScalarView()
+                scalars.append(contentsOf: word[hump])
+                let part = String(scalars).lowercased()
+                guard seen.insert(part).inserted else { continue }
+                length += part.utf8.count + 1
+                parts.append(part)
             }
         }
+
+        for scalar in text.unicodeScalars {
+            let scalarClass = ScalarClass(scalar)
+            if scalarClass == .separator {
+                if !word.isEmpty { finishWord() }
+            } else {
+                word.append(scalar)
+                classes.append(scalarClass)
+            }
+        }
+        if !word.isEmpty { finishWord() }
         return parts.joined(separator: " ")
     }
 
-    /// `parseHTTPHeader2` → `parse`, `HTTP`, `Header`, `2`.
-    static func humps(of word: Substring) -> [Substring] {
-        var humps: [Substring] = []
-        var start = word.startIndex
-        var index = word.startIndex
-        while index < word.endIndex {
-            let next = word.index(after: index)
-            if next < word.endIndex, isBoundary(word[index], word[next], after: word[next...].dropFirst().first) {
-                humps.append(word[start..<next])
-                start = next
+    private enum ScalarClass {
+        case lower, upper, digit, uncased, separator
+
+        init(_ scalar: Unicode.Scalar) {
+            switch scalar.value {
+            case 0x61...0x7A: self = .lower
+            case 0x41...0x5A: self = .upper
+            case 0x30...0x39: self = .digit
+            case 0..<0x80: self = .separator
+            default:
+                let properties = scalar.properties
+                if properties.isLowercase {
+                    self = .lower
+                } else if properties.isUppercase {
+                    self = .upper
+                } else if properties.numericType != nil {
+                    self = .digit
+                } else if properties.isAlphabetic {
+                    self = .uncased
+                } else {
+                    self = .separator
+                }
             }
-            index = next
         }
-        if start < word.endIndex {
-            humps.append(word[start...])
-        }
-        return humps
+
+        var isLetter: Bool { self != .digit }
     }
 
-    private static func isBoundary(_ current: Character, _ next: Character, after: Character?) -> Bool {
-        if current.isLowercase && next.isUppercase { return true }
-        if current.isLetter != next.isLetter { return current.isLetter || current.isNumber }
-        // The end of an acronym: the last capital starts the next word (`HTTPHeader`).
-        if current.isUppercase && next.isUppercase, let after, after.isLowercase { return true }
-        return false
+    /// Whether a word splits after `index`: `parse|HTTP|Header|2`.
+    private static func isBoundary(at index: Int, in classes: [ScalarClass]) -> Bool {
+        let current = classes[index], next = classes[index + 1]
+        if current == .lower && next == .upper { return true }
+        if current.isLetter != next.isLetter { return true }
+        // The end of an acronym: its last capital starts the next word (`HTTPHeader`).
+        return current == .upper && next == .upper && index + 2 < classes.count && classes[index + 2] == .lower
     }
 
     static func isWordCharacter(_ character: Character) -> Bool {

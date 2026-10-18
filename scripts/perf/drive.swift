@@ -92,7 +92,7 @@ case "prompt" where arguments.count == 3:
     for _ in 0..<50 {
         if let send = find(window, where: {
             string($0, kAXRoleAttribute) == kAXButtonRole
-                && (string($0, kAXDescriptionAttribute) == "Send" || string($0, kAXTitleAttribute) == "Send")
+                && string($0, kAXDescriptionAttribute) == "Send Message"
         }) {
             press(send)
             exit(0)
