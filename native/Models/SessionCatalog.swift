@@ -22,11 +22,14 @@ struct SessionSummary: Identifiable, Hashable {
 final class SessionCatalog {
     private typealias Listing = [Project.ID: [AgentDefinition.ID: [SessionInfo]]]
 
+    /// Saved right away when the user's action changed it (a new session must survive the app being
+    /// killed a moment later), and once per burst while agents' listings come in.
     private var listed: Listing {
-        didSet { scheduleSave() }
+        didSet { isRefreshing ? scheduleSave() : save() }
     }
     @ObservationIgnored private let url: URL?
     @ObservationIgnored private var isSaveScheduled = false
+    @ObservationIgnored private var isRefreshing = false
 
     static var defaultURL: URL {
         let folder = Bundle.main.bundleIdentifier ?? "Native"
@@ -104,23 +107,25 @@ final class SessionCatalog {
     /// Replaces an agent's sessions in a project with a fresh listing. Sessions `isOpen` says are
     /// in use survive even when the agent hasn't saved them yet.
     func replace(_ agent: AgentDefinition.ID, in project: Project.ID, with fetched: [SessionInfo], keeping isOpen: (SessionID) -> Bool) {
+        isRefreshing = true
+        defer { isRefreshing = false }
         let fetchedIDs = Set(fetched.map(\.sessionId))
         let unsaved = sessions(in: project, of: agent).filter { !fetchedIDs.contains($0.sessionId) && isOpen($0.sessionId) }
         listed[project, default: [:]][agent] = unsaved + fetched
     }
 
-    /// Saves once per burst of changes: refreshing lists every project for every agent at once.
+    /// Refreshing lists every project for every agent at once, so those changes save together.
     private func scheduleSave() {
         guard url != nil, !isSaveScheduled else { return }
         isSaveScheduled = true
         Task { [weak self] in
             try? await Task.sleep(for: .seconds(1))
+            self?.isSaveScheduled = false
             self?.save()
         }
     }
 
     private func save() {
-        isSaveScheduled = false
         guard let url else { return }
         do {
             try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)

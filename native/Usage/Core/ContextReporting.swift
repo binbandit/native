@@ -8,5 +8,7 @@ protocol ContextReporting: AnyObject {
     var canReportContext: Bool { get }
     /// Whether a hidden command can run now without waiting for a turn.
     var isIdleForContext: Bool { get }
+    /// Whether the agent lists `command` among its slash commands.
+    func advertises(_ command: String) -> Bool
     func runHiddenCommand(_ command: String) async throws -> String
 }

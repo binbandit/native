@@ -5,7 +5,7 @@ public enum TerminalAppearance: Hashable, Sendable {
 }
 
 /// The colors around the text: background, default text, cursor and selection.
-public struct TerminalChrome: Hashable, Sendable {
+public struct TerminalChrome: Hashable, Sendable, Codable {
     public var background: TerminalRGB
     public var foreground: TerminalRGB
     public var cursor: TerminalRGB
@@ -26,7 +26,7 @@ public struct TerminalChrome: Hashable, Sendable {
 }
 
 /// Everything a terminal draws with in one appearance.
-public struct TerminalColors: Hashable, Sendable {
+public struct TerminalColors: Hashable, Sendable, Codable {
     public var chrome: TerminalChrome
     /// The 16 ANSI colors in order: black, red, green, yellow, blue, magenta, cyan, white, then the
     /// bright variant of each.
@@ -40,7 +40,8 @@ public struct TerminalColors: Hashable, Sendable {
 
 /// A terminal color theme with a light and a dark variant. Native's own theme takes its chrome from
 /// the app's design system so the terminal sits in the window like the rest of the content; a code
-/// theme (Dracula, Solarized, ...) brings its own chrome.
+/// theme (Dracula, Solarized, ...) can bring its own. The app's theme is `TerminalStore.appTheme`,
+/// which the code-theme setting replaces.
 public struct TerminalTheme: Identifiable, Hashable, Sendable {
     public struct Variant: Hashable, Sendable {
         /// The 16 ANSI colors, in `TerminalColors.palette` order.
@@ -88,14 +89,6 @@ public struct TerminalTheme: Identifiable, Hashable, Sendable {
             0x6E7681, 0xFFA198, 0x56D364, 0xE3B341, 0x79C0FF, 0xD2A8FF, 0x56D4DD, 0xFFFFFF,
         ])
     )
-
-    /// Every theme, for a picker. The code-theme setting adds to this.
-    public static let all: [TerminalTheme] = [.native]
-
-    /// The theme with `id`; unknown ids get Native's.
-    public static func named(_ id: String) -> TerminalTheme {
-        all.first { $0.id == id } ?? .native
-    }
 }
 
 /// How every terminal draws: the user's settings, plus the colors for the app's current appearance.
@@ -108,5 +101,18 @@ public struct TerminalStyle: Hashable, Sendable {
         self.settings = settings
         self.appearance = appearance
         self.colors = colors
+    }
+
+    /// The style for `settings` in `appearance`: colors imported from Ghostty when the user did
+    /// that, otherwise the app's theme over the design system's chrome.
+    public init(
+        settings: TerminalSettings, appearance: TerminalAppearance, appTheme: TerminalTheme, appChrome: TerminalChrome
+    ) {
+        let colors =
+            switch settings.colors {
+            case .app: appTheme.colors(for: appearance, appChrome: appChrome)
+            case .imported(let imported): imported.colors(for: appearance)
+            }
+        self.init(settings: settings, appearance: appearance, colors: colors)
     }
 }

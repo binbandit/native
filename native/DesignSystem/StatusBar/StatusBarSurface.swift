@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The strip along the window's bottom edge: the reference app's status bar, dressed as the reference app and
-/// the reference app dress their chrome. It sits on the sidebar's translucent backdrop under a hairline,
+/// the reference app dress their chrome. It sits on the sidebar's translucency under a hairline,
 /// at the sidebar footer's height, with its items in quiet tertiary caption text and hairlines
 /// between them. When the window is too narrow for every item, whole items drop out, the leading
 /// end's innermost first, so nothing is ever cut mid-word.
@@ -31,7 +31,7 @@ public struct StatusBarSurface<Leading: View, Trailing: View>: View {
         .frame(height: DS.Size.chromeBar)
         // Dropped items wait just past the trailing edge.
         .clipped()
-        .dsSidebarBackground()
+        .background { StatusBarBackdrop() }
         .overlay(alignment: .top) { SeparatorLine() }
     }
 
@@ -45,6 +45,27 @@ public struct StatusBarSurface<Leading: View, Trailing: View>: View {
                 item.layoutValue(key: StatusBarSlot.self, value: .item(edge))
             }
         }
+    }
+}
+
+/// The sidebar column's look, carried under the bar so the two read as one band. It's the
+/// sidebar's recipe (a material, then the solid sidebar color at `\.dsTransparency`'s tint), but
+/// with SwiftUI's ultra-thin material: in both appearances it lands within a level of the system's
+/// sidebar column, where `dsSidebarBackground`'s `.sidebar` vibrancy renders a step lighter.
+private struct StatusBarBackdrop: View {
+    @Environment(\.dsTransparency) private var transparency
+
+    var body: some View {
+        ZStack {
+            if transparency != .solid {
+                Rectangle().fill(.ultraThinMaterial)
+            }
+            Rectangle()
+                .fill(.dsSidebarSolid)
+                .opacity(transparency.sidebarTint)
+        }
+        .ignoresSafeArea()
+        .animation(.dsStandard, value: transparency)
     }
 }
 

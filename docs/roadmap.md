@@ -42,5 +42,6 @@ coordinator keeps this current.
 | Skills: browse, enable and disable, install, update and remove | `native/Skills`, `Packages/Skills` | One list across agents and scopes, in Settings ▸ Skills, as in the reference app |
 | Minimal by default | plugins, settings | `docs/decisions.md` |
 | Sounds stay quiet during Focus | `native/Sounds` | Waiting on Developer ID team signing: the Focus Status entitlement can't be added to ad hoc builds. The logic is built and tested; turning it on is step 8 of `docs/releasing.md`'s one-time setup |
+| Celebrations plugin (Halloween, Día de Muertos first; international catalogue later) | `native/Celebrations`, `Packages/AppAppearance` | Spec: `docs/celebrations.md`. Engine, chooser and the two first editions now; the rest in reviewed artwork batches |
 | iPad app | app target | After the host protocol lands (`docs/architecture.md`) |
 | Expeditions (the reference app's missions, rebranded) | `Packages/Expeditions`, `native/Expeditions` | the reference app's concept under Native's own name, composed from orchestration, goals, workflows and worktrees |

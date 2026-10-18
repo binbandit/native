@@ -10,7 +10,7 @@ final class UserNotificationPoster: NSObject, NativeNotificationPosting {
     var onResponse: ((NativeNotificationResponse) -> Void)?
 
     private let center = UNUserNotificationCenter.current()
-    private static let payloadKey = "native.notification"
+    private nonisolated static let payloadKey = "native.notification"
 
     override init() {
         super.init()

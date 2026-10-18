@@ -66,7 +66,7 @@ struct NativeApp: App {
                     OrchestrationPlugin.connect(to: model)
                     MCPServersPlugin.connect(to: model) { BuiltInPlugins.usage.contextReports.reports }
                     SkillsPlugin.connect(to: model)
-                    BuiltInPlugins.usage.limits.host = model
+                    BuiltInPlugins.usage.connect(to: model)
                     BuiltInPlugins.automation.center.connect(to: model) { [git, gitHub] draft in
                         try await AutomationGitHubWiring.openPullRequest(draft, git: git, gitHub: gitHub)
                     }
@@ -79,6 +79,7 @@ struct NativeApp: App {
                     )
                     ExpeditionWiring.connect(BuiltInPlugins.expeditions.center, model: model, git: git, gitHub: gitHub)
                     AmbientWiring.connect(model: model, keepAwake: keepAwake)
+                    DockBadgeWiring.connect(model: model, workflows: BuiltInPlugins.automation.center.workflows)
                     iconPreferences.start()
                     await model.start()
                 }

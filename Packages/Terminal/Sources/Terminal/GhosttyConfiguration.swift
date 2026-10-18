@@ -65,6 +65,8 @@ public struct GhosttyConfiguration: Hashable, Sendable {
         for (index, color) in colors.palette.enumerated() {
             set("palette", "\(index)=\(color)")
         }
+        set("cursor-style", settings.cursor.style.rawValue)
+        set("cursor-style-blink", settings.cursor.blinks ? "true" : "false")
         set("window-padding-x", String(padding.horizontal))
         set("window-padding-y", String(padding.vertical))
         set("window-padding-balance", "true")
@@ -80,19 +82,36 @@ public struct GhosttyConfiguration: Hashable, Sendable {
         // anything under `sudo`) ignore the bundled one, so the terminal says it's xterm. Programs
         // still find truecolor (COLORTERM) and Ghostty's extensions by asking the terminal.
         set("term", "xterm-256color")
-        // Native shows its own state when a shell exits or fails to start, keeps the tab around
-        // until the user closes it, and asks before closing a tab with a running process.
-        set("wait-after-command", "true")
-        set("confirm-close-surface", "false")
-        // Programs may copy (OSC 52) but never read the clipboard.
-        set("clipboard-read", "deny")
-        set("clipboard-write", "allow")
+        lines.append(Self.embeddingOverrides)
         set("mouse-hide-while-typing", "true")
         set("desktop-notifications", "false")
 
         lines.append(contentsOf: Self.keybinds.map { "keybind = \($0)" })
         return lines.joined(separator: "\n") + "\n"
     }
+
+    /// Read before the user's Ghostty config when "Use my Ghostty settings" is on: Native's choices
+    /// where the user's config says nothing. The `xterm-ghostty` entry isn't on remote machines and
+    /// setuid programs ignore the bundled one (see `text`), so Native says it's xterm unless the
+    /// user's config sets `term`.
+    public static let userConfigDefaults = """
+        term = xterm-256color
+
+        """
+
+    /// Settings Native owns in every terminal, applied after the user's Ghostty config too
+    /// (docs/terminal.md, "Using your Ghostty settings"): Native shows its own state when a shell
+    /// exits or fails to start and keeps the tab until the user closes it, asks before closing a
+    /// tab with a running process itself, and has no prompt for programs reading the clipboard
+    /// (OSC 52), so they can copy but never read.
+    public static let embeddingOverrides = """
+        wait-after-command = true
+        confirm-close-surface = false
+        quit-after-last-window-closed = false
+        clipboard-read = deny
+        clipboard-write = allow
+
+        """
 
     /// Ghostty's default bindings would take keys the app owns (⌘N, ⌘W, ⌘Q, ⌘T, ⌘D, ...), so
     /// they're cleared, and only these terminal-local ones come back (docs/keyboard.md, Terminal).

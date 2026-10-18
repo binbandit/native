@@ -13,6 +13,8 @@ import SwiftUI
 // - The sidebar is translucent (`.dsSidebarBackground()` or the system sidebar), so everything drawn
 //   on it is either text or a translucent fill. `dsSidebarSolid` is only its backdrop when the user
 //   turns transparency down (TokensTransparency.swift).
+// - Light mode has two tones (TokensLightTone.swift): Paper, the values below, and Wool, a warm
+//   off-white set that resolves against the environment's `dsLightTone` (`toned(_:wool:)`).
 // - The accent follows the app-icon theme: it resolves against the environment's
 //   `DSAccentPalette` (see AccentPalette.swift), `original` (graphite / off-white) by default.
 // - `dsAttention` is the one status hue for "needs you" states, so they stand out under any accent.
@@ -119,37 +121,37 @@ nonisolated extension ShapeStyle where Self == Color {
 
 /// Backing storage for the tokens: each dynamic color is built once.
 nonisolated private enum DSPalette {
-    static let background = dynamic("background", light: 0xFBFBFB, dark: 0x171717)
-    static let surface = dynamic("surface", light: 0xFFFFFF, dark: 0x171717)
-    static let surfaceRaised = dynamic("surfaceRaised", light: 0xF8F8F8, dark: 0x191919)
-    static let surfaceSunken = dynamic("surfaceSunken", light: 0xF6F6F6, dark: 0x1D1D1D)
-    static let overlay = dynamic("overlay", light: 0xFFFFFF, dark: 0x171717)
-    static let sidebarSolid = dynamic("sidebarSolid", light: 0xF0F0F0, dark: 0x1F1F1F)
+    static let background = toned(dynamic("background", light: 0xFBFBFB, dark: 0x171717), wool: 0xF6F3EE)
+    static let surface = toned(dynamic("surface", light: 0xFFFFFF, dark: 0x171717), wool: 0xFBF9F5)
+    static let surfaceRaised = toned(dynamic("surfaceRaised", light: 0xF8F8F8, dark: 0x191919), wool: 0xF3F0EA)
+    static let surfaceSunken = toned(dynamic("surfaceSunken", light: 0xF6F6F6, dark: 0x1D1D1D), wool: 0xF1EDE6)
+    static let overlay = toned(dynamic("overlay", light: 0xFFFFFF, dark: 0x171717), wool: 0xFBF9F5)
+    static let sidebarSolid = toned(dynamic("sidebarSolid", light: 0xF0F0F0, dark: 0x1F1F1F), wool: 0xEEEAE2)
 
-    static let hover = dynamic("hover", light: 0x000000, lightAlpha: 0.045, dark: 0xFFFFFF, darkAlpha: 0.06)
-    static let selected = dynamic("selected", light: 0x000000, lightAlpha: 0.08, dark: 0xFFFFFF, darkAlpha: 0.1)
-    static let pressed = dynamic("pressed", light: 0x000000, lightAlpha: 0.11, dark: 0xFFFFFF, darkAlpha: 0.13)
-    static let fill = dynamic("fill", light: 0x000000, lightAlpha: 0.07, dark: 0xFFFFFF, darkAlpha: 0.07)
+    static let hover = toned(dynamic("hover", light: 0x000000, lightAlpha: 0.045, dark: 0xFFFFFF, darkAlpha: 0.06), wool: 0x3B2B14, woolAlpha: 0.045)
+    static let selected = toned(dynamic("selected", light: 0x000000, lightAlpha: 0.08, dark: 0xFFFFFF, darkAlpha: 0.1), wool: 0x3B2B14, woolAlpha: 0.08)
+    static let pressed = toned(dynamic("pressed", light: 0x000000, lightAlpha: 0.11, dark: 0xFFFFFF, darkAlpha: 0.13), wool: 0x3B2B14, woolAlpha: 0.11)
+    static let fill = toned(dynamic("fill", light: 0x000000, lightAlpha: 0.07, dark: 0xFFFFFF, darkAlpha: 0.07), wool: 0x3B2B14, woolAlpha: 0.07)
 
-    static let separator = dynamic("separator", light: 0xE8E8E8, dark: 0x2C2C2C)
-    static let border = dynamic("border", light: 0xCBCBCB, dark: 0x3E3E3E)
-    static let borderHover = dynamic("borderHover", light: 0x949494, dark: 0x4F4F4F)
-    static let borderStrong = dynamic("borderStrong", light: 0x767676, dark: 0x616161)
-    static let borderInner = dynamic("borderInner", light: 0xB2B2B2, dark: 0x2F2F2F)
+    static let separator = toned(dynamic("separator", light: 0xE8E8E8, dark: 0x2C2C2C), wool: 0xE6E1D8)
+    static let border = toned(dynamic("border", light: 0xCBCBCB, dark: 0x3E3E3E), wool: 0xCDC7BC)
+    static let borderHover = toned(dynamic("borderHover", light: 0x949494, dark: 0x4F4F4F), wool: 0x979084)
+    static let borderStrong = toned(dynamic("borderStrong", light: 0x767676, dark: 0x616161), wool: 0x797266)
+    static let borderInner = toned(dynamic("borderInner", light: 0xB2B2B2, dark: 0x2F2F2F), wool: 0xB4AEA3)
 
     static let textPrimary = dynamic("textPrimary", light: 0x181818, dark: 0xFFFFFF)
-    static let textSecondary = dynamic("textSecondary", light: 0x505050, dark: 0xAFAFAF)
-    static let textTertiary = dynamic("textTertiary", light: 0x8D8D8D, dark: 0x717171)
-    static let textQuaternary = dynamic("textQuaternary", light: 0xB2B2B2, dark: 0x4B4B4B)
-    static let textInverse = dynamic("textInverse", light: 0xFFFFFF, dark: 0x121212)
+    static let textSecondary = toned(dynamic("textSecondary", light: 0x505050, dark: 0xAFAFAF), wool: 0x4B4B4B)
+    static let textTertiary = toned(dynamic("textTertiary", light: 0x8D8D8D, dark: 0x717171), wool: 0x888888)
+    static let textQuaternary = toned(dynamic("textQuaternary", light: 0xB2B2B2, dark: 0x4B4B4B), wool: 0xACACAC)
+    static let textInverse = toned(dynamic("textInverse", light: 0xFFFFFF, dark: 0x121212), wool: 0xFBF9F5)
 
-    static let attention = dynamic("attention", light: 0xA35200, dark: 0xF59E3B)
+    static let attention = toned(dynamic("attention", light: 0xA35200, dark: 0xF59E3B), wool: 0x9C4E00)
 
-    static let success = dynamic("success", light: 0x16A249, dark: 0x4ADE80)
-    static let warning = dynamic("warning", light: 0x9A6700, dark: 0xD29922)
-    static let danger = dynamic("danger", light: 0xDC2828, dark: 0xF87272)
-    static let info = dynamic("info", light: 0x2463EB, dark: 0x61A6FA)
-    static let merged = dynamic("merged", light: 0x8250DF, dark: 0xA371F7)
+    static let success = toned(dynamic("success", light: 0x16A249, dark: 0x4ADE80), wool: 0x159C46)
+    static let warning = toned(dynamic("warning", light: 0x9A6700, dark: 0xD29922), wool: 0x936200)
+    static let danger = toned(dynamic("danger", light: 0xDC2828, dark: 0xF87272), wool: 0xD32626)
+    static let info = toned(dynamic("info", light: 0x2463EB, dark: 0x61A6FA), wool: 0x225FE1)
+    static let merged = toned(dynamic("merged", light: 0x8250DF, dark: 0xA371F7), wool: 0x7C4CD6)
 
     static let dangerFill = dynamic("dangerFill", light: 0xD72D17, dark: 0xD72D17)
     static let dangerFillHover = dynamic("dangerFillHover", light: 0xA91F10, dark: 0xA91F10)
@@ -158,6 +160,22 @@ nonisolated private enum DSPalette {
     static let chart1 = dynamic("chart1", light: 0x2A78D6, dark: 0x3987E5)
     static let chart2 = dynamic("chart2", light: 0xEB6834, dark: 0xD95926)
     static let chart3 = dynamic("chart3", light: 0x1BAF7A, dark: 0x199E70)
+
+    /// `base` with its own value for Wool (TokensLightTone.swift). Wool's text and status values are
+    /// a step darker than Paper's so each keeps Paper's contrast on Wool's background (#F6F3EE); its
+    /// fills are a warm brown rather than black.
+    static func toned(_ base: Color, wool: UInt32, woolAlpha: Float = 1) -> Color {
+        Color(
+            DSTonedStyle(
+                base: base,
+                wool: Color.Resolved(
+                    red: Float((wool >> 16) & 0xFF) / 255,
+                    green: Float((wool >> 8) & 0xFF) / 255,
+                    blue: Float(wool & 0xFF) / 255,
+                    opacity: woolAlpha
+                )
+            ))
+    }
 
     /// An sRGB color that picks its light or dark value from the resolving appearance (high-contrast
     /// variants map to their base appearance).

@@ -4,6 +4,8 @@ import SwiftUI
 enum AppearancePreferences {
     /// How see-through the sidebar, overlays and floating controls are (`DSTransparency`).
     static let transparencyKey = "appearance.transparency"
+    /// The white light mode is drawn on (`DSLightTone`).
+    static let lightToneKey = "appearance.lightTone"
 }
 
 extension View {
@@ -16,8 +18,11 @@ extension View {
 
 private struct AppearancePreferencesModifier: ViewModifier {
     @AppStorage(AppearancePreferences.transparencyKey) private var transparency = DSTransparency.standard
+    @AppStorage(AppearancePreferences.lightToneKey) private var lightTone = DSLightTone.paper
 
     func body(content: Content) -> some View {
-        content.dsTransparency(transparency)
+        content
+            .dsTransparency(transparency)
+            .dsLightTone(lightTone)
     }
 }

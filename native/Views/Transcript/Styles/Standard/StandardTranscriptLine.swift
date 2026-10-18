@@ -13,6 +13,8 @@ struct StandardTranscriptLine: Identifiable {
         case footer(TranscriptTurn, TurnSummary, ending: TranscriptNotice?, showsChanges: Bool)
         /// What the latest turn changed, with the next steps for it.
         case changes(TurnSummary)
+        /// A usage limit stopped the turn here (`UsageLimitTranscriptCard`).
+        case usageLimit(UsageLimitStop, isLatestTurn: Bool)
     }
 
     let id: String
@@ -24,7 +26,7 @@ struct StandardTranscriptLine: Identifiable {
         switch kind {
         case .row(let row, _): row.isToolActivity
         case .fold: true
-        case .footer, .changes: false
+        case .footer, .changes, .usageLimit: false
         }
     }
 
@@ -51,6 +53,14 @@ struct StandardTranscriptLine: Identifiable {
             let isLatest = position == turns.count - 1
             let isRunning = isLatest && transcript.isWorking
             let summary = state.summary(of: turn)
+            // A usage limit shows once, as a card where the work stopped: the agent relaying the
+            // provider's message and Native's notice of the failure say the same thing.
+            let limitStop = UsageLimitStop(turnItems: state.items[turn.items], stopReason: turn.stopReason)
+            if let limitStop {
+                turnRows.removeAll { entry in
+                    if case .item(let item) = entry.row { limitStop.itemIDs.contains(item.id) } else { false }
+                }
+            }
             // A turn that didn't end normally closes with the reason; the footer says it instead.
             var ending: TranscriptNotice?
             if let reason = turn.stopReason, reason != .endTurn, case .item(.notice(let notice))? = turnRows.last?.row {
@@ -70,6 +80,9 @@ struct StandardTranscriptLine: Identifiable {
                     guard isUnfolded else { continue }
                 }
                 lines.append(Self(id: row.id, kind: .row(row, itemIndex: index)))
+            }
+            if let limitStop {
+                lines.append(Self(id: "limit-\(turn.id)", kind: .usageLimit(limitStop, isLatestTurn: isLatest)))
             }
 
             guard !isRunning else { continue }
@@ -98,7 +111,7 @@ struct StandardTranscriptLine: Identifiable {
     private static func spacing(between previous: Self, and next: Self) -> CGFloat {
         switch next.kind {
         case .footer, .changes: DS.Space.md
-        case .row, .fold: previous.isDense && next.isDense ? DS.Space.xxs : DS.Space.xl
+        case .row, .fold, .usageLimit: previous.isDense && next.isDense ? DS.Space.xxs : DS.Space.xl
         }
     }
 }

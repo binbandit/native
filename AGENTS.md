@@ -88,7 +88,7 @@ and prints its pid and window id (`--quit` stops it, `--reset` also forgets its 
 that process through AX actions on it (`AXPress`, setting `AXValue`) or `CGEvent.postToPid`. Never
 send System Events `keystroke`/`key code`, never bring a window to the front, and never use coordinate
 clicks like `click at`: all of those land on whatever app has focus,
-often someone else's. Screenshot with `screencapture -x -l <windowid>`. Quit your instance (and any
+often someone else's. Never open other apps or windows on Brayden's Mac to test (Finder, editors, terminals, browsers): verify against a fake opener instead. Screenshot with `screencapture -x -l <windowid>`. Quit your instance (and any
 render harness) as soon as a check is done; never leave apps running between checks, since many
 agents share one Mac.
 

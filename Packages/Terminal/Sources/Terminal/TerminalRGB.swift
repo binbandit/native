@@ -1,5 +1,5 @@
 /// An opaque sRGB color, the form terminal renderers take colors in.
-public struct TerminalRGB: Hashable, Sendable, CustomStringConvertible {
+public struct TerminalRGB: Hashable, Sendable, Codable, CustomStringConvertible {
     public var red: UInt8
     public var green: UInt8
     public var blue: UInt8
@@ -15,6 +15,14 @@ public struct TerminalRGB: Hashable, Sendable, CustomStringConvertible {
         red = UInt8((hex >> 16) & 0xFF)
         green = UInt8((hex >> 8) & 0xFF)
         blue = UInt8(hex & 0xFF)
+    }
+
+    /// A color from `#rrggbb` or `rrggbb`, as Ghostty's config and themes write them; nil for
+    /// anything else (Ghostty also takes X11 color names, which Native doesn't read).
+    public init?(hex: String) {
+        let digits = hex.hasPrefix("#") ? hex.dropFirst() : Substring(hex)
+        guard digits.count == 6, let value = UInt32(digits, radix: 16) else { return nil }
+        self.init(value)
     }
 
     /// A color from components in 0...1, as AppKit and SwiftUI resolve them; out-of-range values

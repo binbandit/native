@@ -51,6 +51,8 @@ private struct StandardTranscript: View {
                 subagents: subagents(in: turn), openSubagent: transcript.openSubagent)
         case .changes(let summary):
             TurnChangesCard(summary: summary)
+        case .usageLimit(let stop, let isLatestTurn):
+            UsageLimitTranscriptCard(session: transcript.session, stop: stop, isLatestTurn: isLatestTurn)
         }
     }
 
