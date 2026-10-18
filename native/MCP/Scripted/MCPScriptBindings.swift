@@ -92,7 +92,7 @@ nonisolated final class MCPScriptBindings: OrchestrationScriptBindings {
                     await run.update(id, to: .failed)
                     // A server that went away is started again by the next script.
                     await connections.forget(server.key)
-                    throw ScriptToolError("\(server.name) couldn't run \(info.name): \(error.message)")
+                    throw ScriptToolError("\(server.name) didn't answer: \(error.message)")
                 }
                 let failed = result["isError"] == .bool(true)
                 await run.update(id, to: failed ? .failed : .completed)

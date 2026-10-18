@@ -77,8 +77,9 @@ struct CelebrationRow: View {
         if let authority = contribution.provenance.authority {
             lines.append("Dates from \(authority)")
         }
-        if let note = contribution.provenance.note {
-            lines.append(note)
+        // The source's first point, such as an evening start; the rest is for checking the dates.
+        if let note = contribution.provenance.note?.split(separator: ". ").first {
+            lines.append(note.hasSuffix(".") ? String(note) : note + ".")
         }
         return lines
     }

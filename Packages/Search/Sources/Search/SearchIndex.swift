@@ -59,6 +59,11 @@ public final class SearchIndex: Sendable {
         try await writer.removeSessions(under: folder)
     }
 
+    /// Forgets every session last active before `cutoff`, for a retention policy.
+    public func removeSessions(updatedBefore cutoff: Date) async throws {
+        try await writer.removeSessions(updatedBefore: cutoff)
+    }
+
     /// Forgets everything and gives the space back.
     public func removeAll() async throws {
         try await writer.removeAll()

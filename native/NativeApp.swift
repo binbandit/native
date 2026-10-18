@@ -243,7 +243,7 @@ private struct GoCommands: Commands {
             Divider()
             CommandMenuItem(.goPullRequests, in: commands)
             CommandMenuItem(.goExpeditions, in: commands)
-            TranscriptSearchMenuItem()
+            TranscriptSearchMenuItem(commands: commands)
         }
     }
 }

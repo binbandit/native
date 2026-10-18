@@ -58,12 +58,11 @@ import ScriptRuntime
     /// calls unasked, the user allowed it before, or the user says so now.
     func approve(_ id: String, tool: MCPToolInfo, of server: MCPScriptedServer) async -> Verdict {
         guard tool.isReadOnly != true else { return .allowed }
-        let label = "tools.\(server.name).\(tool.name)"
         while isAsking { await withCheckedContinuation { waiting.append($0) } }
         if allowsEverything || library?.isAlwaysAllowedInScripts(tool.name, of: server.key) == true {
             return .allowed
         }
-        guard let link else { return .declined("\(label) needs approval, but its session is gone.") }
+        guard let link else { return .declined("It needs the user's approval, but its session is gone.") }
         if link.approvesToolCallsUnasked { return .allowed }
 
         isAsking = true
@@ -78,9 +77,9 @@ import ScriptRuntime
         guard let answer else {
             return ContinuousClock.now >= expiry
                 ? .declined(
-                    "\(label) was still waiting for the user's approval when the script's time ran low. Ask them to approve it, then run the script again."
+                    "It was still waiting for the user's approval when the script's time ran low. Ask them to approve it, then run the script again."
                 )
-                : .declined("The approval of \(label) was cancelled.")
+                : .declined("Its approval was cancelled.")
         }
         switch Choice(rawValue: answer.optionId) {
         case .once: return .allowed
@@ -91,7 +90,7 @@ import ScriptRuntime
             library?.alwaysAllowInScripts(tool.name, of: server.key)
             return .allowed
         case .reject, nil:
-            return .declined("The user declined \(label). Ask them before trying it again.")
+            return .declined("The user declined it. Ask them before trying it again.")
         }
     }
 

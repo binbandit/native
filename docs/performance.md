@@ -7,7 +7,21 @@ showed. `just perf` reruns the key numbers.
 
 ## Budgets
 
-<!-- budgets -->
+Measured with `just perf` in a Debug build unless it says otherwise. On a busy Mac (a dozen
+agents compiling) wall-clock launch times swing by hundreds of milliseconds, so launch also has a
+CPU budget, which doesn't.
+
+| What | Budget |
+| --- | --- |
+| Launch, warm, to the first frame | under 350 ms on an idle Mac (half a Dock bounce), and under 150 ms of main-thread CPU |
+| Launch, to `appInit` | under 60 ms |
+| An agent ready to take a session | under 1 s after it's needed (the adapter's own start, plus Native's login-shell read once) |
+| Idle, window visible, nothing working | about 0% CPU (under 0.1%), under 1 wakeup per second |
+| Idle, minimized or hidden | under 0.05% CPU, under 0.5 wakeups per second; nothing animates, nothing polls |
+| Memory, typical workspace (a few tasks, one long transcript open) | Native itself under 150 MB footprint; one adapter process per running agent (no npm wrapper) |
+| Sessions nobody uses | closed after 10 minutes, here and in the agent |
+| Streaming a long reply | main thread under 25% busy; footprint back within 20 MB of where it started once the session is left |
+| Growth and leaks | under 10 MB after 30 task switches and 10 Settings toggles; `leaks` finds 0 |
 
 ## Measuring
 

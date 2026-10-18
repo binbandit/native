@@ -40,7 +40,7 @@ struct RootView: View {
             content
                 .transcriptSearchPanel()
                 // Opening a pull request (from a badge, a link or the list) shows its page there.
-                .onChange(of: gitHub.presentedPullRequest) { _, reference in
+                .onChange(of: gitHub.presentedPullRequest, initial: true) { _, reference in
                     if reference != nil { showsPullRequests = true }
                 }
             StatusBar(registry: statusBar)
@@ -121,16 +121,7 @@ struct RootView: View {
                     Task { await model.addProject(url) }
                 }
             }
-            // Only for an action the user just took; background failures stay with their project.
-            .alert(
-                model.actionFailure?.title ?? "",
-                isPresented: Binding(get: { model.actionFailure != nil }, set: { if !$0 { model.actionFailure = nil } }),
-                presenting: model.actionFailure
-            ) { _ in
-                Button("OK") {}
-            } message: { failure in
-                Text(failure.message)
-            }
+            .actionFailureAlert()
             .alert(
                 "Sign In to \(signInAgent?.agent.displayName ?? "")",
                 isPresented: Binding(get: { model.signInPrompt != nil }, set: { if !$0 { model.signInPrompt = nil } }),

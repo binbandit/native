@@ -34,7 +34,8 @@ struct PullRequestRow: View {
                 .frame(minHeight: DS.Size.rowLeading + DS.Space.xs)
                 metadata
                     .overlay(alignment: .trailing) {
-                        if isHovered { hoverActions }
+                        // Touch has no hover, so the actions stay out; the context menu has them too.
+                        if isHovered || DS.isTouchPlatform { hoverActions }
                     }
             }
         }
