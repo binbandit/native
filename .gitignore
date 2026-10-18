@@ -33,3 +33,6 @@ build/
 
 # The companion's app icons, built from design/app-icon by scripts/companion/app-icons.sh
 Companion/AppIcons/
+
+# Per-machine build settings, such as your signing team.
+Config/Local.xcconfig
