@@ -3,11 +3,12 @@ import NativeAutomation
 import SwiftUI
 
 /// A user prompt, an agent reply, or the agent's reasoning.
-struct MessageView: View {
+/// Equatable, so a message that didn't change doesn't re-render while another one streams.
+struct MessageView: View, Equatable {
     let message: TranscriptMessage
     /// When reasoning started and, once the agent moved on, ended (`SessionState.thinkingInterval`).
     /// Without it a thought times itself from its first to its last chunk.
-    var thinking: (start: Date, end: Date?)?
+    var thinking: ThinkingClock?
 
     var body: some View {
         switch message.role {
@@ -29,7 +30,9 @@ struct MessageView: View {
             MarkdownView(message.text)
                 .frame(maxWidth: .infinity, alignment: .leading)
         case .thought:
-            ThoughtView(text: message.text, clock: thinking ?? message.startedAt.map { ($0, message.updatedAt) })
+            ThoughtView(
+                text: message.text,
+                clock: thinking ?? message.startedAt.map { ThinkingClock(start: $0, end: message.updatedAt) })
         }
     }
 }
@@ -51,7 +54,7 @@ struct NoticeView: View {
 private struct ThoughtView: View {
     let text: String
     /// Nil for replayed history, which has no times.
-    let clock: (start: Date, end: Date?)?
+    let clock: ThinkingClock?
 
     @State private var isExpanded = false
 
@@ -99,6 +102,12 @@ private struct ThoughtView: View {
             Text("Thought")
         }
     }
+}
+
+/// When reasoning started and, once the agent moved on, ended; no end while it's still thinking.
+struct ThinkingClock: Equatable {
+    var start: Date
+    var end: Date?
 }
 
 /// Fills the offered width and trailing-aligns its content, which gets at most `fraction` of it.

@@ -1,6 +1,10 @@
 import ACP
 import Foundation
 
+#if canImport(AppKit)
+import AppKit
+#endif
+
 /// Delivers the MCP servers configured in Native to every session: once in Settings ▸ MCP Servers,
 /// every agent (or the ones chosen) gets them in every project (or the ones chosen). Agents that
 /// already load a server from their own configuration don't get a second copy, and agents that
@@ -30,6 +34,16 @@ extension MCPServersPlugin {
         guard let library = library(in: model.plugins) else { return }
         library.host = AppMCPHost(model: model, contextReports: contextReports)
         Task { await library.readConfigurations() }
+        // Agents' files change outside Native; coming back to the app is when that matters.
+        #if canImport(AppKit)
+        _ = NotificationCenter.default.addObserver(
+            forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main
+        ) { _ in
+            MainActor.assumeIsolated {
+                Task { await library.readConfigurationsIfStale() }
+            }
+        }
+        #endif
     }
 
     static func library(in registry: PluginRegistry) -> MCPLibrary? {

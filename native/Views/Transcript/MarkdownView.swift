@@ -5,7 +5,7 @@ import SwiftUI
 /// Foundation parses the source; each run's `presentationIntent` locates it in the block tree
 /// (paragraph inside list item inside list, ...), and the tree renders recursively. Inline styles
 /// (emphasis, code spans, links) stay on the `AttributedString` and render natively in `Text`.
-struct MarkdownView: View {
+struct MarkdownView: View, Equatable {
     let source: String
 
     init(_ source: String) {
@@ -13,7 +13,7 @@ struct MarkdownView: View {
     }
 
     var body: some View {
-        if let blocks = MarkdownNode.blocks(from: source) {
+        if let blocks = MarkdownParseCache.blocks(for: source) {
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(blocks) { block in
                     MarkdownBlockView(node: block)
@@ -25,6 +25,22 @@ struct MarkdownView: View {
             Text(verbatim: source)
                 .textSelection(.enabled)
         }
+    }
+}
+
+/// Parsed documents by source, so a message is parsed once per text it has had: finished
+/// messages never re-parse, and a streaming one only when a chunk arrives.
+private enum MarkdownParseCache {
+    private static var documents: [String: [MarkdownNode]] = [:]
+    /// Plenty for every message on screen; past it the cache starts over rather than tracking age.
+    private static let capacity = 512
+
+    static func blocks(for source: String) -> [MarkdownNode]? {
+        if let blocks = documents[source] { return blocks }
+        guard let blocks = MarkdownNode.blocks(from: source) else { return nil }
+        if documents.count >= capacity { documents.removeAll(keepingCapacity: true) }
+        documents[source] = blocks
+        return blocks
     }
 }
 
