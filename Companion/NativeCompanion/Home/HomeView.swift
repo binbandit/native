@@ -208,7 +208,7 @@ struct CompanionTaskRow: View {
                     .monospacedDigit()
             }
         }
-        .frame(minHeight: DS.minimumHitTarget)
+        .frame(minHeight: DS.Size.minimumHitTarget)
         .accessibilityElement(children: .combine)
     }
 }

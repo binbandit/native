@@ -18,9 +18,32 @@ struct SentryPrivacyTests {
         #expect(!options.enableMemoryIntrospection)
         #expect(!options.enableSwizzling)
         #expect(!options.enableLogs)
-        #expect(!options.enableMetrics)
+        #expect(options.enableMetrics)
         #expect(options.maxAttachmentSize == 0)
         #expect(options.beforeBreadcrumb?(Breadcrumb()) == nil)
+    }
+
+    @Test func allowsOnlyFinitePerformanceDurations() {
+        #expect(
+            SentryPrivacy.allowsPerformanceMetric(
+                name: "native.launch.duration_ms", value: .distribution(812), unit: .millisecond))
+        #expect(
+            SentryPrivacy.allowsPerformanceMetric(
+                name: "native.hang.duration_ms", value: .distribution(3_000), unit: .millisecond))
+        #expect(
+            !SentryPrivacy.allowsPerformanceMetric(name: "private prompt", value: .distribution(1), unit: .millisecond))
+        #expect(
+            !SentryPrivacy.allowsPerformanceMetric(
+                name: "native.launch.duration_ms", value: .distribution(.nan), unit: .millisecond))
+        #expect(
+            !SentryPrivacy.allowsPerformanceMetric(
+                name: "native.launch.duration_ms", value: .distribution(-1), unit: .millisecond))
+        #expect(
+            !SentryPrivacy.allowsPerformanceMetric(
+                name: "native.launch.duration_ms", value: .counter(1), unit: .millisecond))
+        #expect(
+            !SentryPrivacy.allowsPerformanceMetric(
+                name: "native.launch.duration_ms", value: .distribution(1), unit: .generic("private")))
     }
 
     @Test func stripsContentButKeepsSymbolicationAddresses() throws {

@@ -77,6 +77,7 @@ struct ExtensionsSettingsPage: View {
                     SettingsRowGroup {
                         ForEach(installed) { loaded in
                             ExtensionRow(loaded: loaded, isEnabled: binding(for: loaded))
+                                .settingsLocked(registry.isAllowed(loaded.id) ? nil : AgentsSettingsPage.notAllowed)
                         }
                     }
                 }

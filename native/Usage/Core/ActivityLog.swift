@@ -135,6 +135,15 @@ final class ActivityLog {
         days[dayKey(for: date)]?.tasks.filter(filter.includes) ?? []
     }
 
+    /// What `agent` did in each project from `start` on, the busiest first, for "what used it".
+    func projectUsage(of agent: String, since start: Date) -> [(project: String, counts: ActivityCounts)] {
+        let first = dayKey(for: start)
+        let entries = days.values.filter { $0.day >= first }.flatMap(\.entries).filter { $0.agent == agent }
+        return Dictionary(grouping: entries, by: \.project)
+            .map { (project: $0.key, counts: $0.value.reduce(ActivityCounts()) { $0 + $1.counts }) }
+            .sorted { ($0.counts.cost, $0.counts.tokens, $0.counts.prompts) > ($1.counts.cost, $1.counts.tokens, $1.counts.prompts) }
+    }
+
     /// The agents and projects with any activity, for the graph's filter: (id, name).
     var agents: [(id: String, name: String)] {
         let pairs = days.values.flatMap(\.entries).map { ($0.agent, $0.agentName) }

@@ -9,6 +9,10 @@ struct UsageAccountCard: View {
     let symbol: String
     let limits: UsageLimits
     let reports: ProviderUsageReports
+    let activity: ActivityLog
+
+    /// The longest limit window providers have, so the projects cover all of it.
+    private static let recentDays = 7
 
     var body: some View {
         let status = reports.status(of: agent)
@@ -18,6 +22,7 @@ struct UsageAccountCard: View {
                 TimelineView(.everyMinute) { context in
                     windows(status, now: context.date)
                 }
+                recentProjects
                 tasks
             }
         }
@@ -73,6 +78,24 @@ struct UsageAccountCard: View {
         }
     }
 
+    /// What used the account lately, project by project, from what Native counted.
+    @ViewBuilder
+    private var recentProjects: some View {
+        let start = Calendar.current.date(byAdding: .day, value: 1 - Self.recentDays, to: .now) ?? .now
+        let usage = activity.projectUsage(of: agent.rawValue, since: start).filter { !$0.counts.isEstimate }
+        if !usage.isEmpty {
+            VStack(alignment: .leading, spacing: 0) {
+                ContributorSectionHeader(
+                    title: "Past \(Self.recentDays) days", tokens: spent(usage.reduce(ActivityCounts()) { $0 + $1.counts }))
+                ForEach(usage, id: \.project) { entry in
+                    ContributorRow(
+                        title: URL(filePath: entry.project).lastPathComponent, detail: summary(of: entry.counts),
+                        tokens: spent(entry.counts))
+                }
+            }
+        }
+    }
+
     @ViewBuilder
     private var tasks: some View {
         let spend = reports.taskUsage(of: agent)
@@ -87,6 +110,18 @@ struct UsageAccountCard: View {
                 }
             }
         }
+    }
+
+    /// "12 prompts · 1h 4m of agent time"
+    private func summary(of counts: ActivityCounts) -> String {
+        let prompts = ActivityMetric.prompts.describe(Double(counts.prompts))
+        guard counts.activeSeconds > 0 else { return prompts }
+        return "\(prompts) · \(DSFormat.duration(counts.activeSeconds)) of agent time"
+    }
+
+    /// Cost when the agent reports it, tokens otherwise.
+    private func spent(_ counts: ActivityCounts) -> String {
+        counts.cost > 0 ? ActivityMetric.cost.describe(counts.cost) : ActivityMetric.tokens.describe(Double(counts.tokens))
     }
 
     private func reset(_ date: Date, now: Date) -> String {

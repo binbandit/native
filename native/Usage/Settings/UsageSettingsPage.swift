@@ -31,7 +31,8 @@ struct UsageSettingsPage: View {
             }
             ForEach(accounts) { account in
                 UsageAccountCard(
-                    agent: account.id, name: account.name, symbol: account.symbol, limits: limits, reports: reports)
+                    agent: account.id, name: account.name, symbol: account.symbol, limits: limits, reports: reports,
+                    activity: activity)
             }
         }
         .task {

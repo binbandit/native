@@ -39,13 +39,13 @@ extension HostSessionSummary {
         if needsApproval, let pending = mirror?.state.pendingPermissions.first,
             let call = mirror?.state.toolCall(id: pending.toolCallID)
         {
-            return "Needs approval · \(ToolPresentation(call).subject)"
+            return "Needs approval · \(CompanionToolSummary(call).subject)"
         }
         if isWorking {
             if let call = mirror?.state.items.reversed().lazy.compactMap({ item -> ToolCallState? in
                 if case .toolCall(let call) = item, call.status == .inProgress || call.status == .pending { call } else { nil }
             }).first {
-                let presentation = ToolPresentation(call)
+                let presentation = CompanionToolSummary(call)
                 return [presentation.verbs?.progressive, presentation.subject].compactMap { $0 }.joined(separator: " ")
             }
             return queue.isEmpty ? "Working" : "Working · \(queue.count) queued"

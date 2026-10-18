@@ -99,8 +99,8 @@ final class SessionModel {
     /// `parent` adopts it as a subagent.
     init(
         agent: AgentDefinition, id: SessionID, clientID: UUID = UUID(), cwd: URL, connection: ACPConnection,
-        services: SessionServices, supportsSteering: Bool, promptCapabilities: PromptCapabilities = PromptCapabilities(),
-        phase: Phase,
+        services: SessionServices, supportsSteering: Bool,
+        promptCapabilities: PromptCapabilities = PromptCapabilities(), phase: Phase,
         title: String? = nil, configOptions: [ConfigOption] = [], origin: Origin = .user, parent: SessionModel? = nil
     ) {
         self.agent = agent

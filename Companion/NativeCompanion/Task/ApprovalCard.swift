@@ -24,8 +24,8 @@ struct ApprovalCard: View {
                     .foregroundStyle(.dsAttention)
             }
             if let call {
-                let presentation = ToolPresentation(call)
-                Text([presentation.verbs?.base.capitalizingFirstLetter, presentation.subject].compactMap { $0 }.joined(separator: " "))
+                let presentation = CompanionToolSummary(call)
+                Text([presentation.verbs?.base, presentation.subject].compactMap { $0 }.joined(separator: " "))
                     .font(CompanionType.bodyMedium)
                     .foregroundStyle(.dsTextPrimary)
                 if let command = call.rawInput?["command"]?.stringValue ?? presentation.subtitle {
@@ -52,7 +52,7 @@ struct ApprovalCard: View {
                             .font(CompanionType.subheadline)
                             .lineLimit(1)
                             .minimumScaleFactor(0.8)
-                            .frame(maxWidth: .infinity, minHeight: DS.minimumHitTarget)
+                            .frame(maxWidth: .infinity, minHeight: DS.Size.minimumHitTarget)
                     }
                     .buttonStyle(.ds(option.kind.isAllow ? .primary : .secondary, size: .large))
                     .disabled(sending != nil)

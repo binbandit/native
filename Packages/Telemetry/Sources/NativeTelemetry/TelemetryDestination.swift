@@ -25,12 +25,15 @@ public struct TelemetryBatch: Sendable {
 /// deactivates it when it's turned off, so an SDK behind it can start and stop with consent.
 public protocol TelemetryDestination: Sendable {
     var id: TelemetryDestinationID { get }
+    /// A destination can accept a subset without queuing or logging records it won't transmit.
+    func accepts(_ name: TelemetryEventName) -> Bool
     func activate() async
     func deactivate() async
     func send(_ batch: TelemetryBatch) async throws
 }
 
 extension TelemetryDestination {
+    public func accepts(_ name: TelemetryEventName) -> Bool { true }
     public func activate() async {}
     public func deactivate() async {}
 }
