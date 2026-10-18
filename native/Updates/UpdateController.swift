@@ -1,4 +1,5 @@
 import Foundation
+import NativePolicy
 import Observation
 
 /// Native's updater as state SwiftUI can observe. On macOS Sparkle does the work
@@ -36,11 +37,20 @@ final class UpdateController {
     @ObservationIgnored private var driver: SparkleUpdateDriver?
     #endif
 
-    init(current: AppVersion = .current, defaults: UserDefaults = .standard) {
+    /// The organization's rules (docs/enterprise.md): updates off, an internal feed, or fewer channels.
+    let policy: NativePolicy.Updates
+
+    init(
+        current: AppVersion = .current, defaults: UserDefaults = .standard,
+        policy: NativePolicy.Updates = PolicyCenter.currentPolicy().updates
+    ) {
         self.current = current
-        channels = UpdateChannel.choices(for: current.channel)
-        channel = UpdateChannel.preferred(for: current.channel, defaults: defaults)
-        state = Self.unavailableReason(for: current).map(UpdateState.unavailable) ?? .idle
+        self.policy = policy
+        let allowed = UpdateChannel.choices(for: current.channel).filter { policy.allows(channel: $0.rawValue) }
+        channels = allowed.isEmpty ? UpdateChannel.choices(for: current.channel) : allowed
+        let preferred = UpdateChannel.preferred(for: current.channel, defaults: defaults)
+        channel = channels.contains(preferred) ? preferred : channels[0]
+        state = Self.unavailableReason(for: current, policy: policy).map(UpdateState.unavailable) ?? .idle
     }
 
     /// Starts Sparkle and its scheduled checks. Call once, at launch.
@@ -297,11 +307,18 @@ final class UpdateController {
     }
     #endif
 
-    private static func unavailableReason(for version: AppVersion) -> UpdateUnavailableReason? {
+    private static func unavailableReason(
+        for version: AppVersion, policy: NativePolicy.Updates
+    )
+        -> UpdateUnavailableReason?
+    {
         #if canImport(Sparkle)
+        guard policy.isEnabled else { return .managedByOrganization }
         // A build run from source has no feed: a release would replace it.
         if version.channel == .dev { return .developmentBuild }
-        return version.isUpdateConfigured ? nil : .notConfigured
+        // An organization's own feed stands in for Native's, but updates still need the signing key.
+        let hasFeed = version.isUpdateConfigured || (policy.feedURL != nil && version.hasSigningKey)
+        return hasFeed ? nil : .notConfigured
         #else
         return .unsupportedPlatform
         #endif

@@ -12,6 +12,8 @@ let package = Package(
         .package(path: "../MCPServer"),
         // Agents' CLIs run through a `CommandRunner`, so they can run on whichever host owns the project.
         .package(path: "../Exec"),
+        // What an organization allows, so the servers it doesn't stay out of sessions.
+        .package(path: "../NativePolicy"),
     ],
     targets: [
         .target(
@@ -19,11 +21,13 @@ let package = Package(
             dependencies: [
                 .product(name: "MCP", package: "MCPServer"),
                 .product(name: "Exec", package: "Exec"),
+                .product(name: "NativePolicy", package: "NativePolicy"),
             ]),
         .testTarget(
             name: "MCPClientTests",
             dependencies: [
                 "MCPClient", .product(name: "MCP", package: "MCPServer"), .product(name: "Exec", package: "Exec"),
+                .product(name: "NativePolicy", package: "NativePolicy"),
             ],
             resources: [.copy("Fixtures")]
         ),
