@@ -14,7 +14,7 @@ struct TranscriptView: View {
     @Environment(\.transcriptColumnMaxWidth) private var columnWidth
     @Environment(AppModel.self) private var model
     @Environment(\.isPrimaryTranscript) private var isPrimary
-    @State private var position = ScrollPosition(edge: .bottom)
+    @State private var position = ScrollPosition()
     /// Whether the newest output is out of view.
     @State private var isAwayFromLatest = false
     /// The scroll container's width, which a legacy scroller doesn't change.

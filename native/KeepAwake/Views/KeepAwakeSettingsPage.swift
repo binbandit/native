@@ -34,7 +34,9 @@ struct KeepAwakeSettingsPage: View {
                     id: Self.timerRow,
                     "Stay awake for a while",
                     description: Text("Keeps your Mac awake for a set time whatever the mode, then goes back to it."),
-                    detail: controller.awakeUntil.map { Text("Awake until \(DSFormat.timeAndCountdown($0, now: .now)).") }
+                    detail: controller.awakeUntil.map {
+                        Text("Awake until \(DSFormat.timeAndCountdown($0, now: .now)).")
+                    }
                 ) {
                     timerControl
                 }

@@ -55,7 +55,7 @@ struct GitSettingsPage: View {
                     HStack(spacing: DS.Space.sm) {
                         if settings.branchPrefixMode == .custom {
                             TextField("prefix", text: $settings.customBranchPrefix)
-                                .textFieldStyle(.roundedBorder)
+                                .settingsField()
                                 .frame(width: GitMetrics.prefixFieldWidth)
                         }
                         SettingsSelect(
@@ -84,7 +84,7 @@ struct GitSettingsPage: View {
                     description: Text("Ignored files a task needs to run, as gitignore patterns separated by commas.")
                 ) {
                     TextField(".env*", text: patterns)
-                        .textFieldStyle(.roundedBorder)
+                        .settingsField()
                         .frame(width: GitMetrics.patternsFieldWidth)
                 }
                 SettingsRow(

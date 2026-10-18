@@ -37,6 +37,12 @@ struct PromptAttachmentTests {
         #expect(blocks == [.text("What's wrong?"), .image(data: "AQID", mimeType: "image/png")])
     }
 
+    /// The transcript shows what went: a picture sent as its path shows as a file.
+    @Test func picturesSentAsPathsShowAsFiles() {
+        #expect(MessageAttachment.shown([screenshot], capabilities: everything).first?.isImage == true)
+        #expect(MessageAttachment.shown([screenshot], capabilities: nothing).first?.isImage == false)
+    }
+
     @Test func blocksEncodeToTheWireShape() throws {
         let json = try JSONEncoder().encode(ContentBlock.prompt("", attachments: [readme], capabilities: nothing))
         let decoded = try JSONSerialization.jsonObject(with: json) as? [[String: String]]

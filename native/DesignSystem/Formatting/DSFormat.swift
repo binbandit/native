@@ -123,7 +123,7 @@ public nonisolated enum DSFormat {
 
     /// A file's size as the Finder writes it: "63 bytes", "20 KB", "72.1 MB".
     public static func fileSize(_ bytes: Int) -> String {
-        Int64(bytes).formatted(.byteCount(style: .file))
+        ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)
     }
 
     /// CPU as a percent of one core, as ps and Activity Monitor report it, so it can pass 100%.

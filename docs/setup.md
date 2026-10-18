@@ -64,8 +64,8 @@ didn't agree to.
 
 **A setup session.** When the user asks you to set Native up:
 
-1. Call `setup_status`, and open with a short summary: what already works, what's missing, and the
-   plan.
+1. Call `setup_status`, and open with a short summary: what already works, what's missing (every
+   agent that isn't ready, by name), and the plan.
 2. Agents: offer to install the ones that are `not_installed` (the user may not want them all), fix
    any that are `stopped` or `needs_sign_in`, and for `unknown` sign-ins say that starting a task on
    the agent shows whether it's signed in.
@@ -78,7 +78,8 @@ didn't agree to.
 6. Finish with `setup_status` again and a short list of what's done and what's left.
 
 Give the user one group of steps at a time, each with its Settings path, and check with
-`setup_status` when they say it's done.
+`setup_status` when they say it's done. Talk about their setup, not about this guide: don't quote it
+or explain what you may not do.
 
 ## Installing Native
 

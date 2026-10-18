@@ -154,7 +154,8 @@ extension SessionModel {
             if case .message(let message) = item { message.role == .user } else { false }
         }
         if echo {
-            state.appendUserMessage(text, attachments: MessageAttachment.shown(attachments))
+            state.appendUserMessage(
+                text, attachments: MessageAttachment.shown(attachments, capabilities: promptCapabilities))
         }
         phase = .prompting
         lastActivity = .now
@@ -254,12 +255,17 @@ extension SessionModel {
             switch response.outcome {
             case .injected:
                 if echo {
-                    state.appendUserMessage(text, attachments: MessageAttachment.shown(attachments), steered: true)
+                    state.appendUserMessage(
+                        text, attachments: MessageAttachment.shown(attachments, capabilities: promptCapabilities),
+                        steered: true)
                 }
                 delivery = .steered
             case .startedNewTurn:
                 // An older agent took it as a new prompt of its own; it's been delivered.
-                if echo { state.appendUserMessage(text, attachments: MessageAttachment.shown(attachments)) }
+                if echo {
+                    state.appendUserMessage(
+                        text, attachments: MessageAttachment.shown(attachments, capabilities: promptCapabilities))
+                }
                 delivery = .steered
             case .promptRequired, .other:
                 queue.prepend(text, attachments: attachments, isEchoed: echo)
