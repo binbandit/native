@@ -157,6 +157,10 @@ final class AppModel {
                 await workspaceGotTitle(event)
             }
         }
+        // Agents with saved sessions were installed last time. Their runtimes come now, so their rows
+        // show from the first frame instead of after the login shell answers; checking for agents
+        // drops any that went away since.
+        _ = runtimes.sync(including: catalog.hasSessions)
         observeAgents()
         parkAgentsWhenIdle()
         await syncAgents()

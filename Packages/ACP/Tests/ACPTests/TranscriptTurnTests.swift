@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import ACP
 
 struct TranscriptTurnTests {
@@ -119,7 +120,8 @@ struct TranscriptTurnTests {
         let summary = state.summary(of: try #require(state.turns.only))
         #expect(summary.filesRead == 1)
         #expect(summary.commands == 1)
-        #expect(summary.changedFiles == [.init(path: "/private/tmp/acp-research/sandbox/out.txt", added: 1, removed: 0)])
+        #expect(
+            summary.changedFiles == [.init(path: "/private/tmp/acp-research/sandbox/out.txt", added: 1, removed: 0)])
         #expect(summary.linesAdded == 1)
         #expect(summary.activityDescription == "Explored 1 file, edited 1 file, ran 1 command")
     }
@@ -150,10 +152,11 @@ struct TranscriptTurnTests {
             return TranscriptItem.toolCall(call)
         }
         let summary = TurnSummary(items: items)
-        #expect(summary.changedFiles == [
-            .init(path: "/a.swift", added: 3, removed: 2),
-            .init(path: "/b.swift", added: 1, removed: 0),
-        ])
+        #expect(
+            summary.changedFiles == [
+                .init(path: "/a.swift", added: 3, removed: 2),
+                .init(path: "/b.swift", added: 1, removed: 0),
+            ])
         #expect(summary.activityDescription == "Edited 2 files")
     }
 

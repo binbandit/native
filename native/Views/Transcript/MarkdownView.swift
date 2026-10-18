@@ -237,10 +237,11 @@ private struct MarkdownTableView: View {
 
 private extension MarkdownNode {
     var cellsByColumn: [Int: AttributedString] {
-        Dictionary(children.compactMap { cell in
-            guard case .tableCell(let column) = cell.kind else { return nil }
-            return (column, cell.text)
-        }, uniquingKeysWith: { first, _ in first })
+        Dictionary(
+            children.compactMap { cell in
+                guard case .tableCell(let column) = cell.kind else { return nil }
+                return (column, cell.text)
+            }, uniquingKeysWith: { first, _ in first })
     }
 }
 

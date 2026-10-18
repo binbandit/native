@@ -24,8 +24,9 @@ final class ProjectIconStore {
     init(
         files: any ProjectFileReading = LocalProjectFiles(),
         defaults: UserDefaults = .standard,
+        // Per bundle id, like the app's other stores, so isolated test builds don't share icons.
         directory: URL = URL.applicationSupportDirectory.appending(
-            path: "Native/ProjectIcons", directoryHint: .isDirectory)
+            path: "\(Bundle.main.bundleIdentifier ?? "Native")/ProjectIcons", directoryHint: .isDirectory)
     ) {
         resolver = ProjectIconResolver(files: files)
         self.defaults = defaults

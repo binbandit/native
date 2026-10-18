@@ -76,12 +76,13 @@ enum ToolPhase: Equatable {
             return
         }
         // Claude Code leaves calls `pending` while they run, so both open states read as running.
-        self = switch call.status {
-        case .pending, .inProgress: .running
-        case .completed: .completed
-        case .failed: .failed
-        case .cancelled: .cancelled
-        }
+        self =
+            switch call.status {
+            case .pending, .inProgress: .running
+            case .completed: .completed
+            case .failed: .failed
+            case .cancelled: .cancelled
+            }
     }
 }
 
@@ -132,7 +133,10 @@ private struct ToolRow<Accessory: View>: View {
             if presentation.showsStatusIcon {
                 // Subagent rows: their status, not the tool, is what matters at a glance.
                 Image(systemName: statusSymbol)
-                    .symbolEffect(.variableColor.iterative.dimInactiveLayers.nonReversing, options: .repeat(.continuous), isActive: phase == .running)
+                    .symbolEffect(
+                        .variableColor.iterative.dimInactiveLayers.nonReversing, options: .repeat(.continuous),
+                        isActive: phase == .running
+                    )
                     .foregroundStyle(phase == .failed ? AnyShapeStyle(.red) : AnyShapeStyle(.secondary))
                     .contentTransition(.symbolEffect(.replace))
             } else {

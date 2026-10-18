@@ -90,13 +90,16 @@ extension ToolPresentation {
         let name = call.name ?? ""
 
         if let mcp = MCPToolName(name) {
-            self.init(symbol: "puzzlepiece.extension", subject: mcp.tool.titleCased, subtitle: mcp.server.humanized, body: .mcp)
+            self.init(
+                symbol: "puzzlepiece.extension", subject: mcp.tool.titleCased, subtitle: mcp.server.humanized,
+                body: .mcp)
             return
         }
 
         switch name {
         case "Read":
-            self.init(symbol: "book", verbs: .read, subject: Self.readSubject(input) ?? call.title.dropping(prefix: "Read "))
+            self.init(
+                symbol: "book", verbs: .read, subject: Self.readSubject(input) ?? call.title.dropping(prefix: "Read "))
         case "Edit", "MultiEdit", "Write", "NotebookEdit":
             self = .fileChange(call)
         case "Bash":
@@ -104,16 +107,22 @@ extension ToolPresentation {
             if let description = input?["description"]?.stringValue, !description.isEmpty {
                 self.init(symbol: "terminal", subject: description.capitalizingFirstLetter)
             } else {
-                self.init(symbol: "terminal", subject: command ?? call.title, subjectStyle: command == nil ? .plain : .command)
+                self.init(
+                    symbol: "terminal", subject: command ?? call.title, subjectStyle: command == nil ? .plain : .command
+                )
             }
             failureLabel = "Command failed"
             body = .command(command ?? call.title)
         case "Grep":
             let pattern = input?["pattern"]?.stringValue.map { "\"\($0)\"" }
-            self.init(symbol: "magnifyingglass", verbs: .grep, subject: Self.join(pattern, in: input?["path"]?.stringValue) ?? call.title, body: .lines)
+            self.init(
+                symbol: "magnifyingglass", verbs: .grep,
+                subject: Self.join(pattern, in: input?["path"]?.stringValue) ?? call.title, body: .lines)
         case "Glob":
             let pattern = input?["pattern"]?.stringValue
-            self.init(symbol: "doc.text.magnifyingglass", verbs: ToolVerb.search.appending("files for"), subject: Self.join(pattern, in: input?["path"]?.stringValue) ?? call.title, body: .lines)
+            self.init(
+                symbol: "doc.text.magnifyingglass", verbs: ToolVerb.search.appending("files for"),
+                subject: Self.join(pattern, in: input?["path"]?.stringValue) ?? call.title, body: .lines)
         case "WebSearch":
             let query = input?["query"]?.stringValue.map { "\"\($0)\"" }
             self.init(symbol: "globe", verbs: ToolVerb.search.appending("the web for"), subject: query ?? call.title)
@@ -158,7 +167,10 @@ extension ToolPresentation {
         case .delete: ToolPresentation(symbol: "trash", verbs: .delete, subject: title.dropping(prefix: "Delete "))
         case .move: ToolPresentation(symbol: "arrow.right.doc.on.clipboard", subject: title)
         case .search: ToolPresentation(symbol: "magnifyingglass", subject: title, body: .lines)
-        case .execute: ToolPresentation(symbol: "terminal", subject: title, subjectStyle: .command, failureLabel: "Command failed", body: .command(title))
+        case .execute:
+            ToolPresentation(
+                symbol: "terminal", subject: title, subjectStyle: .command, failureLabel: "Command failed",
+                body: .command(title))
         case .think: ToolPresentation(symbol: "brain", subject: title)
         case .fetch: ToolPresentation(symbol: "globe", subject: title)
         case .switchMode: ToolPresentation(symbol: "arrow.triangle.branch", subject: title)
@@ -234,7 +246,8 @@ private extension String {
     /// `search_issues` -> `Search Issues`; acronyms stay upper case.
     var titleCased: String {
         humanized.split(separator: " ").map { word in
-            word.allSatisfy { $0.isUppercase || $0.isNumber } ? String(word) : word.prefix(1).uppercased() + word.dropFirst().lowercased()
+            word.allSatisfy { $0.isUppercase || $0.isNumber }
+                ? String(word) : word.prefix(1).uppercased() + word.dropFirst().lowercased()
         }
         .joined(separator: " ")
     }
