@@ -29,12 +29,19 @@ final class TelemetryCenter {
     @ObservationIgnored private var policyWatch: Task<Void, Never>?
 
     private static let consentKey = "telemetry.native.consent"
+    // Local only, for deciding when to ask; never sent.
+    private static let askedKey = "telemetry.native.asked"
+    private static let firstLaunchKey = "telemetry.local.firstLaunch"
+    private static let sessionCountKey = "telemetry.local.sessionsStarted"
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         ids = TelemetryInstallationID(defaults: defaults)
         installationID = ids.current
         consent = defaults.string(forKey: Self.consentKey).flatMap(Consent.init(rawValue:)) ?? .undecided
+        if defaults.object(forKey: Self.firstLaunchKey) == nil {
+            defaults.set(Date.now, forKey: Self.firstLaunchKey)
+        }
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         sentLog = TelemetrySentLog(url: support.appending(path: "Native/Telemetry/sent.jsonl"))
     }
@@ -81,6 +88,26 @@ final class TelemetryCenter {
                 await apply()
             }
         }
+    }
+
+    /// Whether to ask the user about Native's telemetry now: once, only when there's somewhere to
+    /// send it and the organization leaves it to them, after real use (five sessions over three
+    /// days), and never while an agent is working.
+    func shouldAskForConsent(isTurnRunning: Bool) -> Bool {
+        guard isNativeDestinationAvailable, nativeMode == .user, consent == .undecided, !isTurnRunning,
+            !defaults.bool(forKey: Self.askedKey),
+            let firstLaunch = defaults.object(forKey: Self.firstLaunchKey) as? Date
+        else { return false }
+        return defaults.integer(forKey: Self.sessionCountKey) >= 5
+            && Date.now.timeIntervalSince(firstLaunch) >= 3 * 24 * 60 * 60
+    }
+
+    func markAskedForConsent() {
+        defaults.set(true, forKey: Self.askedKey)
+    }
+
+    func noteSessionStarted() {
+        defaults.set(defaults.integer(forKey: Self.sessionCountKey) + 1, forKey: Self.sessionCountKey)
     }
 
     func setConsent(_ granted: Bool) {

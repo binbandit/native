@@ -32,6 +32,8 @@ struct ComposerEditor: View {
                     .focused(isFocused)
                     .onKeyPress(phases: [.down, .repeat], action: onKey)
                     .accessibilityLabel("Message")
+                    // Files and images dropped on the text attach instead (the composer's drop area).
+                    .textViewTakesOnlyTextDrops()
             }
             .overlay(alignment: .topLeading) {
                 if text.isEmpty {
