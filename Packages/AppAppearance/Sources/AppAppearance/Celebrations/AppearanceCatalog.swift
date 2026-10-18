@@ -251,11 +251,25 @@ public struct AppearanceCatalog: Hashable, Sendable {
     /// out of the folder).
     static func contained(_ path: String, in folder: URL) -> URL? {
         guard !path.isEmpty, !path.hasPrefix("/"), !path.hasPrefix("~") else { return nil }
-        let root = folder.standardizedFileURL.resolvingSymlinksInPath()
-        let url = root.appending(path: path).standardizedFileURL.resolvingSymlinksInPath()
+        let root = resolvingSymlinks(folder)
+        let url = resolvingSymlinks(root.appending(path: path))
         let rootPath = root.path(percentEncoded: false)
         let prefix = rootPath.hasSuffix("/") ? rootPath : rootPath + "/"
         return url.path(percentEncoded: false).hasPrefix(prefix) ? url : nil
+    }
+
+    /// Symlinks only resolve along a path that exists, so a missing file's folder is resolved and the
+    /// rest appended: a link to outside the plugin is caught even before its target file exists.
+    private static func resolvingSymlinks(_ url: URL) -> URL {
+        var existing = url.standardizedFileURL
+        var missing: [String] = []
+        while !FileManager.default.fileExists(atPath: existing.path(percentEncoded: false)),
+            existing.pathComponents.count > 1
+        {
+            missing.insert(existing.lastPathComponent, at: 0)
+            existing.deleteLastPathComponent()
+        }
+        return missing.reduce(existing.resolvingSymlinksInPath()) { $0.appending(path: $1) }
     }
 
     /// A mark this build can't draw falls back to the palette's two-tone emblem when there is one.
