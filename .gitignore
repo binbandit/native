@@ -19,6 +19,10 @@ research/
 # Private agent instructions (paths to local reference material).
 CLAUDE.local.md
 
+# Image-generation prompts for the icon artwork stay private; the artwork itself is public.
+design/**/*.prompt.txt
+design/**/generation.json
+
 # Rust (Runtime/ScriptRuntime builds into ~/Library/Caches/Native, this is for local cargo runs)
 target/
 
