@@ -1,4 +1,5 @@
 import Foundation
+
 /// An experiment as a plugin's `plugin.json` declares it (docs/plugins.md, Experiments). A data-only
 /// plugin has no code to read it, so a gate switches the contributions marked with its id, and a
 /// parameter fills `${experiment:<id>}` placeholders in its agents' and MCP servers' settings.

@@ -29,7 +29,9 @@ public nonisolated struct WorkflowIssue: Hashable, Sendable, CustomStringConvert
         return issues
     }
 
-    private static func problems(with step: WorkflowStep, in definition: WorkflowDefinition, earlier: Set<String>) -> [WorkflowIssue] {
+    private static func problems(
+        with step: WorkflowStep, in definition: WorkflowDefinition, earlier: Set<String>
+    ) -> [WorkflowIssue] {
         var messages: [String] = []
         if step.id.range(of: #"^[A-Za-z][A-Za-z0-9_-]*$"#, options: .regularExpression) == nil {
             messages.append("ids start with a letter and use only letters, digits, - and _.")
@@ -97,7 +99,10 @@ public nonisolated struct WorkflowIssue: Hashable, Sendable, CustomStringConvert
         for (index, step) in continuing.enumerated() {
             for other in continuing[(index + 1)...] where other.continues == step.continues {
                 if !definition.ancestors(of: other).contains(step.id) {
-                    issues.append(WorkflowIssue(step: other.id, message: "It continues the same task as \"\(step.id)\", so it has to wait for that step."))
+                    issues.append(
+                        WorkflowIssue(
+                            step: other.id,
+                            message: "It continues the same task as \"\(step.id)\", so it has to wait for that step."))
                 }
             }
         }

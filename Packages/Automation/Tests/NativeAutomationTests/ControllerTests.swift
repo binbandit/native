@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import NativeAutomation
 
 @MainActor
@@ -85,7 +86,9 @@ final class FakeGoalHost: GoalHost {
 
 @MainActor
 final class FakeWorkflowHost: WorkflowHost {
-    var workflowAgents = [WorkflowAgent(id: "claude-code", name: "Claude Code"), WorkflowAgent(id: "codex", name: "Codex")]
+    var workflowAgents = [
+        WorkflowAgent(id: "claude-code", name: "Claude Code"), WorkflowAgent(id: "codex", name: "Codex"),
+    ]
     var defaultWorkflowAgent: WorkflowAgent.ID? = "claude-code"
     var created: [(agent: String, title: String)] = []
     var prompts: [UUID: [String]] = [:]
@@ -147,9 +150,13 @@ final class FakeWorkflowHost: WorkflowHost {
         let host = FakeWorkflowHost()
         let runner = WorkflowRunner()
         runner.host = host
-        let definition = WorkflowDefinition(id: "w", name: "W", summary: "", steps: [
-            WorkflowStep(id: "count", title: "Count", kind: .script, prompt: "{{input}}", script: "export default (input) => input.length"),
-        ])
+        let definition = WorkflowDefinition(
+            id: "w", name: "W", summary: "",
+            steps: [
+                WorkflowStep(
+                    id: "count", title: "Count", kind: .script, prompt: "{{input}}",
+                    script: "export default (input) => input.length")
+            ])
         #expect(WorkflowIssue.find(in: definition) == [])
         let id = runner.start(definition, input: "abc", cwd: URL(filePath: "/"))
         await settle()
@@ -162,7 +169,8 @@ final class FakeWorkflowHost: WorkflowHost {
         host.failCreation = true
         let runner = WorkflowRunner()
         runner.host = host
-        let definition = WorkflowDefinition(id: "w", name: "W", summary: "", steps: [WorkflowStep(id: "a", title: "A", prompt: "a")])
+        let definition = WorkflowDefinition(
+            id: "w", name: "W", summary: "", steps: [WorkflowStep(id: "a", title: "A", prompt: "a")])
         let id = runner.start(definition, input: "", cwd: URL(filePath: "/"))
         await settle()
         guard case .failed(let message)? = runner.run(id)?.stepRun("a")?.status else {
@@ -196,7 +204,10 @@ final class FakeWorkflowHost: WorkflowHost {
         stopped.host = failing
         var stops: [WorkflowAttention] = []
         stopped.onAttention = { _, attention in stops.append(attention) }
-        stopped.start(WorkflowDefinition(id: "w", name: "W", summary: "", steps: [WorkflowStep(id: "a", title: "A", prompt: "a")]), input: "", cwd: URL(filePath: "/"))
+        stopped.start(
+            WorkflowDefinition(
+                id: "w", name: "W", summary: "", steps: [WorkflowStep(id: "a", title: "A", prompt: "a")]), input: "",
+            cwd: URL(filePath: "/"))
         await settle()
         #expect(stops == [.halted])
     }

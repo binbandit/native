@@ -13,7 +13,10 @@ struct GoalEditor: View {
     @State private var objective: String
     @State private var budget: GoalBudget
 
-    init(goal: Goal?, agentName: String, onSave: @escaping (_ objective: String, _ budget: GoalBudget) -> Void, onCancel: @escaping () -> Void) {
+    init(
+        goal: Goal?, agentName: String, onSave: @escaping (_ objective: String, _ budget: GoalBudget) -> Void,
+        onCancel: @escaping () -> Void
+    ) {
         self.goal = goal
         self.agentName = agentName
         self.onSave = onSave
@@ -33,10 +36,12 @@ struct GoalEditor: View {
                 Text(goal == nil ? "Set a Goal" : "Edit Goal")
                     .font(.dsHeadline)
                     .foregroundStyle(.dsTextPrimary)
-                Text("\(agentName) keeps working, turn after turn, until the goal is met, it needs you, or the budget runs out.")
-                    .font(.dsCaption)
-                    .foregroundStyle(.dsTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                Text(
+                    "\(agentName) keeps working, turn after turn, until the goal is met, it needs you, or the budget runs out."
+                )
+                .font(.dsCaption)
+                .foregroundStyle(.dsTextSecondary)
+                .fixedSize(horizontal: false, vertical: true)
             }
             .tracking(DS.Tracking.tight)
 
@@ -90,7 +95,8 @@ struct GoalEditor: View {
 
     private var budgetNote: String {
         if budget.maxIterations == nil {
-            return "Leave a limit empty for none. Without an iteration limit, Native stops after \(GoalLoop.safetyIterationCeiling)."
+            return
+                "Leave a limit empty for none. Without an iteration limit, Native stops after \(GoalLoop.safetyIterationCeiling)."
         }
         return "Leave a limit empty for none. Native checks the budget between turns, never in the middle of one."
     }

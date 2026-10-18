@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import MCP
 
 struct HTTPTests {
@@ -8,7 +9,10 @@ struct HTTPTests {
     }
 
     @Test func parsesARequestWithItsBody() throws {
-        guard case .complete(let request) = parse("POST /mcp/abc?x=1 HTTP/1.1\r\nHost: 127.0.0.1:1\r\nContent-Length: 4\r\nX-A: 1\r\nx-a: 2\r\n\r\n{}{}") else {
+        guard
+            case .complete(let request) = parse(
+                "POST /mcp/abc?x=1 HTTP/1.1\r\nHost: 127.0.0.1:1\r\nContent-Length: 4\r\nX-A: 1\r\nx-a: 2\r\n\r\n{}{}")
+        else {
             Issue.record("Expected a complete request")
             return
         }

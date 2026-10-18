@@ -37,7 +37,10 @@ public struct SubagentUpdate: Decodable, Hashable, Sendable {
 
     /// For clients that run subagents themselves, such as tasks one agent hands another, and show
     /// them the way agents' own subagents are shown.
-    public init(sessionId: SessionID, title: Patch<String> = .unchanged, description: Patch<String> = .unchanged, canCancel: Patch<Bool> = .unchanged, state: Patch<SubagentWorkState> = .unchanged) {
+    public init(
+        sessionId: SessionID, title: Patch<String> = .unchanged, description: Patch<String> = .unchanged,
+        canCancel: Patch<Bool> = .unchanged, state: Patch<SubagentWorkState> = .unchanged
+    ) {
         self.sessionId = sessionId
         self.title = title
         self.description = description
@@ -60,11 +63,12 @@ public struct SubagentUpdate: Decodable, Hashable, Sendable {
         description = try container.decodePatch(String.self, forKey: .description)
         state = try container.decodePatch(SubagentWorkState.self, forKey: .state)
         // Capabilities are replaced as a whole; a missing or null `cancel` means it's unsupported.
-        canCancel = switch try container.decodePatch(Capabilities.self, forKey: .capabilities) {
-        case .unchanged: .unchanged
-        case .cleared: .set(false)
-        case .set(let capabilities): .set(capabilities.cancel.map { $0 != .null } ?? false)
-        }
+        canCancel =
+            switch try container.decodePatch(Capabilities.self, forKey: .capabilities) {
+            case .unchanged: .unchanged
+            case .cleared: .set(false)
+            case .set(let capabilities): .set(capabilities.cancel.map { $0 != .null } ?? false)
+            }
     }
 }
 
@@ -90,13 +94,14 @@ extension SubagentUpdate {
     /// `subagent_state_update`: a terminal state as a plain string.
     init(stateChange decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: DraftKeys.self)
-        let state: SubagentWorkState = switch try container.decode(String.self, forKey: .state) {
-        case "completed": .idle(stopReason: .endTurn, error: nil)
-        case "failed": .idle(stopReason: .error, error: nil)
-        case "cancelled": .idle(stopReason: .cancelled, error: nil)
-        case "disconnected": .unknown
-        case let other: .other(other)
-        }
+        let state: SubagentWorkState =
+            switch try container.decode(String.self, forKey: .state) {
+            case "completed": .idle(stopReason: .endTurn, error: nil)
+            case "failed": .idle(stopReason: .error, error: nil)
+            case "cancelled": .idle(stopReason: .cancelled, error: nil)
+            case "disconnected": .unknown
+            case let other: .other(other)
+            }
         self.init(sessionId: try container.decode(SessionID.self, forKey: .subagentSessionId), state: .set(state))
     }
 }
@@ -119,16 +124,18 @@ public enum SubagentWorkState: Hashable, Sendable, Decodable {
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let state = try container.decode(String.self, forKey: .state)
-        self = switch state {
-        case "running": .running
-        case "requires_action": .requiresAction
-        case "idle": .idle(
-            stopReason: try container.decodeIfPresent(StopReason.self, forKey: .stopReason),
-            error: try container.decodeIfPresent(RPCError.self, forKey: .error)
-        )
-        case "unknown": .unknown
-        default: .other(state)
-        }
+        self =
+            switch state {
+            case "running": .running
+            case "requires_action": .requiresAction
+            case "idle":
+                .idle(
+                    stopReason: try container.decodeIfPresent(StopReason.self, forKey: .stopReason),
+                    error: try container.decodeIfPresent(RPCError.self, forKey: .error)
+                )
+            case "unknown": .unknown
+            default: .other(state)
+            }
     }
 
     public var isWorking: Bool {
@@ -146,7 +153,8 @@ public struct SessionMessageUpdate: Decodable, Hashable, Sendable {
 
     /// For clients that relay messages between sessions themselves, such as tasks of different
     /// agents talking to each other, and show them like agents' own.
-    public init(messageId: String, senderSessionId: SessionID?, recipientSessionId: SessionID?, content: [ContentBlock]) {
+    public init(messageId: String, senderSessionId: SessionID?, recipientSessionId: SessionID?, content: [ContentBlock])
+    {
         self.messageId = messageId
         self.senderSessionId = senderSessionId
         self.recipientSessionId = recipientSessionId

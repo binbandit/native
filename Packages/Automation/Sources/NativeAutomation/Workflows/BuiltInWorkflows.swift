@@ -9,11 +9,14 @@ public nonisolated enum BuiltInWorkflows {
     }
 
     // Shared prompt text, spliced into the JSON below.
-    private static let planPrompt = #"Plan this change in {{project}} ({{cwd}}). Don't edit any files.\n\n{{input}}\n\nRead the relevant code first. Then write a plan someone could follow without asking questions: the approach and why, the files to change and what changes in each, edge cases, and how to verify the result, including the tests to add or run. Keep it concrete and no longer than it needs to be."#
+    private static let planPrompt =
+        #"Plan this change in {{project}} ({{cwd}}). Don't edit any files.\n\n{{input}}\n\nRead the relevant code first. Then write a plan someone could follow without asking questions: the approach and why, the files to change and what changes in each, edge cases, and how to verify the result, including the tests to add or run. Keep it concrete and no longer than it needs to be."#
 
-    private static let reviewPrompt = #"Review the changes in {{project}} ({{cwd}}) that implement:\n\n{{input}}\n\n{{steps.implement.agent}} summarized the work as:\n\n{{steps.implement.output}}\n\nRead the actual changes rather than relying on the summary: `git diff` for uncommitted work, and `git log -p` for commits on this branch that aren't on the default branch. Look for bugs, missed requirements, unhandled edge cases and missing tests. Don't change anything. Start with a one-line verdict (ready, or needs changes), then list concrete findings, most important first, each with its file and line."#
+    private static let reviewPrompt =
+        #"Review the changes in {{project}} ({{cwd}}) that implement:\n\n{{input}}\n\n{{steps.implement.agent}} summarized the work as:\n\n{{steps.implement.output}}\n\nRead the actual changes rather than relying on the summary: `git diff` for uncommitted work, and `git log -p` for commits on this branch that aren't on the default branch. Look for bugs, missed requirements, unhandled edge cases and missing tests. Don't change anything. Start with a one-line verdict (ready, or needs changes), then list concrete findings, most important first, each with its file and line."#
 
-    private static let addressPrompt = #"{{steps.review.agent}} reviewed your changes and reported:\n\n{{steps.review.output}}\n\nFix every finding you agree with and verify the fixes: it builds and the relevant tests pass. For a finding you disagree with, explain why instead. The goal is complete when every finding is fixed and verified, or answered. Finish with a short summary of what you changed."#
+    private static let addressPrompt =
+        #"{{steps.review.agent}} reviewed your changes and reported:\n\n{{steps.review.output}}\n\nFix every finding you agree with and verify the fixes: it builds and the relevant tests pass. For a finding you disagree with, explain why instead. The goal is complete when every finding is fixed and verified, or answered. Finish with a short summary of what you changed."#
 
     public static let sources: [String] = [
         #"""

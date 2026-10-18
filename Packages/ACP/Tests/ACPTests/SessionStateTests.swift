@@ -225,7 +225,8 @@ struct SessionStateAttachmentTests {
         var state = SessionState()
         state.apply(.userMessageChunk(ContentChunk(content: .text("Look at these"))))
         state.apply(.userMessageChunk(ContentChunk(content: .image(data: "AQID", mimeType: "image/png"))))
-        state.apply(.userMessageChunk(ContentChunk(content: .resourceLink(uri: "file:///repo/a.swift", name: "a.swift"))))
+        state.apply(
+            .userMessageChunk(ContentChunk(content: .resourceLink(uri: "file:///repo/a.swift", name: "a.swift"))))
         #expect(state.items.count == 1)
         guard case .message(let message) = state.items.last else {
             Issue.record("no message")

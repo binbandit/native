@@ -57,7 +57,9 @@ public nonisolated struct GoalMarker: Hashable, Sendable {
 
     private static func parseLine(_ line: String) -> GoalMarker? {
         let leading = decoration.union(CharacterSet(charactersIn: "-"))
-        var rest = Substring(line.trimmingCharacters(in: .whitespaces)).drop { $0.unicodeScalars.allSatisfy(leading.contains) }
+        var rest = Substring(line.trimmingCharacters(in: .whitespaces)).drop {
+            $0.unicodeScalars.allSatisfy(leading.contains)
+        }
         guard rest.lowercased().hasPrefix("goal") else { return nil }
         rest = rest.dropFirst(4)
         // "GOAL STATUS: complete" is a common rewording.

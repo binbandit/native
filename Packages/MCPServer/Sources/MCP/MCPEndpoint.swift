@@ -19,7 +19,9 @@ struct MCPEndpoint<Context: Sendable>: Sendable {
             return HTTPResponse(status: 403)
         }
         let token = request.path.dropFirst("/mcp/".count)
-        guard request.path.hasPrefix("/mcp/"), !token.isEmpty, !token.contains("/"), let context = await resolve(String(token)) else {
+        guard request.path.hasPrefix("/mcp/"), !token.isEmpty, !token.contains("/"),
+            let context = await resolve(String(token))
+        else {
             return HTTPResponse(status: 404)
         }
         // There are no server-initiated streams (GET) or protocol sessions to end (DELETE).
@@ -27,10 +29,17 @@ struct MCPEndpoint<Context: Sendable>: Sendable {
             return HTTPResponse(status: 405, headers: ["Allow": "POST"])
         }
         guard let message = try? JSONDecoder().decode(JSON.self, from: request.body) else {
-            return .json(Self.envelope(id: .null, error: RPCFailure(code: -32700, message: "Parse error: the body isn't JSON.")), status: 400)
+            return .json(
+                Self.envelope(id: .null, error: RPCFailure(code: -32700, message: "Parse error: the body isn't JSON.")),
+                status: 400)
         }
         guard case .object(let fields) = message else {
-            return .json(Self.envelope(id: .null, error: RPCFailure(code: -32600, message: "Send one JSON-RPC message per request; batches aren't supported.")), status: 400)
+            return .json(
+                Self.envelope(
+                    id: .null,
+                    error: RPCFailure(
+                        code: -32600, message: "Send one JSON-RPC message per request; batches aren't supported.")),
+                status: 400)
         }
         // Notifications (no id) and responses (no method) need no answer, and nothing in them
         // changes what this server does.
@@ -66,7 +75,9 @@ struct MCPEndpoint<Context: Sendable>: Sendable {
     private static var legacyVersions: [String] { ["2025-11-25", "2025-06-18", "2025-03-26"] }
 
     private static func era(of request: HTTPRequest, method: String, params: JSON) -> Era {
-        let declared = params["_meta"]?["io.modelcontextprotocol/protocolVersion"]?.stringValue ?? request.header("mcp-protocol-version")
+        let declared =
+            params["_meta"]?["io.modelcontextprotocol/protocolVersion"]?.stringValue
+            ?? request.header("mcp-protocol-version")
         // Versions are dates, so every later revision sorts after the first modern one.
         guard method != "initialize", let declared, declared >= modernVersions[0] else { return .legacy }
         return .modern
@@ -88,13 +99,17 @@ struct MCPEndpoint<Context: Sendable>: Sendable {
         return definitions
     }
 
-    private func handle(_ method: String, params: JSON, era: Era, request: HTTPRequest, context: Context) async throws(RPCFailure) -> [String: JSON] {
+    private func handle(
+        _ method: String, params: JSON, era: Era, request: HTTPRequest, context: Context
+    ) async throws(RPCFailure) -> [String: JSON] {
         switch era {
         case .modern:
             try Self.validateModern(method, params: params, request: request)
         case .legacy:
             // After `initialize`, clients of 2025-06-18 and later repeat the agreed version.
-            if method != "initialize", let version = request.header("mcp-protocol-version"), !Self.legacyVersions.contains(version) {
+            if method != "initialize", let version = request.header("mcp-protocol-version"),
+                !Self.legacyVersions.contains(version)
+            {
                 throw RPCFailure(code: -32600, message: "Unsupported MCP-Protocol-Version \(version).", status: 400)
             }
         }
@@ -107,7 +122,8 @@ struct MCPEndpoint<Context: Sendable>: Sendable {
         case ("initialize", .legacy):
             let requested = params["protocolVersion"]?.stringValue
             var result: [String: JSON] = [
-                "protocolVersion": .string(requested.flatMap { Self.legacyVersions.contains($0) ? $0 : nil } ?? Self.legacyVersions[0]),
+                "protocolVersion": .string(
+                    requested.flatMap { Self.legacyVersions.contains($0) ? $0 : nil } ?? Self.legacyVersions[0]),
                 "capabilities": capabilities,
                 "serverInfo": serverInfo,
             ]
@@ -151,21 +167,31 @@ struct MCPEndpoint<Context: Sendable>: Sendable {
     private static func validateModern(_ method: String, params: JSON, request: HTTPRequest) throws(RPCFailure) {
         let meta = params["_meta"]
         guard let version = meta?["io.modelcontextprotocol/protocolVersion"]?.stringValue,
-              meta?["io.modelcontextprotocol/clientCapabilities"]?.objectValue != nil
+            meta?["io.modelcontextprotocol/clientCapabilities"]?.objectValue != nil
         else {
-            throw RPCFailure(code: -32602, message: "Requests must declare io.modelcontextprotocol/protocolVersion and io.modelcontextprotocol/clientCapabilities in _meta.", status: 400)
+            throw RPCFailure(
+                code: -32602,
+                message:
+                    "Requests must declare io.modelcontextprotocol/protocolVersion and io.modelcontextprotocol/clientCapabilities in _meta.",
+                status: 400)
         }
         guard modernVersions.contains(version) else {
-            throw RPCFailure(code: -32022, message: "Unsupported protocol version", data: ["supported": supportedVersions, "requested": .string(version)], status: 400)
+            throw RPCFailure(
+                code: -32022, message: "Unsupported protocol version",
+                data: ["supported": supportedVersions, "requested": .string(version)], status: 400)
         }
         guard request.header("mcp-protocol-version") == version else {
-            throw RPCFailure(code: -32020, message: "Header mismatch: MCP-Protocol-Version must be \(version), as in _meta.", status: 400)
+            throw RPCFailure(
+                code: -32020, message: "Header mismatch: MCP-Protocol-Version must be \(version), as in _meta.",
+                status: 400)
         }
         guard request.header("mcp-method") == method else {
-            throw RPCFailure(code: -32020, message: "Header mismatch: Mcp-Method must be \(method), as in the body.", status: 400)
+            throw RPCFailure(
+                code: -32020, message: "Header mismatch: Mcp-Method must be \(method), as in the body.", status: 400)
         }
         if method == "tools/call", decodeHeaderValue(request.header("mcp-name")) != params["name"]?.stringValue {
-            throw RPCFailure(code: -32020, message: "Header mismatch: Mcp-Name must be the name of the tool called.", status: 400)
+            throw RPCFailure(
+                code: -32020, message: "Header mismatch: Mcp-Name must be the name of the tool called.", status: 400)
         }
     }
 

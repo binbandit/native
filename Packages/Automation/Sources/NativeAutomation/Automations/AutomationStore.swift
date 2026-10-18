@@ -27,7 +27,8 @@ public final class AutomationStore {
 
     public func save(_ book: AutomationBook) {
         do {
-            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(
+                at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
             try JSONEncoder().encode(book).write(to: url, options: .atomic)
         } catch {
             logger.error("Couldn't save automations: \(error)")

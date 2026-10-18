@@ -1,9 +1,13 @@
 import Testing
+
 @testable import NativeAutomation
 
 @Suite struct GoalMarkerTests {
     @Test(arguments: [
-        ("Done.\n\nGOAL: complete - hello.txt exists and contains hi", GoalMarker.Status.complete, "hello.txt exists and contains hi" as String?),
+        (
+            "Done.\n\nGOAL: complete - hello.txt exists and contains hi", GoalMarker.Status.complete,
+            "hello.txt exists and contains hi" as String?
+        ),
         ("**GOAL: complete** - all 12 tests pass", .complete, "all 12 tests pass"),
         ("`GOAL: blocked - need the staging API key`", .blocked, "need the staging API key"),
         ("GOAL: continuing — next I'll wire the view", .continuing, "next I'll wire the view"),
@@ -60,7 +64,8 @@ import Testing
 
 @Suite struct GoalPromptTests {
     @Test func kickoffRoundTrips() {
-        let usage = Goal(objective: "x", budget: GoalBudget(maxIterations: 5), at: .now, sessionCost: nil).usage(at: .now)
+        let usage = Goal(objective: "x", budget: GoalBudget(maxIterations: 5), at: .now, sessionCost: nil).usage(
+            at: .now)
         let text = GoalPrompt.kickoffText(objective: "Make the tests pass\nall of them", usage: usage)
         #expect(GoalPrompt(parsing: text) == .kickoff(objective: "Make the tests pass\nall of them"))
         #expect(text.contains("Budget: 5 iterations."))
@@ -69,7 +74,8 @@ import Testing
     @Test func continuationRoundTrips() {
         var goal = Goal(objective: "Ship it", budget: GoalBudget(maxIterations: 4), at: .now, sessionCost: nil)
         goal.iterations = 3
-        let text = GoalPrompt.continuationText(objective: "Ship it", usage: goal.usage(at: .now), reminder: true, resumed: false)
+        let text = GoalPrompt.continuationText(
+            objective: "Ship it", usage: goal.usage(at: .now), reminder: true, resumed: false)
         #expect(GoalPrompt(parsing: text) == .continuation(objective: "Ship it", iteration: 4))
         #expect(text.contains("last iteration"))
         #expect(text.contains("didn't end with a status line"))
@@ -102,7 +108,9 @@ import Testing
 
 @Suite struct TurnOutcomeTests {
     @Test func limitErrorsReadAsLimits() {
-        #expect(TurnOutcome.failure("Claude AI usage limit reached|1760000000") == .limited("Claude AI usage limit reached|1760000000"))
+        #expect(
+            TurnOutcome.failure("Claude AI usage limit reached|1760000000")
+                == .limited("Claude AI usage limit reached|1760000000"))
         #expect(TurnOutcome.failure("429 Too Many Requests") == .limited("429 Too Many Requests"))
         #expect(TurnOutcome.failure("Internal error") == .failed("Internal error"))
     }

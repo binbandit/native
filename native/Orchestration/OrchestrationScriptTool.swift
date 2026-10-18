@@ -11,7 +11,8 @@ nonisolated enum OrchestrationScriptTool {
     static let scriptable: Set<String> = ["list_agents", "list_tasks", "get_task", "wait_for_task"]
 
     /// Added to the server's instructions when `run_script` is offered.
-    static let instructions = " run_script runs JavaScript that calls the read-only tools, to check or wait on several tasks in one call."
+    static let instructions =
+        " run_script runs JavaScript that calls the read-only tools, to check or wait on several tasks in one call."
 
     /// `run_script` over the scriptable `tools`, or nil without a runner: the app has none when it
     /// was built without cargo, or its runtime isn't signed into the App Sandbox.
@@ -90,12 +91,15 @@ nonisolated enum OrchestrationScriptTool {
                 }
             }
             // Other features' tools live under their own names; one that would shadow Native's is dropped.
-            let extra = await extensions.bindings(for: caller, until: .now + .seconds(seconds)).filter { !ownNames.contains($0.path[0]) }
+            let extra = await extensions.bindings(for: caller, until: .now + .seconds(seconds)).filter {
+                !ownNames.contains($0.path[0])
+            }
             if !extra.isEmpty { bindings += extra + [search(extra)] }
             let result = try await runner.run(
                 arguments.code, bindings: bindings, inputs: arguments.inputs ?? [:],
                 limits: ScriptLimits(time: .seconds(seconds)))
-            return MCPToolResult(text: result.report, structuredContent: try JSON(encoding: result.summary), isError: !result.succeeded)
+            return MCPToolResult(
+                text: result.report, structuredContent: try JSON(encoding: result.summary), isError: !result.succeeded)
         }
         let declared = tool.description
         tool.listing = { caller in
@@ -103,13 +107,14 @@ nonisolated enum OrchestrationScriptTool {
             guard !summaries.isEmpty else {
                 return .init(description: declared, annotations: MCPToolAnnotations(readOnly: true, openWorld: false))
             }
-            let description = declared + """
+            let description =
+                declared + """
 
 
-                Also bound for this session: \(summaries.map(\.description).joined(separator: " ")) Find those \
-                with tools.\(searchName)({ query }), which resolves with their declarations (query by server name to list \
-                one server's), then call them in a later script.
-                """
+                    Also bound for this session: \(summaries.map(\.description).joined(separator: " ")) Find those \
+                    with tools.\(searchName)({ query }), which resolves with their declarations (query by server name to list \
+                    one server's), then call them in a later script.
+                    """
             return .init(
                 description: description, annotations: MCPToolAnnotations(readOnly: summaries.allSatisfy(\.isReadOnly)))
         }

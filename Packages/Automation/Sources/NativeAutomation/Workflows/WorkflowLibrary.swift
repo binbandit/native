@@ -26,16 +26,23 @@ public nonisolated struct WorkflowLibrary: Hashable, Sendable {
     public private(set) var entries: [Entry]
 
     /// `contributions` are plugins' workflows by plugin id, in plugin order.
-    public init(builtIns: [WorkflowDefinition] = BuiltInWorkflows.all, contributions: [(plugin: String, workflows: [WorkflowDefinition])] = []) {
+    public init(
+        builtIns: [WorkflowDefinition] = BuiltInWorkflows.all,
+        contributions: [(plugin: String, workflows: [WorkflowDefinition])] = []
+    ) {
         var entries: [Entry] = []
         var ids: Set<String> = []
-        let sources = builtIns.map { ($0, Entry.Source.builtIn) }
-            + contributions.flatMap { contribution in contribution.workflows.map { ($0, Entry.Source.plugin(contribution.plugin)) } }
+        let sources =
+            builtIns.map { ($0, Entry.Source.builtIn) }
+            + contributions.flatMap { contribution in
+                contribution.workflows.map { ($0, Entry.Source.plugin(contribution.plugin)) }
+            }
         for (definition, source) in sources {
             var issues = WorkflowIssue.find(in: definition)
             // The first one keeps the id, so a plugin can't replace a built-in or another plugin's.
             if !ids.insert(definition.id).inserted {
-                issues.insert(WorkflowIssue(message: "Another workflow already uses the id \"\(definition.id)\"."), at: 0)
+                issues.insert(
+                    WorkflowIssue(message: "Another workflow already uses the id \"\(definition.id)\"."), at: 0)
             }
             entries.append(Entry(definition: definition, source: source, issues: issues))
         }

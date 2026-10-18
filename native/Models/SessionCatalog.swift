@@ -41,7 +41,9 @@ final class SessionCatalog {
     init(url: URL? = SessionCatalog.defaultURL) {
         self.url = url
         // A file from an incompatible build is only a stale cache; the agents list again.
-        listed = url.flatMap { try? Data(contentsOf: $0) }.flatMap { try? JSONDecoder().decode(Listing.self, from: $0) } ?? [:]
+        listed =
+            url.flatMap { try? Data(contentsOf: $0) }.flatMap { try? JSONDecoder().decode(Listing.self, from: $0) }
+            ?? [:]
     }
 
     func sessions(in project: Project.ID, of agent: AgentDefinition.ID) -> [SessionInfo] {
@@ -106,11 +108,16 @@ final class SessionCatalog {
 
     /// Replaces an agent's sessions in a project with a fresh listing. Sessions `isOpen` says are
     /// in use survive even when the agent hasn't saved them yet.
-    func replace(_ agent: AgentDefinition.ID, in project: Project.ID, with fetched: [SessionInfo], keeping isOpen: (SessionID) -> Bool) {
+    func replace(
+        _ agent: AgentDefinition.ID, in project: Project.ID, with fetched: [SessionInfo],
+        keeping isOpen: (SessionID) -> Bool
+    ) {
         isRefreshing = true
         defer { isRefreshing = false }
         let fetchedIDs = Set(fetched.map(\.sessionId))
-        let unsaved = sessions(in: project, of: agent).filter { !fetchedIDs.contains($0.sessionId) && isOpen($0.sessionId) }
+        let unsaved = sessions(in: project, of: agent).filter {
+            !fetchedIDs.contains($0.sessionId) && isOpen($0.sessionId)
+        }
         listed[project, default: [:]][agent] = unsaved + fetched
     }
 
@@ -128,7 +135,8 @@ final class SessionCatalog {
     private func save() {
         guard let url else { return }
         do {
-            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(
+                at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
             try JSONEncoder().encode(listed).write(to: url, options: .atomic)
         } catch {
             AppModel.logger.error("Couldn't save the session catalog: \(error.localizedDescription, privacy: .public)")

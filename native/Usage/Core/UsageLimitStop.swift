@@ -36,9 +36,12 @@ struct UsageLimitStop: Hashable {
             break
         }
         guard let anchor = reports.first else { return nil }
-        let isTrusted = stopReason == .error || reports.contains { report in
-            report.isNotice || UsageLimitHit(text: report.text).map { $0.resetsAt != nil || $0.window != nil } == true
-        }
+        let isTrusted =
+            stopReason == .error
+            || reports.contains { report in
+                report.isNotice
+                    || UsageLimitHit(text: report.text).map { $0.resetsAt != nil || $0.window != nil } == true
+            }
         guard isTrusted else { return nil }
         // The agent's relay keeps the provider's exact words; Native's notice may be a copy.
         message = reports.last { !$0.isNotice }?.text ?? anchor.text

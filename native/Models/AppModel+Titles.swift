@@ -8,7 +8,9 @@ extension AppModel {
         if let session = sessions.session(summary.id) {
             return session.displayTitle
         }
-        return titles.title(for: SessionTitles.Key(agent: summary.agent.id, session: summary.info.sessionId), agentTitle: summary.info.title) ?? "New Session"
+        return titles.title(
+            for: SessionTitles.Key(agent: summary.agent.id, session: summary.info.sessionId),
+            agentTitle: summary.info.title) ?? "New Session"
     }
 
     /// Lets the workspace provider name a task's workspace (its branch) after the task's first real
@@ -16,7 +18,7 @@ extension AppModel {
     /// its own provisional branch; the provider decides whether there's anything to rename.
     func workspaceGotTitle(_ event: TitleEvent) async {
         guard let provider = taskWorkspaces, !titledWorkspaces.contains(event.key),
-              let projectID = catalog.lookup(event.key)?.project, let project = projects.project(projectID)
+            let projectID = catalog.lookup(event.key)?.project, let project = projects.project(projectID)
         else { return }
         titledWorkspaces.insert(event.key)
         await provider.taskDidGetTitle(event.title, workspace: event.folder, in: project)

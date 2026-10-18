@@ -5,7 +5,8 @@ import Testing
 struct TerminalEscapesTests {
     /// The shape of codex-acp's stderr: a dimmed timestamp and a red level.
     @Test func colorsAreRemoved() {
-        let stderr = "\u{1B}[2m2026-10-18T01:02:03.456Z\u{1B}[0m \u{1B}[31mERROR\u{1B}[0m codex_core: stream disconnected"
+        let stderr =
+            "\u{1B}[2m2026-10-18T01:02:03.456Z\u{1B}[0m \u{1B}[31mERROR\u{1B}[0m codex_core: stream disconnected"
         #expect(stderr.withoutTerminalEscapes == "2026-10-18T01:02:03.456Z ERROR codex_core: stream disconnected")
     }
 

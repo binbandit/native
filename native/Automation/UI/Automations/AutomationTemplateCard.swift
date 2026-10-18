@@ -27,11 +27,14 @@ struct AutomationTemplateCard: View {
                         .foregroundStyle(.dsTextSecondary)
                         .lineLimit(3, reservesSpace: true)
                         .fixedSize(horizontal: false, vertical: true)
-                    Label(template.triggers.first?.summary ?? "Manual", systemImage: template.triggers.first?.systemImage ?? "hand.tap")
-                        .font(.dsCaption)
-                        .foregroundStyle(.dsTextTertiary)
-                        .lineLimit(1)
-                        .padding(.top, DS.Space.sm)
+                    Label(
+                        template.triggers.first?.summary ?? "Manual",
+                        systemImage: template.triggers.first?.systemImage ?? "hand.tap"
+                    )
+                    .font(.dsCaption)
+                    .foregroundStyle(.dsTextTertiary)
+                    .lineLimit(1)
+                    .padding(.top, DS.Space.sm)
                 }
                 .tracking(DS.Tracking.tight)
                 .frame(maxWidth: .infinity, alignment: .leading)

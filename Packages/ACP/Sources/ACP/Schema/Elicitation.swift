@@ -27,11 +27,12 @@ public struct CreateElicitationRequest: Decodable, Hashable, Sendable {
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         sessionId = try container.decode(SessionID.self, forKey: .sessionId)
-        mode = switch try container.decode(String.self, forKey: .mode) {
-        case "form": .form
-        case "url": .url
-        case let other: .unsupported(other)
-        }
+        mode =
+            switch try container.decode(String.self, forKey: .mode) {
+            case "form": .form
+            case "url": .url
+            case let other: .unsupported(other)
+            }
         toolCallId = try container.decodeIfPresent(String.self, forKey: .toolCallId)
         message = try container.decodeIfPresent(String.self, forKey: .message) ?? ""
         requestedSchema = try container.decodeIfPresent(JSONValue.self, forKey: .requestedSchema)

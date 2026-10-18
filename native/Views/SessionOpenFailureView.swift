@@ -12,7 +12,8 @@ struct SessionOpenFailureView: View {
         case .agentMissing:
             ErrorState(
                 "Native has no \(failure.agent) agent",
-                suggestion: "This task belongs to an agent that's turned off or was removed. Turn it on in Settings, then try again.",
+                suggestion:
+                    "This task belongs to an agent that's turned off or was removed. Turn it on in Settings, then try again.",
                 primary: .init("Try Again", perform: onRetry),
                 secondary: .init("Go Back", perform: onGoBack),
                 layout: .pane
@@ -30,7 +31,8 @@ struct SessionOpenFailureView: View {
             // Trying again can't help: the agent has no way to load a past task.
             ErrorState(
                 "\(failure.agent) can't reopen this task",
-                suggestion: "It lists its past tasks but can't load one back into Native. Continue it in \(failure.agent) itself.",
+                suggestion:
+                    "It lists its past tasks but can't load one back into Native. Continue it in \(failure.agent) itself.",
                 primary: .init("Go Back", perform: onGoBack),
                 layout: .pane
             )

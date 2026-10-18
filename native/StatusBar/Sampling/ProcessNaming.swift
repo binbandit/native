@@ -3,7 +3,9 @@ import Foundation
 /// Readable names for processes from their arguments. Agents run as runtimes (node, bun, python)
 /// whose executable name says nothing, so the script or package they run names them instead.
 nonisolated enum ProcessNaming {
-    private static let runtimes: Set<String> = ["node", "bun", "deno", "python", "python3", "ruby", "sh", "bash", "zsh", "env"]
+    private static let runtimes: Set<String> = [
+        "node", "bun", "deno", "python", "python3", "ruby", "sh", "bash", "zsh", "env",
+    ]
 
     /// - Parameters:
     ///   - arguments: The process's argv; npm rewrites argv[0] to its title, such as

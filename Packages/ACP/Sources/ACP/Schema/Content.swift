@@ -70,7 +70,9 @@ extension ContentBlock: Codable {
             try container.encode("resource", forKey: .type)
             try container.encode(EmbeddedResource(uri: uri, text: text), forKey: .resource)
         case .unsupported(let type):
-            throw EncodingError.invalidValue(type, .init(codingPath: encoder.codingPath, debugDescription: "Cannot send unsupported content type \(type)"))
+            throw EncodingError.invalidValue(
+                type,
+                .init(codingPath: encoder.codingPath, debugDescription: "Cannot send unsupported content type \(type)"))
         }
     }
 }

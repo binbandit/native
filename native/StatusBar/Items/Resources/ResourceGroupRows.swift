@@ -42,7 +42,9 @@ struct ResourceGroupRows: View {
             .trackHover($isHovered)
             .help(isExpanded ? "Hide \(group.title)'s processes" : "Show \(group.title)'s processes")
             .accessibilityLabel(group.title)
-            .accessibilityValue("\(group.processes.count) processes, \(DSFormat.memory(group.memory)), \(DSFormat.cpu(group.cpu)) CPU")
+            .accessibilityValue(
+                "\(group.processes.count) processes, \(DSFormat.memory(group.memory)), \(DSFormat.cpu(group.cpu)) CPU"
+            )
             .accessibilityHint(isExpanded ? "Hides its processes" : "Shows its processes")
 
             if isExpanded {
@@ -75,7 +77,9 @@ struct ResourceGroupRows: View {
         .help("\(process.name), process \(process.pid)")
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(process.name)
-        .accessibilityValue("Process \(process.pid), \(DSFormat.memory(process.memory)), \(process.cpu.map(DSFormat.cpu) ?? "measuring") CPU")
+        .accessibilityValue(
+            "Process \(process.pid), \(DSFormat.memory(process.memory)), \(process.cpu.map(DSFormat.cpu) ?? "measuring") CPU"
+        )
     }
 
     private func figures(cpu: Double?, memory: UInt64, isPrimary: Bool) -> some View {

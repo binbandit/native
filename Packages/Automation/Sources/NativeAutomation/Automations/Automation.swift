@@ -17,8 +17,10 @@ public nonisolated struct Automation: Codable, Hashable, Sendable, Identifiable 
     public let createdAt: Date
 
     public init(
-        id: UUID = UUID(), name: String, triggers: [AutomationTrigger], action: AutomationAction, agent: WorkflowAgent.ID? = nil,
-        project: URL, repository: String? = nil, placement: AutomationPlacement = .worktree, isPaused: Bool = false, createdAt: Date
+        id: UUID = UUID(), name: String, triggers: [AutomationTrigger], action: AutomationAction,
+        agent: WorkflowAgent.ID? = nil,
+        project: URL, repository: String? = nil, placement: AutomationPlacement = .worktree, isPaused: Bool = false,
+        createdAt: Date
     ) {
         self.id = id
         self.name = name

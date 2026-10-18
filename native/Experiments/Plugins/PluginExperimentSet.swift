@@ -15,9 +15,11 @@ struct PluginExperimentSet {
             for declaration in plugin.experiments {
                 let id = declaration.descriptor.id
                 if !id.isNamespaced(by: manifest.id) {
-                    problems.append(.init(experiment: id.rawValue, message: "Its id should start with \"\(manifest.id).\"."))
+                    problems.append(
+                        .init(experiment: id.rawValue, message: "Its id should start with \"\(manifest.id).\"."))
                 } else if reserved.contains(id) || found.contains(where: { $0.id == id }) {
-                    problems.append(.init(experiment: id.rawValue, message: "\(id) is already used by another experiment."))
+                    problems.append(
+                        .init(experiment: id.rawValue, message: "\(id) is already used by another experiment."))
                 } else {
                     found.append(declaration.descriptor.contributed(byPlugin: manifest.id, named: manifest.name))
                 }
@@ -55,6 +57,8 @@ extension PluginRegistry.LoadedPlugin {
         guard usesExperiments, let manifestPlugin = plugin as? ManifestPlugin else { return self }
         let manifest = manifestPlugin.manifest
         let applied = manifest.applyingExperiments { snapshot.value(for: ExperimentID(namespace: manifest.id, $0)) }
-        return Self(plugin: ManifestPlugin(manifest: applied, policyTranslator: manifestPlugin.policyTranslator), source: source)
+        return Self(
+            plugin: ManifestPlugin(manifest: applied, policyTranslator: manifestPlugin.policyTranslator), source: source
+        )
     }
 }

@@ -31,7 +31,11 @@ struct AutomationTriggerRow: View {
             timePicker(hour: hour, minute: minute) { trigger = .schedule(.daily(hour: $0, minute: $1)) }
         case .schedule(.weekly(let weekday, let hour, let minute)):
             Text("Every")
-            Picker("Day", selection: Binding(get: { weekday }, set: { trigger = .schedule(.weekly(weekday: $0, hour: hour, minute: minute)) })) {
+            Picker(
+                "Day",
+                selection: Binding(
+                    get: { weekday }, set: { trigger = .schedule(.weekly(weekday: $0, hour: hour, minute: minute)) })
+            ) {
                 ForEach(Array(calendar.standaloneWeekdaySymbols.enumerated()), id: \.offset) { index, name in
                     Text(name).tag(index + 1)
                 }
@@ -40,7 +44,9 @@ struct AutomationTriggerRow: View {
             .labelsHidden()
             .fixedSize()
             Text("at")
-            timePicker(hour: hour, minute: minute) { trigger = .schedule(.weekly(weekday: weekday, hour: $0, minute: $1)) }
+            timePicker(hour: hour, minute: minute) {
+                trigger = .schedule(.weekly(weekday: weekday, hour: $0, minute: $1))
+            }
         case .schedule(.everyHours(let hours)):
             Stepper(value: Binding(get: { hours }, set: { trigger = .schedule(.everyHours($0)) }), in: 1...24) {
                 Text(hours == 1 ? "Every hour" : "Every \(hours) hours")

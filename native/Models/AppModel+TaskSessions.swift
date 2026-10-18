@@ -7,7 +7,8 @@ extension AppModel {
     /// Starts a session for Native's tools, out of the sidebar: one another session delegates work
     /// to (`parent`, Native's id for it; the session is its subagent and works in its folder unless
     /// `cwd` says otherwise), or a detached one such as a workflow step. Returned idle.
-    func startTaskSession(agent: AgentDefinition.ID, cwd: URL? = nil, parent: UUID? = nil) async throws -> SessionModel {
+    func startTaskSession(agent: AgentDefinition.ID, cwd: URL? = nil, parent: UUID? = nil) async throws -> SessionModel
+    {
         let parentSession = try parent.map { id in
             guard let session = sessions.session(clientID: id) else { throw SessionLauncher.LaunchError.parentClosed }
             return session
@@ -16,7 +17,8 @@ extension AppModel {
             throw SessionLauncher.LaunchError.agentUnavailable(runtimes[agent]?.agent.displayName ?? agent.rawValue)
         }
         guard let cwd = cwd ?? parentSession?.cwd ?? currentProject?.url else {
-            throw SessionLauncher.LaunchError.failed(agent: runtime.agent.displayName, underlying: CocoaError(.fileNoSuchFile))
+            throw SessionLauncher.LaunchError.failed(
+                agent: runtime.agent.displayName, underlying: CocoaError(.fileNoSuchFile))
         }
         // Until its record is written, the sidebar's listing mustn't take the new session for the user's.
         taskStartsInFlight[agent, default: 0] += 1

@@ -9,7 +9,10 @@ import Testing
     private func cache(name: String, version: String, bin: String) throws -> URL {
         let cache = FileManager.default.temporaryDirectory.appending(path: "npx-\(UUID().uuidString)")
         let launch = try #require(
-            NpxLaunch(AgentCommand(executable: "npx", arguments: ["\(name)@\(version)"], environment: ["npm_config_cache": cache.path])))
+            NpxLaunch(
+                AgentCommand(
+                    executable: "npx", arguments: ["\(name)@\(version)"], environment: ["npm_config_cache": cache.path])
+            ))
         let modules = launch.folder.appending(path: "node_modules")
         let package = modules.appending(path: name)
         try FileManager.default.createDirectory(at: package, withIntermediateDirectories: true)
@@ -43,7 +46,8 @@ import Testing
     }
 
     @Test func runsTheInstalledBinaryDirectly() throws {
-        let cache = try cache(name: "@agentclientprotocol/codex-acp", version: "2.2.2", bin: #"{"codex-acp": "dist/index.js"}"#)
+        let cache = try cache(
+            name: "@agentclientprotocol/codex-acp", version: "2.2.2", bin: #"{"codex-acp": "dist/index.js"}"#)
         let command = npx(["--yes", "@agentclientprotocol/codex-acp@2.2.2", "--flag"], cache: cache).skippingNpx()
 
         #expect(command.executable.hasSuffix("/node_modules/.bin/codex-acp"))

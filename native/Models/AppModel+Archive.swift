@@ -133,7 +133,8 @@ extension AppModel {
                         details: error.localizedDescription))
             }
         }
-        if let folder, let project = projects.project(projectID), !SessionFolder.isSame(folder.folderPath, project.path) {
+        if let folder, let project = projects.project(projectID), !SessionFolder.isSame(folder.folderPath, project.path)
+        {
             do {
                 try await taskWorkspaces?.deleteWorkspace(at: folder, in: project)
             } catch {

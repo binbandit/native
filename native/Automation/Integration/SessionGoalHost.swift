@@ -13,7 +13,8 @@ final class SessionGoalHost: GoalHost {
 
     var canSendGoalPrompt: Bool {
         guard let session else { return false }
-        return session.acceptsPrompts && session.phase == .idle && !session.isRunningHiddenCommand && session.queuedPrompts.isEmpty
+        return session.acceptsPrompts && session.phase == .idle && !session.isRunningHiddenCommand
+            && session.queuedPrompts.isEmpty
     }
 
     var goalSessionCost: Double? {

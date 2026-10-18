@@ -36,26 +36,29 @@ extension SessionUpdate: Decodable {
         let kind = try container.decode(String.self, forKey: .sessionUpdate)
         // Each variant's fields sit beside the `sessionUpdate` discriminator, so payload types decode
         // from the same decoder.
-        self = switch kind {
-        case "user_message_chunk": .userMessageChunk(try ContentChunk(from: decoder))
-        case "agent_message_chunk": .agentMessageChunk(try ContentChunk(from: decoder))
-        case "agent_thought_chunk": .agentThoughtChunk(try ContentChunk(from: decoder))
-        case "tool_call": .toolCall(try ToolCallUpdate(from: decoder))
-        case "tool_call_update": .toolCallUpdate(try ToolCallUpdate(from: decoder))
-        case "plan": .plan(try container.decode([PlanEntry].self, forKey: .entries))
-        case "available_commands_update": .availableCommands(try container.decode([AvailableCommand].self, forKey: .availableCommands))
-        case "config_option_update": .configOptions(try container.decode([ConfigOption].self, forKey: .configOptions))
-        case "session_info_update": .sessionInfo(title: try container.decodeIfPresent(String.self, forKey: .title))
-        case "usage_update": .usage(try Usage(from: decoder))
-        case "current_mode_update": .currentMode(try container.decode(String.self, forKey: .currentModeId))
-        case "subagent_update": .subagent(try SubagentUpdate(from: decoder))
-        // The subagents RFD's earlier draft, which Cursor still sends.
-        case "subagent_spawned": .subagent(try SubagentUpdate(spawned: decoder))
-        case "subagent_state_update": .subagent(try SubagentUpdate(stateChange: decoder))
-        case "session_message": .sessionMessage(try SessionMessageUpdate(from: decoder))
-        case "session_message_chunk": .sessionMessageChunk(try SessionMessageChunk(from: decoder))
-        default: .unsupported(kind)
-        }
+        self =
+            switch kind {
+            case "user_message_chunk": .userMessageChunk(try ContentChunk(from: decoder))
+            case "agent_message_chunk": .agentMessageChunk(try ContentChunk(from: decoder))
+            case "agent_thought_chunk": .agentThoughtChunk(try ContentChunk(from: decoder))
+            case "tool_call": .toolCall(try ToolCallUpdate(from: decoder))
+            case "tool_call_update": .toolCallUpdate(try ToolCallUpdate(from: decoder))
+            case "plan": .plan(try container.decode([PlanEntry].self, forKey: .entries))
+            case "available_commands_update":
+                .availableCommands(try container.decode([AvailableCommand].self, forKey: .availableCommands))
+            case "config_option_update":
+                .configOptions(try container.decode([ConfigOption].self, forKey: .configOptions))
+            case "session_info_update": .sessionInfo(title: try container.decodeIfPresent(String.self, forKey: .title))
+            case "usage_update": .usage(try Usage(from: decoder))
+            case "current_mode_update": .currentMode(try container.decode(String.self, forKey: .currentModeId))
+            case "subagent_update": .subagent(try SubagentUpdate(from: decoder))
+            // The subagents RFD's earlier draft, which Cursor still sends.
+            case "subagent_spawned": .subagent(try SubagentUpdate(spawned: decoder))
+            case "subagent_state_update": .subagent(try SubagentUpdate(stateChange: decoder))
+            case "session_message": .sessionMessage(try SessionMessageUpdate(from: decoder))
+            case "session_message_chunk": .sessionMessageChunk(try SessionMessageChunk(from: decoder))
+            default: .unsupported(kind)
+            }
     }
 }
 

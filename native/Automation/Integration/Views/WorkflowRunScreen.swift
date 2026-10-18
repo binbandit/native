@@ -28,7 +28,9 @@ struct WorkflowRunScreen<Transcript: View>: View {
             .navigationTitle(run.title)
             .navigationSubtitle(run.definition.name)
             .inspector(isPresented: Binding(get: { openStep != nil }, set: { if !$0 { openStep = nil } })) {
-                if let step = openStep.flatMap(run.stepRun), let task = step.task, let session = center.host?.session(for: task) {
+                if let step = openStep.flatMap(run.stepRun), let task = step.task,
+                    let session = center.host?.session(for: task)
+                {
                     WorkflowStepInspector(step: step, send: { center.workflows.send($0, to: runID) }) {
                         transcript(session)
                     }
@@ -40,7 +42,9 @@ struct WorkflowRunScreen<Transcript: View>: View {
                 }
             }
         } else {
-            EmptyStateView("This Run Is Gone", systemImage: "point.3.connected.trianglepath.dotted", message: "Workflow runs last until Native quits. Their steps' sessions stay with their agents.")
+            EmptyStateView(
+                "This Run Is Gone", systemImage: "point.3.connected.trianglepath.dotted",
+                message: "Workflow runs last until Native quits. Their steps' sessions stay with their agents.")
         }
     }
 

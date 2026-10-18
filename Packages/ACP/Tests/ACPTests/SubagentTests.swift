@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import ACP
 
 struct SubagentTests {
@@ -7,7 +8,7 @@ struct SubagentTests {
 
     @Test func announcementAndIdleUpdatesDecode() throws {
         guard case .subagent(let announced) = try Wire.update(SubagentWire.running),
-              case .subagent(let finished) = try Wire.update(SubagentWire.idle)
+            case .subagent(let finished) = try Wire.update(SubagentWire.idle)
         else {
             Issue.record("Expected subagent updates")
             return
@@ -63,7 +64,10 @@ struct SubagentTests {
     @Test(arguments: [
         (#"{"sessionId":"a7c82d0a6f0097318","state":null}"#, Patch<SubagentWorkState>.cleared),
         (#"{"sessionId":"a7c82d0a6f0097318","state":{"state":"requires_action"}}"#, .set(.requiresAction)),
-        (#"{"sessionId":"a7c82d0a6f0097318","state":{"state":"idle","stopReason":"error","error":{"code":-32603,"message":"Internal error"}}}"#, .set(.idle(stopReason: .error, error: RPCError(code: -32603, message: "Internal error")))),
+        (
+            #"{"sessionId":"a7c82d0a6f0097318","state":{"state":"idle","stopReason":"error","error":{"code":-32603,"message":"Internal error"}}}"#,
+            .set(.idle(stopReason: .error, error: RPCError(code: -32603, message: "Internal error")))
+        ),
         (#"{"sessionId":"a7c82d0a6f0097318","state":{"state":"unknown"}}"#, .set(.unknown)),
         (#"{"sessionId":"a7c82d0a6f0097318","state":{"state":"paused"}}"#, .set(.other("paused"))),
     ])
@@ -94,9 +98,9 @@ struct SubagentTests {
 
         // One roster entry, patched in place between the tool call that started it and the reply.
         guard parent.items.count == 3,
-              case .toolCall(let spawn) = parent.items[0],
-              case .subagent(let subagent) = parent.items[1],
-              case .message(let reply) = parent.items[2]
+            case .toolCall(let spawn) = parent.items[0],
+            case .subagent(let subagent) = parent.items[1],
+            case .message(let reply) = parent.items[2]
         else {
             Issue.record("Expected the Agent tool call, the subagent and a reply, got \(parent.items)")
             return
@@ -112,8 +116,8 @@ struct SubagentTests {
         #expect(reply.text == "done")
 
         guard child.items.count == 2,
-              case .sessionMessage(let task) = child.items[0],
-              case .message(let answer) = child.items[1]
+            case .sessionMessage(let task) = child.items[0],
+            case .message(let answer) = child.items[1]
         else {
             Issue.record("Expected the incoming task and the child's answer, got \(child.items)")
             return
@@ -130,7 +134,13 @@ struct SubagentTests {
         var parent = SessionState()
         parent.apply(try Wire.update(SubagentWire.running))
         parent.apply(.agentMessageChunk(ContentChunk(content: .text("Waiting on it."), messageId: "m1")))
-        parent.apply(.subagent(try Wire.decode(SubagentUpdate.self, from: #"{"sessionId":"a7c82d0a6f0097318","title":null,"capabilities":null,"state":{"state":"requires_action"}}"#)))
+        parent.apply(
+            .subagent(
+                try Wire.decode(
+                    SubagentUpdate.self,
+                    from:
+                        #"{"sessionId":"a7c82d0a6f0097318","title":null,"capabilities":null,"state":{"state":"requires_action"}}"#
+                )))
 
         guard parent.items.count == 2, case .subagent(let subagent) = parent.items[0] else {
             Issue.record("Expected the subagent to stay first, got \(parent.items)")
@@ -145,8 +155,14 @@ struct SubagentTests {
     @Test func sessionMessageChunksAppendAndKeepParticipants() throws {
         var child = SessionState()
         // The RFD's streaming example: participants on the first chunk only.
-        child.apply(try Wire.update(#"{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"a7c82d0a6f0097318","update":{"sessionUpdate":"session_message_chunk","messageId":"msg_2","senderSessionId":"b9e8f5f4-c297-4a0e-819f-9229a4f29594","recipientSessionId":"a7c82d0a6f0097318","content":{"type":"text","text":"Start by reproducing "}}}}"#))
-        child.apply(try Wire.update(#"{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"a7c82d0a6f0097318","update":{"sessionUpdate":"session_message_chunk","messageId":"msg_2","content":{"type":"text","text":"the bug."}}}}"#))
+        child.apply(
+            try Wire.update(
+                #"{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"a7c82d0a6f0097318","update":{"sessionUpdate":"session_message_chunk","messageId":"msg_2","senderSessionId":"b9e8f5f4-c297-4a0e-819f-9229a4f29594","recipientSessionId":"a7c82d0a6f0097318","content":{"type":"text","text":"Start by reproducing "}}}}"#
+            ))
+        child.apply(
+            try Wire.update(
+                #"{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"a7c82d0a6f0097318","update":{"sessionUpdate":"session_message_chunk","messageId":"msg_2","content":{"type":"text","text":"the bug."}}}}"#
+            ))
 
         let message = try #require(sessionMessage(in: child))
         #expect(child.items.count == 1)
@@ -160,10 +176,16 @@ struct SubagentTests {
         child.apply(try Wire.update(SubagentWire.incomingTask))
 
         // A metadata-only upsert leaves the content alone.
-        child.apply(try Wire.update(#"{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"a7c82d0a6f0097318","update":{"sessionUpdate":"session_message","messageId":"toolu_01S5Y6Qnqi9ei4VL8SjXndyP"}}}"#))
+        child.apply(
+            try Wire.update(
+                #"{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"a7c82d0a6f0097318","update":{"sessionUpdate":"session_message","messageId":"toolu_01S5Y6Qnqi9ei4VL8SjXndyP"}}}"#
+            ))
         #expect(sessionMessage(in: child)?.text == "Reply with only the word: hi")
 
-        child.apply(try Wire.update(#"{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"a7c82d0a6f0097318","update":{"sessionUpdate":"session_message","messageId":"toolu_01S5Y6Qnqi9ei4VL8SjXndyP","content":null}}}"#))
+        child.apply(
+            try Wire.update(
+                #"{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"a7c82d0a6f0097318","update":{"sessionUpdate":"session_message","messageId":"toolu_01S5Y6Qnqi9ei4VL8SjXndyP","content":null}}}"#
+            ))
         #expect(sessionMessage(in: child)?.content == [])
         // Participants are never cleared by omission.
         #expect(sessionMessage(in: child)?.sender == SubagentWire.parentID)
@@ -173,7 +195,10 @@ struct SubagentTests {
     /// Cursor sends the RFD's earlier draft: a spawn with a name and task, then plain-string states.
     @Test func cursorDraftSubagentMessagesFoldLikeTheRFD() throws {
         var parent = SessionState()
-        parent.apply(try Wire.update(#"{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"parent-1","update":{"sessionUpdate":"subagent_spawned","subagentSessionId":"child-1","name":"explore","task":"Find the config loader","capabilities":{}}}}"#))
+        parent.apply(
+            try Wire.update(
+                #"{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"parent-1","update":{"sessionUpdate":"subagent_spawned","subagentSessionId":"child-1","name":"explore","task":"Find the config loader","capabilities":{}}}}"#
+            ))
         let spawned = try #require(parent.subagents.first)
         #expect(spawned.id == SessionID("child-1"))
         #expect(spawned.title == "explore")
@@ -187,7 +212,10 @@ struct SubagentTests {
             ("cancelled", .idle(stopReason: .cancelled, error: nil)),
             ("disconnected", .unknown),
         ] {
-            parent.apply(try Wire.update(#"{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"parent-1","update":{"sessionUpdate":"subagent_state_update","subagentSessionId":"child-1","state":"\#(state)"}}}"#))
+            parent.apply(
+                try Wire.update(
+                    #"{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"parent-1","update":{"sessionUpdate":"subagent_state_update","subagentSessionId":"child-1","state":"\#(state)"}}}"#
+                ))
             #expect(parent.subagents.first?.workState == expected)
             // A state change patches only the state.
             #expect(parent.subagents.first?.title == "explore")
@@ -212,11 +240,14 @@ private enum SubagentWire {
     /// The child's incoming task reuses this as its message id.
     static let agentToolCallID = "toolu_01S5Y6Qnqi9ei4VL8SjXndyP"
 
-    static let running = #"{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"b9e8f5f4-c297-4a0e-819f-9229a4f29594","update":{"sessionUpdate":"subagent_update","sessionId":"a7c82d0a6f0097318","title":"general-purpose","description":"Reply with hi","capabilities":{"cancel":{}},"state":{"state":"running"}}}}"#
+    static let running =
+        #"{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"b9e8f5f4-c297-4a0e-819f-9229a4f29594","update":{"sessionUpdate":"subagent_update","sessionId":"a7c82d0a6f0097318","title":"general-purpose","description":"Reply with hi","capabilities":{"cancel":{}},"state":{"state":"running"}}}}"#
 
-    static let incomingTask = #"{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"a7c82d0a6f0097318","update":{"sessionUpdate":"session_message","messageId":"toolu_01S5Y6Qnqi9ei4VL8SjXndyP","senderSessionId":"b9e8f5f4-c297-4a0e-819f-9229a4f29594","recipientSessionId":"a7c82d0a6f0097318","content":[{"type":"text","text":"Reply with only the word: hi"}]}}}"#
+    static let incomingTask =
+        #"{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"a7c82d0a6f0097318","update":{"sessionUpdate":"session_message","messageId":"toolu_01S5Y6Qnqi9ei4VL8SjXndyP","senderSessionId":"b9e8f5f4-c297-4a0e-819f-9229a4f29594","recipientSessionId":"a7c82d0a6f0097318","content":[{"type":"text","text":"Reply with only the word: hi"}]}}}"#
 
-    static let idle = #"{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"b9e8f5f4-c297-4a0e-819f-9229a4f29594","update":{"sessionUpdate":"subagent_update","sessionId":"a7c82d0a6f0097318","state":{"state":"idle","stopReason":"end_turn"}}}}"#
+    static let idle =
+        #"{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"b9e8f5f4-c297-4a0e-819f-9229a4f29594","update":{"sessionUpdate":"subagent_update","sessionId":"a7c82d0a6f0097318","state":{"state":"idle","stopReason":"end_turn"}}}}"#
 
     static let promptTurn = [
         #"{"jsonrpc":"2.0","method":"session/update","params":{"sessionId":"b9e8f5f4-c297-4a0e-819f-9229a4f29594","update":{"_meta":{"claudeCode":{"toolName":"Agent"}},"toolCallId":"toolu_01S5Y6Qnqi9ei4VL8SjXndyP","sessionUpdate":"tool_call","name":"Agent","rawInput":{},"status":"pending","title":"Task","kind":"think","content":[]}}}"#,

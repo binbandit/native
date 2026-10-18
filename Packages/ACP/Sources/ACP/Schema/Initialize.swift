@@ -165,7 +165,8 @@ public struct AgentCapabilities: Decodable, Hashable, Sendable {
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         loadSession = try container.decodeIfPresent(Bool.self, forKey: .loadSession) ?? false
-        prompt = try container.decodeIfPresent(PromptCapabilities.self, forKey: .promptCapabilities) ?? PromptCapabilities()
+        prompt =
+            try container.decodeIfPresent(PromptCapabilities.self, forKey: .promptCapabilities) ?? PromptCapabilities()
         let session = try container.decodeIfPresent(SessionCapabilities.self, forKey: .sessionCapabilities)
         listSessions = session?.list.map { $0 != .null } ?? false
         deleteSessions = session?.delete.map { $0 != .null } ?? false

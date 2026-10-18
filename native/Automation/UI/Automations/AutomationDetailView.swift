@@ -50,8 +50,11 @@ struct AutomationDetailView: View {
                 Button("Run Now", systemImage: "play.fill", action: onRunNow)
                     .buttonStyle(.ds(.primary, size: .medium))
                     .disabled(runs.first?.status.isOpen == true)
-                Button(automation.isPaused ? "Resume" : "Pause", systemImage: automation.isPaused ? "play.circle" : "pause.circle", action: onTogglePause)
-                    .buttonStyle(.ds(.secondary, size: .medium))
+                Button(
+                    automation.isPaused ? "Resume" : "Pause",
+                    systemImage: automation.isPaused ? "play.circle" : "pause.circle", action: onTogglePause
+                )
+                .buttonStyle(.ds(.secondary, size: .medium))
                 Menu {
                     Button("Edit…", systemImage: "pencil", action: onEdit)
                     Button("Delete…", systemImage: "trash", role: .destructive) { isConfirmingDelete = true }
@@ -84,7 +87,8 @@ struct AutomationDetailView: View {
     }
 
     private var facts: String {
-        [automation.project.lastPathComponent, agentName ?? "Default agent", automation.placement.label].joined(separator: " · ")
+        [automation.project.lastPathComponent, agentName ?? "Default agent", automation.placement.label].joined(
+            separator: " · ")
     }
 
     private var actionText: String {
@@ -95,8 +99,13 @@ struct AutomationDetailView: View {
     }
 
     private var scheduleNote: String? {
-        if automation.isPaused { return "Paused. Nothing runs until you resume it; scheduled times that pass meanwhile are skipped." }
-        if let nextRun { return "Next run \(DSFormat.timeAndCountdown(nextRun, now: .now)). Runs only while Native is running; a time missed while it's closed runs once when it's back." }
+        if automation.isPaused {
+            return "Paused. Nothing runs until you resume it; scheduled times that pass meanwhile are skipped."
+        }
+        if let nextRun {
+            return
+                "Next run \(DSFormat.timeAndCountdown(nextRun, now: .now)). Runs only while Native is running; a time missed while it's closed runs once when it's back."
+        }
         return nil
     }
 
@@ -110,7 +119,9 @@ struct AutomationDetailView: View {
                     .padding(DS.Space.md)
             } else {
                 ForEach(runs) { run in
-                    AutomationRunRow(run: run, onOpen: run.workflowRun.map { id in { onOpenRun(id) } }) { onStopRun(run.id) }
+                    AutomationRunRow(run: run, onOpen: run.workflowRun.map { id in { onOpenRun(id) } }) {
+                        onStopRun(run.id)
+                    }
                     if run.id != runs.last?.id {
                         SeparatorLine()
                     }

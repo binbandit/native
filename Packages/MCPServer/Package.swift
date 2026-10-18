@@ -5,7 +5,7 @@ let package = Package(
     name: "MCPServer",
     platforms: [.macOS(.v15), .iOS(.v18)],
     products: [
-        .library(name: "MCP", targets: ["MCP"]),
+        .library(name: "MCP", targets: ["MCP"])
     ],
     targets: [
         .target(name: "MCP"),

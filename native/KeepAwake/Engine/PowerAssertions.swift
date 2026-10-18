@@ -1,7 +1,7 @@
 import Foundation
 import IOKit.pwr_mgt
-import os
 import Synchronization
+import os
 
 /// The power assertions held right now. Setting a new set takes the missing ones and releases the
 /// rest; releasing on deinit, and the system releasing a dead process's assertions, mean the Mac is
@@ -32,7 +32,8 @@ nonisolated final class PowerAssertions: Sendable {
             }
             for kind in kinds where held[kind] == nil {
                 var id = IOPMAssertionID(0)
-                let result = IOPMAssertionCreateWithName(kind.type as CFString, IOPMAssertionLevel(kIOPMAssertionLevelOn), name as CFString, &id)
+                let result = IOPMAssertionCreateWithName(
+                    kind.type as CFString, IOPMAssertionLevel(kIOPMAssertionLevelOn), name as CFString, &id)
                 if result == kIOReturnSuccess {
                     held[kind] = id
                 } else {

@@ -106,11 +106,17 @@ public final class AutomationEngine {
 
     /// A task the user started finished a turn in `project`.
     public func noteTaskFinished(project: URL, title: String) {
-        ingest([AutomationOccurrence(kind: .taskFinished, key: UUID().uuidString, project: project, subject: title, occurredAt: now())])
+        ingest([
+            AutomationOccurrence(
+                kind: .taskFinished, key: UUID().uuidString, project: project, subject: title, occurredAt: now())
+        ])
     }
 
     public func noteBranchPushed(project: URL, branch: String) {
-        ingest([AutomationOccurrence(kind: .branchPushed, key: UUID().uuidString, project: project, subject: branch, occurredAt: now())])
+        ingest([
+            AutomationOccurrence(
+                kind: .branchPushed, key: UUID().uuidString, project: project, subject: branch, occurredAt: now())
+        ])
     }
 
     public func ingest(_ occurrences: [AutomationOccurrence]) {
@@ -127,7 +133,9 @@ public final class AutomationEngine {
     /// Call whenever a workflow run changes; runs that belong to an automation update its history.
     public func workflowRunChanged(_ run: WorkflowRun) {
         guard let entry = book.runs.first(where: { $0.workflowRun == run.id }) else { return }
-        let stopped = run.steps.first { $0.status.isStopped }.map { "\($0.step.title): \($0.status.reason ?? $0.status.label)" }
+        let stopped = run.steps.first { $0.status.isStopped }.map {
+            "\($0.step.title): \($0.status.reason ?? $0.status.label)"
+        }
         let status = AutomationRunStatus(phase: run.phase, reason: stopped)
         guard status != entry.status else { return }
         book.update(entry.id) { entry in
@@ -149,7 +157,9 @@ public final class AutomationEngine {
             book.lastChecked[id] = date
             fire(id, reason: reason)
         }
-        guard needsPolling, lastPoll.map({ date.timeIntervalSince($0) >= Self.pollInterval - 1 }) ?? true else { return }
+        guard needsPolling, lastPoll.map({ date.timeIntervalSince($0) >= Self.pollInterval - 1 }) ?? true else {
+            return
+        }
         lastPoll = date
         guard let host else { return }
         do {
@@ -164,7 +174,9 @@ public final class AutomationEngine {
 
     /// Whether any automation waits on a pull request event, so GitHub has to be watched.
     public var needsPolling: Bool {
-        let gitHubEvents: Set<AutomationEventKind> = [.pullRequestOpened, .pullRequestUpdated, .reviewRequested, .checksFailed]
+        let gitHubEvents: Set<AutomationEventKind> = [
+            .pullRequestOpened, .pullRequestUpdated, .reviewRequested, .checksFailed,
+        ]
         return book.automations.contains { !$0.isPaused && !$0.eventKinds.isDisjoint(with: gitHubEvents) }
     }
 
@@ -200,7 +212,10 @@ public final class AutomationEngine {
         guard let automation = book.automation(id) else { return }
         guard book.openRun(of: id) == nil else {
             // Runs never pile up: the next trigger after this one starts a run if this one is done.
-            book.record(AutomationRun(automation: id, reason: reason, startedAt: now(), status: .skipped("The previous run was still going.")))
+            book.record(
+                AutomationRun(
+                    automation: id, reason: reason, startedAt: now(),
+                    status: .skipped("The previous run was still going.")))
             return
         }
         let run = AutomationRun(automation: id, reason: reason, startedAt: now())
@@ -211,14 +226,19 @@ public final class AutomationEngine {
     private func start(_ runID: AutomationRun.ID, of automation: Automation, reason: AutomationRunReason) async {
         guard let host else { return }
         do {
-            guard let (definition, input) = automation.action.workflow(named: automation.name, library: host.workflowLibrary, context: reason.context) else {
+            guard
+                let (definition, input) = automation.action.workflow(
+                    named: automation.name, library: host.workflowLibrary, context: reason.context)
+            else {
                 throw AutomationError.workflowMissing
             }
             let workspace = try await host.prepareWorkspace(for: automation, title: automation.name)
             // The user may have stopped it while the worktree was being made.
             guard book.runs.first(where: { $0.id == runID })?.status == .preparing else { return }
             let defaultSteps = definition.steps.filter { $0.kind == .agent && $0.agent == nil && $0.continues == nil }
-            let overrides = automation.agent.map { agent in Dictionary(uniqueKeysWithValues: defaultSteps.map { ($0.id, agent) }) } ?? [:]
+            let overrides =
+                automation.agent.map { agent in Dictionary(uniqueKeysWithValues: defaultSteps.map { ($0.id, agent) }) }
+                ?? [:]
             let workflowRun = host.startWorkflow(definition, input: input, cwd: workspace, overrides: overrides)
             book.update(runID) {
                 $0.workspace = workspace

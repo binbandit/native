@@ -27,13 +27,15 @@ struct HTTPRequest: Sendable {
         guard let headerEnd = buffer.firstRange(of: Data("\r\n\r\n".utf8)) else {
             return buffer.count > maxHeaderBytes ? .rejected(HTTPResponse(status: 431)) : .incomplete
         }
-        guard headerEnd.lowerBound - buffer.startIndex <= maxHeaderBytes else { return .rejected(HTTPResponse(status: 431)) }
+        guard headerEnd.lowerBound - buffer.startIndex <= maxHeaderBytes else {
+            return .rejected(HTTPResponse(status: 431))
+        }
         let head = String(decoding: buffer[buffer.startIndex..<headerEnd.lowerBound], as: UTF8.self)
         var lines = head.split(separator: "\r\n", omittingEmptySubsequences: false)[...]
         let requestLine = lines.popFirst()?.split(separator: " ", omittingEmptySubsequences: false) ?? []
         guard requestLine.count == 3, requestLine[2].hasPrefix("HTTP/1."),
-              let target = requestLine[1].split(separator: "?", maxSplits: 1, omittingEmptySubsequences: false).first,
-              target.hasPrefix("/")
+            let target = requestLine[1].split(separator: "?", maxSplits: 1, omittingEmptySubsequences: false).first,
+            target.hasPrefix("/")
         else {
             return .rejected(HTTPResponse(status: 400))
         }
@@ -62,11 +64,12 @@ struct HTTPRequest: Sendable {
 
         let bodyStart = headerEnd.upperBound
         guard buffer.endIndex - bodyStart >= length else { return .incomplete }
-        return .complete(HTTPRequest(
-            method: String(requestLine[0]),
-            path: String(target),
-            headers: headers,
-            body: Data(buffer[bodyStart..<bodyStart + length])
-        ))
+        return .complete(
+            HTTPRequest(
+                method: String(requestLine[0]),
+                path: String(target),
+                headers: headers,
+                body: Data(buffer[bodyStart..<bodyStart + length])
+            ))
     }
 }

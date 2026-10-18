@@ -32,7 +32,8 @@ public final class WorkflowRunStore {
 
     public func save(_ runs: [WorkflowRun]) {
         do {
-            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(
+                at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
             try JSONEncoder().encode(Array(runs.prefix(Self.limit))).write(to: url, options: .atomic)
         } catch {
             logger.error("Couldn't save workflow runs: \(error)")

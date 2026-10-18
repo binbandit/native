@@ -25,17 +25,21 @@ struct GoalPresentation: Hashable {
         let isBudgetSpent = goal.exhaustedBudget(at: now, iterationCeiling: GoalLoop.safetyIterationCeiling) != nil
         glyph = AutomationGlyph(goal: goal.status, isWorking: isWorking)
         // A cost of nothing against no cost budget says nothing, so it's left out.
-        let iterations = usage.budget.maxIterations.map { "\(usage.iterations)/\($0)" } ?? "\(usage.iterations) \(usage.iterations == 1 ? "iteration" : "iterations")"
+        let iterations =
+            usage.budget.maxIterations.map { "\(usage.iterations)/\($0)" }
+            ?? "\(usage.iterations) \(usage.iterations == 1 ? "iteration" : "iterations")"
         // Whole minutes past the first: the bar refreshes every 15 seconds, and ticking seconds are noise.
-        let elapsed = DSFormat.duration(usage.elapsed < 60 ? usage.elapsed : (usage.elapsed / 60).rounded(.down) * 60)
+        let elapsed =
+            DSFormat.duration(usage.elapsed < 60 ? usage.elapsed : (usage.elapsed / 60).rounded(.down) * 60)
             + (usage.budget.maxDuration.map { "/" + DSFormat.duration($0) } ?? "")
         // A cost of nothing against no cost budget says nothing, so it's left out.
-        let cost: String? = switch (usage.cost, usage.budget.maxCost) {
-        case (let spent?, let limit?): "\(DSFormat.cost(spent))/\(DSFormat.cost(limit))"
-        case (nil, let limit?): "–/\(DSFormat.cost(limit))"
-        case (let spent?, nil) where spent > 0: DSFormat.cost(spent)
-        default: nil
-        }
+        let cost: String? =
+            switch (usage.cost, usage.budget.maxCost) {
+            case (let spent?, let limit?): "\(DSFormat.cost(spent))/\(DSFormat.cost(limit))"
+            case (nil, let limit?): "–/\(DSFormat.cost(limit))"
+            case (let spent?, nil) where spent > 0: DSFormat.cost(spent)
+            default: nil
+            }
         self.usage = [iterations, elapsed, cost].compactMap(\.self).joined(separator: " · ")
         fraction = usage.fractionUsed
         usageHelp = ["Iterations: \(iterations)", "active time: \(elapsed)", cost.map { "spend: \($0)" }]
@@ -46,7 +50,10 @@ struct GoalPresentation: Hashable {
         case .active:
             label = "Goal"
             let iteration = "Iteration \(goal.iterations + 1)" + (goal.budget.maxIterations.map { " of \($0)" } ?? "")
-            detail = isWorking ? [iteration, reason ?? "working toward the goal"].joined(separator: " · ") : "\(iteration) starts when \(agentName) is free"
+            detail =
+                isWorking
+                ? [iteration, reason ?? "working toward the goal"].joined(separator: " · ")
+                : "\(iteration) starts when \(agentName) is free"
             primaryAction = .pause
         case .paused:
             label = "Paused"
@@ -54,7 +61,8 @@ struct GoalPresentation: Hashable {
             primaryAction = .resume
         case .blocked:
             label = "Needs you"
-            detail = "\(agentName) needs you: \(Self.sentence(reason ?? "it can't go on without your input")) Reply to continue."
+            detail =
+                "\(agentName) needs you: \(Self.sentence(reason ?? "it can't go on without your input")) Reply to continue."
             primaryAction = .resume
         case .limited:
             label = isBudgetSpent ? "Budget used" : "Limited"

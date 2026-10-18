@@ -10,13 +10,14 @@ final class PowerSourceMonitor {
     init(onChange: @escaping () -> Void) {
         self.onChange = onChange
         let context = Unmanaged.passUnretained(self).toOpaque()
-        source = IOPSNotificationCreateRunLoopSource({ context in
-            guard let context else { return }
-            // The source is on the main run loop, so this is the main thread.
-            MainActor.assumeIsolated {
-                Unmanaged<PowerSourceMonitor>.fromOpaque(context).takeUnretainedValue().onChange()
-            }
-        }, context)?.takeRetainedValue()
+        source = IOPSNotificationCreateRunLoopSource(
+            { context in
+                guard let context else { return }
+                // The source is on the main run loop, so this is the main thread.
+                MainActor.assumeIsolated {
+                    Unmanaged<PowerSourceMonitor>.fromOpaque(context).takeUnretainedValue().onChange()
+                }
+            }, context)?.takeRetainedValue()
         if let source {
             CFRunLoopAddSource(CFRunLoopGetMain(), source, .defaultMode)
         }

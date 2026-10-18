@@ -38,10 +38,11 @@ extension WorkflowAgentChoice: Codable {
         } else if let step = try container.decodeIfPresent(String.self, forKey: .differentFrom) {
             self = .differentFrom(step)
         } else {
-            throw DecodingError.dataCorrupted(.init(
-                codingPath: decoder.codingPath,
-                debugDescription: "An agent is an agent id, {\"sameAs\": step} or {\"differentFrom\": step}."
-            ))
+            throw DecodingError.dataCorrupted(
+                .init(
+                    codingPath: decoder.codingPath,
+                    debugDescription: "An agent is an agent id, {\"sameAs\": step} or {\"differentFrom\": step}."
+                ))
         }
     }
 

@@ -8,7 +8,8 @@ import ScriptRuntime
 /// their tools are a search away for every session without their schemas in its context. A call
 /// that can make changes is approved like the agent's own (`MCPScriptRun`).
 nonisolated final class MCPScriptBindings: OrchestrationScriptBindings {
-    typealias Resolve = @Sendable @MainActor (URL) async -> (servers: [MCPScriptedServer], environment: [String: String])
+    typealias Resolve =
+        @Sendable @MainActor (URL) async -> (servers: [MCPScriptedServer], environment: [String: String])
 
     typealias StartRun = @Sendable @MainActor (UUID, ContinuousClock.Instant) -> MCPScriptRun?
 

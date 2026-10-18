@@ -95,7 +95,11 @@ final class AgentRuntime {
             let response = try await process.connection.send(InitializeRequest(clientInfo: Self.clientInfo))
             guard generation == self.generation else { return }
             guard response.protocolVersion == ACP.protocolVersion else {
-                throw RPCError(code: 0, message: "\(agent.displayName) speaks ACP version \(response.protocolVersion); Native supports version \(ACP.protocolVersion).")
+                throw RPCError(
+                    code: 0,
+                    message:
+                        "\(agent.displayName) speaks ACP version \(response.protocolVersion); Native supports version \(ACP.protocolVersion)."
+                )
             }
             info = response.agentInfo
             capabilities = response.agentCapabilities
@@ -167,7 +171,9 @@ final class AgentRuntime {
             return fileManager.isExecutableFile(atPath: command.executable)
         }
         return command.environment["PATH", default: ""].split(separator: ":").contains { directory in
-            fileManager.isExecutableFile(atPath: URL(filePath: String(directory)).appending(path: command.executable).path(percentEncoded: false))
+            fileManager.isExecutableFile(
+                atPath: URL(filePath: String(directory)).appending(path: command.executable).path(percentEncoded: false)
+            )
         }
     }
 

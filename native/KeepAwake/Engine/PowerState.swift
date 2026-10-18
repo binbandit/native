@@ -14,10 +14,11 @@ nonisolated struct PowerState: Hashable, Sendable {
         var state = PowerState(isOnBattery: providing == kIOPSBatteryPowerValue)
         let sources = IOPSCopyPowerSourcesList(info)?.takeRetainedValue() as? [CFTypeRef] ?? []
         for source in sources {
-            guard let description = IOPSGetPowerSourceDescription(info, source)?.takeUnretainedValue() as? [String: Any],
-                  description[kIOPSTypeKey] as? String == kIOPSInternalBatteryType,
-                  let current = description[kIOPSCurrentCapacityKey] as? Int,
-                  let maximum = description[kIOPSMaxCapacityKey] as? Int, maximum > 0
+            guard
+                let description = IOPSGetPowerSourceDescription(info, source)?.takeUnretainedValue() as? [String: Any],
+                description[kIOPSTypeKey] as? String == kIOPSInternalBatteryType,
+                let current = description[kIOPSCurrentCapacityKey] as? Int,
+                let maximum = description[kIOPSMaxCapacityKey] as? Int, maximum > 0
             else { continue }
             state.batteryLevel = Double(current) / Double(maximum)
         }

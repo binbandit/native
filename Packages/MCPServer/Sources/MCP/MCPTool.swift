@@ -68,7 +68,9 @@ public struct MCPTool<Context: Sendable>: Sendable {
 
     func definition(for context: Context) async -> JSON {
         let listed = await listing?(context) ?? Listing(description: description, annotations: annotations)
-        var object: [String: JSON] = ["name": .string(name), "description": .string(listed.description), "inputSchema": inputSchema]
+        var object: [String: JSON] = [
+            "name": .string(name), "description": .string(listed.description), "inputSchema": inputSchema,
+        ]
         object["title"] = title.map(JSON.string)
         object["outputSchema"] = outputSchema
         object["annotations"] = listed.annotations.json
@@ -81,7 +83,8 @@ public struct MCPTool<Context: Sendable>: Sendable {
         case DecodingError.keyNotFound(let key, _): "missing required argument \"\(key.stringValue)\"."
         case DecodingError.typeMismatch(_, let context), DecodingError.valueNotFound(_, let context):
             "argument \"\(path(context))\" has the wrong type."
-        case DecodingError.dataCorrupted(let context): "argument \"\(path(context))\" is invalid: \(context.debugDescription)"
+        case DecodingError.dataCorrupted(let context):
+            "argument \"\(path(context))\" is invalid: \(context.debugDescription)"
         default: "\(error)"
         }
     }
@@ -103,8 +106,11 @@ public struct MCPToolAnnotations: Sendable, Hashable {
     }
 
     var json: JSON? {
-        let hints = ["readOnlyHint": readOnly, "destructiveHint": destructive, "idempotentHint": idempotent, "openWorldHint": openWorld]
-            .compactMapValues { $0.map(JSON.bool) }
+        let hints = [
+            "readOnlyHint": readOnly, "destructiveHint": destructive, "idempotentHint": idempotent,
+            "openWorldHint": openWorld,
+        ]
+        .compactMapValues { $0.map(JSON.bool) }
         return hints.isEmpty ? nil : .object(hints)
     }
 }

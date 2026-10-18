@@ -46,7 +46,9 @@ final class AppAutomationsHost: AutomationHost {
         }
     }
 
-    func startWorkflow(_ definition: WorkflowDefinition, input: String, cwd: URL, overrides: [String: WorkflowAgent.ID]) -> WorkflowRun.ID {
+    func startWorkflow(
+        _ definition: WorkflowDefinition, input: String, cwd: URL, overrides: [String: WorkflowAgent.ID]
+    ) -> WorkflowRun.ID {
         guard let center else { return WorkflowRun.ID() }
         return center.workflows.start(definition, input: input, cwd: cwd, overrides: overrides)
     }

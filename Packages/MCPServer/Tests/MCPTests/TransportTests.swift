@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import MCP
 
 /// The server over real loopback connections.
@@ -21,11 +22,17 @@ struct TransportTests {
         let url = try #require(server.url(for: "alice"))
         #expect(url.host() == "127.0.0.1")
 
-        let (json, status) = try await call(url, ["jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": ["name": "echo", "arguments": ["text": "hi"]]])
+        let (json, status) = try await call(
+            url,
+            [
+                "jsonrpc": "2.0", "id": 1, "method": "tools/call",
+                "params": ["name": "echo", "arguments": ["text": "hi"]],
+            ])
         #expect(status == 200)
         #expect(json?["result"]?["structuredContent"]?["text"] == "hi")
 
-        let (_, missing) = try await call(try #require(server.url(for: "mallory")), ["jsonrpc": "2.0", "id": 1, "method": "ping"])
+        let (_, missing) = try await call(
+            try #require(server.url(for: "mallory")), ["jsonrpc": "2.0", "id": 1, "method": "ping"])
         #expect(missing == 404)
     }
 
@@ -38,7 +45,10 @@ struct TransportTests {
         let url = try #require(server.url(for: "alice"))
 
         let session = URLSession(configuration: .ephemeral)
-        let slow = Task { try await call(url, ["jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": ["name": "slow"]], session: session) }
+        let slow = Task {
+            try await call(
+                url, ["jsonrpc": "2.0", "id": 1, "method": "tools/call", "params": ["name": "slow"]], session: session)
+        }
         #expect(await iterator.next() == "started")
 
         let (ping, status) = try await call(url, ["jsonrpc": "2.0", "id": 2, "method": "ping"])

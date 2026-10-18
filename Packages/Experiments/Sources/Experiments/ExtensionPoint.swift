@@ -110,7 +110,9 @@ public struct ExtensionResolver: Sendable {
         switch claims.count {
         case 0: return .standard
         case 1: return .contributed(by: claims[0].source)
-        default: return .conflict(ExtensionConflict(point: point, pointTitle: claims[0].claim.pointTitle, sources: claims.map(\.source)))
+        default:
+            return .conflict(
+                ExtensionConflict(point: point, pointTitle: claims[0].claim.pointTitle, sources: claims.map(\.source)))
         }
     }
 

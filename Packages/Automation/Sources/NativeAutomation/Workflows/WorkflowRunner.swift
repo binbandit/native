@@ -32,14 +32,22 @@ public final class WorkflowRunner {
     }
 
     /// The agents each step would get, for the picker to show before anything runs.
-    public func plan(for definition: WorkflowDefinition, overrides: [String: WorkflowAgent.ID] = [:]) -> [String: WorkflowAssignment] {
-        WorkflowAssignment.resolve(definition, agents: host?.workflowAgents ?? [], defaultAgent: host?.defaultWorkflowAgent, overrides: overrides)
+    public func plan(
+        for definition: WorkflowDefinition, overrides: [String: WorkflowAgent.ID] = [:]
+    ) -> [String: WorkflowAssignment] {
+        WorkflowAssignment.resolve(
+            definition, agents: host?.workflowAgents ?? [], defaultAgent: host?.defaultWorkflowAgent,
+            overrides: overrides)
     }
 
     /// Starts `definition` in `cwd` and returns the new run's id.
     @discardableResult
-    public func start(_ definition: WorkflowDefinition, input: String, cwd: URL, overrides: [String: WorkflowAgent.ID] = [:]) -> WorkflowRun.ID {
-        let run = WorkflowRun(definition: definition, input: input, cwd: cwd, assignments: plan(for: definition, overrides: overrides), at: now())
+    public func start(
+        _ definition: WorkflowDefinition, input: String, cwd: URL, overrides: [String: WorkflowAgent.ID] = [:]
+    ) -> WorkflowRun.ID {
+        let run = WorkflowRun(
+            definition: definition, input: input, cwd: cwd, assignments: plan(for: definition, overrides: overrides),
+            at: now())
         runs.insert(run, at: 0)
         send(.start, to: run.id)
         return run.id
@@ -102,7 +110,9 @@ public final class WorkflowRunner {
             do {
                 try await host.sendToStepTask(task, text: text)
             } catch {
-                send(.taskFailed(step: step, message: "Couldn't send the step's prompt: \(Self.describe(error))"), to: run)
+                send(
+                    .taskFailed(step: step, message: "Couldn't send the step's prompt: \(Self.describe(error))"),
+                    to: run)
             }
         case .cancelTask(let task):
             await host.cancelStepTask(task)
@@ -115,7 +125,9 @@ public final class WorkflowRunner {
             }
         case .runScript(let step, let source, let input, let cwd):
             do {
-                send(.scriptFinished(step: step, output: try await host.runScript(source, input: input, cwd: cwd)), to: run)
+                send(
+                    .scriptFinished(step: step, output: try await host.runScript(source, input: input, cwd: cwd)),
+                    to: run)
             } catch {
                 send(.scriptFailed(step: step, message: Self.describe(error)), to: run)
             }

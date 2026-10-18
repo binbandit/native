@@ -38,7 +38,8 @@ final class AppAutomationHost: WorkflowHost {
             return session
         }
         guard let model, let record = records[task] else { throw AutomationHostError.taskClosed }
-        let session = try await model.reopenTaskSession(agent: AgentDefinition.ID(rawValue: record.agent), id: record.session, cwd: record.cwd)
+        let session = try await model.reopenTaskSession(
+            agent: AgentDefinition.ID(rawValue: record.agent), id: record.session, cwd: record.cwd)
         reopened[task] = session.clientID
         return session
     }
@@ -47,7 +48,8 @@ final class AppAutomationHost: WorkflowHost {
 
     var workflowAgents: [WorkflowAgent] {
         (model?.agents ?? []).filter(\.isAvailable).map { runtime in
-            WorkflowAgent(id: runtime.agent.id.rawValue, name: runtime.agent.displayName, symbol: runtime.agent.symbolName)
+            WorkflowAgent(
+                id: runtime.agent.id.rawValue, name: runtime.agent.displayName, symbol: runtime.agent.symbolName)
         }
     }
 
@@ -59,7 +61,8 @@ final class AppAutomationHost: WorkflowHost {
         guard let model else { throw AutomationHostError.appUnavailable }
         let session = try await model.startTaskSession(agent: AgentDefinition.ID(rawValue: agent), cwd: cwd)
         model.rename(session.key, to: title)
-        records.remember(StepTaskRecords.Record(agent: agent, session: session.id, cwd: session.cwd), for: session.clientID)
+        records.remember(
+            StepTaskRecords.Record(agent: agent, session: session.id, cwd: session.cwd), for: session.clientID)
         return session.clientID
     }
 
@@ -73,7 +76,9 @@ final class AppAutomationHost: WorkflowHost {
 
     func stepTaskReport(_ task: UUID) -> WorkflowTaskReport? {
         guard let session = session(for: task) else { return nil }
-        return WorkflowTaskReport(reply: session.state.latestReply, cost: session.state.usage?.cost?.amount, needsApproval: session.needsApproval)
+        return WorkflowTaskReport(
+            reply: session.state.latestReply, cost: session.state.usage?.cost?.amount,
+            needsApproval: session.needsApproval)
     }
 
     func openPullRequest(_ draft: WorkflowPullRequestDraft) async throws -> WorkflowPullRequestResult {

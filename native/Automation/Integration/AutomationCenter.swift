@@ -55,7 +55,8 @@ final class AutomationCenter {
         worktree: @escaping (_ project: URL, _ title: String) async throws -> URL,
         pullRequests: @escaping () async throws -> [PullRequestSnapshot]
     ) {
-        automations.host = AppAutomationsHost(center: self, repository: repository, worktree: worktree, pullRequests: pullRequests)
+        automations.host = AppAutomationsHost(
+            center: self, repository: repository, worktree: worktree, pullRequests: pullRequests)
     }
 
     /// A turn ended normally. A task the user started finishing is an event automations can wait on;
@@ -68,7 +69,10 @@ final class AutomationCenter {
     /// Wires the center to the app: workflow steps run as the app's task sessions, pull request steps
     /// go through `openPullRequest` (the Git and GitHub features), and provider limits read the way
     /// the rest of Native words them.
-    func connect(to model: AppModel, openPullRequest: @escaping (WorkflowPullRequestDraft) async throws -> WorkflowPullRequestResult) {
+    func connect(
+        to model: AppModel,
+        openPullRequest: @escaping (WorkflowPullRequestDraft) async throws -> WorkflowPullRequestResult
+    ) {
         let host = AppAutomationHost(model: model)
         host.openPullRequestHandler = openPullRequest
         self.host = host
@@ -102,9 +106,11 @@ final class AutomationCenter {
 
     /// Picks up the workflows enabled plugins contribute. Call when plugins change.
     func reloadLibrary(from plugins: PluginRegistry) {
-        reloadLibrary(contributions: plugins.enabledPlugins.compactMap { plugin in
-            plugin.manifest.workflows.isEmpty ? nil : (plugin: plugin.manifest.id, workflows: plugin.manifest.workflows)
-        })
+        reloadLibrary(
+            contributions: plugins.enabledPlugins.compactMap { plugin in
+                plugin.manifest.workflows.isEmpty
+                    ? nil : (plugin: plugin.manifest.id, workflows: plugin.manifest.workflows)
+            })
     }
 
     // MARK: - Session events

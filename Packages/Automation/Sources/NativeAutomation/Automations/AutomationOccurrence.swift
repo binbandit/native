@@ -15,7 +15,10 @@ public nonisolated struct AutomationOccurrence: Codable, Hashable, Sendable {
     public var url: URL?
     public var occurredAt: Date
 
-    public init(kind: AutomationEventKind, key: String, repository: String? = nil, project: URL? = nil, subject: String, url: URL? = nil, occurredAt: Date) {
+    public init(
+        kind: AutomationEventKind, key: String, repository: String? = nil, project: URL? = nil, subject: String,
+        url: URL? = nil, occurredAt: Date
+    ) {
         self.kind = kind
         self.key = key
         self.repository = repository
@@ -27,14 +30,15 @@ public nonisolated struct AutomationOccurrence: Codable, Hashable, Sendable {
 
     /// What happened, in a few words: "CI failed: acme/reports#214 Add CSV export".
     public var headline: String {
-        let what = switch kind {
-        case .pullRequestOpened: "Pull request opened"
-        case .pullRequestUpdated: "Pull request updated"
-        case .reviewRequested: "Review requested"
-        case .checksFailed: "CI failed"
-        case .taskFinished: "Task finished"
-        case .branchPushed: "Branch pushed"
-        }
+        let what =
+            switch kind {
+            case .pullRequestOpened: "Pull request opened"
+            case .pullRequestUpdated: "Pull request updated"
+            case .reviewRequested: "Review requested"
+            case .checksFailed: "CI failed"
+            case .taskFinished: "Task finished"
+            case .branchPushed: "Branch pushed"
+            }
         return "\(what): \(subject)"
     }
 

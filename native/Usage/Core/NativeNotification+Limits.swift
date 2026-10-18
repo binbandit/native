@@ -7,12 +7,14 @@ extension NativeNotification {
         switch alert {
         case .reached(let limit, let sessions):
             let status = limit.limitStatus()
-            self.init(limit, kind: .limitReached, title: status.headline, body: Self.reachedBody(status, sessions, now: now))
+            self.init(
+                limit, kind: .limitReached, title: status.headline, body: Self.reachedBody(status, sessions, now: now))
             if let first = sessions.first {
                 session = first.session.rawValue
                 sessionTitle = first.title
             }
-            actions = limit.resetsAt != nil && !sessions.isEmpty ? [.resumeAtReset, .snoozeUntilReset] : [.snoozeUntilReset]
+            actions =
+                limit.resetsAt != nil && !sessions.isEmpty ? [.resumeAtReset, .snoozeUntilReset] : [.snoozeUntilReset]
         case .warning(let limit):
             let status = limit.limitStatus()
             let body = status.resetText(now: now).map { $0.sentenceCased + "." } ?? "Requests may stop soon."
@@ -27,7 +29,9 @@ extension NativeNotification {
             self.init(
                 id: "native.usage-limit.\(limit.agent.rawValue)", kind: .limitRescheduled, about: ref,
                 title: limit.limitStatus().headline,
-                body: "Hit the limit again. Native will resume \(ref.title.map { "“\($0)”" } ?? "the task") at \(DSFormat.time(date, now: now)).")
+                body:
+                    "Hit the limit again. Native will resume \(ref.title.map { "“\($0)”" } ?? "the task") at \(DSFormat.time(date, now: now))."
+            )
         case .resumeFailed(let ref):
             self.init(
                 id: "native.usage-limit.\(ref.agent.rawValue).resume.\(ref.session.rawValue)", kind: .resumeFailed,

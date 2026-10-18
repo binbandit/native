@@ -14,7 +14,8 @@ import Foundation
 
 let arguments = Array(CommandLine.arguments.dropFirst())
 guard arguments.count >= 2, let pid = pid_t(arguments[0]) else {
-    FileHandle.standardError.write(Data("usage: drive <pid> menu <menu> <item> | prompt <text> | minimize | hide\n".utf8))
+    FileHandle.standardError.write(
+        Data("usage: drive <pid> menu <menu> <item> | prompt <text> | minimize | hide\n".utf8))
     exit(2)
 }
 let app = AXUIElementCreateApplication(pid)
@@ -82,18 +83,23 @@ case "enabled" where arguments.count == 4:
 case "prompt" where arguments.count == 3:
     let window = mainWindow()
     guard
-        let editor = find(window, where: {
-            string($0, kAXRoleAttribute) == kAXTextAreaRole && string($0, kAXDescriptionAttribute) == "Message"
-        })
+        let editor = find(
+            window,
+            where: {
+                string($0, kAXRoleAttribute) == kAXTextAreaRole && string($0, kAXDescriptionAttribute) == "Message"
+            })
     else { fail("no composer") }
     guard AXUIElementSetAttributeValue(editor, kAXValueAttribute as CFString, arguments[2] as CFString) == .success
     else { fail("couldn't write the draft") }
     // The Send button appears once the draft has text.
     for _ in 0..<50 {
-        if let send = find(window, where: {
-            string($0, kAXRoleAttribute) == kAXButtonRole
-                && string($0, kAXDescriptionAttribute) == "Send Message"
-        }) {
+        if let send = find(
+            window,
+            where: {
+                string($0, kAXRoleAttribute) == kAXButtonRole
+                    && string($0, kAXDescriptionAttribute) == "Send Message"
+            })
+        {
             press(send)
             exit(0)
         }

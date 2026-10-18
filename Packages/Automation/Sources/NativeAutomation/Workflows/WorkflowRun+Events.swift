@@ -57,7 +57,9 @@ extension WorkflowRun {
             }
             return begin(index, at: now)
         case .skip(let step):
-            guard let index = index(of: step), !steps[index].status.isActive, !steps[index].status.isFinished else { return [] }
+            guard let index = index(of: step), !steps[index].status.isActive, !steps[index].status.isFinished else {
+                return []
+            }
             steps[index].status = .skipped
             steps[index].endedAt = now
             steps[index].waitingSince = nil
@@ -82,7 +84,8 @@ extension WorkflowRun {
             return send(text, to: index, origin: .user, at: now)
         case .reply(let step, let text):
             let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard let index = index(of: step), steps[index].status.isStopped, !text.isEmpty, steps[index].task != nil else { return [] }
+            guard let index = index(of: step), steps[index].status.isStopped, !text.isEmpty, steps[index].task != nil
+            else { return [] }
             // The answer is what the step stopped for, so its goal picks back up with it.
             resumeGoal(index, at: now)
             return send(text, to: index, origin: .user, at: now)
@@ -106,9 +109,12 @@ extension WorkflowRun {
     public static let continuePrompt = "Continue where you left off."
     /// Sent when the user resumes a step that was cut off, so the agent checks what its last turn
     /// actually finished before carrying on.
-    public static let interruptedPrompt = "Native quit while you were working on this, so your last turn was cut off. Check what it finished, then continue where you left off."
+    public static let interruptedPrompt =
+        "Native quit while you were working on this, so your last turn was cut off. Check what it finished, then continue where you left off."
 
-    private mutating func turnEnded(_ step: String, outcome: TurnOutcome, reply: String?, cost: Double?, at now: Date) -> [WorkflowEffect] {
+    private mutating func turnEnded(
+        _ step: String, outcome: TurnOutcome, reply: String?, cost: Double?, at now: Date
+    ) -> [WorkflowEffect] {
         guard let index = index(of: step), steps[index].status == .running else { return [] }
         steps[index].turns += 1
         steps[index].latestReply = reply ?? steps[index].latestReply
@@ -136,7 +142,9 @@ extension WorkflowRun {
         return advance(at: now)
     }
 
-    private mutating func settleGoalStep(_ index: Int, loop: GoalLoop, outcome: TurnOutcome, reply: String?, at now: Date) {
+    private mutating func settleGoalStep(
+        _ index: Int, loop: GoalLoop, outcome: TurnOutcome, reply: String?, at now: Date
+    ) {
         let reason = loop.goal.lastReason ?? loop.goal.status.label
         switch loop.goal.status {
         case .complete:

@@ -19,7 +19,9 @@ struct WorkflowPickerView: View {
     init(
         entries: [WorkflowLibrary.Entry], agents: [WorkflowAgent], projectName: String,
         plan: @escaping (WorkflowDefinition, [String: WorkflowAgent.ID]) -> [String: WorkflowAssignment],
-        onRun: @escaping (_ definition: WorkflowDefinition, _ input: String, _ overrides: [String: WorkflowAgent.ID]) -> Void,
+        onRun:
+            @escaping (_ definition: WorkflowDefinition, _ input: String, _ overrides: [String: WorkflowAgent.ID]) ->
+            Void,
         onCancel: @escaping () -> Void,
         initialSelection: String? = nil
     ) {
@@ -78,7 +80,11 @@ struct WorkflowPickerView: View {
     }
 
     private var cards: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: AutomationMetrics.cardMinWidth), spacing: DS.Space.md, alignment: .top)], spacing: DS.Space.md) {
+        LazyVGrid(
+            columns: [
+                GridItem(.adaptive(minimum: AutomationMetrics.cardMinWidth), spacing: DS.Space.md, alignment: .top)
+            ], spacing: DS.Space.md
+        ) {
             ForEach(entries) { entry in
                 WorkflowCard(entry: entry, isSelected: entry.id == selectedID) {
                     selectedID = entry.id
@@ -94,13 +100,19 @@ struct WorkflowPickerView: View {
                 Text(definition.input.label)
                     .font(.dsBodyMedium)
                     .foregroundStyle(.dsTextPrimary)
-                AutomationTextField(label: definition.input.label, text: $input, placeholder: definition.input.placeholder ?? "", axis: .vertical, lines: 2...6)
-                    .focusedOnAppear()
+                AutomationTextField(
+                    label: definition.input.label, text: $input, placeholder: definition.input.placeholder ?? "",
+                    axis: .vertical, lines: 2...6
+                )
+                .focusedOnAppear()
             }
             VStack(alignment: .leading, spacing: DS.Space.xs) {
                 SectionHeader("Steps")
                 ForEach(Array(definition.steps.enumerated()), id: \.element.id) { index, step in
-                    WorkflowStepPlanRow(index: index, step: step, definition: definition, assignment: assignments[step.id], agents: agents) { agent in
+                    WorkflowStepPlanRow(
+                        index: index, step: step, definition: definition, assignment: assignments[step.id],
+                        agents: agents
+                    ) { agent in
                         overrides[step.id] = agent
                     }
                 }
@@ -111,9 +123,12 @@ struct WorkflowPickerView: View {
     private var footer: some View {
         HStack(spacing: DS.Space.md) {
             if agents.isEmpty {
-                Label("No agent is ready to run steps. Start one from the sidebar.", systemImage: "exclamationmark.triangle")
-                    .font(.dsCaption)
-                    .foregroundStyle(.dsWarning)
+                Label(
+                    "No agent is ready to run steps. Start one from the sidebar.",
+                    systemImage: "exclamationmark.triangle"
+                )
+                .font(.dsCaption)
+                .foregroundStyle(.dsWarning)
             } else if let broken = brokenSummary {
                 Label(broken, systemImage: "exclamationmark.triangle")
                     .font(.dsCaption)
@@ -138,6 +153,7 @@ struct WorkflowPickerView: View {
     private var brokenSummary: String? {
         let broken = entries.filter { !$0.isRunnable }
         guard !broken.isEmpty else { return nil }
-        return broken.count == 1 ? "1 workflow can't run; its card says why." : "\(broken.count) workflows can't run; their cards say why."
+        return broken.count == 1
+            ? "1 workflow can't run; its card says why." : "\(broken.count) workflows can't run; their cards say why."
     }
 }

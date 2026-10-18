@@ -39,7 +39,8 @@ public nonisolated struct WorkflowRun: Codable, Hashable, Sendable, Identifiable
 
     /// The run's name: the first line of the input, or the workflow's name without one.
     public static func title(for input: String, definition: WorkflowDefinition) -> String {
-        let line = input.split(whereSeparator: \.isNewline).first.map(String.init)?.trimmingCharacters(in: .whitespaces) ?? ""
+        let line =
+            input.split(whereSeparator: \.isNewline).first.map(String.init)?.trimmingCharacters(in: .whitespaces) ?? ""
         guard !line.isEmpty else { return definition.name }
         return line.count > 72 ? String(line.prefix(71)) + "…" : line
     }

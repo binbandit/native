@@ -44,7 +44,9 @@ public struct UsageLimitHit: Hashable, Sendable {
             texts.append(agentText)
         }
         let candidates = texts.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }.filter { !$0.isEmpty }
-        guard let message = candidates.first(where: Self.isLimitMessage) ?? (isFlagged ? candidates.first : nil) else { return nil }
+        guard let message = candidates.first(where: Self.isLimitMessage) ?? (isFlagged ? candidates.first : nil) else {
+            return nil
+        }
         self.init(
             message: message,
             resetsAt: candidates.lazy.compactMap { Self.resetDate(in: $0, now: now, timeZone: timeZone) }.first,
@@ -56,7 +58,9 @@ public struct UsageLimitHit: Hashable, Sendable {
     public init?(text: String, now: Date = .now, timeZone: TimeZone = .current) {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard Self.isLimitMessage(text) else { return nil }
-        self.init(message: text, resetsAt: Self.resetDate(in: text, now: now, timeZone: timeZone), window: Self.window(in: text))
+        self.init(
+            message: text, resetsAt: Self.resetDate(in: text, now: now, timeZone: timeZone),
+            window: Self.window(in: text))
     }
 
     /// Whether `text` is a provider's "usage limit reached" message: one of the Agent SDK's
@@ -146,7 +150,9 @@ public struct UsageLimitHit: Hashable, Sendable {
         for character in phrase.dropFirst(3).lowercased() + " " {
             if character.isNumber || character == "." {
                 number.append(character)
-            } else if let value = Double(number), let unit = ["d": 86_400.0, "h": 3_600, "m": 60, "s": 1][String(character)] {
+            } else if let value = Double(number),
+                let unit = ["d": 86_400.0, "h": 3_600, "m": 60, "s": 1][String(character)]
+            {
                 seconds += value * unit
                 number = ""
                 matched = true
@@ -161,7 +167,8 @@ public struct UsageLimitHit: Hashable, Sendable {
 
     /// "3pm", "3:05 PM", "15:00", "Oct 20, 3pm", "Oct 18th, 2026 3:05 PM"
     private static func absoluteDate(_ phrase: String, now: Date, timeZone: TimeZone) -> Date? {
-        var tokens = phrase
+        var tokens =
+            phrase
             .replacingOccurrences(of: ",", with: " ")
             .split(separator: " ")
             .map { $0.lowercased() }
@@ -175,7 +182,9 @@ public struct UsageLimitHit: Hashable, Sendable {
         var hasYear = false
 
         if let month = month(named: tokens[0]) {
-            guard tokens.count >= 3, let day = Int(tokens[1].prefix { $0.isNumber }), (1...31).contains(day) else { return nil }
+            guard tokens.count >= 3, let day = Int(tokens[1].prefix { $0.isNumber }), (1...31).contains(day) else {
+                return nil
+            }
             components.month = month
             components.day = day
             hasDate = true

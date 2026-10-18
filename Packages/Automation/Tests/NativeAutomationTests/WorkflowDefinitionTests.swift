@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import NativeAutomation
 
 @Suite struct WorkflowDefinitionTests {
@@ -21,13 +22,13 @@ import Testing
 
     @Test func pluginJSONShorthands() throws {
         let json = #"""
-        {"id": "w", "name": "W", "steps": [
-          {"id": "a", "prompt": "Do {{input}}", "goal": true, "approval": "Check it"},
-          {"id": "b", "agent": "codex", "prompt": "Review {{steps.a.output}}", "after": ["a"]},
-          {"id": "c", "agent": {"differentFrom": "b"}, "prompt": "x", "approval": true, "after": []},
-          {"id": "pr", "kind": "pullRequest", "pullRequest": {"body": "{{steps.a.output}}", "draft": true}, "after": ["a"]}
-        ]}
-        """#
+            {"id": "w", "name": "W", "steps": [
+              {"id": "a", "prompt": "Do {{input}}", "goal": true, "approval": "Check it"},
+              {"id": "b", "agent": "codex", "prompt": "Review {{steps.a.output}}", "after": ["a"]},
+              {"id": "c", "agent": {"differentFrom": "b"}, "prompt": "x", "approval": true, "after": []},
+              {"id": "pr", "kind": "pullRequest", "pullRequest": {"body": "{{steps.a.output}}", "draft": true}, "after": ["a"]}
+            ]}
+            """#
         let definition = try JSONDecoder().decode(WorkflowDefinition.self, from: Data(json.utf8))
         #expect(definition.steps[0].goal == WorkflowStep.defaultGoalBudget)
         #expect(definition.steps[0].approval == WorkflowApproval(message: "Check it"))
@@ -42,12 +43,14 @@ import Testing
     }
 
     @Test func validationCatchesBrokenReferences() {
-        let definition = WorkflowDefinition(id: "w", name: "W", summary: "", steps: [
-            WorkflowStep(id: "a", title: "A", prompt: "Uses {{steps.b.output}} and {{nope}}"),
-            WorkflowStep(id: "b", title: "B", agent: .sameAs("c"), prompt: "x", after: ["z"]),
-            WorkflowStep(id: "b", title: "Dup", continues: "a", prompt: ""),
-            WorkflowStep(id: "pr", title: "PR", kind: .pullRequest),
-        ])
+        let definition = WorkflowDefinition(
+            id: "w", name: "W", summary: "",
+            steps: [
+                WorkflowStep(id: "a", title: "A", prompt: "Uses {{steps.b.output}} and {{nope}}"),
+                WorkflowStep(id: "b", title: "B", agent: .sameAs("c"), prompt: "x", after: ["z"]),
+                WorkflowStep(id: "b", title: "Dup", continues: "a", prompt: ""),
+                WorkflowStep(id: "pr", title: "PR", kind: .pullRequest),
+            ])
         let messages = WorkflowIssue.find(in: definition).map(\.description)
         #expect(messages.contains("Step \"a\": It uses \"b\"'s result, but doesn't wait for that step."))
         #expect(messages.contains("Step \"a\": {{nope}} isn't a variable."))
@@ -59,16 +62,20 @@ import Testing
     }
 
     @Test func parallelContinuationsOfOneTaskAreRejected() {
-        let definition = WorkflowDefinition(id: "w", name: "W", summary: "", steps: [
-            WorkflowStep(id: "a", title: "A", prompt: "x"),
-            WorkflowStep(id: "b", title: "B", continues: "a", prompt: "x", after: ["a"]),
-            WorkflowStep(id: "c", title: "C", continues: "a", prompt: "x", after: ["a"]),
-        ])
+        let definition = WorkflowDefinition(
+            id: "w", name: "W", summary: "",
+            steps: [
+                WorkflowStep(id: "a", title: "A", prompt: "x"),
+                WorkflowStep(id: "b", title: "B", continues: "a", prompt: "x", after: ["a"]),
+                WorkflowStep(id: "c", title: "C", continues: "a", prompt: "x", after: ["a"]),
+            ])
         #expect(WorkflowIssue.find(in: definition).map(\.step) == ["c"])
     }
 
     @Test func libraryKeepsTheFirstOfDuplicateIDs() {
-        let duplicate = WorkflowDefinition(id: "plan-implement-review", name: "Mine", summary: "", steps: [WorkflowStep(id: "a", title: "A", prompt: "x")])
+        let duplicate = WorkflowDefinition(
+            id: "plan-implement-review", name: "Mine", summary: "",
+            steps: [WorkflowStep(id: "a", title: "A", prompt: "x")])
         let library = WorkflowLibrary(contributions: [("my-plugin", [duplicate])])
         #expect(library.entry("plan-implement-review")?.source == .builtIn)
         #expect(library.entries.last?.isRunnable == false)
@@ -79,8 +86,13 @@ import Testing
         var values = WorkflowTemplate.Values(input: "Add CSV", title: "Add CSV", cwd: URL(filePath: "/work/app"))
         values.outputs["plan"] = "1. Do it"
         values.agents["plan"] = "Claude Code"
-        let text = WorkflowTemplate.render("In {{ project }} ({{cwd}}): {{input}}\n{{steps.plan.output}} by {{steps.plan.agent}}; {{steps.gone.output}}", with: values)
-        #expect(text == "In app (/work/app): Add CSV\n1. Do it by Claude Code; (No output: that step was skipped or didn't reply.)")
+        let text = WorkflowTemplate.render(
+            "In {{ project }} ({{cwd}}): {{input}}\n{{steps.plan.output}} by {{steps.plan.agent}}; {{steps.gone.output}}",
+            with: values)
+        #expect(
+            text
+                == "In app (/work/app): Add CSV\n1. Do it by Claude Code; (No output: that step was skipped or didn't reply.)"
+        )
         #expect(WorkflowTemplate.render("unclosed {{input", with: values) == "unclosed {{input")
     }
 
@@ -102,7 +114,8 @@ import Testing
         #expect(solo["implement"]?.agent == codex)
         #expect(solo["implement"]?.note?.contains("Only one agent") == true)
 
-        let overridden = WorkflowAssignment.resolve(definition, agents: [claude, codex], defaultAgent: "claude-code", overrides: ["implement": "claude-code"])
+        let overridden = WorkflowAssignment.resolve(
+            definition, agents: [claude, codex], defaultAgent: "claude-code", overrides: ["implement": "claude-code"])
         #expect(overridden["implement"]?.agent == claude)
     }
 }

@@ -12,7 +12,8 @@ final class DeletedSessions {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        keys = defaults.data(forKey: Self.key).flatMap { try? JSONDecoder().decode(Set<SessionKey>.self, from: $0) } ?? []
+        keys =
+            defaults.data(forKey: Self.key).flatMap { try? JSONDecoder().decode(Set<SessionKey>.self, from: $0) } ?? []
     }
 
     func contains(_ key: SessionKey) -> Bool {

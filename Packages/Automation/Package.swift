@@ -7,7 +7,7 @@ let package = Package(
     // protocol to every client.
     platforms: [.macOS(.v15), .iOS(.v18)],
     products: [
-        .library(name: "NativeAutomation", targets: ["NativeAutomation"]),
+        .library(name: "NativeAutomation", targets: ["NativeAutomation"])
     ],
     targets: [
         .target(name: "NativeAutomation"),

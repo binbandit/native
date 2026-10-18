@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// A small Native window for Settings ▸ Appearance's choices: a sidebar beside a transcript with a
-/// code block and the composer, drawn in whatever color scheme and light tone its environment has,
+/// code block and the composer, drawn in whatever color scheme and tones its environment has,
 /// so each choice shows itself whatever the app looks like now.
 struct AppearancePreviewWindow: View {
     var body: some View {

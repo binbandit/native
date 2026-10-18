@@ -21,7 +21,9 @@ struct UsageSessionRef: Codable, Hashable, Identifiable {
     /// Subagents take work only from their parent, so they can't be resumed.
     var isPromptable: Bool { parent == nil }
 
-    init(agent: AgentDefinition.ID, agentName: String, session: SessionID, title: String? = nil, parent: SessionID? = nil) {
+    init(
+        agent: AgentDefinition.ID, agentName: String, session: SessionID, title: String? = nil, parent: SessionID? = nil
+    ) {
         self.agent = agent
         self.agentName = agentName
         self.session = session
@@ -32,6 +34,8 @@ struct UsageSessionRef: Codable, Hashable, Identifiable {
     /// Nil while `session/new` is in flight and the agent's id doesn't exist yet.
     init?(_ context: SessionContext) {
         guard let session = context.sessionID else { return nil }
-        self.init(agent: context.agent, agentName: context.agentName, session: session, title: context.title, parent: context.parentID)
+        self.init(
+            agent: context.agent, agentName: context.agentName, session: session, title: context.title,
+            parent: context.parentID)
     }
 }

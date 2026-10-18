@@ -22,7 +22,9 @@ actor MCPScriptConnections {
     }
 
     /// The live session for `server`, connecting the first time; a changed configuration reconnects.
-    func session(for server: MCPScriptedServer, environment: [String: String]) async -> Result<MCPSession, MCPSessionError> {
+    func session(
+        for server: MCPScriptedServer, environment: [String: String]
+    ) async -> Result<MCPSession, MCPSessionError> {
         switch connections[server.key] {
         case .connected(let session, let config) where config == server.config:
             return .success(session)

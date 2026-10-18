@@ -18,7 +18,10 @@ public final class GoalController {
 
     /// `storageKey` identifies the session across launches (its agent and session id); nil keeps the
     /// goal in memory only.
-    public init(strategy: GoalLoop.Strategy = .native, store: GoalStore? = .standard, storageKey: String?, now: @escaping () -> Date = Date.init) {
+    public init(
+        strategy: GoalLoop.Strategy = .native, store: GoalStore? = .standard, storageKey: String?,
+        now: @escaping () -> Date = Date.init
+    ) {
         self.strategy = strategy
         self.now = now
         if let store, let storageKey {
@@ -42,7 +45,10 @@ public final class GoalController {
         if let clear = loop?.clearPrompt, host?.canSendGoalPrompt == true {
             try? await host?.sendGoalPrompt(clear)
         }
-        change { $0 = GoalLoop(objective: objective, budget: budget, strategy: strategy, at: now(), sessionCost: host?.goalSessionCost) }
+        change {
+            $0 = GoalLoop(
+                objective: objective, budget: budget, strategy: strategy, at: now(), sessionCost: host?.goalSessionCost)
+        }
         await sendIfIdle()
     }
 

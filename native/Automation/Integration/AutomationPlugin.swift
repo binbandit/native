@@ -7,7 +7,8 @@ struct AutomationPlugin: NativePlugin {
     let manifest = PluginManifest(
         id: "automation",
         name: "Goals and Workflows",
-        description: "Keeps an agent working toward a goal across turns, and runs multi-agent workflows such as plan, implement and review."
+        description:
+            "Keeps an agent working toward a goal across turns, and runs multi-agent workflows such as plan, implement and review."
     )
 
     let center = AutomationCenter()

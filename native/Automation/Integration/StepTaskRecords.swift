@@ -39,7 +39,8 @@ final class StepTaskRecords {
             records = Dictionary(uniqueKeysWithValues: records.suffix(Self.limit / 2).map { ($0.key, $0.value) })
         }
         do {
-            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(
+                at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
             try JSONEncoder().encode(records).write(to: url, options: .atomic)
         } catch {
             logger.error("Couldn't save workflow step sessions: \(error)")

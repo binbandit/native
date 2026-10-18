@@ -28,7 +28,9 @@ struct WorkflowPickerSheet: View {
                 initialSelection: center.pickerSelection
             )
         } else {
-            EmptyStateView("Open a Project First", systemImage: "folder", message: "A workflow's steps work in a project's folder.") {
+            EmptyStateView(
+                "Open a Project First", systemImage: "folder", message: "A workflow's steps work in a project's folder."
+            ) {
                 Button("Cancel") { dismiss() }
                     .buttonStyle(.ds(.secondary, size: .medium))
                 Button("Open Folder…") {

@@ -16,7 +16,8 @@ enum ReleaseChannel: String, CaseIterable, Sendable {
     /// or `defaults write <bundle id> releaseChannelOverride nightly`.
     static let current: ReleaseChannel = {
         if let override = UserDefaults.standard.string(forKey: "releaseChannelOverride"),
-           let channel = ReleaseChannel(rawValue: override) {
+            let channel = ReleaseChannel(rawValue: override)
+        {
             return channel
         }
         #if NATIVE_NIGHTLY

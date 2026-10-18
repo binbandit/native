@@ -15,8 +15,9 @@ public nonisolated enum GoalPrompt: Hashable, Sendable {
         if first == "<goal>", let end = lines.firstIndex(of: "</goal>") {
             self = .kickoff(objective: Self.objective(in: lines[1..<end]))
         } else if first.hasPrefix(Self.continuationOpening), first.hasSuffix("\">"),
-                  let iteration = Int(first.dropFirst(Self.continuationOpening.count).dropLast(2)),
-                  let end = lines.firstIndex(of: "</goal-continue>") {
+            let iteration = Int(first.dropFirst(Self.continuationOpening.count).dropLast(2)),
+            let end = lines.firstIndex(of: "</goal-continue>")
+        {
             self = .continuation(objective: Self.objective(in: lines[1..<end]), iteration: iteration)
         } else {
             return nil
@@ -79,10 +80,13 @@ public nonisolated enum GoalPrompt: Hashable, Sendable {
             notes.append("Budget: \(remaining).")
         }
         if usage.isLastIteration {
-            notes.append("This is the last iteration the budget allows, so wrap up: leave the work in a good state and report where it stands.")
+            notes.append(
+                "This is the last iteration the budget allows, so wrap up: leave the work in a good state and report where it stands."
+            )
         }
         if reminder {
-            notes.append("Your last reply didn't end with a status line, so Native couldn't tell where the goal stands.")
+            notes.append(
+                "Your last reply didn't end with a status line, so Native couldn't tell where the goal stands.")
         }
         return """
             \(continuationOpening)\(usage.iterations + 1)">
