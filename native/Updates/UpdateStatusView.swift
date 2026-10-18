@@ -59,7 +59,7 @@ struct UpdateStatusView: View {
             symbol: "checkmark.circle.fill", tint: .dsSuccess,
             title: "Native is up to date",
             detail: "Version \(controller.current.version) is the newest on the \(controller.channel.title) channel. "
-                + "Checked \(DSFormat.compactAge(checkedAt, now: .now)) ago."
+                + "Checked \(Self.checkedAgo(checkedAt))."
         ) {
             Button("Check Again", action: controller.checkForUpdates)
                 .buttonStyle(.ds(.ghost))
@@ -195,7 +195,13 @@ struct UpdateStatusView: View {
 
     private var lastCheckedText: String {
         guard let date = controller.lastChecked else { return "It hasn't checked yet." }
-        return "Last checked \(DSFormat.compactAge(date, now: .now)) ago."
+        return "Last checked \(Self.checkedAgo(date))."
+    }
+
+    /// "just now" or "5m ago", from the app's one age format.
+    private static func checkedAgo(_ date: Date) -> String {
+        let age = DSFormat.compactAge(date, now: .now)
+        return age == "now" ? "just now" : "\(age) ago"
     }
 
     private func releaseFacts(_ release: UpdateRelease, extra: String) -> String {

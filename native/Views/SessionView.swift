@@ -20,7 +20,10 @@ struct SessionView: View {
             .environment(\.isPrimaryTranscript, true)
             // A bar rather than an inset, so the transcript gets the system scroll edge effect under it.
             .safeAreaBar(edge: .bottom, spacing: 0) {
-                ComposerView(session: session)
+                VStack(spacing: 0) {
+                    UsageComposerNotices(session: session)
+                    ComposerView(session: session)
+                }
             }
             // How the task's worktree setup went: the project's setup script running, or why it failed.
             .safeAreaBar(edge: .top, spacing: 0) {

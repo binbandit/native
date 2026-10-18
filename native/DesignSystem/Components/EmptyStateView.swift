@@ -37,14 +37,18 @@ public struct EmptyStateView<Actions: View>: View {
                     .font(.dsBody)
                     .foregroundStyle(.dsTextSecondary)
                     .multilineTextAlignment(.center)
+                    // The why is the point: it wraps rather than truncating in a short frame.
+                    .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: 320)
             }
-            HStack(spacing: DS.Space.md) {
-                actions
+            if Actions.self != EmptyView.self {
+                HStack(spacing: DS.Space.md) {
+                    actions
+                }
+                // The action is primary unless the caller styles it.
+                .buttonStyle(.ds(.primary))
+                .padding(.top, DS.Space.xs)
             }
-            // The action is primary unless the caller styles it.
-            .buttonStyle(.ds(.primary))
-            .padding(.top, DS.Space.xs)
         }
         .tracking(DS.Tracking.tight)
         .padding(DS.Space.xxl)

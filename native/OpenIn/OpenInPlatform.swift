@@ -3,6 +3,7 @@ import SwiftUI
 
 #if canImport(AppKit)
 import AppKit
+import Exec
 #elseif canImport(UIKit)
 import UIKit
 #endif
@@ -52,24 +53,62 @@ enum OpenInPlatform {
 
     /// Opens the location in the app and brings the app to the front.
     static func open(_ location: OpenInLocation, in app: OpenInApp) async throws {
+        guard let request = OpenInRequest(location: location, app: app) else { return }
+        #if DEBUG
+        // `-OpenInDryRunLog <file>` records each request there instead, so tests never open apps.
+        if let log = UserDefaults.standard.string(forKey: "OpenInDryRunLog") {
+            record("\(app.id)\t\(request)", to: URL(filePath: log))
+            return
+        }
+        #endif
+        try await perform(request)
+    }
+
+    private static func perform(_ request: OpenInRequest) async throws {
         #if canImport(AppKit)
         let workspace = NSWorkspace.shared
         let configuration = NSWorkspace.OpenConfiguration()
         configuration.activates = true
-        switch (location, app.target.launch) {
-        case (.local(let folder), .document):
-            try await workspace.open([folder], withApplicationAt: app.url, configuration: configuration)
-        case (.local(let folder), .arguments(let arguments)):
+        switch request {
+        case .open(let item, let application):
+            try await workspace.open([item], withApplicationAt: application, configuration: configuration)
+        case .launch(let application, let arguments):
             // A running app ignores launch arguments, so these always start a new process.
-            configuration.arguments = arguments + [folder.path(percentEncoded: false)]
+            configuration.arguments = arguments
             configuration.createsNewApplicationInstance = true
-            try await workspace.openApplication(at: app.url, configuration: configuration)
-        case (.remote(let host, let path), _):
-            guard let url = app.target.remoteURL(host: host, path: path) else { return }
-            try await workspace.open([url], withApplicationAt: app.url, configuration: configuration)
+            try await workspace.openApplication(at: application, configuration: configuration)
+        case .runTool(let tool, let arguments, let application):
+            let command = Command(
+                tool.path(percentEncoded: false), arguments, environment: ProcessInfo.processInfo.environment,
+                timeout: .seconds(30))
+            let result = try await LocalCommandRunner().run(command)
+            guard result.exitCode == 0 else {
+                throw CocoaError(
+                    .executableLoad,
+                    userInfo: [
+                        NSLocalizedDescriptionKey:
+                            "\(application.deletingPathExtension().lastPathComponent) couldn't open the folder."
+                    ])
+            }
+            try await workspace.openApplication(at: application, configuration: configuration)
+        case .reveal(let folder):
+            PlatformFileBrowser.reveal(folder)
         }
         #endif
     }
+
+    #if DEBUG
+    private static func record(_ line: String, to log: URL) {
+        let data = Data((line + "\n").utf8)
+        if let handle = try? FileHandle(forWritingTo: log) {
+            handle.seekToEndOfFile()
+            handle.write(data)
+            try? handle.close()
+        } else {
+            try? data.write(to: log)
+        }
+    }
+    #endif
 
     static func copy(_ string: String) {
         #if canImport(AppKit)
