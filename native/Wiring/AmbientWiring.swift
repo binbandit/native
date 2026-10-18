@@ -5,7 +5,7 @@ import SwiftUI
 enum AmbientWiring {
     /// The status bar's items. Kept minimal by default: what's urgent (limits, tasks needing you)
     /// and what the reference app shows (keep awake, memory and CPU); the rest is a right-click away.
-    static func statusBar(model: AppModel, keepAwake: KeepAwakeController) -> StatusBarRegistry {
+    static func statusBar(model: AppModel, keepAwake: KeepAwakeController, settings: SettingsPresentation) -> StatusBarRegistry {
         let registry = StatusBarRegistry()
         registry.register(LimitsStatusItem(statuses: {
             model.agents.compactMap { BuiltInPlugins.usage.limits.limitStatus(for: $0.agent.id) }
@@ -13,7 +13,7 @@ enum AmbientWiring {
         registry.register(TasksStatusItem(source: model))
         registry.register(KeepAwakeStatusItem(controller: keepAwake))
         registry.register(ResourcesStatusItem(source: model))
-        registry.register(MCPStatusItem(model: model), isVisibleByDefault: false)
+        registry.register(MCPStatusItem(model: model) { settings.open(.mcpServers) }, isVisibleByDefault: false)
         return registry
     }
 

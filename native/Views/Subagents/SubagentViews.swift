@@ -116,24 +116,17 @@ struct SubagentStatusLabel: View {
 /// A message between sessions, such as the task a parent gave its subagent. It isn't from the
 /// user or to the user, so it reads as a labelled hand-off rather than a chat bubble.
 struct SessionMessageView: View {
-    let message: SessionMessage
-    /// The transcript this appears in, to tell incoming from outgoing.
-    let sessionID: SessionID
-    let name: (SessionID?) -> String
-
-    private var isOutgoing: Bool {
-        message.sender == sessionID
-    }
+    /// "From the parent session", "To Fix the bug".
+    let title: String
+    let isOutgoing: Bool
+    let text: String
 
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Label(
-                isOutgoing ? "To \(name(message.recipient))" : "From \(name(message.sender))",
-                systemImage: isOutgoing ? "arrow.up.right" : "arrow.down.left"
-            )
-            .font(.caption.weight(.medium))
-            .foregroundStyle(.secondary)
-            MarkdownView(message.text)
+            Label(title, systemImage: isOutgoing ? "arrow.up.right" : "arrow.down.left")
+                .font(.caption.weight(.medium))
+                .foregroundStyle(.secondary)
+            MarkdownView(text)
         }
         .padding(.leading, 12)
         .overlay(alignment: .leading) {
@@ -141,5 +134,28 @@ struct SessionMessageView: View {
                 .fill(.tint.opacity(0.5))
                 .frame(width: 3)
         }
+    }
+}
+
+extension SessionMessageView {
+    /// A message in a live session; `sessionID` is the transcript it appears in, to tell incoming
+    /// from outgoing.
+    init(message: SessionMessage, sessionID: SessionID, name: (SessionID?) -> String) {
+        let isOutgoing = message.sender == sessionID
+        self.init(
+            title: isOutgoing ? "To \(name(message.recipient))" : "From \(name(message.sender))",
+            isOutgoing: isOutgoing,
+            text: message.text)
+    }
+
+    /// A task prompt or message replayed by a reloaded session, where it arrives as a framed user
+    /// prompt rather than a session message.
+    init(frame: TaskPromptFrame) {
+        let sender =
+            switch frame.sender {
+            case .parent: "the parent session"
+            case .task(_, let label), .sibling(_, let label): label
+            }
+        self.init(title: "From \(sender)", isOutgoing: false, text: frame.body)
     }
 }

@@ -12,7 +12,7 @@ struct NativeApp: App {
     @State private var taskWorkspaces: GitTaskWorkspaceProvider
     @State private var iconPreferences = AppIconPreferences()
     /// Settings takes over the main window, as in the reference app, rather than opening one of its own.
-    @State private var settings = SettingsPresentation()
+    @State private var settings: SettingsPresentation
     @State private var terminals = TerminalStore()
     @State private var keepAwake: KeepAwakeController
     @State private var statusBar: StatusBarRegistry
@@ -36,9 +36,11 @@ struct NativeApp: App {
             MainActor.assumeIsolated { model.stopAgents() }
         }
         GitAutomationWiring.connect(git, to: BuiltInPlugins.automation.center.automations)
+        let settings = SettingsPresentation()
+        _settings = State(initialValue: settings)
         let keepAwake = KeepAwakeController()
         _keepAwake = State(initialValue: keepAwake)
-        _statusBar = State(initialValue: AmbientWiring.statusBar(model: model, keepAwake: keepAwake))
+        _statusBar = State(initialValue: AmbientWiring.statusBar(model: model, keepAwake: keepAwake, settings: settings))
     }
 
     var body: some Scene {

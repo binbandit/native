@@ -241,7 +241,7 @@ final class Orchestrator {
 
     // MARK: - Messages
 
-    /// Introduces a message with who it's from, as the recipient knows them, and how to answer.
+    /// Who a message is from, as its recipient knows them.
     private func frameSender(from caller: OrchestrationCaller, to recipient: Peer) -> TaskPromptFrame.Sender {
         if recipient.relation == .child {
             return .parent(agent: agentName(caller.agent))
