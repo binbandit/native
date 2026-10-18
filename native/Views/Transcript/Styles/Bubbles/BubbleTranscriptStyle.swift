@@ -26,10 +26,16 @@ private struct BubbleTranscript: View {
     }
 
     var body: some View {
-        let rows = BubbleRow.plan(transcript.rows)
+        // A usage limit shows once, as a card where the work stopped, in place of the messages saying so.
+        let limitStops = transcript.session.state.usageLimitStops
+        let rows = BubbleRow.plan(
+            transcript.rows.filter { row in
+                guard case .item(let item) = row, let entry = limitStops[item.id] else { return true }
+                return entry.stop.anchorID == item.id
+            })
         LazyVStack(alignment: .leading, spacing: 0) {
             ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
-                BubbleRowView(row: row, transcript: transcript)
+                BubbleRowView(row: row, transcript: transcript, limitStops: limitStops)
                     .padding(.top, index == 0 ? 0 : BubbleRow.spacing(between: rows[index - 1], and: row))
                     .transition(transition(for: row))
             }
@@ -59,9 +65,14 @@ private struct BubbleTranscript: View {
 private struct BubbleRowView: View {
     let row: BubbleRow
     let transcript: TranscriptStyleConfiguration
+    let limitStops: [String: (stop: UsageLimitStop, isLatestTurn: Bool)]
 
     var body: some View {
         switch row {
+        case .message(let message, _, _) where limitStops[message.id.uuidString] != nil:
+            limitCard(for: message.id.uuidString)
+        case .notice(let notice) where limitStops[notice.id.uuidString] != nil:
+            limitCard(for: notice.id.uuidString)
         case .message(let message, let side, let position):
             BubbleLane(side: side, hugsContent: true) {
                 BubbleMessageView(message: message, side: side, position: position)
@@ -94,6 +105,14 @@ private struct BubbleRowView: View {
             agentSide { transcript.subagent(subagent) }
         case .sessionMessage(let message):
             agentSide { transcript.sessionMessage(message) }
+        }
+    }
+
+    @ViewBuilder private func limitCard(for itemID: String) -> some View {
+        if let entry = limitStops[itemID] {
+            agentSide {
+                UsageLimitTranscriptCard(session: transcript.session, stop: entry.stop, isLatestTurn: entry.isLatestTurn)
+            }
         }
     }
 

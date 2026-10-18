@@ -1,7 +1,9 @@
 import NativeAutomation
 import Observation
 
-/// Keeps the app icon's badge aligned with work awaiting the user and is connected once at launch.
+/// Shows on the app icon how many tasks need the user, as the Dock badge setting says. Connected
+/// once at launch; it writes the badge only when the number changes, so streaming turns, which
+/// re-evaluate the count, never touch the Dock tile.
 @MainActor
 enum DockBadgeWiring {
     static func connect(
@@ -20,7 +22,9 @@ enum DockBadgeWiring {
         }
     }
 
-    /// Counts distinct listed tasks needing approval, optionally unread tasks, and workflow runs waiting on the user.
+    /// Each listed task that needs the user counts once: a permission request, question or plan
+    /// review in it or a subagent under it (what the sidebar marks), and with `.needsYouAndUnread`
+    /// an unread one. Workflow runs waiting on the user add theirs, as the Workflows item counts them.
     static func count(model: AppModel, workflows: WorkflowRunner, mode: DockBadgePreference.Mode) -> Int {
         guard mode != .off else { return 0 }
 

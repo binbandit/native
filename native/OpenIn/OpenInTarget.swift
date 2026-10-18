@@ -16,6 +16,9 @@ nonisolated struct OpenInTarget: Identifiable, Hashable, Sendable {
         /// A new process whose arguments end with the folder's path, for terminals that ignore
         /// open-document events and take a working directory on the command line instead.
         case arguments([String])
+        /// The app's own command-line tool (a path inside its bundle), given the folder, for apps
+        /// that don't honor a folder handed to them as a document.
+        case bundledTool(String)
     }
 
     /// How the app opens a folder on an SSH host.
@@ -119,7 +122,6 @@ nonisolated extension OpenInTarget {
         .init(id: "rubymine", bundleIdentifiers: ["com.jetbrains.rubymine"], kind: .editor),
         .init(id: "rider", bundleIdentifiers: ["com.jetbrains.rider"], kind: .editor),
         .init(id: "android-studio", bundleIdentifiers: ["com.google.android.studio"], kind: .editor),
-        .init(id: "fleet", bundleIdentifiers: ["com.jetbrains.fleet"], kind: .editor),
         .init(id: "xcode", bundleIdentifiers: ["com.apple.dt.Xcode"], kind: .editor),
     ]
 

@@ -21,7 +21,7 @@ struct StatusBarItemsLayout: Layout {
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
         let sizes = subviews.map { $0.sizeThatFits(.unspecified) }
         let height = sizes.map(\.height).max() ?? 0
-        let ideal = width(of: Set(subviews.indices), subviews: subviews, sizes: sizes)
+        let ideal = width(of: nonEmptyItems(in: subviews, sizes: sizes), subviews: subviews, sizes: sizes)
         return CGSize(width: proposal.width ?? ideal, height: proposal.height ?? height)
     }
 
@@ -30,7 +30,7 @@ struct StatusBarItemsLayout: Layout {
         let leading = items(at: .leading, in: subviews)
         let trailing = items(at: .trailing, in: subviews)
 
-        var shown = Set(leading + trailing)
+        var shown = nonEmptyItems(in: subviews, sizes: sizes)
         for index in leading.reversed() + trailing
         where width(of: shown, subviews: subviews, sizes: sizes) > bounds.width {
             shown.remove(index)
@@ -87,6 +87,12 @@ struct StatusBarItemsLayout: Layout {
             }
         }
         return result
+    }
+
+    /// Items with something to show. One that renders nothing (an item with no data yet) still
+    /// arrives as a subview, and mustn't get a separator.
+    private func nonEmptyItems(in subviews: Subviews, sizes: [CGSize]) -> Set<Int> {
+        Set((items(at: .leading, in: subviews) + items(at: .trailing, in: subviews)).filter { sizes[$0].width > 0 })
     }
 
     private func items(at edge: HorizontalEdge, in subviews: Subviews) -> [Int] {

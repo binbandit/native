@@ -32,29 +32,43 @@ extension AppModel {
         guard let connection = runtime.connection, runtime.capabilities?.listSessions == true else { return }
         let agent = runtime.agent.id
         var fetched: [SessionInfo] = []
+        var positions: [SessionID: Int] = [:]
+        // Some agents list a repository's sessions from each of its worktrees; keep one copy, the
+        // one fetched for the session's own folder.
+        func merge(_ page: [SessionInfo], from folder: String) {
+            for info in page {
+                if let position = positions[info.sessionId] {
+                    if info.cwd == folder {
+                        fetched[position] = info
+                    }
+                } else {
+                    positions[info.sessionId] = fetched.count
+                    fetched.append(info)
+                }
+            }
+        }
         do {
             // The project's own folder, and the folders Native made for its tasks (worktrees).
             let folders = [project.path] + (await taskWorkspaces?.taskFolders(of: project) ?? []).map(\.folderPath)
-            var positions: [SessionID: Int] = [:]
             for folder in Set(folders).sorted() {
-                for info in try await SessionCatalog.fetch(cwd: folder, from: connection) {
-                    // Some agents list a repository's sessions from each of its worktrees; keep one
-                    // copy, the one fetched for the session's own folder.
-                    if let position = positions[info.sessionId] {
-                        if info.cwd == folder {
-                            fetched[position] = info
-                        }
-                    } else {
-                        positions[info.sessionId] = fetched.count
-                        fetched.append(info)
-                    }
-                }
+                merge(try await SessionCatalog.fetch(cwd: folder, from: connection), from: folder)
             }
         } catch {
             if !runtime.noteSignInRequired(by: error) {
                 errorMessage = "Couldn't list \(runtime.agent.displayName) sessions in \(project.name): \(error.localizedDescription)"
             }
             return
+        }
+        // Agents that match folders exactly don't list a session whose folder the provider no longer
+        // reports (an archived task's removed worktree, or one it couldn't look up just now), so
+        // ask those folders too before dropping what was listed before. Best effort: a folder that's
+        // gone may fail.
+        let missingFolders = Set(
+            catalog.sessions(in: project.id, of: agent).filter { positions[$0.sessionId] == nil }.map(\.cwd))
+        for folder in missingFolders.sorted() {
+            if let page = try? await SessionCatalog.fetch(cwd: folder, from: connection) {
+                merge(page, from: folder)
+            }
         }
         Self.logger.debug("\(runtime.agent.displayName, privacy: .public) lists \(fetched.count) sessions in \(project.path, privacy: .public)")
         guard projects.project(project.id) != nil, runtimes[agent] === runtime else { return }

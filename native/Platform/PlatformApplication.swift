@@ -2,6 +2,7 @@
 import AppKit
 #elseif canImport(UIKit)
 import UIKit
+// The iPad badge goes through notifications; the Dock tile needs nothing.
 import UserNotifications
 #endif
 
@@ -20,7 +21,7 @@ enum PlatformApplication {
         #endif
     }
 
-    /// Shows `count` on the app icon; 0 clears it.
+    /// Shows `count` on the app icon (the Dock tile on the Mac); 0 clears it.
     static func setBadgeCount(_ count: Int) async {
         #if canImport(AppKit)
         NSApplication.shared.dockTile.badgeLabel = count > 0 ? "\(count)" : nil

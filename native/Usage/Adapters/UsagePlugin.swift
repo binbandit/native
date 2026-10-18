@@ -1,26 +1,36 @@
 import ACP
 import Foundation
 
-/// Usage limits and context reports, fed by session events: tells the user when a provider's
-/// usage limit is close or reached, picks stopped sessions back up at the reset, and keeps each
-/// session's `/context` breakdown.
+/// Usage limits, context reports and notifications, fed by session events: tells the user when a
+/// provider's usage limit is close or reached and picks stopped tasks back up at the reset, keeps
+/// each task's `/context` breakdown, and notifies about long work and tasks that need the user.
 struct UsagePlugin: NativePlugin {
     let manifest = PluginManifest(
         id: "usage",
         name: "Usage",
         description:
-            "Tells you when an agent's usage limit is close or reached, picks stopped sessions back up when it resets, and breaks down what fills each session's context."
+            "Tells you when an agent's usage limit is close or reached, picks stopped tasks back up when it resets, breaks down what fills each task's context, and notifies you when long work finishes or a task needs you."
     )
 
     let limits: UsageLimits
-    let contextReports: ContextReports
+    let contextReports = ContextReports()
+    let providerReports = ProviderUsageReports()
+    let notifications: UsageNotifications
     private let clockEvents: SystemClockEvents
 
     init() {
-        let limits = UsageLimits(store: UsageLimitsFileStore(), alerts: UserNotificationAlerts())
+        let notifications = UsageNotifications(poster: UserNotificationPoster(), activity: PlatformAppActivity())
+        let limits = UsageLimits(store: UsageLimitsFileStore(), alerts: notifications)
+        self.notifications = notifications
         self.limits = limits
-        contextReports = ContextReports()
         clockEvents = SystemClockEvents { [weak limits] in limits?.processDue() }
+    }
+
+    /// Gives Usage the app to act on; resumes that came due before this run then.
+    func connect(to host: some UsageHost) {
+        notifications.host = host
+        providerReports.host = host
+        limits.host = host
     }
 
     func handle(_ event: SessionEvent) async {
@@ -34,20 +44,27 @@ struct UsagePlugin: NativePlugin {
                 FailedTurn(prompt: prompt, items: items), error: error, agent: session.agent,
                 agentName: session.agentName, stopping: UsageSessionRef(session))
         case .turnEnded(let session, let reason):
-            if let target = UsageSessionRef(session) {
-                limits.recordTurnEnded(reason, in: target)
+            if let ref = UsageSessionRef(session) {
+                limits.recordTurnEnded(reason, in: ref)
+                contextReports.noteTurnEnded(SessionKey(agent: ref.agent, id: ref.session))
             }
-            if let id = session.sessionID {
-                contextReports.noteTurnEnded(SessionKey(agent: session.agent, id: id))
-            }
-        default:
+            await notifications.turnEnded(session, reason: reason)
+        case .permissionRequested(let session, let toolCall):
+            await notifications.permissionRequested(session, toolCall: toolCall)
+        case .questionAsked(let session, let message):
+            await notifications.questionAsked(session, message: message)
+        case .needsUser(let session, let reason):
+            await notifications.needsAttention(.needsUser, context: session, reason: reason)
+        case .failed(let session, let reason):
+            await notifications.needsAttention(.failed, context: session, reason: reason)
+        case .sessionStarted, .promptSent:
             break
         }
     }
 }
 
 extension BuiltInPlugins {
-    /// One instance for the app: the composition root sets `usage.limits.host`, and views read the
-    /// same limits and reports the plugin is fed.
+    /// One instance for the app: the composition root connects it, and views read the same limits
+    /// and reports the plugin is fed.
     static let usage = UsagePlugin()
 }

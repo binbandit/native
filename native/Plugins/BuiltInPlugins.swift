@@ -1,10 +1,10 @@
 import ACP
+import Foundation
 import FoundationModels
-import UserNotifications
 
 enum BuiltInPlugins {
     static let all: [any NativePlugin] = [
-        claudeCode, codex, cursor, openCode, pi, copilot, OnDeviceTitlesPlugin(), NotificationsPlugin(), SoundsPlugin(),
+        claudeCode, codex, cursor, openCode, pi, copilot, OnDeviceTitlesPlugin(), SoundsPlugin(),
         OrchestrationPlugin(), MCPServersPlugin(), SkillsPlugin(), usage, automation, automations, expeditions,
     ]
 
@@ -103,35 +103,5 @@ struct OnDeviceTitler: SessionTitler {
             .trimmingCharacters(in: .whitespacesAndNewlines.union(.punctuationCharacters))
         guard let first = title.first else { return nil }
         return first.uppercased() + title.dropFirst()
-    }
-}
-
-// MARK: - Notifications
-
-/// Tells the user when a session finishes or needs approval while they're in another app.
-struct NotificationsPlugin: NativePlugin {
-    let manifest = PluginManifest(
-        id: "notifications",
-        name: "Notifications",
-        description: "Notifies you when a session finishes or needs your approval while Native is in the background."
-    )
-
-    func handle(_ event: SessionEvent) async {
-        let content = UNMutableNotificationContent()
-        switch event {
-        // Subagents' approvals block their parent, so they notify too; their finishing doesn't.
-        case .permissionRequested(let session, let toolCall):
-            content.title = "\(session.title ?? session.agentName) needs approval"
-            content.body = toolCall
-        case .turnEnded(let session, .endTurn) where session.parentID == nil:
-            content.title = "\(session.agentName) finished"
-            content.body = session.title ?? "Your session is ready."
-        default:
-            return
-        }
-        guard !PlatformApplication.isActive else { return }
-        let center = UNUserNotificationCenter.current()
-        guard (try? await center.requestAuthorization(options: [.alert, .sound])) == true else { return }
-        try? await center.add(UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil))
     }
 }

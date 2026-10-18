@@ -1,9 +1,10 @@
 /// How much output a terminal keeps above the screen.
-public enum TerminalScrollback: Hashable, Sendable, CaseIterable, Identifiable {
+public enum TerminalScrollback: Hashable, Sendable, Identifiable {
     case lines(Int)
     case unlimited
 
-    public static let allCases: [TerminalScrollback] = [
+    /// The limits Settings offers; an imported limit outside them is offered too.
+    public static let choices: [TerminalScrollback] = [
         .lines(1000), .lines(10000), .lines(50000), .lines(100_000), .unlimited,
     ]
 
@@ -24,6 +25,50 @@ public enum TerminalScrollback: Hashable, Sendable, CaseIterable, Identifiable {
     public var storedValue: Int { id }
 }
 
+/// The cursor's shape, as Ghostty's `cursor-style` names them.
+public enum TerminalCursorStyle: String, Hashable, Sendable, Codable, CaseIterable {
+    case block
+    case bar
+    case underline
+}
+
+public struct TerminalCursor: Hashable, Sendable, Codable {
+    public var style: TerminalCursorStyle
+    public var blinks: Bool
+
+    public init(style: TerminalCursorStyle = .block, blinks: Bool = true) {
+        self.style = style
+        self.blinks = blinks
+    }
+}
+
+/// Where the terminal's colors come from.
+public enum TerminalColorChoice: Hashable, Sendable, Codable {
+    /// The app's theme: Native's, or the code theme's terminal palette.
+    case app
+    /// A snapshot imported from the user's Ghostty config.
+    case imported(TerminalImportedColors)
+}
+
+/// Colors copied from a Ghostty config, for each appearance (a Ghostty theme can differ by
+/// appearance with `theme = light:…,dark:…`).
+public struct TerminalImportedColors: Hashable, Sendable, Codable {
+    /// The Ghostty theme they came from, such as "Dracula", when the config named one.
+    public var themeName: String?
+    public var light: TerminalColors
+    public var dark: TerminalColors
+
+    public init(themeName: String?, light: TerminalColors, dark: TerminalColors) {
+        self.themeName = themeName
+        self.light = light
+        self.dark = dark
+    }
+
+    public func colors(for appearance: TerminalAppearance) -> TerminalColors {
+        appearance == .dark ? dark : light
+    }
+}
+
 /// The user's terminal preferences (Settings ▸ Terminal), independent of how they're stored or drawn.
 public struct TerminalSettings: Hashable, Sendable {
     /// Sizes the font picker offers, in points.
@@ -36,17 +81,21 @@ public struct TerminalSettings: Hashable, Sendable {
         didSet { fontSize = Self.clamp(fontSize) }
     }
     public var scrollback: TerminalScrollback
-    /// A `TerminalTheme` id.
-    public var themeID: String
+    public var cursor: TerminalCursor
+    public var colors: TerminalColorChoice
+    /// Whether terminals load the user's own Ghostty config instead of the settings above.
+    public var usesGhosttyConfig: Bool
 
     public init(
-        fontFamily: String? = nil, fontSize: Double = Self.defaultFontSize,
-        scrollback: TerminalScrollback = .default, themeID: String = TerminalTheme.native.id
+        fontFamily: String? = nil, fontSize: Double = Self.defaultFontSize, scrollback: TerminalScrollback = .default,
+        cursor: TerminalCursor = TerminalCursor(), colors: TerminalColorChoice = .app, usesGhosttyConfig: Bool = false
     ) {
         self.fontFamily = fontFamily.flatMap { $0.isEmpty ? nil : $0 }
         self.fontSize = Self.clamp(fontSize)
         self.scrollback = scrollback
-        self.themeID = themeID
+        self.cursor = cursor
+        self.colors = colors
+        self.usesGhosttyConfig = usesGhosttyConfig
     }
 
     private static func clamp(_ size: Double) -> Double {

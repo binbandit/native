@@ -1,7 +1,8 @@
 import Foundation
 import Observation
 
-/// The user's Dock badge choice, observable so its shared Settings row and wiring apply changes at once.
+/// What the Dock badge counts. One shared, observable instance, so the badge follows the Settings
+/// row the moment it changes.
 @MainActor
 @Observable
 final class DockBadgePreference {

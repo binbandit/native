@@ -21,3 +21,11 @@ extension ContextPressureBanner where Source == SessionContextSource {
         self.init(source: SessionContextSource(session: session), chrome: chrome)
     }
 }
+
+extension UsageLimitTranscriptCard {
+    init(session: SessionModel, stop: UsageLimitStop, isLatestTurn: Bool) {
+        self.init(
+            stop: stop, agent: session.agent.id, agentName: session.agentName, session: session.id,
+            isLatestTurn: isLatestTurn, limits: BuiltInPlugins.usage.limits)
+    }
+}

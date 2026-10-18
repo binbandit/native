@@ -57,7 +57,7 @@ public nonisolated enum DSTransparency: String, CaseIterable, Identifiable, Send
     }
 }
 
-extension EnvironmentValues {
+nonisolated extension EnvironmentValues {
     /// The transparency translucent surfaces draw at: the user's choice, or Solid while the system's
     /// Reduce Transparency setting is on. Set it with `.dsTransparency(_:)`.
     @Entry public var dsTransparency: DSTransparency = .standard
