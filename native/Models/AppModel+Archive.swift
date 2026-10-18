@@ -133,7 +133,7 @@ extension AppModel {
                         details: error.localizedDescription))
             }
         }
-        if let folder, let project = projects.project(projectID), folder.folderPath != project.path {
+        if let folder, let project = projects.project(projectID), !SessionFolder.isSame(folder.folderPath, project.path) {
             do {
                 try await taskWorkspaces?.deleteWorkspace(at: folder, in: project)
             } catch {
@@ -223,7 +223,7 @@ extension AppModel {
         guard let provider = taskWorkspaces,
             let folder = sessions.session(key)?.cwd
                 ?? catalog.lookup(key).map({ URL(filePath: $0.info.cwd, directoryHint: .isDirectory) }),
-            folder.folderPath != project.path
+            !SessionFolder.isSame(folder.folderPath, project.path)
         else { return nil }
         return try await provider.archiveWorkspace(at: folder, in: project)
     }
