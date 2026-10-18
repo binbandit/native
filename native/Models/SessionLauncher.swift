@@ -48,7 +48,8 @@ final class SessionLauncher {
         let response = try await connection.send(request)
         let session = SessionModel(
             agent: runtime.agent, id: response.sessionId, clientID: clientID, cwd: cwd, connection: connection,
-            services: services, supportsSteering: runtime.capabilities?.steering == true, phase: .idle,
+            services: services, supportsSteering: runtime.capabilities?.steering == true,
+            supportsImages: runtime.capabilities?.image == true, phase: .idle,
             configOptions: response.configOptions ?? [], origin: origin, parent: parent
         )
         store.register(session)
@@ -73,7 +74,8 @@ final class SessionLauncher {
         }
         let session = SessionModel(
             agent: runtime.agent, id: key.id, cwd: cwd, connection: connection, services: services,
-            supportsSteering: runtime.capabilities?.steering == true, phase: .loading, title: title,
+            supportsSteering: runtime.capabilities?.steering == true,
+            supportsImages: runtime.capabilities?.image == true, phase: .loading, title: title,
             origin: origin, parent: parent
         )
         store.register(session)

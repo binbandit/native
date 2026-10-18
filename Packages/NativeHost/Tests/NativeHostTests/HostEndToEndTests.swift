@@ -183,7 +183,7 @@ struct HostEndToEndTests {
         try await first.wait("the turn to get going") { await $0.agentText(session).contains("tick 2") }
         try await first.client.shutdownHost(stopAgents: false, immediately: true)
         // 75 is what launchd restarts on; the harness plays launchd.
-        #expect(harness.waitForExit() == 75)
+        #expect(try await harness.waitForExit() == 75)
         await first.stop()
 
         try harness.start()
@@ -206,7 +206,7 @@ struct HostEndToEndTests {
         let session = try await startSession(recorder, harness: harness)
         _ = try await recorder.client.prompt(PromptParams(sessionID: session, text: "slow 4"))
         try await recorder.client.shutdownHost(stopAgents: false)
-        #expect(harness.waitForExit() == 75)
+        #expect(try await harness.waitForExit() == 75)
         #expect(await recorder.turnsEnded(session) == ["end_turn"])
         await recorder.stop()
     }

@@ -107,15 +107,24 @@ private struct PillChrome: ViewModifier {
     }
 }
 
-/// Icon then title, 6pt apart, the icon at 11pt; square pills show the icon alone.
+/// Icon then title, 6pt apart, the icon at 11pt; square pills show the icon alone, through the
+/// system's icon-only style so the title stays the accessibility label.
 private struct PillLabelStyle: LabelStyle {
     let isIconOnly: Bool
 
     func makeBody(configuration: Configuration) -> some View {
-        HStack(spacing: DS.Space.sm) {
-            configuration.icon
-                .font(.system(size: 11, weight: .regular))
-            if !isIconOnly {
+        if isIconOnly {
+            Label {
+                configuration.title
+            } icon: {
+                configuration.icon
+                    .font(.system(size: 11, weight: .regular))
+            }
+            .labelStyle(.iconOnly)
+        } else {
+            HStack(spacing: DS.Space.sm) {
+                configuration.icon
+                    .font(.system(size: 11, weight: .regular))
                 configuration.title
             }
         }

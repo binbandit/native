@@ -150,8 +150,9 @@ Each task has a terminal panel under the composer, opening in the task's folder 
 | ⌃⇧` | New terminal tab | View |
 | | Close the terminal tab (asks first when a program is running in it) | View |
 
-While a terminal has focus, keys go to its shell, except ⌘ shortcuts that Native's menus claim
-(they keep working) and these, which the terminal handles itself:
+While a terminal has focus, Native's menu shortcuts come first, then the terminal's own bindings,
+then the shell. With "Use my Ghostty settings" on, the bindings are the user's Ghostty key
+bindings (`docs/terminal.md`); otherwise they're these:
 
 | Keys | Action |
 | --- | --- |

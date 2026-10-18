@@ -48,6 +48,16 @@ final class PlatformAppIcon {
         notify()
     }
 
+    /// Whether any image can become the app icon here, as on the Mac. Elsewhere only the compiled
+    /// alternates `canApply` names can.
+    static var canApplyAnyImage: Bool {
+        #if canImport(AppKit)
+        true
+        #else
+        false
+        #endif
+    }
+
     /// Whether `image` can be the app icon on this platform.
     static func canApply(_ image: AppIconImage) -> Bool {
         #if canImport(AppKit)

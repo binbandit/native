@@ -11,7 +11,10 @@ struct CodeHighlighterTests {
     }
 
     @Test(arguments: [
-        ("swift", "@MainActor func greet(_ name: String) -> String { \"Hi, \\(name)\" } // done\n/* a\nb */ let x = 0x1F"),
+        (
+            "swift",
+            "@MainActor func greet(_ name: String) -> String { \"Hi, \\(name)\" } // done\n/* a\nb */ let x = 0x1F"
+        ),
         ("ts", "const rows: string[] = parse(`a ${b}`, { bom: true }); // ok"),
         ("python", "@cache\ndef f(x):\n    \"\"\"Doc\n    more\"\"\"\n    return x ** 2  # square"),
         ("json", "{\"name\": \"Ada\", \"tags\": [1, 2.5, true, null]}"),
@@ -40,19 +43,26 @@ struct CodeHighlighterTests {
     }
 
     @Test func stringsAndCommentsHideTheirContents() {
-        #expect(tokens("let s = \"func // not\" // real", "swift").suffix(2) == ["string:\"func // not\"", "comment:// real"])
+        #expect(
+            tokens("let s = \"func // not\" // real", "swift").suffix(2) == [
+                "string:\"func // not\"", "comment:// real",
+            ])
         #expect(tokens("x = '''a\n# b'''", "python").last == "string:'''a\n# b'''")
     }
 
     @Test func jsonKeysDifferFromValues() {
-        #expect(tokens("{\"a\": \"b\", \"c\": null}", "json").filter { !$0.hasPrefix("punctuation") } == [
-            "tag:\"a\"", "string:\"b\"", "tag:\"c\"", "constant:null",
-        ])
+        #expect(
+            tokens("{\"a\": \"b\", \"c\": null}", "json").filter { !$0.hasPrefix("punctuation") } == [
+                "tag:\"a\"", "string:\"b\"", "tag:\"c\"", "constant:null",
+            ])
     }
 
     @Test func diffColorsWholeLines() {
         let lines = CodeHighlighter.lines("--- a/f\n@@ -1 +1 @@\n-old\n+new\n same\n", language: .named("diff"))
-        #expect(lines.map { $0.map(\.role) } == [[.comment], [.keyword], [.deletedForeground], [.insertedForeground], [.foreground]])
+        #expect(
+            lines.map { $0.map(\.role) } == [
+                [.comment], [.keyword], [.deletedForeground], [.insertedForeground], [.foreground],
+            ])
     }
 
     @Test func blockCommentsKeepTheirColorOnEveryLine() {
@@ -95,5 +105,22 @@ struct CodeHighlighterTests {
         // Already legible colors don't move, and fills stay as they were.
         #expect(light.preservingContrast(on: light.background) == light)
         #expect(moved.insertedBackground == light.insertedBackground)
+    }
+}
+
+struct CodePaletteTerminalTests {
+    @Test(arguments: CodeTheme.all)
+    func ansiColorsComeFromTheTheme(_ theme: CodeTheme) throws {
+        for appearance in CodeAppearance.allCases {
+            guard let palette = theme.palette(for: appearance) else { continue }
+            let ansi = palette.ansiColors(for: appearance)
+            #expect(ansi.count == 16)
+            #expect(ansi[1] == palette.deletedForeground.composited(over: palette.background))
+            #expect(ansi[4] == palette.function.composited(over: palette.background))
+            // The default text color stays readable as ANSI white (dark) or black (light).
+            let text = appearance == .dark ? ansi[7] : ansi[0]
+            #expect(text.contrastRatio(with: palette.background) >= 4.5)
+            #expect(ansi.allSatisfy { $0.alpha == 0xFF })
+        }
     }
 }

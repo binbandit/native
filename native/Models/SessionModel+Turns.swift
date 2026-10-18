@@ -42,25 +42,33 @@ extension SessionModel {
     /// Sends the user's draft as a prompt, if the agent is idle, and waits for the turn to end.
     func send() async {
         let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard origin == .user, phase == .idle, !isRunningHiddenCommand, !text.isEmpty else { return }
+        let attachments = self.attachments
+        guard origin == .user, phase == .idle, !isRunningHiddenCommand, !text.isEmpty || !attachments.isEmpty else {
+            return
+        }
         draft = ""
+        self.attachments = []
         let start = beginTurn(text, echo: true)
-        await finishTurn(text, itemsStart: start)
+        await finishTurn(text, attachments: attachments, itemsStart: start)
     }
 
     /// Sends the user's draft whatever the agent is doing: right away when it's idle, otherwise
     /// queued for when the turn ends or steered into the running turn, as `behavior` says.
     func submit(_ behavior: FollowUpBehavior) async {
         let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard origin == .user, phase == .idle || phase == .prompting, !text.isEmpty else { return }
+        let attachments = self.attachments
+        guard origin == .user, phase == .idle || phase == .prompting, !text.isEmpty || !attachments.isEmpty else {
+            return
+        }
         draft = ""
+        self.attachments = []
         if phase == .idle, !isRunningHiddenCommand {
             // The user sending again lifts a pause after a cancelled turn. Waiting messages go first.
             queue.resume()
-            queue.append(text)
+            queue.append(text, attachments: attachments)
             drainQueue()
         } else {
-            _ = try? await submit(text, behavior)
+            _ = try? await submit(text, attaching: attachments, behavior)
         }
     }
 
@@ -68,26 +76,29 @@ extension SessionModel {
     /// doing, leaving the draft alone. When idle, it returns once the turn has started, not when it
     /// ends. While a turn runs it steers (if `behavior` asks and the agent can) or queues, as it
     /// does while the session loads. `echo: false` keeps the text out of the transcript, now and
-    /// when it goes out from the queue.
+    /// when it goes out from the queue. `attachments` (files, images) go with the text as their own
+    /// content blocks.
     @discardableResult
-    func submit(_ text: String, _ behavior: FollowUpBehavior, echo: Bool = true) async throws -> FollowUpDelivery {
+    func submit(
+        _ text: String, attaching attachments: [PromptAttachment] = [], _ behavior: FollowUpBehavior, echo: Bool = true
+    ) async throws -> FollowUpDelivery {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { throw SendError.emptyMessage }
+        guard !text.isEmpty || !attachments.isEmpty else { throw SendError.emptyMessage }
         guard acceptsPrompts else { throw SendError.notAcceptingPrompts }
         switch phase {
         case .loading:
             // Sent the moment the session has loaded (`finishLoading`), rather than refused.
-            queue.append(text, isEchoed: echo)
+            queue.append(text, attachments: attachments, isEchoed: echo)
             return .queued
         case .disconnected:
             throw SendError.disconnected
         case .idle where !isRunningHiddenCommand:
-            startTurn(text, echo: echo)
+            startTurn(text, attachments: attachments, echo: echo)
             return .prompted
         case .prompting where behavior == .steer && supportsSteering:
-            return await steer(text, echo: echo)
+            return await steer(text, attachments: attachments, echo: echo)
         case .idle, .prompting:
-            queue.append(text, isEchoed: echo)
+            queue.append(text, attachments: attachments, isEchoed: echo)
             return .queued
         }
     }
@@ -112,10 +123,10 @@ extension SessionModel {
     /// when the agent is idle (as it is after a cancelled turn paused the queue).
     func steerQueued(_ id: QueuedPrompt.ID) async {
         if phase == .prompting, supportsSteering, let item = queue.remove(id) {
-            await steer(item.text, echo: item.isEchoed)
+            await steer(item.text, attachments: item.attachments, echo: item.isEchoed)
         } else if phase == .idle, !isRunningHiddenCommand, let item = queue.remove(id) {
             queue.resume()
-            startTurn(item.text, echo: item.isEchoed)
+            startTurn(item.text, attachments: item.attachments, echo: item.isEchoed)
         }
     }
 
@@ -123,16 +134,16 @@ extension SessionModel {
     /// paused.
     func drainQueue() {
         guard phase == .idle, !isRunningHiddenCommand, let next = queue.next() else { return }
-        startTurn(next.text, echo: next.isEchoed)
+        startTurn(next.text, attachments: next.attachments, echo: next.isEchoed)
     }
 
     // MARK: - Running a turn
 
     /// Starts a turn and runs it in the background, so the session is prompting by the time this
     /// returns.
-    private func startTurn(_ text: String, echo: Bool) {
+    private func startTurn(_ text: String, attachments: [PromptAttachment], echo: Bool) {
         let start = beginTurn(text, echo: echo)
-        Task { await finishTurn(text, itemsStart: start) }
+        Task { await finishTurn(text, attachments: attachments, itemsStart: start) }
     }
 
     /// Records the prompt and marks the turn as running, before anything suspends. Returns where the
@@ -161,9 +172,10 @@ extension SessionModel {
         return state.items.count
     }
 
-    private func finishTurn(_ text: String, itemsStart start: Int) async {
+    private func finishTurn(_ text: String, attachments: [PromptAttachment], itemsStart start: Int) async {
         do {
-            let response = try await connection.send(PromptRequest(sessionId: id, prompt: [.text(text)]))
+            let prompt = ContentBlock.prompt(text, attachments: attachments, supportsImages: supportsImages)
+            let response = try await connection.send(PromptRequest(sessionId: id, prompt: prompt))
             state.endTurn(response.stopReason)
             lastStopReason = response.stopReason
             services.post(.turnEnded(context, response.stopReason))
@@ -178,7 +190,7 @@ extension SessionModel {
             }
             if let delay = retryPolicy.nextDelay(after: error, turnMadeProgress: madeProgress) {
                 // Already in the transcript, so it goes back without showing again.
-                queue.prepend(text, isEchoed: false)
+                queue.prepend(text, attachments: attachments, isEchoed: false)
                 scheduleRetry(after: delay)
                 state.appendNotice("\(agentName) couldn't be reached (\(error.localizedDescription)). Native kept your message and will try again in \(delay.components.seconds) seconds. Press ⌘. to stop.", isError: true)
             } else {
@@ -224,10 +236,11 @@ extension SessionModel {
 
     /// Adds `text` to the running turn. If the turn ended first, it goes to the front of the queue.
     @discardableResult
-    private func steer(_ text: String, echo: Bool) async -> FollowUpDelivery {
+    private func steer(_ text: String, attachments: [PromptAttachment], echo: Bool) async -> FollowUpDelivery {
         var delivery = FollowUpDelivery.queued
         do {
-            let response = try await connection.send(SteerRequest(sessionId: id, prompt: [.text(text)]))
+            let prompt = ContentBlock.prompt(text, attachments: attachments, supportsImages: supportsImages)
+            let response = try await connection.send(SteerRequest(sessionId: id, prompt: prompt))
             switch response.outcome {
             case .injected:
                 if echo { state.appendUserMessage(text, steered: true) }
@@ -237,10 +250,10 @@ extension SessionModel {
                 if echo { state.appendUserMessage(text) }
                 delivery = .steered
             case .promptRequired, .other:
-                queue.prepend(text, isEchoed: echo)
+                queue.prepend(text, attachments: attachments, isEchoed: echo)
             }
         } catch {
-            queue.append(text, isEchoed: echo)
+            queue.append(text, attachments: attachments, isEchoed: echo)
             state.appendNotice("Couldn't add your message to the running turn, so it's queued: \(error.localizedDescription)", isError: true)
         }
         // The turn may have ended while the steer was in flight, leaving nothing to send the queue.

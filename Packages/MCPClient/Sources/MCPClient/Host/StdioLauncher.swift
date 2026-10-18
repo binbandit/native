@@ -1,5 +1,6 @@
 import Exec
 import Foundation
+import Synchronization
 
 /// Starts long-lived processes a client talks to over stdin and stdout, such as local MCP servers,
 /// on some machine: this Mac today, a remote Native Host later. One-shot commands go through
@@ -52,11 +53,12 @@ public struct LocalStdioLauncher: StdioLauncher {
         process.standardInput = stdin
         process.standardOutput = stdout
         process.standardError = stderr
+        let ends = PipeEnds { events(.outputClosed) }
         stdout.fileHandleForReading.readabilityHandler = { handle in
             let data = handle.availableData
             if data.isEmpty {
                 handle.readabilityHandler = nil
-                events(.outputClosed)
+                ends.outputEnded()
             } else {
                 events(.output(data))
             }
@@ -65,6 +67,7 @@ public struct LocalStdioLauncher: StdioLauncher {
             let data = handle.availableData
             if data.isEmpty {
                 handle.readabilityHandler = nil
+                ends.errorEnded()
             } else {
                 events(.error(data))
             }
@@ -81,6 +84,50 @@ public struct LocalStdioLauncher: StdioLauncher {
         return (path ?? "").split(separator: ":")
             .map { URL(filePath: String($0)).appending(path: executable) }
             .first { FileManager.default.isExecutableFile(atPath: $0.path(percentEncoded: false)) }
+    }
+}
+
+/// Holds back `outputClosed` until stderr has ended too, so a server that logs why it's exiting and
+/// quits has its last words in the tail before the failure is reported. A process that keeps stderr
+/// open after closing stdout (a child it left behind, say) only delays it briefly.
+private final class PipeEnds: Sendable {
+    private static let errorGrace: Duration = .milliseconds(200)
+    private let state = Mutex((output: false, error: false, reported: false))
+    private let report: @Sendable () -> Void
+
+    init(report: @escaping @Sendable () -> Void) {
+        self.report = report
+    }
+
+    func outputEnded() {
+        let errorAlreadyEnded = state.withLock { state in
+            state.output = true
+            return state.error
+        }
+        if errorAlreadyEnded {
+            reportOnce()
+        } else {
+            Task {
+                try? await Task.sleep(for: Self.errorGrace)
+                reportOnce()
+            }
+        }
+    }
+
+    func errorEnded() {
+        let outputAlreadyEnded = state.withLock { state in
+            state.error = true
+            return state.output
+        }
+        if outputAlreadyEnded { reportOnce() }
+    }
+
+    private func reportOnce() {
+        let first = state.withLock { state in
+            defer { state.reported = true }
+            return !state.reported
+        }
+        if first { report() }
     }
 }
 

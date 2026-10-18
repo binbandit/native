@@ -2,18 +2,24 @@ import SwiftUI
 
 /// Native's lockup at the top of the home page, in the edition that matches the app icon in the
 /// Dock (`HomeLandingEdition`): a channel badge on Beta, Nightly and Dev builds, the night sky on
-/// Nightly, and the Halloween ghosts while the user has the seasonal icon. It settles in once when
+/// Nightly, and the edition of whichever celebration is showing. It settles in once when
 /// the page appears, before the cards fade in under it, so the page opens on the brand rather than
 /// on a flash of controls.
 struct HomeHero: View {
     @Environment(\.releaseChannel) private var releaseChannel
-    /// Optional, so previews and other hosts without icon preferences get the everyday mark.
+    /// Optional, so previews and other hosts without them get the everyday mark.
     @Environment(AppIconPreferences.self) private var iconPreferences: AppIconPreferences?
+    @Environment(CelebrationCenter.self) private var celebrations: CelebrationCenter?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var isShown = false
 
     private var edition: HomeLandingEdition {
-        HomeLandingEdition(channel: releaseChannel, isHalloween: iconPreferences?.isHalloweenActive == true)
+        if let look = celebrations?.homeLook {
+            return HomeLandingEdition(channel: releaseChannel, look: look, occasion: celebrations?.homeTitle)
+        }
+        return HomeLandingEdition(
+            channel: releaseChannel, look: iconPreferences?.baseHomeLook,
+            occasion: iconPreferences?.baseIconSet?.name.resolved())
     }
 
     var body: some View {
@@ -33,7 +39,7 @@ struct HomeHero: View {
         .offset(y: isShown ? 0 : HomeLayout.heroEntranceOffset)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(edition.name)
-        .accessibilityValue(edition.isHalloween ? "Halloween" : "")
+        .accessibilityValue(edition.occasion ?? "")
         .accessibilityAddTraits(.isHeader)
         .onAppear {
             withAnimation(reduceMotion ? nil : HomeLayout.heroEntrance) {

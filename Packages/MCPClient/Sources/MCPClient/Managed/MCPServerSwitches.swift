@@ -6,10 +6,15 @@ import Foundation
 /// on; a project's switch beats the global one.
 public struct MCPServerSwitches: Hashable, Sendable, Codable {
     public enum Mode: String, Hashable, Sendable, Codable {
+        /// Agents load it, as usual.
         case on
+        /// Agents don't load it; Native connects to it and binds its tools into `run_script`, so its
+        /// tool schemas stay out of every session's context (docs/script-runtime.md, "Code mode").
+        case scripted
         case off
-        // Planned: `scripted`, the server reachable only through Native's `run_script` tool, so its
-        // tool schemas don't load into every session (docs/script-runtime.md, "Code mode").
+
+        /// Whether agents load the server themselves.
+        public var reachesAgents: Bool { self == .on }
     }
 
     public private(set) var global: [String: Mode]
@@ -45,11 +50,6 @@ public struct MCPServerSwitches: Hashable, Sendable, Codable {
         let path = ProjectPath.key(project)
         projects[path, default: [:]][server] = mode
         if projects[path]?.isEmpty == true { projects[path] = nil }
-    }
-
-    /// Servers off everywhere, whatever the project.
-    public var globallyOff: Set<String> {
-        Set(global.filter { $0.value == .off }.keys)
     }
 
     /// Whether any project turns `server` to a different mode than the global switch.

@@ -121,6 +121,10 @@ public struct HistoryNavigationButtons: View {
             )
             .disabled(!canGoForward)
         }
+        // In a toolbar item the pair reads as one group; its own label keeps the item from
+        // borrowing the first button's, which VoiceOver then gave to both buttons.
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("History")
     }
 }
 

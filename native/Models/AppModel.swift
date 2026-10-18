@@ -78,6 +78,8 @@ final class AppModel {
     /// AppModel+TaskSessions.swift and AppModel+Listing.swift.
     @ObservationIgnored var taskStartsInFlight: [AgentDefinition.ID: Int] = [:]
     @ObservationIgnored private let environment = ShellEnvironment()
+    /// What stops an agent's sessions from taking messages; the Usage feature reports limits here.
+    let sendGate: AgentSendGate
     /// Internal only for AppModel+Listing.swift.
     let sessionLists = ProjectSessionLists()
     @ObservationIgnored private let pluginEvents: AsyncStream<SessionEvent>
@@ -109,12 +111,15 @@ final class AppModel {
         self.pluginEvents = pluginEvents
         let (titleEvents, titleContinuation) = AsyncStream.makeStream(of: TitleEvent.self)
         self.titleEvents = titleEvents
-        services = SessionServices(plugins: plugins, titles: titles) {
+        let sendGate = AgentSendGate()
+        self.sendGate = sendGate
+        services = SessionServices(plugins: plugins, titles: titles, sendGate: sendGate) {
             continuation.yield($0)
         } titleLanded: { key, folder, title in
             titleContinuation.yield(TitleEvent(key: key, folder: folder, title: title))
         }
         runtimes = AgentRuntimes(plugins: plugins)
+        sendGate.runtimes = runtimes
         projects = Projects()
         catalog = SessionCatalog()
         ordering = SessionOrdering()

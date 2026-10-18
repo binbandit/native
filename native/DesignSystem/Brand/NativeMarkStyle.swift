@@ -6,4 +6,8 @@ public enum NativeMarkStyle: Equatable, Sendable {
     case beta
     /// The Halloween icon's ghosts, in an edition's colors.
     case halloween(NativeHalloweenEdition)
+    /// Marigolds, candlelight and papel picado for Día de Muertos.
+    case diaDeMuertos(NativeMuertosEdition)
+    /// Each link in its own color, from a plugin icon set's palette.
+    case twoTone(NativeTwoTonePalette)
 }
