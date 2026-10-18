@@ -6,15 +6,17 @@ extension SettingsPane.ID {
 
 extension SettingsPane {
     /// The look of the app: the app icon (Mac-only, since the icon is the Dock's), the white light mode
-    /// is drawn on, and how see-through the translucent layers are.
+    /// is drawn on, how see-through the translucent layers are, and the code theme.
     static let appearance = SettingsPane(
         id: .appearance,
         title: "Appearance",
         systemImage: "paintpalette",
         group: .personal,
         order: 10,
-        keywords: ["app icon", "dock", "theme", "light", "dark", "transparency", "translucent", "wool", "paper"],
-        searchEntries: { [LightToneSettingsRow.searchEntry, TransparencySettingsRow.searchEntry] },
+        keywords: ["app icon", "dock", "theme", "light", "dark", "transparency", "translucent", "wool", "paper", "code theme", "syntax"],
+        searchEntries: {
+            [LightToneSettingsRow.searchEntry, TransparencySettingsRow.searchEntry, CodeThemeSettingsRow.searchEntry]
+        },
         content: {
             SettingsPage {
                 SettingsHeader("Appearance")
@@ -25,6 +27,7 @@ extension SettingsPane {
                 SettingsRowGroup {
                     LightToneSettingsRow()
                     TransparencySettingsRow()
+                    CodeThemeSettingsRow()
                 }
             }
         }
