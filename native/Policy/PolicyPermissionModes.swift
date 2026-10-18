@@ -1,4 +1,5 @@
 import ACP
+import NativePolicy
 
 /// Keeps sessions out of permission modes the organization forbids.
 enum PolicyPermissionModes {

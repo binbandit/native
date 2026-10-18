@@ -144,6 +144,7 @@ private struct HostSection: View {
         NavigationLink(value: TaskRoute(hostID: host.id, sessionID: session.id)) {
             CompanionTaskRow(host: host, session: session)
         }
+        .accessibilityIdentifier("task-\(host.name)")
     }
 }
 

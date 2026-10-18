@@ -13,6 +13,7 @@ struct NeedsYouRow: View {
             NavigationLink(value: TaskRoute(hostID: host.id, sessionID: session.id)) {
                 CompanionTaskRow(host: host, session: session)
             }
+            .accessibilityIdentifier("task-\(host.name)")
             if let pending = mirror?.state.pendingPermissions.first {
                 ApprovalCard(
                     host: host, sessionID: session.id, toolCallID: pending.toolCallID, permission: pending.permission,
