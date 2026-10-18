@@ -59,7 +59,9 @@ private struct StandardTranscript: View {
         case .exploration(let calls):
             transcript.exploration(calls)
         case .item(.message(let message)):
-            MessageView(message: message, thinking: transcript.session.state.thinkingInterval(at: itemIndex))
+            let thinking = transcript.session.state.thinkingInterval(at: itemIndex)
+            MessageView(message: message, thinking: thinking.map { ThinkingClock(start: $0.start, end: $0.end) })
+                .equatable()
         case .item(.toolCall(let call)):
             transcript.toolCall(call)
         case .item(.notice(let notice)):

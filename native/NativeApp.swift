@@ -268,13 +268,13 @@ private struct SessionCommands: Commands {
                 Task { await nextPermissionMode(of: session) }
             }
             .keyboardShortcut("m", modifiers: [.command, .shift])
-            .disabled(session.map { ComposerSettings($0.state.configOptions).autonomy == nil } ?? true)
+            .disabled(session.map { ComposerSettings($0.configOptions).autonomy == nil } ?? true)
 
             Button("Choose Model…") {
                 session?.isModelPickerRequested = true
             }
             .keyboardShortcut("e", modifiers: [.command, .shift])
-            .disabled(session.map { ComposerSettings($0.state.configOptions).model == nil } ?? true)
+            .disabled(session.map { ComposerSettings($0.configOptions).model == nil } ?? true)
 
             Divider()
 

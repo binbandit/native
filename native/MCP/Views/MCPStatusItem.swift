@@ -28,7 +28,7 @@ private struct MCPStatusSegment: View {
 
     var body: some View {
         if let session, let library = MCPServersPlugin.library(in: model.plugins) {
-            let entries = library.entries(for: session.context)
+            let entries = library.entries(forSession: session.clientID)
             let summary = MCPSessionSummary(library: library, entries: entries)
             StatusBarSegment(help: summary.help, accessibilityLabel: "MCP servers", accessibilityValue: summary.help) {
                 HStack(spacing: DS.Space.sm) {

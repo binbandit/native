@@ -38,8 +38,13 @@ final class MCPLibrary {
     @ObservationIgnored private let storeURL: URL
     /// Secrets read this launch, so the Keychain is asked once per server.
     @ObservationIgnored private var secretCache: [UUID: ManagedServerSecrets] = [:]
-    /// Agents' effective servers in folders that aren't projects (worktrees, subfolders).
-    @ObservationIgnored private var directoryCache: [String: [ConfiguredServer]] = [:]
+    /// Configuration read for folders sessions work in that aren't projects (worktrees,
+    /// subfolders), by "format|folder".
+    @ObservationIgnored private var folderConfigurations: [String: AgentMCPConfiguration] = [:]
+    /// Sessions whose entries are kept, by Native's id for them.
+    @ObservationIgnored private var trackedSessions: [UUID: SessionContext] = [:]
+    /// What each tracked session has, for views to read without computing.
+    private(set) var sessionEntries: [UUID: [MCPSessionEntry]] = [:]
     /// The projects and environment of the last read.
     @ObservationIgnored private var readProjects: Set<String> = []
     @ObservationIgnored private var readEnvironment: [String: String] = [:]
@@ -83,6 +88,7 @@ final class MCPLibrary {
         }
         reports[.managed(server.id)] = nil
         persist()
+        recomputeSessionEntries()
     }
 
     /// Removes a server; the returned value puts it back exactly (`restore`), secrets included.
@@ -95,6 +101,7 @@ final class MCPLibrary {
         servers.remove(at: index)
         reports[.managed(id)] = nil
         persist()
+        recomputeSessionEntries()
         return removed
     }
 
@@ -105,6 +112,7 @@ final class MCPLibrary {
         secretCache[removed.server.id] = removed.secrets
         servers.insert(removed.server, at: min(removed.index, servers.count))
         persist()
+        recomputeSessionEntries()
     }
 
     func setEnabled(_ isEnabled: Bool, for id: UUID) {
@@ -127,6 +135,7 @@ final class MCPLibrary {
         guard let index = servers.firstIndex(where: { $0.id == id }) else { return }
         change(&servers[index])
         persist()
+        recomputeSessionEntries()
     }
 
     /// A server's secret values, from the Keychain the first time.
@@ -184,8 +193,9 @@ final class MCPLibrary {
         configurations[format]
     }
 
-    /// Reads every agent's configuration again, for every open project, and asks Codex for the
-    /// servers its plugins add.
+    /// Reads every agent's configuration again, off the main thread, for every open project and
+    /// every folder a tracked session works in, and asks Codex for the servers its plugins add.
+    /// Runs at connect, when the app becomes active, and on demand; nothing reads files in `body`.
     func readConfigurations() async {
         guard !isReadingConfigurations, let host else { return }
         isReadingConfigurations = true
@@ -193,43 +203,88 @@ final class MCPLibrary {
         let environment = await host.mcpEnvironment()
         let reader = AgentConfigReader(files: files, home: home(in: environment), environment: environment)
         let projects = host.mcpProjects
-        let formats = Set(agents.map(\.format))
-        var read = await Task.detached {
-            Dictionary(uniqueKeysWithValues: formats.map { ($0, reader.read($0, projects: projects)) })
+        let projectKeys = Set(projects.map(ProjectPath.key))
+        let folders = Set(trackedSessions.values.map { ProjectPath.key($0.cwd) }).subtracting(projectKeys)
+        // Every format, not just running agents': an agent that starts later is covered already.
+        var (read, perFolder) = await Task.detached {
+            let read = Dictionary(
+                uniqueKeysWithValues: AgentConfigFormat.allCases.map { ($0, reader.read($0, projects: projects)) })
+            let perFolder = Dictionary(
+                uniqueKeysWithValues: folders.flatMap { folder in
+                    AgentConfigFormat.allCases.map { format in
+                        ("\(format.rawValue)|\(folder)", reader.read(format, projects: [ProjectPath.url(folder)]))
+                    }
+                })
+            return (read, perFolder)
         }.value
-        if formats.contains(.codex), let codex = read[.codex],
+        if agents.contains(where: { $0.format == .codex }), let codex = read[.codex],
             let listing = await codexListing(environment: environment)
         {
             read[.codex] = codex.merging(listing)
         }
         configurations = read
-        directoryCache = [:]
-        readProjects = Set(projects.map(ProjectPath.key))
+        folderConfigurations = perFolder
+        readProjects = projectKeys
         readEnvironment = environment
         lastRead = .now
+        recomputeSessionEntries()
     }
 
-    /// What `format`'s agent loads in `directory`. Projects come from the last read; other folders
-    /// (worktrees, subfolders) are read once and kept until the next.
+    /// Reads again unless the last read is recent, for when the app comes back to the front.
+    func readConfigurationsIfStale() async {
+        guard lastRead.map({ Date.now.timeIntervalSince($0) > 10 }) ?? true else { return }
+        await readConfigurations()
+    }
+
+    /// What `format`'s agent loads in `directory`, from the last read. Never touches files: a
+    /// folder that isn't a project is read when a session there is first tracked.
     func agentServers(_ format: AgentConfigFormat, in directory: URL?) -> [ConfiguredServer] {
-        // Sessions reopen at launch, before the first full read: read what's needed now, so the
-        // agent isn't handed a copy of a server it already loads.
-        let configuration =
-            configurations[format]
-            ?? AgentConfigReader(
-                files: files, home: home(in: readEnvironment),
-                environment: readEnvironment.isEmpty ? ProcessInfo.processInfo.environment : readEnvironment
-            ).read(format, projects: directory.map { [$0] } ?? [])
-        guard let directory, !readProjects.contains(ProjectPath.key(directory)) else {
+        guard let configuration = configurations[format] else { return [] }
+        guard let directory, let folder = folderConfigurations["\(format.rawValue)|\(ProjectPath.key(directory))"]
+        else {
             return configuration.effective(in: directory)
         }
-        let key = "\(format.rawValue)|\(ProjectPath.key(directory))"
-        if let cached = directoryCache[key] { return cached }
-        let fresh = AgentConfigReader(files: files, home: home(in: readEnvironment), environment: readEnvironment).read(
-            format, projects: [directory])
-        let servers = fresh.withPlugins(of: configuration).effective(in: directory)
-        directoryCache[key] = servers
-        return servers
+        return folder.withPlugins(of: configuration).effective(in: directory)
+    }
+
+    // MARK: - Sessions
+
+    /// The servers each tracked session has, kept up to date as configuration and servers change,
+    /// so views read stored values.
+    func entries(forSession clientID: UUID) -> [MCPSessionEntry] {
+        sessionEntries[clientID] ?? []
+    }
+
+    /// Starts keeping a session's entries; reads its folder first if it isn't a project.
+    func track(_ session: SessionContext) async {
+        trackedSessions[session.clientID] = session
+        sessionEntries[session.clientID] = entries(for: session)
+        let folder = ProjectPath.key(session.cwd)
+        guard !readProjects.contains(folder),
+            folderConfigurations["\(AgentConfigFormat.claudeCode.rawValue)|\(folder)"] == nil
+        else { return }
+        let reader = AgentConfigReader(files: files, home: home(in: readEnvironment), environment: readEnvironment)
+        let read = await Task.detached {
+            Dictionary(
+                uniqueKeysWithValues: AgentConfigFormat.allCases.map { format in
+                    ("\(format.rawValue)|\(folder)", reader.read(format, projects: [ProjectPath.url(folder)]))
+                })
+        }.value
+        folderConfigurations.merge(read) { $1 }
+        recomputeSessionEntries()
+    }
+
+    func untrack(_ clientID: UUID) {
+        trackedSessions[clientID] = nil
+        sessionEntries[clientID] = nil
+    }
+
+    /// In memory only: the configuration and servers are already loaded.
+    func recomputeSessionEntries() {
+        for (id, session) in trackedSessions {
+            let fresh = entries(for: session)
+            if sessionEntries[id] != fresh { sessionEntries[id] = fresh }
+        }
     }
 
     private func home(in environment: [String: String]) -> URL {

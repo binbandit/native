@@ -59,7 +59,13 @@ final class SessionModel {
 
     // Turn state. Internal only so the SessionModel+ extensions in other files can drive turns;
     // everything else changes it through the methods.
-    var state = SessionState()
+    var state = SessionState() {
+        didSet { mirrorState() }
+    }
+    /// `state.title` and `state.configOptions`, mirrored so what shows only these (sidebar rows,
+    /// menus) doesn't update with every streamed chunk, which changes `state`.
+    private(set) var title: String?
+    private(set) var configOptions: [ConfigOption] = []
     var phase: Phase
     /// When the user last sent a prompt, for ordering the sidebar.
     var lastActivity: Date?
@@ -103,6 +109,8 @@ final class SessionModel {
         self.parent = parent
         state.title = title
         state.configOptions = configOptions
+        // Observers don't run in an initializer.
+        mirrorState()
         parent?.children[id] = self
     }
 
@@ -134,7 +142,7 @@ final class SessionModel {
         if origin == .announced {
             return parent?.state.subagents.first { $0.id == id }?.title ?? state.title ?? "Subagent"
         }
-        return services.titles.title(for: titleKey, agentTitle: state.title) ?? (origin == .task ? "Task" : "New Session")
+        return services.titles.title(for: titleKey, agentTitle: title) ?? (origin == .task ? "Task" : "New Session")
     }
 
     /// This session as plugins see it.
@@ -210,6 +218,16 @@ final class SessionModel {
             }
         }
         state.apply(update)
+    }
+
+    /// Writes only what changed, since writing notifies observers even with an equal value.
+    private func mirrorState() {
+        if title != state.title {
+            title = state.title
+        }
+        if configOptions != state.configOptions {
+            configOptions = state.configOptions
+        }
     }
 
     /// Creates the model for a subagent the agent just announced.

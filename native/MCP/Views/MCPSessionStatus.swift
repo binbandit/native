@@ -18,7 +18,19 @@ struct MCPSessionStatusButton: View {
 
     var body: some View {
         if let library = MCPServersPlugin.library(in: model.plugins) {
-            let entries = library.entries(for: session.context)
+            // A real container, so tracking starts even while there's nothing to show.
+            HStack(spacing: 0) {
+                button(library)
+            }
+            .task(id: session.clientID) { await library.track(session.context) }
+        }
+    }
+
+    @ViewBuilder
+    private func button(_ library: MCPLibrary) -> some View {
+        do {
+            // Stored values only: the library keeps them current, so streaming updates cost nothing here.
+            let entries = library.entries(forSession: session.clientID)
             let summary = MCPSessionSummary(library: library, entries: entries)
             // Quiet when the session has no servers at all.
             if !entries.isEmpty {
