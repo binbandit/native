@@ -62,6 +62,7 @@ enum AgentSessionDefaults {
             }
             await session.setConfigOption(option, to: value)
         }
+        await PolicyPermissionModes.enforce(on: session)
     }
 }
 

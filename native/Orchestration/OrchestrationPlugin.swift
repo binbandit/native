@@ -26,7 +26,10 @@ struct OrchestrationPlugin: NativePlugin {
         let tools = OrchestrationTools.all(orchestrator)
         // run_script exists only where the script runtime does; without it the server just lacks it.
         let extensions = OrchestrationScriptExtensions()
-        let script = OrchestrationScriptTool.make(binding: tools, extensions: extensions)
+        // An organization can turn the script runtime off (`policy.scripts.enabled`).
+        let script =
+            PolicyCenter.currentPolicy().scriptsEnabled
+            ? OrchestrationScriptTool.make(binding: tools, extensions: extensions) : nil
         let server = MCPHTTPServer(
             name: "native",
             version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0",

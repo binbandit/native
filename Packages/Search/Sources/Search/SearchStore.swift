@@ -60,7 +60,7 @@ actor SearchStore {
             CREATE INDEX IF NOT EXISTS items_session ON items (session_row);
             CREATE VIRTUAL TABLE IF NOT EXISTS items_fts USING fts5 (
                 body, parts, content = 'items', content_rowid = 'id',
-                tokenize = 'unicode61 remove_diacritics 2', prefix = '2 3'
+                tokenize = 'unicode61 remove_diacritics 2'
             );
             CREATE TRIGGER IF NOT EXISTS items_inserted AFTER INSERT ON items BEGIN
                 INSERT INTO items_fts (rowid, body, parts) VALUES (new.id, new.body, new.parts);
@@ -86,15 +86,18 @@ actor SearchStore {
 
     // MARK: - Writing
 
-    /// Puts `record` and its documents in place of whatever the index had for the session.
-    func replace(_ record: SearchSessionRecord, documents: [SearchDocument], source: SearchSourceStamp?) throws {
+    /// Puts each entry's session and documents in place of whatever the index had for it, in one
+    /// transaction: a commit per session would make backfilling thousands of them slow.
+    func replace(_ entries: [SearchIndexEntry]) throws {
         try database.transaction {
-            let row = try upsert(record, source: source)
-            try database.query("DELETE FROM items WHERE session_row = ?", [.int(row)])
-            var ordinal = 0
-            for document in [titleDocument(for: record)] + documents where !document.text.isEmpty {
-                try insert(document, ordinal: ordinal, session: row)
-                ordinal += 1
+            for entry in entries {
+                let row = try upsert(entry.session, source: entry.source)
+                try database.query("DELETE FROM items WHERE session_row = ?", [.int(row)])
+                var ordinal = 0
+                for document in [titleDocument(for: entry.session)] + entry.documents where !document.text.isEmpty {
+                    try insert(document, ordinal: ordinal, session: row)
+                    ordinal += 1
+                }
             }
         }
     }
@@ -388,6 +391,19 @@ actor SearchStore {
             bodies[$0.int(0)] = $0.text(1)
         }
         return bodies
+    }
+}
+
+/// One session to index: what's known about it, its transcript, and the history file it came from.
+public struct SearchIndexEntry: Sendable {
+    public var session: SearchSessionRecord
+    public var documents: [SearchDocument]
+    public var source: SearchSourceStamp?
+
+    public init(session: SearchSessionRecord, documents: [SearchDocument], source: SearchSourceStamp? = nil) {
+        self.session = session
+        self.documents = documents
+        self.source = source
     }
 }
 

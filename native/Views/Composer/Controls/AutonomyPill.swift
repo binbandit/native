@@ -36,7 +36,10 @@ struct AutonomyPill: View {
         .contextMenu {
             Picker("Autonomy", selection: Binding(get: { setting.value }, set: { onSet(setting, $0) })) {
                 ForEach(levels) { choice in
-                    Text(choice.name).tag(choice.value)
+                    let forbidden = PolicyPermissionModes.forbids(setting.option, value: choice.value)
+                    Text(forbidden ? "\(choice.name) (\(PolicyCenter.managedExplanation))" : choice.name)
+                        .tag(choice.value)
+                        .selectionDisabled(forbidden)
                 }
             }
             .pickerStyle(.inline)

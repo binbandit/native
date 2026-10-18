@@ -4,6 +4,11 @@ import Sentry
 
 /// Transport adapter only. Native's telemetry gate owns consent and organization policy.
 enum SentryTelemetry {
+    private static var isDevelopmentBuild: Bool {
+        let identifier = Bundle.main.bundleIdentifier ?? ""
+        return identifier.contains(".dev.") || identifier.hasSuffix(".dev")
+    }
+
     private static var cacheDirectory: URL? {
         FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first?
             .appending(path: Bundle.main.bundleIdentifier ?? "Native")
@@ -14,7 +19,9 @@ enum SentryTelemetry {
         #if DEBUG
         return nil
         #else
-        guard let dsn = Bundle.main.object(forInfoDictionaryKey: "NativeSentryDSN") as? String, !dsn.isEmpty else {
+        guard !isDevelopmentBuild,
+            let dsn = Bundle.main.object(forInfoDictionaryKey: "NativeSentryDSN") as? String, !dsn.isEmpty
+        else {
             return nil
         }
         return dsn
@@ -26,7 +33,7 @@ enum SentryTelemetry {
         #if !DEBUG
         guard !SentrySDK.isEnabled,
             let url = URL(string: dsn), url.scheme == "https", url.host != nil, url.user != nil,
-            !(Bundle.main.bundleIdentifier?.contains(".dev.") ?? false)
+            !isDevelopmentBuild
         else { return }
         SentrySDK.start { options in
             options.dsn = dsn

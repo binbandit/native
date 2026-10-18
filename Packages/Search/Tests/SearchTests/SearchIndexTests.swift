@@ -131,16 +131,20 @@ struct SearchIndexTests {
         let vocabulary = (0..<4_000).map { "word\($0)" } + ["timeout", "migration", "SessionStore", "refactor", "deploy"]
         var generator = SystemRandomNumberGenerator()
         let started = Date.now
-        for sessionNumber in 0..<3_000 {
-            let documents = (0..<60).map { position in
-                let words = (0..<40).map { _ in vocabulary.randomElement(using: &generator) ?? "" }
-                return SearchDocument(
-                    role: [.user, .agent, .tool][position % 3], text: words.joined(separator: " "), anchor: .session)
+        for batch in stride(from: 0, to: 3_000, by: 25) {
+            let entries = (batch..<batch + 25).map { sessionNumber in
+                let documents = (0..<60).map { position in
+                    let words = (0..<40).map { _ in vocabulary.randomElement(using: &generator) ?? "" }
+                    return SearchDocument(
+                        role: [.user, .agent, .tool][position % 3], text: words.joined(separator: " "), anchor: .session)
+                }
+                return SearchIndexEntry(
+                    session: session(
+                        "s\(sessionNumber)", title: "Task \(sessionNumber)", project: "/code/p\(sessionNumber % 20)",
+                        daysAgo: Double(sessionNumber % 365)),
+                    documents: documents)
             }
-            try await index.replace(
-                session("s\(sessionNumber)", title: "Task \(sessionNumber)", project: "/code/p\(sessionNumber % 20)",
-                    daysAgo: Double(sessionNumber % 365)),
-                documents: documents)
+            try await index.replace(entries)
         }
         print("indexed 180k items in \(Date.now.timeIntervalSince(started))s, \(try await index.statistics())")
         for text in ["timeout", "word12 word99", "SessionStore", "store", "dep", "\"word1 word2\"", "timeout agent:claude"] {

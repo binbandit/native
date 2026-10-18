@@ -1,6 +1,7 @@
 import ACP
 import Experiments
 import Foundation
+import NativePolicy
 import Observation
 import os
 
@@ -89,7 +90,15 @@ final class PluginRegistry {
     }
 
     func isEnabled(_ id: String) -> Bool {
-        choices[id] ?? loadedPlugins.first { $0.id == id }?.plugin.isEnabledByDefault ?? true
+        guard isAllowed(id) else { return false }
+        return choices[id] ?? loadedPlugins.first { $0.id == id }?.plugin.isEnabledByDefault ?? true
+    }
+
+    /// Whether the organization lets the plugin load. Its list covers plugins installed from
+    /// manifests; built-ins are part of Native and governed by their own policy keys.
+    func isAllowed(_ id: String) -> Bool {
+        guard loadedPlugins.first(where: { $0.id == id })?.source != .builtIn else { return true }
+        return PolicyCenter.shared.policy.allowsPlugin(id)
     }
 
     /// Whether the user has switched the plugin on or off themselves, rather than it following its default.
@@ -117,13 +126,20 @@ final class PluginRegistry {
 
     // MARK: - Contributions of enabled plugins
 
+    /// Enabled plugins, plus the system plugins that always run (`SystemPlugins`).
     var enabledPlugins: [any NativePlugin] {
-        plugins.filter { isEnabled($0.id) }.map(\.plugin)
+        plugins.filter { isEnabled($0.id) }.map(\.plugin) + SystemPlugins.current
     }
 
+    /// Agents of enabled plugins that the organization allows, with any environment it adds.
     var agents: [AgentDefinition] {
-        enabledPlugins.flatMap { plugin in
-            plugin.manifest.agents.map { AgentDefinition($0, pluginID: plugin.manifest.id) }
+        let policy = PolicyCenter.shared.policy.agents
+        return enabledPlugins.flatMap { plugin in
+            plugin.manifest.agents.filter { policy.allows($0.id) }.map { agent in
+                var agent = agent
+                agent.env.merge(policy.environment[agent.id] ?? [:]) { $1 }
+                return AgentDefinition(agent, pluginID: plugin.manifest.id)
+            }
         }
     }
 
@@ -133,9 +149,13 @@ final class PluginRegistry {
 
     /// Every MCP server enabled plugins want the agent to have for this session.
     func mcpServers(for session: SessionContext) -> [MCPServer] {
-        enabledPlugins.flatMap { plugin in
+        // The organization's blocks and allowlist apply to every server but the ones it requires.
+        let policy = PolicyCenter.shared.policy.mcp
+        let required = Set(policy.required.map(\.name))
+        return enabledPlugins.flatMap { plugin in
             plugin.manifest.mcpServers.compactMap(\.server) + plugin.mcpServers(for: session)
         }
+        .filter { required.contains($0.policyName) || policy.allows(name: $0.policyName, command: $0.policyCommandLine) }
     }
 
     // MARK: - Session policy
