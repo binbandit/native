@@ -65,7 +65,7 @@ extension PullRequestPageModel {
 
     func submitReview(_ event: ReviewEvent, body: String) async -> Bool {
         let done = await write("review") { cli, page in try await cli.submitReview(event, body: body, on: page) }
-        if done { gitHub.map { gitHub in Task { await gitHub.refresh() } } }
+        if done, let gitHub { Task { await gitHub.refresh() } }
         return done
     }
 
@@ -86,7 +86,7 @@ extension PullRequestPageModel {
 
     func merge(_ method: MergeMethod, deleteBranch: Bool) async -> Bool {
         let done = await write("merge") { cli, page in try await cli.merge(page, method: method, deleteBranch: deleteBranch) }
-        if done { gitHub.map { gitHub in Task { await gitHub.refresh() } } }
+        if done, let gitHub { Task { await gitHub.refresh() } }
         return done
     }
 
@@ -122,14 +122,17 @@ extension PullRequestPageModel {
 
     /// Runs a write against the loaded page, marking `key` busy, then reloads. Returns whether it
     /// worked; a failure lands in `actionError`, said in GitHub's words.
-    func write(_ key: String, _ body: (GitHubCLI, PullRequestPage) async throws(GitHubError) -> Void) async -> Bool {
+    func write(_ key: String, _ body: (GitHubCLI, PullRequestPage) async throws -> Void) async -> Bool {
         guard let gitHub, let page, !busy.contains(key) else { return false }
         busy.insert(key)
         defer { busy.remove(key) }
         do {
             try await body(gitHub.cli(), page)
-        } catch {
+        } catch let error as GitHubError {
             actionError = error
+            return false
+        } catch {
+            actionError = .failed(exitCode: 0, error.localizedDescription)
             return false
         }
         await load()
