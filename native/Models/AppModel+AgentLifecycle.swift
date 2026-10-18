@@ -85,14 +85,14 @@ extension AppModel {
     }
 
     /// How long one of the user's sessions sits unused (not shown, not working, no draft) before
-    /// Native closes it, here and in the agent's process. An open session costs its transcript
-    /// here and, in the agent, whatever it holds per session (Codex starts the user's MCP servers
-    /// for each one, often hundreds of megabytes); selecting it again loads it back. The
-    /// `sessionIdleTimeout` default (seconds) shortens it, for trying the behavior out; it's checked
-    /// as often as agents are, so shorten `agentIdleTimeout` with it.
-    static var sessionIdleTimeout: Duration {
+    /// Native closes it, here and in the agent's process; nil, the default, keeps sessions open.
+    /// Set the `sessionIdleTimeout` default (seconds) to turn it on; it's checked as often as agents
+    /// are, so shorten `agentIdleTimeout` with it. Off until closing pays and reopening is faithful
+    /// (docs/performance.md): Codex keeps a closed session's MCP servers anyway, and a session
+    /// loaded back shows the agent's default model and its own title instead of the user's.
+    static var sessionIdleTimeout: Duration? {
         let seconds = UserDefaults.standard.double(forKey: "sessionIdleTimeout")
-        return seconds > 0 ? .seconds(seconds) : .seconds(10 * 60)
+        return seconds > 0 ? .seconds(seconds) : nil
     }
 
     /// Stops agents that sit unused for `agentIdleTimeout`, and closes sessions that sit unused for
@@ -131,7 +131,7 @@ extension AppModel {
     /// sessions belong to the engines that started them.
     private func closeIdleSessions(now: ContinuousClock.Instant, idleSince: inout [SessionKey: ContinuousClock.Instant])
     {
-        let timeout = Self.sessionIdleTimeout
+        guard let timeout = Self.sessionIdleTimeout else { return }
         var open: Set<SessionKey> = []
         for runtime in agents where runtime.isReady {
             for session in sessions.open(of: runtime.agent.id)
