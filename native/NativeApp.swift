@@ -143,6 +143,7 @@ struct NativeApp: App {
 
 private struct FileCommands: Commands {
     let model: AppModel
+    @FocusedValue(\.activeSession) private var session
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
@@ -165,6 +166,14 @@ private struct FileCommands: Commands {
                 model.isAddingProject = true
             }
             .keyboardShortcut("o")
+
+            Divider()
+
+            Button("Attach Files…") {
+                session?.isAttachmentPickerRequested = true
+            }
+            .keyboardShortcut("u")
+            .disabled(session == nil || session?.acceptsPrompts == false || session?.phase == .disconnected)
         }
     }
 }

@@ -22,6 +22,8 @@
 		000000000000000000E10320 /* Experiments in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000E10310 /* Experiments */; };
 		00000000000000000A070020 /* NativeAutomation in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000000A070010 /* NativeAutomation */; };
 		00000000000000000B5C1020 /* Skills in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000000B5C1010 /* Skills */; };
+		0000000000000000901C0020 /* NativePolicy in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000901C0010 /* NativePolicy */; };
+		00000000000000007E1E0020 /* NativeTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000007E1E0010 /* NativeTelemetry */; };
 		00000000000000000E0ED020 /* NativeExpeditions in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000000E0ED010 /* NativeExpeditions */; };
 		00000000000000005E1EA503 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; platformFilters = (macos, ); productRef = 00000000000000005E1EA502 /* Sparkle */; };
 		00000000000000005E1EA531 /* LICENSE.md in Resources */ = {isa = PBXBuildFile; fileRef = 00000000000000005E1EA530 /* LICENSE.md */; };
@@ -106,6 +108,8 @@
 				00000000000000005E171013 /* NativeDiagnostics in Frameworks */,
 				54227E023083ADA900D7771F /* MCPClient in Frameworks */,
 				00000000000000000B5C1020 /* Skills in Frameworks */,
+				0000000000000000901C0020 /* NativePolicy in Frameworks */,
+				00000000000000007E1E0020 /* NativeTelemetry in Frameworks */,
 				000000000000000000000320 /* ACP in Frameworks */,
 				0000000000000000A99A0020 /* AppAppearance in Frameworks */,
 				0000000000000000C0DE0020 /* CodeThemes in Frameworks */,
@@ -222,6 +226,8 @@
 				000000000000000071E10010 /* Terminal */,
 				00000000000000000AC10010 /* MCPClient */,
 				00000000000000000B5C1010 /* Skills */,
+				0000000000000000901C0010 /* NativePolicy */,
+				00000000000000007E1E0010 /* NativeTelemetry */,
 			);
 			productName = Native;
 			productReference = 000000000000000000000120 /* Native.app */;
@@ -270,6 +276,8 @@
 				0000000000000000005C5200 /* XCLocalSwiftPackageReference "Packages/ScriptRuntime" */,
 				00000000000000000AC10000 /* XCLocalSwiftPackageReference "Packages/MCPClient" */,
 				00000000000000000B5C1000 /* XCLocalSwiftPackageReference "Packages/Skills" */,
+				0000000000000000901C0000 /* XCLocalSwiftPackageReference "Packages/NativePolicy" */,
+				00000000000000007E1E0000 /* XCLocalSwiftPackageReference "Packages/Telemetry" */,
 			);
 			preferredProjectObjectVersion = 90;
 			productRefGroup = 000000000000000000000020 /* Products */;
@@ -797,6 +805,14 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Skills;
 		};
+		0000000000000000901C0000 /* XCLocalSwiftPackageReference "Packages/NativePolicy" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/NativePolicy;
+		};
+		00000000000000007E1E0000 /* XCLocalSwiftPackageReference "Packages/Telemetry" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Telemetry;
+		};
 		00000000000000000E0ED000 /* XCLocalSwiftPackageReference "Packages/Expeditions" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Expeditions;
@@ -896,6 +912,14 @@
 		00000000000000000B5C1010 /* Skills */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Skills;
+		};
+		0000000000000000901C0010 /* NativePolicy */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = NativePolicy;
+		};
+		00000000000000007E1E0010 /* NativeTelemetry */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = NativeTelemetry;
 		};
 		00000000000000000E0ED010 /* NativeExpeditions */ = {
 			isa = XCSwiftPackageProductDependency;
