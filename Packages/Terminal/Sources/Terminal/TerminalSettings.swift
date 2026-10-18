@@ -1,3 +1,5 @@
+import Foundation
+
 /// How much output a terminal keeps above the screen.
 public enum TerminalScrollback: Hashable, Sendable, Identifiable {
     case lines(Int)
