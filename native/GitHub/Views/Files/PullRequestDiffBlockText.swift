@@ -41,14 +41,14 @@ struct PullRequestDiffBlockText {
                 code += AttributedString("\n")
             }
             gutter += Self.gutter(line, width: numberWidth)
-            var text = Self.code(
+            let text = Self.code(
                 line, highlighted: highlighted.flatMap { $0.indices.contains(index) ? $0[index] : nil }, colors: colors)
-            if text.characters.count > columns, columns > 2 {
-                let end = text.characters.index(text.startIndex, offsetBy: columns - 2)
-                text = AttributedString(text[text.startIndex..<end]) + Self.cutOffMarker
+            if let cut = Self.cutOff(text, columns: columns) {
+                code += cut
                 cutOff.insert(kinds.count)
+            } else {
+                code += text
             }
-            code += text
             kinds.append(line.kind)
         }
         self.gutter = gutter
@@ -56,6 +56,13 @@ struct PullRequestDiffBlockText {
         self.kinds = kinds
         self.cutOff = cutOff
         plain = lines.map(\.text).joined(separator: "\n")
+    }
+
+    /// The line cut to `columns` characters, ending in the "…" marker, or nil when it fits.
+    static func cutOff(_ text: AttributedString, columns: Int) -> AttributedString? {
+        guard text.characters.count > columns, columns > 2 else { return nil }
+        let end = text.characters.index(text.startIndex, offsetBy: columns - 2)
+        return AttributedString(text[text.startIndex..<end]) + cutOffMarker
     }
 
     /// "…" on a tinted chip where a cut-off line ends, so it reads as something to click rather

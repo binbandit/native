@@ -26,7 +26,8 @@ struct PullRequestDiffBlockRow: View {
         if model.wrapsBlock(path, hunk, range) {
             PullRequestWrappedDiffBlock(
                 model: model, path: path, hunk: hunk, range: range, numberWidth: numberWidth,
-                highlighted: model.highlighted[PullRequestPageModel.hunkKey(path, hunk)], colors: colors)
+                highlighted: model.highlighted[PullRequestPageModel.hunkKey(path, hunk)], colors: colors,
+                columns: columns, characterWidth: characterWidth)
         } else {
             let key = blockKey
             PullRequestDiffBlock(

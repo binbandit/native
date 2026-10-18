@@ -54,7 +54,9 @@ public nonisolated struct DSCodeFont: Hashable, Sendable {
         let size = max(size + offset, 8)
         var font = DSTypography.platformFont(size: size, design: .mono)
         #if canImport(AppKit)
-        if !family.isEmpty, let chosen = NSFontManager.shared.font(withFamily: family, traits: [], weight: 5, size: size) {
+        if !family.isEmpty,
+            let chosen = NSFontManager.shared.font(withFamily: family, traits: [], weight: 5, size: size)
+        {
             font = chosen
         }
         guard !ligatures else { return font }
@@ -65,7 +67,8 @@ public nonisolated struct DSCodeFont: Hashable, Sendable {
             font = chosen
         }
         guard !ligatures else { return font }
-        return UIFont(descriptor: font.fontDescriptor.addingAttributes([.featureSettings: Self.noLigatures]), size: size)
+        return UIFont(
+            descriptor: font.fontDescriptor.addingAttributes([.featureSettings: Self.noLigatures]), size: size)
         #endif
     }
 
@@ -97,6 +100,18 @@ public enum DSCodeTextRole: Sendable {
     case block
     /// Diffs and tool output: a point smaller, as they sit inside other content.
     case compact
+
+    /// Points added to the chosen size.
+    var sizeOffset: Double { self == .block ? 0 : -1 }
+}
+
+extension DSCodeFont {
+    /// The space `codeTextStyle(_:)` puts between lines, on top of Text's own line height (about
+    /// 1.2 times the size). Code laid out a line per view pads each line by this to keep the same
+    /// rhythm.
+    public func lineSpacing(_ role: DSCodeTextRole) -> Double {
+        max(0, (size + role.sizeOffset) * (lineHeight - 1.2))
+    }
 }
 
 extension View {
@@ -117,12 +132,9 @@ private struct CodeTextStyle: ViewModifier {
     @Environment(\.dsCodeFont) private var codeFont
 
     func body(content: Content) -> some View {
-        let offset: Double = role == .block ? 0 : -1
-        let size = codeFont.size + offset
         content
-            .font(Font(codeFont.platformFont(offset: offset) as CTFont))
-            // Text's own line height is about 1.2 times its size; the rest of the multiple is spacing.
-            .lineSpacing(max(0, size * (codeFont.lineHeight - 1.2)))
+            .font(Font(codeFont.platformFont(offset: role.sizeOffset) as CTFont))
+            .lineSpacing(codeFont.lineSpacing(role))
     }
 }
 

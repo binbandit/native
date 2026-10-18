@@ -8,6 +8,7 @@ nonisolated enum RenderProbe {
     static let logger = Logger(subsystem: "Native", category: "Probe")
     /// Off unless launched with `-renderProbe YES`, so CPU measurements don't pay for the logging.
     static let isEnabled = UserDefaults.standard.bool(forKey: "renderProbe")
+    static let staticLoaders = UserDefaults.standard.bool(forKey: "staticLoaders")
 
     static func hit(_ name: String) {
         guard isEnabled else { return }
