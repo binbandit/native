@@ -4,8 +4,9 @@ import NativeHostClient
 import NativeHostProtocol
 import Observation
 
-/// The app's handle on its local Native host: registering it with launchd, staying connected, and
-/// mirroring the sessions it runs. Phase 1 of `docs/durability.md` uses it for the Durable Sessions
+/// The app's handle on its local Native host: registering it with launchd, staying connected,
+/// mirroring the sessions it runs, and moving the host onto this app's binary after an update. One
+/// per app, shared through the environment. Phase 1 of `docs/durability.md` uses it for the Durable Sessions
 /// preview; in Phase 2 `AppModel` and `SessionModel` sit on the same client.
 ///
 /// Opt-in for now (`NativeHostEnabled`), so building Native doesn't register a launchd job for
@@ -26,12 +27,17 @@ final class DurableHost {
     private(set) var mirrors: [HostSessionID: SessionMirror] = [:]
     /// What happened while no client was looking, newest last ("while you were away").
     private(set) var awayActivity: [ActivityEntry] = []
+    /// How this app and its host compare, for `HostVersionNotice`.
+    private(set) var versionStatus = HostVersionStatus.matched
     var errorMessage: String?
 
     @ObservationIgnored private let registrar = HostRegistration()
     @ObservationIgnored private var client: NativeHostClient?
     @ObservationIgnored private var listening: Task<Void, Never>?
     @ObservationIgnored private var agents: [AgentSpec] = []
+    @ObservationIgnored private var isStarted = false
+    /// The host process (its epoch) already asked to restart onto this app's binary.
+    @ObservationIgnored private var restartRequested: UUID?
 
     /// Per channel: every development build shares one defaults domain but has a host of its own, so
     /// turning one build's host on mustn't register the others'.
@@ -45,9 +51,11 @@ final class DurableHost {
     }
 
     /// Connects if the host is enabled, registering it with launchd first.
+    /// Connects if the host is enabled. Calling it again only updates the agents.
     func start(agents: [AgentSpec]) async {
         self.agents = agents
-        guard isEnabled else { return }
+        guard isEnabled, !isStarted else { return }
+        isStarted = true
         await register()
         connect()
     }
@@ -118,6 +126,14 @@ final class DurableHost {
         await perform("stop the host") { client in try await client.shutdownHost(stopAgents: true) }
     }
 
+    /// Restarts the host onto this app's binary now. Running turns are interrupted and resume on the
+    /// new host, which says it restarted to update.
+    func restartHost() async {
+        await perform("restart the host") { client in
+            try await client.shutdownHost(stopAgents: false, immediately: true)
+        }
+    }
+
     func dismissAwayActivity() {
         if let last = awayActivity.last {
             UserDefaults.standard.set(last.id, forKey: Self.seenActivityKey)
@@ -167,13 +183,24 @@ final class DurableHost {
         switch event {
         case .connection(let state):
             connection = state
-            if case .connected = state {
+            switch state {
+            case .connected:
                 await connected()
+                refreshVersionStatus()
+            case .incompatible(let protocolVersion, let host):
+                // The client already asked an older host to restart once idle.
+                versionStatus =
+                    protocolVersion < HostProtocol.version
+                    ? .hostRestartPending(hostVersion: host.version, workingTasks: 0)
+                    : .appOutdated(hostVersion: host.version)
+            default:
+                break
             }
         case .sessionEvent(let session, let event):
             mirrors[session]?.apply(event)
         case .sessionChanged(let summary):
             upsert(summary)
+            refreshVersionStatus()
         case .sessionClosed(let session):
             sessions.removeAll { $0.id == session }
             mirrors[session] = nil
@@ -202,6 +229,20 @@ final class DurableHost {
         } catch {
             errorMessage = error.localizedDescription
         }
+    }
+
+    /// Compares builds and, for a host from an earlier Native, asks it (once per host process) to
+    /// restart onto this app's binary as soon as nothing is running.
+    private func refreshVersionStatus() {
+        guard case .connected(let info) = connection else { return }
+        let appBuild = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0"
+        versionStatus = .compare(
+            appBuild: appBuild, hostBuild: info.hostInfo.build, hostVersion: info.hostInfo.version,
+            workingTasks: sessions.count(where: \.isWorking)
+        )
+        guard case .hostRestartPending = versionStatus, restartRequested != info.epoch, let client else { return }
+        restartRequested = info.epoch
+        Task { try? await client.shutdownHost(stopAgents: false) }
     }
 
     private func upsert(_ summary: HostSessionSummary) {
