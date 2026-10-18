@@ -186,7 +186,7 @@ extension SessionModel {
     /// `rm -rf build`?", "Waiting for your answer: …", or nil when it isn't waiting.
     var sidebarAsk: String? {
         guard let wait else { return nil }
-        let more = state.pendingPermissions.count - 1
+        let more = permissionRequests.count - 1
         if case .permission = wait, more > 0 {
             return "\(wait.summary) (\(more) more)"
         }
@@ -204,7 +204,7 @@ struct SessionContextUsage: View {
     private static let threshold = 0.7
 
     var body: some View {
-        if let fraction = model.session(summary.id)?.state.usage?.fractionUsed, fraction >= Self.threshold {
+        if let fraction = model.session(summary.id)?.usage?.fractionUsed, fraction >= Self.threshold {
             ContextUsageRing(fraction: fraction)
         }
     }

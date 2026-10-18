@@ -8,7 +8,7 @@ struct SessionContextSource: ContextSource {
     var reports = BuiltInPlugins.usage.contextReports
 
     var agentName: String { session.agentName }
-    var usage: Usage? { session.state.usage }
+    var usage: Usage? { session.usage }
     var report: ContextReport? { reports.report(for: session.key) }
     var reportStatus: ContextReportStatus { reports.status(of: session) }
     var canCompact: Bool { session.acceptsPrompts && session.advertises("compact") }
