@@ -3,7 +3,7 @@ import NativeTelemetry
 /// Notices when the main thread stops answering: a background task asks it to run an empty block
 /// every second, and a wait of two seconds or more is recorded as a hang.
 enum TelemetryHangWatchdog {
-    static let threshold = Duration.seconds(2)
+    nonisolated static let threshold = Duration.seconds(2)
 
     static func start() {
         Task.detached(priority: .utility) {

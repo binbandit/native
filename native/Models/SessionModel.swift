@@ -260,7 +260,7 @@ final class SessionModel {
     }
 
     func failLoading(_ error: any Error) {
-        state.appendNotice("Couldn't load this session: \(error.localizedDescription)", isError: true)
+        state.appendNotice("Couldn't load this session: \(error.localizedDescription.withoutTerminalEscapes)", isError: true)
         phase = .idle
     }
 

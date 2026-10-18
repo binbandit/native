@@ -1,3 +1,4 @@
+import NativePolicy
 import SwiftUI
 
 /// The Settings pages other features contribute, in one place, so presenting Settings never needs

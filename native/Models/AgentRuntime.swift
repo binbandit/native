@@ -155,7 +155,8 @@ final class AgentRuntime {
         let stderr = process?.recentStderr.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         process?.terminate()
         process = nil
-        status = .failed(stderr.isEmpty ? message : "\(message)\n\n\(stderr)")
+        // Agents color their logs for a terminal; the status is shown as plain text.
+        status = .failed((stderr.isEmpty ? message : "\(message)\n\n\(stderr)").withoutTerminalEscapes)
     }
 
     /// Whether the command resolves the way `AgentProcess` will run it: an absolute path, or a name

@@ -41,6 +41,7 @@ jobs:
           - NativeDiagnostics
           - NativeHost
           - ScriptRuntime
+          - Telemetry
           - Terminal
     steps:
       - uses: actions/checkout@v5

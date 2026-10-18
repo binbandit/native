@@ -346,7 +346,8 @@ final class AppModel {
             if runtime.noteSignInRequired(by: error), !runtime.authMethods.isEmpty {
                 signInPrompt = agent
             } else {
-                errorMessage = "Couldn't start a \(runtime.agent.displayName) session: \(error.localizedDescription)"
+                errorMessage =
+                    "Couldn't start a \(runtime.agent.displayName) session: \(error.localizedDescription.withoutTerminalEscapes)"
             }
         }
     }
