@@ -197,8 +197,10 @@ struct MCPSessionPanel: View {
                 .buttonStyle(.ds(.secondary, size: .small))
             switch entry {
             case .managed(let server, _):
-                Button("Disable in \(session.cwd.lastPathComponent)") { library.setMode(.off, of: server.transport.endpoint.key, in: session.cwd) }
-                    .buttonStyle(.ds(.ghost, size: .small))
+                Button("Disable in \(session.cwd.lastPathComponent)") {
+                    library.setMode(.off, of: server.transport.endpoint.key, in: session.cwd)
+                }
+                .buttonStyle(.ds(.ghost, size: .small))
             case .agent(let configured):
                 if case .needsAuth = health, case .success(let command) = AgentCLI.signIn(configured) {
                     Button("Sign In with \(configured.format.displayName)…") { pendingCommand = command }

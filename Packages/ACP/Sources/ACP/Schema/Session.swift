@@ -38,7 +38,9 @@ public enum MCPServer: Encodable, Hashable, Sendable {
 
     public func encode(to encoder: any Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
-        let pairs = { (dictionary: [String: String]) in dictionary.sorted { $0.key < $1.key }.map { NameValue(name: $0.key, value: $0.value) } }
+        let pairs = { (dictionary: [String: String]) in
+            dictionary.sorted { $0.key < $1.key }.map { NameValue(name: $0.key, value: $0.value) }
+        }
         switch self {
         case .stdio(let name, let command, let arguments, let environment):
             try container.encode(name, forKey: .name)
@@ -198,15 +200,16 @@ public enum StopReason: Hashable, Sendable, Decodable {
 
     public init(from decoder: any Decoder) throws {
         let raw = try decoder.singleValueContainer().decode(String.self)
-        self = switch raw {
-        case "end_turn": .endTurn
-        case "max_tokens": .maxTokens
-        case "max_turn_requests": .maxTurnRequests
-        case "refusal": .refusal
-        case "cancelled": .cancelled
-        case "error": .error
-        default: .other(raw)
-        }
+        self =
+            switch raw {
+            case "end_turn": .endTurn
+            case "max_tokens": .maxTokens
+            case "max_turn_requests": .maxTurnRequests
+            case "refusal": .refusal
+            case "cancelled": .cancelled
+            case "error": .error
+            default: .other(raw)
+            }
     }
 }
 
@@ -274,7 +277,10 @@ public struct ConfigOption: Decodable, Hashable, Sendable, Identifiable {
         case group(SelectGroup)
 
         init(from decoder: any Decoder) throws {
-            self = if let group = try? SelectGroup(from: decoder) { .group(group) } else { .option(try SelectOption(from: decoder)) }
+            self =
+                if let group = try? SelectGroup(from: decoder) { .group(group) } else {
+                    .option(try SelectOption(from: decoder))
+                }
         }
 
         var options: [SelectOption] {
@@ -346,12 +352,13 @@ public struct SteerResponse: Decodable, Sendable {
 
         public init(from decoder: any Decoder) throws {
             let raw = try decoder.singleValueContainer().decode(String.self)
-            self = switch raw {
-            case "injected": .injected
-            case "promptRequired": .promptRequired
-            case "startedNewTurn": .startedNewTurn
-            default: .other(raw)
-            }
+            self =
+                switch raw {
+                case "injected": .injected
+                case "promptRequired": .promptRequired
+                case "startedNewTurn": .startedNewTurn
+                default: .other(raw)
+                }
         }
     }
 }

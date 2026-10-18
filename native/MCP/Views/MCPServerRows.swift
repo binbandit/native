@@ -51,7 +51,9 @@ struct MCPManagedServerRow: View {
                     .accessibilityLabel("Actions for \(server.name)")
                     SettingsSwitch(
                         server.name,
-                        isOn: Binding(get: { isOn }, set: { library.setMode($0 ? .on : .off, of: server.transport.endpoint.key, in: nil) }))
+                        isOn: Binding(
+                            get: { isOn },
+                            set: { library.setMode($0 ? .on : .off, of: server.transport.endpoint.key, in: nil) }))
                 }
             }
             if isExpanded {
