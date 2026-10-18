@@ -85,7 +85,6 @@ enum JSONLines {
     }
 }
 
-
 /// Builds a session's documents the way the ACP reducer builds its transcript, so anchors found in
 /// history match the transcript Native shows after loading the session: consecutive pieces of one
 /// message are one message, and a tool call's output joins its call.
@@ -114,7 +113,8 @@ struct HistoryTranscriptBuilder {
     /// A tool call: its name and the strings of its input (paths, commands, patterns).
     mutating func toolCall(id: String, name: String, input: [String], date: Date?, hasDiff: Bool = false) {
         openMessage = nil
-        let inputText = SearchText.capped(input.filter { !$0.isEmpty }.joined(separator: "\n"), to: SearchLimits.toolInput)
+        let inputText = SearchText.capped(
+            input.filter { !$0.isEmpty }.joined(separator: "\n"), to: SearchLimits.toolInput)
         toolCalls[id] = documents.count
         documents.append(
             SearchDocument(

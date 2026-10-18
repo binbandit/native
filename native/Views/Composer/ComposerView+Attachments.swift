@@ -78,7 +78,9 @@ extension ComposerView {
 
     /// Reading and scaling a large image takes a moment; never on the main actor.
     @concurrent
-    private nonisolated static func run(_ loader: @Sendable () throws -> PromptAttachment) async throws
+    private nonisolated static func run(
+        _ loader: @Sendable () throws -> PromptAttachment
+    ) async throws
         -> PromptAttachment
     {
         try loader()

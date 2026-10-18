@@ -14,7 +14,10 @@ extension ComposerView {
             preferredFollowUp: followUp
         )
         let modifiers = ComposerKeyMap.Modifiers(press)
-        guard let action = ComposerKeyMap.action(for: key, modifiers: modifiers, isRepeat: press.phase == .repeat, in: context) else {
+        guard
+            let action = ComposerKeyMap.action(
+                for: key, modifiers: modifiers, isRepeat: press.phase == .repeat, in: context)
+        else {
             return .ignored
         }
         if case .moveFocus(let forward) = action {

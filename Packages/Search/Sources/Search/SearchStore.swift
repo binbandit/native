@@ -114,7 +114,8 @@ actor SearchStore {
             for entry in batch.appending {
                 let row = try upsert(entry.session)
                 var ordinal = 0
-                try database.query("SELECT coalesce(max(ordinal), 0) + 1 FROM items WHERE session_row = ?", [.int(row)]) {
+                try database.query("SELECT coalesce(max(ordinal), 0) + 1 FROM items WHERE session_row = ?", [.int(row)])
+                {
                     ordinal = Int($0.int(0))
                 }
                 if entry.session.title != nil {
@@ -135,7 +136,8 @@ actor SearchStore {
                         .text(checkpoint.path), .int(Int64(checkpoint.size)),
                         .double(checkpoint.modifiedAt.timeIntervalSince1970), .int(Int64(checkpoint.offset)),
                         checkpoint.session.map { .text($0.agent) } ?? .null,
-                        checkpoint.session.map { .text($0.session) } ?? .null, checkpoint.cwd.map(SQLiteValue.text) ?? .null,
+                        checkpoint.session.map { .text($0.session) } ?? .null,
+                        checkpoint.cwd.map(SQLiteValue.text) ?? .null,
                     ])
             }
         }
@@ -206,7 +208,8 @@ actor SearchStore {
             """
         ) { row in
             guard let path = row.text(0) else { return }
-            let session = row.text(4).flatMap { agent in row.text(5).map { SearchSessionKey(agent: agent, session: $0) } }
+            let session = row.text(4).flatMap { agent in row.text(5).map { SearchSessionKey(agent: agent, session: $0) }
+            }
             checkpoints[path] = HistoryCheckpoint(
                 path: path, size: Int(row.int(1)), modifiedAt: row.date(2) ?? .distantPast, offset: Int(row.int(3)),
                 session: session, cwd: row.text(6), isSessionIndexed: row.int(7) != 0)

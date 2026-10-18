@@ -76,10 +76,13 @@ public struct ClaudeCodeHistoryReader: SessionHistoryReader {
             }
         }
         // A resumed read only adds to a session; a new one needs a conversation to be one.
-        guard let cwd, resume != nil || !builder.documents.isEmpty else { return HistoryRead(session: nil, offset: offset) }
+        guard let cwd, resume != nil || !builder.documents.isEmpty else {
+            return HistoryRead(session: nil, offset: offset)
+        }
         let title = customTitle ?? aiTitle ?? summary ?? (resume == nil ? firstPrompt : nil)
         let session = HistorySession(
-            sessionID: sessionID, title: title, cwd: cwd, createdAt: resume == nil ? firstDate : nil, updatedAt: lastDate,
+            sessionID: sessionID, title: title, cwd: cwd, createdAt: resume == nil ? firstDate : nil,
+            updatedAt: lastDate,
             documents: builder.documents)
         return HistoryRead(session: session, offset: offset)
     }
@@ -120,7 +123,8 @@ public struct ClaudeCodeHistoryReader: SessionHistoryReader {
                     builder.plan(todos.compactMap { $0["content"] as? String }, date: date)
                 }
                 let editsFiles = ["Edit", "MultiEdit", "Write", "NotebookEdit"].contains(name)
-                builder.toolCall(id: id, name: name, input: JSONLines.strings(in: input), date: date, hasDiff: editsFiles)
+                builder.toolCall(
+                    id: id, name: name, input: JSONLines.strings(in: input), date: date, hasDiff: editsFiles)
             default:
                 break
             }
