@@ -14,6 +14,8 @@ struct ToolCallView: View {
     var body: some View {
         if let questions = AskedQuestions(call), !questions.entries.isEmpty {
             AskedQuestionsView(questions: questions)
+        } else if call.permission == nil, NativeScriptCallLine.isScriptCall(call) {
+            NativeScriptCallLine(call: call)
         } else {
             row
         }
@@ -344,7 +346,7 @@ private struct PermissionButtons: View {
             let button = Button(option.name, role: option.isRejection ? .destructive : nil) {
                 onChoose(option)
             }
-            .keyboardShortcut(shortcutsEnabled ? shortcut(for: option) : nil)
+            .keyboardShortcut(shortcutsEnabled && isFirstOfItsKind(option) ? shortcut(for: option) : nil)
             if option.kind == .allowOnce {
                 button.buttonStyle(.borderedProminent)
             } else {
@@ -355,12 +357,20 @@ private struct PermissionButtons: View {
 
     @ViewBuilder private var shortcutHint: some View {
         if shortcutsEnabled {
-            let hints = options.compactMap { option in Self.symbols(for: option.kind).map { "\($0) \(option.name)" } }
+            let hints = options.filter(isFirstOfItsKind).compactMap { option in
+                Self.symbols(for: option.kind).map { "\($0) \(option.name)" }
+            }
             Text(hints.joined(separator: "  ·  "))
                 .font(.dsCaption)
                 .foregroundStyle(.dsTextTertiary)
                 .lineLimit(1)
         }
+    }
+
+    /// Options of a kind share its shortcut (Native's script approvals offer two "allow always"
+    /// choices), so only the first gets it.
+    private func isFirstOfItsKind(_ option: PermissionOption) -> Bool {
+        options.first { $0.kind == option.kind }?.id == option.id
     }
 
     private func shortcut(for option: PermissionOption) -> KeyboardShortcut? {
