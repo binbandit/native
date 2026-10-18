@@ -7,12 +7,15 @@ final class SessionLauncher {
     enum LaunchError: LocalizedError {
         case parentClosed
         case agentUnavailable(String)
+        /// The agent lists its past sessions but can't load one (no `loadSession` capability).
+        case cannotLoad(String)
         case failed(agent: String, underlying: any Error)
 
         var errorDescription: String? {
             switch self {
             case .parentClosed: "The session that asked for this is no longer open."
             case .agentUnavailable(let agent): "\(agent) isn't running, so it can't start a session."
+            case .cannotLoad(let agent): "\(agent) can't reopen its past sessions."
             case .failed(let agent, let underlying):
                 "Couldn't start a \(agent) session: \(underlying.localizedDescription)"
             }
@@ -72,7 +75,7 @@ final class SessionLauncher {
             throw LaunchError.agentUnavailable(runtime.agent.displayName)
         }
         guard runtime.capabilities?.loadSession == true else {
-            throw LaunchError.failed(agent: runtime.agent.displayName, underlying: CocoaError(.featureUnsupported))
+            throw LaunchError.cannotLoad(runtime.agent.displayName)
         }
         let session = SessionModel(
             agent: runtime.agent, id: key.id, cwd: cwd, connection: connection, services: services,

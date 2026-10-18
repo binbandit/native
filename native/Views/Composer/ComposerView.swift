@@ -85,6 +85,9 @@ struct ComposerView: View {
     }
 
     var body: some View {
+        #if DEBUG
+        let _ = RenderProbe.hit("ComposerView")
+        #endif
         let settings = ComposerSettings(session.state.configOptions)
         let suggestions = suggestions
         surface(settings, suggestions: suggestions)

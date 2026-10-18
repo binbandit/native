@@ -19,6 +19,7 @@ struct HomeView: View {
             }
         }
         .listStyle(.insetGrouped)
+        .hostTint(store.activeHost?.preferences)
         .scrollContentBackground(.hidden)
         .background(.dsBackground)
         .navigationTitle("Tasks")
@@ -31,6 +32,7 @@ struct HomeView: View {
             }
             ToolbarItem(placement: .topBarTrailing) {
                 Button("Settings", systemImage: "gearshape") { isShowingSettings = true }
+                    .hostTint(store.activeHost?.preferences)
                     .accessibilityIdentifier("settings")
             }
         }
@@ -64,7 +66,6 @@ struct HomeView: View {
         .sheet(isPresented: $isShowingSettings) {
             CompanionSettingsView()
         }
-        .hostTint(store.activeHost?.preferences)
     }
 
     private var visibleHosts: [HostConnection] {

@@ -128,6 +128,11 @@ public struct HighlightedCode: View {
         let segments =
             highlighted?.code == code
             ? highlighted?.segments : CodeHighlightCache.shared.cached(code, language: language)
+        #if DEBUG
+        let _ = RenderProbe.note(
+            "hc body id=\(probeID) lang=\(language?.id ?? "nil") len=\(code.count) hash=\(code.hashValue) head=\(code.prefix(12).debugDescription) src=\(highlighted?.code == code ? "state" : segments != nil ? "cache" : "plain") stateLen=\(highlighted?.code.count ?? -1)"
+        )
+        #endif
         Group {
             if let segments {
                 Text(colors.text(segments))
@@ -137,12 +142,35 @@ public struct HighlightedCode: View {
             }
         }
         .task(id: code) {
+            #if DEBUG
+            RenderProbe.note(
+                "hc task id=\(probeID) len=\(code.count) hash=\(code.hashValue) captured=\(segments == nil ? "nil" : "some") skip=\(language == nil || segments != nil)"
+            )
+            #endif
             guard language != nil, segments == nil else { return }
             let result = await CodeHighlightCache.shared.highlight(code, language: language)
+            #if DEBUG
+            RenderProbe.note(
+                "hc done id=\(probeID) len=\(code.count) hash=\(code.hashValue) cancelled=\(Task.isCancelled)")
+            #endif
             highlighted = (code, result)
         }
     }
+
+    #if DEBUG
+    @State private var probeID = HighlightedCodeProbe.next()
+    #endif
 }
+
+#if DEBUG
+@MainActor enum HighlightedCodeProbe {
+    static var counter = 0
+    static func next() -> Int {
+        counter += 1
+        return counter
+    }
+}
+#endif
 
 extension EnvironmentValues {
     /// Just what code colors depend on, so views read three values rather than the whole

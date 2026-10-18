@@ -153,45 +153,61 @@ final class CompanionEndToEndTests: XCTestCase {
         attachScreenshot(XCUIApplication(bundleIdentifier: "com.apple.springboard"), named: "home-screen")
     }
 
-    /// Picks `COMPANION_HOST_LABEL` in the home screen's host chip (with `COMPANION_HOST_ICON`, a
-    /// theme, as its icon when given) and attaches the chip, the host page and a task's header.
+    /// Picks `COMPANION_HOST_LABEL` in the home screen's host chip and attaches the chip's menu,
+    /// home with the host picked, and its newest task's header. `COMPANION_HOST_COLOR` and
+    /// `COMPANION_HOST_ICON` (theme ids) set its color and app icon on its page first.
     func testHostChip() throws {
         let label = try XCTUnwrap(environment["COMPANION_HOST_LABEL"])
         let app = XCUIApplication()
         app.launchArguments += ["-appearance", environment["COMPANION_APPEARANCE"] ?? "light"]
         app.launch()
         XCTAssertTrue(app.navigationBars["Tasks"].waitForExistence(timeout: 10))
+        if environment["COMPANION_HOST_COLOR"] != nil || environment["COMPANION_HOST_ICON"] != nil {
+            app.buttons["host-\(label)"].tap()
+            if let color = environment["COMPANION_HOST_COLOR"] {
+                let swatch = app.buttons["hostColor-\(color)"]
+                XCTAssertTrue(swatch.waitForExistence(timeout: 5))
+                swatch.tap()
+            }
+            if let icon = environment["COMPANION_HOST_ICON"] {
+                let picker = app.buttons["hostAppIcon"]
+                XCTAssertTrue(picker.waitForExistence(timeout: 5))
+                picker.tap()
+                sleep(1)
+                attachScreenshot(app, named: "host-icon-picker")
+                app.buttons["hostIcon-\(icon)"].tap()
+                acceptIconAlert()
+                app.navigationBars.buttons.firstMatch.tap()
+            }
+            sleep(1)
+            attachScreenshot(app, named: "host-page")
+            app.navigationBars.buttons.firstMatch.tap()
+        }
         let chip = app.buttons["hostChip"]
         XCTAssertTrue(chip.waitForExistence(timeout: 5))
-        attachScreenshot(app, named: "home-before")
         chip.tap()
         sleep(1)
         attachScreenshot(app, named: "chip-menu")
-        app.buttons[label].tap()
+        app.buttons[label].firstMatch.tap()
         acceptIconAlert()
-        sleep(2)
-        attachScreenshot(app, named: "home-host")
-        app.buttons["host-\(label)"].tap()
         sleep(1)
-        if let icon = environment["COMPANION_HOST_ICON"] {
-            let picker = app.buttons["hostAppIcon"]
-            app.swipeUp()
-            XCTAssertTrue(picker.waitForExistence(timeout: 5))
-            picker.tap()
-            app.buttons[icon].tap()
-            acceptIconAlert()
-            app.navigationBars.buttons.firstMatch.tap()
-        }
-        attachScreenshot(app, named: "host-page")
-        app.swipeUp()
-        attachScreenshot(app, named: "host-page-more")
-        app.navigationBars.buttons.firstMatch.tap()
+        attachScreenshot(app, named: "home-host")
         let task = app.buttons.matching(identifier: "task-\(label)").firstMatch
-        if task.waitForExistence(timeout: 10) {
-            task.tap()
-            sleep(3)
-            attachScreenshot(app, named: "task")
-        }
+        XCTAssertTrue(task.waitForExistence(timeout: 10))
+        task.tap()
+        sleep(3)
+        attachScreenshot(app, named: "task")
+    }
+
+    /// Sets the home screen's host chip back to All Hosts.
+    func testAllHosts() throws {
+        let app = XCUIApplication()
+        app.launch()
+        let chip = app.buttons["hostChip"]
+        XCTAssertTrue(chip.waitForExistence(timeout: 10))
+        chip.tap()
+        app.buttons["All Hosts"].firstMatch.tap()
+        acceptIconAlert()
     }
 
     /// Opens the newest task of `COMPANION_HOST_LABEL` and attaches it, with whatever approval is

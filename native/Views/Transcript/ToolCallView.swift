@@ -62,7 +62,7 @@ struct ToolCallView: View {
         case .command, .mcp: return true
         case .generic, .diff, .lines: break
         }
-        guard call.content.isEmpty else { return true }
+        guard call.content.isEmpty, ToolOutput.printed(by: call) == nil else { return true }
         guard let rawInput = call.rawInput else { return false }
         return rawInput != .null && !rawInput.isEmptyObject
     }

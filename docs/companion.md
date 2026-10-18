@@ -61,7 +61,8 @@ installs wait on an Apple developer team.
   after their last message is sent, so refusals and "revoked" always arrive.
 - **Re-pairing.** The phone sends a per-host installation tag (a hash of an installation secret and
   the host's key), so pairing the same app again replaces its old entry on the Mac instead of
-  adding a duplicate, without giving two hosts anything in common.
+  adding a duplicate, without giving two hosts anything in common. On the phone, pairing a host
+  again keeps what it called the host (name, color, icon).
 
 ### Host integration
 
@@ -86,14 +87,16 @@ lives in Settings, and a pairing link opens it from anywhere.
 `Companion/NativeCompanion.xcodeproj`, its own project so it can never break the Mac scheme. It
 compiles `native/DesignSystem` (a synchronized folder) and the Mac's transcript pieces by reference
 (`MarkdownView`, `ToolPresentation`, `ToolPhase`, `FileDiff+DiffView`, `TranscriptStyle`,
-`TranscriptMetrics`, `TranscriptFixtures`), so tool rows and approvals use the Mac's exact words, and
-links ACP, NativeHostClient, NativeLink, NativePolicy and CodeThemes. Screens follow `research/companion-app.md`: welcome;
+`TranscriptMetrics`, `TranscriptFixtures`, plus `CelebrationDates`), so tool rows and approvals use
+the Mac's exact words, and links ACP, NativeHostClient, NativeLink, NativePolicy, CodeThemes and
+AppAppearance. Screens follow `research/companion-app.md`: welcome;
 Add Host (scan with VisionKit's DataScanner, pick a Mac Bonjour found and type its code, or paste
 the link); pairing progress with the verification code and a pairing log; Tasks grouped by host
 (needs you with inline approvals, working, recent); a task's transcript (the shared `SessionState`
 via `SessionMirror`), the docked approval card, queue/steer composer and queued messages; New Task;
 a host's page (connection and log, Native version and updates, plugins, name/color/symbol,
-notifications, unpair); Settings (hosts, appearance, app icon).
+notifications, app icon while connected, unpair); Settings (hosts, appearance, app icon and
+celebrations).
 
 - **Unsent messages** go back into the draft marked "Not sent"; nothing is cleared until the host
   accepts it. **Interrupted turns** show the host's recovery notice in the transcript, and a lost
@@ -107,8 +110,23 @@ notifications, unpair); Settings (hosts, appearance, app icon).
 - **Plugins** are listed from `_native/plugins/list`, with switches only when the pairing granted
   `managePlugins`. Appearance-only plugins installed on the phone are a second source for the same
   list later.
-- **App icon** themes set the accent and call `setAlternateIconName("AppIcon-<Theme>")`; the
-  artwork comes from the icon owner, and until a theme's icon ships only the accent changes.
+- **Approvals** are the one approval card, weighted by what the agent offers: its "allow once" is
+  the filled primary button, other allows are outlined, rejections are plain text last. Option names
+  wrap (up to three lines) with their `code` spans in the mono face. A shell command shows as typed
+  under a dimmed `$`: `ToolCallState.shellCommand` (`Packages/ACP`) reads it however the agent sent
+  it, including codex-acp 2.2.2's permission requests, which carry it JSON-encoded a second time
+  ("printf 'ship\\n' > todo.txt" in quotes) and retitle the call "Run command", and argv arrays
+  (`bash -lc <script>` is the script). The Mac's `ToolPresentation` uses the same property, so its
+  Codex rows show the command, not "Run command".
+- **Which host.** A host's color and symbol (its page, "On This Phone") are a quiet, always-on
+  accent: the home screen's header chip shows the active host (its mark and name, or "All Hosts"
+  with every host's marks) and switches it, along with Needs You Only; that host's color tints the
+  home list and toolbar buttons; a task's header carries its host's mark, and the task, its
+  sheets and the host's page tint with its color. Filled actions (Yes, proceed, New Task) keep the
+  app's accent, and a host left on Original has no color of its own, so with one uncolored host
+  nothing changes. "App Icon While Connected" on a host's page switches the app icon when that
+  host becomes the active one (picked in the chip, or the only host).
+
 - **Later, with a developer team:** APNs push (the categories in the research doc, threaded per
   host) and one Live Activity per host; `CompanionNotifications` is the seam. The full
   `TranscriptView` stays Mac-only until it no longer needs `SessionModel`/`AppModel`; the phone's
@@ -117,6 +135,40 @@ notifications, unpair); Settings (hosts, appearance, app icon).
   rows, the gateway stops listening, opens no window and answers paired devices with an
   authenticated `disabledByPolicy` (pairings kept), and the phone's Add Host says pairing is off.
   The host reads the policy from the app's managed domain (`LinkGateway.setAllowedByPolicy`).
+
+### App icons and celebrations
+
+Settings › App Icon picks the icon (Original or a theme, which also sets the accent, as on the
+Mac), opens Celebrations, and has the one switch that keeps the icon fixed. The icon showing is, in
+order: a celebration on its dates, then the active host's icon, then the picked one; Keep Icon
+Fixed leaves only the picked one. Celebrations use the Mac's catalogue and overlap policy
+(`Packages/AppAppearance`): every one is off until turned on, then shows on its dates (Halloween's
+season, Día de Muertos and Australia Day in the style picked), on the phone's own choices. The phone
+has no Home page, so only the icon counts. iOS changes the icon only while the app is active and
+shows an alert every time, so a change that falls due on its own (a celebration starting or ending)
+waits until the app next becomes active and is tried once (`AppIconController`); a change the
+person makes (a theme, a host's icon, switching hosts, a celebration) applies at once.
+
+iOS can't download alternate icons, so they're bundled, built from the icon work's documents by
+`scripts/companion/app-icons.sh`, which the companion target runs as its first build phase into
+the gitignored `Companion/AppIcons/` (nothing there is committed, and nothing is drawn or edited):
+
+- The five themes stay layered `.icon` documents (Regular `stable.icon` from
+  `design/app-icon/channel-themes/<theme>`), so iOS draws their light, dark, tinted and clear looks.
+- Every celebration edition and style (45, Halloween included; the release script's PENDING and
+  EXCLUDED editions are left out) is flat: Icon Composer's `ictool` renders its Regular `stable.icon`
+  light and dark at the iPhone icon sizes into an app icon set. Tinted is iOS's automatic tint of
+  the light icon.
+- Every icon, the primary included, gets a 48 pt light and dark preview for the pickers, since iOS
+  can't load app icons as images (`UIImage(named:)` on one crashes).
+
+Why celebrations are flat: Xcode bakes 1024 px light, dark and tinted renders of every layered
+document for phone and pad, about 6 MB each. Measured with Xcode 27.1 (Release, iOS 27): all 50
+icons layered would add 319 MB to the app (about 168 MB on an iPhone after App Store thinning);
+as built, the themes add 23 MB, the flat celebrations 23 MB and the previews 3 MB: about 50 MB in
+the app and about 18 MB on an iPhone. A clean checkout builds without manual steps, but needs Xcode 26 or later
+(for `ictool`) and, once `design/**/*.png` moves to Git LFS, `git lfs pull`: the script fails with
+that instruction rather than building blank icons.
 
 ### Verifying
 
@@ -129,7 +181,16 @@ projects), each paired from the simulator with `CompanionEndToEndTests.testPairW
 invite read off the Mac's QR code, Pair clicked on the Mac through AX), then
 `testSendPromptAndApprove`: list the host's tasks, open the Codex durable session, pick
 `gpt-6.1-sol` and Read-only from the phone, send a prompt, and allow the permission request.
-`testScreens` walks the screens in light or dark.
+`testScreens` walks the screens in light or dark. Codex's models are labelled by name in its picker
+(`COMPANION_MODEL="6.1 Sol"`).
+
+Icons, celebrations and hosts (2026-10-18): `testAppIconAndCelebrations` walks Settings › App Icon
+and Celebrations, turns on `COMPANION_CELEBRATION` (Halloween, in its season), accepts iOS's alert
+and shows the home screen; `testHostChip` gives a host a color and an icon on its page, picks it in
+the chip (the icon switches, with the alert) and opens its task; `testAllHosts` goes back to All
+Hosts. `COMPANION_LEAVE_PENDING=1` makes `testSendPromptAndApprove` stop at the approval card, so
+`testTaskScreen` can show it in the other appearance. Real Codex wire data for the card is in
+`Packages/ACP/Tests/ACPTests/ShellCommandTests.swift`.
 
 ## Architecture
 

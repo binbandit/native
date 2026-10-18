@@ -13,6 +13,17 @@ private struct PullRequestFileCardSlice: ViewModifier {
     let slice: PullRequestFilesRow.Slice
 
     func body(content: Content) -> some View {
+        if slice == .middle, UserDefaults.standard.bool(forKey: "gitHubExperimentPlainSlice") {
+            content
+                .background(.dsDiffBackground)
+                .overlay(alignment: .leading) { Rectangle().fill(.dsSeparator).frame(width: 1) }
+                .overlay(alignment: .trailing) { Rectangle().fill(.dsSeparator).frame(width: 1) }
+        } else {
+            sliced(content)
+        }
+    }
+
+    @ViewBuilder private func sliced(_ content: Content) -> some View {
         let radius = DS.Radius.card
         let hasTop = slice == .top || slice == .single
         let hasBottom = slice == .bottom || slice == .single

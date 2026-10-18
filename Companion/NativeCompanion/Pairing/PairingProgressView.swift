@@ -115,8 +115,11 @@ struct HostThemePicker: View {
                         }
                         .dsAccentPalette(themeID: theme.rawValue)
                 }
+                // In a List row, buttons without their own style all fire on any tap in the row.
+                .buttonStyle(.plain)
                 .accessibilityLabel(theme.title)
                 .accessibilityAddTraits(themeID == theme.rawValue ? .isSelected : [])
+                .accessibilityIdentifier("hostColor-\(theme.rawValue)")
             }
         }
     }

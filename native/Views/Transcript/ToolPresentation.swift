@@ -166,6 +166,8 @@ extension ToolPresentation {
     private static func byKind(_ call: ToolCallState) -> ToolPresentation {
         let title = call.title
         return switch call.kind {
+        // Codex lists files as a read titled "List files", which reads wrong after the verb.
+        case .read where !title.hasPrefix("Read "): ToolPresentation(symbol: "book", subject: title)
         case .read: ToolPresentation(symbol: "book", verbs: .read, subject: title.dropping(prefix: "Read "))
         case .edit: fileChange(call)
         case .delete: ToolPresentation(symbol: "trash", verbs: .delete, subject: title.dropping(prefix: "Delete "))
