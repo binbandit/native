@@ -16,14 +16,27 @@ public struct CelebrationEvent: Hashable, Sendable, Identifiable {
     public let pluginID: String
     /// Position in the catalogue: the overlap order until the user sets their own.
     public let order: Int
-    /// The icon set it refers to, when an enabled plugin provides it.
+    /// The icon set in use: the default, or the style the user picked (`with(style:)`).
     public let iconSet: IconSet?
+    /// Every style on offer, the default first, for the chooser.
+    public let styles: [IconSet]
 
-    public init(contribution: CelebrationContribution, pluginID: String, order: Int, iconSet: IconSet?) {
+    public init(
+        contribution: CelebrationContribution, pluginID: String, order: Int, iconSet: IconSet?, styles: [IconSet] = []
+    ) {
         self.contribution = contribution
         self.pluginID = pluginID
         self.order = order
         self.iconSet = iconSet
+        self.styles = styles.isEmpty ? [iconSet].compactMap { $0 } : styles
+    }
+
+    /// The same celebration in the style the user picked; an unknown or missing style keeps the
+    /// default, without changing the stored choice.
+    public func with(style: IconSetID?) -> CelebrationEvent {
+        guard let style, let set = styles.first(where: { $0.id == style }) else { return self }
+        return CelebrationEvent(
+            contribution: contribution, pluginID: pluginID, order: order, iconSet: set, styles: styles)
     }
 
     public var id: CelebrationID { contribution.id }

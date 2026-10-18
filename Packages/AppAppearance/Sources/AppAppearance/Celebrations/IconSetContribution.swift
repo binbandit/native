@@ -21,10 +21,12 @@ public struct IconSetContribution: AppearanceContribution {
     /// Small Regular icons for the catalogue, shipped with the app so previews work before (or
     /// without) downloading the full set. Plugin sets preview their own icons instead.
     public var thumbnail: IconSetImagePair?
+    /// One line about the style, shown where it's chosen: "Doesn't keep the interlock."
+    public var caption: LocalizedText?
 
     public init(
         id: IconSetID, name: LocalizedText, icons: IconSetIcons? = nil, homeMark: String? = nil,
-        palette: IconSetPalette? = nil, thumbnail: IconSetImagePair? = nil
+        palette: IconSetPalette? = nil, thumbnail: IconSetImagePair? = nil, caption: LocalizedText? = nil
     ) {
         self.id = id
         self.name = name
@@ -32,12 +34,13 @@ public struct IconSetContribution: AppearanceContribution {
         self.homeMark = homeMark
         self.palette = palette
         self.thumbnail = thumbnail
+        self.caption = caption
     }
 }
 
 extension IconSetContribution: Codable {
     private enum CodingKeys: String, CodingKey {
-        case id, name, icons, home, palette, thumbnail
+        case id, name, icons, home, palette, thumbnail, caption
     }
 
     private enum HomeKeys: String, CodingKey {
@@ -51,10 +54,12 @@ extension IconSetContribution: Codable {
         icons = try container.decodeIfPresent(IconSetIcons.self, forKey: .icons)
         homeMark =
             try container.contains(.home)
-            ? container.nestedContainer(keyedBy: HomeKeys.self, forKey: .home).decodeIfPresent(String.self, forKey: .mark)
+            ? container.nestedContainer(keyedBy: HomeKeys.self, forKey: .home).decodeIfPresent(
+                String.self, forKey: .mark)
             : nil
         palette = try container.decodeIfPresent(IconSetPalette.self, forKey: .palette)
         thumbnail = try container.decodeIfPresent(IconSetImagePair.self, forKey: .thumbnail)
+        caption = try container.decodeIfPresent(LocalizedText.self, forKey: .caption)
     }
 
     public func encode(to encoder: any Encoder) throws {
@@ -68,6 +73,7 @@ extension IconSetContribution: Codable {
         }
         try container.encodeIfPresent(palette, forKey: .palette)
         try container.encodeIfPresent(thumbnail, forKey: .thumbnail)
+        try container.encodeIfPresent(caption, forKey: .caption)
     }
 }
 
@@ -191,7 +197,9 @@ public struct HexColor: Hashable, Sendable, CustomStringConvertible {
     }
 
     public var description: String {
-        String(format: "#%02X%02X%02X", Int((red * 255).rounded()), Int((green * 255).rounded()), Int((blue * 255).rounded()))
+        String(
+            format: "#%02X%02X%02X", Int((red * 255).rounded()), Int((green * 255).rounded()),
+            Int((blue * 255).rounded()))
     }
 }
 

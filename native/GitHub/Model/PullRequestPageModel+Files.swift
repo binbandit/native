@@ -35,9 +35,14 @@ extension PullRequestPageModel {
         }
     }
 
-    /// Makes sure `path`'s patch is loaded, fetching pages in order until it turns up.
+    /// Makes sure `path`'s patch is loaded, fetching pages in order until it turns up. Several files
+    /// can ask at once as the list scrolls; they wait for the page in flight rather than skip it.
     func loadPatch(for path: String) async {
-        while patches[path] == nil, !patchesComplete {
+        while patches[path] == nil, !patchesComplete, !Task.isCancelled {
+            if isLoadingPatches {
+                try? await Task.sleep(for: .milliseconds(150))
+                continue
+            }
             let before = patchPagesLoaded
             await loadNextPatchPage()
             if patchPagesLoaded == before { return }

@@ -152,10 +152,14 @@ struct CelebrationCalendarTests {
         let catalog = F.catalog([easter, table])
         let events = catalog.celebrations
         let preferences = F.enabled(easter.id, table.id)
-        #expect(catalog.celebration(easter.id)?.dateStatus(on: try F.day("2027-04-01")) == .unsupportedCalendar("western-easter"))
+        #expect(
+            catalog.celebration(easter.id)?.dateStatus(on: try F.day("2027-04-01"))
+                == .unsupportedCalendar("western-easter"))
         #expect(try F.active(preferences, on: "2027-01-01", events: events) == table.id)
         #expect(try F.active(preferences, on: "2027-12-26", events: events) == nil)
-        #expect(catalog.celebration(table.id)?.dateStatus(on: try F.day("2027-12-26")) == .coverageEnded(lastYear: 2026))
-        #expect(CelebrationPolicy.resolve(events, preferences: preferences, on: try F.day("2027-12-26")).nextChange == nil)
+        #expect(
+            catalog.celebration(table.id)?.dateStatus(on: try F.day("2027-12-26")) == .coverageEnded(lastYear: 2026))
+        #expect(
+            CelebrationPolicy.resolve(events, preferences: preferences, on: try F.day("2027-12-26")).nextChange == nil)
     }
 }

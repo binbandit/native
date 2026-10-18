@@ -98,7 +98,9 @@ public enum CelebrationAssets {
             throw Failure.checksumMismatch(edition)
         }
         let pack = try JSONDecoder().decode(Pack.self, from: data)
-        let names = AppIconVariant.allCases.flatMap { [Pack.imageName($0, isDark: false), Pack.imageName($0, isDark: true)] }
+        let names = AppIconVariant.allCases.flatMap {
+            [Pack.imageName($0, isDark: false), Pack.imageName($0, isDark: true)]
+        }
         guard pack.edition == edition,
             names.allSatisfy({ pack.images[$0].map(isPNG) ?? false })
         else { throw Failure.incomplete(edition) }
@@ -120,7 +122,7 @@ public enum CelebrationAssets {
         _ events: [CelebrationEvent], preferences: CelebrationPreferences, on day: CivilDate,
         leadDays: Int = leadDays
     ) -> [String] {
-        events.compactMap { event in
+        events.map(preferences.styled).compactMap { event in
             let selection = preferences.selection(for: event.id)
             guard selection.isEnabled, selection.appIcon, let pack = event.iconPack,
                 case .downloadable(let state) = event.appIcon, state != .downloading,

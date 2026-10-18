@@ -18,6 +18,10 @@ struct PullRequestPageView: View {
                 SeparatorLine()
                 if let error = model.actionError {
                     actionErrorBanner(error)
+                } else if let error = model.loadError, let loadedAt = model.loadedAt {
+                    PullRequestsStaleBanner(error: error, fetchedAt: loadedAt) { await model.load() }
+                        .padding(.horizontal, DS.Space.xl)
+                        .padding(.top, DS.Space.md)
                 }
                 content(page)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -32,7 +36,18 @@ struct PullRequestPageView: View {
             }
         }
         .background(.dsBackground)
-        .task(id: model.reference) { await model.loadIfStale() }
+        // Fresh on arrival, then once a minute while it's on screen: one GraphQL request each.
+        .task(id: model.reference) {
+            while !Task.isCancelled {
+                await model.loadIfStale()
+                try? await Task.sleep(for: .seconds(PullRequestPageModel.freshness))
+            }
+        }
+        // Pull request links in comments open their page here (per the setting); others the browser.
+        .environment(\.openURL, OpenURLAction { url in
+            gitHub.open(url)
+            return .handled
+        })
         .undoToast($model.undo)
         .sheet(isPresented: $model.isReviewSheetPresented) {
             SubmitReviewSheet(model: model)

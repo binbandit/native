@@ -107,8 +107,9 @@ final class CelebrationCenter {
 
     // MARK: - What's showing
 
+    /// The celebration showing, in the style the user picked.
     var activeEvent: CelebrationEvent? {
-        resolution.active.flatMap { catalog.celebration($0.eventID) }
+        resolution.active.flatMap { catalog.celebration($0.eventID) }.map(preferences.styled)
     }
 
     /// What Home draws today, or nil for the everyday mark.
@@ -141,7 +142,12 @@ final class CelebrationCenter {
 
     /// Enabled celebrations in overlap order.
     var priority: [CelebrationEvent] {
-        preferences.order(in: catalog.celebrations).compactMap { catalog.celebration($0) }
+        preferences.order(in: catalog.celebrations).compactMap { catalog.celebration($0) }.map(preferences.styled)
+    }
+
+    /// Every celebration in the catalogue, each in its chosen style.
+    var celebrations: [CelebrationEvent] {
+        catalog.celebrations.map(preferences.styled)
     }
 
     // MARK: - Changes
@@ -159,7 +165,9 @@ final class CelebrationCenter {
 
     /// Tries a celebration's icon download again.
     func fetchIcons(for id: CelebrationID) {
-        guard let pack = catalog.celebration(id)?.iconPack, preferences.selection(for: id).appIcon else { return }
+        guard let pack = catalog.celebration(id).map(preferences.styled)?.iconPack,
+            preferences.selection(for: id).appIcon
+        else { return }
         assets.fetch(pack)
     }
 
@@ -169,6 +177,13 @@ final class CelebrationCenter {
 
     func setWindow(_ window: CelebrationWindow.ID, for id: CelebrationID) {
         change { $0.selections[id, default: .init()].window = window }
+    }
+
+    /// Picks one of a celebration's styles; its icons download if it's switched on.
+    func setStyle(_ style: IconSetID, for id: CelebrationID) {
+        let isDefault = catalog.celebration(id)?.contribution.iconSet == style
+        change { $0.selections[id, default: .init()].style = isDefault ? nil : style }
+        if preferences.selection(for: id).isEnabled { fetchIcons(for: id) }
     }
 
     func skip(_ occurrence: CelebrationOccurrence.ID) {

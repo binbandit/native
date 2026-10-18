@@ -33,7 +33,7 @@ struct PullRequestFilesTab: View {
             width = $0
         }
         .task(id: page.headRefOid) {
-            await model.loadNextPatchPage()
+            if model.patchPagesLoaded == 0 { await model.loadNextPatchPage() }
             await model.loadAllFiles()
         }
     }

@@ -14,9 +14,11 @@ public enum FirstPartyCelebrations {
     }
 
     /// The confirmed editions first, then the rest of the catalogue.
-    public static let celebrations: [CelebrationContribution] = [halloween, diaDeMuertos] + catalogue.map(\.celebration)
+    public static let celebrations: [CelebrationContribution] =
+        [halloween, diaDeMuertos] + catalogue.map(\.celebration)
     /// One set per pack: Julian Christmas shares Christmas's.
-    public static let iconSets: [IconSetContribution] = [halloweenIcons, diaDeMuertosIcons]
+    public static let iconSets: [IconSetContribution] =
+        [halloweenIcons, diaDeMuertosIcons, sugarSkullIcons]
         + catalogue.map(\.icons).reduce(into: []) { sets, set in
             if !sets.contains(where: { $0.id == set.id }) { sets.append(set) }
         }
@@ -34,14 +36,25 @@ public enum FirstPartyCelebrations {
         homeMark: HomeMark.halloween,
         palette: palette(light: ["#EF9A53", "#442A24"], dark: ["#FFF0D8", "#FFA052"]))
 
-    /// Home only for now: the four channel icons are specified in `docs/celebrations-artwork.md`, and
-    /// the icon applies once they're compiled in and listed here.
+    /// The interlock painted with marigolds and folk-art flowers: the default style. Its icons come as a
+    /// pack; Home is the design system's edition.
     public static let diaDeMuertosIcons = IconSetContribution(
         id: IconSetID("native.dia-de-muertos"),
-        name: "Día de Muertos",
-        icons: .forthcoming,
+        name: "Painted interlock",
+        icons: .pack("dia-de-muertos"),
         homeMark: HomeMark.diaDeMuertos,
-        palette: palette(light: ["#D9660B", "#B8326E"], dark: ["#FFB23F", "#F06AA4"]))
+        palette: palette(light: ["#D9660B", "#B8326E"], dark: ["#FFB23F", "#F06AA4"]),
+        thumbnail: thumbnail("dia-de-muertos"))
+
+    /// A calavera in the same palette: an alternate style of the same celebration.
+    public static let sugarSkullIcons = IconSetContribution(
+        id: IconSetID("native.dia-de-muertos-sugar-skull"),
+        name: "Sugar skull",
+        icons: .pack("dia-de-muertos-sugar-skull"),
+        homeMark: HomeMark.diaDeMuertos,
+        palette: palette(light: ["#D9660B", "#B8326E"], dark: ["#FFB23F", "#F06AA4"]),
+        thumbnail: thumbnail("dia-de-muertos-sugar-skull"),
+        caption: "A calavera instead of Native's interlock.")
 
     /// 31 October, shown from 1 October through 7 November: the window agreed for the Halloween icons.
     public static let halloween = CelebrationContribution(
@@ -83,7 +96,8 @@ public enum FirstPartyCelebrations {
             windows: [
                 CelebrationWindow(id: extended, title: "Extended, decorative", daysBefore: 4, daysAfter: 1)
             ]),
-        iconSet: diaDeMuertosIcons.id
+        iconSet: diaDeMuertosIcons.id,
+        alternateIconSets: [sugarSkullIcons.id]
     )
 
     public static let season = CelebrationWindow.ID("season")
@@ -93,6 +107,13 @@ public enum FirstPartyCelebrations {
 
     private static func monthDay(_ month: Int, _ day: Int) -> MonthDay {
         MonthDay(literal: month, day)
+    }
+
+    /// A bundled catalogue thumbnail, by artwork folder.
+    static func thumbnail(_ edition: String) -> IconSetImagePair {
+        IconSetImagePair(
+            light: .asset("CelebrationThumbnail-\(edition)-light"), dark: .asset("CelebrationThumbnail-\(edition)-dark")
+        )
     }
 
     private static func urls(_ strings: String...) -> [URL] {

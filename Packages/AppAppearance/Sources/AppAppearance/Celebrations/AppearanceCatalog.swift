@@ -24,7 +24,9 @@ public struct ContributionSource {
     public init(
         pluginID: String, location: Location, assetExists: @escaping (String) -> Bool = { _ in false },
         homeMarks: Set<String> = [], nativeVersion: String? = nil,
-        fileExists: @escaping (URL) -> Bool = { FileManager.default.fileExists(atPath: $0.path(percentEncoded: false)) },
+        fileExists: @escaping (URL) -> Bool = {
+            FileManager.default.fileExists(atPath: $0.path(percentEncoded: false))
+        },
         packState: @escaping (String) -> IconPackState = { _ in .notDownloaded }
     ) {
         self.pluginID = pluginID
@@ -46,7 +48,8 @@ public struct AppearanceCatalog: Hashable, Sendable {
         public let iconSets: IconSetContributions
         public let celebrations: CelebrationContributions
 
-        public init(source: ContributionSource, iconSets: IconSetContributions, celebrations: CelebrationContributions) {
+        public init(source: ContributionSource, iconSets: IconSetContributions, celebrations: CelebrationContributions)
+        {
             self.source = source
             self.iconSets = iconSets
             self.celebrations = celebrations
@@ -86,7 +89,8 @@ public struct AppearanceCatalog: Hashable, Sendable {
 
     /// Icon sets offered as plain app icon themes: those no celebration uses, with icons ready.
     public var themes: [IconSet] {
-        let used = Set(celebrations.compactMap(\.contribution.iconSet))
+        let used = Set(
+            celebrations.flatMap { [$0.contribution.iconSet].compactMap { $0 } + $0.contribution.alternateIconSets })
         return iconSets.filter { !used.contains($0.id) && $0.appIcon.isReady }
     }
 
@@ -123,7 +127,9 @@ public struct AppearanceCatalog: Hashable, Sendable {
         }
     }
 
-    private static func validate(_ contribution: IconSetContribution, from source: ContributionSource, taken: [IconSet])
+    private static func validate(
+        _ contribution: IconSetContribution, from source: ContributionSource, taken: [IconSet]
+    )
         throws -> IconSet
     {
         try checkIdentity(contribution.id.rawValue, from: source)
@@ -138,7 +144,8 @@ public struct AppearanceCatalog: Hashable, Sendable {
         let thumbnail = try contribution.thumbnail.flatMap { pair -> AppIconImagePair? in
             let light = try image(pair.light, from: source)
             let dark = try image(pair.dark, from: source)
-            return exists(light, in: source) && exists(dark, in: source) ? AppIconImagePair(light: light, dark: dark) : nil
+            return exists(light, in: source) && exists(dark, in: source)
+                ? AppIconImagePair(light: light, dark: dark) : nil
         }
         return IconSet(
             contribution: contribution, pluginID: source.pluginID, appIcon: appIcon, icons: icons,
@@ -158,9 +165,11 @@ public struct AppearanceCatalog: Hashable, Sendable {
         }
         try checkCompatibility(contribution.compatibility, nativeVersion: source.nativeVersion)
         try checkWindows(contribution.display)
+        let set = contribution.iconSet.flatMap { id in iconSets.first { $0.id == id } }
+        let alternates = contribution.alternateIconSets.compactMap { id in iconSets.first { $0.id == id } }
         return CelebrationEvent(
-            contribution: contribution, pluginID: source.pluginID, order: taken.count,
-            iconSet: contribution.iconSet.flatMap { id in iconSets.first { $0.id == id } })
+            contribution: contribution, pluginID: source.pluginID, order: taken.count, iconSet: set,
+            styles: [set].compactMap { $0 } + alternates)
     }
 
     private static func checkIdentity(_ id: String, from source: ContributionSource) throws {
@@ -194,7 +203,8 @@ public struct AppearanceCatalog: Hashable, Sendable {
                 throw Failure("Two display windows use the id \"\(window.id.rawValue)\".")
             }
             guard reach.contains(window.daysBefore), reach.contains(window.daysAfter) else {
-                throw Failure("The \"\(window.id.rawValue)\" window can reach 0 to \(reach.upperBound) days either side.")
+                throw Failure(
+                    "The \"\(window.id.rawValue)\" window can reach 0 to \(reach.upperBound) days either side.")
             }
         }
         guard seen.contains(display.defaultWindow) else {
@@ -204,7 +214,9 @@ public struct AppearanceCatalog: Hashable, Sendable {
 
     /// Bad references (a path outside the plugin's folder) reject the set; missing files only keep its
     /// icon from applying, and say what's missing.
-    private static func iconStatus(_ icons: IconSetIcons?, from source: ContributionSource) throws
+    private static func iconStatus(
+        _ icons: IconSetIcons?, from source: ContributionSource
+    ) throws
         -> (AppearanceSurfaceStatus, [AppIconVariant: AppIconImagePair])
     {
         switch icons {
@@ -239,7 +251,9 @@ public struct AppearanceCatalog: Hashable, Sendable {
         }
     }
 
-    private static func image(_ reference: IconSetImageReference, from source: ContributionSource) throws
+    private static func image(
+        _ reference: IconSetImageReference, from source: ContributionSource
+    ) throws
         -> AppIconImage
     {
         switch (reference, source.location) {
@@ -290,7 +304,9 @@ public struct AppearanceCatalog: Hashable, Sendable {
     }
 
     /// A mark this build can't draw falls back to the palette's two-tone emblem when there is one.
-    private static func homeStatus(_ contribution: IconSetContribution, marks: Set<String>)
+    private static func homeStatus(
+        _ contribution: IconSetContribution, marks: Set<String>
+    )
         -> (AppearanceSurfaceStatus, HomeLook?)
     {
         if let mark = contribution.homeMark, marks.contains(mark) { return (.ready, .mark(mark)) }
