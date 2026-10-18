@@ -1,6 +1,6 @@
 import Foundation
 
-/// Decides which managed servers a session gets: the enabled ones chosen for its agent and project,
+/// Decides which managed servers a session gets: the ones switched on and chosen for its agent and project,
 /// that the agent can connect to, and that the agent doesn't already load from its own
 /// configuration (handing it a second copy would load the server twice).
 public enum ManagedServerDelivery {
@@ -25,7 +25,8 @@ public enum ManagedServerDelivery {
 
     public enum Outcome: Hashable, Sendable {
         case deliver
-        case disabled
+        /// Its switch is off here.
+        case switchedOff
         case notForAgent
         case notForProject
         case unsupportedTransport(MCPTransport.Kind)
@@ -50,7 +51,7 @@ public enum ManagedServerDelivery {
     }
 
     private static func outcome(of server: ManagedServer, for target: Target, loaded: [ConfiguredServer]) -> Outcome {
-        guard server.isEnabled else { return .disabled }
+        guard target.switches.mode(of: server.transport.endpoint.key, in: target.directory) == .on else { return .switchedOff }
         guard server.agents.includes(target.agentID) else { return .notForAgent }
         guard server.includes(directory: target.directory) else { return .notForProject }
         let support = target.transports ?? MCPTransportSupport(http: true, sse: true)

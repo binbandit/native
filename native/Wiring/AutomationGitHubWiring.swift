@@ -25,12 +25,16 @@ enum AutomationGitHubWiring {
         }
     }
 
-    static func openPullRequest(_ draft: WorkflowPullRequestDraft, git: GitStore, gitHub: GitHubModel) async throws -> WorkflowPullRequestResult {
+    static func openPullRequest(
+        _ draft: WorkflowPullRequestDraft, git: GitStore, gitHub: GitHubModel
+    ) async throws -> WorkflowPullRequestResult {
         let model = git.model(for: draft.cwd)
         if model.repository == nil {
             await model.refreshNow()
         }
-        guard let repository = model.repository, let head = model.branch?.name else { throw PullRequestError.notARepository }
+        guard let repository = model.repository, let head = model.branch?.name else {
+            throw PullRequestError.notARepository
+        }
         // Asked before pushing, so a checkout that isn't on GitHub is refused without a push to its
         // remote; the error carries GitHub's own reason and fix.
         let base = try await gitHub.repository(of: repository.root).defaultBranch
@@ -43,7 +47,8 @@ enum AutomationGitHubWiring {
                 throw PullRequestError.pushFailed(notice.message ?? notice.title)
             }
         }
-        let pullRequest = NewPullRequest(title: draft.title, body: draft.body, head: head, base: base, isDraft: draft.isDraft)
+        let pullRequest = NewPullRequest(
+            title: draft.title, body: draft.body, head: head, base: base, isDraft: draft.isDraft)
         let url = try await gitHub.createPullRequest(pullRequest, in: repository.root)
         return WorkflowPullRequestResult(url: url, number: Int(url.lastPathComponent))
     }
@@ -72,26 +77,47 @@ extension AutomationGitHubWiring {
         if gitHub.inbox == nil {
             await gitHub.refresh()
         }
-        switch gitHub.availability {
+        // A refresh already in flight (the app starts one at launch) returns at once with no
+        // answer; asking gh directly makes the first reason shown the real one.
+        let availability =
+            if gitHub.inbox == nil, gitHub.availability == nil {
+                try? await gitHub.cli().availability()
+            } else {
+                gitHub.availability
+            }
+        switch availability {
         case .notInstalled:
-            throw EventSourceError(errorDescription: "The GitHub CLI (gh) isn't installed, so Native can't see pull request events. Install it (brew install gh), then run gh auth login.")
+            throw EventSourceError(
+                errorDescription:
+                    "The GitHub CLI (gh) isn't installed, so Native can't see pull request events. Install it (brew install gh), then run gh auth login."
+            )
         case .notAuthenticated:
-            throw EventSourceError(errorDescription: "gh isn't signed in, so Native can't see pull request events. Run gh auth login in a terminal; Native picks it up on its next check.")
+            throw EventSourceError(
+                errorDescription:
+                    "gh isn't signed in, so Native can't see pull request events. Run gh auth login in a terminal; Native picks it up on its next check."
+            )
         case .offline:
-            throw EventSourceError(errorDescription: "You're offline, so Native can't see pull request events. They're picked up again when the network returns.")
+            throw EventSourceError(
+                errorDescription:
+                    "You're offline, so Native can't see pull request events. They're picked up again when the network returns."
+            )
         case .ready, nil:
             break
         }
         guard let inbox = gitHub.inbox else {
-            throw EventSourceError(errorDescription: gitHub.lastError?.localizedDescription ?? "GitHub hasn't answered yet; Native tries again in two minutes.")
+            throw EventSourceError(
+                errorDescription: gitHub.lastError?.localizedDescription
+                    ?? "GitHub hasn't answered yet; Native tries again in two minutes.")
         }
         let authored = Set(inbox.authored.map(\.url))
         let reviewRequested = Set(inbox.reviewRequested.map(\.url))
         return inbox.all.map { pullRequest in
             PullRequestSnapshot(
-                url: pullRequest.url, repository: pullRequest.repository, number: pullRequest.number, title: pullRequest.title,
+                url: pullRequest.url, repository: pullRequest.repository, number: pullRequest.number,
+                title: pullRequest.title,
                 updatedAt: pullRequest.updatedAt, isAuthored: authored.contains(pullRequest.url),
-                isReviewRequested: reviewRequested.contains(pullRequest.url), hasFailingChecks: pullRequest.checks?.state == .failing
+                isReviewRequested: reviewRequested.contains(pullRequest.url),
+                hasFailingChecks: pullRequest.checks?.state == .failing
             )
         }
     }
