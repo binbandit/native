@@ -66,8 +66,7 @@ struct MergePullRequestSheet: View {
                         }
                     }
                     .buttonStyle(.ds(.primary, size: .medium))
-                    .disabled(
-                        page.mergeMethods.isEmpty || model.busy.contains("merge") || page.mergeable == .conflicting)
+                    .disabled(isBlocked(page) || model.busy.contains("merge"))
                 }
                 .padding(.horizontal, DS.Space.xl)
                 .padding(.vertical, DS.Space.lg)
@@ -76,6 +75,13 @@ struct MergePullRequestSheet: View {
             .background(.dsBackground)
             .onAppear { model.actionError = nil }
         }
+    }
+
+    /// What GitHub would refuse anyway: conflicts, a stale base it requires current, or protection
+    /// the viewer can't bypass.
+    private func isBlocked(_ page: PullRequestPage) -> Bool {
+        page.mergeMethods.isEmpty || page.mergeable == .conflicting || page.mergeStatus == .dirty
+            || page.mergeStatus == .behind || (page.mergeStatus == .blocked && !page.viewerCanMergeAsAdmin)
     }
 
     private func defaultMethod(_ page: PullRequestPage) -> MergeMethod {
