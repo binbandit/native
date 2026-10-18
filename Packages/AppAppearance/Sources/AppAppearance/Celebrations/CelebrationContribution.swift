@@ -262,7 +262,8 @@ extension CelebrationCalendar: Codable {
                 offset: try container.decodeIfPresent(Int.self, forKey: .offset) ?? 0, length: length)
         case "ethiopic":
             rule = .ethiopic(
-                month: try container.decode(Int.self, forKey: .month), day: try container.decode(Int.self, forKey: .day),
+                month: try container.decode(Int.self, forKey: .month),
+                day: try container.decode(Int.self, forKey: .day),
                 length: length)
         case "table":
             let occurrences = try container.decode([TabledOccurrence].self, forKey: .occurrences)

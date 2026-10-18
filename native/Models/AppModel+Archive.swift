@@ -107,7 +107,9 @@ extension AppModel {
     private func carryOutDeletion(of key: SessionKey, in projectID: Project.ID) async {
         guard pendingDeletions.removeValue(forKey: key) != nil else { return }
         let title = titleOfSession(key)
-        let folder = sessions.session(key)?.cwd ?? catalog.lookup(key).map { URL(filePath: $0.info.cwd, directoryHint: .isDirectory) }
+        let folder =
+            sessions.session(key)?.cwd
+            ?? catalog.lookup(key).map { URL(filePath: $0.info.cwd, directoryHint: .isDirectory) }
         deletedSessions.insert(key)
         archivedSessions.set(key, archived: false)
         unread.set(key, unread: false)
@@ -117,7 +119,9 @@ extension AppModel {
         problems.resolve(.workspaceArchive(key), in: projectID)
         problems.resolve(.workspaceRestore(key), in: projectID)
         // The agent's copy goes too when it's running; a stopped agent isn't started just for this.
-        if let runtime = runtimes[key.agent], let connection = runtime.connection, runtime.capabilities?.deleteSessions == true {
+        if let runtime = runtimes[key.agent], let connection = runtime.connection,
+            runtime.capabilities?.deleteSessions == true
+        {
             do {
                 _ = try await connection.send(DeleteSessionRequest(sessionId: key.id))
             } catch {
@@ -178,7 +182,9 @@ extension AppModel {
             ordering.forget(id)
             try? await taskWorkspaces?.deleteWorkspaces(of: project)
         }
-        offerUndo("Deleted “\(project.name)”. Its folder wasn't touched.", name: "Delete Project", undoManager: undoManager) { model in
+        offerUndo(
+            "Deleted “\(project.name)”. Its folder wasn't touched.", name: "Delete Project", undoManager: undoManager
+        ) { model in
             model.pendingProjectDeletions.removeValue(forKey: id)?.cancel()
             if !wasArchived {
                 model.unarchiveProject(id, at: index)
@@ -190,7 +196,8 @@ extension AppModel {
 
     private func titleOfSession(_ key: SessionKey) -> String {
         sessions.session(key)?.displayTitle
-            ?? titles.title(for: SessionTitles.Key(agent: key.agent, session: key.id), agentTitle: catalog.lookup(key)?.info.title)
+            ?? titles.title(
+                for: SessionTitles.Key(agent: key.agent, session: key.id), agentTitle: catalog.lookup(key)?.info.title)
             ?? "New Session"
     }
 
@@ -214,14 +221,17 @@ extension AppModel {
     /// AppModel+Problems.swift.
     func archiveWorkspace(of key: SessionKey, in project: Project) async throws -> TaskWorkspaceRemoval? {
         guard let provider = taskWorkspaces,
-              let folder = sessions.session(key)?.cwd ?? catalog.lookup(key).map({ URL(filePath: $0.info.cwd, directoryHint: .isDirectory) }),
-              folder.folderPath != project.path
+            let folder = sessions.session(key)?.cwd
+                ?? catalog.lookup(key).map({ URL(filePath: $0.info.cwd, directoryHint: .isDirectory) }),
+            folder.folderPath != project.path
         else { return nil }
         return try await provider.archiveWorkspace(at: folder, in: project)
     }
 
     /// Shows the undo toast and registers the same undo with the window's undo manager.
-    private func offerUndo(_ message: String, name: String, undoManager: UndoManager?, undo: @escaping (AppModel) -> Void) {
+    private func offerUndo(
+        _ message: String, name: String, undoManager: UndoManager?, undo: @escaping (AppModel) -> Void
+    ) {
         undoManager?.registerUndo(withTarget: self) { model in
             MainActor.assumeIsolated { undo(model) }
         }

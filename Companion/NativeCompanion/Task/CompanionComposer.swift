@@ -1,3 +1,4 @@
+import ACP
 import NativeHostProtocol
 import SwiftUI
 
@@ -27,6 +28,7 @@ struct CompanionComposer: View {
                     .font(CompanionType.caption)
                     .foregroundStyle(.dsTextSecondary)
             }
+            CompanionConfigPills(host: host, sessionID: session.id)
             if session.isWorking {
                 Picker("When", selection: $behavior) {
                     Text("Queue").tag(PromptBehavior.queue)

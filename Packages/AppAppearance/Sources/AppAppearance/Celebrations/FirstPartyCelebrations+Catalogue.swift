@@ -64,7 +64,8 @@ extension FirstPartyCelebrations {
             .rule(.ethiopic(month: 1, day: 17, length: 1)),
             tradition: "Ethiopian calendar, 17 Meskerem; the Demera bonfire is the evening before"),
         edition(
-            "timkat", "Timkat", ["Timket", "Ethiopian Epiphany"], "religious", .rule(.ethiopic(month: 5, day: 11, length: 1)),
+            "timkat", "Timkat", ["Timket", "Ethiopian Epiphany"], "religious",
+            .rule(.ethiopic(month: 5, day: 11, length: 1)),
             tradition: "Ethiopian calendar, 11 Tir; the Ketera eve is the day before"),
         edition("earth-day", "Earth Day", [], "community", .fixed(4, 22)),
         edition("juneteenth", "Juneteenth", ["Emancipation Day"], "community", .fixed(6, 19)),
@@ -110,15 +111,21 @@ extension FirstPartyCelebrations {
             case .rule(let rule):
                 return (CelebrationCalendar(rule: rule, tradition: tradition), CelebrationProvenance())
             case .soon(let kind):
-                return (CelebrationCalendar(rule: .unsupported(kind: kind), tradition: tradition), CelebrationProvenance())
+                return (
+                    CelebrationCalendar(rule: .unsupported(kind: kind), tradition: tradition), CelebrationProvenance()
+                )
             case .published:
                 guard let table = publishedDates[slug] else {
-                    return (CelebrationCalendar(rule: .unsupported(kind: "table"), tradition: tradition), CelebrationProvenance())
+                    return (
+                        CelebrationCalendar(rule: .unsupported(kind: "table"), tradition: tradition),
+                        CelebrationProvenance()
+                    )
                 }
                 let ranges = table.ranges
                 let years = ranges.map(\.first.year)
                 return (
-                    CelebrationCalendar(rule: .table(ranges), tradition: table.tradition, isProvisional: table.isProvisional),
+                    CelebrationCalendar(
+                        rule: .table(ranges), tradition: table.tradition, isProvisional: table.isProvisional),
                     CelebrationProvenance(
                         sources: table.sources.compactMap(URL.init(string:)), authority: table.authority,
                         dataVersion: "2026-10-18", reviewed: CivilDate(year: 2026, month: 10, day: 18),
@@ -127,6 +134,7 @@ extension FirstPartyCelebrations {
                 )
             }
         }
+    }
 
     private static func edition(
         _ slug: String, _ title: LocalizedText, _ aliases: [String], _ tag: String, _ dates: Dates,
@@ -136,7 +144,8 @@ extension FirstPartyCelebrations {
         let (calendar, provenance) = dates.calendar(slug, tradition: tradition)
         return (
             CelebrationContribution(
-                id: CelebrationID("native.\(slug)"), title: title, aliases: aliases, tags: [tag], provenance: provenance,
+                id: CelebrationID("native.\(slug)"), title: title, aliases: aliases, tags: [tag],
+                provenance: provenance,
                 calendar: calendar,
                 iconSet: IconSetID("native.\(pack)")),
             IconSetContribution(

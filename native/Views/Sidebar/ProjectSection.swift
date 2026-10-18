@@ -31,7 +31,7 @@ struct ProjectSection<TaskAccessory: View>: View {
 
     var body: some View {
         let item = SidebarDragState.Item.project(project.id)
-        let problems = model.problems(in: project.id)
+        let problems = model.problems.list(for: project.id)
         ProjectGroup(
             name: project.name,
             icon: iconStore.icon(for: project),

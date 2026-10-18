@@ -46,8 +46,19 @@ final class CompanionEndToEndTests: XCTestCase {
         let task = app.buttons.matching(identifier: "task-\(label)").firstMatch
         XCTAssertTrue(task.waitForExistence(timeout: 30), "the host's tasks are listed")
         task.tap()
-        let composer = app.textViews["composer"].exists ? app.textViews["composer"] : app.textFields["composer"]
+        let composer = app.descendants(matching: .any)["composer"]
         XCTAssertTrue(composer.waitForExistence(timeout: 30))
+        // `COMPANION_MODEL` picks the agent's model from the phone first (the cheap one for checks).
+        if let model = environment["COMPANION_MODEL"] {
+            let pill = app.descendants(matching: .any)["config-model"]
+            XCTAssertTrue(pill.waitForExistence(timeout: 30), "the agent offers models")
+            pill.tap()
+            let choice = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] %@", model)).firstMatch
+            XCTAssertTrue(choice.waitForExistence(timeout: 5), "the agent offers \(model)")
+            choice.tap()
+            let chosen = app.descendants(matching: .any).matching(NSPredicate(format: "identifier == 'config-model' AND label CONTAINS[c] %@", model)).firstMatch
+            XCTAssertTrue(chosen.waitForExistence(timeout: 15), "the host applied \(model)")
+        }
         composer.tap()
         composer.typeText(prompt)
         app.buttons["send"].tap()

@@ -26,6 +26,7 @@ struct CelebrationRow: View {
                 ) {
                     if event.display.treatment == .quiet { SettingsBadge("Quiet") }
                     if let status { SettingsBadge(status) }
+                    if contribution.calendar.isProvisional { SettingsBadge("Provisional") }
                 } control: {
                     SettingsSwitch(
                         "Celebrate \(contribution.title.resolved()) automatically",
@@ -72,6 +73,12 @@ struct CelebrationRow: View {
         }
         if let tradition = contribution.calendar.tradition {
             lines.append(tradition)
+        }
+        if let authority = contribution.provenance.authority {
+            lines.append("Dates from \(authority)")
+        }
+        if let note = contribution.provenance.note {
+            lines.append(note)
         }
         return lines
     }

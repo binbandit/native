@@ -221,7 +221,8 @@ final class AppModel {
         do {
             try await runtime.signIn(with: method)
         } catch {
-            actionFailure = ActionFailure("Couldn't Sign In to \(runtime.agent.displayName)", error.localizedDescription)
+            actionFailure = ActionFailure(
+                "Couldn't Sign In to \(runtime.agent.displayName)", error.localizedDescription)
             return false
         }
         await refreshSessions(of: runtime)
@@ -366,7 +367,8 @@ final class AppModel {
                 signInPrompt = agent
             } else {
                 actionFailure = ActionFailure(
-                    "Couldn't Start a \(runtime.agent.displayName) Session", error.localizedDescription.withoutTerminalEscapes)
+                    "Couldn't Start a \(runtime.agent.displayName) Session",
+                    error.localizedDescription.withoutTerminalEscapes)
             }
         }
     }

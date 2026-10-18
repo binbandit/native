@@ -4,10 +4,6 @@ import Foundation
 // Background work that failed for a project (`ProjectProblem`): what clients show with the project,
 // and Retry and Dismiss, which every client drives through here.
 extension AppModel {
-    func problems(in project: Project.ID) -> [ProjectProblem] {
-        problems.problems(in: project)
-    }
-
     func isRetrying(_ problem: ProjectProblem) -> Bool {
         problems.retrying.contains(problem.id)
     }
