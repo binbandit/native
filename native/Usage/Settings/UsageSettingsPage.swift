@@ -6,7 +6,8 @@ struct UsageSettingsPage: View {
     struct Account: Identifiable {
         let id: AgentDefinition.ID
         let name: String
-        let symbol: String
+        /// For the agent's icon.
+        let definition: AgentDefinition
     }
 
     let accounts: [Account]
@@ -33,7 +34,7 @@ struct UsageSettingsPage: View {
             }
             ForEach(accounts) { account in
                 UsageAccountCard(
-                    agent: account.id, name: account.name, symbol: account.symbol, limits: limits, reports: reports,
+                    agent: account.id, name: account.name, definition: account.definition, limits: limits, reports: reports,
                     activity: activity)
             }
         }

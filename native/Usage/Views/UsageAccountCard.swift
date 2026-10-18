@@ -6,7 +6,8 @@ import SwiftUI
 struct UsageAccountCard: View {
     let agent: AgentDefinition.ID
     let name: String
-    let symbol: String
+    /// For the agent's icon, the one the sidebar and recent tasks show.
+    let definition: AgentDefinition
     let limits: UsageLimits
     let reports: ProviderUsageReports
     let activity: ActivityLog
@@ -30,10 +31,8 @@ struct UsageAccountCard: View {
 
     private func header(_ status: ProviderUsageReports.Status) -> some View {
         HStack(spacing: DS.Space.md) {
-            Image(systemName: symbol)
-                .font(.dsBody)
+            AgentIcon(agent: definition)
                 .foregroundStyle(.dsTextSecondary)
-                .frame(width: DS.Size.rowLeading)
             Text(name)
                 .font(.dsHeadline)
                 .foregroundStyle(.dsTextPrimary)

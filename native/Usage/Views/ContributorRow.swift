@@ -1,10 +1,11 @@
 import SwiftUI
 
-/// One thing that takes up context, with its cost on the right.
+/// One thing that takes up context, with its cost on the right (or nothing there, when the caller
+/// puts an action beside it).
 struct ContributorRow<Leading: View>: View {
     let title: String
     var detail: String?
-    let tokens: String
+    var tokens: String?
     var isMono = false
     @ViewBuilder var leading: Leading
 
@@ -25,10 +26,12 @@ struct ContributorRow<Leading: View>: View {
                     .lineLimit(1)
             }
             Spacer(minLength: DS.Space.md)
-            Text(tokens)
-                .font(isMono ? .dsCaption : .dsBody)
-                .monospacedDigit()
-                .foregroundStyle(.dsTextSecondary)
+            if let tokens {
+                Text(tokens)
+                    .font(isMono ? .dsCaption : .dsBody)
+                    .monospacedDigit()
+                    .foregroundStyle(.dsTextSecondary)
+            }
         }
         .frame(minHeight: DS.Size.controlXS - DS.Space.xs)
         .accessibilityElement(children: .combine)
@@ -37,7 +40,7 @@ struct ContributorRow<Leading: View>: View {
 
 extension ContributorRow where Leading == Color {
     /// A row with an empty leading slot, so its title lines up with those that have one.
-    init(title: String, detail: String? = nil, tokens: String, isMono: Bool = false) {
+    init(title: String, detail: String? = nil, tokens: String?, isMono: Bool = false) {
         self.init(title: title, detail: detail, tokens: tokens, isMono: isMono) { Color.clear }
     }
 }
@@ -45,15 +48,18 @@ extension ContributorRow where Leading == Color {
 /// A group of contributors' title and total, flush with the table above it.
 struct ContributorSectionHeader: View {
     let title: String
-    let tokens: String
+    let tokens: String?
 
     var body: some View {
         HStack {
             Text(title)
+                .monospacedDigit()
                 .accessibilityAddTraits(.isHeader)
             Spacer(minLength: DS.Space.md)
-            Text(tokens)
-                .monospacedDigit()
+            if let tokens {
+                Text(tokens)
+                    .monospacedDigit()
+            }
         }
         .font(.dsBody)
         .foregroundStyle(.dsTextTertiary)
