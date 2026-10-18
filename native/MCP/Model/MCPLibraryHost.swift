@@ -21,6 +21,21 @@ protocol MCPLibraryHost: AnyObject {
     var mcpAgentsAwaitingRestart: [MCPAgent] { get }
     /// Restarts those agents: only idle ones, unless `force`.
     func mcpApplyLaunchPolicies(force: Bool) async
+    /// The session (by `SessionContext.clientID`) a script's calls are made for.
+    func mcpScriptSession(_ clientID: UUID) -> MCPScriptSessionLink?
+}
+
+/// What a script's calls need from the session they're made for: whether it asks before tool
+/// calls, its transcript and its approval card.
+@MainActor protocol MCPScriptSessionLink {
+    /// Whether its agent runs tool calls without asking in its current mode.
+    var approvesToolCallsUnasked: Bool { get }
+    /// The agent's run_script call still running, which the script's calls belong under.
+    var runningScriptCall: String? { get }
+    func record(_ call: ToolCallUpdate)
+    func requestApproval(
+        for call: ToolCallUpdate, options: [PermissionOption], until deadline: ContinuousClock.Instant
+    ) async -> PermissionOption?
 }
 
 /// An agent whose own MCP configuration Native can read.
@@ -107,6 +122,11 @@ final class AppMCPHost: MCPLibraryHost {
         await model?.applyLaunchPolicies(force: force)
     }
 
+    func mcpScriptSession(_ clientID: UUID) -> MCPScriptSessionLink? {
+        guard let model, let session = model.session(clientID: clientID) else { return nil }
+        return AppMCPScriptSession(session: session, translator: model.plugins.policyTranslator(for: session.agent.id))
+    }
+
     func mcpPluginServers(for session: SessionContext?) -> [MCPPluginServer] {
         guard let registry = model?.plugins else { return [] }
         return registry.plugins.filter { registry.isEnabled($0.id) && !($0.plugin is MCPServersPlugin) }.flatMap {
@@ -117,5 +137,30 @@ final class AppMCPHost: MCPLibraryHost {
                 MCPPluginServer(pluginName: manifest.name, server: $0)
             }
         }
+    }
+}
+
+/// A session of the app as the target of a script's calls.
+private struct AppMCPScriptSession: MCPScriptSessionLink {
+    let session: SessionModel
+    let translator: (any SessionPolicyTranslator)?
+
+    var approvesToolCallsUnasked: Bool {
+        guard let mode = session.permissionMode else { return false }
+        return translator?.approvesToolCallsUnasked(inMode: mode) ?? false
+    }
+
+    var runningScriptCall: String? {
+        session.runningToolCall(named: "run_script")
+    }
+
+    func record(_ call: ToolCallUpdate) {
+        session.recordNativeToolCall(call)
+    }
+
+    func requestApproval(
+        for call: ToolCallUpdate, options: [PermissionOption], until deadline: ContinuousClock.Instant
+    ) async -> PermissionOption? {
+        await session.requestNativeApproval(for: call, options: options, until: deadline)
     }
 }

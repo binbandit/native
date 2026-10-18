@@ -36,6 +36,9 @@ final class DurableHost {
     @ObservationIgnored private var listening: Task<Void, Never>?
     @ObservationIgnored private var agents: [AgentSpec] = []
     @ObservationIgnored private var isStarted = false
+    /// Native's updater, whose status the host serves to paired devices as this Mac's.
+    @ObservationIgnored private weak var updates: UpdateController?
+    @ObservationIgnored private var reporting: Task<Void, Never>?
     /// The host process (its epoch) already asked to restart onto this app's binary.
     @ObservationIgnored private var restartRequested: UUID?
 
@@ -131,6 +134,24 @@ final class DurableHost {
         await perform("stop the host") { client in try await client.shutdownHost(stopAgents: true) }
     }
 
+    /// Tells the host this Mac's update status every time the updater's changes, so devices paired
+    /// with it see it (docs/releasing.md, "Remote updates"), and relays their requests back.
+    func connectUpdates(_ updates: UpdateController) {
+        guard self.updates !== updates else { return }
+        self.updates = updates
+        reporting?.cancel()
+        reporting = Task { [weak self] in
+            for await snapshot in Observations({ updates.snapshot }) {
+                await self?.report(snapshot)
+            }
+        }
+    }
+
+    private func report(_ snapshot: UpdateSnapshot) async {
+        guard let client, case .connected = connection else { return }
+        try? await client.reportUpdateStatus(HostUpdateStatus(snapshot))
+    }
+
     /// Restarts the host onto this app's binary now. Running turns are interrupted and resume on the
     /// new host, which says it restarted to update.
     func restartHost() async {
@@ -192,6 +213,10 @@ final class DurableHost {
             case .connected:
                 await connected()
                 refreshVersionStatus()
+                // A new host process hasn't heard the updater's status yet.
+                if let updates {
+                    await report(updates.snapshot)
+                }
             case .incompatible(let protocolVersion, let host):
                 // The client already asked an older host to restart once idle.
                 versionStatus =
@@ -209,9 +234,15 @@ final class DurableHost {
         case .sessionClosed(let session):
             sessions.removeAll { $0.id == session }
             mirrors[session] = nil
-        case .pluginsChanged:
-            // The app still reads its plugins from its own registry until Phase 2.
+        case .pluginsChanged, .updateChanged:
+            // The app still reads its plugins from its own registry, and its updater is the source
+            // of the update status it would hear back.
             break
+        case .appUpdateCheckRequested:
+            updates?.checkForUpdates()
+        case .appUpdateInstallRequested(let when):
+            // A device asked; `.now` only after its user chose to interrupt running tasks.
+            updates?.installForRemote(when == .now ? .now : .whenTasksFinish)
         case .activity(let entry):
             // Seen as it happens, so it isn't news the next time the app connects.
             if awayActivity.isEmpty {

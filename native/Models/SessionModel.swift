@@ -298,7 +298,10 @@ final class SessionModel {
         }
         // ACP requires answering open permission requests as cancelled when a turn is cancelled.
         for (toolCallID, _) in state.pendingPermissions {
-            if let permission = state.resolvePermission(toolCallID: toolCallID) {
+            guard let permission = state.resolvePermission(toolCallID: toolCallID) else { continue }
+            if NativeApprovals.isNative(permission.requestID) {
+                NativeApprovals.answer(permission.requestID, with: nil)
+            } else {
                 try? await connection.respond(to: permission.requestID, with: RequestPermissionResponse.cancelled)
             }
         }
@@ -308,6 +311,10 @@ final class SessionModel {
 
     func choose(_ option: PermissionOption, forToolCall toolCallID: String) async {
         guard let permission = state.resolvePermission(toolCallID: toolCallID) else { return }
+        // Native's own approvals (SessionModel+ScriptApprovals.swift) never reached the agent.
+        guard !NativeApprovals.isNative(permission.requestID) else {
+            return NativeApprovals.answer(permission.requestID, with: option)
+        }
         try? await connection.respond(to: permission.requestID, with: RequestPermissionResponse.selected(optionId: option.optionId))
     }
 

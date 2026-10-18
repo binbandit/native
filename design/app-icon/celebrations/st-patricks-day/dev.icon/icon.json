@@ -38,19 +38,19 @@
               "value": true
             }
           ],
-          "image-name": "painted-interlock.png",
-          "name": "Painted Native interlock",
+          "image-name": "flat-interlock.png",
+          "name": "Flat Native interlock",
           "position": {
-            "scale": 0.5661820964039785,
+            "scale": 0.6684733514001807,
             "translation-in-points": [
-              -0.28309104820198927,
-              12.283091048201989
+              -4.345076784101175,
+              -4.043360433604338
             ]
           }
         }
       ],
       "lighting": "individual",
-      "name": "St Patrick’s Day · painted Native interlock",
+      "name": "St Patrick’s Day · flat Native interlock",
       "refractivity-specializations": [
         {
           "appearance": "tinted",
@@ -62,8 +62,8 @@
         }
       ],
       "shadow": {
-        "kind": "neutral",
-        "opacity": 0.18
+        "kind": "none",
+        "opacity": 0
       },
       "translucency-specializations": [
         {

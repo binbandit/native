@@ -8,7 +8,8 @@ import Synchronization
 nonisolated protocol OrchestrationScriptBindings: Sendable {
     /// What `caller`'s scripts can reach from here, for run_script's description; nil for nothing.
     func summary(for caller: OrchestrationCaller) async -> OrchestrationScriptSummary?
-    func bindings(for caller: OrchestrationCaller) async -> [ScriptBinding]
+    /// Tools for one run, which has until `deadline` (tools waiting on the user give up by then).
+    func bindings(for caller: OrchestrationCaller, until deadline: ContinuousClock.Instant) async -> [ScriptBinding]
 }
 
 nonisolated struct OrchestrationScriptSummary: Sendable {
@@ -34,9 +35,9 @@ nonisolated final class OrchestrationScriptExtensions: Sendable {
         return summaries
     }
 
-    func bindings(for caller: OrchestrationCaller) async -> [ScriptBinding] {
+    func bindings(for caller: OrchestrationCaller, until deadline: ContinuousClock.Instant) async -> [ScriptBinding] {
         var bindings: [ScriptBinding] = []
-        for source in sources.withLock({ $0 }) { bindings += await source.bindings(for: caller) }
+        for source in sources.withLock({ $0 }) { bindings += await source.bindings(for: caller, until: deadline) }
         return bindings
     }
 }
