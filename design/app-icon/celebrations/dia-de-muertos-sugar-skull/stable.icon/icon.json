@@ -1,97 +1,177 @@
 {
-  "features" : [
+  "features": [
     "refractivity"
   ],
-  "fill-specializations" : [
+  "fill-specializations": [
     {
-      "value" : {
-        "automatic-gradient" : "srgb:0.93333,0.88627,0.81569,1.00000"
+      "value": {
+        "automatic-gradient": "srgb:0.92549,0.92157,0.90980,1.00000"
       }
     },
     {
-      "appearance" : "dark",
-      "value" : {
-        "automatic-gradient" : "srgb:0.12941,0.07451,0.13333,1.00000"
+      "appearance": "dark",
+      "value": {
+        "automatic-gradient": "srgb:0.10980,0.10588,0.12157,1.00000"
       }
     },
     {
-      "appearance" : "tinted",
-      "value" : "automatic"
+      "appearance": "tinted",
+      "value": "automatic"
     }
   ],
-  "groups" : [
+  "groups": [
     {
-      "blur-material-specializations" : [
+      "blur-material-specializations": [
         {
-          "appearance" : "tinted",
-          "value" : 0.25
+          "appearance": "tinted",
+          "value": 0.25
         }
       ],
-      "layers" : [
+      "layers": [
         {
-          "glass-specializations" : [
+          "fill-specializations": [
             {
-              "value" : false
+              "value": {
+                "automatic-gradient": "srgb:0.97255,0.90588,0.76863,1.00000"
+              }
             },
             {
-              "appearance" : "tinted",
-              "value" : true
+              "appearance": "dark",
+              "value": {
+                "automatic-gradient": "srgb:0.97255,0.90588,0.76863,1.00000"
+              }
+            },
+            {
+              "appearance": "tinted",
+              "value": "automatic"
             }
           ],
-          "image-name" : "painted-calavera.png",
-          "name" : "Hand painted calavera",
-          "position" : {
-            "scale" : 0.66,
-            "translation-in-points" : [
+          "glass-specializations": [
+            {
+              "value": false
+            },
+            {
+              "appearance": "tinted",
+              "value": true
+            }
+          ],
+          "image-name": "native-inlay.svg",
+          "name": "Native interlock inlay"
+        }
+      ],
+      "lighting": "individual",
+      "name": "Native painted forehead inlay",
+      "refractivity-specializations": [
+        {
+          "appearance": "tinted",
+          "value": {
+            "enabled": true,
+            "depth": 0.3,
+            "strength": 0.75
+          }
+        }
+      ],
+      "shadow": {
+        "kind": "none",
+        "opacity": 0
+      },
+      "translucency-specializations": [
+        {
+          "value": {
+            "enabled": false,
+            "value": 0
+          }
+        },
+        {
+          "appearance": "tinted",
+          "value": {
+            "enabled": true,
+            "value": 0.25
+          }
+        }
+      ],
+      "specular-specializations": [
+        {
+          "value": false
+        },
+        {
+          "appearance": "tinted",
+          "value": true
+        }
+      ]
+    },
+    {
+      "blur-material-specializations": [
+        {
+          "appearance": "tinted",
+          "value": 0.25
+        }
+      ],
+      "layers": [
+        {
+          "glass-specializations": [
+            {
+              "value": false
+            },
+            {
+              "appearance": "tinted",
+              "value": true
+            }
+          ],
+          "image-name": "painted-calavera.png",
+          "name": "Hand painted calavera",
+          "position": {
+            "scale": 0.66,
+            "translation-in-points": [
               0,
               0
             ]
           }
         }
       ],
-      "lighting" : "individual",
-      "name" : "Fully painted calavera",
-      "refractivity-specializations" : [
+      "lighting": "individual",
+      "name": "Fully painted calavera",
+      "refractivity-specializations": [
         {
-          "appearance" : "tinted",
-          "value" : {
-            "depth" : 0.3,
-            "enabled" : true,
-            "strength" : 0.75
+          "appearance": "tinted",
+          "value": {
+            "depth": 0.3,
+            "enabled": true,
+            "strength": 0.75
           }
         }
       ],
-      "shadow" : {
-        "kind" : "neutral",
-        "opacity" : 0.22
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.22
       },
-      "specular-specializations" : [
+      "specular-specializations": [
         {
-          "value" : false
+          "value": false
         },
         {
-          "appearance" : "tinted",
-          "value" : true
+          "appearance": "tinted",
+          "value": true
         }
       ],
-      "translucency-specializations" : [
+      "translucency-specializations": [
         {
-          "value" : {
-            "enabled" : false,
-            "value" : 0
+          "value": {
+            "enabled": false,
+            "value": 0
           }
         },
         {
-          "appearance" : "tinted",
-          "value" : {
-            "enabled" : true,
-            "value" : 0.25
+          "appearance": "tinted",
+          "value": {
+            "enabled": true,
+            "value": 0.25
           }
         }
       ]
     }
   ],
-  "supported-platforms" : {
-    "squares" : "shared"
+  "supported-platforms": {
+    "squares": "shared"
   }
 }

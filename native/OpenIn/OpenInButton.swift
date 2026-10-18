@@ -33,7 +33,6 @@ struct OpenInButton: View {
             chevron
         }
         .frame(height: DS.Size.controlXS)
-        .background(.dsSurface)
         .clipShape(shape)
         .overlay { shape.strokeBorder(.dsBorder, lineWidth: 1) }
         .fixedSize()
@@ -91,13 +90,15 @@ struct OpenInButton: View {
     }
 }
 
-/// One half of the control: no chrome of its own, a hover wash and a pressed fill.
+/// The left half: filled like an outlined button, with a hover wash and a pressed fill over it. The
+/// chevron half stays unfilled on the toolbar, as in Conductor.
 private struct SegmentButtonStyle: ButtonStyle {
     let isHovered: Bool
 
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
             .background(configuration.isPressed ? .dsPressed : isHovered ? .dsHover : .clear)
+            .background(.dsSurface)
     }
 }
 

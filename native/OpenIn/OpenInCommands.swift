@@ -34,8 +34,11 @@ struct OpenInCommands: View {
         Menu("Open In") {
             if let location {
                 OpenInMenuContent(location: location, model: model)
+            } else {
+                // The menu bar keeps a submenu enabled, so it says why it's empty.
+                Button("Open a Task to Choose an App") {}
+                    .disabled(true)
             }
         }
-        .disabled(location == nil)
     }
 }

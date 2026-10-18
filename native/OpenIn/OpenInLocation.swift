@@ -12,13 +12,14 @@ nonisolated enum OpenInLocation: Hashable, Sendable {
     init(folder: URL, host: HostID) {
         self =
             host == .local
-            ? .local(folder) : .remote(host: host.rawValue, path: folder.path(percentEncoded: false))
+            ? .local(folder) : .remote(host: host.rawValue, path: folder.folderPath)
     }
 
-    /// What Copy Path copies.
+    /// What Copy Path copies: the path as agents take it, without a trailing slash.
+    @MainActor
     var path: String {
         switch self {
-        case .local(let folder): folder.path(percentEncoded: false)
+        case .local(let folder): folder.folderPath
         case .remote(_, let path): path
         }
     }

@@ -47,8 +47,12 @@ bundle_id() {
     /usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$app/Contents/Info.plist" 2>/dev/null
 }
 
-quit() {
+quit_app() {
     pkill -f "$process" 2>/dev/null || true
+}
+
+quit() {
+    quit_app
     local id
     id=$(bundle_id) || return 0
     # The instance's development host, if it was turned on (Window › Durable Sessions).
@@ -92,7 +96,9 @@ if [ "$build" = 1 ]; then
 fi
 [ -d "$app" ] || { echo "no build at $app; run without --no-build" >&2; exit 1; }
 
-quit
+# Relaunching replaces the app but leaves its host running, so durability and host handoffs can be
+# tested by relaunching; --quit and --reset stop the host too.
+quit_app
 defaults_args=()
 [[ " ${app_args[*]-} " == *" -agentDefaults.codex.model "* ]] || defaults_args=(-agentDefaults.codex.model gpt-6.1-sol)
 open -n "$app" --args ${defaults_args[@]+"${defaults_args[@]}"} ${app_args[@]+"${app_args[@]}"}
