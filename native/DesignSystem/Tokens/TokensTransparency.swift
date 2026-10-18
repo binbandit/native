@@ -11,10 +11,10 @@ public nonisolated enum DSTransparency: String, CaseIterable, Identifiable, Send
     case solid
     /// A hint of the desktop and the content behind.
     case subtle
-    /// The system's own materials, as macOS and iPadOS draw them.
+    /// The system's own materials, as macOS and iPadOS draw them. The most see-through level:
+    /// macOS tints its sidebar glass with the wallpaper rather than showing windows through it, and
+    /// clear glass under text stops it reading, so there is nothing clearer worth offering.
     case standard
-    /// Lighter glass and overlays, for calm wallpapers.
-    case clear
 
     public var id: Self { self }
 
@@ -23,28 +23,26 @@ public nonisolated enum DSTransparency: String, CaseIterable, Identifiable, Send
         case .solid: "Solid"
         case .subtle: "Subtle"
         case .standard: "Standard"
-        case .clear: "Clear"
         }
     }
 
-    /// How much of the sidebar's own color covers the material behind it (1 is opaque). Standard
-    /// and Clear leave the system's material as it is; Clear also makes its glass clear.
+    /// How much of the sidebar's own color covers the material behind it (1 is opaque; Standard
+    /// leaves the system's material as it is).
     public var sidebarTint: Double {
         switch self {
         case .solid: 1
         case .subtle: 0.65
-        case .standard, .clear: 0
+        case .standard: 0
         }
     }
 
     /// How much of the overlay color covers the blur behind menus, popovers and toasts. Overlays
-    /// hold text the user reads, so they stay mostly opaque even at Clear.
+    /// hold text the user reads, so even Standard keeps them mostly opaque.
     public var overlayTint: Double {
         switch self {
         case .solid: 1
-        case .subtle: 0.94
-        case .standard: 0.84
-        case .clear: 0.66
+        case .subtle: 0.92
+        case .standard: 0.8
         }
     }
 
@@ -55,7 +53,6 @@ public nonisolated enum DSTransparency: String, CaseIterable, Identifiable, Send
         case .solid: nil
         case .subtle: .regular.tint(Color.dsSurface.opacity(0.6))
         case .standard: .regular
-        case .clear: .clear
         }
     }
 }
