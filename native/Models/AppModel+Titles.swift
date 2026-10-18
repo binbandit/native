@@ -11,12 +11,12 @@ extension AppModel {
         return titles.title(for: SessionTitles.Key(agent: summary.agent.id, session: summary.info.sessionId), agentTitle: summary.info.title) ?? "New Session"
     }
 
-    /// Lets the workspace provider name a task's folder (its branch) after the task's first real
-    /// title. Only folders Native made: never the user's own project folder.
+    /// Lets the workspace provider name a task's workspace (its branch) after the task's first real
+    /// title. That includes a task in the project's own folder, which in branch mode still gets
+    /// its own provisional branch; the provider decides whether there's anything to rename.
     func workspaceGotTitle(_ event: TitleEvent) async {
         guard let provider = taskWorkspaces, !titledWorkspaces.contains(event.key),
-              let projectID = catalog.lookup(event.key)?.project, let project = projects.project(projectID),
-              event.folder.folderPath != project.path
+              let projectID = catalog.lookup(event.key)?.project, let project = projects.project(projectID)
         else { return }
         titledWorkspaces.insert(event.key)
         await provider.taskDidGetTitle(event.title, workspace: event.folder, in: project)

@@ -19,8 +19,9 @@ protocol TaskWorkspaceProvider: AnyObject {
     /// Removes everything Native made for a project's tasks, for when the project is deleted.
     func deleteWorkspaces(of project: Project) async throws
 
-    /// Called once, when a task in a folder Native made gets its first real title (generated or the
-    /// user's), so a provisional branch can be renamed after it.
+    /// Called once, when a task gets its first real title (generated or the user's), so a
+    /// provisional branch can be renamed after it. `workspace` is the task's folder, which is the
+    /// project's own in branch mode; the provider decides whether there's a branch to rename.
     func taskDidGetTitle(_ title: String, workspace: URL, in project: Project) async
 
     /// The folders Native made for the project's tasks (worktrees), so their sessions are listed
