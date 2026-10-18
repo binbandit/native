@@ -103,7 +103,7 @@ extension SessionModel {
         }
     }
 
-    /// Edits a queued message; emptying it removes it.
+    /// Edits a queued message; emptying one that carries no files removes it.
     func updateQueued(_ id: QueuedPrompt.ID, text: String) {
         queue.update(id, text: text)
     }

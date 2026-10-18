@@ -38,10 +38,10 @@ nonisolated struct PromptQueue: Equatable, Sendable {
         items.insert(Item(text, attachments: attachments, isEchoed: isEchoed), at: 0)
     }
 
-    /// Edits a message; emptying it removes it.
+    /// Edits a message; emptying one that carries no files removes it.
     mutating func update(_ id: Item.ID, text: String) {
         guard let index = items.firstIndex(where: { $0.id == id }) else { return }
-        if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+        if text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty, items[index].attachments.isEmpty {
             items.remove(at: index)
         } else {
             items[index].text = text
