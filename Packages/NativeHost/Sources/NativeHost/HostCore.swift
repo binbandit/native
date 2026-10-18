@@ -19,6 +19,8 @@ public final class HostCore {
         public var heartbeatInterval: Duration
         /// Called when the host should exit, with the status to exit with.
         public var exit: @Sendable (Int32) -> Void
+        /// Where installed plugins live, a folder each: `~/.native/plugins` unless set.
+        public var pluginsDirectory: URL
         /// Development hosts stop after this long with no clients and nothing running, so hosts of
         /// builds nobody uses don't linger. Nil for release hosts, which stay up.
         public var idleExit: Duration?
@@ -26,8 +28,12 @@ public final class HostCore {
         public init(
             location: HostLocation, hostInfo: PeerInfo, machineName: String, bootTime: Date?,
             environment: @escaping @Sendable () async -> [String: String], heartbeatInterval: Duration = .seconds(30),
-            idleExit: Duration? = nil, exit: @escaping @Sendable (Int32) -> Void
+            idleExit: Duration? = nil, pluginsDirectory: URL? = nil, exit: @escaping @Sendable (Int32) -> Void
         ) {
+            self.pluginsDirectory =
+                pluginsDirectory
+                ?? FileManager.default.homeDirectoryForCurrentUser.appending(
+                    path: ".native/plugins", directoryHint: .isDirectory)
             self.location = location
             self.hostInfo = hostInfo
             self.machineName = machineName
@@ -55,6 +61,9 @@ public final class HostCore {
     var agents: [String: AgentLink] = [:]
     var sessions: [HostSessionID: HostSession] = [:]
     var clients: [ClientLink.ID: ClientLink] = [:]
+    var pluginCatalog: PluginCatalog { PluginCatalog(directory: configuration.pluginsDirectory) }
+    /// The catalog clients were last told about, to notify them only of real changes.
+    var lastPublishedPlugins: [HostPlugin]?
     /// Set once a restart was asked for, to exit when nothing is running.
     var isRestartingWhenIdle = false
     let logger = HostLogger(category: "Host")

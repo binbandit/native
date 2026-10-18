@@ -60,7 +60,7 @@ struct GhosttyImportTests {
     }
 
     @Test func quotesTheShellAndResolvesTheLoginShell() {
-        #expect(TerminalShell.command(for: "/opt/homebrew/bin/fish") == "'/opt/homebrew/bin/fish'")
+        #expect(TerminalShell.command(for: "/opt/homebrew/bin/fish") == "/opt/homebrew/bin/fish")
         #expect(TerminalShell.command(for: "/a b/it's") == "'/a b/it'\\''s'")
         #expect(TerminalShell.login.path(loginShell: "/bin/zsh") == "/bin/zsh")
         #expect(TerminalShell.path("/bin/bash").path(loginShell: "/bin/zsh") == "/bin/bash")

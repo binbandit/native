@@ -1,0 +1,90 @@
+import ACP
+import Foundation
+import NativeHostProtocol
+
+/// What the host sees of a paired device: its secure channel, with every request checked against
+/// the device's role first. A refused request is answered here and never reaches the host. The
+/// device's `initialize` names it as the host knows it (the name the Mac's user confirmed), so
+/// whatever the host records as "from Brayden's iPhone" is true.
+final class LinkPolicyStream: ByteStream {
+    /// A device sending lines longer than this is cut off: nothing it needs to send comes close.
+    static let maximumLine = 8 << 20
+
+    private let channel: SecureChannel
+    private let role: LinkDeviceRole
+    private let deviceName: String
+
+    init(channel: SecureChannel, role: LinkDeviceRole, deviceName: String) {
+        self.channel = channel
+        self.role = role
+        self.deviceName = deviceName
+    }
+
+    func incoming() -> AsyncStream<Data> {
+        AsyncStream { continuation in
+            let task = Task { [channel] in
+                var buffer = Data()
+                for await chunk in channel.incoming() {
+                    buffer += chunk
+                    while let newline = buffer.firstIndex(of: UInt8(ascii: "\n")) {
+                        let line = Data(buffer[buffer.startIndex..<newline])
+                        buffer = Data(buffer[buffer.index(after: newline)...])
+                        if let forwarded = admit(line) {
+                            continuation.yield(forwarded + Data([UInt8(ascii: "\n")]))
+                        }
+                    }
+                    if buffer.count > Self.maximumLine {
+                        channel.close()
+                        break
+                    }
+                }
+                continuation.finish()
+            }
+            continuation.onTermination = { _ in task.cancel() }
+        }
+    }
+
+    @discardableResult
+    func write(_ data: Data) -> Bool {
+        channel.write(data)
+    }
+
+    func close() {
+        channel.close()
+    }
+
+    /// The line to hand the host, or nil when it was refused (and answered) here.
+    func admit(_ line: Data) -> Data? {
+        guard case .object(var message)? = try? JSONDecoder().decode(JSONValue.self, from: line),
+            case .string(let method)? = message["method"]
+        else {
+            // Responses, and anything unparseable: the host answers malformed input itself.
+            return line
+        }
+        guard LinkMethodPolicy.allows(method, for: role) else {
+            if let id = message["id"] {
+                refuse(id: id, method: method)
+            }
+            return nil
+        }
+        guard method == HostProtocol.Method.initialize,
+            case .object(var params)? = message["params"],
+            case .object(var clientInfo)? = params["clientInfo"]
+        else { return line }
+        clientInfo["name"] = .string(deviceName)
+        params["clientInfo"] = .object(clientInfo)
+        message["params"] = .object(params)
+        return (try? JSONEncoder().encode(JSONValue.object(message))) ?? line
+    }
+
+    private func refuse(id: JSONValue, method: String) {
+        let error = RPCError(code: -32601, message: "\(method) isn't available to paired devices with this access.")
+        let response: JSONValue = .object([
+            "jsonrpc": .string("2.0"), "id": id,
+            "error": .object(["code": .number(Double(error.code)), "message": .string(error.message)]),
+        ])
+        guard var data = try? JSONEncoder().encode(response) else { return }
+        data.append(UInt8(ascii: "\n"))
+        channel.write(data)
+    }
+}

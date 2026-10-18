@@ -11,12 +11,16 @@ let package = Package(
         .library(name: "NativeLink", targets: ["NativeLink"])
     ],
     dependencies: [
-        .package(path: "../NativeHost")
+        .package(path: "../ACP"),
+        .package(path: "../NativeHost"),
     ],
     targets: [
         .target(
             name: "NativeLink",
-            dependencies: [.product(name: "NativeHostClient", package: "NativeHost")]
+            dependencies: [
+                .product(name: "ACP", package: "ACP"),
+                .product(name: "NativeHostClient", package: "NativeHost"),
+            ]
         ),
         .testTarget(
             name: "NativeLinkTests",

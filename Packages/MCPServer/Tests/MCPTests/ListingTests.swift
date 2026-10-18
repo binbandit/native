@@ -5,6 +5,7 @@ import Testing
 
 @Suite struct ListingTests {
     struct None: Decodable, Sendable {}
+    struct ListingMissing: Error {}
 
     /// A tool that tells each client what it can reach, and drops its read-only hint for "bob".
     let endpoint: MCPEndpoint<String> = {
@@ -25,7 +26,9 @@ import Testing
         func listed(by owner: String) async throws -> JSON {
             var request = legacy("tools/list")
             request.path = "/mcp/\(owner)"
-            return try #require(await endpoint.respond(to: request).json?["result"]?["tools"]?.arrayValue?.first)
+            let tools = await endpoint.respond(to: request).json?["result"]?["tools"]
+            guard case .array(let listed)? = tools else { throw ListingMissing() }
+            return try #require(listed.first)
         }
         let alice = try await listed(by: "alice")
         let bob = try await listed(by: "bob")

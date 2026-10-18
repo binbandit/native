@@ -18,6 +18,8 @@ enum HostError: Error, LocalizedError {
     case notAcceptingPrompts
     case emptyMessage
     case permissionNotPending
+    /// The client isn't trusted with this (a paired device without the grant).
+    case notAuthorized(String)
 
     var errorDescription: String? {
         switch self {
@@ -28,6 +30,7 @@ enum HostError: Error, LocalizedError {
         case .notAcceptingPrompts: "This subagent only takes work from the session that started it."
         case .emptyMessage: "There's nothing to send."
         case .permissionNotPending: "That request was already answered."
+        case .notAuthorized(let action): "This device isn't allowed to \(action) on this host."
         }
     }
 

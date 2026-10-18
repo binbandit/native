@@ -216,8 +216,7 @@ private struct CodeBlockView: View {
             }
             ScrollView(.horizontal) {
                 HighlightedCode(code.hasSuffix("\n") ? String(code.dropLast()) : code, language: language)
-                    .font(.dsMono)
-                    .lineSpacing(TranscriptMetrics.codeLineSpacing)
+                    .codeTextStyle()
             }
             .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
             .fixedSize(horizontal: false, vertical: true)

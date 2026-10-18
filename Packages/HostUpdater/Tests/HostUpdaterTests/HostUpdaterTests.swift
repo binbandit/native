@@ -52,7 +52,7 @@ struct TestSigner {
     @Test func picksTheMachinesBinary() throws {
         let feed = try HostUpdateFeed.decode(Data(json.utf8))
         #expect(feed.asset(for: .macos, arch: .arm64)?.url.lastPathComponent == "native-host-macos")
-        #expect(feed.asset(for: .linux, arch: .x86_64)?.url.lastPathComponent == "native-host-linux-x86_64")
+        #expect(feed.asset(for: .linux, arch: .x64)?.url.lastPathComponent == "native-host-linux-x86_64")
         #expect(feed.asset(for: .linux, arch: .arm64) == nil)
         #expect(feed.assets.last?.platform == .unknown)
     }

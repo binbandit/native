@@ -40,16 +40,19 @@ final class CelebrationCenter {
         self.variant = variant
         self.now = now
         self.timeZone = timeZone
+        let preferences: CelebrationPreferences
         if let data = defaults.data(forKey: Self.preferencesKey),
             let stored = try? JSONDecoder().decode(CelebrationPreferences.self, from: data)
         {
             preferences = stored
         } else {
+            // The app icon's Halloween switch becomes Halloween's selection, once.
             let legacy = defaults.bool(forKey: Self.legacyHalloweenKey)
             preferences = .migrating(legacyHalloweenEnabled: legacy)
             migratedHalloweenOptIn = legacy
             defaults.removeObject(forKey: Self.legacyHalloweenKey)
         }
+        self.preferences = preferences
         let today = CivilDate(now(), in: timeZone())
         self.today = today
         resolution = CelebrationPolicy.resolve([], preferences: preferences, on: today)

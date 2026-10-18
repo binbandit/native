@@ -14,6 +14,15 @@ public struct DiffView: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dsLightTone) private var lightTone
     @Environment(\.dsCodeThemes) private var codeThemes
+    /// Both files highlighted off the main thread, for the texts they were made from; until then
+    /// the lines draw plain.
+    @State private var highlighted: (key: HighlightKey, new: [[CodeSegment]], old: [[CodeSegment]])?
+
+    private struct HighlightKey: Hashable {
+        let path: String
+        let oldText: String?
+        let newText: String
+    }
 
     /// - Parameters:
     ///   - oldText: The file before the change; nil for a new file.
@@ -28,15 +37,31 @@ public struct DiffView: View {
 
     public var body: some View {
         let (rows, stats) = DiffRow.rows(oldText: oldText, newText: newText)
-        let language = CodeLanguage.forPath(path)
+        let key = HighlightKey(path: path, oldText: oldText, newText: newText)
+        let current = highlighted?.key == key ? highlighted : nil
         let lines = DiffHighlightedLines(
             colors: DSCodeColors(.code(colorScheme: colorScheme, lightTone: lightTone, themes: codeThemes), on: .surface),
-            new: CodeHighlighter.lines(newText, language: language),
-            old: oldText.map { CodeHighlighter.lines($0, language: language) } ?? []
+            new: current?.new ?? [],
+            old: current?.old ?? []
         )
-        if isEmbedded {
-            DiffLines(rows: rows, lines: lines)
-        } else {
+        Group {
+            if isEmbedded {
+                DiffLines(rows: rows, lines: lines)
+            } else {
+                framed(rows: rows, stats: stats, lines: lines)
+            }
+        }
+        .task(id: key) {
+            guard let language = CodeLanguage.forPath(path), current == nil else { return }
+            let cache = CodeHighlightCache.shared
+            async let new = cache.highlightLines(newText, language: language)
+            async let old = cache.highlightLines(oldText ?? "", language: language)
+            highlighted = (key, await new, await old)
+        }
+    }
+
+    private func framed(rows: [DiffRow], stats: DiffStats, lines: DiffHighlightedLines) -> some View {
+        Group {
             let shape = RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous)
             VStack(alignment: .leading, spacing: 0) {
                 header(stats)
@@ -97,7 +122,7 @@ private struct DiffLines: View {
             }
         }
         .padding(.vertical, DS.Space.xs)
-        .font(.dsMonoCaption)
+        .codeTextStyle(.compact)
         .foregroundStyle(lines.colors.isNative ? Color.dsTextPrimary : lines.colors.color(.foreground))
         // A themed diff draws on its theme's background wherever it's embedded.
         .background(lines.colors.isNative ? AnyShapeStyle(.clear) : AnyShapeStyle(.dsDiffBackground))

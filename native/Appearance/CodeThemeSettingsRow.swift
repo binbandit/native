@@ -64,8 +64,7 @@ private struct CodeThemePreview: View {
             }
             VStack(alignment: .leading, spacing: DS.Space.sm) {
                 HighlightedCode(Self.sample, language: "ts")
-                    .font(.dsMonoCaption)
-                    .lineSpacing(DS.Space.xxs)
+                    .codeTextStyle()
                     .padding(DS.Space.lg)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .background(.dsCodeBlockBackground, in: .rect(cornerRadius: DS.Radius.card))
