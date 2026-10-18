@@ -5,11 +5,14 @@ import SwiftUI
 enum AmbientWiring {
     /// The status bar's items. Kept minimal by default: what's urgent (limits, tasks needing you)
     /// and what Orca shows (keep awake, memory and CPU); the rest is a right-click away.
-    static func statusBar(model: AppModel, keepAwake: KeepAwakeController, settings: SettingsPresentation) -> StatusBarRegistry {
+    static func statusBar(
+        model: AppModel, keepAwake: KeepAwakeController, settings: SettingsPresentation
+    ) -> StatusBarRegistry {
         let registry = StatusBarRegistry()
-        registry.register(LimitsStatusItem(statuses: {
-            model.agents.compactMap { BuiltInPlugins.usage.limits.limitStatus(for: $0.agent.id) }
-        }))
+        registry.register(
+            LimitsStatusItem(statuses: {
+                model.agents.compactMap { BuiltInPlugins.usage.limits.limitStatus(for: $0.agent.id) }
+            }))
         registry.register(TasksStatusItem(source: model))
         registry.register(KeepAwakeStatusItem(controller: keepAwake))
         registry.register(ResourcesStatusItem(source: model))
