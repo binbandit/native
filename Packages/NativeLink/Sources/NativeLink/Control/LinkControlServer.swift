@@ -91,15 +91,16 @@ final class LinkControlServer: Sendable {
             case Method.openPairing: await gateway.openPairingWindow()
             case Method.closePairing: await gateway.closePairingWindow()
             case Method.decidePairing:
-                await gateway.decidePairing(accept: try message.params(as: LinkDecisionParams.self).accept)
+                let params = try message.params(as: LinkDecisionParams.self)
+                await gateway.decidePairing(accept: params.accept, grants: params.grants ?? .standard)
             case Method.revoke: await gateway.revoke(try message.params(as: LinkDeviceParams.self).deviceID)
             case Method.restore: await gateway.restore(try message.params(as: LinkDeviceParams.self).deviceID)
             case Method.rename:
                 let params = try message.params(as: LinkDeviceParams.self)
                 await gateway.rename(params.deviceID, to: params.name ?? "")
-            case Method.setRole:
+            case Method.setGrants:
                 let params = try message.params(as: LinkDeviceParams.self)
-                await gateway.setRole(params.deviceID, to: params.role ?? .companion)
+                await gateway.setGrants(params.deviceID, to: params.grants ?? .standard)
             case Method.forgetRevoked: await gateway.forgetRevoked()
             case Method.setEnabled:
                 await gateway.setEnabled(try message.params(as: LinkEnabledParams.self).isEnabled)

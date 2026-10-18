@@ -23,7 +23,7 @@ struct CelebrationsSettingsPage: View {
     var body: some View {
         SettingsPage {
             SettingsHeader(
-                title: "Celebrations",
+                "Celebrations",
                 description: Text(
                     "Native dresses its icon and Home for the celebrations you choose, on their dates, then puts your usual look back. Every one starts off."
                 ))

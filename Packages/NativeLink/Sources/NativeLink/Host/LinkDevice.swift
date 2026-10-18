@@ -7,7 +7,7 @@ public struct LinkDevice: Codable, Hashable, Sendable, Identifiable {
     public var model: String
     public var system: String
     public var publicKey: LinkPublicKey
-    public var role: LinkDeviceRole
+    public var grants: LinkGrants
     public var pairedAt: Date
     public var lastSeen: Date?
     /// Set when revoked: the key is refused at the handshake, and the device is told so.
@@ -16,14 +16,15 @@ public struct LinkDevice: Codable, Hashable, Sendable, Identifiable {
     public var isRevoked: Bool { revokedAt != nil }
 
     public init(
-        id: UUID = UUID(), info: LinkDeviceInfo, publicKey: LinkPublicKey, pairedAt: Date, role: LinkDeviceRole? = nil
+        id: UUID = UUID(), info: LinkDeviceInfo, publicKey: LinkPublicKey, pairedAt: Date,
+        grants: LinkGrants = .standard
     ) {
         self.id = id
         name = info.name
         model = info.model
         system = info.system
         self.publicKey = publicKey
-        self.role = role ?? info.role
+        self.grants = grants
         self.pairedAt = pairedAt
     }
 }

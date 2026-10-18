@@ -1,14 +1,24 @@
 import Foundation
 import NativeHostProtocol
 
-/// What a paired device may do on its host. The gateway enforces it per method (`LinkMethodPolicy`).
-public enum LinkDeviceRole: String, WireEnum, CaseIterable {
-    /// The companion: follow and drive tasks (prompts, approvals, queue), see updates and plugins.
-    case companion
-    /// Everything `docs/durability.md` allows a paired device, including host settings, plugins,
-    /// and (when they exist) commands and files: an iPad running the full app.
-    case admin
-    case unknown
+/// What a paired device may do beyond following and driving tasks, granted by the Mac's user when
+/// they confirm the pairing (and changeable later). The gateway enforces them per method
+/// (`LinkMethodPolicy`) and hands them to the host as its `ClientGrants`.
+public struct LinkGrants: Codable, Hashable, Sendable {
+    /// Turn the host's plugins on and off for everyone using it.
+    public var managePlugins: Bool
+
+    public init(managePlugins: Bool = false) {
+        self.managePlugins = managePlugins
+    }
+
+    /// What a device gets unless the Mac's user grants more.
+    public static let standard = LinkGrants()
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        managePlugins = try container.decodeIfPresent(Bool.self, forKey: .managePlugins) ?? false
+    }
 }
 
 /// The host's payload in the second handshake message, encrypted to the device.
@@ -26,14 +36,11 @@ public struct LinkDeviceInfo: Codable, Hashable, Sendable {
     public var model: String
     /// "iOS 27.1".
     public var system: String
-    /// The role it asks for; the host grants it or less.
-    public var role: LinkDeviceRole
 
-    public init(name: String, model: String, system: String, role: LinkDeviceRole = .companion) {
+    public init(name: String, model: String, system: String) {
         self.name = name
         self.model = model
         self.system = system
-        self.role = role
     }
 }
 
@@ -60,5 +67,5 @@ struct LinkWelcome: Codable, Sendable {
     var status: Status
     var deviceID: UUID?
     var verification: VerificationCode?
-    var role: LinkDeviceRole?
+    var grants: LinkGrants?
 }

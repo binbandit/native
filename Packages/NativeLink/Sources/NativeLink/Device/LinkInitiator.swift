@@ -7,7 +7,7 @@ public struct LinkPairingResult: Sendable {
     public let hostKey: LinkPublicKey
     public let hostName: String
     public let deviceID: UUID
-    public let role: LinkDeviceRole
+    public let grants: LinkGrants
 }
 
 /// The device's side of a link connection, over any byte stream (TCP, or a socket pair in tests).
@@ -71,7 +71,7 @@ public enum LinkInitiator {
                 guard let deviceID = welcome.deviceID else { throw LinkError.malformed("paired without a device id") }
                 let result = LinkPairingResult(
                     hostID: hello.hostID, hostKey: channel.remoteKey, hostName: hello.name, deviceID: deviceID,
-                    role: welcome.role ?? device.role)
+                    grants: welcome.grants ?? .standard)
                 return (channel, result)
             case .rejected: throw LinkError.rejected
             case .expired: throw LinkError.confirmationExpired
