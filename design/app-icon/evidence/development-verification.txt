@@ -1,0 +1,63 @@
+Checked UTC: 2026-10-18T00:33:00.031919+00:00
+HEAD at capture: 92d4ac37c76e35ce8e69311543c5708a6ac5c450
+Claim: Debug/local builds use a dedicated compiled development icon. The optional Halloween edition uses matching development artwork from October 1 through November 7 and preserves the base choice.
+Before: Debug selected AppIcon and seasonal identity followed ReleaseChannel; no development icon source or seasonal assets existed.
+After: Debug selects AppIconDev via NATIVE_APP_ICON_NAME. AppIconVariant keeps local development icon identity distinct while previewing other release behavior. The model selects the development seasonal assets and labels the build Native Dev.
+
+verified - Full isolated Debug build and launch: scripts/dev/run-isolated.sh dev-icons. Compiled CFBundleIconName and CFBundleIconFile are AppIconDev. Settings > Appearance initially shows Native Dev and the blueprint icon under Original.
+verified - Real app UI: View shortcut Option-Shift-Command-H activates Halloween · Native Dev. Light/Dark controls load their corresponding ghost artwork. After quitting and relaunching without preference overrides, Halloween and the Light choice remain selected. Choosing Original disables Halloween and restores Native Dev with system appearance controls. The isolated app and host were quit after testing.
+verified - Actual AppKit model/adapter integration with a fresh Dev-primary Assets.car: all four variants load light/dark Halloween images into NSApplication.applicationIconImage; injected November 8 refresh restores the selected base image; stored opt-in cannot bypass the season; next-year opt-in returns; selecting a theme exits Halloween; Original restores the bundled native icon. Debug retains development icon identity when releaseChannelOverride is Beta or Nightly.
+verified - Apple Icon Composer: Dev.icon and HalloweenDev.icon render Default, Dark, ClearLight, ClearDark, TintedLight and TintedDark. Native AppIconDev.icon matches the editable Dev.icon source byte-for-byte.
+verified - All 28 theme PNGs pass the enclosed-transparency audit. All four new images compile in the real asset catalog. Original uses the compiled native icon stack; seasonal overrides retain the existing light/dark PNG behavior.
+verified - AppAppearance: 5 Swift Testing tests pass, including the new invariant that normal/seasonal images for all four variants and both appearances never collide.
+verified - iPadOS shared model/adapter/view check and strict formatting for all four changed Swift files.
+verified - scripts/release/check.sh --derived-data /tmp/native-beta-halloween-build completes for Release and Nightly. Shipping icon selection remains AppIcon and AppIconNightly respectively.
+Coverage: UI evidence belongs to the isolated Debug app below, built from the recorded icon sources. The shared tree contains concurrent unrelated work; this record does not verify those features.
+
+Bundle: devplaceholder.TRN3AWSV.Native.dev.dev-icons
+Debug executable SHA-256: f822734e61cf42b3d2fae471a21bb895827cc5e22068ed0389b6e3fce9e3fbe9
+Debug Assets.car SHA-256: b2e101c95d1f975d02008251b13802c8d712d753370179e009e5330cd7b6a269
+Integration executable SHA-256: e2e65472555e6bc02e072495c21a84222e733e5a0d7b2729a9aaaebebb468700
+
+Evidence: development/settings-original.png, settings-halloween.png, settings-halloween-light.png, settings-relaunch.png, settings-restored.png; previews/development-and-halloween.png; development/{Dev,HalloweenDev}-{rendition}.png.
+Check logs: /tmp/native-dev-icon-debug.log, /tmp/native-dev-icon-release-check.log, /tmp/native-dev-icon-package.log, /tmp/native-dev-icon-ios.log, /tmp/native-dev-icon-integration.log, /tmp/native-dev-icon-alpha.log.
+
+SHA-256 of relevant sources and assets:
+23b5b168a51a102cabebb3dc535d9418661b64872385513302e1c1697e56d28f  Config/Debug.xcconfig
+eb440873539a1af2a9eeac1ca788e8468d7c86f92548bfcc424fe79d33b935e6  native.xcodeproj/project.pbxproj
+d108652f7edfa233195e7fd39e463d6a8970f9265d85b8075f895724a2e30792  native/Models/AppIconPreferences.swift
+6787fd5e7edf5f551c5fa8fb467bf898dbb97418633e408ec0475430bbbf6978  native/Models/AppIconVariant+Build.swift
+397b0cb39e92fe318d46ed8fb95fd88845c62618f36e7780af376fdc7844c32e  native/Views/Settings/AppearanceSettingsView.swift
+14cad13c6d6e2efbb7e7960e15f99af74db3684492cb2543c348cd9d2c645e27  native/Platform/PlatformAppIcon.swift
+c4c707d4a9ef2d361675f4a98ce1f42bb585be696fb30effd11f1a2ad4cf5646  Packages/AppAppearance/Sources/AppAppearance/AppIconVariant.swift
+895df460d1e310236871b9452584be84ae0f1890f9cb6c60d985eb405287febc  Packages/AppAppearance/Tests/AppAppearanceTests/AppIconVariantTests.swift
+ab6735bfa23bf3891aa8e62aa1103800693e1d0fb9706971ca1e6a8de2e89820  native/Release/ReleaseChannel.swift
+8d3ebcfb2dcd7f62c9df0dcc7f7bfd2c238f308a186cbfa6c5dbde9a270f85de  native/AppIconDev.icon/Assets/code.svg
+8ecd324bbd5bd4a7fb07db4bceb12dcb66c50ded519d5b3708eda82341d842ef  native/AppIconDev.icon/Assets/grid.svg
+d85535e6402b9706c6c2f9d78ac8aab40d610bcf5ea563c9c879f92ee7581b65  native/AppIconDev.icon/Assets/lower-fold.svg
+6fdb8685dcc8bc9fd5cbf9b0381b58aaf3c63e6d3b296bfcb3a48048e330a996  native/AppIconDev.icon/Assets/registration.svg
+2b79baef96d4ab33f1a7b52cba352b1bcd154eacc385c32a05fde62df3071069  native/AppIconDev.icon/Assets/upper-fold.svg
+c4ab4db9f558c8873220bc9c76932b79d108be418294293a250433d73e643cf7  native/AppIconDev.icon/icon.json
+8d3ebcfb2dcd7f62c9df0dcc7f7bfd2c238f308a186cbfa6c5dbde9a270f85de  design/app-icon/Dev.icon/Assets/code.svg
+8ecd324bbd5bd4a7fb07db4bceb12dcb66c50ded519d5b3708eda82341d842ef  design/app-icon/Dev.icon/Assets/grid.svg
+d85535e6402b9706c6c2f9d78ac8aab40d610bcf5ea563c9c879f92ee7581b65  design/app-icon/Dev.icon/Assets/lower-fold.svg
+6fdb8685dcc8bc9fd5cbf9b0381b58aaf3c63e6d3b296bfcb3a48048e330a996  design/app-icon/Dev.icon/Assets/registration.svg
+2b79baef96d4ab33f1a7b52cba352b1bcd154eacc385c32a05fde62df3071069  design/app-icon/Dev.icon/Assets/upper-fold.svg
+c4ab4db9f558c8873220bc9c76932b79d108be418294293a250433d73e643cf7  design/app-icon/Dev.icon/icon.json
+8d3ebcfb2dcd7f62c9df0dcc7f7bfd2c238f308a186cbfa6c5dbde9a270f85de  design/app-icon/HalloweenDev.icon/Assets/code.svg
+f628dec40c201aaa58e2d60a79688d4b958d75eb5a831db1d197766c2e310cd9  design/app-icon/HalloweenDev.icon/Assets/edge-light.svg
+a4bb4ae2613c919b707822832c8708ab926bd1b8308ee4ef3cf460f5d86d7ae0  design/app-icon/HalloweenDev.icon/Assets/embers.svg
+3580953ae33c2fe4b8098373231d3d477eedb64e1c443814ec10491aef1e1576  design/app-icon/HalloweenDev.icon/Assets/folds.svg
+8ecd324bbd5bd4a7fb07db4bceb12dcb66c50ded519d5b3708eda82341d842ef  design/app-icon/HalloweenDev.icon/Assets/grid.svg
+68e661967c3859b381fa88a47369339df18d1c3557eb028116d8dd2ca631a439  design/app-icon/HalloweenDev.icon/Assets/lower-fold.svg
+6fdb8685dcc8bc9fd5cbf9b0381b58aaf3c63e6d3b296bfcb3a48048e330a996  design/app-icon/HalloweenDev.icon/Assets/registration.svg
+1e52b3dd7f22fd30f29e4aad18cbcb4de191f4b94d7284bffc879d06d84aa58d  design/app-icon/HalloweenDev.icon/Assets/upper-fold.svg
+c95dc8308263f63d4e2d71c6a72d5abc084719da123664b119ebb8d574018724  design/app-icon/HalloweenDev.icon/icon.json
+dbc16b7e300aef2548c92d65e9d4aeab05f552b125eb32802eea1bb6af8b0aa1  design/app-icon/themes/AppIcon-dev-light.png
+dbc16b7e300aef2548c92d65e9d4aeab05f552b125eb32802eea1bb6af8b0aa1  native/Assets.xcassets/AppIcon-dev-light.imageset/icon.png
+c70ea35e2a9a7aabc53e755dc4b42ba44e1272044860f5787f00ac6bad15794c  design/app-icon/themes/AppIcon-dev-dark.png
+c70ea35e2a9a7aabc53e755dc4b42ba44e1272044860f5787f00ac6bad15794c  native/Assets.xcassets/AppIcon-dev-dark.imageset/icon.png
+f645b99267968f942571aaf916a35a89bd3ce163f4884677b68578ae34a89b22  design/app-icon/themes/AppIcon-halloween-dev-light.png
+f645b99267968f942571aaf916a35a89bd3ce163f4884677b68578ae34a89b22  native/Assets.xcassets/AppIcon-halloween-dev-light.imageset/icon.png
+e6d5ac7342c0f039d8cb3731307dde2846c7f821b25d5168bc447a00d496ee48  design/app-icon/themes/AppIcon-halloween-dev-dark.png
+e6d5ac7342c0f039d8cb3731307dde2846c7f821b25d5168bc447a00d496ee48  native/Assets.xcassets/AppIcon-halloween-dev-dark.imageset/icon.png

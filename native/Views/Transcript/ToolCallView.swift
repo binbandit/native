@@ -123,7 +123,7 @@ private struct ToolRow<Accessory: View>: View {
             }
             stateLabel
         }
-        .padding(.vertical, DS.Space.sm)
+        .padding(.vertical, DS.Space.xs)
         .onHover { isHovering = $0 }
         .animation(.dsQuick, value: isHovering)
     }
