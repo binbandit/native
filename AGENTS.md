@@ -79,12 +79,14 @@ Format only the files you change, so parallel work doesn't collide on whitespace
 `swift format lint --recursive --strict native Packages` becomes a required check once the one-time
 formatting pass has landed.
 
-Verify UI changes in the running app, not just the build. Several agents may run Native at once:
-use your own DerivedData path, launch with `open -n`, automate only your own process (System Events
-`first process whose unix id is <pid>`, never global keystrokes or coordinate clicks like
-`click at`, which land on whatever window is on top; for synthetic events use `CGEvent.postToPid`),
-screenshot with `screencapture -x -l <windowid>`, and quit with `kill <pid>`. Quit your instance (and any
-render harness) as soon as a check is done; never leave apps running between checks, since many
+Verify UI changes in the running app, not just the build. Several agents run Native at once, so
+use an isolated instance: `scripts/dev/run-isolated.sh <name> [-- app arguments…]` builds into
+`/tmp/native-dd/<name>` with its own bundle id, defaults, Application Support and host, launches it,
+and prints its pid and window id (`--quit` stops it, `--reset` also forgets its data). Automate only
+that process (System Events `first process whose unix id is <pid>`, never global keystrokes or
+coordinate clicks like `click at`, which land on whatever window is on top; for synthetic events use
+`CGEvent.postToPid`) and screenshot with `screencapture -x -l <windowid>`. Quit your instance (and
+any render harness) as soon as a check is done; never leave apps running between checks, since many
 agents share one Mac.
 
 When a check needs a real agent session, use Codex with `gpt-6.1-sol` (it's the cheapest): launch with
