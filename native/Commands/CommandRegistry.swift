@@ -109,6 +109,12 @@ final class CommandRegistry {
         shortcut(for: id)?.keyboardShortcut
     }
 
+    /// A tooltip or hint ending with the command's current shortcut, "Show Terminal (⌃`)", or just
+    /// the text when it has none. Hints that name a key use this, so they follow a remap.
+    func help(_ text: String, for id: NativeCommand.ID) -> String {
+        shortcut(for: id).map { "\(text) (\($0.displayString))" } ?? text
+    }
+
     func isCustomized(_ id: NativeCommand.ID) -> Bool {
         bindings.isCustomized(id)
     }

@@ -1,4 +1,5 @@
 import ACP
+import NativeCommands
 import SwiftUI
 
 /// Factory's autonomy meter over the agent's permission modes; a click steps up a level, wrapping
@@ -50,6 +51,6 @@ struct AutonomyPill: View {
         let detail = shown.description.map { "\(shown.name): \($0)" } ?? shown.name
         return isSuspended
             ? "Autonomy resumes at \(detail) when Plan Mode ends"
-            : "Autonomy: \(detail). Click or press ⇧⌘M for the next mode."
+            : "Autonomy: \(detail). Click" + (CommandRegistry.shared.shortcut(for: .sessionNextPermissionMode).map { " or press \($0.displayString)" } ?? "") + " for the next mode."
     }
 }

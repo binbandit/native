@@ -1,3 +1,4 @@
+import NativeCommands
 import SwiftUI
 
 /// The sidebar's "Pull Requests" item, with how many wait on the user's review.
@@ -15,7 +16,7 @@ struct PullRequestsNavItem: View {
 
     var body: some View {
         SidebarNavItem(
-            "Pull Requests", systemImage: "arrow.triangle.pull", isSelected: isSelected, shortcut: "⌘⇧P",
+            "Pull Requests", systemImage: "arrow.triangle.pull", isSelected: isSelected, shortcut: CommandRegistry.shared.shortcut(for: .goPullRequests)?.displayString,
             action: showList
         ) {
             if model.reviewRequestCount > 0 {

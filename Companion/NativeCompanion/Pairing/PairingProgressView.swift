@@ -49,6 +49,7 @@ struct PairingProgressView: View {
     private func status(_ title: String, detail: String, loader: DotGridLoader.Pattern) -> some View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
             DotGridLoader(pattern: loader)
+                .frame(width: CompanionMetrics.hostMark, height: CompanionMetrics.hostMark)
             Text(title).font(CompanionType.title).foregroundStyle(.dsTextPrimary)
             Text(detail).font(CompanionType.body).foregroundStyle(.dsTextSecondary)
         }

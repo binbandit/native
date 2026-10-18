@@ -22,7 +22,7 @@ struct HomeDetail: View {
             )
         } else {
             HomeWelcomeView(
-                agents: agents, addProjectShortcut: KeyboardShortcut("o"),
+                agents: agents, addProjectShortcut: CommandRegistry.shared.keyboardShortcut(for: .projectOpen),
                 onAddProject: { model.isAddingProject = true })
         }
     }
@@ -34,7 +34,7 @@ struct HomeDetail: View {
             symbolName: runtime.agent.symbolName,
             availability: availability(of: runtime),
             remedy: remedy(for: runtime),
-            shortcut: runtime.agent.id == model.defaultAgent?.id ? KeyboardShortcut("n") : nil
+            shortcut: runtime.agent.id == model.defaultAgent?.id ? CommandRegistry.shared.keyboardShortcut(for: .sessionNew) : nil
         )
         agent.agent = runtime.agent
         return agent

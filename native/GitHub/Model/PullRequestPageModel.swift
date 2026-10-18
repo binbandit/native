@@ -37,6 +37,8 @@ final class PullRequestPageModel {
     var files: [ChangedFile] = []
     var filesCursor: String?
     var patches: [String: FilePatch] = [:]
+    /// Each patch parsed once, as it arrives, rather than on every redraw.
+    var hunks: [String: [DiffHunk]] = [:]
     var patchPagesLoaded = 0
     var patchesComplete = false
     var isLoadingPatches = false
@@ -108,6 +110,7 @@ final class PullRequestPageModel {
         }
         if headMoved {
             patches = [:]
+            hunks = [:]
             patchPagesLoaded = 0
             patchesComplete = false
             checks = nil

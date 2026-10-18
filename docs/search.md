@@ -27,7 +27,8 @@ their parent.
 ## Querying
 
 Plain words match anywhere, every word must match, and the last word matches as a prefix while
-it's being typed (`rollb` finds `rollback`). Symbols are part of the text: `AppModel.swift`,
+it's being typed, from its third letter (`rollb` finds `rollback`; one or two letters would match
+most of the index). Symbols are part of the text: `AppModel.swift`,
 `git rebase -i` and `native/Models` search as written, as phrases. Quotes make a phrase.
 
 Operators narrow without leaving the keyboard; the filter bar sets the same filters:
@@ -63,8 +64,10 @@ items_fts fts5(body, parts, content='items', tokenize='unicode61 remove_diacriti
   phrases and snippets; queries match both.
 - **Ranking.** `bm25(body 1.0, parts 0.4)`, times a recency boost (1.5× today, 1.25× at two weeks,
   fading to 1× over months), times a role weight (title 1.5, prompt 1.25, reply and plan 1.0, tool
-  0.8, reasoning 0.6). The best 600 hits are grouped by task, tasks ordered by their best hit, each
-  showing its best three.
+  0.8, reasoning 0.6). Without narrowing filters, only the 4,000 best matches by text are
+  weighed, so a word that's everywhere ("the") doesn't cost a lookup per match; with filters every
+  match is weighed, so a rare one isn't missed. The best 600 hits are grouped by task, tasks ordered
+  by their best hit, each showing its best three.
 - **Snippets.** About 180 characters around the first match, whitespace collapsed, with every
   query word marked as a run, case- and diacritic-insensitively and inside identifiers (`model`
   lights up in `AppModel`). Built in Swift from the stored body, not FTS5's `snippet()`, which
@@ -166,7 +169,10 @@ On real history (this Mac's, read-only into a throwaway index with
 timings only): Claude Code 379 files, 870 MB, read in 6 s (235 conversations; the other 144 files
 hold only slash commands); Codex 112 rollouts, 581 MB, read in 3 s. 344 sessions became 26,700
 documents in a 55 MB index. A known phrase, a file path and a command each found their task in
-0–2 ms; the broadest queries (`agent:codex test`, 34 tasks) took 15 ms.
+1–3 ms; an identifier part (`catalog`) 18 ms, `agent:codex test` 29 ms, all measured while the Mac
+was under a load average near 300. The pathological query, a lone stopword matching nearly every
+document (`the`), took 91 ms under that load; it's the one case past the 50 ms budget, and typing
+a second word brings it back under.
 
 Indexing is the heavy part, so it runs at background priority, off the main thread, in batches,
 and stops on battery. The history files are memory-mapped and most lines are skipped by a byte

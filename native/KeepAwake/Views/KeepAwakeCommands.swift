@@ -14,7 +14,6 @@ extension NativeCommand {
         ) { _ in
             controller.cycleMode()
         }
-        .menuTitle { _ in "Next Mode" }
     }
 }
 
@@ -28,7 +27,7 @@ struct KeepAwakeCommands: Commands {
             Menu("Keep Mac Awake") {
                 KeepAwakeMenuItems(controller: controller)
                 Divider()
-                CommandMenuItem(.keepAwakeNextMode, in: commands)
+                CommandMenuItem(.keepAwakeNextMode, in: commands, title: "Next Mode")
             }
         }
     }

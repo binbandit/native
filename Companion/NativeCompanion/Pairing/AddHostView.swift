@@ -94,6 +94,7 @@ struct AddHostView: View {
                 if store.discovered.isEmpty {
                     HStack(spacing: DS.Space.md) {
                         DotGridLoader(pattern: .waiting)
+                            .frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
                         Text("Looking for Macs running Native on this network…")
                             .font(CompanionType.subheadline).foregroundStyle(.dsTextSecondary)
                     }

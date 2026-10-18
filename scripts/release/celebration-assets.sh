@@ -14,12 +14,12 @@
 #       the update key (Sparkle's `sign_update -p`), so the app verifies packs with the key it
 #       already trusts.
 #
-# Editions in PENDING are left out until their artwork is chosen.
+# Editions in PENDING are left out until their artwork is chosen or delivered.
 set -euo pipefail
 
 root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
 art="$root/design/app-icon/celebrations"
-PENDING=(personal-celebration)
+PENDING=(personal-celebration australia-day)
 CHANNELS=(stable beta nightly dev)
 
 editions() {

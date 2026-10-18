@@ -26,7 +26,8 @@ struct ProjectList<TaskAccessory: View>: View {
             }
             SectionHeader(showsOnlyNeedsYou ? "Needs You" : "Projects") {
                 IconButton(
-                    showsOnlyNeedsYou ? "Show All Tasks (⌥⌘J)" : "Show Only Tasks That Need You (⌥⌘J)",
+                    CommandRegistry.shared.help(
+                        showsOnlyNeedsYou ? "Show All Tasks" : "Show Only Tasks That Need You", for: .viewNeedsYouFilter),
                     systemImage: "line.3.horizontal.decrease",
                     isActive: showsOnlyNeedsYou
                 ) {

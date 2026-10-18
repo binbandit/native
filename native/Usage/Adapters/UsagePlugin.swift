@@ -36,13 +36,13 @@ struct UsagePlugin: NativePlugin {
         activity.refreshBackfill()
     }
 
-    /// Opens a task from Settings › Usage's day list.
-    func open(_ task: ActivityDay.Task) {
+    /// What opens a task from Settings › Usage's day list; nil once its agent no longer lists it.
+    func opener(for task: ActivityDay.Task) -> (() -> Void)? {
         let ref = UsageSessionRef(
             agent: AgentDefinition.ID(rawValue: task.agent), agentName: task.agentName,
-            session: SessionID(task.session),
-            title: task.title)
-        notifications.host?.show(ref)
+            session: SessionID(task.session), title: task.title)
+        guard let host = notifications.host, host.canShow(ref) else { return nil }
+        return { host.show(ref) }
     }
 
     func handle(_ event: SessionEvent) async {

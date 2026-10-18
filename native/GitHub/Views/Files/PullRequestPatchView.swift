@@ -19,10 +19,11 @@ struct PullRequestPatchView: View {
         let colors = DSCodeColors(environment, on: .surface)
         let threads = model.threads(in: path)
         let numberWidth = numberTemplate
-        VStack(alignment: .leading, spacing: 0) {
-            ForEach(visibleHunks) { hunk in
+        // Lazy, so a long file lays out only the lines on screen.
+        LazyVStack(alignment: .leading, spacing: 0) {
+            ForEach(visibleHunks, id: \.hunk.id) { hunk, shown in
                 PullRequestHunkHeader(hunk: hunk)
-                ForEach(hunk.lines.indices, id: \.self) { index in
+                ForEach(shown, id: \.self) { index in
                     let line = hunk.lines[index]
                     PullRequestDiffLineRow(
                         line: line,
@@ -67,14 +68,17 @@ struct PullRequestPatchView: View {
         hunks.reduce(0) { $0 + $1.lines.count }
     }
 
-    /// Hunks up to the line limit, so a huge file doesn't stall the list; "Show All" lifts it.
-    private var visibleHunks: [DiffHunk] {
-        guard !showsAllLines else { return hunks }
-        var count = 0
-        return hunks.prefix { hunk in
-            defer { count += hunk.lines.count }
-            return count < PullRequestFilesLayout.initialLineLimit
+    /// Hunks and the lines of each to draw, up to the line limit, so a huge file doesn't stall the
+    /// list; "Show All" lifts it.
+    private var visibleHunks: [(hunk: DiffHunk, lines: Range<Int>)] {
+        var budget = showsAllLines ? Int.max : PullRequestFilesLayout.initialLineLimit
+        var visible: [(hunk: DiffHunk, lines: Range<Int>)] = []
+        for hunk in hunks where budget > 0 {
+            let count = min(hunk.lines.count, budget)
+            visible.append((hunk, 0..<count))
+            budget -= count
         }
+        return visible
     }
 
     private var numberTemplate: String {

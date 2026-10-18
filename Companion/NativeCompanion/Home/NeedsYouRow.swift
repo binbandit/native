@@ -21,6 +21,7 @@ struct NeedsYouRow: View {
             } else {
                 HStack(spacing: DS.Space.md) {
                     DotGridLoader(pattern: .waiting)
+                        .frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
                     Text("Loading the request…").font(CompanionType.caption).foregroundStyle(.dsTextSecondary)
                 }
             }

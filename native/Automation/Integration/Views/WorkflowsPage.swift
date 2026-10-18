@@ -51,7 +51,7 @@ struct WorkflowsPage<Transcript: View>: View {
             Spacer(minLength: DS.Space.lg)
             Button("Run Workflow…", systemImage: "play.fill") { center.requestPicker() }
                 .buttonStyle(.ds(.primary, size: .medium))
-                .help("Run a workflow in the current project (⌥⌘R)")
+                .help(CommandRegistry.shared.help("Run a workflow in the current project", for: .workflowRun))
         }
     }
 

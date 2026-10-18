@@ -1,3 +1,4 @@
+import NativeCommands
 import SwiftUI
 
 /// "Expeditions" in the sidebar's top half. It counts the expeditions waiting on the user.
@@ -10,7 +11,7 @@ struct ExpeditionsNavItem: View {
     var body: some View {
         let waiting = center.waitingCount
         SidebarNavItem(
-            "Expeditions", systemImage: ExpeditionsMetrics.symbol, isSelected: isSelected, shortcut: "⇧⌘X",
+            "Expeditions", systemImage: ExpeditionsMetrics.symbol, isSelected: isSelected, shortcut: CommandRegistry.shared.shortcut(for: .goExpeditions)?.displayString,
             action: action
         ) {
             if waiting > 0 {

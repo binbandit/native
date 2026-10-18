@@ -32,9 +32,10 @@ struct ExpeditionCrewPanel: View {
                         .disabled(message.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
                 .padding(.top, DS.Space.xs)
-                // ⌘L focuses the composer elsewhere; here, the lead's field is the composer.
+                // Focus Composer's key (⌘L unless remapped); here, the lead's field is the composer.
                 .background {
-                    Button("Message the Lead") { isMessageFocused = true }.keyboardShortcut("l", modifiers: .command)
+                    Button("Message the Lead") { isMessageFocused = true }
+                        .keyboardShortcut(CommandRegistry.shared.keyboardShortcut(for: .composerFocus))
                         .hidden()
                 }
             }

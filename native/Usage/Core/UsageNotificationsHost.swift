@@ -17,4 +17,6 @@ protocol UsageNotificationsHost: AnyObject {
     /// Answers the task's open question; false when it couldn't take the text.
     func reply(to ref: UsageSessionRef, text: String) async -> Bool
     func show(_ ref: UsageSessionRef)
+    /// Whether `show` can find the task: it's open or its agent still lists it.
+    func canShow(_ ref: UsageSessionRef) -> Bool
 }

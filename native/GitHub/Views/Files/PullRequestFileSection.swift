@@ -87,7 +87,7 @@ struct PullRequestFileSection: View {
             if let reason = patch.missingPatchReason {
                 missing(reason)
             } else {
-                PullRequestPatchView(model: model, path: file.path, hunks: patch.hunks)
+                PullRequestPatchView(model: model, path: file.path, hunks: model.hunks[file.path] ?? [])
             }
             outdatedThreads
         } else if model.patchesComplete {
@@ -127,7 +127,7 @@ struct PullRequestFileSection: View {
 
     /// Conversations whose lines are no longer in the diff, kept so nothing said goes missing.
     @ViewBuilder private var outdatedThreads: some View {
-        let hunks = model.patches[file.path]?.hunks ?? []
+        let hunks = model.hunks[file.path] ?? []
         let orphans = model.threads(in: file.path).filter { thread in
             guard let anchor = thread.anchor else { return true }
             return !hunks.contains { $0.index(side: anchor.side, line: anchor.line) != nil }

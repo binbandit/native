@@ -147,5 +147,4 @@ compiling), so wall-clock launch numbers are high and noisy; compare the CPU col
 | Render a streaming message in parts | The growing reply is one row; re-rendering it on every chunk is where most streaming CPU and the transient 225 MB of graphics memory go. Split the Markdown at stable block boundaries so finished blocks don't re-render | Transcript |
 | Read MCP config files off the main thread at launch | About 14 ms in Debug before the first frame; agents can wait for it instead | MCP |
 | Park the default agent when it has no open sessions for a long while, or start it on the first New Session | It's kept running so New Session never waits; with direct adapter launch that wait is now about 0.3 s for Codex | App model |
-| Count session listings in flight as in use | So a park never cuts `session/list` short | Failures (agreed, in progress) |
 | Night sky on Nightly's home page | Twinkles at 30 fps for as long as Home is shown; a slower rate would look the same | Brand |

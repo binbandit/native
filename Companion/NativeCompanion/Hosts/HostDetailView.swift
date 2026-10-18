@@ -40,7 +40,7 @@ struct HostDetailView: View {
                 NavigationLink("Connection Log") { ConnectionLogView(host: host) }
             }
             HostUpdateSection(host: host)
-            Section("Plugins") {
+            Section {
                 NavigationLink {
                     PluginCatalogView(host: host)
                 } label: {

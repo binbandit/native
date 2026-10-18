@@ -1,3 +1,4 @@
+import NativeCommands
 import SwiftUI
 
 /// The sidebar's first navigation item (Factory's "New session"): starts a session in the current
@@ -8,7 +9,7 @@ struct NewSessionItem: View {
     @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        SidebarNavItem("New Session", systemImage: "plus", shortcut: "⌘N") {
+        SidebarNavItem("New Session", systemImage: "plus", shortcut: CommandRegistry.shared.shortcut(for: .sessionNew)?.displayString) {
             Task { await model.newSession() }
         } accessory: {
             SidebarRowMenu(label: "New Session With") {
