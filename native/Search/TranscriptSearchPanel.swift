@@ -74,7 +74,7 @@ struct TranscriptSearchPanel: View {
                 .buttonStyle(.plain)
                 .foregroundStyle(.dsTextTertiary)
                 .accessibilityLabel("Clear search")
-                .dsHitTarget()
+                .dsHitTarget(DS.Size.statusGlyph)
             }
             Button("Close") { center.isPresented = false }
                 .buttonStyle(.ds(.ghost))

@@ -60,7 +60,7 @@ public struct KeyShortcut: Hashable, Sendable {
 
     /// As menus print it, modifiers in the menu bar's order: "⌃⌥⇧⌘K".
     public var displayString: String {
-        Self.modifierNames.filter { modifiers.contains($0.modifier) }.map { String($0.glyph) }.joined() + keyGlyph
+        modifiers.glyphs + keyGlyph
     }
 
     /// As preferences and exported files spell it: "shift+cmd+k".
@@ -103,7 +103,7 @@ public struct KeyShortcut: Hashable, Sendable {
         return .character(character)
     }
 
-    private static let modifierNames:
+    fileprivate static let modifierNames:
         [(modifier: Modifiers, glyph: Character, words: [String], spoken: [String])] = [
             (.control, "⌃", ["ctrl", "control"], ["control", "ctrl"]),
             (.option, "⌥", ["opt", "option", "alt"], ["option", "opt", "alt"]),
@@ -129,6 +129,13 @@ public struct KeyShortcut: Hashable, Sendable {
         (.pageUp, "⇞", "pageup", []),
         (.pageDown, "⇟", "pagedown", []),
     ]
+}
+
+extension KeyShortcut.Modifiers {
+    /// "⌃⌥⇧⌘", in the menu bar's order: what a recorder shows while keys are held.
+    public var glyphs: String {
+        KeyShortcut.modifierNames.filter { contains($0.modifier) }.map { String($0.glyph) }.joined()
+    }
 }
 
 extension KeyShortcut: CustomStringConvertible {

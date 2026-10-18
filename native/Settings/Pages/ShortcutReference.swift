@@ -1,6 +1,7 @@
 import Foundation
 
-/// The shortcuts in `docs/keyboard.md`, which is the source of truth: change a key there, then in
+/// The keys views answer themselves, which can't be changed (the registry's commands are listed
+/// from the registry). `docs/keyboard.md` is the source of truth: change a key there, then in
 /// code, then here.
 enum ShortcutReference {
     struct Group: Identifiable {
@@ -43,7 +44,7 @@ enum ShortcutReference {
                     Shortcut(id: "new-line", title: "New line", keys: ["⇧↵", "⌥↵"]),
                     Shortcut(
                         id: "stop", title: "Stop the turn",
-                        note: "While the agent works. Escape closes the slash-command list first.", keys: ["Esc", "⌘."]),
+                        note: "While the agent works. Escape closes the slash-command list first.", keys: ["Esc"]),
                     Shortcut(
                         id: "recall", title: "Recall the last prompt",
                         note: "In an empty composer. While the agent works, edits the last queued message.", keys: ["↑"]
@@ -96,49 +97,13 @@ enum ShortcutReference {
                         id: "setup-script", title: "Save the setup script", note: "In Settings ▸ Git", keys: ["⌘↵"]),
                 ]),
             Group(
-                title: "Sessions and navigation",
+                title: "Sidebar and palette",
                 shortcuts: [
-                    Shortcut(id: "new-session", title: "New session", note: "With the last-used agent", keys: ["⌘N"]),
-                    Shortcut(id: "new-session-with", title: "New session with…", note: "Pick the agent", keys: ["⌥⌘N"]),
-                    Shortcut(id: "new-expedition", title: "New expedition", keys: ["⌥⌘E"]),
-                    Shortcut(id: "open-folder", title: "Open folder", keys: ["⌘O"]),
-                    Shortcut(id: "open-in", title: "Open the task's folder", note: "In the default app", keys: ["⇧⌘O"]),
-                    Shortcut(id: "focus-composer", title: "Focus the composer", keys: ["⌘L"]),
-                    Shortcut(
-                        id: "history", title: "Back / forward", note: "Through the sessions you've viewed",
-                        keys: ["⌘[", "⌘]"]),
-                    Shortcut(
-                        id: "go-to-session", title: "Go to a session", note: "The Nth session in the sidebar",
-                        keys: ["⌘1", "⌘9"], joiner: "–"),
-                    Shortcut(id: "next-session", title: "Next / previous session", keys: ["⌃Tab", "⌃⇧Tab"]),
                     Shortcut(
                         id: "rename-session", title: "Rename the selected session",
                         note: "In the sidebar. Return commits, Escape cancels.", keys: ["↵"]),
-                    Shortcut(
-                        id: "move-item", title: "Move the selected project or session", note: "Up / down",
-                        keys: ["⌥⌘↑", "⌥⌘↓"]),
-                    Shortcut(
-                        id: "archive", title: "Archive the selected task", note: "Undo brings it back", keys: ["⇧⌘A"]),
-                    Shortcut(id: "needs-you", title: "Show only tasks that need you", keys: ["⌥⌘J"]),
-                    Shortcut(id: "toggle-sidebar", title: "Show or hide the sidebar", keys: ["⌃⌘S"]),
-                    Shortcut(id: "pull-requests", title: "Pull requests", keys: ["⌘⇧P"]),
-                    Shortcut(id: "expeditions", title: "Expeditions", keys: ["⌘⇧X"]),
-                    Shortcut(id: "toggle-inspector", title: "Show or hide the subagent inspector", keys: ["⌥⌘I"]),
-                    Shortcut(
-                        id: "toggle-changes", title: "Show or hide the changes inspector",
-                        note: "The task's uncommitted git changes", keys: ["⌘⇧D"]),
-                    Shortcut(id: "mcp-servers", title: "Show the session's MCP servers", keys: ["⌃⌘M"]),
-                    Shortcut(
-                        id: "keep-awake", title: "Keep Mac awake", note: "Cycles Off, While agents work, On",
-                        keys: ["⌃⌘A"]),
-                ]),
-            Group(
-                title: "Session settings",
-                shortcuts: [
-                    Shortcut(id: "permission-mode", title: "Next permission mode", keys: ["⌘⇧M"]),
-                    Shortcut(id: "model-picker", title: "Model picker", keys: ["⌘⇧E"]),
-                    Shortcut(id: "goal", title: "Set or edit the session's goal", keys: ["⌥⌘G"]),
-                    Shortcut(id: "workflow", title: "Run a workflow", keys: ["⌥⌘R"]),
+                    Shortcut(id: "palette-move", title: "Move through the palette", note: "Return runs", keys: ["↑", "↓"]),
+                    Shortcut(id: "palette-close", title: "Close the palette", keys: ["Esc"]),
                 ]),
             Group(
                 title: "Settings",
@@ -150,22 +115,11 @@ enum ShortcutReference {
                         keys: ["↑", "↓"]),
                     Shortcut(
                         id: "settings-close", title: "Close Settings", note: "Escape clears the search first",
-                        keys: ["Esc", "⌘["]),
+                        keys: ["Esc"]),
                 ]),
             Group(
-                title: "Appearance",
+                title: "Inside a terminal",
                 shortcuts: [
-                    Shortcut(
-                        id: "halloween-icon", title: "Toggle the Halloween icon",
-                        note: "Available October 1 through November 7", keys: ["⌥⇧⌘H"])
-                ]),
-            Group(
-                title: "Terminal",
-                shortcuts: [
-                    Shortcut(
-                        id: "terminal-toggle", title: "Show the task's terminal",
-                        note: "With it focused, hides it and returns to the composer", keys: ["⌃`"]),
-                    Shortcut(id: "terminal-new-tab", title: "New terminal tab", keys: ["⌃⇧`"]),
                     Shortcut(id: "terminal-clear", title: "Clear the screen and scrollback", keys: ["⌘K"]),
                     Shortcut(id: "terminal-scroll-ends", title: "Scroll to the top / bottom", keys: ["⌘Home", "⌘End"]),
                     Shortcut(id: "terminal-page", title: "Scroll by a page", keys: ["⌘PageUp", "⌘PageDown"]),
