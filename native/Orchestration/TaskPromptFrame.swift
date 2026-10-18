@@ -1,16 +1,24 @@
 import Foundation
 
-/// Encodes task and message prompt framing because the prompt is the only channel that identifies
-/// a sender and reply path; transcripts parse it back to show that sender rather than its header.
+/// The header Native puts on a `start_task` prompt or a `send_message` message. An agent's prompt is
+/// the only place to tell it who is talking and how to answer, so the header says both. A reloaded
+/// session replays those prompts, and the transcript parses them back to show the sender instead of
+/// the header.
 public struct TaskPromptFrame: Hashable, Sendable {
     public enum Kind: Hashable, Sendable {
+        /// The prompt a task was started with.
         case task
+        /// A message sent to a session while it works.
         case message
     }
 
+    /// Who sent it, as the recipient knows them.
     public enum Sender: Hashable, Sendable {
+        /// The session that started the recipient; `agent` is its agent's display name.
         case parent(agent: String)
+        /// One of the recipient's own tasks. `label` is `OrchestrationTask.label`, which starts with `id`.
         case task(id: String, label: String)
+        /// Another task of the recipient's parent.
         case sibling(id: String, label: String)
     }
 
@@ -49,10 +57,13 @@ public struct TaskPromptFrame: Hashable, Sendable {
         self.body = body
     }
 
+    /// Tells a task's agent that its audience is another agent, which only sees its final reply, and
+    /// how to reach the sessions around it.
     public static func task(_ body: String, fromParent agent: String) -> String {
         taskHeaderPrefix + agent + taskHeaderSuffix + headerTerminator + body
     }
 
+    /// Introduces a message with who it's from and the id to answer with.
     public static func message(_ body: String, from sender: Sender) -> String {
         let senderPhrase: String
         let replyTo: String
@@ -101,7 +112,8 @@ public struct TaskPromptFrame: Hashable, Sendable {
     private static let headerTerminator = "]\n\n"
     private static let taskHeaderPrefix = "[A task from your parent session ("
     private static let taskHeaderSuffix =
-        "), handed to you through Native. What you say at the end of your turn goes back to it as your reply. To message it or its other tasks while you work, use the native MCP tools list_tasks and send_message."
+        "), handed to you through Native. What you say at the end of your turn goes back to it as your reply. "
+        + "To message it or its other tasks while you work, use the native MCP tools list_tasks and send_message."
     private static let messageHeaderPrefix = "[Message from "
     private static let messageReplyPrefix = ". To reply, call send_message with to: \""
     private static let messageHeaderSuffix = "\"."

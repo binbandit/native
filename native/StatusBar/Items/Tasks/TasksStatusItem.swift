@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// How many tasks are working and how many wait on the user, across every project (Orca's
-/// terminal-session count). Click for the list; a row opens its task.
+/// How many tasks are working, for how long the longest has been at it, and how many wait on the
+/// user, across every project (Orca's session count). "Working" opens the list; "needs you" goes
+/// straight to the first task waiting, the one ⌘Y would answer.
 struct TasksStatusItem: StatusBarItem {
     let source: any StatusBarSource
 
@@ -18,54 +19,54 @@ struct TasksStatusItem: StatusBarItem {
 private struct TasksSegment: View {
     let source: any StatusBarSource
 
-    private var tasks: [TaskActivity] {
-        source.statusBarTasks
-    }
-
-    private var working: Int {
-        tasks.count { !$0.needsAttention }
-    }
-
-    private var waiting: Int {
-        tasks.count(where: \.needsAttention)
-    }
-
-    /// "2 working, 1 needs you", or that nothing is running.
-    private var summary: String {
-        let parts = [
-            working > 0 ? "\(working) working" : nil,
-            waiting > 0 ? "\(waiting) \(waiting == 1 ? "needs" : "need") you" : nil,
-        ].compactMap(\.self)
-        return parts.isEmpty ? "No tasks running" : parts.joined(separator: ", ")
-    }
-
     var body: some View {
-        StatusBarSegment(
-            help: tasks.isEmpty ? "No agent is working on a task." : "Tasks: \(summary). Click to see them.",
-            accessibilityLabel: "Tasks",
-            accessibilityValue: summary
-        ) {
-            HStack(spacing: DS.Space.sm) {
-                if tasks.isEmpty {
-                    StatusIndicator(status: .idle, size: StatusBarMetrics.statusGlyph)
-                    Text("No tasks running")
-                        .foregroundStyle(.dsTextTertiary)
-                } else {
-                    if working > 0 {
+        let tasks = source.statusBarTasks
+        let working = tasks.filter { !$0.needsAttention }
+        let waiting = tasks.filter(\.needsAttention)
+        HStack(spacing: DS.Space.xs) {
+            StatusBarSegment(
+                help: working.isEmpty ? "No agent is working on a task." : "\(Self.count(working.count, "task")) working. Click to see them.",
+                accessibilityLabel: "Working tasks",
+                accessibilityValue: working.isEmpty ? "None" : "\(working.count)"
+            ) {
+                HStack(spacing: DS.Space.sm) {
+                    if working.isEmpty {
+                        StatusIndicator(status: .idle, size: StatusBarMetrics.statusGlyph)
+                        Text(waiting.isEmpty ? "No tasks running" : "None working")
+                            .foregroundStyle(.dsTextTertiary)
+                    } else {
                         StatusIndicator(status: .working, size: StatusBarMetrics.statusGlyph)
-                        Text("\(working) working")
-                    }
-                    if working > 0, waiting > 0 {
-                        StatusBarDivider()
-                    }
-                    if waiting > 0 {
-                        StatusIndicator(status: .needsPermission, size: StatusBarMetrics.statusGlyph)
-                        Text("\(waiting) \(waiting == 1 ? "needs" : "need") you")
+                        Text("\(working.count) working")
+                        // The longest-running turn: the one most likely to need a look.
+                        if let start = working.compactMap(\.since).min() {
+                            ElapsedTimeText(since: start)
+                                .foregroundStyle(.dsTextTertiary)
+                        }
                     }
                 }
+            } details: {
+                TasksPanel(source: source)
             }
-        } details: {
-            TasksPanel(source: source)
+            if let first = waiting.first {
+                Button {
+                    source.showTask(first.id)
+                } label: {
+                    HStack(spacing: DS.Space.sm) {
+                        StatusIndicator(status: first.status, size: StatusBarMetrics.statusGlyph)
+                        Text("\(waiting.count) \(waiting.count == 1 ? "needs" : "need") you")
+                    }
+                    .statusBarSegmentChrome()
+                }
+                .buttonStyle(.plain)
+                .help("\(first.title) · \(first.status.label). Click to open it.")
+                .accessibilityLabel("Tasks that need you")
+                .accessibilityValue("\(waiting.count). First: \(first.title), \(first.status.label)")
+                .accessibilityHint("Opens the first one")
+            }
         }
+    }
+
+    private static func count(_ n: Int, _ noun: String) -> String {
+        n == 1 ? "1 \(noun)" : "\(n) \(noun)s"
     }
 }

@@ -17,6 +17,11 @@ struct MessageView: View, Equatable {
             if let goal = GoalPrompt(parsing: message.text) {
                 GoalPromptRow(prompt: goal, text: message.text)
             }
+        case .user where TaskPromptFrame(parsing: message.text) != nil:
+            // A reloaded task session replays its task prompt and messages with Native's header on.
+            if let frame = TaskPromptFrame(parsing: message.text) {
+                SessionMessageView(frame: frame)
+            }
         case .user:
             TrailingFractionLayout(fraction: 0.85) {
                 // Prompts are shown as typed; Markdown syntax in them stays literal.
