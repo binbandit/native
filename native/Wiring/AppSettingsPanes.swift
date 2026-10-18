@@ -8,7 +8,7 @@ enum AppSettingsPanes {
     {
         [
             .labs, .git, .mcpServers(registry: plugins), .skills(registry: plugins), .terminal(terminals),
-            .sounds(), .keepAwake(keepAwake), .updates, .usage(registry: plugins), .notifications,
+            .sounds(), .keepAwake(keepAwake), .updates, .usage(registry: plugins), .notifications, .pairedDevices,
             .celebrations(registry: plugins),
         ]
     }
