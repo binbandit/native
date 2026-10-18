@@ -5,8 +5,8 @@ import os
 /// One pass over the agents' own history: reads every session file that's new or changed since it
 /// was last indexed, newest first, and indexes it in batches. Resumable by construction: each
 /// batch records its files' stamps, so a pass that's cancelled, crashes or pauses picks up where
-/// it stopped. It runs at background priority and waits while the Mac is on battery or in Low
-/// Power Mode.
+/// it stopped. It runs at utility priority (background priority's I/O throttling can stall it
+/// outright on a busy Mac) and waits while the Mac is on battery or in Low Power Mode.
 nonisolated struct TranscriptSearchBackfill: Sendable {
     nonisolated struct Reader: Sendable {
         let agent: String
