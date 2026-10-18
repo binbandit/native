@@ -82,7 +82,8 @@ struct SettingsRow<Accessory: View, Control: View>: View {
     /// The control, dimmed and explained while the organization (or something else) locks it.
     private var trailing: some View {
         control
-            .fixedSize()
+            // Beside the text a control keeps its own width; under it, it may take the row's.
+            .fixedSize(horizontal: !isControlBelow, vertical: true)
             .disabled(lockReason != nil)
             .help(lockReason ?? "")
     }

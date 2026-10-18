@@ -30,12 +30,12 @@ Each manifest plugin is a folder holding a `plugin.json`:
 ```
 
 Name the folder after the plugin's `id`. Native reads the folder at launch, and again when the user
-clicks **Reload** in Settings ▸ Plugins. Folders are read in alphabetical order, after the
+clicks **Reload** in Settings ▸ Extensions. Folders are read in alphabetical order, after the
 built-in plugins, so a plugin can't take over a built-in plugin's id. The user can turn any plugin
-off in Settings ▸ Plugins. Changes apply to sessions started afterwards; agents start or stop right
+off in Settings ▸ Extensions. Changes apply to sessions started afterwards; agents start or stop right
 away.
 
-A plugin that fails to load is skipped and listed in Settings ▸ Plugins with the reason, such as
+A plugin that fails to load is skipped and listed in Settings ▸ Extensions with the reason, such as
 "Missing \"name\"." Other plugins still load.
 
 ## plugin.json
@@ -407,7 +407,7 @@ orchestration tools are built-in plugins written this way.
 2. Check every `command` runs from a login shell, the way Native starts it:
    `zsh -lc 'command -v gemini'`. For a stdio MCP server, run its command by hand; it should wait
    for input rather than exit.
-3. Have the user click **Reload** in Settings ▸ Plugins (or restart Native), then check the plugin
+3. Have the user click **Reload** in Settings ▸ Extensions (or restart Native), then check the plugin
    is listed and enabled, with no load failure under it.
 4. Try what it adds: an agent appears in the agent picker and starts (its status shows in the
    sidebar footer); an MCP server's tools show up in a new session; a workflow appears in the

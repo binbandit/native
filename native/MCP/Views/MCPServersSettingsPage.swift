@@ -92,7 +92,7 @@ struct MCPServersSettingsPage: View {
             if !registry.isEnabled(MCPServersPlugin.id) {
                 MCPNotice(
                     text:
-                        "The MCP Servers plugin is off, so agents don't get the servers set up here. Turn it on in Plugins.",
+                        "The MCP Servers plugin is off, so agents don't get the servers set up here. Turn it on in Settings ▸ Extensions.",
                     tone: .warning)
             }
             if let problem = library.problem {
