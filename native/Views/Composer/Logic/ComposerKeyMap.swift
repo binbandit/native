@@ -26,6 +26,8 @@ enum ComposerKeyMap {
         var hasQueuedPrompts: Bool
         var hasLastPrompt: Bool
         var hasAttachments: Bool
+        /// An input method is composing text, so every key is its own.
+        var isComposing: Bool
         var preferredFollowUp: FollowUpBehavior
     }
 
@@ -46,6 +48,7 @@ enum ComposerKeyMap {
 
     /// The action for a key, or nil to let the text view handle it. `isRepeat` is a held key.
     static func action(for key: Key, modifiers: Modifiers, isRepeat: Bool, in context: Context) -> Action? {
+        guard !context.isComposing else { return nil }
         if context.isSuggestionListOpen, modifiers.isEmpty || key == .escape {
             switch key {
             case .up: return .moveHighlight(by: -1)
@@ -68,12 +71,11 @@ enum ComposerKeyMap {
             return .submit(modifiers == .command ? preferred.opposite : preferred)
         case .tab where modifiers.isEmpty || modifiers == .shift:
             return isRepeat ? .swallow : .moveFocus(forward: modifiers.isEmpty)
-        // Where the platform hands Delete to the editor's key handler (iPadOS); the Mac's text view
-        // keeps it, so the composer hears it through `onDraftBackspace` and the same rule.
+        // Heard before the text view deletes anything, so an empty draft is empty before the key.
         case .delete where modifiers.isEmpty:
             switch DraftBackspace(
-                isDraftEmpty: context.isDraftEmpty, isComposing: false, hasAttachments: context.hasAttachments,
-                isRepeat: isRepeat)
+                isDraftEmpty: context.isDraftEmpty, isComposing: context.isComposing,
+                hasAttachments: context.hasAttachments, isRepeat: isRepeat)
             {
             case .removeLastAttachment: return .removeLastAttachment
             case .swallow: return .swallow

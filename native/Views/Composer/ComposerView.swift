@@ -250,7 +250,6 @@ struct ComposerView: View {
             }
             .disabled(!canEdit)
             .onAttachmentPaste(isEnabled: isFocused && canEdit, perform: attach)
-            .onDraftBackspace(isEnabled: canEdit && !session.attachments.isEmpty, perform: handleBackspace)
             // Send and Stop keep their places, so neither moves nor reflows the text: Send alone while
             // idle (once there's a draft); while the agent works, Stop, with a slot
             // beside it where Send appears to queue or steer what's typed, by pointer or touch too.

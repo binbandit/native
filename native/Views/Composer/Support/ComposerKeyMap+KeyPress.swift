@@ -11,7 +11,9 @@ extension ComposerKeyMap.Key {
         // Shift-Tab arrives as backtab.
         case .tab, KeyEquivalent("\u{19}"): self = .tab
         case .escape: self = .escape
-        case .delete: self = .delete
+        // Backspace: iPadOS reports SwiftUI's `.delete` (U+0008), but the Mac reports the character
+        // its key types (U+007F), which matches neither `.delete` nor `.deleteForward` (U+F728).
+        case .delete, KeyEquivalent("\u{7F}"): self = .delete
         default: return nil
         }
     }
