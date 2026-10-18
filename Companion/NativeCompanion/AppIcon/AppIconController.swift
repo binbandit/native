@@ -92,10 +92,10 @@ final class AppIconController {
     /// host, a celebration): switch now, alert and all.
     func applyNow() {
         let wanted = target().name
-        defaults.set(Self.key(wanted), forKey: Self.attemptedKey)
         guard UIApplication.shared.applicationState == .active,
             wanted != UIApplication.shared.alternateIconName
         else { return }
+        defaults.set(Self.key(wanted), forKey: Self.attemptedKey)
         switchIcon(to: wanted)
     }
 
