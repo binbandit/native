@@ -33,6 +33,15 @@ enum ComposerPlatform {
         #endif
     }
 
+    /// The "+" chip offers the photo library alongside files where photos live on the device.
+    static var offersPhotoLibrary: Bool {
+        #if os(iOS)
+        true
+        #else
+        false
+        #endif
+    }
+
     /// Where `@` mentions find files: git on the Mac. An iPad has no local checkout; it will ask its
     /// host instead.
     static func fileIndex(for root: URL) -> (any ProjectFileIndex)? {
