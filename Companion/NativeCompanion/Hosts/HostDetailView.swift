@@ -65,24 +65,18 @@ struct HostDetailView: View {
                 )
             }
             Section {
-                Picker("App Icon While Connected", selection: $host.preferences.appIcon) {
-                    Label {
-                        Text("Don't Change")
-                    } icon: {
-                        AppIconThumbnail(name: icons.theme.iconName, size: CompanionMetrics.hostMarkSmall)
-                    }
-                    .tag(CompanionAppIcon?.none)
-                    ForEach(CompanionAppIcon.allCases) { theme in
-                        Label {
-                            Text(theme.title)
-                        } icon: {
-                            AppIconThumbnail(name: theme.iconName, size: CompanionMetrics.hostMarkSmall)
+                NavigationLink {
+                    HostAppIconPicker(host: host)
+                } label: {
+                    LabeledContent("App Icon While Connected") {
+                        HStack(spacing: DS.Space.sm) {
+                            if let icon = host.preferences.appIcon {
+                                AppIconThumbnail(name: icon.iconName, size: CompanionMetrics.hostMarkSmall)
+                            }
+                            Text(host.preferences.appIcon?.title ?? "Don't Change")
                         }
-                        .tag(Optional(theme))
                     }
                 }
-                .pickerStyle(.navigationLink)
-                .onChange(of: host.preferences.appIcon) { icons.applyNow() }
                 .accessibilityIdentifier("hostAppIcon")
             } footer: {
                 Text(
@@ -125,6 +119,49 @@ struct HostDetailView: View {
         } message: {
             Text("This phone forgets its key for \(host.name). To reconnect, pair again from the Mac.")
         }
+    }
+}
+
+/// The icon the app shows while a host is the one in view, or none.
+private struct HostAppIconPicker: View {
+    let host: HostConnection
+
+    @Environment(AppIconController.self) private var icons
+
+    var body: some View {
+        List {
+            Section {
+                row(nil, title: "Don't Change")
+                ForEach(CompanionAppIcon.allCases) { row($0, title: $0.title) }
+            } footer: {
+                Text("With Don't Change, the icon picked in Settings › App Icon stays.")
+            }
+        }
+        .font(CompanionType.body)
+        .scrollContentBackground(.hidden)
+        .background(.dsBackground)
+        .navigationTitle("App Icon While Connected")
+        .navigationBarTitleDisplayMode(.inline)
+        .hostTint(host.preferences)
+    }
+
+    private func row(_ icon: CompanionAppIcon?, title: String) -> some View {
+        Button {
+            host.preferences.appIcon = icon
+            icons.applyNow()
+        } label: {
+            HStack(spacing: DS.Space.lg) {
+                AppIconThumbnail(name: (icon ?? icons.theme).iconName)
+                    .opacity(icon == nil ? 0.5 : 1)
+                Text(title).foregroundStyle(.dsTextPrimary)
+                Spacer()
+                if host.preferences.appIcon == icon {
+                    Image(systemName: "checkmark").foregroundStyle(.tint)
+                }
+            }
+        }
+        .accessibilityAddTraits(host.preferences.appIcon == icon ? .isSelected : [])
+        .accessibilityIdentifier("hostIcon-\(icon?.rawValue ?? "none")")
     }
 }
 

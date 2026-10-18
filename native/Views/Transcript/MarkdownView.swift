@@ -13,6 +13,9 @@ struct MarkdownView: View, Equatable {
     }
 
     var body: some View {
+        #if DEBUG
+        let _ = RenderProbe.hit("MarkdownView")
+        #endif
         if let blocks = MarkdownParseCache.blocks(for: source) {
             VStack(alignment: .leading, spacing: 0) {
                 ForEach(blocks) { block in
@@ -138,6 +141,9 @@ private struct MarkdownBlockView: View {
     var listDepth = 0
 
     var body: some View {
+        #if DEBUG
+        let _ = RenderProbe.hit("MarkdownBlock")
+        #endif
         switch node.kind {
         case .header(let level):
             Text(node.text)

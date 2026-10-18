@@ -1,3 +1,4 @@
+import ACP
 import Foundation
 import Search
 import os
@@ -146,9 +147,10 @@ nonisolated struct TranscriptSearchBackfill: Sendable {
         batch = SearchIndexBatch()
     }
 
-    /// Whether `path` is one of `folders` or inside one.
+    /// Whether `path` is one of `folders` or inside one, whichever spelling each uses: Claude Code
+    /// records a project at `/tmp/x` as `/private/tmp/x`.
     static func isExcluded(_ path: String, by folders: [String]) -> Bool {
-        folders.contains { path == $0 || path.hasPrefix($0.hasSuffix("/") ? $0 : $0 + "/") }
+        folders.contains { SessionFolder.contains($0, path) }
     }
 
     /// The deepest of `folders` that holds `path`.

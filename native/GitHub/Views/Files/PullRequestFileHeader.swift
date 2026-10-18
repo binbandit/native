@@ -52,6 +52,7 @@ struct PullRequestFileHeader: View {
                 isOn: Binding(get: { file.isViewed }, set: { viewed in Task { await model.setViewed(viewed, file) } })
             )
             .help("Mark this file viewed on GitHub. It folds, and unfolds again if the file changes.")
+            if !UserDefaults.standard.bool(forKey: "gitHubExperimentNoMenu") {
             Menu {
                 Button("Copy Path", systemImage: "doc.on.doc") { gitHub.copy(file.path) }
                 Button("Open on GitHub", systemImage: "arrow.up.right") {
@@ -68,6 +69,7 @@ struct PullRequestFileHeader: View {
             .fixedSize()
             .foregroundStyle(.dsTextSecondary)
             .accessibilityLabel("File Options")
+            }
         }
         .padding(.leading, DS.Space.md)
         .padding(.trailing, DS.Space.xs)

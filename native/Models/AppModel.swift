@@ -52,6 +52,9 @@ final class AppModel {
     var actionFailure: ActionFailure?
     /// Background work that failed for a project, shown with the project until it's fixed.
     let problems = ProjectProblems()
+    /// Listed tasks that couldn't be opened before they had a model, shown in their place (a load
+    /// that fails later says so in the task's transcript).
+    var openFailures: [SessionKey: SessionOpenFailure] = [:]
     /// The agent a session is being created with, while that's under way.
     private(set) var creatingSessionWith: AgentDefinition.ID?
     /// The project whose home was shown last, for when no session is selected. Internal only for
@@ -393,14 +396,25 @@ final class AppModel {
     }
 
     /// Opens a listed session, replaying its history from the agent the first time, which starts
-    /// the agent if it isn't running.
+    /// the agent if it isn't running. When it fails before the session has a model, `openFailures`
+    /// says why; an agent that won't start says so through its status instead.
     func loadSession(_ key: SessionKey) async {
-        guard sessions.session(key) == nil, let info = catalog.lookup(key)?.info,
-            let runtime = await ensureRunning(key.agent),
-            // Selecting a row loads it from two places; the first one to get here opens it.
-            sessions.session(key) == nil
-        else { return }
-        _ = try? await launcher.load(
-            key, cwd: URL(filePath: info.cwd, directoryHint: .isDirectory), title: info.title, on: runtime)
+        guard sessions.session(key) == nil, let info = catalog.lookup(key)?.info else { return }
+        openFailures[key] = nil
+        guard let runtime = await ensureRunning(key.agent) else {
+            if runtimes[key.agent] == nil {
+                openFailures[key] = SessionOpenFailure(.agentMissing, agent: key.agent.rawValue)
+            }
+            return
+        }
+        // Selecting a row loads it from two places; the first one to get here opens it.
+        guard sessions.session(key) == nil else { return }
+        do {
+            _ = try await launcher.load(
+                key, cwd: URL(filePath: info.cwd, directoryHint: .isDirectory), title: info.title, on: runtime)
+        } catch {
+            guard sessions.session(key) == nil else { return }
+            openFailures[key] = SessionOpenFailure(error, agent: runtime.agent.displayName)
+        }
     }
 }

@@ -323,7 +323,10 @@ final class TranscriptSearchCenter {
         guard !excludedFolders.contains(folder) else { return }
         excludedFolders.append(folder)
         stopBackfill()
-        try? await index?.removeSessions(under: folder)
+        // Under each spelling agents record it by, as the index compares paths as text.
+        for spelling in SessionFolder.listingPaths(for: folder) {
+            try? await index?.removeSessions(under: spelling)
+        }
         await refreshStatistics()
         scheduleSearch(debounce: false)
         startBackfill()
@@ -334,7 +337,9 @@ final class TranscriptSearchCenter {
         excludedFolders.removeAll { $0 == folder }
         stopBackfill()
         // Its files' checkpoints say they were seen; forgetting them has the next pass read them.
-        try? await index?.removeCheckpoints(under: folder)
+        for spelling in SessionFolder.listingPaths(for: folder) {
+            try? await index?.removeCheckpoints(under: spelling)
+        }
         startBackfill()
     }
 }

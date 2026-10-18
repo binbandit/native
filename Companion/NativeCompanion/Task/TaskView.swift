@@ -109,21 +109,24 @@ struct TaskView: View {
 
     @ViewBuilder
     private func bottom(_ session: HostSessionSummary, mirror: SessionMirror?) -> some View {
-        VStack(spacing: DS.Space.sm) {
-            if let pending = mirror?.state.pendingPermissions.first {
-                ApprovalCard(
-                    host: host, sessionID: sessionID, toolCallID: pending.toolCallID, permission: pending.permission,
-                    call: mirror?.state.toolCall(id: pending.toolCallID)
-                )
-                .padding(.horizontal, DS.Space.lg)
-            } else {
+        if let pending = mirror?.state.pendingPermissions.first {
+            ApprovalCard(
+                host: host, sessionID: sessionID, toolCallID: pending.toolCallID, permission: pending.permission,
+                call: mirror?.state.toolCall(id: pending.toolCallID)
+            )
+            .padding(.horizontal, DS.Space.lg)
+            .padding(.top, DS.Space.sm)
+            // The card is content, not a floating control: the transcript stops behind it.
+            .background(.dsBackground)
+        } else {
+            VStack(spacing: DS.Space.sm) {
                 if !session.queue.isEmpty {
                     QueuedMessagesView(host: host, session: session)
                 }
                 CompanionComposer(host: host, session: session)
             }
+            .padding(.top, DS.Space.sm)
         }
-        .padding(.top, DS.Space.sm)
     }
 }
 

@@ -325,6 +325,8 @@ public struct ToolCallState: Hashable, Sendable {
     public var permission: PendingPermission?
     /// The agent's `_meta` for the call, every update's merged in.
     public var meta: JSONValue?
+    /// What a command printed, from the output chunks in its `_meta` (see `appendingTerminalOutput`).
+    public var terminalOutput: String?
     /// When a live call was first announced and when it finished; nil for replayed history.
     public var startedAt: Date?
     public var finishedAt: Date?
@@ -338,7 +340,10 @@ public struct ToolCallState: Hashable, Sendable {
         if let locations = update.locations { self.locations = locations }
         if let rawInput = update.rawInput { self.rawInput = rawInput }
         if let rawOutput = update.rawOutput { self.rawOutput = rawOutput }
-        if let meta = update.meta { self.meta = self.meta?.merging(meta) ?? meta }
+        if let update = update.meta {
+            let meta = appendingTerminalOutput(update)
+            self.meta = self.meta?.merging(meta) ?? meta
+        }
     }
 }
 

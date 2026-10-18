@@ -166,10 +166,16 @@ private struct PullRequestDiffBlockCode: View, Equatable {
     let key: String
 
     var body: some View {
-        Text(text.code)
-            .fixedSize()
-            .textSelection(.enabled)
-            .accessibilityRepresentation { Text(verbatim: text.plain) }
+        if UserDefaults.standard.bool(forKey: "gitHubExperimentNoSelection") {
+            Text(text.code)
+                .fixedSize()
+                .accessibilityRepresentation { Text(verbatim: text.plain) }
+        } else {
+            Text(text.code)
+                .fixedSize()
+                .textSelection(.enabled)
+                .accessibilityRepresentation { Text(verbatim: text.plain) }
+        }
     }
 
     nonisolated static func == (lhs: Self, rhs: Self) -> Bool {

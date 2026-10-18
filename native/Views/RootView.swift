@@ -323,8 +323,11 @@ struct RootView: View {
                 message: "It was deleted, or its agent no longer lists it.",
                 actionTitle: "Go Back"
             ) {
-                if model.canGoBack { model.goBack() } else { model.selection = nil }
+                goBack()
             }
+        } else if let failure = model.openFailures[key] {
+            SessionOpenFailureView(
+                failure: failure, onRetry: { Task { await model.loadSession(key) } }, onGoBack: goBack)
         } else if let runtime = model.runtime(key.agent), runtime.status.canRetry {
             let isMissing = if case .notInstalled = runtime.status { true } else { false }
             EmptyStateView(
@@ -339,6 +342,11 @@ struct RootView: View {
         } else {
             LoadingStateView("Opening the task…")
         }
+    }
+
+    /// Leaves a task that can't be shown for the last place in history, or home.
+    private func goBack() {
+        if model.canGoBack { model.goBack() } else { model.selection = nil }
     }
 }
 

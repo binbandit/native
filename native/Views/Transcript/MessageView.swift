@@ -11,6 +11,9 @@ struct MessageView: View, Equatable {
     var thinking: ThinkingClock?
 
     var body: some View {
+        #if DEBUG
+        let _ = RenderProbe.hit("MessageView")
+        #endif
         switch message.role {
         case .user where GoalPrompt(parsing: message.text) != nil:
             // Native's own goal prompts read as one quiet line, not a wall of instructions.

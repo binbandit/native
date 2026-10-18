@@ -10,8 +10,11 @@ struct ToolCallBody: View {
     var body: some View {
         switch presentation.body {
         case .command(let command):
-            // While a command runs Claude Code puts its description in the content, not output.
-            CommandOutput(command: command, output: phase == .running ? nil : ToolOutput.text(of: call), phase: phase)
+            // While a command runs Claude Code puts its description in the content, not output; what
+            // a command has printed so far (Codex's chunks) is output.
+            CommandOutput(
+                command: command, output: phase == .running ? ToolOutput.printed(by: call) : ToolOutput.text(of: call),
+                phase: phase)
         case .mcp(let rawName):
             MCPOutput(
                 rawName: rawName, input: call.mcpArguments, output: ToolOutput.text(of: call) ?? call.mcpResultText,
@@ -40,15 +43,23 @@ struct ToolCallBody: View {
 }
 
 enum ToolOutput {
-    /// The text the tool produced: its text content without an enclosing code fence, else a
-    /// string `rawOutput`.
+    /// The text the tool produced: its text content without an enclosing code fence, else what the
+    /// command printed, else a string `rawOutput`.
     static func text(of call: ToolCallState) -> String? {
         let texts = call.content.compactMap { content -> String? in
             guard case .content(let block) = content, let text = block.text else { return nil }
             return text.unfenced ?? text
         }
         if !texts.isEmpty { return texts.joined(separator: "\n") }
-        return call.rawOutput?.stringValue
+        return printed(by: call) ?? call.rawOutput?.stringValue
+    }
+
+    /// What a command printed, from the chunks its agent streams (Codex), without the newline that
+    /// ends it, which would draw as an empty last line.
+    static func printed(by call: ToolCallState) -> String? {
+        guard var output = call.terminalOutput else { return nil }
+        while output.last?.isNewline == true { output.removeLast() }
+        return output.isEmpty ? nil : output
     }
 
     static func copyText(command: String, call: ToolCallState) -> String {
@@ -121,13 +132,18 @@ private struct MCPOutput: View {
 }
 
 /// Content blocks as sent: fenced output as plain monospaced text, anything else as Markdown.
-/// Without content, the raw input stands in.
+/// Without content, what the command printed stands in (Codex's file listings and searches), else
+/// the raw input.
 private struct GenericOutput: View {
     let call: ToolCallState
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            if call.content.isEmpty, let rawInput = call.rawInput {
+            if call.content.isEmpty, let output = ToolOutput.printed(by: call) {
+                Text(verbatim: output)
+                    .foregroundStyle(.dsTextSecondary)
+                    .monospacedOutput()
+            } else if call.content.isEmpty, let rawInput = call.rawInput {
                 Text(verbatim: rawInput.prettyPrinted())
                     .foregroundStyle(.dsTextSecondary)
                     .monospacedOutput()
