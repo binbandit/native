@@ -34,7 +34,8 @@ struct UsageSettingsPage: View {
             }
             ForEach(accounts) { account in
                 UsageAccountCard(
-                    agent: account.id, name: account.name, definition: account.definition, limits: limits, reports: reports,
+                    agent: account.id, name: account.name, definition: account.definition, limits: limits,
+                    reports: reports,
                     activity: activity)
             }
         }

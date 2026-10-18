@@ -20,10 +20,17 @@ public struct MessageAttachment: Identifiable, Hashable, Sendable {
         imageData != nil
     }
 
-    /// What the user attached; mentions already show in the text.
-    public static func shown(_ attachments: [PromptAttachment]) -> [MessageAttachment] {
+    /// What the user attached, as it went to the agent: a picture the agent got as a path shows as
+    /// a file, as it will when the session is reloaded. Mentions already show in the text.
+    public static func shown(
+        _ attachments: [PromptAttachment], capabilities: PromptCapabilities
+    ) -> [MessageAttachment] {
         attachments.filter { $0.origin == .attached }.map { attachment in
-            let image: Data? = if case .image(let data, _) = attachment.content { data } else { nil }
+            let image: Data? =
+                switch (attachment.content, attachment.delivery(to: capabilities)) {
+                case (.image(let data, _), .image): data
+                default: nil
+                }
             return MessageAttachment(name: attachment.name, url: attachment.url, imageData: image)
         }
     }

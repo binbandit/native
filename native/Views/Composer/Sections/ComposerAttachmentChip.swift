@@ -14,7 +14,8 @@ struct ComposerAttachmentChip: View {
     let onRemove: () -> Void
 
     var body: some View {
-        ComposerAttachmentChipFrame(isWarning: isWarning) {
+        // Only a file that can't go is outlined; a picture going as its path just says so.
+        ComposerAttachmentChipFrame(isOutlined: isMissing) {
             Button(action: onPreview) {
                 HStack(spacing: DS.Space.sm) {
                     AttachmentGlyph(attachment: attachment, isWarning: isWarning)
@@ -81,7 +82,7 @@ struct ComposerPendingAttachmentChip: View {
     let pending: ComposerPendingAttachment
 
     var body: some View {
-        ComposerAttachmentChipFrame(isWarning: false) {
+        ComposerAttachmentChipFrame(isOutlined: false) {
             HStack(spacing: DS.Space.sm) {
                 DotGridLoader(pattern: .waiting)
                     .padding(DS.Space.xs)
@@ -101,7 +102,8 @@ struct ComposerPendingAttachmentChip: View {
 
 /// The chip's shape, shared by attached and pending files.
 private struct ComposerAttachmentChipFrame<Content: View>: View {
-    let isWarning: Bool
+    /// In the warning color, for a file that stops the message going.
+    let isOutlined: Bool
     @ViewBuilder let content: Content
 
     var body: some View {
@@ -115,7 +117,7 @@ private struct ComposerAttachmentChipFrame<Content: View>: View {
         .frame(maxWidth: ComposerMetrics.attachmentChipMaxWidth, alignment: .leading)
         .fixedSize(horizontal: true, vertical: false)
         .background(.dsFill, in: shape)
-        .overlay { shape.strokeBorder(isWarning ? Color.dsWarning : .dsBorder) }
+        .overlay { shape.strokeBorder(isOutlined ? Color.dsWarning : .dsBorder) }
     }
 }
 
