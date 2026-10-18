@@ -76,7 +76,10 @@ public struct UndoToast: View {
                 .font(.dsCallout)
                 .tracking(DS.Tracking.tight)
                 .foregroundStyle(.dsTextPrimary)
-                .lineLimit(2)
+                // Room for what was done and what was kept ("…saving uncommitted work as a checkpoint")
+                // without cutting off the part that reassures.
+                .lineLimit(3)
+                .fixedSize(horizontal: false, vertical: true)
             Spacer(minLength: DS.Space.md)
             Button("Undo", action: onUndo)
                 .buttonStyle(.ds(.secondary))
@@ -97,5 +100,9 @@ public struct UndoToast: View {
 #Preview("Undo toast") {
     DSPreviewPair {
         UndoToast(message: "Archived “Sidebar polish”", onUndo: {}, onDismiss: {})
+        UndoToast(
+            message:
+                "Archived “Sidebar polish”. Removed its worktree and branch, saving uncommitted work as a checkpoint.",
+            onUndo: {}, onDismiss: {})
     }
 }
