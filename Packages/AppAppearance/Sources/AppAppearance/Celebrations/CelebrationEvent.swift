@@ -56,8 +56,10 @@ public struct CelebrationEvent: Hashable, Sendable, Identifiable {
 
     public func dateStatus(on day: CivilDate) -> DateStatus {
         if case .unsupported(let kind) = contribution.calendar.rule { return .unsupportedCalendar(kind) }
-        if let coverage = contribution.provenance.coverage, day.year > coverage.through {
-            return .coverageEnded(lastYear: coverage.through)
+        if let last = contribution.provenance.coverage?.through ?? contribution.calendar.rule.lastTabledYear,
+            day.year > last
+        {
+            return .coverageEnded(lastYear: last)
         }
         return .resolvable
     }
