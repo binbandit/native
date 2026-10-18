@@ -54,7 +54,9 @@ struct SkillRow: View {
         let sentence =
             description.firstRange(of: /[.!?](\s|$)/).map { String(description[..<$0.upperBound]) } ?? description
         let text = sentence.trimmingCharacters(in: .whitespacesAndNewlines)
-        return text.count > limit ? text.prefix(limit).trimmingCharacters(in: .whitespaces) + "…" : text
+        guard text.count > limit else { return text }
+        let cut = text.prefix(limit)
+        return (cut.lastIndex(of: " ").map { String(cut[..<$0]) } ?? String(cut)) + "…"
     }
 
     /// Who loads it, then anything that keeps the switch from reaching an agent.

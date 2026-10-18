@@ -63,6 +63,8 @@ these rules exist to keep changes small, isolated and easy to review.
 
 ## Build, test, run
 
+`just` lists the everyday commands (build, run an isolated instance, test, format, lint, the iPad check, release checks); the commands it wraps are below.
+
 ```sh
 xcodebuild -project native.xcodeproj -scheme native -derivedDataPath /tmp/native-dd/<you> build
 (cd Packages/ACP && swift test)          # likewise for every package
