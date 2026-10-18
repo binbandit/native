@@ -220,8 +220,8 @@ struct ComposerView: View {
                 onCycleEffort: { apply(settings.nextEffort) },
                 onCycleAutonomy: { apply(settings.nextAutonomy) },
                 onTogglePlan: { apply(settings.togglingPlan(resumedAutonomy: autonomyBeforePlan)) },
-                extras: { SessionGoalControl(session: session) },
-                context: { ContextIndicator(session: session, style: .labeled) }
+                extras: { density in SessionGoalControl(session: session, showsIcon: density.showsIcons) },
+                context: { density in ContextIndicator(session: session, style: density.showsIcons ? .ring : .labeled) }
             )
             // The file picker opens on the task's own folder.
             .fileDialogDefaultDirectory(session.cwd)

@@ -2,6 +2,7 @@ import Synchronization
 
 /// Highlighting off the main thread, cached by content: views draw `cached(_:language:)` at once
 /// (plain text when it's nil), then `highlight(_:language:)` in a task and redraw with the colors.
+/// Code that's still changing (a block in a streaming reply) goes through `LiveCodeHighlighter`.
 public final class CodeHighlightCache: Sendable {
     public static let shared = CodeHighlightCache()
 
@@ -29,15 +30,8 @@ public final class CodeHighlightCache: Sendable {
         if let cached = cached(code, language: language) {
             return cached
         }
-        let segments = await Self.work(code, language: language)
-        let key = Key(code: code, language: language?.id)
-        entries.withLock { entries in
-            if entries.size + code.utf8.count > budget {
-                entries = ([:], 0)
-            }
-            entries.segments[key] = segments
-            entries.size += code.utf8.count
-        }
+        let segments = await Self.segments(code, language: language)
+        store(segments, for: code, language: language)
         return segments
     }
 
@@ -47,7 +41,27 @@ public final class CodeHighlightCache: Sendable {
             segments: await highlight(code, language: language), endsWithNewline: code.hasSuffix("\n"))
     }
 
-    @concurrent private static func work(_ code: String, language: CodeLanguage?) async -> [CodeSegment] {
+    /// Keeps `segments` for `code`, and drops what was kept for `replaced`: the earlier text of code
+    /// that has changed since, which nothing will look up again.
+    func store(_ segments: [CodeSegment], for code: String, language: CodeLanguage?, replacing replaced: String? = nil) {
+        let key = Key(code: code, language: language?.id)
+        entries.withLock { entries in
+            if let replaced, replaced != code,
+                let old = entries.segments.removeValue(forKey: Key(code: replaced, language: language?.id))
+            {
+                entries.size -= old.reduce(0) { $0 + $1.text.utf8.count }
+            }
+            guard entries.segments[key] == nil else { return }
+            if entries.size + code.utf8.count > budget {
+                entries = ([:], 0)
+            }
+            entries.segments[key] = segments
+            entries.size += code.utf8.count
+        }
+    }
+
+    /// Highlights on a background thread, without the cache.
+    @concurrent static func segments(_ code: String, language: CodeLanguage?) async -> [CodeSegment] {
         CodeHighlighter.segments(code, language: language)
     }
 }

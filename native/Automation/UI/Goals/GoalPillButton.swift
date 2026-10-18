@@ -5,13 +5,16 @@ import SwiftUI
 /// while the goal is driving the agent (the way the reference app marks a non-default mode).
 struct GoalPillButton: View {
     let status: GoalStatus?
+    /// Only the target, when the composer is short of room; the status stays in the tooltip and the
+    /// accessibility label.
+    var showsIcon = false
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             Label(title, systemImage: "target")
         }
-        .buttonStyle(.pill(isOn: status == .active))
+        .buttonStyle(.pill(isOn: status == .active, isSquare: showsIcon))
         .help(CommandRegistry.shared.help(status == nil ? "Set a goal for the agent to work toward" : "Edit the goal", for: .goalEdit))
         .accessibilityLabel(status == nil ? "Set Goal" : "Goal, \(status?.label ?? "")")
     }

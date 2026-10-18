@@ -109,7 +109,8 @@ private enum ApprovalOptionProminence: Int, Comparable {
     static func < (lhs: Self, rhs: Self) -> Bool { lhs.rawValue < rhs.rawValue }
 }
 
-/// The command as typed, in a sunken block with a dimmed prompt, or a path without one.
+/// The command as typed, with a dimmed prompt, or a path without one. The fill is translucent, so
+/// the block stands out on the docked card and on a home list row alike.
 private struct ApprovalCommandBlock: View {
     let text: String
     let isCommand: Bool
@@ -118,7 +119,7 @@ private struct ApprovalCommandBlock: View {
     var body: some View {
         Group {
             if isCommand {
-                Text("\(Text(verbatim: "$").foregroundStyle(.dsTextTertiary)) \(Text(verbatim: text))")
+                Text("\(Text(verbatim: "$").foregroundStyle(.dsTextSecondary)) \(Text(verbatim: text))")
             } else {
                 Text(verbatim: text)
             }
@@ -129,7 +130,7 @@ private struct ApprovalCommandBlock: View {
         .textSelection(.enabled)
         .padding(DS.Space.md)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(.dsSurfaceSunken, in: .rect(cornerRadius: DS.Radius.card))
+        .background(.dsFill, in: .rect(cornerRadius: DS.Radius.card))
     }
 }
 

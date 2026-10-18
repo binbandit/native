@@ -15,9 +15,14 @@ struct SessionView: View {
     @Experiment(.transcriptWidth) private var columnWidth: TranscriptWidth
     /// Files dropped on the transcript, for the composer to attach.
     @State private var drops = ComposerDropInbox()
+    @Environment(\.inspectorRoom) private var inspectorRoom
+    private static let subagentInspectorWidth: CGFloat = 420
 
     var body: some View {
-        TranscriptView(session: session) { openSubagent = $0 }
+        TranscriptView(session: session) { id in
+            makeInspectorRoom(Self.subagentInspectorWidth)
+            openSubagent = id
+        }
             .environment(\.turnChangesActions, turnChangesActions)
             .environment(\.isPrimaryTranscript, true)
             // A bar rather than an inset, so the transcript gets the system scroll edge effect under it.
@@ -42,7 +47,7 @@ struct SessionView: View {
             .inspector(isPresented: isInspectorPresented) {
                 if let id = openSubagent, let subagent = session.state.subagents.first(where: { $0.id == id }) {
                     SubagentInspector(subagent: subagent, child: session.child(id))
-                        .sessionInspectorColumn(min: 340, ideal: 420, max: 640)
+                        .sessionInspectorColumn(min: 340, ideal: Self.subagentInspectorWidth, max: 640)
                 } else if showsChanges {
                     GitChangesInspector(model: repository) {
                         Task { await GitHubGitWiring.createPullRequest(from: repository, gitHub: gitHub) }
@@ -58,6 +63,11 @@ struct SessionView: View {
             .onChange(of: showsChanges) { _, shows in
                 if shows { openSubagent = nil }
             }
+            .onChange(of: isInspectorPresented.wrappedValue) { _, isPresented in
+                if !isPresented { inspectorRoom.release() }
+            }
+            // Another task or page took the window; the inspector went with this view.
+            .onDisappear { inspectorRoom.release() }
             .toolbar {
                 // Draws its own outline, like the reference app's header control, rather than sitting on glass.
                 ToolbarItem {
@@ -65,14 +75,14 @@ struct SessionView: View {
                 }
                 .sharedBackgroundVisibility(.hidden)
                 ToolbarItem {
-                    GitChangesToolbarButton(model: repository, isPresented: $showsChanges)
+                    GitChangesToolbarButton(model: repository, isPresented: showsChangesBinding)
                 }
                 .visibilityPriority(.high)
                 ToolbarItem {
                     MCPSessionStatusButton(session: session) { settings.open(.mcpServers) }
                 }
             }
-            .focusedSceneValue(\.gitChangesInspector, $showsChanges)
+            .focusedSceneValue(\.gitChangesInspector, showsChangesBinding)
             .refreshesGitStatus(of: session, in: git)
             .environment(\.transcriptColumnMaxWidth, columnWidth.maxWidth)
     }
@@ -93,7 +103,7 @@ struct SessionView: View {
         let gitHub = gitHub
         let canCommit = repository.status.map { !$0.isClean && $0.conflicted.isEmpty } ?? false
         return TurnChangesActions(
-            review: { showsChanges = true },
+            review: { showsChangesBinding.wrappedValue = true },
             commitForm: canCommit
                 ? { isPresented in
                     AnyView(
@@ -104,6 +114,23 @@ struct SessionView: View {
                             }))
                 } : nil
         )
+    }
+
+    /// The changes inspector, making room for it before it opens.
+    private var showsChangesBinding: Binding<Bool> {
+        Binding(
+            get: { showsChanges },
+            set: { shows in
+                if shows { makeInspectorRoom(GitMetrics.inspectorIdealWidth) }
+                showsChanges = shows
+            }
+        )
+    }
+
+    /// Before an inspector opens: the window makes room rather than growing, when none is open yet.
+    private func makeInspectorRoom(_ width: CGFloat) {
+        guard !isInspectorPresented.wrappedValue else { return }
+        inspectorRoom.prepare(width)
     }
 
     private var isInspectorPresented: Binding<Bool> {

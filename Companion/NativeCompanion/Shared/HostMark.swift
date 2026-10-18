@@ -91,9 +91,9 @@ struct HostChip: View {
 }
 
 extension View {
-    /// Tints a host's screens (toolbar buttons, links, switches) with the host's color: the quiet,
-    /// always-on reminder of which host they belong to. Filled actions keep the app's accent, so
-    /// it never shouts, and a host left on `original` keeps the app's accent everywhere.
+    /// Tints what identifies a host or leads into it (the home list's links, the symbol picker)
+    /// with the host's color. Never a whole screen: controls (Stop, switches, approvals, Settings)
+    /// keep their own color. A host left on `original` has no color of its own.
     func hostTint(_ preferences: HostPreferences?) -> some View {
         modifier(HostTint(themeID: preferences?.themeID))
     }

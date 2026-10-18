@@ -68,6 +68,8 @@ struct TaskView: View {
                     Button("Stop", systemImage: "stop.fill") {
                         Task { stopFailure = await host.cancel(sessionID) }
                     }
+                    // A system control: neutral, whatever the host's or the theme's color.
+                    .tint(.dsTextPrimary)
                     .accessibilityIdentifier("stop")
                 }
             }
@@ -75,7 +77,6 @@ struct TaskView: View {
         .sheet(item: $selectedCall) { call in
             ToolCallDetailSheet(call: call)
         }
-        .hostTint(host.preferences)
         .onAppear { host.attach(sessionID) }
     }
 

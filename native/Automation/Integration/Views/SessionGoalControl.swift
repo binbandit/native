@@ -5,13 +5,15 @@ import SwiftUI
 /// (⌥⌘G) and from `/goal` with no objective, through `GoalController.isEditorRequested`.
 struct SessionGoalControl: View {
     let session: SessionModel
+    /// The pill as only its icon, when the composer is short of room.
+    var showsIcon = false
 
     @Environment(AutomationCenter.self) private var center
     @State private var isEditing = false
 
     var body: some View {
         if let controller = center.goal(for: session) {
-            GoalPillButton(status: controller.goal?.status) { isEditing = true }
+            GoalPillButton(status: controller.goal?.status, showsIcon: showsIcon) { isEditing = true }
                 .popover(isPresented: $isEditing, arrowEdge: .top) {
                     GoalEditor(goal: controller.goal, agentName: session.agentName) { objective, budget in
                         isEditing = false

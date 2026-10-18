@@ -107,6 +107,22 @@ private struct PillChrome: ViewModifier {
     }
 }
 
+/// A pill's icon without its title, at the size pill labels draw theirs, for a pill that pairs it
+/// with something else (a meter).
+public struct PillIcon: View {
+    let systemName: String
+
+    public init(_ systemName: String) {
+        self.systemName = systemName
+    }
+
+    public var body: some View {
+        Image(systemName: systemName)
+            .font(.system(size: 11, weight: .regular))
+            .accessibilityHidden(true)
+    }
+}
+
 /// Icon then title, 6pt apart, the icon at 11pt; square pills show the icon alone, through the
 /// system's icon-only style so the title stays the accessibility label.
 private struct PillLabelStyle: LabelStyle {
