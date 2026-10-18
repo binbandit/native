@@ -105,7 +105,8 @@ final class AgentIconStore {
         {
             return artwork
         }
-        if style == .tile, let image = AgentIconInstalledApps.icon(bundleIDs: source.apps, pixelSize: Self.pictureSize) {
+        if style == .tile, let image = AgentIconInstalledApps.icon(bundleIDs: source.apps, pixelSize: Self.pictureSize)
+        {
             return .picture(image)
         }
         if let id = source.registry, let data = await registry.icon(for: id), let glyph = AgentIconGlyph(svg: data) {

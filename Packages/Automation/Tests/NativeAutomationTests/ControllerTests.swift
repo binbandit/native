@@ -8,8 +8,10 @@ final class FakeGoalHost: GoalHost {
     var goalSessionCost: Double?
     var goalLatestReply: String?
     var sent: [String] = []
+    var sendError: (any Error)?
 
-    func sendGoalPrompt(_ text: String) async {
+    func sendGoalPrompt(_ text: String) async throws {
+        if let sendError { throw sendError }
         sent.append(text)
     }
 }
@@ -27,6 +29,17 @@ final class FakeGoalHost: GoalHost {
         await controller.turnDidEnd(.ended)
         #expect(host.sent.count == 2)
         #expect(controller.goal?.lastReason == "tests")
+    }
+
+    @Test func aPromptThatCantGoOutPausesTheGoalWithTheReason() async {
+        struct Gone: LocalizedError { var errorDescription: String? { "The agent is no longer running." } }
+        let host = FakeGoalHost()
+        host.sendError = Gone()
+        let controller = GoalController(store: nil, storageKey: nil)
+        controller.host = host
+        await controller.set(objective: "Ship it", budget: .unlimited)
+        #expect(controller.goal?.status == .paused)
+        #expect(controller.goal?.lastReason == "Couldn't send the next prompt: The agent is no longer running.")
     }
 
     @Test func queuedUserMessagesGoFirst() async {

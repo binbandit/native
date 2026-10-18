@@ -20,7 +20,7 @@ final class NotificationSounds {
     /// viewed and `.unlessViewing` behaves like `.always`.
     @ObservationIgnored var isViewing: (SessionContext) -> Bool = { _ in false }
 
-    @ObservationIgnored private let isAppActive: () -> Bool
+    @ObservationIgnored private let isAppActive: @MainActor () -> Bool
     @ObservationIgnored private let player = SoundPlayer()
     @ObservationIgnored private var lastPlayed = Date.distantPast
     /// Several sessions often finish together; one sound says so.
@@ -29,7 +29,7 @@ final class NotificationSounds {
     init(
         preferences: SoundPreferences = SoundPreferences(),
         focus: any FocusStatusProviding = SystemFocusStatus(),
-        isAppActive: @escaping () -> Bool = NotificationSounds.isAppActive
+        isAppActive: @escaping @MainActor () -> Bool = NotificationSounds.isAppActive
     ) {
         self.preferences = preferences
         self.focus = focus

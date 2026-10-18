@@ -90,13 +90,16 @@ struct AgentIconGlyphView: View {
         Canvas { context, size in
             let box = glyph.viewBox
             let scale = min(size.width / box.width, size.height / box.height)
-            let transform = CGAffineTransform(translationX: (size.width - box.width * scale) / 2, y: (size.height - box.height * scale) / 2)
-                .scaledBy(x: scale, y: scale)
-                .translatedBy(x: -box.minX, y: -box.minY)
+            let transform = CGAffineTransform(
+                translationX: (size.width - box.width * scale) / 2, y: (size.height - box.height * scale) / 2
+            )
+            .scaledBy(x: scale, y: scale)
+            .translatedBy(x: -box.minX, y: -box.minY)
             for piece in glyph.pieces {
                 var layer = context
                 layer.opacity = piece.opacity
-                layer.fill(Path(piece.path).applying(transform), with: .foreground, style: FillStyle(eoFill: piece.evenOdd))
+                layer.fill(
+                    Path(piece.path).applying(transform), with: .foreground, style: FillStyle(eoFill: piece.evenOdd))
             }
         }
     }

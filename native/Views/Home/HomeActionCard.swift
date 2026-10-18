@@ -75,7 +75,7 @@ struct HomeActionCard<Accessory: View>: View {
 
     @ViewBuilder private var glyph: some View {
         if let agent {
-            AgentIcon(agent: agent, style: .tile, size: HomeLayout.cardGlyphSlot)
+            AgentIconTile(agent: agent, size: DS.Size.controlMD)
         } else {
             Image(systemName: systemImage)
                 .font(HomeLayout.cardGlyph)

@@ -38,8 +38,9 @@ public final class GoalController {
     public func set(objective: String, budget: GoalBudget) async {
         let objective = objective.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !objective.isEmpty else { return }
+        // Best effort: the goal is replaced either way.
         if let clear = loop?.clearPrompt, host?.canSendGoalPrompt == true {
-            await host?.sendGoalPrompt(clear)
+            try? await host?.sendGoalPrompt(clear)
         }
         change { $0 = GoalLoop(objective: objective, budget: budget, strategy: strategy, at: now(), sessionCost: host?.goalSessionCost) }
         await sendIfIdle()
@@ -76,8 +77,9 @@ public final class GoalController {
     }
 
     public func clear() async {
+        // Best effort: the goal is replaced either way.
         if let clear = loop?.clearPrompt, host?.canSendGoalPrompt == true {
-            await host?.sendGoalPrompt(clear)
+            try? await host?.sendGoalPrompt(clear)
         }
         change { $0 = nil }
     }
@@ -115,14 +117,25 @@ public final class GoalController {
         var next: String?
         change { next = $0?.turnDidEnd(outcome, reply: reply, sessionCost: cost, at: date) }
         guard let next, let host, host.canSendGoalPrompt else { return }
-        await host.sendGoalPrompt(next)
+        await send(next, through: host)
     }
 
     // MARK: - Internals
 
     private func sendIfIdle() async {
         guard let host, host.canSendGoalPrompt, let prompt = loop?.nextPrompt(at: now()) else { return }
-        await host.sendGoalPrompt(prompt)
+        await send(prompt, through: host)
+    }
+
+    /// A prompt that can't go out pauses the goal with the reason, so it never sits "active" with
+    /// nothing running.
+    private func send(_ prompt: String, through host: any GoalHost) async {
+        do {
+            try await host.sendGoalPrompt(prompt)
+        } catch {
+            let date = now()
+            change { $0?.pause(at: date, reason: "Couldn't send the next prompt: \(error.localizedDescription)") }
+        }
     }
 
     private func change(_ body: (inout GoalLoop?) -> Void) {

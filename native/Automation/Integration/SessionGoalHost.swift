@@ -24,10 +24,8 @@ final class SessionGoalHost: GoalHost {
         session?.state.latestReply
     }
 
-    func sendGoalPrompt(_ text: String) async {
+    func sendGoalPrompt(_ text: String) async throws {
         guard let session, canSendGoalPrompt else { return }
-        // A goal prompt that can't go out leaves the goal waiting, which the goal bar shows; the
-        // session itself reports why (disconnected, still loading).
-        _ = try? await session.submit(text, .queue)
+        _ = try await session.submit(text, .queue)
     }
 }

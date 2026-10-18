@@ -59,6 +59,9 @@ public nonisolated enum GoalPrompt: Hashable, Sendable {
             reading back the result. Report blocked only when you can't go on without the user, such as \
             for a decision only they can make, credentials, or access; otherwise make reasonable choices \
             yourself and keep going.
+
+            Don't end a turn just to wait: if a command or build is still running, wait for it within the \
+            same turn. Every reply starts another iteration.
             """
         if let remaining = usage.remainingText {
             text += "\n\nBudget: \(remaining.replacingOccurrences(of: " left", with: ""))."
@@ -68,7 +71,10 @@ public nonisolated enum GoalPrompt: Hashable, Sendable {
 
     /// `reminder` follows a reply that had no status line, so the agent knows Native couldn't read it.
     public static func continuationText(objective: String, usage: GoalUsage, reminder: Bool, resumed: Bool) -> String {
-        var notes: [String] = [resumed ? "Pick the goal back up where you left off." : "Keep working toward the goal."]
+        var notes: [String] = [
+            resumed ? "Pick the goal back up where you left off." : "Keep working toward the goal.",
+            "If something is still running, wait for it within this turn.",
+        ]
         if let remaining = usage.remainingText {
             notes.append("Budget: \(remaining).")
         }

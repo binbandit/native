@@ -36,6 +36,10 @@ coordinator keeps this current.
 | Updates and release channels | new `Updates` feature | Stable, beta, nightly; published as GitHub Releases |
 | Startup performance | everyone, with a budget | First window well within one Dock bounce |
 | Built-in skills, starting with "build a Native plugin" | orchestration (Native's MCP server) | |
+| Code mode for other MCP servers | `native/MCP`, `Packages/MCPClient`, `Packages/ScriptRuntime` | A server marked "scripted" is reached through `run_script` instead of loading every tool schema (rea: 170 tools, ~197k tokens) |
+| MCP OAuth for Native's own HTTP servers | composer, ACP | URL elicitation cards |
+| One MCP switch across every agent | `native/MCP` | Session-scoped per-agent overrides, global or per project; no editing each agent's config by hand |
+| Skills: browse, enable and disable, install, update and remove | `native/Skills`, `Packages/Skills` | One list across agents and scopes, in Settings ▸ Skills, as in Factory |
 | Minimal by default | plugins, settings | `docs/decisions.md` |
 | iPad app | app target | After the host protocol lands (`docs/architecture.md`) |
 | Expeditions (Factory's missions, rebranded) | `Packages/Expeditions`, `native/Expeditions` | Factory's concept under Native's own name, composed from orchestration, goals, workflows and worktrees |

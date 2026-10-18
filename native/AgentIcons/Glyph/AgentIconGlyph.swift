@@ -88,10 +88,14 @@ nonisolated private final class AgentIconSVGReader: NSObject, XMLParserDelegate 
         }
         guard let shape = Self.shape(name, attributes) else { return }
         if style.fills {
-            pieces.append(.init(path: transformed(shape, style), evenOdd: style.evenOdd, opacity: style.opacity * style.fillOpacity))
+            pieces.append(
+                .init(
+                    path: transformed(shape, style), evenOdd: style.evenOdd, opacity: style.opacity * style.fillOpacity)
+            )
         }
         if style.strokes, style.strokeWidth > 0 {
-            let outline = shape.copy(strokingWithWidth: style.strokeWidth, lineCap: style.lineCap, lineJoin: style.lineJoin, miterLimit: 4)
+            let outline = shape.copy(
+                strokingWithWidth: style.strokeWidth, lineCap: style.lineCap, lineJoin: style.lineJoin, miterLimit: 4)
             pieces.append(.init(path: transformed(outline, style), evenOdd: false, opacity: style.opacity))
         }
     }
@@ -170,16 +174,23 @@ nonisolated private final class AgentIconSVGReader: NSObject, XMLParserDelegate 
             let radiusX = number(attributes["rx"]) ?? number(attributes["ry"]) ?? 0
             let radiusY = number(attributes["ry"]) ?? radiusX
             return CGPath(
-                roundedRect: rect, cornerWidth: min(radiusX, rect.width / 2), cornerHeight: min(radiusY, rect.height / 2),
+                roundedRect: rect, cornerWidth: min(radiusX, rect.width / 2),
+                cornerHeight: min(radiusY, rect.height / 2),
                 transform: nil)
         case "circle":
             let radius = value("r")
             guard radius > 0 else { return nil }
-            return CGPath(ellipseIn: CGRect(x: value("cx") - radius, y: value("cy") - radius, width: radius * 2, height: radius * 2), transform: nil)
+            return CGPath(
+                ellipseIn: CGRect(
+                    x: value("cx") - radius, y: value("cy") - radius, width: radius * 2, height: radius * 2),
+                transform: nil)
         case "ellipse":
             let (radiusX, radiusY) = (value("rx"), value("ry"))
             guard radiusX > 0, radiusY > 0 else { return nil }
-            return CGPath(ellipseIn: CGRect(x: value("cx") - radiusX, y: value("cy") - radiusY, width: radiusX * 2, height: radiusY * 2), transform: nil)
+            return CGPath(
+                ellipseIn: CGRect(
+                    x: value("cx") - radiusX, y: value("cy") - radiusY, width: radiusX * 2, height: radiusY * 2),
+                transform: nil)
         case "line":
             let path = CGMutablePath()
             path.move(to: CGPoint(x: value("x1"), y: value("y1")))
@@ -226,7 +237,9 @@ nonisolated enum AgentIconSVGTransform {
             var scanner = AgentIconSVGScanner(String(parts[1]))
             var values: [CGFloat] = []
             while let value = scanner.number() { values.append(value) }
-            guard let transform = make(parts[0].trimmingCharacters(in: .whitespaces.union(.init(charactersIn: ","))), values)
+            guard
+                let transform = make(
+                    parts[0].trimmingCharacters(in: .whitespaces.union(.init(charactersIn: ","))), values)
             else { return nil }
             // Later functions in the list apply to the point first.
             result = transform.concatenating(result)
@@ -237,7 +250,8 @@ nonisolated enum AgentIconSVGTransform {
     private static func make(_ name: String, _ values: [CGFloat]) -> CGAffineTransform? {
         switch (name, values.count) {
         case ("matrix", 6):
-            return CGAffineTransform(a: values[0], b: values[1], c: values[2], d: values[3], tx: values[4], ty: values[5])
+            return CGAffineTransform(
+                a: values[0], b: values[1], c: values[2], d: values[3], tx: values[4], ty: values[5])
         case ("translate", 1), ("translate", 2):
             return CGAffineTransform(translationX: values[0], y: values.count == 2 ? values[1] : 0)
         case ("scale", 1), ("scale", 2):

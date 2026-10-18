@@ -18,12 +18,18 @@ struct ComposerFeedback: Equatable, Identifiable {
         canUndo ? .seconds(6) : .seconds(4)
     }
 
-    /// What became of a message sent while the agent was working. A message that started a turn of
-    /// its own shows in the transcript, so it needs no word here.
-    init?(delivery: SessionModel.FollowUpDelivery, requested: FollowUpBehavior, supportsSteering: Bool, agentName: String) {
+    /// What became of a sent message. One that started a turn of its own shows in the transcript, so
+    /// it needs no word here. `wasWorking` says whether a turn was running; otherwise the agent
+    /// wasn't ready yet (the session was loading).
+    init?(
+        delivery: SessionModel.FollowUpDelivery, requested: FollowUpBehavior, wasWorking: Bool, supportsSteering: Bool,
+        agentName: String
+    ) {
         switch delivery {
         case .prompted:
             return nil
+        case .queued where !wasWorking:
+            self.init(tone: .done, message: "Sends when \(agentName) is ready")
         case .steered:
             self.init(tone: .done, message: "Added to the running turn")
         case .queued where requested == .steer && !supportsSteering:

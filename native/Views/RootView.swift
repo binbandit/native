@@ -20,6 +20,8 @@ struct RootView: View {
     @Environment(ExpeditionCenter.self) private var expeditions
     @Environment(SettingsPresentation.self) private var settings
     @Environment(TerminalStore.self) private var terminals
+    @Environment(KeepAwakeController.self) private var keepAwake
+    @Environment(StatusBarRegistry.self) private var statusBar
 
     var body: some View {
         @Bindable var model = model
@@ -136,7 +138,7 @@ struct RootView: View {
         if settings.isShown {
             SettingsScreen(
                 pane: $settings.pane,
-                additionalPanes: AppSettingsPanes.all(plugins: model.plugins, terminals: terminals))
+                additionalPanes: AppSettingsPanes.all(plugins: model.plugins, terminals: terminals, keepAwake: keepAwake))
         } else {
             splitView
         }
@@ -192,6 +194,7 @@ struct RootView: View {
             detail
         }
         .toolbar(removing: .sidebarToggle)
+        .safeAreaBar(edge: .bottom) { StatusBar(registry: statusBar) }
     }
 
     private var sidebar: some View {

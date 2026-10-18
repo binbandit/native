@@ -10,6 +10,7 @@ struct SessionView: View {
     @State private var showsChanges = false
     @Environment(GitStore.self) private var git
     @Environment(GitHubModel.self) private var gitHub
+    @Environment(SettingsPresentation.self) private var settings
     @Experiment(.transcriptWidth) private var columnWidth: TranscriptWidth
 
     var body: some View {
@@ -56,7 +57,7 @@ struct SessionView: View {
                 }
                 .visibilityPriority(.high)
                 ToolbarItem {
-                    MCPSessionStatusButton(session: session)
+                    MCPSessionStatusButton(session: session) { settings.open(.mcpServers) }
                 }
             }
             .focusedSceneValue(\.gitChangesInspector, $showsChanges)

@@ -14,7 +14,7 @@ struct ComposerPlaceholder {
     var text: String {
         let agent = agentName
         let text = switch phase {
-        case .loading: "Waiting for session…"
+        case .loading: "Loading… messages send when \(agent) is ready"
         case .disconnected: "\(agent) isn’t running"
         case .prompting where hasQuestion: "\(agent) is waiting for your answer above…"
         case .prompting where needsApproval: "\(agent) is waiting for your approval…"

@@ -46,10 +46,13 @@ extension ComposerView {
             return
         }
         session.draft = ""
+        let wasWorking = isWorking
         Task {
             do {
                 let delivery = try await session.submit(text, behavior)
-                feedback = ComposerFeedback(delivery: delivery, requested: behavior, supportsSteering: session.supportsSteering, agentName: session.agentName)
+                feedback = ComposerFeedback(
+                    delivery: delivery, requested: behavior, wasWorking: wasWorking,
+                    supportsSteering: session.supportsSteering, agentName: session.agentName)
             } catch {
                 // Nothing went out, so the message comes back to be sent again.
                 if session.draft.isEmpty {

@@ -28,7 +28,6 @@ final class KeepAwake {
     }
 
     /// Applies a policy for the current activity; call again whenever either changes.
-    @discardableResult
     func apply(_ policy: KeepAwakePolicy, activity: KeepAwakeActivity) -> KeepAwakeStatus {
         self.policy = policy
         self.activity = activity

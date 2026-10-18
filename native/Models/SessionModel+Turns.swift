@@ -66,8 +66,9 @@ extension SessionModel {
 
     /// Sends `text` on someone's behalf (another session, a workflow, a timer) whatever the agent is
     /// doing, leaving the draft alone. When idle, it returns once the turn has started, not when it
-    /// ends. While a turn runs it steers (if `behavior` asks and the agent can) or queues. `echo:
-    /// false` keeps the text out of the transcript, now and when it goes out from the queue.
+    /// ends. While a turn runs it steers (if `behavior` asks and the agent can) or queues, as it
+    /// does while the session loads. `echo: false` keeps the text out of the transcript, now and
+    /// when it goes out from the queue.
     @discardableResult
     func submit(_ text: String, _ behavior: FollowUpBehavior, echo: Bool = true) async throws -> FollowUpDelivery {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -75,7 +76,9 @@ extension SessionModel {
         guard acceptsPrompts else { throw SendError.notAcceptingPrompts }
         switch phase {
         case .loading:
-            throw SendError.loading
+            // Sent the moment the session has loaded (`finishLoading`), rather than refused.
+            queue.append(text, isEchoed: echo)
+            return .queued
         case .disconnected:
             throw SendError.disconnected
         case .idle where !isRunningHiddenCommand:

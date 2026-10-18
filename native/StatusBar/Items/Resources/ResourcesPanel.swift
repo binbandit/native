@@ -1,4 +1,3 @@
-import AppKit
 import SwiftUI
 
 /// Every process tree's memory and CPU with its trend, and on expanding a tree, each process in it
@@ -6,6 +5,7 @@ import SwiftUI
 struct ResourcesPanel: View {
     let monitor: ResourceMonitor
 
+    @Environment(\.openURL) private var openURL
     @State private var sort = ResourceSort.memory
     @State private var expanded: Set<ProcessGroup.Kind>
 
@@ -20,9 +20,11 @@ struct ResourcesPanel: View {
 
     var body: some View {
         StatusBarPanel(title: "Memory and CPU", systemImage: "memorychip") {
+            #if os(macOS)
             IconButton("Open Activity Monitor", systemImage: "arrow.up.forward.app") {
-                openActivityMonitor()
+                openURL(URL(filePath: "/System/Applications/Utilities/Activity Monitor.app"))
             }
+            #endif
         } content: {
             summary
             SeparatorLine()
@@ -68,10 +70,5 @@ struct ResourcesPanel: View {
         .padding(.horizontal, DS.Space.lg)
         .frame(height: DS.Size.controlSM)
         .accessibilityElement(children: .combine)
-    }
-
-    private func openActivityMonitor() {
-        guard let url = NSWorkspace.shared.urlForApplication(withBundleIdentifier: "com.apple.ActivityMonitor") else { return }
-        NSWorkspace.shared.openApplication(at: url, configuration: NSWorkspace.OpenConfiguration())
     }
 }

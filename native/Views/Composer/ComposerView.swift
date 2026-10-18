@@ -31,7 +31,7 @@ struct ComposerView: View {
     @State var feedback: ComposerFeedback?
 
     var canEdit: Bool {
-        session.phase != .loading && session.phase != .disconnected
+        session.phase != .disconnected
     }
 
     var isWorking: Bool {
@@ -158,7 +158,7 @@ struct ComposerView: View {
                         prompts: session.queuedPrompts,
                         editing: editingQueued,
                         // After a cancelled turn the queue waits, idle, until one is sent by hand.
-                        sendNow: isWorking ? (session.supportsSteering ? .steer : nil) : .send,
+                        sendNow: isWorking ? (session.supportsSteering ? .steer : nil) : session.phase == .idle ? .send : nil,
                         onSendNow: { id in Task { await session.steerQueued(id) } },
                         onEdit: edit,
                         onRemove: remove

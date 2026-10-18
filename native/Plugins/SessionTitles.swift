@@ -30,8 +30,18 @@ final class SessionTitles {
     }
 
     func title(for key: Key, agentTitle: String?) -> String? {
-        userTitles[key.storageKey] ?? generatedTitles[key.storageKey] ?? agentTitle
+        userTitles[key.storageKey] ?? generatedTitles[key.storageKey] ?? agentTitle.flatMap(Self.meaningful)
     }
+
+    /// Some agents name a session they haven't titled with a timestamp ("New session -
+    /// 2026-10-17T14:19:55.251Z", from OpenCode). That says nothing the row's age doesn't, so it
+    /// counts as no title.
+    private static func meaningful(_ agentTitle: String) -> String? {
+        agentTitle.wholeMatch(of: placeholderTitle) == nil ? agentTitle : nil
+    }
+
+    private nonisolated(unsafe) static let placeholderTitle =
+        #/(?i)new session\s*[-–]\s*\d{4}-\d{2}-\d{2}T[\d:.]+Z?/#
 
     /// The title the user typed, if any, so a rename can be undone back to exactly what was there.
     func userTitle(for key: Key) -> String? {
@@ -49,9 +59,9 @@ final class SessionTitles {
     /// user's. Call it when the first prompt is sent.
     func generateIfNeeded(for key: Key, request: TitleRequest, using titler: (any SessionTitler)?) async {
         guard let titler,
-              userTitles[key.storageKey] == nil,
-              generatedTitles[key.storageKey] == nil,
-              generating.insert(key).inserted
+            userTitles[key.storageKey] == nil,
+            generatedTitles[key.storageKey] == nil,
+            generating.insert(key).inserted
         else { return }
         defer { generating.remove(key) }
         do {
