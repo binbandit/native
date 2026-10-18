@@ -7,7 +7,9 @@
 # (every feature uses it) against the iOS simulator SDK in Swift 6 mode with the app's settings
 # (MainActor by default, member import visibility). `#Preview` blocks are stripped, since the
 # preview macro isn't available outside Xcode. Swift packages the files import (ACP, Git, …) are
-# built for iOS first from Packages/*/Sources. Code that uses other app folders needs those folders
+# built for iOS first from Packages/*/Sources; a package SwiftPM has to build (remote dependencies
+# or resources, like CodeThemes and its tree-sitter grammars) is built with xcodebuild for the
+# simulator into a cache kept between runs. Code that uses other app folders needs those folders
 # listed too. Prints the errors and warnings, and exits non-zero if there are errors.
 set -euo pipefail
 
@@ -19,7 +21,9 @@ fi
 root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
 cd "$root"
 work=$(mktemp -d -t native-check-ios)
-trap 'rm -rf "$work"' EXIT
+packages=${TMPDIR:-/tmp}/native-check-ios-packages
+lock=""
+trap 'rm -rf "$work"; [ -z "$lock" ] || rmdir "$lock" 2>/dev/null' EXIT
 mkdir -p "$work/sources" "$work/modules"
 
 sdk=$(xcrun --sdk iphonesimulator --show-sdk-path)
@@ -58,13 +62,41 @@ for path in native/DesignSystem "$@"; do
     strip_previews "$path" "$work/sources"
 done
 
+# Builds a package with xcodebuild for the simulator and imports its products, for packages swiftc
+# alone can't build. The cache makes reruns incremental; parallel checks take turns on it.
+build_package() {
+    local package=$1 name=$2
+    local derived="$packages/$(basename "$package")"
+    mkdir -p "$packages"
+    until mkdir "$derived.lock" 2>/dev/null; do sleep 1; done
+    lock="$derived.lock"
+    if ! (cd "$package" && xcodebuild -scheme "$name" -destination "generic/platform=iOS Simulator" \
+        -derivedDataPath "$derived" build -quiet) >"$derived.log" 2>&1; then
+        grep -E "error:" "$derived.log" | sort -u | head -20 >&2
+        echo "building $package for iOS failed; full log: $derived.log" >&2
+        exit 1
+    fi
+    rmdir "$lock"
+    lock=""
+    flags+=(-I "$derived/Build/Products/Debug-iphonesimulator")
+    for map in "$derived"/Build/Intermediates.noindex/GeneratedModuleMaps-iphonesimulator/*.modulemap; do
+        [ -e "$map" ] && flags+=(-Xcc "-fmodule-map-file=$map")
+    done
+    touch "$work/modules/$name.package"
+}
+
 # Builds a package module (and the package modules it imports) for iOS, once.
 build_module() {
     local name=$1
-    [ -e "$work/modules/$name.swiftmodule" ] && return
+    [ -e "$work/modules/$name.swiftmodule" ] || [ -e "$work/modules/$name.package" ] && return
     local dir
     dir=$(ls -d Packages/*/Sources/"$name" 2>/dev/null | head -1 || true)
     [ -n "$dir" ] || return 0
+    local package=${dir%/Sources/*}
+    if grep -qE "\.package\(url:|resources:" "$package/Package.swift"; then
+        build_package "$package" "$name"
+        return
+    fi
     for dependency in $(grep -rhoE "^(@[a-zA-Z_]+ )*import [A-Za-z_]+" "$dir" | awk '{print $NF}' | sort -u || true); do
         [ "$dependency" != "$name" ] && build_module "$dependency"
     done

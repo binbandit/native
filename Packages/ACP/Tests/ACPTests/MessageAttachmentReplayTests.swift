@@ -33,23 +33,35 @@ struct MessageAttachmentReplayTests {
         #expect(users.last?.attachments.first?.url == URL(filePath: "/tmp/attachments-probe/project/files/notes.txt"))
     }
 
-    /// Claude Code keeps an embedded file's link and its contents as separate blocks: one file.
-    @Test func claudeCodeLinkAndContextAreOneFile() {
+    /// Captured from `session/load` on claude-agent-acp 0.93.0 after Native sent an image block and an
+    /// embedded text file. Claude Code keeps the file's link and its contents as separate blocks.
+    static let claudeCodeReplay = [
+        #"{"sessionId":"600fca73","update":{"sessionUpdate":"user_message_chunk","content":{"type":"text","text":"In two words: circle color, and first word of notes.txt?"},"messageId":"08e6c40d"}}"#,
+        #"{"sessionId":"600fca73","update":{"sessionUpdate":"user_message_chunk","content":{"type":"image","data":"AQID","mimeType":"image/png"},"messageId":"08e6c40d"}}"#,
+        #"{"sessionId":"600fca73","update":{"sessionUpdate":"user_message_chunk","content":{"type":"text","text":"[@notes.txt](file:///tmp/attachments-probe/project/files/notes.txt)"},"messageId":"08e6c40d"}}"#,
+        #"{"sessionId":"600fca73","update":{"sessionUpdate":"user_message_chunk","content":{"type":"text","text":"\n<context ref=\"file:///tmp/attachments-probe/project/files/notes.txt\">\nThe quick brown fox jumps over the lazy dog.\nSecond line here.\n\n</context>"},"messageId":"08e6c40d"}}"#,
+    ]
+
+    @Test func claudeCodeLinkAndContextAreOneFile() throws {
         var state = SessionState()
-        let blocks: [ContentBlock] = [
-            .text("Summarize it"),
-            .text("[@My%20Notes.md](file:///repo/My%20Notes.md)"),
-            .text("\n<context ref=\"file:///repo/My%20Notes.md\">\n# Notes\n</context>"),
-        ]
-        for block in blocks {
-            state.apply(.userMessageChunk(ContentChunk(content: block, messageId: "u1")))
+        for line in Self.claudeCodeReplay {
+            state.apply(try JSONDecoder().decode(SessionNotification.self, from: Data(line.utf8)).update)
         }
+        #expect(state.items.count == 1)
         guard case .message(let message) = state.items.last else {
             Issue.record("no message")
             return
         }
-        #expect(message.text == "Summarize it")
-        #expect(message.attachments.map(\.name) == ["My Notes.md"])
+        #expect(message.text == "In two words: circle color, and first word of notes.txt?")
+        #expect(message.attachments.map(\.name) == ["Image", "notes.txt"])
+        #expect(message.attachments.first?.imageData == Data([1, 2, 3]))
+    }
+
+    /// A link's name comes back as the agent wrote it, percent-encoded from the file's URL.
+    @Test func linkNamesAreDecoded() {
+        let attachment = MessageAttachment(replayedText: "[@My%20Notes.md](file:///repo/My%20Notes.md)")
+        #expect(attachment?.name == "My Notes.md")
+        #expect(attachment?.url == URL(filePath: "/repo/My Notes.md"))
     }
 
     @Test func textThatOnlyQuotesALinkStaysText() {
