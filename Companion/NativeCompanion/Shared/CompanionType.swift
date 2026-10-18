@@ -21,6 +21,9 @@ enum CompanionMetrics {
     static let hostMark: CGFloat = 32
     static let welcomeMark: CGFloat = 72
     static let hostMarkSmall: CGFloat = 20
+    static let hostMarkTiny: CGFloat = 14
+    static let iconThumbnail: CGFloat = 36
+    static let iconPreview: CGFloat = 60
     static let scannerHeight: CGFloat = 320
     static let pill: CGFloat = 50
     static let composerMaxLines = 6

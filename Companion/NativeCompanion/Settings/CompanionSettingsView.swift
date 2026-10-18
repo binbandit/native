@@ -1,13 +1,13 @@
 import NativeHostProtocol
 import SwiftUI
 
-/// Settings: the paired hosts (and adding one), appearance, the app icon, notifications.
+/// Settings: the paired hosts (and adding one), appearance, the app icon and celebrations,
+/// notifications.
 struct CompanionSettingsView: View {
     @Environment(CompanionStore.self) private var store
     @Environment(\.dismiss) private var dismiss
     @AppStorage(CompanionAppearance.key) private var appearance = CompanionAppearance.system
-    @AppStorage(CompanionAppIcon.key) private var iconTheme = CompanionAppIcon.original.rawValue
-    @State private var iconProblem: String?
+    @Environment(AppIconController.self) private var icons
     @State private var notificationsAllowed: Bool?
 
     var body: some View {
@@ -40,27 +40,15 @@ struct CompanionSettingsView: View {
                     .pickerStyle(.segmented)
                 }
                 Section {
-                    Picker("App Icon", selection: $iconTheme) {
-                        ForEach(CompanionAppIcon.allCases) { theme in
-                            HStack {
-                                Circle().fill(.dsAccent).frame(
-                                    width: CompanionMetrics.hostMarkSmall, height: CompanionMetrics.hostMarkSmall
-                                )
-                                .dsAccentPalette(themeID: theme.rawValue)
-                                Text(theme.title)
-                            }
-                            .tag(theme.rawValue)
+                    NavigationLink {
+                        AppIconSettingsView()
+                    } label: {
+                        HStack(spacing: DS.Space.lg) {
+                            AppIconThumbnail(name: icons.target().name)
+                            Text("App Icon")
                         }
                     }
-                    .pickerStyle(.inline)
-                    .labelsHidden()
-                    .onChange(of: iconTheme) { _, id in
-                        Task { iconProblem = await CompanionAppIcon(rawValue: id)?.apply() }
-                    }
-                } header: {
-                    Text("App Icon")
-                } footer: {
-                    Text(iconProblem ?? "The icon sets the accent too, as on the Mac.")
+                    .accessibilityIdentifier("appIcon")
                 }
                 Section("Notifications") {
                     Button("Allow Notifications") {
