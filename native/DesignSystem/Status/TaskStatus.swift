@@ -1,22 +1,22 @@
 import SwiftUI
 
-/// What a task (an agent session) is doing, as the sidebar shows it. Mirrors the reference app's workspace
-/// statuses, narrowed to agent states: active states animate, states that need the user turn
-/// amber (`dsAttention`) so they stand out under any accent, and settled states are quiet.
+/// What a task (an agent session) is doing, as the sidebar shows it: active states animate, states
+/// that need the user turn amber (`dsAttention`) so they stand out under any accent, and settled
+/// states are quiet.
 public nonisolated enum TaskStatus: Hashable, Sendable, CaseIterable {
     /// Not started, or finished and read: a hollow circle.
     case idle
-    /// The agent is starting up (the reference app `setting-up`).
+    /// The agent is starting up.
     case starting
-    /// The agent is working on a turn (the reference app `working`).
+    /// The agent is working on a turn.
     case working
-    /// Waiting on background tasks (the reference app `waiting`).
+    /// Waiting on background tasks.
     case waiting
-    /// The agent asked a question (the reference app `needs-user-input`).
+    /// The agent asked a question.
     case needsInput
-    /// A tool call is waiting for approval (the reference app `needs-user-permission`).
+    /// A tool call is waiting for approval.
     case needsPermission
-    /// A plan is waiting for review (the reference app `needs-plan-response`).
+    /// A plan is waiting for review.
     case needsPlanReview
     /// The last turn finished.
     case done
@@ -29,7 +29,7 @@ public nonisolated enum TaskStatus: Hashable, Sendable, CaseIterable {
     /// Stopped by a usage limit until it resets.
     case limited
 
-    /// the reference app's tooltip and accessibility text for the status.
+    /// The tooltip and accessibility text for the status.
     public var label: String {
         switch self {
         case .idle: "Idle"
@@ -75,7 +75,7 @@ public nonisolated enum TaskStatus: Hashable, Sendable, CaseIterable {
         }
     }
 
-    /// The SF Symbol for settled and attention states (the reference app's lucide glyphs).
+    /// The SF Symbol for settled and attention states.
     var symbolName: String? {
         switch self {
         case .needsInput: "questionmark.bubble"
@@ -90,7 +90,7 @@ public nonisolated enum TaskStatus: Hashable, Sendable, CaseIterable {
         }
     }
 
-    /// The animated loader for busy states (the reference app's status sprites).
+    /// The animated loader for busy states.
     var loader: DotGridLoader.Pattern? {
         switch self {
         case .starting: .settingUp
@@ -101,7 +101,7 @@ public nonisolated enum TaskStatus: Hashable, Sendable, CaseIterable {
     }
 }
 
-/// The 16pt status glyph that leads a task row (the reference app `WorkspaceStatusIcon`): an animated dot
+/// The 16pt status glyph that leads a task row: an animated dot
 /// grid while the agent is busy, otherwise a symbol tinted by the status.
 public struct StatusIndicator: View {
     let status: TaskStatus
@@ -120,7 +120,7 @@ public struct StatusIndicator: View {
                     .foregroundStyle(status.tint)
                     .frame(width: size * 0.875, height: size * 0.875)
             } else if status == .idle {
-                // the reference app's hollow circle is smaller than SF's (r 9 of 24 at 14pt).
+                // Smaller than SF's circle (r 9 of 24 at 14pt), so idle reads quieter than the glyphs.
                 Circle()
                     .strokeBorder(status.tint, lineWidth: 1.2)
                     .frame(width: size * 0.66, height: size * 0.66)

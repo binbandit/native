@@ -56,10 +56,9 @@ for its lifetime; a second copy exits 0 (so launchd doesn't restart it). Agents 
 children and exit when the host's end of their stdio closes, so they die with the host (checked by
 killing the host mid-turn under launchd: no adapters were left behind); Phase 2 also tracks each
 agent's process group (npm puts itself in its own) and ends it explicitly, so there are no orphaned
-agent trees, ever. (the reference app's
-worst bugs were the opposite: daemons from old versions piling up, and an app that read "daemon
-unreachable" as "gone" and started a second copy of a running conversation. The lock and the
-single launchd label make both impossible.)
+agent trees, ever. (The opposite failures are as bad: daemons from old versions piling up, or an
+app that reads "daemon unreachable" as "gone" and starts a second copy of a running conversation.
+The lock and the single launchd label make both impossible.)
 
 **Start.** The app registers the agent on launch (idempotent) and connects. (Development builds
 start a session-only launchd job instead; see "Development builds".) If the user disabled

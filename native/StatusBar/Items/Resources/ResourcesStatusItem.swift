@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The memory and CPU Native and its agents use (the reference app's Resource Manager): the totals in the bar,
+/// The memory and CPU Native and its agents use: the totals in the bar,
 /// each process tree and process on click. Samples only while the bar is on screen.
 struct ResourcesStatusItem: StatusBarItem {
     let source: any StatusBarSource
@@ -67,7 +67,7 @@ private struct ResourcesSegment: View {
         return "\(DSFormat.share(Int(clamping: bytes), of: Int(clamping: total))) of \(DSFormat.memory(total))"
     }
 
-    /// the reference app tints the figure under memory pressure; here, past a quarter and half of the Mac's RAM.
+    /// Tints the figure as memory gets tight: past a quarter and half of the Mac's RAM.
     private var memoryTint: Color? {
         let share = Double(snapshot.memory) / Double(max(ProcessInfo.processInfo.physicalMemory, 1))
         return share >= 0.5 ? .dsDanger : share >= 0.25 ? .dsWarning : nil

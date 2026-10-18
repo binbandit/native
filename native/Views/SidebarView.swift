@@ -1,8 +1,8 @@
 import SwiftUI
 
-/// The sidebar. Its top half follows the reference app: "New Session" and the navigation items other features
-/// add, then their accessories (the usage meter). Below a hairline, the projects and their sessions
-/// follow the reference app's tree, and its footer holds Help and Settings. Nothing in it
+/// The sidebar. Its top half holds "New Session" and the navigation items other features add, then
+/// their accessories (the usage meter). Below a hairline, the projects and their sessions form a
+/// tree, and its footer holds Help and Settings. Nothing in it
 /// is opaque, so the sidebar material shows through everywhere.
 ///
 /// Features extend it through its slots rather than editing it: `navigationItems` adds rows under
@@ -33,7 +33,7 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            // the reference app's primary nav group: 6pt insets, 2pt between rows.
+            // The primary nav group: 6pt insets, 2pt between rows.
             VStack(alignment: .leading, spacing: DS.Space.xxs) {
                 NewSessionItem()
                 navigationItems

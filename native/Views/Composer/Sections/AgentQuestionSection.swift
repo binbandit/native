@@ -1,7 +1,7 @@
 import ACP
 import SwiftUI
 
-/// An agent's questions docked above the draft (research/native-recommendations.md item 5): one
+/// An agent's questions docked above the draft: one
 /// question at a time with a pager, options as rows with a line of detail, a free-text row, and
 /// Skip / Next. Its keys are in docs/keyboard.md, "Agent questions".
 struct AgentQuestionSection: View {

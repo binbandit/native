@@ -15,9 +15,8 @@ asks its host to run one; iOS wouldn't allow V8's JIT anyway, and the runtime ru
 | `Packages/ScriptRuntime/` | Swift: launches the runtime, speaks its protocol, runs bound tools (`ScriptRunner`) |
 | `scripts/build-script-runtime.sh` | Builds and signs the runtime; the Xcode phase "Embed Script Runtime" runs it |
 
-The runtime started as Brayden's reimplementation of the reference app's script runtime. It was restructured
-for Native: its own guest JavaScript (no bundled third-party code), Native-specific features
-removed, the protocol simplified (below), and the boundaries tightened.
+The runtime is built for Native: its own guest JavaScript (no bundled third-party code), a small
+protocol (below), and tight boundaries.
 
 ## Security boundaries
 

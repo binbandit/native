@@ -8,7 +8,7 @@ import AppKit
 /// and hover fill drawn around it by `OpenInButton`. On the Mac it's AppKit underneath, so the menu
 /// behaves like a native pull-down: it opens on mouse-down (press, drag to an app, release), from
 /// the keyboard (Space, Return or ↓ with Full Keyboard Access) and from VoiceOver, and it's
-/// right-aligned under the control as the reference app's is. Elsewhere it's a SwiftUI menu.
+/// right-aligned under the control. Elsewhere it's a SwiftUI menu.
 struct OpenInMenuTrigger: View {
     let location: OpenInLocation
     let model: OpenInModel
@@ -59,7 +59,7 @@ final class OpenInMenuTriggerView: NSView {
     var onHoverChange: (Bool) -> Void = { _ in }
     var onOpenChange: (Bool) -> Void = { _ in }
 
-    /// How far the menu's top edge sits below the control: the reference app's popover offset (4px), plus
+    /// How far the menu's top edge sits below the control: a 4pt gap, plus
     /// the padding NSMenu draws above the item placed at the pop-up location (5pt on macOS 27).
     private static let menuOffset = DS.Space.xs + 5
 

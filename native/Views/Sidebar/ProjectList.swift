@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The projects and their sessions (the reference app's sidebar tree): a "Projects" header with the Needs You
+/// The projects and their sessions as a tree: a "Projects" header with the Needs You
 /// filter and an add button, each project as a collapsible group in the user's order, then what's
 /// archived. Collapsed projects are remembered, and a project expands when one of its sessions is
 /// selected.
@@ -92,7 +92,7 @@ struct ProjectList<TaskAccessory: View>: View {
     }
 }
 
-/// the reference app's empty tree: a dashed button to add the first project.
+/// The empty tree: a dashed button to add the first project.
 private struct AddProjectPrompt: View {
     @Environment(AppModel.self) private var model
     @State private var isHovered = false

@@ -1,7 +1,7 @@
 import NativeCommands
 import SwiftUI
 
-/// The sidebar's first navigation item (the reference app's "New session"): starts a session in the current
+/// The sidebar's first navigation item, "New Session": starts a session in the current
 /// project with the default agent, with a menu at its end for picking another agent.
 struct NewSessionItem: View {
     @Environment(AppModel.self) private var model

@@ -1,7 +1,7 @@
 import NativeAutomation
 import SwiftUI
 
-/// A task's goal as the composer's top section, after the reference app's mission bar: the status in an
+/// A task's goal as the composer's top section: the status in an
 /// uppercase mono label, the objective, its spend against the budget, what the loop is doing or why
 /// it stopped, and the one action that moves it on.
 struct GoalSection: View {

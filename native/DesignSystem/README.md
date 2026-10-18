@@ -2,8 +2,8 @@
 
 Native's tokens, components and patterns. Every color, font, size, radius and animation in the app
 comes from here, so many contributors (people and agents, working in parallel) build screens that
-look like one product. The look follows the reference app (sidebar top half, composer, buttons, type) and
-the reference app (projects and tasks, statuses, loaders), with Native's own brand and accents.
+look like one product: quiet neutral chrome, Geist type, outlined controls and color saved for
+statuses, with Native's own brand and accents.
 
 Open `DesignSystemGallery` (the "Gallery" preview, or `DesignSystemGallery.showWindow()` on the
 Mac) to see everything in light and dark side by side.
@@ -54,11 +54,11 @@ Mac) to see everything in light and dark side by side.
 
 | File | What |
 | --- | --- |
-| `Tokens/TokensColor.swift` | Layers, translucent fills, borders, text, semantic and chart colors. Neutrals are the reference app's "the reference app" preset (dark content #171717, composer outline #3e3e3e); statuses are the reference app's |
+| `Tokens/TokensColor.swift` | Layers, translucent fills, borders, text, semantic and chart colors. Dark content is #171717 with a #3e3e3e composer outline |
 | `Tokens/AccentPalette.swift` | `DSAccentPalette` per icon theme (original, cobalt, fern, ember, prism, arcade, glass, nightly), contrast-checked |
-| `Tokens/TokensTypography.swift` | Geist and Geist Mono (bundled, SIL OFL, `Fonts/OFL.txt`), the reference app's scale (UI text 12pt, sidebar and composer 13pt) |
+| `Tokens/TokensTypography.swift` | Geist and Geist Mono (bundled, SIL OFL, `Fonts/OFL.txt`), UI text at 12pt, sidebar and composer at 13pt |
 | `Tokens/TokensLayout.swift` | Spacing, radii, sizes (including `contentColumn` 760, `listRow` 26), shadows |
-| `Tokens/TokensMotion.swift` | Animations and `.trackHover` (instant in, 100ms out, as the reference app) |
+| `Tokens/TokensMotion.swift` | Animations and `.trackHover` (instant in, 100ms out) |
 | `Tokens/Platform.swift` | macOS/iPadOS adapters and touch metrics |
 | `Tokens/TokensTransparency.swift` | `DSTransparency` (Solid, Subtle, Standard) from `.dsTransparency(_:)`; Reduce Transparency forces Solid |
 | `Tokens/TokensLightTone.swift` | `DSLightTone` (Paper, Wool) from `.dsLightTone(_:)`; neutrals, text and statuses have Wool values |
@@ -66,24 +66,24 @@ Mac) to see everything in light and dark side by side.
 
 ## Components
 
-| Component | Mirrors |
+| Component | What it is |
 | --- | --- |
-| `SidebarNavItem`, `SidebarRowMenu` | the reference app's sidebar navigation rows |
-| `SidebarCollapseButton`, `HistoryNavigationButtons`, `WindowToolbarButton` | the reference app's toggle placement; the reference app's ghost glyphs and arrows (color-only hover, safe in a macOS toolbar) |
-| `UpdateButton` | the reference app's accent update tag right of the sidebar toggle |
-| `UsageMeter` | the reference app's usage bar (accent, warning at 80%, error at 100%) |
+| `SidebarNavItem`, `SidebarRowMenu` | The sidebar's navigation rows: icon, label, a shortcut hint on hover, an optional trailing menu |
+| `SidebarCollapseButton`, `HistoryNavigationButtons`, `WindowToolbarButton` | The sidebar toggle right after the window controls, and back and forward arrows, as ghost glyphs (color-only hover, safe in a macOS toolbar) |
+| `UpdateButton` | The accent update tag right of the sidebar toggle |
+| `UsageMeter` | A usage bar (accent, warning at 80%, error at 100%) |
 | `ActivityHeatmap` | GitHub's contribution graph: 53 weeks of days, month and weekday labels, five accent steps over a neutral empty square; hover, tap or arrow keys pick a day, and every square tells VoiceOver its exact count |
-| `ProjectGroup`, `ProjectRow`, `ProjectAvatar` | the reference app's repository groups |
-| `TaskRow` (+ `leading`/`accessory` slots), `TaskBadge`, `DiffStatLabel`, `CompactAgeText` | the reference app's workspace rows: one leading visual, trailing badge, diff or age |
-| `TaskStatus`, `StatusIndicator`, `DotGridLoader` | the reference app's statuses and Lottie dot-grid loaders (ported keyframes) |
-| `ContextUsageRing` | the reference app's context ring |
-| `ComposerSurface`, `ComposerControlsBar`, `.pill` / `.pillChrome`, `PillIcon`, `PillMenu`, `EffortBars`, `ComposerSendButton`, `ComposerStopButton`, `ComposerChip` | the reference app's composer, measured at 1x |
+| `ProjectGroup`, `ProjectRow`, `ProjectAvatar` | Collapsible project groups: avatar, name, task count while collapsed |
+| `TaskRow` (+ `leading`/`accessory` slots), `TaskBadge`, `DiffStatLabel`, `CompactAgeText` | Task rows: one leading visual, trailing badge, diff or age |
+| `TaskStatus`, `StatusIndicator`, `DotGridLoader` | Agent states and the animated dot-grid loaders |
+| `ContextUsageRing` | A small ring for how much of the context window a session has used |
+| `ComposerSurface`, `ComposerControlsBar`, `.pill` / `.pillChrome`, `PillIcon`, `PillMenu`, `EffortBars`, `ComposerSendButton`, `ComposerStopButton`, `ComposerChip` | The composer: outlined sections with 1pt rules, 28pt pills |
 | `SearchField` | The one search and filter field: a magnifier, a clear button once something's typed, Escape to clear, an optional trailing accessory (a shortcut hint, a record-keys button), no fill of its own |
-| `.ds(_:size:iconOnly:)` buttons, `IconButton`, `Badge`, `Kbd`, `Card`, `SeparatorLine`, `SectionHeader`, `StatusDot` | the reference app core-ui v2 buttons and Kbd; the reference app badges and cards |
-| `DiffView`, `DiffStats`, `DiffStatsText` | the reference app's diff layout; shared by the transcript and Git |
-| `StatusBarSurface`, `.statusBarSegment(_:isActive:)`, `StatusBarGlyph`, `StatusBarDivider`, `StatusBarSeparator` | the reference app's status bar in the reference app's chrome: the sidebar backdrop under a hairline, `DS.Size.chromeBar` tall, tertiary caption text, footer-sized glyphs, hairlines between items, color-only hover. Narrow windows drop whole items |
-| `IconThemePicker`, `IconThemeOption` | the reference app's settings select showing the current app icon; a popover lists each option's thumbnail, name, badge and note, with a checkmark. Options are data, so plugins can add their own |
-| `PopoverPanel`, `PopoverPanelFootnote`, `.dsPopover(isPresented:)` | the reference app's Resource Manager layout (glyph and title header, hairline, content) on the overlay backdrop |
+| `.ds(_:size:iconOnly:)` buttons, `IconButton`, `Badge`, `Kbd`, `Card`, `SeparatorLine`, `SectionHeader`, `StatusDot` | Buttons, shortcut caps, badges and cards |
+| `DiffView`, `DiffStats`, `DiffStatsText` | Line diffs with a colored bar, line numbers and tinted lines; shared by the transcript and Git |
+| `StatusBarSurface`, `.statusBarSegment(_:isActive:)`, `StatusBarGlyph`, `StatusBarDivider`, `StatusBarSeparator` | The window's bottom strip: the sidebar backdrop under a hairline, `DS.Size.chromeBar` tall, tertiary caption text, footer-sized glyphs, hairlines between items, color-only hover. Narrow windows drop whole items |
+| `IconThemePicker`, `IconThemeOption` | The settings select showing the current app icon; a popover lists each option's thumbnail, name, badge and note, with a checkmark. Options are data, so plugins can add their own |
+| `PopoverPanel`, `PopoverPanelFootnote`, `.dsPopover(isPresented:)` | A popover that explains something: glyph and title header, hairline, content, on the overlay backdrop |
 | `CappedHeightScrollView` | Natural height up to a cap, then scrolls |
 | `NativeMark`, `NativeLockup`, `.nightSky(isEnabled:)`, `NightlyMark` | Native's brand: the interlock emblem from the app icon, the wordmark, and the nightly sky and moon |
 | `LaunchAnimationView`, `.launchScreen(isPresented:)` | The emblem tracing in and interlocking while agents start |

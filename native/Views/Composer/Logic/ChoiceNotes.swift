@@ -1,7 +1,7 @@
 import ACP
 import Foundation
 
-// What a choice costs, said at the point of choice (research/native-recommendations.md item 6).
+// What a choice costs, said at the point of choice, so the user never learns it from the bill.
 
 extension SelectSetting {
     /// The agent's own pick: its "default" value, or the option it names "(recommended)" (Claude

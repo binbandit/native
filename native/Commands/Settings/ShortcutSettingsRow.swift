@@ -84,7 +84,7 @@ struct ShortcutSettingsRow: View {
     }
 }
 
-/// The shortcut as the reference app's pill. Clicking it records: it outlines in the accent and shows the
+/// The shortcut as a pill. Clicking it records: it outlines in the accent and shows the
 /// modifiers held until a key completes the shortcut. Escape cancels; Delete removes it.
 private struct ShortcutRecorderPill: View {
     let command: NativeCommand

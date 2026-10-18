@@ -1,10 +1,9 @@
 import SwiftUI
 
-/// The outlined 28pt chip every composer control uses (the reference app `OptionsPrimary`): 1pt outline,
-/// 4pt radius, 12pt text; hover fills it and darkens the outline. `isOn` inverts it, the way
-/// the reference app marks a non-default mode. `isSquare` makes an icon button ("+", "?", the mic).
-/// `isOpen` dashes the outline in the primary color while the pill's popover or menu is showing
-/// (the reference app's model selector, `border-style: dashed`).
+/// The outlined 28pt chip every composer control uses: 1pt outline, 4pt radius, 12pt text; hover
+/// fills it and darkens the outline. `isOn` inverts it, to mark a non-default mode. `isSquare` makes
+/// an icon button ("+", "?", the mic). `isOpen` dashes the outline in the primary color while the
+/// pill's popover or menu is showing.
 ///
 ///     Button("Plan", action: toggle).buttonStyle(.pill(isOn: isPlanning))
 ///     Button("Model") { isPickerOpen = true }.buttonStyle(.pill(isOpen: isPickerOpen))

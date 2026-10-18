@@ -153,7 +153,7 @@ struct RootView: View {
 
     /// The sidebar with the other features' parts: the pull requests page, and each task row's pull
     /// request, branch state and context usage.
-    /// Settings takes over the window while it's open, as in the reference app. The split view's state lives
+    /// Settings takes over the window while it's open. The split view's state lives
     /// here, so leaving Settings returns to where you were.
     @ViewBuilder
     private var content: some View {
@@ -172,7 +172,7 @@ struct RootView: View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             sidebar
                 .dsSidebarColumnTransparency()
-                // The only sidebar toggle is ours, right after the window controls as in the reference app; as a
+                // The only sidebar toggle is ours, right after the window controls; as a
                 // sidebar toolbar item it stays there when the sidebar is hidden, too. The system's
                 // goes from both the column and the split view. On the column it must come before
                 // the width, or SwiftUI drops the width.
@@ -200,9 +200,9 @@ struct RootView: View {
                         .sharedBackgroundVisibility(.hidden)
                     }
                     // Pushes the toggle to the sidebar's leading edge, next to the window controls, and
-                    // back and forward to its trailing edge, where the reference app has them.
+                    // back and forward to its trailing edge, by the content they navigate.
                     ToolbarSpacer(.flexible)
-                    // the reference app's update button: right-aligned before back and forward, and still there when
+                    // The update button: right-aligned before back and forward, and still there when
                     // the sidebar is hidden. It shows only when an update needs the user.
                     if let updates, updates.showsToolbarButton {
                         ToolbarItem {

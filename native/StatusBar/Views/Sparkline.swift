@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A thin line through recent values, scaled to their own range (the reference app's Resource Manager trend).
+/// A thin line through recent values, scaled to their own range.
 /// A flat history draws a flat line through the middle.
 struct Sparkline: View {
     let values: [UInt64]

@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A key or chord drawn as the reference app draws them: glyphs side by side, with Return as a
+/// A key or chord as glyphs side by side, with Return as a
 /// corner-down-left arrow because the ↵ character renders inconsistently across fonts.
 struct KeyGlyphs: View {
     /// Glyphs such as "⌘⇧M" or "⌃Tab"; each "↵" is Return.
@@ -24,7 +24,7 @@ struct KeyGlyphs: View {
     }
 }
 
-/// the reference app's shortcut pill: 32pt tall, fully rounded, a muted fill and medium glyphs.
+/// A shortcut pill: 32pt tall, fully rounded, a muted fill and medium glyphs.
 struct SettingsKeycap: View {
     let keys: String
 
@@ -39,8 +39,8 @@ struct SettingsKeycap: View {
     }
 }
 
-/// The shortcut hint inside the search field (the reference app's `⌘F` cap: 16pt tall, 4pt radius,
-/// outlined, glyphs 4pt apart).
+/// The shortcut hint inside the search field (a `⌘F` cap: 16pt tall, 4pt radius, outlined, glyphs
+/// 4pt apart).
 struct SearchShortcutHint: View {
     let parts: [String]
 

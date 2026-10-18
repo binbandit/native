@@ -1,7 +1,7 @@
 import Git
 import SwiftUI
 
-/// A task's uncommitted changes, for the window's inspector column (the reference app's Changes panel):
+/// A task's uncommitted changes, for the window's inspector column:
 /// branch and next action on top, the changed files grouped by area, and the selected file's diff
 /// below. Stays current on its own; `GitStore.refresh(folder:)` forces a rescan.
 struct GitChangesInspector: View {

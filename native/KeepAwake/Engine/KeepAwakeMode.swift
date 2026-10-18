@@ -1,4 +1,4 @@
-/// When Native keeps the Mac awake (the reference app's "Keep computer awake": On, Agent, Off).
+/// When Native keeps the Mac awake: never, while agents work, or always.
 nonisolated enum KeepAwakeMode: String, Codable, CaseIterable, Identifiable, Sendable {
     case off
     case whileAgentsWork
@@ -14,7 +14,7 @@ nonisolated enum KeepAwakeMode: String, Codable, CaseIterable, Identifiable, Sen
         }
     }
 
-    /// For the status bar, where the reference app shows "On", "Agent" or "Off".
+    /// For the status bar, where space is short.
     var shortTitle: String {
         switch self {
         case .off: "Off"
@@ -23,7 +23,7 @@ nonisolated enum KeepAwakeMode: String, Codable, CaseIterable, Identifiable, Sen
         }
     }
 
-    /// the reference app's descriptions under each choice.
+    /// The description under each choice.
     var explanation: String {
         switch self {
         case .off: "Allow normal system sleep"

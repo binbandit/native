@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// The quiet link under the agent cards: the project their tasks start in, as a menu for choosing
-/// another or adding one. It sits where the reference app puts a ghost button, and reads as the cards'
+/// another or adding one. It's a quiet link rather than a button, so it reads as the cards'
 /// context ("in native") rather than as another action.
 struct HomeProjectMenu<ID: Hashable>: View {
     let projects: [HomeProject<ID>]

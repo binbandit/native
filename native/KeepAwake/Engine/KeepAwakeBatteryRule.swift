@@ -1,5 +1,5 @@
-/// What keeping awake does on battery power. the reference app's caffeinate "shuts off below 10% battery";
-/// that's the default here too.
+/// What keeping awake does on battery power. Stopping below 10% is the default, so a forgotten
+/// keep-awake never drains the battery flat.
 nonisolated enum KeepAwakeBatteryRule: String, Codable, CaseIterable, Identifiable, Sendable {
     case keepAwake
     case stopWhenLow

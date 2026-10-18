@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// Usage limits that are close or reached, as `LimitChip`s at the bar's leading edge, where the reference app
-/// shows its usage roster. The usage feature supplies the statuses and what opening one does; the
+/// Usage limits that are close or reached, as `LimitChip`s at the bar's leading edge. The usage feature supplies the statuses and what opening one does; the
 /// app passes both in, so the bar doesn't depend on that feature. Shows nothing while no limit is
 /// near.
 struct LimitsStatusItem: StatusBarItem {

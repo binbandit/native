@@ -11,8 +11,7 @@ enum GitDiffContent: Equatable {
     case submodule
     case unavailable(String)
 
-    /// Line diffs past this size are slow to compute and unreadable in a side panel (the reference app
-    /// gives up at 300 KB too).
+    /// Line diffs past this size are slow to compute and unreadable in a side panel.
     static let sizeLimit = 300 * 1024
 
     init(change: FileChange, versions: FileVersions) {

@@ -2,7 +2,7 @@ import Foundation
 
 /// Names for task branches. A task's branch has to exist before its agent session starts, but its
 /// good name only comes from the first prompt, so it starts as `<prefix><code>` and is renamed
-/// from the task's title later, as the reference app does with its placeholder branches.
+/// from the task's title later.
 public enum BranchNaming {
     /// Characters of a provisional code; the last is a digit so it never reads as a word.
     static let codeLength = 5

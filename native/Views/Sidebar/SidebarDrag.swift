@@ -1,7 +1,7 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// The drag under way in the sidebar and where it would drop, after the reference app's `drag.ts`: projects
+/// The drag under way in the sidebar and where it would drop: projects
 /// reorder among projects, sessions only within their own project. What's being dragged is tracked
 /// here rather than decoded from the pasteboard, and drags carry a private type, so nothing dragged
 /// in from elsewhere is mistaken for a reorder.
@@ -87,7 +87,7 @@ final class SidebarDragState {
 }
 
 extension View {
-    /// Lets the view be dragged to reorder `item`, dimming it while it is (as the reference app does).
+    /// Lets the view be dragged to reorder `item`, dimming it while it is.
     func sidebarDraggable(_ item: SidebarDragState.Item, title: String, state: SidebarDragState) -> some View {
         opacity(state.isDragging(item) ? 0.5 : 1)
             .onDrag {
@@ -97,7 +97,7 @@ extension View {
             }
     }
 
-    /// Lets rows of `item`'s kind drop before or after the view, showing the reference app's indicator line.
+    /// Lets rows of `item`'s kind drop before or after the view, showing an indicator line.
     /// While `isActive` is false the view ignores drags, so they reach an enclosing target (a project
     /// group under its sessions). `onDrop` gets what was dropped and where.
     func sidebarDropTarget(
@@ -174,7 +174,7 @@ private struct SidebarDropDelegate: DropDelegate {
     }
 }
 
-/// the reference app's drop indicator: a 2pt rounded line in the ring color across the row.
+/// The drop indicator: a 2pt rounded line in the ring color across the row.
 private struct SidebarDropIndicator: View {
     /// Half the 4pt gap between rows plus half the line, so it sits between them.
     static let gapOffset = DS.Space.xxs + 1
@@ -189,7 +189,7 @@ private struct SidebarDropIndicator: View {
     }
 }
 
-/// the reference app's drag ghost: the row's title on a raised, outlined, rounded card.
+/// The drag preview: the row's title on a raised, outlined, rounded card.
 private struct SidebarDragPreview: View {
     let title: String
 

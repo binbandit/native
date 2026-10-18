@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Tasks the user pinned, in a small section above the projects (the reference app's Pinned), in their own order:
+/// Tasks the user pinned, in a small section above the projects, in their own order:
 /// drag to reorder, Unpin from the context menu or a swipe. A pinned task shows only here.
 struct PinnedSection<TaskAccessory: View>: View {
     @Environment(AppModel.self) private var model

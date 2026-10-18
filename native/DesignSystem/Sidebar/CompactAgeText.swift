@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// A compact age that keeps itself current: "now", "5m", "3h", "4d", "2mo", "1y" (the reference app's and
-/// the reference app's sidebar ages), in 10pt tertiary.
+/// A compact age that keeps itself current: "now", "5m", "3h", "4d", "2mo", "1y", in 10pt
+/// tertiary.
 public struct CompactAgeText: View {
     let date: Date
 

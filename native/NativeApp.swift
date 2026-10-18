@@ -14,7 +14,7 @@ struct NativeApp: App {
     @State private var iconPreferences = AppIconPreferences()
     /// `-nativeDate yyyy-MM-dd` previews another day's celebrations on the icon and Home.
     @State private var celebrations: CelebrationCenter
-    /// Settings takes over the main window, as in the reference app, rather than opening one of its own.
+    /// Settings takes over the main window rather than opening one of its own.
     @State private var settings: SettingsPresentation
     @State private var terminals: TerminalStore
     @State private var keepAwake: KeepAwakeController

@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// How many tasks are working, for how long the longest has been at it, and how many wait on the
-/// user, across every project (the reference app's session count). "Working" opens the list; "needs you" goes
+/// user, across every project. "Working" opens the list; "needs you" goes
 /// straight to the first task waiting, the one ⌘Y would answer.
 struct TasksStatusItem: StatusBarItem {
     let source: any StatusBarSource

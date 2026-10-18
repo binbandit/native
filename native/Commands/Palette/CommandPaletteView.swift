@@ -15,7 +15,7 @@ extension View {
     }
 }
 
-/// the reference app's and the reference app's palette: a search field over grouped results, each row with its
+/// The command palette: a search field over grouped results, each row with its
 /// shortcut, floating near the top of the window. ↑ and ↓ move, Return runs, Escape or a click
 /// outside closes it. Rows are touch-sized on iPad.
 struct CommandPaletteView: View {
@@ -122,7 +122,7 @@ struct CommandPaletteView: View {
     }
 }
 
-/// The hints along the bottom, as the reference app's palette has them.
+/// The key hints along the bottom.
 private struct CommandPaletteFooter: View {
     var body: some View {
         HStack(spacing: DS.Space.xl) {

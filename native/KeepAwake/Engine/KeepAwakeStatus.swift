@@ -52,7 +52,7 @@ nonisolated struct KeepAwakeStatus: Hashable, Sendable {
                 }
             }
         }
-        // the reference app takes `caffeinate -i -s`: idle sleep everywhere, system sleep on power.
+        // As `caffeinate -i -s` does: no idle sleep anywhere, no system sleep on power.
         var assertions: Set<PowerAssertionKind> = [.preventIdleSleep, .preventSystemSleep]
         if policy.keepsDisplayOn {
             assertions.insert(.preventDisplaySleep)

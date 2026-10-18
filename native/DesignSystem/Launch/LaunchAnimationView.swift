@@ -1,8 +1,7 @@
 import SwiftUI
 
-/// The startup animation: Native's emblem assembling itself at the center of an empty window, in
-/// the spirit of the reference app's loading screen (a small line drawing in the primary color on the bare
-/// background) but with our own choreography. The two links trace their outlines in from opposite
+/// The startup animation: Native's emblem assembling itself at the center of an empty window, a
+/// small line drawing in the primary color on the bare background. The two links trace their outlines in from opposite
 /// corners, slide together until they interlock, fill in, hold, then unwind and repeat until the
 /// caller removes the view. With Reduce Motion it shows the finished emblem.
 public struct LaunchAnimationView: View {

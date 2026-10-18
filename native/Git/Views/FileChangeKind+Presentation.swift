@@ -1,7 +1,7 @@
 import Git
 import SwiftUI
 
-/// How each kind of change is drawn: the reference app's square glyphs in git's colors.
+/// How each kind of change is drawn: square glyphs in git's colors.
 extension FileChange.Kind {
     var symbolName: String {
         switch self {

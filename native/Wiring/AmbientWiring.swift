@@ -4,7 +4,7 @@ import SwiftUI
 /// only holds them and `RootView` only shows the bar.
 enum AmbientWiring {
     /// The status bar's items. Kept minimal by default: what's urgent (limits, tasks needing you)
-    /// and what the reference app shows (keep awake, memory and CPU); the rest is a right-click away.
+    /// and what's worth a glance (keep awake, memory and CPU); the rest is a right-click away.
     static func statusBar(
         model: AppModel, keepAwake: KeepAwakeController, settings: SettingsPresentation
     ) -> StatusBarRegistry {

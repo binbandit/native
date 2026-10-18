@@ -1,23 +1,19 @@
 import SwiftUI
 
-/// The home page's metrics. The composition follows the reference app's home (`HomeContent` and
-/// `QuickActions`), so the shared measurements note the Tailwind class they stand for.
+/// The home page's metrics.
 nonisolated enum HomeLayout {
     // MARK: Column and cards
 
-    /// The cards' column (`max-w-[640px]`), which the recent tasks share so everything lines up.
+    /// The cards' column, which the recent tasks share so everything lines up.
     static let columnWidth: CGFloat = 640
-    /// Cards per row (`md:grid-cols-3`).
+    /// Cards per row.
     static let maxColumns = 3
     /// Below this a card's label stops fitting, so rows get fewer cards.
     static let minCardWidth: CGFloat = 176
-    /// `h-32`.
     static let cardHeight: CGFloat = 128
-    /// `gap-3`.
     static let cardSpacing = DS.Space.lg
     /// A card's height as a row, when only one fits across.
     static let compactCardHeight: CGFloat = 60
-    /// `p-4`.
     static let cardPadding = DS.Space.xl
     /// A card's glyph: 14pt in a 16pt slot matches the weight of 16pt line icons.
     static let cardGlyph = Font.system(size: 14, weight: .regular)
@@ -33,17 +29,17 @@ nonisolated enum HomeLayout {
 
     // MARK: Vertical rhythm
 
-    /// Under the hero (`mb-12`).
+    /// Under the hero.
     static let heroSpacingBelow: CGFloat = 48
-    /// the reference app nudges the cards down once there's work (`mt-4`); here, once there are tasks.
+    /// Nudges the cards down once there are tasks, so the work reads as its own band.
     static let activitySpacing = DS.Space.xl
-    /// Above the footer link (`mt-6`).
+    /// Above the footer link.
     static let footerSpacing = DS.Space.xxl
     /// Above the recent tasks.
     static let sectionSpacing: CGFloat = 40
-    /// The hero's distance from the top of the window (`mt-56`), kept while the content fits.
+    /// The hero's distance from the top of the window, kept while the content fits.
     static let heroTop: CGFloat = 224
-    /// Page gutters (`px-8`), and the tighter ones of a narrow column.
+    /// Page gutters, and the tighter ones of a narrow column.
     static let gutter = DS.Space.xxxl
     static let compactGutter = DS.Space.xl
     /// Below this page width the gutters tighten and task rows drop their trailing label.
@@ -58,11 +54,11 @@ nonisolated enum HomeLayout {
     static let recentTaskLimit = 5
     /// The trailing label of task rows: the project or agent.
     static let taskDetailWidth: CGFloat = 120
-    /// The age column of task rows (`w-12`).
+    /// The age column of task rows.
     static let ageColumnWidth: CGFloat = 48
 
     // MARK: Motion
 
-    /// The cards fading in under the hero (`animate-in fade-in duration-1000`).
+    /// The cards fading in under the hero.
     static let contentFadeIn = Animation.easeOut(duration: 1).delay(0.15)
 }

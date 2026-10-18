@@ -3,8 +3,8 @@ import Foundation
 import ImageIO
 import UniformTypeIdentifiers
 
-/// Finds the icon a project already has: a web favicon or logo where frameworks put them (the paths
-/// the reference app checks), else an Apple app icon from an asset catalog. Returns a small PNG, so the
+/// Finds the icon a project already has: a web favicon or logo where common frameworks put them,
+/// else an Apple app icon from an asset catalog. Returns a small PNG, so the
 /// result can be cached and crosses actors freely.
 nonisolated struct ProjectIconResolver: Sendable {
     let files: any ProjectFileReading

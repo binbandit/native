@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// the reference app's caffeinate segment: a cup, the mode (or the time left on a timer) and a dot that's lit
+/// The keep-awake segment: a cup, the mode (or the time left on a timer) and a dot that's lit
 /// while the Mac is being kept awake. Click for the choices.
 struct KeepAwakeStatusItem: StatusBarItem {
     let controller: KeepAwakeController

@@ -1,7 +1,7 @@
 import Git
 import SwiftUI
 
-/// The commit form (after the reference app's commit box): a message, which files go in, and Commit, Commit &
+/// The commit form: a message, which files go in, and Commit, Commit &
 /// Push, or Commit & Create PR when the GitHub feature provides one. The on-device model can draft
 /// the message from the selected files' diff.
 struct GitCommitPopover: View {

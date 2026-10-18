@@ -2,7 +2,7 @@ import SwiftUI
 
 /// What leads a project row.
 public enum ProjectIcon {
-    /// The project name's first letter on a small tile (the reference app's fallback avatar).
+    /// The project name's first letter on a small tile.
     case initial
     /// An SF Symbol, e.g. "folder".
     case symbol(String)
@@ -12,7 +12,7 @@ public enum ProjectIcon {
     case image(Image)
 }
 
-/// A project header (the reference app's repository row): avatar, name and, while collapsed, the task count.
+/// A project header: avatar, name and, while collapsed, the task count.
 /// Hovering swaps the avatar for a chevron and reveals the actions menu; "+" creates a task.
 public struct ProjectRow<MenuContent: View>: View {
     let name: String
@@ -26,7 +26,7 @@ public struct ProjectRow<MenuContent: View>: View {
     @State private var isHovered = false
 
     /// - Parameters:
-    ///   - taskCount: Shown after the name while collapsed (the reference app shows it in mono).
+    ///   - taskCount: Shown after the name, in mono, while collapsed.
     ///   - menu: The project's actions, shown from the "…" button and as a context menu.
     public init(
         name: String,
@@ -141,7 +141,7 @@ extension ProjectRow where MenuContent == EmptyView {
     }
 }
 
-/// A 16pt project avatar (the reference app `RepoAvatar`): emoji, image, symbol or a lettered tile.
+/// A 16pt project avatar: emoji, image, symbol or a lettered tile.
 public struct ProjectAvatar: View {
     let name: String
     let icon: ProjectIcon
@@ -187,7 +187,7 @@ public struct ProjectAvatar: View {
                 Button("Reveal in Finder") {}
             }
             ProjectRow(
-                name: "conductor", icon: .symbol("folder"), isExpanded: false, taskCount: 3, onToggle: {}, onNewTask: {}
+                name: "companion", icon: .symbol("folder"), isExpanded: false, taskCount: 3, onToggle: {}, onNewTask: {}
             )
             ProjectRow(name: "website", icon: .emoji("🌐"), isExpanded: false, taskCount: 1, onToggle: {})
         }

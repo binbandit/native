@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The left column of Settings after the reference app's settings nav: the search field, then pages under
+/// The left column of Settings: the search field, then pages under
 /// muted group labels. The list is one keyboard stop, like a macOS sidebar: ↑ and ↓ change the page.
 struct SettingsNavigation<Search: View>: View {
     let panes: [SettingsPane]
@@ -8,8 +8,8 @@ struct SettingsNavigation<Search: View>: View {
     var focus: FocusState<SettingsScreen.Focus?>.Binding
     @ViewBuilder var search: Search
 
-    /// the reference app rings nav items only for keyboard focus (`focus-visible`), not after a click or
-    /// when Settings opens.
+    /// Nav items get a ring only for keyboard focus, not after a click or when Settings opens, where
+    /// it would just be noise.
     @State private var showsFocusRing = false
     @State private var isFocusingQuietly = false
 
@@ -37,7 +37,7 @@ struct SettingsNavigation<Search: View>: View {
         .frame(maxHeight: .infinity, alignment: .top)
         .background(.dsBackground)
         .overlay(alignment: .trailing) {
-            // the reference app's `border-r`, full height, under the toolbar too.
+            // A full-height divider, under the toolbar too.
             SeparatorLine(axis: .vertical)
                 .ignoresSafeArea()
         }
@@ -105,7 +105,7 @@ struct SettingsNavigation<Search: View>: View {
     }
 }
 
-/// A nav row (the reference app: 32pt, 6pt radius, 16pt icon 12pt before a 14pt label; muted until
+/// A nav row (32pt, 6pt radius, 16pt icon 12pt before a 14pt label; muted until
 /// selected, when it fills and turns medium; hovering fills it and brightens the icon).
 private struct NavItem: View {
     let pane: SettingsPane
@@ -134,7 +134,7 @@ private struct NavItem: View {
             .background(isSelected || isHovered ? Color.dsHover : .clear, in: shape)
             .overlay {
                 if showsFocusRing {
-                    // the reference app's 2pt ring, in the accent color the system draws focus rings in. It
+                    // A 2pt ring, in the accent color the system draws focus rings in. It
                     // sits on the row's edge rather than outside it, where the scroll view would clip it.
                     shape.strokeBorder(.tint, lineWidth: 2)
                 }

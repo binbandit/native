@@ -80,7 +80,7 @@ everything renders from `UpdateState`:
 | `failed` | `ErrorState`: what happened, that Native is still on its version, Try Again or Open GitHub Releases (security failures never offer a retry) |
 | `unavailable` | why this build can't update (development build, not set up, iPad, updater failed to start) and where releases are |
 
-- **The update button** is the reference app's: the accent tag in the sidebar's toolbar row, right of the
+- **The update button** is the accent tag in the sidebar's toolbar row, right of the
   sidebar toggle and before back and forward (`UpdateToolbarButton`, built on the design system's
   `UpdateButton`). It shows only when there's something to do. One click downloads if needed and
   restarts into the update.

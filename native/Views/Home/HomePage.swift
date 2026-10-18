@@ -3,8 +3,7 @@ import SwiftUI
 /// The frame both home screens share: the lockup, anything urgent, the cards, a quiet link, then
 /// anything else, in one centered column whose content fades in after the lockup.
 ///
-/// The lockup sits 224pt from the top of the window, as the reference app places its wordmark, while
-/// everything fits below it. Taller content pushes it up only as far as needed, and the page
+/// The lockup sits 224pt from the top of the window while everything fits below it. Taller content pushes it up only as far as needed, and the page
 /// scrolls once even that runs out.
 struct HomePage<Notice: View, Cards: View, Footer: View, Content: View>: View {
     /// Whether there are tasks yet; the cards sit a little lower once there's work.

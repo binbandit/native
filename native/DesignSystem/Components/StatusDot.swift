@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A 6pt dot: the reference app's unread mark in the sidebar and the connectors' health in the composer.
+/// A 6pt dot: the unread mark in the sidebar and the connectors' health in the composer.
 public struct StatusDot: View {
     let color: Color
 

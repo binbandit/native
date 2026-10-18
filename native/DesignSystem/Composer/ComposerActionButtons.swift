@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Sends the draft: a 24pt accent square with a chevron (the reference app `ChatSubmitButton`). When sending
+/// Sends the draft: a 24pt accent square with a chevron. When sending
 /// is blocked it stays in place, half transparent, and says why in its tooltip and accessibility
 /// hint, so the composer's 24pt send/stop slot never shifts.
 public struct ComposerSendButton: View {
@@ -38,9 +38,8 @@ public struct ComposerSendButton: View {
     }
 }
 
-/// Stops the running turn: a 24pt foreground-colored square with an 8pt stop glyph (the reference app v2
-/// `ChatStopButton`). Binds Esc unless `isEscapeEnabled` is false, for when something else in the
-/// composer needs it.
+/// Stops the running turn: a 24pt foreground-colored square with an 8pt stop glyph. Binds Esc
+/// unless `isEscapeEnabled` is false, for when something else in the composer needs it.
 public struct ComposerStopButton: View {
     let isEscapeEnabled: Bool
     let action: () -> Void

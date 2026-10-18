@@ -2,7 +2,7 @@ import NativeTelemetry
 import Observation
 
 /// Whether Settings has taken over the main window, and on which page. Settings is part of the
-/// window, as in the reference app, so everything that opens it (⌘,, the sidebar's gear, a feature linking
+/// window, so everything that opens it (⌘,, the sidebar's gear, a feature linking
 /// to its page) sets `pane`, and leaving it (Back, Escape, ⌘[) clears it.
 @Observable
 final class SettingsPresentation {

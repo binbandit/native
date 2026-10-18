@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Settings as the reference app shows them: a full-window screen inside the main window, with a nav
+/// Settings as a full-window screen inside the main window, with a nav
 /// column (Back, search, grouped pages) on the left and the selected page on the right.
 ///
 /// The screen is open while `pane` is non-nil; Back and Escape set it to nil. Setting it to a pane
@@ -45,7 +45,7 @@ struct SettingsScreen: View {
 
     var body: some View {
         // A split view, like the main window's, keeps the toolbar and window controls where they
-        // are and puts Back at the nav's trailing edge, where the reference app has it.
+        // are and puts Back at the nav's trailing edge.
         NavigationSplitView(columnVisibility: .constant(.all), preferredCompactColumn: $compactColumn) {
             SettingsNavigation(panes: panes, selection: selection, focus: $focus) {
                 SettingsSearchField(
@@ -87,7 +87,7 @@ struct SettingsScreen: View {
                 .hidden()
         }
         .onChange(of: focus) { _, newValue in
-            // the reference app closes the results when you click away from the search.
+            // Clicking away from the search closes its results.
             if newValue != .search {
                 query = ""
             }
@@ -110,7 +110,7 @@ struct SettingsScreen: View {
                 flash = reveal
             }
         }
-        // A new page starts at the top, as the reference app remounts its scroller per page.
+        // A new page starts at the top: each page gets its own scroller.
         .id(selectedPane?.id)
         .environment(\.settingsFlash, flash)
         .frame(maxWidth: .infinity, maxHeight: .infinity)

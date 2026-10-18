@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// A repository path with its directory muted and the file name in full (the reference app `PathLabel`).
+/// A repository path with its directory muted and the file name in full.
 /// The directory gives way first when space runs out.
 struct GitPathLabel: View {
     let path: String

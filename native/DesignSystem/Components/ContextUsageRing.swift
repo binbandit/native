@@ -1,15 +1,15 @@
 import SwiftUI
 
-/// How much of the model's context window a session has used, as a small ring (the reference app's
-/// `ProgressRing`: butt-capped stroke on a border-colored track, gray until 90%, then red).
-/// the reference app shows it once usage passes 70%; that threshold is the caller's call.
+/// How much of the model's context window a session has used, as a small ring: a butt-capped
+/// stroke on a border-colored track, gray until 90%, then red. When it appears is the caller's call
+/// (the sidebar shows it past 70%).
 public struct ContextUsageRing: View {
     let fraction: Double
     let size: CGFloat
 
     /// - Parameters:
     ///   - fraction: Used share of the context window, 0...1.
-    ///   - size: Diameter; 12pt fits task rows, the reference app's composer uses 18pt.
+    ///   - size: Diameter; 12pt fits task rows, 18pt suits the composer.
     public init(fraction: Double, size: CGFloat = 12) {
         self.fraction = fraction
         self.size = size
@@ -17,7 +17,7 @@ public struct ContextUsageRing: View {
 
     private var clamped: Double { min(max(fraction, 0), 1) }
     private var percent: Int { Int((clamped * 100).rounded()) }
-    /// the reference app's 3pt stroke at 18pt, scaled.
+    /// A 3pt stroke at 18pt, scaled.
     private var lineWidth: CGFloat { max(size / 6, 1.5) }
 
     public var body: some View {

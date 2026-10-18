@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The bar along the window's bottom edge, after the reference app's footer: registered items at each end of a
+/// The bar along the window's bottom edge: registered items at each end of a
 /// `StatusBarSurface`, which drops the innermost ones whole when the window is narrow.
 /// Right-click shows or hides items. Put it under the window's content in a VStack, so it's part
 /// of the layout; hidden or with no items, it takes no space.

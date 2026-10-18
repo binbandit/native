@@ -2,8 +2,7 @@ import CodeThemes
 import SwiftUI
 
 /// Settings ▸ Appearance ▸ Code theme: the syntax colors for code blocks and diffs, chosen apart for
-/// light and dark mode, each with a preview drawn in its own appearance (the reference app's code-theme row,
-/// doubled).
+/// light and dark mode, each with a preview drawn in its own appearance.
 struct CodeThemeSettingsRow: View {
     static let rowID = SettingsRowID("appearance.code-theme")
 

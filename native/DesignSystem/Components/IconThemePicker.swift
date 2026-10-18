@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The app icon chooser for a settings row: the reference app's select (an outlined 32pt trigger with an
+/// The app icon chooser for a settings row: the settings select (an outlined 32pt trigger with an
 /// up-down chevron) showing the current icon's thumbnail and name. It opens a popover listing every
 /// option with its thumbnail, its source and limits, and a checkmark on the current one.
 ///

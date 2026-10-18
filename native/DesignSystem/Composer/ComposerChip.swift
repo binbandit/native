@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// An attachment or context chip above the editor (the reference app `AttachmentPreview` chip): 28pt, 4pt
+/// An attachment or context chip above the editor: 28pt, 4pt
 /// radius, outlined on a selected-tone fill, with a round remove button that turns accent on hover.
 public struct ComposerChip: View {
     let title: String

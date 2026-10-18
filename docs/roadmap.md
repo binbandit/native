@@ -20,7 +20,7 @@ coordinator keeps this current.
 | Feature | Owner | Notes |
 | --- | --- | --- |
 | Smart commits | `native/Git` | Split changes into logical commits with drafted messages, reviewed before committing |
-| Branch names from the task, with a prefix setting | `native/Git` | Prefix: GitHub username, custom, or none (as in the reference app) |
+| Branch names from the task, with a prefix setting | `native/Git` | Prefix: GitHub username, custom, or none |
 | Worktree or branch by default, automatic worktree setup | `native/Git`, models | Setup script, copying ignored env files, cleanup on archive |
 | Archive and delete for tasks and projects | models, sidebar | Deleting a project never deletes its folder |
 | Project icons: favicon detection and custom icons | sidebar | |
@@ -31,7 +31,7 @@ coordinator keeps this current.
 | Native PR view and reviews | `native/GitHub` | Setting: open PRs in the browser or in Native |
 | Automations | `native/Automation` | Scheduled and event-triggered tasks, run by the host |
 | Remappable, searchable shortcuts and a command palette | new `Commands` feature | `docs/keyboard.md` stays the source of defaults |
-| Code themes | design system | the reference app's set (Catppuccin, Tokyo Night, Gruvbox, Solarized, Dracula, Nord) plus popular ones |
+| Code themes | design system | Catppuccin, Tokyo Night, Gruvbox, Solarized, Dracula, Nord and other popular ones |
 | Terminal | new `Terminal` feature | libghostty |
 | Updates and release channels | new `Updates` feature | Stable, beta, nightly; published as GitHub Releases |
 | Startup performance | everyone, with a budget | First window well within one Dock bounce |
@@ -39,16 +39,16 @@ coordinator keeps this current.
 | Code mode for other MCP servers | `native/MCP`, `Packages/MCPClient`, `Packages/ScriptRuntime` | A server marked "scripted" is reached through `run_script` instead of loading every tool schema (rea: 170 tools, ~197k tokens) |
 | MCP OAuth for Native's own HTTP servers | composer, ACP | URL elicitation cards |
 | One MCP switch across every agent | `native/MCP` | Session-scoped per-agent overrides, global or per project; no editing each agent's config by hand |
-| Skills: browse, enable and disable, install, update and remove | `native/Skills`, `Packages/Skills` | One list across agents and scopes, in Settings ▸ Skills, as in the reference app |
+| Skills: browse, enable and disable, install, update and remove | `native/Skills`, `Packages/Skills` | One list across agents and scopes, in Settings ▸ Skills |
 | Minimal by default | plugins, settings | `docs/decisions.md` |
 | Sounds stay quiet during Focus | `native/Sounds` | Waiting on Developer ID team signing: the Focus Status entitlement can't be added to ad hoc builds. The logic is built and tested; turning it on is step 8 of `docs/releasing.md`'s one-time setup |
 | Celebrations plugin (Halloween, Día de Muertos first; international catalogue later) | `native/Celebrations`, `Packages/AppAppearance` | Spec: `docs/celebrations.md`. Engine, chooser and the two first editions now; the rest in reviewed artwork batches |
 | Plugin themes and icon sets | plugins, appearance, celebrations | Data only. Code themes, accent palettes and icon sets. Plugin icons apply on the Mac only: iOS can switch only between icons compiled into the app |
 | Plugins on iPad and iPhone | host protocol (`_native/plugins/*`), companion, iPad | Host-side plugin parts run on the host; data parts (themes, icon sets, celebrations, experiments) sync to each client. See decisions |
 | App icon switching on iPad and iPhone | iPad and companion targets | Built-in themes ship as alternate icons (`setAlternateIconName`) once those targets exist |
-| iPhone companion app (several hosts at once, each kept fully separate) | new target, host client | Designed (`docs/companion.md`, `research/companion-app.md`). Needs durable host Phase 2, paired network transport and QR pairing first |
+| iPhone companion app (several hosts at once, each kept fully separate) | new target, host client | Designed (`docs/companion.md`). Needs durable host Phase 2, paired network transport and QR pairing first |
 | Search across all agent runs | `Packages/Search`, `native/Search` | SQLite FTS5 index of every session, live and past (via per-agent history readers in plugins); later served by the host for iPad and iPhone |
-| What's New sheet after updates | `native/WhatsNew` | the reference app-style highlights shown once per version, never on a fresh install; Help ▸ What's New reopens it |
+| What's New sheet after updates | `native/WhatsNew` | Highlights shown once per version, never on a fresh install; Help ▸ What's New reopens it |
 | Organizations: managed policy, our telemetry (opt-in), their own telemetry and audit | `Packages/NativePolicy`, `Packages/Telemetry`, Settings | `docs/enterprise.md` |
 | iPad app | app target | After the host protocol lands (`docs/architecture.md`) |
-| Expeditions (the reference app's missions, rebranded) | `Packages/Expeditions`, `native/Expeditions` | the reference app's concept under Native's own name, composed from orchestration, goals, workflows and worktrees |
+| Expeditions: long, multi-agent projects | `Packages/Expeditions`, `native/Expeditions` | Composed from orchestration, goals, workflows and worktrees (`docs/expeditions.md`) |

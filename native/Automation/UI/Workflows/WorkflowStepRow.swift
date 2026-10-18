@@ -1,7 +1,7 @@
 import NativeAutomation
 import SwiftUI
 
-/// One step in a run's timeline, after the reference app's mission feature rows: status glyph, title, the
+/// One step in a run's timeline: status glyph, title, the
 /// agent it runs on, and a line saying what it's doing or why it stopped, with the ways on below.
 /// Its gate, or a reply box when it's asking something, opens right under it.
 struct WorkflowStepRow: View {

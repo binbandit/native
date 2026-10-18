@@ -2,13 +2,13 @@ import Foundation
 import Git
 import Observation
 
-/// How Native sets up git for new tasks, after the reference app's Git settings: the branch prefix, whether
+/// How Native sets up git for new tasks: the branch prefix, whether
 /// a task gets its own worktree, which ignored files a worktree gets copied, each project's setup
 /// script, and what archiving does with the branch.
 @Observable
 final class GitSettings {
     enum BranchPrefixMode: String, CaseIterable, Identifiable {
-        /// `<github-username>/`, the reference app's default.
+        /// `<github-username>/`, the default.
         case gitHubUsername
         case custom
         case none

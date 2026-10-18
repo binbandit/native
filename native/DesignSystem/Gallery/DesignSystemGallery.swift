@@ -68,31 +68,31 @@ struct DesignSystemGalleryColumn: View {
             GallerySection("Accent palettes", source: "One per app-icon theme, set with .dsAccentPalette(themeID:)") {
                 GalleryAccentPalettes()
             }
-            GallerySection("Colors", source: "the reference app core-ui v2 neutrals, the reference app statuses, CVD-safe chart series") {
+            GallerySection("Colors", source: "Neutral layers, status colors, CVD-safe chart series") {
                 GalleryColors()
             }
-            GallerySection("Typography", source: "Geist / Geist Mono, the reference app scale") {
+            GallerySection("Typography", source: "Geist / Geist Mono, 12pt UI text, 13pt sidebar and composer") {
                 GalleryTypography()
             }
-            GallerySection("Spacing, radii, elevation", source: "the reference app spacing, the reference app radii") {
+            GallerySection("Spacing, radii, elevation", source: "Spacing scale, corner radii, shadows") {
                 GalleryMetrics()
             }
-            GallerySection("Sidebar", source: "the reference app top half, the reference app projects and tasks, translucent") {
+            GallerySection("Sidebar", source: "Navigation on top, projects and tasks below, translucent") {
                 GallerySidebar()
             }
-            GallerySection("Icon picker", source: "the reference app's settings select, with a popover list") {
+            GallerySection("Icon picker", source: "The settings select, with a popover list") {
                 GalleryIconThemePicker()
             }
-            GallerySection("Status bar", source: "the reference app's status bar in the reference app's chrome") {
+            GallerySection("Status bar", source: "Quiet segments along the window's bottom edge") {
                 GalleryStatusBar()
             }
-            GallerySection("Task status", source: "the reference app workspace statuses and dot-grid loaders") {
+            GallerySection("Task status", source: "Agent states and dot-grid loaders") {
                 GalleryStatus()
             }
-            GallerySection("Composer", source: "the reference app composer") {
+            GallerySection("Composer", source: "Outlined sections and pill controls") {
                 GalleryComposer()
             }
-            GallerySection("Controls", source: "the reference app buttons, Kbd; the reference app badges, cards") {
+            GallerySection("Controls", source: "Buttons, Kbd, badges, cards") {
                 GalleryControls()
             }
             GallerySection("Patterns", source: "One per situation (docs/product-quality.md)") {

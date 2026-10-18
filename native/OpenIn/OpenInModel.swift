@@ -5,7 +5,7 @@ import SwiftUI
 /// The apps a folder can be opened in, and the default the button opens. One shared instance backs
 /// the toolbar control and the menu bar, so both always agree on the default.
 ///
-/// As in the reference app, the default is the app last chosen from the menu, so the button keeps opening
+/// The default is the app last chosen from the menu, so the button keeps opening
 /// wherever you went last; before any choice it's the likeliest editor (`OpenInTarget.catalog`).
 @Observable
 final class OpenInModel {

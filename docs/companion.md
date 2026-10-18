@@ -1,7 +1,6 @@
 # Companion app plan
 
-The iPhone layout of Native, in the spirit of the reference app's and the reference app's companions: check on tasks away
-from the Mac, approve permission requests, steer or queue follow-ups, start a task, and get notified
+The iPhone layout of Native: check on tasks away from the Mac, approve permission requests, steer or queue follow-ups, start a task, and get notified
 when something finishes or needs you. The iPad runs the full app instead (see "Clients and hosts" in
 `docs/architecture.md`); both are clients of a host, paired and connected the same way. The host
 keeps agents, worktrees, credentials and plugins.
@@ -89,7 +88,7 @@ compiles `native/DesignSystem` (a synchronized folder) and the Mac's transcript 
 (`MarkdownView`, `ToolPresentation`, `ToolPhase`, `FileDiff+DiffView`, `TranscriptStyle`,
 `TranscriptMetrics`, `TranscriptFixtures`, plus `CelebrationDates`), so tool rows and approvals use
 the Mac's exact words, and links ACP, NativeHostClient, NativeLink, NativePolicy, CodeThemes and
-AppAppearance. Screens follow `research/companion-app.md`: welcome;
+AppAppearance. The screens: welcome;
 Add Host (scan with VisionKit's DataScanner, pick a Mac Bonjour found and type its code, or paste
 the link); pairing progress with the verification code and a pairing log; Tasks grouped by host
 (needs you with inline approvals, working, recent); a task's transcript (the shared `SessionState`
@@ -126,7 +125,7 @@ celebrations).
   is neutral, switches, approvals and Settings follow the app, and a host left on Original has no
   color of its own. "App Icon While Connected" on a host's page switches the app icon when that
   host becomes the active one (picked in the chip, or the only host).
-- **Later, with a developer team:** APNs push (the categories in the research doc, threaded per
+- **Later, with a developer team:** APNs push (a category per kind of event, threaded per
   host) and one Live Activity per host; `CompanionNotifications` is the seam. The full
   `TranscriptView` stays Mac-only until it no longer needs `SessionModel`/`AppModel`; the phone's
   rows are its own, built on the same `SessionState` items and `ToolPresentation`.
@@ -214,8 +213,6 @@ Hosts. `COMPANION_LEAVE_PENDING=1` makes `testSendPromptAndApprove` stop at the 
   1. Same network: Bonjour discovery.
   2. Anywhere, no server of ours: over the user's Tailscale tailnet.
   3. Anywhere, zero setup: a small relay, end-to-end encrypted so it only forwards ciphertext.
-- **Design references.** the reference app's iPhone companion (well reviewed) first, then the best AI assistant
-  apps; research notes live in `research/companion-app.md`.
 - **Security.** Pairing establishes a long-lived key pair per device. All traffic is end-to-end
   encrypted and authenticated (Noise or TLS with pinned keys), never trusting the network or a
   relay. Each paired device can be revoked from Settings. Permission answers from the phone are

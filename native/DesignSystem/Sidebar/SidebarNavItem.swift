@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// A sidebar navigation row: icon, label, an optional shortcut hint that appears on hover and an
-/// optional trailing accessory such as a menu (the reference app `NavigationButton`: 6pt padding, 10pt gap,
-/// 12pt icons, secondary text that turns primary on hover).
+/// optional trailing accessory such as a menu: 6pt padding, 10pt gap, 12pt icons, secondary text
+/// that turns primary on hover.
 public struct SidebarNavItem<Accessory: View>: View {
     let title: String
     let systemImage: String
@@ -88,7 +88,7 @@ extension SidebarNavItem where Accessory == EmptyView {
     }
 }
 
-/// Darkens a sidebar row while pressed (the reference app's `active:inset-shadow` 10% wash). Hover and
+/// Darkens a sidebar row while pressed (a 10% wash). Hover and
 /// selection fills belong to the row so they also cover trailing accessories.
 public struct SidebarRowButtonStyle: ButtonStyle {
     public init() {}
