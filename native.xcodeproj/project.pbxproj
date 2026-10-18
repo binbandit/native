@@ -13,6 +13,8 @@
 		0000000000000000004E480E /* Native Host.app in Embed Login Items */ = {isa = PBXBuildFile; fileRef = 0000000000000000004E480A /* Native Host.app */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		0000000000000000004E4812 /* NativeHost in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000004E4811 /* NativeHost */; };
 		0000000000000000004E4814 /* NativeHostClient in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000004E4813 /* NativeHostClient */; };
+		0000000000000000117C0020 /* NativeLink in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000117C0010 /* NativeLink */; };
+		0000000000000000117C0021 /* NativeLink in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000117C0011 /* NativeLink */; };
 		0000000000000000005C5220 /* ScriptRuntime in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000005C5210 /* ScriptRuntime */; };
 		000000000000000000617320 /* Git in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000617310 /* Git */; };
 		000000000000000000E10320 /* Experiments in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000E10310 /* Experiments */; };
@@ -92,6 +94,7 @@
 			isa = PBXFrameworksBuildPhase;
 			files = (
 				0000000000000000004E4812 /* NativeHost in Frameworks */,
+				0000000000000000117C0021 /* NativeLink in Frameworks */,
 			);
 		};
 		000000000000000130000000 /* Frameworks */ = {
@@ -109,6 +112,7 @@
 				000000000000000000617320 /* Git in Frameworks */,
 				000000000000000000E10320 /* Experiments in Frameworks */,
 				0000000000000000004E4814 /* NativeHostClient in Frameworks */,
+				0000000000000000117C0020 /* NativeLink in Frameworks */,
 				00000000000000005E1EA503 /* Sparkle in Frameworks */,
 				0000000000000000005C5220 /* ScriptRuntime in Frameworks */,
 				000000000000000071E10020 /* Terminal in Frameworks */,
@@ -168,6 +172,7 @@
 			name = NativeHostHelper;
 			packageProductDependencies = (
 				0000000000000000004E4811 /* NativeHost */,
+				0000000000000000117C0011 /* NativeLink */,
 			);
 			productName = "Native Host";
 			productReference = 0000000000000000004E480A /* Native Host.app */;
@@ -205,6 +210,7 @@
 				000000000000000000617310 /* Git */,
 				000000000000000000E10310 /* Experiments */,
 				0000000000000000004E4813 /* NativeHostClient */,
+				0000000000000000117C0010 /* NativeLink */,
 				00000000000000005E1EA502 /* Sparkle */,
 				0000000000000000005C5210 /* ScriptRuntime */,
 				000000000000000071E10010 /* Terminal */,
@@ -251,6 +257,7 @@
 				000000000000000000617300 /* XCLocalSwiftPackageReference "Packages/Git" */,
 				000000000000000000E10300 /* XCLocalSwiftPackageReference "Packages/Experiments" */,
 				0000000000000000004E4810 /* XCLocalSwiftPackageReference "Packages/NativeHost" */,
+				0000000000000000117C0000 /* XCLocalSwiftPackageReference "Packages/NativeLink" */,
 				00000000000000005E1EA501 /* XCRemoteSwiftPackageReference "Sparkle" */,
 				0000000000000000005C5200 /* XCLocalSwiftPackageReference "Packages/ScriptRuntime" */,
 				00000000000000000AC10000 /* XCLocalSwiftPackageReference "Packages/MCPClient" */,
@@ -750,6 +757,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/NativeHost;
 		};
+		0000000000000000117C0000 /* XCLocalSwiftPackageReference "Packages/NativeLink" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/NativeLink;
+		};
 		0000000000000000005C5200 /* XCLocalSwiftPackageReference "Packages/ScriptRuntime" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/ScriptRuntime;
@@ -823,6 +834,14 @@
 		0000000000000000004E4813 /* NativeHostClient */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = NativeHostClient;
+		};
+		0000000000000000117C0010 /* NativeLink */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = NativeLink;
+		};
+		0000000000000000117C0011 /* NativeLink */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = NativeLink;
 		};
 		0000000000000000005C5210 /* ScriptRuntime */ = {
 			isa = XCSwiftPackageProductDependency;

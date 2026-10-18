@@ -28,6 +28,18 @@ private struct TerminalPanelModifier: ViewModifier {
             }
         }
         .onGeometryChange(for: CGFloat.self, of: \.size.height) { availableHeight = $0 }
+        // The pointer and touch way in, beside ⌃` and View ▸ Show Terminal.
+        .toolbar {
+            ToolbarItem {
+                Button {
+                    store.toggle(for: session)
+                } label: {
+                    Image(systemName: "apple.terminal")
+                }
+                .help(panel.isVisible ? "Hide Terminal (⌃`)" : "Show Terminal (⌃`)")
+                .accessibilityLabel(panel.isVisible ? "Hide Terminal" : "Show Terminal")
+            }
+        }
         .animation(.dsPanel, value: panel.isVisible)
         // Reported whether or not the panel shows, so a terminal opened from the menu starts in
         // the right colors.

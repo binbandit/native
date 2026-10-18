@@ -117,7 +117,7 @@ struct PluginTests {
             bootTime: nil, environment: { [:] }, pluginsDirectory: harness.plugins, exit: { _ in })
         let core = try HostCore(configuration: configuration)
         let transport = InProcessTransport { stream in
-            await core.accept(stream, grants: ClientGrants(managePlugins: false))
+            await core.accept(stream, grants: ClientGrants(managePlugins: false, manageHost: false, isLocal: false))
         }
         let client = NativeHostClient(
             transport: transport, clientInfo: PeerInfo(name: "phone", version: "1", build: "1"))
@@ -128,18 +128,5 @@ struct PluginTests {
             _ = try await client.setPluginEnabled("aurora", false)
         }
         await client.stop()
-    }
-}
-
-/// Connects a client straight to an in-process host, as a paired transport would after its handshake.
-private struct InProcessTransport: HostTransport {
-    let accept: @Sendable (any ByteStream) async -> Void
-
-    var displayName: String { "In process" }
-
-    func connect() async throws -> any ByteStream {
-        let (clientEnd, hostEnd) = try UnixSocket.pair()
-        await accept(ByteChannel.socket(hostEnd, label: "host"))
-        return ByteChannel.socket(clientEnd, label: "client")
     }
 }

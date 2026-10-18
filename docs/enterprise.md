@@ -76,8 +76,9 @@ The event model (`Packages/Telemetry`):
 | Native (us) | off until the user opts in | the user, or the organization (forced off or forced on) |
 | Organization collector | none | the organization only |
 
-Our collector, its endpoint, and the retention policy are decided before anything is sent. Until then
-the Native destination is compiled in but disabled.
+Our destination is Sentry: errors, crashes, hangs and performance, plus the typed usage events. The
+Sentry SDK starts only when consent and policy allow it, with default PII off, text-carrying breadcrumbs
+off, no screenshots, view hierarchy or session replay, and a `beforeSend` allowlist.
 
 ## Audit
 

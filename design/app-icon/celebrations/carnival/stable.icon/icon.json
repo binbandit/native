@@ -38,19 +38,19 @@
               "value": true
             }
           ],
-          "image-name": "painted-interlock.png",
-          "name": "Painted Native interlock",
+          "image-name": "flat-interlock.png",
+          "name": "Flat Native interlock",
           "position": {
-            "scale": 0.6055646481178396,
+            "scale": 0.5543071161048689,
             "translation-in-points": [
-              -0.0,
-              10.183306055646481
+              -1.3857677902621723,
+              0.3595505617977519
             ]
           }
         }
       ],
       "lighting": "individual",
-      "name": "Carnival · painted Native interlock",
+      "name": "Carnival · flat Native interlock",
       "refractivity-specializations": [
         {
           "appearance": "tinted",
@@ -62,8 +62,8 @@
         }
       ],
       "shadow": {
-        "kind": "neutral",
-        "opacity": 0.18
+        "kind": "none",
+        "opacity": 0
       },
       "translucency-specializations": [
         {

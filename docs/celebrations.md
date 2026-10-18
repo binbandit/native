@@ -6,7 +6,13 @@ Installing the plugin should open that choice, with every event initially off. P
 Halloween opt-in when migrating.
 
 Research date: 18 October 2026. Halloween and Día de Muertos are confirmed requests. The wider catalogue,
-display windows and plugin design below are recommendations. This proposal does not add runtime support.
+display windows and plugin design below are recommendations.
+
+Status: the contribution contract (`iconSets`, `celebrations` in [plugins](plugins.md)), the occurrence
+engine and overlap policy (`Packages/AppAppearance`), the chooser (Settings ▸ Celebrations) and the first
+two editions ship in the built-in Celebrations plugin (`native/Celebrations/`). Día de Muertos changes
+Home only until its icons exist ([artwork hand-off](celebrations-artwork.md)); the rest of the catalogue is
+listed as forthcoming, and calendars other than fixed civil dates await their resolvers.
 
 ## Confirmed editions
 

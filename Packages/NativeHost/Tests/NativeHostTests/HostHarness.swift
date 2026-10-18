@@ -170,3 +170,16 @@ actor Recorder {
         listening?.cancel()
     }
 }
+
+/// Connects a client straight to an in-process host, as a paired transport would after its handshake.
+struct InProcessTransport: HostTransport {
+    let accept: @Sendable (any ByteStream) async -> Void
+
+    var displayName: String { "In process" }
+
+    func connect() async throws -> any ByteStream {
+        let (clientEnd, hostEnd) = try UnixSocket.pair()
+        await accept(ByteChannel.socket(hostEnd, label: "host"))
+        return ByteChannel.socket(clientEnd, label: "client")
+    }
+}

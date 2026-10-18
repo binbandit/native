@@ -36,7 +36,8 @@ public final class HostCore {
             self.updates =
                 updates
                 ?? .none(
-                    current: HostUpdateStatus.Build(version: hostInfo.version, build: hostInfo.build, channel: "stable"),
+                    current: HostUpdateStatus.Build(
+                        version: hostInfo.version, build: hostInfo.build, channel: "stable"),
                     reason: "This host wasn't installed by Native's updater, so it can't update itself.")
             self.pluginsDirectory =
                 pluginsDirectory

@@ -119,6 +119,13 @@ public struct RequestPermissionRequest: Decodable, Sendable {
     public var sessionId: SessionID
     public var toolCall: ToolCallUpdate
     public var options: [PermissionOption]
+
+    /// For approvals the client raises itself, for work it does on the session's behalf.
+    public init(sessionId: SessionID, toolCall: ToolCallUpdate, options: [PermissionOption]) {
+        self.sessionId = sessionId
+        self.toolCall = toolCall
+        self.options = options
+    }
 }
 
 public struct PermissionOption: Decodable, Hashable, Sendable, Identifiable {
@@ -131,6 +138,12 @@ public struct PermissionOption: Decodable, Hashable, Sendable, Identifiable {
         case allowAlways = "allow_always"
         case rejectOnce = "reject_once"
         case rejectAlways = "reject_always"
+    }
+
+    public init(optionId: String, name: String, kind: Kind) {
+        self.optionId = optionId
+        self.name = name
+        self.kind = kind
     }
 
     public var id: String { optionId }

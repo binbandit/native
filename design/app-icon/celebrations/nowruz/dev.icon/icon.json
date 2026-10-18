@@ -38,19 +38,19 @@
               "value": true
             }
           ],
-          "image-name": "painted-interlock.png",
-          "name": "Painted Native interlock",
+          "image-name": "flat-interlock.png",
+          "name": "Flat Native interlock",
           "position": {
-            "scale": 0.5873015873015873,
+            "scale": 0.6146179401993356,
             "translation-in-points": [
-              -0.5873015873015873,
-              11.706349206349206
+              -0.0,
+              13.843853820598007
             ]
           }
         }
       ],
       "lighting": "individual",
-      "name": "Nowruz · painted Native interlock",
+      "name": "Nowruz · flat Native interlock",
       "refractivity-specializations": [
         {
           "appearance": "tinted",
@@ -62,8 +62,8 @@
         }
       ],
       "shadow": {
-        "kind": "neutral",
-        "opacity": 0.18
+        "kind": "none",
+        "opacity": 0
       },
       "translucency-specializations": [
         {
