@@ -271,6 +271,14 @@ enum SessionEvent: Sendable {
     /// turn added after the user's prompt, so a plugin can tell whether the agent got anywhere.
     case turnFailed(SessionContext, prompt: String, error: any Error, items: [TranscriptItem])
     case permissionRequested(SessionContext, toolCall: String)
+    /// Something other than an agent's own request is waiting on the user: a workflow's approval
+    /// gate, a goal the agent can't continue without them. The session is the task involved, if any.
+    case needsUser(SessionContext?, reason: String)
+    /// Something stopped short outside a turn: an agent that crashed or couldn't start, a workflow
+    /// step or automation run that failed. The session is the task involved, if any.
+    case failed(SessionContext?, reason: String)
+    /// The agent asked the user something (an `elicitation/create` form). `message` is the question.
+    case questionAsked(SessionContext, message: String)
     /// A live context and cost report (not one replayed by `session/load`). Claude Code's
     /// rate-limit status rides on it as `usage.rateLimit`.
     case usageUpdated(SessionContext, Usage)

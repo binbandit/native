@@ -105,7 +105,7 @@ final class AutomationCenter {
         case .turnFailed(let context, _, let error, _):
             let outcome = describeLimit?(error).map(TurnOutcome.limited) ?? .failure(error.localizedDescription)
             await turnEnded(context, outcome: outcome)
-        case .sessionStarted, .permissionRequested, .usageUpdated:
+        case .sessionStarted, .permissionRequested, .questionAsked, .usageUpdated, .needsUser, .failed:
             break
         }
     }

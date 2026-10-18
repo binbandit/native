@@ -66,7 +66,7 @@ final class ExpeditionCenter {
         case .turnFailed(let context, _, let error, _):
             let outcome = describeLimit?(error).map(TurnOutcome.limited) ?? .failure(error.localizedDescription)
             runner.turnEnded(task: host?.task(forClient: context.clientID) ?? context.clientID, outcome: outcome)
-        case .sessionStarted, .promptSent, .permissionRequested, .usageUpdated:
+        case .sessionStarted, .promptSent, .permissionRequested, .usageUpdated, .needsUser, .failed:
             break
         }
     }

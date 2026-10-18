@@ -22,7 +22,8 @@ struct SkillRow: View {
             SettingsRow(
                 id: SkillsSettingsPage.rowID(item.key),
                 title: Text(item.name),
-                description: Text(item.description ?? item.problems.first?.message ?? "No description."),
+                description: Text(
+                    item.description.map(Self.summary) ?? item.problems.first?.message ?? "No description."),
                 detail: detail
             ) {
                 ForEach(item.scopes, id: \.self) { scope in
@@ -44,6 +45,16 @@ struct SkillRow: View {
                 SkillDetails(library: library, item: item)
             }
         }
+    }
+
+    /// A description's first sentence, so long ones don't turn rows into paragraphs; the details
+    /// show the rest.
+    static func summary(_ description: String) -> String {
+        let limit = 160
+        let sentence =
+            description.firstRange(of: /[.!?](\s|$)/).map { String(description[..<$0.upperBound]) } ?? description
+        let text = sentence.trimmingCharacters(in: .whitespacesAndNewlines)
+        return text.count > limit ? text.prefix(limit).trimmingCharacters(in: .whitespaces) + "…" : text
     }
 
     /// Who loads it, then anything that keeps the switch from reaching an agent.

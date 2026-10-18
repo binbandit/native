@@ -7,8 +7,6 @@ nonisolated enum SoundID: Hashable, Sendable {
     /// local copy.
     case conductor(String)
     case custom(UUID)
-
-    static let `default` = SoundID.native(.chime)
 }
 
 extension SoundID: RawRepresentable {

@@ -110,7 +110,7 @@ struct SkillNativeRow: View {
         SettingsRow(
             id: SkillsSettingsPage.rowID(SkillItem.key(for: skill.id)),
             title: Text(skill.id),
-            description: Text(skill.summary),
+            description: Text(SkillRow.summary(skill.summary)),
             detail: Text(
                 skill.isServed
                     ? "Every agent, through Native's MCP tools · from \(skill.pluginName)"

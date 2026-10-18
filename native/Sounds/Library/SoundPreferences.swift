@@ -14,8 +14,13 @@ final class SoundPreferences {
         didSet { defaults.set(staysQuietDuringFocus, forKey: Key.staysQuietDuringFocus) }
     }
 
-    var selection: SoundID {
-        didSet { defaults.set(selection.rawValue, forKey: Key.selection) }
+    /// Each trigger's sound. Missing ones use the trigger's default.
+    private var sounds: [SoundTrigger: SoundID] {
+        didSet {
+            for (trigger, sound) in sounds where oldValue[trigger] != sound {
+                defaults.set(sound.rawValue, forKey: Key.sound(trigger))
+            }
+        }
     }
 
     /// 0...1. At the default, Native's sounds play at the level the reference app plays its chime.
@@ -42,7 +47,9 @@ final class SoundPreferences {
     private enum Key {
         static let enabled = "sounds.enabled"
         static let staysQuietDuringFocus = "sounds.staysQuietDuringFocus"
-        static let selection = "sounds.selection"
+        static func sound(_ trigger: SoundTrigger) -> String { "sounds.sound.\(trigger.rawValue)" }
+        /// Before each trigger had its own sound, one sound played for all of them.
+        static let legacySelection = "sounds.selection"
         static let volume = "sounds.volume"
         static let triggers = "sounds.triggers"
         static let timing = "sounds.timing"
@@ -53,9 +60,15 @@ final class SoundPreferences {
         self.defaults = defaults
         isEnabled = defaults.object(forKey: Key.enabled) as? Bool ?? true
         staysQuietDuringFocus = defaults.object(forKey: Key.staysQuietDuringFocus) as? Bool ?? true
-        selection = defaults.string(forKey: Key.selection).flatMap(SoundID.init(rawValue:)) ?? .default
+        // The one sound earlier versions played stays the task-finished sound; the others get
+        // their own new defaults.
+        let legacy = defaults.string(forKey: Key.legacySelection).flatMap(SoundID.init(rawValue:))
+        sounds = Dictionary(uniqueKeysWithValues: SoundTrigger.allCases.map { trigger in
+            let stored = defaults.string(forKey: Key.sound(trigger)).flatMap(SoundID.init(rawValue:))
+            return (trigger, stored ?? (trigger == .taskFinished ? legacy : nil) ?? trigger.defaultSound)
+        })
         volume = defaults.object(forKey: Key.volume) as? Double ?? Self.defaultVolume
-        triggers = defaults.stringArray(forKey: Key.triggers).map { Set($0.compactMap(SoundTrigger.init(rawValue:))) }
+        triggers = defaults.stringArray(forKey: Key.triggers).map { Set($0.compactMap(SoundTrigger.init(storedValue:))) }
             ?? Set(SoundTrigger.allCases)
         timing = defaults.string(forKey: Key.timing).flatMap(SoundTiming.init(rawValue:)) ?? .unlessViewing
         customSounds = defaults.data(forKey: Key.customSounds).flatMap { try? JSONDecoder().decode([CustomSound].self, from: $0) } ?? []
@@ -70,12 +83,21 @@ final class SoundPreferences {
         return added
     }
 
-    /// Forgets a custom sound (the file stays where it is). If it was selected, the default takes over.
+    /// Forgets a custom sound (the file stays where it is). Triggers that used it go back to their
+    /// own default.
     func removeCustomSound(_ id: UUID) {
         customSounds.removeAll { $0.id == id }
-        if selection == .custom(id) {
-            selection = .default
+        for (trigger, sound) in sounds where sound == .custom(id) {
+            sounds[trigger] = trigger.defaultSound
         }
+    }
+
+    func sound(for trigger: SoundTrigger) -> SoundID {
+        sounds[trigger] ?? trigger.defaultSound
+    }
+
+    func setSound(_ sound: SoundID, for trigger: SoundTrigger) {
+        sounds[trigger] = sound
     }
 
     func isEnabled(_ trigger: SoundTrigger) -> Bool {
