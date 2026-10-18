@@ -33,7 +33,7 @@ struct AgentTerminalSignInSheet: View {
         .onDisappear { run?.end() }
         .onChange(of: run?.outcome) { _, outcome in
             if outcome == .succeeded {
-                Task { await complete() }
+                complete()
             }
         }
     }
@@ -64,7 +64,7 @@ struct AgentTerminalSignInSheet: View {
                 TerminalSurfaceHost(surface: surface)
                     .overlay(alignment: .bottom) { outcome.padding(DS.Space.md) }
                 #endif
-            } else if run?.outcome != .running {
+            } else if case .failed = run?.outcome {
                 // The terminal never started, or the user closed it after a failed sign-in.
                 failure
             }
@@ -91,8 +91,7 @@ struct AgentTerminalSignInSheet: View {
                     "Its output is above; fix what it reported, then try again.",
                 ]
                 .compactMap(\.self).joined(separator: " "),
-                primary: .init("Try Again") { run?.restart() },
-                secondary: .init("Cancel") { dismiss() }
+                primary: .init("Try Again") { run?.restart() }
             )
         }
     }
@@ -102,7 +101,6 @@ struct AgentTerminalSignInSheet: View {
             "Signing in didn't finish",
             suggestion: "Try again here, or run “\(request.command)” in your own terminal and choose Check Again.",
             primary: .init("Try Again") { run?.restart() },
-            secondary: .init("Cancel") { dismiss() },
             layout: .pane
         )
     }
@@ -116,20 +114,12 @@ struct AgentTerminalSignInSheet: View {
                 .lineLimit(1)
                 .truncationMode(.middle)
             Spacer(minLength: DS.Space.lg)
-            if isFinishing {
-                DotGridLoader(pattern: .waiting)
-                    .frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
-                    .foregroundStyle(.dsTextTertiary)
-            }
             Button("Cancel") { dismiss() }
                 .buttonStyle(.ds(.secondary))
                 .keyboardShortcut(.cancelAction)
-            Button(isFinishing ? "Checking…" : "Check Again") {
-                Task { await complete() }
-            }
-            .buttonStyle(.ds(.primary))
-            .disabled(isFinishing)
-            .help("Signed in another way? Native restarts \(request.agent.displayName) to pick it up.")
+            Button("Check Again") { complete() }
+                .buttonStyle(.ds(.primary))
+                .help("Signed in another way? Native restarts \(request.agent.displayName) to pick it up.")
         }
         .padding(DS.Space.lg)
     }
@@ -141,11 +131,13 @@ struct AgentTerminalSignInSheet: View {
         run = AgentTerminalSignInRun(request: request, terminals: terminals)
     }
 
-    private func complete() async {
+    /// Ends the command and hands over to the app, which restarts the agent and carries on; the
+    /// agent's own status shows that progress once the sheet closes.
+    private func complete() {
         guard !isFinishing else { return }
         isFinishing = true
         run?.end()
-        await finish(request)
+        Task { await finish(request) }
         dismiss()
     }
 }

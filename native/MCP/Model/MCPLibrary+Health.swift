@@ -29,7 +29,7 @@ extension MCPLibrary {
     /// aren't turned off. A few at a time.
     func probeAll() async {
         let keys =
-            servers.filter(\.isEnabled).map { MCPServerKey.managed($0.id) }
+            servers.filter { mode(of: $0.transport.endpoint.key, in: nil) == .on }.map { MCPServerKey.managed($0.id) }
             + configurations.values.flatMap(\.servers).filter { $0.status != .disabled }.map {
                 MCPServerKey.agent($0.id)
             }

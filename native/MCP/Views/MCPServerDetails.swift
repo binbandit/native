@@ -152,10 +152,10 @@ struct MCPServerDetails: View {
                 .buttonStyle(.ds(.primary, size: .medium))
             if case .managed(let id) = key {
                 if let project {
-                    Button("Disable in \(project.lastPathComponent)") { library.disable(id, in: project) }
+                    Button("Disable in \(project.lastPathComponent)") { library.server(id).map { library.setMode(.off, of: $0.transport.endpoint.key, in: project) } }
                         .buttonStyle(.ds(.secondary, size: .medium))
                 }
-                Button("Turn Off") { library.setEnabled(false, for: id) }
+                Button("Turn Off") { library.server(id).map { library.setMode(.off, of: $0.transport.endpoint.key, in: nil) } }
                     .buttonStyle(.ds(.secondary, size: .medium))
             } else if let entry, MCPFileActions.canReveal {
                 Button("Show \(entry.source.lastPathComponent)") { MCPFileActions.reveal(entry.source) }

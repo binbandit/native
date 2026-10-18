@@ -2,11 +2,18 @@ import SwiftUI
 
 /// The slim bar along the window's bottom edge, after Orca's footer: registered items at each end
 /// on one line, leading ones clipping first when the window is narrow. Right-click shows or hides
-/// items. Attach it with `.safeAreaBar(edge: .bottom) { StatusBar(registry:) }`.
+/// items. Put it under the window's content in a VStack, so it's part of the layout; hidden or
+/// with no items, it takes no space.
 struct StatusBar: View {
     let registry: StatusBarRegistry
 
     var body: some View {
+        if registry.isVisible {
+            bar
+        }
+    }
+
+    private var bar: some View {
         HStack(spacing: StatusBarMetrics.segmentSpacing) {
             segments(.leading)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -43,6 +50,9 @@ struct StatusBar: View {
                     registry.setVisible($0, for: item.id)
                 })
             }
+        }
+        Button("Hide Status Bar") {
+            registry.isShown = false
         }
     }
 }

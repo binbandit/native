@@ -62,10 +62,26 @@ public struct NewSessionRequest: ACPRequest {
 
     public var cwd: String
     public var mcpServers: [MCPServer]
+    /// Agent-specific options for this session, such as Claude Code's `claudeCode.options`. Left
+    /// out when empty.
+    public var meta: [String: JSONValue]
 
-    public init(cwd: String, mcpServers: [MCPServer] = []) {
+    private enum CodingKeys: String, CodingKey {
+        case cwd, mcpServers
+        case meta = "_meta"
+    }
+
+    public init(cwd: String, mcpServers: [MCPServer] = [], meta: [String: JSONValue] = [:]) {
         self.cwd = cwd
         self.mcpServers = mcpServers
+        self.meta = meta
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(cwd, forKey: .cwd)
+        try container.encode(mcpServers, forKey: .mcpServers)
+        if !meta.isEmpty { try container.encode(meta, forKey: .meta) }
     }
 }
 
@@ -81,11 +97,27 @@ public struct LoadSessionRequest: ACPRequest {
     public var sessionId: SessionID
     public var cwd: String
     public var mcpServers: [MCPServer]
+    /// As in `NewSessionRequest`: the agent applies it to the reopened session.
+    public var meta: [String: JSONValue]
 
-    public init(sessionId: SessionID, cwd: String, mcpServers: [MCPServer] = []) {
+    private enum CodingKeys: String, CodingKey {
+        case sessionId, cwd, mcpServers
+        case meta = "_meta"
+    }
+
+    public init(sessionId: SessionID, cwd: String, mcpServers: [MCPServer] = [], meta: [String: JSONValue] = [:]) {
         self.sessionId = sessionId
         self.cwd = cwd
         self.mcpServers = mcpServers
+        self.meta = meta
+    }
+
+    public func encode(to encoder: any Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(sessionId, forKey: .sessionId)
+        try container.encode(cwd, forKey: .cwd)
+        try container.encode(mcpServers, forKey: .mcpServers)
+        if !meta.isEmpty { try container.encode(meta, forKey: .meta) }
     }
 }
 

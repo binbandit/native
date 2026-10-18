@@ -16,6 +16,8 @@ import os
 @Observable
 final class MCPLibrary {
     private(set) var servers: [ManagedServer] = []
+    /// On/off for every server, Native's and agents', globally and per project.
+    private(set) var switches = MCPServerSwitches()
     /// Each agent's own configuration, as last read.
     private(set) var configurations: [AgentConfigFormat: AgentMCPConfiguration] = [:]
     private(set) var isReadingConfigurations = false
@@ -62,7 +64,9 @@ final class MCPLibrary {
         self.files = files
         self.secretStore = secretStore
         self.storeURL = storeURL
-        servers = load()
+        let stored = load()
+        servers = stored.servers
+        switches = stored.switches
     }
 
     /// Application Support, per bundle id like the other stores, so dev instances keep their own.
@@ -121,25 +125,18 @@ final class MCPLibrary {
         recomputeSessionEntries()
     }
 
-    func setEnabled(_ isEnabled: Bool, for id: UUID) {
-        update(id) { $0.isEnabled = isEnabled }
+    // MARK: - Switches
+
+    /// Whether `server` (an `MCPEndpointIdentity.key`) loads in `directory`, or everywhere when nil.
+    func mode(of server: String, in directory: URL?) -> MCPServerSwitches.Mode {
+        switches.mode(of: server, in: directory)
     }
 
-    /// Turns a server off in one project only, keeping it everywhere else.
-    func disable(_ id: UUID, in project: URL) {
-        update(id) { server in
-            let path = ProjectPath.key(project)
-            if !server.excludedProjects.contains(path) { server.excludedProjects.append(path) }
-        }
-    }
-
-    func enable(_ id: UUID, in project: URL) {
-        update(id) { $0.excludedProjects.removeAll { $0 == ProjectPath.key(project) } }
-    }
-
-    private func update(_ id: UUID, _ change: (inout ManagedServer) -> Void) {
-        guard let index = servers.firstIndex(where: { $0.id == id }) else { return }
-        change(&servers[index])
+    /// Sets a server's switch for one project, or all projects when `project` is nil. Nil `mode`
+    /// clears a project's switch so it follows the global one. Takes effect at the next session
+    /// start; agents that apply it at launch pick it up when they restart.
+    func setMode(_ mode: MCPServerSwitches.Mode?, of server: String, in project: URL?) {
+        switches.set(mode, for: server, in: project)
         persist()
         recomputeSessionEntries()
     }
@@ -171,20 +168,20 @@ final class MCPLibrary {
                 at: storeURL.deletingLastPathComponent(), withIntermediateDirectories: true)
             let encoder = JSONEncoder()
             encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
-            try encoder.encode(servers).write(to: storeURL, options: .atomic)
+            try encoder.encode(MCPStoreFile(servers: servers, switches: switches)).write(to: storeURL, options: .atomic)
         } catch {
             problem = "Couldn't save your MCP servers: \(error.localizedDescription)"
         }
     }
 
-    private func load() -> [ManagedServer] {
-        guard let data = try? Data(contentsOf: storeURL) else { return [] }
+    private func load() -> MCPStoreFile {
+        guard let data = try? Data(contentsOf: storeURL) else { return MCPStoreFile() }
         do {
-            return try JSONDecoder().decode([ManagedServer].self, from: data)
+            return try JSONDecoder().decode(MCPStoreFile.self, from: data)
         } catch {
             logger.error("Ignoring unreadable MCP servers file: \(error)")
             problem = "Native couldn't read its saved MCP servers, so it started without them."
-            return []
+            return MCPStoreFile()
         }
     }
 
@@ -310,6 +307,12 @@ final class MCPLibrary {
             return nil
         }
     }
+}
+
+/// What `MCPLibrary` keeps on disk: its servers and every switch. Secrets aren't in it.
+struct MCPStoreFile: Codable {
+    var servers: [ManagedServer] = []
+    var switches = MCPServerSwitches()
 }
 
 /// A managed server just removed, kept so the removal can be undone.

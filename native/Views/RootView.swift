@@ -26,7 +26,11 @@ struct RootView: View {
     var body: some View {
         @Bindable var model = model
         @Bindable var automation = automation
-        content
+        // The status bar is part of the layout, under everything, so nothing ends up beneath it.
+        VStack(spacing: 0) {
+            content
+            StatusBar(registry: statusBar)
+        }
             .focusedSceneValue(\.sidebarVisibility, $columnVisibility)
             .undoToast($undoToast)
             .onChange(of: model.lastUndoable?.id) {
@@ -194,7 +198,6 @@ struct RootView: View {
             detail
         }
         .toolbar(removing: .sidebarToggle)
-        .safeAreaBar(edge: .bottom) { StatusBar(registry: statusBar) }
     }
 
     private var sidebar: some View {

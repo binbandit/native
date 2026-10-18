@@ -79,10 +79,9 @@ struct HomeDetail: View {
     private func availability(of runtime: AgentRuntime) -> HomeAgent<AgentDefinition.ID>.Availability {
         if model.creatingSessionWith == runtime.agent.id { return .creatingTask }
         return switch runtime.status {
-        case .starting: .starting
         case .ready where runtime.needsSignIn: .unavailable("Needs sign-in")
-        // An idle agent starts when the user picks it.
-        case .idle, .ready: .available
+        // A task picked while the agent is idle or still starting waits for it, showing as starting.
+        case .idle, .starting, .ready: .available
         case .notInstalled, .failed: .unavailable(runtime.status.label)
         }
     }

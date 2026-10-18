@@ -32,11 +32,11 @@ extension MCPLibrary {
         agents.compactMap { agent in
             let target = ManagedServerDelivery.Target(
                 agentID: agent.id.rawValue, directory: nil, transports: agent.transports,
-                agentServers: agentServers(agent.format, in: nil))
+                agentServers: agentServers(agent.format, in: nil), switches: switches)
             var everywhere = server
             everywhere.projects = .all
             guard let outcome = ManagedServerDelivery.plan([everywhere], for: target).first?.outcome,
-                let reason = outcome.inactiveReason(agentName: agent.name), outcome != .disabled
+                let reason = outcome.inactiveReason(agentName: agent.name), outcome != .switchedOff
             else { return nil }
             return (agent, reason)
         }

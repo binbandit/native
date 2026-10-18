@@ -202,9 +202,25 @@ including when an app stays running or wakes after the season. The Gregorian dat
 AppAppearance, with calendar boundary and time-zone tests. Mac Dock access and environment
 notifications live in PlatformAppIcon, outside shared models and views.
 
+Debug builds use a separate development icon identity, including its Halloween edition. Icon
+identity lives in AppAppearance and stays separate from ReleaseChannel so a development build can
+preview Nightly behavior without taking on a shipping build's icon. Original restores the compiled
+development icon, retaining the system's Default, Dark, Clear and Tinted appearances.
+
 ## 2026-10-18: Fair source under the Functional Source License
 
 Native is licensed under FSL-1.1-ALv2. Anyone can read, fork, modify and use it, at work too, and
 contribute back; the only use it rules out is offering a competing commercial product built from it.
 Each release becomes Apache 2.0 two years after it's published. This keeps the project open and
 friendly to fork without letting someone repackage the work as a rival app.
+
+## 2026-10-18: Expeditions: agents plan, Native's engine schedules
+
+Expeditions (`docs/expeditions.md`) are Native's take on long multi-agent objectives. A lead agent
+proposes a route the user approves, but Native's engine, not the lead, starts builders and
+reviewers from it: one source of truth for the overview, recovery and budgets, no reliance on an
+agent calling coordination tools, and any provider in any role. Agents hand work back through
+protocols in their replies (a route block, the goal status line, a verdict line) that Native
+validates, and Native is the only writer of the shared artifacts. The engine is the UI-free
+`Packages/Expeditions`, built from the goal loop and the workflow engine's shape, so it moves into
+the durable host unchanged.
