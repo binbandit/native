@@ -45,7 +45,10 @@ extension LinkGateway {
             _ = try noise.readMessage(try await reader.next().body)
             let hostHello = LinkHostHello(
                 hostID: configuration.hostID, name: configuration.machineName, linkVersion: Self.linkVersion)
-            guard raw.write(LinkFrame(kind: .noise, body: try noise.writeMessage(payload: JSONEncoder().encode(hostHello))).encoded)
+            guard
+                raw.write(
+                    LinkFrame(kind: .noise, body: try noise.writeMessage(payload: JSONEncoder().encode(hostHello)))
+                        .encoded)
             else { return raw.close() }
 
             let final = try await reader.next()
@@ -148,8 +151,10 @@ extension LinkGateway {
             try? channel.send(LinkWelcome(status: .unknownDevice))
             return channel.close()
         }
-        guard !device.isRevoked, registry.isEnabled else {
-            try? channel.send(LinkWelcome(status: device.isRevoked ? .revoked : .unknownDevice))
+        guard !device.isRevoked, registry.isEnabled, isAllowedByPolicy else {
+            let status: LinkWelcome.Status =
+                device.isRevoked ? .revoked : isAllowedByPolicy ? .unknownDevice : .disabledByPolicy
+            try? channel.send(LinkWelcome(status: status))
             return channel.close()
         }
         registry.update(device.id) { $0.lastSeen = configuration.now() }
@@ -183,7 +188,8 @@ extension LinkGateway {
     /// Listens while the gateway is on and there's someone to serve: a paired device or an open window.
     func updateListener() {
         let shouldListen =
-            configuration.usesNetwork && registry.isEnabled && (!registry.activeDevices.isEmpty || window != nil)
+            configuration.usesNetwork && isAllowedByPolicy && registry.isEnabled
+            && (!registry.activeDevices.isEmpty || window != nil)
         if shouldListen, listener == nil {
             startListener(port: registry.port ?? configuration.preferredPort)
         } else if !shouldListen, let listener {
@@ -198,7 +204,10 @@ extension LinkGateway {
         do {
             listener = try LinkListener(
                 port: port, serviceName: configuration.advertisesOverBonjour ? configuration.machineName : nil,
-                txtRecord: ["v": "\(Self.linkVersion)", "k": identity.publicKey.fingerprint, "i": configuration.hostID.description],
+                txtRecord: [
+                    "v": "\(Self.linkVersion)", "k": identity.publicKey.fingerprint,
+                    "i": configuration.hostID.description,
+                ],
                 events: { [weak self] event in Task { await self?.listenerEvent(event, requestedPort: port) } },
                 connections: { [weak self] stream in self?.serve(stream) }
             )

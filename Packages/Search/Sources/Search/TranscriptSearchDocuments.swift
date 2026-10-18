@@ -74,7 +74,8 @@ extension SearchDocument {
         var seen: Set<String> = [call.title]
         let text = [
             call.title,
-            SearchText.capped(input.filter { seen.insert($0).inserted }.joined(separator: "\n"), to: SearchLimits.toolInput),
+            SearchText.capped(
+                input.filter { seen.insert($0).inserted }.joined(separator: "\n"), to: SearchLimits.toolInput),
             SearchText.capped(output.joined(separator: "\n"), to: SearchLimits.toolOutput),
         ].filter { !$0.isEmpty }.joined(separator: "\n")
         return SearchDocument(

@@ -27,8 +27,18 @@ struct SearchTextTests {
         #expect(snippet.text == "Opened AppModel.swift to fix it")
     }
 
+    @Test func shortWordsMatchWholeWordsAndPhrasesReadAsOne() {
+        let snippet = SearchSnippet(
+            text: "Another one: they ran the kumquat-lighthouse check", words: ["the", "kumquat", "lighthouse"])
+        #expect(snippet.runs.filter(\.isMatch).map(\.text) == ["the kumquat-lighthouse"])
+        let typing = SearchSnippet(text: "the rollback", words: ["ro"], prefixes: ["ro"])
+        #expect(typing.runs.filter(\.isMatch).map(\.text) == ["ro"])
+    }
+
     @Test func longTextIsCutAroundTheMatch() {
-        let text = String(repeating: "filler words here ", count: 40) + "the login timeout" + String(repeating: " tail", count: 60)
+        let text =
+            String(repeating: "filler words here ", count: 40) + "the login timeout"
+            + String(repeating: " tail", count: 60)
         let snippet = SearchSnippet(text: text, words: ["timeout"], width: 80)
         #expect(snippet.text.hasPrefix("…"))
         #expect(snippet.text.hasSuffix("…"))

@@ -26,12 +26,14 @@ struct HistoryReaderTests {
         let text = session.documents.map(\.text).joined()
         #expect(!text.contains("Caveat") && !text.contains("compact") && !text.contains("Subagent chatter"))
         #expect(!text.contains("A request body"))
-        #expect(session.documents[0].anchor == .message(startingWith: "Fix the flaky login timeout in SessionStore.swift"))
+        #expect(
+            session.documents[0].anchor == .message(startingWith: "Fix the flaky login timeout in SessionStore.swift"))
     }
 
     @Test func readsACodexRollout() throws {
         let home = try #require(fixtures).appending(path: "codex")
-        let reader = CodexHistoryReader(root: home.appending(path: "sessions"), index: home.appending(path: "session_index.jsonl"))
+        let reader = CodexHistoryReader(
+            root: home.appending(path: "sessions"), index: home.appending(path: "session_index.jsonl"))
         let source = try #require(reader.sources().first)
         let session = try #require(try reader.read(source))
         #expect(session.sessionID == "0199aaaa-bbbb-7ccc-8ddd-eeeeffff0000")
@@ -48,11 +50,13 @@ struct HistoryReaderTests {
         #expect(patch.text.contains("src/migrations/0042_orders_index.rs"))
         #expect(patch.text.contains("Success. Updated"))
         #expect(session.documents[4].text == "Drop the new index first\nRestore the old column")
-        #expect(!session.documents.contains { $0.text.contains("environment_context") || $0.text.contains("sandboxed") })
+        #expect(
+            !session.documents.contains { $0.text.contains("environment_context") || $0.text.contains("sandboxed") })
     }
 
     @Test func injectedContextIsRecognized() {
-        #expect(HistoryTranscriptBuilder.isInjectedContext("<environment_context>\n<cwd>/x</cwd>\n</environment_context>"))
+        #expect(
+            HistoryTranscriptBuilder.isInjectedContext("<environment_context>\n<cwd>/x</cwd>\n</environment_context>"))
         #expect(HistoryTranscriptBuilder.isInjectedContext("# AGENTS.md instructions for /x\n\nrules"))
         #expect(!HistoryTranscriptBuilder.isInjectedContext("<div> is rendering twice, why?"))
         #expect(!HistoryTranscriptBuilder.isInjectedContext("Fix the bug"))

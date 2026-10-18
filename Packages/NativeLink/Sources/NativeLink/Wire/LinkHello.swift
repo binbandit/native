@@ -63,8 +63,10 @@ public enum LinkRefusal: UInt8, Sendable, Error, CaseIterable {
     /// What the device says, quoting the host: these arrive unauthenticated, so they guide rather than decide.
     public var message: String {
         switch self {
-        case .unsupportedVersion: "That Mac runs a different version of Native. Update Native and this app, then try again."
-        case .noPairingWindow: "The Mac isn't pairing right now. On your Mac, open Settings › Paired Devices › Pair iPhone and use the new code."
+        case .unsupportedVersion:
+            "That Mac runs a different version of Native. Update Native and this app, then try again."
+        case .noPairingWindow:
+            "The Mac isn't pairing right now. On your Mac, open Settings › Paired Devices › Pair iPhone and use the new code."
         case .wrongCode: "That code didn't match. Check the code on your Mac and try again."
         case .tooManyAttempts: "Too many wrong codes. Make a new code on your Mac."
         case .busy: "Another device is pairing with that Mac. Finish or cancel it there, then try again."

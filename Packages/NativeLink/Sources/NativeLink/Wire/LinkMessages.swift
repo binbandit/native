@@ -71,6 +71,8 @@ struct LinkWelcome: Codable, Sendable {
         case revoked
         /// The host has never paired this key (or forgot it).
         case unknownDevice
+        /// The host's organization turned paired devices off; the pairing stays for when it's back.
+        case disabledByPolicy
         case unknown
     }
 

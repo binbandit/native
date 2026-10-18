@@ -10,6 +10,8 @@ extension View {
                     .transition(.opacity.animation(.dsPopover))
             }
         }
+        .onAppear { palette.windowAppeared() }
+        .onDisappear { palette.windowDisappeared() }
     }
 }
 

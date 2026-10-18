@@ -63,6 +63,7 @@ extension AppModel {
     }
 
     private func refreshSessions(in project: Project, of runtime: AgentRuntime) async {
+        checkFolder(of: project)
         guard let connection = runtime.connection, runtime.capabilities?.listSessions == true else { return }
         let agent = runtime.agent.id
         listingsInFlight[agent, default: 0] += 1
@@ -94,9 +95,11 @@ extension AppModel {
             // reports). That isn't the listing's failure; the agent lists again when it next starts.
             return
         } catch {
-            // A replaced agent's listing no longer matters, and one that wants the user to sign in
-            // says so itself.
-            guard runtimes[agent] === runtime, !runtime.noteSignInRequired(by: error) else { return }
+            // A replaced agent's listing no longer matters, one that wants the user to sign in says
+            // so itself, and a missing folder already explains why listing it failed.
+            guard runtimes[agent] === runtime, !runtime.noteSignInRequired(by: error),
+                !problems.list(for: project.id).contains(where: { $0.work == .folder })
+            else { return }
             problems.report(listingProblem(in: project, of: runtime.agent, details: error.localizedDescription))
             return
         }
@@ -152,6 +155,25 @@ extension AppModel {
             return
         }
         await refreshSessions(in: project, of: runtime)
+    }
+
+    /// Says when a project's folder on this Mac is gone, since agents list a missing folder as empty
+    /// and starting a task there fails. Agents still list it, for sessions they kept from before.
+    private func checkFolder(of project: Project) {
+        guard project.host == .local else { return }
+        guard !FileManager.default.fileExists(atPath: project.url.path(percentEncoded: false)) else {
+            problems.resolve(.folder, in: project.id)
+            return
+        }
+        problems.report(
+            ProjectProblem(
+                project: project.id,
+                work: .folder,
+                title: "Can't find this project's folder",
+                recovery: "Native looked for it at \(project.url.path(percentEncoded: false)).",
+                suggestion: "Move it back and retry, or delete the project from Native.",
+                details: "No folder at \(project.url.path(percentEncoded: false))"
+            ))
     }
 
     private func listingProblem(in project: Project, of agent: AgentDefinition, details: String) -> ProjectProblem {

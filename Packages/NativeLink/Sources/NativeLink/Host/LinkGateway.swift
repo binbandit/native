@@ -69,6 +69,9 @@ public actor LinkGateway {
     var connections: [UUID: [ObjectIdentifier: SecureChannel]] = [:]
     var listener: LinkListener?
     var listenerStatus = LinkListenerStatus(state: .off)
+    /// The organization's `policy.companion.enabled`. Off: nothing listens, no window opens, and
+    /// paired devices are turned away (told why), but their pairings stay for when it's back on.
+    var isAllowedByPolicy = true
     private var observers: [UUID: @Sendable (LinkStatus) -> Void] = [:]
     private var control: LinkControlServer?
     let accept: @Sendable (any ByteStream, LinkGrants) -> Void
@@ -113,11 +116,14 @@ public actor LinkGateway {
         }
         return LinkStatus(
             isEnabled: registry.isEnabled,
+            isAllowedByPolicy: isAllowedByPolicy,
             listener: listenerStatus,
             hostName: configuration.machineName,
             hostKey: identity.publicKey,
             addresses: addresses,
-            devices: registry.devices.map { LinkDeviceStatus(device: $0, isConnected: !(connections[$0.id] ?? [:]).isEmpty) },
+            devices: registry.devices.map {
+                LinkDeviceStatus(device: $0, isConnected: !(connections[$0.id] ?? [:]).isEmpty)
+            },
             pairing: window.map { window in
                 LinkPairingStatus(
                     invite: window.invite(
@@ -149,6 +155,7 @@ public actor LinkGateway {
     /// Opens a fresh pairing window (or replaces the current one), turning the gateway on.
     @discardableResult
     public func openPairingWindow() -> LinkStatus {
+        guard isAllowedByPolicy else { return status }
         resolveDecision(.rejected)
         window = PairingWindow(lifetime: configuration.pairingLifetime, now: configuration.now())
         if !registry.isEnabled {
@@ -218,6 +225,20 @@ public actor LinkGateway {
         save()
         if !isEnabled {
             closePairingWindow()
+            for channel in connections.values.flatMap(\.values) { channel.close() }
+            connections = [:]
+        }
+        updateListener()
+        publish()
+    }
+
+    /// Follows the organization's policy; call whenever it changes.
+    public func setAllowedByPolicy(_ allowed: Bool) {
+        guard allowed != isAllowedByPolicy else { return }
+        isAllowedByPolicy = allowed
+        if !allowed {
+            resolveDecision(.rejected)
+            window = nil
             for channel in connections.values.flatMap(\.values) { channel.close() }
             connections = [:]
         }

@@ -61,8 +61,9 @@ struct ProjectSection<TaskAccessory: View>: View {
                 .sidebarDraggable(row, title: model.title(for: summary), state: drag)
                 .sidebarDropTarget(row, state: drag, isActive: drag.dragged.isSession, onDrop: model.applySidebarDrop)
             }
-            // A project whose listing failed isn't known to be empty; its problem row says so.
-            if sessions.isEmpty, !isFiltered, !problems.contains(where: \.isListing) {
+            // A project whose folder is gone or whose listing failed isn't known to be empty; its
+            // problem row says why.
+            if sessions.isEmpty, !isFiltered, !problems.contains(where: \.leavesListUnknown) {
                 ProjectEmptyRow(project: project)
             }
         }
@@ -253,7 +254,10 @@ extension Optional where Wrapped == SidebarDragState.Item {
 }
 
 extension ProjectProblem {
-    fileprivate var isListing: Bool {
-        if case .listing = work { true } else { false }
+    fileprivate var leavesListUnknown: Bool {
+        switch work {
+        case .folder, .listing: true
+        case .agentCopyDeletion, .workspaceDeletion, .workspaceArchive, .workspaceRestore: false
+        }
     }
 }

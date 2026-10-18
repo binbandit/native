@@ -17,7 +17,8 @@ import Testing
         #expect(status.isEnabled)
 
         // The channel now carries the host protocol, with the device's name as the host knows it.
-        let initialize = #"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1,"clientInfo":{"name":"spoofed","version":"1","build":"1"}}}"#
+        let initialize =
+            #"{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":1,"clientInfo":{"name":"spoofed","version":"1","build":"1"}}}"#
         channel.write(Data((initialize + "\n").utf8))
         let (stream, grants) = try #require(harness.admitted.withLock { $0.first })
         #expect(grants == .standard)
@@ -36,7 +37,10 @@ import Testing
         let reading = Task { for await _ in stream.incoming() {} }
         defer { reading.cancel() }
         var replies = channel.incoming().makeAsyncIterator()
-        channel.write(Data(#"{"jsonrpc":"2.0","id":7,"method":"_native/host/shutdown","params":{"stopAgents":true}}"#.utf8 + [0x0A]))
+        channel.write(
+            Data(
+                #"{"jsonrpc":"2.0","id":7,"method":"_native/host/shutdown","params":{"stopAgents":true}}"#.utf8 + [0x0A]
+            ))
         let reply = String(decoding: try #require(await replies.next()), as: UTF8.self)
         #expect(reply.contains(#""id":7"#))
         #expect(reply.contains("-32601"))
@@ -47,7 +51,9 @@ import Testing
         #expect(!LinkMethodPolicy.allows(HostProtocol.Method.updateInstall, with: .standard))
         #expect(LinkMethodPolicy.allows(HostProtocol.Method.updateInstall, with: LinkGrants(manageHost: true)))
         #expect(LinkMethodPolicy.allows(HostProtocol.Method.updateStatus, with: .standard))
-        #expect(!LinkMethodPolicy.allows(HostProtocol.Method.updateReport, with: LinkGrants(managePlugins: true, manageHost: true)))
+        #expect(
+            !LinkMethodPolicy.allows(
+                HostProtocol.Method.updateReport, with: LinkGrants(managePlugins: true, manageHost: true)))
     }
 
     @Test func grantsChosenOnTheMacReachTheHost() async throws {
@@ -62,7 +68,8 @@ import Testing
         let invite = try #require(await harness.gateway.openPairingWindow().pairing?.invite)
         async let answer: Void = harness.answerNextRequest(accept: true)
         _ = try await LinkInitiator.pair(
-            over: try harness.connection(), identity: LinkIdentity(), credential: .invite(invite), device: harness.device,
+            over: try harness.connection(), identity: LinkIdentity(), credential: .invite(invite),
+            device: harness.device,
             awaitingConfirmation: { _ in })
         await answer
 
@@ -91,13 +98,17 @@ import Testing
         for _ in 0..<4 {
             do {
                 _ = try await LinkInitiator.pair(
-                    over: try harness.connection(), identity: LinkIdentity(), credential: .code(try require(PairingCode(typed: "ZZZZZZ"))),
+                    over: try harness.connection(), identity: LinkIdentity(),
+                    credential: .code(try require(PairingCode(typed: "ZZZZZZ"))),
                     device: harness.device, awaitingConfirmation: { _ in })
             } catch let error as LinkError {
                 refusals.append(error)
             }
         }
-        #expect(refusals == [.refused(.wrongCode), .refused(.wrongCode), .refused(.tooManyAttempts), .refused(.tooManyAttempts)])
+        #expect(
+            refusals == [
+                .refused(.wrongCode), .refused(.wrongCode), .refused(.tooManyAttempts), .refused(.tooManyAttempts),
+            ])
         #expect(await harness.gateway.status.pairing?.phase == .tooManyAttempts)
     }
 
@@ -164,6 +175,17 @@ import Testing
 
         // Undo.
         await harness.gateway.restore(deviceID)
+        _ = try await harness.connect(host)
+    }
+
+    @Test func anOrganizationPolicyTurnsDevicesAwayWithoutForgettingThem() async throws {
+        let harness = try GatewayHarness()
+        let (host, _) = try await harness.pairDevice()
+        await harness.gateway.setAllowedByPolicy(false)
+        await #expect(throws: LinkError.disabledByPolicy) { _ = try await harness.connect(host) }
+        #expect(await harness.gateway.openPairingWindow().pairing == nil)
+        #expect(await harness.gateway.status.activeDevices.count == 1)
+        await harness.gateway.setAllowedByPolicy(true)
         _ = try await harness.connect(host)
     }
 

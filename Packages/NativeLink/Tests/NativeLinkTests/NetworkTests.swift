@@ -46,7 +46,8 @@ import Testing
         #expect(host.addresses.contains { $0.kind == .loopback })
 
         let log = LinkLocked<[LinkLogEntry]>([])
-        let transport = PairedHostTransport(host: host, device: device, log: { entry in log.withLock { $0.append(entry) } })
+        let transport = PairedHostTransport(
+            host: host, device: device, log: { entry in log.withLock { $0.append(entry) } })
         let stream = try await transport.connect()
         #expect(log.withLock { $0.last?.kind } == .success)
         stream.close()

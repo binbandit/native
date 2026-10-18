@@ -27,7 +27,8 @@ import Testing
     }
 
     static func vectors() throws -> [Vector] {
-        let url = try #require(Bundle.module.url(forResource: "noise-vectors", withExtension: "jsonl", subdirectory: "Fixtures"))
+        let url = try #require(
+            Bundle.module.url(forResource: "noise-vectors", withExtension: "jsonl", subdirectory: "Fixtures"))
         let text = try String(contentsOf: url, encoding: .utf8)
         return try text.split(separator: "\n").map { try JSONDecoder().decode(Vector.self, from: Data($0.utf8)) }
     }
@@ -85,17 +86,21 @@ import Testing
 
     @Test func wrongPreSharedKeyFailsTheLastMessage() throws {
         var initiator = try NoiseHandshake(
-            pattern: .xxpsk3, isInitiator: true, prologue: Data(), localStatic: .init(), preSharedKey: Data(repeating: 1, count: 32))
+            pattern: .xxpsk3, isInitiator: true, prologue: Data(), localStatic: .init(),
+            preSharedKey: Data(repeating: 1, count: 32))
         var responder = try NoiseHandshake(
-            pattern: .xxpsk3, isInitiator: false, prologue: Data(), localStatic: .init(), preSharedKey: Data(repeating: 2, count: 32))
+            pattern: .xxpsk3, isInitiator: false, prologue: Data(), localStatic: .init(),
+            preSharedKey: Data(repeating: 2, count: 32))
         _ = try responder.readMessage(try initiator.writeMessage())
         _ = try initiator.readMessage(try responder.writeMessage())
         #expect(throws: NoiseError.decryptFailed) { try responder.readMessage(try initiator.writeMessage()) }
     }
 
     @Test func differentProloguesNeverAgree() throws {
-        var initiator = try NoiseHandshake(pattern: .xx, isInitiator: true, prologue: Data("a".utf8), localStatic: .init())
-        var responder = try NoiseHandshake(pattern: .xx, isInitiator: false, prologue: Data("b".utf8), localStatic: .init())
+        var initiator = try NoiseHandshake(
+            pattern: .xx, isInitiator: true, prologue: Data("a".utf8), localStatic: .init())
+        var responder = try NoiseHandshake(
+            pattern: .xx, isInitiator: false, prologue: Data("b".utf8), localStatic: .init())
         _ = try responder.readMessage(try initiator.writeMessage())
         #expect(throws: NoiseError.decryptFailed) { try initiator.readMessage(try responder.writeMessage()) }
     }

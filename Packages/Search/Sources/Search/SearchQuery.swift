@@ -93,6 +93,11 @@ public struct ParsedSearchQuery: Hashable, Sendable {
             .joined(separator: " ")
     }
 
+    /// Words still being typed, highlighted as prefixes.
+    public var prefixWords: Set<String> {
+        Set(terms.filter(\.isPrefix).compactMap(\.words.last))
+    }
+
     /// Every word to highlight in snippets.
     public var highlightWords: [String] {
         Array(Set(terms.flatMap(\.words))).sorted { $0.count > $1.count }

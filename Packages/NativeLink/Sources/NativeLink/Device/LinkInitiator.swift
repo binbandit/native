@@ -35,6 +35,7 @@ public enum LinkInitiator {
             case .ok: return (channel, hello)
             case .revoked: throw LinkError.revoked
             case .unknownDevice: throw LinkError.unknownDevice
+            case .disabledByPolicy: throw LinkError.disabledByPolicy
             default: throw LinkError.malformed("welcome \(welcome.status.rawValue)")
             }
         }
@@ -114,7 +115,8 @@ public enum LinkInitiator {
         let final = try noise.writeMessage(payload: try JSONEncoder().encode(device))
         guard raw.write(LinkFrame(kind: .noise, body: final).encoded) else { throw LinkError.closed }
         let channel = SecureChannel(
-            raw: raw, reader: reader, ciphers: try noise.split(), remoteKey: hostKey, handshakeHash: noise.handshakeHash)
+            raw: raw, reader: reader, ciphers: try noise.split(), remoteKey: hostKey, handshakeHash: noise.handshakeHash
+        )
         return (channel, hostHello)
     }
 }

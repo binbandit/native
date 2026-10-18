@@ -48,7 +48,7 @@ enum SentryTelemetry {
             #else
             options.environment = "production"
             #endif
-            SentryPrivacy.configure(options)
+            SentryPrivacy.configure(options, metrics: SentryTelemetryDestination.metricAllowlist)
         }
         #endif
     }

@@ -10,6 +10,8 @@ public enum LinkError: Error, Equatable, Sendable, LocalizedError {
     case revoked
     /// The host doesn't know this device (it was removed, or the host was reset).
     case unknownDevice
+    /// The host's organization turned paired devices off.
+    case disabledByPolicy
     /// Pairing: the Mac's user declined.
     case rejected
     /// Pairing: nobody confirmed on the Mac in time.
@@ -28,6 +30,8 @@ public enum LinkError: Error, Equatable, Sendable, LocalizedError {
             "That Mac didn't prove it's the one you paired with, so nothing was sent. If you reset Native on it, pair again."
         case .revoked: "This device was removed on the Mac. Pair again to reconnect."
         case .unknownDevice: "The Mac doesn't know this device anymore. Pair again to reconnect."
+        case .disabledByPolicy:
+            "The organization that manages this Mac turned off paired devices. The pairing comes back if they turn it on again."
         case .rejected: "The Mac declined the pairing."
         case .confirmationExpired: "Nobody confirmed on the Mac in time. Make a new code there and try again."
         case .handshakeFailed: "The secure connection couldn't be set up."

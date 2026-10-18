@@ -21,7 +21,8 @@ final class LinkControlServer: Sendable {
     init(path: String, gateway: LinkGateway, verifyPeer: (@Sendable (Int32) throws -> Void)?) throws {
         let descriptor = try UnixSocket.listen(at: path)
         self.descriptor = descriptor
-        let source = DispatchSource.makeReadSource(fileDescriptor: descriptor, queue: DispatchQueue(label: "Native.Link.control"))
+        let source = DispatchSource.makeReadSource(
+            fileDescriptor: descriptor, queue: DispatchQueue(label: "Native.Link.control"))
         self.source = source
         let logger = HostLogger(category: "LinkControl")
         source.setEventHandler { [weak self] in
