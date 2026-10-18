@@ -67,6 +67,8 @@ if [ -d "$channels_dir" ]; then
         [ -d "$dir" ] || continue
         found=1
         channel=$(basename "$dir")
+        # Development channels only: `nightly` and other named channels belong to real installs.
+        printf '%s' "$channel" | grep -qE '^[0-9a-f]{10}$' || continue
         if is_kept "$channel"; then
             echo "keep   folder $channel"
         else

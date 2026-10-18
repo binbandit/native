@@ -101,7 +101,7 @@ private struct Lexer {
                 var end = position + 1
                 while end < scalars.count, isOperator(scalars[end]) { end += 1 }
                 emit(until: end, .operator)
-            } else if "{}[]();,.".unicodeScalars.contains(scalars[position]) {
+            } else if "{}[]();,.:".unicodeScalars.contains(scalars[position]) {
                 emit(until: position + 1, .punctuation)
             } else {
                 position += 1
@@ -373,6 +373,6 @@ private struct Lexer {
     }
 
     private func isOperator(_ scalar: Unicode.Scalar) -> Bool {
-        "+-*/%=&|^!<>?~:".unicodeScalars.contains(scalar)
+        "+-*/%=&|^!<>?~".unicodeScalars.contains(scalar)
     }
 }

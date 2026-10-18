@@ -80,7 +80,8 @@ struct TerminalGhosttySection: View {
         case .ghosttyNotFound(let searched):
             NoticeBanner(
                 tone: .info, title: "No Ghostty config found",
-                detail: "Native looks in \(searched.map { $0.deletingLastPathComponent() }.uniqued.map(\.abbreviatedPath).joined(separator: " and ")). "
+                detail:
+                    "Native looks in \(searched.map { $0.deletingLastPathComponent() }.uniqued.map(\.abbreviatedPath).joined(separator: " and ")). "
                     + "Its own settings apply until you create one there; you don't need Ghostty installed.",
                 footnote: themesNote
             ) {

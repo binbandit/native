@@ -172,4 +172,42 @@ struct HostEndToEndTests {
         #expect(harness.received == ["prompt\tslow 6", "steer\talso this", "prompt\tnext"])
         await recorder.stop()
     }
+
+    @Test("Restart Host Now exits for the new binary, which resumes the turn as an update")
+    func restartNow() async throws {
+        let harness = try HostHarness()
+        try harness.start()
+        let first = try await harness.connect()
+        let session = try await startSession(first, harness: harness)
+        _ = try await first.client.prompt(PromptParams(sessionID: session, text: "slow 20"))
+        try await first.wait("the turn to get going") { await $0.agentText(session).contains("tick 2") }
+        try await first.client.shutdownHost(stopAgents: false, immediately: true)
+        // 75 is what launchd restarts on; the harness plays launchd.
+        #expect(harness.waitForExit() == 75)
+        await first.stop()
+
+        try harness.start()
+        let second = try await harness.connect()
+        try await second.client.attach(session)
+        try await second.wait("the resumed turn to finish", timeout: .seconds(30)) {
+            await $0.turnsEnded(session).count == 1
+        }
+        let recovery = try #require(await second.recoveries(session).first)
+        #expect(recovery.cause == .hostUpdated)
+        #expect(recovery.action == .resumed)
+        await second.stop()
+    }
+
+    @Test("Restarting once idle waits for the running turn to end")
+    func restartWhenIdle() async throws {
+        let harness = try HostHarness()
+        try harness.start()
+        let recorder = try await harness.connect()
+        let session = try await startSession(recorder, harness: harness)
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session, text: "slow 4"))
+        try await recorder.client.shutdownHost(stopAgents: false)
+        #expect(harness.waitForExit() == 75)
+        #expect(await recorder.turnsEnded(session) == ["end_turn"])
+        await recorder.stop()
+    }
 }

@@ -13,7 +13,9 @@ extension HostCore {
         let lastSeenAlive = try store.meta(MetaKey.heartbeat).flatMap(Double.init).map(
             Date.init(timeIntervalSince1970:))
         let wasUpdate = try store.meta(MetaKey.restartReason) == "update"
-        let cause = wasUpdate ? .hostUpdated : RecoveryPlanner.cause(previousBoot: previousBoot, currentBoot: configuration.bootTime)
+        let cause =
+            wasUpdate
+            ? .hostUpdated : RecoveryPlanner.cause(previousBoot: previousBoot, currentBoot: configuration.bootTime)
         try store.setMeta(MetaKey.restartReason, nil)
         try store.setMeta(MetaKey.bootTime, configuration.bootTime.map { String($0.timeIntervalSince1970) })
         try store.setMeta(MetaKey.cleanShutdown, "0")

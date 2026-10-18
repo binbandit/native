@@ -20,7 +20,9 @@ enum GhosttyConfigBuilder {
         guard let ghostty else {
             return native(style).map { Built(config: $0, status: .native) }
         }
-        let files = ghostty.defaultFiles.filter { FileManager.default.fileExists(atPath: $0.path(percentEncoded: false)) }
+        let files = ghostty.defaultFiles.filter {
+            FileManager.default.fileExists(atPath: $0.path(percentEncoded: false))
+        }
         guard !files.isEmpty else {
             return native(style).map { Built(config: $0, status: .ghosttyNotFound(searched: ghostty.defaultFiles)) }
         }
@@ -109,7 +111,8 @@ enum GhosttyConfigBuilder {
             }
             return body(paths)
         } catch {
-            GhosttyRuntime.logger.error("Couldn't write the terminal config: \(error.localizedDescription, privacy: .public)")
+            GhosttyRuntime.logger.error(
+                "Couldn't write the terminal config: \(error.localizedDescription, privacy: .public)")
             return nil
         }
     }
@@ -155,7 +158,8 @@ enum GhosttyConfigBuilder {
             }
             setenv("GHOSTTY_RESOURCES_DIR", ghostty.path(percentEncoded: false), 1)
         } catch {
-            GhosttyRuntime.logger.error("Couldn't prepare Ghostty's resources: \(error.localizedDescription, privacy: .public)")
+            GhosttyRuntime.logger.error(
+                "Couldn't prepare Ghostty's resources: \(error.localizedDescription, privacy: .public)")
             setenv("GHOSTTY_RESOURCES_DIR", bundled.appending(path: "ghostty").path(percentEncoded: false), 1)
         }
     }

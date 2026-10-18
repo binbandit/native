@@ -122,7 +122,8 @@ struct TerminalSettingsPage: View {
     }
 
     private func scrollbackOptions(current: TerminalScrollback) -> [SettingsSelect<TerminalScrollback>.Option] {
-        let choices = TerminalScrollback.choices.contains(current)
+        let choices =
+            TerminalScrollback.choices.contains(current)
             ? TerminalScrollback.choices : TerminalScrollback.choices + [current]
         return choices.map { .init(value: $0, title: $0.title) }
     }

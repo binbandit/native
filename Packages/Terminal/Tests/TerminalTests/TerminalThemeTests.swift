@@ -38,7 +38,8 @@ struct TerminalThemeTests {
             colors: .imported(TerminalImportedColors(themeName: "Dracula", light: dracula, dark: dracula)))
         let style = TerminalStyle(settings: imported, appearance: .light, appTheme: .native, appChrome: appChrome)
         #expect(style.colors == dracula)
-        let app = TerminalStyle(settings: TerminalSettings(), appearance: .light, appTheme: .native, appChrome: appChrome)
+        let app = TerminalStyle(
+            settings: TerminalSettings(), appearance: .light, appTheme: .native, appChrome: appChrome)
         #expect(app.colors.chrome == appChrome)
     }
 

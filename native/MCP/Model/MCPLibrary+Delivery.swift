@@ -82,6 +82,16 @@ enum MCPSessionEntry: Identifiable, Hashable {
         }
     }
 
+    /// The key of its on/off switch (`MCPServerSwitches`); nil for other plugins' servers, which
+    /// their plugin turns on and off.
+    var switchKey: String? {
+        switch self {
+        case .agent(let entry): entry.server.endpoint.key
+        case .managed(let server, _): server.transport.endpoint.key
+        case .plugin: nil
+        }
+    }
+
     var transportKind: MCPTransport.Kind {
         switch self {
         case .agent(let entry): entry.server.transport.kind
