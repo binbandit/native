@@ -2,6 +2,19 @@ import ACP
 import Foundation
 import NativeHostProtocol
 
+/// What a client may do beyond using sessions. Paired devices (docs/durability.md, "Transport and
+/// security") are granted these when they pair; the owner has all of them.
+public struct ClientGrants: Hashable, Sendable {
+    /// Turn plugins on or off for everyone using this host.
+    public var managePlugins: Bool
+
+    public init(managePlugins: Bool) {
+        self.managePlugins = managePlugins
+    }
+
+    public static let owner = ClientGrants(managePlugins: true)
+}
+
 /// A connected client: the app, later the companion, or a test.
 @HostActor
 final class ClientLink {
@@ -9,12 +22,14 @@ final class ClientLink {
 
     let id: ID
     let peer: JSONRPCPeer
+    let grants: ClientGrants
     var info: PeerInfo?
     var attached: Set<HostSessionID> = []
 
-    init(id: ID, peer: JSONRPCPeer) {
+    init(id: ID, peer: JSONRPCPeer, grants: ClientGrants) {
         self.id = id
         self.peer = peer
+        self.grants = grants
     }
 
     /// Sends a notification. Writes queue on the channel, so this never waits on the client.
@@ -26,12 +41,14 @@ final class ClientLink {
 // The client side of the protocol: every request a client can make, answered on the host actor.
 extension HostCore {
     /// Takes a new connection and serves it until it closes.
-    public func accept(_ stream: any ByteStream) {
+    /// Takes a new connection and serves it until it closes. Local clients (this user's own, checked
+    /// by `PeerVerifier`) and SSH bridges are the owner; paired devices get what their pairing grants.
+    public func accept(_ stream: any ByteStream, grants: ClientGrants = .owner) {
         let id = ClientLink.ID()
         let peer = JSONRPCPeer(channel: stream, label: "client") { [weak self] event in
             await self?.receive(event, fromClient: id)
         }
-        let client = ClientLink(id: id, peer: peer)
+        let client = ClientLink(id: id, peer: peer, grants: grants)
         clients[id] = client
         peer.start()
     }
@@ -125,6 +142,12 @@ extension HostCore {
         case Method.listActivity:
             let params = try message.params(as: ListActivityParams.self)
             try reply(try store.activity(after: params.after, limit: min(params.limit, 1_000)))
+        case Method.listPlugins:
+            try reply(try listPlugins())
+        case Method.pluginAsset:
+            try reply(try pluginAsset(try message.params(as: PluginAssetParams.self)))
+        case Method.setPluginEnabled:
+            try reply(try setPluginEnabled(try message.params(as: SetPluginEnabledParams.self), by: client))
         case Method.shutdown:
             try reply(EmptyMessage())
             let params = try message.params(as: ShutdownParams.self)

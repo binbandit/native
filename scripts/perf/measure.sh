@@ -75,17 +75,17 @@ echo "== launch (ms from process start)"
 printf "%-6s %8s %8s %18s %11s\n" run appInit firstFrame sidebarInteractive agentsReady
 for i in $(seq 1 "$launches"); do
     log=$(mktemp)
-    log stream --style compact --predicate 'subsystem == "Native" AND category == "Launch"' >"$log" 2>/dev/null &
+    /usr/bin/log stream --style compact --predicate 'subsystem == "Native" AND category == "Launch"' >"$log" 2>/dev/null &
     stream=$!
     sleep 1
     if [ "$i" = 1 ] && [ "$build" = 1 ]; then pid=$(launch); else pid=$(launch --no-build); fi
-    for _ in $(seq 1 100); do
-        grep -q "\[$pid:\?.*launch agentsReady\|Native\[$pid.*launch agentsReady" "$log" && break
-        grep -E "Native\[$pid" "$log" | grep -q agentsReady && break
+    # Compact lines read `… Native[<pid>:<thread>] [Native:Launch] launch firstFrame 212 ms`.
+    value() { grep -F "Native[$pid:" "$log" | grep -oE "launch $1 [0-9]+" | awk '{ print $3 }' | head -1; }
+    for _ in $(seq 1 150); do
+        [ -n "$(value agentsReady)" ] && break
         sleep 0.2
     done
     kill "$stream" 2>/dev/null || true
-    value() { grep -E "Native\[$pid" "$log" | grep -oE "launch $1 [0-9]+" | awk '{ print $3 }' | head -1; }
     label=$([ "$i" = 1 ] && [ "$build" = 1 ] && echo cold || echo "warm$i")
     printf "%-6s %8s %8s %18s %11s\n" "$label" "$(value appInit)" "$(value firstFrame)" \
         "$(value sidebarInteractive)" "$(value agentsReady)"

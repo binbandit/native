@@ -13,7 +13,7 @@ import NativeHostProtocol
 final class HostStore {
     private let database: SQLiteDatabase
 
-    private static let schemaVersion: Int64 = 1
+    private static let schemaVersion: Int64 = 2
 
     init(url: URL) throws {
         database = try SQLiteDatabase(url: url)
@@ -98,6 +98,9 @@ final class HostStore {
                     recovery TEXT
                 );
                 """)
+            // Version 2: the user's on/off choices for installed plugins.
+            try database.execute(
+                "CREATE TABLE IF NOT EXISTS plugin_choices (plugin_id TEXT PRIMARY KEY, enabled INTEGER NOT NULL)")
             try database.execute("PRAGMA user_version = \(Self.schemaVersion)")
         }
     }
@@ -319,6 +322,22 @@ final class HostStore {
                 recovery: row[6].text.flatMap { try? decoder.decode(RecoveryNote.self, from: Data($0.utf8)) }
             )
         }
+    }
+
+    // MARK: - Plugins
+
+    func pluginChoices() throws -> [String: Bool] {
+        var choices: [String: Bool] = [:]
+        for row in try database.query("SELECT plugin_id, enabled FROM plugin_choices") {
+            if let id = row[0].text { choices[id] = row[1].bool }
+        }
+        return choices
+    }
+
+    func setPluginChoice(_ pluginID: String, enabled: Bool) throws {
+        try database.run(
+            "INSERT INTO plugin_choices (plugin_id, enabled) VALUES (?, ?) ON CONFLICT(plugin_id) DO UPDATE SET enabled = excluded.enabled",
+            .text(pluginID), .bool(enabled))
     }
 
     // MARK: - Inspection, for tests

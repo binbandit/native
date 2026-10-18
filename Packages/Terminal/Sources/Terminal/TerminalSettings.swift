@@ -58,9 +58,11 @@ public enum TerminalShell: Hashable, Sendable, Codable {
     }
 
     /// The command libghostty runs (as a login shell, through `login(1)` and `exec -l`): the path,
-    /// quoted so spaces and quotes in it survive the shell that execs it.
+    /// quoted only when it has characters the shell that execs it would split or expand, so
+    /// Ghostty still recognizes the shell for its shell integration.
     public static func command(for path: String) -> String {
-        "'" + path.replacingOccurrences(of: "'", with: "'\\''") + "'"
+        let plain = path.allSatisfy { $0.isASCII && ($0.isLetter || $0.isNumber || "/._+-".contains($0)) }
+        return plain ? path : "'" + path.replacingOccurrences(of: "'", with: "'\\''") + "'"
     }
 
     /// What a shell falls back to when the chosen one is missing or fails: every Mac has it.

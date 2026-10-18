@@ -1,5 +1,6 @@
 import CryptoKit
 import Foundation
+import NativeHostProtocol
 
 /// What the Mac's QR code carries: the host's public key (so the phone knows exactly whom it's
 /// pairing with before it says anything), a one-time secret that expires in minutes, the host's name
@@ -10,6 +11,8 @@ public struct PairingInvite: Codable, Hashable, Sendable {
     public static let currentVersion = 1
 
     public var version: Int
+    /// The host instance: pairings are kept per `HostID`, so two Natives on one Mac are two hosts.
+    public var hostID: HostID
     public var hostKey: LinkPublicKey
     /// 32 random bytes, used once. Never shown as text.
     public var secret: Data
@@ -18,10 +21,11 @@ public struct PairingInvite: Codable, Hashable, Sendable {
     public var addresses: [LinkAddress]
 
     public init(
-        hostKey: LinkPublicKey, secret: Data, hostName: String, expiresAt: Date, addresses: [LinkAddress],
-        version: Int = PairingInvite.currentVersion
+        hostID: HostID, hostKey: LinkPublicKey, secret: Data, hostName: String, expiresAt: Date,
+        addresses: [LinkAddress], version: Int = PairingInvite.currentVersion
     ) {
         self.version = version
+        self.hostID = hostID
         self.hostKey = hostKey
         self.secret = secret
         self.hostName = hostName
@@ -35,6 +39,10 @@ public struct PairingInvite: Codable, Hashable, Sendable {
 
     /// The Noise pre-shared key the secret becomes, kept apart from any other use of the bytes.
     var preSharedKey: Data {
+        Self.preSharedKey(secret: secret)
+    }
+
+    static func preSharedKey(secret: Data) -> Data {
         Data(SHA256.hash(data: Data("NativeLink invite v1".utf8) + secret))
     }
 
@@ -83,6 +91,7 @@ public struct PairingInvite: Codable, Hashable, Sendable {
 
     private enum CodingKeys: String, CodingKey {
         case version = "v"
+        case hostID = "i"
         case hostKey = "k"
         case secret = "s"
         case hostName = "n"

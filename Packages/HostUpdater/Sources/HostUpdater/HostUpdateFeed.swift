@@ -104,7 +104,7 @@ public enum HostPlatform: String, Codable, Hashable, Sendable {
 public enum HostArch: String, Codable, Hashable, Sendable {
     case universal
     case arm64
-    case x86_64
+    case x64 = "x86_64"
     case unknown
 
     public init(from decoder: any Decoder) throws {
@@ -115,7 +115,7 @@ public enum HostArch: String, Codable, Hashable, Sendable {
         #if arch(arm64)
         .arm64
         #elseif arch(x86_64)
-        .x86_64
+        .x64
         #else
         .unknown
         #endif

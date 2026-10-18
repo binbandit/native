@@ -106,16 +106,41 @@ public struct HighlightedCode: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dsLightTone) private var lightTone
     @Environment(\.dsCodeThemes) private var codeThemes
+    /// The last highlighting, for the code it was made from; a streaming block keeps its old colors
+    /// only while they still describe its text.
+    @State private var highlighted: (code: String, segments: [CodeSegment])?
 
-    /// - Parameter language: A Markdown fence's info string (`swift`, `ts`…); unknown ones draw plain.
+    /// - Parameter language: A Markdown fence's info string (`swift`, `ts`…), or nil for a file's
+    ///   extension to decide via `CodeLanguage.forPath`; unknown languages draw plain.
     public init(_ code: String, language: String?) {
         self.code = code
         self.language = language.flatMap(CodeLanguage.named)
     }
 
+    public init(_ code: String, path: String) {
+        self.code = code
+        language = CodeLanguage.forPath(path)
+    }
+
     public var body: some View {
         let colors = DSCodeColors(.code(colorScheme: colorScheme, lightTone: lightTone, themes: codeThemes), on: .sunken)
-        Text(colors.text(CodeHighlighter.segments(code, language: language)))
+        // Plain text at once (or the cached colors), then the colors from a background thread.
+        let segments =
+            highlighted?.code == code
+            ? highlighted?.segments : CodeHighlightCache.shared.cached(code, language: language)
+        Group {
+            if let segments {
+                Text(colors.text(segments))
+            } else {
+                Text(verbatim: code)
+                    .foregroundStyle(colors.isNative ? Color.dsTextPrimary : colors.color(.foreground))
+            }
+        }
+        .task(id: code) {
+            guard language != nil, segments == nil else { return }
+            let result = await CodeHighlightCache.shared.highlight(code, language: language)
+            highlighted = (code, result)
+        }
     }
 }
 

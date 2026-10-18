@@ -29,23 +29,6 @@
       ],
       "layers": [
         {
-          "fill-specializations": [
-            {
-              "value": {
-                "solid": "srgb:0.63137,0.48627,0.71765,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "solid": "srgb:0.72157,0.60000,0.74902,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
           "glass-specializations": [
             {
               "value": false
@@ -55,182 +38,19 @@
               "value": true
             }
           ],
-          "image-name": "enamel-egg.svg",
-          "name": "Enamel egg"
-        },
-        {
-          "fill-specializations": [
-            {
-              "value": {
-                "solid": "srgb:0.64706,0.48235,0.25098,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "solid": "srgb:0.88627,0.74902,0.57255,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
-          "glass-specializations": [
-            {
-              "value": false
-            },
-            {
-              "appearance": "tinted",
-              "value": true
-            }
-          ],
-          "image-name": "egg-engraving.svg",
-          "name": "Egg engraving"
-        },
-        {
-          "fill-specializations": [
-            {
-              "value": {
-                "solid": "srgb:0.27843,0.45882,0.35294,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "solid": "srgb:0.50196,0.73333,0.50980,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
-          "glass-specializations": [
-            {
-              "value": false
-            },
-            {
-              "appearance": "tinted",
-              "value": true
-            }
-          ],
-          "image-name": "spring-sprigs.svg",
-          "name": "Spring sprigs"
+          "image-name": "painted-interlock.png",
+          "name": "Painted Native interlock",
+          "position": {
+            "scale": 0.5910543130990416,
+            "translation-in-points": [
+              -0.0,
+              11.113418530351439
+            ]
+          }
         }
       ],
       "lighting": "individual",
-      "name": "Easter · decorative craft",
-      "refractivity-specializations": [
-        {
-          "appearance": "tinted",
-          "value": {
-            "enabled": true,
-            "depth": 0.3,
-            "strength": 0.75
-          }
-        }
-      ],
-      "shadow": {
-        "kind": "neutral",
-        "opacity": 0.12
-      },
-      "translucency-specializations": [
-        {
-          "value": {
-            "enabled": false,
-            "value": 0
-          }
-        },
-        {
-          "appearance": "tinted",
-          "value": {
-            "enabled": true,
-            "value": 0.25
-          }
-        }
-      ],
-      "specular-specializations": [
-        {
-          "value": false
-        },
-        {
-          "appearance": "tinted",
-          "value": true
-        }
-      ]
-    },
-    {
-      "blur-material-specializations": [
-        {
-          "appearance": "tinted",
-          "value": 0.25
-        }
-      ],
-      "layers": [
-        {
-          "fill-specializations": [
-            {
-              "value": {
-                "automatic-gradient": "srgb:0.29804,0.23529,0.16863,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "automatic-gradient": "srgb:1.00000,0.94118,0.81961,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
-          "glass-specializations": [
-            {
-              "value": false
-            },
-            {
-              "appearance": "tinted",
-              "value": true
-            }
-          ],
-          "image-name": "upper-fold.svg",
-          "name": "Upper fold"
-        },
-        {
-          "fill-specializations": [
-            {
-              "value": {
-                "automatic-gradient": "srgb:0.63137,0.48627,0.71765,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "automatic-gradient": "srgb:0.88627,0.74902,0.57255,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
-          "glass-specializations": [
-            {
-              "value": false
-            },
-            {
-              "appearance": "tinted",
-              "value": true
-            }
-          ],
-          "image-name": "lower-fold.svg",
-          "name": "Lower fold"
-        }
-      ],
-      "lighting": "individual",
-      "name": "Native interlock",
+      "name": "Easter · painted Native interlock",
       "refractivity-specializations": [
         {
           "appearance": "tinted",
@@ -282,13 +102,13 @@
           "fill-specializations": [
             {
               "value": {
-                "solid": "srgb:0.61176,0.41569,0.16863,1.00000"
+                "solid": "srgb:0.64314,0.47059,0.19608,1.00000"
               }
             },
             {
               "appearance": "dark",
               "value": {
-                "solid": "srgb:0.95294,0.74118,0.37647,1.00000"
+                "solid": "srgb:0.94902,0.76863,0.42745,1.00000"
               }
             },
             {
@@ -305,7 +125,7 @@
               "value": true
             }
           ],
-          "image-name": "beta-signature.svg",
+          "image-name": "beta.svg",
           "name": "Beta signature"
         }
       ],

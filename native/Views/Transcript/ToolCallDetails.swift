@@ -186,8 +186,7 @@ private struct ContentBlockView: View {
 private extension View {
     /// Tool output type: small monospaced text with roomy lines, padded inside the detail panel.
     func monospacedOutput() -> some View {
-        font(.dsMonoCaption)
-            .lineSpacing(TranscriptMetrics.outputLineSpacing)
+        codeTextStyle(.compact)
             .textSelection(.enabled)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal, DS.Space.lg)
