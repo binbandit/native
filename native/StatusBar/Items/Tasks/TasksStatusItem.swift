@@ -20,9 +20,6 @@ private struct TasksSegment: View {
     let source: any StatusBarSource
 
     var body: some View {
-        #if DEBUG
-        let _ = RenderProbe.hit("TasksSegment")
-        #endif
         let tasks = source.statusBarTasks
         let working = tasks.filter { !$0.needsAttention }
         let waiting = tasks.filter(\.needsAttention)

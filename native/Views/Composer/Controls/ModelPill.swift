@@ -14,9 +14,6 @@ struct ModelPill: View {
     }
 
     var body: some View {
-        #if DEBUG
-        let _ = RenderProbe.hit("ModelPill")
-        #endif
         Button {
             isPickerOpen.toggle()
         } label: {

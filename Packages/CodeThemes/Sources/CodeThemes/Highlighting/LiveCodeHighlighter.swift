@@ -54,7 +54,7 @@ public final class LiveCodeHighlighter {
         }
         request(code, language)
         guard let latest, latest.language == language.id else { return nil }
-        return CodeHighlighter.segments(latest.segments, of: latest.code, reusedFor: code)
+        return CodeHighlighter.reused(latest.segments, of: latest.code, for: code)
     }
 
     private func request(_ code: String, _ language: CodeLanguage) {

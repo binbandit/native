@@ -2,33 +2,33 @@ import CodeThemes
 import GitHub
 import SwiftUI
 
-/// A run of diff lines as two texts, the gutter (both line numbers and the change marker) and the
-/// code, so a block lays out as one text each instead of a view per line: what keeps scrolling a
-/// pull request with thousands of changed lines smooth. Lines don't wrap, so every line has the
-/// same height and line `i` sits at `i × height`; a line longer than the pane is cut off with a
-/// "…" that opens it.
+/// A run of diff lines as two texts for the platform's text view, the gutter (both line numbers
+/// and the change marker) and the code, so a block is two text views instead of a view per line:
+/// what keeps scrolling a pull request with thousands of changed lines smooth. Lines don't wrap and
+/// all have the same height, so line `i` sits at `i × lineHeight`; a line longer than the pane is
+/// cut off with a "…" link that opens it.
 struct PullRequestDiffBlockText {
-    let gutter: AttributedString
-    let code: AttributedString
+    let gutter: NSAttributedString
+    let code: NSAttributedString
     let kinds: [DiffHunk.Line.Kind]
     /// Lines (offsets in the block) cut off at the pane edge.
     let cutOff: Set<Int>
-    /// The code as plain text, for accessibility: resolving the colored text for VoiceOver costs
-    /// far more than reading this.
-    let plain: String
 
     /// Minified lines (bundles, lockfiles) show their start: their diff is behind "Load Diff", and
     /// laying out the whole of one costs frames.
     static let minifiedLineLength = 1_000
     static let minifiedDisplayLength = 400
+    /// The "…" on a cut-off line links here, followed by the line's offset in the block.
+    static let expandLinkPrefix = "native-diff-line:"
 
     /// - Parameters:
     ///   - highlighted: The hunk's lines as code segments, when highlighting has finished.
     ///   - numberWidth: Digits in the largest line number of the file, so gutters line up.
     ///   - columns: Characters that fit beside the gutter; longer lines are cut off with "…".
+    ///   - font: The diff's code font; every line is `lineHeight` tall.
     init(
         lines: ArraySlice<DiffHunk.Line>, highlighted: [[CodeSegment]]?, colors: DSCodeColors, numberWidth: Int,
-        columns: Int
+        columns: Int, font: DSPlatformFont, lineHeight: CGFloat, environment: EnvironmentValues
     ) {
         var gutter = AttributedString()
         var code = AttributedString()
@@ -43,7 +43,9 @@ struct PullRequestDiffBlockText {
             gutter += Self.gutter(line, width: numberWidth)
             let text = Self.code(
                 line, highlighted: highlighted.flatMap { $0.indices.contains(index) ? $0[index] : nil }, colors: colors)
-            if let cut = Self.cutOff(text, columns: columns) {
+            if var cut = Self.cutOff(text, columns: columns) {
+                let marker = cut.characters.index(before: cut.endIndex)
+                cut[marker..<cut.endIndex].link = URL(string: Self.expandLinkPrefix + String(kinds.count))
                 code += cut
                 cutOff.insert(kinds.count)
             } else {
@@ -51,11 +53,17 @@ struct PullRequestDiffBlockText {
             }
             kinds.append(line.kind)
         }
-        self.gutter = gutter
-        self.code = code
+        self.gutter = PlatformCodeText.attributed(gutter, font: font, lineHeight: lineHeight, in: environment)
+        self.code = PlatformCodeText.attributed(code, font: font, lineHeight: lineHeight, in: environment)
         self.kinds = kinds
         self.cutOff = cutOff
-        plain = lines.map(\.text).joined(separator: "\n")
+    }
+
+    /// The line offset a "…" link stands for.
+    static func expandedLine(_ url: URL) -> Int? {
+        let text = url.absoluteString
+        guard text.hasPrefix(expandLinkPrefix) else { return nil }
+        return Int(text.dropFirst(expandLinkPrefix.count))
     }
 
     /// The line cut to `columns` characters, ending in the "…" marker, or nil when it fits.

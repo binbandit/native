@@ -36,9 +36,6 @@ struct SessionRow<Accessory: View>: View {
     }
 
     var body: some View {
-        #if DEBUG
-        let _ = RenderProbe.hit("SessionRow")
-        #endif
         if model.renaming == summary.id {
             SessionTitleField(summary: summary, status: TaskStatus(session))
         } else {

@@ -13,9 +13,6 @@ struct MarkdownView: View, Equatable {
     }
 
     var body: some View {
-        #if DEBUG
-        let _ = RenderProbe.hit("MarkdownView")
-        #endif
         // Section by section: a streaming reply only grows its last section, so the ones before it
         // are parsed, laid out and drawn once rather than on every chunk.
         let sections = source.markdownSections
@@ -36,9 +33,6 @@ struct MarkdownSectionView: View, Equatable {
     let isFirst: Bool
 
     var body: some View {
-        #if DEBUG
-        let _ = RenderProbe.hit("MarkdownSection")
-        #endif
         Group {
             // A stack of its own, so a change in another section doesn't lay this one out again.
             if let blocks = MarkdownParseCache.blocks(for: source) {
@@ -211,9 +205,6 @@ private struct MarkdownBlockView: View {
     var listDepth = 0
 
     var body: some View {
-        #if DEBUG
-        let _ = RenderProbe.hit("MarkdownBlock")
-        #endif
         switch node.kind {
         case .header(let level):
             Text(node.text)

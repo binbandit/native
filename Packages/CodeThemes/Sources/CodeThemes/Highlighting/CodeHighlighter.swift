@@ -29,9 +29,7 @@ public enum CodeHighlighter {
 
     /// `segments`, the colors of `previous`, reused for `code` until it's highlighted itself: the start
     /// the two share keeps its colors and the rest draws plain. Joined, the result is exactly `code`.
-    public static func segments(_ segments: [CodeSegment], of previous: String, reusedFor code: String)
-        -> [CodeSegment]
-    {
+    public static func reused(_ segments: [CodeSegment], of previous: String, for code: String) -> [CodeSegment] {
         // Scalars rather than characters: segments split where captures do, which can be inside a
         // grapheme cluster, so only scalar counts are sure to add up to `previous`.
         var remaining = zip(previous.unicodeScalars, code.unicodeScalars).prefix { $0 == $1 }.count
