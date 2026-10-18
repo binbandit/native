@@ -127,7 +127,7 @@ files; a file moved or deleted before sending is marked on its chip and holds th
 | ⌘V | Paste copied files or an image as attachments (text pastes as text) | | |
 | Space or Return on a chip | Open it in Quick Look | | |
 | ← at the start of the draft | Select the last file; ← and → move between files, → past the last returns to the text | | |
-| Delete or ⌦ on a selected file | Remove it and select the next one along | | |
+| Delete or ⌦ on a selected file | Remove it; Delete selects the file before, ⌦ the one after | | |
 | Escape, or typing, with a file selected | Return to the text | | |
 | Delete in an empty draft | Remove the last file (a held key doesn't) | | |
 | Delete on a focused chip | Remove it from the message (with Keyboard Navigation on) | | |
