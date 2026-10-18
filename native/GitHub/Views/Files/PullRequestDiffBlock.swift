@@ -154,6 +154,7 @@ private struct PullRequestDiffBlockCode: View, Equatable {
         Text(text.code)
             .fixedSize()
             .textSelection(.enabled)
+            .accessibilityRepresentation { Text(verbatim: text.plain) }
     }
 
     nonisolated static func == (lhs: Self, rhs: Self) -> Bool {

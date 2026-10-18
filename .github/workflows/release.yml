@@ -23,6 +23,7 @@ jobs:
       DEVELOPER_DIR: ${{ vars.XCODE_DEVELOPER_DIR || '/Applications/Xcode_27.1.app/Contents/Developer' }}
       GH_TOKEN: ${{ github.token }}
       NATIVE_TEAM_ID: ${{ secrets.NATIVE_TEAM_ID }}
+      NATIVE_SENTRY_DSN: ${{ secrets.NATIVE_SENTRY_DSN }}
     steps:
       - uses: actions/checkout@v5
         with:

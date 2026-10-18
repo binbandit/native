@@ -337,7 +337,8 @@ events to its own OpenTelemetry collector. Design: `docs/enterprise.md`.
 Use official `sentry-cocoa` **9.30.2**, pinned through SwiftPM, for crash persistence and symbolication
 instead of maintaining signal handlers ourselves. `native/Telemetry/SentryTelemetry.start(dsn:)` is
 called by Native's telemetry gate after consent and `policy.telemetry.native` permit it. Debug/dev
-builds cannot start it. The public DSN is `NATIVE_SENTRY_DSN` (`NativeSentryDSN` in Info.plist).
+builds cannot start it. The DSN is `NATIVE_SENTRY_DSN` (`NativeSentryDSN` in Info.plist), set only for official
+builds from a repository secret, so builds from source and forks never report to Native's Sentry.
 
 `Packages/NativeDiagnostics` rebuilds reports from fixed error categories, timestamps, numeric thread
 ids, instruction/load addresses, binary UUIDs, release and channel. It drops messages, paths, source

@@ -80,4 +80,19 @@ struct SetupReportTests {
         #expect(SetupReport.headline(of: failure) == "Codex exited.")
         #expect(SetupReport.headline(of: String(repeating: "a", count: 500)).count == 200)
     }
+
+    /// Nothing is paired yet, so the gateway is closed; pairing opens it, so that's the step to name.
+    @Test func pairedDevicesPointAtPairingBeforeTheSwitch() {
+        var fresh = report
+        fresh.durableHost = .init(state: .connected, version: "0.4.0")
+        fresh.pairedDevices = .init(
+            state: .available, paired: 0, connected: 0, acceptsConnections: false, listener: .off)
+        #expect(fresh.summary.contains("To pair one: Settings ▸ Paired Devices ▸ Pair iPhone…"))
+        #expect(!fresh.summary.contains("Allow paired devices to connect"))
+
+        fresh.pairedDevices.paired = 1
+        #expect(
+            fresh.summary.contains("Connections are off (Settings ▸ Paired Devices ▸ Allow paired devices to connect).")
+        )
+    }
 }

@@ -43,10 +43,12 @@ struct TranscriptView: View {
             containerWidth = width
         }
         .onScrollGeometryChange(for: String.self) { g in
-            "content \(g.contentSize.height) container \(g.containerSize.height) offset \(g.contentOffset.y) insets \(g.contentInsets.top),\(g.contentInsets.bottom) visible \(g.visibleRect.minY)-\(g.visibleRect.maxY)"
+            "content \(g.contentSize.height) container \(g.containerSize.width)x\(g.containerSize.height) offset \(g.contentOffset.y) insets \(g.contentInsets.top),\(g.contentInsets.bottom) visible \(g.visibleRect.minY)-\(g.visibleRect.maxY)"
         } action: { _, new in
-            if let h = FileHandle(forWritingAtPath: "/tmp/stabilize-tools/geo.log") { h.seekToEndOfFile(); h.write(Data("STABDBG \(Date().timeIntervalSince1970) \(new)\n".utf8)); try? h.close() }
+            stabLog(new)
         }
+        .onAppear { stabLog("appear \(session.id) items \(session.state.items.count)") }
+        .onDisappear { stabLog("disappear \(session.id)") }
         .onScrollGeometryChange(for: Bool.self) { [threshold = DS.Space.xxxl] geometry in
             geometry.visibleRect.maxY < geometry.contentSize.height - threshold
         } action: { _, isAway in
@@ -107,4 +109,8 @@ struct TranscriptView: View {
     private func jumpToLatest() {
         withAnimation(.dsStandard) { position.scrollTo(edge: .bottom) }
     }
+}
+
+func stabLog(_ s: String) {
+    if let h = FileHandle(forWritingAtPath: "/tmp/stabilize-tools/geo.log") { h.seekToEndOfFile(); h.write(Data("STABDBG \(Date().timeIntervalSince1970) \(s)\n".utf8)); try? h.close() }
 }

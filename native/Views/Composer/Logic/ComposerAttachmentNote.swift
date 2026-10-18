@@ -26,27 +26,27 @@ enum ComposerAttachmentNote {
         for attachment: PromptAttachment, capabilities: PromptCapabilities, agentName: String
     ) -> String? {
         guard attachment.isImageFile, attachment.delivery(to: capabilities) == .link else { return nil }
+        let name = attachment.name
         if !capabilities.image {
-            return "\(agentName) can’t take images, so it gets the file’s path instead."
+            return "\(agentName) can’t take images, so it gets \(name)’s path instead."
         }
         if let bytes = attachment.byteCount, bytes > PromptAttachment.Limits.imageFileBytes {
-            return "It’s over the \(DSFormat.fileSize(PromptAttachment.Limits.imageFileBytes)) Native sends as an "
-                + "image, so \(agentName) gets its path instead."
+            return "\(name) is over the \(DSFormat.fileSize(PromptAttachment.Limits.imageFileBytes)) Native sends "
+                + "as an image, so \(agentName) gets its path instead."
         }
-        return "Native couldn’t read it as an image, so \(agentName) gets its path instead."
+        return "Native couldn’t read \(name) as an image, so \(agentName) gets its path instead."
     }
 
+    /// The first picture's reason, or for an agent that takes no images, all of them at once.
     private static func pathOnly(
         _ added: [PromptAttachment], capabilities: PromptCapabilities, agentName: String
     ) -> String? {
-        let linked = added.filter { pathOnlyReason(for: $0, capabilities: capabilities, agentName: agentName) != nil }
-        guard let first = linked.first else { return nil }
-        if !capabilities.image {
-            let what = linked.count == 1 ? "\(first.name)’s path" : "the paths of \(linked.count) images"
-            return "\(agentName) can’t take images, so it gets \(what) instead."
+        let reasons = added.compactMap { pathOnlyReason(for: $0, capabilities: capabilities, agentName: agentName) }
+        guard let first = reasons.first else { return nil }
+        if !capabilities.image, reasons.count > 1 {
+            return "\(agentName) can’t take images, so it gets the paths of these \(reasons.count) images instead."
         }
-        let reason = pathOnlyReason(for: first, capabilities: capabilities, agentName: agentName) ?? ""
-        return "\(first.name): \(reason)"
+        return first
     }
 
     /// "Attached 20 of 30 files: …", or, when the message was already full, that it is.
