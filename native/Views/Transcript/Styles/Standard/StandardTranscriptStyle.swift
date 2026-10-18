@@ -40,6 +40,9 @@ private struct StandardTranscript: View {
                         .padding(.top, DS.Space.xl)
                 }
             }
+            .onAppear {
+                if let last = lines.last { proxy.scrollTo(last.id, anchor: .bottom) }
+            }
             .task(id: transcript.session.transcriptReveal) {
                 await reveal(transcript.session.transcriptReveal, with: proxy)
             }

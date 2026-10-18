@@ -1,4 +1,5 @@
 ; From tree-sitter/tree-sitter-typescript v0.23.2, queries/highlights.scm (MIT; see NOTICE.md).
+; Changed: type parameters' angle brackets are brackets, as type arguments' already are (appended at the end).
 ; Types
 
 (type_identifier) @type
@@ -34,3 +35,7 @@
   "override"
   "satisfies"
 ] @keyword
+
+(type_parameters
+  "<" @punctuation.bracket
+  ">" @punctuation.bracket)

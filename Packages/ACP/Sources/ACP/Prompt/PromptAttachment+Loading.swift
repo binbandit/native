@@ -40,7 +40,7 @@ extension PromptAttachment {
             switch self {
             case .tooMany: "A message can carry up to \(Limits.count) files."
             case .tooMuchInline(let name):
-                "\(name) would take this message past \(size(Limits.inlineBytes)) of images and files. "
+                "\(name) would take this message past \(PromptAttachment.size(Limits.inlineBytes)) of images and files. "
                     + "Send it in the next message."
             }
         }

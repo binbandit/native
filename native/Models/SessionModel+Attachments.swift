@@ -9,8 +9,26 @@ extension SessionModel {
         attachments = try PromptAttachment.adding(attachment, to: attachments)
     }
 
-    func removeAttachment(_ id: PromptAttachment.ID) {
-        attachments.removeAll { $0.id == id }
+    /// Takes a file off the draft; with an undo manager, ⌘Z puts it back in its place.
+    func removeAttachment(_ id: PromptAttachment.ID, undoManager: UndoManager? = nil) {
+        guard let index = attachments.firstIndex(where: { $0.id == id }) else { return }
+        let removed = attachments.remove(at: index)
+        undoManager?.registerUndo(withTarget: self) { session in
+            MainActor.assumeIsolated {
+                guard !session.attachments.contains(where: { $0.id == removed.id }) else { return }
+                session.attachments.insert(removed, at: min(index, session.attachments.count))
+            }
+        }
+        undoManager?.setActionName("Remove Attachment")
+    }
+
+    /// Attached files that are gone from disk and would reach the agent only as their path, which
+    /// leads nowhere now. An image or text file whose contents go with the message still can.
+    var missingAttachments: [PromptAttachment] {
+        attachments.filter { attachment in
+            attachment.delivery(to: promptCapabilities) == .link
+                && !FileManager.default.fileExists(atPath: attachment.url.path(percentEncoded: false))
+        }
     }
 
     /// Why a message can't go out now, or nil when it can. A session that's loading or busy isn't

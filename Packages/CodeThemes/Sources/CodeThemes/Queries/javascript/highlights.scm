@@ -1,4 +1,5 @@
 ; From tree-sitter/tree-sitter-javascript v0.23.1, queries/highlights.scm (MIT; see NOTICE.md).
+; Changed: a regex literal's slashes belong to the regex, not the division operator (appended at the end).
 ; Variables
 ;----------
 
@@ -203,3 +204,6 @@
   "with"
   "yield"
 ] @keyword
+
+(regex
+  "/" @string.special)

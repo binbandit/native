@@ -121,6 +121,11 @@ public nonisolated enum DSFormat {
         Int64(clamping: bytes).formatted(.byteCount(style: .memory))
     }
 
+    /// A file's size as the Finder writes it: "63 bytes", "20 KB", "72.1 MB".
+    public static func fileSize(_ bytes: Int) -> String {
+        Int64(bytes).formatted(.byteCount(style: .file))
+    }
+
     /// CPU as a percent of one core, as ps and Activity Monitor report it, so it can pass 100%.
     /// One decimal below 10%, so idle processes don't all read 0%: "0.4%", "12%", "225%".
     public static func cpu(_ percentOfCore: Double) -> String {

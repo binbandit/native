@@ -28,9 +28,12 @@ enum TreeSitterHighlighter {
         else { return false }
 
         let units = canvas.units
-        let context = Predicate.Context(textProvider: { range, _ in
-            units.text(at: offset + range.location, length: range.length)
-        })
+        // Without scope tracking every name counts as local, so `(#is-not? local)` patterns, meant
+        // for names no local defines (Ruby's bare method calls, JavaScript's `console`), stay quiet
+        // rather than coloring every variable.
+        let context = Predicate.Context(
+            textProvider: { range, _ in units.text(at: offset + range.location, length: range.length) },
+            groupMembershipProvider: { _, _, _ in true })
         for match in queries.highlights.execute(in: tree).resolve(with: context) {
             for capture in match.captures {
                 guard let role = queries.roles[capture.index] else { continue }

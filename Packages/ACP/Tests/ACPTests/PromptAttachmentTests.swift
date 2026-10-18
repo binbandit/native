@@ -107,7 +107,21 @@ struct PromptAttachmentLoadingTests {
         #expect(try PromptAttachment.load(svg).content == .text(#"<svg xmlns="http://www.w3.org/2000/svg" width="4" height="4"/>"#))
         let broken = folder.appending(path: "broken.png")
         try Data([0x89, 0x50, 0x4E, 0x47, 0, 1, 2, 3]).write(to: broken)
-        #expect(try PromptAttachment.load(broken).content == .reference)
+        let attachment = try PromptAttachment.load(broken)
+        #expect(attachment.content == .reference)
+        #expect(attachment.isImageFile)
+    }
+
+    /// Past what Native will read and scale, a picture goes by its path rather than not at all.
+    @Test func oversizedImagesGoByPath() throws {
+        let url = folder.appending(path: "huge.png")
+        try writeImage(width: 10, height: 10, to: url)
+        let handle = try FileHandle(forWritingTo: url)
+        try handle.truncate(atOffset: UInt64(PromptAttachment.Limits.imageFileBytes + 1))
+        try handle.close()
+        let attachment = try PromptAttachment.load(url)
+        #expect(attachment.content == .reference)
+        #expect(attachment.byteCount == PromptAttachment.Limits.imageFileBytes + 1)
     }
 
     @Test func missingFilesSaySo() {
