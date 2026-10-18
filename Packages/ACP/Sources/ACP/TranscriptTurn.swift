@@ -64,7 +64,7 @@ extension SessionState {
     /// chunk when nothing followed; while it's still the newest item of the open turn, there's none.
     public func thinkingInterval(at index: Int) -> (start: Date, end: Date?)? {
         guard items.indices.contains(index), case .message(let thought) = items[index], thought.role == .thought,
-              let start = thought.startedAt
+            let start = thought.startedAt
         else { return nil }
         if index + 1 < items.count {
             return (start, items[index + 1].startedAt ?? thought.updatedAt)

@@ -48,9 +48,12 @@ struct TurnFooter: View {
     @ViewBuilder private func view(for part: Part) -> some View {
         switch part {
         case .ending(let notice):
-            Label(notice.text.trimmingSuffix("."), systemImage: notice.isError ? "exclamationmark.triangle" : "stop.circle")
-                .foregroundStyle(notice.isError ? .dsDanger : .dsTextSecondary)
-                .textSelection(.enabled)
+            Label(
+                notice.text.trimmingSuffix("."),
+                systemImage: notice.isError ? "exclamationmark.triangle" : "stop.circle"
+            )
+            .foregroundStyle(notice.isError ? .dsDanger : .dsTextSecondary)
+            .textSelection(.enabled)
         case .duration(let start, let end):
             ElapsedTimeText(since: start, until: end)
         case .changes:

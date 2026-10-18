@@ -56,11 +56,6 @@ struct TranscriptView: View {
         }
         .animation(.dsStandard, value: showsJumpToLatest)
         .focusedSceneValue(\.transcriptJumpToLatest, jumpCommand)
-        .onScrollGeometryChange(for: String.self) { g in
-            "content \(g.contentSize) insets \(g.contentInsets) container \(g.containerSize) offset \(g.contentOffset)"
-        } action: { _, new in
-            FileHandle.standardError.write(Data("HANG \(Date().timeIntervalSince1970) \(new)\n".utf8))
-        }
         .overlay {
             if session.phase == .loading {
                 ProgressView("Loading session…")

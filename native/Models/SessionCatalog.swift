@@ -59,6 +59,11 @@ final class SessionCatalog {
         lookup(key) != nil
     }
 
+    /// Whether any project lists sessions of `agent`.
+    func hasSessions(of agent: AgentDefinition.ID) -> Bool {
+        listed.values.contains { $0[agent]?.isEmpty == false }
+    }
+
     /// Whether `agent` has ever listed `project`, so its (possibly empty) listing is known.
     func hasListed(_ agent: AgentDefinition.ID, in project: Project.ID) -> Bool {
         listed[project]?[agent] != nil
