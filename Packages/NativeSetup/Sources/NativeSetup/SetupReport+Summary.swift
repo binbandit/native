@@ -131,7 +131,9 @@ extension SetupReport.PairedDevices {
             parts = [sentence("waiting for the durable host", problem)]
         case .available:
             parts = ["\(paired ?? 0) paired, \(connected ?? 0) connected."]
-            if acceptsConnections == false {
+            if (paired ?? 0) == 0 {
+                parts.append("To pair one: Settings ▸ Paired Devices ▸ Pair iPhone…, which also opens the gateway.")
+            } else if acceptsConnections == false {
                 parts.append("Connections are off (Settings ▸ Paired Devices ▸ Allow paired devices to connect).")
             }
             parts.append(listenerNote)

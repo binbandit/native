@@ -10,6 +10,9 @@ struct PullRequestDiffBlockText {
     let gutter: AttributedString
     let code: AttributedString
     let kinds: [DiffHunk.Line.Kind]
+    /// The code as plain text, for accessibility: resolving the colored text for VoiceOver costs
+    /// far more than reading this.
+    let plain: String
 
     /// Longer lines (minified bundles) show their start; the full line is on GitHub.
     static let maximumLineLength = 1_000
@@ -37,6 +40,7 @@ struct PullRequestDiffBlockText {
         self.gutter = gutter
         self.code = code
         self.kinds = kinds
+        plain = lines.map(\.text).joined(separator: "\n")
     }
 
     private static func gutter(_ line: DiffHunk.Line, width: Int) -> AttributedString {

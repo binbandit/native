@@ -15,8 +15,8 @@ in `docs/decisions.md` ("Releases on GitHub", "Sparkle for updates", "Nightly be
 ## Sentry crash symbols
 
 The Sentry project is [FoxyCorps / native](https://foxycorps.sentry.io/settings/projects/native/).
-The public ingestion DSN lives in `NATIVE_SENTRY_DSN` (`Config/Shared.xcconfig`); development builds
-clear it and cannot start the SDK. Runtime reporting is controlled by Native's telemetry consent and
+The ingestion DSN is the `NATIVE_SENTRY_DSN` repository secret, which `scripts/release/release.sh`
+passes to official builds only; builds from source and forks have none and cannot start the SDK. Runtime reporting is controlled by Native's telemetry consent and
 organization policy, through `SentryTelemetry.start(dsn:)` and `stop()`.
 Keep **Security & Privacy → Prevent Storing of IP Addresses** enabled in the Sentry project; SDK PII
 settings alone do not prevent server-side IP enrichment. Keep the advanced rule **Remove Anything
@@ -291,6 +291,7 @@ credentials in a throwaway keychain and removes it afterwards.
 | `DEVELOPER_ID_CERTIFICATE_P12` | the Developer ID Application certificate and its private key, base64 | Keychain Access → export the identity as .p12 → `base64 -i cert.p12 \| pbcopy` |
 | `DEVELOPER_ID_CERTIFICATE_PASSWORD` | the .p12's password | chosen at export |
 | `NATIVE_TEAM_ID` | the Apple team id (10 characters) | developer.apple.com → Membership |
+| `NATIVE_SENTRY_DSN` | Sentry's client key (DSN) for official builds; source and fork builds have none | Sentry → Project Settings → Client Keys (DSN) |
 | `NOTARY_API_KEY_P8` | an App Store Connect API key for notarytool, base64 | App Store Connect → Users and Access → Integrations → Team Keys (Developer role) → download the .p8 → `base64 -i AuthKey_XXXX.p8` |
 | `NOTARY_API_KEY_ID` | that key's id | shown beside the key |
 | `NOTARY_API_ISSUER_ID` | the issuer id | shown above the keys |

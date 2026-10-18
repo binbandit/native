@@ -108,6 +108,7 @@ if [ "$MODE" = publish ]; then
     [ -z "$(git status --porcelain)" ] || die "the working tree has changes; release from a clean checkout"
     require_tool gh "brew install gh"
     [ -n "${SENTRY_AUTH_TOKEN:-}" ] || die "set SENTRY_AUTH_TOKEN before publishing (docs/releasing.md, Sentry crash symbols)"
+    [ -n "${NATIVE_SENTRY_DSN:-}" ] || die "set NATIVE_SENTRY_DSN before publishing (docs/releasing.md, repository secrets)"
 fi
 
 # Developer ID for anything that leaves this Mac; ad hoc is fine for a local dry run.
@@ -147,6 +148,7 @@ run xcodebuild archive \
     -archivePath "$archive" -derivedDataPath "$output/DerivedData" -destination 'generic/platform=macOS' \
     MARKETING_VERSION="$version" CURRENT_PROJECT_VERSION="$build_number" \
     NATIVE_CHANNEL_CONDITION="$channel_condition" NATIVE_APP_ICON_NAME="$app_icon" \
+    NATIVE_SENTRY_DSN="${NATIVE_SENTRY_DSN:-}" \
     CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="$identity" DEVELOPMENT_TEAM="$team" \
     CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO OTHER_CODE_SIGN_FLAGS="$sign_flags" ${runtime[@]+"${runtime[@]}"} \
     ${settings[@]+"${settings[@]}"} -quiet

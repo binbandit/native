@@ -85,7 +85,7 @@ struct ComposerPendingAttachmentChip: View {
         ComposerAttachmentChipFrame(isOutlined: false) {
             HStack(spacing: DS.Space.sm) {
                 DotGridLoader(pattern: .waiting)
-                    .padding(DS.Space.xs)
+                    .frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
                     .frame(width: ComposerMetrics.attachmentThumbnail, height: ComposerMetrics.attachmentThumbnail)
                     .background(.dsBackground, in: .rect(cornerRadius: DS.Radius.small, style: .continuous))
                     .overlay {
