@@ -26,8 +26,7 @@ extension View {
     }
 
     /// Applies the user's transparency to a `NavigationSplitView` sidebar column, whose material the
-    /// system draws: lower levels lay the solid sidebar color over it, and Clear asks the Mac's
-    /// sidebar glass for its clear style.
+    /// system draws: lower levels lay the solid sidebar color over it.
     public func dsSidebarColumnTransparency() -> some View {
         modifier(SidebarColumnTransparency())
     }
@@ -52,14 +51,14 @@ private struct SidebarBackdrop: View {
     @ViewBuilder private var material: some View {
         #if canImport(AppKit)
         if blending == .behindWindow {
-            DSBehindWindowMaterial(material: transparency == .clear ? .fullScreenUI : .sidebar)
+            DSBehindWindowMaterial()
         } else {
             // AppKit's within-window vibrancy can't see SwiftUI content drawn behind it in the
             // same hosting view; SwiftUI's own material can.
-            Rectangle().fill(transparency == .clear ? .ultraThinMaterial : .thinMaterial)
+            Rectangle().fill(.thinMaterial)
         }
         #else
-        Rectangle().fill(transparency == .clear ? .ultraThinMaterial : .thinMaterial)
+        Rectangle().fill(.thinMaterial)
         #endif
     }
 }
@@ -75,11 +74,6 @@ private struct SidebarColumnTransparency: ViewModifier {
                     .opacity(transparency.sidebarTint)
                     .ignoresSafeArea()
                     .animation(.dsStandard, value: transparency)
-                #if canImport(AppKit)
-                SidebarGlassStyle(isClear: transparency == .clear)
-                    .frame(width: 0, height: 0)
-                    .accessibilityHidden(true)
-                #endif
             }
     }
 }
@@ -100,39 +94,6 @@ struct DSBehindWindowMaterial: NSViewRepresentable {
     func updateNSView(_ view: NSVisualEffectView, context: Context) {
         view.material = material
         view.appearance = NSAppearance(named: context.environment.colorScheme == .dark ? .darkAqua : .aqua)
-    }
-}
-
-/// Sets the style of the `NSGlassEffectView` that macOS wraps a split view's sidebar in. SwiftUI
-/// has no API for it, so this finds the glass among its ancestors; if a later macOS draws the
-/// sidebar differently, nothing is found and Clear looks like Standard.
-private struct SidebarGlassStyle: NSViewRepresentable {
-    let isClear: Bool
-
-    func makeNSView(context: Context) -> Probe { Probe() }
-
-    func updateNSView(_ view: Probe, context: Context) {
-        view.style = isClear ? .clear : .regular
-    }
-
-    final class Probe: NSView {
-        var style = NSGlassEffectView.Style.regular {
-            didSet { apply() }
-        }
-
-        override func viewDidMoveToWindow() {
-            super.viewDidMoveToWindow()
-            apply()
-        }
-
-        private func apply() {
-            var ancestor = superview
-            while let view = ancestor, !(view is NSGlassEffectView) {
-                ancestor = view.superview
-            }
-            guard let glass = ancestor as? NSGlassEffectView, glass.style != style else { return }
-            glass.style = style
-        }
     }
 }
 #endif
