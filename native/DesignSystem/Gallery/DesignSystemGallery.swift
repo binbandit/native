@@ -80,6 +80,9 @@ struct DesignSystemGalleryColumn: View {
             GallerySection("Sidebar", source: "the reference app top half, the reference app projects and tasks, translucent") {
                 GallerySidebar()
             }
+            GallerySection("Status bar", source: "the reference app's status bar in the reference app's chrome") {
+                GalleryStatusBar()
+            }
             GallerySection("Task status", source: "the reference app workspace statuses and dot-grid loaders") {
                 GalleryStatus()
             }

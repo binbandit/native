@@ -232,6 +232,13 @@ extension Expedition {
             expedition.checkpoints[index].status = .interrupted
             expedition.checkpoints[index].waitingSince = updatedAt
         }
+        let cutOff = expedition.allSlots.filter { expedition.status(of: $0) == .interrupted }.count
+        if cutOff > 0 {
+            let who = cutOff == 1 ? "a crew member was" : "\(cutOff) crew members were"
+            expedition.note(
+                .attention, "Native quit while \(who) working. Resume tells each one its turn was cut off.",
+                at: updatedAt)
+        }
         if pullRequestError == nil, isOpeningPullRequest {
             expedition.pullRequestError =
                 "Native quit while the pull request was opening. Check GitHub before retrying."

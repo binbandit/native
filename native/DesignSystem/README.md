@@ -72,6 +72,8 @@ Mac) to see everything in light and dark side by side.
 | `ComposerSurface`, `ComposerControlsBar`, `.pill` / `.pillChrome`, `PillMenu`, `EffortBars`, `ComposerSendButton`, `ComposerStopButton`, `ComposerChip` | the reference app's composer, measured at 1x |
 | `.ds(_:size:)` buttons, `IconButton`, `Badge`, `Kbd`, `Card`, `SeparatorLine`, `SectionHeader`, `StatusDot` | the reference app core-ui v2 buttons and Kbd; the reference app badges and cards |
 | `DiffView`, `DiffStats`, `DiffStatsText` | the reference app's diff layout; shared by the transcript and Git |
+| `StatusBarSurface`, `.statusBarSegment(_:isActive:)`, `StatusBarGlyph`, `StatusBarDivider`, `StatusBarSeparator` | the reference app's status bar in the reference app's chrome: the sidebar backdrop under a hairline, `DS.Size.chromeBar` tall, tertiary caption text, footer-sized glyphs, hairlines between items, color-only hover. Narrow windows drop whole items |
+| `PopoverPanel`, `PopoverPanelFootnote`, `.dsPopover(isPresented:)` | the reference app's Resource Manager layout (glyph and title header, hairline, content) on the overlay backdrop |
 | `CappedHeightScrollView` | Natural height up to a cap, then scrolls |
 | `NativeMark`, `NativeLockup`, `.nightSky(isEnabled:)`, `NightlyMark` | Native's brand: the interlock emblem from the app icon, the wordmark, and the nightly sky and moon |
 | `LaunchAnimationView`, `.launchScreen(isPresented:)` | The emblem tracing in and interlocking while agents start |
@@ -87,6 +89,8 @@ Mac) to see everything in light and dark side by side.
 | Usage limits | `LimitStatus` (one value from Usage), rendered by `LimitBanner` and `LimitChip`, worded by `LimitStatus.line(now:)` |
 | Task state | `TaskStatus` + `StatusIndicator`; paused and limited included |
 | Loading | `DotGridLoader`, never ad-hoc spinners |
+| Something blocked on the user, in chrome | `.statusBarSegment(.attention)`: the only boxed item in the status bar, one at a time |
+| Details on click | `.dsPopover` with a `PopoverPanel` |
 | Elapsed time | `ElapsedTimeText(since:until:)`: ticks while running, a total once done |
 | Counts, sizes, times | `DSFormat`: `compactAge`, `time`, `countdown`, `timeAndCountdown`, `duration`, `thoughtFor`, `tokens`, `percent`, `share`, `lineCount`, `diffStat`, `cost`, `memory`, `cpu` |
 

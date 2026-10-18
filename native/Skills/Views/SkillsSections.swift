@@ -58,7 +58,9 @@ struct SkillsSections: View {
             }
         }
         if !agents.isEmpty {
-            section("From your agents", note: "Shipped with an agent or one of its plugins, which keep them up to date.") {
+            section(
+                "From your agents", note: "Shipped with an agent or one of its plugins, which keep them up to date."
+            ) {
                 ForEach(agents) { row($0) }
             }
         }
@@ -84,7 +86,9 @@ struct SkillsSections: View {
             onUpdate: { onUpdate(item) }, onRemove: { onRemove(item) }, onToggle: { onToggle(item, $0) })
     }
 
-    private func section<Content: View>(_ title: String, note: String, @ViewBuilder content: () -> Content)
+    private func section<Content: View>(
+        _ title: String, note: String, @ViewBuilder content: () -> Content
+    )
         -> some View
     {
         VStack(alignment: .leading, spacing: DS.Space.lg) {

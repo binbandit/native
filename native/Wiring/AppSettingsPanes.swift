@@ -5,6 +5,6 @@ import SwiftUI
 /// `RootView`; Settings orders them by their group and order.
 enum AppSettingsPanes {
     static func all(plugins: PluginRegistry, terminals: TerminalStore, keepAwake: KeepAwakeController) -> [SettingsPane] {
-        [.labs, .git, .mcpServers(registry: plugins), .terminal(terminals.preferences), .sounds(), .keepAwake(keepAwake)]
+        [.labs, .git, .mcpServers(registry: plugins), .skills(registry: plugins), .terminal(terminals.preferences), .sounds(), .keepAwake(keepAwake)]
     }
 }

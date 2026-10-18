@@ -82,8 +82,12 @@ struct SkillDetails: View {
                     .foregroundStyle(.dsTextPrimary)
                     .textSelection(.enabled)
                 Text(
-                    ([place.root.scope.displayName, readers.isEmpty ? "No agent reads it" : readers.joined(separator: ", ")]
-                        + (place.isLink ? ["Links to " + SkillPaths.abbreviated(place.resolvedPath, home: library.home)] : []))
+                    ([
+                        place.root.scope.displayName,
+                        readers.isEmpty ? "No agent reads it" : readers.joined(separator: ", "),
+                    ]
+                        + (place.isLink
+                            ? ["Links to " + SkillPaths.abbreviated(place.resolvedPath, home: library.home)] : []))
                         .joined(separator: " · ")
                 )
                 .settingsText(.caption)
@@ -177,7 +181,8 @@ struct SkillFoldersFooter: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.md) {
-            SettingsSubheading("Skills folders", note: "Where your agents look. A folder that doesn't exist yet is fine.")
+            SettingsSubheading(
+                "Skills folders", note: "Where your agents look. A folder that doesn't exist yet is fine.")
             ForEach(library.roots.filter { $0.scope.isUserManaged }, id: \.path) { root in
                 HStack(spacing: DS.Space.md) {
                     Text(SkillPaths.abbreviated(root.path, home: library.home))
