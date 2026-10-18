@@ -78,4 +78,9 @@ By participating you agree to the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 ## License
 
-Not chosen yet. Geist (SIL OFL) and Ghostty (MIT) ship with their notices.
+Native is [fair source](https://fair.io) under the [Functional Source License](LICENSE.md)
+(FSL-1.1-ALv2). Read it, fork it, change it, use it at work, build on it: all welcome. The one thing
+it rules out is shipping a competing product built from it. Two years after each release, that
+release becomes Apache 2.0.
+
+Geist (SIL OFL) and Ghostty (MIT) ship with their own notices.
