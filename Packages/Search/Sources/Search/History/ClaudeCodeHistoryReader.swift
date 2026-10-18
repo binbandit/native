@@ -40,6 +40,7 @@ public struct ClaudeCodeHistoryReader: SessionHistoryReader {
         var aiTitle: String?
         var customTitle: String?
         var summary: String?
+        var firstPrompt: String?
         var firstDate: Date?
         var lastDate: Date?
         let markers = [
@@ -64,6 +65,9 @@ public struct ClaudeCodeHistoryReader: SessionHistoryReader {
                 }
                 if type == "user" {
                     readUser(message["content"], date: date, into: &builder)
+                    if firstPrompt == nil, let prompt = builder.documents.first(where: { $0.role == .user }) {
+                        firstPrompt = String(SearchText.collapsingWhitespace(prompt.text).prefix(80))
+                    }
                 } else {
                     readAssistant(message["content"], date: date, into: &builder)
                 }
@@ -73,7 +77,7 @@ public struct ClaudeCodeHistoryReader: SessionHistoryReader {
         }
         guard let cwd, !builder.documents.isEmpty else { return nil }
         return HistorySession(
-            sessionID: sessionID, title: customTitle ?? aiTitle ?? summary, cwd: cwd, createdAt: firstDate,
+            sessionID: sessionID, title: customTitle ?? aiTitle ?? summary ?? firstPrompt, cwd: cwd, createdAt: firstDate,
             updatedAt: lastDate, documents: builder.documents)
     }
 

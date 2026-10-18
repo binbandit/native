@@ -73,7 +73,9 @@ public struct SearchSnippet: Hashable, Sendable, Codable {
             leading = start == text.startIndex ? "" : "…"
             trailing = end == text.endIndex ? "" : "…"
         }
-        let excerpt = leading + SearchText.collapsingWhitespace(window) + trailing
+        // Tool output that was itself JSON keeps its escapes; they read as line breaks.
+        let unescaped = window.replacingOccurrences(of: "\\n", with: " ")
+        let excerpt = leading + SearchText.collapsingWhitespace(unescaped) + trailing
         runs = Self.runs(of: excerpt, marking: words, prefixes: prefixes)
     }
 

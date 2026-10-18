@@ -54,6 +54,7 @@ final class TranscriptSearchCenter {
     @ObservationIgnored private var searchTask: Task<Void, Never>?
     @ObservationIgnored private var backfillTask: Task<Void, Never>?
     @ObservationIgnored private var lastBackfill: Date?
+    @ObservationIgnored private var lastRefresh = Date.distantPast
     @ObservationIgnored private var liveTasks: [SessionKey: Task<Void, Never>] = [:]
     @ObservationIgnored private var observers: [Task<Void, Never>] = []
 
@@ -316,6 +317,9 @@ final class TranscriptSearchCenter {
 
     private func update(indexing state: TranscriptSearchIndexing) async {
         indexing = state
+        // Progress comes per file; counts and results refresh at most once a second.
+        guard state == .idle || Date.now.timeIntervalSince(lastRefresh) > 1 else { return }
+        lastRefresh = .now
         await refreshStatistics()
         // New sessions land while the panel is open: show them without the user retyping.
         if isPresented {

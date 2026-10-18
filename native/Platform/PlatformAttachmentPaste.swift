@@ -51,6 +51,9 @@ private struct AttachmentPasteMonitor: NSViewRepresentable {
     final class Coordinator {
         var perform: (IncomingAttachments) -> Void
         private var monitor: Any?
+        #if DEBUG
+        private var debugObserver: (any NSObjectProtocol)?
+        #endif
 
         init(perform: @escaping (IncomingAttachments) -> Void) {
             self.perform = perform
@@ -65,11 +68,36 @@ private struct AttachmentPasteMonitor: NSViewRepresentable {
                     perform(pasted)
                     return nil
                 }
+                #if DEBUG
+                debugObserver = Self.observeDebugPaste { [weak self] in
+                    if let pasted = Self.attachments(on: Self.pasteboard) { self?.perform(pasted) }
+                }
+                #endif
             } else if !isEnabled, let monitor {
                 NSEvent.removeMonitor(monitor)
                 self.monitor = nil
+                #if DEBUG
+                debugObserver.map(DistributedNotificationCenter.default().removeObserver)
+                debugObserver = nil
+                #endif
             }
         }
+
+        #if DEBUG
+        /// What ⌘V does, on a distributed notification naming this process
+        /// (`dev.native.debug.pasteAttachment`, object: the pid), so an automated check can paste
+        /// without a key press reaching the app.
+        private static func observeDebugPaste(_ paste: @escaping @MainActor () -> Void) -> any NSObjectProtocol {
+            DistributedNotificationCenter.default().addObserver(
+                forName: Notification.Name("dev.native.debug.pasteAttachment"), object: nil, queue: .main
+            ) { notification in
+                guard notification.object as? String == String(ProcessInfo.processInfo.processIdentifier) else {
+                    return
+                }
+                MainActor.assumeIsolated { paste() }
+            }
+        }
+        #endif
 
         private static func isPaste(_ event: NSEvent) -> Bool {
             event.modifierFlags.intersection(.deviceIndependentFlagsMask) == .command
