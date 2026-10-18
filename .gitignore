@@ -21,3 +21,11 @@ research/**/*.webp
 research/**/*.gif
 research/**/*.mp4
 research/**/*.mov
+
+# Rust (Runtime/ScriptRuntime builds into ~/Library/Caches/Native, this is for local cargo runs)
+target/
+
+# Build output and caches
+build/
+.ci-cache/
+*.xcarchive
