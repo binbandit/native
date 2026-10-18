@@ -60,6 +60,8 @@ Cursor and Windsurf).
 
 ## Checking it
 
-Drive only your own instance, by pid, as AGENTS.md asks. An AX client reads the attributes above
-from the `AXTextArea` described "Message", writes `AXSelectedText`, then checks that the Send
-button and the `@` list appear. Accessibility Inspector shows the same tree by hand.
+`swift scripts/check-composer-ax.swift <pid>` runs the contract against your own running instance
+(open a session first). It reads every attribute above, writes `AXValue`, `AXSelectedTextRange` and
+`AXSelectedText` as a dictation tool would, and checks that each write reaches the draft: the Send
+button appears and goes away with it. It touches only that pid, sends nothing to the agent, and puts
+the draft back. Accessibility Inspector shows the same tree by hand.

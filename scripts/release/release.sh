@@ -129,9 +129,15 @@ log "$product $version (build $build_number) from ${sha:0:7}, $MODE"
 # MARK: - Archive and sign
 
 log "Archiving ($configuration)"
-# A secure timestamp is what notarization wants; ad hoc signatures can't carry one.
-sign_flags=""
-[ "$identity" = "-" ] || sign_flags="--timestamp${NATIVE_KEYCHAIN:+ --keychain $NATIVE_KEYCHAIN}"
+# A secure timestamp is what notarization wants; ad hoc signatures can't carry one. Ad hoc builds
+# also go without the hardened runtime: its library validation won't load the ad hoc signed Sparkle
+# framework into an ad hoc signed app. Developer ID builds share one team, so they keep it.
+sign_flags="" runtime=()
+if [ "$identity" = "-" ]; then
+    runtime=(ENABLE_HARDENED_RUNTIME=NO)
+else
+    sign_flags="--timestamp${NATIVE_KEYCHAIN:+ --keychain $NATIVE_KEYCHAIN}"
+fi
 run rm -rf "$archive" "$app"
 run mkdir -p "$output"
 run xcodebuild archive \
@@ -140,7 +146,7 @@ run xcodebuild archive \
     MARKETING_VERSION="$version" CURRENT_PROJECT_VERSION="$build_number" \
     NATIVE_CHANNEL_CONDITION="$channel_condition" NATIVE_APP_ICON_NAME="$app_icon" \
     CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="$identity" DEVELOPMENT_TEAM="$team" \
-    CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO OTHER_CODE_SIGN_FLAGS="$sign_flags" \
+    CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO OTHER_CODE_SIGN_FLAGS="$sign_flags" ${runtime[@]+"${runtime[@]}"} \
     ${settings[@]+"${settings[@]}"} -quiet
 run ditto "$archive/Products/Applications/$product.app" "$app"
 run codesign --verify --deep --strict --verbose=2 "$app"
@@ -185,6 +191,8 @@ if [ "$make_dmg" = 1 ]; then
     run mkdir -p "$staging"
     run ditto "$app" "$staging/$product.app"
     run ln -s /Applications "$staging/Applications"
+    # The app carries LICENSE.md in its resources; the disk image shows it beside the app too.
+    run cp LICENSE.md "$staging/LICENSE.md"
     run hdiutil create -quiet -volname "$product" -srcfolder "$staging" -ov -format ULFO "$output/$dmg_name"
     run rm -rf "$staging"
     [ "$identity" = "-" ] || run codesign --sign "$identity" --timestamp ${keychain_args[@]+"${keychain_args[@]}"} "$output/$dmg_name"
