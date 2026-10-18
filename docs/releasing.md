@@ -12,9 +12,7 @@ in `docs/decisions.md` ("Releases on GitHub", "Sparkle for updates", "Nightly be
 | `scripts/release/` | `release.sh` (archive → notarize → package → appcast → publish), `host.sh` (standalone host and its feed), `check.sh` (compile Release and Nightly), `release-notes.sh`, `ci-signing.sh` |
 | `.github/workflows/` | `check.yml` (every pull request), `nightly.yml` (every night), `release.yml` (on a `v*` tag) |
 
-## Channels
-
-### Sentry crash symbols
+## Sentry crash symbols
 
 The Sentry project is [FoxyCorps / native](https://foxycorps.sentry.io/settings/projects/native/).
 The public ingestion DSN lives in `NATIVE_SENTRY_DSN` (`Config/Shared.xcconfig`); development builds
@@ -31,7 +29,7 @@ uploading. `bash scripts/release/sentry.sh <archive/dSYMs> --no-upload` checks s
 If symbols fail to upload, publication stops; resolve the token, network or missing-dSYMs error and
 rerun the release. Release and Nightly configurations already generate dSYMs.
 
-## Channel configuration
+## Channels
 
 | | Native (stable) | Native (beta) | Native Nightly |
 | --- | --- | --- | --- |
