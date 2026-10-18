@@ -111,6 +111,11 @@ struct NativeApp: App {
                         guard let gitHub else { return }
                         try await GitHubGitWiring.openAsTask(pullRequest, app: model, git: git, gitHub: gitHub)
                     }
+                    gitHub.askAgent = { [model, git, weak gitHub] prompt, destination in
+                        guard let gitHub else { return }
+                        try await GitHubAgentWiring.ask(prompt, destination: destination, app: model, git: git, gitHub: gitHub)
+                    }
+                    gitHub.hasCurrentTask = { [model] in GitHubAgentWiring.currentTask(app: model) != nil }
                     await gitHub.keepFresh()
                 }
                 .task(id: model.plugins.enabledPlugins.map(\.manifest)) {

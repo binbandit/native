@@ -47,11 +47,12 @@ enum GitHubGitWiring {
     }
 
     /// Checks a pull request out in a fresh worktree of the project it belongs to and starts a task
-    /// there with the default agent.
+    /// there with the default agent, returning it.
+    @discardableResult
     static func openAsTask(
         _ pullRequest: PullRequestSummary, app: AppModel, git: GitStore, gitHub: GitHubModel
     )
-        async throws
+        async throws -> SessionModel
     {
         guard let project = await project(for: pullRequest.repository, app: app, gitHub: gitHub) else {
             throw TaskError.noProject(repository: pullRequest.repository)
@@ -61,7 +62,7 @@ enum GitHubGitWiring {
             in: project.url, title: "pr \(pullRequest.number) \(pullRequest.title)", detached: true)
         let localBranch = await localBranchName(for: pullRequest, in: project.url, git: git)
         try await gitHub.cli().checkout(.number(pullRequest.number), in: worktree, localBranch: localBranch)
-        _ = try await app.startTaskSession(agent: agent, cwd: worktree)
+        return try await app.startTaskSession(agent: agent, cwd: worktree)
     }
 
     // MARK: - Helpers

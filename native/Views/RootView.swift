@@ -14,6 +14,7 @@ struct RootView: View {
     @State private var sidebarWidth = RootSidebarWidth()
     @State private var undoToast: UndoToastItem?
     @State private var showsPullRequests = false
+    @Environment(GitHubModel.self) private var gitHub
     @Environment(AutomationCenter.self) private var automation
     /// Workflows or Automations, when one of them has the detail column.
     @State private var automationPage: AutomationPage?
@@ -52,6 +53,10 @@ struct RootView: View {
                     automationPage = nil
                     expeditions.isPageShown = false
                 }
+            }
+            // Opening a pull request (from a badge, a link or the list) shows its page there.
+            .onChange(of: gitHub.presentedPullRequest) { _, reference in
+                if reference != nil { showsPullRequests = true }
             }
             .onChange(of: automationPage) { _, page in
                 if page != nil {

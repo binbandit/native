@@ -2,6 +2,7 @@ import Foundation
 import NativeHostProtocol
 import NativeLink
 import Observation
+import os
 
 /// Every host this phone is paired with, each with its own connection, plus the add-host flow a
 /// pairing link opens. Hosts are separate: unpairing one never touches another.
@@ -14,6 +15,8 @@ final class CompanionStore {
     var pendingInvite: PairingInvite?
     var isAddingHost = false
     var problem: String?
+
+    private static let logger = Logger(subsystem: "Native.Companion", category: "Hosts")
 
     @ObservationIgnored private let store: any PairedHostStore
     @ObservationIgnored private let browser = LinkBrowser()
@@ -48,8 +51,10 @@ final class CompanionStore {
         do {
             try store.save(pairedHost)
         } catch {
+            Self.logger.error("Couldn't save the pairing: \(error.localizedDescription, privacy: .public)")
             problem = "Paired, but couldn't save it: \(error.localizedDescription)"
         }
+        Self.logger.info("Paired with \(pairedHost.machineName, privacy: .public)")
         if let existing = host(pairedHost.hostID) {
             existing.stop()
             hosts.removeAll { $0.id == pairedHost.hostID }

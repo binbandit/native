@@ -21,22 +21,19 @@ extension AppModel {
     /// The session once it's open and its history has loaded, or nil if that doesn't happen within
     /// `timeout` (the agent can't start, say, which the session's own view explains).
     func loadedSession(_ key: SessionKey, timeout: Duration = .seconds(30)) async -> SessionModel? {
-        await withTaskGroup(of: SessionModel?.self) { group in
-            group.addTask { @MainActor in
-                for await phase in Observations({ self.sessions.session(key)?.phase }) {
-                    if let phase, phase != .loading {
-                        return self.sessions.session(key)
-                    }
+        let waiter = Task {
+            for await phase in Observations({ self.sessions.session(key)?.phase }) {
+                if let phase, phase != .loading {
+                    return self.sessions.session(key)
                 }
-                return nil
             }
-            group.addTask {
-                try? await Task.sleep(for: timeout)
-                return nil
-            }
-            let session = await group.next() ?? nil
-            group.cancelAll()
-            return session
+            return nil
         }
+        let timer = Task {
+            try? await Task.sleep(for: timeout)
+            waiter.cancel()
+        }
+        defer { timer.cancel() }
+        return await waiter.value
     }
 }

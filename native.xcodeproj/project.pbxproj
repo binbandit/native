@@ -23,6 +23,7 @@
 		00000000000000000A070020 /* NativeAutomation in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000000A070010 /* NativeAutomation */; };
 		00000000000000000B5C1020 /* Skills in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000000B5C1010 /* Skills */; };
 		000000000000000005EA2C20 /* Search in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000005EA2C10 /* Search */; };
+		0000000000000000C0DC1020 /* NativeCommands in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000C0DC1010 /* NativeCommands */; };
 		0000000000000000901C0020 /* NativePolicy in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000901C0010 /* NativePolicy */; };
 		00000000000000007E1E0020 /* NativeTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000007E1E0010 /* NativeTelemetry */; };
 		00000000000000000E0ED020 /* NativeExpeditions in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000000E0ED010 /* NativeExpeditions */; };
@@ -110,6 +111,7 @@
 				54227E023083ADA900D7771F /* MCPClient in Frameworks */,
 				00000000000000000B5C1020 /* Skills in Frameworks */,
 				000000000000000005EA2C20 /* Search in Frameworks */,
+				0000000000000000C0DC1020 /* NativeCommands in Frameworks */,
 				0000000000000000901C0020 /* NativePolicy in Frameworks */,
 				00000000000000007E1E0020 /* NativeTelemetry in Frameworks */,
 				000000000000000000000320 /* ACP in Frameworks */,
@@ -229,6 +231,7 @@
 				00000000000000000AC10010 /* MCPClient */,
 				00000000000000000B5C1010 /* Skills */,
 				000000000000000005EA2C10 /* Search */,
+				0000000000000000C0DC1010 /* NativeCommands */,
 				0000000000000000901C0010 /* NativePolicy */,
 				00000000000000007E1E0010 /* NativeTelemetry */,
 			);
@@ -280,6 +283,7 @@
 				00000000000000000AC10000 /* XCLocalSwiftPackageReference "Packages/MCPClient" */,
 				00000000000000000B5C1000 /* XCLocalSwiftPackageReference "Packages/Skills" */,
 				000000000000000005EA2C00 /* XCLocalSwiftPackageReference "Packages/Search" */,
+				0000000000000000C0DC1000 /* XCLocalSwiftPackageReference "Packages/NativeCommands" */,
 				0000000000000000901C0000 /* XCLocalSwiftPackageReference "Packages/NativePolicy" */,
 				00000000000000007E1E0000 /* XCLocalSwiftPackageReference "Packages/Telemetry" */,
 			);
@@ -809,6 +813,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Skills;
 		};
+		0000000000000000C0DC1000 /* XCLocalSwiftPackageReference "Packages/NativeCommands" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/NativeCommands;
+		};
 		000000000000000005EA2C00 /* XCLocalSwiftPackageReference "Packages/Search" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Search;
@@ -920,6 +928,10 @@
 		00000000000000000B5C1010 /* Skills */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = Skills;
+		};
+		0000000000000000C0DC1010 /* NativeCommands */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = NativeCommands;
 		};
 		000000000000000005EA2C10 /* Search */ = {
 			isa = XCSwiftPackageProductDependency;
