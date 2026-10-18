@@ -86,6 +86,8 @@ struct PullRequestFileSection: View {
         if let patch = model.patches[file.path] {
             if let reason = patch.missingPatchReason {
                 missing(reason)
+            } else if model.isLarge(file.path), !model.loadedLargeDiffs.contains(file.path) {
+                largeDiff
             } else {
                 PullRequestPatchView(model: model, path: file.path, hunks: model.hunks[file.path] ?? [])
             }
@@ -121,6 +123,19 @@ struct PullRequestFileSection: View {
                 Button("Open on GitHub") { gitHub.openExternally(model.reference.url.appending(path: "files")) }
                     .buttonStyle(.ds(.secondary))
             }
+        }
+        .padding(DS.Space.lg)
+    }
+
+    /// Big and minified diffs wait for a click, as on GitHub, so they don't slow the list.
+    private var largeDiff: some View {
+        HStack(spacing: DS.Space.md) {
+            Text("Large diff: \(model.lineCount(file.path)) lines. It isn't shown until you load it.")
+                .font(.dsBody)
+                .foregroundStyle(.dsTextSecondary)
+            Spacer(minLength: DS.Space.md)
+            Button("Load Diff") { model.loadedLargeDiffs.insert(file.path) }
+                .buttonStyle(.ds(.secondary))
         }
         .padding(DS.Space.lg)
     }

@@ -33,7 +33,8 @@ struct PullRequestDiffLineMenu: View {
         if let anchor, model.canAskAgent {
             Divider()
             let isInDraft = model.draftLines(in: path, hunk: hunk).contains(line)
-            PullRequestAskAgentButtons(model: model, anchor: isInDraft ? (model.draft?.anchor ?? anchor) : anchor, thread: nil)
+            PullRequestAskAgentButtons(
+                model: model, anchor: isInDraft ? (model.draft?.anchor ?? anchor) : anchor, thread: nil)
         }
         Divider()
         Button("Copy Line", systemImage: "doc.on.doc") { model.gitHub?.copy(diffLine.text) }

@@ -1,0 +1,83 @@
+{
+  "collection": "Australian artwork options",
+  "editions": [
+    {
+      "id": "australia-day",
+      "title": "Australia · Southern Cross",
+      "method": "Original SVG + Apple Icon Composer",
+      "folder": "australia-day",
+      "channels": [
+        "stable",
+        "beta",
+        "nightly",
+        "dev"
+      ]
+    },
+    {
+      "id": "australia-day-wattle",
+      "title": "Australia · Wattle",
+      "method": "Built-in image generation + Apple Icon Composer",
+      "folder": "australia-day-wattle",
+      "channels": [
+        "stable",
+        "beta",
+        "nightly",
+        "dev"
+      ]
+    },
+    {
+      "id": "australia-day-reflection",
+      "title": "Australia · Reflection",
+      "method": "Built-in image generation + Apple Icon Composer",
+      "folder": "australia-day-reflection",
+      "channels": [
+        "stable",
+        "beta",
+        "nightly",
+        "dev"
+      ]
+    },
+    {
+      "id": "australia-day-boxing-kangaroo",
+      "title": "Australia · Boxing Kangaroo",
+      "method": "Built-in image generation + Apple Icon Composer",
+      "folder": "australia-day-boxing-kangaroo",
+      "channels": [
+        "stable",
+        "beta",
+        "nightly",
+        "dev"
+      ]
+    },
+    {
+      "id": "australia-day-ochre-dots",
+      "title": "Ochre Dots · Study",
+      "method": "Original SVG + Apple Icon Composer",
+      "folder": "australia-day-ochre-dots",
+      "channels": [
+        "stable",
+        "beta",
+        "nightly",
+        "dev"
+      ]
+    }
+  ],
+  "star_construction": "Southern Cross: four larger seven-pointed stars and the smaller five-pointed Epsilon, with the flag construction-sheet arrangement.",
+  "authorship": "Ochre Dots is an AI-assisted original abstract vector study. It is not presented as Aboriginal or Torres Strait Islander artwork and does not reproduce cultural symbols or stories.",
+  "artist_edition": "An Aboriginal or Torres Strait Islander artist edition should be a separate paid collaboration, with agreed attribution, permissions and use.",
+  "sources": [
+    {
+      "title": "Australian flag construction sheet",
+      "url": "https://www.pmc.gov.au/sites/default/files/2023-01/flag-infosheet-recreate-flag.pdf"
+    },
+    {
+      "title": "Australian national colours",
+      "url": "https://www.pmc.gov.au/honours-and-symbols/australian-national-symbols/australian-national-colours"
+    },
+    {
+      "title": "First Nations cultural and intellectual property protocols",
+      "url": "https://creative.gov.au/first-nations-arts/protocols-for-using-first-nations-cultural-and-intellectual-property-in-the-arts"
+    }
+  ],
+  "exports": "Per edition: four editable .icon sources; 1024×1024 RGBA light/dark PNGs per channel; Clear and Tinted previews per channel."
+}

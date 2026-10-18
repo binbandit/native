@@ -31,7 +31,8 @@ struct PullRequestDiffBlockText {
             }
             kinds.append(line.kind)
             gutter += Self.gutter(line, width: numberWidth)
-            code += Self.code(line, highlighted: highlighted.flatMap { $0.indices.contains(index) ? $0[index] : nil }, colors: colors)
+            code += Self.code(
+                line, highlighted: highlighted.flatMap { $0.indices.contains(index) ? $0[index] : nil }, colors: colors)
         }
         self.gutter = gutter
         self.code = code
@@ -59,7 +60,9 @@ struct PullRequestDiffBlockText {
         return numbers + marker
     }
 
-    private static func code(_ line: DiffHunk.Line, highlighted: [CodeSegment]?, colors: DSCodeColors) -> AttributedString {
+    private static func code(
+        _ line: DiffHunk.Line, highlighted: [CodeSegment]?, colors: DSCodeColors
+    ) -> AttributedString {
         if line.kind == .noNewline {
             var text = AttributedString(line.text)
             text.foregroundColor = .dsTextTertiary

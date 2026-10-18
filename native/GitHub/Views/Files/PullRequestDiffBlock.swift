@@ -22,7 +22,9 @@ struct PullRequestDiffBlock: View {
         HStack(alignment: .top, spacing: 0) {
             PullRequestDiffBlockGutter(text: text, key: textKey)
                 .equatable()
-                .onGeometryChange(for: CGFloat.self) { $0.size.height } action: { height in
+                .onGeometryChange(for: CGFloat.self) {
+                    $0.size.height
+                } action: { height in
                     rowHeight = height / CGFloat(max(text.kinds.count, 1))
                 }
                 .overlay(alignment: .topTrailing) { plus }
