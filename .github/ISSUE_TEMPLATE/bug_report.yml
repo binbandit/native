@@ -1,0 +1,47 @@
+name: Bug report
+description: Something in Native is broken or looks wrong.
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+    validations: { required: true }
+  - type: textarea
+    id: expected
+    attributes:
+      label: What you expected
+    validations: { required: true }
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: "1. ...\n2. ..."
+    validations: { required: true }
+  - type: input
+    id: version
+    attributes:
+      label: Native version
+      description: Settings > Updates, for example 1.4.0 (123).
+    validations: { required: true }
+  - type: dropdown
+    id: channel
+    attributes:
+      label: Channel
+      options: [Stable, Beta, Nightly, Built from source]
+    validations: { required: true }
+  - type: input
+    id: macos
+    attributes:
+      label: macOS version
+    validations: { required: true }
+  - type: input
+    id: agent
+    attributes:
+      label: Agent and adapter version
+      description: Leave empty if no agent is involved.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and screenshots
+      render: shell

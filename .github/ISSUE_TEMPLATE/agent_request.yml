@@ -1,0 +1,34 @@
+name: Agent integration request
+description: Add support for an agent.
+labels: [agent]
+title: "Add support for "
+body:
+  - type: input
+    id: agent
+    attributes:
+      label: Agent
+      description: Name and link.
+    validations: { required: true }
+  - type: dropdown
+    id: acp
+    attributes:
+      label: ACP support
+      options: [Native ACP, Via an adapter, No ACP support, Not sure]
+    validations: { required: true }
+  - type: textarea
+    id: install
+    attributes:
+      label: How it is installed
+      description: Package, binary or adapter command.
+    validations: { required: true }
+  - type: textarea
+    id: auth
+    attributes:
+      label: How it authenticates
+      description: Login command, API key, OAuth.
+    validations: { required: true }
+  - type: textarea
+    id: notes
+    attributes:
+      label: Anything else
+      description: Models, modes, slash commands or quirks worth knowing.

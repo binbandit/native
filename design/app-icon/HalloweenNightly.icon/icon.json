@@ -5,13 +5,13 @@
   "fill-specializations": [
     {
       "value": {
-        "solid": "srgb:0.84706,0.80392,0.92157,1.00000"
+        "automatic-gradient": "srgb:0.84706,0.80392,0.92157,1.00000"
       }
     },
     {
       "appearance": "dark",
       "value": {
-        "solid": "srgb:0.08235,0.07451,0.14118,1.00000"
+        "automatic-gradient": "srgb:0.08235,0.07451,0.14118,1.00000"
       }
     },
     {
@@ -32,13 +32,73 @@
           "fill-specializations": [
             {
               "value": {
-                "solid": "srgb:0.21569,0.15686,0.26275,1.00000"
+                "solid": "srgb:1.00000,1.00000,1.00000,0.35000"
               }
             },
             {
               "appearance": "dark",
               "value": {
-                "solid": "srgb:0.98431,0.92941,0.84706,1.00000"
+                "solid": "srgb:1.00000,1.00000,1.00000,0.35000"
+              }
+            },
+            {
+              "appearance": "tinted",
+              "value": "automatic"
+            }
+          ],
+          "glass-specializations": [
+            {
+              "value": false
+            },
+            {
+              "appearance": "tinted",
+              "value": true
+            }
+          ],
+          "image-name": "edge-light.svg",
+          "name": "Soft edge light"
+        },
+        {
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "srgb:0.14118,0.12549,0.13333,0.14000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "srgb:0.18431,0.13333,0.22745,0.14000"
+              }
+            },
+            {
+              "appearance": "tinted",
+              "value": "automatic"
+            }
+          ],
+          "glass-specializations": [
+            {
+              "value": false
+            },
+            {
+              "appearance": "tinted",
+              "value": true
+            }
+          ],
+          "image-name": "folds.svg",
+          "name": "Fabric folds"
+        },
+        {
+          "fill-specializations": [
+            {
+              "value": {
+                "automatic-gradient": "srgb:0.21569,0.15686,0.26275,1.00000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "automatic-gradient": "srgb:0.98431,0.92941,0.84706,1.00000"
               }
             },
             {
@@ -62,13 +122,13 @@
           "fill-specializations": [
             {
               "value": {
-                "solid": "srgb:0.49412,0.36078,0.61176,1.00000"
+                "automatic-gradient": "srgb:0.49412,0.36078,0.61176,1.00000"
               }
             },
             {
               "appearance": "dark",
               "value": {
-                "solid": "srgb:0.74118,0.65490,0.93725,1.00000"
+                "automatic-gradient": "srgb:0.74118,0.65490,0.93725,1.00000"
               }
             },
             {
@@ -87,42 +147,62 @@
           ],
           "image-name": "lower-fold.svg",
           "name": "Haunted lower fold"
+        }
+      ],
+      "lighting": "individual",
+      "name": "Haunted interlock with soft lighting",
+      "refractivity-specializations": [
+        {
+          "appearance": "tinted",
+          "value": {
+            "enabled": true,
+            "depth": 0.3,
+            "strength": 0.75
+          }
+        }
+      ],
+      "shadow": {
+        "kind": "neutral",
+        "opacity": 0.22
+      },
+      "translucency-specializations": [
+        {
+          "value": {
+            "enabled": false,
+            "value": 0
+          }
         },
+        {
+          "appearance": "tinted",
+          "value": {
+            "enabled": true,
+            "value": 0.25
+          }
+        }
+      ],
+      "specular-specializations": [
+        {
+          "value": false
+        },
+        {
+          "appearance": "tinted",
+          "value": true
+        }
+      ]
+    },
+    {
+      "blur-material-specializations": [
+        {
+          "appearance": "tinted",
+          "value": 0.25
+        }
+      ],
+      "layers": [
         {
           "fill-specializations": [
             {
               "value": {
-                "solid": "srgb:0.61569,0.52157,0.61569,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "solid": "srgb:0.55686,0.46667,0.56078,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
-          "glass-specializations": [
-            {
-              "value": false
-            },
-            {
-              "appearance": "tinted",
-              "value": true
-            }
-          ],
-          "image-name": "stars.svg",
-          "name": "Stars"
-        },
-        {
-          "fill-specializations": [
-            {
-              "value": {
-                "solid": "srgb:0.53333,0.43922,0.54118,1.00000"
+                "solid": "srgb:0.46667,0.32549,0.40392,1.00000"
               }
             },
             {
@@ -145,20 +225,50 @@
               "value": true
             }
           ],
-          "image-name": "lunar-bats.svg",
-          "name": "Bats over harvest moon"
+          "image-name": "moon-bats.svg",
+          "name": "Bats crossing the harvest moon"
         },
         {
           "fill-specializations": [
             {
               "value": {
-                "solid": "srgb:0.84706,0.61176,0.38431,1.00000"
+                "solid": "srgb:0.61176,0.38039,0.23922,0.27000"
               }
             },
             {
               "appearance": "dark",
               "value": {
-                "solid": "srgb:0.89804,0.54902,0.32549,1.00000"
+                "solid": "srgb:0.63137,0.36471,0.28627,0.27000"
+              }
+            },
+            {
+              "appearance": "tinted",
+              "value": "automatic"
+            }
+          ],
+          "glass-specializations": [
+            {
+              "value": false
+            },
+            {
+              "appearance": "tinted",
+              "value": true
+            }
+          ],
+          "image-name": "moon-detail.svg",
+          "name": "Soft lunar detail"
+        },
+        {
+          "fill-specializations": [
+            {
+              "value": {
+                "automatic-gradient": "srgb:0.86667,0.63922,0.42353,1.00000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "automatic-gradient": "srgb:0.90588,0.60392,0.40000,1.00000"
               }
             },
             {
@@ -177,10 +287,70 @@
           ],
           "image-name": "moon.svg",
           "name": "Harvest moon"
+        },
+        {
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "srgb:0.38824,0.31765,0.44314,1.00000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "srgb:1.00000,0.94118,0.82745,1.00000"
+              }
+            },
+            {
+              "appearance": "tinted",
+              "value": "automatic"
+            }
+          ],
+          "glass-specializations": [
+            {
+              "value": false
+            },
+            {
+              "appearance": "tinted",
+              "value": true
+            }
+          ],
+          "image-name": "bright-stars.svg",
+          "name": "Bright four-point stars"
+        },
+        {
+          "fill-specializations": [
+            {
+              "value": {
+                "solid": "srgb:0.55294,0.44314,0.60392,1.00000"
+              }
+            },
+            {
+              "appearance": "dark",
+              "value": {
+                "solid": "srgb:0.75294,0.70588,0.87059,1.00000"
+              }
+            },
+            {
+              "appearance": "tinted",
+              "value": "automatic"
+            }
+          ],
+          "glass-specializations": [
+            {
+              "value": false
+            },
+            {
+              "appearance": "tinted",
+              "value": true
+            }
+          ],
+          "image-name": "stars.svg",
+          "name": "Fine stars"
         }
       ],
       "lighting": "individual",
-      "name": "Haunted interlock",
+      "name": "Halloween atmosphere",
       "refractivity-specializations": [
         {
           "appearance": "tinted",
