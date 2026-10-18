@@ -53,7 +53,7 @@ public enum CelebrationPolicy {
         let order = preferences.order(in: events)
         var candidates: [Candidate] = []
         var skipped: [CelebrationOccurrence] = []
-        for event in events {
+        for event in events.map(preferences.styled) {
             guard let surfaces = surfaces(of: event, preferences: preferences, canApplyAppIcon: canApplyAppIcon) else {
                 continue
             }
@@ -79,7 +79,8 @@ public enum CelebrationPolicy {
         }
         return CelebrationResolution(
             day: day, active: active, runnersUp: candidates.dropFirst().map(\.occurrence), skipped: skipped,
-            nextChange: nextChange(after: day, events: events, preferences: preferences, canApplyAppIcon: canApplyAppIcon)
+            nextChange: nextChange(
+                after: day, events: events, preferences: preferences, canApplyAppIcon: canApplyAppIcon)
         )
     }
 
@@ -159,7 +160,7 @@ public enum CelebrationPolicy {
             return nil
         }
         return
-            events
+            events.map(preferences.styled)
             .filter { surfaces(of: $0, preferences: preferences, canApplyAppIcon: canApplyAppIcon) != nil }
             .flatMap { $0.occurrences(window: preferences.selection(for: $0.id).window, overlapping: span) }
             .flatMap(\.edges)

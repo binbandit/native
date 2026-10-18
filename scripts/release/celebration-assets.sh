@@ -19,7 +19,7 @@ set -euo pipefail
 
 root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
 art="$root/design/app-icon/celebrations"
-PENDING=(dia-de-muertos dia-de-muertos-sugar-skull personal-celebration)
+PENDING=(personal-celebration)
 CHANNELS=(stable beta nightly dev)
 
 editions() {

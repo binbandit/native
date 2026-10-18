@@ -102,6 +102,7 @@ struct PullRequestReviewThreadView: View {
                         }
                     }
                     .buttonStyle(.ds(.primary))
+                    .keyboardShortcut(.return, modifiers: .command)
                 }
             } else {
                 PullRequestMarkdownBody(source: comment.body, original: thread.anchor.map(model.lineText(for:)))

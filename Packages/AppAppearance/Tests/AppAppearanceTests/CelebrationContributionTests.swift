@@ -205,17 +205,23 @@ struct CelebrationContributionTests {
         // their icons, the others are coming soon.
         let catalogue = catalog.celebrations.dropFirst(2)
         #expect(catalogue.allSatisfy { !$0.isApplicable })
-        #expect(catalog.celebration(CelebrationID("native.kwanzaa"))?.nextOccurrence(window: nil, from: try F.day("2026-12-30"))?.core.last == (try F.day("2027-01-01")))
-        #expect(catalog.celebration(CelebrationID("native.thanksgiving-us"))?.canBeChosen(on: try F.day("2026-10-18")) == true)
+        #expect(
+            catalog.celebration(CelebrationID("native.kwanzaa"))?.nextOccurrence(
+                window: nil, from: try F.day("2026-12-30"))?.core.last == (try F.day("2027-01-01")))
+        #expect(
+            catalog.celebration(CelebrationID("native.thanksgiving-us"))?.canBeChosen(on: try F.day("2026-10-18"))
+                == true)
         #expect(catalog.celebration(CelebrationID("native.diwali"))?.canBeChosen(on: try F.day("2026-10-18")) == false)
-        #expect(catalog.celebration(CelebrationID("native.christmas-julian"))?.iconSet?.id == IconSetID("native.christmas"))
+        #expect(
+            catalog.celebration(CelebrationID("native.christmas-julian"))?.iconSet?.id == IconSetID("native.christmas"))
         #expect(catalog.celebrations.contains { $0.contribution.matches("deepavali") })
         let halloween = try #require(catalog.celebration(F.halloween))
         #expect(halloween.appIcon == .ready)
         #expect(halloween.icon(for: .development, isDark: true) == .asset("AppIcon-halloween-dev-dark"))
         #expect(halloween.icon(for: .stable, isDark: false) == .asset("AppIcon-halloween-stable-light"))
         let muertos = try #require(catalog.celebration(F.muertos))
-        #expect(muertos.appIcon == .forthcoming)
+        #expect(muertos.appIcon == .downloadable(.notDownloaded))
+        #expect(muertos.styles.map(\.id.rawValue) == ["native.dia-de-muertos", "native.dia-de-muertos-sugar-skull"])
         #expect(muertos.homeLook == .mark(FirstPartyCelebrations.HomeMark.diaDeMuertos))
     }
 

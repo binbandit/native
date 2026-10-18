@@ -78,6 +78,16 @@ sidebar, the projects and the Settings pages, recently used ones first. With a t
 | ⌘Return in Smart Commit | Commit the planned groups |
 | ⌘Return in the setup-script editor | Save the script new worktrees run (Settings ▸ Git) |
 
+## Pull request page
+
+| Keys | Action |
+| --- | --- |
+| ⌘Return in a comment box | Send it: comment, reply, add to the review, or save an edit |
+| Escape in a new line comment | Discard it |
+| Shift-click a line number | Widen the line comment to a range (on iPad: "Extend Comment to Here" in the line's menu) |
+| Return in the review sheet | Submit the review (merging always takes a click) |
+| Escape in the review or merge sheet | Close it without submitting |
+
 ## Slash commands
 
 | Keys | Action |

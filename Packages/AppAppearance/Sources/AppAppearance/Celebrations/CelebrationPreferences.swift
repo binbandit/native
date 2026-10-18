@@ -9,13 +9,18 @@ public struct CelebrationPreferences: Codable, Hashable, Sendable {
         public var home: Bool
         /// The display window; nil follows the celebration's default.
         public var window: CelebrationWindow.ID?
+        /// The style (icon set); nil is the celebration's default.
+        public var style: IconSetID?
 
-        public init(isEnabled: Bool = false, appIcon: Bool = true, home: Bool = true, window: CelebrationWindow.ID? = nil)
-        {
+        public init(
+            isEnabled: Bool = false, appIcon: Bool = true, home: Bool = true, window: CelebrationWindow.ID? = nil,
+            style: IconSetID? = nil
+        ) {
             self.isEnabled = isEnabled
             self.appIcon = appIcon
             self.home = home
             self.window = window
+            self.style = style
         }
     }
 
@@ -48,6 +53,11 @@ public struct CelebrationPreferences: Codable, Hashable, Sendable {
 
     public func selection(for id: CelebrationID) -> Selection {
         selections[id] ?? Selection()
+    }
+
+    /// The celebration in the style this user picked.
+    public func styled(_ event: CelebrationEvent) -> CelebrationEvent {
+        event.with(style: selection(for: event.id).style)
     }
 
     // MARK: - Migration

@@ -50,7 +50,9 @@ public enum CelebrationRule: Hashable, Sendable {
                 return CivilDayRange(first: first, last: last)
             }
         case .nthWeekday(let month, let weekday, let ordinal, let length):
-            ranges = years.compactMap { Self.nthWeekday(ordinal, weekday, of: month, in: $0).map { Self.days($0, length) } }
+            ranges = years.compactMap {
+                Self.nthWeekday(ordinal, weekday, of: month, in: $0).map { Self.days($0, length) }
+            }
         case .dayOfYear(let day, let length):
             ranges = years.compactMap { year in
                 guard let january = CivilDate(year: year, month: 1, day: 1) else { return nil }

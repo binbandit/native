@@ -107,6 +107,26 @@ private struct CelebrationOptions: View {
                 "Home", isIcon: false, preview: AnyView(CelebrationHomePreview(look: event.homeLook, channel: channel)),
                 status: event.home,
                 isOn: Binding(get: { selection.home }, set: { center.setHome($0, for: event.id) }))
+            if event.styles.count > 1, let current = event.iconSet {
+                VStack(alignment: .leading, spacing: DS.Space.xs) {
+                    HStack(spacing: DS.Space.xl) {
+                        Text("Style")
+                            .settingsText(.body)
+                            .foregroundStyle(.dsTextSecondary)
+                        Spacer(minLength: 0)
+                        SettingsSelect(
+                            label: "\(event.contribution.title.resolved()) style",
+                            selection: Binding(get: { current.id }, set: { center.setStyle($0, for: event.id) }),
+                            options: event.styles.map { .init(value: $0.id, title: $0.name.resolved()) },
+                            width: CelebrationMetrics.windowSelectWidth)
+                    }
+                    if let caption = current.contribution.caption {
+                        Text(caption.resolved())
+                            .settingsText(.caption)
+                            .foregroundStyle(.dsTextSecondary)
+                    }
+                }
+            }
             if !event.display.windows.isEmpty {
                 HStack(spacing: DS.Space.xl) {
                     Text("Show for")

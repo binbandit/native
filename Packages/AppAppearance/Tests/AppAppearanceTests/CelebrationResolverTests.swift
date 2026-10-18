@@ -21,7 +21,8 @@ struct CelebrationResolverTests {
 
     @Test func mardiGrasIsFortySevenDaysBeforeEaster() throws {
         let span = try #require(CivilDayRange(first: try F.day("2027-01-01"), last: try F.day("2027-12-31")))
-        let ranges = try #require(CelebrationRule.easter(.western, offset: -47, length: 1).coreRanges(overlapping: span))
+        let ranges = try #require(
+            CelebrationRule.easter(.western, offset: -47, length: 1).coreRanges(overlapping: span))
         #expect(ranges.map(\.first) == [try F.day("2027-02-09")])
     }
 
@@ -44,7 +45,10 @@ struct CelebrationResolverTests {
     @Test func programmersDayIsDay256() throws {
         let rule = CelebrationRule.dayOfYear(day: 256, length: 1)
         let span = try #require(CivilDayRange(first: try F.day("2026-01-01"), last: try F.day("2028-12-31")))
-        #expect(try #require(rule.coreRanges(overlapping: span)).map(\.first.description) == ["2026-09-13", "2027-09-13", "2028-09-12"])
+        #expect(
+            try #require(rule.coreRanges(overlapping: span)).map(\.first.description) == [
+                "2026-09-13", "2027-09-13", "2028-09-12",
+            ])
     }
 
     @Test func tablesExpireAfterTheirLastYear() throws {
@@ -55,7 +59,8 @@ struct CelebrationResolverTests {
         let event = try #require(
             F.catalog([CelebrationContribution(id: CelebrationID("test.table"), title: "Table", calendar: calendar)])
                 .celebrations.first)
-        #expect(event.nextOccurrence(window: nil, from: try F.day("2027-06-01"))?.core.last == (try F.day("2028-01-01")))
+        #expect(
+            event.nextOccurrence(window: nil, from: try F.day("2027-06-01"))?.core.last == (try F.day("2028-01-01")))
         #expect(event.dateStatus(on: try F.day("2027-06-01")) == .resolvable)
         #expect(event.dateStatus(on: try F.day("2028-06-01")) == .coverageEnded(lastYear: 2027))
         #expect(event.nextOccurrence(window: nil, from: try F.day("2028-06-01")) == nil)
@@ -71,11 +76,13 @@ struct CelebrationResolverTests {
         ] {
             let calendar = try JSONDecoder().decode(CelebrationCalendar.self, from: Data(json.utf8))
             #expect(calendar.rule.isResolvable)
-            #expect(try JSONDecoder().decode(CelebrationCalendar.self, from: JSONEncoder().encode(calendar)) == calendar)
+            #expect(
+                try JSONDecoder().decode(CelebrationCalendar.self, from: JSONEncoder().encode(calendar)) == calendar)
         }
         #expect(throws: DecodingError.self) {
             try JSONDecoder().decode(
-                CelebrationCalendar.self, from: Data(#"{"kind": "nth-weekday", "month": 1, "weekday": "funday", "ordinal": 1}"#.utf8))
+                CelebrationCalendar.self,
+                from: Data(#"{"kind": "nth-weekday", "month": 1, "weekday": "funday", "ordinal": 1}"#.utf8))
         }
     }
 }

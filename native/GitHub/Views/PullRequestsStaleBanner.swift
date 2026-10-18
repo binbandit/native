@@ -5,6 +5,8 @@ import SwiftUI
 struct PullRequestsStaleBanner: View {
     let error: GitHubError
     let fetchedAt: Date
+    /// What Retry does; refreshing the list unless given.
+    var retry: (() async -> Void)?
 
     @Environment(GitHubModel.self) private var model
 
@@ -22,7 +24,9 @@ struct PullRequestsStaleBanner: View {
             }
             Spacer(minLength: DS.Space.md)
             Button("Retry") {
-                Task { await model.refresh() }
+                Task {
+                    if let retry { await retry() } else { await model.refresh() }
+                }
             }
             .buttonStyle(.ds(.ghost))
             .disabled(model.isRefreshing)

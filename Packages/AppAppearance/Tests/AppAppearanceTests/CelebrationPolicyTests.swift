@@ -60,7 +60,10 @@ struct CelebrationPolicyTests {
 
     @Test func catalogueOrderIsTheFallback() throws {
         var both = CelebrationPreferences()
-        both.selections = [F.muertos: .init(isEnabled: true, window: FirstPartyCelebrations.extended), F.halloween: .init(isEnabled: true)]
+        both.selections = [
+            F.muertos: .init(isEnabled: true, window: FirstPartyCelebrations.extended),
+            F.halloween: .init(isEnabled: true),
+        ]
         #expect(both.order(in: F.events) == [F.halloween, F.muertos])
         #expect(try F.active(both, on: "2026-10-29") == F.halloween)
     }

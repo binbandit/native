@@ -69,7 +69,8 @@ struct CelebrationAssetTests {
         }
         let index = try CelebrationAssets.verifiedIndex(data, signature: signature, publicKey: publicKey)
         #expect(throws: CelebrationAssets.Failure.checksumMismatch("valentines-day")) {
-            try CelebrationAssets.verifiedPack(try pack("valentines-day", dropping: "dev-dark"), edition: "valentines-day", index: index)
+            try CelebrationAssets.verifiedPack(
+                try pack("valentines-day", dropping: "dev-dark"), edition: "valentines-day", index: index)
         }
         #expect(throws: CelebrationAssets.Failure.notInIndex("kwanzaa")) {
             try CelebrationAssets.verifiedPack(valentines, edition: "kwanzaa", index: index)
@@ -97,7 +98,11 @@ struct CelebrationAssetTests {
 
         let icons = Dictionary(
             uniqueKeysWithValues: AppIconVariant.allCases.map {
-                ($0, AppIconImagePair(light: .file(URL(filePath: "/tmp/l.png")), dark: .file(URL(filePath: "/tmp/d.png"))))
+                (
+                    $0,
+                    AppIconImagePair(
+                        light: .file(URL(filePath: "/tmp/l.png")), dark: .file(URL(filePath: "/tmp/d.png")))
+                )
             })
         let downloaded = AppearanceCatalog([
             AppearanceCatalog.Plugin(
@@ -110,14 +115,57 @@ struct CelebrationAssetTests {
         #expect(try F.active(preferences, on: "2027-02-14", events: downloaded.celebrations) == valentines)
     }
 
+    @Test func aChosenStyleDrivesTheIconAndItsDownload() throws {
+        var preferences = F.enabled(F.muertos)
+        let sugarSkull = FirstPartyCelebrations.sugarSkullIcons.id
+        #expect(
+            CelebrationAssets.packsDue(F.events, preferences: preferences, on: try F.day("2026-10-28")) == [
+                "dia-de-muertos"
+            ])
+        preferences.selections[F.muertos]?.style = sugarSkull
+        #expect(
+            CelebrationAssets.packsDue(F.events, preferences: preferences, on: try F.day("2026-10-28")) == [
+                "dia-de-muertos-sugar-skull"
+            ])
+        let icons = Dictionary(
+            uniqueKeysWithValues: AppIconVariant.allCases.map {
+                (
+                    $0,
+                    AppIconImagePair(
+                        light: .file(URL(filePath: "/tmp/s.png")), dark: .file(URL(filePath: "/tmp/s.png")))
+                )
+            })
+        let catalog = AppearanceCatalog([
+            AppearanceCatalog.Plugin(
+                source: ContributionSource(
+                    pluginID: "celebrations", location: .builtIn, assetExists: { _ in true }, homeMarks: F.homeMarks,
+                    packState: { $0 == "dia-de-muertos-sugar-skull" ? .ready(icons) : .notDownloaded }),
+                iconSets: IconSetContributions(FirstPartyCelebrations.iconSets),
+                celebrations: CelebrationContributions(FirstPartyCelebrations.celebrations))
+        ])
+        let day = CelebrationPolicy.resolve(catalog.celebrations, preferences: preferences, on: try F.day("2026-11-01"))
+        #expect(day.active?.appliesToAppIcon == true)
+        // The default style's pack isn't here, so without the choice only Home changes.
+        preferences.selections[F.muertos]?.style = nil
+        let plain = CelebrationPolicy.resolve(
+            catalog.celebrations, preferences: preferences, on: try F.day("2026-11-01"))
+        #expect(plain.active?.appliesToAppIcon == false)
+        // Sets a celebration uses, alternates included, aren't offered as plain themes.
+        #expect(!catalog.themes.contains { $0.id == sugarSkull })
+    }
+
     @Test func packsAreFetchedAWeekAhead() throws {
         var preferences = CelebrationPreferences()
         preferences.setEnabled(true, for: CelebrationID("native.valentines-day"))
         preferences.setEnabled(true, for: CelebrationID("native.christmas"))
         let events = F.events
         #expect(CelebrationAssets.packsDue(events, preferences: preferences, on: try F.day("2027-01-20")) == [])
-        #expect(CelebrationAssets.packsDue(events, preferences: preferences, on: try F.day("2027-02-08")) == ["valentines-day"])
-        #expect(CelebrationAssets.packsDue(events, preferences: preferences, on: try F.day("2026-12-24")) == ["christmas"])
+        #expect(
+            CelebrationAssets.packsDue(events, preferences: preferences, on: try F.day("2027-02-08")) == [
+                "valentines-day"
+            ])
+        #expect(
+            CelebrationAssets.packsDue(events, preferences: preferences, on: try F.day("2026-12-24")) == ["christmas"])
         preferences.selections[CelebrationID("native.christmas")]?.appIcon = false
         #expect(CelebrationAssets.packsDue(events, preferences: preferences, on: try F.day("2026-12-24")) == [])
     }

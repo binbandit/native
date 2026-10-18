@@ -48,12 +48,16 @@ public struct CelebrationContribution: AppearanceContribution {
     /// The icon set it dresses Native in, from any enabled plugin. Nil lists it with its artwork
     /// forthcoming, so it can be browsed but changes nothing.
     public var iconSet: IconSetID?
+    /// Other styles of the same celebration the user can pick instead, such as a sugar skull edition
+    /// beside the interlock one.
+    public var alternateIconSets: [IconSetID]
     public var compatibility: CelebrationCompatibility
 
     public init(
         id: CelebrationID, title: LocalizedText, aliases: [String] = [], summary: LocalizedText? = nil,
         tags: [String] = [], provenance: CelebrationProvenance = CelebrationProvenance(),
         calendar: CelebrationCalendar, display: CelebrationDisplay = CelebrationDisplay(), iconSet: IconSetID? = nil,
+        alternateIconSets: [IconSetID] = [],
         compatibility: CelebrationCompatibility = CelebrationCompatibility()
     ) {
         self.id = id
@@ -65,6 +69,7 @@ public struct CelebrationContribution: AppearanceContribution {
         self.calendar = calendar
         self.display = display
         self.iconSet = iconSet
+        self.alternateIconSets = alternateIconSets
         self.compatibility = compatibility
     }
 
@@ -80,7 +85,8 @@ public struct CelebrationContribution: AppearanceContribution {
 
 extension CelebrationContribution: Codable {
     private enum CodingKeys: String, CodingKey {
-        case id, title, aliases, summary = "description", tags, provenance, calendar, display, iconSet, compatibility
+        case id, title, aliases, summary = "description", tags, provenance, calendar, display, iconSet,
+            alternateIconSets, compatibility
     }
 
     public init(from decoder: any Decoder) throws {
@@ -94,6 +100,7 @@ extension CelebrationContribution: Codable {
         calendar = try container.decode(CelebrationCalendar.self, forKey: .calendar)
         display = try container.decodeIfPresent(CelebrationDisplay.self, forKey: .display) ?? .init()
         iconSet = try container.decodeIfPresent(IconSetID.self, forKey: .iconSet)
+        alternateIconSets = try container.decodeIfPresent([IconSetID].self, forKey: .alternateIconSets) ?? []
         compatibility = try container.decodeIfPresent(CelebrationCompatibility.self, forKey: .compatibility) ?? .init()
     }
 }
@@ -253,7 +260,8 @@ extension CelebrationCalendar: Codable {
             let occurrences = try container.decode([TabledOccurrence].self, forKey: .occurrences)
             rule = .table(
                 try occurrences.map { occurrence in
-                    guard let range = CivilDayRange(first: occurrence.start, last: occurrence.end ?? occurrence.start) else {
+                    guard let range = CivilDayRange(first: occurrence.start, last: occurrence.end ?? occurrence.start)
+                    else {
                         throw DecodingError.dataCorruptedError(
                             forKey: .occurrences, in: container,
                             debugDescription: "An occurrence ends before it starts (\(occurrence.start)).")
@@ -291,7 +299,8 @@ extension CelebrationCalendar: Codable {
             try container.encode(length, forKey: .length)
         case .table(let occurrences):
             try container.encode("table", forKey: .kind)
-            try container.encode(occurrences.map { TabledOccurrence(start: $0.first, end: $0.last) }, forKey: .occurrences)
+            try container.encode(
+                occurrences.map { TabledOccurrence(start: $0.first, end: $0.last) }, forKey: .occurrences)
         case .unsupported(let kind):
             try container.encode(kind, forKey: .kind)
         }

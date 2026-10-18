@@ -18,7 +18,7 @@ struct CelebrationsSettingsPage: View {
     private var isPluginEnabled: Bool { plugins.isEnabled(CelebrationsPlugin.id) }
 
     private var matches: [CelebrationEvent] {
-        center.catalog.celebrations.filter { $0.contribution.matches(query) }
+        center.celebrations.filter { $0.contribution.matches(query) }
     }
 
     /// Ready to use, or already chosen.
