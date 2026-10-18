@@ -71,11 +71,16 @@ pub enum Outbound<'a> {
         text: &'a str,
         end: bool,
     },
+    /// `line` and `column` say where in the script it was made, when known.
     #[serde(rename_all = "camelCase")]
     ToolCall {
         id: u32,
         tool_name: &'a str,
         input: &'a Value,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        line: Option<u32>,
+        #[serde(skip_serializing_if = "Option::is_none")]
+        column: Option<u32>,
     },
     /// The script finished. Nothing follows.
     Result,
@@ -299,11 +304,25 @@ mod tests {
             id: 1,
             tool_name: "t",
             input: &input,
+            line: None,
+            column: None,
         })
         .unwrap();
         assert_eq!(
             json,
             r#"{"type":"tool_call","id":1,"toolName":"t","input":{}}"#
+        );
+        let json = serde_json::to_string(&Outbound::ToolCall {
+            id: 2,
+            tool_name: "t",
+            input: &input,
+            line: Some(4),
+            column: Some(9),
+        })
+        .unwrap();
+        assert_eq!(
+            json,
+            r#"{"type":"tool_call","id":2,"toolName":"t","input":{},"line":4,"column":9}"#
         );
     }
 }

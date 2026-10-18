@@ -37,11 +37,13 @@ public enum ThemeJSON: Codable, Hashable, Sendable {
         }
     }
 
-    subscript(key: String) -> ThemeJSON? {
+    /// An object's member, or nil for anything else.
+    public subscript(key: String) -> ThemeJSON? {
         if case .object(let members) = self { members[key] } else { nil }
     }
 
-    var string: String? {
+    /// A string's value, or nil for anything else.
+    public var string: String? {
         if case .string(let value) = self { value } else { nil }
     }
 }

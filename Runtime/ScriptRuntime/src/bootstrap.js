@@ -72,9 +72,11 @@
     }
     const site = new Error();
     positionOf(site);
-    const id = request({ op: "call", index, input });
+    const position = positions.get(site);
+    // The host shows where a call was made, such as when it asks the user to approve it.
+    const id = request({ op: "call", index, input, ...position });
     return new Promise((resolve, reject) => {
-      pending.set(id, { resolve, reject, label, position: positions.get(site) });
+      pending.set(id, { resolve, reject, label, position });
     });
   }
 

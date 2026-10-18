@@ -10,6 +10,7 @@ import Testing
         {"type":"ready","protocolVersion":2}
         {"type":"evaluation_started"}
         {"type":"tool_call","id":1,"toolName":"add","input":{"a":1,"b":2}}
+        {"type":"tool_call","id":2,"toolName":"add","input":{},"line":3,"column":15}
         {"type":"text","text":"sum 3","end":true}
         {"type":"text","text":"{\\"ok\\":true} [1,2]","end":true}
         {"type":"result"}
@@ -28,6 +29,7 @@ import Testing
                 .ready(protocolVersion: 2),
                 .evaluationStarted,
                 .toolCall(id: 1, toolName: "add", input: ["a": 1, "b": 2]),
+                .toolCall(id: 2, toolName: "add", input: [:], site: ScriptCallSite(line: 3, column: 15)),
                 .text("sum 3", end: true),
                 .text(#"{"ok":true} [1,2]"#, end: true),
                 .result,
