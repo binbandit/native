@@ -1,9 +1,9 @@
 import Foundation
 
-/// A guide Native gives agents for working with Native itself, such as writing a plugin, served
-/// by the `native` MCP server's `list_skills` and `get_skill` tools. Each skill is a Markdown file
-/// in the app's resources; the plugin skill links to `docs/plugins.md`, so the doc and the skill
-/// can't drift apart.
+/// A guide Native gives agents for working with Native itself, such as setting it up or writing a
+/// plugin, served by the `native` MCP server's `list_skills` and `get_skill` tools. Each skill is a
+/// Markdown file in the app's resources, linked to the doc it is (`set-up-native` to
+/// `docs/setup.md`, `build-a-native-plugin` to `docs/plugins.md`), so the two can't drift apart.
 nonisolated struct NativeSkill: Sendable, Identifiable {
     let id: String
     let title: String
@@ -13,7 +13,7 @@ nonisolated struct NativeSkill: Sendable, Identifiable {
 
     /// The skills shipped with the app, by resource name.
     static func bundled(in bundle: Bundle = .main) -> [NativeSkill] {
-        ["build-a-native-plugin"].compactMap { id in
+        ["set-up-native", "build-a-native-plugin"].compactMap { id in
             bundle.url(forResource: id, withExtension: "md")
                 .flatMap { try? String(contentsOf: $0, encoding: .utf8) }
                 .map { NativeSkill(id: id, markdown: $0) }

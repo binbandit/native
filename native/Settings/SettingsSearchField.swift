@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// the reference app's settings search: a 28pt field with the ⌘F hint, and results in a popup under it.
-/// ↑ and ↓ move through results, Return opens one, Escape clears the search.
+/// the reference app's settings search: the design system's `SearchField` with the ⌘F hint, and results in
+/// a popup under it. ↑ and ↓ move through results, Return opens one, Escape clears the search.
 struct SettingsSearchField: View {
     @Binding var query: String
     let results: [SettingsSearchIndex.Result]
@@ -10,70 +10,30 @@ struct SettingsSearchField: View {
     let onPick: (SettingsSearchIndex.Item) -> Void
 
     private var isOpen: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
-    private var isFocused: Bool { focus.wrappedValue == .search }
 
     var body: some View {
-        let shape = RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
-        TextField("Search settings", text: $query, prompt: Text("Search settings").foregroundStyle(.dsTextTertiary))
-            .textFieldStyle(.plain)
-            .settingsText(.body)
-            .foregroundStyle(.dsTextPrimary)
-            .focused(focus, equals: .search)
-            .padding(.leading, DS.Space.xxxl)
-            .padding(.trailing, DS.Space.xxl + DS.Space.xl)
-            .frame(height: DS.Size.controlSM)
-            .overlay(alignment: .leading) {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: SettingsMetrics.searchGlyph, weight: .regular))
-                    .foregroundStyle(.dsTextSecondary)
-                    .padding(.leading, DS.Space.md + DS.Space.xxs)
-                    .accessibilityHidden(true)
+        SearchField(
+            "Search settings", text: $query, font: SettingsTextStyle.body.font, focus: focus, equals: .search
+        ) {
+            if query.isEmpty {
+                SearchShortcutHint(parts: ["⌘", "F"])
             }
-            .overlay(alignment: .trailing) {
-                trailingAccessory
-                    .padding(.trailing, DS.Space.md)
+        }
+        .onKeyPress(.downArrow) { moveHighlight(by: 1) }
+        .onKeyPress(.upArrow) { moveHighlight(by: -1) }
+        .onKeyPress(.return) {
+            guard isOpen else { return .ignored }
+            if results.indices.contains(highlighted) {
+                onPick(results[highlighted].item)
             }
-            .background(.dsBackground, in: shape)
-            .overlay { shape.strokeBorder(isFocused ? Color.dsAccent : Color.dsBorder, lineWidth: 1) }
-            .onKeyPress(.downArrow) { moveHighlight(by: 1) }
-            .onKeyPress(.upArrow) { moveHighlight(by: -1) }
-            .onKeyPress(.return) {
-                guard isOpen else { return .ignored }
-                if results.indices.contains(highlighted) {
-                    onPick(results[highlighted].item)
-                }
-                return .handled
+            return .handled
+        }
+        .onChange(of: query) { highlighted = 0 }
+        .overlay(alignment: .top) {
+            if isOpen {
+                SettingsSearchResults(query: query, results: results, highlighted: $highlighted, onPick: onPick)
+                    .offset(y: DS.Size.controlSM + SettingsMetrics.resultsOffset)
             }
-            .onKeyPress(.escape) {
-                guard !query.isEmpty else { return .ignored }
-                query = ""
-                return .handled
-            }
-            .onChange(of: query) { highlighted = 0 }
-            .overlay(alignment: .top) {
-                if isOpen {
-                    SettingsSearchResults(query: query, results: results, highlighted: $highlighted, onPick: onPick)
-                        .offset(y: DS.Size.controlSM + SettingsMetrics.resultsOffset)
-                }
-            }
-    }
-
-    @ViewBuilder
-    private var trailingAccessory: some View {
-        if query.isEmpty {
-            SearchShortcutHint(parts: ["⌘", "F"])
-        } else {
-            Button {
-                query = ""
-            } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: SettingsMetrics.searchGlyph - 2, weight: .medium))
-                    .foregroundStyle(.dsTextSecondary)
-                    .padding(DS.Space.xxs)
-                    .contentShape(.rect)
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Clear Settings Search")
         }
     }
 

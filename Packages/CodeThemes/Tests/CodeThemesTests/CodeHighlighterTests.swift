@@ -2,10 +2,12 @@ import Testing
 
 @testable import CodeThemes
 
+/// The lexer, which colors languages without a grammar and code a grammar can't parse.
 struct CodeHighlighterTests {
-    /// The roles of the non-plain segments, in order, with their text.
+    /// The roles of the lexer's non-plain segments, in order, with their text.
     private func tokens(_ code: String, _ language: String) -> [String] {
-        CodeHighlighter.segments(code, language: CodeLanguage.named(language))
+        guard let language = CodeLanguage.named(language) else { return [] }
+        return CodeLexer.segments(code, language: language)
             .filter { $0.role != .foreground && !$0.text.allSatisfy(\.isWhitespace) }
             .map { "\($0.role.rawValue):\($0.text)" }
     }
@@ -71,7 +73,7 @@ struct CodeHighlighterTests {
     }
 
     @Test func blockCommentsKeepTheirColorOnEveryLine() {
-        let lines = CodeHighlighter.lines("/* one\ntwo */\nlet x", language: .named("swift"))
+        let lines = CodeHighlighter.lines("/* one\ntwo */\nlet x = 1", language: .named("swift"))
         #expect(lines.count == 3)
         #expect(lines[0].map(\.role) == [.comment])
         #expect(lines[1].map(\.role) == [.comment])
@@ -94,7 +96,9 @@ struct CodeHighlighterTests {
     @Test func languagesByNameAndPath() {
         #expect(CodeLanguage.named("TypeScript")?.id == "typescript")
         #expect(CodeLanguage.named("ts {highlight: 2}")?.id == "typescript")
-        #expect(CodeLanguage.named("zsh")?.id == "shell")
+        #expect(CodeLanguage.named("zsh")?.id == "bash")
+        #expect(CodeLanguage.named("tsx")?.id == "tsx")
+        #expect(CodeLanguage.named("c++")?.id == "cpp")
         #expect(CodeLanguage.named("prose") == nil)
         #expect(CodeLanguage.forPath("native/Views/RootView.swift")?.id == "swift")
         #expect(CodeLanguage.forPath("Packages/x/Package.swift")?.id == "swift")

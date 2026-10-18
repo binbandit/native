@@ -102,7 +102,7 @@ struct TerminalSettingsPage: View {
                 id: Self.colorsRow, "Colors",
                 description: Text("Native's colors, in light and dark. Import from Ghostty to use your theme instead.")
             ) {
-                EmptyView()
+                SettingsValue("Native")
             }
         case .imported(let imported):
             SettingsRow(

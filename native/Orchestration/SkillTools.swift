@@ -1,7 +1,7 @@
 import Foundation
 import MCP
 
-/// `list_skills` and `get_skill`: how agents learn to extend Native. Tools rather than MCP
+/// `list_skills` and `get_skill`: how agents learn to set up and extend Native. Tools rather than MCP
 /// resources or prompts, because every agent surfaces tools to its model, and not all do the others.
 /// Each call sees only the skills `available` gives its caller, so a skill switched off in Settings
 /// is gone for that session.
@@ -17,7 +17,8 @@ enum SkillTools {
                 name: "list_skills",
                 title: "List skills",
                 description: """
-                    List Native's skills: guides for extending Native itself, such as building a Native \
+                    List Native's skills: guides for working with Native itself, such as setting Native up \
+                    for the user (agents, projects, devices, policy, troubleshooting) or building a Native \
                     plugin that adds an agent, an MCP server or a workflow. Read one with get_skill before \
                     doing what it covers.
                     """,
@@ -55,7 +56,7 @@ enum SkillTools {
                 name: "get_skill",
                 title: "Get skill",
                 description:
-                    "Read one of Native's skills in full, such as build-a-native-plugin before writing a Native plugin for the user.",
+                    "Read one of Native's skills in full, such as set-up-native before helping the user set Native up, or build-a-native-plugin before writing a Native plugin for them.",
                 inputSchema: [
                     "type": "object",
                     "properties": [
@@ -78,7 +79,8 @@ enum SkillTools {
                 // The folder this copy of Native reads, which isn't always the default.
                 let local =
                     "\n\n## On this Mac\n\nNative reads plugins from `\(pluginsFolder.path(percentEncoded: false))`. Write plugins there."
-                return MCPToolResult(text: skill.content + (skill.id == "build-a-native-plugin" ? local : ""))
+                let writesPlugins: Set = ["build-a-native-plugin", "set-up-native"]
+                return MCPToolResult(text: skill.content + (writesPlugins.contains(skill.id) ? local : ""))
             },
         ]
     }

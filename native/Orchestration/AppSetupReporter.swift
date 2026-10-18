@@ -64,9 +64,11 @@ final class AppSetupReporter {
 
     private func describe(_ agent: inout SetupReport.Agent, availability: AgentAvailability, model: AppModel) {
         let id = AgentDefinition.ID(rawValue: agent.id)
-        if let info = model.runtime(id)?.info {
+        let runtime = model.runtime(id)
+        if let info = runtime?.info {
             agent.version = [info.name, info.version].compactMap { $0 }.joined(separator: " ")
         }
+        agent.offersSignIn = runtime?.authMethods.isEmpty == false
         switch availability {
         case .notInstalled(let missing):
             agent.state = .notInstalled

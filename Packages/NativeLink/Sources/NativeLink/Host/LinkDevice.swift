@@ -12,6 +12,8 @@ public struct LinkDevice: Codable, Hashable, Sendable, Identifiable {
     public var lastSeen: Date?
     /// Set when revoked: the key is refused at the handshake, and the device is told so.
     public var revokedAt: Date?
+    /// `LinkDeviceInfo.installation`, to replace this entry when the same app pairs again.
+    public var installation: String?
 
     public var isRevoked: Bool { revokedAt != nil }
 
@@ -26,6 +28,7 @@ public struct LinkDevice: Codable, Hashable, Sendable, Identifiable {
         self.publicKey = publicKey
         self.grants = grants
         self.pairedAt = pairedAt
+        installation = info.installation
     }
 }
 
@@ -45,9 +48,12 @@ struct LinkDeviceRegistry: Codable, Sendable {
         devices.first { $0.publicKey == key }
     }
 
-    /// Adds a device, replacing any earlier pairing of the same key (a phone pairing again).
+    /// Adds a device, replacing any earlier pairing of the same key or the same installation (a
+    /// phone pairing again).
     mutating func add(_ device: LinkDevice) {
-        devices.removeAll { $0.publicKey == device.publicKey }
+        devices.removeAll {
+            $0.publicKey == device.publicKey || (device.installation != nil && $0.installation == device.installation)
+        }
         devices.append(device)
     }
 

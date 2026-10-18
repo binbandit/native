@@ -85,14 +85,15 @@ struct ExtensionsSettingsPage: View {
             if !registry.failures.isEmpty {
                 VStack(alignment: .leading, spacing: DS.Space.lg) {
                     SettingsSubheading("Couldn't load", note: "Fix the file, then Reload.")
-                    SettingsRowGroup {
-                        ForEach(registry.failures) { failure in
-                            SettingsRow(
-                                failure.url.deletingLastPathComponent().lastPathComponent,
-                                icon: "exclamationmark.triangle",
-                                description: Text(failure.message).foregroundStyle(.dsDanger),
-                                detail: Text(ExtensionRow.displayPath(failure.url)).font(SettingsTextStyle.mono.font)
-                            ) { EmptyView() }
+                    ForEach(registry.failures) { failure in
+                        NoticeBanner(
+                            tone: .danger,
+                            title: "\(failure.url.deletingLastPathComponent().lastPathComponent) couldn't load",
+                            detail: failure.message,
+                            footnote: ExtensionRow.displayPath(failure.url)
+                        ) {
+                            Button("Reload") { registry.reload() }
+                                .buttonStyle(.ds(.secondary))
                         }
                     }
                 }
@@ -101,13 +102,11 @@ struct ExtensionsSettingsPage: View {
     }
 
     private var installedEmptyState: some View {
-        SettingsRow(
-            "No plugins yet",
-            icon: "shippingbox",
-            description: Text(
-                "A plugin.json can add agents that speak ACP, MCP servers for every session, and workflows."
+        SettingsNote("No plugins yet", systemImage: "shippingbox") {
+            Text(
+                "Add a folder with a plugin.json to ~/.native/plugins, then Reload. A plugin can add agents that speak ACP, MCP servers for every session, and workflows."
             )
-        ) { EmptyView() }
+        }
     }
 
     private func binding(for loaded: PluginRegistry.LoadedPlugin) -> Binding<Bool> {

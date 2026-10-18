@@ -22,7 +22,8 @@ public final class LinkBrowser: Sendable {
     private let latest = LinkLocked<[DiscoveredHost]>([])
 
     public init() {
-        (results, continuation) = AsyncStream.makeStream(of: [DiscoveredHost].self, bufferingPolicy: .bufferingNewest(1))
+        (results, continuation) = AsyncStream.makeStream(
+            of: [DiscoveredHost].self, bufferingPolicy: .bufferingNewest(1))
         let parameters = NWParameters()
         parameters.includePeerToPeer = false
         browser = NWBrowser(for: .bonjourWithTXTRecord(type: LinkListener.serviceType, domain: nil), using: parameters)

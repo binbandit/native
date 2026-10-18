@@ -21,7 +21,7 @@ public enum LinkPairing {
 
     public static func pair(
         credential: LinkInitiator.Credential, endpoints: [(NWEndpoint, String)], device: LinkDeviceInfo,
-        log: @escaping @Sendable (LinkLogEntry) -> Void,
+        installationSecret: Data? = nil, log: @escaping @Sendable (LinkLogEntry) -> Void,
         awaitingConfirmation: @escaping @Sendable (VerificationCode) -> Void
     ) async throws -> (PairedHost, SecureChannel) {
         let identity = LinkIdentity()
@@ -41,7 +41,7 @@ public enum LinkPairing {
             // Once a host answered, its verdict stands: another address reaches the same host.
             let (channel, result) = try await LinkInitiator.pair(
                 over: raw, identity: identity, credential: credential, device: device,
-                awaitingConfirmation: awaitingConfirmation)
+                installationSecret: installationSecret, awaitingConfirmation: awaitingConfirmation)
             log(LinkLogEntry(.success, "Paired with \(result.hostName)"))
             return (PairedHost(result: result, identity: identity), channel)
         }

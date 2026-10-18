@@ -21,7 +21,7 @@ struct SetupReportTests {
                 signInCommand: "claude"),
             .init(
                 id: "copilot", name: "Copilot", state: .ready, signIn: .needsSignIn, launch: "copilot --acp",
-                signInCommand: "copilot login"),
+                signInCommand: "copilot login", offersSignIn: true),
         ],
         durableHost: .init(state: .off),
         pairedDevices: .init(state: .hostOff),
@@ -52,7 +52,9 @@ struct SetupReportTests {
                 "- Claude Code (`claude-code`): not installed: `claude` isn't on the login shell's PATH. Install with `npm install -g @anthropic-ai/claude-code`. Then Settings ▸ Agents ▸ Add an Agent ▸ Check Again."
             ))
         #expect(
-            summary.contains("signed out. Sign In… on its row in Settings ▸ Agents, or `copilot login` in a terminal."))
+            summary.contains(
+                "signed out. Sign In… from the ⋯ menu on its row in Settings ▸ Agents, or run `copilot login` in a terminal."
+            ))
         #expect(summary.contains("3. Durable host: off."))
         #expect(summary.contains("5. Organization: manages `policy.agents.allowed`, `policy.updates.enabled`."))
         #expect(summary.contains("6. Updates: off: Updates are off in development builds."))

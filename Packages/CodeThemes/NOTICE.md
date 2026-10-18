@@ -21,3 +21,37 @@ here. Every upstream theme is MIT licensed. The Native theme is original.
 
 Where a theme does not define a role (for example a changed-line background, which VS Code themes
 have no key for), the value is derived from that theme's own colors and marked in the source.
+
+## Tree-sitter
+
+Highlighting links the tree-sitter runtime, its Swift API and the grammars below as Swift packages
+(versions in `Package.swift`), and `Sources/CodeThemes/Queries` holds copies of each grammar's
+highlight and injection queries from the same release. Each copied file names its source in its
+first line and says what changed, if anything.
+
+| Component | Upstream | License | Copyright |
+| --- | --- | --- | --- |
+| Runtime | [tree-sitter/tree-sitter](https://github.com/tree-sitter/tree-sitter) | MIT | Copyright (c) 2018-2024 Max Brunsfeld |
+| Swift API | [tree-sitter/swift-tree-sitter](https://github.com/tree-sitter/swift-tree-sitter) (SwiftTreeSitter) | BSD-3-Clause | Copyright (c) 2021, Chime |
+| Swift | [alex-pinkus/tree-sitter-swift](https://github.com/alex-pinkus/tree-sitter-swift) | MIT | Copyright (c) 2021 alex-pinkus |
+| TypeScript, TSX | [tree-sitter/tree-sitter-typescript](https://github.com/tree-sitter/tree-sitter-typescript) | MIT | Copyright (c) 2017 Max Brunsfeld |
+| JavaScript | [tree-sitter/tree-sitter-javascript](https://github.com/tree-sitter/tree-sitter-javascript) | MIT | Copyright (c) 2014 Max Brunsfeld |
+| Python | [tree-sitter/tree-sitter-python](https://github.com/tree-sitter/tree-sitter-python) | MIT | Copyright (c) 2016 Max Brunsfeld |
+| Rust | [tree-sitter/tree-sitter-rust](https://github.com/tree-sitter/tree-sitter-rust) | MIT | Copyright (c) 2017 Maxim Sokolov |
+| Go | [tree-sitter/tree-sitter-go](https://github.com/tree-sitter/tree-sitter-go) | MIT | Copyright (c) 2014 Max Brunsfeld |
+| JSON | [tree-sitter/tree-sitter-json](https://github.com/tree-sitter/tree-sitter-json) | MIT | Copyright (c) 2014 Max Brunsfeld |
+| Bash | [tree-sitter/tree-sitter-bash](https://github.com/tree-sitter/tree-sitter-bash) | MIT | Copyright (c) 2017 Max Brunsfeld |
+| YAML | [tree-sitter-grammars/tree-sitter-yaml](https://github.com/tree-sitter-grammars/tree-sitter-yaml) | MIT | Copyright (c) 2024 tree-sitter-grammars contributors |
+| TOML | [tree-sitter-grammars/tree-sitter-toml](https://github.com/tree-sitter-grammars/tree-sitter-toml) | MIT | Copyright (c) Ika |
+| HTML | [tree-sitter/tree-sitter-html](https://github.com/tree-sitter/tree-sitter-html) | MIT | Copyright (c) 2014 Max Brunsfeld |
+| CSS | [tree-sitter/tree-sitter-css](https://github.com/tree-sitter/tree-sitter-css) | MIT | Copyright (c) 2018 Max Brunsfeld |
+| Markdown | [tree-sitter-grammars/tree-sitter-markdown](https://github.com/tree-sitter-grammars/tree-sitter-markdown) | MIT | Copyright (c) 2021 Matthias Deiml |
+| C | [tree-sitter/tree-sitter-c](https://github.com/tree-sitter/tree-sitter-c) | MIT | Copyright (c) 2014 Max Brunsfeld |
+| C++ | [tree-sitter/tree-sitter-cpp](https://github.com/tree-sitter/tree-sitter-cpp) | MIT | Copyright (c) 2014 Max Brunsfeld |
+| Java | [tree-sitter/tree-sitter-java](https://github.com/tree-sitter/tree-sitter-java) | MIT | Copyright (c) 2017 Ayman Nadeem |
+| Kotlin | [fwcd/tree-sitter-kotlin](https://github.com/fwcd/tree-sitter-kotlin) | MIT | Copyright (c) 2019 fwcd |
+| Ruby | [tree-sitter/tree-sitter-ruby](https://github.com/tree-sitter/tree-sitter-ruby) | MIT | Copyright (c) 2016 Rob Rix |
+
+The Markdown and Kotlin queries say they derive from
+[nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) (Apache-2.0), which their
+grammar repositories redistribute under their own MIT license.

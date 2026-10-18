@@ -64,7 +64,7 @@ extension SetupReport.Agent {
         case .stopped:
             parts = [
                 sentence("stopped", problem), "Runs `\(launch)`.",
-                "Restart it from Settings ▸ Agents (Restart \(name)).",
+                "Restart it from the ⋯ menu on its row in Settings ▸ Agents.",
             ]
         case .notInstalled:
             parts = ["not installed: `\(missingCommand ?? launch)` isn't on the login shell's PATH."]
@@ -84,9 +84,12 @@ extension SetupReport.Agent {
         case .signedIn: "ready and signed in."
         case .signingIn: "ready, signing in."
         case .unknown: "ready. Whether it's signed in shows once a session starts on it."
+        case .needsSignIn where offersSignIn:
+            "signed out. Sign In… from the ⋯ menu on its row in Settings ▸ Agents"
+                + (signInCommand.map { ", or run `\($0)` in a terminal." } ?? ".")
         case .needsSignIn:
-            "signed out. Sign In… on its row in Settings ▸ Agents"
-                + (signInCommand.map { ", or `\($0)` in a terminal." } ?? ".")
+            "signed out. " + (signInCommand.map { "Run `\($0)` in a terminal to sign in, then" } ?? "Sign in, then")
+                + " Restart \(name) from the ⋯ menu on its row in Settings ▸ Agents."
         }
     }
 }
@@ -95,7 +98,7 @@ extension SetupReport.DurableHost {
     fileprivate var status: String {
         switch state {
         case .off:
-            "off. Agents stop when Native quits, and paired devices can't connect. Turn it on in Window ▸ Durable Sessions ▸ Turn On."
+            "off, so paired devices can't connect and nothing keeps running after Native quits. Turn it on in Window ▸ Durable Sessions ▸ Turn On."
         case .starting: "starting."
         case .connected:
             "connected" + (version.map { ", Native \($0)." } ?? ".") + versionNote

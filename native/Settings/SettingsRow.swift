@@ -24,48 +24,80 @@ struct SettingsRow<Accessory: View, Control: View>: View {
     @ViewBuilder var control: Control
 
     @Environment(\.settingsLockReason) private var lockReason
+    @Environment(\.settingsControlBelow) private var isControlBelow
 
     var body: some View {
-        HStack(alignment: detail == nil ? .center : .top, spacing: SettingsMetrics.rowControlSpacing) {
-            HStack(spacing: DS.Space.lg) {
-                if let icon {
-                    SettingsIconTile(systemImage: icon)
+        Group {
+            if isControlBelow {
+                VStack(alignment: .leading, spacing: DS.Space.lg) {
+                    label
+                    trailing
                 }
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack(spacing: DS.Space.md) {
-                        title
-                            .settingsText(.bodyMedium)
-                            .foregroundStyle(.dsTextPrimary)
-                        accessory
-                        if let lockReason {
-                            SettingsBadge(lockReason, systemImage: "lock.fill")
-                        }
-                    }
-                    .frame(minHeight: SettingsMetrics.rowTitleHeight)
-                    if let description {
-                        description
-                            .settingsText(.body)
-                            .foregroundStyle(.dsTextSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .padding(.top, DS.Space.xxs)
-                    }
-                    if let detail {
-                        detail
-                            .settingsText(.caption)
-                            .foregroundStyle(.dsTextSecondary)
-                            .fixedSize(horizontal: false, vertical: true)
-                            .padding(.top, DS.Space.xs)
-                    }
+            } else {
+                HStack(alignment: detail == nil ? .center : .top, spacing: SettingsMetrics.rowControlSpacing) {
+                    label
+                    trailing
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .accessibilityElement(children: .combine)
-            control
-                .fixedSize()
-                .disabled(lockReason != nil)
-                .help(lockReason ?? "")
         }
         .settingsRevealTarget(id)
+    }
+
+    private var label: some View {
+        HStack(spacing: DS.Space.lg) {
+            if let icon {
+                SettingsIconTile(systemImage: icon)
+            }
+            VStack(alignment: .leading, spacing: 0) {
+                HStack(spacing: DS.Space.md) {
+                    title
+                        .settingsText(.bodyMedium)
+                        .foregroundStyle(.dsTextPrimary)
+                    accessory
+                    if let lockReason {
+                        SettingsBadge(lockReason, systemImage: "lock.fill")
+                    }
+                }
+                .frame(minHeight: SettingsMetrics.rowTitleHeight)
+                if let description {
+                    description
+                        .settingsText(.body)
+                        .foregroundStyle(.dsTextSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, DS.Space.xxs)
+                }
+                if let detail {
+                    detail
+                        .settingsText(.caption)
+                        .foregroundStyle(.dsTextSecondary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .padding(.top, DS.Space.xs)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .accessibilityElement(children: .combine)
+    }
+
+    /// The control, dimmed and explained while the organization (or something else) locks it.
+    private var trailing: some View {
+        control
+            .fixedSize()
+            .disabled(lockReason != nil)
+            .help(lockReason ?? "")
+    }
+}
+
+extension EnvironmentValues {
+    /// Puts rows' controls on a line of their own under the text, for controls too wide to sit
+    /// beside it (several pickers, an editor).
+    @Entry var settingsControlBelow = false
+}
+
+extension View {
+    /// Puts the rows' controls under their text instead of beside it.
+    func settingsControlBelow() -> some View {
+        environment(\.settingsControlBelow, true)
     }
 }
 
@@ -85,7 +117,7 @@ extension SettingsRow where Accessory == EmptyView {
 }
 
 extension SettingsRow where Control == EmptyView {
-    @available(*, unavailable, message: "Information goes in a SettingsNote, and a value in SettingsValue")
+    @available(*, deprecated, message: "Information goes in a SettingsNote, and a value in SettingsValue")
     init(
         id: SettingsRowID? = nil,
         title: Text,
@@ -100,7 +132,7 @@ extension SettingsRow where Control == EmptyView {
 }
 
 extension SettingsRow where Accessory == EmptyView, Control == EmptyView {
-    @available(*, unavailable, message: "Information goes in a SettingsNote, and a value in SettingsValue")
+    @available(*, deprecated, message: "Information goes in a SettingsNote, and a value in SettingsValue")
     init(
         id: SettingsRowID? = nil,
         _ title: String,
