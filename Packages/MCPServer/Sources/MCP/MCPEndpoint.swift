@@ -82,6 +82,12 @@ struct MCPEndpoint<Context: Sendable>: Sendable {
         ["tools": ["listChanged": false]]
     }
 
+    private func definitions(for context: Context) async -> [JSON] {
+        var definitions: [JSON] = []
+        for tool in tools { definitions.append(await tool.definition(for: context)) }
+        return definitions
+    }
+
     private func handle(_ method: String, params: JSON, era: Era, request: HTTPRequest, context: Context) async throws(RPCFailure) -> [String: JSON] {
         switch era {
         case .modern:
@@ -93,8 +99,10 @@ struct MCPEndpoint<Context: Sendable>: Sendable {
             }
         }
 
-        // The tools never change while the server runs, and every client gets the same ones.
-        let cacheHints: [String: JSON] = ["ttlMs": 3_600_000, "cacheScope": "public"]
+        // The tools never change while the server runs. Unless some vary by client, every client
+        // gets the same ones, and may share them.
+        let cacheHints: [String: JSON] =
+            tools.contains { $0.listing != nil } ? ["ttlMs": 3_600_000] : ["ttlMs": 3_600_000, "cacheScope": "public"]
         switch (method, era) {
         case ("initialize", .legacy):
             let requested = params["protocolVersion"]?.stringValue
@@ -112,9 +120,9 @@ struct MCPEndpoint<Context: Sendable>: Sendable {
         case ("ping", _):
             return [:]
         case ("tools/list", .modern):
-            return ["tools": .array(tools.map(\.definition))].merging(cacheHints) { $1 }
+            return ["tools": .array(await definitions(for: context))].merging(cacheHints) { $1 }
         case ("tools/list", .legacy):
-            return ["tools": .array(tools.map(\.definition))]
+            return ["tools": .array(await definitions(for: context))]
         case ("tools/call", _):
             guard let name = params["name"]?.stringValue else {
                 throw RPCFailure(code: -32602, message: "tools/call needs the name of a tool.")

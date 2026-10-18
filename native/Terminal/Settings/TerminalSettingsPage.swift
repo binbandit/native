@@ -89,7 +89,7 @@ struct TerminalSettingsPage: View {
         .task { families = Self.monospacedFamilies() }
         .onChange(of: appearanceKey, initial: true) { _, key in
             let appearance = TerminalAppearance(key.colorScheme)
-            store.prepareSettings(
+            store.setAppearance(
                 appearance, chrome: .designSystem(appearance: appearance, palette: key.palette),
                 transparency: key.transparency)
         }

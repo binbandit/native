@@ -1,3 +1,4 @@
+import AppAppearance
 import SwiftUI
 
 /// The View menu's celebration commands: put the usual look back (or bring a skipped celebration

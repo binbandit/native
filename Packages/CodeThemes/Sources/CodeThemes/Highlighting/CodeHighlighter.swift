@@ -28,8 +28,13 @@ public enum CodeHighlighter {
     /// The code's lines, each as segments (without the line break), for drawing line by line (diffs).
     /// Tokens spanning lines, like block comments, keep their color on every line.
     public static func lines(_ code: String, language: CodeLanguage?) -> [[CodeSegment]] {
+        lines(segments: segments(code, language: language), endsWithNewline: code.hasSuffix("\n"))
+    }
+
+    /// Highlighted segments split into lines.
+    static func lines(segments: [CodeSegment], endsWithNewline: Bool) -> [[CodeSegment]] {
         var lines: [[CodeSegment]] = [[]]
-        for segment in segments(code, language: language) {
+        for segment in segments {
             let parts = segment.text.split(separator: "\n", omittingEmptySubsequences: false)
             for (index, part) in parts.enumerated() {
                 if index > 0 {
@@ -40,7 +45,7 @@ public enum CodeHighlighter {
                 }
             }
         }
-        if code.hasSuffix("\n") {
+        if endsWithNewline {
             lines.removeLast()
         }
         return lines
@@ -68,6 +73,7 @@ private struct Lexer {
         switch language.grammar {
         case .diff: scanDiff()
         case .markup: scanMarkup()
+        case .markdown: scanMarkdown()
         case .code: scanCode()
         }
         flushPlain()
@@ -181,7 +187,9 @@ private struct Lexer {
         guard language.lineKeys, isWordStart(scalars[position]) || scalars[position] == "-" else { return false }
         var start = position - 1
         while start >= 0, scalars[start] == " " || scalars[start] == "\t" { start -= 1 }
-        guard start < 0 || scalars[start] == "\n" || (scalars[start] == "-" && language.id == "yaml") else { return false }
+        guard start < 0 || scalars[start] == "\n" || (scalars[start] == "-" && language.id == "yaml") else {
+            return false
+        }
         var end = position
         while end < scalars.count, isWordCharacter(scalars[end]) || "-.".unicodeScalars.contains(scalars[end]) {
             end += 1
@@ -265,6 +273,65 @@ private struct Lexer {
             end += 1
         }
         return end
+    }
+
+    // MARK: Markdown
+
+    private mutating func scanMarkdown() {
+        var isInFence = false
+        while position < scalars.count {
+            let end = lineEnd(from: position)
+            var start = position
+            while start < end, scalars[start] == " " { start += 1 }
+            position = start
+            if matches("```", at: start) || matches("~~~", at: start) {
+                emit(until: end, .comment)
+                isInFence.toggle()
+            } else if isInFence {
+                position = end
+            } else if scalars[start...].prefix(while: { $0 == "#" }).count.isBetween(1, 6) {
+                emit(until: end, .keyword)
+            } else if start < end, scalars[start] == ">" {
+                emit(until: end, .comment)
+            } else {
+                if start + 1 < end, "-*+".unicodeScalars.contains(scalars[start]), scalars[start + 1] == " " {
+                    emit(until: start + 1, .punctuation)
+                }
+                scanMarkdownInline(until: end)
+            }
+            position = end < scalars.count ? end + 1 : end
+        }
+    }
+
+    /// Code spans, emphasis and links within one line.
+    private mutating func scanMarkdownInline(until end: Int) {
+        while position < end {
+            let scalar = scalars[position]
+            if scalar == "`", let close = closing("`", from: position + 1, before: end) {
+                emit(until: close + 1, .string)
+            } else if scalar == "*" || scalar == "_", position + 1 < end, scalars[position + 1] == scalar,
+                let close = closing(String(repeating: String(scalar), count: 2), from: position + 2, before: end)
+            {
+                emit(until: close + 2, .constant)
+            } else if scalar == "[", let label = closing("]", from: position + 1, before: end), label + 1 < end,
+                scalars[label + 1] == "(", let target = closing(")", from: label + 2, before: end)
+            {
+                emit(until: label + 1, .function)
+                emit(until: target + 1, .string)
+            } else {
+                position += 1
+            }
+        }
+    }
+
+    /// Where `delimiter` next starts, from `index` up to `end`.
+    private func closing(_ delimiter: String, from index: Int, before end: Int) -> Int? {
+        var cursor = index
+        while cursor < end {
+            if matches(delimiter, at: cursor) { return cursor }
+            cursor += 1
+        }
+        return nil
     }
 
     // MARK: Diff
@@ -375,4 +442,8 @@ private struct Lexer {
     private func isOperator(_ scalar: Unicode.Scalar) -> Bool {
         "+-*/%=&|^!<>?~".unicodeScalars.contains(scalar)
     }
+}
+
+extension Int {
+    fileprivate func isBetween(_ low: Int, _ high: Int) -> Bool { (low...high).contains(self) }
 }

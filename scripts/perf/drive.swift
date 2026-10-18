@@ -60,7 +60,10 @@ func mainWindow() -> AXUIElement {
 
 switch arguments[1] {
 case "menu" where arguments.count == 4:
-    guard let bar = attribute(app, kAXMenuBarAttribute).map({ $0 as! AXUIElement }) else { fail("no menu bar") }
+    guard let value = attribute(app, kAXMenuBarAttribute), CFGetTypeID(value) == AXUIElementGetTypeID() else {
+        fail("no menu bar")
+    }
+    let bar = unsafeBitCast(value, to: AXUIElement.self)
     guard let menu = children(bar).first(where: { string($0, kAXTitleAttribute) == arguments[2] }) else {
         fail("no menu \(arguments[2])")
     }

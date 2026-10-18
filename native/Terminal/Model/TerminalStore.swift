@@ -104,16 +104,6 @@ final class TerminalStore {
         applyStyle()
     }
 
-    /// Settings ▸ Terminal is showing: records the appearance and, with "Use my Ghostty settings"
-    /// on, starts the engine so the page can say whether the user's config loads.
-    func prepareSettings(_ appearance: TerminalAppearance, chrome: TerminalChrome, transparency: TerminalTransparency) {
-        self.appearance = (appearance, chrome, transparency)
-        if preferences.settings.usesGhosttyConfig, availability == .available {
-            _ = startedEngine()
-        }
-        applyStyle()
-    }
-
     /// Rereads the user's Ghostty config and restyles every terminal with it.
     func reloadGhosttyConfig() {
         applyStyle(force: true)
@@ -173,7 +163,10 @@ final class TerminalStore {
     private func applyStyle(force: Bool = false) {
         guard let (appearance, chrome, transparency) = appearance else { return }
         let settings = preferences.settings
-        guard let engine else {
+        // Ghostty settings start the engine even before a terminal opens, so Settings can say
+        // whether the user's config loads.
+        let wantsEngine = settings.usesGhosttyConfig && availability == .available
+        guard let engine = engine ?? (wantsEngine ? startedEngine() : nil) else {
             configStatus = settings.usesGhosttyConfig ? .ghosttyPending : .native
             return
         }

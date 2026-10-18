@@ -129,7 +129,9 @@ public struct HostBinaryInstaller: Sendable {
 
     /// The build `native-host` points at now.
     private func currentTarget() -> String? {
-        guard let target = try? FileManager.default.destinationOfSymbolicLink(atPath: executable.path) else { return nil }
+        guard let target = try? FileManager.default.destinationOfSymbolicLink(atPath: executable.path) else {
+            return nil
+        }
         let parts = target.split(separator: "/")
         return parts.count >= 2 ? String(parts[parts.count - 2]) : nil
     }
@@ -139,7 +141,8 @@ public struct HostBinaryInstaller: Sendable {
     private func point(at build: String) throws {
         let staging = root.appending(path: "native-host.next")
         try? FileManager.default.removeItem(at: staging)
-        try FileManager.default.createSymbolicLink(atPath: staging.path, withDestinationPath: "versions/\(build)/native-host")
+        try FileManager.default.createSymbolicLink(
+            atPath: staging.path, withDestinationPath: "versions/\(build)/native-host")
         guard rename(staging.path, executable.path) == 0 else {
             throw CocoaError(.fileWriteUnknown, userInfo: [NSFilePathErrorKey: executable.path])
         }
