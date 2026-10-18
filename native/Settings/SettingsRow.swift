@@ -58,7 +58,10 @@ struct SettingsRow<Accessory: View, Control: View>: View {
                         SettingsBadge(lockReason, systemImage: "lock.fill")
                     }
                 }
-                .frame(minHeight: SettingsMetrics.rowTitleHeight)
+                // The line takes the text column's width. Sized to its own, it was laid out again a
+                // fraction narrower beside a wider description, truncating its last accessory and
+                // centering in the leftover ("node_repl" on MCP Servers).
+                .frame(maxWidth: .infinity, minHeight: SettingsMetrics.rowTitleHeight, alignment: .leading)
                 if let description {
                     description
                         .settingsText(.body)

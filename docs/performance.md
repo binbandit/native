@@ -78,27 +78,29 @@ there to catch regressions in agent startup.
 
 2026-10-18, Debug build in the `perf` instance, Codex (`gpt-6.1-sol`) as the default agent, one
 scratch project. The Mac was very busy (load average 150 to 220 on 16 cores, other agents
-compiling), so wall-clock launch numbers are high and noisy; compare the CPU columns.
+compiling), so wall-clock launch numbers are high and noisy; compare the CPU columns. "After" is
+the tree a few hours later, which also has the features that landed in between (search over agent
+history, telemetry, the command palette), so not every difference is this work's.
 
 ### Before and after
 
 | Measurement | Before | After |
 | --- | --- | --- |
 | Launch, warm: `appInit` | 44–66 ms | 58–61 ms |
-| Launch, warm: first frame (wall, busy Mac) | 702–1308 ms | <!-- after-frame --> |
-| Launch, warm: main-thread CPU to first frame | not measured (added with this work) | <!-- after-cpu --> |
+| Launch, warm: first frame (wall, busy Mac) | 702–1308 ms | 838–976 ms; 659–680 ms with agent-history search off |
+| Launch, warm: main-thread CPU to first frame | not measured (added with this work) | 585–716 ms main, 804–955 ms process; 402–428 / 533–571 ms with agent-history search off |
 | Launch: agents ready (`agentsReady`) | 2471–4242 ms | 2145–2802 ms |
 | Codex adapter start to `initialize` answered | 1085–2185 ms through npx | 287–306 ms direct |
 | Claude adapter start to `initialize` answered | 4018 ms through npx | 1332 ms direct |
 | Idle, visible, no sessions: Native | 0.07% CPU, 0.6 wakeups/s, 111 MB | 0.05% CPU, 0.9 wakeups/s, 101 MB |
-| Idle, hidden: Native | 0.01% CPU, 0.3 wakeups/s | <!-- after-hidden --> |
+| Idle, hidden: Native | 0.01% CPU, 0.3 wakeups/s | 0.14% CPU, 0.6 wakeups/s (one idle-loop tick a minute) |
 | Idle, no sessions: processes under Native | 4, 295 MB footprint (npm wrapper 69 MB) | 3, 205 MB |
-| Idle, 1 session: Native / everything under it | 0.22% CPU, 0.9 wakeups/s, 94 MB / 14 processes, 990 MB | <!-- after-1 --> |
-| Idle, 5 sessions: Native / everything under it | 0.30% CPU, 99 MB / 54 processes, 5.26 GB | <!-- after-5 --> |
-| Streaming a 2,500-word reply: Native CPU | 36.7% over 25 s, 88 wakeups/s, 91 mW | <!-- after-stream --> |
+| Idle, 1 session: Native / everything under it | 0.22% CPU, 0.9 wakeups/s, 94 MB / 14 processes, 990 MB | 0.02% CPU, 0.7 wakeups/s, 127 MB / 13 processes, 1.31 GB |
+| Idle, 5 sessions: Native / everything under it | 0.30% CPU, 99 MB / 54 processes, 5.26 GB | 0.42% CPU, 134 MB / 53 processes, 5.29 GB; 4 of the 5 closed after the idle timeout, but Codex keeps their MCP servers (below) |
+| Streaming a 2,500-word reply: Native CPU | 36.7% over 25 s, 88 wakeups/s, 91 mW | 24.5% over a 45 s turn, 67 wakeups/s, 85 mW (measured without a profiler attached; the "before" ran under `sample`, which inflates both) |
 | Streaming: main-thread time in Keep Awake | 338 ms per 25 s (a power-source IPC per chunk) | 0 (only when the working count changes) |
-| Streaming: footprint | 104 MB → 364 MB (225 MB of it graphics), 138 MB after leaving the session | <!-- after-stream-mem --> |
-| 30 task switches + 10 Settings toggles | +6 MB, 0 leaks | <!-- after-growth --> |
+| Streaming: footprint | 104 MB → 364 MB (225 MB of it graphics), 138 MB after leaving the session | 193 MB → 420 MB, again mostly graphics, held while a long reply is on screen |
+| 30 task switches + 10 Settings toggles | +6 MB, 0 leaks | +12 MB; 297 leaks (20 KB) at launch, 5,532 (268 KB) after, all inside the Metal driver (IOGPUMetalBuffer and AGXHeap descriptors), none in Native |
 
 ### What the measurements showed
 
@@ -108,7 +110,10 @@ compiling), so wall-clock launch numbers are high and noisy; compare the CPU col
   tasks opened once held 54 processes and 5.26 GB until the agent stopped, and the default agent
   never stops. Native now closes sessions nobody has used for 10 minutes (`session/close`, which
   codex-acp and claude-agent-acp both support), and drops their transcripts; selecting one loads
-  it back.
+  it back (checked with `-sessionIdleTimeout 30 -agentIdleTimeout 60`: four of five closed, and
+  the selected one stayed). That frees Native's side and the adapter's. Codex's app-server, though,
+  only unsubscribes the thread, and still held the closed sessions' MCP servers 11 minutes later:
+  it unloads a thread after `thread_unload_delay_secs`, which codex-acp gives no way to set.
 - **npx sat between Native and every adapter.** `npx --yes <adapter>@<version>` keeps an
   `npm exec` Node process alive as the adapter's parent (52–118 MB each) and adds 0.8–2.7 s to
   every agent start. When npx has already installed that exact version, Native now runs the
@@ -128,8 +133,16 @@ compiling), so wall-clock launch numbers are high and noisy; compare the CPU col
 - **The Markdown cache could hold a long reply hundreds of times.** It keyed parses by source and
   capped the count at 512, but every streamed chunk is a new source holding the whole reply so
   far. It now also caps the total source size at 4 MB.
-- **Launch is mostly the main thread.** Its CPU reaches about a second before the first frame in
-  this Debug build. The biggest app-side pieces in the time profile: plugin manifests rescanned
+- **Plugin manifests were rescanned on every read.** `PluginRegistry.plugins` re-applied
+  experiments on every access, and finding out whether a manifest uses any ran a regex over every
+  agent argument and environment value. That's most of what the idle loop's once-a-minute tick
+  cost. Each loaded plugin now works that out once.
+- **Search over agent history reads the whole history at every launch.** With search on, the
+  first minutes after launch ran at 15–45% CPU, hidden or not, with footprint up to 370 MB,
+  parsing every Claude Code JSONL file; it also adds about 300 ms of main-thread CPU before the
+  first frame.
+- **Launch is mostly the main thread.** It spends about 0.4 s of CPU before the first frame in
+  this Debug build (0.6–0.7 s with agent-history search on), against a 150 ms budget. The biggest app-side pieces in the time profile: plugin manifests rescanned
   for experiment placeholders (a regex over every argument) on every `PluginRegistry.plugins`
   read, the MCP config files parsed on the main thread (`~/.claude.json` is 315 KB here), and
   the home card grid's layout. The rest is SwiftUI and AppKit building the window, plus waiting on
@@ -142,7 +155,10 @@ compiling), so wall-clock launch numbers are high and noisy; compare the CPU col
 
 | What | Why | Owner |
 | --- | --- | --- |
-| Cache the applied plugin list in `PluginRegistry` (or at least `usesExperiments` per loaded plugin) | `plugins` re-applies experiments, with a regex scan of every manifest, on every read: tens of ms at launch, and again on every redraw that asks for agents | Experiments / plugins |
+| Make the agent-history backfill incremental | Skip files whose size and modification date are unchanged, stream lines instead of loading whole files, run at background QoS, and keep its setup off the main thread before the first frame | Search |
+| Let Codex unload closed threads | Codex keeps an unsubscribed thread, with its MCP servers (about 1 GB each here), for `thread_unload_delay_secs`. codex-acp needs an option (or the delay a lower default) so Native's `session/close` actually frees them | Codex plugin, upstream codex-acp |
+| Cache the applied plugin list itself | Only the experiment scan is cached; `plugins` still maps every loaded plugin on every read | Experiments / plugins |
+| "Couldn't run git: The file “project” doesn't exist" alert | New Session in a project whose folder is gone shows a modal; the sidebar already says "Can't find this project's folder" with Retry | Failures |
 | Narrow what the composer and sidebar rows observe | While a reply streams, `ModelPill`, `ComposerView`, `SessionRow` and `AppModel.statusBarTasks` re-render on every chunk because they read `session.state`; they need the mirrored `configOptions`, status and title only | Composer, sidebar |
 | Render a streaming message in parts | The growing reply is one row; re-rendering it on every chunk is where most streaming CPU and the transient 225 MB of graphics memory go. Split the Markdown at stable block boundaries so finished blocks don't re-render | Transcript |
 | Read MCP config files off the main thread at launch | About 14 ms in Debug before the first frame; agents can wait for it instead | MCP |

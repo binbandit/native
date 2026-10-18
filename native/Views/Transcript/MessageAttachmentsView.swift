@@ -50,7 +50,8 @@ struct MessageAttachmentsView: View {
         }
         .buttonStyle(.plain)
         .help("Quick Look \(attachment.name)")
-        .accessibilityLabel("Image \(attachment.name)")
+        // A replayed image has no file name of its own, only "Image".
+        .accessibilityLabel(attachment.url == nil ? attachment.name : "Image \(attachment.name)")
         .accessibilityHint("Opens it in Quick Look")
     }
 
