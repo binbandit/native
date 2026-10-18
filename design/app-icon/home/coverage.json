@@ -1,0 +1,5109 @@
+{
+  "families": 53,
+  "expectedVariants": 424,
+  "editableSVGs": 424,
+  "transparentPNGs": 424,
+  "catalogueMatchesAppIcons": true,
+  "errors": [],
+  "checks": [
+    "SVG parse and local references",
+    "All app-icon artwork families covered",
+    "Four channels and both appearances",
+    "Release-channel layers present",
+    "No raster or live text in SVGs",
+    "RGBA 1280×1080 exports",
+    "Transparent outer edges; no clipping",
+    "More than 55% transparent canvas",
+    "Eight distinct rendered variants per family"
+  ],
+  "inkBounds": [
+    {
+      "id": "original",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.783
+    },
+    {
+      "id": "original",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.783
+    },
+    {
+      "id": "original",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.782
+    },
+    {
+      "id": "original",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.782
+    },
+    {
+      "id": "original",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.779
+    },
+    {
+      "id": "original",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.779
+    },
+    {
+      "id": "original",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.778
+    },
+    {
+      "id": "original",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.778
+    },
+    {
+      "id": "cobalt",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.783
+    },
+    {
+      "id": "cobalt",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.783
+    },
+    {
+      "id": "cobalt",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.782
+    },
+    {
+      "id": "cobalt",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.782
+    },
+    {
+      "id": "cobalt",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.779
+    },
+    {
+      "id": "cobalt",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.779
+    },
+    {
+      "id": "cobalt",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.778
+    },
+    {
+      "id": "cobalt",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.778
+    },
+    {
+      "id": "fern",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.783
+    },
+    {
+      "id": "fern",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.783
+    },
+    {
+      "id": "fern",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.782
+    },
+    {
+      "id": "fern",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.782
+    },
+    {
+      "id": "fern",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.779
+    },
+    {
+      "id": "fern",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.779
+    },
+    {
+      "id": "fern",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.778
+    },
+    {
+      "id": "fern",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.778
+    },
+    {
+      "id": "ember",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.783
+    },
+    {
+      "id": "ember",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.783
+    },
+    {
+      "id": "ember",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.782
+    },
+    {
+      "id": "ember",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.782
+    },
+    {
+      "id": "ember",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.779
+    },
+    {
+      "id": "ember",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.779
+    },
+    {
+      "id": "ember",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.778
+    },
+    {
+      "id": "ember",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.778
+    },
+    {
+      "id": "prism",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.783
+    },
+    {
+      "id": "prism",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.783
+    },
+    {
+      "id": "prism",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.782
+    },
+    {
+      "id": "prism",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.782
+    },
+    {
+      "id": "prism",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.779
+    },
+    {
+      "id": "prism",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.779
+    },
+    {
+      "id": "prism",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.778
+    },
+    {
+      "id": "prism",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.778
+    },
+    {
+      "id": "arcade",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        129,
+        254,
+        1143,
+        888
+      ],
+      "transparentFraction": 0.781
+    },
+    {
+      "id": "arcade",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        129,
+        254,
+        1143,
+        888
+      ],
+      "transparentFraction": 0.781
+    },
+    {
+      "id": "arcade",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        129,
+        254,
+        1215,
+        888
+      ],
+      "transparentFraction": 0.78
+    },
+    {
+      "id": "arcade",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        129,
+        254,
+        1215,
+        888
+      ],
+      "transparentFraction": 0.78
+    },
+    {
+      "id": "arcade",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        888
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "arcade",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        888
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "arcade",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.775
+    },
+    {
+      "id": "arcade",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.775
+    },
+    {
+      "id": "halloween",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1140,
+        995
+      ],
+      "transparentFraction": 0.775
+    },
+    {
+      "id": "halloween",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1140,
+        995
+      ],
+      "transparentFraction": 0.775
+    },
+    {
+      "id": "halloween",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1215,
+        995
+      ],
+      "transparentFraction": 0.774
+    },
+    {
+      "id": "halloween",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1215,
+        995
+      ],
+      "transparentFraction": 0.774
+    },
+    {
+      "id": "halloween",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        995
+      ],
+      "transparentFraction": 0.767
+    },
+    {
+      "id": "halloween",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        995
+      ],
+      "transparentFraction": 0.767
+    },
+    {
+      "id": "halloween",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        995
+      ],
+      "transparentFraction": 0.77
+    },
+    {
+      "id": "halloween",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        995
+      ],
+      "transparentFraction": 0.77
+    },
+    {
+      "id": "dia-de-muertos",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        56,
+        1140,
+        991
+      ],
+      "transparentFraction": 0.722
+    },
+    {
+      "id": "dia-de-muertos",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        56,
+        1140,
+        991
+      ],
+      "transparentFraction": 0.722
+    },
+    {
+      "id": "dia-de-muertos",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        56,
+        1215,
+        991
+      ],
+      "transparentFraction": 0.721
+    },
+    {
+      "id": "dia-de-muertos",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        56,
+        1215,
+        991
+      ],
+      "transparentFraction": 0.721
+    },
+    {
+      "id": "dia-de-muertos",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        52,
+        56,
+        1230,
+        991
+      ],
+      "transparentFraction": 0.718
+    },
+    {
+      "id": "dia-de-muertos",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        52,
+        56,
+        1230,
+        991
+      ],
+      "transparentFraction": 0.718
+    },
+    {
+      "id": "dia-de-muertos",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        56,
+        1251,
+        991
+      ],
+      "transparentFraction": 0.717
+    },
+    {
+      "id": "dia-de-muertos",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        56,
+        1251,
+        991
+      ],
+      "transparentFraction": 0.717
+    },
+    {
+      "id": "dia-de-muertos-sugar-skull",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        377,
+        174,
+        903,
+        936
+      ],
+      "transparentFraction": 0.78
+    },
+    {
+      "id": "dia-de-muertos-sugar-skull",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        377,
+        174,
+        903,
+        936
+      ],
+      "transparentFraction": 0.78
+    },
+    {
+      "id": "dia-de-muertos-sugar-skull",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        377,
+        174,
+        1215,
+        936
+      ],
+      "transparentFraction": 0.779
+    },
+    {
+      "id": "dia-de-muertos-sugar-skull",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        377,
+        174,
+        1215,
+        936
+      ],
+      "transparentFraction": 0.779
+    },
+    {
+      "id": "dia-de-muertos-sugar-skull",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        936
+      ],
+      "transparentFraction": 0.775
+    },
+    {
+      "id": "dia-de-muertos-sugar-skull",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        936
+      ],
+      "transparentFraction": 0.775
+    },
+    {
+      "id": "dia-de-muertos-sugar-skull",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.775
+    },
+    {
+      "id": "dia-de-muertos-sugar-skull",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.775
+    },
+    {
+      "id": "new-year",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        64,
+        65,
+        1234,
+        984
+      ],
+      "transparentFraction": 0.768
+    },
+    {
+      "id": "new-year",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        64,
+        65,
+        1234,
+        984
+      ],
+      "transparentFraction": 0.768
+    },
+    {
+      "id": "new-year",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        64,
+        65,
+        1234,
+        984
+      ],
+      "transparentFraction": 0.767
+    },
+    {
+      "id": "new-year",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        64,
+        65,
+        1234,
+        984
+      ],
+      "transparentFraction": 0.767
+    },
+    {
+      "id": "new-year",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        984
+      ],
+      "transparentFraction": 0.763
+    },
+    {
+      "id": "new-year",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        984
+      ],
+      "transparentFraction": 0.763
+    },
+    {
+      "id": "new-year",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        65,
+        1251,
+        984
+      ],
+      "transparentFraction": 0.763
+    },
+    {
+      "id": "new-year",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        65,
+        1251,
+        984
+      ],
+      "transparentFraction": 0.763
+    },
+    {
+      "id": "valentines-day",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        114,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.78
+    },
+    {
+      "id": "valentines-day",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        114,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.78
+    },
+    {
+      "id": "valentines-day",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        114,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.779
+    },
+    {
+      "id": "valentines-day",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        114,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.779
+    },
+    {
+      "id": "valentines-day",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "valentines-day",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "valentines-day",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        114,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.775
+    },
+    {
+      "id": "valentines-day",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        114,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.775
+    },
+    {
+      "id": "st-patricks-day",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        154,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.773
+    },
+    {
+      "id": "st-patricks-day",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        154,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.773
+    },
+    {
+      "id": "st-patricks-day",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        154,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.772
+    },
+    {
+      "id": "st-patricks-day",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        154,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.772
+    },
+    {
+      "id": "st-patricks-day",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.768
+    },
+    {
+      "id": "st-patricks-day",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.768
+    },
+    {
+      "id": "st-patricks-day",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.768
+    },
+    {
+      "id": "st-patricks-day",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.768
+    },
+    {
+      "id": "spring-festival",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        90,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.778
+    },
+    {
+      "id": "spring-festival",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        90,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.778
+    },
+    {
+      "id": "spring-festival",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        90,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.777
+    },
+    {
+      "id": "spring-festival",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        90,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.777
+    },
+    {
+      "id": "spring-festival",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.773
+    },
+    {
+      "id": "spring-festival",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.773
+    },
+    {
+      "id": "spring-festival",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        90,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.773
+    },
+    {
+      "id": "spring-festival",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        90,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.773
+    },
+    {
+      "id": "seollal",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1140,
+        916
+      ],
+      "transparentFraction": 0.781
+    },
+    {
+      "id": "seollal",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1140,
+        916
+      ],
+      "transparentFraction": 0.781
+    },
+    {
+      "id": "seollal",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1215,
+        916
+      ],
+      "transparentFraction": 0.779
+    },
+    {
+      "id": "seollal",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1215,
+        916
+      ],
+      "transparentFraction": 0.779
+    },
+    {
+      "id": "seollal",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        916
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "seollal",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        916
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "seollal",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.775
+    },
+    {
+      "id": "seollal",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.775
+    },
+    {
+      "id": "tet",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        143,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.778
+    },
+    {
+      "id": "tet",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        143,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.778
+    },
+    {
+      "id": "tet",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        143,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.777
+    },
+    {
+      "id": "tet",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        143,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.777
+    },
+    {
+      "id": "tet",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.773
+    },
+    {
+      "id": "tet",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.773
+    },
+    {
+      "id": "tet",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.773
+    },
+    {
+      "id": "tet",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.773
+    },
+    {
+      "id": "lantern-festival",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        211,
+        1140,
+        992
+      ],
+      "transparentFraction": 0.773
+    },
+    {
+      "id": "lantern-festival",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        211,
+        1140,
+        992
+      ],
+      "transparentFraction": 0.773
+    },
+    {
+      "id": "lantern-festival",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        211,
+        1215,
+        992
+      ],
+      "transparentFraction": 0.772
+    },
+    {
+      "id": "lantern-festival",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        211,
+        1215,
+        992
+      ],
+      "transparentFraction": 0.772
+    },
+    {
+      "id": "lantern-festival",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        992
+      ],
+      "transparentFraction": 0.768
+    },
+    {
+      "id": "lantern-festival",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        992
+      ],
+      "transparentFraction": 0.768
+    },
+    {
+      "id": "lantern-festival",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        992
+      ],
+      "transparentFraction": 0.768
+    },
+    {
+      "id": "lantern-festival",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        992
+      ],
+      "transparentFraction": 0.768
+    },
+    {
+      "id": "mid-autumn",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        97,
+        1140,
+        917
+      ],
+      "transparentFraction": 0.759
+    },
+    {
+      "id": "mid-autumn",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        97,
+        1140,
+        917
+      ],
+      "transparentFraction": 0.759
+    },
+    {
+      "id": "mid-autumn",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        97,
+        1215,
+        917
+      ],
+      "transparentFraction": 0.758
+    },
+    {
+      "id": "mid-autumn",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        97,
+        1215,
+        917
+      ],
+      "transparentFraction": 0.758
+    },
+    {
+      "id": "mid-autumn",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        917
+      ],
+      "transparentFraction": 0.754
+    },
+    {
+      "id": "mid-autumn",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        917
+      ],
+      "transparentFraction": 0.754
+    },
+    {
+      "id": "mid-autumn",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        97,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.754
+    },
+    {
+      "id": "mid-autumn",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        97,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.754
+    },
+    {
+      "id": "tet-trung-thu",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        63,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.768
+    },
+    {
+      "id": "tet-trung-thu",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        63,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.768
+    },
+    {
+      "id": "tet-trung-thu",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        63,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.767
+    },
+    {
+      "id": "tet-trung-thu",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        63,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.767
+    },
+    {
+      "id": "tet-trung-thu",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.763
+    },
+    {
+      "id": "tet-trung-thu",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.763
+    },
+    {
+      "id": "tet-trung-thu",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        63,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.763
+    },
+    {
+      "id": "tet-trung-thu",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        63,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.763
+    },
+    {
+      "id": "chuseok",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        125,
+        1140,
+        949
+      ],
+      "transparentFraction": 0.762
+    },
+    {
+      "id": "chuseok",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        125,
+        1140,
+        949
+      ],
+      "transparentFraction": 0.762
+    },
+    {
+      "id": "chuseok",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        125,
+        1215,
+        949
+      ],
+      "transparentFraction": 0.761
+    },
+    {
+      "id": "chuseok",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        125,
+        1215,
+        949
+      ],
+      "transparentFraction": 0.761
+    },
+    {
+      "id": "chuseok",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        949
+      ],
+      "transparentFraction": 0.757
+    },
+    {
+      "id": "chuseok",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        949
+      ],
+      "transparentFraction": 0.757
+    },
+    {
+      "id": "chuseok",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        125,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.757
+    },
+    {
+      "id": "chuseok",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        125,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.757
+    },
+    {
+      "id": "nowruz",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        160,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "nowruz",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        160,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "nowruz",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        160,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.775
+    },
+    {
+      "id": "nowruz",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        160,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.775
+    },
+    {
+      "id": "nowruz",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.771
+    },
+    {
+      "id": "nowruz",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.771
+    },
+    {
+      "id": "nowruz",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.771
+    },
+    {
+      "id": "nowruz",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.771
+    },
+    {
+      "id": "songkran",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "songkran",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "songkran",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.775
+    },
+    {
+      "id": "songkran",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.775
+    },
+    {
+      "id": "songkran",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.771
+    },
+    {
+      "id": "songkran",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.771
+    },
+    {
+      "id": "songkran",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.771
+    },
+    {
+      "id": "songkran",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.771
+    },
+    {
+      "id": "matariki",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        97,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.781
+    },
+    {
+      "id": "matariki",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        97,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.781
+    },
+    {
+      "id": "matariki",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        97,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.78
+    },
+    {
+      "id": "matariki",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        97,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.78
+    },
+    {
+      "id": "matariki",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        40,
+        76,
+        1240,
+        883
+      ],
+      "transparentFraction": 0.777
+    },
+    {
+      "id": "matariki",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        40,
+        76,
+        1240,
+        883
+      ],
+      "transparentFraction": 0.777
+    },
+    {
+      "id": "matariki",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        97,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "matariki",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        97,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "kwanzaa",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        32,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.761
+    },
+    {
+      "id": "kwanzaa",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        32,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.761
+    },
+    {
+      "id": "kwanzaa",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        32,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.76
+    },
+    {
+      "id": "kwanzaa",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        32,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.76
+    },
+    {
+      "id": "kwanzaa",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.756
+    },
+    {
+      "id": "kwanzaa",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.756
+    },
+    {
+      "id": "kwanzaa",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        32,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.756
+    },
+    {
+      "id": "kwanzaa",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        32,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.756
+    },
+    {
+      "id": "pride",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        142,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.782
+    },
+    {
+      "id": "pride",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        142,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.782
+    },
+    {
+      "id": "pride",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        142,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.781
+    },
+    {
+      "id": "pride",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        142,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.781
+    },
+    {
+      "id": "pride",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.777
+    },
+    {
+      "id": "pride",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.777
+    },
+    {
+      "id": "pride",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.777
+    },
+    {
+      "id": "pride",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.777
+    },
+    {
+      "id": "carnival",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        64,
+        65,
+        1234,
+        984
+      ],
+      "transparentFraction": 0.767
+    },
+    {
+      "id": "carnival",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        64,
+        65,
+        1234,
+        984
+      ],
+      "transparentFraction": 0.767
+    },
+    {
+      "id": "carnival",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        64,
+        65,
+        1234,
+        984
+      ],
+      "transparentFraction": 0.766
+    },
+    {
+      "id": "carnival",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        64,
+        65,
+        1234,
+        984
+      ],
+      "transparentFraction": 0.766
+    },
+    {
+      "id": "carnival",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        984
+      ],
+      "transparentFraction": 0.762
+    },
+    {
+      "id": "carnival",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        984
+      ],
+      "transparentFraction": 0.762
+    },
+    {
+      "id": "carnival",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        65,
+        1251,
+        984
+      ],
+      "transparentFraction": 0.761
+    },
+    {
+      "id": "carnival",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        65,
+        1251,
+        984
+      ],
+      "transparentFraction": 0.761
+    },
+    {
+      "id": "christmas",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        167,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.778
+    },
+    {
+      "id": "christmas",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        167,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.778
+    },
+    {
+      "id": "christmas",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        167,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "christmas",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        167,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "christmas",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.773
+    },
+    {
+      "id": "christmas",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.773
+    },
+    {
+      "id": "christmas",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.772
+    },
+    {
+      "id": "christmas",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.772
+    },
+    {
+      "id": "easter",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        80,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.767
+    },
+    {
+      "id": "easter",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        80,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.767
+    },
+    {
+      "id": "easter",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        80,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.766
+    },
+    {
+      "id": "easter",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        80,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.766
+    },
+    {
+      "id": "easter",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.762
+    },
+    {
+      "id": "easter",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.762
+    },
+    {
+      "id": "easter",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        80,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.762
+    },
+    {
+      "id": "easter",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        80,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.762
+    },
+    {
+      "id": "orthodox-pascha",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        192,
+        1140,
+        941
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "orthodox-pascha",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        192,
+        1140,
+        941
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "orthodox-pascha",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        192,
+        1215,
+        941
+      ],
+      "transparentFraction": 0.774
+    },
+    {
+      "id": "orthodox-pascha",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        192,
+        1215,
+        941
+      ],
+      "transparentFraction": 0.774
+    },
+    {
+      "id": "orthodox-pascha",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        941
+      ],
+      "transparentFraction": 0.771
+    },
+    {
+      "id": "orthodox-pascha",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        941
+      ],
+      "transparentFraction": 0.771
+    },
+    {
+      "id": "orthodox-pascha",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.77
+    },
+    {
+      "id": "orthodox-pascha",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.77
+    },
+    {
+      "id": "holi",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        127,
+        1155,
+        883
+      ],
+      "transparentFraction": 0.777
+    },
+    {
+      "id": "holi",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        127,
+        1155,
+        883
+      ],
+      "transparentFraction": 0.777
+    },
+    {
+      "id": "holi",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        127,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "holi",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        127,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "holi",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.773
+    },
+    {
+      "id": "holi",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.773
+    },
+    {
+      "id": "holi",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        127,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.772
+    },
+    {
+      "id": "holi",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        127,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.772
+    },
+    {
+      "id": "diwali",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        111,
+        1140,
+        995
+      ],
+      "transparentFraction": 0.777
+    },
+    {
+      "id": "diwali",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        111,
+        1140,
+        995
+      ],
+      "transparentFraction": 0.777
+    },
+    {
+      "id": "diwali",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        111,
+        1215,
+        995
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "diwali",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        111,
+        1215,
+        995
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "diwali",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        995
+      ],
+      "transparentFraction": 0.772
+    },
+    {
+      "id": "diwali",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        995
+      ],
+      "transparentFraction": 0.772
+    },
+    {
+      "id": "diwali",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        111,
+        1251,
+        995
+      ],
+      "transparentFraction": 0.772
+    },
+    {
+      "id": "diwali",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        111,
+        1251,
+        995
+      ],
+      "transparentFraction": 0.772
+    },
+    {
+      "id": "vaisakhi",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        30,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.765
+    },
+    {
+      "id": "vaisakhi",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        30,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.765
+    },
+    {
+      "id": "vaisakhi",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        30,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.764
+    },
+    {
+      "id": "vaisakhi",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        30,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.764
+    },
+    {
+      "id": "vaisakhi",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        30,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.76
+    },
+    {
+      "id": "vaisakhi",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        30,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.76
+    },
+    {
+      "id": "vaisakhi",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        30,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.76
+    },
+    {
+      "id": "vaisakhi",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        30,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.76
+    },
+    {
+      "id": "bandi-chhor-divas",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1140,
+        983
+      ],
+      "transparentFraction": 0.779
+    },
+    {
+      "id": "bandi-chhor-divas",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1140,
+        983
+      ],
+      "transparentFraction": 0.779
+    },
+    {
+      "id": "bandi-chhor-divas",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1215,
+        983
+      ],
+      "transparentFraction": 0.778
+    },
+    {
+      "id": "bandi-chhor-divas",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1215,
+        983
+      ],
+      "transparentFraction": 0.778
+    },
+    {
+      "id": "bandi-chhor-divas",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        983
+      ],
+      "transparentFraction": 0.774
+    },
+    {
+      "id": "bandi-chhor-divas",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        983
+      ],
+      "transparentFraction": 0.774
+    },
+    {
+      "id": "bandi-chhor-divas",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        983
+      ],
+      "transparentFraction": 0.774
+    },
+    {
+      "id": "bandi-chhor-divas",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        983
+      ],
+      "transparentFraction": 0.774
+    },
+    {
+      "id": "guru-nanak-gurpurab",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        88,
+        1140,
+        977
+      ],
+      "transparentFraction": 0.775
+    },
+    {
+      "id": "guru-nanak-gurpurab",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        88,
+        1140,
+        977
+      ],
+      "transparentFraction": 0.775
+    },
+    {
+      "id": "guru-nanak-gurpurab",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        88,
+        1215,
+        977
+      ],
+      "transparentFraction": 0.774
+    },
+    {
+      "id": "guru-nanak-gurpurab",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        88,
+        1215,
+        977
+      ],
+      "transparentFraction": 0.774
+    },
+    {
+      "id": "guru-nanak-gurpurab",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        977
+      ],
+      "transparentFraction": 0.77
+    },
+    {
+      "id": "guru-nanak-gurpurab",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        977
+      ],
+      "transparentFraction": 0.77
+    },
+    {
+      "id": "guru-nanak-gurpurab",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        88,
+        1251,
+        977
+      ],
+      "transparentFraction": 0.77
+    },
+    {
+      "id": "guru-nanak-gurpurab",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        88,
+        1251,
+        977
+      ],
+      "transparentFraction": 0.77
+    },
+    {
+      "id": "eid-al-fitr",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        83,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.772
+    },
+    {
+      "id": "eid-al-fitr",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        83,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.772
+    },
+    {
+      "id": "eid-al-fitr",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        83,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.771
+    },
+    {
+      "id": "eid-al-fitr",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        83,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.771
+    },
+    {
+      "id": "eid-al-fitr",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.767
+    },
+    {
+      "id": "eid-al-fitr",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.767
+    },
+    {
+      "id": "eid-al-fitr",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        83,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.767
+    },
+    {
+      "id": "eid-al-fitr",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        83,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.767
+    },
+    {
+      "id": "eid-al-adha",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        70,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "eid-al-adha",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        70,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "eid-al-adha",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        70,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.775
+    },
+    {
+      "id": "eid-al-adha",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        70,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.775
+    },
+    {
+      "id": "eid-al-adha",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.771
+    },
+    {
+      "id": "eid-al-adha",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.771
+    },
+    {
+      "id": "eid-al-adha",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        70,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.771
+    },
+    {
+      "id": "eid-al-adha",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        70,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.771
+    },
+    {
+      "id": "hanukkah",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        28,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.757
+    },
+    {
+      "id": "hanukkah",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        28,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.757
+    },
+    {
+      "id": "hanukkah",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        28,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.756
+    },
+    {
+      "id": "hanukkah",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        28,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.756
+    },
+    {
+      "id": "hanukkah",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        52,
+        28,
+        1230,
+        883
+      ],
+      "transparentFraction": 0.753
+    },
+    {
+      "id": "hanukkah",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        52,
+        28,
+        1230,
+        883
+      ],
+      "transparentFraction": 0.753
+    },
+    {
+      "id": "hanukkah",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        28,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.752
+    },
+    {
+      "id": "hanukkah",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        28,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.752
+    },
+    {
+      "id": "vesak",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        98,
+        1140,
+        887
+      ],
+      "transparentFraction": 0.77
+    },
+    {
+      "id": "vesak",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        98,
+        1140,
+        887
+      ],
+      "transparentFraction": 0.77
+    },
+    {
+      "id": "vesak",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        98,
+        1215,
+        887
+      ],
+      "transparentFraction": 0.769
+    },
+    {
+      "id": "vesak",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        98,
+        1215,
+        887
+      ],
+      "transparentFraction": 0.769
+    },
+    {
+      "id": "vesak",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        887
+      ],
+      "transparentFraction": 0.765
+    },
+    {
+      "id": "vesak",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        887
+      ],
+      "transparentFraction": 0.765
+    },
+    {
+      "id": "vesak",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        98,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.765
+    },
+    {
+      "id": "vesak",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        98,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.765
+    },
+    {
+      "id": "meskel",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        94,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.778
+    },
+    {
+      "id": "meskel",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        94,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.778
+    },
+    {
+      "id": "meskel",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        94,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.777
+    },
+    {
+      "id": "meskel",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        94,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.777
+    },
+    {
+      "id": "meskel",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.773
+    },
+    {
+      "id": "meskel",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.773
+    },
+    {
+      "id": "meskel",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        94,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.773
+    },
+    {
+      "id": "meskel",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        94,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.773
+    },
+    {
+      "id": "timkat",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        69,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.777
+    },
+    {
+      "id": "timkat",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        69,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.777
+    },
+    {
+      "id": "timkat",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        69,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "timkat",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        69,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "timkat",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.772
+    },
+    {
+      "id": "timkat",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.772
+    },
+    {
+      "id": "timkat",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        69,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.772
+    },
+    {
+      "id": "timkat",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        69,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.772
+    },
+    {
+      "id": "earth-day",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        107,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.774
+    },
+    {
+      "id": "earth-day",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        107,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.774
+    },
+    {
+      "id": "earth-day",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        107,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.773
+    },
+    {
+      "id": "earth-day",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        107,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.773
+    },
+    {
+      "id": "earth-day",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.769
+    },
+    {
+      "id": "earth-day",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.769
+    },
+    {
+      "id": "earth-day",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        107,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.769
+    },
+    {
+      "id": "earth-day",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        107,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.769
+    },
+    {
+      "id": "juneteenth",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        69,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.769
+    },
+    {
+      "id": "juneteenth",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        69,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.769
+    },
+    {
+      "id": "juneteenth",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        69,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.767
+    },
+    {
+      "id": "juneteenth",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        69,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.767
+    },
+    {
+      "id": "juneteenth",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.764
+    },
+    {
+      "id": "juneteenth",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.764
+    },
+    {
+      "id": "juneteenth",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        69,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.763
+    },
+    {
+      "id": "juneteenth",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        69,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.763
+    },
+    {
+      "id": "thanksgiving-canada",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        110,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.772
+    },
+    {
+      "id": "thanksgiving-canada",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        110,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.772
+    },
+    {
+      "id": "thanksgiving-canada",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        110,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.77
+    },
+    {
+      "id": "thanksgiving-canada",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        110,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.77
+    },
+    {
+      "id": "thanksgiving-canada",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.767
+    },
+    {
+      "id": "thanksgiving-canada",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.767
+    },
+    {
+      "id": "thanksgiving-canada",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        110,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.766
+    },
+    {
+      "id": "thanksgiving-canada",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        110,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.766
+    },
+    {
+      "id": "thanksgiving-us",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        109,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.771
+    },
+    {
+      "id": "thanksgiving-us",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        109,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.771
+    },
+    {
+      "id": "thanksgiving-us",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        109,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.77
+    },
+    {
+      "id": "thanksgiving-us",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        109,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.77
+    },
+    {
+      "id": "thanksgiving-us",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.766
+    },
+    {
+      "id": "thanksgiving-us",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.766
+    },
+    {
+      "id": "thanksgiving-us",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        109,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.766
+    },
+    {
+      "id": "thanksgiving-us",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        109,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.766
+    },
+    {
+      "id": "mathematics-day",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        137,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.777
+    },
+    {
+      "id": "mathematics-day",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        137,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.777
+    },
+    {
+      "id": "mathematics-day",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        137,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "mathematics-day",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        137,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "mathematics-day",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.772
+    },
+    {
+      "id": "mathematics-day",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.772
+    },
+    {
+      "id": "mathematics-day",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        137,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.772
+    },
+    {
+      "id": "mathematics-day",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        137,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.772
+    },
+    {
+      "id": "programmers-day",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1140,
+        915
+      ],
+      "transparentFraction": 0.777
+    },
+    {
+      "id": "programmers-day",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1140,
+        915
+      ],
+      "transparentFraction": 0.777
+    },
+    {
+      "id": "programmers-day",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1215,
+        915
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "programmers-day",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1215,
+        915
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "programmers-day",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        915
+      ],
+      "transparentFraction": 0.772
+    },
+    {
+      "id": "programmers-day",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        915
+      ],
+      "transparentFraction": 0.772
+    },
+    {
+      "id": "programmers-day",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.772
+    },
+    {
+      "id": "programmers-day",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.772
+    },
+    {
+      "id": "ada-lovelace-day",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        126,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.783
+    },
+    {
+      "id": "ada-lovelace-day",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        126,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.783
+    },
+    {
+      "id": "ada-lovelace-day",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        126,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.782
+    },
+    {
+      "id": "ada-lovelace-day",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        126,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.782
+    },
+    {
+      "id": "ada-lovelace-day",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.778
+    },
+    {
+      "id": "ada-lovelace-day",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.778
+    },
+    {
+      "id": "ada-lovelace-day",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        126,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.778
+    },
+    {
+      "id": "ada-lovelace-day",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        126,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.778
+    },
+    {
+      "id": "personal-celebration",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        64,
+        65,
+        1234,
+        984
+      ],
+      "transparentFraction": 0.775
+    },
+    {
+      "id": "personal-celebration",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        64,
+        65,
+        1234,
+        984
+      ],
+      "transparentFraction": 0.775
+    },
+    {
+      "id": "personal-celebration",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        64,
+        65,
+        1234,
+        984
+      ],
+      "transparentFraction": 0.773
+    },
+    {
+      "id": "personal-celebration",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        64,
+        65,
+        1234,
+        984
+      ],
+      "transparentFraction": 0.773
+    },
+    {
+      "id": "personal-celebration",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        984
+      ],
+      "transparentFraction": 0.77
+    },
+    {
+      "id": "personal-celebration",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        984
+      ],
+      "transparentFraction": 0.77
+    },
+    {
+      "id": "personal-celebration",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        65,
+        1251,
+        984
+      ],
+      "transparentFraction": 0.769
+    },
+    {
+      "id": "personal-celebration",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        65,
+        1251,
+        984
+      ],
+      "transparentFraction": 0.769
+    },
+    {
+      "id": "us-independence-day",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        119,
+        1182,
+        883
+      ],
+      "transparentFraction": 0.773
+    },
+    {
+      "id": "us-independence-day",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        119,
+        1182,
+        883
+      ],
+      "transparentFraction": 0.773
+    },
+    {
+      "id": "us-independence-day",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        119,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.772
+    },
+    {
+      "id": "us-independence-day",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        119,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.772
+    },
+    {
+      "id": "us-independence-day",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.768
+    },
+    {
+      "id": "us-independence-day",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.768
+    },
+    {
+      "id": "us-independence-day",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        119,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.768
+    },
+    {
+      "id": "us-independence-day",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        119,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.768
+    },
+    {
+      "id": "australia-day",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        39,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.781
+    },
+    {
+      "id": "australia-day",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        39,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.781
+    },
+    {
+      "id": "australia-day",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        39,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.78
+    },
+    {
+      "id": "australia-day",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        39,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.78
+    },
+    {
+      "id": "australia-day",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "australia-day",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "australia-day",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        39,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "australia-day",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        39,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "australia-day-wattle",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        73,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "australia-day-wattle",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        73,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.776
+    },
+    {
+      "id": "australia-day-wattle",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        73,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.775
+    },
+    {
+      "id": "australia-day-wattle",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        73,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.775
+    },
+    {
+      "id": "australia-day-wattle",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.771
+    },
+    {
+      "id": "australia-day-wattle",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.771
+    },
+    {
+      "id": "australia-day-wattle",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        73,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.771
+    },
+    {
+      "id": "australia-day-wattle",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        73,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.771
+    },
+    {
+      "id": "australia-day-reflection",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        143,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.775
+    },
+    {
+      "id": "australia-day-reflection",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        143,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.775
+    },
+    {
+      "id": "australia-day-reflection",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        143,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.774
+    },
+    {
+      "id": "australia-day-reflection",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        143,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.774
+    },
+    {
+      "id": "australia-day-reflection",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.77
+    },
+    {
+      "id": "australia-day-reflection",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.77
+    },
+    {
+      "id": "australia-day-reflection",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.77
+    },
+    {
+      "id": "australia-day-reflection",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.77
+    },
+    {
+      "id": "australia-day-boxing-kangaroo",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        185,
+        181,
+        1089,
+        881
+      ],
+      "transparentFraction": 0.887
+    },
+    {
+      "id": "australia-day-boxing-kangaroo",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        185,
+        181,
+        1089,
+        881
+      ],
+      "transparentFraction": 0.887
+    },
+    {
+      "id": "australia-day-boxing-kangaroo",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        185,
+        181,
+        1215,
+        881
+      ],
+      "transparentFraction": 0.886
+    },
+    {
+      "id": "australia-day-boxing-kangaroo",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        185,
+        181,
+        1215,
+        881
+      ],
+      "transparentFraction": 0.886
+    },
+    {
+      "id": "australia-day-boxing-kangaroo",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        881
+      ],
+      "transparentFraction": 0.882
+    },
+    {
+      "id": "australia-day-boxing-kangaroo",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        881
+      ],
+      "transparentFraction": 0.882
+    },
+    {
+      "id": "australia-day-boxing-kangaroo",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.882
+    },
+    {
+      "id": "australia-day-boxing-kangaroo",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.882
+    },
+    {
+      "id": "australia-day-ochre-dots",
+      "channel": "stable",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.783
+    },
+    {
+      "id": "australia-day-ochre-dots",
+      "channel": "stable",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1140,
+        883
+      ],
+      "transparentFraction": 0.783
+    },
+    {
+      "id": "australia-day-ochre-dots",
+      "channel": "beta",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.782
+    },
+    {
+      "id": "australia-day-ochre-dots",
+      "channel": "beta",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        140,
+        240,
+        1215,
+        883
+      ],
+      "transparentFraction": 0.782
+    },
+    {
+      "id": "australia-day-ochre-dots",
+      "channel": "nightly",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.779
+    },
+    {
+      "id": "australia-day-ochre-dots",
+      "channel": "nightly",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        55,
+        32,
+        1235,
+        883
+      ],
+      "transparentFraction": 0.779
+    },
+    {
+      "id": "australia-day-ochre-dots",
+      "channel": "dev",
+      "appearance": "light",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.778
+    },
+    {
+      "id": "australia-day-ochre-dots",
+      "channel": "dev",
+      "appearance": "dark",
+      "inkBoundsPixels": [
+        29,
+        140,
+        1251,
+        949
+      ],
+      "transparentFraction": 0.778
+    }
+  ]
+}

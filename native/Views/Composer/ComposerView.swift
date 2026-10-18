@@ -218,7 +218,13 @@ struct ComposerView: View {
                 onCycleAutonomy: { apply(settings.nextAutonomy) },
                 onTogglePlan: { apply(settings.togglingPlan(resumedAutonomy: autonomyBeforePlan)) },
                 extras: { density in SessionGoalControl(session: session, showsIcon: density.showsIcons) },
-                context: { density in ContextIndicator(session: session, style: density.showsIcons ? .ring : .labeled) }
+                context: { density in
+                    // The session's MCP servers sit beside the context ring, quiet like it.
+                    HStack(spacing: DS.Space.xxs) {
+                        MCPComposerChip(session: session, showsCount: !density.showsIcons)
+                        ContextIndicator(session: session, style: density.showsIcons ? .ring : .labeled)
+                    }
+                }
             )
             // The file picker opens on the task's own folder.
             .fileDialogDefaultDirectory(session.cwd)

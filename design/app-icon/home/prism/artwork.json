@@ -1,7 +1,7 @@
 {
   "id": "prism",
   "name": "Prism",
-  "intent": "Two flat Native links, recolored for Home.",
+  "intent": "Native’s flat spectrum treatment, with deeper inks on light pages and brighter colors on dark pages.",
   "channels": [
     "stable",
     "beta",

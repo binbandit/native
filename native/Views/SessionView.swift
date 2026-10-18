@@ -10,7 +10,6 @@ struct SessionView: View {
     @State private var showsChanges = false
     @Environment(GitStore.self) private var git
     @Environment(GitHubModel.self) private var gitHub
-    @Environment(SettingsPresentation.self) private var settings
     @Environment(AppModel.self) private var model
     @Experiment(.transcriptWidth) private var columnWidth: TranscriptWidth
     /// Files dropped on the transcript, for the composer to attach.
@@ -68,7 +67,9 @@ struct SessionView: View {
         // Another task or page took the window; the inspector went with this view.
         .onDisappear { inspectorRoom.release() }
         .toolbar {
-            // Draws its own outline, like the other header controls, rather than sitting on glass.
+            // The header controls draw their own outline (`.header` buttons, Open In) rather than
+            // sitting on the toolbar's glass, so each hides the shared background. The session's
+            // MCP servers live in the composer, beside the context ring.
             ToolbarItem {
                 OpenInButton(location: OpenInLocation(folder: session.cwd, host: projectHost))
             }
@@ -76,11 +77,10 @@ struct SessionView: View {
             ToolbarItem {
                 GitChangesToolbarButton(model: repository, isPresented: showsChangesBinding)
             }
+            .sharedBackgroundVisibility(.hidden)
             .visibilityPriority(.high)
-            ToolbarItem {
-                MCPSessionStatusButton(session: session) { settings.open(.mcpServers) }
-            }
         }
+        .mcpServersPresentation()
         .focusedSceneValue(\.gitChangesInspector, showsChangesBinding)
         .refreshesGitStatus(of: session, in: git)
         .environment(\.transcriptColumnMaxWidth, columnWidth.maxWidth)

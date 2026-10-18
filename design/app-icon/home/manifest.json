@@ -1,0 +1,3438 @@
+{
+  "version": 1,
+  "kind": "native-home-artwork",
+  "familyCount": 53,
+  "channelCount": 4,
+  "appearances": [
+    "light",
+    "dark"
+  ],
+  "svgCount": 424,
+  "pngCount": 424,
+  "families": [
+    {
+      "id": "original",
+      "name": "Original",
+      "intent": "Two flat Native links, recolored for Home.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "original/stable-light.svg",
+            "png": "original/stable-light.png",
+            "sha256": "e61f6679903a596855606734cfdcb089fb1b2ac6a4a5873329c34721c90c9fa8",
+            "sourceSha256": "84d2ff7102231532264e096635bc76967ac5fcee252717a1c667283078bffbc8"
+          },
+          "dark": {
+            "svg": "original/stable-dark.svg",
+            "png": "original/stable-dark.png",
+            "sha256": "45fe88161cd42d278e08f76f1b1132afe3a52a44541c6aa884c167f71ea974c5",
+            "sourceSha256": "f0246a83b6b5e9d38c6f44c661514daef29acbbaaaabcd108e7a7c07b380f5d1"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "original/beta-light.svg",
+            "png": "original/beta-light.png",
+            "sha256": "c2e320ebe91f0cfdc7015b174fdafb88c65db9d9305ea9f60ad7436e7c7e75e7",
+            "sourceSha256": "85ba87389f1ba3f8c78f53bddfef9d0c4f346d0425405591c870e4f9cbbf95aa"
+          },
+          "dark": {
+            "svg": "original/beta-dark.svg",
+            "png": "original/beta-dark.png",
+            "sha256": "9135cccff5cfb60b37b82b26526ce5e0f3016d215cdd0b3e0055776aae0dc281",
+            "sourceSha256": "765606c104498c267ccadbc6bc589edb44c142e767a7f1d12dac0bbb6b1bd1bc"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "original/nightly-light.svg",
+            "png": "original/nightly-light.png",
+            "sha256": "8c984c86fb88380ed6210be57e1bd76fda6f0071419acdbff0922cd9057f69af",
+            "sourceSha256": "c10c920db03587d940e87c96b3a1d88db7d864196d2f0f248d4f7c9c077f204e"
+          },
+          "dark": {
+            "svg": "original/nightly-dark.svg",
+            "png": "original/nightly-dark.png",
+            "sha256": "903e97af467b965e71bbc6bb2ef25c2ed1a9820d1efcadce6a8a681849056757",
+            "sourceSha256": "8874d2cd36a6d878f40903ff15f93c509ffbe47eb356288e4dffedfd0043785b"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "original/dev-light.svg",
+            "png": "original/dev-light.png",
+            "sha256": "0b4e07a4c24a7555644db0f826639b9ea7f09fecda05abd1bdabae078b223324",
+            "sourceSha256": "6e6d8e19a159ac7bc509ca95e9016b426226f03131734bc15d0c8b9575d1e7e5"
+          },
+          "dark": {
+            "svg": "original/dev-dark.svg",
+            "png": "original/dev-dark.png",
+            "sha256": "87dbd50f317dd5117c66b05d067f019e182261475a5c17d9ebad98256d1936ea",
+            "sourceSha256": "ec80aa0d36322f8541b2c6d932c1dec290391e8c760bf4045f465dadcbd4b97e"
+          }
+        }
+      }
+    },
+    {
+      "id": "cobalt",
+      "name": "Cobalt",
+      "intent": "Two flat Native links, recolored for Home.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "cobalt/stable-light.svg",
+            "png": "cobalt/stable-light.png",
+            "sha256": "5aca87aed8eb7de5af2ae95898ec9c8a60f31a2986969748de1425aa60e3e6a9",
+            "sourceSha256": "79a7ab9419c4dca5082858990426fe39e3368945b9cd270943e44426d900b78a"
+          },
+          "dark": {
+            "svg": "cobalt/stable-dark.svg",
+            "png": "cobalt/stable-dark.png",
+            "sha256": "796ac0bfff2e53b9753a38a2a3eaeea8d63e0ff8a7188be4598607a83aded2d4",
+            "sourceSha256": "1f2750b88fd5c6a24e8336c52ec9f178b914727b1d2c2936ded38f33f1a64c77"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "cobalt/beta-light.svg",
+            "png": "cobalt/beta-light.png",
+            "sha256": "c7c8d8b29b3f66a09f21381cdac80d5c3ca3f04221f59d59679565628624d99a",
+            "sourceSha256": "2cc3c9ca59c7880edfad677e3bd650a0dda9953a0aa94cd12217ba60e6de7c89"
+          },
+          "dark": {
+            "svg": "cobalt/beta-dark.svg",
+            "png": "cobalt/beta-dark.png",
+            "sha256": "54a5f906dcf52d1d31ce2de184a14ee0f9be939be7c799bae6a6004d9a182b06",
+            "sourceSha256": "e4bb3effc0eec6ab7e59d1eefcaa58a6667c23e4d29c463566acdbfed1d4e165"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "cobalt/nightly-light.svg",
+            "png": "cobalt/nightly-light.png",
+            "sha256": "02219abc5cd41aa8a35cf8a725fe7e9ef45290fea8984f6bba4c99f522bf262b",
+            "sourceSha256": "0df1eaa92d23d708c685518aea50652f483f236e5c202155c21dda539ee304e5"
+          },
+          "dark": {
+            "svg": "cobalt/nightly-dark.svg",
+            "png": "cobalt/nightly-dark.png",
+            "sha256": "d104cd25f089198dd9571a1ccb58d89388c1385e28c8d4e6f65475a038337e15",
+            "sourceSha256": "5723fd9a9b8eee64988dbce5ae5eb99030f927d6deaa069a5dd9267e150a2442"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "cobalt/dev-light.svg",
+            "png": "cobalt/dev-light.png",
+            "sha256": "a46c8e389f558272a4f703526a15319ae5ce3aa7eb5c8d76d97c7db4847dcd4a",
+            "sourceSha256": "83addb8c1a78784dc717152a54375244a95694b682b7ce7a8dc30e2306862a0e"
+          },
+          "dark": {
+            "svg": "cobalt/dev-dark.svg",
+            "png": "cobalt/dev-dark.png",
+            "sha256": "658389f8b3002f6fda55eec2f32064136aa7f7616390634ade52d611af9ae622",
+            "sourceSha256": "9d586cf9aae003e3f2f4d27df4660c737ae1446e1e73d8280cd55e5162ef539e"
+          }
+        }
+      }
+    },
+    {
+      "id": "fern",
+      "name": "Fern",
+      "intent": "Two flat Native links, recolored for Home.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "fern/stable-light.svg",
+            "png": "fern/stable-light.png",
+            "sha256": "4ce555187b4d94948fd24cc96c9859c6e07d307e839029da1289c4baebd7039d",
+            "sourceSha256": "b022329aa87f02df605a753436e870cbc74406373079a21fdddd10bf4e3ded20"
+          },
+          "dark": {
+            "svg": "fern/stable-dark.svg",
+            "png": "fern/stable-dark.png",
+            "sha256": "7cfa383f1a3d668d73ad046eaa7461e6ef5677943cc0aba831075b10de8a61bc",
+            "sourceSha256": "f8bbca0555a83d04c1b464a46fb3cf48bf7379b650cb2ea5ed2ae28d624e67e9"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "fern/beta-light.svg",
+            "png": "fern/beta-light.png",
+            "sha256": "97baa8f69f65df551027cc55b0ad8c61b23b9cd0b62853bb3b84d134a2062bea",
+            "sourceSha256": "b1cb279132e5be09b3ac0861d19a24dc7e43b67d4e5d5e5c9a2e1630393d2c83"
+          },
+          "dark": {
+            "svg": "fern/beta-dark.svg",
+            "png": "fern/beta-dark.png",
+            "sha256": "8fd3ab3cc6b4ddc7c6e63f6b2a8f45810d1f64f69ad66a4b316ed85a5760b6cd",
+            "sourceSha256": "7a66744562cbd280a9677e504d65a5f963428fefddd252fce37503533d1d95c8"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "fern/nightly-light.svg",
+            "png": "fern/nightly-light.png",
+            "sha256": "f33105bfe37fdd51c6553c876fd03ceb0cb9b257e7d4ff309504e98f4256ea32",
+            "sourceSha256": "337675a109009a3b4318b9b2a76e609d841134fdc111f48e187935da35d5b3cb"
+          },
+          "dark": {
+            "svg": "fern/nightly-dark.svg",
+            "png": "fern/nightly-dark.png",
+            "sha256": "1761063804e52b8430988b3a259dfccf7032c9e953a6a0daa10669da6f805bc1",
+            "sourceSha256": "654df08c6813e496f7bf33457daabdb54feefa40caa9e19bc1ad80c852919938"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "fern/dev-light.svg",
+            "png": "fern/dev-light.png",
+            "sha256": "37268749e8c528a64b8061b76f476fb86d3b3d75e9725fafe0562796e9f65ba8",
+            "sourceSha256": "b3e299b35c8bd36b97ba1ea90148f3ef180bdf65050649297b9b8bb1fc4dba18"
+          },
+          "dark": {
+            "svg": "fern/dev-dark.svg",
+            "png": "fern/dev-dark.png",
+            "sha256": "ae788103754ad660eb3e36ba1751c683716d12b7187a219a522eaf40f2386080",
+            "sourceSha256": "73587b3c44410df06cc645e0cf04bc2279d5b0541c1fcac91164d1f7e2b20164"
+          }
+        }
+      }
+    },
+    {
+      "id": "ember",
+      "name": "Ember",
+      "intent": "Two flat Native links, recolored for Home.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "ember/stable-light.svg",
+            "png": "ember/stable-light.png",
+            "sha256": "36ef8d014ea10d53db8837b013baef42e3a86a98a3d4845172894856f9071119",
+            "sourceSha256": "cd365a497ecd7cdcfb98641a6c851adfc8734c6b12556e4713f0381e78607163"
+          },
+          "dark": {
+            "svg": "ember/stable-dark.svg",
+            "png": "ember/stable-dark.png",
+            "sha256": "114670f71f8c2bace3a67070f39b44addd15fff3418a30997d5907fa4289fa5d",
+            "sourceSha256": "a3736c484a1aa431b3131b0d992e034e0dfb2d39f01d249d38181941737f6da4"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "ember/beta-light.svg",
+            "png": "ember/beta-light.png",
+            "sha256": "07a50f5caa32fdabe481ed78d46ca42de8f8bff96e4ce57052557454d3a504d5",
+            "sourceSha256": "9a75e576247b1a43f117650289f8683d9965e951440fbbdbfca800071b93c5ae"
+          },
+          "dark": {
+            "svg": "ember/beta-dark.svg",
+            "png": "ember/beta-dark.png",
+            "sha256": "018da9beaa2a75b43cae35d17477d3466dd83955e1c6bd87f3800b7bf4910796",
+            "sourceSha256": "cf09da5bd711f47f0a680d5c37a641aa3fea2f53a9c284606460340f02adf3d8"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "ember/nightly-light.svg",
+            "png": "ember/nightly-light.png",
+            "sha256": "cb5b541a7d13af382b5f1ee3023d6026a55a454ccee6b716cf1ac0ad5dca6294",
+            "sourceSha256": "c288f44fc00299104c783c7d903be13364f24e0eab9ebc5adacc4fe7b1f9d7e9"
+          },
+          "dark": {
+            "svg": "ember/nightly-dark.svg",
+            "png": "ember/nightly-dark.png",
+            "sha256": "9c71ba53c8692a20f9ec0193b30031308f1458404f581f4b929ea1790123dd0b",
+            "sourceSha256": "672a4d8adee6bb374b310e2790e1bdb72c79b58deb55a9c946414cfe317847d3"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "ember/dev-light.svg",
+            "png": "ember/dev-light.png",
+            "sha256": "a80fb2e694cd697f45a477b32daf146c807a62aa58572c09732e6115041d3704",
+            "sourceSha256": "13fa908d8b0af9f0f0849fa00cbb28e1bf6c299fe2c49129da8b11d9e28f685f"
+          },
+          "dark": {
+            "svg": "ember/dev-dark.svg",
+            "png": "ember/dev-dark.png",
+            "sha256": "4ce73bed9eec42c84a67569b601a36ab163cc7b673031c625da1c094ea67b6fb",
+            "sourceSha256": "2db695063b244d909daecfe30b80f59de9f8a3e4a63c5814ceb5ab5dccb064a7"
+          }
+        }
+      }
+    },
+    {
+      "id": "prism",
+      "name": "Prism",
+      "intent": "Native’s flat spectrum treatment, with deeper inks on light pages and brighter colors on dark pages.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "prism/stable-light.svg",
+            "png": "prism/stable-light.png",
+            "sha256": "cfea57e367b2be40ac003144a05f25b07746d9175ccfa5e59b13f3b38175e802",
+            "sourceSha256": "0b5bd4ee4915928eac74083bdf3846d43866a4295b62cb69bb846ecc29dd2d89"
+          },
+          "dark": {
+            "svg": "prism/stable-dark.svg",
+            "png": "prism/stable-dark.png",
+            "sha256": "819bfd9873e5a8c2640492a83006c9590a9002010773231e310c8b83a4b69d9c",
+            "sourceSha256": "bfd81aab6dd1ef1a3f649a1558f0ac4856b6bf8d8b4f477859f84b9fba18b657"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "prism/beta-light.svg",
+            "png": "prism/beta-light.png",
+            "sha256": "06b2ace967f4c3f879c92069110906a965da41112778bcd368b21ea6c3e66b25",
+            "sourceSha256": "4c2c45bdd69bc8eb76aed549b2c3957a72499b1cf91d49579eb427ee786018c8"
+          },
+          "dark": {
+            "svg": "prism/beta-dark.svg",
+            "png": "prism/beta-dark.png",
+            "sha256": "77874d0b66297a68315a56d6f7ca393963ff17f32e875a578339dd0708c990ce",
+            "sourceSha256": "fbf53cc610b18ded328d74b84c111093cdd02a7986f7aa4ca453330ad0beb422"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "prism/nightly-light.svg",
+            "png": "prism/nightly-light.png",
+            "sha256": "8db69a179e8f945660ffe03c3d15866d8a4482dad07993ed865577cca96e4dc4",
+            "sourceSha256": "b340b205185d9bdbf27047c7cd9e2d0a1fa981e4f9d0201010a795ac47b3491e"
+          },
+          "dark": {
+            "svg": "prism/nightly-dark.svg",
+            "png": "prism/nightly-dark.png",
+            "sha256": "3aea66b95ca73bd09b8879dd44c44e735d501cbbee1903f2f39d34bf3baa2ae4",
+            "sourceSha256": "f83e3d41fcf50ba4c2a0068aea7f4d0ae28694b79b5e080498eda27c3bafb3b8"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "prism/dev-light.svg",
+            "png": "prism/dev-light.png",
+            "sha256": "d5e40e02f8b4bbc9995a09c3dfe859a4ce520c110fb7d35f16155e1a98c0a947",
+            "sourceSha256": "177657ef35ddf77f8aed05ccb1b76aafcc882fc9a0527527b3e80c2afc7d011f"
+          },
+          "dark": {
+            "svg": "prism/dev-dark.svg",
+            "png": "prism/dev-dark.png",
+            "sha256": "5a5f6683b8e516dcb13f9e90991b982b2c036dbdaf0488e9ca8c8771b9036bf7",
+            "sourceSha256": "b958e8a16a7c203144a761fbaa4fc3f8072673e1e1f342381fee44cf776e04f4"
+          }
+        }
+      }
+    },
+    {
+      "id": "arcade",
+      "name": "Arcade",
+      "intent": "Two flat Native links, recolored for Home.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "arcade/stable-light.svg",
+            "png": "arcade/stable-light.png",
+            "sha256": "f2e9e3f4a52401933baa0715fd04ee172c8e600f5bd01cd1a8ab9587f6fc110e",
+            "sourceSha256": "b23653cc185bb78b090d6a09859e843bb0b7d66788ed5fab6368e5753aef49b5"
+          },
+          "dark": {
+            "svg": "arcade/stable-dark.svg",
+            "png": "arcade/stable-dark.png",
+            "sha256": "7a9e6535b3ccaaa8802cb52214f4e660f8185eae961676044ea5da0c866e4d1d",
+            "sourceSha256": "c9d5eccc77b083192aac07c7e77c58307fae80af29462ae95f4c92d9f4144a60"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "arcade/beta-light.svg",
+            "png": "arcade/beta-light.png",
+            "sha256": "58b0f5b3c9c0f9c469d5bf745f25293ec09784a847052bb6703cf4c6dd291351",
+            "sourceSha256": "26feaa54f64874a592d01bb6c373846751a59b7655193482bf380ebdf3d8b3f0"
+          },
+          "dark": {
+            "svg": "arcade/beta-dark.svg",
+            "png": "arcade/beta-dark.png",
+            "sha256": "d73670883f8ded50958dd26c2b3a96476f3fa4e74f699f7dcaf8ed4af55bf458",
+            "sourceSha256": "071e935a1e5454ddf51a33182ae763d2484c853baa5ec8364bf3f56f7e589f5e"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "arcade/nightly-light.svg",
+            "png": "arcade/nightly-light.png",
+            "sha256": "e009d970aa75c636e41e3a1d24c160c4e31feee0d609fba99f1948dc9941865c",
+            "sourceSha256": "7e7f002f5b1f273165e41130f4bbef9c3c045cfea3ccdd83eefb4a3df9158197"
+          },
+          "dark": {
+            "svg": "arcade/nightly-dark.svg",
+            "png": "arcade/nightly-dark.png",
+            "sha256": "f1990f182201967652e0c0073f92ca4c639f410b0588dc8d6e2d669de0d8beec",
+            "sourceSha256": "7083a754e27de4da7b9e2f4889b714a6f950c52b96c3956b1cbe9c7ac43898c1"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "arcade/dev-light.svg",
+            "png": "arcade/dev-light.png",
+            "sha256": "7a98d4665004d62535b444c068bc9062779aec5e317536e1b9fb0b7cf4a6df08",
+            "sourceSha256": "fa352aa0709a52e1d14a5abed8d670bc5f3f01a78f2fed103558686ecc64872f"
+          },
+          "dark": {
+            "svg": "arcade/dev-dark.svg",
+            "png": "arcade/dev-dark.png",
+            "sha256": "5fc6fdc650783f8bcd2a8e27f6eef1816954d80d2ee7a12783df362e19a80b94",
+            "sourceSha256": "75f1fb017ffbc7e39ba4d1c031cda7509cb258e34bbd3959a5e35f6c512f1fe9"
+          }
+        }
+      }
+    },
+    {
+      "id": "halloween",
+      "name": "Halloween",
+      "intent": "The existing Halloween Home ghosts, preserved as editable vector artwork. Dev gains its own cool palette.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "halloween/stable-light.svg",
+            "png": "halloween/stable-light.png",
+            "sha256": "cf46aedb3a95be057a3f83a67c6e322785b2edf2661b5260d9d3eaa980e23a9e",
+            "sourceSha256": "4d5fc98a97dc7e9894f08b96995486ed12eb048b80f3b795c26b9c3d19dd37f4"
+          },
+          "dark": {
+            "svg": "halloween/stable-dark.svg",
+            "png": "halloween/stable-dark.png",
+            "sha256": "db91736a4315ba5df817b6985841d92fbaa50c6c22a9a451b7c249072cad0696",
+            "sourceSha256": "6ba6a1b95b183b33897fb39057c542120eed1ee6e712679bd494806ad8ce871f"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "halloween/beta-light.svg",
+            "png": "halloween/beta-light.png",
+            "sha256": "ff176be7b771a45867a7d6b3fd8466e8c50aa4021b13c7e9af00cf052c81e12e",
+            "sourceSha256": "ad495802eb0a8531210debcb7ee4a8bb2232d7ef27d7d32778946f3b6878f43e"
+          },
+          "dark": {
+            "svg": "halloween/beta-dark.svg",
+            "png": "halloween/beta-dark.png",
+            "sha256": "954cfe04cd51a1f6280a1d3cf7de14cea0d1b7cf3569920b82744a0961ebecb4",
+            "sourceSha256": "32fd22c14a912b1fd7adc1cd8006d8ece4a0e96044888deb5ca693f3a4211ac4"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "halloween/nightly-light.svg",
+            "png": "halloween/nightly-light.png",
+            "sha256": "f55ed8a2c34eba73c5b1ed951ebdbdc0d13e4388fd83afe8c08da4c148d9941f",
+            "sourceSha256": "060b00ef08a7d92a45df4435d6a799d8b47088cf13ce725aa18ef8c9c855f812"
+          },
+          "dark": {
+            "svg": "halloween/nightly-dark.svg",
+            "png": "halloween/nightly-dark.png",
+            "sha256": "1babd961f87c52f66be8c38cf14f06e6aa38d123f3eb1b5b5962a8a3844a16a6",
+            "sourceSha256": "e7acaa1798a2e19a6c7164851dca6dff5296d03ef04e5142b6d0c4a9cef98d47"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "halloween/dev-light.svg",
+            "png": "halloween/dev-light.png",
+            "sha256": "62988fd5e0069b84f2b46b5c720f6fb2b9cef0059e1129630c22932b82b8280d",
+            "sourceSha256": "8cc84c01c71b2d3fcb1cd87ecb865d9960b09c721e5de9ad92bdc14f08d4be55"
+          },
+          "dark": {
+            "svg": "halloween/dev-dark.svg",
+            "png": "halloween/dev-dark.png",
+            "sha256": "30f67d7e22decbc71811d4b17632d08b0a033923aebf830967c02a44cddf5461",
+            "sourceSha256": "a2da39bf25c2400ea3d76bc6bfc17b265a44b6452ba3c17e1349a3f7522fede0"
+          }
+        }
+      }
+    },
+    {
+      "id": "dia-de-muertos",
+      "name": "Día de Muertos",
+      "intent": "Marigold and rosa links beneath cut-paper flags, with three cempasúchil blossoms and two votives. Remembrance treatment.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "dia-de-muertos/stable-light.svg",
+            "png": "dia-de-muertos/stable-light.png",
+            "sha256": "eb3018b982c13a20b213a76fee39081838fbfdeaaca89c8106595599d61333b8",
+            "sourceSha256": "5dab4c5b096dbec8594a6dfabdcd29a4539a745f5d833ab60fce39676148b710"
+          },
+          "dark": {
+            "svg": "dia-de-muertos/stable-dark.svg",
+            "png": "dia-de-muertos/stable-dark.png",
+            "sha256": "62ae0af48ba0f001a202f0e822cfc3ef7a10e4484bedcaa82331d0debe4b2d66",
+            "sourceSha256": "f283ba30da79ea043704a7243f430719fbfae9e51a5e2f7643a7e6c8809a57b9"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "dia-de-muertos/beta-light.svg",
+            "png": "dia-de-muertos/beta-light.png",
+            "sha256": "04f44132b95e4b6072e98ae0fc7866314c6c1cec372bfc4a7e6b5db77f23ad88",
+            "sourceSha256": "c2c916ea3d70a68e9423beaffb8a918557ef01a98b689ed1959df6bd6811081b"
+          },
+          "dark": {
+            "svg": "dia-de-muertos/beta-dark.svg",
+            "png": "dia-de-muertos/beta-dark.png",
+            "sha256": "92e71eb5ffd1709012550691af4154ccb664071cd05b5e4234c9ab773a1ab519",
+            "sourceSha256": "12c863e8cdc14b26dc689257bde3b7e7cf54e85a20a1fa5a221f66c947d4c5e0"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "dia-de-muertos/nightly-light.svg",
+            "png": "dia-de-muertos/nightly-light.png",
+            "sha256": "f4b1201aa125103f2ecce6dcc5df79fe0c8d5494a7e733987faa49bf384c3984",
+            "sourceSha256": "8f29e33b03093e06f00b851e97005edbfca8896d85f0669740dec52ba86ce207"
+          },
+          "dark": {
+            "svg": "dia-de-muertos/nightly-dark.svg",
+            "png": "dia-de-muertos/nightly-dark.png",
+            "sha256": "f7de1ad9a5d79931b4c88ca39b1c84a90cc105169ac007a5112a390375188812",
+            "sourceSha256": "9c2254ad8de93873ef60e4e493480dcd99cbdb5b36479bc631f6725a8982831a"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "dia-de-muertos/dev-light.svg",
+            "png": "dia-de-muertos/dev-light.png",
+            "sha256": "5d52a0328b29c4177baa282c75c6f99f664407259810b032870c445556b31dac",
+            "sourceSha256": "b9d211105d665fe0a3c82bc20af17a13edb7257f3082f5fa0c1cfe457de089b3"
+          },
+          "dark": {
+            "svg": "dia-de-muertos/dev-dark.svg",
+            "png": "dia-de-muertos/dev-dark.png",
+            "sha256": "f2b210b3f83351e4735d55d168f9a762de8b5b5e00b3c3c147494ebf1c893711",
+            "sourceSha256": "d7716dbfd0ed1af5c6de64844714e30b6207e27c6493b105c37fc5d23a460b9d"
+          }
+        }
+      }
+    },
+    {
+      "id": "dia-de-muertos-sugar-skull",
+      "name": "Día de Muertos · Sugar Skull",
+      "intent": "A fully painted flat calavera, with flower eyes, cheek leaves, marigolds and a small Native forehead inlay.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "dia-de-muertos-sugar-skull/stable-light.svg",
+            "png": "dia-de-muertos-sugar-skull/stable-light.png",
+            "sha256": "0e789041cb725e2050ee014b55722413741c3d005669ca290c708aff30dc5d2f",
+            "sourceSha256": "89fcc58ff6b543ce3720055c6966cf425597fcec4304375d21de2e4489274291"
+          },
+          "dark": {
+            "svg": "dia-de-muertos-sugar-skull/stable-dark.svg",
+            "png": "dia-de-muertos-sugar-skull/stable-dark.png",
+            "sha256": "77f8789dc4088a443b07ce88eb7c4a30cf4922e29807e0e85f3e244f9059a9be",
+            "sourceSha256": "e2d9874e77baafc21e1496f1b77820eba9a59194f94252edf4554efee3a25578"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "dia-de-muertos-sugar-skull/beta-light.svg",
+            "png": "dia-de-muertos-sugar-skull/beta-light.png",
+            "sha256": "3f2ba1d0ba848d461f04c72190bfeadf018166a006834e88c7c3231e195e9c72",
+            "sourceSha256": "cd79aff154415a3aeefe495b806d550a2dcfe701611eec6ffde5ee6e1528e6fd"
+          },
+          "dark": {
+            "svg": "dia-de-muertos-sugar-skull/beta-dark.svg",
+            "png": "dia-de-muertos-sugar-skull/beta-dark.png",
+            "sha256": "443253ff4cfcd68cc31ba0e36d93a79a6a5aeba9b4b47724e49e63dea70051ca",
+            "sourceSha256": "7c874034c5329a37b669b72e7143858df8fe9d131a5ea16bcf86fd2de2603d8d"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "dia-de-muertos-sugar-skull/nightly-light.svg",
+            "png": "dia-de-muertos-sugar-skull/nightly-light.png",
+            "sha256": "f5b13b94dd8b3921aa4127325bd4e36cd5bb3210454cf9f0f6c98a28b25cc09a",
+            "sourceSha256": "9c22957ce01b1bd05b0d79899415e67d814c162e93e522cd616170f3545e2a15"
+          },
+          "dark": {
+            "svg": "dia-de-muertos-sugar-skull/nightly-dark.svg",
+            "png": "dia-de-muertos-sugar-skull/nightly-dark.png",
+            "sha256": "f9a7fc9ea00591355abc08d28b41f369e831b9a0a58e2e30745dfbd105329452",
+            "sourceSha256": "c93238f8f6cddabef4459b66981f22e498785a0ae16f0aa3d460571afb99d89e"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "dia-de-muertos-sugar-skull/dev-light.svg",
+            "png": "dia-de-muertos-sugar-skull/dev-light.png",
+            "sha256": "2215eca604de0c1d902bf43d6dbf00912703e352a651a23da190ddfae8ef5931",
+            "sourceSha256": "a0bdc229b37b1aeb800b8880512007fced97f48570378b9fd7fbecea3feac594"
+          },
+          "dark": {
+            "svg": "dia-de-muertos-sugar-skull/dev-dark.svg",
+            "png": "dia-de-muertos-sugar-skull/dev-dark.png",
+            "sha256": "3af360768a076e56223d5330a1ab29aeae3c2b27e5885bceb0e0014a7aabf46b",
+            "sourceSha256": "b38ba7542b00acfd1b730e56af870aae28ec1afd17ecffa311683648dcd92bd8"
+          }
+        }
+      }
+    },
+    {
+      "id": "new-year",
+      "name": "New Year",
+      "intent": "Champagne sparkler links with two broad firework bursts and a few falling ribbons.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "new-year/stable-light.svg",
+            "png": "new-year/stable-light.png",
+            "sha256": "b70c05d91a069235a8e3be522d1a21296cd41fca4ce2ff24b281e38fd081134d",
+            "sourceSha256": "91ed5dcd01dc7b3ca4f39bd2ea1f59e5e8855fd8695708adb6a7364bc10363e5"
+          },
+          "dark": {
+            "svg": "new-year/stable-dark.svg",
+            "png": "new-year/stable-dark.png",
+            "sha256": "2fc3771d527577ede89e628cefd2a3e5219376fb35df17b5bc60a6d7c45c76a6",
+            "sourceSha256": "9b77cb123d4100368043e6167a613a252f4378e5ff1e13fceaceb07c20bc34f0"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "new-year/beta-light.svg",
+            "png": "new-year/beta-light.png",
+            "sha256": "d2a6c0b5aa054353e913b877f01ad35e28d17dddc1e551dd02cec74cba60132d",
+            "sourceSha256": "546a58e380860610a3fb43414a601b05d503a712cd0089a65fca4aaf57e49412"
+          },
+          "dark": {
+            "svg": "new-year/beta-dark.svg",
+            "png": "new-year/beta-dark.png",
+            "sha256": "078756df204c033f997b96db7b13301f16925f1d3ba5389e94d053f7f648435f",
+            "sourceSha256": "1b16f83310cb431ee526c801dc91a89c3072dbbbb58d183f758a0c7fed62abbf"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "new-year/nightly-light.svg",
+            "png": "new-year/nightly-light.png",
+            "sha256": "266bda5163e173b9993d1628de571fedf8fa8e9c4aa8a0e79da27d95b25fdaef",
+            "sourceSha256": "fa66cbd23b9f2c69f6ce1e407e5d46280ccb62de1effdbf4193fed697f050497"
+          },
+          "dark": {
+            "svg": "new-year/nightly-dark.svg",
+            "png": "new-year/nightly-dark.png",
+            "sha256": "0e64bf00118d6d9e92780e1df80b7e1e8eb4206727135df3c77d25f23337bbf4",
+            "sourceSha256": "909102b89d569556df8b03f789f54ae063d09f050b5f0083431c28b4633a191e"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "new-year/dev-light.svg",
+            "png": "new-year/dev-light.png",
+            "sha256": "e6114e222d28f08429844360fa35d9a2fb32ad518c2b10c12607f000216f958a",
+            "sourceSha256": "a3f8a860a6c21184aedd805f6ee636bbe26b0c10f2b68a725d544470d69b326c"
+          },
+          "dark": {
+            "svg": "new-year/dev-dark.svg",
+            "png": "new-year/dev-dark.png",
+            "sha256": "351afc6d2c7e2e9876b506de125a055ca21d3eac4dbbcfd32df5a7a0b2062868",
+            "sourceSha256": "2374d2dbed77043168a2d2875957c1e9ac507d87e44005cf2913ea6e17b42767"
+          }
+        }
+      }
+    },
+    {
+      "id": "valentines-day",
+      "name": "Valentine’s Day",
+      "intent": "Rose and carmine links, a climbing heart vine and one larger floating heart.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "valentines-day/stable-light.svg",
+            "png": "valentines-day/stable-light.png",
+            "sha256": "f68838d996c30eace6c2131f1e2c3eca5ec41fbc60c9af2e1e250f625fbe9176",
+            "sourceSha256": "09f023d14ffbaa5907db7dd3e2e646685a6ec794bcb450b34be6a7d618e5ca47"
+          },
+          "dark": {
+            "svg": "valentines-day/stable-dark.svg",
+            "png": "valentines-day/stable-dark.png",
+            "sha256": "e82d379b454ad35d1e0257f84adf72d39fc07597259003990a27cc2ffa4b98d9",
+            "sourceSha256": "8fdb8aae83a2d9255dabe90975ac4090fc69a30c46c6b3637c16aa5ec64bee86"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "valentines-day/beta-light.svg",
+            "png": "valentines-day/beta-light.png",
+            "sha256": "9936bc72da9180afcd4296029fa66fbe87ff81ccad2e39ef8db032fb9c221ff7",
+            "sourceSha256": "32c952c2a484a2a0cf8c63d1dd415adbd035272fe36328ad98cab5eab3c22b28"
+          },
+          "dark": {
+            "svg": "valentines-day/beta-dark.svg",
+            "png": "valentines-day/beta-dark.png",
+            "sha256": "f800f7cdbad653e50af7d589fc212483bd39826317fed40246c390c8a070139d",
+            "sourceSha256": "a540bfa61463e39e267a83e78819fe743a6be14f281fffd4a94d28d6ce5ce3d0"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "valentines-day/nightly-light.svg",
+            "png": "valentines-day/nightly-light.png",
+            "sha256": "77d89694786391c9a117a7c6108f778121da848051a7422304f1103005b05f98",
+            "sourceSha256": "b8d3aa35a219e6395e74c8d7f6625b7501c1c8c688bd8bca018b00853b3b3bd7"
+          },
+          "dark": {
+            "svg": "valentines-day/nightly-dark.svg",
+            "png": "valentines-day/nightly-dark.png",
+            "sha256": "8e2806569d55f16f6cc679b73c08b38e45b99bb4cd08b44c4798275e5ceca895",
+            "sourceSha256": "53f24ae63c5acb8c67ecbf2f2757375f3a9df49d3e14e8fb7117a5277fee6312"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "valentines-day/dev-light.svg",
+            "png": "valentines-day/dev-light.png",
+            "sha256": "11ce689bdf33a185e5201967f8373feb7d9b92492c2a4b7b4388af448221f277",
+            "sourceSha256": "2cc5b15660b3517813b4e2298e5518a36ecfecf229fb09dbdfff0e2ee0fbfcd9"
+          },
+          "dark": {
+            "svg": "valentines-day/dev-dark.svg",
+            "png": "valentines-day/dev-dark.png",
+            "sha256": "95b6b6ca8c15141465fcf1b3385a37464fd31ae9edc31ad983d0664b00f44bb4",
+            "sourceSha256": "fd53116579128f809c75b3c7841ec063cf6c4a9574f6635bb14632c915170e60"
+          }
+        }
+      }
+    },
+    {
+      "id": "st-patricks-day",
+      "name": "St Patrick’s Day",
+      "intent": "The links grow into a shamrock sprig, with a broad emerald and gold botanical rhythm.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "st-patricks-day/stable-light.svg",
+            "png": "st-patricks-day/stable-light.png",
+            "sha256": "30968e259fcb5445c073c991040249506ba6724aae57042d4441983381fe54b5",
+            "sourceSha256": "c8fd65e01d50ff3f84657cdd0daba20066255978f39b643a1821673e69f571eb"
+          },
+          "dark": {
+            "svg": "st-patricks-day/stable-dark.svg",
+            "png": "st-patricks-day/stable-dark.png",
+            "sha256": "bcfc1440d4876b8c92457b7410241d1786059ec91cc7f7826844ddda49517e73",
+            "sourceSha256": "8f4000dada8e8ecfcb15056566e11aedf73a3dc681a340a5b148bcf6320d7159"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "st-patricks-day/beta-light.svg",
+            "png": "st-patricks-day/beta-light.png",
+            "sha256": "d9bd1f68b76f764c7de8f0ab18f8ebc7b9d85b575306257a6ee875ad8b910652",
+            "sourceSha256": "6ad9f34fd980968c1dbd83c5c4149c88b870abb7c4fe4d91914a4f245a298711"
+          },
+          "dark": {
+            "svg": "st-patricks-day/beta-dark.svg",
+            "png": "st-patricks-day/beta-dark.png",
+            "sha256": "99ddb152a3d17127508316cd297a2206c8742e174c672aaa8e7b63c3cad8f3cc",
+            "sourceSha256": "2fce1ba42c86fa5e84fabf627a4a57e3c8c0d86ed768ec0144b719d78d602772"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "st-patricks-day/nightly-light.svg",
+            "png": "st-patricks-day/nightly-light.png",
+            "sha256": "db0940bce87c76fbfeb636cf4c70a464091880b41debaff79fe03d4749e02f8c",
+            "sourceSha256": "d059cde3a3e7bb30c52103ef2d38a56c120d7e6c4c0c12c6c7fae2839e6afaf9"
+          },
+          "dark": {
+            "svg": "st-patricks-day/nightly-dark.svg",
+            "png": "st-patricks-day/nightly-dark.png",
+            "sha256": "5b2b9be402a7c5e4cfaf0ed308f4114393b9e84d463d18c38b3af6a5a1fe021f",
+            "sourceSha256": "e998e46a73fd54f00c76a731727436d41c3ad93d9345df8c46029c879dda67ed"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "st-patricks-day/dev-light.svg",
+            "png": "st-patricks-day/dev-light.png",
+            "sha256": "90a11941957fa1d96244d0df226fab2059419bcf5f114a16c9597b40bb9102e4",
+            "sourceSha256": "d48c121f0ca4a52bd0ec08f07d972f91f70309b1818f9d445ffaa7ca2d848139"
+          },
+          "dark": {
+            "svg": "st-patricks-day/dev-dark.svg",
+            "png": "st-patricks-day/dev-dark.png",
+            "sha256": "13c985e4884ed07c6e4a4d3d32b378278626fcd9f91dee4c019a818e8850d4a8",
+            "sourceSha256": "ee10d3444fb7e89cd1f9e901ad7d074f15dc36bf1749e7bf30f5369dd7c183e2"
+          }
+        }
+      }
+    },
+    {
+      "id": "spring-festival",
+      "name": "Spring Festival",
+      "intent": "Red and gold papercut blossom links with a suspended lantern.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "spring-festival/stable-light.svg",
+            "png": "spring-festival/stable-light.png",
+            "sha256": "278f1c3267ebdf1bd30077ad3d55be564e0374ba3deaa4f96b2d2c0d0e5fbcca",
+            "sourceSha256": "a4d4edbc3cbc73de1058a5ef52cfe491f2ca40ba12f82364639132158a9a1294"
+          },
+          "dark": {
+            "svg": "spring-festival/stable-dark.svg",
+            "png": "spring-festival/stable-dark.png",
+            "sha256": "72e26244c6a4bd267134f6fe5a90045fa815d07bd896da0bc354d72402b87d82",
+            "sourceSha256": "5a49f0051150a79bb2e26cd889120bc68a733a5b2b95684609a6405dca60623c"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "spring-festival/beta-light.svg",
+            "png": "spring-festival/beta-light.png",
+            "sha256": "c101de5756624b1746b8a106c75ecae799b855bcf9f02852e89d09aabeaf5148",
+            "sourceSha256": "30afd8fbd7f197d848c8eaffd92c1c3c7639087358fd6266658399f628f45ff6"
+          },
+          "dark": {
+            "svg": "spring-festival/beta-dark.svg",
+            "png": "spring-festival/beta-dark.png",
+            "sha256": "efc410614450c3b16e97f448240c7cfb86ff03f908d7e33cdaea951918049fcd",
+            "sourceSha256": "4874dbb39b1f8dc0411bfdf098e3c83cbed051c578bdb64c0d516582f270706f"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "spring-festival/nightly-light.svg",
+            "png": "spring-festival/nightly-light.png",
+            "sha256": "e157376f3925f9fa20ad8dba8b9fb91091c26e9e5070f907d2e21f912a4322a8",
+            "sourceSha256": "63961aa6991cf1b8fd78646d6b1e0a5aa9397e633c67cbca6ba7cad0efec3be2"
+          },
+          "dark": {
+            "svg": "spring-festival/nightly-dark.svg",
+            "png": "spring-festival/nightly-dark.png",
+            "sha256": "cb89f08f979981417a9036db04f7d3cfaaef3fbd72084a3049773e9d260d17bb",
+            "sourceSha256": "8b5e21d38a25fb2112555ba206317ceb276332a1b29aa15ffa0cd0a8b467db9c"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "spring-festival/dev-light.svg",
+            "png": "spring-festival/dev-light.png",
+            "sha256": "77919d0f7a3bd4569dc6c3ca307321e4ba2b1b3fce89fd6f78da4edeb958007e",
+            "sourceSha256": "9585b44ca191ea137d863c1814d5e0ce84b8fc141053120b69a77e596243783e"
+          },
+          "dark": {
+            "svg": "spring-festival/dev-dark.svg",
+            "png": "spring-festival/dev-dark.png",
+            "sha256": "feb3187cf93eee6e0b22392c7bef2ad85a8b950efdf5a03f7bc20c89fea65fe6",
+            "sourceSha256": "37503c28e6c819c5ca216450b002f6e87f95e9a85453d9ae54f7e430e04d782a"
+          }
+        }
+      }
+    },
+    {
+      "id": "seollal",
+      "name": "Seollal",
+      "intent": "Saekdong-colored cloth bands on the right link, finished with a small tied ribbon.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "seollal/stable-light.svg",
+            "png": "seollal/stable-light.png",
+            "sha256": "bb836cab3aead958dc56afd6e89d2304ad730ac89133872377221f598af4fe06",
+            "sourceSha256": "380a4e50a530dfc6e2ea14442125df830ae92ffd266e9da2c1bbadb9dd205c36"
+          },
+          "dark": {
+            "svg": "seollal/stable-dark.svg",
+            "png": "seollal/stable-dark.png",
+            "sha256": "a71433619bcbcf0a074ae6ff600d149e076c06bbac74644e4e9c77ddfa2d6656",
+            "sourceSha256": "9eba85d8bc7c5bd1f127292f4a087e114b3cea1f35874d3f2d0d7d1b55e52860"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "seollal/beta-light.svg",
+            "png": "seollal/beta-light.png",
+            "sha256": "f9abd3f3b3cbe31761f2ca393aaf7c68c2584ef5f4b17a231666844b6587d6b7",
+            "sourceSha256": "82a64ded6f3f4baead206eead65d29c0e35a505be87c1c590d6d769187fb3e79"
+          },
+          "dark": {
+            "svg": "seollal/beta-dark.svg",
+            "png": "seollal/beta-dark.png",
+            "sha256": "59d977d63f8fff1f98801d270bd5e9c5dd4951a74fa1d2f0ae931857fe601bec",
+            "sourceSha256": "63a078fca1a0b34bb33edaf45778e282f40b7941c4656c36831703bf6bbc610c"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "seollal/nightly-light.svg",
+            "png": "seollal/nightly-light.png",
+            "sha256": "6bdb96e7049d96fe7ee84c4bb79d5339987d2fa3aa76f4ae4f997c1c6db2bfc2",
+            "sourceSha256": "924e9c5bd3167c5a8ae3a6249d792f1316b15fc6dfa8f8710bef855d5e770341"
+          },
+          "dark": {
+            "svg": "seollal/nightly-dark.svg",
+            "png": "seollal/nightly-dark.png",
+            "sha256": "38154ab971d0d1c2022bf705b565c07a9d9bee30a0c2e533df0f1bc737eee692",
+            "sourceSha256": "b7a68da5320965d5d45536bb9c041fde71b0b085e2b4483419da385e2bdc4703"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "seollal/dev-light.svg",
+            "png": "seollal/dev-light.png",
+            "sha256": "e8ba3cac2ba618e8d1f03a4f692c0eafd0d704551b74d9c01619e13d6a5f4cd4",
+            "sourceSha256": "8cb739d4391815cd92db6bf954ec6dd290245e52aa4ebfe057d4cb72e7c928e8"
+          },
+          "dark": {
+            "svg": "seollal/dev-dark.svg",
+            "png": "seollal/dev-dark.png",
+            "sha256": "2cf6bf37d4baf29e6a8a9f5bcd47a276be87b5fdb62afcf735c7569a33c518b9",
+            "sourceSha256": "29d13e565e162f4c9fb342ad1ac3a79fe164a36a302df998b64b41f633323908"
+          }
+        }
+      }
+    },
+    {
+      "id": "tet",
+      "name": "Tết Nguyên Đán",
+      "intent": "Apricot and peach blossoms grow along red Native links, with a flowering branch above.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "tet/stable-light.svg",
+            "png": "tet/stable-light.png",
+            "sha256": "2b4cf5e287ff9825fc25d901af517ff5e907f084582b867ad8bdc36c4378a6a9",
+            "sourceSha256": "9aef338eb523e808545ac80dc182519b492237f8c46b3e70c4d87dca726aa9b1"
+          },
+          "dark": {
+            "svg": "tet/stable-dark.svg",
+            "png": "tet/stable-dark.png",
+            "sha256": "22b99202203d0e7e8b0347a7ecaa4004e1ba2a03bd9c39f72b35a03e95265a70",
+            "sourceSha256": "8fba2de9f1f5851d82effed32add37e937496cc34ccdc5502c654be0a3609ce1"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "tet/beta-light.svg",
+            "png": "tet/beta-light.png",
+            "sha256": "f88124aa95165503afe8423cf6751e15d7274dee7b0a8f5b8a73033ea28c7831",
+            "sourceSha256": "7dfdfec9a4fa37cfd94a3a100480bd3b9dafbf06b305ede30a2f2293a42bb856"
+          },
+          "dark": {
+            "svg": "tet/beta-dark.svg",
+            "png": "tet/beta-dark.png",
+            "sha256": "a23034ac2044ff0074e65c7cbff110b80972b322874d16417774f73f0d32beb4",
+            "sourceSha256": "a014f9e683125ec992a204a1ddd7ed2dc1a10ae701bf0fcb5ecacfed60a635fb"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "tet/nightly-light.svg",
+            "png": "tet/nightly-light.png",
+            "sha256": "afde235924863644914f3dcc36b770a1c492fcfb67926d31ac0b3dd7df64a465",
+            "sourceSha256": "ce4b96edc80a3751d0d5f644d5dd01d22de2a1cc67b4db745803cefb88b0aeb1"
+          },
+          "dark": {
+            "svg": "tet/nightly-dark.svg",
+            "png": "tet/nightly-dark.png",
+            "sha256": "b9fc936ac62ba2ecef7c5757c582766c87bda309a8727fac1f81a520e3b3f33d",
+            "sourceSha256": "90cfddafd076c77f83476f75aa19faa9a64c1966a331b36b957854062a5b4286"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "tet/dev-light.svg",
+            "png": "tet/dev-light.png",
+            "sha256": "fa3b87109561e9956689027f13a9a149a8fe255e2208a2b102af50846b021624",
+            "sourceSha256": "c0df5cac1bfd865434dec229702d3e18af5379ccf473a8d31bd822cd6f03a024"
+          },
+          "dark": {
+            "svg": "tet/dev-dark.svg",
+            "png": "tet/dev-dark.png",
+            "sha256": "8aacd4a768e263daed3b54bcacc921c983e6e20ef3b6e53ed23b64fef0138bb5",
+            "sourceSha256": "7c814299e054f10b5e8354412b05041ad6513b01cea137f41801f8dd4ebd717a"
+          }
+        }
+      }
+    },
+    {
+      "id": "lantern-festival",
+      "name": "Lantern Festival",
+      "intent": "The Native links take on paper-lantern ribs and tassels, with two lanterns hanging from their upper edges.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "lantern-festival/stable-light.svg",
+            "png": "lantern-festival/stable-light.png",
+            "sha256": "8c37afb054ebd7625db4b63f95b397f1daab6c831b3b7b222c2d59df520dfd50",
+            "sourceSha256": "f4aa33b7184aa8497c68197f7bb50b323230165d2bb9d75092b30c0139a0c077"
+          },
+          "dark": {
+            "svg": "lantern-festival/stable-dark.svg",
+            "png": "lantern-festival/stable-dark.png",
+            "sha256": "2394dd3ee7c702f727b59c01b061c6ecd7137fbfc2bb12f6e113bebf92b17f7c",
+            "sourceSha256": "296cdbae5999a967fddf1a1a4b9df1d4c7ceef0bf4712713d12774933fe2d216"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "lantern-festival/beta-light.svg",
+            "png": "lantern-festival/beta-light.png",
+            "sha256": "f8bed62878c77b406a01c81c515596b651854c42c782dfe93de264d036355e6b",
+            "sourceSha256": "1fed66c139086c5c3ef7ae96d9ab0074899ff6d2b48ca465750f6c555afcbd2d"
+          },
+          "dark": {
+            "svg": "lantern-festival/beta-dark.svg",
+            "png": "lantern-festival/beta-dark.png",
+            "sha256": "2b6a3893b5d8e41fc269a67b731c75911297ce261970581de2e739626b742c5f",
+            "sourceSha256": "0e2bd46ffdf9b7f8ad60dee9548ddf274857b2d28eff029271b8dece68838658"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "lantern-festival/nightly-light.svg",
+            "png": "lantern-festival/nightly-light.png",
+            "sha256": "3efa2764b74c4e67cb98758e6bf51094cd4a142857a931727a9efa02047d2697",
+            "sourceSha256": "a4e8749e46a978dcd24319aaafd0f0c3acd2646785386d3178a4a373ff4bd3dd"
+          },
+          "dark": {
+            "svg": "lantern-festival/nightly-dark.svg",
+            "png": "lantern-festival/nightly-dark.png",
+            "sha256": "dc060aa8ef49e911e44b8a04b3f22592848422d21e2f56b0d25f1ae0d8032180",
+            "sourceSha256": "7621ba59cb220568af1548a4b196b6dc4d1fb6fdd970cc2f81c3c9cb0e74c40e"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "lantern-festival/dev-light.svg",
+            "png": "lantern-festival/dev-light.png",
+            "sha256": "3e65d58e1077d09f1cb90e1d6546ca54947dd3c06acb82248c2c4ce67b2ebd80",
+            "sourceSha256": "2a1ed813dc55040a38560a0195f65e65395420a312f29c5e696b6f5d6af4827f"
+          },
+          "dark": {
+            "svg": "lantern-festival/dev-dark.svg",
+            "png": "lantern-festival/dev-dark.png",
+            "sha256": "dfd20d2dbeb35ea3898657135da14346410eb2384b7c92127530653e3d7e8eca",
+            "sourceSha256": "534474b6943b21e0859fad2a0fff213a8f82febf0f1e62dcdc03c1619f9d5c0e"
+          }
+        }
+      }
+    },
+    {
+      "id": "mid-autumn",
+      "name": "Mid Autumn",
+      "intent": "A harvest moon rises through the blue links, with small flat cloud curls.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "mid-autumn/stable-light.svg",
+            "png": "mid-autumn/stable-light.png",
+            "sha256": "992f51bb8a35de8140852febd0c3c1c7961df439539e8423cea258be049577dd",
+            "sourceSha256": "064e91f0ad31b5556c8b3b2f12ca42057886f0e884077dd2a399063e76eece8f"
+          },
+          "dark": {
+            "svg": "mid-autumn/stable-dark.svg",
+            "png": "mid-autumn/stable-dark.png",
+            "sha256": "a86c670c7b94c1cdbe608cdd03b43af75f4ed58a02830204f93e55297af6427e",
+            "sourceSha256": "5568a842c0270a35235d9bd41de1be4a45456b20d0c5be883cc37d73bfb3fc04"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "mid-autumn/beta-light.svg",
+            "png": "mid-autumn/beta-light.png",
+            "sha256": "e816fb6a60bcc6900ee66f0368e0dc3ea616e17bdd27f8073b7db4bc6efb1673",
+            "sourceSha256": "3da9dd881fca87d4d0a910b9e4a1a1bcde08a0cbc39c06a4ed03025072987442"
+          },
+          "dark": {
+            "svg": "mid-autumn/beta-dark.svg",
+            "png": "mid-autumn/beta-dark.png",
+            "sha256": "27b33deee34716423fcaa0e099e2df6a80fcb5102387984c7f9558b971d92abb",
+            "sourceSha256": "f4200031f3ead569d75332665f647fea19bb0a72b6d9cf57b2d0f2793299bc0b"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "mid-autumn/nightly-light.svg",
+            "png": "mid-autumn/nightly-light.png",
+            "sha256": "aec53e98f94bcddaf28cfbe90663daa9eb72593177c143a8519bcd247d9ea384",
+            "sourceSha256": "b59f964cfdf44f0e0cc18fc8f4a17b429492818c844ae16fb0b262ab999afc5c"
+          },
+          "dark": {
+            "svg": "mid-autumn/nightly-dark.svg",
+            "png": "mid-autumn/nightly-dark.png",
+            "sha256": "a8586bc8be327925c390fae84b49e50a9c7ac7d7d6807e4668ba51d7ce077f9b",
+            "sourceSha256": "46dc477b5169888d0415d46116337e60310ffec20781db2f5c0a7742b317dc89"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "mid-autumn/dev-light.svg",
+            "png": "mid-autumn/dev-light.png",
+            "sha256": "66711145e1a39cf2076c01d651df8371500e2a375dc11dcac24794c9703ef265",
+            "sourceSha256": "92e552fd23db40230a04114508ccd8ab454f8f39552e41445f314116322eb4b1"
+          },
+          "dark": {
+            "svg": "mid-autumn/dev-dark.svg",
+            "png": "mid-autumn/dev-dark.png",
+            "sha256": "0797d2cec11f68031371c7a846e450a31c428d6b441fa5e42681fddffcbdefc5",
+            "sourceSha256": "67ac78e95a9c79afa561c5b106e11a4d8ab994576cbc2a4914a5a70fcc70939e"
+          }
+        }
+      }
+    },
+    {
+      "id": "tet-trung-thu",
+      "name": "Tết Trung Thu",
+      "intent": "A five-point bamboo-style star lantern rises above magenta and gold links, with two ribbon tails.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "tet-trung-thu/stable-light.svg",
+            "png": "tet-trung-thu/stable-light.png",
+            "sha256": "d0047fcda96463413fa0429dd3606ecdd23718b456a31341b8214192022cfcf7",
+            "sourceSha256": "14c3bea59f950afe1ce2b838d1c18adfb20757eca0a5daceb2896afa88f594ad"
+          },
+          "dark": {
+            "svg": "tet-trung-thu/stable-dark.svg",
+            "png": "tet-trung-thu/stable-dark.png",
+            "sha256": "f04dc866865f1475c8034d7bba337692d3052ed4f9eac519f8c2c2455db6edea",
+            "sourceSha256": "5787bbd7382a102f7bc5b0d8712d9e4a11f2cb5f9d458727e2aaf2c96e7db3a1"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "tet-trung-thu/beta-light.svg",
+            "png": "tet-trung-thu/beta-light.png",
+            "sha256": "6c1b38c818e1a5cb0085bd8bc81375928d5aadaa8e88c482b0480e1ee7e982a0",
+            "sourceSha256": "34a4fbdc0c0ed6cc9d88daa90986d40a0189b3023e0f25867afc8c1480c16007"
+          },
+          "dark": {
+            "svg": "tet-trung-thu/beta-dark.svg",
+            "png": "tet-trung-thu/beta-dark.png",
+            "sha256": "25c67f4b9f8b634450536fd9daa8b136a0f97600c687f3f1a00d905b8cee172b",
+            "sourceSha256": "939d9bab0a8b998a4f104a1a7156078006b6f6f49c9209316f5fd851776a4fc4"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "tet-trung-thu/nightly-light.svg",
+            "png": "tet-trung-thu/nightly-light.png",
+            "sha256": "2e87baeed3131161a2b00260503bdaa6fe60c6cac59f4fba8f0c3146d168ec3f",
+            "sourceSha256": "2dd1d0b05c33a56dd01f3f281fae736c3b2624ddec975a5ccd965e2edafb0832"
+          },
+          "dark": {
+            "svg": "tet-trung-thu/nightly-dark.svg",
+            "png": "tet-trung-thu/nightly-dark.png",
+            "sha256": "a12249fff7860c6a9cf6c53c395f855ce2ac2e4af7f8028ce4b638ac4c2a135b",
+            "sourceSha256": "c7da2929575bae3587c7f4958402bfbba35d50bf113cc09a54ec74669759285f"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "tet-trung-thu/dev-light.svg",
+            "png": "tet-trung-thu/dev-light.png",
+            "sha256": "5ad7ab70666466ab81fe6d3ad9d98b866ad0bcefffd757d6687eaf6ff5b26e8d",
+            "sourceSha256": "975dc80ff9b63d6c9b9bf20734d4324cd318ed9d3b25b0737bca60f8b8db03d3"
+          },
+          "dark": {
+            "svg": "tet-trung-thu/dev-dark.svg",
+            "png": "tet-trung-thu/dev-dark.png",
+            "sha256": "b1b36f6d384e84d0d177a278e8cd1c6666f66a603ce300aaa84c08a6f9606578",
+            "sourceSha256": "34341e1a2221e6f8f9ea8dfe18d909d5c7908052e1653358601656cfa2aeec6c"
+          }
+        }
+      }
+    },
+    {
+      "id": "chuseok",
+      "name": "Chuseok",
+      "intent": "Moonlit harvest links with a rice sprig and two simple songpyeon forms below.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "chuseok/stable-light.svg",
+            "png": "chuseok/stable-light.png",
+            "sha256": "d2024ba6a6c4e685117ea36b00ac183dbbaad79a8a8d539f41e421a23472cb03",
+            "sourceSha256": "09276891885c19ea36ef095220d3492eafa8eddea90a33d6424e2c911869ad8a"
+          },
+          "dark": {
+            "svg": "chuseok/stable-dark.svg",
+            "png": "chuseok/stable-dark.png",
+            "sha256": "73e4ad360674ab03482eef0bbad68866dc09ee138663a69350b33590c8de103e",
+            "sourceSha256": "ebb0f5f138faf74a16b6fb90d94383a6e75e976c6735156f349d91da75ab468a"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "chuseok/beta-light.svg",
+            "png": "chuseok/beta-light.png",
+            "sha256": "59aae2e6a39f63796c0d7a6c7eed76228ae2dbcd8fc7b343ae27f95adb62a372",
+            "sourceSha256": "4919f6500f923b68db13cc55c53d801cb0ca10bba32f56f048f485ff48649711"
+          },
+          "dark": {
+            "svg": "chuseok/beta-dark.svg",
+            "png": "chuseok/beta-dark.png",
+            "sha256": "a2f6b257b432e7e0e21036f22bf5c078b6d6981aa05fc22c87761f0b3bfe2f7a",
+            "sourceSha256": "ad533ff4afa4a4c6d9eef675654f636783fa1e9397e5650e73da9ac70bec7edb"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "chuseok/nightly-light.svg",
+            "png": "chuseok/nightly-light.png",
+            "sha256": "3f5434c3e077eb0f39414b9aefd2195cebed03aaa67bc2c43736b8a7c791f9ee",
+            "sourceSha256": "71ab6026c847dc8e7c4a2095796f65616ab731767836436589cd75fc6ba5e81d"
+          },
+          "dark": {
+            "svg": "chuseok/nightly-dark.svg",
+            "png": "chuseok/nightly-dark.png",
+            "sha256": "f95fe372db26eadbccb029a34ba9627807ea5348106eaf77aff4cd807c9eebd7",
+            "sourceSha256": "e088f48d455b8eb0ca3b00daaa72af7b98ee89a0aa008cfa4117019ac07b8ba8"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "chuseok/dev-light.svg",
+            "png": "chuseok/dev-light.png",
+            "sha256": "65494c7cbc7c972ba302ebb9556b5dbaee1fbaf0d14e39d85d765cb4670f9e36",
+            "sourceSha256": "909e5c22bab94103b1b3a2a6bd461af81339f1e4f152d552b3a1cf13dbe6898e"
+          },
+          "dark": {
+            "svg": "chuseok/dev-dark.svg",
+            "png": "chuseok/dev-dark.png",
+            "sha256": "acfbaf59a19c7422ee3a87372fe2f40aa6508a54f59069ec461f0e05a9c1e2fd",
+            "sourceSha256": "1922c3ffbd42969a095032f2f593a1bf37d18a324a038228cca39ffd8e87f3cf"
+          }
+        }
+      }
+    },
+    {
+      "id": "nowruz",
+      "name": "Nowruz",
+      "intent": "Hyacinth blossoms and fresh spring leaves emerge from the Native links.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "nowruz/stable-light.svg",
+            "png": "nowruz/stable-light.png",
+            "sha256": "3c6d64f68cb1628e39791a68b3b2e6c413b09fe0171a0a4e46fa611b942c2e0f",
+            "sourceSha256": "6d820da5dda8a55816a1d6acb7ea552297c7308a2078f2f2d14e6fec9717e6ce"
+          },
+          "dark": {
+            "svg": "nowruz/stable-dark.svg",
+            "png": "nowruz/stable-dark.png",
+            "sha256": "b04c40b00a50af4c8a371b23c103153b0b795bafc67f2dffc49ae7b31161debe",
+            "sourceSha256": "16f01c8bdae7e10aad3b05c6e4cdeaa3e4c165ba271c5e2c46cce18488aba432"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "nowruz/beta-light.svg",
+            "png": "nowruz/beta-light.png",
+            "sha256": "1192db25935f55422a788202caf9d10745099669b7d52034587c30126248309b",
+            "sourceSha256": "f3c6d5500de609bf60105f7a394caee76293b509e69b67776e807a7f24ec8e40"
+          },
+          "dark": {
+            "svg": "nowruz/beta-dark.svg",
+            "png": "nowruz/beta-dark.png",
+            "sha256": "e08c037d3dac51e7da965643712fc767da739a61c35a4c23b7659a69c79ccaf2",
+            "sourceSha256": "a7a92ca9c747d6d8f94e341bc19577d682ecea8d5e65ccab9424b2c07d6badfb"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "nowruz/nightly-light.svg",
+            "png": "nowruz/nightly-light.png",
+            "sha256": "61f5d84ffc099790af51e7959a2b61787739a96d313bcf0143696ad9bae79b7e",
+            "sourceSha256": "7f190fd122ff4b65a8d5c81089bc9c4d388a6f6093f9168bd29fb672c6565239"
+          },
+          "dark": {
+            "svg": "nowruz/nightly-dark.svg",
+            "png": "nowruz/nightly-dark.png",
+            "sha256": "6a900a22f5b437b4eca35767a8ddbf37627d55728bae998d4578b7f261dfc61b",
+            "sourceSha256": "6b411185949638854079aec95560970d2341144401c9a102a5a6b2e246a6b445"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "nowruz/dev-light.svg",
+            "png": "nowruz/dev-light.png",
+            "sha256": "ad9285507728bd86f1bf278bd66b3a121c5b586234ab7e0a54ce3ababb0aa70c",
+            "sourceSha256": "e1b09a1a04cfc240c39cc7256e3fa08e0f431e3c76deecbe444096c057821e36"
+          },
+          "dark": {
+            "svg": "nowruz/dev-dark.svg",
+            "png": "nowruz/dev-dark.png",
+            "sha256": "39a73c9a92a3e261bf2aa99712739aa655725bb9517428169f89b73b046235df",
+            "sourceSha256": "840798d934f4e2bae74e56527f8765ed0bb04048c716fac4384f160d1016d5df"
+          }
+        }
+      }
+    },
+    {
+      "id": "songkran",
+      "name": "Songkran",
+      "intent": "The links curl into flat water splashes, with frangipani and falling droplets.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "songkran/stable-light.svg",
+            "png": "songkran/stable-light.png",
+            "sha256": "4f2a470c409bc108adf16b0f9e471403a4c83db550458541cc3ae65f8b535d5d",
+            "sourceSha256": "724e2f9f44fc649381f926d5790c4360ee061645d50dcbf75f51d06cb204ae0b"
+          },
+          "dark": {
+            "svg": "songkran/stable-dark.svg",
+            "png": "songkran/stable-dark.png",
+            "sha256": "9a929ef05f471ac603cf01c7846ee8e12b3bce63213aa3fddee256179413b021",
+            "sourceSha256": "0bbc697aa9aab79a42bb9a4bce83fbf291f2d6da355090d8bb85db5bc8c08790"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "songkran/beta-light.svg",
+            "png": "songkran/beta-light.png",
+            "sha256": "0ad346b010efd70c424d45a4284d003bfd892c961ab925483b4ee691f6793517",
+            "sourceSha256": "ab2f608ae2f2601283124b9eb8c64403f8129d766ee6ea302532cf60ce0eb23d"
+          },
+          "dark": {
+            "svg": "songkran/beta-dark.svg",
+            "png": "songkran/beta-dark.png",
+            "sha256": "cc57ef3aa6838bb75294fd1180c4249baa54e7cc522858dd3d7bf341aee0d98a",
+            "sourceSha256": "8d7cfd036cc4c7c801640a8d8c181c006f07fae16e8aca0024602c2f39b3a09a"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "songkran/nightly-light.svg",
+            "png": "songkran/nightly-light.png",
+            "sha256": "b6a449ff92ffc001dcd775567ce34e962c92ace4517a2606ab7bcc52994f1efb",
+            "sourceSha256": "5f7d68317627647beaad109cff31a51df73f89e0443819b979b197b26458cb05"
+          },
+          "dark": {
+            "svg": "songkran/nightly-dark.svg",
+            "png": "songkran/nightly-dark.png",
+            "sha256": "d780267063cb3a1f8811f3a0ff18cb1f23a845a50d01634a3f8fb2281e8cd738",
+            "sourceSha256": "370944e4cf0dfc36e3afc0cc00f21e2d49b4cabff0bc98df9e28cb60c4dd8751"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "songkran/dev-light.svg",
+            "png": "songkran/dev-light.png",
+            "sha256": "d932f781a611a1215a84fd792ec0ff92263a90eca354988569e0de502cee6023",
+            "sourceSha256": "9fd3052bf0c305d0bff2cdc0442210f3c8b632c28d08036b19df8e5623133c4a"
+          },
+          "dark": {
+            "svg": "songkran/dev-dark.svg",
+            "png": "songkran/dev-dark.png",
+            "sha256": "e0bd3292f55c4287f306d66bc996c0e95f6b8911766a15a9e4d32f04497d2bd8",
+            "sourceSha256": "46a5e5de447e2b94e9b04d48059d925c716a740b64a1f1cb166d47742d137c1b"
+          }
+        }
+      }
+    },
+    {
+      "id": "matariki",
+      "name": "Matariki",
+      "intent": "Nine named-star-inspired points above a quiet blue interlock. No borrowed Māori patterns or traditional artwork; grouping is illustrative, not a navigation chart.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "matariki/stable-light.svg",
+            "png": "matariki/stable-light.png",
+            "sha256": "900e47f94d90660765b445d25a547b0a0829aec1ad3cb9ef1f9aaf8f6e536ee7",
+            "sourceSha256": "dd73decbdd2ed36aef765abe85e18e077c34247613ad738e269d722dc4d2861c"
+          },
+          "dark": {
+            "svg": "matariki/stable-dark.svg",
+            "png": "matariki/stable-dark.png",
+            "sha256": "aae5f40a4c055dac81ed8c657dd419915ce4d2cd059f164ac24df455f58c84bd",
+            "sourceSha256": "d99a3fc7351726d4d63227df46f541518c2c18835faa4c8870b21196c77c27bb"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "matariki/beta-light.svg",
+            "png": "matariki/beta-light.png",
+            "sha256": "86528eebc50e3641e75b87c0e5118084871c3898b6823c29d139bd7eec7a83fb",
+            "sourceSha256": "30e786fde71c29c264b7de5f13045bcd9128db48e3780130c6c006ac5f34c489"
+          },
+          "dark": {
+            "svg": "matariki/beta-dark.svg",
+            "png": "matariki/beta-dark.png",
+            "sha256": "412e516b13c2509b7bf0ba6370e957e14373018d92910f3eb410380ea845e0e6",
+            "sourceSha256": "f7cbd53262a87a40088b7b7834f79f69f045f6122cae3a55a56baa6be0d5e560"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "matariki/nightly-light.svg",
+            "png": "matariki/nightly-light.png",
+            "sha256": "ed395cf60f08fb0fdf404ffdca51b66b4205fb69bdbcf7b3db7cd95db2e6b805",
+            "sourceSha256": "5f508c56e531360e52f99ed9b74a8e7377dccc5d709b420b2d8f2af749490077"
+          },
+          "dark": {
+            "svg": "matariki/nightly-dark.svg",
+            "png": "matariki/nightly-dark.png",
+            "sha256": "a6d506c582961b18f6e3af8435e2228638b98b1998fa64966f1170bdabf1cd36",
+            "sourceSha256": "a829cc9238063187a6243f3b67af19f28556ab59f0295e7d2dfef9801971745b"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "matariki/dev-light.svg",
+            "png": "matariki/dev-light.png",
+            "sha256": "e573a522bedfc7c2e92e568b09d6472f0ec98c0a85d7a310538e87d35c815ad8",
+            "sourceSha256": "d6a850b62c5627a0a1bf0e84344f4efc4c88605829be773b6c14c896d8e32ca0"
+          },
+          "dark": {
+            "svg": "matariki/dev-dark.svg",
+            "png": "matariki/dev-dark.png",
+            "sha256": "8a08342ec616d78b713d4637a69f8ee04d31a4737372c86db98494448030d2e5",
+            "sourceSha256": "616efd1377f0a76ff3b6769ad5379d4c572548b541354f24959560d5b6185b43"
+          }
+        }
+      }
+    },
+    {
+      "id": "kwanzaa",
+      "name": "Kwanzaa",
+      "intent": "Red and green woven links beneath a seven-candle kinara: three red, central black, three green. The center candle has an outline on dark pages.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "kwanzaa/stable-light.svg",
+            "png": "kwanzaa/stable-light.png",
+            "sha256": "3d231c653d7af18e1e5fb6d42264aa9ca28dba948da71c8221c6cff3c7361a12",
+            "sourceSha256": "508bc57d8dc1928946dd9a9df97c4691283d7568dc4cb3a34dad69a999547a27"
+          },
+          "dark": {
+            "svg": "kwanzaa/stable-dark.svg",
+            "png": "kwanzaa/stable-dark.png",
+            "sha256": "a56ad427860561e0f95a8945b387b72fadcaba1ea117e5a7d87297462e8ec2ab",
+            "sourceSha256": "ebbea6d3e74390100dd5b0603b6238e27ca84a45f2aa3e9bbb7a0fe959c53973"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "kwanzaa/beta-light.svg",
+            "png": "kwanzaa/beta-light.png",
+            "sha256": "ab17442bd117f1af3a0b5f93d8f44a54cb8de5892e10c461d291ccc0b21fc182",
+            "sourceSha256": "bd16ad2adacf9d34a301768ebe330c6ac46b848a4da0c51aa2eecd75e653f6fb"
+          },
+          "dark": {
+            "svg": "kwanzaa/beta-dark.svg",
+            "png": "kwanzaa/beta-dark.png",
+            "sha256": "6ef79b6d6f9fa0e52076a0e61aa3aeffd3276a6fb2c29751f7f9680809175f4b",
+            "sourceSha256": "39e6482f3d6e1951581bf3378bd01be1e40a983b20f5da765936b96d8b6c8984"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "kwanzaa/nightly-light.svg",
+            "png": "kwanzaa/nightly-light.png",
+            "sha256": "ff9351881343acda2455e29e115b085748670e196b928ef2ed13b5a92b871c09",
+            "sourceSha256": "dfaf67fcec58ee94957d0c14922fe23f07091eedf59e689dfe2c9829915f72b2"
+          },
+          "dark": {
+            "svg": "kwanzaa/nightly-dark.svg",
+            "png": "kwanzaa/nightly-dark.png",
+            "sha256": "f0eb3eeb39621a7145463aaac62a1e5d2998cd65581a619d2595ca134c66a188",
+            "sourceSha256": "ec7104dabf27a0ac7575694df0883ed12c288c25413dea5c1d324448aa94d755"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "kwanzaa/dev-light.svg",
+            "png": "kwanzaa/dev-light.png",
+            "sha256": "3be208932543659b20dd4a5624d0c0a4cfdedbcfb6211b11f620e824aa380f3c",
+            "sourceSha256": "64014a289ba40a448174e0ab0df26f3e12e9081c23518b74d07430317a3b5d74"
+          },
+          "dark": {
+            "svg": "kwanzaa/dev-dark.svg",
+            "png": "kwanzaa/dev-dark.png",
+            "sha256": "9a99c7aedd8fca68d347118146a34554a07d2e5ebdf770bcdac709bd847c77b4",
+            "sourceSha256": "688b84f964db6ad45fd55c06a247848a0e240ce9897a790465b58b5ebe6494c7"
+          }
+        }
+      }
+    },
+    {
+      "id": "pride",
+      "name": "Pride",
+      "intent": "Six broad flat Pride colors flow through both Native links.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "pride/stable-light.svg",
+            "png": "pride/stable-light.png",
+            "sha256": "1583b0e65962db95a4e8277a0a9fd17fd72ec305768e5fb76cdc9ea143d668d2",
+            "sourceSha256": "41aa62cf47338859223906a69df56bfda7967cb79eeedcf1773b222e78bdbd68"
+          },
+          "dark": {
+            "svg": "pride/stable-dark.svg",
+            "png": "pride/stable-dark.png",
+            "sha256": "6f36c68277f890d353c9b70aef64af7ba337d23508985408c518d560b0953c22",
+            "sourceSha256": "6d220f29031956ac1cbfab71b46a5920b1e78a1bdb4a563d9fbb82180fe32a67"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "pride/beta-light.svg",
+            "png": "pride/beta-light.png",
+            "sha256": "42216f39d41acff518a37f0372601d5cdc9fa450f1dde9bf6111187e63fd9436",
+            "sourceSha256": "c33c2667bb4627635cacea3d23c10f598011c3d86aef5c4e7f92939771697ef8"
+          },
+          "dark": {
+            "svg": "pride/beta-dark.svg",
+            "png": "pride/beta-dark.png",
+            "sha256": "ccafea10fecadb1fa89442aafc431651f5bb3d299ccf2534be01894df6b7cf60",
+            "sourceSha256": "04d63c2afe6c36d6105055fc04cf0ce8215d4087c48294904b128a499c6416a8"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "pride/nightly-light.svg",
+            "png": "pride/nightly-light.png",
+            "sha256": "0b073deba554814e7f68fe76addc0d7128b93023bb777a6a7bc2978f40e25be2",
+            "sourceSha256": "e17b955421cdf7a27d15ff4293e25abeb70ea097509b280ac82cb00af6b09d97"
+          },
+          "dark": {
+            "svg": "pride/nightly-dark.svg",
+            "png": "pride/nightly-dark.png",
+            "sha256": "fb0cbf800545c3f7602863ea936c28602b59eeb05ee5f94a35ffb5543f1d3fbb",
+            "sourceSha256": "148d36838c319ec9f620205e7fd67e96dccc2e437c7ce12a90a434dc49cbf9a5"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "pride/dev-light.svg",
+            "png": "pride/dev-light.png",
+            "sha256": "0f31ae92dc42379af265187ea0bb5688045ba37787d0635a1639929053d984c7",
+            "sourceSha256": "065785eaedb7624d361cc10d95e16d0ae6cf2da96c94e99e5bda6ac37066bae8"
+          },
+          "dark": {
+            "svg": "pride/dev-dark.svg",
+            "png": "pride/dev-dark.png",
+            "sha256": "3ee96ede4104048149d5e19bf973644cd0dc70357013e5c33ed07e38dc1b2bd6",
+            "sourceSha256": "1119f61ab05b2d9d63eed581b245d2fd106d77bfb8d42068022bde6daf8b1514"
+          }
+        }
+      }
+    },
+    {
+      "id": "carnival",
+      "name": "Carnival",
+      "intent": "Purple, green and gold carnival links, with broad feather silhouettes and bead details.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "carnival/stable-light.svg",
+            "png": "carnival/stable-light.png",
+            "sha256": "2f0a376b3b47b45326897b603e5fe83e876eee27b73c2d87f40eb7531cd4b673",
+            "sourceSha256": "684bf2e6b928a14e40a706f6264e70bc2e3550bd69c3aadf5685c097d0e96a44"
+          },
+          "dark": {
+            "svg": "carnival/stable-dark.svg",
+            "png": "carnival/stable-dark.png",
+            "sha256": "62d16388cc22663031fd0721680d6446f1ee36aa5f1969a1e6b6481dc46db0f8",
+            "sourceSha256": "3230f4a9eeaba5d4f9f812c09f9ed2d697b8f7916bf1356b5464932f877782f5"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "carnival/beta-light.svg",
+            "png": "carnival/beta-light.png",
+            "sha256": "a63aadf2496422f2161dcf0c6e383f02ab147c5eb2ba1cf488f21650f0319ca4",
+            "sourceSha256": "42a8baad59443ba5c24b247150019b808e264d6adefacd155f2aa77c12db4d2b"
+          },
+          "dark": {
+            "svg": "carnival/beta-dark.svg",
+            "png": "carnival/beta-dark.png",
+            "sha256": "6928cb62c6f907cf4d2c18b5ace181c43dcd3189834ebde1d34b9e490a5f272b",
+            "sourceSha256": "ccb46fa980b9a6cf26c528313c70dafbadcb4052d41b7d92dbbb46476cec8c02"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "carnival/nightly-light.svg",
+            "png": "carnival/nightly-light.png",
+            "sha256": "8c6d0962364289a166a882ed4cc73024355468fee6fcd13adebfaf81d8667f80",
+            "sourceSha256": "28c88ff47d6c9558eedf5f648041f957f745eff0347c5d3560d04958846968fb"
+          },
+          "dark": {
+            "svg": "carnival/nightly-dark.svg",
+            "png": "carnival/nightly-dark.png",
+            "sha256": "f1a76e692bdab95b3a18de8f2b8032fcce7f955288c7dbac335d4b99554044a7",
+            "sourceSha256": "1882c4739941f7f2c783125eff08d8d78920db96c50bba03f5657aad2c35c396"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "carnival/dev-light.svg",
+            "png": "carnival/dev-light.png",
+            "sha256": "e50a702bba61f035d6eb6c8af6b5a2bdad14418ac03b9e2fcf2ee9ef0c24925d",
+            "sourceSha256": "cf76a5daa5aeafeb496dca4ed9c4cab5c86089b560957930411a74327688c17b"
+          },
+          "dark": {
+            "svg": "carnival/dev-dark.svg",
+            "png": "carnival/dev-dark.png",
+            "sha256": "7abfe9f1f36ea1d1e7b2343e29eb33412d872aef62dfeb71fb754667f3354152",
+            "sourceSha256": "61a308c00335baba6a3216266af59097adddd0ee9d0af4e2433f0031e0d84ee3"
+          }
+        }
+      }
+    },
+    {
+      "id": "christmas",
+      "name": "Christmas",
+      "intent": "One candy-cane link and one holly link, finished with a large sprig. No snow is baked into the design.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "christmas/stable-light.svg",
+            "png": "christmas/stable-light.png",
+            "sha256": "a4f6b511d297a99780ed05b415e773ca73f7e51dfd636c578c17f6d5432fde66",
+            "sourceSha256": "de212fdcae1c581854b29711a36bd158d56cd5afdc5cbea77e4d858dbbe87777"
+          },
+          "dark": {
+            "svg": "christmas/stable-dark.svg",
+            "png": "christmas/stable-dark.png",
+            "sha256": "7b412ae77000bbfcf8a39c28f91e978d02637417afdb96796df13b5b0306595c",
+            "sourceSha256": "3f5c2d0594307d723a76954cdf8b9760a6098b4886b9badba5e48538721b1002"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "christmas/beta-light.svg",
+            "png": "christmas/beta-light.png",
+            "sha256": "a5410e1e30ee1ba09fc8350a31504cd101b481d3d65239e969c6a241aae79e6f",
+            "sourceSha256": "9e338c20c1a7e06813c7324ecf6e8dbb4e749b5dc706b67bad3f10487dc79e5d"
+          },
+          "dark": {
+            "svg": "christmas/beta-dark.svg",
+            "png": "christmas/beta-dark.png",
+            "sha256": "e5fcbe5a64ec3ee7343a643c913ccaff4378ac6677022b4e76e419dcc268dd80",
+            "sourceSha256": "8ab011b02a48abd10502497945b664c49df28b8cf87c26fc9076e0cb944b202d"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "christmas/nightly-light.svg",
+            "png": "christmas/nightly-light.png",
+            "sha256": "1866f68e4d6b027b6cb5319864e546ae078f8dd867e7a1877cde624385d6fd56",
+            "sourceSha256": "b7c4e096705b0d0e9991c8e2075c3e61fa2921359f131a249c5596beae938b65"
+          },
+          "dark": {
+            "svg": "christmas/nightly-dark.svg",
+            "png": "christmas/nightly-dark.png",
+            "sha256": "642ec21f056328a37eff08b9c1fdeb1f29042871acb912f7e2f6b08cc2c837ce",
+            "sourceSha256": "54cc7d77c263531ffbc7d8af06efb1aba98dc10645665c8a40fa087e3096fa84"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "christmas/dev-light.svg",
+            "png": "christmas/dev-light.png",
+            "sha256": "2f53dbbcb344f620a66d991ac9f115a4bf921d7b355153b46371ea2989521bcd",
+            "sourceSha256": "30ba464607986d0a15c7299959023bc027f77691e9266ae3e8015b5e43e412b5"
+          },
+          "dark": {
+            "svg": "christmas/dev-dark.svg",
+            "png": "christmas/dev-dark.png",
+            "sha256": "36eb725ab90d4a48dd755644a24f061c42e44a33983fad243a95b9c6b619cdff",
+            "sourceSha256": "3fa4a07a39472aa17acbaaae858380d23af27e61a53d6a39bedf1a5d6602dd64"
+          }
+        }
+      }
+    },
+    {
+      "id": "easter",
+      "name": "Easter",
+      "intent": "Rabbit ears grow from the right link; a small painted egg and flower inlays keep the Easter identity clear.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "easter/stable-light.svg",
+            "png": "easter/stable-light.png",
+            "sha256": "209fa2ad139aab70f5865d8d56e5c3cc9165d7da10b33f7b93b472150813e107",
+            "sourceSha256": "bbbd65eed55de5c7db59bb7ffdea683be4c6fabb2f0ca21eaf123d259cb10547"
+          },
+          "dark": {
+            "svg": "easter/stable-dark.svg",
+            "png": "easter/stable-dark.png",
+            "sha256": "6b27b43fdab819705dfec9d61402b317fe59584686c58d6a43b9112194503009",
+            "sourceSha256": "0c28c142ca7b1c7764f2483df9eb839194db1420055258ee2477e0fedfcd10e2"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "easter/beta-light.svg",
+            "png": "easter/beta-light.png",
+            "sha256": "8602987a783173866d4e3fce362ebff2796815dc0b32f304b4b724bd0765f3da",
+            "sourceSha256": "1bb864950a88a24e640213831f2c5653d928f122d117f04550781847a90e8894"
+          },
+          "dark": {
+            "svg": "easter/beta-dark.svg",
+            "png": "easter/beta-dark.png",
+            "sha256": "5b7d5e901b6e5951b973f3e6d57a721b6fc2c6cd938289bb91ad420cc78cf178",
+            "sourceSha256": "e846a30e4ab683cc637b953303df3cb7272888373a1974e6b9f4593e306f8210"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "easter/nightly-light.svg",
+            "png": "easter/nightly-light.png",
+            "sha256": "af141f74da5ff9bca4b720984be8c34d96e772fbbbb8600ef68c31d3370003c8",
+            "sourceSha256": "c8edf37abd674093487b6c57dd2f2b3a79a6309d4c8ba98e16759f8ea920a265"
+          },
+          "dark": {
+            "svg": "easter/nightly-dark.svg",
+            "png": "easter/nightly-dark.png",
+            "sha256": "2a5baee917f34c16713ee4743f4b6803d47fd44179caa62d6422b9a733d2bda0",
+            "sourceSha256": "0c51cfe3a2a81d81ce2dbc9bc3375b7ba80943b54faa92c8e5fe2dbf57fc47b6"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "easter/dev-light.svg",
+            "png": "easter/dev-light.png",
+            "sha256": "e53c5ff1c17c90f6fcba6459039276916b8737407ade013ddb881995048943a4",
+            "sourceSha256": "eba2d27777505916602028d2b47a1bd29778033c82adcb4ca7728886a18ba918"
+          },
+          "dark": {
+            "svg": "easter/dev-dark.svg",
+            "png": "easter/dev-dark.png",
+            "sha256": "047b9a4ff82616c8cdb4091ad6ac96337da2613243a9f414869491612d39a187",
+            "sourceSha256": "6a20a0dd78b8ea3b762e06b2eaedcd87cb585b17833aeb27ecdee75002b41874"
+          }
+        }
+      }
+    },
+    {
+      "id": "orthodox-pascha",
+      "name": "Orthodox Pascha",
+      "intent": "Red and gold links with a tall Paschal candle and a red egg, distinct from the Western Easter edition.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "orthodox-pascha/stable-light.svg",
+            "png": "orthodox-pascha/stable-light.png",
+            "sha256": "dd5586092dc44ad5de713d09a89544f3b975e4120048623cc0b43edcde0237ca",
+            "sourceSha256": "ac6f7352efd02976ebebaab265b06c94dd5f60ffa6be0dc919e23b1313cea37e"
+          },
+          "dark": {
+            "svg": "orthodox-pascha/stable-dark.svg",
+            "png": "orthodox-pascha/stable-dark.png",
+            "sha256": "0fbf267fdd8f792998475470399eb3b4762628595f54b99cbbf8c3b2e4736267",
+            "sourceSha256": "bdcf9c86e3f9454d5d645e5b7feed107aa8153390eed38873a99093a71223585"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "orthodox-pascha/beta-light.svg",
+            "png": "orthodox-pascha/beta-light.png",
+            "sha256": "a9304267d6cf65d8199f80e882b7d1b0afc2c74c9ff052db930b45a35cd3da84",
+            "sourceSha256": "49cc07c0faae543a20817ff76ef64a3a914a8ddd380315678108873020cae15e"
+          },
+          "dark": {
+            "svg": "orthodox-pascha/beta-dark.svg",
+            "png": "orthodox-pascha/beta-dark.png",
+            "sha256": "3d273942deb3e801e11053ae45311125f2c061f49f5eff165eb158ffbc6ee594",
+            "sourceSha256": "c369010e0fab1365cd5afad363f15f35cc0e409979d95c08e43764bff7dbafe9"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "orthodox-pascha/nightly-light.svg",
+            "png": "orthodox-pascha/nightly-light.png",
+            "sha256": "995af8184873108aafad24b693eb4aa7edc0ff6dd51bed5a676dae8f46b69e89",
+            "sourceSha256": "76b3e39fedf1dec17674d0b4d749476f39e70cca97e4b6c9ba05353b0f6a297f"
+          },
+          "dark": {
+            "svg": "orthodox-pascha/nightly-dark.svg",
+            "png": "orthodox-pascha/nightly-dark.png",
+            "sha256": "b243dfcb85b6c837d315e8576de270888c3c4dd151100a7c3327fb7ed883be57",
+            "sourceSha256": "65dd69162334c189714de409ed0904ba916815cc627c31cb2dfa1e1c93f14f3e"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "orthodox-pascha/dev-light.svg",
+            "png": "orthodox-pascha/dev-light.png",
+            "sha256": "bbe40c3c5ff9a907f9d74c7d01122a29bd01b18bf85b5d0bcd8b7a4d06098aa8",
+            "sourceSha256": "d28216ae0f47b0c7df4a99d83b47a2f0e47ea7765168d4441aab169a9a2f1db3"
+          },
+          "dark": {
+            "svg": "orthodox-pascha/dev-dark.svg",
+            "png": "orthodox-pascha/dev-dark.png",
+            "sha256": "5995f2746270b8d4ccb236066a4560bd2139526f7296755c6eff5f315d1d6f7f",
+            "sourceSha256": "5da66761f71c10ac58262749f135f3abc2b539418af0c2a74902ee410e811d2e"
+          }
+        }
+      }
+    },
+    {
+      "id": "holi",
+      "name": "Holi",
+      "intent": "Large flat pigment splashes cross the links, with a few loose colored powder dots.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "holi/stable-light.svg",
+            "png": "holi/stable-light.png",
+            "sha256": "ec43d6a925c47e3e47676aa31259b0f7ad434cd7ed4619ecd60a1cfe65a70312",
+            "sourceSha256": "eb294d5f56745ef0c8d851496feff1e012898b22a245f8774c34ab4febeb29a5"
+          },
+          "dark": {
+            "svg": "holi/stable-dark.svg",
+            "png": "holi/stable-dark.png",
+            "sha256": "f22792c0f9d453b7b86fc8e3412f72be78c5a7be54203834b2fd0bf4b793f65f",
+            "sourceSha256": "131493b3cd9e69e0022fd4b8568c5be4eb0100332a5e050a4e75758111e84415"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "holi/beta-light.svg",
+            "png": "holi/beta-light.png",
+            "sha256": "edefd3771d1183b60c6ad675c65d790b0a6ebf738983f57cda99517abdfcb9a6",
+            "sourceSha256": "98799e5981e11b758ed2659685bb1cd7553f4f5fc1bb6b5b4ae55fa0de5047ef"
+          },
+          "dark": {
+            "svg": "holi/beta-dark.svg",
+            "png": "holi/beta-dark.png",
+            "sha256": "40e2826dba1a39e82a844994a457838c00464248938a74e378c461afdb08544b",
+            "sourceSha256": "5b6c09e27f48b4c92013ee97830b0c460bd85a909b9d6b0ca378e609ca8490db"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "holi/nightly-light.svg",
+            "png": "holi/nightly-light.png",
+            "sha256": "ac04f05a4fe4a1baafb7220f734cfa0377a5fdf55bbdd92131e1b22831c08105",
+            "sourceSha256": "a6a793bddd7899e75e03d6bc0df1bd520ac25ae2b20d6d16a40d1fc6c8b4a4f5"
+          },
+          "dark": {
+            "svg": "holi/nightly-dark.svg",
+            "png": "holi/nightly-dark.png",
+            "sha256": "dab86523d7639c275757b9006f70816ab1934484d763f1745cd0b6ac3cca6d69",
+            "sourceSha256": "ff10778208bb9d357e157527713a8cda708cf57c94b933a9122bde30d6726f31"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "holi/dev-light.svg",
+            "png": "holi/dev-light.png",
+            "sha256": "4402ab6429b5df41cb287d9ef5039c33f61cb4337cc974449e067bff21369d8f",
+            "sourceSha256": "46e4b17c2aa4bd326576ffcaf3982e412e9c19dc54d4668bbafda3bf59778253"
+          },
+          "dark": {
+            "svg": "holi/dev-dark.svg",
+            "png": "holi/dev-dark.png",
+            "sha256": "2176f1bf53bad48aeb67048c8f23c0d343b1a4192e1a3f3439862145ebe74662",
+            "sourceSha256": "8178be0680b609eac72d3dab4e5d8f0cdd8ff812c984427ecc912866427902d0"
+          }
+        }
+      }
+    },
+    {
+      "id": "diwali",
+      "name": "Diwali",
+      "intent": "Warm rangoli-like linework and four small lamps integrated into the links, with a larger diya below.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "diwali/stable-light.svg",
+            "png": "diwali/stable-light.png",
+            "sha256": "4faadd63fffad6423e686c2773f0fa63b8fc6fdb3ed4069b8be273533ed49604",
+            "sourceSha256": "8cad3f6ae268e18244292432fb62dda3f3cd8fe1e36932913d8b74100fafc512"
+          },
+          "dark": {
+            "svg": "diwali/stable-dark.svg",
+            "png": "diwali/stable-dark.png",
+            "sha256": "cd855b342ada1b95bac0e2c132c7dc49e9fedd27f159f3fe1262bb45e384d448",
+            "sourceSha256": "5f15140eb24b7b5c0e33aabe07586f5910e019796a6314e5d07a2df27cc5f419"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "diwali/beta-light.svg",
+            "png": "diwali/beta-light.png",
+            "sha256": "a279e41001d1e9de7bc31e182fbdaf8b81a4c61e274c5d7fcf9104688ca80280",
+            "sourceSha256": "072626a942a8cb51aceed000e83fba44768ae5b866fd5ce80041da3eb121a9ef"
+          },
+          "dark": {
+            "svg": "diwali/beta-dark.svg",
+            "png": "diwali/beta-dark.png",
+            "sha256": "b8380ce8b7339b6cf396e9037579e8b2b4197b7a2076af61f86913ef4b1fc313",
+            "sourceSha256": "c75872c7be8715fbbf9990073fcfb41f050806475493da3e5171f13baf3bd73e"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "diwali/nightly-light.svg",
+            "png": "diwali/nightly-light.png",
+            "sha256": "4b687351f5684ca1cdeb12b29a1f2bcb01271979eda62a4b9da17083175372ee",
+            "sourceSha256": "3edc62fbf7c7e0b531a29f2ced9be721c49fc0ab8b1a275f4d75bfa573401d48"
+          },
+          "dark": {
+            "svg": "diwali/nightly-dark.svg",
+            "png": "diwali/nightly-dark.png",
+            "sha256": "edc82e97f40df2035c46987f4c7b5b7f4465a81aec4eb77ee2a0ea214e223ac2",
+            "sourceSha256": "1143e873bc5aea7965732c9986693cdcb9ecbe4e5d2d9083e24dcaccedee7503"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "diwali/dev-light.svg",
+            "png": "diwali/dev-light.png",
+            "sha256": "6194e3c4f4bb0146771e6af968eb859fb07080881227429d73c2cf209ac474eb",
+            "sourceSha256": "8e0181bda3aceaa92b7a42dfa35fd09f6bc216cb49a818e2d1a344ad458af436"
+          },
+          "dark": {
+            "svg": "diwali/dev-dark.svg",
+            "png": "diwali/dev-dark.png",
+            "sha256": "c41aded5918192ff820c6bd80094eb62ddb08a55c46b5ad5309cae21345086b2",
+            "sourceSha256": "9ed19104cc5cf06f6aac41daa68d854937d4ce6eb4a8b165e3bb6a807e20c0c9"
+          }
+        }
+      }
+    },
+    {
+      "id": "vaisakhi",
+      "name": "Vaisakhi",
+      "intent": "Saffron and blue harvest links with wheat sprigs, keeping Vaisakhi distinct from the other illumination editions.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "vaisakhi/stable-light.svg",
+            "png": "vaisakhi/stable-light.png",
+            "sha256": "8d7314b829980a7fd557b21a26b37658a03db1ee5a8188984b188ecf1137d263",
+            "sourceSha256": "3a107a678f017be7747e57f9be3d8be68199733a59a929f70d6ab119a4e43b1f"
+          },
+          "dark": {
+            "svg": "vaisakhi/stable-dark.svg",
+            "png": "vaisakhi/stable-dark.png",
+            "sha256": "94fdbfa5c81f3745f258595f3fbbbeab4b3cd01023e5e7dff49fcb3c1be57609",
+            "sourceSha256": "7c54c140be0eb1d1c66670f437ac0c45c8df87fc61769a0c8d2fa5123419895b"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "vaisakhi/beta-light.svg",
+            "png": "vaisakhi/beta-light.png",
+            "sha256": "15b1011fa45ca6c682c68e7b89b867420940dcf6efb69fc0d69da6edb9f47c2b",
+            "sourceSha256": "b3ea8c6b4f7a81c965f6628353a75fa9ba96ecb2010cdcebc19f19e3886d8bdc"
+          },
+          "dark": {
+            "svg": "vaisakhi/beta-dark.svg",
+            "png": "vaisakhi/beta-dark.png",
+            "sha256": "124abeaae98dd4f2c589d34945de074ac0de911db109a6647020e4ad747eebce",
+            "sourceSha256": "7f9966511bd745c0fdce5cbd13b5396f41c3b58104ee4e18c8b9bbec9e46ba0a"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "vaisakhi/nightly-light.svg",
+            "png": "vaisakhi/nightly-light.png",
+            "sha256": "faa8fc24a1fab272b0f43b011ec0a906a3ad61045f8b7224afe4296b954b587f",
+            "sourceSha256": "929c19e814570433c1d5642a6a3c2174e82138cd6bbc5f17fd93d8ab8b3615b1"
+          },
+          "dark": {
+            "svg": "vaisakhi/nightly-dark.svg",
+            "png": "vaisakhi/nightly-dark.png",
+            "sha256": "d3f4ef81b1594c290023cb4628d618ae0fb429404e4fa4d2ceb9f67ef53e0b51",
+            "sourceSha256": "e28398185a72517a32372bfd9d51f1fd109b984fe9ea3bab26399aba75022d5e"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "vaisakhi/dev-light.svg",
+            "png": "vaisakhi/dev-light.png",
+            "sha256": "92fcac617bc5fe17878288ff6717e18d27b34122b1a4a5b8548d7686900ee1d8",
+            "sourceSha256": "9e8d2c671f49f13a16b47671f517bda02e5ee0bfd4f34ffa65336c1bdec2032e"
+          },
+          "dark": {
+            "svg": "vaisakhi/dev-dark.svg",
+            "png": "vaisakhi/dev-dark.png",
+            "sha256": "b7517c50a3e9716116a7cf6f9f26d2a66320d362f0ad966fa0fa9af4a658d649",
+            "sourceSha256": "b425f8d39953396686fb855e676907f53ee0ca9a06677876adfc006a1e540965"
+          }
+        }
+      }
+    },
+    {
+      "id": "bandi-chhor-divas",
+      "name": "Bandi Chhor Divas",
+      "intent": "Blue and gold linked illumination, with a quiet row of lamps and no borrowed sacred emblem.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "bandi-chhor-divas/stable-light.svg",
+            "png": "bandi-chhor-divas/stable-light.png",
+            "sha256": "6419042576c99ce028279f2c4e42fb0245caec5690e0ecb71e1a37f6a7ce017c",
+            "sourceSha256": "8377d3d4dca6f2f9b83538097f559951087b601948fe4c27aea6f2eed4613cb7"
+          },
+          "dark": {
+            "svg": "bandi-chhor-divas/stable-dark.svg",
+            "png": "bandi-chhor-divas/stable-dark.png",
+            "sha256": "5d1cebf10b17e8f0df391728c3d2a0e1a76eff5eb45c415b1c0505db8b49ae00",
+            "sourceSha256": "18c669a4df7aac228afdde88481ac3ba497d8d512c47ac26922fa2de2ba005ca"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "bandi-chhor-divas/beta-light.svg",
+            "png": "bandi-chhor-divas/beta-light.png",
+            "sha256": "c4def5e7f21ef1c89edc558428820737488bea295fdb5fd331f527739e363f60",
+            "sourceSha256": "5e6c347ee11ea5d4833c5025795d8ed3b570e6a35b774238ff98bc0a014fa391"
+          },
+          "dark": {
+            "svg": "bandi-chhor-divas/beta-dark.svg",
+            "png": "bandi-chhor-divas/beta-dark.png",
+            "sha256": "e84067dd2502329cae6e6cee10de0af798feb8f306eff49082261687f2e7ee9d",
+            "sourceSha256": "4453ead3de8d1cdc172db7829d8d107d4ff11e8946d3509819c3bde368a46b23"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "bandi-chhor-divas/nightly-light.svg",
+            "png": "bandi-chhor-divas/nightly-light.png",
+            "sha256": "7600d15832f1dcfb6ef7c92c4e5fae3121b43d138637d461f020a8bdf55a0c77",
+            "sourceSha256": "2f85a9b3917e58362a1b0da02492f84aa7320cdcb23a169f7cfcb5920dac0cfa"
+          },
+          "dark": {
+            "svg": "bandi-chhor-divas/nightly-dark.svg",
+            "png": "bandi-chhor-divas/nightly-dark.png",
+            "sha256": "c5c30261cce0a9841cc749ccf02520e9c552696a77f555dc6a4ed7b8dca64d98",
+            "sourceSha256": "06f9c9cb3654e6a2104ff28d6006b30a404d1b5783c719df2e6915914fb94651"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "bandi-chhor-divas/dev-light.svg",
+            "png": "bandi-chhor-divas/dev-light.png",
+            "sha256": "9dbe4a50d93e771f6309a305ced222ecc7ee99fc886731464d9ebf2880c2c07c",
+            "sourceSha256": "3cac8f607396ce464eae17d01a4106f2cc95f958077e6aae7384fca6f7f4d3ef"
+          },
+          "dark": {
+            "svg": "bandi-chhor-divas/dev-dark.svg",
+            "png": "bandi-chhor-divas/dev-dark.png",
+            "sha256": "3f0ff1e29b0fbe22cb585006109c6dc2e767db06888859685f797c4760e635cf",
+            "sourceSha256": "1a2ee16c27bc1c31a8aa31c499adc8f6fb3c8ac81eb79b53bcf38a2fc66ccbb5"
+          }
+        }
+      }
+    },
+    {
+      "id": "guru-nanak-gurpurab",
+      "name": "Guru Nanak’s Gurpurab",
+      "intent": "Calm gold botanical links under a soft sunburst, with a single warm lamp.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "guru-nanak-gurpurab/stable-light.svg",
+            "png": "guru-nanak-gurpurab/stable-light.png",
+            "sha256": "b2f51b183bf28506486ce53560f6c75908b0cf527b29f09800903f05bad4912b",
+            "sourceSha256": "768133f008d55bcd0b6a01c36cb1fee2919ee59e52b04a848b6b96b254f52e1c"
+          },
+          "dark": {
+            "svg": "guru-nanak-gurpurab/stable-dark.svg",
+            "png": "guru-nanak-gurpurab/stable-dark.png",
+            "sha256": "fea5584be8d6934fe5c0ad307618174851bb62bee85a5e0d4904fcb0a3560c0a",
+            "sourceSha256": "ddc4fb2e83e7516e867482949932fdeca620b8a43039b6f50f66cf0deb30af60"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "guru-nanak-gurpurab/beta-light.svg",
+            "png": "guru-nanak-gurpurab/beta-light.png",
+            "sha256": "4e9b6df3e68c715f329209fff74f7b2a0ddedc4fbcf1368046f2b194a39bd0e2",
+            "sourceSha256": "388d59bd91c4b366c585667fd83b4022fab89986961c2628e0ab9bdcb1e502c8"
+          },
+          "dark": {
+            "svg": "guru-nanak-gurpurab/beta-dark.svg",
+            "png": "guru-nanak-gurpurab/beta-dark.png",
+            "sha256": "cd929137b296a08a95446cdb06f040649cda403da511a9855ee6862f5f301d35",
+            "sourceSha256": "827e3279756f68a3ee355cef413f5763fa4804df73dff2007b32802d905b8dbd"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "guru-nanak-gurpurab/nightly-light.svg",
+            "png": "guru-nanak-gurpurab/nightly-light.png",
+            "sha256": "6d8b9a2ca6fbae330549bf8d79a01e54f5bff697a2bed4c2c30bb5ff49712aaf",
+            "sourceSha256": "80d3179861fc0d1ad1cb1b63dfe3e1e02a7d8390fa1f62c3b44e8a30b7928fa2"
+          },
+          "dark": {
+            "svg": "guru-nanak-gurpurab/nightly-dark.svg",
+            "png": "guru-nanak-gurpurab/nightly-dark.png",
+            "sha256": "a905fcf31842cab3106e64de4659ef3494b87e0ecb616272be6e1ac77bfb6d7a",
+            "sourceSha256": "62581f66ebc5d41ce8c7c14d90f6e120c9ee32c52ce11cc033b8b9bf1f5e6bdc"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "guru-nanak-gurpurab/dev-light.svg",
+            "png": "guru-nanak-gurpurab/dev-light.png",
+            "sha256": "fa1fbc3e006f41453926b16bb55804e63433569f91290ff1df5e4c344a5726ae",
+            "sourceSha256": "48da9a1e0e4e2ee2e1fed437b9c05e7b8da62a6ddef495b9667b8581c421235b"
+          },
+          "dark": {
+            "svg": "guru-nanak-gurpurab/dev-dark.svg",
+            "png": "guru-nanak-gurpurab/dev-dark.png",
+            "sha256": "0ee793ffb6b3d802a89949de5fff9299a0789918e0579434564769612c82eb76",
+            "sourceSha256": "944b468ce81e053e50f69e90641cfd0e25ee0d9ad6ad82a6c4a9c041a6e0890c"
+          }
+        }
+      }
+    },
+    {
+      "id": "eid-al-fitr",
+      "name": "Eid Al Fitr",
+      "intent": "Cool geometric links beneath a flat crescent and star.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "eid-al-fitr/stable-light.svg",
+            "png": "eid-al-fitr/stable-light.png",
+            "sha256": "a973df3a8551be5d1afb603aa4a8c421ae31c8c096b8590135d0502a0d823474",
+            "sourceSha256": "43e7dba7d67c93a453529ce740888d067eaed274a212a9c033ec093878a5e696"
+          },
+          "dark": {
+            "svg": "eid-al-fitr/stable-dark.svg",
+            "png": "eid-al-fitr/stable-dark.png",
+            "sha256": "e8f0dd230ff40c12b3d4cd4c68fd99c03a6e9e9a70f081cdb27f66f0b0179108",
+            "sourceSha256": "9878e2acf18aef1a481d7ea60703dba4ae4442be3aaab316ed08c5a3bdce57a6"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "eid-al-fitr/beta-light.svg",
+            "png": "eid-al-fitr/beta-light.png",
+            "sha256": "4612534b7eb8291c5e71ecd2230f8e7bbc33ff0e55d234530dcb8b0fcd20378a",
+            "sourceSha256": "9286adf55753fca918c75d1839c11612d8f58a4732096ab7621acc03cb115fb0"
+          },
+          "dark": {
+            "svg": "eid-al-fitr/beta-dark.svg",
+            "png": "eid-al-fitr/beta-dark.png",
+            "sha256": "dce02982a81ef4ef436261f1f933d832b4a7bb104a9d15558f8c4473cfa934f6",
+            "sourceSha256": "d80b4157d230c6dc1b55a4bc97fb36d0f9d4c716872b50b0d108c507f47f399c"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "eid-al-fitr/nightly-light.svg",
+            "png": "eid-al-fitr/nightly-light.png",
+            "sha256": "4065126202ed9334a0a9844b3c8b065d9e30fd662ba9a1de93ee2682f7a64ede",
+            "sourceSha256": "d8509c843452829dea19b860247598292650ba961d2fe02b1132552ed99aa2d9"
+          },
+          "dark": {
+            "svg": "eid-al-fitr/nightly-dark.svg",
+            "png": "eid-al-fitr/nightly-dark.png",
+            "sha256": "aae916045021985f81d7311911f00ce91c91abbd5c0e39721d52d33699419bb6",
+            "sourceSha256": "8afc96cfc3172914388b2ea61f5b0ee72e24b693bef35b334dcfe62373bdd42f"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "eid-al-fitr/dev-light.svg",
+            "png": "eid-al-fitr/dev-light.png",
+            "sha256": "17c3797e8934770febfcfa4a179da2ab364645b6eeba76688964b444d9a9078c",
+            "sourceSha256": "cd97134f81496772c36791b0c46dce3e196000b254c5dfb36bab1aa23d7982f7"
+          },
+          "dark": {
+            "svg": "eid-al-fitr/dev-dark.svg",
+            "png": "eid-al-fitr/dev-dark.png",
+            "sha256": "5ce174db521e1439f9fa1c53666825686c1bc21734374eeca64e24d1b7dd55c0",
+            "sourceSha256": "a21046b48ee1fe7e8cc2ee8db923326bfdf9780b9719d4baeffae223fb484dac"
+          }
+        }
+      }
+    },
+    {
+      "id": "eid-al-adha",
+      "name": "Eid Al Adha",
+      "intent": "Warm olive and gold links with eight-point geometry and two olive-like sprigs; a separate Eid al-Adha treatment.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "eid-al-adha/stable-light.svg",
+            "png": "eid-al-adha/stable-light.png",
+            "sha256": "83cee310d22466262e694beab8230e789bc5693a087eaf7e48947ccf03a23fb7",
+            "sourceSha256": "a60a82472644e37b21021b9448604d9258d16140c45b8c5f7fb7c5b6074afe7f"
+          },
+          "dark": {
+            "svg": "eid-al-adha/stable-dark.svg",
+            "png": "eid-al-adha/stable-dark.png",
+            "sha256": "b6b1af13dd91e793edcdaa2c0b29493dc2273faba894da2c21fbe6a4162b7ccd",
+            "sourceSha256": "5b754023c45837520e611dd63eea998e7338da1cdbd8b7526e3765061efa7aec"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "eid-al-adha/beta-light.svg",
+            "png": "eid-al-adha/beta-light.png",
+            "sha256": "5aa30f4083ab54de68aaa13f13ddf19f0d2b6be7e2087d61c2549d225d9ec8d4",
+            "sourceSha256": "ba0f9c02cda5ec8c88ce399189545a988bce1892886a7330dda924a87425c6ec"
+          },
+          "dark": {
+            "svg": "eid-al-adha/beta-dark.svg",
+            "png": "eid-al-adha/beta-dark.png",
+            "sha256": "56f93a1fbfaf959c1c53d271c72f0536b668317b3d2201bc58aec82f52736eed",
+            "sourceSha256": "aeaa58495205f1f2cb6da69cf9f5a6d1b27ade10c0869f0eabd2db3566edf168"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "eid-al-adha/nightly-light.svg",
+            "png": "eid-al-adha/nightly-light.png",
+            "sha256": "287652648d3283786e734aa93bf7347fab9b22fefb81808df8f8bfe9304bc9c2",
+            "sourceSha256": "3f070fe32cfdff630e88803ca75a54d42ad3acf4ad0518e84e9c7e2c0792975a"
+          },
+          "dark": {
+            "svg": "eid-al-adha/nightly-dark.svg",
+            "png": "eid-al-adha/nightly-dark.png",
+            "sha256": "7600913e8e8089c63bfbc6e7a027844cb2640445d936a33052369208b4022796",
+            "sourceSha256": "cd7cc613622c82a3c4b404413f9ee5b9e564b80f686feb90ce8bdd65d520c12a"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "eid-al-adha/dev-light.svg",
+            "png": "eid-al-adha/dev-light.png",
+            "sha256": "3306209cc083eeab156cdc7437462cd5913d9673df82a2426b4efc0c11531b46",
+            "sourceSha256": "9444da8bb52e931527afeb8ac137c8f2c9e5cb401db19b6d5f5383db341b3e32"
+          },
+          "dark": {
+            "svg": "eid-al-adha/dev-dark.svg",
+            "png": "eid-al-adha/dev-dark.png",
+            "sha256": "fb67ef8c90479b06c9640c9a54ef0457dc7930080c7f5f5165b145605d4d6aa9",
+            "sourceSha256": "8ff452c66866b19838fb459fa4c13933d37009495c5dba5a5a1052e42bc19cfc"
+          }
+        }
+      }
+    },
+    {
+      "id": "hanukkah",
+      "name": "Hanukkah",
+      "intent": "A nine-light hanukkiah: eight equal candle positions and one raised central shamash. Blue and silver links stay uncluttered.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "hanukkah/stable-light.svg",
+            "png": "hanukkah/stable-light.png",
+            "sha256": "67bf778cdf531f694af7db0587e5599ab7934f5edc49ff90d9cbfccc6d99e4e7",
+            "sourceSha256": "74422af728db8aba0bf79dd0e45fe2ebffb0da6bf32d5d3908ca1b0bb290bde8"
+          },
+          "dark": {
+            "svg": "hanukkah/stable-dark.svg",
+            "png": "hanukkah/stable-dark.png",
+            "sha256": "0e4f17a0709abbf234c4089589c30f8d4270d2e9117a374c230c27d668341a61",
+            "sourceSha256": "b890f30f832b24657048be325666574ac4147ac41845bd42ff090a54f63285e0"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "hanukkah/beta-light.svg",
+            "png": "hanukkah/beta-light.png",
+            "sha256": "42614dd5de4749c6398315312311f3370bba8a716c378ed320e4420a09e27820",
+            "sourceSha256": "906b75af59228bf72416c26fee0e6421077072c415c7a11e9226456cdde55eee"
+          },
+          "dark": {
+            "svg": "hanukkah/beta-dark.svg",
+            "png": "hanukkah/beta-dark.png",
+            "sha256": "6f4e3d0548261d39480db9df0cc44a80f23a3ae359e71db9723d751d940f5f1e",
+            "sourceSha256": "fd30a3c329fc572eefc2bacfd642b269c64f202ce2ed3bd7230c434dd4996b4c"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "hanukkah/nightly-light.svg",
+            "png": "hanukkah/nightly-light.png",
+            "sha256": "c7104c6de6f9420ace0d2c9bcea7c4b2656715f2d060f8c24047829e2d79a91d",
+            "sourceSha256": "b47caf362d197cca1eb86cc55d1ec09a811e8e34921dcec5b8089323cd6652b6"
+          },
+          "dark": {
+            "svg": "hanukkah/nightly-dark.svg",
+            "png": "hanukkah/nightly-dark.png",
+            "sha256": "55292576b84be1477592118f94c3c72097db0894b504721b07e73ba823f1c51d",
+            "sourceSha256": "0ac2938a2d74fba5e4450e6c06ffedc51f1a24dbf8784a64d707922d1b851f28"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "hanukkah/dev-light.svg",
+            "png": "hanukkah/dev-light.png",
+            "sha256": "779ec0ce557a50e529eb416ffcfe14f110a0eceddfabd3d261fbd57d1d6b1fbe",
+            "sourceSha256": "d0673a84193cb3842203755f2f5028ea5495c8019e85689216a197abc73254aa"
+          },
+          "dark": {
+            "svg": "hanukkah/dev-dark.svg",
+            "png": "hanukkah/dev-dark.png",
+            "sha256": "d27cf8174e477687af8c689b73d6301ea23ac3360508d1500a68a3ee8a289628",
+            "sourceSha256": "318aa026a9b294246728a219febf7df6537df2f100f93e374773fae9265a97df"
+          }
+        }
+      }
+    },
+    {
+      "id": "vesak",
+      "name": "Vesak",
+      "intent": "Two lotus blossoms grow from soft green and rose links, without a generic party treatment.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "vesak/stable-light.svg",
+            "png": "vesak/stable-light.png",
+            "sha256": "36c765c7dd5d8765527e55891a0a58f19471771237244dd6e8ec47007de7359e",
+            "sourceSha256": "db88d9bd3c7231fa827db1c908c53b31405330e6a88e8ae2b9619ebe16026cc8"
+          },
+          "dark": {
+            "svg": "vesak/stable-dark.svg",
+            "png": "vesak/stable-dark.png",
+            "sha256": "150e190cdfd7c6a0c7312a1c4c6e2f4412a036e49e81649afa8712184ddc9f9d",
+            "sourceSha256": "72497bc40460cdb2e462a0641018034b7904ce27b2bb60de559674be3c77f0b0"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "vesak/beta-light.svg",
+            "png": "vesak/beta-light.png",
+            "sha256": "9c89e8abb1c9038bd410f14f3c44a64caaa8c6cdc8b51cf00da919940c2b4f49",
+            "sourceSha256": "3a8d4baf4a33a8f8773cca12030b06aad4ae67c02c506c115ac2d01bb799b965"
+          },
+          "dark": {
+            "svg": "vesak/beta-dark.svg",
+            "png": "vesak/beta-dark.png",
+            "sha256": "e65109a1223b27e3f7e158f6c09818e61a07f5aa91c8b9649f6cba8544733810",
+            "sourceSha256": "3f54f3650a74333e77f140fd8d360271395d3d64976bb6286da7159a05a331bd"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "vesak/nightly-light.svg",
+            "png": "vesak/nightly-light.png",
+            "sha256": "6fb8141213e62d37235a1b8a5172ebd99b8f397baf7e3c6bed9b360b064cec27",
+            "sourceSha256": "29de99d4c922521bd4354959c4faefbdcec08039a02df62e9b393eac8b183b7f"
+          },
+          "dark": {
+            "svg": "vesak/nightly-dark.svg",
+            "png": "vesak/nightly-dark.png",
+            "sha256": "726484cef7d4d80c6cf8c5c230152ceb5abc97d5111b4c06306aaa4e418057f8",
+            "sourceSha256": "fa1ae7eca805aa0bb6502d6241d3436f75ccbec97202bb9be063131168ae9540"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "vesak/dev-light.svg",
+            "png": "vesak/dev-light.png",
+            "sha256": "9040864349994cf83a37118363871cbc0dbe7812086d8077d523abf204eebd2d",
+            "sourceSha256": "efe2351de0e89fde0fd623f793ed8a6f6d96abecddeda677320f76764b81e086"
+          },
+          "dark": {
+            "svg": "vesak/dev-dark.svg",
+            "png": "vesak/dev-dark.png",
+            "sha256": "9804aec800d0a3febd74bf77b95c3b6354a7b2d18f14b561efc26e59e50aeeab",
+            "sourceSha256": "457576d0a4e783d1a70266f806c185b98cf43bc755bfd95716a788e9db025893"
+          }
+        }
+      }
+    },
+    {
+      "id": "meskel",
+      "name": "Meskel",
+      "intent": "Golden daisy-like flowers along both links and a small abstract bonfire above, following the existing Meskel app artwork.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "meskel/stable-light.svg",
+            "png": "meskel/stable-light.png",
+            "sha256": "c818a34bd695e47597a0b4aecec5b5a9609737e3f5d78ac47d67aa8eac915da0",
+            "sourceSha256": "0b0145cafdbca1b1fd6728e0687190c693f2795a7f0104bb9fc190a25d0acc2a"
+          },
+          "dark": {
+            "svg": "meskel/stable-dark.svg",
+            "png": "meskel/stable-dark.png",
+            "sha256": "cff161c61e8c8b8cf27cea328d1ec0d6f57e9b120b3b6132001b0348e80967a7",
+            "sourceSha256": "c0b5fcc9322e56e6b29b7dceb697f1c9b9c03c9a138c7a9e4130bd7b99ea9306"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "meskel/beta-light.svg",
+            "png": "meskel/beta-light.png",
+            "sha256": "27f26827de139ba67c498029394c69aaa55184c1a8816e4bca1d5dfc9bc803c6",
+            "sourceSha256": "fb7da1b12060c5432fd4f5c62fb6f8a5bfc12c7a64ecc53bb8a18cd351a26609"
+          },
+          "dark": {
+            "svg": "meskel/beta-dark.svg",
+            "png": "meskel/beta-dark.png",
+            "sha256": "5a9a3fcd13b225b03aab07bbe5ed1a21fa623567a72722d6d5b307976dac7d10",
+            "sourceSha256": "b07c2b580f21a6ed8da44f95fc47082101fd82dab8d3e36a0c2abf87e7d092d9"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "meskel/nightly-light.svg",
+            "png": "meskel/nightly-light.png",
+            "sha256": "b968b664b04112c029d12aac5cc571257efd417e5b4aa7bf737d421eb8100aa0",
+            "sourceSha256": "0c9ccf2966212d802e673e690c0922a5a4ed6a4cfef868e75a3b24335d49bfa9"
+          },
+          "dark": {
+            "svg": "meskel/nightly-dark.svg",
+            "png": "meskel/nightly-dark.png",
+            "sha256": "11870ba046317c748f7333789cf87a2c778f9f223f5a012c328e8f94776b1fd4",
+            "sourceSha256": "406cbac92682ff084299b88e3514f6e4f9b7e994bc5775195e24d2076c14eb15"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "meskel/dev-light.svg",
+            "png": "meskel/dev-light.png",
+            "sha256": "7b3c13eb2977a2429ae49154206365f11c66eff03e8ceac9eaabcd210114c9a5",
+            "sourceSha256": "2e0a933386cff688c0ad16366a573c894ce7344f34df7b79b546848629609f5c"
+          },
+          "dark": {
+            "svg": "meskel/dev-dark.svg",
+            "png": "meskel/dev-dark.png",
+            "sha256": "efd64958a8ae3c4f19b8f289eb722442cb940c4a0916bd60946d351046fddc53",
+            "sourceSha256": "06f2a5cb59d0890d11e25d3da5ab2e3cccf4af73e6d23e2cb26a0da054e25df4"
+          }
+        }
+      }
+    },
+    {
+      "id": "timkat",
+      "name": "Timkat",
+      "intent": "White textile-like crosses and water curls on blue links, with a central descending droplet.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "timkat/stable-light.svg",
+            "png": "timkat/stable-light.png",
+            "sha256": "bb7dae4dc3db3a6755a7a5a1acbdbb1c818a4b8d63acb7954c9c87716c17d9e0",
+            "sourceSha256": "bfb20e1b93b9b04deb680b81b8af7114b50e421682a2d9142749e64d2a0360f0"
+          },
+          "dark": {
+            "svg": "timkat/stable-dark.svg",
+            "png": "timkat/stable-dark.png",
+            "sha256": "78e040d07b0b36457ad2e9b85e76992a8a52b417c31aae64d0325c029714ff90",
+            "sourceSha256": "575ba3fd61be0626e99d6964d52e59e5d04a48cd645203982b3fd13a0624aaea"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "timkat/beta-light.svg",
+            "png": "timkat/beta-light.png",
+            "sha256": "2b8356ae48c3183fc9cb5dfd488dd67a5f9b5910c20ad0de85b266c2be258508",
+            "sourceSha256": "8c904caf88581c3e1ed3df60b5adc8446ffe6d045a618a99712717fb94758d96"
+          },
+          "dark": {
+            "svg": "timkat/beta-dark.svg",
+            "png": "timkat/beta-dark.png",
+            "sha256": "bd8f3d1f100eae9db31b62db438238342f2e3f076d05aabfa631379729689a0b",
+            "sourceSha256": "5f09dd8708b41c0573fb0f93a8690ff596c7bc1731bd0d7bc78952548ad902d1"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "timkat/nightly-light.svg",
+            "png": "timkat/nightly-light.png",
+            "sha256": "9f2b0386234dbd266a5bdd0955854f4feab579c41a4c8d21280d379be05c01e3",
+            "sourceSha256": "3ef56a9019a642b5043e9288d7ed8b56ce5200893b6359cff21a6ba1f10dfdaa"
+          },
+          "dark": {
+            "svg": "timkat/nightly-dark.svg",
+            "png": "timkat/nightly-dark.png",
+            "sha256": "dec5cf8a0c402792667e13bc4dddb30db74fe34d39ad7316067b1f0bc44b9f00",
+            "sourceSha256": "7d99d83cbf788fcd87e59d96a5c4464b8028c2f790661f628fcafcddc6233d02"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "timkat/dev-light.svg",
+            "png": "timkat/dev-light.png",
+            "sha256": "8d2adbd1b37064f2a9ec0173c0dae155a2e8edea0d2f6ffbc79182a3a9e9723a",
+            "sourceSha256": "141fd31a67175651241411bcabc70c3ac71528d4bb770242884ee2976bad275c"
+          },
+          "dark": {
+            "svg": "timkat/dev-dark.svg",
+            "png": "timkat/dev-dark.png",
+            "sha256": "51ab3b8dda9b6342aee791ce061ec2f5e42b9187585d5676cf38fbf8b581031d",
+            "sourceSha256": "ca96c85f33e32da8fc3496e88ad0439d46c1b369663eb1b93a058d88b6ceb127"
+          }
+        }
+      }
+    },
+    {
+      "id": "earth-day",
+      "name": "Earth Day",
+      "intent": "Living leaf shapes grow directly from green and blue Native links.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "earth-day/stable-light.svg",
+            "png": "earth-day/stable-light.png",
+            "sha256": "b8cedd363a6c6f1c763754c4ae7ebd1e3d5b69d75800e93387f7257ef85ed3db",
+            "sourceSha256": "4a352dacb4374b27cc985fd10ef0aac4e363841b7d13638e0ee314a7da766b9d"
+          },
+          "dark": {
+            "svg": "earth-day/stable-dark.svg",
+            "png": "earth-day/stable-dark.png",
+            "sha256": "51cd7ec65cc50f3139c5c0c13a4d881c2dae006d372129cd1be8f1d1ab1d6edf",
+            "sourceSha256": "cf1839ddd96fea452f960268227a1e52b33316b8a243fd032c91e1807e040f4c"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "earth-day/beta-light.svg",
+            "png": "earth-day/beta-light.png",
+            "sha256": "d156364ff7cd99d402c69df836e8449e16ecec97e9b22e5d9ca6323073ae95e6",
+            "sourceSha256": "4259c0ec5d7c36408ab70835c13cf06cf293d14773535e7d3ed7615f45d65669"
+          },
+          "dark": {
+            "svg": "earth-day/beta-dark.svg",
+            "png": "earth-day/beta-dark.png",
+            "sha256": "a4eabf6c8e32cb5eec982a6fe33ae15f0f904709b6fcbc4e4c5bf1884bcfd7ca",
+            "sourceSha256": "fc49f4bff85c56052e5b4054cf95eeac956cdc43c360c6344191e8a81e6f0bf1"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "earth-day/nightly-light.svg",
+            "png": "earth-day/nightly-light.png",
+            "sha256": "fac5a9e58043b60e04b731d7de7b8d3fe1537b8f8758b11f8a6ad1734ed37089",
+            "sourceSha256": "b7988d11c84b9d95a8ee2eb29ee37934f10fdf3e534c298779e582ef3f4e24fb"
+          },
+          "dark": {
+            "svg": "earth-day/nightly-dark.svg",
+            "png": "earth-day/nightly-dark.png",
+            "sha256": "c6acbfb69224fb49e71d6626c83b9081f1ea50451052d9a70182046f12e177f5",
+            "sourceSha256": "00a0cdbd7ab4080090dc6c7f175a9a9d687068493dccd0ad36095f8cf1943212"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "earth-day/dev-light.svg",
+            "png": "earth-day/dev-light.png",
+            "sha256": "0445267f5f3aba57eb73b134ee32e094ba51b2b107da82687239e98feb801988",
+            "sourceSha256": "9663730eeb0660d4f14900fa9f3c04fd0e663ed40a7bc923582b67026bceebfa"
+          },
+          "dark": {
+            "svg": "earth-day/dev-dark.svg",
+            "png": "earth-day/dev-dark.png",
+            "sha256": "865da76ab8dabda874753bebde7a6d760ade5659e226ee0a0c1582c09fb0c7cd",
+            "sourceSha256": "82aa528cee8d9ca176b96e47ca17f660f2b1ab8454141be73d4b2587864fc57c"
+          }
+        }
+      }
+    },
+    {
+      "id": "juneteenth",
+      "name": "Juneteenth",
+      "intent": "Red and blue links, a rising arc and a bright star within a broader burst, informed by the Juneteenth freedom-star motif.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "juneteenth/stable-light.svg",
+            "png": "juneteenth/stable-light.png",
+            "sha256": "59c72b1b402ae5adbfb44f02b7fabedbe47144f1cd369c67ca3ad726faf4dee2",
+            "sourceSha256": "c2096e2d31db7d43d96515d9baf0a144aeae1520060c991f89b6431315272e2a"
+          },
+          "dark": {
+            "svg": "juneteenth/stable-dark.svg",
+            "png": "juneteenth/stable-dark.png",
+            "sha256": "9d93cc482aef465dab3097a4fd691e342ddb4056a60474269395dac508b9b829",
+            "sourceSha256": "8a595a8afc15edf6e17c5e5d8484a7d27cbcf7f39425a3ce49f3fef3d1dbb603"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "juneteenth/beta-light.svg",
+            "png": "juneteenth/beta-light.png",
+            "sha256": "a4f70fff9c3e85796f3c5a0e56e3deb3102a39528c106306e25cd1ada3b4f6d3",
+            "sourceSha256": "34d3633f220fc718cf7a55a9eabac824391307b87d31a9b2b140a3a39a976998"
+          },
+          "dark": {
+            "svg": "juneteenth/beta-dark.svg",
+            "png": "juneteenth/beta-dark.png",
+            "sha256": "f4733c77f0ac6aec62aa38dad855fb7b41cc29b8720b3ffdc7e6c12c910f84de",
+            "sourceSha256": "4cf2b5bb1fc278762de834187ee5af1c561955c817b186bbd36c8c3621eb848c"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "juneteenth/nightly-light.svg",
+            "png": "juneteenth/nightly-light.png",
+            "sha256": "87d278b6a83141ac53b88faffd69664d4a2e454fd6682b841a293668a3fa1bec",
+            "sourceSha256": "4fa48f718effbda5a0e41f01c154e8e2d3e7aca3d8e64d5eb0dfe2003568f2c7"
+          },
+          "dark": {
+            "svg": "juneteenth/nightly-dark.svg",
+            "png": "juneteenth/nightly-dark.png",
+            "sha256": "b506f678bd13a02897ac820cdbf97149d9ff6063dc3eb84c2e6c2ee35fa2d617",
+            "sourceSha256": "9d1e8aa54fa44bfdca6cb804c488c8c1e4abd0e340424e9f6ae29a36fd750c8e"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "juneteenth/dev-light.svg",
+            "png": "juneteenth/dev-light.png",
+            "sha256": "95ac0cb1bcefcad0e5d03af874e1d035bbf927172f3f3e79927624f08a2b6acb",
+            "sourceSha256": "8721b3080d10fcbd0fc42bcb43ab9760f0a6969ac59ed5752d4a010746d4ee9d"
+          },
+          "dark": {
+            "svg": "juneteenth/dev-dark.svg",
+            "png": "juneteenth/dev-dark.png",
+            "sha256": "e1348bd05937291cdbc6ddd199cdcb9a06fdeb2434da292bf3346e6d7ec1d3d7",
+            "sourceSha256": "3e30e6bb9465d62cf539fc177b9eaa426c8782cc09eb6952f8c9a95844fcb587"
+          }
+        }
+      }
+    },
+    {
+      "id": "thanksgiving-canada",
+      "name": "Thanksgiving · Canada",
+      "intent": "Autumn wheat links with a broad maple leaf growing from the right fold.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "thanksgiving-canada/stable-light.svg",
+            "png": "thanksgiving-canada/stable-light.png",
+            "sha256": "303528e58a39ba4a43894e5e20c8d2f23d5ef1e1009ec37cb7396c20533826d2",
+            "sourceSha256": "25a92961d807ea9ed51b98d4ab32078f89779835434b93bea965fcbd0948cd7c"
+          },
+          "dark": {
+            "svg": "thanksgiving-canada/stable-dark.svg",
+            "png": "thanksgiving-canada/stable-dark.png",
+            "sha256": "ed0769d1df4ac0d6003062a21c01f32eb2d82a3f29efa35e746d0f076236577e",
+            "sourceSha256": "c2ed6be38a630ba0d29cd933b5c3f665b9868524c9bf9ec5ec50beed5f0ff266"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "thanksgiving-canada/beta-light.svg",
+            "png": "thanksgiving-canada/beta-light.png",
+            "sha256": "1253650a2c56724db14eebd35862ab6d675a8a472e950c74efc5593a2fece55b",
+            "sourceSha256": "66878739ac50b79320c4f855e54134faa7b8b66f585e80a039b6d81d5803992a"
+          },
+          "dark": {
+            "svg": "thanksgiving-canada/beta-dark.svg",
+            "png": "thanksgiving-canada/beta-dark.png",
+            "sha256": "e50f2a55aa5d58fc1af51eb1932a0ff03d5814e207795546441f4403e45b2c08",
+            "sourceSha256": "a2f3ddd581f43c7f3d65a3f8b8ef630608b4b7e33c4d71e7cb43af1f231b533d"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "thanksgiving-canada/nightly-light.svg",
+            "png": "thanksgiving-canada/nightly-light.png",
+            "sha256": "1a886f6b8cee01a58b0e06a26728ecf4853b9095d7b4c3f3102539674e0d0bdf",
+            "sourceSha256": "b0f442abcfa6871fc4c06656441ef6f55732593f7db3b0febfd8617b8f7a37ee"
+          },
+          "dark": {
+            "svg": "thanksgiving-canada/nightly-dark.svg",
+            "png": "thanksgiving-canada/nightly-dark.png",
+            "sha256": "e5296aa01d8d3d81e94ccbde4ceb94e9fdc4a248d3d8da42160e4dba4bb356d1",
+            "sourceSha256": "179f133f8db5f8d26eb16ea4140d27685a87871699b274d6ff958bbda220ae10"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "thanksgiving-canada/dev-light.svg",
+            "png": "thanksgiving-canada/dev-light.png",
+            "sha256": "2ce5e80036e26a5106410dfd7dbf3f43bc4c1b991ce221c7362c180879e89906",
+            "sourceSha256": "37386bdcae8f3cc471dd8574e4556a94aa615bfad7e65d2bfd753589ffde45cf"
+          },
+          "dark": {
+            "svg": "thanksgiving-canada/dev-dark.svg",
+            "png": "thanksgiving-canada/dev-dark.png",
+            "sha256": "723ee2c97d7b41c905f4c5ed30e344b8fac66dcf4201e7dfc4815893e93baa06",
+            "sourceSha256": "60438d97ef921e848d2441f8a92f437405ca770818bc44ff0a47e4a06f6f3a3e"
+          }
+        }
+      }
+    },
+    {
+      "id": "thanksgiving-us",
+      "name": "Thanksgiving · US",
+      "intent": "Harvest-gold wheat links with a compact pumpkin nestled at the upper fold.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "thanksgiving-us/stable-light.svg",
+            "png": "thanksgiving-us/stable-light.png",
+            "sha256": "88a06d4a70b42dcd4acaa991a14416d4dcbfe3a9c4952a1253afaaa5548c2ec3",
+            "sourceSha256": "38725b7c6f8fa310f25b98b3f3d8759c6fe5d5474ee936bd7ae01613fe1ce58e"
+          },
+          "dark": {
+            "svg": "thanksgiving-us/stable-dark.svg",
+            "png": "thanksgiving-us/stable-dark.png",
+            "sha256": "9051130dbef0d1d1e0d59ef68ec8fb3f871b659498ce35c83e4e47a68a80448e",
+            "sourceSha256": "a30a8be9bfbfaace16107594277fa967c7bce8cb99e268f8954e5ea55cd24f87"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "thanksgiving-us/beta-light.svg",
+            "png": "thanksgiving-us/beta-light.png",
+            "sha256": "52703274f054fbd756336c8c33347af00cf201b4c4df56e52c1a57c145f89a47",
+            "sourceSha256": "a98e851e9c591d97be247473303e7c67d881eefed9ceec66db44280a0b849b7d"
+          },
+          "dark": {
+            "svg": "thanksgiving-us/beta-dark.svg",
+            "png": "thanksgiving-us/beta-dark.png",
+            "sha256": "5944f899fcfa8c67e956ae0bbc71617d662ded5e64a594f39e6da79616621e4c",
+            "sourceSha256": "bdcbb180b42e9064c64f917613957730a7a4f958221b202f61e5260ab189e4b4"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "thanksgiving-us/nightly-light.svg",
+            "png": "thanksgiving-us/nightly-light.png",
+            "sha256": "1a02379a262372b56c324a1e113e3d891d5d0ce1e8de6bfef17d65172613a323",
+            "sourceSha256": "4f884f67a0a606d40a1fe20e1720884d81528ab2faefa4a5a3077127c98b1746"
+          },
+          "dark": {
+            "svg": "thanksgiving-us/nightly-dark.svg",
+            "png": "thanksgiving-us/nightly-dark.png",
+            "sha256": "2b7d284cdcbea369dc3449187c435d139fa07ac1c6bc3d2badf21fd578d50ded",
+            "sourceSha256": "2ebc7c0419f7953226cd653b8cb9c18a11b05f22fd4a0f6268d580f1b2c18b64"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "thanksgiving-us/dev-light.svg",
+            "png": "thanksgiving-us/dev-light.png",
+            "sha256": "01a2875c46b3561a63c97d2a6eb9f4638ca393bd00c96d0f33c4ddcae40654fa",
+            "sourceSha256": "4d21981b2e17fa0c5522cfeab78b03cb5cf7aa00cab954ef64c5550440652ec0"
+          },
+          "dark": {
+            "svg": "thanksgiving-us/dev-dark.svg",
+            "png": "thanksgiving-us/dev-dark.png",
+            "sha256": "c5975cae7ac34b381bd439efc91ef868351aff6b5555e1423e57a2b91866ca4f",
+            "sourceSha256": "7b578a710e3e8554352c78a22502a1ead8e02e916f57026e3836c1642b302092"
+          }
+        }
+      }
+    },
+    {
+      "id": "mathematics-day",
+      "name": "Pi Day",
+      "intent": "A bold pi symbol rests above the Native links, with broad mathematical curves and construction circles.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "mathematics-day/stable-light.svg",
+            "png": "mathematics-day/stable-light.png",
+            "sha256": "b6fc258672d45f76feffe40b7c729c63f7470be44063e337315769d1b569341d",
+            "sourceSha256": "3c63d9cd136259e092f2ee75c443dab3c8ec5a0257b927772d71dfb6218626fb"
+          },
+          "dark": {
+            "svg": "mathematics-day/stable-dark.svg",
+            "png": "mathematics-day/stable-dark.png",
+            "sha256": "ab0aa5606851a081742ddd2330bcf1bfe389097240175efcd57a1eb76b0b2107",
+            "sourceSha256": "380f18d740b022e36ea59c53527d64d5acf48506a104486c482f3eb702ab1282"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "mathematics-day/beta-light.svg",
+            "png": "mathematics-day/beta-light.png",
+            "sha256": "54eafecf32593989453988a26fcc5eb580598c79f94223be37fd8bcdeeb3763b",
+            "sourceSha256": "54708cdf46a774a8c55b98c406d29970644106c444ae9f61d32fbcc7608011cd"
+          },
+          "dark": {
+            "svg": "mathematics-day/beta-dark.svg",
+            "png": "mathematics-day/beta-dark.png",
+            "sha256": "9661d5f98876dcd6092efd221c5652fc35f947e594e114e301b90c8b3e48f5eb",
+            "sourceSha256": "c07b6b63553051bbd39bf515710be9e298d1ba71e5bed2b80a4d3d4cab4d6fcc"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "mathematics-day/nightly-light.svg",
+            "png": "mathematics-day/nightly-light.png",
+            "sha256": "7af6f7bdae8e18aa684619efe990acce19add1f602e6d98e9b2544b2a3bd4db8",
+            "sourceSha256": "a7d995711b9b8dfc1fe6f8d23d8bc8d613af140767304dbb855ec12a8f6c9621"
+          },
+          "dark": {
+            "svg": "mathematics-day/nightly-dark.svg",
+            "png": "mathematics-day/nightly-dark.png",
+            "sha256": "3aa3b88aaee4e707ec9d4f2765e0f1146823d20c6e8b0baf9720d417f6cbcb5d",
+            "sourceSha256": "ef5102cd2ffc1e270b7d8d060115b4bf2cbbdc7fd2846894c8107b1976c02788"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "mathematics-day/dev-light.svg",
+            "png": "mathematics-day/dev-light.png",
+            "sha256": "b506a18fa1ffa83b2f9e8b52f91d69d2ce8691254864e13884e03e20b6261ed8",
+            "sourceSha256": "3c8fbe76a695843470311dcd66d42d29368a26f7ffb51b6211832b07eea7b91d"
+          },
+          "dark": {
+            "svg": "mathematics-day/dev-dark.svg",
+            "png": "mathematics-day/dev-dark.png",
+            "sha256": "0a1b9ddb81d4f7597ec633fd9ca815622a4d35b547d293588fec8feadf80e5d8",
+            "sourceSha256": "bbc94a2f07c91c6e3410edef83c020542529e73c20b954bdaccadedb4932896d"
+          }
+        }
+      }
+    },
+    {
+      "id": "programmers-day",
+      "name": "Programmers’ Day",
+      "intent": "Phosphor circuit traces are integrated into the links, with a broad terminal chevron and cursor.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "programmers-day/stable-light.svg",
+            "png": "programmers-day/stable-light.png",
+            "sha256": "5e15bef2c7ad2c141862567ba44330e0d06c553ecc37b188bf8bc6e23f978ad2",
+            "sourceSha256": "bb8f4887c5ee4707e8baa78cd8f9a1a04bab985d3d2adff42971d08d650df6a6"
+          },
+          "dark": {
+            "svg": "programmers-day/stable-dark.svg",
+            "png": "programmers-day/stable-dark.png",
+            "sha256": "d51f6e9ae8302d55e68ce93389cd6b735729eea4826150558dd3185fdd990074",
+            "sourceSha256": "2b9f6b4ffa97d0761eee3408d727d5e510d629794c0f6ffd3d0eeb0cab39428a"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "programmers-day/beta-light.svg",
+            "png": "programmers-day/beta-light.png",
+            "sha256": "265208e7b16db57a8686a09fe9665c9e0fa32c5ddbcb485e37642cc1a3419095",
+            "sourceSha256": "dce205bc9689999f16070721af43b822c37cb9f052aa61c73e017283f228c230"
+          },
+          "dark": {
+            "svg": "programmers-day/beta-dark.svg",
+            "png": "programmers-day/beta-dark.png",
+            "sha256": "c125b0e24d19e36d2c694b72820dfa7592350cf5b45e7a64049d4d1028ada2d4",
+            "sourceSha256": "e6273e1b64f1c992d3d506fe3181c3439c344ee3c4d949803a4b3e74aaf83342"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "programmers-day/nightly-light.svg",
+            "png": "programmers-day/nightly-light.png",
+            "sha256": "771a19f0281c75417ea7de2666f19f0ebf1497bfe6625d5c330794283d69a227",
+            "sourceSha256": "8135933351774277901358aa9eb724ce348a6491b7ef6018bc6b0f5da5100382"
+          },
+          "dark": {
+            "svg": "programmers-day/nightly-dark.svg",
+            "png": "programmers-day/nightly-dark.png",
+            "sha256": "b6bfd592e30cd8c75391c616ee2b3de3e0ebe03f30775c25eec764ffdc4e3f87",
+            "sourceSha256": "c00fdf260349711399325db50117407a891f2b8ba11e06256f24880b5342738a"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "programmers-day/dev-light.svg",
+            "png": "programmers-day/dev-light.png",
+            "sha256": "47f00a4ab06af13c9d4b75949a81f07819102192ac76f4a5350caaf0c377a35b",
+            "sourceSha256": "87955d6f3f194301cc03cf0877f409d339b5367e27eb5de0b88655d1490bfd85"
+          },
+          "dark": {
+            "svg": "programmers-day/dev-dark.svg",
+            "png": "programmers-day/dev-dark.png",
+            "sha256": "13dd95f48ad0cf5e1d220834ec142710df7658f44f2e60726604f84aa890ad99",
+            "sourceSha256": "5256bca5e9c3dd3bfc14ef20ae7516f7c761780677089ee5e8eb62d839cfe26b"
+          }
+        }
+      }
+    },
+    {
+      "id": "ada-lovelace-day",
+      "name": "Ada Lovelace Day",
+      "intent": "Brass and ink links become original punched cards, including real transparent holes and one loose card.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "ada-lovelace-day/stable-light.svg",
+            "png": "ada-lovelace-day/stable-light.png",
+            "sha256": "5d4ba78898a37bfbd42b83e9f99802cfc10e5bcb97db2894a375ca0a98bc7030",
+            "sourceSha256": "f538a9ff66fa9bb66caa5ee09164ab424cca15bcc83c2cb27b60aba326544e7b"
+          },
+          "dark": {
+            "svg": "ada-lovelace-day/stable-dark.svg",
+            "png": "ada-lovelace-day/stable-dark.png",
+            "sha256": "3d0a5a7735a82ce01fb2b597af72bc1589ce20537a8438a0ae00cc0d2e3857c4",
+            "sourceSha256": "2110b9d7c2e59a77bfca0d4f13a1eac0a1b8fc32af123a872abdfbfd0e77edb0"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "ada-lovelace-day/beta-light.svg",
+            "png": "ada-lovelace-day/beta-light.png",
+            "sha256": "d07908985cba8c69f1b281eb54b875abc070b285b63b145807651cff296c4c44",
+            "sourceSha256": "46a32cb224784603d9a9cb5378e24d50e4dbd657ff81fb4b4b60bdd4e437349b"
+          },
+          "dark": {
+            "svg": "ada-lovelace-day/beta-dark.svg",
+            "png": "ada-lovelace-day/beta-dark.png",
+            "sha256": "7b3f0b994338049a7b15a1bde692cc78f4fae81a0eabb4e9e381124a306ca667",
+            "sourceSha256": "ae2fe9d59c90bf9617926988ac06066c3a95fc27e5405133440fe4c794cb075e"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "ada-lovelace-day/nightly-light.svg",
+            "png": "ada-lovelace-day/nightly-light.png",
+            "sha256": "ff5dfa820952345d2361020e6245a5b2ae0b3eaa3e4d1b812ba31fc58d88821a",
+            "sourceSha256": "8d1d0cdf0badf1bfd2ff2a770be02ab01102e6d7b47d92b36fafe07bebe53f13"
+          },
+          "dark": {
+            "svg": "ada-lovelace-day/nightly-dark.svg",
+            "png": "ada-lovelace-day/nightly-dark.png",
+            "sha256": "125f90de0505fb9cfdc49abfeaaa1f5973aba384c5dd7ed179b1d0b6d6a5debd",
+            "sourceSha256": "f5ba4c9f1d85ad24914fb1c7dc70b0ec109a941bf3bf236aa2af48fcf0c61611"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "ada-lovelace-day/dev-light.svg",
+            "png": "ada-lovelace-day/dev-light.png",
+            "sha256": "faaf8dc4661d889ccb31849d37679fba917af4457a2257b545113793504bcf87",
+            "sourceSha256": "6c84dd0ee936048894ab19f89f14821fe74eb522ebd0a3ff7ce831d2e9560f88"
+          },
+          "dark": {
+            "svg": "ada-lovelace-day/dev-dark.svg",
+            "png": "ada-lovelace-day/dev-dark.png",
+            "sha256": "e05815fe70c2c560d49fbd0890bfd2e5dd611e784d8d564532bc8f75632eefe8",
+            "sourceSha256": "a8e1bd732f4b45061bc6157c156b4d8b42f947c5990035609f26abb3fcf4c978"
+          }
+        }
+      }
+    },
+    {
+      "id": "personal-celebration",
+      "name": "Personal Celebration",
+      "intent": "A gift-ribbon Native interlock with a tied bow, broad sprinkles and six pieces of confetti.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "personal-celebration/stable-light.svg",
+            "png": "personal-celebration/stable-light.png",
+            "sha256": "cb33236c1891ba3f5d39b5495a9c44e591ba6bcac5e21909efdb8df1160e6f42",
+            "sourceSha256": "788889f848b4a83b0c0b8afa08346ab582839fdd220917a4f03636bf8af25871"
+          },
+          "dark": {
+            "svg": "personal-celebration/stable-dark.svg",
+            "png": "personal-celebration/stable-dark.png",
+            "sha256": "0d428171e1c4eef261f64929aba843620c7d10a2893a4c1869d4109811ebbec3",
+            "sourceSha256": "4ff36c69af74efc20284ce4a06aefc78262055e4d2407f903524cb81a395f7d7"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "personal-celebration/beta-light.svg",
+            "png": "personal-celebration/beta-light.png",
+            "sha256": "d2fba18b5b7f0a580f11a9b2c9bb907943795ca5a4142b7277e0ed88fe334ed8",
+            "sourceSha256": "1fea64d36d29bc658e8af18bd99b9709c225dbb795a22ed1389fad8cf90c6a11"
+          },
+          "dark": {
+            "svg": "personal-celebration/beta-dark.svg",
+            "png": "personal-celebration/beta-dark.png",
+            "sha256": "570d32df830b0b45fbeaf3dd3305ae7bcdbc94d28a52c4758a63c3736272d7fe",
+            "sourceSha256": "98b61cc54379eab3d4ef8b36886875354daf3eacf936526aa16741380bb10e9d"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "personal-celebration/nightly-light.svg",
+            "png": "personal-celebration/nightly-light.png",
+            "sha256": "40e962d748570850384155758a39ec165f51235df688fe79aa7b1a6f51a16578",
+            "sourceSha256": "ed7fdc1f3a96b87d3805a428f3046829d568b530c9dd3cbcb55cc6217cc5c08d"
+          },
+          "dark": {
+            "svg": "personal-celebration/nightly-dark.svg",
+            "png": "personal-celebration/nightly-dark.png",
+            "sha256": "f071c7c8844e168e09fc257ffd48a6b29c7cf7237e93e631b4231400beb57037",
+            "sourceSha256": "4f753981ad0f2da50b49cf31cf90f7b5d24bbdc96f28554f003e2760982ce1ae"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "personal-celebration/dev-light.svg",
+            "png": "personal-celebration/dev-light.png",
+            "sha256": "b241be047b2cc9853c01058d55e92b4594b1975e36089e43f866c7f6c05c30ee",
+            "sourceSha256": "1c33ffa7fec885af7f4a96e2e210631dc3bd4178a363b32d54871f0129a04dfa"
+          },
+          "dark": {
+            "svg": "personal-celebration/dev-dark.svg",
+            "png": "personal-celebration/dev-dark.png",
+            "sha256": "5958ee696f9b608a8ee30ec67303ba2f8ecb13ccbcb6caa13beefd341b3efcc6",
+            "sourceSha256": "cd61f6221a4aa70d30349e416e55f7c560f68de5c5b5edb08d35555fc1dc1430"
+          }
+        }
+      }
+    },
+    {
+      "id": "us-independence-day",
+      "name": "Fourth of July",
+      "intent": "Original stars-and-stripes links and two red, blue and gold fireworks for the Fourth of July.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "us-independence-day/stable-light.svg",
+            "png": "us-independence-day/stable-light.png",
+            "sha256": "505b8f94a19d37702b370741be284c214604766892c59a0b6118e740b7fabe51",
+            "sourceSha256": "e36751a9a730e33268b9bf6129fbba221decfd9ccc3943a26f0d85499a920597"
+          },
+          "dark": {
+            "svg": "us-independence-day/stable-dark.svg",
+            "png": "us-independence-day/stable-dark.png",
+            "sha256": "78e79aff7ed689d770229a29b651a8a30ae61f924675e809751e012be00588de",
+            "sourceSha256": "17598071bd759011983b0c272003f29d5c894074548cc8485091d70cd06cb81e"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "us-independence-day/beta-light.svg",
+            "png": "us-independence-day/beta-light.png",
+            "sha256": "7ab9fab898c46209ee2546285bd0bc7783c060f46f184ac8da00fb4ebb439821",
+            "sourceSha256": "04e7cc6d88532aa350fc08ea7bb97b632b2027e2d169a63fba1cf63bf4c34f80"
+          },
+          "dark": {
+            "svg": "us-independence-day/beta-dark.svg",
+            "png": "us-independence-day/beta-dark.png",
+            "sha256": "3ecbe2f79f054bcaa2be8d653a94346740de01cec7d39ae066e96ac5db3bc5e7",
+            "sourceSha256": "6fa8050462c188d735697df88f9d49b05ba101fade53c84ced72657dc79449dc"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "us-independence-day/nightly-light.svg",
+            "png": "us-independence-day/nightly-light.png",
+            "sha256": "3624dde52474f2ec0ce3a3e71f5c4883898dd29339448d60bfc786204b7d67e8",
+            "sourceSha256": "c761d9a8e202436bea7ecd9d442df529c88f8b97a13f763ad5b6ed2575bdcf09"
+          },
+          "dark": {
+            "svg": "us-independence-day/nightly-dark.svg",
+            "png": "us-independence-day/nightly-dark.png",
+            "sha256": "715756d9be955cbae5f99f5203671bad3315e74099ad47311ee783382b421c45",
+            "sourceSha256": "ebf125080b08e1b4579de4f105f8ada98ade138942026b4bc70ff722ae260aee"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "us-independence-day/dev-light.svg",
+            "png": "us-independence-day/dev-light.png",
+            "sha256": "2411cbf10f1f6a7a164e63c82f903a596c34282ddc8f6c196b53f8a5417690e7",
+            "sourceSha256": "98c4273666ca7c74b49d4e1a48483855ff6ad1e0077e574ef0f75686a7f36881"
+          },
+          "dark": {
+            "svg": "us-independence-day/dev-dark.svg",
+            "png": "us-independence-day/dev-dark.png",
+            "sha256": "148d513e3e189189cc4a380fe9d31872749ab519f005e73f11cd4534d1f2f2ad",
+            "sourceSha256": "8d3debc7c4f50380460845764c2933bc80a432383390652c649ebf3e4dd70db5"
+          }
+        }
+      }
+    },
+    {
+      "id": "australia-day",
+      "name": "Southern Cross",
+      "intent": "A simple Native interlock beneath the correctly proportioned five-star Southern Cross. No Union Jack.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "australia-day/stable-light.svg",
+            "png": "australia-day/stable-light.png",
+            "sha256": "0e15ed8dd4dc289381d09516ede41c63aac5bef289f7184d695cac9d759172cb",
+            "sourceSha256": "4d54a5c6fd30ee95235e3f4e85b3fd3664510afcb17a7c73fc03cbc990d93841"
+          },
+          "dark": {
+            "svg": "australia-day/stable-dark.svg",
+            "png": "australia-day/stable-dark.png",
+            "sha256": "6f3f4f5dd3faa12ebe08d213c1f157f3da126abd13dc4f622d664c526d97678e",
+            "sourceSha256": "fc35fc003b9915a510cdd58507515c2f65b9d2bb08c1ab5a5b38e0dd39d6fb61"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "australia-day/beta-light.svg",
+            "png": "australia-day/beta-light.png",
+            "sha256": "47afb123e24b1bee47e3b68f7302700add8d4917698d90d65908aea1b084e8d1",
+            "sourceSha256": "0372c46199d245e7aa96e56f390531e5dd468e51a446ca4da04aa221c5ddfe35"
+          },
+          "dark": {
+            "svg": "australia-day/beta-dark.svg",
+            "png": "australia-day/beta-dark.png",
+            "sha256": "e77b8e65dac12d195f6fefcc9f45c23bb696603e552bdc747652847ced485e78",
+            "sourceSha256": "f03862a89d4b5cf94db9d5dd0116b6f3d5e7ffa18d5e007b1ac3544eba631452"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "australia-day/nightly-light.svg",
+            "png": "australia-day/nightly-light.png",
+            "sha256": "ff484179fbba7580ab6ceca2c1d31052e550bb7003c48e2e69f3dab139122354",
+            "sourceSha256": "c42f78e2f3e28a4b465e60e44f3aa5c749974d18dfc244ec9e0ab0266a995962"
+          },
+          "dark": {
+            "svg": "australia-day/nightly-dark.svg",
+            "png": "australia-day/nightly-dark.png",
+            "sha256": "c283b06a54f1be9901620462d0b069d5d0163848cca570b55c671332148a83cb",
+            "sourceSha256": "828294665ba66e364ea330d01142d2312bea750094ba34f20bb2ccdc9617066f"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "australia-day/dev-light.svg",
+            "png": "australia-day/dev-light.png",
+            "sha256": "a3ede9a064dd4037b79f134767e81de7fd93c26ad6072597c1984a8f0a85bd6d",
+            "sourceSha256": "afb77cb1a80717002596f7c385dbab98898c0270a2ef96b9a3abf264aacb1f6f"
+          },
+          "dark": {
+            "svg": "australia-day/dev-dark.svg",
+            "png": "australia-day/dev-dark.png",
+            "sha256": "74721ad99232856af795b27e15e3d8d98d802bf6d58a49233f5ee4be45a29e18",
+            "sourceSha256": "47fd07a3b3c6e1f4abab344168f239288fc4da878ab786c343a06f639cdfe97d"
+          }
+        }
+      }
+    },
+    {
+      "id": "australia-day-wattle",
+      "name": "Wattle",
+      "intent": "Green and gold links grow into wattle, using broad leaf blades and clustered golden flower balls.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "australia-day-wattle/stable-light.svg",
+            "png": "australia-day-wattle/stable-light.png",
+            "sha256": "ee78300272d9cc7ddd36783eb5274055a47422fead053b727b2fd56bd7c6d937",
+            "sourceSha256": "6b2bd14d4301a08d7e7fbdc9eef7a529140c8674fdd17e7443ba65c78d490a86"
+          },
+          "dark": {
+            "svg": "australia-day-wattle/stable-dark.svg",
+            "png": "australia-day-wattle/stable-dark.png",
+            "sha256": "b2b09e0e13ed4e06f8d13c2a24a637f53992f5691f83f28b6b38af6bdb9e1ebb",
+            "sourceSha256": "b24a423681ac4974391fed6dc8cd8578fdea5f0027824b80881d3f7a606b2707"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "australia-day-wattle/beta-light.svg",
+            "png": "australia-day-wattle/beta-light.png",
+            "sha256": "2e7fddfce467f657b1d6666ed489f1c9083dfe5e3981d12969b29f57b9c103c5",
+            "sourceSha256": "1a48f6de4a47b59e2d9bffd88718c5f9d4b2e321a549de88f3591c0a5eabf562"
+          },
+          "dark": {
+            "svg": "australia-day-wattle/beta-dark.svg",
+            "png": "australia-day-wattle/beta-dark.png",
+            "sha256": "9405f265169b2c1f9c0ca0903c599d12091e4ac42d10d35474024442eb9314b4",
+            "sourceSha256": "9d6479e9e69785ea86b6865fc060c50c30b946bba5309467006717b48ca300fc"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "australia-day-wattle/nightly-light.svg",
+            "png": "australia-day-wattle/nightly-light.png",
+            "sha256": "6c13054e8be253e5be7abf0ceaae2b5a5e73b67a04d68a7258381461682d6a48",
+            "sourceSha256": "55feca015ad7a9df61545ea6df4c017a37095b594a0755d275e0e93b4cbcd9c8"
+          },
+          "dark": {
+            "svg": "australia-day-wattle/nightly-dark.svg",
+            "png": "australia-day-wattle/nightly-dark.png",
+            "sha256": "fd13204e3d3bbcda9408ffc393ecf05e0423c2bb9ffaee8c1ddcf11571101c29",
+            "sourceSha256": "1097dc3132d5767819669bce53759fbdcda68bdf3f156d4081f673100e56de3f"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "australia-day-wattle/dev-light.svg",
+            "png": "australia-day-wattle/dev-light.png",
+            "sha256": "ab09204573963344cf562e0f2c93702fccecbf9196ed35aed148eb79ccdca771",
+            "sourceSha256": "50313c8ca5768c724ad155e1acd234898b2aec265d4b43b8baf5056a5516506d"
+          },
+          "dark": {
+            "svg": "australia-day-wattle/dev-dark.svg",
+            "png": "australia-day-wattle/dev-dark.png",
+            "sha256": "dde29c40da78fda94eee730138ab60a7ccb3b75b5b09d471fbe01bd0c94f2da2",
+            "sourceSha256": "49265ef21b8660fe0ffe58070c23f2b2b5d46fc17c93d538995656b56b875071"
+          }
+        }
+      }
+    },
+    {
+      "id": "australia-day-reflection",
+      "name": "Reflection",
+      "intent": "Quiet eucalyptus-like leaves and seed pods on sage links, without flag or party details.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "australia-day-reflection/stable-light.svg",
+            "png": "australia-day-reflection/stable-light.png",
+            "sha256": "c5a3917aa475867321f379f3cd25013298c0e0cc2cad68f42fba4352a3e0d759",
+            "sourceSha256": "e6745a8da1578a45d2f13ce33ebfaced690a58c6c8d43db3f0bc4cda0fb817d9"
+          },
+          "dark": {
+            "svg": "australia-day-reflection/stable-dark.svg",
+            "png": "australia-day-reflection/stable-dark.png",
+            "sha256": "24a1d6fc91fed98fbf1e0d5cd967774ce80fbe01a352e72af02a01c2075fe4a3",
+            "sourceSha256": "8abaa82854549ae1027f8809188133ffd443163d4380d41e4ff7878f253939c4"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "australia-day-reflection/beta-light.svg",
+            "png": "australia-day-reflection/beta-light.png",
+            "sha256": "eefe91cc8f4139ffb8b65903713b624d72e1c65942d2831fef50f88b68804006",
+            "sourceSha256": "5eab83341f635c01f37bcaa504b372533b9a29fbec4833884e5c67911d02be40"
+          },
+          "dark": {
+            "svg": "australia-day-reflection/beta-dark.svg",
+            "png": "australia-day-reflection/beta-dark.png",
+            "sha256": "c212753a2a009233e8fedab4c069f7486ce8e65e563d5f25821084fa53fab0a9",
+            "sourceSha256": "18b36fd4d717bc86206b103a899c2952f982dd5184901f47c9249c0faf37a7f7"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "australia-day-reflection/nightly-light.svg",
+            "png": "australia-day-reflection/nightly-light.png",
+            "sha256": "d2dd1ac1d4cd2995d3632f61b0601393f6b566bdd2121c2f7e9f29137cfb4d3a",
+            "sourceSha256": "d14ee7e822b65a16c6cec8da65c8019a4ba022ea68fd802ea59c1ca36a8b6388"
+          },
+          "dark": {
+            "svg": "australia-day-reflection/nightly-dark.svg",
+            "png": "australia-day-reflection/nightly-dark.png",
+            "sha256": "11a1280ea79e94513c4c72f26bb96c3a7dedb04fbaaf822cecf00399cfe534d8",
+            "sourceSha256": "8a7dfa44a6be54cb9fd3fabd7310e52e908e3580435bd57c168c841b7b029926"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "australia-day-reflection/dev-light.svg",
+            "png": "australia-day-reflection/dev-light.png",
+            "sha256": "4b262c081185da7f8241469c54a63a71b8253b46a2e908c8a890ea51afd05b41",
+            "sourceSha256": "41b77eafe9aa3144024ab63022b84ae42c90ae773c45d07fd644f327aaa2334c"
+          },
+          "dark": {
+            "svg": "australia-day-reflection/dev-dark.svg",
+            "png": "australia-day-reflection/dev-dark.png",
+            "sha256": "cf17e45fd1a9dcc9b453d69f68d055f6596465b6cd6cc876a75b9121649585f0",
+            "sourceSha256": "69844b6df0c5d920f82612e45f1c087f624dcf808e5338dd5b5323594c17312b"
+          }
+        }
+      }
+    },
+    {
+      "id": "australia-day-boxing-kangaroo",
+      "name": "Boxing Kangaroo",
+      "intent": "An original flat boxing kangaroo with red gloves, Native belly inlay and a correctly proportioned Southern Cross. Not a traced flag mascot.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "australia-day-boxing-kangaroo/stable-light.svg",
+            "png": "australia-day-boxing-kangaroo/stable-light.png",
+            "sha256": "258a6173c120395f4cecae6f39748271f5922db0459162315edd82553cefb846",
+            "sourceSha256": "330bde3ab34de3049f3497d8c9b696a173b3d7bbb47ca839ca5ca49636d91704"
+          },
+          "dark": {
+            "svg": "australia-day-boxing-kangaroo/stable-dark.svg",
+            "png": "australia-day-boxing-kangaroo/stable-dark.png",
+            "sha256": "7ec719e24cdcc2dcb68d7e27b3fd48f376cb99c8243835dd030062f6a593d875",
+            "sourceSha256": "28d3b5fca92f48da2e2f77ab13f54ffea7d28d70fb8a01f259109c953688b1db"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "australia-day-boxing-kangaroo/beta-light.svg",
+            "png": "australia-day-boxing-kangaroo/beta-light.png",
+            "sha256": "c4783a6049bfba58b73416a97e1b40347482dbe2ff4d58ef5b03fdd367d89fb4",
+            "sourceSha256": "d3c1b489d3a1e1469087df985bfa9571e2edee5a8675ab6eb2e7230f557e52e0"
+          },
+          "dark": {
+            "svg": "australia-day-boxing-kangaroo/beta-dark.svg",
+            "png": "australia-day-boxing-kangaroo/beta-dark.png",
+            "sha256": "f131a6d643d7653db35470c084f868104c84680971d2d533102446fb3c44122f",
+            "sourceSha256": "b05d33c84a64e4d036327ced91b04a6307ab6e3cc65a50b120594863fd4c4705"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "australia-day-boxing-kangaroo/nightly-light.svg",
+            "png": "australia-day-boxing-kangaroo/nightly-light.png",
+            "sha256": "abc0d7c6c3a21e6b3bb678658d2fc5794180bdb22f8ac0cba99336ec43d21c39",
+            "sourceSha256": "da6f75b08efbf5285a1b50a7d99682e5fb900a66656a733ad840023e5c7145f7"
+          },
+          "dark": {
+            "svg": "australia-day-boxing-kangaroo/nightly-dark.svg",
+            "png": "australia-day-boxing-kangaroo/nightly-dark.png",
+            "sha256": "f81252a9ede966ebd0505f2f8a600f08184ade038a55c071f79b973c59d4e761",
+            "sourceSha256": "bb03e7a7057ea43a6e7f61210536615ab75c24154a44b7cf75d56abb0dcebf67"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "australia-day-boxing-kangaroo/dev-light.svg",
+            "png": "australia-day-boxing-kangaroo/dev-light.png",
+            "sha256": "0bd72aa19ddc9a83b5857406c55f57d1060345c9314a203681e6bf96f24ce82c",
+            "sourceSha256": "8ef4f36da86ebf3c846a4955f44ef41e6b38d66fef521b0ecf8c06308fecd72f"
+          },
+          "dark": {
+            "svg": "australia-day-boxing-kangaroo/dev-dark.svg",
+            "png": "australia-day-boxing-kangaroo/dev-dark.png",
+            "sha256": "847ce4962a6b83ecf691cef8f05fdc52911a530d5cc19874ebc62017387ca331",
+            "sourceSha256": "34b7577f3d2639233a684cb9365d8f0652b09bceb1026198534e0fb4d9bb1ed5"
+          }
+        }
+      }
+    },
+    {
+      "id": "australia-day-ochre-dots",
+      "name": "Ochre Dots · Original Study",
+      "intent": "Original abstract ochre dot-pattern study on the Native links. No Aboriginal authorship claim, cultural symbols, stories or copied pattern.",
+      "variants": {
+        "stable": {
+          "light": {
+            "svg": "australia-day-ochre-dots/stable-light.svg",
+            "png": "australia-day-ochre-dots/stable-light.png",
+            "sha256": "b95ea6d1e658555fd785afa0336aef05245b86f90bdc0253bf3b22b567f3f96a",
+            "sourceSha256": "395325b17435db9c7a9e0cf0ddb7018e3c46e6ee48669040c181867e0907f088"
+          },
+          "dark": {
+            "svg": "australia-day-ochre-dots/stable-dark.svg",
+            "png": "australia-day-ochre-dots/stable-dark.png",
+            "sha256": "9d16da4534c259e92f1e9ee07c0c339f16b43add6cb8b6939c3c46fa364a6a7d",
+            "sourceSha256": "70022a32d457251a7228b095eef7b68cefc24b6e5443ec2b49a6032e0697a94f"
+          }
+        },
+        "beta": {
+          "light": {
+            "svg": "australia-day-ochre-dots/beta-light.svg",
+            "png": "australia-day-ochre-dots/beta-light.png",
+            "sha256": "530dc297ca39ac8b3ccc12eedd39ca32da7ffa0f63bc6291178c3d895aa256fb",
+            "sourceSha256": "9f495ed699b83842a89887410ded8050ac6b9f69a3147bfe17cfb7c8b6d0971b"
+          },
+          "dark": {
+            "svg": "australia-day-ochre-dots/beta-dark.svg",
+            "png": "australia-day-ochre-dots/beta-dark.png",
+            "sha256": "412fd7c2740b79fcad10dee1a74335341170e726a89a1dfa6e77b4b538259b53",
+            "sourceSha256": "967bda0a0dd11a9ad3db62ed2f80c9b20c970acdaa02346e6383ce7e603669b5"
+          }
+        },
+        "nightly": {
+          "light": {
+            "svg": "australia-day-ochre-dots/nightly-light.svg",
+            "png": "australia-day-ochre-dots/nightly-light.png",
+            "sha256": "fd4908ec51f774b232a6d99d5dab21ecec788f42f6322cf1e661075b0717a2e1",
+            "sourceSha256": "e6e572e5680731cb56da17892ff898dae1d411b3781f9eca17451bde92902410"
+          },
+          "dark": {
+            "svg": "australia-day-ochre-dots/nightly-dark.svg",
+            "png": "australia-day-ochre-dots/nightly-dark.png",
+            "sha256": "18587ca5515ee000808272cdc9a3f10ed41e2815045960c42c8673a81b368d32",
+            "sourceSha256": "cdd5b0bfbc86c1b93d9179a0ea21175b737dbf3095375aaaa37ca53133944214"
+          }
+        },
+        "dev": {
+          "light": {
+            "svg": "australia-day-ochre-dots/dev-light.svg",
+            "png": "australia-day-ochre-dots/dev-light.png",
+            "sha256": "54cee07c2eb0098691563fec6acf6448e4d717cdc399174451687fa15c4ee9c0",
+            "sourceSha256": "a8ec7ee0d856f7b6a28c587434a8e005115b1a63ee80f018ad125b22ac91a5b9"
+          },
+          "dark": {
+            "svg": "australia-day-ochre-dots/dev-dark.svg",
+            "png": "australia-day-ochre-dots/dev-dark.png",
+            "sha256": "de950d902298fa65320fa464708c1bef88cf6a60439b1888266da7b0df3355d7",
+            "sourceSha256": "39dc12bfd95e6f735e05d0b831e16a2ebacded821ed58f17e129bdf375a890e9"
+          }
+        }
+      }
+    }
+  ],
+  "layout": {
+    "viewBox": [
+      -140,
+      -240,
+      1280,
+      1080
+    ],
+    "nativeEmblemBounds": [
+      0,
+      0,
+      1000,
+      643.04
+    ],
+    "nativeEmblemAnchor": [
+      500,
+      321.52
+    ],
+    "referenceHome": {
+      "wordmarkFont": "Geist SemiBold",
+      "wordmarkPointSize": 28,
+      "nativeEmblemWidthPoints": 87.0878,
+      "nativeEmblemHeightPoints": 56,
+      "wholeCanvasWidthPoints": 111.4724,
+      "wholeCanvasHeightPoints": 94.0548,
+      "canvasOriginRelativeToEmblemPoints": [
+        -12.1923,
+        -20.9011
+      ]
+    },
+    "wordmarkIncluded": false,
+    "backgroundIncluded": false
+  },
+  "layerOrder": [
+    "supporting-art",
+    "native-links / ghost-links / painted-calavera / boxing-kangaroo",
+    "integrated-details",
+    "overhanging-details",
+    "channel-beta / channel-nightly-stars / channel-dev-construction"
+  ],
+  "integration": "Artwork delivery only. App and plugin code are unchanged. These Home images have no macOS tile, shadow, or Icon Composer material; keep their transparent canvas and Native emblem anchor when integrating.",
+  "sourceNotes": {
+    "all": {
+      "source": "../../../docs/celebrations.md",
+      "role": "Existing catalogue and researched motif directions. Original artwork; no downloaded reference images included."
+    },
+    "matariki": [
+      {
+        "url": "https://www.tepapa.govt.nz/digital-museum/explore-digital-museum/matariki-maori-new-year/matariki-regional-variations/matariki",
+        "role": "Seven- and nine-star traditions. This edition uses nine points in an illustrative grouping; no traditional art is copied."
+      }
+    ],
+    "kwanzaa": [
+      {
+        "url": "https://nmaahc.si.edu/explore/moments/kwanzaa",
+        "role": "Seven principles and kinara tradition."
+      }
+    ],
+    "australia-day": [
+      {
+        "url": "https://www.pmc.gov.au/sites/default/files/2023-01/flag-infosheet-recreate-flag.pdf",
+        "role": "Factual Southern Cross star arrangement and point counts, drawn as new SVG geometry."
+      }
+    ],
+    "australia-day-boxing-kangaroo": [
+      {
+        "source": "User-supplied green-and-gold Boxing Kangaroo flag reference",
+        "role": "Color and subject inspiration only. Original flat kangaroo, not the flag artwork."
+      }
+    ],
+    "australia-day-ochre-dots": [
+      {
+        "source": "../celebrations/australian-editions.artwork.json",
+        "role": "Original abstract dot-pattern study, not represented as Aboriginal artwork. No cultural symbols or story."
+      }
+    ]
+  },
+  "previewFiles": [
+    "featured-dark.png",
+    "featured-light.png",
+    "overview-dark.png",
+    "overview-light.png",
+    "overview-nightly.png",
+    "channel-overview.png",
+    "size-check.png"
+  ]
+}
