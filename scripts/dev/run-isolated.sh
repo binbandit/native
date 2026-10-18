@@ -39,7 +39,8 @@ done
 root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
 derived="/tmp/native-dd/$name"
 app="$derived/Build/Products/Debug/Native.app"
-executable="$app/Contents/MacOS/Native"
+# Matched without the leading /tmp, which macOS reports as /private/tmp.
+process="native-dd/$name/Build/Products/Debug/Native.app/Contents/MacOS/Native"
 support="$HOME/Library/Application Support"
 
 bundle_id() {
@@ -47,7 +48,7 @@ bundle_id() {
 }
 
 quit() {
-    pkill -f "^$executable" 2>/dev/null || true
+    pkill -f "$process" 2>/dev/null || true
     local id
     id=$(bundle_id) || return 0
     # The instance's development host, if it was turned on (Window › Durable Sessions).
@@ -98,7 +99,7 @@ open -n "$app" --args ${defaults_args[@]+"${defaults_args[@]}"} ${app_args[@]+"$
 
 pid=""
 for _ in $(seq 1 50); do
-    pid=$(pgrep -nf "^$executable" || true)
+    pid=$(pgrep -nf "$process" || true)
     [ -n "$pid" ] && break
     sleep 0.2
 done
