@@ -169,7 +169,7 @@ specifics (code signatures, boot time, the login-shell reader, later IOKit keep-
 | --- | --- | --- | --- |
 | `LocalSocketTransport` | this Mac | uid + code signature | built |
 | SSH bridge: `ssh <machine> native-host attach` | a Mac mini, a Linux box | the user's own SSH keys; the bridge runs as that user on the remote host | the `attach` side is built; the client's process transport is next |
-| Paired network transport | iPad, iPhone, another Mac on any network | QR pairing, then Noise (XX, then IK) with pinned static keys | designed |
+| Paired network transport | iPad, iPhone, another Mac on any network | QR pairing, then Noise (XX, then IK) with pinned static keys | built (`Packages/NativeLink`; Noise XX / XXpsk3 over TCP, see docs/companion.md) |
 | WebSocket + TLS | cloud sandboxes | provider-issued token + pinned key | later |
 
 **Pairing** (shared with the companion, `docs/companion.md`). The Mac shows a QR code carrying the

@@ -68,6 +68,30 @@ final class CompanionEndToEndTests: XCTestCase {
         attachScreenshot(app, named: "answered")
     }
 
+    /// Walks the main screens in `COMPANION_APPEARANCE` (light or dark) and attaches each one.
+    func testScreens() throws {
+        let app = XCUIApplication()
+        app.launchArguments += ["-appearance", environment["COMPANION_APPEARANCE"] ?? "light"]
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Tasks"].waitForExistence(timeout: 10))
+        sleep(3)
+        attachScreenshot(app, named: "home")
+        if let label = environment["COMPANION_HOST_LABEL"] {
+            app.buttons["host-\(label)"].tap()
+            sleep(2)
+            attachScreenshot(app, named: "host")
+            app.swipeUp()
+            attachScreenshot(app, named: "host-more")
+            app.navigationBars.buttons.firstMatch.tap()
+        }
+        app.buttons["settings"].tap()
+        sleep(1)
+        attachScreenshot(app, named: "settings")
+        app.buttons["addHost"].tap()
+        sleep(2)
+        attachScreenshot(app, named: "add-host")
+    }
+
     private func choose(_ wanted: String, in category: String, app: XCUIApplication) {
         let pill = app.descendants(matching: .any)["config-\(category)"]
         XCTAssertTrue(pill.waitForExistence(timeout: 30), "the agent offers a \(category)")
