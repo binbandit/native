@@ -6,7 +6,7 @@ import GitHub
 extension PullRequestPageModel {
     /// The Files Changed list's content, where blocks report where they sit. It scrolls with the
     /// blocks, so their places in it hold still while a drag crosses them.
-    static let filesSpace = "pullRequestFiles"
+    nonisolated static let filesSpace = "pullRequestFiles"
 
     func placeBlock(_ path: String, _ hunk: DiffHunk, _ range: Range<Int>, minY: CGFloat) {
         blockOrigins[Self.hunkKey(path, hunk), default: [:]][range.lowerBound] = (range.upperBound, minY)

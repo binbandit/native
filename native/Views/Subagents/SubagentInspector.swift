@@ -19,6 +19,7 @@ struct SubagentInspector: View {
                     .frame(maxHeight: .infinity)
             }
         }
+        .background(.dsBackground)
     }
 
     private var header: some View {

@@ -225,6 +225,9 @@ struct RootView: View {
                 }
         } detail: {
             detail
+                // Under every page, so the transcript and anything else without a background of its
+                // own sits on the design system's background in the user's light tone, not the system's.
+                .background(.dsBackground)
                 .safeAreaInset(edge: .top, spacing: 0) { hostVersionNotice }
                 .task {
                     if let updates { durableHost?.connectUpdates(updates) }
