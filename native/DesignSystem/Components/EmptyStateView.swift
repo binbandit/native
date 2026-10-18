@@ -37,9 +37,12 @@ public struct EmptyStateView<Actions: View>: View {
                     .font(.dsBody)
                     .foregroundStyle(.dsTextSecondary)
                     .multilineTextAlignment(.center)
-                    // The why is the point: it wraps rather than truncating in a short frame.
-                    .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: 320)
+                    // The why is the point: in a short frame it keeps its lines before anything else
+                    // does. Not a fixed height, which the window's minimum size is measured from at
+                    // no width at all, where the message is thousands of points tall: the window grew
+                    // to fit every empty state.
+                    .layoutPriority(1)
             }
             if Actions.self != EmptyView.self {
                 HStack(spacing: DS.Space.md) {

@@ -99,21 +99,20 @@ private struct AppIconStatusRow: View {
     }
 }
 
-/// A bundled icon's artwork at row size, or the plain mark if this build lacks it.
+/// An icon as the home screen draws it, at row size; a dashed outline if this build lacks it.
 struct AppIconThumbnail: View {
     let name: String?
     var size = CompanionMetrics.iconThumbnail
 
     var body: some View {
         Group {
-            if let image = BundledAppIcons.image(name) {
-                Image(uiImage: image).resizable().interpolation(.high)
+            if let preview = BundledAppIcons.previewName(name) {
+                Image(preview).resizable().interpolation(.high)
             } else {
-                Image(systemName: "app.dashed").font(.ds(size * 0.5)).foregroundStyle(.dsTextTertiary)
+                Image(systemName: "app.dashed").font(.ds(size * 0.6)).foregroundStyle(.dsTextTertiary)
             }
         }
         .frame(width: size, height: size)
-        .clipShape(.rect(cornerRadius: size * 0.225, style: .continuous))
         .accessibilityHidden(true)
     }
 }

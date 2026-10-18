@@ -17,11 +17,6 @@ struct SessionView: View {
     @State private var drops = ComposerDropInbox()
 
     var body: some View {
-        if UserDefaults.standard.integer(forKey: "stabInspector") == 2 {
-            Color.blue
-                .toolbar { ToolbarItem { GitChangesToolbarButton(model: repository, isPresented: $showsChanges) } }
-                .inspector(isPresented: isInspectorPresented) { Color.red.inspectorColumnWidth(min: 340, ideal: 420, max: 640) }
-        } else {
         TranscriptView(session: session) { openSubagent = $0 }
             .environment(\.turnChangesActions, turnChangesActions)
             .environment(\.isPrimaryTranscript, true)
@@ -45,16 +40,14 @@ struct SessionView: View {
             )
             // One inspector, showing a subagent or the task's changes; opening one closes the other.
             .inspector(isPresented: isInspectorPresented) {
-                if UserDefaults.standard.integer(forKey: "stabInspector") == 1 {
-                    Color.red.inspectorColumnWidth(min: 340, ideal: 420, max: 640)
-                } else if let id = openSubagent, let subagent = session.state.subagents.first(where: { $0.id == id }) {
+                if let id = openSubagent, let subagent = session.state.subagents.first(where: { $0.id == id }) {
                     SubagentInspector(subagent: subagent, child: session.child(id))
-                        .inspectorColumnWidth(min: 340, ideal: 420, max: 640)
+                        .sessionInspectorColumn(min: 340, ideal: 420, max: 640)
                 } else if showsChanges {
                     GitChangesInspector(model: repository) {
                         Task { await GitHubGitWiring.createPullRequest(from: repository, gitHub: gitHub) }
                     }
-                    .inspectorColumnWidth(
+                    .sessionInspectorColumn(
                         min: GitMetrics.inspectorMinWidth, ideal: GitMetrics.inspectorIdealWidth,
                         max: GitMetrics.inspectorMaxWidth)
                 }
@@ -82,7 +75,6 @@ struct SessionView: View {
             .focusedSceneValue(\.gitChangesInspector, $showsChanges)
             .refreshesGitStatus(of: session, in: git)
             .environment(\.transcriptColumnMaxWidth, columnWidth.maxWidth)
-        }
     }
 
     /// The machine the task's project is on (the selected task's project is the current one).
@@ -124,5 +116,15 @@ struct SessionView: View {
                 }
             }
         )
+    }
+}
+
+extension View {
+    /// The inspector column's widths, with its content never laid out narrower than the minimum.
+    /// The window takes its minimum size from the content laid out at no width at all, where wrapped
+    /// text (an empty state's message) comes out thousands of points tall, so opening the inspector
+    /// grew the window to the height of the screen.
+    fileprivate func sessionInspectorColumn(min: CGFloat, ideal: CGFloat, max: CGFloat) -> some View {
+        frame(minWidth: min).inspectorColumnWidth(min: min, ideal: ideal, max: max)
     }
 }
