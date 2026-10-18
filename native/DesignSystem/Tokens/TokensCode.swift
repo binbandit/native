@@ -106,9 +106,8 @@ public struct HighlightedCode: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dsLightTone) private var lightTone
     @Environment(\.dsCodeThemes) private var codeThemes
-    /// The last highlighting, for the code it was made from; a streaming block keeps its old colors
-    /// only while they still describe its text.
-    @State private var highlighted: (code: String, segments: [CodeSegment])?
+    /// Colors from a background thread, kept while the code changes (a block in a streaming reply).
+    @State private var highlighter = LiveCodeHighlighter()
 
     /// - Parameter language: A Markdown fence's info string (`swift`, `ts`…), or nil for a file's
     ///   extension to decide via `CodeLanguage.forPath`; unknown languages draw plain.
@@ -124,22 +123,18 @@ public struct HighlightedCode: View {
 
     public var body: some View {
         let colors = DSCodeColors(.code(colorScheme: colorScheme, lightTone: lightTone, themes: codeThemes), on: .sunken)
-        // Plain text at once (or the cached colors), then the colors from a background thread.
-        let segments =
-            highlighted?.code == code
-            ? highlighted?.segments : CodeHighlightCache.shared.cached(code, language: language)
-        Group {
-            if let segments {
-                Text(colors.text(segments))
-            } else {
-                Text(verbatim: code)
-                    .foregroundStyle(colors.isNative ? Color.dsTextPrimary : colors.color(.foreground))
-            }
-        }
-        .task(id: code) {
-            guard language != nil, segments == nil else { return }
-            let result = await CodeHighlightCache.shared.highlight(code, language: language)
-            highlighted = (code, result)
+        // Plain or the colors there are at once; the highlighter brings the rest.
+        let segments = highlighter.segments(for: code, language: language)
+        #if DEBUG
+        let _ = RenderProbe.note(
+            "hc body id=\(ObjectIdentifier(highlighter).hashValue) lang=\(language?.id ?? "nil") len=\(code.count) colored=\(segments.map { $0.filter { $0.role != .foreground }.count } ?? -1) plainTail=\(segments?.last?.role == .foreground ? segments?.last?.text.count ?? 0 : 0)"
+        )
+        #endif
+        if let segments {
+            Text(colors.text(segments))
+        } else {
+            Text(verbatim: code)
+                .foregroundStyle(colors.isNative ? Color.dsTextPrimary : colors.color(.foreground))
         }
     }
 }

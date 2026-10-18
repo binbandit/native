@@ -98,7 +98,7 @@ Mac) to see everything in light and dark side by side.
 | Something that can be taken back | `.undoToast($item)` with `UndoToastItem(message) { undo }`, instead of a confirmation |
 | Usage limits | `LimitStatus` (one value from Usage), rendered by `LimitBanner` and `LimitChip`, worded by `LimitStatus.line(now:)` |
 | Task state | `TaskStatus` + `StatusIndicator`; paused and limited included |
-| Loading | `DotGridLoader`, never ad-hoc spinners |
+| Loading | `DotGridLoader`, or `LoadingStateView(what)` filling a pane; never ad-hoc spinners |
 | Something blocked on the user, in chrome | `.statusBarSegment(.attention)`: the only boxed item in the status bar, one at a time |
 | Details on click | `.dsPopover` with a `PopoverPanel` |
 | An icon-only button | `Button("Title", systemImage:)` with `.ds(_, iconOnly: true)` or `.pill(isSquare: true)`, or `IconButton`: the title stays VoiceOver's label. Never a bare `Image` label |
