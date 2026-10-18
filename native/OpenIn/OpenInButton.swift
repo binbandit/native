@@ -1,8 +1,9 @@
 import SwiftUI
 
-/// Conductor's "Open in" control for a task's folder: a split button sized for the window toolbar.
-/// The left half opens the folder in the default app and shows that app's real icon; the chevron
-/// lists every installed editor, terminal and git client (see `OpenInMenu`).
+/// Conductor's "Open in" control for a project's or task's folder: a split button sized for the
+/// window toolbar. The left half opens the folder in the default app and shows that app's real
+/// icon; the chevron lists every installed editor, terminal and git client that can open it, and
+/// Copy Path (see `OpenInMenu`).
 ///
 ///     ToolbarItem { OpenInButton(location: .local(session.cwd)) }
 ///         .sharedBackgroundVisibility(.hidden)
@@ -42,16 +43,17 @@ struct OpenInButton: View {
     }
 
     private var primary: some View {
-        let app = model.defaultApp
-        let title = app.map { "Open in \($0.name)" } ?? "Open"
+        let app = model.defaultApp(for: location)
+        let title = app.map { "Open in \($0.name)" } ?? "Copy Path"
         return Button {
             model.openInDefaultApp(location)
         } label: {
             Group {
                 if let app {
-                    Image(nsImage: model.icon(for: app))
+                    model.icon(for: app)
                 } else {
-                    Image(systemName: "folder")
+                    Image(systemName: "doc.on.doc")
+                        .font(.dsCaption)
                         .foregroundStyle(.dsTextSecondary)
                 }
             }
@@ -64,27 +66,28 @@ struct OpenInButton: View {
         }
         .buttonStyle(SegmentButtonStyle(isHovered: isPrimaryHovered && isEnabled))
         .trackHover($isPrimaryHovered)
-        .disabled(app == nil)
-        .help("\(title) (\(OpenInCommands.shortcut.displayString))")
+        .help(app == nil ? title : "\(title) (\(OpenInCommands.shortcut.displayString))")
         .accessibilityLabel(title)
     }
 
+    /// A chevron, or a checkmark for a moment after Copy Path, confirming it where it was chosen.
     private var chevron: some View {
         let isHighlighted = isEnabled && (isChevronHovered || isMenuOpen)
-        return OpenInMenuTrigger(label: "Open In…", isHovered: $isChevronHovered, isOpen: $isMenuOpen) {
-            OpenInMenu.make(for: location, model: model)
-        }
-        .frame(width: DS.Size.rowLeading + 2 * DS.Space.sm + 1)
-        .background(isMenuOpen ? .dsPressed : isHighlighted ? .dsHover : .clear)
-        .overlay {
-            Image(systemName: "chevron.down")
-                .font(.dsCaption)
-                .imageScale(.small)
-                .padding(.trailing, 1)
-                .foregroundStyle(isHighlighted ? .dsTextPrimary : .dsTextSecondary)
-                .allowsHitTesting(false)
-        }
-        .allowsHitTesting(isEnabled)
+        let didCopy = model.copiedLocation == location
+        return OpenInMenuTrigger(location: location, model: model, isHovered: $isChevronHovered, isOpen: $isMenuOpen)
+            .frame(width: DS.Size.rowLeading + 2 * DS.Space.sm + 1)
+            .background(isMenuOpen ? .dsPressed : isHighlighted ? .dsHover : .clear)
+            .overlay {
+                Image(systemName: didCopy ? "checkmark" : "chevron.down")
+                    .font(.dsCaption)
+                    .imageScale(.small)
+                    .padding(.trailing, 1)
+                    .foregroundStyle(didCopy ? .dsSuccess : isHighlighted ? .dsTextPrimary : .dsTextSecondary)
+                    .contentTransition(.symbolEffect(.replace))
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
+            .allowsHitTesting(isEnabled)
     }
 }
 

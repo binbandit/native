@@ -17,21 +17,20 @@ extension SettingsPane {
             searchEntries: {
                 [
                     SettingsSearchEntry(id: SoundsSettingsPage.enabledRow, title: "Play sounds", keywords: ["mute", "silence", "off"]),
+                    SettingsSearchEntry(id: SoundsSettingsPage.volumeRow, title: "Volume", keywords: ["loud", "quiet"]),
                     SettingsSearchEntry(
                         id: SoundsSettingsPage.focusRow,
                         title: "Stay quiet during Focus",
                         keywords: ["do not disturb", "dnd", "focus", "quiet"]
                     ),
-                    SettingsSearchEntry(
-                        id: SoundsSettingsPage.soundRow,
-                        title: "Notification sound",
-                        description: "Choose what plays when a task finishes or needs you.",
-                        keywords: ["chime", "bell", "completion"]
-                    ),
-                    SettingsSearchEntry(id: SoundsSettingsPage.volumeRow, title: "Volume", keywords: ["loud", "quiet"]),
                     SettingsSearchEntry(id: SoundsSettingsPage.timingRow, title: "When to play", keywords: ["background", "focus"]),
                 ] + SoundTrigger.allCases.map {
-                    SettingsSearchEntry(id: SoundsSettingsPage.triggerRow($0), title: $0.title, description: $0.detail)
+                    SettingsSearchEntry(
+                        id: SoundsSettingsPage.triggerRow($0),
+                        title: $0.title,
+                        description: $0.detail,
+                        keywords: ["chime", "sound", "notification"]
+                    )
                 }
             },
             content: { SoundsSettingsPage(sounds: sounds) }

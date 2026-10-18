@@ -147,3 +147,62 @@ private struct UpdateWithMeta: Decodable {
 
     let params: Params
 }
+
+struct ProviderUsageReportTests {
+    private let losAngeles = TimeZone(identifier: "America/Los_Angeles") ?? .gmt
+
+    private func date(_ month: Int, _ day: Int, _ hour: Int, _ minute: Int, year: Int = 2026) -> Date {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = losAngeles
+        return calendar.date(from: DateComponents(year: year, month: month, day: day, hour: hour, minute: minute)) ?? .distantPast
+    }
+
+    /// As `claude-agent-acp`'s `formatUsageResponse` renders the SDK's `/usage` answer.
+    @Test func readsClaudeCodesUsage() throws {
+        let markdown = """
+            ## Usage
+
+            > Claude max subscription usage
+
+            ### Limits
+
+            **5-hour limit** — **42%** · Resets Oct 17, 3:00 PM PDT
+
+            `████████░░░░░░░░░░░░`
+
+            **Weekly · all models** — **18%** · Resets Oct 21, 9:00 AM PDT
+
+            `████░░░░░░░░░░░░░░░░`
+
+            **Weekly · Opus** — **0%**
+
+            ---
+
+            ### This session
+
+            | Cost | API time | Active |
+            """
+        let report = try #require(ProviderUsageReport.parse(markdown, now: date(10, 17, 10, 0), timeZone: losAngeles))
+        #expect(report.windows.map(\.name) == ["5-hour limit", "Weekly · all models", "Weekly · Opus"])
+        #expect(report.windows.map(\.utilization) == [0.42, 0.18, 0])
+        #expect(report.windows[0].resetsAt == date(10, 17, 15, 0))
+        #expect(report.windows[1].resetsAt == date(10, 21, 9, 0))
+        #expect(report.windows[2].resetsAt == nil)
+    }
+
+    /// As `codex-acp`'s `/status` renders its rate-limit snapshots.
+    @Test func readsCodexsStatus() throws {
+        let markdown = """
+            **Model:** gpt-6.1-sol  \n**Context window:** 24% used (61.2k used / 258.4k)  \n**codex 5h limit:** 88% left (resets 15:00)  \n**codex Weekly limit:** 61% left (resets 09:30 on Oct 21)
+            """
+        let report = try #require(ProviderUsageReport.parse(markdown, now: date(10, 17, 10, 0), timeZone: losAngeles))
+        #expect(report.windows.map(\.name) == ["5h limit", "Weekly limit"])
+        #expect(report.windows.map(\.utilization) == [0.12, 0.39])
+        #expect(report.windows.map(\.resetsAt) == [date(10, 17, 15, 0), date(10, 21, 9, 30)])
+    }
+
+    @Test func otherTextHasNoWindows() {
+        #expect(ProviderUsageReport.parse("**Limits:** data not available yet") == nil)
+        #expect(ProviderUsageReport.parse("## Context Usage") == nil)
+    }
+}

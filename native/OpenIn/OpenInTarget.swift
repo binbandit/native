@@ -38,6 +38,17 @@ nonisolated struct OpenInTarget: Identifiable, Hashable, Sendable {
 }
 
 nonisolated extension OpenInTarget {
+    /// The URL that opens `path` on `host` in this app, when it opens remote folders from a URL.
+    func remoteURL(host: String, path: String) -> URL? {
+        guard case .url(let template) = remote,
+            let host = host.addingPercentEncoding(withAllowedCharacters: .urlHostAllowed),
+            let path = path.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)
+        else { return nil }
+        return URL(string: template.replacing("{host}", with: host).replacing("{path}", with: path))
+    }
+}
+
+nonisolated extension OpenInTarget {
     /// Every known app, grouped by kind. Within a group the most widely used come first, so on first
     /// run the first installed one is the likeliest default: an editor if there is any, Xcode only
     /// when nothing else is installed (most Macs with developer tools have it), and Finder last.

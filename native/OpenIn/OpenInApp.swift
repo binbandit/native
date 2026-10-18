@@ -1,48 +1,22 @@
-import AppKit
+import Foundation
 
-/// A catalog app that's installed, wherever LaunchServices found it (`/Applications`,
-/// `~/Applications`, a JetBrains Toolbox folder…).
+/// A catalog app that's installed, wherever the platform found it (on the Mac, LaunchServices:
+/// `/Applications`, `~/Applications`, a JetBrains Toolbox folder…).
 nonisolated struct OpenInApp: Identifiable, Hashable, Sendable {
     let target: OpenInTarget
+    /// The installed app bundle.
     let url: URL
     /// The app's name as Finder shows it, e.g. "Visual Studio Code" or "Zed Preview".
     let name: String
 
     var id: OpenInTarget.ID { target.id }
 
-    /// The installed catalog apps, in catalog order. Finder is always among them.
-    static func installed(using workspace: NSWorkspace = .shared) -> [OpenInApp] {
-        OpenInTarget.catalog.compactMap { target in
-            let url = target.bundleIdentifiers.lazy.compactMap(workspace.urlForApplication(withBundleIdentifier:)).first
-            guard let url else { return nil }
-            // Finder keeps ".app" when the user shows all filename extensions.
-            var name = FileManager.default.displayName(atPath: url.path(percentEncoded: false))
-            if name.hasSuffix(".app") {
-                name.removeLast(4)
-            }
-            return OpenInApp(target: target, url: url, name: name)
-        }
-    }
-
-    /// Opens the location in the app and brings it to the front.
-    func open(_ location: OpenInLocation, using workspace: NSWorkspace = .shared) async throws {
+    /// Whether the app can open the location: any local folder, and a remote one when the app can
+    /// reach it from a URL. Terminals' `ssh` launches are recorded but not offered yet.
+    func canOpen(_ location: OpenInLocation) -> Bool {
         switch location {
-        case .local(let folder):
-            try await open(folder, using: workspace)
-        }
-    }
-
-    private func open(_ folder: URL, using workspace: NSWorkspace) async throws {
-        let configuration = NSWorkspace.OpenConfiguration()
-        configuration.activates = true
-        switch target.launch {
-        case .document:
-            try await workspace.open([folder], withApplicationAt: url, configuration: configuration)
-        case .arguments(let arguments):
-            // A running app ignores launch arguments, so these always start a new process.
-            configuration.arguments = arguments + [folder.path(percentEncoded: false)]
-            configuration.createsNewApplicationInstance = true
-            try await workspace.openApplication(at: url, configuration: configuration)
+        case .local: true
+        case .remote(let host, let path): target.remoteURL(host: host, path: path) != nil
         }
     }
 }

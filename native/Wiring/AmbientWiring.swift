@@ -25,6 +25,9 @@ enum AmbientWiring {
         keepAwake.follow {
             KeepAwakeActivity(workingAgents: model.statusBarTasks.count { $0.status == .working })
         }
+        NotificationSounds.shared.isRetrying = { [weak model] context in
+            model?.session(clientID: context.clientID)?.isRetryScheduled == true
+        }
         NotificationSounds.shared.isViewing = { [weak model] context in
             guard let model, let id = context.parentID ?? context.sessionID else { return false }
             // A subagent counts as viewed when its parent is on screen.

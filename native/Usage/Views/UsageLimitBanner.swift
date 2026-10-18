@@ -11,7 +11,7 @@ struct UsageLimitBanner: View {
 
     var body: some View {
         if let status = limits.limitStatus(agent: agent, session: session) {
-            let id = LimitTarget.ID(agent: agent, session: session)
+            let id = UsageSessionRef.ID(agent: agent, session: session)
             LimitBanner(
                 status: status,
                 onResume: { limits.resumeAtReset(id) },

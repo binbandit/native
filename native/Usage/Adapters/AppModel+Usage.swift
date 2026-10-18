@@ -2,7 +2,7 @@ import ACP
 import Foundation
 
 extension AppModel: UsageLimitsHost {
-    func resumableSession(_ target: LimitTarget) async -> (any LimitResumable)? {
+    func resumableSession(_ target: UsageSessionRef) async -> (any LimitResumable)? {
         let key = SessionKey(agent: target.agent, id: target.session)
         if session(key) == nil {
             await loadSession(key)
@@ -10,7 +10,7 @@ extension AppModel: UsageLimitsHost {
         return session(key)
     }
 
-    func show(_ target: LimitTarget) {
+    func show(_ target: UsageSessionRef) {
         selection = SessionKey(agent: target.agent, id: target.session)
     }
 }

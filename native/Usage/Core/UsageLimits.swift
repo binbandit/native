@@ -21,7 +21,7 @@ final class UsageLimits {
     static let maxResumeAttempts = 20
 
     private(set) var providers: [AgentDefinition.ID: ProviderLimit] = [:]
-    private(set) var sessions: [LimitTarget.ID: LimitedSession] = [:]
+    private(set) var sessions: [UsageSessionRef.ID: LimitedSession] = [:]
 
     /// Resumes wait for this; setting it runs any that came due before it was there.
     @ObservationIgnored weak var host: (any UsageLimitsHost)? {
@@ -33,8 +33,11 @@ final class UsageLimits {
     @ObservationIgnored private let alerts: any LimitAlerting
     @ObservationIgnored private let timer = LimitTimer()
     @ObservationIgnored private var pendingAlerts: [AgentDefinition.ID: Task<Void, Never>] = [:]
-    @ObservationIgnored private var resumeAttempts: [LimitTarget.ID: Int] = [:]
+    @ObservationIgnored private var resumeAttempts: [UsageSessionRef.ID: Int] = [:]
     @ObservationIgnored private var isProcessing = false
+    /// Sessions picked back up at a reset, until a turn of theirs ends normally. One that hits the
+    /// limit again waits for the next reset on its own rather than asking again.
+    @ObservationIgnored private var resumed: Set<UsageSessionRef.ID> = []
 
     init(store: any UsageLimitsStore, alerts: any LimitAlerting, now: @escaping () -> Date = Date.init) {
         self.store = store
@@ -78,7 +81,7 @@ final class UsageLimits {
     @discardableResult
     func recordFailure(
         _ turn: FailedTurn, error: any Error, agent: AgentDefinition.ID, agentName: String,
-        stopping target: LimitTarget?
+        stopping target: UsageSessionRef?
     ) -> Bool {
         let hit = UsageLimitHit(error: error, agentText: turn.agentText, now: now())
         let current = providers[agent].flatMap { limit in
@@ -91,19 +94,24 @@ final class UsageLimits {
                 agent, agentName: agentName, status: .reached, window: hit.window ?? current?.window,
                 resetsAt: current?.resetsAt ?? hit.resetsAt, utilization: current?.utilization, message: hit.message)
         }
-        guard let target else { return true }
+        guard let target, target.isPromptable else { return true }
         var limited = sessions[target.id] ?? LimitedSession(target: target, work: turn.work)
         limited.target = target
         limited.work = turn.work
+        if resumed.contains(target.id), let resumeAt = resumeTime(for: agent), let limit = providers[agent] {
+            limited.resumeAt = resumeAt
+            Task { await alerts.post(.rescheduled(limit, session: target, at: resumeAt)) }
+        }
         sessions[target.id] = limited
         changed()
         return true
     }
 
     /// A turn that ended normally.
-    func recordTurnEnded(_ reason: StopReason, in target: LimitTarget) {
+    func recordTurnEnded(_ reason: StopReason, in target: UsageSessionRef) {
         guard reason == .endTurn else { return }
         // The user carried on by hand, so a scheduled resume would only repeat the work.
+        resumed.remove(target.id)
         var didChange = sessions.removeValue(forKey: target.id) != nil
         // With no reset time to wait for, a model answering is the only sign the limit lifted.
         if let limit = providers[target.agent], limit.status == .reached, limit.resetsAt == nil {
@@ -117,7 +125,7 @@ final class UsageLimits {
 
     // MARK: - What the user chooses
 
-    func resumeAtReset(_ id: LimitTarget.ID) {
+    func resumeAtReset(_ id: UsageSessionRef.ID) {
         guard var limited = sessions[id], let resumeAt = resumeTime(for: id.agent) else { return }
         limited.resumeAt = resumeAt
         sessions[id] = limited
@@ -134,7 +142,7 @@ final class UsageLimits {
         changed()
     }
 
-    func cancelResume(_ id: LimitTarget.ID) {
+    func cancelResume(_ id: UsageSessionRef.ID) {
         guard var limited = sessions[id], limited.resumeAt != nil else { return }
         limited.resumeAt = nil
         sessions[id] = limited
@@ -186,7 +194,7 @@ final class UsageLimits {
     /// the resume it can offer, and nothing once the user dismissed or snoozed a warning.
     func limitStatus(agent: AgentDefinition.ID, session: SessionID) -> LimitStatus? {
         guard let limit = providers[agent], isInForce(limit) else { return nil }
-        let limited = sessions[LimitTarget.ID(agent: agent, session: session)]
+        let limited = sessions[UsageSessionRef.ID(agent: agent, session: session)]
         switch limit.status {
         case .warning:
             guard !limit.isDismissed, !limit.isSnoozed else { return nil }
@@ -232,6 +240,7 @@ final class UsageLimits {
         switch session?.resumeReadiness {
         case .ready?:
             resumeAttempts[limited.id] = nil
+            resumed.insert(limited.id)
             await session?.resume(with: limited.work.resumePrompt)
         case .busy?:
             resumeAttempts[limited.id] = nil
@@ -336,6 +345,9 @@ final class UsageLimits {
         switch limit.status {
         case .reached:
             let stopped = sessions.values.filter { $0.id.agent == agent && $0.resumeAt == nil }.map(\.target)
+            // Sessions that hit the limit again after resuming already said so, quietly.
+            let rescheduled = sessions.values.contains { $0.id.agent == agent && resumed.contains($0.id) }
+            if stopped.isEmpty, rescheduled { return }
             await alerts.post(.reached(limit, sessions: stopped.sorted { ($0.title ?? "") < ($1.title ?? "") }))
         case .warning:
             await alerts.post(.warning(limit))
