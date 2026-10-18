@@ -31,7 +31,7 @@ protocol TaskWorkspaceProvider: AnyObject {
 
 /// A task's workspace that was put away, and how to restore it.
 struct TaskWorkspaceRemoval {
-    /// What was done, in a sentence: "Removed the worktree; uncommitted work saved as a checkpoint."
+    /// What was done, in a sentence: "Removed its worktree, saving uncommitted work as a checkpoint."
     let summary: String
     let restore: () async throws -> Void
 }

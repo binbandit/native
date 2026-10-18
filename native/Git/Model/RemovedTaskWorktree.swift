@@ -13,10 +13,10 @@ struct RemovedTaskWorktree: Hashable, Sendable {
     /// The branch was deleted too (kept under `refs/native-archived-branches/`).
     let archivedBranch: Bool
 
-    /// "Removed the worktree. Uncommitted work was saved as a checkpoint." for the archive UI.
+    /// "Removed its worktree, saving uncommitted work as a checkpoint." for the archive toast, whose
+    /// Undo restores all of it, so the sentence doesn't need to say so.
     var summary: String {
-        let work = checkpoint == nil ? "" : " Uncommitted work was saved as a checkpoint."
-        let branchNote = archivedBranch ? " The branch was deleted; restoring brings it back." : ""
-        return "Removed the worktree.\(work)\(branchNote) You can restore it."
+        let removed = archivedBranch ? "Removed its worktree and branch" : "Removed its worktree"
+        return checkpoint == nil ? "\(removed)." : "\(removed), saving uncommitted work as a checkpoint."
     }
 }
