@@ -1,4 +1,5 @@
 ; From tree-sitter-grammars/tree-sitter-toml v0.7.0, queries/highlights.scm (MIT; see NOTICE.md).
+; Changed: a pair captures its key as the property, not the whole pair.
 ; Properties
 ;-----------
 
@@ -7,7 +8,7 @@
 (quoted_key) @string
 
 (pair
-  (bare_key)) @property
+  (bare_key) @property)
 
 (pair
   (dotted_key

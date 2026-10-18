@@ -137,6 +137,8 @@ final class PullRequestPageModel {
             hunks = [:]
             highlighted = [:]
             highlightedPaths = []
+            lineCounts = [:]
+            largeDiffs = []
             blockTexts = [:]
             patchPagesLoaded = 0
             patchesComplete = false

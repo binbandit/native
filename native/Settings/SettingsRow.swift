@@ -120,7 +120,7 @@ extension SettingsRow where Accessory == EmptyView {
 }
 
 extension SettingsRow where Control == EmptyView {
-    @available(*, deprecated, message: "Information goes in a SettingsNote, and a value in SettingsValue")
+    @available(*, unavailable, message: "Information goes in a SettingsNote, and a value in SettingsValue")
     init(
         id: SettingsRowID? = nil,
         title: Text,
@@ -135,7 +135,7 @@ extension SettingsRow where Control == EmptyView {
 }
 
 extension SettingsRow where Accessory == EmptyView, Control == EmptyView {
-    @available(*, deprecated, message: "Information goes in a SettingsNote, and a value in SettingsValue")
+    @available(*, unavailable, message: "Information goes in a SettingsNote, and a value in SettingsValue")
     init(
         id: SettingsRowID? = nil,
         _ title: String,
