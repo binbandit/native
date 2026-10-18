@@ -49,8 +49,23 @@ keychain_args=()
 log "Building native-host $version (build $build_number), macOS universal"
 run rm -rf "$host"
 run mkdir -p "$host"
+# A bare binary has no bundle, so its identity, version, channel, feed and signing key travel in an
+# embedded Info.plist, which Bundle.main reads like an app's.
+public_key=${NATIVE_SPARKLE_PUBLIC_KEY:-$(xcconfig_value NATIVE_SPARKLE_PUBLIC_KEY Shared.xcconfig)}
+feed_url="$releases/latest/download/$feed_name"
+[ "$channel" = nightly ] && feed_url="$releases/download/nightly/$feed_name"
+info="$output/host-Info.plist"
+if [ "$MODE" != plan ]; then
+    plutil -create xml1 "$info"
+    for pair in "CFBundleIdentifier=native-host" "CFBundleName=Native Host" "CFBundleShortVersionString=$version" \
+        "CFBundleVersion=$build_number" "NativeChannel=$channel" "NativeHostFeedURL=$feed_url" \
+        "SUPublicEDKey=$public_key"; do
+        plutil -insert "${pair%%=*}" -string "${pair#*=}" "$info"
+    done
+fi
 run swift build -c release --package-path Packages/NativeHost --product native-host \
-    --arch arm64 --arch x86_64 --scratch-path "$output/host-build"
+    --arch arm64 --arch x86_64 --scratch-path "$output/host-build" \
+    -Xlinker -sectcreate -Xlinker __TEXT -Xlinker __info_plist -Xlinker "$info"
 run cp "$output/host-build/apple/Products/Release/native-host" "$host/$binary_name"
 if [ "$identity" = "-" ]; then
     run codesign --force --sign - --identifier native-host "$host/$binary_name"

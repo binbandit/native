@@ -35,6 +35,10 @@ final class MCPLibrary {
     @ObservationIgnored var host: (any MCPLibraryHost)?
     @ObservationIgnored let runner: any CommandRunner
     @ObservationIgnored let launcher: any StdioLauncher
+    /// Native's connections to servers that run through scripts.
+    @ObservationIgnored let scriptConnections: MCPScriptConnections
+    /// Whether this build can run scripts at all; without it nothing can run through them.
+    var scriptsAvailable = false
     @ObservationIgnored let files: any ConfigFileSystem
     @ObservationIgnored private let secretStore: any SecretStore
     @ObservationIgnored private let storeURL: URL
@@ -61,6 +65,7 @@ final class MCPLibrary {
     ) {
         self.runner = runner
         self.launcher = launcher
+        scriptConnections = MCPScriptConnections(launcher: launcher)
         self.files = files
         self.secretStore = secretStore
         self.storeURL = storeURL
@@ -141,6 +146,8 @@ final class MCPLibrary {
         recomputeSessionEntries()
         // Agents that apply switches at launch restart for them, but only while idle.
         Task { await host?.mcpApplyLaunchPolicies(force: false) }
+        let scripted = scriptedKeys
+        Task { await scriptConnections.keep(only: scripted) }
     }
 
     /// A server's secret values, from the Keychain the first time.

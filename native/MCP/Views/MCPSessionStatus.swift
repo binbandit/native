@@ -169,7 +169,7 @@ struct MCPSessionPanel: View {
                     SettingsSwitch(
                         "\(entry.name) in \(session.cwd.lastPathComponent)",
                         isOn: Binding(
-                            get: { library.mode(of: key, in: session.cwd) == .on },
+                            get: { library.mode(of: key, in: session.cwd) != .off },
                             set: { library.setMode($0 ? .on : .off, of: key, in: session.cwd) })
                     )
                     .help("Switch \(entry.name) for new sessions in \(session.cwd.lastPathComponent)")

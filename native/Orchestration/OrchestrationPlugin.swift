@@ -17,6 +17,8 @@ struct OrchestrationPlugin: NativePlugin {
     let orchestrator: Orchestrator
     /// Other features' tools for `run_script`.
     let scriptExtensions: OrchestrationScriptExtensions
+    /// Whether the server offers `run_script`: only where the script runtime is.
+    let hasScripts: Bool
     private let server: MCPHTTPServer<OrchestrationCaller>
 
     init() {
@@ -36,6 +38,7 @@ struct OrchestrationPlugin: NativePlugin {
         }
         self.orchestrator = orchestrator
         self.scriptExtensions = extensions
+        hasScripts = script != nil
         self.server = server
         // Listening takes a moment, long before the first session asks for the URL.
         Task {

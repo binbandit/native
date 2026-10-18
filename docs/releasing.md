@@ -97,10 +97,78 @@ keeps executing its old binary, so agents never notice the app restarting. Then:
    can't talk to it otherwise. A newer host facing an older app is `incompatible` and shows
    "Update Native".
 
-What the host side still needs (owned by `Packages/NativeHost` and `native/Host`; see the hand-off in
-the PR): `ShutdownParams.immediately` for Restart Host Now, sending the frozen shutdown on a protocol
-mismatch before closing, `DurableHost.versionStatus` driving `HostVersionNotice`, and
-`install-launch-agent.sh` reading `NATIVE_HOST_CHANNEL` so Nightly gets its own host.
+The host side of this (the frozen handshake, `ShutdownParams.immediately` for Restart Host Now,
+`DurableHost.versionStatus`, and Nightly's own host channel) lives in `Packages/NativeHost` and
+`native/Host`.
+
+## Remote updates
+
+An iPad or iPhone, or a Mac pointed at a Mac mini, sees when a host's Native has an update, tells
+the user, and can install it, including on headless hosts (a Linux run box running only
+`native-host`). Update status is a property of the **host**, served over the host protocol, so every
+client asks the same question the same way.
+
+**Who updates what.** A host reports one of three providers:
+
+| Provider | Where | What updates | How |
+| --- | --- | --- | --- |
+| `app` | a Mac with Native.app | the whole app, host included (the host is inside the signed bundle, so it's never replaced alone) | Sparkle in the app (`UpdateController`). When the app isn't running, the host opens it hidden with `-NativeInstallUpdateAndQuit YES`: it checks, installs without relaunching and quits |
+| `standalone` | a Linux box, or a Mac with only `native-host` (`~/.native/host`) | the `native-host` binary | the host itself, with `Packages/HostUpdater` |
+| `none` | development builds, iPad | nothing | status says why |
+
+**Protocol** (`_native/host/update/*`, shapes in `docs/durability.md`, "Updating a host remotely"):
+
+| Method | Direction | Does |
+| --- | --- | --- |
+| `status` | client → host | → `HostUpdateStatus` |
+| `check` | client → host | starts a check now; → the status, then `changed` as it moves |
+| `install {when: idle \| now}` | client → host | installs the available update; authorized clients only |
+| `changed {status}` | host → clients | the status moved |
+| `report {status}` | app → host (local only) | the Mac app's Sparkle status, which the host serves as its own (provider `app`); the app sends `UpdateController.snapshot` on every change |
+| `_native/app/update/install {when}` | host → app | a device's install request, for the app's Sparkle (`UpdateController.installForRemote`) |
+
+`HostUpdateStatus`: `provider`, `current {version, build, channel}`, `state` (`idle`, `checking`,
+`upToDate`, `available`, `downloading`, `ready`, `installing`, `failed`, `unavailable`; unknown
+values decode as `unknown`), `available {version, build, notes, releaseNotesURL, date, size,
+critical}?`, `progress?`, `message?` (the failure or why updates are off, in the words the Mac
+shows), `lastChecked?`, `pendingInstall` (`idle`, `now` or null), `workingSessions` (what installing
+now would interrupt), `canInstall` (computed for the asking client) and `lastRollback {from, to,
+at}?`.
+
+**Never mid-turn without consent.** `when: idle` waits until no session has a turn running or
+recovering, then installs (the Mac app's Sparkle path, or a standalone host's swap) and the host
+restarts through the existing exit-75 path. `when: now` is only ever sent from an explicit "Install
+Now, Interrupt Tasks" on the device; interrupted turns resume like after any interruption, and the
+activity journal records which device asked.
+
+**Standalone hosts update themselves** (`Packages/HostUpdater`):
+
+1. **Check** every 24 hours and on `check`: fetch the channel's host feed and its detached signature
+   (`HostUpdateSource`), verify it with the public key compiled into the host
+   (`NATIVE_SPARKLE_PUBLIC_KEY`, the appcast's key), and compare build numbers.
+2. **Download** this machine's binary (exact architecture, else macOS universal), check its size,
+   SHA-256 and Ed25519 signature, and stage it at `~/.native/host/versions/<build>/native-host`
+   (`HostBinaryInstaller.stage`). Nothing runs it yet: state `ready`.
+3. **Install** when allowed (idle, or `now`): `activate` swaps the `native-host` symlink with
+   `rename(2)`, so the supervisor sees the old build or the new one, never neither; the host exits 75
+   and launchd or `systemd --user` (`Restart=on-failure`) starts the new build.
+4. **Confirm or roll back.** At launch the host calls `startupCheck`: a new build gets two launches
+   to come up, serve and pass a handshake against its own socket, then calls `confirm`, which keeps
+   it and the build before it and prunes older ones. A build that crashes or hangs (the host exits
+   if it isn't confirmed within 60 seconds) is rolled back: the symlink points at the last good
+   build, the host exits 75, and the status and journal say "Native Host 1.4.0 didn't start, so the
+   host went back to 1.3.2".
+
+**Host feed.** Each release also publishes the standalone host and a JSON feed beside the appcast
+(`scripts/release/host.sh`): `native-host-<build>-macos-universal` (Developer ID signed, hardened
+runtime, notarized; a bare binary can't be stapled, so Gatekeeper finds the ticket online),
+`native-host-<build>-linux-<arch>` once the host builds on Linux (TODO: the disabled `linux-host`
+jobs in the workflows), and `host-feed.json` (`host-feed-beta.json` for betas, uploaded to the latest
+stable release like the appcast) with `host-feed.json.sig`, a detached Ed25519 signature made with
+the appcast's key. The feed lists each binary's platform, architecture, URL, size, SHA-256 and its
+own signature (schema in `HostUpdateFeed`). The macOS host carries its version, channel, feed URL
+and public key in an embedded Info.plist (`-sectcreate __TEXT __info_plist`); Linux builds will
+take them from a generated source file (TODO(linux)).
 
 ## Configuration
 

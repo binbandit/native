@@ -68,4 +68,7 @@ struct LinkWelcome: Codable, Sendable {
     var deviceID: UUID?
     var verification: VerificationCode?
     var grants: LinkGrants?
+    /// With `paired`: every address the host has, so a device that paired by code (and only knew
+    /// the Bonjour name) can reach it off the local network too.
+    var addresses: [LinkAddress]?
 }

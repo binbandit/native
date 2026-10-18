@@ -18,8 +18,4 @@ public enum AppIconVariant: String, CaseIterable, Sendable {
         let name = self == .stable ? "original" : rawValue
         return "AppIcon-\(name)-\(isDark ? "dark" : "light")"
     }
-
-    public func halloweenImageName(isDark: Bool) -> String {
-        "AppIcon-halloween-\(rawValue)-\(isDark ? "dark" : "light")"
-    }
 }

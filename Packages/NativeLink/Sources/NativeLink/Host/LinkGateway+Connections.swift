@@ -155,7 +155,10 @@ extension LinkGateway {
         registry.update(device.id) { $0.lastSeen = configuration.now() }
         save()
         do {
-            try channel.send(LinkWelcome(status: welcome, deviceID: device.id, grants: device.grants))
+            try channel.send(
+                LinkWelcome(
+                    status: welcome, deviceID: device.id, grants: device.grants,
+                    addresses: welcome == .paired ? status.addresses : nil))
         } catch {
             return channel.close()
         }
