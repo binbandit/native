@@ -38,19 +38,19 @@
               "value": true
             }
           ],
-          "image-name": "painted-interlock.png",
-          "name": "Painted Native interlock",
+          "image-name": "flat-interlock.png",
+          "name": "Flat Native interlock",
           "position": {
-            "scale": 0.5813040062843676,
+            "scale": 0.6739526411657559,
             "translation-in-points": [
-              -0.2906520031421838,
-              9.093479968578162
+              -0.0,
+              -16.64298724954463
             ]
           }
         }
       ],
       "lighting": "individual",
-      "name": "Matariki · painted Native interlock",
+      "name": "Matariki · flat Native interlock",
       "refractivity-specializations": [
         {
           "appearance": "tinted",
@@ -62,8 +62,8 @@
         }
       ],
       "shadow": {
-        "kind": "neutral",
-        "opacity": 0.18
+        "kind": "none",
+        "opacity": 0
       },
       "translucency-specializations": [
         {

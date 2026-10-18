@@ -75,12 +75,15 @@ public struct SessionState: Sendable {
     /// Records a prompt the user sent. Agents don't echo live prompts back, only on replay.
     /// `steered` marks a message added to a turn already in progress; any other prompt starts a live
     /// turn, timed from `date` until `endTurn`.
-    public mutating func appendUserMessage(_ text: String, steered: Bool = false, at date: Date = .now) {
+    public mutating func appendUserMessage(
+        _ text: String, attachments: [MessageAttachment] = [], steered: Bool = false, at date: Date = .now
+    ) {
         if !steered {
             openTurn = items.count
             turnClocks[items.count] = TurnClock(startedAt: date)
         }
-        let message = TranscriptMessage(role: .user, text: text, wasSteered: steered, startedAt: date, updatedAt: date)
+        var message = TranscriptMessage(role: .user, text: text, wasSteered: steered, startedAt: date, updatedAt: date)
+        message.attachments = attachments
         items.append(.message(message))
     }
 
@@ -147,6 +150,21 @@ public struct SessionState: Sendable {
     // MARK: - Folding
 
     private mutating func appendChunk(_ chunk: ContentChunk, role: TranscriptMessage.Role, at date: Date?) {
+        // A replayed prompt's files and images show with it, not as their paths in its text.
+        if role == .user, let attachment = MessageAttachment(chunk.content) {
+            if case .message(var last) = items.last, last.role == .user,
+                chunk.messageId == nil || chunk.messageId == last.messageID
+            {
+                last.attachments.append(attachment)
+                items[items.count - 1] = .message(last)
+            } else {
+                var message = TranscriptMessage(
+                    role: .user, text: "", messageID: chunk.messageId, startedAt: date, updatedAt: date)
+                message.attachments = [attachment]
+                items.append(.message(message))
+            }
+            return
+        }
         let text: String
         switch chunk.content {
         case .text(let string): text = string
@@ -277,6 +295,8 @@ public struct TranscriptMessage: Hashable, Sendable {
     public var messageID: String?
     /// A user message sent into a turn that was already running.
     public var wasSteered = false
+    /// Files and images that went with a user message.
+    public var attachments: [MessageAttachment] = []
     /// When a live message began and last grew; nil for replayed history.
     public var startedAt: Date?
     public var updatedAt: Date?

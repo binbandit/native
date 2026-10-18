@@ -32,7 +32,8 @@ struct AccentSettingsRow: View {
             SettingsSelect(
                 label: "Accent",
                 selection: $selection,
-                options: [.init(value: "", title: "Match app icon")] + accents.map { .init(value: $0.id, title: $0.name) },
+                options: [.init(value: "", title: "Match app icon")]
+                    + accents.map { .init(value: $0.id, title: $0.name) },
                 width: SettingsMetrics.selectWidth * 1.6
             )
         }

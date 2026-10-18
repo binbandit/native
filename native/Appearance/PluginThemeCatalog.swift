@@ -29,7 +29,9 @@ struct PluginThemeCatalog {
     }
 
     /// One plugin's themes, checked: the usable ones, named "Theme (Plugin)", and why the others aren't.
-    static func check(_ manifest: PluginManifest) -> (codeThemes: [CodeTheme], accents: [DSAccentPalette], problems: [ThemeProblem]) {
+    static func check(
+        _ manifest: PluginManifest
+    ) -> (codeThemes: [CodeTheme], accents: [DSAccentPalette], problems: [ThemeProblem]) {
         var codeThemes: [CodeTheme] = []
         var accents: [DSAccentPalette] = []
         var problems: [ThemeProblem] = []
@@ -87,6 +89,7 @@ extension DSAccentPalette {
                 accent: hex(swatch.accent), hover: hex(swatch.hover), pressed: hex(swatch.pressed),
                 text: hex(swatch.text), onAccent: hex(swatch.onAccent), subtle: hex(swatch.subtle))
         }
-        self.init(id: accent.id, name: "\(accent.name) (\(plugin))", light: swatch(accent.light), dark: swatch(accent.dark))
+        self.init(
+            id: accent.id, name: "\(accent.name) (\(plugin))", light: swatch(accent.light), dark: swatch(accent.dark))
     }
 }

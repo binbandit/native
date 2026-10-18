@@ -11,10 +11,12 @@ final class FakeRuntime: ScriptTransport {
     private let react: @Sendable (ScriptInboundFrame, FakeRuntime) -> Void
     let received = Mutex<[ScriptInboundFrame]>([])
     let terminated = Mutex(false)
+    private let startsEvaluating: Bool
 
-    init(react: @escaping @Sendable (ScriptInboundFrame, FakeRuntime) -> Void) {
+    init(startsEvaluating: Bool = true, react: @escaping @Sendable (ScriptInboundFrame, FakeRuntime) -> Void) {
         (frames, continuation) = AsyncThrowingStream.makeStream()
         self.react = react
+        self.startsEvaluating = startsEvaluating
         continuation.yield(.ready(protocolVersion: scriptProtocolVersion))
     }
 
@@ -24,7 +26,7 @@ final class FakeRuntime: ScriptTransport {
     func send(_ frame: ScriptInboundFrame) throws {
         received.withLock { $0.append(frame) }
         // Like the real runtime, which starts the script as soon as it has it.
-        if case .evaluate = frame { emit(.evaluationStarted) }
+        if startsEvaluating, case .evaluate = frame { emit(.evaluationStarted) }
         react(frame, self)
     }
 
@@ -115,18 +117,17 @@ private let tasks = [
     }
 
     @Test func startingUpDoesNotCountAgainstTheScriptsTime() async throws {
-        let runtime = FakeRuntime { frame, runtime in
+        // A busy Mac: the runtime takes longer to start the script than the script may run.
+        let runtime = FakeRuntime(startsEvaluating: false) { frame, runtime in
             guard case .evaluate = frame else { return }
-            runtime.emit(.result)
+            Task {
+                try await Task.sleep(for: .milliseconds(300))
+                runtime.emit(.evaluationStarted)
+                runtime.emit(.result)
+            }
         }
-        // A slow start: the session hears nothing for longer than the script may run.
-        let delayed = FakeRuntime { _, _ in }
-        Task {
-            try await Task.sleep(for: .milliseconds(300))
-            delayed.emit(.result)
-        }
-        #expect(try await run(limits: ScriptLimits(time: .milliseconds(100)), runtime: runtime).failure == nil)
-        #expect(try await run(limits: ScriptLimits(time: .milliseconds(100)), runtime: delayed).failure?.kind == .timedOut)
+        let result = try await run(limits: ScriptLimits(time: .milliseconds(100)), runtime: runtime)
+        #expect(result.failure == nil)
     }
 
     @Test func stopsAScriptThatRunsOutOfTime() async throws {

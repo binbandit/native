@@ -315,3 +315,11 @@ installing atomically through a symlink swap and rolling back a build that doesn
 can trigger an install but never choose what's installed. No new dependency: CryptoKit verifies on
 Apple platforms; Linux will need swift-crypto, recorded when the host first builds there. See
 `docs/releasing.md` ("Remote updates").
+
+## 2026-10-18: Organizations manage Native through one policy layer; telemetry is opt-in and redirectable
+
+Organizations configure Native with standard managed preferences (configuration profiles) that feed a
+single `NativePolicy`; every feature asks it what's allowed, and Settings shows managed values as locked.
+Native's own telemetry is anonymous product usage only, opt-in, never containing prompts, code, paths or
+commands, and can be forced off by an organization, which can instead send the same events plus audit
+events to its own OpenTelemetry collector. Design: `docs/enterprise.md`.

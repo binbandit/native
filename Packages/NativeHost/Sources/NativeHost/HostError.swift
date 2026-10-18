@@ -8,6 +8,7 @@ enum MetaKey {
     static let bootTime = "boot_time"
     static let cleanShutdown = "clean_shutdown"
     static let restartReason = "restart_reason"
+    static let journaledRollback = "journaled_rollback"
 }
 
 enum HostError: Error, LocalizedError {
@@ -20,6 +21,7 @@ enum HostError: Error, LocalizedError {
     case permissionNotPending
     /// The client isn't trusted with this (a paired device without the grant).
     case notAuthorized(String)
+    case updateUnavailable(String)
 
     var errorDescription: String? {
         switch self {
@@ -31,6 +33,7 @@ enum HostError: Error, LocalizedError {
         case .emptyMessage: "There's nothing to send."
         case .permissionNotPending: "That request was already answered."
         case .notAuthorized(let action): "This device isn't allowed to \(action) on this host."
+        case .updateUnavailable(let reason): reason
         }
     }
 

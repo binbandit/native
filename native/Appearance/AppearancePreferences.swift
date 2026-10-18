@@ -18,6 +18,8 @@ enum AppearancePreferences {
     static let codeFontSizeKey = "appearance.codeFont.size"
     static let codeLineHeightKey = "appearance.codeFont.lineHeight"
     static let codeLigaturesKey = "appearance.codeFont.ligatures"
+    /// The terminal uses the code font and size too (`TerminalSettings.fontFamily`, `fontSize`).
+    static let terminalUsesCodeFontKey = "appearance.codeFont.terminal"
 }
 
 extension View {

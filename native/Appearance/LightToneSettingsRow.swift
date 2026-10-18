@@ -21,7 +21,8 @@ struct LightToneSettingsRow: View {
             SettingsRow(
                 id: Self.rowID,
                 "Light mode",
-                description: Text("Draw light mode on crisp Paper white, or on Wool, a warm off-white that’s easier on the eyes.")
+                description: Text(
+                    "Draw light mode on crisp Paper white, or on Wool, a warm off-white that’s easier on the eyes.")
             ) {
                 SettingsSelect(
                     label: "Light mode",

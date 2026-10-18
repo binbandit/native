@@ -49,5 +49,6 @@ coordinator keeps this current.
 | iPhone companion app (several hosts at once, each kept fully separate) | new target, host client | Designed (`docs/companion.md`, `research/companion-app.md`). Needs durable host Phase 2, paired network transport and QR pairing first |
 | Search across all agent runs | `Packages/Search`, `native/Search` | SQLite FTS5 index of every session, live and past (via per-agent history readers in plugins); later served by the host for iPad and iPhone |
 | What's New sheet after updates | `native/WhatsNew` | Orca-style highlights shown once per version, never on a fresh install; Help ▸ What's New reopens it |
+| Organizations: managed policy, our telemetry (opt-in), their own telemetry and audit | `Packages/NativePolicy`, `Packages/Telemetry`, Settings | `docs/enterprise.md` |
 | iPad app | app target | After the host protocol lands (`docs/architecture.md`) |
 | Expeditions (Factory's missions, rebranded) | `Packages/Expeditions`, `native/Expeditions` | Factory's concept under Native's own name, composed from orchestration, goals, workflows and worktrees |

@@ -59,7 +59,8 @@ private struct CodeThemePreview: View {
                     label: appearance == .light ? "Light mode code theme" : "Dark mode code theme",
                     selection: $selection,
                     options: themes.filter { $0.palette(for: appearance) != nil }
-                        .map { .init(value: $0.id.rawValue, title: $0.name) }
+                        .map { .init(value: $0.id.rawValue, title: $0.name) },
+                    width: SettingsMetrics.selectWidth * 1.5
                 )
             }
             VStack(alignment: .leading, spacing: DS.Space.sm) {

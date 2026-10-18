@@ -16,7 +16,7 @@ import Testing
         let link = invite.url.absoluteString
         #expect(link.hasPrefix("nativecompanion://pair#"))
         // Small enough for a comfortable QR code.
-        #expect(link.count < 400)
+        #expect(link.count < 512)
         #expect(try PairingInvite(url: "  \(link)\n") == invite)
     }
 

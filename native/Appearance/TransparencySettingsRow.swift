@@ -22,7 +22,8 @@ struct TransparencySettingsRow: View {
             SettingsRow(
                 id: Self.rowID,
                 "Transparency",
-                description: Text("How much of your desktop and work shows through the sidebar, popovers and the composer."),
+                description: Text(
+                    "How much of your desktop and work shows through the sidebar, popovers and the composer."),
                 detail: reduceTransparency ? Text(Self.reduceTransparencyNote) : nil
             ) {
                 SettingsSelect(

@@ -7,11 +7,13 @@ struct NotificationSettingsPage: View {
     static let thresholdRow = SettingsRowID("notifications.threshold")
     static let needsYouRow = SettingsRowID("notifications.needsYou")
     static let limitsRow = SettingsRowID("notifications.limits")
+    static let dockBadgeRow = SettingsRowID("notifications.dock-badge")
 
     @AppStorage(NotificationPreferences.longWorkKey) private var notifiesLongWork = true
     @AppStorage(NotificationPreferences.longWorkSecondsKey) private var longWorkSeconds = NotificationPreferences.defaultLongWorkSeconds
     @AppStorage(NotificationPreferences.needsYouKey) private var notifiesNeedsYou = true
     @AppStorage(NotificationPreferences.usageLimitsKey) private var notifiesUsageLimits = true
+    @Bindable private var dockBadge = DockBadgePreference.shared
 
     var body: some View {
         SettingsPage {
@@ -44,6 +46,15 @@ struct NotificationSettingsPage: View {
                     description: Text("When an agent nears or hits its usage limit, with Resume at Reset, and when a snoozed limit resets. When off, limits show only in the window.")
                 ) {
                     SettingsSwitch("Usage limits", isOn: $notifiesUsageLimits)
+                }
+                SettingsRow(
+                    id: Self.dockBadgeRow, "Dock badge",
+                    description: Text("Show a count on Native's icon in the Dock.")
+                ) {
+                    SettingsSelect(
+                        label: "Dock badge", selection: $dockBadge.mode,
+                        options: DockBadgePreference.Mode.allCases.map { .init(value: $0, title: $0.title) },
+                        width: SettingsMetrics.selectWidth * 1.3)
                 }
             }
         }

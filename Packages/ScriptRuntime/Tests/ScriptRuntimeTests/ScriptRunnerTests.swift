@@ -56,10 +56,12 @@ struct ScriptRunnerTests {
 
     @Test func toolsLearnWhereTheyWereCalled() async throws {
         let sites = Mutex<[ScriptCallSite?]>([])
-        let probe = ScriptBinding(path: ["where"], siteHandler: { _, site in
-            sites.withLock { $0.append(site) }
-            return nil
-        })
+        let probe = ScriptBinding(
+            path: ["where"],
+            siteHandler: { _, site in
+                sites.withLock { $0.append(site) }
+                return nil
+            })
         let result = try await runner.run("text('first');\nawait tools.where({});", bindings: [probe])
         #expect(result.failure == nil)
         #expect(sites.withLock { $0 }.map { $0?.line } == [2])

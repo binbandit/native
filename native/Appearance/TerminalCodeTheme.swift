@@ -4,8 +4,9 @@ import Terminal
 
 extension View {
     /// Gives the terminal the user's code themes as its app theme (`TerminalStore.appTheme`), the one
-    /// input the terminal takes from them. The terminal decides precedence: the user's Ghostty
-    /// settings, or colors imported from Ghostty, win over it.
+    /// input the terminal takes from them; the terminal decides precedence (the user's Ghostty
+    /// settings, or colors imported from Ghostty, win). With "Use the same font in the terminal" on,
+    /// it also keeps the terminal's font family and size on the code font.
     func terminalCodeTheme(_ terminals: TerminalStore) -> some View {
         modifier(TerminalCodeThemeModifier(terminals: terminals))
     }
@@ -15,12 +16,30 @@ private struct TerminalCodeThemeModifier: ViewModifier {
     let terminals: TerminalStore
 
     @Environment(\.dsCodeThemes) private var codeThemes
+    @Environment(\.dsCodeFont) private var codeFont
+    @AppStorage(AppearancePreferences.terminalUsesCodeFontKey) private var terminalUsesCodeFont = false
 
     func body(content: Content) -> some View {
-        content.onChange(of: codeThemes, initial: true) { _, themes in
-            terminals.appTheme = TerminalTheme(themes)
-        }
+        content
+            .onChange(of: codeThemes, initial: true) { _, themes in
+                terminals.appTheme = TerminalTheme(themes)
+            }
+            .onChange(of: TerminalFontSync(font: codeFont, isOn: terminalUsesCodeFont), initial: true) { _, sync in
+                guard sync.isOn else { return }
+                var settings = terminals.preferences.settings
+                // The terminal's nil family is the app's code font, Geist Mono.
+                settings.fontFamily = sync.font.family.isEmpty ? nil : sync.font.family
+                settings.fontSize = sync.font.size
+                if settings != terminals.preferences.settings {
+                    terminals.preferences.settings = settings
+                }
+            }
     }
+}
+
+private struct TerminalFontSync: Equatable {
+    let font: DSCodeFont
+    let isOn: Bool
 }
 
 extension TerminalTheme {

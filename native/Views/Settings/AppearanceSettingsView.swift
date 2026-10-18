@@ -1,8 +1,12 @@
 import AppAppearance
 import SwiftUI
 
+/// The app icon: what the Dock shows now, the base icon (a built-in theme or a plugin's icon set, in
+/// the design system's picker), and its light or dark appearance. A celebration covers the base while
+/// it lasts; Settings ▸ Celebrations is where it's chosen or put away.
 struct AppearanceSettingsView: View {
     @Environment(AppIconPreferences.self) private var preferences
+    @Environment(SettingsPresentation.self) private var settings: SettingsPresentation?
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
@@ -30,6 +34,18 @@ struct AppearanceSettingsView: View {
             Divider()
 
             HStack(spacing: DS.Space.xl) {
+                Text("Icon")
+                Spacer(minLength: 0)
+                IconThemePicker(
+                    "App icon",
+                    selection: Binding(get: { preferences.effectiveChoice }, set: { preferences.select($0) }),
+                    options: preferences.options.map(Self.pickerOption),
+                    previewScheme: preferences.isDark ? .dark : .light
+                )
+                .accessibilityIdentifier("icon-theme-picker")
+            }
+
+            HStack(spacing: DS.Space.xl) {
                 Text("Icon appearance")
                 Spacer(minLength: 0)
                 if preferences.usesSystemIcon {
@@ -48,86 +64,41 @@ struct AppearanceSettingsView: View {
                 }
             }
 
-            Text(
-                preferences.usesSystemIcon
-                    ? "Default, Dark, Clear and Tinted appearances follow your Mac’s settings."
-                    : preferences.isCelebrating
-                        ? "Your chosen icon returns when the celebration ends. Restore it now in Celebrations."
-                        : "Choose Original to use your Mac’s Clear or Tinted icons."
-            )
-            .font(.dsCallout)
-            .foregroundStyle(.secondary)
-
-            LazyVGrid(
-                columns: Array(repeating: GridItem(.flexible(), spacing: DS.Space.lg), count: DS.AppIcon.columns),
-                spacing: DS.Space.lg
-            ) {
-                ForEach(preferences.options) { option in
-                    optionButton(option)
+            HStack(spacing: DS.Space.md) {
+                Text(note)
+                    .font(.dsCallout)
+                    .foregroundStyle(.secondary)
+                if preferences.isCelebrating, let settings {
+                    Button("Celebrations…") { settings.open(.celebrations) }
+                        .buttonStyle(.ds(.ghost, size: .medium))
                 }
             }
-
         }
         .padding(DS.Space.xxl)
         .animation(reduceMotion ? nil : .dsQuick, value: preferences.currentImage)
     }
 
-    private func optionButton(_ option: AppIconOption) -> some View {
-        let selected = preferences.effectiveChoice == option.id
-
-        return Button {
-            preferences.select(option.id)
-        } label: {
-            VStack(spacing: DS.Space.xs) {
-                previewImage(option.preview)
-                    .resizable()
-                    .interpolation(.high)
-                    .scaledToFit()
-                    .frame(width: DS.AppIcon.tile, height: DS.AppIcon.tile)
-                HStack(spacing: DS.Space.xs) {
-                    Text(option.title)
-                    if selected {
-                        Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(.dsAccent)
-                    }
-                }
-                .font(.dsCallout)
-                .frame(height: DS.AppIcon.labelHeight)
-                if let note = option.limitation ?? option.pluginName {
-                    Text(note)
-                        .font(.dsCaption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-            }
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, DS.AppIcon.tilePadding)
-            .background(
-                selected ? Color.dsAccent.opacity(DS.AppIcon.selectedOpacity) : .clear,
-                in: .rect(cornerRadius: DS.Radius.panel)
-            )
-            .overlay {
-                RoundedRectangle(cornerRadius: DS.Radius.panel)
-                    .strokeBorder(selected ? Color.dsAccent : .clear, lineWidth: DS.AppIcon.selectedBorder)
-            }
-            .contentShape(.rect)
+    private var note: String {
+        if preferences.isCelebrating {
+            return "A celebration is on your icon. Your chosen icon returns when it ends."
         }
-        .buttonStyle(.plain)
-        .accessibilityLabel(option.title)
-        .accessibilityValue(selected ? "Selected" : option.limitation ?? "")
-        .accessibilityAddTraits(selected ? .isSelected : [])
-        .accessibilityIdentifier("icon-theme-\(option.id.rawValue)")
-        .help("Use the \(option.title) icon")
-    }
-
-    private func previewImage(_ preview: AppIconOption.Preview) -> Image {
-        switch preview {
-        case .bundle: PlatformAppIcon.bundledPreview
-        case .image(let icons): PlatformAppIcon.preview(icons.image(isDark: preferences.isDark))
-        }
+        return preferences.usesSystemIcon
+            ? "Default, Dark, Clear and Tinted appearances follow your Mac’s settings."
+            : "Choose Original to use your Mac’s Clear or Tinted icons."
     }
 
     private var currentPreview: Image {
         preferences.currentImage.map(PlatformAppIcon.preview) ?? PlatformAppIcon.bundledPreview
+    }
+
+    private static func pickerOption(_ option: AppIconOption) -> IconThemeOption<AppIconOption.ID> {
+        let (light, dark) =
+            switch option.preview {
+            case .bundle: (PlatformAppIcon.bundledPreview, PlatformAppIcon.bundledPreview)
+            case .image(let icons): (PlatformAppIcon.preview(icons.light), PlatformAppIcon.preview(icons.dark))
+            }
+        return IconThemeOption(
+            id: option.id, title: option.title, lightImage: light, darkImage: dark, badge: option.pluginName,
+            note: option.limitation)
     }
 }
