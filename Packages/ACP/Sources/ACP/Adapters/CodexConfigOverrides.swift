@@ -9,7 +9,9 @@ import Foundation
 /// `mcp_servers.<name>.enabled` keys only win when they happen to apply after it.
 /// docs/agent-session-overrides.md has the details and the adapter change that fixes it.
 public struct CodexConfigOverrides: Hashable, Sendable {
-    /// MCP servers by the name Codex gives them.
+    /// MCP servers by the name Codex gives them, and only those its own config defines: any other
+    /// name becomes an entry with no command, and Codex then fails every new session ("Internal
+    /// error"). `MCPLibrary.launchPolicy` names only an agent's configured servers for this reason.
     public var disabledMCPServers: Set<String>
     /// Skills by the path of their SKILL.md.
     public private(set) var disabledSkillFiles: Set<String>

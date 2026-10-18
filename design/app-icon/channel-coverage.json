@@ -15,11 +15,8 @@
     "TintedDark"
   ],
   "editable_sources": 212,
-  "exports": 1260,
-  "errors": [
-    "/Users/brayden/Developer/native/native/design/app-icon/channel-themes/halloween beta: Beta cue missing",
-    "/Users/brayden/Developer/native/native/design/app-icon/channel-themes/original nightly: Nightly cue missing"
-  ],
+  "exports": 1272,
+  "errors": [],
   "entries": [
     {
       "family": "celebrations/ada-lovelace-day",
@@ -475,7 +472,7 @@
       "family": "channel-themes/halloween",
       "channels": {
         "stable": "complete",
-        "beta": "incomplete",
+        "beta": "complete",
         "nightly": "complete",
         "dev": "complete"
       }
@@ -485,7 +482,7 @@
       "channels": {
         "stable": "complete",
         "beta": "complete",
-        "nightly": "incomplete",
+        "nightly": "complete",
         "dev": "complete"
       }
     },
@@ -498,5 +495,10 @@
         "dev": "complete"
       }
     }
-  ]
+  ],
+  "system_appearances": {
+    "clear": "ClearLight and ClearDark provided for all four channels",
+    "tinted": "TintedLight and TintedDark provided for all four channels",
+    "glass": "Native system appearance; the archived Glass.icon exploration is not an additional selectable theme"
+  }
 }
