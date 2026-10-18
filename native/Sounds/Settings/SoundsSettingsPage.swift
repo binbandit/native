@@ -1,18 +1,19 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Settings › Sounds, in the reference app's row style: one switch for all sounds, their volume, Focus and
-/// timing, then each moment with its own sound, a Test button and a switch.
+/// Settings › Sounds: one switch for all sounds, their volume, Focus, timing and the folder of the
+/// user's own sounds, then each moment with its own sound, a Test button and a switch.
 struct SoundsSettingsPage: View {
     static let enabledRow = SettingsRowID("sounds.enabled")
     static let volumeRow = SettingsRowID("sounds.volume")
     static let focusRow = SettingsRowID("sounds.focus")
     static let timingRow = SettingsRowID("sounds.timing")
+    static let folderRow = SettingsRowID("sounds.folder")
     static func triggerRow(_ trigger: SoundTrigger) -> SettingsRowID {
         SettingsRowID("sounds.trigger.\(trigger.rawValue)")
     }
 
-    /// the reference app's sound select (`w-[190px]`), wider than its other selects for the longer names.
+    /// The sound selects, wider than other settings selects for the longer names.
     static let selectWidth: CGFloat = 190
 
     let sounds: NotificationSounds
@@ -61,9 +62,11 @@ struct SoundsSettingsPage: View {
                     )
                 }
                 .disabled(!preferences.isEnabled)
+                SoundsFolderRow(sounds: sounds)
+                    .disabled(!preferences.isEnabled)
             }
 
-            SettingsSubheading("Play a sound when", note: conductorNote)
+            SettingsSubheading("Play a sound when")
             SettingsRowGroup {
                 ForEach(SoundTrigger.allCases) { trigger in
                     SettingsRow(id: Self.triggerRow(trigger), trigger.title, description: Text(trigger.detail)) {
@@ -82,7 +85,7 @@ struct SoundsSettingsPage: View {
                 sounds.addSounds(at: urls, for: trigger)
             }
         }
-        // the reference app's folder or a custom file may have moved since the page was last open.
+        // The sounds folder's files or a custom file may have changed since the page was last open.
         .onAppear { sounds.reloadCatalog() }
     }
 
@@ -102,12 +105,6 @@ struct SoundsSettingsPage: View {
                 preferences.setEnabled($0, for: trigger)
             })
         }
-    }
-
-    private var conductorNote: String? {
-        guard !sounds.catalog.conductor.isEmpty else { return nil }
-        let folder = (ConductorSounds.folder.path(percentEncoded: false) as NSString).abbreviatingWithTildeInPath
-        return "the reference app's sounds play from your copy in \(folder)."
     }
 
     /// When Native can't see Focus, says so and what that means, instead of quietly not working.

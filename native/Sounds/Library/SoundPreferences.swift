@@ -23,7 +23,7 @@ final class SoundPreferences {
         }
     }
 
-    /// 0...1. At the default, Native's sounds play at the level the reference app plays its chime.
+    /// 0...1. The default is the level Native's sounds are tuned for (`ChimeSynthesizer.loudness`).
     var volume: Double {
         didSet { defaults.set(volume, forKey: Key.volume) }
     }
@@ -40,6 +40,11 @@ final class SoundPreferences {
         didSet { defaults.set(try? JSONEncoder().encode(customSounds), forKey: Key.customSounds) }
     }
 
+    /// The folder whose audio files the sound picker offers; nil until the user chooses one.
+    var soundsFolder: SoundsFolder? {
+        didSet { defaults.set(soundsFolder.flatMap { try? JSONEncoder().encode($0) }, forKey: Key.soundsFolder) }
+    }
+
     static let defaultVolume = 0.7
 
     @ObservationIgnored private let defaults: UserDefaults
@@ -54,6 +59,7 @@ final class SoundPreferences {
         static let triggers = "sounds.triggers"
         static let timing = "sounds.timing"
         static let customSounds = "sounds.customSounds"
+        static let soundsFolder = "sounds.folder"
     }
 
     init(defaults: UserDefaults = .standard) {
@@ -72,6 +78,7 @@ final class SoundPreferences {
             ?? Set(SoundTrigger.allCases)
         timing = defaults.string(forKey: Key.timing).flatMap(SoundTiming.init(rawValue:)) ?? .unlessViewing
         customSounds = defaults.data(forKey: Key.customSounds).flatMap { try? JSONDecoder().decode([CustomSound].self, from: $0) } ?? []
+        soundsFolder = defaults.data(forKey: Key.soundsFolder).flatMap { try? JSONDecoder().decode(SoundsFolder.self, from: $0) }
     }
 
     /// Remembers files the user picked and returns them, skipping ones already added.

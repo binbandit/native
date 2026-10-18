@@ -1,6 +1,6 @@
 /// When a triggered sound actually plays.
 nonisolated enum SoundTiming: String, CaseIterable, Identifiable, Sendable {
-    /// the reference app's policy: stay quiet only while the user is looking at that very session.
+    /// Stay quiet only while the user is looking at that very session.
     case unlessViewing
     case inBackground
     case always

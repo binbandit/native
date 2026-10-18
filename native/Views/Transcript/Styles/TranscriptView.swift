@@ -28,39 +28,45 @@ struct TranscriptView: View {
             session: session, rows: rows, openSubagent: openSubagent,
             sessionTitle: { model.session(id: $0)?.displayTitle }
         )
-        ScrollView {
-            if let containerWidth {
-                column(transcript, in: containerWidth)
-            } else {
-                // Keeps the scroll view full width while the rows wait for its size; empty, it has none.
-                Color.clear.frame(maxWidth: .infinity, maxHeight: 0)
+        // Sized by the space it's given, never by its rows. The window works out its minimum size by
+        // laying out its content at no width, on every update; a transcript laid out that narrow
+        // (each line of text wrapped a character at a time) took most of the main thread while a
+        // reply streamed. An overlay is laid out only at its base's final size.
+        Color.clear.overlay {
+            ScrollView {
+                if let containerWidth {
+                    column(transcript, in: containerWidth)
+                } else {
+                    // Keeps the scroll view full width while the rows wait for its size; empty, it has none.
+                    Color.clear.frame(maxWidth: .infinity, maxHeight: 0)
+                }
             }
-        }
-        // Start at the latest message and stay there as rows grow. Short transcripts sit at the top:
-        // bottom-aligning them (the `.alignment` role) pads the top by an inset that lags the content
-        // height by one pass, so every new row briefly overflows and flashes a legacy scroller.
-        .defaultScrollAnchor(.bottom, for: .initialOffset)
-        .defaultScrollAnchor(.bottom, for: .sizeChanges)
-        .scrollPosition($position)
-        // Rows scrolled up under the title bar stay legible through the soft edge, right behind the
-        // session's title; the hard edge keeps the title on a plain backing.
-        .scrollEdgeEffectStyle(.hard, for: .top)
-        // The scroll view's own size, reported from the first layout on (scroll geometry only
-        // reports changes, and a session switched to is laid out at its final size from the start).
-        .onGeometryChange(for: CGSize.self) { proxy in
-            proxy.size
-        } action: { size in
-            // A view that's just been made (a session reopened, or back from Settings) is first laid
-            // out at a sliver with no height or no width. Rows measured that narrow come out
-            // thousands of points tall, and the lazy stack keeps them as its estimates, so the
-            // transcript opened mid-way or past its end, blank. The rows wait for a real size.
-            guard size.width > 0, size.height > 0 else { return }
-            containerWidth = size.width
-        }
-        .onScrollGeometryChange(for: Bool.self) { [threshold = DS.Space.xxxl] geometry in
-            geometry.visibleRect.maxY < geometry.contentSize.height - threshold
-        } action: { _, isAway in
-            isAwayFromLatest = isAway
+            // Start at the latest message and stay there as rows grow. Short transcripts sit at the top:
+            // bottom-aligning them (the `.alignment` role) pads the top by an inset that lags the content
+            // height by one pass, so every new row briefly overflows and flashes a legacy scroller.
+            .defaultScrollAnchor(.bottom, for: .initialOffset)
+            .defaultScrollAnchor(.bottom, for: .sizeChanges)
+            .scrollPosition($position)
+            // Rows scrolled up under the title bar stay legible through the soft edge, right behind the
+            // session's title; the hard edge keeps the title on a plain backing.
+            .scrollEdgeEffectStyle(.hard, for: .top)
+            // The scroll view's own size, reported from the first layout on (scroll geometry only
+            // reports changes, and a session switched to is laid out at its final size from the start).
+            .onGeometryChange(for: CGSize.self) { proxy in
+                proxy.size
+            } action: { size in
+                // A view that's just been made (a session reopened, or back from Settings) is first laid
+                // out at a sliver with no height or no width. Rows measured that narrow come out
+                // thousands of points tall, and the lazy stack keeps them as its estimates, so the
+                // transcript opened mid-way or past its end, blank. The rows wait for a real size.
+                guard size.width > 0, size.height > 0 else { return }
+                containerWidth = size.width
+            }
+            .onScrollGeometryChange(for: Bool.self) { [threshold = DS.Space.xxxl] geometry in
+                geometry.visibleRect.maxY < geometry.contentSize.height - threshold
+            } action: { _, isAway in
+                isAwayFromLatest = isAway
+            }
         }
         .overlay(alignment: .bottom) {
             if showsJumpToLatest {

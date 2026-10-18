@@ -3,8 +3,9 @@ import os
 
 /// Plays one sound at a time; a new one cuts off the last, so a burst of events never stacks up.
 final class SoundPlayer {
-    /// the reference app plays its files at a fixed gain of 0.5. Scaling files by this makes them match
-    /// the reference app at the default volume, where Native's own sounds match it too.
+    /// Files play at half gain at the default volume, the level Native's own sounds are tuned to
+    /// match (`ChimeSynthesizer.loudness`), so switching between a file and a built-in sound never
+    /// jumps in level.
     static let fileGain = 0.5 / SoundPreferences.defaultVolume
 
     private var current: AVAudioPlayer?

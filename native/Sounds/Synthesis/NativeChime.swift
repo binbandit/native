@@ -4,11 +4,11 @@ import Foundation
 /// they're ours to distribute and cost nothing in the bundle; `ChimeSynthesizer` renders each once
 /// on first use.
 ///
-/// All keep what makes the reference app's chime pleasant (a nearly pure tone that dies away within about a
-/// second) and add a character of their own: `chime` is a rising fifth on glass, `soft` a felt
-/// mallet on wood, `bell` a small handbell. Two more say what happened by their shape, on the same
-/// glass and in the same room: `nudge`, a quick rising "hm?" for when an agent needs the user, and
-/// `fall`, a soft, damped falling minor third for when something didn't work.
+/// All keep what makes a notification chime pleasant (a nearly pure tone that dies away within
+/// about a second) and add a character of their own: `chime` is a rising fifth on glass, `soft` a
+/// felt mallet on wood, `bell` a small handbell. Two more say what happened by their shape, on the
+/// same glass and in the same room: `nudge`, a quick rising "hm?" for when an agent needs the user,
+/// and `fall`, a soft, damped falling minor third for when something didn't work.
 nonisolated enum NativeChime: String, CaseIterable, Identifiable, Sendable {
     case chime, nudge, fall, soft, bell
 
