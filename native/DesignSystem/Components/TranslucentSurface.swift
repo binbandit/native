@@ -73,7 +73,9 @@ private struct GlassBackground<GlassShape: Shape>: ViewModifier {
 
     func body(content: Content) -> some View {
         if let glass = transparency.controlGlass {
-            content.glassEffect(glass, in: shape)
+            content
+                .environment(\.dsOnGlass, true)
+                .glassEffect(glass, in: shape)
         } else {
             content
                 .background(.dsSurface, in: shape)

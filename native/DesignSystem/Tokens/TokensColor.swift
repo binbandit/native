@@ -142,8 +142,17 @@ nonisolated private enum DSPalette {
         woolAlpha: 0.07)
 
     static let separator = toned(dynamic("separator", light: 0xE8E8E8, dark: 0x2C2C2C), wool: 0xE6E1D8)
-    static let border = toned(dynamic("border", light: 0xCBCBCB, dark: 0x3E3E3E), wool: 0xCDC7BC)
-    static let borderHover = toned(dynamic("borderHover", light: 0x949494, dark: 0x4F4F4F), wool: 0x979084)
+    // On glass, the same step from the surface as a translucent wash (`DSGlassAwareStyle`).
+    static let border = onGlass(
+        toned(dynamic("border", light: 0xCBCBCB, dark: 0x3E3E3E), wool: 0xCDC7BC),
+        glass: toned(
+            dynamic("borderOnGlass", light: 0x000000, lightAlpha: 0.2, dark: 0xFFFFFF, darkAlpha: 0.17),
+            wool: 0x3B2B14, woolAlpha: 0.245))
+    static let borderHover = onGlass(
+        toned(dynamic("borderHover", light: 0x949494, dark: 0x4F4F4F), wool: 0x979084),
+        glass: toned(
+            dynamic("borderHoverOnGlass", light: 0x000000, lightAlpha: 0.42, dark: 0xFFFFFF, darkAlpha: 0.24),
+            wool: 0x3B2B14, woolAlpha: 0.51))
     static let borderStrong = toned(dynamic("borderStrong", light: 0x767676, dark: 0x616161), wool: 0x797266)
     static let borderInner = toned(dynamic("borderInner", light: 0xB2B2B2, dark: 0x2F2F2F), wool: 0xB4AEA3)
     // 3.3:1 on Paper's background, 3.4:1 on dark's, 3.5:1 on Wool's; the thumb (`surface`) keeps the
@@ -186,6 +195,11 @@ nonisolated private enum DSPalette {
                     opacity: woolAlpha
                 )
             ))
+    }
+
+    /// `base`, with `glass` in its place on Liquid Glass.
+    static func onGlass(_ base: Color, glass: Color) -> Color {
+        Color(DSGlassAwareStyle(base: base, glass: glass))
     }
 
     /// An sRGB color that picks its light or dark value from the resolving appearance (high-contrast

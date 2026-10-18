@@ -25,8 +25,10 @@ extension View {
     }
 }
 
-/// The sky, laid out on the icon's 1024-unit canvas and stretched to the frame.
-private struct NightSkyField: View {
+/// The sky, laid out on the icon's 1024-unit canvas and stretched to the frame. The moon draws once;
+/// the stars twinkle and the bats drift in Core Animation (`NightSkyTwinkleLayer`), so the sky costs
+/// nothing per frame.
+struct NightSkyField: View {
     let isHalloween: Bool
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -34,46 +36,45 @@ private struct NightSkyField: View {
 
     var body: some View {
         if reduceMotion {
-            canvas(time: nil)
+            canvas(drawsStars: true)
         } else {
-            TimelineView(.animation(minimumInterval: 1.0 / 30)) { context in
-                canvas(time: context.date.timeIntervalSinceReferenceDate)
+            ZStack {
+                canvas(drawsStars: false)
+                LayerMaskedView(content: Rectangle().fill(.foreground)) {
+                    NightSkyTwinkleLayer(isHalloween: isHalloween)
+                }
             }
         }
     }
 
-    private func canvas(time: TimeInterval?) -> some View {
+    /// The moon, and with `drawsStars` the stars and bats held still.
+    private func canvas(drawsStars: Bool) -> some View {
         Canvas { context, size in
             let unit = CGSize(width: size.width / 1024, height: size.height / 1024)
             // Shapes keep their proportions; only their positions stretch.
             let shapeScale = min(unit.width, unit.height)
-            for (index, star) in Self.stars.enumerated() {
-                let center = CGPoint(x: star.x * unit.width, y: star.y * unit.height)
-                let radius = max(star.radius * shapeScale, star.isDot ? 0.75 : 2)
-                context.opacity = Self.brightness(index: index, time: time)
-                let path =
-                    star.isDot
-                    ? Path(
-                        ellipseIn: CGRect(
-                            x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2))
-                    : Self.sparkle(center: center, radius: radius)
-                context.fill(path, with: .foreground)
+            if drawsStars {
+                context.opacity = Self.stillBrightness
+                for star in Self.stars {
+                    context.fill(star.path(unit: unit, scale: shapeScale), with: .foreground)
+                }
             }
             guard !isHalloween else {
                 HalloweenNight.draw(
                     in: context,
-                    moonCenter: CGPoint(x: 801 * unit.width, y: 174 * unit.height),
+                    moonCenter: Self.moonCenter(unit: unit),
                     scale: shapeScale,
                     isDark: colorScheme == .dark,
-                    time: time
+                    drawsFlyers: drawsStars
                 )
                 return
             }
             context.opacity = 0.7
             let moonHeight = 90 * shapeScale
+            let center = Self.moonCenter(unit: unit)
             let moonRect = CGRect(
-                x: 801 * unit.width - moonHeight * Crescent.aspectRatio / 2,
-                y: 174 * unit.height - moonHeight / 2,
+                x: center.x - moonHeight * Crescent.aspectRatio / 2,
+                y: center.y - moonHeight / 2,
                 width: moonHeight * Crescent.aspectRatio,
                 height: moonHeight
             )
@@ -81,17 +82,27 @@ private struct NightSkyField: View {
         }
     }
 
-    /// A slow twinkle, each star on its own phase and period; 0.55 for all with Reduce Motion.
-    private static func brightness(index: Int, time: TimeInterval?) -> Double {
-        guard let time else { return 0.55 }
-        let period = 3.2 + Double(index % 5) * 0.55
+    nonisolated static func moonCenter(unit: CGSize) -> CGPoint {
+        CGPoint(x: 801 * unit.width, y: 174 * unit.height)
+    }
+
+    /// Every star's brightness with Reduce Motion.
+    nonisolated static let stillBrightness = 0.55
+
+    /// How long a star takes to twinkle once; each has its own.
+    nonisolated static func twinklePeriod(index: Int) -> TimeInterval {
+        3.2 + Double(index % 5) * 0.55
+    }
+
+    /// A slow twinkle, each star on its own phase and period, `time` seconds in.
+    nonisolated static func brightness(index: Int, time: TimeInterval) -> Double {
         let phase = Double(index) * 1.618
-        let wave = 0.5 + 0.5 * sin(2 * .pi * time / period + phase)
+        let wave = 0.5 + 0.5 * sin(2 * .pi * time / twinklePeriod(index: index) + phase)
         return 0.25 + 0.5 * wave
     }
 
     /// The icon's four-point star: points at `radius`, waist at a quarter of it on the diagonals.
-    private static func sparkle(center: CGPoint, radius: CGFloat) -> Path {
+    nonisolated static func sparkle(center: CGPoint, radius: CGFloat) -> Path {
         let waist = radius / 4
         var path = Path()
         path.move(to: CGPoint(x: center.x, y: center.y - radius))
@@ -106,15 +117,23 @@ private struct NightSkyField: View {
         return path
     }
 
-    private struct Star {
+    nonisolated struct Star: Sendable {
         let x: Double
         let y: Double
         let radius: Double
         let isDot: Bool
+
+        /// The star's shape on a canvas `unit` points per icon unit, its size scaled by `scale`.
+        func path(unit: CGSize, scale: CGFloat) -> Path {
+            let center = CGPoint(x: x * unit.width, y: y * unit.height)
+            let radius = max(radius * scale, isDot ? 0.75 : 2)
+            let square = CGRect(x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2)
+            return isDot ? Path(ellipseIn: square) : NightSkyField.sparkle(center: center, radius: radius)
+        }
     }
 
     /// Sparkles and dots from `design/app-icon/Nightly.icon/Assets/night-sky.svg`.
-    private static let stars: [Star] = [
+    nonisolated static let stars: [Star] = [
         Star(x: 185, y: 204, radius: 16, isDot: false), Star(x: 849, y: 761, radius: 12, isDot: false),
         Star(x: 133, y: 160, radius: 7, isDot: false), Star(x: 299, y: 130, radius: 4, isDot: false),
         Star(x: 450, y: 195, radius: 5, isDot: false), Star(x: 610, y: 124, radius: 4, isDot: false),

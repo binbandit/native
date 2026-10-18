@@ -2,15 +2,17 @@ import SwiftUI
 
 /// The Halloween Nightly icon's sky (`HalloweenNightly.icon`): an orange full moon with craters and
 /// a bat across it, and two more bats flying near it. `NightSky` draws it in place of its crescent
-/// during the Halloween season; the bats drift slowly, and hold still with Reduce Motion.
+/// during the Halloween season; the bats drift slowly (`NightSkyTwinkleLayer`), and hold still with
+/// Reduce Motion.
 enum HalloweenNight {
-    /// Draws into a night-sky field laid out on the icon's 1024-unit canvas, around `moonCenter`.
+    /// Draws into a night-sky field laid out on the icon's 1024-unit canvas, around `moonCenter`;
+    /// without `drawsFlyers` when Core Animation flies the bats (`NightSkyTwinkleLayer`).
     static func draw(
         in context: GraphicsContext,
         moonCenter: CGPoint,
         scale: CGFloat,
         isDark: Bool,
-        time: TimeInterval?
+        drawsFlyers: Bool = true
     ) {
         let colors = NativeHalloweenEdition.moonColors(isDark: isDark)
         let radius = moonRadius * scale
@@ -27,16 +29,21 @@ enum HalloweenNight {
         let batCenter = CGPoint(x: moonCenter.x - radius * 0.09, y: moonCenter.y - radius * 0.07)
         context.fill(bat(center: batCenter, width: batWidth), with: .color(colors.bat))
 
-        // The flying bats are part of the sky, so they draw in its color, quieter than the stars.
-        context.opacity = 0.45
+        guard drawsFlyers else { return }
+        context.opacity = flyerOpacity
         for flyer in flyers {
-            let drift = time.map { sin(2 * .pi * $0 / flyer.period + flyer.phase) } ?? 0
-            let center = CGPoint(
-                x: moonCenter.x + (flyer.x + drift * 6) * scale,
-                y: moonCenter.y + (flyer.y + drift * 2) * scale
-            )
+            let center = CGPoint(x: moonCenter.x + flyer.x * scale, y: moonCenter.y + flyer.y * scale)
             context.fill(bat(center: center, width: flyer.width * scale), with: .foreground)
         }
+    }
+
+    /// The flying bats are part of the sky, so they draw in its color, quieter than the stars.
+    nonisolated static let flyerOpacity = 0.45
+
+    /// How far a flying bat has drifted `time` seconds in, from -1 to 1; it moves 6 units across and 2
+    /// down for each.
+    nonisolated static func drift(of flyer: Flyer, at time: TimeInterval) -> CGFloat {
+        sin(2 * .pi * time / flyer.period + flyer.phase)
     }
 
     private static let moonRadius: CGFloat = 52
@@ -55,7 +62,7 @@ enum HalloweenNight {
         Crater(x: -0.426, y: 0.336, radius: 0.082),
     ]
 
-    private struct Flyer {
+    nonisolated struct Flyer: Sendable {
         let x: CGFloat
         let y: CGFloat
         let width: CGFloat
@@ -64,7 +71,7 @@ enum HalloweenNight {
     }
 
     /// Two bats down and left of the moon, in the canvas's units from its center.
-    private static let flyers = [
+    nonisolated static let flyers = [
         Flyer(x: -150, y: 18, width: 34, period: 9, phase: 0),
         Flyer(x: -104, y: 92, width: 24, period: 11.5, phase: 2.1),
     ]
@@ -74,7 +81,7 @@ enum HalloweenNight {
     }
 
     /// `moon-bats.svg`'s bat, about twice as wide as it is tall, centered on `center`.
-    private static func bat(center: CGPoint, width: CGFloat) -> Path {
+    nonisolated static func bat(center: CGPoint, width: CGFloat) -> Path {
         let height = width * batAspect
         let origin = CGPoint(x: center.x - width / 2, y: center.y - height / 2)
         func point(_ p: (Double, Double)) -> CGPoint {
@@ -92,7 +99,7 @@ enum HalloweenNight {
         return path
     }
 
-    private static let batAspect: CGFloat = 54.0 / 106.0
+    private nonisolated static let batAspect: CGFloat = 54.0 / 106.0
 
     private enum Segment: Sendable {
         case move((Double, Double))
@@ -103,7 +110,7 @@ enum HalloweenNight {
     }
 
     /// In fractions of the bat's width and height, from its top-left corner.
-    private static let batOutline: [Segment] = [
+    private nonisolated static let batOutline: [Segment] = [
         .move((0.0, 0.6667)),
         .cubic((0.2547, 0.0), (0.1038, 0.5556), (0.2075, 0.2778)),
         .cubic((0.4245, 0.4074), (0.3679, 0.0741), (0.4057, 0.2963)),

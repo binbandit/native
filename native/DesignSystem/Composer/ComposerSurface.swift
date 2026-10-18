@@ -29,6 +29,8 @@ public struct ComposerSurface<Content: View>: View {
     let isDropTargeted: Bool
     let content: Content
 
+    @Environment(\.dsTransparency) private var transparency
+
     /// - Parameters:
     ///   - isFloating: The composer floats over scrolling content: Liquid Glass replaces the solid
     ///     fill, as see-through as the user's transparency (glass is for the control layer only).
@@ -63,6 +65,8 @@ public struct ComposerSurface<Content: View>: View {
             }
         }
         .containerShape(shape)
+        // The outline too sits on the glass, outside the glass effect's own content.
+        .environment(\.dsOnGlass, isFloating && transparency.controlGlass != nil)
     }
 }
 
