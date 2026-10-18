@@ -66,7 +66,7 @@ these rules exist to keep changes small, isolated and easy to review.
 `just` lists the everyday commands (build, run an isolated instance, test, format, lint, the iPad check, release checks); the commands it wraps are below.
 
 ```sh
-xcodebuild -project native.xcodeproj -scheme native -derivedDataPath /tmp/native-dd/<you> build
+xcodebuild -project native.xcodeproj -scheme native -derivedDataPath /tmp/native-dd/<you>-build build
 (cd Packages/ACP && swift test)          # likewise for every package
 scripts/release/check.sh                  # Release and Nightly compile; run before landing #if DEBUG or build-setting changes
 scripts/dev/install-hooks.sh              # once per clone: format + lint staged Swift, conventional commit titles
@@ -93,6 +93,10 @@ clicks like `click at`: all of those land on whatever app has focus,
 often someone else's. Never open other apps or windows on Brayden's Mac to test (Finder, editors, terminals, browsers): verify against a fake opener instead. Screenshot with `screencapture -x -l <windowid>`. Quit your instance (and any
 render harness) as soon as a check is done; never leave apps running between checks, since many
 agents share one Mac.
+
+Builds are about 6 GB each and the disk is shared: when your task is done, run
+`scripts/dev/run-isolated.sh <name> --remove` for each instance you used and delete your
+`/tmp/native-dd/<you>-build`, and keep extra scratch builds to the minute you need them.
 
 When a check needs a real agent session, use Codex with `gpt-6.1-sol` (it's the cheapest): launch with
 `-agentDefaults.codex.model gpt-6.1-sol`, or pick it in the composer's model picker. Use another

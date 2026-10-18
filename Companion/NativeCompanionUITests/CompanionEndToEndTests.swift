@@ -109,6 +109,110 @@ final class CompanionEndToEndTests: XCTestCase {
         attachScreenshot(app, named: "add-host")
     }
 
+    /// Settings › App Icon and Celebrations in `COMPANION_APPEARANCE`, then turns on
+    /// `COMPANION_CELEBRATION` (a celebration id showing today), accepts iOS's alert and attaches
+    /// the home screen with its icon. `COMPANION_CELEBRATION_OFF=1` turns it off again afterwards.
+    func testAppIconAndCelebrations() throws {
+        let app = XCUIApplication()
+        app.launchArguments += ["-appearance", environment["COMPANION_APPEARANCE"] ?? "light"]
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Tasks"].waitForExistence(timeout: 10))
+        app.buttons["settings"].tap()
+        app.buttons["appIcon"].tap()
+        XCTAssertTrue(app.navigationBars["App Icon"].waitForExistence(timeout: 5))
+        attachScreenshot(app, named: "app-icon")
+        app.buttons["celebrations"].tap()
+        XCTAssertTrue(app.navigationBars["Celebrations"].waitForExistence(timeout: 5))
+        sleep(1)
+        attachScreenshot(app, named: "celebrations")
+        if let id = environment["COMPANION_CELEBRATION"] {
+            let toggle = app.switches["celebration-\(id)"]
+            XCTAssertTrue(toggle.waitForExistence(timeout: 5))
+            toggle.switches.firstMatch.tap()
+            acceptIconAlert()
+            attachScreenshot(app, named: "celebration-on")
+            app.navigationBars.buttons.firstMatch.tap()
+            sleep(1)
+            attachScreenshot(app, named: "app-icon-celebration")
+            if environment["COMPANION_CELEBRATION_OFF"] == "1" {
+                app.buttons["celebrations"].tap()
+                toggle.switches.firstMatch.tap()
+                acceptIconAlert()
+            }
+        }
+        XCUIDevice.shared.press(.home)
+        sleep(2)
+        attachScreenshot(XCUIApplication(bundleIdentifier: "com.apple.springboard"), named: "home-screen")
+    }
+
+    /// Picks `COMPANION_HOST_LABEL` in the home screen's host chip (with `COMPANION_HOST_ICON`, a
+    /// theme, as its icon when given) and attaches the chip, the host page and a task's header.
+    func testHostChip() throws {
+        let label = try XCTUnwrap(environment["COMPANION_HOST_LABEL"])
+        let app = XCUIApplication()
+        app.launchArguments += ["-appearance", environment["COMPANION_APPEARANCE"] ?? "light"]
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Tasks"].waitForExistence(timeout: 10))
+        let chip = app.buttons["hostChip"]
+        XCTAssertTrue(chip.waitForExistence(timeout: 5))
+        attachScreenshot(app, named: "home-before")
+        chip.tap()
+        sleep(1)
+        attachScreenshot(app, named: "chip-menu")
+        app.buttons[label].tap()
+        acceptIconAlert()
+        sleep(2)
+        attachScreenshot(app, named: "home-host")
+        app.buttons["host-\(label)"].tap()
+        sleep(1)
+        if let icon = environment["COMPANION_HOST_ICON"] {
+            let picker = app.buttons["hostAppIcon"]
+            app.swipeUp()
+            XCTAssertTrue(picker.waitForExistence(timeout: 5))
+            picker.tap()
+            app.buttons[icon].tap()
+            acceptIconAlert()
+            app.navigationBars.buttons.firstMatch.tap()
+        }
+        attachScreenshot(app, named: "host-page")
+        app.swipeUp()
+        attachScreenshot(app, named: "host-page-more")
+        app.navigationBars.buttons.firstMatch.tap()
+        let task = app.buttons.matching(identifier: "task-\(label)").firstMatch
+        if task.waitForExistence(timeout: 10) {
+            task.tap()
+            sleep(3)
+            attachScreenshot(app, named: "task")
+        }
+    }
+
+    /// Opens the newest task of `COMPANION_HOST_LABEL` and attaches it, with whatever approval is
+    /// waiting, without answering.
+    func testTaskScreen() throws {
+        let label = try XCTUnwrap(environment["COMPANION_HOST_LABEL"])
+        let app = XCUIApplication()
+        app.launchArguments += ["-appearance", environment["COMPANION_APPEARANCE"] ?? "light"]
+        app.launch()
+        XCTAssertTrue(app.navigationBars["Tasks"].waitForExistence(timeout: 10))
+        sleep(2)
+        attachScreenshot(app, named: "home")
+        let task = app.buttons.matching(identifier: "task-\(label)").firstMatch
+        XCTAssertTrue(task.waitForExistence(timeout: 30))
+        task.tap()
+        sleep(4)
+        attachScreenshot(app, named: "task")
+    }
+
+    /// iOS confirms every icon change with an alert of its own.
+    private func acceptIconAlert() {
+        let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
+        let ok = springboard.alerts.buttons["OK"]
+        if ok.waitForExistence(timeout: 4) {
+            attachScreenshot(springboard, named: "icon-alert")
+            ok.tap()
+        }
+    }
+
     private func choose(_ wanted: String, in category: String, app: XCUIApplication) {
         let pill = app.descendants(matching: .any)["config-\(category)"]
         XCTAssertTrue(pill.waitForExistence(timeout: 30), "the agent offers a \(category)")

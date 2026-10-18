@@ -27,6 +27,7 @@
 		C0C0000000000000000000B4 /* AppIcon-prism.icon in Resources */ = {isa = PBXBuildFile; fileRef = C0C0000000000000000000A4 /* AppIcon-prism.icon */; };
 		C0C0000000000000000000B5 /* CelebrationIcons.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C0C0000000000000000000A5 /* CelebrationIcons.xcassets */; };
 		C0C0000000000000000000AA /* AppAppearance in Frameworks */ = {isa = PBXBuildFile; productRef = C0C0000000000000000000A9 /* AppAppearance */; };
+		C0C0000000000000000000AC /* CelebrationDates.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0C0000000000000000000AB /* CelebrationDates.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -56,6 +57,7 @@
 		C0C0000000000000000000A3 /* AppIcon-fern.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon-fern.icon; sourceTree = "<group>"; };
 		C0C0000000000000000000A4 /* AppIcon-prism.icon */ = {isa = PBXFileReference; lastKnownFileType = folder.iconcomposer.icon; path = AppIcon-prism.icon; sourceTree = "<group>"; };
 		C0C0000000000000000000A5 /* CelebrationIcons.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = CelebrationIcons.xcassets; sourceTree = "<group>"; };
+		C0C0000000000000000000AB /* CelebrationDates.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = CelebrationDates.swift; path = ../native/Celebrations/CelebrationDates.swift; sourceTree = SOURCE_ROOT; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -156,6 +158,7 @@
 				C0C000000000000000000077 /* FileDiff+DiffView.swift */,
 				C0C000000000000000000076 /* ToolPhase.swift */,
 				C0C000000000000000000075 /* ToolPresentation.swift */,
+				C0C0000000000000000000AB /* CelebrationDates.swift */,
 				C0C000000000000000000073 /* AppIcon.icon */,
 			);
 			name = Shared;
@@ -340,6 +343,7 @@
 				C0C000000000000000000087 /* FileDiff+DiffView.swift in Sources */,
 				C0C000000000000000000086 /* ToolPhase.swift in Sources */,
 				C0C000000000000000000085 /* ToolPresentation.swift in Sources */,
+				C0C0000000000000000000AC /* CelebrationDates.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
