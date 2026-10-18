@@ -70,12 +70,21 @@ extension AppModel {
         defer { listingsInFlight[agent, default: 1] -= 1 }
         var fetched: [SessionInfo] = []
         var positions: [SessionID: Int] = [:]
+        // The project's own folder, and the folders Native made for its tasks (worktrees).
+        var folders = [project.path]
+        // A folder as Native knows it (`/tmp/x`), not the resolved spelling an agent may have
+        // recorded (Codex's `/private/tmp/x`), so it shows and compares as the project does.
+        func knownSpelling(_ path: String) -> String {
+            guard !folders.contains(path) else { return path }
+            return folders.first { SessionFolder.isSame($0, path) } ?? path
+        }
         // Some agents list a repository's sessions from each of its worktrees; keep one copy, the
         // one fetched for the session's own folder.
         func merge(_ page: [SessionInfo], from folder: String) {
-            for info in page {
+            for var info in page {
+                info.cwd = knownSpelling(info.cwd)
                 if let position = positions[info.sessionId] {
-                    if info.cwd == folder {
+                    if info.cwd == knownSpelling(folder) {
                         fetched[position] = info
                     }
                 } else {
@@ -85,11 +94,9 @@ extension AppModel {
             }
         }
         do {
-            // The project's own folder, and the folders Native made for its tasks (worktrees), each
-            // under every spelling an agent may have recorded it by.
-            let folders = ([project.path] + (await taskWorkspaces?.taskFolders(of: project) ?? []).map(\.folderPath))
-                .flatMap(SessionFolder.listingPaths)
-            for folder in Set(folders).sorted() {
+            folders += (await taskWorkspaces?.taskFolders(of: project) ?? []).map(\.folderPath)
+            // Each under every spelling an agent may have recorded it by.
+            for folder in Set(folders.flatMap(SessionFolder.listingPaths)).sorted() {
                 merge(try await SessionCatalog.fetch(cwd: folder, from: connection), from: folder)
             }
         } catch ACPConnectionError.disconnected {

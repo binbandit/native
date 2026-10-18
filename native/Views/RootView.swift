@@ -335,13 +335,9 @@ struct RootView: View {
                 Task { await model.restart(key.agent) }
             }
         } else if let runtime = model.runtime(key.agent), runtime.status == .starting {
-            ProgressView("Starting \(runtime.agent.displayName)…")
-                .controlSize(.small)
-                .font(.dsBody)
-                .foregroundStyle(.dsTextSecondary)
+            LoadingStateView("Starting \(runtime.agent.displayName)…")
         } else {
-            ProgressView()
-                .controlSize(.small)
+            LoadingStateView("Opening the task…")
         }
     }
 }
