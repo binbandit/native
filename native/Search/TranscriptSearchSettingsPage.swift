@@ -105,7 +105,8 @@ struct TranscriptSearchSettingsPage: View {
                 SettingsRow(
                     id: Self.excludedRow,
                     center.excludedFolders.isEmpty ? "No excluded projects" : "Exclude another project",
-                    description: Text("Keep a project's sessions out of search, such as one with sensitive work.")
+                    description: Text("Keep a project's sessions out of search, such as one with sensitive work."),
+                    detail: excludeUnavailableReason.map(Text.init)
                 ) {
                     Menu("Exclude Project") {
                         ForEach(model.projects.all.filter { !center.excludedFolders.contains($0.path) }) { project in
@@ -120,6 +121,15 @@ struct TranscriptSearchSettingsPage: View {
                 }
             }
         }
+    }
+
+    /// Why there's nothing to exclude, when the button can't open its menu.
+    private var excludeUnavailableReason: String? {
+        if model.projects.all.isEmpty { return "Add a project to Native first." }
+        if model.projects.all.allSatisfy({ center.excludedFolders.contains($0.path) }) {
+            return "Every project is already excluded."
+        }
+        return nil
     }
 
     private var indexDescription: String {

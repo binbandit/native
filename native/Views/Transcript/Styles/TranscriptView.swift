@@ -40,9 +40,11 @@ struct TranscriptView: View {
         .defaultScrollAnchor(.bottom, for: .initialOffset)
         .defaultScrollAnchor(.bottom, for: .sizeChanges)
         .scrollPosition($position)
-        .onScrollGeometryChange(for: CGSize.self) { geometry in
-            geometry.containerSize
-        } action: { _, size in
+        // The scroll view's own size, reported from the first layout on (scroll geometry only
+        // reports changes, and a session switched to is laid out at its final size from the start).
+        .onGeometryChange(for: CGSize.self) { proxy in
+            proxy.size
+        } action: { size in
             // A view that's just been made (a session reopened, or back from Settings) is first laid
             // out at a sliver with no height or no width. Rows measured that narrow come out
             // thousands of points tall, and the lazy stack keeps them as its estimates, so the

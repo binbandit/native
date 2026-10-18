@@ -49,18 +49,23 @@ final class TranscriptSearchCenter {
         didSet { UserDefaults.standard.set(excludedFolders, forKey: Self.excludedFoldersKey) }
     }
 
-    @ObservationIgnored private var index: SearchIndex?
-    @ObservationIgnored private weak var model: AppModel?
+    // Internal only for TranscriptSearchCenter+History.swift, as are the backfill's members below.
+    @ObservationIgnored var index: SearchIndex?
+    @ObservationIgnored weak var model: AppModel?
     @ObservationIgnored private var searchTask: Task<Void, Never>?
-    @ObservationIgnored private var backfillTask: Task<Void, Never>?
-    @ObservationIgnored private var lastBackfill: Date?
-    @ObservationIgnored private var lastRefresh = Date.distantPast
+    @ObservationIgnored var backfillTask: Task<Void, Never>?
+    @ObservationIgnored var lastBackfill: Date?
+    @ObservationIgnored var lastRefresh = Date.distantPast
+    @ObservationIgnored var pendingBackfill: Task<Void, Never>?
+    @ObservationIgnored var backfillID: UUID?
+    /// Something changed while a pass ran (a turn ended, a project was included): run another.
+    @ObservationIgnored var needsAnotherPass = false
     @ObservationIgnored private var liveTasks: [SessionKey: Task<Void, Never>] = [:]
     @ObservationIgnored private var observers: [Task<Void, Never>] = []
 
     private static let includesHistoryKey = "search.includesAgentHistory"
     private static let excludedFoldersKey = "search.excludedFolders"
-    nonisolated private static let logger = Logger(subsystem: "Native", category: "Search")
+    nonisolated static let logger = Logger(subsystem: "Native", category: "Search")
 
     init(defaults: UserDefaults = .standard) {
         includesAgentHistory = defaults.object(forKey: Self.includesHistoryKey) as? Bool ?? true
@@ -69,17 +74,21 @@ final class TranscriptSearchCenter {
 
     // MARK: - Lifecycle
 
-    /// Opens the index and starts keeping it filled. Called once by the composition root.
+    /// Opens the index and starts keeping it filled, once the window is up: nothing here is
+    /// needed to draw it. Called once by the composition root.
     func connect(to model: AppModel) {
         guard self.model == nil else { return }
         self.model = model
-        Task { await openIndex() }
+        Task(priority: .utility) { [weak self] in
+            try? await Task.sleep(for: .seconds(2))
+            await self?.openIndex()
+        }
     }
 
     private func openIndex() async {
         let url = SearchIndex.defaultURL(bundleIdentifier: Bundle.main.bundleIdentifier)
         do {
-            index = try await SearchIndex(url: url)
+            index = try await Self.open(url)
             failure = nil
         } catch {
             Self.logger.error("Couldn't open the search index: \(error, privacy: .public)")
@@ -116,6 +125,11 @@ final class TranscriptSearchCenter {
         scheduleSearch(debounce: false)
     }
 
+    /// Opening SQLite and checking its schema touch the disk, so it happens off the main thread.
+    @concurrent nonisolated private static func open(_ url: URL) async throws -> SearchIndex {
+        try await SearchIndex(url: url)
+    }
+
     /// Shows the panel, with `query` in its field when given.
     func present(query: String? = nil) {
         if let query {
@@ -134,7 +148,7 @@ final class TranscriptSearchCenter {
 
     // MARK: - Searching
 
-    private func scheduleSearch(debounce: Bool = true) {
+    func scheduleSearch(debounce: Bool = true) {
         searchTask?.cancel()
         let query = SearchQuery(query, filters: filters)
         searchTask = Task { [weak self] in
@@ -197,6 +211,12 @@ final class TranscriptSearchCenter {
     /// one write, and never anything per streamed chunk.
     private func scheduleLiveIndex(clientID: UUID) {
         guard let session = model?.session(clientID: clientID), !session.isSubagent else { return }
+        // An agent with a history reader has just written the turn to its log: reading that log
+        // from its checkpoint costs only the new lines, and keeps one source of truth per session.
+        if readerAgents.contains(session.agent.id) {
+            scheduleBackfill()
+            return
+        }
         let key = session.key
         liveTasks[key]?.cancel()
         liveTasks[key] = Task { [weak self] in
@@ -240,7 +260,7 @@ final class TranscriptSearchCenter {
         PolicyCenter.shared.policy.searchRetentionDays.map { Date.now.addingTimeInterval(-Double($0) * 86_400) }
     }
 
-    private var projectFolders: [String] {
+    var projectFolders: [String] {
         model?.projects.all.map(\.path) ?? []
     }
 
@@ -259,7 +279,7 @@ final class TranscriptSearchCenter {
             })
     }
 
-    private var readerAgents: Set<AgentDefinition.ID> {
+    var readerAgents: Set<AgentDefinition.ID> {
         guard includesAgentHistory, let model else { return [] }
         return Set(model.plugins.historyReaders.map(\.agent))
     }
@@ -279,56 +299,6 @@ final class TranscriptSearchCenter {
                     }
                 }
             })
-    }
-
-    // MARK: - Past sessions
-
-    private func startBackfill() {
-        guard isEnabled, includesAgentHistory, let index, let model, backfillTask == nil else { return }
-        let readers = model.plugins.historyReaders.map {
-            TranscriptSearchBackfill.Reader(agent: $0.agent.rawValue, reader: $0.reader)
-        }
-        var known: [SearchSessionKey: TranscriptSearchBackfill.Known] = [:]
-        for project in model.projects.all {
-            for summary in model.allSessions(in: project.id) {
-                known[summary.id.searchKey] = TranscriptSearchBackfill.Known(
-                    title: model.title(for: summary), project: project.path,
-                    isArchived: model.isArchived(summary.id))
-            }
-        }
-        let backfill = TranscriptSearchBackfill(
-            index: index, readers: readers, known: known, projects: projectFolders, excluded: excludedFolders,
-            retainedSince: retainedSince)
-        lastBackfill = .now
-        backfillTask = Task(priority: .utility) { [weak self] in
-            await backfill.run { [weak self] state in
-                await self?.update(indexing: state)
-            }
-            self?.backfillTask = nil
-            self?.lastBackfill = .now
-        }
-    }
-
-    private func stopBackfill() {
-        backfillTask?.cancel()
-        backfillTask = nil
-        indexing = .idle
-    }
-
-    private func update(indexing state: TranscriptSearchIndexing) async {
-        indexing = state
-        // Progress comes per file; counts and results refresh at most once a second.
-        guard state == .idle || Date.now.timeIntervalSince(lastRefresh) > 1 else { return }
-        lastRefresh = .now
-        await refreshStatistics()
-        // New sessions land while the panel is open: show them without the user retyping.
-        if isPresented {
-            scheduleSearch(debounce: false)
-        }
-    }
-
-    private func refreshStatistics() async {
-        statistics = try? await index?.statistics()
     }
 
     // MARK: - Privacy
@@ -361,7 +331,8 @@ final class TranscriptSearchCenter {
     func include(_ folder: String) async {
         excludedFolders.removeAll { $0 == folder }
         stopBackfill()
-        // Its history files were skipped, so their stamps aren't in the index: the pass reads them.
+        // Its files' checkpoints say they were seen; forgetting them has the next pass read them.
+        try? await index?.removeCheckpoints(under: folder)
         startBackfill()
     }
 }
