@@ -16,6 +16,7 @@ struct UsagePlugin: NativePlugin {
     let contextReports = ContextReports()
     let providerReports = ProviderUsageReports()
     let notifications: UsageNotifications
+    let activity = ActivityLog(store: ActivityFileStore())
     private let clockEvents: SystemClockEvents
 
     init() {
@@ -31,11 +32,21 @@ struct UsagePlugin: NativePlugin {
         notifications.host = host
         providerReports.host = host
         limits.host = host
+        activity.backfill(host.activityBackfill())
+    }
+
+    /// Opens a task from Settings › Usage's day list.
+    func open(_ task: ActivityDay.Task) {
+        let ref = UsageSessionRef(
+            agent: AgentDefinition.ID(rawValue: task.agent), agentName: task.agentName, session: SessionID(task.session),
+            title: task.title)
+        notifications.host?.show(ref)
     }
 
     func handle(_ event: SessionEvent) async {
         switch event {
         case .usageUpdated(let session, let usage):
+            activity.recordUsage(session, usage)
             if let info = usage.rateLimit {
                 limits.record(info, agent: session.agent, agentName: session.agentName)
             }
@@ -48,6 +59,8 @@ struct UsagePlugin: NativePlugin {
                 limits.recordTurnEnded(reason, in: ref)
                 contextReports.noteTurnEnded(SessionKey(agent: ref.agent, id: ref.session))
             }
+            let duration = UsageSessionRef(session).flatMap { notifications.host?.lastTurnSummary(of: $0)?.duration }
+            activity.recordTurn(session, duration: duration)
             await notifications.turnEnded(session, reason: reason)
         case .permissionRequested(let session, let toolCall):
             await notifications.permissionRequested(session, toolCall: toolCall)
@@ -57,8 +70,10 @@ struct UsagePlugin: NativePlugin {
             await notifications.needsAttention(.needsUser, context: session, reason: reason)
         case .failed(let session, let reason):
             await notifications.needsAttention(.failed, context: session, reason: reason)
-        case .sessionStarted, .promptSent:
-            break
+        case .sessionStarted(let session):
+            activity.recordSessionStarted(session)
+        case .promptSent(let session, _):
+            activity.recordPrompt(session)
         }
     }
 }

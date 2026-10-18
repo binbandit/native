@@ -8,7 +8,8 @@ in `docs/decisions.md` ("Releases on GitHub", "Sparkle for updates", "Nightly be
 | --- | --- |
 | `native/Updates/` | `UpdateController` (observable state over Sparkle), the update button, Settings ▸ Updates, Check for Updates…, the host version notice |
 | `Config/*.xcconfig`, `Config/Native-Info.plist` | channels, bundle identifiers, feed URLs and the signing key, in one place |
-| `scripts/release/` | `release.sh` (archive → notarize → package → appcast → publish), `check.sh` (compile Release and Nightly), `release-notes.sh`, `ci-signing.sh` |
+| `Packages/HostUpdater` | how a standalone host updates itself: the signed host feed, Ed25519 checks, atomic install with rollback |
+| `scripts/release/` | `release.sh` (archive → notarize → package → appcast → publish), `host.sh` (standalone host and its feed), `check.sh` (compile Release and Nightly), `release-notes.sh`, `ci-signing.sh` |
 | `.github/workflows/` | `check.yml` (every pull request), `nightly.yml` (every night), `release.yml` (on a `v*` tag) |
 
 ## Channels

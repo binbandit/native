@@ -12,6 +12,8 @@ struct UsageSettingsPage: View {
     let accounts: [Account]
     let limits: UsageLimits
     let reports: ProviderUsageReports
+    let activity: ActivityLog
+    let onOpen: (ActivityDay.Task) -> Void
 
     /// Readings older than this are taken again when the page opens.
     private static let staleAfter: TimeInterval = 5 * 60
@@ -21,8 +23,9 @@ struct UsageSettingsPage: View {
             SettingsHeader(
                 "Usage",
                 description: Text(
-                    "Where each agent’s account stands against its usage limits, read from the agent itself, and what your open tasks have used."
+                    "Your year with agents, and where each agent’s account stands against its usage limits, read from the agent itself."
                 ))
+            UsageActivityCard(activity: activity, onOpen: onOpen)
             if accounts.isEmpty {
                 EmptyStateView("No agents yet", systemImage: "gauge.with.dots.needle.33percent", message: "Agents you add show their limits here.")
             }

@@ -72,6 +72,7 @@ extension PluginManifest {
 
 extension ThemeJSON {
     fileprivate var id: String? {
-        if case .string(let id)? = self["id"] { id } else { nil }
+        guard case .object(let members) = self, case .string(let id)? = members["id"] else { return nil }
+        return id
     }
 }

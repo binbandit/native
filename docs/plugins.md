@@ -62,6 +62,8 @@ A plugin that fails to load is skipped and listed in Settings ▸ Plugins with t
 | `mcpServers` | no | MCP servers for every session, see [MCP servers](#mcp-servers). |
 | `workflows` | no | Multi-agent workflows, see [Workflows](#workflows). |
 | `themes` | no | Code themes and accent palettes, see [Themes](#themes). |
+| `iconSets` | no | App icon families, see [Icon sets](#icon-sets). |
+| `celebrations` | no | Dated celebrations that dress the icon and Home, see [Celebrations](#celebrations). |
 
 Unknown fields are ignored. Nothing in `plugin.json` is secret: don't put API keys in it.
 
@@ -207,6 +209,96 @@ plugin off takes them away at once, and a window using one goes back to the defa
 
 Light-mode tone sets like Paper and Wool aren't open to plugins yet (see `docs/decisions.md`).
 
+## Icon sets
+
+An icon set is a family of app icons: one for each build channel (`stable`, `beta`, `nightly`,
+`dev`), each in light and dark, plus how Home's emblem dresses up with it. A set that no celebration
+uses is offered in Settings ▸ Appearance beside the built-in icons, credited to the plugin. A
+celebration uses one by its id (any enabled plugin's).
+
+```json
+"iconSets": [
+  {
+    "id": "acme.sunset",
+    "name": "Sunset",
+    "icons": {
+      "stable":  {"light": "icons/stable-light.png",  "dark": "icons/stable-dark.png"},
+      "beta":    {"light": "icons/beta-light.png",    "dark": "icons/beta-dark.png"},
+      "nightly": {"light": "icons/nightly-light.png", "dark": "icons/nightly-dark.png"},
+      "dev":     {"light": "icons/dev-light.png",     "dark": "icons/dev-dark.png"}
+    },
+    "palette": {"light": ["#C2471B", "#3B2A4F"], "dark": ["#FF9A62", "#C9B6F2"]}
+  }
+]
+```
+
+| Field | Meaning |
+| --- | --- |
+| `id` | Namespaced with the plugin's id: `<plugin-id>.<name>`, lowercase. Keep it stable; the user's choice is stored by it. |
+| `name` | What the user sees. A string, or translations by language: `{"en": "Sunset", "es": "Atardecer"}`. |
+| `icons` | Images by channel, as paths inside the plugin's folder (1024×1024 PNG). The set applies only when all four channels have both images; otherwise it's listed with what's missing. `"forthcoming"` lists it without icons. |
+| `home` | `{"mark": "<id>"}`: one of Native's Home editions (`native.halloween`, `native.dia-de-muertos`). |
+| `palette` | Colors per appearance, most prominent first. With two or more, Home draws the emblem's links in the first two when there's no `home` mark, or the mark isn't in this version. |
+
+Each set is checked on its own when the plugin loads: one with an id outside the plugin's namespace,
+a duplicate id, or an image path that leaves the plugin's folder (`..`, an absolute path, a symlink
+out) is left out and listed under Settings ▸ Celebrations ▸ Couldn't load; the rest still load.
+
+Platforms differ. On the Mac, Native applies the images at runtime through the Dock; runtime images
+are flat, so they don't get the system's Clear and Tinted icon looks, which only Original has. On
+iPad and iPhone, iOS only switches between icons compiled into the app, so a plugin's set can't
+become the home-screen icon there: the picker marks it "Mac only", and it still restyles Home.
+
+## Celebrations
+
+A celebration dresses Native's icon and Home on its dates, from an icon set. Settings ▸ Celebrations
+lists every celebration all year; each is off until the user turns it on, and installing a plugin
+never turns one on. When two overlap, a celebration on its own dates wins over another's longer
+decorative window, then the user's order decides, so two editions are never blended.
+
+```json
+"celebrations": [
+  {
+    "id": "acme.lantern-night",
+    "title": {"en": "Lantern Night", "es": "Noche de Faroles"},
+    "aliases": ["Lantern Festival night"],
+    "description": "Paper lanterns glowing through the links.",
+    "tags": ["cultural"],
+    "provenance": {"sources": ["https://example.org/calendar"], "publisher": "Example Council", "reviewed": "2026-10-18"},
+    "calendar": {"kind": "fixed", "start": "12-30", "end": "01-02", "tradition": "Example City"},
+    "display": {
+      "windows": [{"id": "extended", "title": "Extended, decorative", "daysBefore": 5, "daysAfter": 2}],
+      "defaultWindow": "core"
+    },
+    "iconSet": "acme.lanterns"
+  }
+]
+```
+
+| Field | Meaning |
+| --- | --- |
+| `id` | Namespaced with the plugin's id, lowercase, and stable forever: the user's choices are stored by it. A regional variant gets its own id. |
+| `title`, `aliases`, `description`, `tags` | What the user sees and searches. Search ignores accents and case and covers the title in every language, the aliases and the tags. Tags help browsing and never turn anything on. |
+| `provenance` | Where the dates come from: `sources` (URLs), `publisher`, `authority`, `dataVersion`, `reviewed` (`yyyy-MM-dd`), and `coverage` (`{"from": 2026, "through": 2030}`) for annual tables. After `through`, nothing shows and the catalogue says the dates have ended. |
+| `calendar` | `kind` and its rule; `tradition` names the calendar or region; `boundary` is `civil-day` (default), `sunset` or `nightfall`; `provisional` marks dates awaiting confirmation. |
+| `display` | `windows`: decorative spans around the core dates, in calendar days (0 to 60 either side); `defaultWindow`: `core` (default) or one of their ids; `treatment`: `festive` (default) or `quiet` for solemn observances. |
+| `iconSet` | The icon set it shows. Omitted lists it with its artwork forthcoming, changing nothing. |
+| `compatibility` | `manifestVersion` (1) and `minimumNativeVersion`; a newer one is listed as needing an update. |
+
+Calendar kinds this version resolves:
+
+- `fixed`: the same civil dates every year. `start` and optional `end` as `MM-dd`; an `end` before
+  `start` crosses New Year (`"12-26"` to `"01-01"`). `02-29` occurs only in leap years.
+
+Other kinds (`western-easter`, `orthodox-pascha`, `hebrew`, `islamic`, `chinese-lunisolar`,
+`table`, ...) are accepted and listed, with a note that Native can't work out their dates yet; they
+never change anything until a version that resolves them. Days are always local calendar days,
+never multiples of 24 hours, so daylight saving and travel don't shift them.
+
+Choices stay out of the manifest: which celebrations are on, which surfaces they change, the window,
+the overlap order and skips are the user's, and updating a plugin never changes them. Turning a
+plugin off puts the usual look back at once.
+
 ## Built-in plugins
 
 Behavior, rather than data, needs a built-in plugin: a Swift type in `native/Plugins/` (or a
@@ -241,7 +333,9 @@ orchestration tools are built-in plugins written this way.
    is listed and enabled, with no load failure under it.
 4. Try what it adds: an agent appears in the agent picker and starts (its status shows in the
    sidebar footer); an MCP server's tools show up in a new session; a workflow appears in the
-   workflow picker.
+   workflow picker; an icon set appears in Settings ▸ Appearance; a celebration appears in
+   Settings ▸ Celebrations. To see a celebration without waiting for its date, launch Native with
+   `-nativeDate yyyy-MM-dd`. Try plugins in a scratch folder with `-pluginsDirectory <path>`.
 
 If you're an agent writing a plugin for the user, tell them which file you wrote and that they need
 to reload, and don't edit plugins you didn't write unless they ask.

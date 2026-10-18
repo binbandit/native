@@ -10,11 +10,12 @@ extension SettingsPane {
     static func usage(registry: PluginRegistry) -> SettingsPane {
         SettingsPane(
             id: .usage, title: "Usage", systemImage: "gauge.with.dots.needle.33percent", group: .agents, order: 25,
-            keywords: ["limits", "rate limit", "quota", "reset", "cost", "tokens", "spend"]
+            keywords: ["limits", "rate limit", "quota", "reset", "cost", "tokens", "spend", "activity", "streak", "graph"]
         ) {
             UsageSettingsPage(
                 accounts: registry.agents.map { .init(id: $0.id, name: $0.displayName, symbol: $0.symbolName) },
-                limits: BuiltInPlugins.usage.limits, reports: BuiltInPlugins.usage.providerReports)
+                limits: BuiltInPlugins.usage.limits, reports: BuiltInPlugins.usage.providerReports,
+                activity: BuiltInPlugins.usage.activity, onOpen: BuiltInPlugins.usage.open)
         }
     }
 

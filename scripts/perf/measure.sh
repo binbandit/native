@@ -2,12 +2,14 @@
 # Measures Native's launch time, idle cost and child processes in its own isolated instance
 # (`just perf`), for the numbers and budgets in docs/performance.md. Never touches another Native.
 #
-#   scripts/perf/measure.sh [--no-build] [--launches N] [--seconds S] [--settle S]
+#   scripts/perf/measure.sh [--no-build] [--launches N] [--seconds S] [--settle S] [--sessions N]
 #
 # Launch times come from the app's own `launch <milestone> <ms> ms` log lines (LaunchMetrics), from
 # the moment the kernel started the process. Idle numbers are kernel counters for the app alone and
 # for the app with every process under it, sampled over S seconds: with the window visible,
-# minimized, and the app hidden. The instance is quit at the end.
+# minimized, and the app hidden. `--sessions N` first opens N Codex sessions that each answer one
+# short prompt. The instance works in a scratch project with Codex as its default agent, and is
+# quit at the end.
 set -euo pipefail
 
 name=perf
@@ -15,13 +17,16 @@ build=1
 launches=5
 seconds=30
 settle=20
+sessions=0
+usage="usage: $0 [--no-build] [--launches N] [--seconds S] [--settle S] [--sessions N]"
 while [ $# -gt 0 ]; do
     case "$1" in
         --no-build) build=0 ;;
         --launches) launches=$2; shift ;;
         --seconds) seconds=$2; shift ;;
         --settle) settle=$2; shift ;;
-        *) echo "usage: $0 [--no-build] [--launches N] [--seconds S] [--settle S]" >&2; exit 2 ;;
+        --sessions) sessions=$2; shift ;;
+        *) echo "$usage" >&2; exit 2 ;;
     esac
     shift
 done
@@ -39,6 +44,19 @@ for tool in rusage drive; do
 done
 
 trap '"$run" "$name" --quit >/dev/null 2>&1 || true' EXIT
+
+# A scratch project and Codex as the default agent, once the instance has been built; it keeps them.
+seed() {
+    local plist="/tmp/native-dd/$name/Build/Products/Debug/Native.app/Contents/Info.plist" bundle
+    bundle=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$plist" 2>/dev/null) || return 0
+    defaults read "$bundle" projects >/dev/null 2>&1 && return 0
+    local project=/tmp/native-perf/project
+    mkdir -p "$project"
+    printf '# Scratch project\n\nA throwaway folder for measuring Native.\n' >"$project/README.md"
+    defaults write "$bundle" workspace "$project"
+    defaults write "$bundle" defaultAgent codex
+}
+seed
 
 # Every process under `pid`, itself included.
 tree() {
@@ -87,9 +105,22 @@ for i in $(seq 1 "$launches"); do
     done
     kill "$stream" 2>/dev/null || true
     label=$([ "$i" = 1 ] && [ "$build" = 1 ] && echo cold || echo "warm$i")
+    seed
     printf "%-6s %8s %8s %18s %11s\n" "$label" "$(value appInit)" "$(value firstFrame)" \
         "$(value sidebarInteractive)" "$(value agentsReady)"
     rm -f "$log"
+done
+
+# Sessions, each answering one prompt; `Session › Stop` is enabled while a turn runs.
+for i in $(seq 1 "$sessions"); do
+    "$tools/drive" "$pid" menu File "New Session"
+    sleep 3
+    "$tools/drive" "$pid" prompt "Reply with the single word OK. Don't run any tools."
+    sleep 2
+    for _ in $(seq 1 120); do
+        [ "$("$tools/drive" "$pid" enabled Session Stop)" = false ] && break
+        sleep 1
+    done
 done
 
 # Idle: the last launch stays up, left alone while agents start and list their sessions.
