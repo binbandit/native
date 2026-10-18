@@ -23,6 +23,7 @@
 		000000000000000071E10020 /* Terminal in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000071E10010 /* Terminal */; };
 		0000000000000000A99A0020 /* AppAppearance in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000A99A0010 /* AppAppearance */; };
 		54227E023083ADA900D7771F /* MCPClient in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000000AC10010 /* MCPClient */; };
+		00000000000000005E1EA531 /* LICENSE.md in Resources */ = {isa = PBXBuildFile; fileRef = 00000000000000005E1EA530 /* LICENSE.md */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -55,6 +56,7 @@
 		00000000000000005E1EA513 /* Release.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Release.xcconfig; sourceTree = "<group>"; };
 		00000000000000005E1EA514 /* Nightly.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Nightly.xcconfig; sourceTree = "<group>"; };
 		00000000000000005E1EA515 /* Native-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "Native-Info.plist"; sourceTree = "<group>"; };
+		00000000000000005E1EA530 /* LICENSE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = LICENSE.md; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -119,6 +121,7 @@
 				000000000000000000000010 /* native */,
 				0000000000000000004E4808 /* NativeHostHelper */,
 				00000000000000005E1EA510 /* Config */,
+				00000000000000005E1EA530 /* LICENSE.md */,
 				000000000000000000000020 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -269,6 +272,7 @@
 		000000000000000140000000 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			files = (
+				00000000000000005E1EA531 /* LICENSE.md in Resources */,
 			);
 		};
 /* End PBXResourcesBuildPhase section */

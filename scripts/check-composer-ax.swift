@@ -17,7 +17,7 @@ AXUIElementSetMessagingTimeout(app, 5)
 var failures = 0
 
 func check(_ name: String, _ passed: Bool, _ detail: String = "") {
-    print(passed ? "pass" : "FAIL", name, detail.isEmpty ? "" : "(\(detail))")
+    print(passed ? "pass" : "FAIL", name, terminator: detail.isEmpty ? "\n" : " (\(detail))\n")
     if !passed { failures += 1 }
 }
 
@@ -46,18 +46,28 @@ func names(_ element: AXUIElement, parameterized: Bool) -> Set<String> {
     return Set((names as? [String]) ?? [])
 }
 
-func range(_ value: AnyObject?) -> CFRange? {
+/// An `AXValue`, once its type ID says it is one.
+func axValue(_ value: AnyObject?) -> AXValue? {
     guard let value, CFGetTypeID(value) == AXValueGetTypeID() else { return nil }
+    return unsafeBitCast(value, to: AXValue.self)
+}
+
+func range(_ value: AnyObject?) -> CFRange? {
     var range = CFRange()
-    // swift-format-ignore: NeverForceUnwrap
-    return AXValueGetValue(value as! AXValue, .cfRange, &range) ? range : nil
+    guard let value = axValue(value), AXValueGetValue(value, .cfRange, &range) else { return nil }
+    return range
 }
 
 func rect(_ value: AnyObject?) -> CGRect? {
-    guard let value, CFGetTypeID(value) == AXValueGetTypeID() else { return nil }
     var rect = CGRect.zero
-    // swift-format-ignore: NeverForceUnwrap
-    return AXValueGetValue(value as! AXValue, .cgRect, &rect) ? rect : nil
+    guard let value = axValue(value), AXValueGetValue(value, .cgRect, &rect) else { return nil }
+    return rect
+}
+
+func parameterized(_ element: AXUIElement, _ name: String, _ parameter: AnyObject) -> AnyObject? {
+    var value: AnyObject?
+    return AXUIElementCopyParameterizedAttributeValue(element, name as CFString, parameter, &value) == .success
+        ? value : nil
 }
 
 func axRange(_ location: Int, _ length: Int) -> AXValue? {
@@ -84,7 +94,12 @@ func find(_ matches: (AXUIElement) -> Bool) -> AXUIElement? {
 /// The Send button exists only while the draft has text, so it shows whether a write reached the
 /// composer's state and not just the text view.
 func hasSendButton() -> Bool {
-    find { (attribute($0, "AXRole") as? String) == "AXButton" && (attribute($0, "AXTitle") as? String) == "Send Message" } != nil
+    find { element in
+        (attribute(element, "AXRole") as? String) == "AXButton"
+            && [attribute(element, "AXTitle"), attribute(element, "AXDescription")].contains {
+                $0 as? String == "Send Message"
+            }
+    } != nil
 }
 
 func settle() { Thread.sleep(forTimeInterval: 0.4) }
@@ -127,13 +142,8 @@ if let selection = axRange(0, 8) {
 }
 settle()
 check("AXSelectedText is the selection", attribute(editor, "AXSelectedText") as? String == "contract")
-if let first = axRange(0, 8), let bounds = rect(attribute(editor, "AXFrame")),
-    let selectionBounds = rect(
-        {
-            var value: AnyObject?
-            AXUIElementCopyParameterizedAttributeValue(editor, "AXBoundsForRange" as CFString, first, &value)
-            return value
-        }())
+if let word = axRange(0, 8), let bounds = rect(attribute(editor, "AXFrame")),
+    let selectionBounds = rect(parameterized(editor, "AXBoundsForRange", word))
 {
     check(
         "AXBoundsForRange lies within the editor", bounds.insetBy(dx: -1, dy: -1).contains(selectionBounds),
