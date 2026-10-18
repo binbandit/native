@@ -6,7 +6,7 @@ in `docs/decisions.md` ("Releases on GitHub", "Sparkle for updates", "Nightly be
 
 | Path | What lives there |
 | --- | --- |
-| `native/Updates/` | `UpdateController` (observable state over Sparkle), the update button, Settings ▸ Updates, the Software Update window, the host version notice |
+| `native/Updates/` | `UpdateController` (observable state over Sparkle), the update button, Settings ▸ Updates, Check for Updates…, the host version notice |
 | `Config/*.xcconfig`, `Config/Native-Info.plist` | channels, bundle identifiers, feed URLs and the signing key, in one place |
 | `scripts/release/` | `release.sh` (archive → notarize → package → appcast → publish), `check.sh` (compile Release and Nightly), `release-notes.sh`, `ci-signing.sh` |
 | `.github/workflows/` | `check.yml` (every pull request), `nightly.yml` (every night), `release.yml` (on a `v*` tag) |
@@ -65,15 +65,17 @@ everything renders from `UpdateState`:
 - **Restarting.** With the durable host, agents keep running while the app restarts, and the button
   says so. Without it, a restart would stop working tasks, so Native asks first and offers Restart
   When Tasks Finish. The app supplies what's running through `UpdateController.restartContext`.
-- **Check for Updates…** sits in the app menu under About and opens the Software Update window,
-  which shows the same status view as Settings ▸ Updates.
+- **Check for Updates…** sits in the app menu under About. It brings the main window forward, opens
+  Settings ▸ Updates there (Settings lives in the window) and checks.
 - **Settings ▸ Updates**: the status, version and build with a link to the release notes, the
   channel (Stable or Beta; fixed in Nightly), automatic checks and automatic downloads. Automatic
   checks and downloads are on by default (`Config/Native-Info.plist`).
 - **Platforms.** Sparkle is macOS-only and linked with a macOS platform filter; on iPad the
   controller reports `unavailable(.unsupportedPlatform)` and the views compile unchanged. Only
   `SparkleUpdateDriver.swift` imports Sparkle.
-- **Development builds** don't update themselves (`NATIVE_FEED_URL` is empty in Debug).
+- **Development builds** (`ReleaseChannel.dev`, any Debug build run from source) don't update
+  themselves: `NATIVE_FEED_URL` is empty in Debug, and Settings ▸ Updates says updates are off
+  because a release would replace the build.
 
 ## Updating the host
 
@@ -107,9 +109,9 @@ values. `Config/Native-Info.plist` is merged into the app's generated Info.plist
 
 | Setting | Meaning |
 | --- | --- |
-| `NATIVE_GITHUB_REPOSITORY` | `owner/name`. A placeholder until the repo exists; the app then says updates aren't set up, and `release.sh --publish` refuses to run |
+| `NATIVE_GITHUB_REPOSITORY` | `binbandit/native`: the feeds, release links and `release.sh`'s target |
 | `NATIVE_BUNDLE_IDENTIFIER_BASE` | the app's bundle id; Nightly appends `.nightly`, the host helper `.Host` |
-| `NATIVE_SPARKLE_PUBLIC_KEY` | Sparkle's EdDSA public key → `SUPublicEDKey` |
+| `NATIVE_SPARKLE_PUBLIC_KEY` | Sparkle's EdDSA public key → `SUPublicEDKey`. Until it's set, release builds say updates aren't set up and `release.sh --publish` refuses to run |
 | `NATIVE_FEED_URL` | `SUFeedURL`: empty in Debug, the stable feed in Release, the nightly feed in Nightly |
 | `NATIVE_CHANNEL_CONDITION` | `NATIVE_BETA` or `NATIVE_NIGHTLY`, read by `ReleaseChannel` |
 | `NATIVE_HOST_CHANNEL` | `nightly` in Nightly, so its host lives apart |
@@ -130,11 +132,14 @@ git tag v1.4.0 && git push origin v1.4.0                # CI publishes (release.
 A dry run is the default: archiving, signing, packaging and the appcast run for real (into
 `$TMPDIR/native-release/<channel>`, outside the repo so quicksaves never pick them up), while
 notarization and everything on GitHub is printed. `--notarize` also talks to Apple; `--publish`
-does everything. On a Mac without a Developer ID identity a dry run signs ad hoc and says so.
+does everything. On a Mac without a Developer ID identity a dry run signs ad hoc and says so; ad hoc
+builds go without the hardened runtime, whose library validation would refuse to load the ad hoc
+signed Sparkle framework. Nothing here depends on git hooks: the scripts only read history.
 
 Each run: archives with `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` → copies the signed app
 out of the archive → notarizes and staples it → zips it for Sparkle (`ditto`) and builds a signed,
-notarized, stapled DMG for first installs → drafts notes → runs `generate_appcast` on the zip and
+notarized, stapled DMG for first installs (the app, an Applications link and `LICENSE.md`; the app
+also carries `LICENSE.md` in its resources) → drafts notes → runs `generate_appcast` on the zip and
 the published feed (so earlier items and the other channel's stay) → publishes.
 
 - **Versions.** Stable is `v1.4.0`; beta is `v1.5.0-beta.1`. Nightly derives
@@ -184,9 +189,9 @@ credentials in a throwaway keychain and removes it afterwards.
 
 ## One-time setup
 
-1. **Create the repository** on GitHub and set `NATIVE_GITHUB_REPOSITORY` in
-   `Config/Shared.xcconfig`. Replace `NATIVE_BUNDLE_IDENTIFIER_BASE` with Native's real identifier
-   (it can't change after release without breaking updates and settings).
+1. **Bundle identifier.** The repository is `binbandit/native`. Replace
+   `NATIVE_BUNDLE_IDENTIFIER_BASE` in `Config/Shared.xcconfig` with Native's real identifier (it
+   can't change after the first release without breaking updates and settings).
 2. **Developer ID certificate.** In Xcode ▸ Settings ▸ Accounts ▸ Manage Certificates, add a
    Developer ID Application certificate (needs the Account Holder role). Check with
    `security find-identity -v -p codesigning`.
@@ -201,9 +206,7 @@ credentials in a throwaway keychain and removes it afterwards.
 5. **Secrets.** Add the secrets above (`gh secret set NAME < file`).
 6. **First releases.** Push `v0.1.0` (stable must exist before betas can reach anyone), then run
    the Nightly workflow by hand once to create the `nightly` release.
-7. **Nightly icon.** The icon owner adds the Nightly icon to the app target and sets
-   `NATIVE_APP_ICON_NAME` in `Config/Nightly.xcconfig`.
-8. **Focus Status capability**, once a development team signs the app, so sounds stay quiet
+7. **Focus Status capability**, once a development team signs the app, so sounds stay quiet
    during Do Not Disturb and other Focus modes (`native/Sounds/Focus/SystemFocusStatus.swift`).
    Enable Focus Status for the App ID, add `com.apple.developer.focus-status` = `true` to the app's
    entitlements, and set `INFOPLIST_KEY_NSFocusStatusUsageDescription` (for example "Native stays

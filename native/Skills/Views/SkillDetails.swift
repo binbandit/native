@@ -12,6 +12,15 @@ struct SkillDetails: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
+            if let description = item.description, SkillRow.summary(description) != description {
+                group("Description") {
+                    Text(description)
+                        .settingsText(.caption)
+                        .foregroundStyle(.dsTextPrimary)
+                        .fixedSize(horizontal: false, vertical: true)
+                        .textSelection(.enabled)
+                }
+            }
             group("Where it is") {
                 ForEach(item.places) { place in
                     placeRow(place)

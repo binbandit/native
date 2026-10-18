@@ -45,14 +45,20 @@ extension AppModel {
         unread.set(key, unread: isUnread)
     }
 
-    /// A turn that ends, or a permission request, in a session the user isn't looking at leaves its
+    /// A turn that ends, a permission request or a question in a session the user isn't looking at leaves its
     /// sidebar row unread. Subagents' news shows on the session they belong to.
     func markUnread(after event: SessionEvent) {
-        let context = switch event {
-        case .turnEnded(let context, _), .turnFailed(let context, _, _, _), .permissionRequested(let context, _): context
-        case .sessionStarted, .promptSent, .usageUpdated: nil as SessionContext?
-        }
-        guard let context, let key = session(clientID: context.clientID)?.root.key, key != selection, catalog.contains(key) else { return }
+        let context =
+            switch event {
+            case .turnEnded(let context, _), .turnFailed(let context, _, _, _), .permissionRequested(let context, _),
+                .questionAsked(let context, _):
+                context
+            case .needsUser(let context, _), .failed(let context, _): context
+            case .sessionStarted, .promptSent, .usageUpdated: nil as SessionContext?
+            }
+        guard let context, let key = session(clientID: context.clientID)?.root.key, key != selection,
+            catalog.contains(key)
+        else { return }
         unread.set(key, unread: true)
     }
 }

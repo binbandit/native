@@ -37,7 +37,7 @@ final class SkillLibrary {
 
     init(
         files: any SkillFileSystem = LocalSkillFiles(),
-        runner: any CommandRunner = LocalCommandRunner(),
+        runner: any CommandRunner = SkillLibrary.defaultRunner,
         registry: SkillsRegistry = SkillsRegistry(),
         supportFolder: URL = SkillLibrary.defaultSupportFolder
     ) {
@@ -49,6 +49,22 @@ final class SkillLibrary {
         switches = stored.store?.switches ?? SkillSwitches()
         records = stored.store?.records ?? []
         problem = stored.problem
+    }
+
+    /// This Mac's processes; elsewhere git runs on a host, which isn't connected here yet.
+    static var defaultRunner: any CommandRunner {
+        #if os(macOS)
+        LocalCommandRunner()
+        #else
+        SkillsHostlessRunner()
+        
+/// Where there's no local process to run (iPadOS without a host), git can't run.
+private struct SkillsHostlessRunner: CommandRunner {
+    func run(_ command: Command) async throws -> CommandResult {
+        throw CommandError.unavailable("Installing from git needs Native on a Mac, or a connected host.")
+    }
+}
+#endif
     }
 
     /// Application Support, per bundle id like the other stores, so dev instances keep their own.
@@ -218,6 +234,13 @@ final class SkillLibrary {
     /// Native's folder for skills moved aside, so removing and updating can be undone.
     var trashFolder: String {
         supportFolder.appending(path: "Skills Trash").path(percentEncoded: false)
+    }
+}
+
+/// Where there's no local process to run (iPadOS without a host), git can't run.
+private struct SkillsHostlessRunner: CommandRunner {
+    func run(_ command: Command) async throws -> CommandResult {
+        throw CommandError.unavailable("Installing from git needs Native on a Mac, or a connected host.")
     }
 }
 #endif
