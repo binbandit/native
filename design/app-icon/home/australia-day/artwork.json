@@ -1,0 +1,42 @@
+{
+  "id": "australia-day",
+  "name": "Southern Cross",
+  "intent": "A simple Native interlock beneath the correctly proportioned five-star Southern Cross. No Union Jack.",
+  "channels": [
+    "stable",
+    "beta",
+    "nightly",
+    "dev"
+  ],
+  "appearances": [
+    "light",
+    "dark"
+  ],
+  "source": "Original editable SVG artwork based on NativeMark and the Halloween Home ghosts.",
+  "canvas": {
+    "viewBox": [
+      -140,
+      -240,
+      1280,
+      1080
+    ],
+    "emblemBounds": [
+      0,
+      0,
+      1000,
+      643.04
+    ],
+    "emblemAnchor": [
+      500,
+      321.52
+    ]
+  },
+  "layers": [
+    "supporting-art",
+    "native-links or edition-specific body",
+    "integrated-details",
+    "overhanging-details",
+    "channel-*"
+  ],
+  "transparent": true
+}

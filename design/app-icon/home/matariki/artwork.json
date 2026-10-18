@@ -1,0 +1,42 @@
+{
+  "id": "matariki",
+  "name": "Matariki",
+  "intent": "Nine named-star-inspired points above a quiet blue interlock. No borrowed Māori patterns or traditional artwork; grouping is illustrative, not a navigation chart.",
+  "channels": [
+    "stable",
+    "beta",
+    "nightly",
+    "dev"
+  ],
+  "appearances": [
+    "light",
+    "dark"
+  ],
+  "source": "Original editable SVG artwork based on NativeMark and the Halloween Home ghosts.",
+  "canvas": {
+    "viewBox": [
+      -140,
+      -240,
+      1280,
+      1080
+    ],
+    "emblemBounds": [
+      0,
+      0,
+      1000,
+      643.04
+    ],
+    "emblemAnchor": [
+      500,
+      321.52
+    ]
+  },
+  "layers": [
+    "supporting-art",
+    "native-links or edition-specific body",
+    "integrated-details",
+    "overhanging-details",
+    "channel-*"
+  ],
+  "transparent": true
+}
