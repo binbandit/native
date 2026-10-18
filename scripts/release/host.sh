@@ -4,14 +4,14 @@
 # alone to try the host part. docs/releasing.md, "Remote updates".
 #
 #   scripts/release/host.sh --channel <name> --version <v> --build-number <n> --output <dir>
-#       [--identity <name>] [--ed-key-file <path>] [--notes <file>] [--plan | --notarize]
+#       [--identity <name>] [--ed-key-file <path>] [--notes <file>] [--linux <dir>] [--plan | --notarize]
 #
 # Writes <output>/host/: native-host-<build>-macos-universal, host-feed[-beta].json and its .sig.
-# Linux binaries join the feed once the host core builds there (TODO(linux) in .github/workflows).
+# --linux adds the native-host-linux-<arch> binaries in <dir> (built by CI; TODO(linux)).
 set -euo pipefail
 source "$(dirname "$0")/lib.sh"
 
-channel="" version="" build_number="" output="" identity="-" key_file="" notes=""
+channel="" version="" build_number="" output="" identity="-" key_file="" notes="" linux=""
 while [ $# -gt 0 ]; do
     case $1 in
         --channel) channel=$2; shift ;;
@@ -21,6 +21,7 @@ while [ $# -gt 0 ]; do
         --identity) identity=$2; shift ;;
         --ed-key-file) key_file=$2; shift ;;
         --notes) notes=$2; shift ;;
+        --linux) linux=$2; shift ;;
         --plan) MODE=plan ;;
         --notarize) MODE=notarize ;;
         --publish) MODE=publish ;;
@@ -80,16 +81,28 @@ if [ -z "$key_file" ] && ! security find-generic-password -s https://sparkle-pro
     warn "no Sparkle signing key (docs/releasing.md, \"One-time setup\"); not writing a host feed"
     exit 0
 fi
-signature=$(sign "$host/$binary_name")
+# One feed entry per binary: the universal macOS build, plus any Linux builds CI made.
+entry() {
+    jq -n --arg platform "$2" --arg arch "$3" --arg url "$releases/download/$tag/$(basename "$1")" \
+        --argjson size "$(wc -c <"$1" | tr -d ' ')" --arg sha256 "$(shasum -a 256 "$1" | cut -d' ' -f1)" \
+        --arg signature "$(sign "$1")" \
+        '{platform: $platform, arch: $arch, url: $url, size: $size, sha256: $sha256, edSignature: $signature}'
+}
+entries=$(entry "$host/$binary_name" macos universal)
+if [ -n "$linux" ]; then
+    for file in "$linux"/native-host-linux-*; do
+        [ -e "$file" ] || continue
+        arch=${file##*-linux-}
+        cp "$file" "$host/native-host-$build_number-linux-$arch"
+        entries+=$'\n'$(entry "$host/native-host-$build_number-linux-$arch" linux "$arch")
+    done
+fi
 jq -n \
     --arg channel "$channel" --arg version "$version" --arg build "$build_number" \
     --arg date "$(date -u +%Y-%m-%dT%H:%M:%SZ)" --rawfile notes "${notes:-/dev/null}" \
-    --arg notesURL "$releases/tag/$tag" --arg url "$releases/download/$tag/$binary_name" \
-    --argjson size "$(stat -f %z "$host/$binary_name")" \
-    --arg sha256 "$(shasum -a 256 "$host/$binary_name" | cut -d' ' -f1)" --arg signature "$signature" \
+    --arg notesURL "$releases/tag/$tag" --argjson assets "$(jq -s . <<<"$entries")" \
     '{schema: 1, channel: $channel, version: $version, build: $build, date: $date,
-      notes: (if $notes == "" then null else $notes end), releaseNotesURL: $notesURL,
-      assets: [{platform: "macos", arch: "universal", url: $url, size: $size, sha256: $sha256, edSignature: $signature}]}' \
+      notes: (if $notes == "" then null else $notes end), releaseNotesURL: $notesURL, assets: $assets}' \
     >"$host/$feed_name"
 sign "$host/$feed_name" >"$host/$feed_name.sig"
 log "Host feed ready: $host/$feed_name"

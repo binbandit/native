@@ -11,7 +11,7 @@ enum LinkControlMethod {
     static let revoke = "link/devices/revoke"
     static let restore = "link/devices/restore"
     static let rename = "link/devices/rename"
-    static let setRole = "link/devices/role"
+    static let setGrants = "link/devices/grants"
     static let forgetRevoked = "link/devices/forget_revoked"
     static let setEnabled = "link/enabled"
 
@@ -21,12 +21,13 @@ enum LinkControlMethod {
 
 struct LinkDecisionParams: Codable, Sendable {
     var accept: Bool
+    var grants: LinkGrants?
 }
 
 struct LinkDeviceParams: Codable, Sendable {
     var deviceID: UUID
     var name: String?
-    var role: LinkDeviceRole?
+    var grants: LinkGrants?
 }
 
 struct LinkEnabledParams: Codable, Sendable {

@@ -53,7 +53,9 @@ public actor LinkGateway {
     }
 
     enum PairingDecision: Sendable {
-        case accepted, rejected, expired
+        case accepted(LinkGrants)
+        case rejected
+        case expired
     }
 
     public nonisolated let configuration: Configuration
@@ -67,13 +69,14 @@ public actor LinkGateway {
     var listenerStatus = LinkListenerStatus(state: .off)
     private var observers: [UUID: @Sendable (LinkStatus) -> Void] = [:]
     private var control: LinkControlServer?
-    let accept: @Sendable (any ByteStream) -> Void
+    let accept: @Sendable (any ByteStream, LinkGrants) -> Void
     let logger = HostLogger(category: "LinkGateway")
 
-    /// `accept` gets each admitted device's stream; the host serves it like a local client.
+    /// `accept` gets each admitted device's stream and grants; the host serves it like a local
+    /// client with those grants.
     public init(
         configuration: Configuration, keyStore: (any LinkKeyStore)? = nil,
-        accept: @escaping @Sendable (any ByteStream) -> Void
+        accept: @escaping @Sendable (any ByteStream, LinkGrants) -> Void
     ) throws {
         try FileManager.default.createDirectory(
             at: configuration.directory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
@@ -163,8 +166,9 @@ public actor LinkGateway {
         publish()
     }
 
-    public func decidePairing(accept: Bool) {
-        resolveDecision(accept ? .accepted : .rejected)
+    /// The Mac's user trusted the waiting device (with `grants`), or not.
+    public func decidePairing(accept: Bool, grants: LinkGrants = .standard) {
+        resolveDecision(accept ? .accepted(grants) : .rejected)
     }
 
     public func revoke(_ id: UUID) {
@@ -198,9 +202,9 @@ public actor LinkGateway {
         publish()
     }
 
-    /// Takes effect from the device's next connection.
-    public func setRole(_ id: UUID, to role: LinkDeviceRole) {
-        registry.update(id) { $0.role = role }
+    /// Reconnects the device's live connections so the new grants apply right away.
+    public func setGrants(_ id: UUID, to grants: LinkGrants) {
+        registry.update(id) { $0.grants = grants }
         save()
         for channel in (connections.removeValue(forKey: id) ?? [:]).values { channel.close() }
         publish()

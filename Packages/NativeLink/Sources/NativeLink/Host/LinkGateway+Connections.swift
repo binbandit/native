@@ -105,8 +105,9 @@ extension LinkGateway {
             return channel.close()
         }
         switch outcome {
-        case .accepted:
-            let device = LinkDevice(info: deviceInfo, publicKey: channel.remoteKey, pairedAt: configuration.now())
+        case .accepted(let grants):
+            let device = LinkDevice(
+                info: deviceInfo, publicKey: channel.remoteKey, pairedAt: configuration.now(), grants: grants)
             registry.add(device)
             registry.isEnabled = true
             save()
@@ -154,7 +155,7 @@ extension LinkGateway {
         registry.update(device.id) { $0.lastSeen = configuration.now() }
         save()
         do {
-            try channel.send(LinkWelcome(status: welcome, deviceID: device.id, role: device.role))
+            try channel.send(LinkWelcome(status: welcome, deviceID: device.id, grants: device.grants))
         } catch {
             return channel.close()
         }
@@ -162,7 +163,7 @@ extension LinkGateway {
         channel.onClose { [weak self] in
             Task { await self?.closed(channel, deviceID: device.id) }
         }
-        accept(LinkPolicyStream(channel: channel, role: device.role, deviceName: device.name))
+        accept(LinkPolicyStream(channel: channel, grants: device.grants, deviceName: device.name), device.grants)
         publish()
     }
 

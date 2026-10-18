@@ -3,7 +3,7 @@ import Foundation
 import NativeHostProtocol
 
 /// What the host sees of a paired device: its secure channel, with every request checked against
-/// the device's role first. A refused request is answered here and never reaches the host. The
+/// the device's grants first. A refused request is answered here and never reaches the host. The
 /// device's `initialize` names it as the host knows it (the name the Mac's user confirmed), so
 /// whatever the host records as "from Brayden's iPhone" is true.
 final class LinkPolicyStream: ByteStream {
@@ -11,12 +11,12 @@ final class LinkPolicyStream: ByteStream {
     static let maximumLine = 8 << 20
 
     private let channel: SecureChannel
-    private let role: LinkDeviceRole
+    private let grants: LinkGrants
     private let deviceName: String
 
-    init(channel: SecureChannel, role: LinkDeviceRole, deviceName: String) {
+    init(channel: SecureChannel, grants: LinkGrants, deviceName: String) {
         self.channel = channel
-        self.role = role
+        self.grants = grants
         self.deviceName = deviceName
     }
 
@@ -61,7 +61,7 @@ final class LinkPolicyStream: ByteStream {
             // Responses, and anything unparseable: the host answers malformed input itself.
             return line
         }
-        guard LinkMethodPolicy.allows(method, for: role) else {
+        guard LinkMethodPolicy.allows(method, with: grants) else {
             if let id = message["id"] {
                 refuse(id: id, method: method)
             }
@@ -78,7 +78,7 @@ final class LinkPolicyStream: ByteStream {
     }
 
     private func refuse(id: JSONValue, method: String) {
-        let error = RPCError(code: -32601, message: "\(method) isn't available to paired devices with this access.")
+        let error = RPCError(code: -32601, message: "\(method) isn't available to this paired device.")
         let response: JSONValue = .object([
             "jsonrpc": .string("2.0"), "id": id,
             "error": .object(["code": .number(Double(error.code)), "message": .string(error.message)]),
