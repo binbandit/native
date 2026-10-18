@@ -140,7 +140,7 @@ struct CelebrationContributionTests {
         let spooky = try #require(catalog.celebration(CelebrationID("acme.spooky")))
         #expect(spooky.appIcon == .ready)
         #expect(spooky.homeLook == .mark(FirstPartyCelebrations.HomeMark.halloween))
-        #expect(spooky.order == 2)
+        #expect(spooky.order == FirstPartyCelebrations.celebrations.count)
         let orphan = try #require(catalog.celebration(CelebrationID("acme.orphan")))
         #expect(orphan.home == .unavailable("Its icon set \"acme.uninstalled\" isn't installed or is turned off."))
         #expect(!orphan.isApplicable)
