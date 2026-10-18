@@ -145,7 +145,8 @@ An agent Native doesn't know is a plugin: see the `build-a-native-plugin` skill.
 
 ## Projects
 
-The user opens a folder with File ▸ Open Folder… (⌘O); tasks start in it. Settings ▸ Git sets how
+The user adds a project with Add Project in the sidebar or File ▸ Open Folder… (⌘O); tasks start
+in it. Settings ▸ Git sets how
 new tasks get their branch and worktree, with the user's own git:
 
 - **New tasks get**: Its own worktree (the default; worktrees live in `~/.native/worktrees`, so
@@ -166,12 +167,14 @@ signed in (`gh auth login`), and sets whether pull requests open in Native or th
 
 Settings ▸ MCP Servers has two lists:
 
-- **Set up in Native**: servers every agent gets in every session, wherever they're configured.
-  Add Server takes a name and a local command (run with the user's shell environment, so `npx` and
-  `uvx` work) or a remote URL, with environment variables or headers. Import into Native on a row
-  below copies an agent's own server here.
+- **Set up in Native**: servers Native hands to the agents and projects chosen for each (all of
+  them by default), in every session they start. Add Server takes a name and a local command (run
+  with the user's shell environment, so `npx` and `uvx` work) with environment variables, or a
+  remote URL with headers. Import into Native, on a row in the other list, copies an agent's own
+  server here.
 - **Loaded by your agents**: what each agent's own configuration loads (Claude Code, Codex and
-  Cursor), read through their CLIs. Native doesn't hand an agent a second copy.
+  Cursor). Changes there go through the agent's own CLI, never by editing its files, and Native
+  doesn't hand an agent a second copy.
 
 Check All starts or reaches every server, lists its tools and disconnects, without calling any; a
 row's details show its tools and how much context their definitions take. Each row's switch turns a
@@ -261,8 +264,8 @@ configuration on each machine.
 
 ### The durable host
 
-Native's background host keeps agents running when the window closes, Native quits, or it updates,
-and resumes interrupted turns after a crash or a restart. The user turns it on in Window ▸ Durable
+Native's background host runs agents outside the app, so its sessions keep going when the window
+closes, Native quits or it updates, and it resumes interrupted turns after a crash or a restart. The user turns it on in Window ▸ Durable
 Sessions ▸ Turn On. On a release build it registers as a login item named Native; if macOS's
 "Allow in the Background" switch for Native is off, `setup_status` says `needs_approval` and the
 window offers Allow in Login Items… (System Settings ▸ General ▸ Login Items & Extensions).

@@ -11,6 +11,7 @@ extension ComposerKeyMap.Key {
         // Shift-Tab arrives as backtab.
         case .tab, KeyEquivalent("\u{19}"): self = .tab
         case .escape: self = .escape
+        case .delete: self = .delete
         default: return nil
         }
     }

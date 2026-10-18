@@ -10,6 +10,7 @@ extension ComposerView {
             isWorking: isWorking,
             hasQueuedPrompts: !session.queuedPrompts.isEmpty,
             hasLastPrompt: session.state.lastPrompt != nil,
+            hasAttachments: !session.attachments.isEmpty,
             preferredFollowUp: followUp
         )
         let modifiers = ComposerKeyMap.Modifiers(press)
@@ -44,6 +45,8 @@ extension ComposerView {
             if let last = session.queuedPrompts.last {
                 edit(last)
             }
+        case .removeLastAttachment:
+            removeLastAttachment()
         case .submit(let behavior):
             submit(behavior)
         // Focus moves in `handleKey`, which needs to know whether it did.

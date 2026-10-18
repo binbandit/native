@@ -74,8 +74,9 @@ private struct QueuedPromptRow: View {
         HStack(spacing: DS.Space.md) {
             // One line each; the full text is a click (or ↑) away in the editor.
             HStack(spacing: DS.Space.sm) {
-                Text(verbatim: prompt.text.split(whereSeparator: \.isNewline).joined(separator: " "))
-                    .foregroundStyle(isEditing ? .dsTextTertiary : .dsTextPrimary)
+                // A message of files alone reads as their names.
+                Text(verbatim: prompt.text.isEmpty ? prompt.attachments.map(\.name).joined(separator: ", ") : line)
+                    .foregroundStyle(isEditing || prompt.text.isEmpty ? .dsTextTertiary : .dsTextPrimary)
                     .lineLimit(1)
                     .truncationMode(.tail)
                 if !prompt.attachments.isEmpty {
@@ -120,6 +121,10 @@ private struct QueuedPromptRow: View {
         .trackHover($isHovered)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(isEditing ? "Editing: \(prompt.text)" : isNext ? "Next: \(prompt.text)" : prompt.text)
+    }
+
+    private var line: String {
+        prompt.text.split(whereSeparator: \.isNewline).joined(separator: " ")
     }
 
     private func action(_ title: String, systemImage: String, perform: @escaping () -> Void) -> some View {

@@ -55,7 +55,13 @@ installs wait on an Apple developer team.
   addresses. A second Native on the same Mac takes another port and Bonjour renames it.
 - **Revocation.** Revoking a device closes its live connections and refuses its key at the next
   handshake with an authenticated `revoked`, so the phone says "removed on the Mac" (with Pair
-  Again) instead of retrying forever. Revoked devices stay as tombstones so revoking can be undone.
+  Again, or Try Again after an undo) instead of retrying forever. Revoked devices stay as
+  tombstones so revoking can be undone, and the gateway keeps listening for them until Forget
+  Revoked, so a removed phone is told rather than refused at the door. TCP connections close only
+  after their last message is sent, so refusals and "revoked" always arrive.
+- **Re-pairing.** The phone sends a per-host installation tag (a hash of an installation secret and
+  the host's key), so pairing the same app again replaces its old entry on the Mac instead of
+  adding a duplicate, without giving two hosts anything in common.
 
 ### Host integration
 
@@ -78,9 +84,10 @@ lives in Settings, and a pairing link opens it from anywhere.
 ## The iPhone app
 
 `Companion/NativeCompanion.xcodeproj`, its own project so it can never break the Mac scheme. It
-compiles `native/DesignSystem` (a synchronized folder) and a few transcript files by reference
-(`MarkdownView`, `TranscriptStyle`, `TranscriptMetrics`, `TranscriptFixtures`), and links ACP,
-NativeHostClient, NativeLink and CodeThemes. Screens follow `research/companion-app.md`: welcome;
+compiles `native/DesignSystem` (a synchronized folder) and the Mac's transcript pieces by reference
+(`MarkdownView`, `ToolPresentation`, `ToolPhase`, `FileDiff+DiffView`, `TranscriptStyle`,
+`TranscriptMetrics`, `TranscriptFixtures`), so tool rows and approvals use the Mac's exact words, and
+links ACP, NativeHostClient, NativeLink, NativePolicy and CodeThemes. Screens follow `research/companion-app.md`: welcome;
 Add Host (scan with VisionKit's DataScanner, pick a Mac Bonjour found and type its code, or paste
 the link); pairing progress with the verification code and a pairing log; Tasks grouped by host
 (needs you with inline approvals, working, recent); a task's transcript (the shared `SessionState`
@@ -103,17 +110,26 @@ notifications, unpair); Settings (hosts, appearance, app icon).
 - **App icon** themes set the accent and call `setAlternateIconName("AppIcon-<Theme>")`; the
   artwork comes from the icon owner, and until a theme's icon ships only the accent changes.
 - **Later, with a developer team:** APNs push (the categories in the research doc, threaded per
-  host) and one Live Activity per host; `CompanionNotifications` is the seam. Reuse of the Mac's
-  `ToolPresentation` waits on `ToolPhase` moving out of `ToolCallView.swift`; until then the phone
-  words tool rows with `CompanionToolSummary`.
+  host) and one Live Activity per host; `CompanionNotifications` is the seam. The full
+  `TranscriptView` stays Mac-only until it no longer needs `SessionModel`/`AppModel`; the phone's
+  rows are its own, built on the same `SessionState` items and `ToolPresentation`.
+- **Organization policy.** `policy.companion.enabled` off: the Mac page explains it and locks its
+  rows, the gateway stops listening, opens no window and answers paired devices with an
+  authenticated `disabledByPolicy` (pairings kept), and the phone's Add Host says pairing is off.
+  The host reads the policy from the app's managed domain (`LinkGateway.setAllowedByPolicy`).
 
 ### Verifying
 
 `(cd Packages/NativeLink && swift test)` covers the Noise vectors, a full pairing over a socket
 pair, a used or expired secret, wrong codes, a host with the wrong key, an unpaired key, revocation
 (live connection cut, then refused, then restored) and a real TCP pairing through the control
-socket. End to end: two isolated instances (`scripts/dev/run-isolated.sh host-a` and `host-b`,
-Durable Sessions on), each paired from the simulator with `CompanionEndToEndTests`.
+socket, plus a revoked device being told so over TCP. End to end (2026-10-18): two isolated
+instances (`scripts/dev/run-isolated.sh host-a` and `host-b`, Durable Sessions on, different
+projects), each paired from the simulator with `CompanionEndToEndTests.testPairWithInvite` (the
+invite read off the Mac's QR code, Pair clicked on the Mac through AX), then
+`testSendPromptAndApprove`: list the host's tasks, open the Codex durable session, pick
+`gpt-6.1-sol` and Read-only from the phone, send a prompt, and allow the permission request.
+`testScreens` walks the screens in light or dark.
 
 ## Architecture
 
