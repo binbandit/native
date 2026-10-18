@@ -28,17 +28,17 @@ private struct TerminalPanelModifier: ViewModifier {
             }
         }
         .onGeometryChange(for: CGFloat.self, of: \.size.height) { availableHeight = $0 }
-        // The pointer and touch way in, beside ⌃` and View ▸ Show Terminal.
+        // The pointer and touch way in, beside ⌃` and View ▸ Show Terminal: an outlined header
+        // control, selected while the panel shows, rather than a button on the toolbar's glass.
         .toolbar {
             ToolbarItem {
-                Button {
+                Button(panel.isVisible ? "Hide Terminal" : "Show Terminal", systemImage: "apple.terminal") {
                     store.toggle(for: session)
-                } label: {
-                    Image(systemName: "apple.terminal")
                 }
+                .buttonStyle(.header(isOn: panel.isVisible, iconOnly: true))
                 .help(CommandRegistry.shared.help(panel.isVisible ? "Hide Terminal" : "Show Terminal", for: .terminalToggle))
-                .accessibilityLabel(panel.isVisible ? "Hide Terminal" : "Show Terminal")
             }
+            .sharedBackgroundVisibility(.hidden)
         }
         .animation(.dsPanel, value: panel.isVisible)
         // Reported whether or not the panel shows, so a terminal opened from the menu starts in
