@@ -37,7 +37,8 @@ struct MCPNotice: View {
     }
 }
 
-/// What an empty list is, why, and the one action that fills it.
+/// What an empty list is, why, and the one action that fills it. Without an action it's only
+/// information, so it's a note rather than a row with nothing to change.
 struct MCPEmptyRow: View {
     let title: String
     let message: String
@@ -45,11 +46,12 @@ struct MCPEmptyRow: View {
     var action: () -> Void = {}
 
     var body: some View {
-        SettingsRow(title, icon: "server.rack", description: Text(message)) {
-            if let actionTitle {
+        if let actionTitle {
+            SettingsRow(title, icon: "server.rack", description: Text(message)) {
                 Button(actionTitle, action: action)
-                    .buttonStyle(.ds(.secondary, size: .medium))
             }
+        } else {
+            SettingsNote(title, systemImage: "server.rack") { Text(message) }
         }
     }
 }

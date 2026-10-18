@@ -37,7 +37,6 @@ struct TerminalGhosttySection: View {
                             + "without a live link. You'll see what changes first.")
                 ) {
                     Button("Import…") { pendingImport = PendingImport(value: store.readGhosttyImport()) }
-                        .buttonStyle(.ds(.secondary, size: .large))
                         .disabled(usesGhostty)
                 }
             }

@@ -72,8 +72,7 @@ struct TranscriptSearchSettingsPage: View {
                         description: Text(
                             "Tasks with no activity for longer are left out of search and removed from the index.")
                     ) {
-                        Text(days == 1 ? "1 day" : "\(days) days")
-                            .foregroundStyle(.dsTextSecondary)
+                        SettingsValue(days == 1 ? "1 day" : "\(days) days")
                     }
                     .settingsManaged(by: .searchRetentionDays)
                 }
@@ -89,7 +88,6 @@ struct TranscriptSearchSettingsPage: View {
                             isClearing = false
                         }
                     }
-                    .buttonStyle(.ds(.secondary))
                     .disabled(isClearing)
                 }
             }
@@ -102,7 +100,6 @@ struct TranscriptSearchSettingsPage: View {
                         Button("Include") {
                             Task { await center.include(folder) }
                         }
-                        .buttonStyle(.ds(.secondary))
                     }
                 }
                 SettingsRow(
@@ -117,7 +114,8 @@ struct TranscriptSearchSettingsPage: View {
                             }
                         }
                     }
-                    .fixedSize()
+                    .menuStyle(.button)
+                    .menuIndicator(.hidden)
                     .disabled(model.projects.all.allSatisfy { center.excludedFolders.contains($0.path) })
                 }
             }

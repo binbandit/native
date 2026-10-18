@@ -79,9 +79,11 @@ struct SettingsRow<Accessory: View, Control: View>: View {
         .accessibilityElement(children: .combine)
     }
 
-    /// The control, dimmed and explained while the organization (or something else) locks it.
+    /// The control, dimmed and explained while the organization (or something else) locks it. A
+    /// button here is an action, so one without a style of its own gets the settings button.
     private var trailing: some View {
         control
+            .buttonStyle(.settings)
             // Beside the text a control keeps its own width; under it, it may take the row's.
             .fixedSize(horizontal: !isControlBelow, vertical: true)
             .disabled(lockReason != nil)

@@ -110,7 +110,6 @@ struct TerminalSettingsPage: View {
                 description: Text("Imported from Ghostty\(imported.themeTitle.map { ": \($0)" } ?? "").")
             ) {
                 Button("Use Native's Colors") { store.preferences.settings.colors = .app }
-                    .buttonStyle(.ds(.secondary, size: .large))
             }
         }
     }

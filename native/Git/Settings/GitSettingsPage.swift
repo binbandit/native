@@ -104,9 +104,7 @@ struct GitSettingsPage: View {
                     SettingsRow(root.lastPathComponent, description: Text(root.abbreviatedPath)) {
                         HStack(spacing: DS.Space.sm) {
                             Button("Edit…") { editingScript = root }
-                                .buttonStyle(.ds(.secondary))
                             Button("Remove", role: .destructive) { settings.setSetupScript("", forProjectAt: root) }
-                                .buttonStyle(.ds(.ghost))
                         }
                     }
                 }
@@ -115,7 +113,6 @@ struct GitSettingsPage: View {
                     description: Text("Install dependencies or start services for a project's new worktrees.")
                 ) {
                     Button("Add Script…") { isChoosingProject = true }
-                        .buttonStyle(.ds(.secondary))
                 }
             }
         }
