@@ -92,6 +92,28 @@ public nonisolated struct DSCodeFont: Hashable, Sendable {
 nonisolated extension EnvironmentValues {
     /// The code font. Set it with `.dsCodeFont(_:)`; use it with `.codeTextStyle(_:)`.
     @Entry public var dsCodeFont: DSCodeFont = .standard
+    /// The code font in its strong weight, for runs a code theme sets strong; set by
+    /// `.codeTextStyle(_:)`, since SwiftUI's weight modifiers don't move a variable font's axis.
+    @Entry var dsCodeStrongFont: Font?
+}
+
+extension DSCodeFont {
+    /// 'wght' as a four-character code.
+    private static let weightAxis = 0x7767_6874
+
+    /// `font` in `weight`: a variable font (Geist Mono) moved along its weight axis, otherwise its
+    /// family's bold member, the nearest most monospaced families have.
+    nonisolated static func weighted(_ font: DSPlatformFont, _ weight: DSTypography.Weight) -> DSPlatformFont {
+        let base = font as CTFont
+        let axes = CTFontCopyVariationAxes(base) as? [[CFString: Any]] ?? []
+        guard axes.contains(where: { $0[kCTFontVariationAxisIdentifierKey] as? Int == weightAxis }) else {
+            return CTFontCreateCopyWithSymbolicTraits(base, 0, nil, .traitBold, .traitBold).map { $0 as DSPlatformFont }
+                ?? font
+        }
+        let descriptor = CTFontDescriptorCreateWithAttributes(
+            [kCTFontVariationAttribute: [weightAxis: weight.rawValue]] as CFDictionary)
+        return CTFontCreateCopyWithAttributes(base, 0, nil, descriptor) as DSPlatformFont
+    }
 }
 
 /// Where code is set, which decides its size relative to the user's choice.
@@ -132,9 +154,11 @@ private struct CodeTextStyle: ViewModifier {
     @Environment(\.dsCodeFont) private var codeFont
 
     func body(content: Content) -> some View {
+        let font = codeFont.platformFont(offset: role.sizeOffset)
         content
-            .font(Font(codeFont.platformFont(offset: role.sizeOffset) as CTFont))
+            .font(Font(font as CTFont))
             .lineSpacing(codeFont.lineSpacing(role))
+            .environment(\.dsCodeStrongFont, Font(DSCodeFont.weighted(font, .semibold) as CTFont))
     }
 }
 

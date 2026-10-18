@@ -35,18 +35,3 @@ extension View {
         environment(\.dsLightTone, tone)
     }
 }
-
-/// A token whose light value depends on the light tone: Paper and dark come from the base color,
-/// Wool from its own value.
-nonisolated struct DSTonedStyle: ShapeStyle, Hashable {
-    let base: Color
-    let wool: Color.Resolved
-
-    func resolve(in environment: EnvironmentValues) -> Color.Resolved {
-        if environment.colorScheme == .light, environment.dsLightTone == .wool {
-            wool
-        } else {
-            base.resolve(in: environment)
-        }
-    }
-}

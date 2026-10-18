@@ -27,22 +27,25 @@ extension CodeTheme {
             selection: CodeColor(rgb: 0x000000, alpha: 0x14),
             lineHighlight: CodeColor(rgb: 0x000000, alpha: 0x0B)
         ),
-        // Native DesignSystem dark semantic tokens.
+        // Native's dark mode: a restrained, mostly monochrome set on the design system's code wells
+        // (#070708). Keywords are the primary text in semibold, names a quieter gray, types a muted
+        // cyan, strings and numbers muted warm tones, and punctuation and comments step down from
+        // there. Every text role clears 4.5:1 on the wells and on the raised surface diffs use.
         dark: CodePalette(
-            foreground: CodeColor(rgb: 0xEDEDED),
-            background: CodeColor(rgb: 0x171717),
-            comment: CodeColor(rgb: 0x8A8A8A),
-            keyword: CodeColor(rgb: 0xA371F7),
-            string: CodeColor(rgb: 0x4ADE80),
-            constant: CodeColor(rgb: 0xF59E3B),
-            function: CodeColor(rgb: 0x61A6FA),
-            variable: CodeColor(rgb: 0xEDEDED),
-            tag: CodeColor(rgb: 0xF87272),
-            type: CodeColor(rgb: 0xD29922),
-            operator: CodeColor(rgb: 0xA371F7),
-            regex: CodeColor(rgb: 0xF59E3B),
+            foreground: CodeColor(rgb: 0xC4C4C4),
+            background: CodeColor(rgb: 0x070708),
+            comment: CodeColor(rgb: 0x85858A),
+            keyword: CodeColor(rgb: 0xE9E9E6),
+            string: CodeColor(rgb: 0xCDB48E),
+            constant: CodeColor(rgb: 0xD9A47E),
+            function: CodeColor(rgb: 0xC4C4C4),
+            variable: CodeColor(rgb: 0xC4C4C4),
+            tag: CodeColor(rgb: 0x94C6D4),
+            type: CodeColor(rgb: 0x94C6D4),
+            operator: CodeColor(rgb: 0xA5A5A8),
+            regex: CodeColor(rgb: 0xCDB48E),
             invalid: CodeColor(rgb: 0xF87272),
-            punctuation: CodeColor(rgb: 0xAFAFAF),
+            punctuation: CodeColor(rgb: 0x8D8D91),
             insertedForeground: CodeColor(rgb: 0x4ADE80),
             insertedBackground: CodeColor(rgb: 0x4ADE80, alpha: 0x26),
             deletedForeground: CodeColor(rgb: 0xF87272),
@@ -50,7 +53,8 @@ extension CodeTheme {
             changedForeground: CodeColor(rgb: 0xD29922),
             changedBackground: CodeColor(rgb: 0xD29922, alpha: 0x26),
             selection: CodeColor(rgb: 0xFFFFFF, alpha: 0x1A),
-            lineHighlight: CodeColor(rgb: 0xFFFFFF, alpha: 0x0F)
+            lineHighlight: CodeColor(rgb: 0xFFFFFF, alpha: 0x0F),
+            strong: [.keyword]
         )
     )
 }

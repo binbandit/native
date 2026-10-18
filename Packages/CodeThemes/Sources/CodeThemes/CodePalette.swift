@@ -21,6 +21,9 @@ public struct CodePalette: Sendable, Hashable {
     public let changedBackground: CodeColor
     public let selection: CodeColor
     public let lineHighlight: CodeColor
+    /// Roles set a weight heavier than the code around them, for a theme whose hierarchy leans on
+    /// weight as well as hue (Native's dark keywords). Empty for most themes.
+    public let strong: Set<CodeTokenRole>
 
     public init(
         foreground: CodeColor,
@@ -44,7 +47,8 @@ public struct CodePalette: Sendable, Hashable {
         changedForeground: CodeColor,
         changedBackground: CodeColor,
         selection: CodeColor,
-        lineHighlight: CodeColor
+        lineHighlight: CodeColor,
+        strong: Set<CodeTokenRole> = []
     ) {
         self.foreground = foreground
         self.background = background
@@ -68,6 +72,7 @@ public struct CodePalette: Sendable, Hashable {
         self.changedBackground = changedBackground
         self.selection = selection
         self.lineHighlight = lineHighlight
+        self.strong = strong
     }
 
     public subscript(role: CodeTokenRole) -> CodeColor {

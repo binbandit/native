@@ -14,6 +14,7 @@ struct AgentTerminalSignInSheet: View {
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dsAccentPalette) private var palette
     @Environment(\.dsLightTone) private var lightTone
+    @Environment(\.dsDarkTone) private var darkTone
     @Environment(\.dismiss) private var dismiss
     @State private var run: AgentTerminalSignInRun?
     @State private var isFinishing = false
@@ -129,7 +130,8 @@ struct AgentTerminalSignInSheet: View {
         guard run == nil else { return }
         let appearance = TerminalAppearance(colorScheme)
         terminals.setAppearance(
-            appearance, chrome: .designSystem(appearance: appearance, palette: palette, lightTone: lightTone))
+            appearance,
+            chrome: .designSystem(appearance: appearance, palette: palette, lightTone: lightTone, darkTone: darkTone))
         run = AgentTerminalSignInRun(request: request, terminals: terminals)
     }
 

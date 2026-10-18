@@ -88,7 +88,14 @@ struct CodeThemeTests {
             }
         }
 
-        #expect(CodeTheme.native.dark?.background == CodeColor(rgb: 0x171717))
+        #expect(CodeTheme.native.dark?.background == CodeColor(rgb: 0x070708))
+    }
+
+    @Test func strongRolesSurviveMovingToAnotherSurface() throws {
+        let dark = try #require(CodeTheme.native.dark)
+        #expect(dark.strong == [.keyword])
+        #expect(dark.preservingContrast(on: CodeColor(rgb: 0x141416)).strong == [.keyword])
+        #expect(CodeTheme.native.light?.strong.isEmpty == true)
     }
 
     private func differs(_ first: CodeColor, from second: CodeColor) -> Bool {

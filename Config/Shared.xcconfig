@@ -9,9 +9,9 @@ NATIVE_GITHUB_REPOSITORY = binbandit/native
 // Native's telemetry gate decides whether it runs in builds that have one.
 NATIVE_SENTRY_DSN =
 
-// TODO(release): replace Xcode's placeholder with Native's real reverse-DNS identifier. Nightly
-// appends ".nightly" and the host helper ".Host", so this is the only place it's spelled out.
-NATIVE_BUNDLE_IDENTIFIER_BASE = devplaceholder.$(PROJECT_UNIQUE_VALUE:identifier).Native
+// Native's reverse-DNS identifier. Nightly appends ".nightly", Debug builds ".dev" and the host
+// helper ".Host", so this is the only place it's spelled out.
+NATIVE_BUNDLE_IDENTIFIER_BASE = dev.binbandit.native
 NATIVE_BUNDLE_IDENTIFIER_SUFFIX =
 NATIVE_BUNDLE_IDENTIFIER = $(NATIVE_BUNDLE_IDENTIFIER_BASE)$(NATIVE_BUNDLE_IDENTIFIER_SUFFIX)
 

@@ -45,7 +45,8 @@ struct PlatformCodeText: View, Equatable {
 
     /// `text` ready for a code text view: SwiftUI colors resolved for `environment`, `foreground`
     /// where a run has none (the text view would draw black, whatever the appearance), set in
-    /// `font`, and every line exactly `lineHeight` tall with its glyphs centered in it.
+    /// `font` (runs a code theme sets strong in its semibold), and every line exactly `lineHeight`
+    /// tall with its glyphs centered in it.
     static func attributed(
         _ text: AttributedString, font: DSPlatformFont, lineHeight: CGFloat, foreground: Color,
         in environment: EnvironmentValues
@@ -59,6 +60,7 @@ struct PlatformCodeText: View, Equatable {
         let base: [NSAttributedString.Key: Any] = [
             .font: font, .paragraphStyle: paragraph, .baselineOffset: max(0, lineHeight - natural) / 2,
         ]
+        lazy var strongFont = DSCodeFont.weighted(font, .semibold)
         // Runs share a handful of colors; resolving each once keeps building a block cheap.
         var resolved: [Color: DSPlatformColor] = [:]
         func platform(_ color: Color) -> DSPlatformColor {
@@ -85,6 +87,9 @@ struct PlatformCodeText: View, Equatable {
             }
             if let link = run[AttributeScopes.FoundationAttributes.LinkAttribute.self] {
                 result.addAttribute(.link, value: link, range: range)
+            }
+            if run[DSCodeStrongAttribute.self] == true {
+                result.addAttribute(.font, value: strongFont, range: range)
             }
         }
         return result

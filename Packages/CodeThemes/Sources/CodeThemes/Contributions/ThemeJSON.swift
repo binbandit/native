@@ -46,4 +46,9 @@ public enum ThemeJSON: Codable, Hashable, Sendable {
     public var string: String? {
         if case .string(let value) = self { value } else { nil }
     }
+
+    /// An array's elements, or nil for anything else.
+    public var array: [ThemeJSON]? {
+        if case .array(let value) = self { value } else { nil }
+    }
 }

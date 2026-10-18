@@ -36,6 +36,15 @@ public nonisolated enum DSTransparency: String, CaseIterable, Identifiable, Send
         }
     }
 
+    /// `sidebarTint` for a window's appearance. Dark mode's sidebar and chrome sit a step deeper
+    /// than its content, darker than any system material, so the material shows through at most a
+    /// fifth as much as the level says: a hint of the desktop rather than a gray that would rise above
+    /// the content. True Black's are opaque, pure black, for OLED screens.
+    public func sidebarTint(colorScheme: ColorScheme, darkTone: DSDarkTone) -> Double {
+        guard colorScheme == .dark else { return sidebarTint }
+        return darkTone == .trueBlack ? 1 : 1 - (1 - sidebarTint) * 0.2
+    }
+
     /// How much of the overlay color covers the blur behind menus, popovers and toasts. Overlays
     /// hold text the user reads, so even Standard keeps them mostly opaque.
     public var overlayTint: Double {

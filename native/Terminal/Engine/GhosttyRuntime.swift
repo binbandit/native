@@ -40,7 +40,8 @@ final class GhosttyRuntime: TerminalEngine {
     private init?() {
         let appearance: TerminalAppearance =
             NSApp.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? .dark : .light
-        let chrome = TerminalChrome.designSystem(appearance: appearance, palette: .original, lightTone: .paper)
+        let chrome = TerminalChrome.designSystem(
+            appearance: appearance, palette: .original, lightTone: .paper, darkTone: .standard)
         // A starting point; `TerminalStore` applies the user's settings right after the app starts.
         style = TerminalStyle(
             settings: TerminalSettings(), appearance: appearance, appTheme: .native, appChrome: chrome)

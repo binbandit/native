@@ -5,6 +5,10 @@ NATIVE_SENTRY_DSN =
 
 NATIVE_APP_ICON_NAME = AppIconDev
 
+// Development builds keep their own settings and data, apart from an installed Native.
+// scripts/dev/run-isolated.sh replaces this with ".dev.<name>" for each test instance.
+NATIVE_BUNDLE_IDENTIFIER_SUFFIX = .dev
+
 // Development builds don't update themselves: the stable feed would replace a dev build with a
 // release. Pass NATIVE_FEED_URL on the xcodebuild command line to test updates locally.
 NATIVE_FEED_URL =

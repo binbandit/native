@@ -4,14 +4,15 @@ import Terminal
 extension TerminalChrome {
     /// The terminal's background, text, cursor and selection from the design system, so it sits
     /// in the window like the rest of the content: the sunken surface code blocks use, primary
-    /// text, an accent cursor, and an accent-tinted selection, in the window's light tone.
+    /// text, an accent cursor, and an accent-tinted selection, in the window's tones.
     static func designSystem(
-        appearance: TerminalAppearance, palette: DSAccentPalette, lightTone: DSLightTone
+        appearance: TerminalAppearance, palette: DSAccentPalette, lightTone: DSLightTone, darkTone: DSDarkTone
     ) -> TerminalChrome {
         var environment = EnvironmentValues()
         environment.colorScheme = appearance == .dark ? .dark : .light
         environment.dsAccentPalette = palette
         environment.dsLightTone = lightTone
+        environment.dsDarkTone = darkTone
         let background = TerminalRGB(Color.dsSurfaceSunken, in: environment)
         let accent = TerminalRGB(Color.dsAccent, in: environment)
         return TerminalChrome(
@@ -50,15 +51,16 @@ extension TerminalRGB {
 
 extension TerminalTransparency {
     /// The terminal's background at the app's transparency level. The terminal holds text the
-    /// user reads, so even Standard stays mostly opaque; the panel blurs what shows through.
-    init(_ level: DSTransparency, reduceTransparency: Bool) {
+    /// user reads, so even Standard stays mostly opaque; the panel blurs what shows through. On True
+    /// Black it's opaque at every level, pure black like the window around it.
+    init(_ level: DSTransparency, reduceTransparency: Bool, isTrueBlack: Bool) {
         let opacity =
             switch level {
             case .solid: 1.0
             case .subtle: 0.92
             case .standard: 0.85
             }
-        self.init(backgroundOpacity: opacity, forcesOpaque: reduceTransparency)
+        self.init(backgroundOpacity: isTrueBlack ? 1 : opacity, forcesOpaque: reduceTransparency)
     }
 }
 
@@ -67,5 +69,6 @@ struct TerminalAppearanceKey: Equatable {
     let colorScheme: ColorScheme
     let palette: DSAccentPalette
     let lightTone: DSLightTone
+    let darkTone: DSDarkTone
     let transparency: TerminalTransparency
 }
