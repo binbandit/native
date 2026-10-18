@@ -4,4 +4,7 @@ import Foundation
 nonisolated struct OrchestrationCaller: Sendable {
     var clientID: UUID
     var agent: AgentDefinition.ID
+    /// The session's folder, for what depends on the project (such as which MCP servers its scripts
+    /// can reach).
+    var cwd: URL
 }

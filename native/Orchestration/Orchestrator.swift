@@ -70,7 +70,7 @@ final class Orchestrator {
         var generator = SystemRandomNumberGenerator()
         let token = (0..<4).map { _ in String(generator.next(), radix: 16).leftPadded(to: 16) }.joined()
         tokens[session.clientID] = token
-        callers[token] = OrchestrationCaller(clientID: session.clientID, agent: session.agent)
+        callers[token] = OrchestrationCaller(clientID: session.clientID, agent: session.agent, cwd: session.cwd)
         if let id = session.sessionID {
             reopenTasks(of: SessionKey(agent: session.agent, id: id))
         }
