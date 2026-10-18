@@ -8,13 +8,13 @@ import os
 /// it stopped. It runs at background priority and waits while the Mac is on battery or in Low
 /// Power Mode.
 nonisolated struct TranscriptSearchBackfill: Sendable {
-    struct Reader: Sendable {
+    nonisolated struct Reader: Sendable {
         let agent: String
         let reader: any SessionHistoryReader
     }
 
     /// What Native knows about a session it lists, which wins over what the history says.
-    struct Known: Sendable {
+    nonisolated struct Known: Sendable {
         let title: String?
         let project: String
         let isArchived: Bool
