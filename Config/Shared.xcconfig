@@ -5,7 +5,7 @@
 NATIVE_GITHUB_REPOSITORY = binbandit/native
 
 // Public ingestion key; Native's telemetry gate controls whether the SDK runs.
-NATIVE_SENTRY_DSN =
+NATIVE_SENTRY_DSN = 
 
 // TODO(release): replace Xcode's placeholder with Native's real reverse-DNS identifier. Nightly
 // appends ".nightly" and the host helper ".Host", so this is the only place it's spelled out.

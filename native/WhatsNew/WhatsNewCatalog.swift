@@ -35,7 +35,8 @@ enum WhatsNewCatalog {
                 WhatsNewHighlight(
                     id: "mcp.servers",
                     title: "MCP servers, checked",
-                    summary: "See every MCP server your agents use, whether it's healthy, and what it costs in context.",
+                    summary:
+                        "See every MCP server your agents use, whether it's healthy, and what it costs in context.",
                     preview: .symbol("server.rack"),
                     destination: .settings("mcp-servers")),
                 WhatsNewHighlight(

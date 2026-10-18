@@ -38,19 +38,19 @@
               "value": true
             }
           ],
-          "image-name": "painted-interlock.png",
-          "name": "Painted Native interlock",
+          "image-name": "flat-interlock.png",
+          "name": "Flat Native interlock",
           "position": {
-            "scale": 0.5614567526555387,
+            "scale": 0.6011372867587328,
             "translation-in-points": [
-              -0.0,
-              12.280728376327769
+              -2.1039805036555648,
+              13.502843216896832
             ]
           }
         }
       ],
       "lighting": "individual",
-      "name": "Bandi Chhor Divas · painted Native interlock",
+      "name": "Bandi Chhor Divas · flat Native interlock",
       "refractivity-specializations": [
         {
           "appearance": "tinted",
@@ -62,8 +62,8 @@
         }
       ],
       "shadow": {
-        "kind": "neutral",
-        "opacity": 0.18
+        "kind": "none",
+        "opacity": 0
       },
       "translucency-specializations": [
         {

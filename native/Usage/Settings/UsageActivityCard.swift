@@ -14,8 +14,10 @@ struct UsageActivityCard: View {
     @Environment(SettingsPresentation.self) private var settings
 
     var body: some View {
-        let values = activity.values(of: metric, for: filter)
         let today = Date.now
+        // The graph's year; the log keeps a few weeks more.
+        let yearAgo = calendar.date(byAdding: .year, value: -1, to: calendar.startOfDay(for: today)) ?? today
+        let values = activity.values(of: metric, for: filter).filter { $0.key > yearAgo }
         Card {
             VStack(alignment: .leading, spacing: DS.Space.lg) {
                 header
@@ -58,7 +60,7 @@ struct UsageActivityCard: View {
             stat(
                 "Busiest day",
                 stats.busiest.map { "\($0.day.formatted(.dateTime.month(.abbreviated).day())) · \(metric.describe($0.value))" } ?? "–")
-            stat("This year", metric.describe(stats.total))
+            stat("Past year", metric.describe(stats.total))
         }
     }
 
@@ -77,10 +79,21 @@ struct UsageActivityCard: View {
     /// The hovered or picked day in numbers, so the graph never relies on color alone.
     private func readout(_ values: [Date: (value: Double, isEstimate: Bool)]) -> some View {
         let day = hovered ?? selection
-        return Text(day.map { describe($0, values[$0]) + (values[$0]?.isEstimate == true ? ", estimated from the agents’ session lists" : "") } ?? "Hover over or tap a day to see it.")
+        let text: String =
+            if let day {
+                describe(day, values[day]) + (values[day]?.isEstimate == true ? ", estimated from the agents’ session lists" : "")
+            } else if values.isEmpty {
+                filter == .all
+                    ? "Each day you work with agents fills in a square. Days before Native counted are estimated from the agents’ session lists."
+                    : "Nothing here in the past year. Show Everything to see all of your work."
+            } else {
+                "Hover over or tap a day to see it."
+            }
+        return Text(text)
             .font(.dsCaption)
             .foregroundStyle(day == nil ? .dsTextTertiary : .dsTextSecondary)
             .monospacedDigit()
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     @ViewBuilder

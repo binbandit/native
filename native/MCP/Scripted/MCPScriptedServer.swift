@@ -10,6 +10,8 @@ nonisolated struct MCPScriptedServer: Hashable, Sendable {
     var config: MCPServerConfig
     /// Where a local server starts.
     var directory: String?
+    /// Whether its last check found only read-only tools; false before any check.
+    var toolsAreReadOnly = false
 }
 
 extension MCPLibrary {
@@ -22,7 +24,8 @@ extension MCPLibrary {
             let key = server.transport.endpoint.key
             guard mode(of: key, in: directory) == .scripted, found[key] == nil else { continue }
             found[key] = MCPScriptedServer(
-                key: key, name: server.name, config: server.config(with: secrets(for: server.id)), directory: folder)
+                key: key, name: server.name, config: server.config(with: secrets(for: server.id)), directory: folder,
+                toolsAreReadOnly: onlyReadOnlyTools(.managed(server.id)))
         }
         for agent in agents {
             for entry in agentServers(agent.format, in: directory) where entry.status.isLoaded {
@@ -31,7 +34,7 @@ extension MCPLibrary {
                 found[key] = MCPScriptedServer(
                     key: key, name: entry.name,
                     config: entry.resolved(environment: environment, project: entry.scope.project ?? directory),
-                    directory: folder)
+                    directory: folder, toolsAreReadOnly: onlyReadOnlyTools(.agent(entry.id)))
             }
         }
         // Script paths need distinct names; a second server with a taken one gets a number.
@@ -48,6 +51,11 @@ extension MCPLibrary {
             server.name = name
             return server
         }
+    }
+
+    private func onlyReadOnlyTools(_ key: MCPServerKey) -> Bool {
+        guard let tools = reports[key]?.tools, !tools.isEmpty else { return false }
+        return tools.allSatisfy { $0.isReadOnly == true }
     }
 
     /// Whether any server runs through scripts anywhere, so connections can close once none does.

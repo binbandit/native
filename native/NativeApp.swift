@@ -21,6 +21,7 @@ struct NativeApp: App {
     /// One connection to this build's background host, shared by the main window and Durable Sessions.
     @State private var durableHost = DurableHost()
     @State private var updates = UpdateController()
+    @State private var whatsNew = WhatsNewCenter()
 
     init() {
         LaunchMetrics.mark(.appInit)
@@ -61,6 +62,7 @@ struct NativeApp: App {
                 .environment(terminals)
                 .environment(durableHost)
                 .environment(updates)
+                .environment(whatsNew)
                 .environment(settings)
                 .environment(model.plugins)
                 .environment(git.settings)
@@ -95,6 +97,7 @@ struct NativeApp: App {
                     iconPreferences.start()
                     updates.restartContext = { [model] in model.updateRestartContext }
                     updates.start()
+                    whatsNew.start()
                     await model.start()
                     LaunchMetrics.mark(.agentsReady)
                 }
@@ -114,6 +117,7 @@ struct NativeApp: App {
         .defaultSize(width: 1120, height: 780)
         .commands {
             UpdateCommands(controller: updates, settings: settings)
+            WhatsNewCommands(center: whatsNew)
             FileCommands(model: model)
             ViewCommands(celebrations: celebrations, settings: settings)
             SettingsCommands(settings: settings)

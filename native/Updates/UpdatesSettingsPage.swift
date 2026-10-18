@@ -23,6 +23,9 @@ extension SettingsPane {
                     SettingsSearchEntry(id: UpdatesSettingsPage.checksRow, title: "Check for updates automatically"),
                     SettingsSearchEntry(id: UpdatesSettingsPage.downloadsRow, title: "Download updates automatically"),
                     SettingsSearchEntry(
+                        id: UpdatesSettingsPage.whatsNewRow, title: "Show What's New",
+                        keywords: ["highlights", "new features", "release notes"]),
+                    SettingsSearchEntry(
                         id: UpdatesSettingsPage.versionRow, title: "Version", keywords: ["build", "release notes"]),
                 ]
             },
@@ -50,10 +53,12 @@ struct UpdatesSettingsPage: View {
     static let checksRow = SettingsRowID("updates.automatic-checks")
     static let downloadsRow = SettingsRowID("updates.automatic-downloads")
     static let versionRow = SettingsRowID("updates.version")
+    static let whatsNewRow = SettingsRowID("updates.whats-new")
 
     let controller: UpdateController
 
     @Environment(\.openURL) private var openURL
+    @AppStorage(WhatsNewCenter.enabledKey) private var showsWhatsNew = true
 
     var body: some View {
         SettingsPage {
@@ -88,6 +93,14 @@ struct UpdatesSettingsPage: View {
                             get: { controller.automaticallyDownloads }, set: controller.setAutomaticallyDownloads)
                     )
                     .disabled(!controller.isAvailable || !controller.automaticallyChecks)
+                }
+                SettingsRow(
+                    id: Self.whatsNewRow,
+                    "Show What's New",
+                    description: Text(
+                        "After an update, show its highlights once. Help ▸ What's New shows them any time.")
+                ) {
+                    SettingsSwitch("Show What's New", isOn: $showsWhatsNew)
                 }
             }
         }
