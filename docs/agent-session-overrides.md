@@ -3,8 +3,10 @@
 Native can leave things out of the sessions it starts (an MCP server switched off in Settings ▸ MCP
 Servers, later skills) without editing any agent's files. Features state intent as a
 `SessionPolicy` (`native/Plugins/SessionPolicy.swift`); each agent's plugin translates it with a
-`SessionPolicyTranslator`. Changes apply at the next session start, or when the agent restarts for
-the ones applied at launch; a running turn is never interrupted.
+`SessionPolicyTranslator`, which builds the adapter's wire format with a tested type in the ACP
+package (`Packages/ACP/Sources/ACP/Adapters/`: `ClaudeCodeSessionSettings`, `CodexConfigOverrides`),
+so MCP servers and skills always land in the same document. Changes apply at the next session start,
+or when the agent restarts for the ones applied at launch; a running turn is never interrupted.
 
 | Agent | Mechanism | Scope | Status |
 | --- | --- | --- | --- |

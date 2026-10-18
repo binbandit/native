@@ -8,9 +8,7 @@ import Testing
 struct CelebrationContributionTests {
     typealias F = CelebrationFixtures
 
-    private func decode<Element: AppearanceContribution>(_ json: String, as _: Element.Type = CelebrationContribution.self)
-        throws -> ContributionList<Element>
-    {
+    private func decode<Element: AppearanceContribution>(_ json: String) throws -> ContributionList<Element> {
         try JSONDecoder().decode(ContributionList<Element>.self, from: Data(json.utf8))
     }
 
