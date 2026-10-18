@@ -37,6 +37,9 @@ struct ComposerView: View {
     @State var pendingAttachments: [ComposerPendingAttachment] = []
     /// Attached files found gone at the last try to send, marked on their chips.
     @State var missingAttachments: Set<PromptAttachment.ID> = []
+    /// The chip ← selected from the start of the text (`DraftAttachmentKeys`); nil while the keys go
+    /// to the text.
+    @State var selectedAttachment: PromptAttachment.ID?
 
     var canEdit: Bool {
         session.phase != .disconnected
@@ -197,6 +200,7 @@ struct ComposerView: View {
                     attachments: session.attachments,
                     pending: pendingAttachments,
                     missing: missingAttachments,
+                    selected: selectedAttachment,
                     capabilities: session.promptCapabilities,
                     agentName: session.agentName,
                     onRemove: removeAttachment
@@ -257,7 +261,8 @@ struct ComposerView: View {
                 if session.canCancel {
                     actionSlot { if hasContent { sendButton } }
                     actionSlot {
-                        ComposerStopButton(isEscapeEnabled: suggestions == nil) {
+                        // Escape deselects a chip before it stops anything.
+                        ComposerStopButton(isEscapeEnabled: suggestions == nil && selectedAttachment == nil) {
                             Task { await session.cancel() }
                         }
                     }

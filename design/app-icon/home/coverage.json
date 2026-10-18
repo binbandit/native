@@ -1,7 +1,9 @@
 {
   "families": 53,
   "expectedVariants": 424,
-  "editableSVGs": 424,
+  "editableSVGCompositions": 424,
+  "pureVectorSVGs": 408,
+  "illustratedSVGs": 16,
   "transparentPNGs": 424,
   "catalogueMatchesAppIcons": true,
   "errors": [],
@@ -10,7 +12,8 @@
     "All app-icon artwork families covered",
     "Four channels and both appearances",
     "Release-channel layers present",
-    "No raster or live text in SVGs",
+    "No scripts, live text or external raster dependencies",
+    "Two illustrated editions embed their unchanged original app foreground; others remain pure vector",
     "RGBA 1280×1080 exports",
     "Transparent outer edges; no clipping",
     "More than 55% transparent canvas",
@@ -790,48 +793,48 @@
       "channel": "stable",
       "appearance": "light",
       "inkBoundsPixels": [
-        377,
-        174,
-        903,
-        936
+        211,
+        146,
+        1042,
+        950
       ],
-      "transparentFraction": 0.78
+      "transparentFraction": 0.708
     },
     {
       "id": "dia-de-muertos-sugar-skull",
       "channel": "stable",
       "appearance": "dark",
       "inkBoundsPixels": [
-        377,
-        174,
-        903,
-        936
+        211,
+        146,
+        1042,
+        950
       ],
-      "transparentFraction": 0.78
+      "transparentFraction": 0.708
     },
     {
       "id": "dia-de-muertos-sugar-skull",
       "channel": "beta",
       "appearance": "light",
       "inkBoundsPixels": [
-        377,
-        174,
+        211,
+        146,
         1215,
-        936
+        950
       ],
-      "transparentFraction": 0.779
+      "transparentFraction": 0.706
     },
     {
       "id": "dia-de-muertos-sugar-skull",
       "channel": "beta",
       "appearance": "dark",
       "inkBoundsPixels": [
-        377,
-        174,
+        211,
+        146,
         1215,
-        936
+        950
       ],
-      "transparentFraction": 0.779
+      "transparentFraction": 0.706
     },
     {
       "id": "dia-de-muertos-sugar-skull",
@@ -841,9 +844,9 @@
         55,
         32,
         1235,
-        936
+        950
       ],
-      "transparentFraction": 0.775
+      "transparentFraction": 0.703
     },
     {
       "id": "dia-de-muertos-sugar-skull",
@@ -853,9 +856,9 @@
         55,
         32,
         1235,
-        936
+        950
       ],
-      "transparentFraction": 0.775
+      "transparentFraction": 0.703
     },
     {
       "id": "dia-de-muertos-sugar-skull",
@@ -865,9 +868,9 @@
         29,
         140,
         1251,
-        949
+        950
       ],
-      "transparentFraction": 0.775
+      "transparentFraction": 0.702
     },
     {
       "id": "dia-de-muertos-sugar-skull",
@@ -877,9 +880,9 @@
         29,
         140,
         1251,
-        949
+        950
       ],
-      "transparentFraction": 0.775
+      "transparentFraction": 0.702
     },
     {
       "id": "new-year",
@@ -4918,48 +4921,48 @@
       "channel": "stable",
       "appearance": "light",
       "inkBoundsPixels": [
-        185,
-        181,
-        1089,
-        881
+        248,
+        55,
+        1108,
+        958
       ],
-      "transparentFraction": 0.887
+      "transparentFraction": 0.873
     },
     {
       "id": "australia-day-boxing-kangaroo",
       "channel": "stable",
       "appearance": "dark",
       "inkBoundsPixels": [
-        185,
-        181,
-        1089,
-        881
+        248,
+        55,
+        1108,
+        958
       ],
-      "transparentFraction": 0.887
+      "transparentFraction": 0.873
     },
     {
       "id": "australia-day-boxing-kangaroo",
       "channel": "beta",
       "appearance": "light",
       "inkBoundsPixels": [
-        185,
-        181,
+        248,
+        55,
         1215,
-        881
+        958
       ],
-      "transparentFraction": 0.886
+      "transparentFraction": 0.872
     },
     {
       "id": "australia-day-boxing-kangaroo",
       "channel": "beta",
       "appearance": "dark",
       "inkBoundsPixels": [
-        185,
-        181,
+        248,
+        55,
         1215,
-        881
+        958
       ],
-      "transparentFraction": 0.886
+      "transparentFraction": 0.872
     },
     {
       "id": "australia-day-boxing-kangaroo",
@@ -4969,9 +4972,9 @@
         55,
         32,
         1235,
-        881
+        958
       ],
-      "transparentFraction": 0.882
+      "transparentFraction": 0.868
     },
     {
       "id": "australia-day-boxing-kangaroo",
@@ -4981,9 +4984,9 @@
         55,
         32,
         1235,
-        881
+        958
       ],
-      "transparentFraction": 0.882
+      "transparentFraction": 0.868
     },
     {
       "id": "australia-day-boxing-kangaroo",
@@ -4991,11 +4994,11 @@
       "appearance": "light",
       "inkBoundsPixels": [
         29,
-        140,
+        55,
         1251,
-        949
+        958
       ],
-      "transparentFraction": 0.882
+      "transparentFraction": 0.868
     },
     {
       "id": "australia-day-boxing-kangaroo",
@@ -5003,11 +5006,11 @@
       "appearance": "dark",
       "inkBoundsPixels": [
         29,
-        140,
+        55,
         1251,
-        949
+        958
       ],
-      "transparentFraction": 0.882
+      "transparentFraction": 0.868
     },
     {
       "id": "australia-day-ochre-dots",

@@ -1,8 +1,11 @@
+import ACP
 import SwiftUI
 
-// The editor's keys (docs/keyboard.md), mapped by the pure `ComposerKeyMap`.
+// The editor's keys (docs/keyboard.md), mapped by the pure `ComposerKeyMap`, and the attachment
+// chips' token-field keys, by `DraftAttachmentKeys`.
 extension ComposerView {
     func handleKey(_ press: KeyPress, suggestions: ComposerSuggestions?) -> KeyPress.Result {
+        if let result = handleAttachmentKey(press) { return result }
         guard let key = ComposerKeyMap.Key(press.key) else { return .ignored }
         let context = ComposerKeyMap.Context(
             isSuggestionListOpen: suggestions != nil,
@@ -10,7 +13,6 @@ extension ComposerView {
             isWorking: isWorking,
             hasQueuedPrompts: !session.queuedPrompts.isEmpty,
             hasLastPrompt: session.state.lastPrompt != nil,
-            hasAttachments: !session.attachments.isEmpty,
             isComposing: PlatformTextInput.isComposing,
             preferredFollowUp: followUp
         )
@@ -49,8 +51,6 @@ extension ComposerView {
             if let last = session.queuedPrompts.last {
                 edit(last)
             }
-        case .removeLastAttachment:
-            removeLastAttachment()
         case .submit(let behavior):
             submit(behavior)
         // Focus moves in `handleKey`, which needs to know whether it did.
@@ -59,4 +59,26 @@ extension ComposerView {
         }
     }
 
+    /// The chips' keys, ahead of the editor's: nil leaves the key to them; otherwise the key stops
+    /// here.
+    private func handleAttachmentKey(_ press: KeyPress) -> KeyPress.Result? {
+        let attachments = session.attachments
+        let draft = DraftAttachmentKeys.Draft(
+            isEmpty: session.draft.isEmpty, isCaretAtStart: isCaretAtStart,
+            isComposing: PlatformTextInput.isComposing)
+        let outcome = DraftAttachmentKeys.outcome(
+            for: DraftAttachmentKeys.Key(press), selection: selectedAttachmentIndex, count: attachments.count,
+            draft: draft, isRepeat: press.phase == .repeat)
+        if let index = outcome.removing, attachments.indices.contains(index) {
+            removeAttachment(attachments[index].id)
+        }
+        selectAttachment(at: outcome.selection)
+        return outcome.passesKey ? nil : .handled
+    }
+
+    /// The caret before the first character with nothing selected, where ← reaches the chips.
+    private var isCaretAtStart: Bool {
+        guard case .selection(let range)? = selection?.indices else { return session.draft.isEmpty }
+        return range.isEmpty && range.lowerBound == session.draft.startIndex
+    }
 }
