@@ -14,11 +14,8 @@ enum AgentIconArtwork {
         .monogram(name.first { $0.isLetter || $0.isNumber }.map { String($0).uppercased() } ?? "·")
     }
 
-    /// Glyphs and monograms take the color of the text around them; pictures keep their own.
-    var isTemplate: Bool {
-        switch self {
-        case .picture: false
-        case .glyph, .monogram: true
-        }
+    /// Pictures keep their own colors; glyphs and monograms take the text color around them.
+    var isPicture: Bool {
+        if case .picture = self { true } else { false }
     }
 }

@@ -93,7 +93,7 @@ struct AgentsSettingsPage: View {
     private func agentRow(_ entry: Entry) -> some View {
         HStack(spacing: DS.Space.lg) {
             SettingsIconTile {
-                AgentIcon(agent: entry.definition, size: SettingsMetrics.tileGlyph + DS.Space.xs)
+                AgentIcon(agent: entry.definition, style: .tile, size: SettingsMetrics.tileGlyph + DS.Space.xs)
             }
             row(entry)
         }

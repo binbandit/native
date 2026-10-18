@@ -11,7 +11,7 @@ struct NewExpeditionMenuItem: View {
             BuiltInPlugins.expeditions.center.isNewExpeditionRequested = true
         }
         .keyboardShortcut("e", modifiers: [.command, .option])
-        .disabled(model.projects.all.isEmpty || model.agents.allSatisfy { !$0.isReady })
+        .disabled(model.projects.all.isEmpty || model.agents.allSatisfy { !$0.isAvailable })
     }
 }
 

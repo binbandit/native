@@ -225,7 +225,7 @@ struct NewExpeditionSheet: View {
     private var readiness: ExpeditionReadiness {
         var readiness = ExpeditionReadiness()
         readiness.crew = crew
-        readiness.unavailableAgents = model.agents.filter { !$0.isReady }.map { runtime in
+        readiness.unavailableAgents = model.agents.filter { !$0.isAvailable }.map { runtime in
             "\(runtime.agent.displayName) can't join the crew: \(runtime.status.label.lowercased())."
                 + (runtime.status.guidance.map { " \($0)" } ?? "")
         }
