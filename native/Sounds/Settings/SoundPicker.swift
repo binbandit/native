@@ -14,8 +14,7 @@ struct SoundPicker: View {
     }
 
     private var title: String {
-        guard sounds.preferences.selection != .none else { return "No Sound" }
-        return sounds.selectedOption?.title ?? "Chime"
+        sounds.selectedOption?.title ?? NativeChime.chime.title
     }
 
     var body: some View {
@@ -54,11 +53,6 @@ struct SoundPicker: View {
     private var options: some View {
         // One inline picker per group, all bound to the selection, so the menu checks the current
         // sound wherever it is.
-        Picker("No Sound", selection: selection) {
-            Text("No Sound").tag(SoundID.none)
-        }
-        .pickerStyle(.inline)
-        .labelsHidden()
         Section("Native") {
             picker("Native", sounds.catalog.native)
         }

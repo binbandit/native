@@ -1,11 +1,13 @@
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// Settings › Sounds, in the reference app's row style: the sound with a Test button, its volume, the
-/// moments that play it and when.
+/// Settings › Sounds, in the reference app's row style: one switch for all sounds, the sound with a Test
+/// button, its volume, Focus, the moments that play it and when.
 struct SoundsSettingsPage: View {
+    static let enabledRow = SettingsRowID("sounds.enabled")
     static let soundRow = SettingsRowID("sounds.sound")
     static let volumeRow = SettingsRowID("sounds.volume")
+    static let focusRow = SettingsRowID("sounds.focus")
     static let timingRow = SettingsRowID("sounds.timing")
     static func triggerRow(_ trigger: SoundTrigger) -> SettingsRowID {
         SettingsRowID("sounds.trigger.\(trigger.rawValue)")
@@ -22,15 +24,14 @@ struct SoundsSettingsPage: View {
         sounds.preferences
     }
 
-    private var isSilent: Bool {
-        preferences.selection == .none
-    }
-
     var body: some View {
         @Bindable var preferences = preferences
         SettingsPage {
             SettingsHeader("Sounds", description: Text("Hear when an agent finishes or needs you, without watching it work."))
             SettingsRowGroup {
+                SettingsRow(id: Self.enabledRow, "Play sounds", description: Text("Turn off to silence every sound Native plays.")) {
+                    SettingsSwitch("Play sounds", isOn: $preferences.isEnabled)
+                }
                 SettingsRow(
                     id: Self.soundRow,
                     "Notification sound",
@@ -43,15 +44,29 @@ struct SoundsSettingsPage: View {
                             sounds.preview()
                         }
                         .buttonStyle(.ds(.ghost, size: .medium))
-                        .disabled(isSilent)
                     }
                 }
+                .disabled(!preferences.isEnabled)
                 SettingsRow(id: Self.volumeRow, "Volume", description: Text("How loud notification sounds play.")) {
                     VolumeSlider(volume: $preferences.volume) {
                         sounds.preview()
                     }
                     .frame(width: Self.selectWidth)
                 }
+                .disabled(!preferences.isEnabled)
+                SettingsRow(
+                    id: Self.focusRow,
+                    "Stay quiet during Focus",
+                    description: Text("When off, Native plays sounds even while Do Not Disturb or another Focus is on."),
+                    detail: focusNote
+                ) {
+                    SettingsSwitch("Stay quiet during Focus", isOn: Binding {
+                        preferences.staysQuietDuringFocus
+                    } set: {
+                        sounds.setStaysQuietDuringFocus($0)
+                    })
+                }
+                .disabled(!preferences.isEnabled)
                 SettingsRow(id: Self.timingRow, "When to play", description: Text("Stay quiet for the task you're looking at, or whenever Native is in front.")) {
                     SettingsSelect(
                         label: "When to play",
@@ -60,8 +75,8 @@ struct SoundsSettingsPage: View {
                         width: Self.selectWidth
                     )
                 }
+                .disabled(!preferences.isEnabled)
             }
-            .disabled(isSilent)
 
             SettingsSubheading("Play a sound when")
             SettingsRowGroup {
@@ -75,7 +90,7 @@ struct SoundsSettingsPage: View {
                     }
                 }
             }
-            .disabled(isSilent)
+            .disabled(!preferences.isEnabled)
         }
         .fileImporter(isPresented: $isAddingSound, allowedContentTypes: [.audio], allowsMultipleSelection: true) { result in
             if case .success(let urls) = result {
@@ -84,5 +99,18 @@ struct SoundsSettingsPage: View {
         }
         // the reference app's folder or a custom file may have moved since the page was last open.
         .onAppear { sounds.reloadCatalog() }
+    }
+
+    /// When Native can't see Focus, says so and what that means, instead of quietly not working.
+    private var focusNote: Text? {
+        guard preferences.staysQuietDuringFocus else { return nil }
+        switch sounds.focus.access {
+        case .allowed, .notDetermined:
+            return nil
+        case .denied:
+            return Text("Native can't see your Focus status, so sounds still play during Focus. Allow it in System Settings ▸ Privacy & Security ▸ Focus.")
+        case .unavailable:
+            return Text("This build of Native can't see your Focus status, so sounds still play during Focus.")
+        }
     }
 }
