@@ -35,7 +35,9 @@ extension MCPLibrary {
         let excluded = switches.exclusions(
             of: agentServers(agent.format, in: session.cwd), in: session.cwd, policy: organizationPolicy)
         return SessionPolicy(
-            disabledMCPServers: excluded.map { .init(name: $0.server.name, scope: $0.everywhere ? .allProjects : .session) })
+            disabledMCPServers: excluded.map {
+                .init(name: $0.server.name, scope: $0.everywhere ? .allProjects : .session)
+            })
     }
 
     /// Agents' own servers kept out of every project, for agents that apply policy at launch.

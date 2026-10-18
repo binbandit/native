@@ -1,4 +1,5 @@
 import NativeLink
+import NativePolicy
 import SwiftUI
 import UIKit
 
@@ -16,7 +17,11 @@ struct AddHostView: View {
     var body: some View {
         NavigationStack {
             Group {
-                if flow.step == .idle {
+                if !Self.policy.companionEnabled {
+                    EmptyStateView(
+                        "Pairing is turned off", systemImage: "building.2",
+                        message: "The organization that manages this iPhone turned off pairing with hosts. Hosts already paired keep working.")
+                } else if flow.step == .idle {
                     chooser
                 } else {
                     PairingProgressView(flow: flow, retry: { flow.reset() }, done: { dismiss() })
@@ -41,6 +46,9 @@ struct AddHostView: View {
             }
         }
     }
+
+    /// The organization's managed configuration for this iPhone (`policy.companion.enabled`).
+    private static var policy: NativePolicy { PolicyLoader.load(from: NativePolicy.platformSource()) }
 
     private var chooser: some View {
         List {

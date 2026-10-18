@@ -1,5 +1,6 @@
 import NativeHostProtocol
 import NativeLink
+import NativePolicy
 import SwiftUI
 
 extension SettingsPane.ID {
@@ -36,6 +37,7 @@ struct PairedDevicesSettingsPage: View {
     static let enabledRow = SettingsRowID("pairedDevices.enabled")
 
     @Environment(DurableHost.self) private var durableHost: DurableHost?
+    @Environment(PolicyCenter.self) private var policyCenter: PolicyCenter?
     @State private var model = PairedDevicesModel()
     @State private var renaming: LinkDevice?
     @State private var newName = ""
@@ -51,15 +53,23 @@ struct PairedDevicesSettingsPage: View {
                 if hostIsOn {
                     Button("Pair iPhone…") { model.beginPairing() }
                         .buttonStyle(.ds(.primary, size: .large))
-                        .disabled(model.status == nil)
+                        .disabled(model.status == nil || !isAllowed)
                         .settingsRevealTarget(Self.pairRow)
                 }
+            }
+            if !isAllowed {
+                NoticeBanner(
+                    tone: .info, systemImage: "building.2", title: "Your organization turned off paired devices",
+                    detail:
+                        "Devices can't pair with or connect to this Mac. Paired ones stay paired and reconnect if this changes."
+                )
             }
             if !hostIsOn {
                 NoticeBanner(
                     tone: .info, systemImage: "iphone.gen3",
                     title: "Paired devices connect through Native's background host",
-                    detail: "Turn on Durable Sessions so agents keep running when Native is closed and your iPhone can reach them."
+                    detail:
+                        "Turn on Durable Sessions so agents keep running when Native is closed and your iPhone can reach them."
                 ) {
                     Button("Turn On") { Task { await durableHost?.setEnabled(true) } }
                         .buttonStyle(.ds(.primary, size: .medium))
@@ -73,8 +83,12 @@ struct PairedDevicesSettingsPage: View {
                 ErrorState("Couldn't change paired devices", suggestion: error)
             }
             if let status = model.status {
-                gateway(status)
-                devices
+                Group {
+                    gateway(status)
+                    devices
+                }
+                .settingsManaged(by: .companionEnabled)
+                .disabled(!isAllowed)
             }
         }
         .onAppear(perform: start)
@@ -96,6 +110,11 @@ struct PairedDevicesSettingsPage: View {
     }
 
     private var hostIsOn: Bool { durableHost?.isEnabled ?? false }
+
+    /// The organization's policy, as this app and the host read it.
+    private var isAllowed: Bool {
+        (policyCenter?.policy.companionEnabled ?? true) && model.status?.isAllowedByPolicy != false
+    }
 
     private func start() {
         guard hostIsOn, let directory = durableHost?.location.directory else { return }
@@ -162,12 +181,18 @@ struct PairedDevicesSettingsPage: View {
                     "Can Install Updates",
                     isOn: Binding(
                         get: { device.grants.manageHost },
-                        set: { model.setGrants(LinkGrants(managePlugins: device.grants.managePlugins, manageHost: $0), for: device) }))
+                        set: {
+                            model.setGrants(
+                                LinkGrants(managePlugins: device.grants.managePlugins, manageHost: $0), for: device)
+                        }))
                 Toggle(
                     "Can Turn Plugins On and Off",
                     isOn: Binding(
                         get: { device.grants.managePlugins },
-                        set: { model.setGrants(LinkGrants(managePlugins: $0, manageHost: device.grants.manageHost), for: device) }))
+                        set: {
+                            model.setGrants(
+                                LinkGrants(managePlugins: $0, manageHost: device.grants.manageHost), for: device)
+                        }))
                 Divider()
                 Button("Remove", role: .destructive) { model.revoke(device) }
             } label: {
@@ -204,7 +229,8 @@ struct PairedDevicesSettingsPage: View {
         case .starting: return "Starting…"
         case .failed: return "Couldn't listen: \(status.listener.problem ?? "unknown error")"
         case .off, .unknown:
-            return status.isEnabled ? "Not listening: pair a device to open the door." : "Off: nothing listens on the network."
+            return status.isEnabled
+                ? "Not listening: pair a device to open the door." : "Off: nothing listens on the network."
         }
     }
 }
