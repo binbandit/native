@@ -92,9 +92,9 @@ public nonisolated enum DSFormat {
         return fraction.formatted(.percent.precision(.fractionLength(fraction < 0.1 ? 1 : 0)))
     }
 
-    /// Changed-line counts for diffs: "12", "1.2k", "12k"; past 99k, "✱✱".
+    /// Changed-line counts for diffs: "12", "1.2k", "12k"; past 99k, "99k+".
     public static func lineCount(_ count: Int) -> String {
-        if count > 99_000 { return "✱✱" }
+        if count > 99_000 { return "99k+" }
         if count >= 10_000 { return "\(Int((Double(count) / 1000).rounded()))k" }
         if count > 999 { return oneDecimal((Double(count) / 100).rounded() / 10) + "k" }
         return "\(count)"

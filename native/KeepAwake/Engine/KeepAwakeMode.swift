@@ -26,9 +26,9 @@ nonisolated enum KeepAwakeMode: String, Codable, CaseIterable, Identifiable, Sen
     /// The description under each choice.
     var explanation: String {
         switch self {
-        case .off: "Allow normal system sleep"
-        case .whileAgentsWork: "Stay awake while an agent is working"
-        case .on: "Keep this Mac awake continuously"
+        case .off: "Your Mac sleeps on its usual schedule"
+        case .whileAgentsWork: "Awake whenever agents have work running"
+        case .on: "Awake all the time, agents or not"
         }
     }
 
