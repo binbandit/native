@@ -190,6 +190,16 @@ was under a load average near 300. The pathological query, a lone stopword match
 document (`the`), took 91 ms under that load; it's the one case past the 50 ms budget, and typing
 a second word brings it back under.
 
+In the app (Debug build, `scripts/perf/measure.sh --name perf-search`, real history of 533
+files and 1.5 GB):
+
+| Measurement | Before checkpoints | After |
+| --- | --- | --- |
+| Main-thread CPU to first frame, history search on | 585–716 ms (332–352 with it off) | 333–374 ms, the same as with it off |
+| A launch with nothing new: CPU over its first 25 s | 15–45% for minutes, the whole history parsed again | 0.81–0.89 s, against 0.78–0.83 s with history search off |
+| Footprint after a launch with nothing new | up to 370 MB while parsing | 88–93 MB (89–100 MB with it off); 114 MB idle with the window up |
+| The first fill | not measured | 15 s of CPU over 35 s at utility priority, then idle |
+
 Indexing is the heavy part: off the main thread, in batches, at background priority once the
 first fill is done, and stopped on battery. Most lines are skipped by a byte search before any
 JSON is parsed, which is why 1.4 GB reads in under ten seconds the first time, and checkpoints mean
