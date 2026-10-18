@@ -30,6 +30,7 @@ enum CommandsWiring {
             }
         ])
         registry.register(NativeCommand.navigation(model: model, settings: settings))
+        registry.register([.searchShow])
         registry.register(NativeCommand.composer)
         registry.register(NativeCommand.automation(BuiltInPlugins.automation.center))
         registry.register(NativeCommand.windowView)

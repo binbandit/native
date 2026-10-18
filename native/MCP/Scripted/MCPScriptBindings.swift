@@ -79,7 +79,7 @@ nonisolated final class MCPScriptBindings: OrchestrationScriptBindings {
             outputSchema: tool.outputSchema.flatMap { try? ScriptJSON(encoding: $0) },
             siteHandler: { input, site in
                 let id = await run.begin(info, of: server, input: input, site: site)
-                if case .declined(let reason) = await run.approve(id, tool: info, of: server, input: input, site: site) {
+                if case .declined(let reason) = await run.approve(id, tool: info, of: server) {
                     await run.update(id, to: .failed)
                     throw ScriptToolError(reason)
                 }

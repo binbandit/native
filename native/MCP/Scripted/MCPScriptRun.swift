@@ -38,10 +38,9 @@ import ScriptRuntime
     func begin(_ tool: MCPToolInfo, of server: MCPScriptedServer, input: ScriptJSON, site: ScriptCallSite?) -> String {
         let id = "native-script-call-" + UUID().uuidString
         guard let link else { return id }
-        var call = ToolCallUpdate(
-            toolCallId: id, title: "\(server.name) · \(tool.name)", kind: tool.isReadOnly == true ? .read : .other,
-            status: .pending)
-        call.name = tool.name
+        var call = ToolCallUpdate(toolCallId: id, title: "\(server.name) · \(tool.name)", kind: .other, status: .pending)
+        // Named the way agents name MCP tools, so the transcript shows it like the agent's own MCP calls.
+        call.name = "mcp__\(server.name)__\(tool.name)"
         call.rawInput = try? JSONValue(convertingFrom: input)
         var script: [String: JSONValue] = ["server": .string(server.name), "tool": .string(tool.name)]
         script["parent"] = parent.map(JSONValue.string)
@@ -57,9 +56,7 @@ import ScriptRuntime
 
     /// Whether the call may run: read-only tools always may; others when the session runs tool
     /// calls unasked, the user allowed it before, or the user says so now.
-    func approve(
-        _ id: String, tool: MCPToolInfo, of server: MCPScriptedServer, input: ScriptJSON, site: ScriptCallSite?
-    ) async -> Verdict {
+    func approve(_ id: String, tool: MCPToolInfo, of server: MCPScriptedServer) async -> Verdict {
         guard tool.isReadOnly != true else { return .allowed }
         let label = "tools.\(server.name).\(tool.name)"
         while isAsking { await withCheckedContinuation { waiting.append($0) } }
@@ -76,11 +73,8 @@ import ScriptRuntime
             waiting = []
             next.forEach { $0.resume() }
         }
-        var call = ToolCallUpdate(toolCallId: id, status: .pending)
-        // The card's title says where in the script the call is.
-        call.title = "\(server.name) · \(tool.name)" + (site.map { " (script line \($0.line))" } ?? "")
-        let answer = await link.requestApproval(for: call, options: Self.options(for: tool), until: expiry)
-        link.record(ToolCallUpdate(toolCallId: id, title: "\(server.name) · \(tool.name)"))
+        let answer = await link.requestApproval(
+            for: ToolCallUpdate(toolCallId: id, status: .pending), options: Self.options(for: tool), until: expiry)
         guard let answer else {
             return ContinuousClock.now >= expiry
                 ? .declined(

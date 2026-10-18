@@ -52,8 +52,8 @@ struct GitHubCommentComposer<Actions: View>: View {
                         .padding(.vertical, DS.Space.sm)
                 }
             }
-            .frame(minHeight: DS.Size.controlMD * 2.5, maxHeight: DS.Size.sidebarWidth)
-            .fixedSize(horizontal: false, vertical: true)
+            // A fixed height: a text view in a scrolling page has no natural one.
+            .frame(height: DS.Size.controlMD * 3)
             .background(.dsSurface, in: RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)

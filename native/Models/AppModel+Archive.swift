@@ -28,9 +28,23 @@ extension AppModel {
         archivedSessions.set(key, archived: true)
         leave(key, in: listed.project)
         var detail = ""
-        if let project = projects.project(listed.project), let removal = await archiveWorkspace(of: key, in: project) {
-            archivedWorkspaces[key] = removal
-            detail = " " + removal.summary
+        if archivedWorkspaces[key] != nil {
+            // Bringing its workspace back failed last time, so it's still put away.
+            problems.resolve(.workspaceRestore(key), in: listed.project)
+        } else if let project = projects.project(listed.project) {
+            do {
+                if let removal = try await archiveWorkspace(of: key, in: project) {
+                    archivedWorkspaces[key] = removal
+                    detail = " " + removal.summary
+                }
+            } catch {
+                problems.report(
+                    ProjectProblem(
+                        project: project.id, work: .workspaceArchive(key),
+                        title: "Couldn't put away “\(title)”'s workspace",
+                        recovery: "The task is archived; its workspace is still on disk.",
+                        details: error.localizedDescription))
+            }
         }
         offerUndo("Archived “\(title)”.\(detail)", name: "Archive Task", undoManager: undoManager) { model in
             Task { await model.unarchiveSession(key) }
@@ -41,12 +55,35 @@ extension AppModel {
     func unarchiveSession(_ key: SessionKey) async {
         guard archivedSessions.contains(key) else { return }
         archivedSessions.set(key, archived: false)
-        if let removal = archivedWorkspaces.removeValue(forKey: key) {
-            do {
-                try await removal.restore()
-            } catch {
-                errorMessage = "Couldn't restore the task's workspace: \(error.localizedDescription) Its checkpoint is still saved."
-            }
+        let project = catalog.lookup(key)?.project
+        if let project {
+            // A workspace that couldn't be put away is where it should be now.
+            problems.resolve(.workspaceArchive(key), in: project)
+        }
+        guard archivedWorkspaces[key] != nil else { return }
+        do {
+            try await restoreWorkspace(of: key)
+        } catch {
+            // Without a project, the task isn't in the sidebar to come back to either.
+            guard let project else { return }
+            problems.report(
+                ProjectProblem(
+                    project: project, work: .workspaceRestore(key),
+                    title: "Couldn't restore “\(titleOfSession(key))”'s workspace",
+                    recovery: "The task is back, and the checkpoint of its work is still saved.",
+                    details: error.localizedDescription))
+        }
+    }
+
+    /// Brings back the workspace Native put away for an archived task, keeping what it needs to try
+    /// again if that fails. Internal only for AppModel+Problems.swift.
+    func restoreWorkspace(of key: SessionKey) async throws {
+        guard let removal = archivedWorkspaces.removeValue(forKey: key) else { return }
+        do {
+            try await removal.restore()
+        } catch {
+            archivedWorkspaces[key] = removal
+            throw error
         }
     }
 
@@ -69,24 +106,39 @@ extension AppModel {
 
     private func carryOutDeletion(of key: SessionKey, in projectID: Project.ID) async {
         guard pendingDeletions.removeValue(forKey: key) != nil else { return }
+        let title = titleOfSession(key)
         let folder = sessions.session(key)?.cwd ?? catalog.lookup(key).map { URL(filePath: $0.info.cwd, directoryHint: .isDirectory) }
         deletedSessions.insert(key)
         archivedSessions.set(key, archived: false)
         unread.set(key, unread: false)
         catalog.remove(key)
         ordering.unpin(key)
+        // Putting its workspace away or bringing it back no longer matters: deleting removes it.
+        problems.resolve(.workspaceArchive(key), in: projectID)
+        problems.resolve(.workspaceRestore(key), in: projectID)
+        // The agent's copy goes too when it's running; a stopped agent isn't started just for this.
         if let runtime = runtimes[key.agent], let connection = runtime.connection, runtime.capabilities?.deleteSessions == true {
             do {
                 _ = try await connection.send(DeleteSessionRequest(sessionId: key.id))
             } catch {
-                errorMessage = "The task is gone from Native, but \(runtime.agent.displayName) couldn't delete its copy: \(error.localizedDescription)"
+                problems.report(
+                    ProjectProblem(
+                        project: projectID, work: .agentCopyDeletion(key),
+                        title: "\(runtime.agent.displayName) couldn't delete “\(title)”",
+                        recovery: "The task is gone from Native, but \(runtime.agent.displayName) still has its copy.",
+                        details: error.localizedDescription))
             }
         }
         if let folder, let project = projects.project(projectID), folder.folderPath != project.path {
             do {
                 try await taskWorkspaces?.deleteWorkspace(at: folder, in: project)
             } catch {
-                errorMessage = "The task is deleted, but Native couldn't remove its workspace: \(error.localizedDescription)"
+                problems.report(
+                    ProjectProblem(
+                        project: projectID, work: .workspaceDeletion(key, folder: folder),
+                        title: "Couldn't remove “\(title)”'s workspace",
+                        recovery: "The task is deleted, but its workspace is still on disk.",
+                        details: error.localizedDescription))
             }
         }
     }
@@ -122,6 +174,7 @@ extension AppModel {
             guard !Task.isCancelled, let self, pendingProjectDeletions.removeValue(forKey: id) != nil else { return }
             projects.removeArchived(id)
             catalog.remove(project: id)
+            problems.resolveAll { $0.project == id }
             ordering.forget(id)
             try? await taskWorkspaces?.deleteWorkspaces(of: project)
         }
@@ -157,17 +210,14 @@ extension AppModel {
         }
     }
 
-    private func archiveWorkspace(of key: SessionKey, in project: Project) async -> TaskWorkspaceRemoval? {
+    /// Puts away the workspace Native made for a task, if it has one. Internal only for
+    /// AppModel+Problems.swift.
+    func archiveWorkspace(of key: SessionKey, in project: Project) async throws -> TaskWorkspaceRemoval? {
         guard let provider = taskWorkspaces,
               let folder = sessions.session(key)?.cwd ?? catalog.lookup(key).map({ URL(filePath: $0.info.cwd, directoryHint: .isDirectory) }),
               folder.folderPath != project.path
         else { return nil }
-        do {
-            return try await provider.archiveWorkspace(at: folder, in: project)
-        } catch {
-            errorMessage = "The task is archived, but Native couldn't put away its workspace: \(error.localizedDescription)"
-            return nil
-        }
+        return try await provider.archiveWorkspace(at: folder, in: project)
     }
 
     /// Shows the undo toast and registers the same undo with the window's undo manager.

@@ -108,7 +108,8 @@ struct PullRequestDiffLineRow: View {
         }
         if let anchor, model.canAskAgent {
             Divider()
-            PullRequestAskAgentButtons(model: model, anchor: model.draft?.anchor ?? anchor, thread: nil)
+            PullRequestAskAgentButtons(
+                model: model, anchor: isSelected ? (model.draft?.anchor ?? anchor) : anchor, thread: nil)
         }
         Divider()
         Button("Copy Line", systemImage: "doc.on.doc") { model.gitHub?.copy(line.text) }

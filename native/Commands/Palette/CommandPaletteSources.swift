@@ -31,10 +31,12 @@ extension CommandPaletteSource {
             guard !text.isEmpty else { return [] }
             return registry.commands.compactMap { command in
                 guard let perform = command.performWithQuery, command.isAvailable(context) else { return nil }
+                // "Search Tasks…" reads "Search Tasks for “text”".
+                let name = command.title.hasSuffix("…") ? String(command.title.dropLast()) : command.title
                 return CommandPaletteItem(
                     id: .init("query:\(command.id)"),
                     kind: .query,
-                    title: "\(command.title) for \u{201C}\(text)\u{201D}",
+                    title: "\(name) for \u{201C}\(text)\u{201D}",
                     systemImage: command.systemImage ?? "magnifyingglass",
                     shortcut: registry.shortcut(for: command.id)
                 ) {
