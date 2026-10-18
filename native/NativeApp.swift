@@ -258,7 +258,6 @@ private struct GoCommands: Commands {
 private struct SessionCommands: Commands {
     let model: AppModel
     @FocusedValue(\.activeSession) private var session
-    @FocusedValue(\.sidebarReorder) private var reorder
     /// The main window's undo manager, so ⌘Z takes back what these commands do. Read from AppKit
     /// because a focused value isn't there when the window's focus is outside SwiftUI's reach.
     private var undoManager: UndoManager? {
@@ -333,17 +332,19 @@ private struct SessionCommands: Commands {
             }
             .disabled(model.selection == nil)
 
+            // From the model rather than the sidebar's focused value, so they work wherever focus is
+            // and while the sidebar is hidden.
             Button("Move Up") {
-                reorder?.move(.up)
+                model.sidebarMoveTarget.map { model.move($0, .up) }
             }
             .keyboardShortcut(.upArrow, modifiers: [.command, .option])
-            .disabled(reorder?.canMove(.up) != true)
+            .disabled(model.sidebarMoveTarget.map { model.canMove($0, .up) } != true)
 
             Button("Move Down") {
-                reorder?.move(.down)
+                model.sidebarMoveTarget.map { model.move($0, .down) }
             }
             .keyboardShortcut(.downArrow, modifiers: [.command, .option])
-            .disabled(reorder?.canMove(.down) != true)
+            .disabled(model.sidebarMoveTarget.map { model.canMove($0, .down) } != true)
 
             Button("Next Session") {
                 model.selectSession(offset: 1)

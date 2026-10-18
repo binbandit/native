@@ -8,6 +8,16 @@ enum SessionWait: Equatable {
     case permission(String)
     /// A plan to approve or send back.
     case planReview(String)
+
+    /// The wait in a line, for rows and tooltips: a question reads differently from a permission
+    /// request, so the user knows whether to answer or to approve.
+    var summary: String {
+        switch self {
+        case .input(let question): "Waiting for your answer: \(question)"
+        case .permission(let tool): "Allow \(tool)?"
+        case .planReview(let plan): "Review the plan: \(plan)"
+        }
+    }
 }
 
 extension SessionModel {

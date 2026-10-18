@@ -97,12 +97,17 @@ extension GhosttySurfaceView {
         sendKey(pressed ? GHOSTTY_ACTION_PRESS : GHOSTTY_ACTION_RELEASE, event: event)
     }
 
-    /// AppKit offers ⌘ and ⌃ keys here before the menus. The terminal's own bindings
-    /// (`GhosttyConfiguration.keybinds`) are handled now; every other ⌘ key goes on to the menus
-    /// (so Native's shortcuts work while typing in a terminal), and a ⌃ key no menu claims comes
-    /// back through `keyDown` to reach the shell.
+    /// AppKit offers ⌘ and ⌃ keys here before the menus. Native's menu shortcuts come first, so
+    /// they work while typing in a terminal whatever the user's Ghostty key bindings say; then the
+    /// terminal's bindings (`GhosttyConfiguration.keybinds`, or the user's own); and a ⌃ key
+    /// nothing claims comes back through `keyDown` to reach the shell.
     override func performKeyEquivalent(with event: NSEvent) -> Bool {
         guard event.type == .keyDown, isFocused, let surface else { return false }
+        if event.timestamp != 0, event.timestamp != lastPerformKeyEvent,
+            NSApp.mainMenu?.performKeyEquivalent(with: event) == true
+        {
+            return true
+        }
 
         var keyEvent = event.ghosttyKeyEvent(GHOSTTY_ACTION_PRESS)
         let isBinding = (event.characters ?? "").withCString { text in

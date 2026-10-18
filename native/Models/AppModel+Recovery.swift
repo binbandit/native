@@ -11,7 +11,11 @@ extension AppModel {
     func handleCrash(of agent: AgentDefinition.ID) {
         let isRestarting = restartPolicies[agent, default: AgentRestartPolicy()].allowsRestart()
         let interrupted = sessions.disconnect(agent, isRestarting: isRestarting)
-        guard isRestarting else { return }
+        guard isRestarting else {
+            // A crash Native recovers from stays quiet, since the turn carries on; this one doesn't.
+            post(.failed(nil, reason: "\(runtimes[agent]?.agent.displayName ?? agent.rawValue) stopped"))
+            return
+        }
         Task { await recover(agent, interrupted: interrupted) }
     }
 

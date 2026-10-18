@@ -23,6 +23,7 @@
 		00000000000000005E1EA531 /* LICENSE.md in Resources */ = {isa = PBXBuildFile; fileRef = 00000000000000005E1EA530 /* LICENSE.md */; };
 		000000000000000071E10020 /* Terminal in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000071E10010 /* Terminal */; };
 		0000000000000000A99A0020 /* AppAppearance in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000A99A0010 /* AppAppearance */; };
+		0000000000000000C0DE0020 /* CodeThemes in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000C0DE0010 /* CodeThemes */; };
 		54227E023083ADA900D7771F /* MCPClient in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000000AC10010 /* MCPClient */; };
 /* End PBXBuildFile section */
 
@@ -100,6 +101,7 @@
 				00000000000000000B5C1020 /* Skills in Frameworks */,
 				000000000000000000000320 /* ACP in Frameworks */,
 				0000000000000000A99A0020 /* AppAppearance in Frameworks */,
+				0000000000000000C0DE0020 /* CodeThemes in Frameworks */,
 				000000000000000000474820 /* GitHub in Frameworks */,
 				000000000000000000000420 /* MCP in Frameworks */,
 				00000000000000000A070020 /* NativeAutomation in Frameworks */,
@@ -195,6 +197,7 @@
 			packageProductDependencies = (
 				000000000000000000000310 /* ACP */,
 				0000000000000000A99A0010 /* AppAppearance */,
+				0000000000000000C0DE0010 /* CodeThemes */,
 				000000000000000000474810 /* GitHub */,
 				000000000000000000000410 /* MCP */,
 				00000000000000000A070010 /* NativeAutomation */,
@@ -240,6 +243,7 @@
 				000000000000000071E10000 /* XCLocalSwiftPackageReference "Packages/Terminal" */,
 				000000000000000000000300 /* XCLocalSwiftPackageReference "Packages/ACP" */,
 				0000000000000000A99A0000 /* XCLocalSwiftPackageReference "Packages/AppAppearance" */,
+				0000000000000000C0DE0000 /* XCLocalSwiftPackageReference "Packages/CodeThemes" */,
 				000000000000000000474800 /* XCLocalSwiftPackageReference "Packages/GitHub" */,
 				000000000000000000000400 /* XCLocalSwiftPackageReference "Packages/MCPServer" */,
 				00000000000000000A070000 /* XCLocalSwiftPackageReference "Packages/Automation" */,
@@ -782,6 +786,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/AppAppearance;
 		};
+		0000000000000000C0DE0000 /* XCLocalSwiftPackageReference "Packages/CodeThemes" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/CodeThemes;
+		};
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
@@ -858,6 +866,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 0000000000000000A99A0000 /* XCLocalSwiftPackageReference "Packages/AppAppearance" */;
 			productName = AppAppearance;
+		};
+		0000000000000000C0DE0010 /* CodeThemes */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0000000000000000C0DE0000 /* XCLocalSwiftPackageReference "Packages/CodeThemes" */;
+			productName = CodeThemes;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

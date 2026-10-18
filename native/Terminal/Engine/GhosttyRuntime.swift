@@ -26,7 +26,7 @@ final class GhosttyRuntime: TerminalEngine {
         if let shared {
             return .success(shared)
         }
-        useBundledResources()
+        GhosttyConfigBuilder.prepareResources()
         guard ghostty_init(UInt(CommandLine.argc), CommandLine.unsafeArgv) == GHOSTTY_SUCCESS else {
             return .failure(.failed("libghostty couldn't initialize."))
         }
@@ -41,11 +41,11 @@ final class GhosttyRuntime: TerminalEngine {
         let appearance: TerminalAppearance =
             NSApp.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .darkAqua ? .dark : .light
         let chrome = TerminalChrome.designSystem(appearance: appearance, palette: .original)
-        let settings = TerminalPreferences().settings
+        // A starting point; `TerminalStore` applies the user's settings right after the app starts.
         style = TerminalStyle(
-            settings: settings, appearance: appearance,
-            colors: TerminalTheme.named(settings.themeID).colors(for: appearance, appChrome: chrome))
-        guard let config = Self.makeConfig(style) else { return nil }
+            settings: TerminalSettings(), appearance: appearance, appTheme: .native, appChrome: chrome)
+        guard let built = GhosttyConfigBuilder.build(style, ghostty: nil) else { return nil }
+        let config = built.config
         defer { ghostty_config_free(config) }
 
         var runtime = ghostty_runtime_config_s()
@@ -92,84 +92,22 @@ final class GhosttyRuntime: TerminalEngine {
         return view
     }
 
-    func apply(_ style: TerminalStyle) {
-        guard let config = Self.makeConfig(style) else { return }
-        defer { ghostty_config_free(config) }
+    func apply(_ style: TerminalStyle, ghostty: GhosttyConfigLocations?) -> TerminalConfigStatus {
+        guard let built = GhosttyConfigBuilder.build(style, ghostty: ghostty) else { return .native }
+        defer { ghostty_config_free(built.config) }
         self.style = style
         // Updates the app's config and every running terminal's.
-        ghostty_app_update_config(app, config)
+        ghostty_app_update_config(app, built.config)
         let scheme = Self.colorScheme(style.appearance)
         ghostty_app_set_color_scheme(app, scheme)
         for surface in surfaces.allObjects {
             surface.setColorScheme(scheme)
         }
+        return built.status
     }
 
     private func tick() {
         ghostty_app_tick(app)
-    }
-
-    // MARK: Configuration
-
-    /// Builds a libghostty config from Native's settings alone; the user's Ghostty config files
-    /// are never loaded.
-    private static func makeConfig(_ style: TerminalStyle) -> ghostty_config_t? {
-        let configuration = GhosttyConfiguration(
-            settings: style.settings,
-            colors: style.colors,
-            defaultFont: defaultFont,
-            padding: .init(horizontal: Int(DS.Space.lg), vertical: Int(DS.Space.md))
-        )
-        // libghostty reads config from files only, so it goes through a private temporary one.
-        let directory = FileManager.default.temporaryDirectory
-            .appending(
-                path: "native-terminal-\(ProcessInfo.processInfo.processIdentifier)", directoryHint: .isDirectory)
-        let file = directory.appending(path: "ghostty.conf")
-        do {
-            try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
-            try configuration.text.write(to: file, atomically: true, encoding: .utf8)
-        } catch {
-            logger.error("Couldn't write the terminal config: \(error.localizedDescription, privacy: .public)")
-            return nil
-        }
-        defer { try? FileManager.default.removeItem(at: directory) }
-
-        guard let config = ghostty_config_new() else { return nil }
-        file.path(percentEncoded: false).withCString { ghostty_config_load_file(config, $0) }
-        ghostty_config_finalize(config)
-        for index in 0..<ghostty_config_diagnostics_count(config) {
-            let diagnostic = ghostty_config_get_diagnostic(config, index)
-            if let message = diagnostic.message {
-                logger.warning("Terminal config: \(String(cString: message), privacy: .public)")
-            }
-        }
-        return config
-    }
-
-    /// The design system's code font, Geist Mono, which `DSTypography` registers for the process.
-    private static var defaultFont: GhosttyConfiguration.DefaultFont {
-        let family = DSTypography.nsFont(size: 12, design: .mono).familyName ?? ""
-        // Without Geist the token falls back to the system's private monospaced face, which
-        // libghostty can't look up by name.
-        guard !family.isEmpty, !family.hasPrefix(".") else {
-            return .init(family: "Menlo", isVariable: false)
-        }
-        return .init(family: family, isVariable: family == "Geist Mono")
-    }
-
-    /// Ghostty finds its terminfo and shell integration next to the executable
-    /// (`Contents/Resources/terminfo`), unless `GHOSTTY_RESOURCES_DIR` points elsewhere, as it does
-    /// when Native is launched from a Ghostty terminal.
-    private static func useBundledResources() {
-        guard let resources = Bundle.main.resourceURL,
-            FileManager.default.fileExists(atPath: resources.appending(path: "terminfo/78/xterm-ghostty").path)
-        else {
-            logger.warning("Ghostty's terminfo isn't in the app bundle; terminals fall back to xterm-256color.")
-            return
-        }
-        if ProcessInfo.processInfo.environment["GHOSTTY_RESOURCES_DIR"] != nil {
-            setenv("GHOSTTY_RESOURCES_DIR", resources.appending(path: "ghostty").path, 1)
-        }
     }
 
     private static func colorScheme(_ appearance: TerminalAppearance) -> ghostty_color_scheme_e {

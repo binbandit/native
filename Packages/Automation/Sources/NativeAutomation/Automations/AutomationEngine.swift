@@ -17,6 +17,9 @@ public final class AutomationEngine {
         didSet { reconcileOpenRuns(); reschedule() }
     }
     /// Off while the Automations plugin is off: nothing fires and nothing is polled.
+    /// Called when a run couldn't start its workflow, with the automation and why, for sounds and
+    /// notifications. Once a workflow runs, its run's `onAttention` covers the rest.
+    @ObservationIgnored public var onStartFailure: ((Automation, String) -> Void)?
     @ObservationIgnored public var isEnabled = true {
         didSet { reschedule() }
     }
@@ -231,6 +234,7 @@ public final class AutomationEngine {
                 $0.endedAt = now()
                 $0.summary = WorkflowRunner.describe(error)
             }
+            onStartFailure?(automation, WorkflowRunner.describe(error))
         }
     }
 

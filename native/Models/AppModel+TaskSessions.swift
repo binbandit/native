@@ -18,6 +18,9 @@ extension AppModel {
         guard let cwd = cwd ?? parentSession?.cwd ?? currentProject?.url else {
             throw SessionLauncher.LaunchError.failed(agent: runtime.agent.displayName, underlying: CocoaError(.fileNoSuchFile))
         }
+        // Until its record is written, the sidebar's listing mustn't take the new session for the user's.
+        taskStartsInFlight[agent, default: 0] += 1
+        defer { taskStartsInFlight[agent, default: 1] -= 1 }
         do {
             let session = try await launcher.start(on: runtime, cwd: cwd, origin: .task, parent: parentSession)
             taskRecords.add(TaskSessionRecords.Record(key: session.key, cwd: cwd, parent: parentSession?.key))

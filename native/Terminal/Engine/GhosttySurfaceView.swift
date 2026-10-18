@@ -132,6 +132,24 @@ final class GhosttySurfaceView: NSView, TerminalSurface {
         case GHOSTTY_ACTION_CLOSE_WINDOW, GHOSTTY_ACTION_CLOSE_TAB:
             requestClose()
             return true
+        // Key bindings from the user's Ghostty config that map onto Native's terminal tabs.
+        case GHOSTTY_ACTION_NEW_TAB:
+            events?.surface(id, didRequest: .newTab)
+            return true
+        case GHOSTTY_ACTION_GOTO_TAB:
+            let target = action.action.goto_tab
+            let request: TerminalSurfaceRequest =
+                switch target {
+                case GHOSTTY_GOTO_TAB_PREVIOUS: .selectTab(offset: -1)
+                case GHOSTTY_GOTO_TAB_NEXT: .selectTab(offset: 1)
+                case GHOSTTY_GOTO_TAB_LAST: .goToTab(number: .max)
+                default: .goToTab(number: Int(target.rawValue))
+                }
+            events?.surface(id, didRequest: request)
+            return true
+        case GHOSTTY_ACTION_RELOAD_CONFIG:
+            events?.surface(id, didRequest: .reloadConfig)
+            return true
         case GHOSTTY_ACTION_CELL_SIZE:
             let size = action.action.cell_size
             let scale = window?.backingScaleFactor ?? 2

@@ -64,14 +64,14 @@ struct HomeDetail: View {
             }
             .sorted { ($0.1.lastActivity ?? .distantPast) < ($1.1.lastActivity ?? .distantPast) }
             .map { summary, _, wait in
-                let (request, status): (String, TaskStatus) =
+                let status: TaskStatus =
                     switch wait {
-                    case .input(let question): (question, .needsInput)
-                    case .permission(let tool): (tool, .needsPermission)
-                    case .planReview(let plan): (plan, .needsPlanReview)
+                    case .input: .needsInput
+                    case .permission: .needsPermission
+                    case .planReview: .needsPlanReview
                     }
                 return HomeWaitingTask(
-                    id: summary.id, title: model.title(for: summary), request: request, status: status,
+                    id: summary.id, title: model.title(for: summary), request: wait.summary, status: status,
                     agentName: summary.agent.displayName)
             }
     }

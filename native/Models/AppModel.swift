@@ -74,6 +74,9 @@ final class AppModel {
     @ObservationIgnored let launcher: SessionLauncher
     /// Internal only for AppModel+Listing.swift.
     @ObservationIgnored let taskRecords = TaskSessionRecords()
+    /// Task sessions being started, by agent, whose ids aren't known yet. Internal only for
+    /// AppModel+TaskSessions.swift and AppModel+Listing.swift.
+    @ObservationIgnored var taskStartsInFlight: [AgentDefinition.ID: Int] = [:]
     @ObservationIgnored private let environment = ShellEnvironment()
     private let sessionLists = ProjectSessionLists()
     @ObservationIgnored private let pluginEvents: AsyncStream<SessionEvent>
@@ -265,8 +268,16 @@ final class AppModel {
                 sessions.handle(event, from: agent, connection: runtimes[agent]?.connection)
             }
         }
+        if case .failed = runtime.status {
+            post(.failed(nil, reason: "\(runtime.agent.displayName) couldn't start"))
+        }
         // Not awaited: whoever started the agent wants it for a session, not for the listing.
         Task { await refreshSessions(of: runtime) }
+    }
+
+    /// Tells plugins about something outside a session's own events. Internal for the extensions.
+    func post(_ event: SessionEvent) {
+        services.post(event)
     }
 
     // MARK: - Sessions
