@@ -30,6 +30,7 @@ public struct ContributionID<Kind>: RawRepresentable, Hashable, Comparable, Send
 /// what the user chose lives in `CelebrationPreferences`, never in the manifest.
 public struct CelebrationContribution: AppearanceContribution {
     public static let kind = ContributionKind.celebration
+    public var rawID: String { id.rawValue }
 
     // Identity
     public var id: CelebrationID

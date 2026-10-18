@@ -7,6 +7,7 @@ public typealias IconSetID = ContributionID<IconSetContribution>
 /// a set no celebration uses is offered as a plain app icon theme.
 public struct IconSetContribution: AppearanceContribution {
     public static let kind = ContributionKind.iconSet
+    public var rawID: String { id.rawValue }
 
     public var id: IconSetID
     public var name: LocalizedText
