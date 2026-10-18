@@ -57,8 +57,16 @@ extension PullRequestPageModel {
         do {
             let page = try await gitHub.cli().filePatches(reference, page: patchPagesLoaded + 1)
             for patch in page {
+                let parsed = patch.hunks
+                let lines = parsed.flatMap(\.lines)
                 patches[patch.path] = patch
-                hunks[patch.path] = patch.hunks
+                hunks[patch.path] = parsed
+                lineCounts[patch.path] = lines.count
+                if lines.count > Self.largeDiffLines
+                    || lines.contains(where: { $0.text.utf8.count > Self.minifiedLineLength })
+                {
+                    largeDiffs.insert(patch.path)
+                }
             }
             patchPagesLoaded += 1
             patchesComplete = page.count < 100 || patches.count >= totalFiles
@@ -73,13 +81,11 @@ extension PullRequestPageModel {
     static let minifiedLineLength = 1_000
 
     func isLarge(_ path: String) -> Bool {
-        guard let hunks = hunks[path] else { return false }
-        let lines = hunks.flatMap(\.lines)
-        return lines.count > Self.largeDiffLines || lines.contains { $0.text.utf8.count > Self.minifiedLineLength }
+        largeDiffs.contains(path)
     }
 
     func lineCount(_ path: String) -> Int {
-        hunks[path]?.reduce(0) { $0 + $1.lines.count } ?? 0
+        lineCounts[path] ?? 0
     }
 
     static func hunkKey(_ path: String, _ hunk: DiffHunk) -> String {

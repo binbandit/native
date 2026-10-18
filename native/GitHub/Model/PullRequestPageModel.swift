@@ -54,6 +54,9 @@ final class PullRequestPageModel {
     /// Each hunk's lines highlighted (`hunkKey`), filled in off the main thread as files show.
     var highlighted: [String: [[CodeSegment]]] = [:]
     @ObservationIgnored var highlightedPaths: Set<String> = []
+    /// Measured once as patches arrive, since every file's header asks.
+    @ObservationIgnored var lineCounts: [String: Int] = [:]
+    @ObservationIgnored var largeDiffs: Set<String> = []
     /// Large diffs the user asked to see; the rest wait behind "Load Diff", as on GitHub.
     var loadedLargeDiffs: Set<String> = []
     /// Built diff text by block, so scrolling past a hunk again doesn't rebuild it.
