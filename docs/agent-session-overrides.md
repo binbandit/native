@@ -8,6 +8,11 @@ package (`Packages/ACP/Sources/ACP/Adapters/`: `ClaudeCodeSessionSettings`, `Cod
 so MCP servers and skills always land in the same document. Changes apply at the next session start,
 or when the agent restarts for the ones applied at launch; a running turn is never interrupted.
 
+What's kept out comes from `MCPServerSwitches.exclusions(of:in:policy:)` in `Packages/MCPClient`:
+servers switched off or set to run through Native's scripts, and servers the organization's
+policy (`policy.mcp.allowed`, `policy.mcp.blocked`) doesn't allow. Those are kept out of every
+project, and their rows in Settings and the session popover are locked and show as off.
+
 | Agent | Mechanism | Scope | Status |
 | --- | --- | --- | --- |
 | Claude Code (claude-agent-acp 0.93.0) | `session/new` and `session/load` `_meta.claudeCode.options.settings.deniedMcpServers: [{serverName}]`. The Agent SDK merges `deniedMcpServers` from every settings source, its programmatic tier included, and doesn't start a denied server. | Per session, so per project | Verified |
