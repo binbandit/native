@@ -135,6 +135,9 @@ private struct PlatformCodeTextRepresentable: NSViewRepresentable {
         guard context.coordinator.key != key else { return }
         context.coordinator.key = key
         view.textStorage?.setAttributedString(text)
+        // New text in a view already on screen (colors arriving once highlighting finishes) only
+        // shows once it's asked to draw again.
+        view.needsDisplay = true
     }
 
     func sizeThatFits(_ proposal: ProposedViewSize, nsView: PlatformCodeNSTextView, context: Context) -> CGSize? {

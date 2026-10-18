@@ -66,7 +66,7 @@ struct PullRequestFilesList: View {
             PullRequestFileNotice(model: model, path: row.path, kind: .large(lines: lines))
         case .hunkHeader(let hunk):
             PullRequestHunkHeaderRow(hunk: hunk)
-                .task(id: row.path) { await model.highlight(row.path) }
+                .onAppear { model.highlight(row.path) }
         case .block(let hunk, let range):
             PullRequestDiffBlockRow(
                 model: model, path: row.path, hunk: hunk, range: range,

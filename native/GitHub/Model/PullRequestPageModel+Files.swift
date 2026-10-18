@@ -99,14 +99,18 @@ extension PullRequestPageModel {
     }
 
     /// Highlights a file's hunks once, off the main thread; they draw plain until it's done.
-    func highlight(_ path: String) async {
+    func highlight(_ path: String) {
         guard let hunks = hunks[path], let language = CodeLanguage.forPath(path),
             highlightedPaths.insert(path).inserted
         else { return }
-        for hunk in hunks {
-            let code = hunk.lines.map { $0.kind == .noNewline ? "" : $0.text }.joined(separator: "\n")
-            highlighted[Self.hunkKey(path, hunk)] = await CodeHighlightCache.shared.highlightLines(
-                code, language: language)
+        // The page owns this, not the row that asked: rows come and go as the list scrolls, and a
+        // cancelled run would leave the file marked highlighted with no colors.
+        Task {
+            for hunk in hunks {
+                let code = hunk.lines.map { $0.kind == .noNewline ? "" : $0.text }.joined(separator: "\n")
+                highlighted[Self.hunkKey(path, hunk)] = await CodeHighlightCache.shared.highlightLines(
+                    code, language: language)
+            }
         }
     }
 
