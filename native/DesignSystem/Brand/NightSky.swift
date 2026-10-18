@@ -7,13 +7,15 @@ extension View {
     /// affecting layout. Draws in the current foreground style at reduced opacity.
     ///
     ///     NativeLockup(size: 28, layout: .stacked).nightSky(isEnabled: channel == .nightly)
-    public func nightSky(isEnabled: Bool) -> some View {
+    ///
+    /// With `isHalloween`, the Halloween Nightly icon's orange moon and bats take the crescent's place.
+    public func nightSky(isEnabled: Bool, isHalloween: Bool = false) -> some View {
         background {
             if isEnabled {
                 GeometryReader { proxy in
                     // Square like the icon, so the scatter keeps its shape around wide or tall views.
                     let side = max(proxy.size.width, proxy.size.height) * 2.2
-                    NightSkyField()
+                    NightSkyField(isHalloween: isHalloween)
                         .frame(width: side, height: side)
                         .position(x: proxy.size.width / 2, y: proxy.size.height / 2)
                 }
@@ -25,7 +27,10 @@ extension View {
 
 /// The sky, laid out on the icon's 1024-unit canvas and stretched to the frame.
 private struct NightSkyField: View {
+    let isHalloween: Bool
+
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         if reduceMotion {
@@ -53,6 +58,16 @@ private struct NightSkyField: View {
                             x: center.x - radius, y: center.y - radius, width: radius * 2, height: radius * 2))
                     : Self.sparkle(center: center, radius: radius)
                 context.fill(path, with: .foreground)
+            }
+            guard !isHalloween else {
+                HalloweenNight.draw(
+                    in: context,
+                    moonCenter: CGPoint(x: 801 * unit.width, y: 174 * unit.height),
+                    scale: shapeScale,
+                    isDark: colorScheme == .dark,
+                    time: time
+                )
+                return
             }
             context.opacity = 0.7
             let moonHeight = 90 * shapeScale

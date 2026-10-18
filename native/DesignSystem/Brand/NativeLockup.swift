@@ -14,11 +14,15 @@ public struct NativeLockup: View {
 
     let size: CGFloat
     let layout: Layout
+    let halloween: NativeHalloweenEdition?
 
     /// - Parameter size: The wordmark's point size; the emblem and spacing scale with it.
-    public init(size: CGFloat = 20, layout: Layout = .horizontal) {
+    /// - Parameter halloween: The Halloween edition of the emblem to show, while the user has the
+    ///   matching seasonal app icon.
+    public init(size: CGFloat = 20, layout: Layout = .horizontal, halloween: NativeHalloweenEdition? = nil) {
         self.size = size
         self.layout = layout
+        self.halloween = halloween
     }
 
     public var body: some View {
@@ -52,10 +56,16 @@ public struct NativeLockup: View {
             .fixedSize()
     }
 
+    @ViewBuilder
     private func mark(height: CGFloat) -> some View {
-        NativeMark()
-            .fill()
-            .frame(width: height * NativeMark.aspectRatio, height: height)
+        if let halloween {
+            NativeHalloweenMark(edition: halloween)
+                .frame(width: height * NativeMark.aspectRatio, height: height)
+        } else {
+            NativeMark()
+                .fill()
+                .frame(width: height * NativeMark.aspectRatio, height: height)
+        }
     }
 
     private var capHeight: CGFloat {

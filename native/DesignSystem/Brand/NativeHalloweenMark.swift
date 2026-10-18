@@ -36,7 +36,9 @@ public struct NativeHalloweenMark: View {
         let palette = edition.palette(isDark: colorScheme == .dark)
         return Canvas { context, _ in
             let rect = CGRect(origin: .zero, size: markSize)
-            for (link, color) in [(NativeMark.Link.left, palette.lowerFold), (NativeMark.Link.right, palette.upperFold)] {
+            for (link, color) in [
+                (NativeMark.Link.left, palette.lowerFold), (NativeMark.Link.right, palette.upperFold),
+            ] {
                 let shading = GraphicsContext.Shading.linearGradient(
                     Gradient(colors: [color.mix(with: .white, by: Self.sheen), color]),
                     startPoint: .zero,
@@ -46,7 +48,8 @@ public struct NativeHalloweenMark: View {
                 body.addPath(Self.path(link == .left ? Self.lowerEyes : Self.upperEyes, width: markSize.width))
                 // Even-odd, so the eyes are holes the page shows through, as the tile does in the icon.
                 context.fill(body, with: shading, style: FillStyle(eoFill: true))
-                context.fill(Self.path(link == .left ? Self.lowerDrips : Self.upperDrips, width: markSize.width), with: shading)
+                context.fill(
+                    Self.path(link == .left ? Self.lowerDrips : Self.upperDrips, width: markSize.width), with: shading)
             }
         }
         .frame(width: markSize.width, height: markSize.height * Self.dripExtent)
@@ -96,7 +99,7 @@ public struct NativeHalloweenMark: View {
         .cubic((0.68946, 0.05517), (0.66953, 0.03476), (0.69275, 0.03969)),
         .line((0.68343, 0.08355)),
         .cubic((0.66021, 0.07861), (0.68014, 0.09903), (0.65692, 0.09409)),
-        .close
+        .close,
     ]
 
     private static let upperDrips: [Segment] = [
@@ -113,7 +116,7 @@ public struct NativeHalloweenMark: View {
         .line((0.72099, 0.60622)),
         .cubic((0.74868, 0.60622), (0.72099, 0.63259), (0.74868, 0.63259)),
         .line((0.74868, 0.54161)),
-        .close
+        .close,
     ]
 
     private static let lowerEyes: [Segment] = [
@@ -126,7 +129,7 @@ public struct NativeHalloweenMark: View {
         .cubic((0.38087, 0.11852), (0.35401, 0.1089), (0.37704, 0.10316)),
         .line((0.38789, 0.14667)),
         .cubic((0.36486, 0.15241), (0.39172, 0.16202), (0.36869, 0.16776)),
-        .close
+        .close,
     ]
 
     private static let lowerDrips: [Segment] = [
@@ -143,7 +146,7 @@ public struct NativeHalloweenMark: View {
         .line((0.39264, 0.67347)),
         .cubic((0.42561, 0.67479), (0.39264, 0.70512), (0.42561, 0.70248)),
         .line((0.42561, 0.61545)),
-        .close
+        .close,
     ]
 }
 

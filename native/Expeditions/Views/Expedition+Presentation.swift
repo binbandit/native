@@ -65,7 +65,8 @@ extension Expedition {
         if let base, base != project {
             parts.append(base.lastPathComponent)
         }
-        parts.append("started \(DSFormat.compactAge(createdAt, now: now)) ago")
+        let age = DSFormat.compactAge(createdAt, now: now)
+        parts.append(age == "now" ? "started just now" : "started \(age) ago")
         if let cost {
             parts.append(budget.maxCost.map { "\(DSFormat.cost(cost)) of \(DSFormat.cost($0))" } ?? DSFormat.cost(cost))
         } else if let max = budget.maxCost {
@@ -80,6 +81,9 @@ extension Expedition {
 
     var progressText: String {
         guard let route else { return phase == .planning ? "Planning the route" : "No route yet" }
+        guard approvedAt != nil else {
+            return "\(route.assignments.count) \(route.assignments.count == 1 ? "assignment" : "assignments") proposed"
+        }
         let count = assignments.filter { !$0.isFix }.count
         let finished = assignments.filter { !$0.isFix && $0.status.isFinished }.count
         let leg =

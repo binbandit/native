@@ -27,13 +27,13 @@ public nonisolated struct Crew: Codable, Hashable, Sendable {
         agents.first { $0.id == id }
     }
 
-    /// The suggested crew from the agents that are ready: the preferred agent leads, everyone
-    /// builds, and the reviewer is a different provider than the lead when there is one, since a
-    /// second provider catches what the first one's habits miss.
+    /// The suggested crew from the agents that are available: the preferred agent leads, it and
+    /// one other provider build, and that other provider reviews, since a second provider catches
+    /// what the first one's habits miss. Small on purpose; the user adds more.
     public static func suggested(from agents: [WorkflowAgent], preferring preferred: WorkflowAgent.ID?) -> Crew? {
         guard let lead = agents.first(where: { $0.id == preferred }) ?? agents.first else { return nil }
-        let reviewer = agents.first { $0.id != lead.id } ?? lead
-        return Crew(lead: lead, builders: agents, reviewer: reviewer)
+        let other = agents.first { $0.id != lead.id }
+        return Crew(lead: lead, builders: [lead] + [other].compactMap(\.self), reviewer: other ?? lead)
     }
 
     /// Whether the reviewer is the only provider building too, so it checks its own habits.

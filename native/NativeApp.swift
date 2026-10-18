@@ -10,7 +10,8 @@ struct NativeApp: App {
     @State private var gitHub: GitHubModel
     /// Held here because AppModel keeps its provider weakly.
     @State private var taskWorkspaces: GitTaskWorkspaceProvider
-    @State private var iconPreferences = AppIconPreferences()
+    /// `-nativeDate yyyy-MM-dd` previews another day's seasonal icon and landing page.
+    @State private var iconPreferences = AppIconPreferences(now: HomeDateOverride.now)
     /// Settings takes over the main window, as in Conductor, rather than opening one of its own.
     @State private var settings: SettingsPresentation
     @State private var terminals = TerminalStore()

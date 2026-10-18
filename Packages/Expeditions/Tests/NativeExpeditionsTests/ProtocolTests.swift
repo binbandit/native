@@ -133,6 +133,6 @@ import Testing
             Crew.suggested(from: [ExpeditionDriver.claude, ExpeditionDriver.codex], preferring: "codex"))
         #expect(crew.lead == ExpeditionDriver.codex)
         #expect(crew.reviewer == ExpeditionDriver.claude)
-        #expect(crew.builders == [ExpeditionDriver.claude, ExpeditionDriver.codex])
+        #expect(crew.builders == [ExpeditionDriver.codex, ExpeditionDriver.claude])
     }
 }
