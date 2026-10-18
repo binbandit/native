@@ -19,10 +19,12 @@ extension GitHubModel {
             openExternally(url)
             return
         }
-        open(reference)
+        open(reference, tab: PullRequestPageModel.Tab(url: url))
     }
 
-    func open(_ reference: PullRequestReference) {
+    /// - Parameter tab: The tab to show, as GitHub links say with `/files` and `/checks`.
+    func open(_ reference: PullRequestReference, tab: PullRequestPageModel.Tab? = nil) {
+        if let tab { pageModel(for: reference).tab = tab }
         presentedPullRequest = reference
     }
 

@@ -1,3 +1,4 @@
+import CodeThemes
 import GitHub
 import Observation
 import SwiftUI
@@ -11,6 +12,17 @@ final class PullRequestPageModel {
         case conversation, files, checks
 
         var id: Self { self }
+
+        /// The tab a GitHub link points at: `/pull/1/files`, `/pull/1/checks`.
+        init?(url: URL) {
+            let parts = url.pathComponents
+            guard let pull = parts.firstIndex(of: "pull"), parts.count > pull + 2 else { return nil }
+            switch parts[pull + 2] {
+            case "files": self = .files
+            case "checks": self = .checks
+            default: return nil
+            }
+        }
 
         var title: String {
             switch self {
@@ -39,6 +51,13 @@ final class PullRequestPageModel {
     var patches: [String: FilePatch] = [:]
     /// Each patch parsed once, as it arrives, rather than on every redraw.
     var hunks: [String: [DiffHunk]] = [:]
+    /// Each hunk's lines highlighted (`hunkKey`), filled in off the main thread as files show.
+    var highlighted: [String: [[CodeSegment]]] = [:]
+    @ObservationIgnored var highlightedPaths: Set<String> = []
+    /// Large diffs the user asked to see; the rest wait behind "Load Diff", as on GitHub.
+    var loadedLargeDiffs: Set<String> = []
+    /// Built diff text by block, so scrolling past a hunk again doesn't rebuild it.
+    @ObservationIgnored var blockTexts: [String: PullRequestDiffBlockText] = [:]
     var patchPagesLoaded = 0
     var patchesComplete = false
     var isLoadingPatches = false
@@ -90,6 +109,8 @@ final class PullRequestPageModel {
             let page = try await gitHub.cli().pullRequestPage(reference)
             apply(page)
             loadError = nil
+            // The first hundred diffs load now, so Files Changed opens with them ready.
+            if patchPagesLoaded == 0 { Task { await loadNextPatchPage() } }
         } catch {
             loadError = error
         }
@@ -111,6 +132,9 @@ final class PullRequestPageModel {
         if headMoved {
             patches = [:]
             hunks = [:]
+            highlighted = [:]
+            highlightedPaths = []
+            blockTexts = [:]
             patchPagesLoaded = 0
             patchesComplete = false
             checks = nil
