@@ -83,6 +83,11 @@ final class PluginRegistry {
         choices[id] ?? plugins.first { $0.id == id }?.plugin.isEnabledByDefault ?? true
     }
 
+    /// Whether the user has switched the plugin on or off themselves, rather than it following its default.
+    func hasChoice(for id: String) -> Bool {
+        choices[id] != nil
+    }
+
     /// Records the user's choice, which then outlasts any change to the plugin's default.
     func setEnabled(_ enabled: Bool, for id: String) {
         choices[id] = enabled

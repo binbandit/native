@@ -45,7 +45,11 @@ final class SessionModel {
     let parentID: SessionID?
     /// Whether messages can join a turn that's running (`SteerRequest`).
     let supportsSteering: Bool
+    /// Whether the agent takes images in prompts (`promptCapabilities.image`).
+    let supportsImages: Bool
     var draft = ""
+    /// Files and images going out with the draft (SessionModel+Attachments.swift).
+    var attachments: [PromptAttachment] = []
     /// Subagent sessions this one started, by their session id.
     private(set) var children: [SessionID: SessionModel] = [:]
 
@@ -93,8 +97,8 @@ final class SessionModel {
     /// `parent` adopts it as a subagent.
     init(
         agent: AgentDefinition, id: SessionID, clientID: UUID = UUID(), cwd: URL, connection: ACPConnection,
-        services: SessionServices, supportsSteering: Bool, phase: Phase, title: String? = nil,
-        configOptions: [ConfigOption] = [], origin: Origin = .user, parent: SessionModel? = nil
+        services: SessionServices, supportsSteering: Bool, supportsImages: Bool = false, phase: Phase,
+        title: String? = nil, configOptions: [ConfigOption] = [], origin: Origin = .user, parent: SessionModel? = nil
     ) {
         self.agent = agent
         self.id = id
@@ -103,6 +107,7 @@ final class SessionModel {
         self.connection = connection
         self.services = services
         self.supportsSteering = supportsSteering
+        self.supportsImages = supportsImages
         self.phase = phase
         self.origin = origin
         parentID = parent?.id
@@ -122,6 +127,7 @@ final class SessionModel {
         connection = parent.connection
         services = parent.services
         supportsSteering = false
+        supportsImages = false
         phase = .idle
         origin = .announced
         parentID = parent.id

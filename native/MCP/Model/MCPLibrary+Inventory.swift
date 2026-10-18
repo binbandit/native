@@ -36,7 +36,7 @@ extension MCPLibrary {
             var everywhere = server
             everywhere.projects = .all
             guard let outcome = ManagedServerDelivery.plan([everywhere], for: target).first?.outcome,
-                let reason = outcome.inactiveReason(agentName: agent.name), outcome != .switchedOff
+                let reason = outcome.inactiveReason(agentName: agent.name), ![.switchedOff, .scripted].contains(outcome)
             else { return nil }
             return (agent, reason)
         }

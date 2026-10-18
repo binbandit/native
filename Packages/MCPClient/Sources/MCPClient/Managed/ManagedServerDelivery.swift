@@ -30,6 +30,8 @@ public enum ManagedServerDelivery {
         case deliver
         /// Its switch is off here.
         case switchedOff
+        /// Native reaches it for the agent, through `run_script`.
+        case scripted
         case notForAgent
         case notForProject
         case unsupportedTransport(MCPTransport.Kind)
@@ -54,8 +56,10 @@ public enum ManagedServerDelivery {
     }
 
     private static func outcome(of server: ManagedServer, for target: Target, loaded: [ConfiguredServer]) -> Outcome {
-        guard target.switches.mode(of: server.transport.endpoint.key, in: target.directory) == .on else {
-            return .switchedOff
+        switch target.switches.mode(of: server.transport.endpoint.key, in: target.directory) {
+        case .on: break
+        case .scripted: return .scripted
+        case .off: return .switchedOff
         }
         guard server.agents.includes(target.agentID) else { return .notForAgent }
         guard server.includes(directory: target.directory) else { return .notForProject }

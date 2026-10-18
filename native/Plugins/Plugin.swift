@@ -1,4 +1,5 @@
 import ACP
+import AppAppearance
 import CodeThemes
 import Foundation
 import NativeAutomation
@@ -59,11 +60,18 @@ struct PluginManifest: Codable, Hashable, Sendable, Identifiable {
     /// Code themes and accent palettes (`docs/plugins.md`, Themes). Data only, checked one by one
     /// when used, so a broken theme is reported rather than failing the plugin.
     var themes = ThemeContributions()
+    /// App icon families (a plain theme, or a celebration's artwork), validated one by one with their
+    /// images inside the plugin's folder (`AppearanceCatalog`).
+    var iconSets = IconSetContributions()
+    /// Celebrations with their calendars, offered in Settings ▸ Celebrations, each off until chosen.
+    /// A malformed one is listed with its problem rather than failing the plugin.
+    var celebrations = CelebrationContributions()
 
     init(
         id: String, name: String, version: String? = nil, description: String? = nil, agents: [AgentManifest] = [],
         mcpServers: [MCPServerManifest] = [], workflows: [WorkflowDefinition] = [],
-        themes: ThemeContributions = ThemeContributions()
+        themes: ThemeContributions = ThemeContributions(), iconSets: IconSetContributions = IconSetContributions(),
+        celebrations: CelebrationContributions = CelebrationContributions()
     ) {
         self.id = id
         self.name = name
@@ -73,6 +81,8 @@ struct PluginManifest: Codable, Hashable, Sendable, Identifiable {
         self.mcpServers = mcpServers
         self.workflows = workflows
         self.themes = themes
+        self.iconSets = iconSets
+        self.celebrations = celebrations
     }
 
     init(from decoder: any Decoder) throws {
@@ -85,6 +95,9 @@ struct PluginManifest: Codable, Hashable, Sendable, Identifiable {
         mcpServers = try container.decodeIfPresent([MCPServerManifest].self, forKey: .mcpServers) ?? []
         workflows = try container.decodeIfPresent([WorkflowDefinition].self, forKey: .workflows) ?? []
         themes = try container.decodeIfPresent(ThemeContributions.self, forKey: .themes) ?? ThemeContributions()
+        // Never fail as a whole: each entry decodes or becomes a listed problem.
+        iconSets = try container.decodeIfPresent(IconSetContributions.self, forKey: .iconSets) ?? .init()
+        celebrations = try container.decodeIfPresent(CelebrationContributions.self, forKey: .celebrations) ?? .init()
     }
 }
 

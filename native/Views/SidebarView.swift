@@ -67,6 +67,7 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
                 return .handled
             }
             .accessibilityLabel("Projects")
+            .onAppear { LaunchMetrics.markOnScreen(.sidebarInteractive) }
 
             SidebarFooter()
         }

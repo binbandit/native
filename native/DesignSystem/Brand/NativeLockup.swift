@@ -17,7 +17,7 @@ public struct NativeLockup: View {
     let style: NativeMarkStyle
 
     /// - Parameter size: The wordmark's point size; the emblem and spacing scale with it.
-    /// - Parameter style: The emblem's edition, to match the app icon the user has (Beta, Halloween).
+    /// - Parameter style: The emblem's edition, to match the app icon the user has (Beta, a celebration).
     public init(size: CGFloat = 20, layout: Layout = .horizontal, style: NativeMarkStyle = .standard) {
         self.size = size
         self.layout = layout
@@ -61,6 +61,8 @@ public struct NativeLockup: View {
             case .standard: NativeMark().fill()
             case .beta: NativeBetaMark()
             case .halloween(let edition): NativeHalloweenMark(edition: edition)
+            case .diaDeMuertos(let edition): NativeMuertosMark(edition: edition)
+            case .twoTone(let palette): NativeTwoToneMark(palette: palette)
             }
         }
         .frame(width: height * NativeMark.aspectRatio, height: height)

@@ -54,10 +54,14 @@ final class HostHarness: @unchecked Sendable {
         self.process = nil
     }
 
-    /// Waits for the host to exit on its own and returns its exit status.
-    func waitForExit() -> Int32? {
+    /// Waits (up to `timeout`) for the host to exit on its own and returns its exit status.
+    func waitForExit(timeout: Duration = .seconds(20)) async throws -> Int32? {
         guard let process else { return nil }
-        process.waitUntilExit()
+        let deadline = ContinuousClock.now + timeout
+        while process.isRunning, ContinuousClock.now < deadline {
+            try await Task.sleep(for: .milliseconds(50))
+        }
+        guard !process.isRunning else { return nil }
         self.process = nil
         return process.terminationStatus
     }

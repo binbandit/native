@@ -10,8 +10,9 @@ struct NativeApp: App {
     @State private var gitHub: GitHubModel
     /// Held here because AppModel keeps its provider weakly.
     @State private var taskWorkspaces: GitTaskWorkspaceProvider
-    /// `-nativeDate yyyy-MM-dd` previews another day's seasonal icon and landing page.
-    @State private var iconPreferences = AppIconPreferences(now: HomeDateOverride.now)
+    @State private var iconPreferences = AppIconPreferences()
+    /// `-nativeDate yyyy-MM-dd` previews another day's celebrations on the icon and Home.
+    @State private var celebrations = CelebrationCenter(now: HomeDateOverride.now)
     /// Settings takes over the main window, as in Conductor, rather than opening one of its own.
     @State private var settings: SettingsPresentation
     @State private var terminals = TerminalStore()
@@ -22,6 +23,7 @@ struct NativeApp: App {
     @State private var updates = UpdateController()
 
     init() {
+        LaunchMetrics.mark(.appInit)
         // Git and GitHub run with the login-shell environment the agents get.
         let model = AppModel()
         _model = State(initialValue: model)
@@ -50,6 +52,7 @@ struct NativeApp: App {
     var body: some Scene {
         Window("Native", id: "main") {
             RootView()
+                .onAppear { LaunchMetrics.markOnScreen(.firstFrame) }
                 .environment(model)
                 .environment(git)
                 .environment(gitHub)
@@ -62,9 +65,11 @@ struct NativeApp: App {
                 .environment(model.plugins)
                 .environment(git.settings)
                 .environment(iconPreferences)
+                .environment(celebrations)
                 .environment(keepAwake)
                 .environment(statusBar)
                 .createPullRequestSheet(gitHub)
+                .terminalCodeTheme(terminals)
                 .appearancePreferences(plugins: model.plugins)
                 .dsAccentPalette(themeID: iconPreferences.theme.rawValue)
                 .task {
@@ -85,10 +90,13 @@ struct NativeApp: App {
                     ExpeditionWiring.connect(BuiltInPlugins.expeditions.center, model: model, git: git, gitHub: gitHub)
                     AmbientWiring.connect(model: model, keepAwake: keepAwake)
                     DockBadgeWiring.connect(model: model, workflows: BuiltInPlugins.automation.center.workflows)
+                    CelebrationsWiring.connect(
+                        celebrations, plugins: model.plugins, icons: iconPreferences, settings: settings)
                     iconPreferences.start()
                     updates.restartContext = { [model] in model.updateRestartContext }
                     updates.start()
                     await model.start()
+                    LaunchMetrics.mark(.agentsReady)
                 }
                 .task { [gitHub] in
                     gitHub.openAsTask = { [model, git, weak gitHub] pullRequest in
@@ -107,7 +115,7 @@ struct NativeApp: App {
         .commands {
             UpdateCommands(controller: updates, settings: settings)
             FileCommands(model: model)
-            ViewCommands(iconPreferences: iconPreferences)
+            ViewCommands(celebrations: celebrations, settings: settings)
             SettingsCommands(settings: settings)
             GoCommands(model: model, settings: settings)
             SessionCommands(model: model)
@@ -158,7 +166,8 @@ private struct FileCommands: Commands {
 }
 
 private struct ViewCommands: Commands {
-    let iconPreferences: AppIconPreferences
+    let celebrations: CelebrationCenter
+    let settings: SettingsPresentation
     @FocusedValue(\.sidebarVisibility) private var sidebarVisibility
     @FocusedValue(\.activeSession) private var session
     @FocusedValue(\.mcpServersPopover) private var mcpServersPopover
@@ -203,17 +212,8 @@ private struct ViewCommands: Commands {
             FoldEarlierTurnsToggle()
             JumpToLatestMenuItem()
 
-            if iconPreferences.isHalloweenAvailable {
-                Divider()
-                Toggle(
-                    "Halloween Icon",
-                    isOn: Binding(
-                        get: { iconPreferences.halloweenEnabled },
-                        set: { iconPreferences.halloweenEnabled = $0 }
-                    )
-                )
-                .keyboardShortcut("h", modifiers: [.command, .option, .shift])
-            }
+            Divider()
+            CelebrationMenuItems(center: celebrations, settings: settings)
         }
     }
 }

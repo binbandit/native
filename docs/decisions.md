@@ -182,8 +182,10 @@ pins Zig 0.15.2, which can't link on macOS 27. The script fetches both into
 `libghostty.a` (ReleaseFast, no Sentry, no gettext) that the app links through a module map, plus
 Ghostty's terminfo and shell integration, which the build phase copies into the bundle. Nothing
 built or fetched lives in the repo. A build without it still compiles (`canImport(GhosttyKit)`) and
-the terminal says how to enable it. Native writes the whole libghostty config itself and never
-reads the user's Ghostty config, so the terminal follows Native's design system and settings.
+the terminal says how to enable it. By default Native writes the whole libghostty config itself,
+so the terminal follows Native's design system and settings; "Use my Ghostty settings" loads the
+user's own Ghostty config instead (read-only, with a few documented overrides), and "Import from
+Ghostty" copies it into Native's settings once (`docs/terminal.md`).
 
 ## 2026-10-18: Expeditions
 

@@ -27,26 +27,89 @@ Why libghostty, and the pin, are in `docs/decisions.md`.
 - **The model never sees AppKit.** Tabs talk to a `TerminalSurface` and the store to a
   `TerminalEngine`; on the Mac those are `GhosttySurfaceView` and `GhosttyRuntime`
   (`native/Terminal/Engine`). A host-backed engine slots in behind the same protocols (below).
-- **Native owns the whole config.** `GhosttyConfiguration` renders Native's settings and colors as
-  a Ghostty config; the user's own `~/.config/ghostty` is never read. Colors come from the design
-  system (`TerminalChrome.designSystem`): the sunken surface code blocks use, primary text, an accent
-  cursor and selection, and ANSI colors from `TerminalTheme.native`, light and dark. Appearance and
-  accent changes restyle running terminals live. `TerminalTheme` and `TerminalSettings.themeID` are
-  the seam for the coming code-theme setting: a theme with its own `chrome` replaces the design
-  system's background and text.
+- **Native's settings, or the user's Ghostty config.** By default `GhosttyConfiguration` renders
+  Native's settings and colors as a Ghostty config, and the user's own config is never read.
+  Colors come from the design system (`TerminalChrome.designSystem`): the sunken surface code blocks
+  use, primary text, an accent cursor and selection, and ANSI colors from `TerminalStore.appTheme`
+  (`TerminalTheme.native` until the code-theme setting sets one), light and dark. Appearance,
+  accent and transparency changes restyle running terminals live. "Use my Ghostty settings" loads
+  the user's config instead (below).
 - **`TERM` is `xterm-256color`.** Ghostty's own `xterm-ghostty` terminfo is bundled (and its
   shell integration found through it), but setuid programs such as `top` and anything under
   `sudo` ignore `TERMINFO`, and remote machines don't have it, which is Ghostty's most common
   support question. Programs still get truecolor (`COLORTERM`) and Ghostty's extensions by
-  querying the terminal.
+  querying the terminal. A Ghostty config that sets `term` wins.
+- **The shell** is the user's login shell from the user database (`getpwuid`, what
+  `dscl . -read ~ UserShell` shows), not `$SHELL`, which an app opened from the Dock may not have.
+  libghostty runs it the way Terminal and Ghostty do (`login -flp user /bin/bash -c 'exec -l
+  <shell>'`), so it's a login shell and profile files load. Settings ▸ Terminal ▸ Shell picks
+  another (`/etc/shells`, or any program). A missing shell gets "<path> isn't there" with
+  "Use /bin/zsh"; one that quits on launch gets Try Again and "Use /bin/zsh". With "Use my Ghostty
+  settings" on, the config's `command` wins. The shell is resolved where the terminal runs: a
+  host-backed engine resolves the host's login shell, never the client's (`TerminalLoginShell`).
+- **Transparency** follows the app's setting (`\.dsTransparency`): Solid, Subtle and Standard
+  set libghostty's `background-opacity` to 1, 0.92 and 0.85, over a behind-window blur the panel
+  draws (libghostty's own `background-blur` blurs the whole window through private API, so Native
+  doesn't use it). Only the default background is translucent; text and colored cells stay opaque.
+  Reduce Transparency forces 1, even over a Ghostty config's `background-opacity`.
 - **Tabs** are named by their shell's title (the folder, or the running command), numbered when two
   show the same title, and fall back to "Terminal", "Terminal 2", ... once their shell exits.
-- **Keys.** Ghostty's default bindings are cleared (they claim ⌘N, ⌘W, ⌘Q, ⌘T), so every ⌘
-  shortcut in Native's menus keeps working inside a terminal; the few terminal-local ones are
-  listed in `docs/keyboard.md`. Copy, paste and select all go through the Edit menu. Input runs
-  through AppKit's input method system first, so dead keys, CJK input and dictation work.
-- **Settings ▸ Terminal** (`SettingsPane.terminal`): font family (any installed monospaced font;
-  Geist Mono by default), size, and scrollback in lines (10,000 by default).
+- **Keys.** Native's menu shortcuts come first while a terminal has focus, then the terminal's key
+  bindings, then the shell. In Native's settings Ghostty's default bindings are cleared (they claim
+  ⌘N, ⌘W, ⌘Q, ⌘T) and only the terminal-local ones in `docs/keyboard.md` come back. Copy, paste and
+  select all go through the Edit menu. Input runs through AppKit's input method system first, so
+  dead keys, CJK input and dictation work.
+- **Settings ▸ Terminal** (`SettingsPane.terminal`): use my Ghostty settings, import from Ghostty,
+  shell, font family (any installed monospaced font; Geist Mono by default), size, cursor,
+  scrollback in lines (10,000 by default), and colors (Native's, or imported).
+
+### Using your Ghostty settings
+
+With "Use my Ghostty settings" on, terminals load the user's own config through libghostty's
+config loader, so theme, palette, font family and size, font features, cursor, padding,
+background opacity and key bindings come out exactly as in Ghostty. Native only reads these files;
+it never writes the config, its themes or Ghostty.app.
+
+- **Files**, in Ghostty's order (later wins): `$XDG_CONFIG_HOME/ghostty/config` (default
+  `~/.config/ghostty`), then `config.ghostty` there, then the same two in
+  `~/Library/Application Support/com.mitchellh.ghostty`, then every `config-file` they include.
+  Native loads them one by one rather than through `ghostty_config_load_default_files`, which
+  writes a template config when none exists. Ghostty.app doesn't need to be installed.
+- **Themes** resolve by name in `~/.config/ghostty/themes`, then Ghostty.app's bundled themes
+  (`Contents/Resources/ghostty/themes`, found wherever the app is installed). Native doesn't ship
+  themes: at launch it joins its own terminfo and shell integration with Ghostty.app's themes in
+  a resources folder in its caches (`ghostty-resources`, symlinks) and points libghostty there.
+  Without Ghostty.app, only the user's themes are found, and the settings page says so. A theme
+  that isn't found is a config problem like any other (below).
+- **What Native overrides**, after the user's config (`GhosttyConfiguration.userConfigOverrides`):
+  `wait-after-command = true` (Native shows the exited state and keeps the tab),
+  `confirm-close-surface = false` (Native asks before closing a tab with a running program),
+  `quit-after-last-window-closed = false`, `clipboard-read = deny` (Native has no prompt for
+  programs reading the clipboard; they can still copy), and `background-opacity = 1` when Reduce
+  Transparency is on. Before the user's config it sets `term = xterm-256color`, which the config
+  can change.
+- **What does nothing embedded**: window and app settings Native owns, such as `window-decoration`,
+  `macos-titlebar-*`, `window-width`/`-height`/`-position`, `fullscreen`, `maximize`,
+  `window-save-state`, `background-blur` (see Transparency), `quick-terminal-*`, `initial-window`,
+  `auto-update`, `desktop-notifications`, `confirm-close-surface` and `working-directory` (each tab
+  starts in its task's folder).
+- **Key bindings** from the config work, after Native's menu shortcuts. `new_tab`, `next_tab`,
+  `previous_tab`, `goto_tab`, `last_tab`, `close_surface` / `close_tab` and `reload_config` act on
+  Native's terminal tabs; bindings for windows, splits, fullscreen, the quick terminal, the
+  inspector, the command palette and search do nothing.
+- **Problems**: libghostty's diagnostics, each with its file and line, show in Settings and above
+  the terminal ("Your Ghostty config didn't load, so Native's terminal settings are in use"), and
+  terminals use Native's settings until the config loads cleanly.
+- **Changes** apply as they're saved: Native watches the config files, their folders, includes and
+  `~/.config/ghostty/themes`, and reloads (a Reload button covers anything else).
+- **Code theme**: the Ghostty config's colors win; Native's code theme doesn't apply to the
+  terminal while this is on.
+
+"Import from Ghostty" is the snapshot instead of the live link: it reads the same files (with a
+small parser in `Packages/Terminal`, `GhosttyImporter`) and copies the font family and size, the
+theme or palette (resolved for light and dark, with the config's own colors over the theme's), the
+cursor and the scrollback limit into Native's settings, after showing each change. Undo restores
+the previous settings.
 
 ### States
 
@@ -55,7 +118,10 @@ Why libghostty, and the pin, are in `docs/decisions.md`.
 | Build without libghostty | "Terminal isn't available in this build", how to enable it, and Copy Command |
 | libghostty didn't start | The error, and to reopen Native |
 | The shell exits | Its last output stays, with "The shell exited · press any key to close · Restart Shell"; the tab gets a gray dot |
-| The shell quits on launch (missing shell, broken profile) | Its output stays, with "The shell didn't start", Try Again and Close Tab; red dot |
+| The shell isn't there | "<path> isn't there", Use /bin/zsh and Choose Shell…; red dot |
+| The shell quits on launch (broken profile, bad command) | Its output stays, with "The shell didn't start", Try Again and Use /bin/zsh; red dot |
+| "Use my Ghostty settings" with no config | Settings explains where Native looked; Native's settings apply |
+| The Ghostty config has errors | Each problem with its file and line, in Settings and above the terminal; Native's settings apply |
 | The task's folder is gone | "This task's folder is gone", Open in Home Folder and Close Tab |
 | Closing a tab with a program running | A confirmation, since it can't be undone |
 | Pasting text that would run commands | A confirmation (Ghostty's paste protection) |

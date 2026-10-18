@@ -59,6 +59,7 @@ extension ManagedServerDelivery.Outcome {
         switch self {
         case .deliver: nil
         case .switchedOff: "Switched off in Native"
+        case .scripted: "Through Native's scripts"
         case .notForAgent: "Not for \(agentName)"
         case .notForProject: "Off in this project"
         case .unsupportedTransport(let kind): "\(agentName) can't use \(kind.displayName)"

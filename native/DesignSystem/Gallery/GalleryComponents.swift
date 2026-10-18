@@ -105,6 +105,7 @@ struct GalleryComposer: View {
                     Button("?") {}
                         .buttonStyle(.pill(isSquare: true))
                         .help("Keyboard Shortcuts")
+                        .accessibilityLabel("Keyboard Shortcuts")
                 } trailing: {
                     Button("Dictate", systemImage: "mic") {}
                         .labelStyle(.iconOnly)

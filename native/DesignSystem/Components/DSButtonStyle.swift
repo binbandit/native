@@ -4,6 +4,10 @@ import SwiftUI
 /// radius; colors change on hover and press with no motion in and a 100ms fade out.
 ///
 ///     Button("Create") { … }.buttonStyle(.ds(.primary))
+///     Button("More", systemImage: "ellipsis") { … }.buttonStyle(.ds(.ghost, iconOnly: true))
+///
+/// An icon-only button still takes a title: it's what VoiceOver says and what the tooltip should
+/// repeat. Never give a DS button a bare `Image` label.
 public struct DSButtonStyle: ButtonStyle {
     public enum Variant: Sendable {
         /// Accent fill, black text (Factory `Primary`).
@@ -37,20 +41,28 @@ public struct DSButtonStyle: ButtonStyle {
 
     let variant: Variant
     let size: Size
+    let isIconOnly: Bool
 
-    public init(variant: Variant = .secondary, size: Size = .small) {
+    /// - Parameter isIconOnly: Shows a `Label`'s icon alone in a square button, keeping its title
+    ///   as the accessibility label.
+    public init(variant: Variant = .secondary, size: Size = .small, isIconOnly: Bool = false) {
         self.variant = variant
         self.size = size
+        self.isIconOnly = isIconOnly
     }
 
     public func makeBody(configuration: Configuration) -> some View {
-        DSButtonBody(configuration: configuration, variant: variant, size: size)
+        DSButtonBody(configuration: configuration, variant: variant, size: size, isIconOnly: isIconOnly)
     }
 }
 
 extension ButtonStyle where Self == DSButtonStyle {
-    public static func ds(_ variant: DSButtonStyle.Variant, size: DSButtonStyle.Size = .small) -> DSButtonStyle {
-        DSButtonStyle(variant: variant, size: size)
+    public static func ds(
+        _ variant: DSButtonStyle.Variant,
+        size: DSButtonStyle.Size = .small,
+        iconOnly: Bool = false
+    ) -> DSButtonStyle {
+        DSButtonStyle(variant: variant, size: size, isIconOnly: iconOnly)
     }
 }
 
@@ -58,6 +70,7 @@ private struct DSButtonBody: View {
     let configuration: ButtonStyleConfiguration
     let variant: DSButtonStyle.Variant
     let size: DSButtonStyle.Size
+    let isIconOnly: Bool
 
     @Environment(\.isEnabled) private var isEnabled
     @State private var isHovered = false
@@ -65,13 +78,13 @@ private struct DSButtonBody: View {
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous)
         configuration.label
-            .labelStyle(DSButtonLabelStyle())
+            .labelStyle(DSButtonLabelStyle(isIconOnly: isIconOnly))
             .font(.dsBody)
             .tracking(DS.Tracking.tight)
             .lineLimit(1)
             .foregroundStyle(foreground)
-            .padding(.horizontal, DS.Space.lg)
-            .frame(minHeight: size.height)
+            .padding(.horizontal, isIconOnly ? 0 : DS.Space.lg)
+            .frame(minWidth: isIconOnly ? size.height : nil, minHeight: size.height)
             .background(fill, in: shape)
             .overlay { shape.strokeBorder(border, lineWidth: 1) }
             .contentShape(shape)
@@ -111,13 +124,26 @@ private struct DSButtonBody: View {
     }
 }
 
-/// Icon and title 6pt apart, the icon a size below the text.
+/// Icon and title 6pt apart, the icon a size below the text; or the icon alone, through the
+/// system's icon-only style so the title stays the accessibility label.
 private struct DSButtonLabelStyle: LabelStyle {
+    let isIconOnly: Bool
+
     func makeBody(configuration: Configuration) -> some View {
-        HStack(spacing: DS.Space.sm) {
-            configuration.icon
-                .font(.system(size: 11, weight: .regular))
-            configuration.title
+        if isIconOnly {
+            Label {
+                configuration.title
+            } icon: {
+                configuration.icon
+                    .font(.system(size: 12, weight: .regular))
+            }
+            .labelStyle(.iconOnly)
+        } else {
+            HStack(spacing: DS.Space.sm) {
+                configuration.icon
+                    .font(.system(size: 11, weight: .regular))
+                configuration.title
+            }
         }
     }
 }
@@ -129,6 +155,7 @@ private struct DSButtonLabelStyle: LabelStyle {
                 Button("Primary") {}.buttonStyle(.ds(.primary))
                 Button("Secondary") {}.buttonStyle(.ds(.secondary))
                 Button("Ghost", systemImage: "arrow.clockwise") {}.buttonStyle(.ds(.ghost))
+                Button("More", systemImage: "ellipsis") {}.buttonStyle(.ds(.ghost, iconOnly: true))
             }
             HStack(spacing: DS.Space.md) {
                 Button("Delete") {}.buttonStyle(.ds(.destructive, size: .medium))

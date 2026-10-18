@@ -1,3 +1,4 @@
+import ACP
 import Foundation
 
 /// Messages the user sent while the agent was busy. They go out one per turn, in order, as turns
@@ -9,10 +10,13 @@ nonisolated struct PromptQueue: Equatable, Sendable {
         /// Whether the message shows in the transcript when it goes out. Messages other sessions
         /// send through Native's tools don't; the transcript records them as session messages.
         let isEchoed: Bool
+        /// Files and images that go with the text.
+        let attachments: [PromptAttachment]
 
-        init(_ text: String, isEchoed: Bool = true) {
+        init(_ text: String, attachments: [PromptAttachment] = [], isEchoed: Bool = true) {
             id = UUID()
             self.text = text
+            self.attachments = attachments
             self.isEchoed = isEchoed
         }
     }
@@ -24,14 +28,14 @@ nonisolated struct PromptQueue: Equatable, Sendable {
         items.isEmpty
     }
 
-    mutating func append(_ text: String, isEchoed: Bool = true) {
-        items.append(Item(text, isEchoed: isEchoed))
+    mutating func append(_ text: String, attachments: [PromptAttachment] = [], isEchoed: Bool = true) {
+        items.append(Item(text, attachments: attachments, isEchoed: isEchoed))
     }
 
     /// For a message that should go out before everything already waiting, such as one that
     /// arrived too late to steer the turn it was meant for.
-    mutating func prepend(_ text: String, isEchoed: Bool = true) {
-        items.insert(Item(text, isEchoed: isEchoed), at: 0)
+    mutating func prepend(_ text: String, attachments: [PromptAttachment] = [], isEchoed: Bool = true) {
+        items.insert(Item(text, attachments: attachments, isEchoed: isEchoed), at: 0)
     }
 
     /// Edits a message; emptying it removes it.
