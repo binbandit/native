@@ -11,7 +11,7 @@
 #       the index celebration-assets.json (each pack's SHA-256 and size) and its signature
 #       celebration-assets.json.sig, for uploading to the release beside the app. The sign command
 #       gets the index's path as its last argument and must print its base64 Ed25519 signature with
-#       the update key (Sparkle's `sign_update -p`), so the app verifies packs with the key it
+#       the update key (Sparkle's `sign_update -p --disable-signing-warning`), so the app verifies packs with the key it
 #       already trusts.
 #
 #   scripts/release/celebration-assets.sh holidays <public-holidays.json>

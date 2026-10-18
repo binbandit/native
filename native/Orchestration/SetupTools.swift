@@ -35,7 +35,8 @@ enum SetupTools {
             ) { caller, _ in
                 let report = try await report(caller)
                 return MCPToolResult(
-                    text: report.summary, structuredContent: try JSONDecoder().decode(JSON.self, from: report.encoded()))
+                    text: report.summary, structuredContent: try JSONDecoder().decode(JSON.self, from: report.encoded())
+                )
             }
         ]
     }
@@ -60,7 +61,9 @@ enum SetupTools {
                             "type": "string",
                             "enum": ["ready", "starting", "stopped", "not_installed", "turned_off", "not_allowed"],
                         ],
-                        "sign_in": ["type": "string", "enum": ["signed_in", "needs_sign_in", "signing_in", "unknown"]],
+                        "sign_in": [
+                            "type": "string", "enum": ["signed_in", "needs_sign_in", "signing_in", "unknown"],
+                        ],
                         "launch": ["type": "string"], "version": ["type": "string"],
                         "missing_command": ["type": "string"], "install_command": ["type": "string"],
                         "sign_in_command": ["type": "string"], "is_caller": ["type": "boolean"],

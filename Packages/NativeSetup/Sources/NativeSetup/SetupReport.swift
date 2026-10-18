@@ -165,7 +165,9 @@ extension SetupReport {
         public var versionStatus: VersionStatus
         public var problem: String?
 
-        public init(state: State, version: String? = nil, versionStatus: VersionStatus = .matched, problem: String? = nil) {
+        public init(
+            state: State, version: String? = nil, versionStatus: VersionStatus = .matched, problem: String? = nil
+        ) {
             self.state = state
             self.version = version
             self.versionStatus = versionStatus

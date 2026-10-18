@@ -37,7 +37,14 @@ public struct NativeLockup: View {
                 }
             case .stacked:
                 VStack(spacing: size * 0.6) {
-                    mark(height: size * 2)
+                    if case .artwork = style {
+                        // An edition's icon tile carries the decorated marks' visual weight: the art
+                        // keeps a transparent margin, so its square is larger than the emblem.
+                        NativeEditionMark(style: style)
+                            .frame(width: size * Self.artworkSide, height: size * Self.artworkSide)
+                    } else {
+                        mark(height: size * 2)
+                    }
                     wordmark
                 }
             }
@@ -59,6 +66,9 @@ public struct NativeLockup: View {
         NativeEditionMark(style: style)
             .frame(width: height * NativeMark.aspectRatio, height: height)
     }
+
+    /// The stacked lockup's icon tile, in wordmark sizes: about 104pt of visible tile on Home.
+    private static let artworkSide: CGFloat = 4.6
 
     private var capHeight: CGFloat {
         DSTypography.platformFont(size: size, weight: .semibold).capHeight
