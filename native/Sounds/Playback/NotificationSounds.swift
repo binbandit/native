@@ -1,50 +1,71 @@
-import AppKit
 import Foundation
 import Observation
 
+#if os(macOS)
+import AppKit
+#endif
+
 /// Native's notification sounds: what to play, when, and playing it. `SoundsPlugin` calls `play`
 /// for session events; other features call it for their own moments (a usage limit reached).
+/// Every sound goes through `play`, so the master switch, the triggers, Focus and the timing apply
+/// to all of them in one place. (Notifications follow Focus on their own, through the system.)
 @Observable
 final class NotificationSounds {
     static let shared = NotificationSounds()
 
     let preferences: SoundPreferences
+    let focus: any FocusStatusProviding
     private(set) var catalog: SoundCatalog
     /// Whether a session is on screen. The app sets this; until it does, no session counts as
     /// viewed and `.unlessViewing` behaves like `.always`.
     @ObservationIgnored var isViewing: (SessionContext) -> Bool = { _ in false }
 
+    @ObservationIgnored private let isAppActive: () -> Bool
     @ObservationIgnored private let player = SoundPlayer()
     @ObservationIgnored private var lastPlayed = Date.distantPast
     /// Several sessions often finish together; one sound says so.
     private static let burstInterval: TimeInterval = 1.5
 
-    init(preferences: SoundPreferences = SoundPreferences()) {
+    init(
+        preferences: SoundPreferences = SoundPreferences(),
+        focus: any FocusStatusProviding = SystemFocusStatus(),
+        isAppActive: @escaping () -> Bool = NotificationSounds.isAppActive
+    ) {
         self.preferences = preferences
+        self.focus = focus
+        self.isAppActive = isAppActive
         catalog = SoundCatalog(customSounds: preferences.customSounds)
-        if case .native(let chime) = preferences.selection {
+        if preferences.isEnabled, case .native(let chime) = preferences.selection {
             Task { [player] in await player.prepare(chime) }
         }
     }
 
     /// The selected sound, falling back to the default when its file has gone missing.
     var selectedOption: SoundOption? {
-        let selection = preferences.selection
-        guard selection != .none else { return nil }
-        return catalog.option(for: selection) ?? catalog.option(for: .default)
+        catalog.option(for: preferences.selection) ?? catalog.option(for: .default)
     }
 
-    /// Plays the selected sound for `trigger` if the user wants one for it right now.
-    func play(_ trigger: SoundTrigger, for session: SessionContext? = nil) {
-        guard preferences.isEnabled(trigger) else { return }
+    /// Plays the selected sound for `trigger` if the user wants one for it right now. Returns
+    /// whether it played.
+    @discardableResult
+    func play(_ trigger: SoundTrigger, for session: SessionContext? = nil) async -> Bool {
+        guard preferences.isEnabled, preferences.isEnabled(trigger) else { return false }
+        if preferences.staysQuietDuringFocus {
+            // The first sound that would play is when Native asks to see Focus, never at launch.
+            await focus.requestAccessIfNeeded()
+            if focus.isFocused == true { return false }
+        }
         let isViewingSession = session.map(isViewing) ?? false
-        guard preferences.timing.allows(isAppActive: NSApplication.shared.isActive, isViewingSession: isViewingSession) else { return }
-        guard Date.now.timeIntervalSince(lastPlayed) >= Self.burstInterval, let option = selectedOption else { return }
+        guard preferences.timing.allows(isAppActive: isAppActive(), isViewingSession: isViewingSession),
+              Date.now.timeIntervalSince(lastPlayed) >= Self.burstInterval,
+              let option = selectedOption
+        else { return false }
         lastPlayed = .now
-        Task { await player.play(option, volume: preferences.volume) }
+        await player.play(option, volume: preferences.volume)
+        return true
     }
 
-    /// Plays a sound regardless of triggers and timing, for trying it out.
+    /// Plays a sound regardless of triggers, Focus and timing, for trying it out.
     func preview(_ id: SoundID? = nil) {
         guard let option = id.map(catalog.option(for:)) ?? selectedOption else { return }
         Task { await player.play(option, volume: preferences.volume) }
@@ -53,6 +74,14 @@ final class NotificationSounds {
     func select(_ id: SoundID) {
         preferences.selection = id
         preview(id)
+    }
+
+    /// Turning "Stay quiet during Focus" on is the other moment Native asks to see Focus.
+    func setStaysQuietDuringFocus(_ isOn: Bool) {
+        preferences.staysQuietDuringFocus = isOn
+        if isOn {
+            Task { await focus.requestAccessIfNeeded() }
+        }
     }
 
     /// Adds audio files the user picked, selects the last of them and plays it.
@@ -72,5 +101,13 @@ final class NotificationSounds {
     /// Looks for Conductor's sounds and the custom files again, for when they've moved.
     func reloadCatalog() {
         catalog = SoundCatalog(customSounds: preferences.customSounds)
+    }
+
+    static func isAppActive() -> Bool {
+        #if os(macOS)
+        NSApplication.shared.isActive
+        #else
+        true
+        #endif
     }
 }

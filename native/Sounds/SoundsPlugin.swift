@@ -19,10 +19,10 @@ struct SoundsPlugin: NativePlugin {
         switch event {
         // A subagent's approval blocks its parent, so it sounds too; its finishing doesn't.
         case .permissionRequested(let session, _):
-            sounds.play(.approvalNeeded, for: session)
+            await sounds.play(.approvalNeeded, for: session)
         case .turnEnded(let session, let reason) where session.parentID == nil:
             if let trigger = Self.trigger(for: reason) {
-                sounds.play(trigger, for: session)
+                await sounds.play(trigger, for: session)
             }
         default:
             break
