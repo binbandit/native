@@ -49,12 +49,12 @@ enum ScriptOutboundFrame: Decodable, Sendable, Equatable {
     case evaluationStarted
     /// A piece of one `text()` call; `end` marks its last piece.
     case text(String, end: Bool)
-    case toolCall(id: UInt32, toolName: String, input: ScriptJSON)
+    case toolCall(id: UInt32, toolName: String, input: ScriptJSON, site: ScriptCallSite? = nil)
     case result
     case error(ScriptFailure)
 
     private enum CodingKeys: String, CodingKey {
-        case type, protocolVersion, text, end, id, toolName, input, error
+        case type, protocolVersion, text, end, id, toolName, input, error, line, column
     }
 
     init(from decoder: any Decoder) throws {
@@ -67,10 +67,12 @@ enum ScriptOutboundFrame: Decodable, Sendable, Equatable {
             self = .text(
                 try container.decode(String.self, forKey: .text), end: try container.decode(Bool.self, forKey: .end))
         case "tool_call":
+            let line = try container.decodeIfPresent(Int.self, forKey: .line)
             self = .toolCall(
                 id: try container.decode(UInt32.self, forKey: .id),
                 toolName: try container.decode(String.self, forKey: .toolName),
-                input: try container.decode(ScriptJSON.self, forKey: .input))
+                input: try container.decode(ScriptJSON.self, forKey: .input),
+                site: line.map { ScriptCallSite(line: $0, column: try? container.decodeIfPresent(Int.self, forKey: .column)) })
         case "result": self = .result
         case "error": self = .error(try container.decode(ScriptFailure.self, forKey: .error))
         default:

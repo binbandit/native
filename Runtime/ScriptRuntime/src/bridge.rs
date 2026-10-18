@@ -46,7 +46,15 @@ pub struct Bridge {
 enum Request {
     Metadata,
     Text { text: String },
-    Call { index: usize, input: Value },
+    Call {
+        index: usize,
+        input: Value,
+        /// Where in the script the call was made, when the guest could tell.
+        #[serde(default)]
+        line: Option<u32>,
+        #[serde(default)]
+        column: Option<u32>,
+    },
     Schedule { delay: f64, repeat: bool },
     Clear { id: u32 },
     Exit,
@@ -132,7 +140,12 @@ impl Bridge {
                 emit_text(&text);
                 Ok(Value::Null)
             }
-            Request::Call { index, input } => {
+            Request::Call {
+                index,
+                input,
+                line,
+                column,
+            } => {
                 let tool_name = self
                     .bindings
                     .get(index)
@@ -158,6 +171,8 @@ impl Bridge {
                     id,
                     tool_name: &tool_name,
                     input: &input,
+                    line,
+                    column,
                 });
                 Ok(json!(id))
             }

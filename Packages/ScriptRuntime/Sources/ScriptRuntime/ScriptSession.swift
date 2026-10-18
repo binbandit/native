@@ -63,7 +63,7 @@ enum ScriptSession {
                                 output.append(pending)
                                 pending = ""
                             }
-                        case .toolCall(let id, let toolName, let input):
+                        case .toolCall(let id, let toolName, let input, let site):
                             guard let binding = byName[toolName] else {
                                 failure = runtimeFailure(
                                     "The script runtime called a tool that isn't bound: \(toolName)")
@@ -81,7 +81,8 @@ enum ScriptSession {
                                 break frames
                             }
                             group.addTask {
-                                let (isError, content, duration) = await invoke(binding, input: input, limits: limits)
+                                let (isError, content, duration) = await invoke(
+                                    binding, input: input, site: site, limits: limits)
                                 shared.calls.withLock { calls in
                                     calls[index].isError = isError
                                     calls[index].duration = duration
@@ -145,11 +146,11 @@ enum ScriptSession {
     }
 
     private static func invoke(
-        _ binding: ScriptBinding, input: ScriptJSON, limits: ScriptLimits
+        _ binding: ScriptBinding, input: ScriptJSON, site: ScriptCallSite?, limits: ScriptLimits
     ) async -> (isError: Bool, content: ScriptJSON, duration: Duration) {
         let started = ContinuousClock.now
         do {
-            let content = try await binding.tool.call(input)
+            let content = try await binding.tool.call(input, at: site)
             let size = content.jsonText.utf8.count
             guard size <= limits.toolResultBytes else {
                 let message =

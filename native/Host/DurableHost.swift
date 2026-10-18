@@ -51,6 +51,11 @@ final class DurableHost {
     }
 
     /// Connects if the host is enabled, registering it with launchd first.
+    /// Connects if the host is enabled, with the agents plugins provide.
+    func start(plugins agents: [AgentDefinition]) async {
+        await start(agents: agents.map(AgentSpec.init))
+    }
+
     /// Connects if the host is enabled. Calling it again only updates the agents.
     func start(agents: [AgentSpec]) async {
         self.agents = agents
