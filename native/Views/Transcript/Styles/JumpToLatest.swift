@@ -12,7 +12,7 @@ struct JumpToLatestButton: View {
                 .font(.dsCalloutMedium)
                 .frame(width: DS.Size.controlSM, height: DS.Size.controlSM)
         }
-        .buttonStyle(.glass)
+        .dsGlassButtonStyle()
         .buttonBorderShape(.circle)
         .help("Jump to the latest output")
         .accessibilityLabel("Jump to latest")

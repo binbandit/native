@@ -38,7 +38,7 @@ struct SubagentInspector: View {
                 Button("Stop", systemImage: "stop.fill") {
                     Task { await child.cancel() }
                 }
-                .buttonStyle(.glass)
+                .dsGlassButtonStyle()
                 .help("Stop this subagent without stopping the main session")
             }
         }

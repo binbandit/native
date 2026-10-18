@@ -201,7 +201,7 @@ private struct SidebarDragPreview: View {
             .padding(.horizontal, DS.Space.md)
             .padding(.vertical, DS.Space.sm)
             .frame(maxWidth: DS.Size.sidebarWidth - DS.Space.xxl, alignment: .leading)
-            .background(.dsOverlay, in: .rect(cornerRadius: DS.Radius.row, style: .continuous))
+            .dsOverlayBackground(in: .rect(cornerRadius: DS.Radius.row, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
                     .strokeBorder(.dsSeparator)

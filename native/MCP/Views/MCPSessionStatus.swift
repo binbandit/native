@@ -59,7 +59,7 @@ struct MCPSessionStatusButton: View {
                             }
                         }
                     )
-                    .presentationBackground(.dsOverlay)
+                    .dsPopoverBackground()
                 }
             }
         }

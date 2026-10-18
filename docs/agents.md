@@ -54,8 +54,10 @@ and offers the rest in Add Agent with their `setup.install` command (shown, neve
   had expired).
 - **Capabilities:** `loadSession`; sessions `list` and `delete`; images; no embedded context
   (unless `PI_ACP_ENABLE_EMBEDDED_CONTEXT=true`); no MCP over HTTP or SSE.
-- **MCP:** the adapter accepts `mcpServers` but doesn't pass them to Pi, so Native's orchestration
-  tools aren't available in Pi sessions. Pi's own MCP (`~/.pi/agent/mcp.json`) still works.
+- **MCP:** the adapter accepts `mcpServers` but doesn't pass them to Pi (it spawns
+  `pi --mode rpc` with no MCP configuration), so Native's tools, including orchestration, don't
+  reach Pi sessions. Pi's own MCP (`~/.pi/agent/mcp.json`) still works. This is upstream in
+  pi-acp; Pi itself supports stdio and HTTP MCP servers, so only the hand-off is missing.
 - **Auth:** one method, `pi_terminal_login` (`type: "terminal"`, args `--terminal-login`), which
   launches interactive `pi` for `/login`. `authenticate` can't complete it over ACP. When Pi has no
   usable model, `session/new` fails with `auth_required` (`-32000`): "Configure an API key or log
@@ -104,13 +106,39 @@ Documented in their plugins (`native/Plugins/BuiltInPlugins.swift`, `CursorPlugi
 Codex (`com.openai.codex`, then ChatGPT `com.openai.chat`) / registry `codex-acp`; Cursor
 (`com.todesktop.230313mzl4w4u92`) / registry `cursor`.
 
+## Signing in from a terminal
+
+OpenCode, Pi and Copilot can only sign in from a terminal: OpenCode's `authenticate` returns success
+without signing in, Copilot's answers `-32000`, and Pi's method is `type: "terminal"`. For them,
+Sign In opens a sheet with a terminal running the agent's own sign-in command
+(`AgentTerminalSignInSheet`):
+
+- **Which command:** the manifest's `setup.signIn` when there is one (it marks the agent as
+  terminal-only), otherwise an ACP method's terminal command (`_meta["terminal-auth"]`, or the
+  agent's own command with a `type: "terminal"` method's `args`, decoded as
+  `AuthMethod.terminal`). Agents whose ACP sign-in works (Codex, Cursor) keep using `authenticate`.
+- **How it runs:** in the user's login shell (`<shell> -l -i -c <command>`), so it sees the same
+  PATH as the agent, in a terminal of its own (`TerminalStore.standalonePanel`), since sign-in
+  usually happens before a session exists. The command writes its exit code to a temporary file,
+  because the terminal only reports that its process exited.
+- **Success** (exit 0) closes the sheet and restarts the agent with a fresh environment, then
+  starts the session the user was starting. **Failure** keeps the output on screen with the exit
+  code and Try Again. **Check Again** does the success path by hand, for a sign-in done elsewhere.
+  **Cancel** or closing the sheet ends the command.
+- **Verified** 2026-10-18 with Copilot signed out, in a scratch build:
+  - The real `copilot login` signed in by reusing the GitHub CLI's login, then Native restarted
+    Copilot and opened the session. It stored a token in the login keychain (service
+    `copilot-cli`), which the test then removed.
+  - A failing stand-in command showed its output, "exited with code 1" and Try Again; Try Again
+    ran it again, and Cancel ended it.
+  - A succeeding stand-in closed the sheet and the session started.
+- **Not covered:** agents with no ACP auth methods at all (Claude Code's adapter advertises none)
+  don't get the sign-in prompt yet, even though `setup.signIn` names their command.
+
 ## What Native still needs for these agents
 
-- **Terminal sign-in.** OpenCode, Pi and Copilot all sign in only in a terminal (`type: "terminal"`
-  or `_meta["terminal-auth"]`). Native's Sign In calls `authenticate`, which can't complete these.
-  Native should open the agent's command (`setup.signIn`, or the method's own `command`/`args`) in
-  the user's terminal, then retry.
-- **Pi's MCP.** Native's orchestration tools reach Pi only once `pi-acp` forwards `mcpServers`.
+- **Pi's MCP.** Native's tools reach Pi only once `pi-acp` forwards `mcpServers` (a draft issue
+  for pi-acp is with Brayden for review).
 
 ## Agent icons
 
@@ -131,7 +159,17 @@ nothing:
 SVGs are drawn by Native's own small renderer (`native/AgentIcons/Glyph/`: paths, basic shapes,
 groups, transforms, fill rules, strokes), so glyphs scale crisply, take the text color like SF
 Symbols, and need no AppKit. SVGs with text, images or `<use>` fall back to the monogram.
-Everything views draw goes through `AgentIcon(agent:size:)`. Menus only take an `Image` and ignore
+Everything views draw goes through `AgentIcon(agent:style:size:)`, in one of two styles, so accent
+color stays rare:
+
+- `.glyph` (the default), for dense lists such as sidebar rows, recent tasks and menus: the
+  monochrome glyph in the text color (the plugin's SVG or the registry's), else a monogram. Never
+  a full-color app icon.
+- `.tile`, for large surfaces such as Home's cards and Settings ▸ Agents: the installed app's icon
+  when there is one, else the glyph. `AgentIconTile` puts either on the same outlined 32pt tile,
+  so a row of agents reads as one set and a white app icon doesn't disappear on a light card.
+
+Menus only take an `Image` and ignore
 SwiftUI's template rendering, so they use `AgentIconStore.image(for:size:scale:colorScheme:)`,
 which draws glyphs in that appearance's label color; and macOS menus hide item icons unless the
 menu's content (not the `Menu` itself) has `.labelStyle(.titleAndIcon)`.
