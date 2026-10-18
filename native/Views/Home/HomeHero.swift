@@ -33,6 +33,12 @@ struct HomeHero: View {
                     // Keeps the sky's stars from showing through the letters.
                     .background(.dsBackground, in: .rect(cornerRadius: DS.Radius.small))
             }
+            // Names the celebration Home is dressed for, so the look never needs explaining.
+            if let title = celebrations?.homeTitle {
+                Text(title)
+                    .font(.dsCallout)
+                    .foregroundStyle(.dsTextSecondary)
+            }
         }
         .foregroundStyle(.dsTextPrimary)
         .opacity(isShown ? 1 : 0)

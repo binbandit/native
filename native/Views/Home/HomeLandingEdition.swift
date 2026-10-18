@@ -67,10 +67,26 @@ struct HomeLandingEdition: Equatable {
             case .nightly: .diaDeMuertos(.nightly)
             case .stable, .dev: .diaDeMuertos(.regular)
             }
+        case .artwork(let icons):
+            icons[variant(channel)].map { pair in
+                .artwork(
+                    NativeEditionArtwork(
+                        id: "\(pair)", light: PlatformAppIcon.preview(pair.light), dark: PlatformAppIcon.preview(pair.dark)))
+            } ?? (channel == .beta ? .beta : .standard)
         case .palette(let palette):
             twoTone(palette).map(NativeMarkStyle.twoTone) ?? (channel == .beta ? .beta : .standard)
         case .mark, nil:
             channel == .beta ? .beta : .standard
+        }
+    }
+
+    /// The icon family each channel wears, as its app icon does.
+    private static func variant(_ channel: ReleaseChannel) -> AppIconVariant {
+        switch channel {
+        case .stable: .stable
+        case .beta: .beta
+        case .nightly: .nightly
+        case .dev: .development
         }
     }
 

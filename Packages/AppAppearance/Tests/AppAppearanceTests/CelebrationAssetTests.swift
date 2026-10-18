@@ -113,6 +113,11 @@ struct CelebrationAssetTests {
                 celebrations: CelebrationContributions(FirstPartyCelebrations.celebrations))
         ])
         #expect(try F.active(preferences, on: "2027-02-14", events: downloaded.celebrations) == valentines)
+        // With no Home edition of its own, Home shows its icon, exactly when the icon applies.
+        let day = CelebrationPolicy.resolve(downloaded.celebrations, preferences: preferences, on: try F.day("2027-02-14"))
+        #expect(day.active?.appliesToHome == true)
+        #expect(downloaded.celebration(valentines)?.homeLook == .artwork(icons))
+        #expect(event.home == .downloadable(.notDownloaded))
     }
 
     @Test func aChosenStyleDrivesTheIconAndItsDownload() throws {

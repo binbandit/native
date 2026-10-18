@@ -49,7 +49,7 @@ struct NotificationSettingsPage: View {
                 }
                 SettingsRow(
                     id: Self.dockBadgeRow, "Dock badge",
-                    description: Text("Show a count on Native's icon in the Dock.")
+                    description: Text("Show a count on Native’s icon in the Dock.")
                 ) {
                     SettingsSelect(
                         label: "Dock badge", selection: $dockBadge.mode,

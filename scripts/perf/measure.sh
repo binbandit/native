@@ -2,7 +2,7 @@
 # Measures Native's launch time, idle cost and child processes in its own isolated instance
 # (`just perf`), for the numbers and budgets in docs/performance.md. Never touches another Native.
 #
-#   scripts/perf/measure.sh [--no-build] [--launches N] [--seconds S] [--settle S] [--sessions N]
+#   scripts/perf/measure.sh [--no-build] [--launches N] [--seconds S] [--settle S] [--sessions N] [-- app arguments…]
 #
 # Launch times come from the app's own `launch <milestone> <ms> ms` log lines (LaunchMetrics), from
 # the moment the kernel started the process. Idle numbers are kernel counters for the app alone and
@@ -18,7 +18,8 @@ launches=5
 seconds=30
 settle=20
 sessions=0
-usage="usage: $0 [--no-build] [--launches N] [--seconds S] [--settle S] [--sessions N]"
+app_args=()
+usage="usage: $0 [--no-build] [--launches N] [--seconds S] [--settle S] [--sessions N] [-- app arguments…]"
 while [ $# -gt 0 ]; do
     case "$1" in
         --no-build) build=0 ;;
@@ -26,6 +27,7 @@ while [ $# -gt 0 ]; do
         --seconds) seconds=$2; shift ;;
         --settle) settle=$2; shift ;;
         --sessions) sessions=$2; shift ;;
+        --) shift; app_args=("$@"); break ;;
         *) echo "$usage" >&2; exit 2 ;;
     esac
     shift
@@ -70,7 +72,7 @@ tree() {
 }
 
 launch() {
-    "$run" "$name" "$@" | awk '/^pid / { print $2 }'
+    "$run" "$name" "$@" -- ${app_args[@]+"${app_args[@]}"} | awk '/^pid / { print $2 }'
 }
 
 sample() {
