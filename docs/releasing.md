@@ -250,6 +250,27 @@ docs, tests, refactors and quicksaves stay out. The notes become the GitHub rele
 embedded in the appcast as Markdown, which Settings ▸ Updates renders. They're generated, never
 hand-edited, and there's no CHANGELOG: to change what users read, write a better commit title.
 
+### What's New
+
+The release notes are the full changelog. On top of them, a release can showcase a few features in
+the What's New sheet (`native/WhatsNew/`): curated entries in `WhatsNewCatalog`, keyed by version,
+each with a title, a one-line summary, optional original art (an asset-catalog image or an SF
+Symbol that animates once) and an optional Try It that deep-links to a Settings page or a URL. Three
+or four highlights per release; more page.
+
+- It appears once, on the first launch after updating to a version with entries, collecting any
+  versions skipped in between (`WhatsNewSchedule.pending`), and never on a brand-new install, where
+  the landing page is the welcome.
+- It waits while a task or workflow needs the user (`AppModel.hasWorkNeedingUser`, the Dock badge's
+  count), so it never covers an approval; it appears as soon as nothing does.
+- Esc or Continue closes it and marks the version seen. Help ▸ What's New reopens the latest
+  highlights any time; Settings ▸ Updates ▸ Show What's New turns the automatic sheet off. It links
+  to the release notes.
+- The content model is Foundation-only, so the companion can show the same entries.
+- Try it: launch with `-whatsNewVersionOverride 0.3.0 -whatsNew.lastSeenVersion 0.1.0` (an update
+  from 0.1.0 to 0.3.0); without `lastSeenVersion` on a fresh instance it's a new install and stays
+  quiet.
+
 ## CI
 
 `check.yml` runs `scripts/release/check.sh` on every pull request and push to `main`: it compiles
