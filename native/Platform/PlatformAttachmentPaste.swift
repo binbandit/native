@@ -5,9 +5,9 @@ import UniformTypeIdentifiers
 import AppKit
 #endif
 
-/// What ⌘V carries that should be attached rather than typed: files copied in the Finder, or an
-/// image (a screenshot, a copied picture) with no text alongside.
-enum PastedAttachments: Equatable {
+/// Files or an image arriving to be attached: from ⌘V (files copied in the Finder, or an image
+/// with no text alongside, such as a screenshot) or from a picker.
+enum IncomingAttachments: Equatable {
     case files([URL])
     case image(Data, UTType)
 }
@@ -16,7 +16,7 @@ extension View {
     /// While `isEnabled`, hands ⌘V of files or an image to `perform`, ahead of the focused text view,
     /// which would paste a file's name or nothing. Text pastes as usual. Mac only: iPadOS pastes
     /// images through its own edit menu.
-    func onAttachmentPaste(isEnabled: Bool, perform: @escaping (PastedAttachments) -> Void) -> some View {
+    func onAttachmentPaste(isEnabled: Bool, perform: @escaping (IncomingAttachments) -> Void) -> some View {
         #if canImport(AppKit)
         background(AttachmentPasteMonitor(isEnabled: isEnabled, perform: perform))
         #else
@@ -29,7 +29,7 @@ extension View {
 /// Watches this window's key events for ⌘V while enabled.
 private struct AttachmentPasteMonitor: NSViewRepresentable {
     let isEnabled: Bool
-    let perform: (PastedAttachments) -> Void
+    let perform: (IncomingAttachments) -> Void
 
     func makeNSView(context: Context) -> NSView {
         NSView()
@@ -49,10 +49,10 @@ private struct AttachmentPasteMonitor: NSViewRepresentable {
     }
 
     final class Coordinator {
-        var perform: (PastedAttachments) -> Void
+        var perform: (IncomingAttachments) -> Void
         private var monitor: Any?
 
-        init(perform: @escaping (PastedAttachments) -> Void) {
+        init(perform: @escaping (IncomingAttachments) -> Void) {
             self.perform = perform
         }
 
@@ -87,7 +87,7 @@ private struct AttachmentPasteMonitor: NSViewRepresentable {
             return .general
         }
 
-        static func attachments(on pasteboard: NSPasteboard) -> PastedAttachments? {
+        static func attachments(on pasteboard: NSPasteboard) -> IncomingAttachments? {
             let options: [NSPasteboard.ReadingOptionKey: Any] = [.urlReadingFileURLsOnly: true]
             if let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: options) as? [URL], !urls.isEmpty {
                 return .files(urls)

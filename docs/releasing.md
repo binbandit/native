@@ -14,6 +14,25 @@ in `docs/decisions.md` ("Releases on GitHub", "Sparkle for updates", "Nightly be
 
 ## Channels
 
+### Sentry crash symbols
+
+The Sentry project is [FoxyCorps / native](https://foxycorps.sentry.io/settings/projects/native/).
+The public ingestion DSN lives in `NATIVE_SENTRY_DSN` (`Config/Shared.xcconfig`); development builds
+clear it and cannot start the SDK. Runtime reporting is controlled by Native's telemetry consent and
+organization policy, through `SentryTelemetry.start(dsn:)` and `stop()`.
+
+Both publishing workflows read the protected `SENTRY_AUTH_TOKEN` repository secret. This is Sentry's
+organization CI token named **Native GitHub release symbols**. Keep it out of source and app bundles.
+For a local publication, supply the same token in the environment. `scripts/release/sentry.sh` verifies
+the pinned Sentry CLI download and uploads only the archive's dSYMs, waiting for processing before
+the release can publish. It does not include source bundles. A local dry run prints this step without
+uploading. `bash scripts/release/sentry.sh <archive/dSYMs> --no-upload` checks symbol discovery offline.
+
+If symbols fail to upload, publication stops; resolve the token, network or missing-dSYMs error and
+rerun the release. Release and Nightly configurations already generate dSYMs.
+
+## Channel configuration
+
 | | Native (stable) | Native (beta) | Native Nightly |
 | --- | --- | --- | --- |
 | What it is | tested releases | the stable app, opted into betas in Settings ▸ Updates | a separate app built from `main` every night |

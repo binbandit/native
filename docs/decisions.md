@@ -323,3 +323,24 @@ single `NativePolicy`; every feature asks it what's allowed, and Settings shows 
 Native's own telemetry is anonymous product usage only, opt-in, never containing prompts, code, paths or
 commands, and can be forced off by an organization, which can instead send the same events plus audit
 events to its own OpenTelemetry collector. Design: `docs/enterprise.md`.
+
+## 2026-10-18: Sentry for opt-in crash diagnostics
+
+Use the official `sentry-cocoa` SDK, pinned to **9.30.2** through SwiftPM, rather than maintaining
+signal handlers, crash persistence and symbolication ourselves. `SentryTelemetry.start(dsn:)` in
+`native/Telemetry/` is an adapter for Native's telemetry gate, never an unconditional launch hook.
+The gate owns user consent and `policy.telemetry.native`; Debug and isolated dev builds cannot start
+the SDK. The public DSN is `NATIVE_SENTRY_DSN` in `Config/Shared.xcconfig`, exposed as `NativeSentryDSN`.
+
+`Packages/NativeDiagnostics` rebuilds outgoing errors, crashes and hangs from allowed fields:
+fixed error categories, event time, numeric thread identifiers, instruction/load addresses and binary
+UUIDs for symbolication, plus the build's release and channel. Error messages, arbitrary error types,
+paths, source context, thread names, requests, breadcrumbs, user data and attachments are discarded.
+Automatic session tracking, tracing, logging, metrics, screenshots, view hierarchy, replay and memory
+introspection are disabled. This intentionally collects no product usage or performance traces yet.
+Stopping the adapter discards its offline cache. These limits preserve `docs/enterprise.md`'s privacy
+contract; organization's OTLP collectors remain a separate destination.
+
+Release publishing uploads dSYMs to FoxyCorps's `native` project before publishing binaries, using
+the `SENTRY_AUTH_TOKEN` GitHub Actions secret. The official CLI is pinned to **3.8.0**, checksum verified,
+and never uploads source bundles. Dry runs do not upload. A failed symbol upload stops publication.

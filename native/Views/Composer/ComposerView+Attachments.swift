@@ -13,7 +13,7 @@ extension ComposerView {
         load([{ try PromptAttachment.pasted(data, type: type) }])
     }
 
-    func attach(_ pasted: PastedAttachments) {
+    func attach(_ pasted: IncomingAttachments) {
         switch pasted {
         case .files(let urls): attach(urls)
         case .image(let data, let type): attachImage(data, type: type)
