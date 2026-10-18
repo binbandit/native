@@ -62,13 +62,13 @@
           "fill-specializations": [
             {
               "value": {
-                "solid": "srgb:0.59608,0.43922,0.25490,1.00000"
+                "solid": "srgb:0.85098,0.52941,0.14118,1.00000"
               }
             },
             {
               "appearance": "dark",
               "value": {
-                "solid": "srgb:1.00000,0.67843,0.20784,1.00000"
+                "solid": "srgb:1.00000,0.75294,0.29412,1.00000"
               }
             },
             {
@@ -128,7 +128,7 @@
             {
               "appearance": "dark",
               "value": {
-                "solid": "srgb:0.80784,0.20392,0.40000,1.00000"
+                "solid": "srgb:0.85490,0.38824,0.50980,1.00000"
               }
             },
             {
@@ -152,13 +152,13 @@
           "fill-specializations": [
             {
               "value": {
-                "solid": "srgb:0.59608,0.43922,0.25490,0.65000"
+                "solid": "srgb:0.85098,0.52941,0.14118,0.65000"
               }
             },
             {
               "appearance": "dark",
               "value": {
-                "solid": "srgb:1.00000,0.67843,0.20784,0.65000"
+                "solid": "srgb:1.00000,0.75294,0.29412,0.65000"
               }
             },
             {
@@ -177,36 +177,6 @@
           ],
           "image-name": "garland.svg",
           "name": "Garland"
-        },
-        {
-          "fill-specializations": [
-            {
-              "value": {
-                "solid": "srgb:0.14118,0.06275,0.12157,0.30000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "solid": "srgb:0.14118,0.06275,0.12157,0.30000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
-          "glass-specializations": [
-            {
-              "value": false
-            },
-            {
-              "appearance": "tinted",
-              "value": true
-            }
-          ],
-          "image-name": "floral-engraving.svg",
-          "name": "Floral engraving"
         }
       ],
       "lighting": "individual",

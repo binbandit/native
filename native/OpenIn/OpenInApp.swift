@@ -14,9 +14,6 @@ nonisolated struct OpenInApp: Identifiable, Hashable, Sendable {
     /// Whether the app can open the location: any local folder, and a remote one when the app can
     /// reach it from a URL. Terminals' `ssh` launches are recorded but not offered yet.
     func canOpen(_ location: OpenInLocation) -> Bool {
-        switch location {
-        case .local: true
-        case .remote(let host, let path): target.remoteURL(host: host, path: path) != nil
-        }
+        OpenInRequest(location: location, app: self) != nil
     }
 }

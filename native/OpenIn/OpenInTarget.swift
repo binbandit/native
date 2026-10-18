@@ -19,6 +19,8 @@ nonisolated struct OpenInTarget: Identifiable, Hashable, Sendable {
         /// The app's own command-line tool (a path inside its bundle), given the folder, for apps
         /// that don't honor a folder handed to them as a document.
         case bundledTool(String)
+        /// Shown in the platform's file browser (`PlatformFileBrowser`): Finder.
+        case reveal
     }
 
     /// How the app opens a folder on an SSH host.
@@ -57,13 +59,16 @@ nonisolated extension OpenInTarget {
     /// when nothing else is installed (most Macs with developer tools have it), and Finder last.
     static let catalog: [OpenInTarget] = editors + terminals + gitClients + [finder]
 
-    static let finder = OpenInTarget(id: "finder", bundleIdentifiers: ["com.apple.finder"], kind: .fileManager)
+    static let finder = OpenInTarget(
+        id: "finder", bundleIdentifiers: ["com.apple.finder"], kind: .fileManager, launch: .reveal)
 
     private static let editors: [OpenInTarget] = [
         .init(
             id: "cursor",
             bundleIdentifiers: ["com.todesktop.230313mzl4w4u92"],
             kind: .editor,
+            // Cursor 3 keeps its Agents window on a folder opened as a document; its CLI opens it.
+            launch: .bundledTool("Contents/Resources/app/bin/cursor"),
             remote: .url("cursor://vscode-remote/ssh-remote+{host}{path}")
         ),
         .init(

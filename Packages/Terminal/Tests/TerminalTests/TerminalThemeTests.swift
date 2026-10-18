@@ -28,8 +28,18 @@ struct TerminalThemeTests {
         #expect(theme.colors(for: .light, appChrome: appChrome).chrome == appChrome)
     }
 
-    @Test func unknownThemesFallBackToNative() {
-        #expect(TerminalTheme.named("missing") == .native)
+    @Test func importedColorsReplaceTheAppTheme() {
+        let dracula = TerminalColors(
+            chrome: TerminalChrome(
+                background: TerminalRGB(0x282A36), foreground: TerminalRGB(0xF8F8F2), cursor: TerminalRGB(0xF8F8F2),
+                cursorText: TerminalRGB(0x282A36), selectionBackground: TerminalRGB(0x44475A)),
+            palette: Array(repeating: TerminalRGB(0x000000), count: 16))
+        let imported = TerminalSettings(
+            colors: .imported(TerminalImportedColors(themeName: "Dracula", light: dracula, dark: dracula)))
+        let style = TerminalStyle(settings: imported, appearance: .light, appTheme: .native, appChrome: appChrome)
+        #expect(style.colors == dracula)
+        let app = TerminalStyle(settings: TerminalSettings(), appearance: .light, appTheme: .native, appChrome: appChrome)
+        #expect(app.colors.chrome == appChrome)
     }
 
     @Test func formatsAndBlendsColors() {
