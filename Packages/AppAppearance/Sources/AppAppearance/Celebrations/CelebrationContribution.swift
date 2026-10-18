@@ -2,7 +2,11 @@ import Foundation
 
 /// A celebration's stable, namespaced id, such as `native.halloween`. User preferences are keyed by
 /// it, so it never changes once shipped; a regional variant gets an id of its own.
-public struct CelebrationID: RawRepresentable, Hashable, Comparable, Sendable, Codable, CodingKeyRepresentable,
+public typealias CelebrationID = ContributionID<CelebrationContribution>
+
+/// A contribution's stable, namespaced id: `<namespace>.<name>`, lowercase. Typed by what it names,
+/// so a celebration id can't be passed where an icon set's is expected.
+public struct ContributionID<Kind>: RawRepresentable, Hashable, Comparable, Sendable, Codable, CodingKeyRepresentable,
     CustomStringConvertible
 {
     public let rawValue: String
@@ -24,7 +28,9 @@ public struct CelebrationID: RawRepresentable, Hashable, Comparable, Sendable, C
 
 /// One celebration a plugin offers: an entry in `plugin.json`'s `celebrations`. It's data only;
 /// what the user chose lives in `CelebrationPreferences`, never in the manifest.
-public struct CelebrationContribution: Hashable, Sendable, Identifiable {
+public struct CelebrationContribution: AppearanceContribution {
+    public static let kind = ContributionKind.celebration
+
     // Identity
     public var id: CelebrationID
     public var title: LocalizedText
@@ -38,14 +44,15 @@ public struct CelebrationContribution: Hashable, Sendable, Identifiable {
     public var provenance: CelebrationProvenance
     public var calendar: CelebrationCalendar
     public var display: CelebrationDisplay
-    public var artwork: CelebrationArtwork
+    /// The icon set it dresses Native in, from any enabled plugin. Nil lists it with its artwork
+    /// forthcoming, so it can be browsed but changes nothing.
+    public var iconSet: IconSetID?
     public var compatibility: CelebrationCompatibility
 
     public init(
         id: CelebrationID, title: LocalizedText, aliases: [String] = [], summary: LocalizedText? = nil,
         tags: [String] = [], provenance: CelebrationProvenance = CelebrationProvenance(),
-        calendar: CelebrationCalendar, display: CelebrationDisplay = CelebrationDisplay(),
-        artwork: CelebrationArtwork = CelebrationArtwork(),
+        calendar: CelebrationCalendar, display: CelebrationDisplay = CelebrationDisplay(), iconSet: IconSetID? = nil,
         compatibility: CelebrationCompatibility = CelebrationCompatibility()
     ) {
         self.id = id
@@ -56,7 +63,7 @@ public struct CelebrationContribution: Hashable, Sendable, Identifiable {
         self.provenance = provenance
         self.calendar = calendar
         self.display = display
-        self.artwork = artwork
+        self.iconSet = iconSet
         self.compatibility = compatibility
     }
 
@@ -72,7 +79,7 @@ public struct CelebrationContribution: Hashable, Sendable, Identifiable {
 
 extension CelebrationContribution: Codable {
     private enum CodingKeys: String, CodingKey {
-        case id, title, aliases, summary = "description", tags, provenance, calendar, display, artwork, compatibility
+        case id, title, aliases, summary = "description", tags, provenance, calendar, display, iconSet, compatibility
     }
 
     public init(from decoder: any Decoder) throws {
@@ -85,7 +92,7 @@ extension CelebrationContribution: Codable {
         provenance = try container.decodeIfPresent(CelebrationProvenance.self, forKey: .provenance) ?? .init()
         calendar = try container.decode(CelebrationCalendar.self, forKey: .calendar)
         display = try container.decodeIfPresent(CelebrationDisplay.self, forKey: .display) ?? .init()
-        artwork = try container.decodeIfPresent(CelebrationArtwork.self, forKey: .artwork) ?? .init()
+        iconSet = try container.decodeIfPresent(IconSetID.self, forKey: .iconSet)
         compatibility = try container.decodeIfPresent(CelebrationCompatibility.self, forKey: .compatibility) ?? .init()
     }
 }

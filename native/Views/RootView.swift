@@ -1,4 +1,5 @@
 import ACP
+import NativeHostClient
 import NativeAutomation
 import SwiftUI
 import UniformTypeIdentifiers
@@ -22,6 +23,9 @@ struct RootView: View {
     @Environment(TerminalStore.self) private var terminals
     @Environment(KeepAwakeController.self) private var keepAwake
     @Environment(StatusBarRegistry.self) private var statusBar
+    /// The background host and the updater, once the app provides them (docs/durability.md).
+    @Environment(DurableHost.self) private var durableHost: DurableHost?
+    @Environment(UpdateController.self) private var updates: UpdateController?
 
     var body: some View {
         @Bindable var model = model
@@ -197,8 +201,25 @@ struct RootView: View {
                 }
         } detail: {
             detail
+                .safeAreaInset(edge: .top, spacing: 0) { hostVersionNotice }
+                .task { await durableHost?.start(agents: model.plugins.agents.map(AgentSpec.init)) }
         }
         .toolbar(removing: .sidebarToggle)
+    }
+
+    /// Says when the background host runs another version than this app, above whatever the
+    /// detail column shows.
+    @ViewBuilder
+    private var hostVersionNotice: some View {
+        if let durableHost, durableHost.versionStatus != .matched {
+            HostVersionNotice(
+                status: durableHost.versionStatus,
+                appVersion: AppVersion.current.version,
+                onRestartHost: { Task { await durableHost.restartHost() } },
+                onCheckForUpdates: { updates?.checkForUpdates() }
+            )
+            .padding(DS.Space.md)
+        }
     }
 
     private var sidebar: some View {
