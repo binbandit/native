@@ -1,7 +1,7 @@
 import GitHub
 import SwiftUI
 
-/// A titled, collapsible run of pull requests (the reference app `PullRequestListSection`): the title and
+/// A titled, collapsible run of pull requests: the title and
 /// count toggle it, and the chevron only shows on hover while expanded.
 struct PullRequestGroupSection: View {
     let group: PullRequestGroup

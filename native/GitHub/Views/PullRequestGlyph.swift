@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The pull request glyphs the reference app and the reference app use (Lucide's git-pull-request family, drawn
+/// The pull request glyphs (Lucide's git-pull-request family, drawn
 /// here on its 24-point grid): SF Symbols has no open, draft or closed pull request glyph that
 /// reads at 12 to 14 points.
 nonisolated struct PullRequestGlyph: Shape {

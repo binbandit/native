@@ -2,6 +2,23 @@ import Foundation
 
 /// Markdown as GitHub shows it, where that differs from what's written.
 public enum GitHubMarkdown {
+    /// What a comment shows: HTML comments dropped, and the disclosure tags GitHub renders
+    /// (`<details>`, `<summary>`) turned into Markdown, so they don't print as tags.
+    public static func displayed(_ markdown: String) -> String {
+        removingDisclosureTags(removingComments(markdown))
+    }
+
+    /// `<summary>Title</summary>` becomes a bold line; `<details>` and `</details>` go.
+    static func removingDisclosureTags(_ markdown: String) -> String {
+        guard markdown.localizedCaseInsensitiveContains("<details") else { return markdown }
+        var text = markdown.replacingOccurrences(
+            of: #"<summary>\s*(.*?)\s*</summary>"#, with: "**$1**\n", options: [.regularExpression, .caseInsensitive])
+        text = text.replacingOccurrences(
+            of: #"</?details[^>]*>"#, with: "", options: [.regularExpression, .caseInsensitive])
+        return text.replacingOccurrences(of: #"\n{3,}"#, with: "\n\n", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
     /// Drops HTML comments (`<!-- … -->`), which GitHub hides: pull request templates are full of
     /// them. Code blocks keep theirs, and the blank lines a comment leaves collapse.
     public static func removingComments(_ markdown: String) -> String {

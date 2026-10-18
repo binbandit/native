@@ -1,7 +1,7 @@
 import GitHub
 import SwiftUI
 
-/// The pull request glyph, colored by lifecycle the way GitHub does (the reference app `PullRequestStateIcon`):
+/// The pull request glyph, colored by lifecycle the way GitHub does:
 /// open green, draft gray, merged purple, closed red.
 struct PullRequestStateIcon: View {
     let state: PullRequest.State

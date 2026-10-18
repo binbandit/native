@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// Placeholder rows while the first load runs (the reference app `PullRequestListSkeleton`).
+/// Placeholder rows while the first load runs.
 struct PullRequestListSkeleton: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.xxl) {

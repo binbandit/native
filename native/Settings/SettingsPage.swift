@@ -1,7 +1,6 @@
 import SwiftUI
 
-/// The body of a settings page: its header and row groups 24pt apart, no wider than the reference app's
-/// `max-w-4xl`.
+/// The body of a settings page: its header and row groups 24pt apart, at most 896pt wide.
 struct SettingsPage<Content: View>: View {
     @ViewBuilder var content: Content
 

@@ -1,9 +1,9 @@
 import SwiftUI
 
 extension View {
-    /// Draws a text field as a setting's control, in the reference app's outline: 32pt like the other
-    /// controls, 14pt text, a 6pt radius and the accent outline while editing, so it reads as a
-    /// control in both appearances.
+    /// Draws a text field as a setting's control, outlined: 32pt like the other controls, 14pt text,
+    /// a 6pt radius and the accent outline while editing, so it reads as a control in both
+    /// appearances.
     ///
     ///     TextField(".env*", text: $patterns).settingsField()
     func settingsField() -> some View {

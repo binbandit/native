@@ -1,7 +1,7 @@
 import ACP
 import SwiftUI
 
-/// The model list with a search field, after the reference app's model dropdown (an agent can offer dozens of
+/// The model list with a search field (an agent can offer dozens of
 /// models), plus the settings that tune the model: effort and switches such as Fast mode.
 struct ModelPicker: View {
     let model: SelectSetting?
@@ -92,7 +92,7 @@ struct ModelPicker: View {
         return Button {
             choose(choice)
         } label: {
-            // Like the reference app's list, the current model is in the accent color.
+            // The current model is in the accent color, so it's found at a glance.
             HStack(spacing: DS.Space.md) {
                 Text(model?.displayName(of: choice) ?? choice.name)
                     .font(.dsCallout)
@@ -193,7 +193,7 @@ struct ModelPicker: View {
             highlighted = max((highlighted ?? matches.count) - 1, 0)
             return .handled
         case .return where press.phase == .down:
-            // With nothing highlighted, Return takes the first match, as in the reference app's picker.
+            // With nothing highlighted, Return takes the first match.
             if let choice = highlighted.flatMap({ matches.indices.contains($0) ? matches[$0] : nil }) ?? matches.first {
                 choose(choice)
             }

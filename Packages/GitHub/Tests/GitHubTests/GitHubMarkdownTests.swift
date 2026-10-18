@@ -16,4 +16,9 @@ struct GitHubMarkdownTests {
             GitHubMarkdown.removingComments("No comments here.\n\n\nStill three newlines.")
                 == "No comments here.\n\n\nStill three newlines.")
     }
+
+    @Test func disclosuresBecomeMarkdown() {
+        let body = "diff a...b\n\n<details>\n<summary>React upstream changes</summary>\n\n- one\n</details>"
+        #expect(GitHubMarkdown.displayed(body) == "diff a...b\n\n**React upstream changes**\n\n- one")
+    }
 }

@@ -111,10 +111,9 @@ struct UsageActivityCard: View {
         let amount =
             entry.map { metric.describe($0.value, isEstimate: $0.isEstimate) } ?? "No \(metric.title.lowercased())"
         VStack(alignment: .leading, spacing: 0) {
-            ContributorSectionHeader(
-                title: [longDate(day), amount, tasks.count == 1 ? "1 task" : "\(tasks.count) tasks"]
-                    .joined(separator: " · "),
-                tokens: nil)
+            // An empty day says so in the line below, so the header doesn't count zero tasks.
+            let count = tasks.isEmpty ? [] : [tasks.count == 1 ? "1 task" : "\(tasks.count) tasks"]
+            ContributorSectionHeader(title: ([longDate(day), amount] + count).joined(separator: " · "), tokens: nil)
             if tasks.isEmpty {
                 Text("No tasks that day.")
                     .font(.dsBody)

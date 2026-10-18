@@ -1,7 +1,7 @@
 import GitHub
 import SwiftUI
 
-/// A comment as GitHub shows one (the reference app `PullRequestConversationComment`): who and when on a
+/// A comment as GitHub shows one: who and when on a
 /// header row, then the body as Markdown, suggestions included.
 struct PullRequestCommentCard<Accessory: View>: View {
     let author: String?

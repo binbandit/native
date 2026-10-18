@@ -1,8 +1,8 @@
 import GitHub
 import SwiftUI
 
-/// All / Mine / Review requested / Assigned, with counts (the reference app's create-from tabs: 24pt
-/// ghost buttons, the active one filled).
+/// All / Mine / Review requested / Assigned, with counts: 24pt ghost buttons, the active one
+/// filled.
 struct PullRequestScopeTabs: View {
     @Binding var scope: PullRequestFilter.Scope
     let inbox: PullRequestInbox?

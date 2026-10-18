@@ -105,8 +105,8 @@ history, telemetry, the command palette), so not every difference is this work's
 ### What the measurements showed
 
 - **Every open Codex session holds the user's MCP servers.** Codex starts each configured MCP server
-  for every session it has open (here twice: `rea` through npx and the ChatGPT computer-use
-  helpers), about 1 GB per session with this Mac's config. Native never closed a session, so five
+  for every session it has open (here two of each: one through npx, and a computer-use helper),
+  about 1 GB per session with this Mac's config. Native never closed a session, so five
   tasks opened once held 54 processes and 5.26 GB until the agent stopped, and the default agent
   never stops. Native now closes sessions nobody has used for 10 minutes (`session/close`, which
   codex-acp and claude-agent-acp both support), and drops their transcripts; selecting one loads
@@ -129,7 +129,7 @@ history, telemetry, the command palette), so not every difference is this work's
   something changes (the next due refresh, coming back to the app, the app becoming visible).
 - **Terminals kept drawing when the window wasn't visible.** libghostty was only told a surface
   was hidden when its view left the window; it's now also told when the window is minimized,
-  hidden or covered, as Ghostty's own app does.
+  hidden or covered.
 - **The Markdown cache could hold a long reply hundreds of times.** It keyed parses by source and
   capped the count at 512, but every streamed chunk is a new source holding the whole reply so
   far. It now also caps the total source size at 4 MB.

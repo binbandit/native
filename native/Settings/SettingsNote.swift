@@ -1,9 +1,9 @@
 import SwiftUI
 
 /// Information with nothing to change: what something is, what it does, what Native sends. It sits
-/// in its own outlined card, apart from the rows, so it never reads as a setting (the reference app's settings
-/// notices: a card 16pt in, a medium title over muted text). Something that has gone wrong or needs
-/// the user is a `NoticeBanner` instead.
+/// in its own outlined card, 16pt in, with a medium title over muted text, apart from the rows, so it
+/// never reads as a setting. Something that has gone wrong or needs the user is a `NoticeBanner`
+/// instead.
 ///
 ///     SettingsNote("Where worktrees live") { Text("In ~/.native/worktrees, one folder per task.") }
 struct SettingsNote<Content: View>: View {

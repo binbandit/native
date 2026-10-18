@@ -1,7 +1,7 @@
 import GitHub
 import SwiftUI
 
-/// Where an open pull request stands with reviewers (the reference app's summary row): Draft, Approved,
+/// Where an open pull request stands with reviewers: Draft, Approved,
 /// Changes requested or Review required. Shows nothing when there's nothing to say.
 struct ReviewStatusText: View {
     let pullRequest: PullRequestSummary

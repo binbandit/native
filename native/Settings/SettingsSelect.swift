@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// the reference app's select: an outlined 32pt trigger showing the value and an up-down chevron. It opens
+/// A select: an outlined 32pt trigger showing the value and an up-down chevron. It opens
 /// a native menu with the current value checked, which keeps keyboard and VoiceOver behavior.
 struct SettingsSelect<Value: Hashable>: View {
     struct Option {
@@ -47,7 +47,7 @@ struct SettingsSelect<Value: Hashable>: View {
             .background(isHovered && isEnabled ? Color.dsHover : Color.dsBackground, in: shape)
             .overlay { shape.strokeBorder(.dsBorder, lineWidth: 1) }
             .contentShape(shape)
-            // the reference app's `disabled:opacity-50`, the same as the switch and buttons.
+            // Half strength while disabled, the same as the switch and buttons.
             .opacity(isEnabled ? 1 : 0.5)
         }
         .menuStyle(.button)

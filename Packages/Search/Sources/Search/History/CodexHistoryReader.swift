@@ -42,15 +42,15 @@ public struct CodexHistoryReader: SessionHistoryReader {
         HistorySource.jsonlFiles(under: root)
     }
 
-    public func read(_ source: HistorySource) throws -> HistorySession? {
+    public func read(_ source: HistorySource, resuming resume: HistoryResume?) throws -> HistoryRead {
         var builder = HistoryTranscriptBuilder()
-        var sessionID: String?
-        var cwd: String?
+        var sessionID = resume?.sessionID
+        var cwd = resume?.cwd
         var createdAt: Date?
         var lastDate: Date?
         var firstPrompt: String?
-        try JSONLines.forEach(in: source.url, containing: [#""type":"session_meta""#, #""type":"response_item""#]) {
-            record in
+        let markers = [#""type":"session_meta""#, #""type":"response_item""#]
+        let offset = try JSONLines.forEach(in: source.url, from: resume?.offset ?? 0, containing: markers) { record in
             guard let payload = record["payload"] as? [String: Any] else { return }
             let date = JSONLines.date(record["timestamp"])
             switch record["type"] as? String {
@@ -67,11 +67,17 @@ public struct CodexHistoryReader: SessionHistoryReader {
                 break
             }
         }
-        guard let sessionID, let cwd, !builder.documents.isEmpty else { return nil }
-        let title = threadNames()[sessionID] ?? firstPrompt.map { String(SearchText.collapsingWhitespace($0).prefix(80)) }
-        return HistorySession(
+        guard let sessionID, let cwd, resume != nil || !builder.documents.isEmpty else {
+            return HistoryRead(session: nil, offset: offset)
+        }
+        // Thread names change as a thread goes on; a resumed read picks up a new one too.
+        let title =
+            threadNames()[sessionID]
+            ?? firstPrompt.map { String(SearchText.collapsingWhitespace($0).prefix(80)) }
+        let session = HistorySession(
             sessionID: sessionID, title: title, cwd: cwd, createdAt: createdAt, updatedAt: lastDate ?? createdAt,
             documents: builder.documents)
+        return HistoryRead(session: session, offset: offset)
     }
 
     /// Adds one response item; returns the text when it's a prompt the user typed.

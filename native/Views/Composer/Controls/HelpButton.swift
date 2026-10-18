@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The "?" chip, opening the keyboard shortcuts sheet as the reference app's does.
+/// The "?" chip, opening the keyboard shortcuts sheet.
 struct HelpButton: View {
     @State private var isPresented = false
 

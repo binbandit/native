@@ -125,16 +125,3 @@ public struct SearchSessionRecord: Hashable, Sendable, Codable {
         URL(filePath: project).lastPathComponent
     }
 }
-
-/// Where a session read from an agent's own history came from, so an unchanged file is skipped on
-/// the next pass and an interrupted pass resumes where it stopped.
-public struct SearchSourceStamp: Hashable, Sendable {
-    public var path: String
-    /// Changes whenever the file does (its size and modification time).
-    public var stamp: String
-
-    public init(path: String, stamp: String) {
-        self.path = path
-        self.stamp = stamp
-    }
-}

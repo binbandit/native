@@ -9,8 +9,10 @@ import Foundation
 public protocol SessionHistoryReader: Sendable {
     /// Every session file the agent has, found without parsing any of them.
     func sources() -> [HistorySource]
-    /// One file's session, or nil when it holds no conversation (only metadata, say).
-    func read(_ source: HistorySource) throws -> HistorySession?
+    /// Reads `source` from the start, or from `resume` when the file only grew since it was last
+    /// read: then the session holds only what's new (its documents, and a title if one was
+    /// recorded since). The read's session is nil when the file holds no conversation.
+    func read(_ source: HistorySource, resuming resume: HistoryResume?) throws -> HistoryRead
 }
 
 /// One file of an agent's history.
@@ -25,9 +27,8 @@ public struct HistorySource: Hashable, Sendable {
         self.modifiedAt = modifiedAt
     }
 
-    /// Changes whenever the file does.
-    public var stamp: SearchSourceStamp {
-        SearchSourceStamp(path: url.path(percentEncoded: false), stamp: "\(size)-\(modifiedAt.timeIntervalSince1970)")
+    public var path: String {
+        url.path(percentEncoded: false)
     }
 
     /// The `.jsonl` files under `root`, at most `maxDepth` levels down (1 is the files in `root` itself), newest first.

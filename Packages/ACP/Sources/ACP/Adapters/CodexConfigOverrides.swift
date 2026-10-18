@@ -15,10 +15,18 @@ public struct CodexConfigOverrides: Hashable, Sendable {
     public var disabledMCPServers: Set<String>
     /// Skills by the path of their SKILL.md.
     public private(set) var disabledSkillFiles: Set<String>
+    /// How long Codex keeps a session nothing listens to any more (after `session/close`) before
+    /// unloading it, and the MCP servers it started for it with it (`thread_unload_delay_secs`).
+    /// Unset, Codex holds them for a long while: often hundreds of megabytes per closed session.
+    public var threadUnloadDelay: Duration?
 
-    public init(disabledMCPServers: Set<String> = [], disabledSkills: some Sequence<String> = [String]()) {
+    public init(
+        disabledMCPServers: Set<String> = [], disabledSkills: some Sequence<String> = [String](),
+        threadUnloadDelay: Duration? = nil
+    ) {
         self.disabledMCPServers = disabledMCPServers
         self.disabledSkillFiles = []
+        self.threadUnloadDelay = threadUnloadDelay
         disabledSkills.forEach { disableSkill(at: $0) }
     }
 
@@ -28,7 +36,7 @@ public struct CodexConfigOverrides: Hashable, Sendable {
     }
 
     public var isEmpty: Bool {
-        disabledMCPServers.isEmpty && disabledSkillFiles.isEmpty
+        disabledMCPServers.isEmpty && disabledSkillFiles.isEmpty && threadUnloadDelay == nil
     }
 
     /// The document. Servers are switched off twice: the nested table holds once the adapter merges
@@ -40,6 +48,9 @@ public struct CodexConfigOverrides: Hashable, Sendable {
             let off = JSONValue.object(["enabled": .bool(false)])
             config["mcp_servers"] = .object(Dictionary(uniqueKeysWithValues: servers.map { ($0, off) }))
             for server in servers { config["mcp_servers.\(server).enabled"] = .bool(false) }
+        }
+        if let threadUnloadDelay {
+            config["thread_unload_delay_secs"] = .number(Double(threadUnloadDelay.components.seconds))
         }
         let skills = disabledSkillFiles.sorted()
         if !skills.isEmpty {

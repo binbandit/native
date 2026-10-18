@@ -194,7 +194,11 @@ extension SessionModel {
                 // Already in the transcript, so it goes back without showing again.
                 queue.prepend(text, attachments: attachments, isEchoed: false)
                 scheduleRetry(after: delay)
-                state.appendNotice("\(agentName) couldn't be reached (\(error.localizedDescription.withoutTerminalEscapes)). Native kept your message and will try again in \(delay.components.seconds) seconds. Use Stop to cancel.", isError: true)
+                state.appendNotice(
+                    "\(agentName) couldn't be reached (\(error.localizedDescription.withoutTerminalEscapes)). "
+                        + "Native kept your message and will try again in \(delay.components.seconds) seconds. "
+                        + "Use Stop to cancel.",
+                    isError: true)
             } else {
                 // Agents pass their terminal-colored logs along in error messages.
                 let message = UsageLimitHit(error: error).map(\.message) ?? error.localizedDescription
@@ -272,7 +276,9 @@ extension SessionModel {
             }
         } catch {
             queue.append(text, attachments: attachments, isEchoed: echo)
-            state.appendNotice("Couldn't add your message to the running turn, so it's queued: \(error.localizedDescription)", isError: true)
+            state.appendNotice(
+                "Couldn't add your message to the running turn, so it's queued: \(error.localizedDescription)",
+                isError: true)
         }
         // The turn may have ended while the steer was in flight, leaving nothing to send the queue.
         drainQueue()

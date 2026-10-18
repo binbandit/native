@@ -1,7 +1,7 @@
 import ACP
 import SwiftUI
 
-/// The agent's todo list as the composer's top section, after the reference app's plan visualizer. Collapsed,
+/// The agent's todo list as the composer's top section. Collapsed,
 /// it shows only the step in progress (or the next one); expanded, every step.
 struct ComposerPlanSection: View {
     let plan: PlanProgress
@@ -37,7 +37,7 @@ struct ComposerPlanSection: View {
             .help(isExpanded ? "Show only the current step" : "Show the whole plan")
             .accessibilityLabel(isExpanded ? "Collapse plan" : "Expand plan")
         }
-        // the reference app: the section's 8pt padding plus the list's own 4pt.
+        // The section's 8pt padding plus the list's own 4pt.
         .padding(DS.Space.lg)
     }
 
@@ -55,7 +55,7 @@ struct ComposerPlanSection: View {
     }
 }
 
-/// the reference app's step markers: a loader on the step being worked on, an accent dot when done, a muted
+/// Step markers: a loader on the step being worked on, an accent dot when done, a muted
 /// dot otherwise.
 private struct StepIndicator: View {
     let status: PlanEntry.Status
