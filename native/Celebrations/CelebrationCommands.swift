@@ -8,7 +8,8 @@ extension CommandID {
 }
 
 extension NativeCommand {
-    /// Put the usual look back (or bring a skipped celebration back) with ⌥⇧⌘H, and open the chooser.
+    /// Put the usual look back (or bring a skipped celebration back), and open the chooser. Their keys
+    /// live in `DefaultShortcuts` (⌥⇧⌘H for the first) and can be remapped.
     static func celebrations(_ center: CelebrationCenter, settings: SettingsPresentation) -> [NativeCommand] {
         func skipped() -> String? {
             guard let skipped = center.resolution.skipped.first, center.resolution.active == nil,

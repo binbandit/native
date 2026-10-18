@@ -42,8 +42,11 @@ final class TelemetryCenter {
         if defaults.object(forKey: Self.firstLaunchKey) == nil {
             defaults.set(Date.now, forKey: Self.firstLaunchKey)
         }
-        let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
-        sentLog = TelemetrySentLog(url: support.appending(path: "Native/Telemetry/sent.jsonl"))
+        // Under the bundle id, like the app's other stores, so isolated instances keep their own.
+        sentLog = TelemetrySentLog(
+            url: URL.applicationSupportDirectory
+                .appending(path: Bundle.main.bundleIdentifier ?? "Native", directoryHint: .isDirectory)
+                .appending(path: "Telemetry/sent.jsonl"))
     }
 
     /// Whether this build has a destination for Native's own telemetry.
