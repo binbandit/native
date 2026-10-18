@@ -174,7 +174,8 @@ public actor NativeHostClient {
 
     /// Turns a plugin on or off for everyone using the host; paired devices need the grant.
     public func setPluginEnabled(_ pluginID: String, _ isEnabled: Bool) async throws -> [HostPlugin] {
-        try await call(HostProtocol.Method.setPluginEnabled, SetPluginEnabledParams(pluginID: pluginID, isEnabled: isEnabled))
+        try await call(
+            HostProtocol.Method.setPluginEnabled, SetPluginEnabledParams(pluginID: pluginID, isEnabled: isEnabled))
     }
 
     public func pluginAsset(_ params: PluginAssetParams) async throws -> PluginAsset {

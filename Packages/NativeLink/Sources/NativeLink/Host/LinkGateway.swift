@@ -125,11 +125,9 @@ public actor LinkGateway {
         )
     }
 
-    /// Calls `handler` with every new status until `removeObserver`.
-    public func observe(_ handler: @escaping @Sendable (LinkStatus) -> Void) -> UUID {
-        let id = UUID()
+    /// Calls `handler` with every new status until `removeObserver(id)`.
+    public func observe(id: UUID = UUID(), _ handler: @escaping @Sendable (LinkStatus) -> Void) {
         observers[id] = handler
-        return id
     }
 
     public func removeObserver(_ id: UUID) {

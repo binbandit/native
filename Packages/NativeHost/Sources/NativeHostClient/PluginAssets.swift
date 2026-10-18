@@ -13,7 +13,8 @@ public actor PluginAssets {
         self.client = client
         self.directory = directory
         index =
-            (try? JSONDecoder().decode([String: String].self, from: Data(contentsOf: directory.appending(path: "index.json"))))
+            (try? JSONDecoder().decode(
+                [String: String].self, from: Data(contentsOf: directory.appending(path: "index.json"))))
             ?? [:]
     }
 
@@ -23,7 +24,8 @@ public actor PluginAssets {
         let key = "\(pluginID)/\(path)"
         let known = index[key]
         do {
-            let asset = try await client.pluginAsset(PluginAssetParams(pluginID: pluginID, path: path, knownHash: known))
+            let asset = try await client.pluginAsset(
+                PluginAssetParams(pluginID: pluginID, path: path, knownHash: known))
             if let data = asset.data {
                 guard ContentHash.sha256(data) == asset.hash else { throw CacheError.corrupt(path) }
                 try store(data, hash: asset.hash, for: key)
@@ -54,7 +56,8 @@ public actor PluginAssets {
     }
 
     private func store(_ data: Data, hash: String, for key: String) throws {
-        try FileManager.default.createDirectory(at: directory.appending(path: "blobs"), withIntermediateDirectories: true)
+        try FileManager.default.createDirectory(
+            at: directory.appending(path: "blobs"), withIntermediateDirectories: true)
         try data.write(to: blob(hash), options: .atomic)
         index[key] = hash
         try JSONEncoder().encode(index).write(to: directory.appending(path: "index.json"), options: .atomic)

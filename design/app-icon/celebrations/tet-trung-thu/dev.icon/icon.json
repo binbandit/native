@@ -5,13 +5,13 @@
   "fill-specializations": [
     {
       "value": {
-        "automatic-gradient": "srgb:0.88235,0.92157,0.93333,1.00000"
+        "automatic-gradient": "srgb:0.87843,0.92157,0.93725,1.00000"
       }
     },
     {
       "appearance": "dark",
       "value": {
-        "automatic-gradient": "srgb:0.08235,0.15686,0.19608,1.00000"
+        "automatic-gradient": "srgb:0.07843,0.15686,0.19216,1.00000"
       }
     },
     {
@@ -29,23 +29,6 @@
       ],
       "layers": [
         {
-          "fill-specializations": [
-            {
-              "value": {
-                "solid": "srgb:0.64706,0.48235,0.25098,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "solid": "srgb:1.00000,0.80000,0.38431,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
           "glass-specializations": [
             {
               "value": false
@@ -55,182 +38,19 @@
               "value": true
             }
           ],
-          "image-name": "lantern-joints.svg",
-          "name": "Lantern joints"
-        },
-        {
-          "fill-specializations": [
-            {
-              "value": {
-                "solid": "srgb:0.78039,0.27843,0.43922,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "solid": "srgb:0.83529,0.44314,0.54118,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
-          "glass-specializations": [
-            {
-              "value": false
-            },
-            {
-              "appearance": "tinted",
-              "value": true
-            }
-          ],
-          "image-name": "lantern-silk.svg",
-          "name": "Lantern silk"
-        },
-        {
-          "fill-specializations": [
-            {
-              "value": {
-                "solid": "srgb:0.64706,0.48235,0.25098,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "solid": "srgb:1.00000,0.80000,0.38431,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
-          "glass-specializations": [
-            {
-              "value": false
-            },
-            {
-              "appearance": "tinted",
-              "value": true
-            }
-          ],
-          "image-name": "lantern-ribs.svg",
-          "name": "Lantern ribs"
+          "image-name": "painted-interlock.png",
+          "name": "Painted Native interlock",
+          "position": {
+            "scale": 0.5469327420546932,
+            "translation-in-points": [
+              -0.2734663710273466,
+              19.38359201773836
+            ]
+          }
         }
       ],
       "lighting": "individual",
-      "name": "Tết Trung Thu · decorative craft",
-      "refractivity-specializations": [
-        {
-          "appearance": "tinted",
-          "value": {
-            "enabled": true,
-            "depth": 0.3,
-            "strength": 0.75
-          }
-        }
-      ],
-      "shadow": {
-        "kind": "neutral",
-        "opacity": 0.12
-      },
-      "translucency-specializations": [
-        {
-          "value": {
-            "enabled": false,
-            "value": 0
-          }
-        },
-        {
-          "appearance": "tinted",
-          "value": {
-            "enabled": true,
-            "value": 0.25
-          }
-        }
-      ],
-      "specular-specializations": [
-        {
-          "value": false
-        },
-        {
-          "appearance": "tinted",
-          "value": true
-        }
-      ]
-    },
-    {
-      "blur-material-specializations": [
-        {
-          "appearance": "tinted",
-          "value": 0.25
-        }
-      ],
-      "layers": [
-        {
-          "fill-specializations": [
-            {
-              "value": {
-                "automatic-gradient": "srgb:0.12549,0.27451,0.33333,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "automatic-gradient": "srgb:0.86667,0.93725,0.94510,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
-          "glass-specializations": [
-            {
-              "value": false
-            },
-            {
-              "appearance": "tinted",
-              "value": true
-            }
-          ],
-          "image-name": "upper-fold.svg",
-          "name": "Upper fold"
-        },
-        {
-          "fill-specializations": [
-            {
-              "value": {
-                "automatic-gradient": "srgb:0.24706,0.51373,0.58431,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "automatic-gradient": "srgb:0.53333,0.84314,0.89804,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
-          "glass-specializations": [
-            {
-              "value": false
-            },
-            {
-              "appearance": "tinted",
-              "value": true
-            }
-          ],
-          "image-name": "lower-fold.svg",
-          "name": "Lower fold"
-        }
-      ],
-      "lighting": "individual",
-      "name": "Native interlock",
+      "name": "Tết Trung Thu · painted Native interlock",
       "refractivity-specializations": [
         {
           "appearance": "tinted",
@@ -282,13 +102,13 @@
           "fill-specializations": [
             {
               "value": {
-                "solid": "srgb:0.22745,0.43922,0.50196,1.00000"
+                "solid": "srgb:0.24706,0.45490,0.52157,1.00000"
               }
             },
             {
               "appearance": "dark",
               "value": {
-                "solid": "srgb:0.64706,0.84314,0.87451,1.00000"
+                "solid": "srgb:0.65098,0.86667,0.90588,1.00000"
               }
             },
             {
@@ -305,20 +125,20 @@
               "value": true
             }
           ],
-          "image-name": "developer-code.svg",
+          "image-name": "code.svg",
           "name": "Developer code"
         },
         {
           "fill-specializations": [
             {
               "value": {
-                "solid": "srgb:0.43137,0.55686,0.60392,0.45000"
+                "solid": "srgb:0.47451,0.58824,0.63922,0.45000"
               }
             },
             {
               "appearance": "dark",
               "value": {
-                "solid": "srgb:0.48627,0.70196,0.76078,0.45000"
+                "solid": "srgb:0.47843,0.69020,0.76471,0.45000"
               }
             },
             {
@@ -335,20 +155,20 @@
               "value": true
             }
           ],
-          "image-name": "registration-marks.svg",
+          "image-name": "registration.svg",
           "name": "Registration marks"
         },
         {
           "fill-specializations": [
             {
               "value": {
-                "solid": "srgb:0.50588,0.62353,0.66275,0.17000"
+                "solid": "srgb:0.56078,0.64314,0.69020,0.18000"
               }
             },
             {
               "appearance": "dark",
               "value": {
-                "solid": "srgb:0.43922,0.59216,0.63922,0.17000"
+                "solid": "srgb:0.42353,0.56863,0.63137,0.18000"
               }
             },
             {
@@ -365,7 +185,7 @@
               "value": true
             }
           ],
-          "image-name": "blueprint-grid.svg",
+          "image-name": "grid.svg",
           "name": "Blueprint grid"
         }
       ],

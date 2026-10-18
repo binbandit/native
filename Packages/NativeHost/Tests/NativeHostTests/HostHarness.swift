@@ -11,6 +11,7 @@ final class HostHarness: @unchecked Sendable {
         path: "native-host-e2e-\(UUID().uuidString.prefix(8))", directoryHint: .isDirectory)
     var home: URL { root.appending(path: "host", directoryHint: .isDirectory) }
     var agentStore: URL { root.appending(path: "agent", directoryHint: .isDirectory) }
+    var plugins: URL { root.appending(path: "plugins", directoryHint: .isDirectory) }
     private var process: Process?
 
     static let products = URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
@@ -40,7 +41,10 @@ final class HostHarness: @unchecked Sendable {
     func start() throws {
         let process = Process()
         process.executableURL = Self.products.appending(path: "native-host")
-        process.arguments = ["serve", "--home", home.path(percentEncoded: false), "--inherit-environment"]
+        process.arguments = [
+            "serve", "--home", home.path(percentEncoded: false), "--plugins", plugins.path(percentEncoded: false),
+            "--inherit-environment",
+        ]
         process.standardError = FileHandle.nullDevice
         try process.run()
         self.process = process
@@ -95,6 +99,7 @@ actor Recorder {
     private(set) var mirrors: [HostSessionID: SessionMirror] = [:]
     private(set) var events: [HostSessionID: [HostEvent]] = [:]
     private(set) var activity: [ActivityEntry] = []
+    private(set) var lastPlugins: [HostPlugin]?
     private var listening: Task<Void, Never>?
 
     init(client: NativeHostClient) {
@@ -117,6 +122,8 @@ actor Recorder {
             events[session, default: []].append(event)
         case .activity(let entry):
             activity.append(entry)
+        case .pluginsChanged(let plugins):
+            lastPlugins = plugins
         default:
             break
         }

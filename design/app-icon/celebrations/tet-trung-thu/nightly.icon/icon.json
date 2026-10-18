@@ -5,13 +5,13 @@
   "fill-specializations": [
     {
       "value": {
-        "automatic-gradient": "srgb:0.89412,0.89804,0.93725,1.00000"
+        "automatic-gradient": "srgb:0.89412,0.89804,0.93333,1.00000"
       }
     },
     {
       "appearance": "dark",
       "value": {
-        "automatic-gradient": "srgb:0.07843,0.09020,0.16471,1.00000"
+        "automatic-gradient": "srgb:0.07059,0.09020,0.16471,1.00000"
       }
     },
     {
@@ -29,23 +29,6 @@
       ],
       "layers": [
         {
-          "fill-specializations": [
-            {
-              "value": {
-                "solid": "srgb:0.64706,0.48235,0.25098,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "solid": "srgb:1.00000,0.80000,0.38431,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
           "glass-specializations": [
             {
               "value": false
@@ -55,182 +38,19 @@
               "value": true
             }
           ],
-          "image-name": "lantern-joints.svg",
-          "name": "Lantern joints"
-        },
-        {
-          "fill-specializations": [
-            {
-              "value": {
-                "solid": "srgb:0.78039,0.27843,0.43922,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "solid": "srgb:0.83529,0.44314,0.54118,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
-          "glass-specializations": [
-            {
-              "value": false
-            },
-            {
-              "appearance": "tinted",
-              "value": true
-            }
-          ],
-          "image-name": "lantern-silk.svg",
-          "name": "Lantern silk"
-        },
-        {
-          "fill-specializations": [
-            {
-              "value": {
-                "solid": "srgb:0.64706,0.48235,0.25098,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "solid": "srgb:1.00000,0.80000,0.38431,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
-          "glass-specializations": [
-            {
-              "value": false
-            },
-            {
-              "appearance": "tinted",
-              "value": true
-            }
-          ],
-          "image-name": "lantern-ribs.svg",
-          "name": "Lantern ribs"
+          "image-name": "painted-interlock.png",
+          "name": "Painted Native interlock",
+          "position": {
+            "scale": 0.5469327420546932,
+            "translation-in-points": [
+              -0.2734663710273466,
+              19.38359201773836
+            ]
+          }
         }
       ],
       "lighting": "individual",
-      "name": "Tết Trung Thu · decorative craft",
-      "refractivity-specializations": [
-        {
-          "appearance": "tinted",
-          "value": {
-            "enabled": true,
-            "depth": 0.3,
-            "strength": 0.75
-          }
-        }
-      ],
-      "shadow": {
-        "kind": "neutral",
-        "opacity": 0.12
-      },
-      "translucency-specializations": [
-        {
-          "value": {
-            "enabled": false,
-            "value": 0
-          }
-        },
-        {
-          "appearance": "tinted",
-          "value": {
-            "enabled": true,
-            "value": 0.25
-          }
-        }
-      ],
-      "specular-specializations": [
-        {
-          "value": false
-        },
-        {
-          "appearance": "tinted",
-          "value": true
-        }
-      ]
-    },
-    {
-      "blur-material-specializations": [
-        {
-          "appearance": "tinted",
-          "value": 0.25
-        }
-      ],
-      "layers": [
-        {
-          "fill-specializations": [
-            {
-              "value": {
-                "automatic-gradient": "srgb:0.33333,0.27451,0.43529,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "automatic-gradient": "srgb:0.96078,0.92941,0.85098,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
-          "glass-specializations": [
-            {
-              "value": false
-            },
-            {
-              "appearance": "tinted",
-              "value": true
-            }
-          ],
-          "image-name": "upper-fold.svg",
-          "name": "Upper fold"
-        },
-        {
-          "fill-specializations": [
-            {
-              "value": {
-                "automatic-gradient": "srgb:0.52941,0.46667,0.62353,1.00000"
-              }
-            },
-            {
-              "appearance": "dark",
-              "value": {
-                "automatic-gradient": "srgb:0.78431,0.68235,0.95686,1.00000"
-              }
-            },
-            {
-              "appearance": "tinted",
-              "value": "automatic"
-            }
-          ],
-          "glass-specializations": [
-            {
-              "value": false
-            },
-            {
-              "appearance": "tinted",
-              "value": true
-            }
-          ],
-          "image-name": "lower-fold.svg",
-          "name": "Lower fold"
-        }
-      ],
-      "lighting": "individual",
-      "name": "Native interlock",
+      "name": "Tết Trung Thu · painted Native interlock",
       "refractivity-specializations": [
         {
           "appearance": "tinted",
@@ -282,13 +102,13 @@
           "fill-specializations": [
             {
               "value": {
-                "solid": "srgb:0.44314,0.39608,0.54510,1.00000"
+                "solid": "srgb:0.45490,0.39608,0.55294,1.00000"
               }
             },
             {
               "appearance": "dark",
               "value": {
-                "solid": "srgb:1.00000,0.94902,0.80000,1.00000"
+                "solid": "srgb:1.00000,0.94118,0.79216,1.00000"
               }
             },
             {
@@ -305,20 +125,20 @@
               "value": true
             }
           ],
-          "image-name": "bright-nightly-stars.svg",
+          "image-name": "bright-stars.svg",
           "name": "Bright Nightly stars"
         },
         {
           "fill-specializations": [
             {
               "value": {
-                "solid": "srgb:0.54902,0.50980,0.64314,1.00000"
+                "solid": "srgb:0.58039,0.51373,0.67059,1.00000"
               }
             },
             {
               "appearance": "dark",
               "value": {
-                "solid": "srgb:0.89020,0.85490,1.00000,1.00000"
+                "solid": "srgb:0.90980,0.86667,0.97647,1.00000"
               }
             },
             {
@@ -335,7 +155,7 @@
               "value": true
             }
           ],
-          "image-name": "nightly-star-field.svg",
+          "image-name": "stars.svg",
           "name": "Nightly star field"
         }
       ],
