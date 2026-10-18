@@ -1,0 +1,61 @@
+Checked UTC: 2026-10-18T00:19:49.381245+00:00
+HEAD at capture: aafc0cecf1285725c806d52ec2975239dc5607b8
+Scope: Halloween artwork only. Linked Native ghosts in Regular, Beta and Nightly, with native gradient shading, edge light and fabric detail. Nightly has 14 high-contrast four-point stars plus 22 smaller stars.
+Availability and preferences retain the existing October 1 through November 7 policy.
+
+PASS - All three editable Icon Composer sources export Default, Dark, ClearLight, ClearDark, TintedLight and TintedDark.
+PASS - Updated PNGs compile in the real app asset catalog with all three compiled channel icons.
+PASS - All 24 theme PNGs pass the enclosed-transparency audit, including the six replacement Halloween images.
+PASS - The existing isolated AppKit integration helper uses the fresh Assets.car. All three channels select the correct light/dark seasonal Dock image, restore the chosen theme after November 7, retain opt-in for the next year, exit Halloween when another theme is chosen, and restore the bundled icon for Original.
+PASS - The actual AppearanceSettingsView and AppIconPreferences in an isolated SwiftUI preview show the replacement Beta artwork when switching Light/Dark. Their source hashes match the earlier verified build. Screenshots: haunted-settings-dark.png and haunted-settings-light.png. Preview app quit after the check.
+PASS - Visual inspection of all six large icons and the dark/light comparison boards. Nightly stars remain distinct in 96, 64 and 32 pixel icon previews.
+Coverage: asset compilation and isolated real Settings/model integration. No full app rebuild or agent-host startup was needed for this artwork-only revision.
+
+Assets.car SHA-256: aa01ba66831c2040af2f4b987803079327a41f125ba9a2ce7b4b0506a7672f8b
+Settings preview executable SHA-256: ec45b7bc792cdb40863b33403ad29c7c4612db8044fa915498d59f94f49fca14
+Integration helper SHA-256: 5f2efa009ef98db7a76d99efa94fde6a89e458453e66643386a9598529e4fc62
+
+SHA-256 of final source artwork, exported assets and verification surfaces:
+4e87188b52ccfd78da01a387fc18163d69f513c9b9758271d86bc22183a82ccd  design/app-icon/HalloweenRegular.icon/Assets/edge-light.svg
+07d904cd6a09cf179aea228f87155eaaaa89eafe939d839171c7380021a16293  design/app-icon/HalloweenRegular.icon/Assets/embers.svg
+b82c7287e3d08b4e59d6c109cc1f04118a81f2bd5d5830891a5b3bf92e635e15  design/app-icon/HalloweenRegular.icon/Assets/folds.svg
+8a35129e5b3fad5645087c952e5a96a6de0e9d54d0e53efb1dd605f647961b3e  design/app-icon/HalloweenRegular.icon/Assets/lower-fold.svg
+954258bef1b4ae951d32fd01e84584c59a9e2169dbf6f09e40ab2fe78df862d6  design/app-icon/HalloweenRegular.icon/Assets/upper-fold.svg
+b3fad836f5e516d865aafbdcd320e81b5b5449cd1ecdebcdfeaa46bfc6f0aeda  design/app-icon/HalloweenRegular.icon/icon.json
+4e87188b52ccfd78da01a387fc18163d69f513c9b9758271d86bc22183a82ccd  design/app-icon/HalloweenBeta.icon/Assets/edge-light.svg
+07d904cd6a09cf179aea228f87155eaaaa89eafe939d839171c7380021a16293  design/app-icon/HalloweenBeta.icon/Assets/embers.svg
+b82c7287e3d08b4e59d6c109cc1f04118a81f2bd5d5830891a5b3bf92e635e15  design/app-icon/HalloweenBeta.icon/Assets/folds.svg
+8a35129e5b3fad5645087c952e5a96a6de0e9d54d0e53efb1dd605f647961b3e  design/app-icon/HalloweenBeta.icon/Assets/lower-fold.svg
+954258bef1b4ae951d32fd01e84584c59a9e2169dbf6f09e40ab2fe78df862d6  design/app-icon/HalloweenBeta.icon/Assets/upper-fold.svg
+1190e55f48cecaea1faa1da1e633a698eee36e7df82f399766da3d7352a7155f  design/app-icon/HalloweenBeta.icon/icon.json
+4875309d754611a3d42dbf341a1e5c7e67840a83076a923b1cc9ec03c7e988ae  design/app-icon/HalloweenNightly.icon/Assets/bright-stars.svg
+4e87188b52ccfd78da01a387fc18163d69f513c9b9758271d86bc22183a82ccd  design/app-icon/HalloweenNightly.icon/Assets/edge-light.svg
+b82c7287e3d08b4e59d6c109cc1f04118a81f2bd5d5830891a5b3bf92e635e15  design/app-icon/HalloweenNightly.icon/Assets/folds.svg
+8a35129e5b3fad5645087c952e5a96a6de0e9d54d0e53efb1dd605f647961b3e  design/app-icon/HalloweenNightly.icon/Assets/lower-fold.svg
+35258a19ec1c46b446d0f6222da60808945a48c98935f8c70a51bf10a305c444  design/app-icon/HalloweenNightly.icon/Assets/moon-bats.svg
+e5162e0948e4912a87e8a66a63a448fa5b23eb08b31b0e1a68b4022d64e0fe4b  design/app-icon/HalloweenNightly.icon/Assets/moon-detail.svg
+c761855f97785e567bc560df7b0e7032d9c786e3e4e9a527e597456bf5e151f6  design/app-icon/HalloweenNightly.icon/Assets/moon.svg
+d0756d1498ce57b6fa6f33735f867de13e089e543660006b1b4b187229b5f973  design/app-icon/HalloweenNightly.icon/Assets/stars.svg
+954258bef1b4ae951d32fd01e84584c59a9e2169dbf6f09e40ab2fe78df862d6  design/app-icon/HalloweenNightly.icon/Assets/upper-fold.svg
+6a91ca9ad31b4e9e7e6f889a59801881f950f808c12774c7cef07e6aa9e66b31  design/app-icon/HalloweenNightly.icon/icon.json
+e54c3f76244059f010205502d22623d77171c1f1772c55bc988916d6b9e4ba0a  design/app-icon/themes/AppIcon-halloween-stable-light.png
+e54c3f76244059f010205502d22623d77171c1f1772c55bc988916d6b9e4ba0a  native/Assets.xcassets/AppIcon-halloween-stable-light.imageset/icon.png
+9a5ac0c530131f556fe184d0932361ea5b03bb5d667b6bd9452ba538d2a5dbff  design/app-icon/themes/AppIcon-halloween-stable-dark.png
+9a5ac0c530131f556fe184d0932361ea5b03bb5d667b6bd9452ba538d2a5dbff  native/Assets.xcassets/AppIcon-halloween-stable-dark.imageset/icon.png
+e080462ecbe010a216689c2fa3c3ebd92bbf4c45de70c590fb9cabb95455bb4e  design/app-icon/themes/AppIcon-halloween-beta-light.png
+e080462ecbe010a216689c2fa3c3ebd92bbf4c45de70c590fb9cabb95455bb4e  native/Assets.xcassets/AppIcon-halloween-beta-light.imageset/icon.png
+22926d649d75508ec941b3bc0db9251ab6a3017173a51d6f5355c937e2595004  design/app-icon/themes/AppIcon-halloween-beta-dark.png
+22926d649d75508ec941b3bc0db9251ab6a3017173a51d6f5355c937e2595004  native/Assets.xcassets/AppIcon-halloween-beta-dark.imageset/icon.png
+a65c4dc6837830df6947353fff9ab2c20ef2d888eecf7d9681beb2c3c0d09e74  design/app-icon/themes/AppIcon-halloween-nightly-light.png
+a65c4dc6837830df6947353fff9ab2c20ef2d888eecf7d9681beb2c3c0d09e74  native/Assets.xcassets/AppIcon-halloween-nightly-light.imageset/icon.png
+d67a5846961341257ce1c9b6037b89028e57c9ade512f7eb33b025e9f1b5e50a  design/app-icon/themes/AppIcon-halloween-nightly-dark.png
+d67a5846961341257ce1c9b6037b89028e57c9ade512f7eb33b025e9f1b5e50a  native/Assets.xcassets/AppIcon-halloween-nightly-dark.imageset/icon.png
+f59cd18bf49fe96678cc7209809e503c78d03f3b1a8ad95f240c49b5ba32adc4  design/app-icon/previews/halloween-haunted-dark.png
+d71817bc1a1b29baf4983ca37638174e10e07b82522d0a0baf262f7b4bc028fc  design/app-icon/previews/halloween-haunted-light.png
+a0d0e895890e8a7f2c26cd144edbc2745da4f14b4983f0fb849acb6814051086  design/app-icon/previews/halloween-dock-sizes-dark.png
+27067b4544b691b8646e67c88bccd7ef28e8b3003fc8bbadaf5565946ad153e5  design/app-icon/previews/halloween-dock-sizes-light.png
+8e0be88d2f8c5aaca7c0b798a1798b8a325cee078216a975d88b9858d577d9e9  design/app-icon/evidence/haunted-settings-dark.png
+5a06dd6bf061f3f16a7f5b8c6fd96e7149911e3704f5dfea7a6a20a2370170be  design/app-icon/evidence/haunted-settings-light.png
+4ef96c150557809f890ce91e6ec175812aafbe0560e77decdbbf536d5b97ca32  native/Models/AppIconPreferences.swift
+397b0cb39e92fe318d46ed8fb95fd88845c62618f36e7780af376fdc7844c32e  native/Views/Settings/AppearanceSettingsView.swift
+14cad13c6d6e2efbb7e7960e15f99af74db3684492cb2543c348cd9d2c645e27  native/Platform/PlatformAppIcon.swift
