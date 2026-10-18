@@ -30,7 +30,9 @@ public struct KeychainPairedHostStore: PairedHostStore {
         let status = SecItemCopyMatching(query as CFDictionary, &result)
         if status == errSecItemNotFound { return [] }
         guard status == errSecSuccess, let items = result as? [Data] else { throw KeychainError(status: status) }
-        return items.compactMap { try? JSONDecoder().decode(PairedHost.self, from: $0) }.sorted { $0.pairedAt < $1.pairedAt }
+        return items.compactMap { try? JSONDecoder().decode(PairedHost.self, from: $0) }.sorted {
+            $0.pairedAt < $1.pairedAt
+        }
     }
 
     public func save(_ host: PairedHost) throws {

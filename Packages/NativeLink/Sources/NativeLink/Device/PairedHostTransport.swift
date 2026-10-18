@@ -44,7 +44,10 @@ public struct PairedHostTransport: HostTransport {
         let identity = try host.identity()
         let candidates = endpoints
         guard !candidates.isEmpty else {
-            log(LinkLogEntry(.failure, "No address to try: \(host.displayName) isn't on this network and saved no other address."))
+            log(
+                LinkLogEntry(
+                    .failure, "No address to try: \(host.displayName) isn't on this network and saved no other address."
+                ))
             throw LinkError.timedOut
         }
         var lastError: any Error = LinkError.timedOut
@@ -64,7 +67,9 @@ public struct PairedHostTransport: HostTransport {
                     over: raw, identity: identity, hostKey: host.hostKey, device: device)
                 log(LinkLogEntry(.success, "Connected over \(label), end-to-end encrypted"))
                 return channel
-            } catch let error as LinkError where error.endsPairing || error == .hostKeyMismatch {
+            } catch let error as LinkError
+                where error.endsPairing || error == .hostKeyMismatch || error == .disabledByPolicy
+            {
                 // Another address won't change the host's answer.
                 log(LinkLogEntry(.failure, error.localizedDescription))
                 throw error

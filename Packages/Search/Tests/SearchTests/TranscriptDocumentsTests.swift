@@ -11,7 +11,8 @@ struct TranscriptDocumentsTests {
 
     private func transcript() throws -> SessionState {
         var state = SessionState()
-        try state.apply(update(#"{"sessionUpdate":"user_message_chunk","content":{"type":"text","text":"Rename   the\nstore"}}"#))
+        try state.apply(
+            update(#"{"sessionUpdate":"user_message_chunk","content":{"type":"text","text":"Rename   the\nstore"}}"#))
         try state.apply(update(#"{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"On "}}"#))
         try state.apply(update(#"{"sessionUpdate":"agent_message_chunk","content":{"type":"text","text":"it."}}"#))
         try state.apply(

@@ -12,7 +12,8 @@ struct SearchIndexTests {
     }
 
     private func session(
-        _ id: String, agent: String = "claude-code", title: String, project: String = "/code/native", daysAgo: Double = 1,
+        _ id: String, agent: String = "claude-code", title: String, project: String = "/code/native",
+        daysAgo: Double = 1,
         archived: Bool = false
     ) -> SearchSessionRecord {
         SearchSessionRecord(
@@ -24,19 +25,24 @@ struct SearchIndexTests {
         try await index.replace(
             session("s1", title: "Fix flaky login timeout"),
             documents: [
-                SearchDocument(role: .user, text: "Why does the login page hang after a timeout?", anchor: .message(probe: "Why does")),
-                SearchDocument(role: .thought, text: "Maybe the refresh token expires", anchor: .message(probe: "Maybe")),
+                SearchDocument(
+                    role: .user, text: "Why does the login page hang after a timeout?",
+                    anchor: .message(probe: "Why does")),
+                SearchDocument(
+                    role: .thought, text: "Maybe the refresh token expires", anchor: .message(probe: "Maybe")),
                 SearchDocument(
                     role: .tool, text: "Edit\n/code/native/native/Models/SessionStore.swift\nloginTimeout = 30",
                     anchor: .toolCall(id: "toolu_1"), hasDiff: true),
-                SearchDocument(role: .agent, text: "Raised the login timeout to 30s.", anchor: .message(probe: "Raised")),
+                SearchDocument(
+                    role: .agent, text: "Raised the login timeout to 30s.", anchor: .message(probe: "Raised")),
             ])
         try await index.replace(
             session("s2", agent: "codex", title: "Orders migration rollback", project: "/code/orders", daysAgo: 30),
             documents: [
                 SearchDocument(role: .user, text: "Write a migration rollback plan", anchor: .message(probe: "Write")),
                 SearchDocument(
-                    role: .tool, text: "exec_command\ncargo test -p orders\ntest result: ok", anchor: .toolCall(id: "call_1")),
+                    role: .tool, text: "exec_command\ncargo test -p orders\ntest result: ok",
+                    anchor: .toolCall(id: "call_1")),
             ])
         try await index.replace(
             session("s3", title: "Old login work", daysAgo: 400, archived: true),
@@ -137,7 +143,8 @@ struct SearchIndexTests {
     @Test(.enabled(if: ProcessInfo.processInfo.environment["SEARCH_BENCH"] != nil))
     func benchmark() async throws {
         let index = try await makeIndex()
-        let vocabulary = (0..<4_000).map { "word\($0)" } + ["timeout", "migration", "SessionStore", "refactor", "deploy"]
+        let vocabulary =
+            (0..<4_000).map { "word\($0)" } + ["timeout", "migration", "SessionStore", "refactor", "deploy"]
         var generator = SystemRandomNumberGenerator()
         let started = Date.now
         var partsTime: TimeInterval = 0
@@ -146,7 +153,8 @@ struct SearchIndexTests {
                 let documents = (0..<60).map { position in
                     let words = (0..<40).map { _ in vocabulary.randomElement(using: &generator) ?? "" }
                     return SearchDocument(
-                        role: [.user, .agent, .tool][position % 3], text: words.joined(separator: " "), anchor: .session)
+                        role: [.user, .agent, .tool][position % 3], text: words.joined(separator: " "), anchor: .session
+                    )
                 }
                 return SearchIndexEntry(
                     session: session(
@@ -161,7 +169,9 @@ struct SearchIndexTests {
         }
         print("code parts took \(partsTime)s")
         print("indexed 180k items in \(Date.now.timeIntervalSince(started))s, \(try await index.statistics())")
-        for text in ["timeout", "word12 word99", "SessionStore", "store", "dep", "\"word1 word2\"", "timeout agent:claude"] {
+        for text in [
+            "timeout", "word12 word99", "SessionStore", "store", "dep", "\"word1 word2\"", "timeout agent:claude",
+        ] {
             var best = Double.infinity
             for _ in 0..<5 {
                 let results = try await index.search(SearchQuery(text), now: now)

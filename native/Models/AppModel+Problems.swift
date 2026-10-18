@@ -19,6 +19,10 @@ extension AppModel {
         }
         do {
             switch problem.work {
+            case .folder:
+                // Looking again is part of listing, which reports how it went.
+                await refreshSessions(in: project)
+                return
             case .listing(let agent):
                 // Listing reports how it went itself, as it does when Native lists on its own.
                 await retryListing(in: project, of: agent)

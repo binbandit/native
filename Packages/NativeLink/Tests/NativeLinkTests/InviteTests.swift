@@ -22,9 +22,13 @@ import Testing
 
     @Test func rejectsWhatIsntAnInvite() {
         #expect(throws: PairingInvite.ParseError.notAnInvite) { try PairingInvite(url: "https://example.com") }
-        #expect(throws: PairingInvite.ParseError.notAnInvite) { try PairingInvite(url: "nativecompanion://pair#bm9wZQ") }
+        #expect(throws: PairingInvite.ParseError.notAnInvite) {
+            try PairingInvite(url: "nativecompanion://pair#bm9wZQ")
+        }
         let newer = Data(#"{"v":9}"#.utf8).base64URLEncodedString()
-        #expect(throws: PairingInvite.ParseError.newerVersion(9)) { try PairingInvite(url: "nativecompanion://pair#\(newer)") }
+        #expect(throws: PairingInvite.ParseError.newerVersion(9)) {
+            try PairingInvite(url: "nativecompanion://pair#\(newer)")
+        }
     }
 
     @Test func readsTypedCodesForgivingly() throws {

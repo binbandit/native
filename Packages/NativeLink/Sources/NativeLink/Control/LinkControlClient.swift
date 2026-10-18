@@ -19,10 +19,11 @@ public actor LinkControlClient {
 
     /// `hostDirectory` is the host location's directory; the gateway lives in its `Link` folder.
     public init(hostDirectory: URL) {
-        socketPath = LinkGateway.Configuration(
-            directory: LinkGateway.Configuration.directory(inHostDirectory: hostDirectory), hostID: HostID(),
-            machineName: ""
-        ).controlSocketPath
+        socketPath =
+            LinkGateway.Configuration(
+                directory: LinkGateway.Configuration.directory(inHostDirectory: hostDirectory), hostID: HostID(),
+                machineName: ""
+            ).controlSocketPath
         (events, continuation) = AsyncStream.makeStream(of: Event.self)
     }
 

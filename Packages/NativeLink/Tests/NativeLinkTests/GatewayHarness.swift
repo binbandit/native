@@ -20,7 +20,8 @@ final class GatewayHarness: Sendable {
         let admitted = admitted
         gateway = try LinkGateway(
             configuration: .init(
-                directory: directory, hostID: HostID(), machineName: "Test Mac", confirmationTimeout: confirmationTimeout,
+                directory: directory, hostID: HostID(), machineName: "Test Mac",
+                confirmationTimeout: confirmationTimeout,
                 usesNetwork: false, now: { clock.value }),
             keyStore: MemoryKeyStore(),
             accept: { stream, grants in admitted.withLock { $0.append((stream, grants)) } }
@@ -63,7 +64,8 @@ final class GatewayHarness: Sendable {
     }
 
     func connect(_ host: PairedHost) async throws -> SecureChannel {
-        try await LinkInitiator.connect(over: try connection(), identity: try host.identity(), hostKey: host.hostKey, device: device)
+        try await LinkInitiator.connect(
+            over: try connection(), identity: try host.identity(), hostKey: host.hostKey, device: device)
     }
 }
 

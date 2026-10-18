@@ -4,6 +4,8 @@ import NativeHostProtocol
 /// Everything the Mac's Paired Devices page shows, as one snapshot the gateway pushes on every change.
 public struct LinkStatus: Codable, Hashable, Sendable {
     public var isEnabled: Bool
+    /// The host's reading of the organization's policy; nil from a host that predates it.
+    public var isAllowedByPolicy: Bool?
     public var listener: LinkListenerStatus
     public var hostName: String
     public var hostKey: LinkPublicKey

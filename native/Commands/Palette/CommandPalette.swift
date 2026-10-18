@@ -16,9 +16,8 @@ extension NativeCommand {
             .paletteShow, title: "Command Palette…", category: .general, systemImage: "command",
             keywords: ["actions", "run", "go to", "jump"]
         ) { context in
-            // The window's focused values are there only while it's in front; without them, the
-            // main window may be closed, so bring it back first.
-            if context.sidebarVisibility == nil {
+            // The palette shows in the main window, so bring it back if it was closed.
+            if !palette.isHosted {
                 context.openMainWindow()
             }
             palette.toggle(in: context)
@@ -43,6 +42,10 @@ final class CommandPalette {
     /// Item ids, most recent first.
     private(set) var recents: [CommandPaletteItem.ID]
 
+    /// Whether a window shows the palette when it opens (the main window is open).
+    var isHosted: Bool { hosts > 0 }
+    @ObservationIgnored private var hosts = 0
+
     /// What the palette lists, in this order when nothing is typed.
     @ObservationIgnored var sources: [CommandPaletteSource] = []
     @ObservationIgnored private let defaults: UserDefaults
@@ -64,6 +67,18 @@ final class CommandPalette {
 
     func dismiss() {
         isPresented = false
+    }
+
+    func windowAppeared() {
+        hosts += 1
+    }
+
+    /// A window that closes takes the palette with it.
+    func windowDisappeared() {
+        hosts -= 1
+        if hosts == 0 {
+            dismiss()
+        }
     }
 
     /// Everything the sources offer for `query`, recents first when it's empty.

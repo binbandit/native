@@ -1,12 +1,14 @@
 import Foundation
 
-/// Work Native did on its own for a project that failed: listing its sessions, or tidying up after
-/// a task was archived, brought back or deleted. It stays with the project, for any client to show
+/// Work Native did on its own for a project that failed: finding its folder, listing its sessions,
+/// or tidying up after a task was archived, brought back or deleted. It stays with the project, for any client to show
 /// where the project is, until the work succeeds, the user retries it or they dismiss it. Never an
 /// alert: the user didn't just ask for this, so it waits quietly where they'll look.
 struct ProjectProblem: Identifiable, Hashable {
     /// What failed, which is also what Retry does again.
     enum Work: Hashable {
+        /// Finding the project's folder, which was moved or deleted. Retry looks again.
+        case folder
         /// Listing the project's sessions from an agent.
         case listing(AgentDefinition.ID)
         /// Deleting the agent's own copy of a task Native deleted.

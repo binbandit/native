@@ -8,9 +8,13 @@ extension MCPLibrary {
         PolicyCenter.shared.policy.mcp
     }
 
-    /// Why the organization keeps `server` from running, for its row; nil when it may.
+    /// Why policy keeps `server` from running, for its row; nil when it may. Policy values can
+    /// also be the user's own, so the organization is named only when it manages them.
     func organizationLock(for server: MCPServerConfig) -> String? {
-        organizationPolicy.allows(server) ? nil : "Not allowed by your organization"
+        guard !organizationPolicy.allows(server) else { return nil }
+        let center = PolicyCenter.shared
+        return center.isManaged(.mcpAllowed) || center.isManaged(.mcpBlocked)
+            ? "Not allowed by your organization" : "Not allowed by your policy settings"
     }
 
     /// The same for a session's server; other plugins' servers answer to `PluginRegistry`.

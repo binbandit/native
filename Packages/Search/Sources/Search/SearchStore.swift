@@ -245,7 +245,9 @@ actor SearchStore {
     /// How many hits are ranked before grouping; past this, counts are lower bounds.
     static let rankedHitLimit = 600
 
-    private func searchText(_ expression: String, parsed: ParsedSearchQuery, query: SearchQuery, now: Date) throws
+    private func searchText(
+        _ expression: String, parsed: ParsedSearchQuery, query: SearchQuery, now: Date
+    ) throws
         -> SearchResults
     {
         var (conditions, bindings) = filterClauses(parsed, includeItems: true)
@@ -297,12 +299,13 @@ actor SearchStore {
         let shownHits = sessionRows.flatMap { hitsBySession[$0] ?? [] }
         let bodies = try bodies(of: shownHits.map(\.id))
         let words = parsed.highlightWords
+        let prefixes = parsed.prefixWords
         let groups = sessionRows.compactMap { row -> SearchGroup? in
             guard let session = sessions[row] else { return nil }
             let hits = (hitsBySession[row] ?? []).map { hit in
                 SearchHit(
                     id: hit.id, role: hit.role, anchor: hit.anchor, date: hit.date, hasDiff: hit.hasDiff,
-                    snippet: SearchSnippet(text: bodies[hit.id] ?? "", words: words))
+                    snippet: SearchSnippet(text: bodies[hit.id] ?? "", words: words, prefixes: prefixes))
             }
             return SearchGroup(session: session, hits: hits, hitCount: counts[row] ?? hits.count)
         }
