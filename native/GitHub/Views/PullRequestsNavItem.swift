@@ -16,7 +16,8 @@ struct PullRequestsNavItem: View {
 
     var body: some View {
         SidebarNavItem(
-            "Pull Requests", systemImage: "arrow.triangle.pull", isSelected: isSelected, shortcut: CommandRegistry.shared.shortcut(for: .goPullRequests)?.displayString,
+            "Pull Requests", systemImage: "arrow.triangle.pull", isSelected: isSelected,
+            shortcut: CommandRegistry.shared.shortcut(for: .goPullRequests)?.displayString,
             action: showList
         ) {
             if model.reviewRequestCount > 0 {

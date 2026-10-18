@@ -3,6 +3,15 @@ import SwiftUI
 /// One setting, laid out like Conductor's settings rows: a medium title with optional accessories,
 /// a muted description and smaller detail, and the control on the right. Rows with a detail line
 /// pin the control to the top, as Conductor's do, so it lines up with the title.
+///
+/// The trailing edge says what kind of row it is, so a glance tells them apart:
+/// - a control (`SettingsSwitch`, `SettingsSelect`, a field) is a setting the user can change;
+/// - an outlined button with a verb (`.buttonStyle(.settings)`) is an action;
+/// - plain text (`SettingsValue`) is a value that can't be changed here;
+/// - a lock badge and a dimmed control mean the organization decides (`.settingsManaged(by:)`).
+///
+/// Information that is none of these goes in a `SettingsNote`. A row always has something on its
+/// trailing edge: one without reads as a setting that lost its control.
 struct SettingsRow<Accessory: View, Control: View>: View {
     /// Where search reveals the row.
     var id: SettingsRowID?
@@ -29,7 +38,7 @@ struct SettingsRow<Accessory: View, Control: View>: View {
                             .foregroundStyle(.dsTextPrimary)
                         accessory
                         if let lockReason {
-                            SettingsBadge(lockReason, systemImage: "lock")
+                            SettingsBadge(lockReason, systemImage: "lock.fill")
                         }
                     }
                     .frame(minHeight: SettingsMetrics.rowTitleHeight)
@@ -54,6 +63,7 @@ struct SettingsRow<Accessory: View, Control: View>: View {
             control
                 .fixedSize()
                 .disabled(lockReason != nil)
+                .help(lockReason ?? "")
         }
         .settingsRevealTarget(id)
     }
@@ -71,6 +81,35 @@ extension SettingsRow where Accessory == EmptyView {
         self.init(
             id: id, title: Text(title), icon: icon, description: description, detail: detail,
             accessory: { EmptyView() }, control: control)
+    }
+}
+
+extension SettingsRow where Control == EmptyView {
+    @available(*, unavailable, message: "Information goes in a SettingsNote, and a value in SettingsValue")
+    init(
+        id: SettingsRowID? = nil,
+        title: Text,
+        icon: String? = nil,
+        description: Text? = nil,
+        detail: Text? = nil,
+        @ViewBuilder accessory: () -> Accessory,
+        @ViewBuilder control: () -> Control
+    ) {
+        fatalError("unavailable")
+    }
+}
+
+extension SettingsRow where Accessory == EmptyView, Control == EmptyView {
+    @available(*, unavailable, message: "Information goes in a SettingsNote, and a value in SettingsValue")
+    init(
+        id: SettingsRowID? = nil,
+        _ title: String,
+        icon: String? = nil,
+        description: Text? = nil,
+        detail: Text? = nil,
+        @ViewBuilder control: () -> Control
+    ) {
+        fatalError("unavailable")
     }
 }
 

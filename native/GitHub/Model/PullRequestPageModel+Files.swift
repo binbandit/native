@@ -93,7 +93,8 @@ extension PullRequestPageModel {
         else { return }
         for hunk in hunks {
             let code = hunk.lines.map { $0.kind == .noNewline ? "" : $0.text }.joined(separator: "\n")
-            highlighted[Self.hunkKey(path, hunk)] = await CodeHighlightCache.shared.highlightLines(code, language: language)
+            highlighted[Self.hunkKey(path, hunk)] = await CodeHighlightCache.shared.highlightLines(
+                code, language: language)
         }
     }
 
