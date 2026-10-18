@@ -12,6 +12,7 @@ struct ProjectProblemRow: View {
     @State private var isHovered = false
 
     var body: some View {
+        let isRetrying = model.isRetrying(problem)
         HStack(spacing: DS.Space.sm) {
             Button {
                 isShowingDetails = true
@@ -25,8 +26,8 @@ struct ProjectProblemRow: View {
                     Text(problem.title)
                         .font(.dsCalloutBook)
                         .foregroundStyle(isHovered ? .dsTextPrimary : .dsTextSecondary)
-                        .lineLimit(1)
-                        .truncationMode(.tail)
+                        // A narrow sidebar wraps it rather than cutting off what failed.
+                        .lineLimit(2)
                     Spacer(minLength: 0)
                 }
                 .frame(minHeight: DS.Size.rowMinHeight)
@@ -37,16 +38,19 @@ struct ProjectProblemRow: View {
             .help("\(problem.title). \(problem.recovery)")
             .accessibilityHint("Shows what went wrong")
 
-            if model.isRetrying(problem) {
-                DotGridLoader(pattern: .waiting)
-                    .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
-                    .foregroundStyle(.dsTextTertiary)
-                    .frame(minWidth: DS.Size.controlXS)
-                    .accessibilityLabel("Retrying")
-            } else {
-                Button("Retry") { retry() }
-                    .buttonStyle(.ds(.ghost))
-            }
+            // While retrying, the loader takes the button's place without moving the title.
+            Button("Retry") { retry() }
+                .buttonStyle(.ds(.ghost))
+                .opacity(isRetrying ? 0 : 1)
+                .disabled(isRetrying)
+                .overlay {
+                    if isRetrying {
+                        DotGridLoader(pattern: .waiting)
+                            .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
+                            .foregroundStyle(.dsTextTertiary)
+                            .accessibilityLabel("Retrying")
+                    }
+                }
         }
         .padding(.leading, TaskRowIndent.grouped.leading)
         .padding(.trailing, DS.Space.sm)

@@ -16,7 +16,11 @@ extension NativeCommand {
             .paletteShow, title: "Command Palette…", category: .general, systemImage: "command",
             keywords: ["actions", "run", "go to", "jump"]
         ) { context in
-            context.openMainWindow()
+            // The window's focused values are there only while it's in front; without them, the
+            // main window may be closed, so bring it back first.
+            if context.sidebarVisibility == nil {
+                context.openMainWindow()
+            }
             palette.toggle(in: context)
         }
         .available { palette.isPresented || !isClaimed($0) }

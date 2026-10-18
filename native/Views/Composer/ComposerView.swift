@@ -204,6 +204,8 @@ struct ComposerView: View {
                 extras: { SessionGoalControl(session: session) },
                 context: { ContextIndicator(session: session, style: .labeled) }
             )
+            // The file picker opens on the task's own folder.
+            .fileDialogDefaultDirectory(session.cwd)
             .disabled(!canEdit)
         }
         .dropDestination(for: ComposerDropItem.self) { items, _ in
