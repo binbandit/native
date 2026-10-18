@@ -26,15 +26,6 @@ import Testing
         #expect(CodexConfigOverrides(disabledSkills: ["/s"]).config["mcp_servers"] == nil)
     }
 
-    @Test func codexUnloadsClosedSessionsAfterTheDelay() throws {
-        let overrides = CodexConfigOverrides(threadUnloadDelay: .seconds(60))
-        let value = try #require(overrides.environment["CODEX_CONFIG"])
-        let config = try JSONDecoder().decode(JSONValue.self, from: Data(value.utf8))
-
-        #expect(config == .object(["thread_unload_delay_secs": .number(60)]))
-        #expect(!overrides.isEmpty)
-    }
-
     @Test func claudeCarriesServersAndSkillsInOneSettingsObject() {
         let settings = ClaudeCodeSessionSettings(deniedMCPServers: ["rea", "fs"], disabledSkills: ["deploy"]).meta
         let object = settings["claudeCode"]?["options"]?["settings"]

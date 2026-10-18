@@ -112,14 +112,12 @@ history, telemetry, the command palette), so not every difference is this work's
   codex-acp and claude-agent-acp both support) and drop their transcripts; selecting one loads it
   back. It's off by default (the `sessionIdleTimeout` default, in seconds, turns it on) because
   in testing it didn't pay, and at first reopening wasn't faithful:
-  - Codex's app-server only unsubscribes a closed thread and keeps it loaded, MCP servers and all:
-    the closed sessions' servers were still running 11 minutes later. It unloads a thread after
-    `thread_unload_delay_secs`, a top-level Codex setting. Native now sends
-    `{"thread_unload_delay_secs": 60}` in `CODEX_CONFIG` (`CodexConfigOverrides.threadUnloadDelay`),
-    and it reaches the adapter's environment, but codex-acp 2.2.2 merges that document into each
-    session's config and starts the app-server as a plain `codex app-server` (only `hooks` become
-    `-c` arguments), so the delay never applies: three minutes after closing two of three
-    sessions, all 33 processes were still there.
+  - Closed Codex sessions kept their MCP servers: 11 minutes later they were still running. Codex
+    unloads a closed thread after `thread_unload_delay_secs` (60 s by default), but codex-acp never
+    unsubscribes the title-generation thread it starts for each session, so that thread's MCP
+    servers live until the adapter exits (codex-acp#628, fixed by the open #629). Setting the delay
+    through `CODEX_CONFIG` wouldn't help either: codex-acp applies it per thread, where the
+    app-server ignores it.
   - A session loaded back showed its transcript correctly, but codex-acp 2.2.2 reopens it on its
     default model and mode (6 Astra and Auto review instead of the 6.1 Sol and Full access it ran
     with), and the same happened whenever an agent restarted. Native now remembers the settings
@@ -224,7 +222,7 @@ comes from a 10 s `sample` right after. "Before" is the build from the start of 
 
 | What | Why | Owner |
 | --- | --- | --- |
-| Let Codex unload closed threads | Codex keeps an unsubscribed thread, with its MCP servers (about 1 GB each here), for `thread_unload_delay_secs`. Native already sends 60 s in `CODEX_CONFIG`; codex-acp has to pass top-level settings to `codex app-server` (as `-c`, as it does for `hooks`) for it to apply | Upstream codex-acp, then the Codex plugin |
+| Let Codex unload closed threads | codex-acp never unsubscribes its title-generation thread, so each session's MCP servers (about 1 GB each here) outlive it until the adapter exits | Upstream codex-acp#628 / #629; then turn idle closing on |
 | Turn on closing idle sessions | Once the row above is done (reopening is faithful now): default `sessionIdleTimeout` to 10 minutes. Also check claude-agent-acp, where each session is its own Claude Code process | App model |
 | Cache the applied plugin list itself | Only the experiment scan is cached; `plugins` still maps every loaded plugin on every read | Experiments / plugins |
 | "Couldn't run git: The file “project” doesn't exist" alert | New Session in a project whose folder is gone shows a modal; the sidebar already says "Can't find this project's folder" with Retry | Failures |
