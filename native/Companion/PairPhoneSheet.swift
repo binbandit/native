@@ -154,6 +154,8 @@ struct PairPhoneSheet: View {
                 Image(systemName: systemImage)
                     .font(.dsTitle2)
                     .foregroundStyle(isSuccess ? .dsSuccess : .dsTextSecondary)
+                    // The heading says it; the symbol's own label ("Selected") would mislead.
+                    .accessibilityHidden(true)
                 header(title, detail: message)
             }
             footer {
