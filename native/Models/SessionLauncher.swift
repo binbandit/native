@@ -59,8 +59,9 @@ final class SessionLauncher {
         return session
     }
 
-    /// Reopens a session the agent has, replaying its history into a new model. On failure the
-    /// model stays registered with what went wrong in its transcript, and the error is rethrown.
+    /// Reopens a session the agent has, replaying its history into a new model and setting back the
+    /// settings chosen for it. On failure the model stays registered with what went wrong in its
+    /// transcript, and the error is rethrown.
     @discardableResult
     func load(
         _ key: SessionKey, cwd: URL, title: String? = nil, on runtime: AgentRuntime,
@@ -85,7 +86,7 @@ final class SessionLauncher {
                 meta: plugins.sessionMeta(for: session.context)
             )
             let response = try await connection.send(request)
-            session.finishLoading(configOptions: response.configOptions)
+            await session.finishLoading(configOptions: response.configOptions)
             return session
         } catch {
             runtime.noteSignInRequired(by: error)

@@ -370,7 +370,8 @@ ciphertext-only relay later. No third-party code. See `docs/companion.md`.
 Brayden chose accuracy, so code is now colored from a parse: `CodeHighlighter.segments(_:language:)`
 keeps its seam, cache and background thread, and parses with tree-sitter through SwiftTreeSitter.
 The lexer stays as the fallback, for languages without a grammar and for code a grammar loses its
-place in (half the text in error nodes, or about one error per line). Each grammar's highlight and
+place in (about one error node per line; a cut-off fragment, which tree-sitter often wraps in one
+error node around text it parsed well, keeps its parse). Each grammar's highlight and
 injection queries are copied into the package, pinned to the grammar's release, so precedence is
 under our control: tree-sitter 0.25 lets the later pattern win, and several grammars still order
 theirs for the old first-match rule (each copy says what changed). Injections color Markdown fences,

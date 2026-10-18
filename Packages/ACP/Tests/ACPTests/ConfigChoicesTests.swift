@@ -35,7 +35,7 @@ struct ConfigChoicesTests {
         try #require(options.first { $0.id == id })
     }
 
-    static let allowAll: (ConfigOption, String) -> Bool = { _, _ in true }
+    static func allowAll(_: ConfigOption, _: String) -> Bool { true }
 
     /// The model and mode the session ran with, chosen in the composer.
     static func chosen() throws -> ConfigChoices {
@@ -96,6 +96,11 @@ struct ConfigChoicesTests {
                 == .unavailable(ConfigChoices.Choice(value: "on", optionName: "Fast mode", valueName: "On"), kept: nil))
     }
 
+    /// Some agents report their options only after answering `session/load`, or not at all.
+    @Test func restoresNothingWhenTheAgentListsNoOptions() throws {
+        #expect(try Self.chosen().restoreOrder(in: []).isEmpty)
+    }
+
     @Test func policyWinsOverTheChoice() throws {
         let options = try Self.options()
         let noFullAccess: (ConfigOption, String) -> Bool = { option, value in
@@ -124,11 +129,13 @@ struct ConfigChoicesTests {
         let effort = try #require(state.configOptions.firstIndex { $0.id == "reasoning_effort" })
         state.configOptions[effort].kind = .select(currentValue: "low", options: state.configOptions[effort].selectOptions)
 
-        #expect(choices.follow(state.configOptions))
+        let changed = choices.follow(state.configOptions)
+        #expect(changed)
         #expect(choices.choices["mode"]?.value == "read-only")
         #expect(choices.choices["model"]?.value == "gpt-6.1-sol")
         #expect(choices.choices["reasoning_effort"] == nil)
-        #expect(!choices.follow(state.configOptions))
+        let changedAgain = choices.follow(state.configOptions)
+        #expect(!changedAgain)
 
         // Reopened on the defaults, the session goes back to Read-only, not to Full access.
         let reopened = try Self.options()

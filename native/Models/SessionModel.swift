@@ -239,6 +239,11 @@ final class SessionModel {
         }
         if configOptions != state.configOptions {
             configOptions = state.configOptions
+            // A loading session reports the agent's defaults until its settings are set back
+            // (SessionModel+ConfigRestore.swift); after that, chosen settings follow the session.
+            if phase != .loading {
+                services.titles.updateConfigChoices(for: titleKey) { $0.follow(configOptions) }
+            }
         }
     }
 
@@ -253,11 +258,16 @@ final class SessionModel {
         state.requestPermission(request, id: id)
     }
 
-    func finishLoading(configOptions: [ConfigOption]?) {
+    func finishLoading(configOptions: [ConfigOption]?) async {
         if let configOptions {
             state.configOptions = configOptions
         }
+        // Still loading while the settings are set back, so nothing queued goes out without them.
+        await restoreConfigChoices()
+        // The agent may have gone away meanwhile.
+        guard phase == .loading else { return }
         phase = .idle
+        services.titles.updateConfigChoices(for: titleKey) { $0.follow(state.configOptions) }
         // Messages sent while it loaded.
         drainQueue()
     }
@@ -325,6 +335,8 @@ final class SessionModel {
         guard case .select(let current, let choices) = option.kind, current != value else { return }
         // Every way of changing a setting comes through here, so a forbidden permission mode stops here.
         guard !PolicyPermissionModes.forbids(option, value: value) else { return }
+        // Remembered for reopening the session; from here on it follows what the agent reports.
+        services.titles.updateConfigChoices(for: titleKey) { $0.choose(option, value: value) }
         // Show the choice right away; the agent's answer is authoritative and replaces it.
         replaceConfigOption(option.id, with: .select(currentValue: value, options: choices))
         do {

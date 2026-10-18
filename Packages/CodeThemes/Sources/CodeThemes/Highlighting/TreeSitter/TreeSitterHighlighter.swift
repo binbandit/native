@@ -69,28 +69,23 @@ enum TreeSitterHighlighter {
         return parser.parse(code)
     }
 
-    /// Code that isn't the language at all (prose under a wrong fence, pseudo-code) parses into error
-    /// nodes, and a grammar that has lost its place colors worse than the lexer: past half the text in
-    /// errors, or about one per line. A cut-off fragment (a hunk, a missing brace) costs one or two.
+    /// Code that isn't the language at all (prose under a wrong fence, pseudo-code) breaks into error
+    /// nodes all through, and a grammar that has lost its place colors worse than the lexer. A
+    /// cut-off fragment (a diff hunk, half a function) also errors, but once, often as one error
+    /// node around text it still parsed well, so the measure is how many errors there are, about
+    /// one per line, not how much text they cover.
     private static func hasLostItsPlace(_ root: Node) -> Bool {
-        guard root.hasError else { return false }
-        let length = root.range.length
-        let errors = errors(in: root)
-        return errors.length * 2 > length || errors.count * 80 > length
+        root.hasError && errorCount(in: root) * 80 > root.range.length
     }
 
-    /// Error nodes (not looking inside them) and missing tokens, and how much text the errors cover.
-    private static func errors(in node: Node) -> (count: Int, length: Int) {
+    /// Error nodes, those nested in them included, and missing tokens.
+    private static func errorCount(in node: Node) -> Int {
         if node.isMissing {
-            return (1, 0)
+            return 1
         }
-        if node.nodeType == "ERROR" {
-            return (1, node.range.length)
-        }
-        guard node.hasError else { return (0, 0) }
-        return (0..<node.childCount).compactMap { node.child(at: $0) }.map(errors(in:)).reduce((0, 0)) {
-            ($0.count + $1.count, $0.length + $1.length)
-        }
+        guard node.hasError else { return 0 }
+        let own = node.nodeType == "ERROR" ? 1 : 0
+        return own + (0..<node.childCount).compactMap { node.child(at: $0) }.reduce(0) { $0 + errorCount(in: $1) }
     }
 
     /// A role per UTF-16 unit, read back as segments. Where captures overlap, the higher rank shows,

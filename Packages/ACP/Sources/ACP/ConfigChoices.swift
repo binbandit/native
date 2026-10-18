@@ -65,8 +65,10 @@ public struct ConfigChoices: Codable, Hashable, Sendable {
 
     /// The order to restore the choices in: the model first, since changing it can change what the
     /// other options offer (a model's efforts), then the rest as the agent lists them, then the
-    /// options it no longer lists.
+    /// options it no longer lists. None when the agent lists no options at all: it hasn't said what
+    /// it offers, so nothing can be compared or called gone.
     public func restoreOrder(in options: [ConfigOption]) -> [String] {
+        guard !options.isEmpty else { return [] }
         let listed = options.filter { choices[$0.id] != nil }
         let models = listed.filter { $0.category == "model" }
         let others = listed.filter { $0.category != "model" }

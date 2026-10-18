@@ -5,7 +5,11 @@ import os
 
 /// The titles Native shows for sessions. A title the user typed wins; then one generated from the
 /// first prompt, so every agent's sessions read the same way and are named the moment they start;
-/// then whatever the agent called it.
+/// then whatever the agent called it, which never replaces either of those, including when a
+/// reopened session's agent reports its own.
+///
+/// It also keeps the settings chosen for each session (`ConfigChoices`), the other thing Native
+/// knows about a session that its agent may not give back on `session/load`.
 @Observable
 final class SessionTitles {
     struct Key: Hashable, Sendable {
@@ -18,15 +22,36 @@ final class SessionTitles {
     private var userTitles: [String: String]
     private var generatedTitles: [String: String]
     private var generating: Set<Key> = []
+    @ObservationIgnored private var configChoices: [String: ConfigChoices]
     private let logger = Logger(subsystem: "Native", category: "Titles")
 
     private static let userKey = "sessionTitles.user"
     private static let generatedKey = "sessionTitles.generated"
+    private static let configChoicesKey = "sessionConfigChoices"
 
     init() {
         let defaults = UserDefaults.standard
         userTitles = defaults.dictionary(forKey: Self.userKey) as? [String: String] ?? [:]
         generatedTitles = defaults.dictionary(forKey: Self.generatedKey) as? [String: String] ?? [:]
+        configChoices =
+            defaults.data(forKey: Self.configChoicesKey)
+            .flatMap { try? JSONDecoder().decode([String: ConfigChoices].self, from: $0) } ?? [:]
+    }
+
+    /// The settings chosen for the session so far.
+    func configChoices(for key: Key) -> ConfigChoices {
+        configChoices[key.storageKey] ?? ConfigChoices()
+    }
+
+    /// Changes the session's chosen settings, saving them if that changed anything.
+    func updateConfigChoices(for key: Key, _ change: (inout ConfigChoices) -> Void) {
+        var choices = configChoices(for: key)
+        change(&choices)
+        guard choices != configChoices(for: key) else { return }
+        configChoices[key.storageKey] = choices.isEmpty ? nil : choices
+        if let data = try? JSONEncoder().encode(configChoices) {
+            UserDefaults.standard.set(data, forKey: Self.configChoicesKey)
+        }
     }
 
     func title(for key: Key, agentTitle: String?) -> String? {
