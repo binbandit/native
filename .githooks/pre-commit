@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Formats staged Swift files to the repo's style (.swift-format) and stops the commit if anything is
+# left that formatting can't fix. Install with scripts/dev/install-hooks.sh.
+set -euo pipefail
+
+staged=()
+while IFS= read -r -d '' file; do staged+=("$file"); done \
+    < <(git diff --cached --name-only --diff-filter=ACMR -z -- '*.swift')
+(( ${#staged[@]} )) || exit 0
+
+# Formatting rewrites whole files, so a file with unstaged edits would have them swept into the commit.
+partial=()
+while IFS= read -r -d '' file; do partial+=("$file"); done < <(git diff --name-only -z -- "${staged[@]}")
+if (( ${#partial[@]} )); then
+    echo "pre-commit: these files also have unstaged changes. Stage them fully, or stash the rest:" >&2
+    printf '  %s\n' "${partial[@]}" >&2
+    exit 1
+fi
+
+swift format format --in-place "${staged[@]}"
+git add -- "${staged[@]}"
+if ! swift format lint --strict "${staged[@]}"; then
+    echo "pre-commit: fix the lint errors above; swift format can't fix them on its own." >&2
+    exit 1
+fi

@@ -74,6 +74,8 @@ struct TransparencyPreview: View {
                 Text("Moved the sidebar rows onto the shared hover and selection fills, so they read on any wallpaper.")
                 Text("Ran the tests: 214 passed. The gallery shows both appearances.")
                 Text("Next I can tighten the composer’s spacing, or leave it for review.")
+                Text("The composer floats over this text, so its glass shows what scrolls beneath it.")
+                Text("Popovers and toasts sit on the overlay color over a blur of the window.")
             }
             .font(.dsCallout)
             .foregroundStyle(.dsTextPrimary)
@@ -114,7 +116,7 @@ struct TransparencyPreview: View {
         static let sidebarWidth: CGFloat = 168
         static let popoverWidth: CGFloat = 200
         /// Straddles the sidebar's edge, so it covers both the wallpaper and the transcript.
-        static let popoverOffset = CGSize(width: 116, height: 112)
+        static let popoverOffset = CGSize(width: 84, height: 96)
     }
 }
 

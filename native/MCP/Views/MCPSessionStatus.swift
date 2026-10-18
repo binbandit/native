@@ -96,7 +96,7 @@ struct MCPSessionPanel: View {
     @State private var note: String?
 
     var body: some View {
-        StatusBarPanel(title: "MCP Servers", systemImage: "server.rack") {
+        PopoverPanel(title: "MCP Servers", systemImage: "server.rack") {
             Text(session.cwd.lastPathComponent)
         } content: {
             VStack(alignment: .leading, spacing: 0) {

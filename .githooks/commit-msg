@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Keeps commit messages to the repo's conventions: a conventional-commit title
+# ("feat(composer): queue follow-ups while a turn runs"), no em dashes, and no co-author trailers.
+set -euo pipefail
+
+message_file=$1
+title=$(grep -v '^#' "$message_file" | sed -n '1p')
+types='feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert'
+
+if ! [[ $title =~ ^($types)(\([a-z0-9./-]+\))?!?:\ .+ ]] && ! [[ $title =~ ^(Merge|Revert|fixup!|squash!|\[kite\]) ]]; then
+    echo "commit-msg: the title should be a conventional commit, like \"fix(git): keep staged files on discard\"." >&2
+    echo "  got: $title" >&2
+    exit 1
+fi
+if grep -v '^#' "$message_file" | grep -q '—'; then
+    echo "commit-msg: use \"-\" instead of an em dash." >&2
+    exit 1
+fi
+if grep -qi '^co-authored-by:' "$message_file"; then
+    echo "commit-msg: drop the Co-authored-by trailer." >&2
+    exit 1
+fi

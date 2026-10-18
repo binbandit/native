@@ -8,7 +8,7 @@ struct TasksPanel: View {
 
     var body: some View {
         let tasks = source.statusBarTasks
-        StatusBarPanel(title: "Tasks", systemImage: "list.bullet") {
+        PopoverPanel(title: "Tasks", systemImage: "list.bullet") {
             if !tasks.isEmpty {
                 Text("\(tasks.count) active")
             }

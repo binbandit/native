@@ -1,22 +1,12 @@
 import SwiftUI
 
-/// the reference app's status-bar metrics (`StatusBarSurface.tsx`, measured at 1x). Most map onto design-system
-/// sizes; the few only the bar uses live here so items don't repeat them.
+/// Sizes only the status bar's items and panels use. The bar's own height, spacing and glyphs come
+/// from the design system (`StatusBarSurface`, `DS.StatusBar`); panels are `PopoverPanel`s.
 enum StatusBarMetrics {
-    /// The bar, its top hairline included (the reference app `h-6`).
-    static let height = DS.Size.controlXS
-    /// Between the window edge and the first segment (the reference app `px-3`).
-    static let edgeInset = DS.Space.lg
-    /// Between segments (the reference app `gap-3`).
-    static let segmentSpacing = DS.Space.lg
-    /// Around a segment's content, inside its hover wash (the reference app `px-1 py-0.5`).
-    static let segmentPadding = EdgeInsets(top: DS.Space.xxs, leading: DS.Space.xs, bottom: DS.Space.xxs, trailing: DS.Space.xs)
-    /// Glyphs in segments: SF Symbols at this size match Lucide's `size-3` (12px).
-    static let glyph: CGFloat = 10
     /// A task-status glyph in a segment; the dot-grid loader needs this much to read.
     static let statusGlyph = DS.Size.statusGlyph
-    /// Detail panels (the reference app's Resource Manager is `w-[26rem]`).
-    static let panelWidth: CGFloat = 400
+    /// Disclosure chevrons in panel rows.
+    static let glyph: CGFloat = 10
     /// The tallest a panel's list grows before it scrolls.
     static let panelListHeight: CGFloat = 320
     /// Sparklines: in segments' panels, beside a group's numbers.

@@ -54,7 +54,7 @@ private struct MCPStatusSegment: View {
                     Text("MCP \(count)")
                 }
             } details: {
-                StatusBarPanel(title: "MCP Servers", systemImage: "server.rack") {
+                PopoverPanel(title: "MCP Servers", systemImage: "server.rack") {
                     EmptyStateView(
                         count == 0 ? "No servers set up in Native" : "\(count) set up in Native",
                         systemImage: "server.rack",

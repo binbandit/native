@@ -166,9 +166,9 @@ extension MCPAgentServerRow {
             switch library.host?.mcpPolicySupport(for: agent.id) {
             case .perSession?, nil: nil
             case .atLaunch?:
-                project == nil
-                    ? "\(agent.name) applies the switch when it restarts"
-                    : "\(agent.name) can only switch it for all projects"
+                project != nil
+                    ? "\(agent.name) can only switch it for all projects"
+                    : isOn ? nil : "\(agent.name) applies the switch when it restarts"
             case .unsupported(let reason)?: reason
             }
         }

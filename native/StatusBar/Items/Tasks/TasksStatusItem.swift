@@ -55,9 +55,8 @@ private struct TasksSegment: View {
                         StatusIndicator(status: first.status, size: StatusBarMetrics.statusGlyph)
                         Text("\(waiting.count) \(waiting.count == 1 ? "needs" : "need") you")
                     }
-                    .statusBarSegmentChrome()
                 }
-                .buttonStyle(.plain)
+                .buttonStyle(.statusBarSegment(.attention))
                 .help("\(first.title) · \(first.status.label). Click to open it.")
                 .accessibilityLabel("Tasks that need you")
                 .accessibilityValue("\(waiting.count). First: \(first.title), \(first.status.label)")
