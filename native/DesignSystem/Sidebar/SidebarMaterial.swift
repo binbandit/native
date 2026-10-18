@@ -65,15 +65,26 @@ private struct SidebarBackdrop: View {
 
 private struct SidebarColumnTransparency: ViewModifier {
     @Environment(\.dsTransparency) private var transparency
+    @Environment(\.dsLightTone) private var lightTone
+    @Environment(\.colorScheme) private var colorScheme
+
+    /// The system's light sidebar is a cool gray; on Wool a little of Wool's own sidebar color
+    /// keeps it from reading cold beside the warm content.
+    private static let woolWarmth = 0.4
+
+    private var tint: Double {
+        let isWool = colorScheme == .light && lightTone == .wool
+        return isWool ? max(transparency.sidebarTint, Self.woolWarmth) : transparency.sidebarTint
+    }
 
     func body(content: Content) -> some View {
         content
             .background {
                 Rectangle()
                     .fill(.dsSidebarSolid)
-                    .opacity(transparency.sidebarTint)
+                    .opacity(tint)
                     .ignoresSafeArea()
-                    .animation(.dsStandard, value: transparency)
+                    .animation(.dsStandard, value: tint)
             }
     }
 }
