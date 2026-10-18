@@ -32,10 +32,18 @@ enum ScriptSession {
         var outputBytes = 0
         var finished = false
         var failure: ScriptFailure?
+        let (evaluation, evaluationStarted) = AsyncStream<Void>.makeStream()
 
         await withTaskCancellationHandler {
             await withTaskGroup(of: Void.self) { group in
                 group.addTask {
+                    // The limit is the script's: a busy Mac can take a while just to start the runtime.
+                    guard await started(evaluation) else {
+                        guard !Task.isCancelled else { return }
+                        shared.failedToStart.withLock { $0 = true }
+                        transport.terminate()
+                        return
+                    }
                     guard (try? await Task.sleep(for: limits.time)) != nil else { return }
                     shared.timedOut.withLock { $0 = true }
                     transport.terminate()
@@ -51,7 +59,7 @@ enum ScriptSession {
                                 "The script runtime speaks protocol \(version), not \(scriptProtocolVersion)")
                             break frames
                         case .evaluationStarted:
-                            break
+                            evaluationStarted.finish()
                         case .text(let piece, let end):
                             outputBytes += piece.utf8.count
                             guard outputBytes <= maxOutputBytes else {
@@ -111,6 +119,8 @@ enum ScriptSession {
         try Task.checkCancellation()
         if shared.timedOut.withLock({ $0 }) {
             failure = ScriptFailure(kind: .timedOut, message: "The script ran past its \(limits.time) limit")
+        } else if shared.failedToStart.withLock({ $0 }) {
+            failure = runtimeFailure("The script runtime didn't start within \(startupLimit)")
         } else if !finished && failure == nil {
             failure = runtimeFailure("The script runtime stopped before the script finished")
         }
@@ -139,10 +149,31 @@ enum ScriptSession {
         return byName
     }
 
+    /// How long the runtime may take to start evaluating before the run fails.
+    static let startupLimit: Duration = .seconds(15)
+
+    /// Whether evaluation started (the stream finished) within `startupLimit`; false when cancelled.
+    private static func started(_ evaluation: AsyncStream<Void>) async -> Bool {
+        await withTaskGroup(of: Bool.self) { race in
+            race.addTask {
+                for await _ in evaluation {}
+                return !Task.isCancelled
+            }
+            race.addTask {
+                try? await Task.sleep(for: startupLimit)
+                return false
+            }
+            let first = await race.next() ?? false
+            race.cancelAll()
+            return first
+        }
+    }
+
     /// What the session's child tasks write to.
     private final class SharedState: Sendable {
         let calls = Mutex<[ScriptToolCall]>([])
         let timedOut = Mutex(false)
+        let failedToStart = Mutex(false)
     }
 
     private static func invoke(

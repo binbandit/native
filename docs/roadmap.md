@@ -47,5 +47,7 @@ coordinator keeps this current.
 | Plugins on iPad and iPhone | host protocol (`_native/plugins/*`), companion, iPad | Host-side plugin parts run on the host; data parts (themes, icon sets, celebrations, experiments) sync to each client. See decisions |
 | App icon switching on iPad and iPhone | iPad and companion targets | Built-in themes ship as alternate icons (`setAlternateIconName`) once those targets exist |
 | iPhone companion app (several hosts at once, each kept fully separate) | new target, host client | Designed (`docs/companion.md`, `research/companion-app.md`). Needs durable host Phase 2, paired network transport and QR pairing first |
+| Search across all agent runs | `Packages/Search`, `native/Search` | SQLite FTS5 index of every session, live and past (via per-agent history readers in plugins); later served by the host for iPad and iPhone |
+| What's New sheet after updates | `native/WhatsNew` | Orca-style highlights shown once per version, never on a fresh install; Help ▸ What's New reopens it |
 | iPad app | app target | After the host protocol lands (`docs/architecture.md`) |
 | Expeditions (Factory's missions, rebranded) | `Packages/Expeditions`, `native/Expeditions` | Factory's concept under Native's own name, composed from orchestration, goals, workflows and worktrees |

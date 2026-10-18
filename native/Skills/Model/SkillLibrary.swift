@@ -18,6 +18,8 @@ final class SkillLibrary {
     private(set) var items: [SkillItem] = []
     /// The folders read, with the agents that read each.
     private(set) var roots: [SkillRoot] = []
+    /// The roots that exist, as of the last read.
+    private(set) var existingRoots: Set<String> = []
     private(set) var isReading = false
     private(set) var lastRead: Date?
     private(set) var switches: SkillSwitches
@@ -86,21 +88,21 @@ final class SkillLibrary {
         isReading = true
         defer { isReading = false }
         environment = await host.skillEnvironment()
-        let (roots, items) = await Task.detached {
+        let scan = await Task.detached {
             [files, home, environment, formats = Set(agents.map(\.format)), projects = host.skillProjects] in
             Self.scan(files: files, formats: formats, home: home, environment: environment, projects: projects)
         }.value
-        apply(roots: roots, items: items)
+        apply(scan)
     }
 
     /// The first read, on the main thread: agents that apply switches at launch start right after
     /// connect and need the inventory already. Only lists folders and reads SKILL.md files.
     func readAtStartup() {
         guard let host else { return }
-        let (roots, items) = Self.scan(
+        let scan = Self.scan(
             files: files, formats: Set(agents.map(\.format)), home: home, environment: environment,
             projects: host.skillProjects)
-        apply(roots: roots, items: items)
+        apply(scan)
     }
 
     /// Reads again unless the last read is recent, for when the app comes back to the front.
@@ -117,17 +119,26 @@ final class SkillLibrary {
     private nonisolated static func scan(
         files: any SkillFileSystem, formats: Set<SkillAgentFormat>, home: String, environment: [String: String],
         projects: [URL]
-    ) -> ([SkillRoot], [SkillItem]) {
+    ) -> SkillScan {
         let roots = SkillAgentFormat.roots(
             for: formats, home: home, environment: environment, projects: projects, files: files)
-        return (roots, SkillInventory.items(SkillScanner(files: files).scan(roots)))
+        return SkillScan(
+            roots: roots, existing: Set(roots.map(\.path).filter { files.itemKind(atPath: $0) == .directory }),
+            items: SkillInventory.items(SkillScanner(files: files).scan(roots)))
     }
 
-    private func apply(roots: [SkillRoot], items: [SkillItem]) {
+    private nonisolated struct SkillScan: Sendable {
+        let roots: [SkillRoot]
+        let existing: Set<String>
+        let items: [SkillItem]
+    }
+
+    private func apply(_ scan: SkillScan) {
         let native = host?.nativeSkills ?? []
         if nativeSkills != native { nativeSkills = native }
-        if self.roots != roots { self.roots = roots }
-        if self.items != items { self.items = items }
+        if roots != scan.roots { roots = scan.roots }
+        if existingRoots != scan.existing { existingRoots = scan.existing }
+        if items != scan.items { items = scan.items }
         lastRead = .now
     }
 
@@ -155,7 +166,7 @@ final class SkillLibrary {
     /// Why a switch doesn't fully reach some running agent, for the row.
     func limitations(of item: SkillItem) -> [String] {
         let support = Dictionary(agents.map { ($0.format, $0.switching) }, uniquingKeysWith: { first, _ in first })
-        return switches.limitations(of: item, agents: support)
+        return switches.limitations(of: item, agents: support).map(\.message)
     }
 
     /// Whether Native's own skill `id` is on for a session in `directory`.
