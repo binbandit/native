@@ -23,12 +23,12 @@ struct CelebrationsSettingsPage: View {
 
     /// Ready to use, or already chosen.
     private var available: [CelebrationEvent] {
-        matches.filter { $0.isApplicable || center.preferences.selection(for: $0.id).isEnabled }
+        matches.filter { $0.canBeChosen(on: center.today) || center.preferences.selection(for: $0.id).isEnabled }
     }
 
-    /// Listed with their artwork (or calendar) still to come.
+    /// Listed with their calendar (or artwork) still to come.
     private var later: [CelebrationEvent] {
-        matches.filter { !$0.isApplicable && !center.preferences.selection(for: $0.id).isEnabled }
+        matches.filter { !$0.canBeChosen(on: center.today) && !center.preferences.selection(for: $0.id).isEnabled }
     }
 
     private var isSearching: Bool { !query.trimmingCharacters(in: .whitespaces).isEmpty }
@@ -106,7 +106,7 @@ struct CelebrationsSettingsPage: View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
             HStack(spacing: DS.Space.xl) {
                 SettingsSubheading(
-                    "Coming later",
+                    "Coming soon",
                     note:
                         "Their dates are researched; their artwork, and some of their calendars, are still being made.")
                 Spacer(minLength: 0)

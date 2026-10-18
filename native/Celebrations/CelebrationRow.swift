@@ -25,14 +25,14 @@ struct CelebrationRow: View {
                     detail: Text(details.joined(separator: "\n"))
                 ) {
                     if event.display.treatment == .quiet { SettingsBadge("Quiet") }
-                    if !event.isApplicable { SettingsBadge(status) }
+                    if let status { SettingsBadge(status) }
                 } control: {
                     SettingsSwitch(
                         "Celebrate \(contribution.title.resolved()) automatically",
                         isOn: Binding(get: { selection.isEnabled }, set: { center.setAutomatic($0, for: event.id) })
                     )
-                    .disabled(!event.isApplicable && !selection.isEnabled)
-                    .help(event.isApplicable ? "Show it on its dates" : "Its artwork isn't ready yet")
+                    .disabled(!event.canBeChosen(on: center.today) && !selection.isEnabled)
+                    .help(status ?? "Show it on its dates")
                 }
             }
             if selection.isEnabled {
@@ -67,7 +67,8 @@ struct CelebrationRow: View {
         case .unsupportedCalendar:
             lines.append("Native can't work out its dates yet, so it never changes anything.")
         case .coverageEnded(let year):
-            lines.append("Its published dates end in \(year.formatted(.number.grouping(.never))); the usual look stays.")
+            lines.append(
+                "Its published dates end in \(year.formatted(.number.grouping(.never))); the usual look stays.")
         }
         if let tradition = contribution.calendar.tradition {
             lines.append(tradition)
@@ -75,10 +76,13 @@ struct CelebrationRow: View {
         return lines
     }
 
-    private var status: String {
+    /// Why it can't be chosen yet, if it can't.
+    private var status: String? {
+        if event.dateStatus(on: center.today) != .resolvable { return "Coming soon" }
+        if event.canBeChosen(on: center.today) { return nil }
         switch (event.appIcon, event.home) {
-        case (.unavailable, _), (_, .unavailable): "Artwork missing"
-        default: "Artwork forthcoming"
+        case (.unavailable, _), (_, .unavailable): return "Artwork missing"
+        default: return "Artwork forthcoming"
         }
     }
 }
@@ -150,8 +154,12 @@ private struct CelebrationOptions: View {
                 }
             }
             Spacer(minLength: 0)
+            if case .downloadable(.failed) = status {
+                Button("Retry") { center.fetchIcons(for: event.id) }
+                    .buttonStyle(.ds(.secondary, size: .medium))
+            }
             SettingsSwitch("\(event.contribution.title.resolved()) \(title.lowercased())", isOn: isOn)
-                .disabled(!status.isReady)
+                .disabled(!status.isReady && !status.isDownloadable)
         }
     }
 
@@ -163,6 +171,10 @@ private struct CelebrationOptions: View {
         case .forthcoming: "Artwork forthcoming. Until it's ready, this stays as it is."
         case .notOffered: "This celebration doesn't change it."
         case .unavailable(let reason): reason
+        case .downloadable(.notDownloaded), .downloadable(.ready):
+            "Downloads now, or a week before its dates. Until then, your icon stays as it is."
+        case .downloadable(.downloading): "Downloading…"
+        case .downloadable(.failed(let reason)): reason
         }
     }
 
@@ -178,9 +190,13 @@ private struct CelebrationOptions: View {
         let isSkipped = center.preferences.skipped.contains(occurrence.id)
         let year = occurrence.core.first.year.formatted(.number.grouping(.never))
         return HStack(spacing: DS.Space.xl) {
-            Text(isSkipped ? "Skipping \(year). It comes back next time." : "This year's \(event.contribution.title.resolved())")
-                .settingsText(.body)
-                .foregroundStyle(.dsTextSecondary)
+            Text(
+                isSkipped
+                    ? "Skipping \(year). It comes back next time."
+                    : "This year's \(event.contribution.title.resolved())"
+            )
+            .settingsText(.body)
+            .foregroundStyle(.dsTextSecondary)
             Spacer(minLength: 0)
             Button(isSkipped ? "Bring Back" : "Skip \(year)") {
                 isSkipped ? center.unskip(occurrence.id) : center.skip(occurrence.id)

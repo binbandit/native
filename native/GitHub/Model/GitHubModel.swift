@@ -1,4 +1,5 @@
 import Exec
+import Foundation
 import GitHub
 import Network
 import Observation
@@ -104,7 +105,7 @@ final class GitHubModel {
     func keepFresh() async {
         watchNetwork()
         let activation = NotificationCenter.default.addObserver(
-            forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main
+            forName: PlatformApplication.didBecomeActiveNotification, object: nil, queue: .main
         ) { [weak self] _ in
             MainActor.assumeIsolated { self?.wakeRefreshLoop() }
         }
@@ -112,9 +113,9 @@ final class GitHubModel {
             pathMonitor.cancel()
             NotificationCenter.default.removeObserver(activation)
         }
-        var wasActive = NSApplication.shared.isActive
+        var wasActive = PlatformApplication.isActive
         while !Task.isCancelled {
-            let isActive = NSApplication.shared.isActive
+            let isActive = PlatformApplication.isActive
             let returned = isActive && !wasActive
             wasActive = isActive
             let activity: RefreshSchedule.Activity = isWatching && isActive ? .watching : .background

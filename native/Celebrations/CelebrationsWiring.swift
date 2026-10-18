@@ -27,7 +27,10 @@ enum CelebrationsWiring {
         let isEnabled = plugins.isEnabled(CelebrationsPlugin.id)
         // Only the registry is read while tracking, so updating the center can't re-trigger it.
         let (catalog, names) = withObservationTracking {
-            (catalog(from: plugins), Dictionary(plugins.plugins.map { ($0.id, $0.plugin.manifest.name) }) { $1 })
+            (
+                catalog(from: plugins, assets: center.assets),
+                Dictionary(plugins.plugins.map { ($0.id, $0.plugin.manifest.name) }) { $1 }
+            )
         } onChange: {
             Task { @MainActor in
                 track(plugins, center: center, icons: icons, settings: settings, wasEnabled: isEnabled)
@@ -44,7 +47,7 @@ enum CelebrationsWiring {
 
     /// Every enabled plugin's contributions, checked against this build: compiled images, the Home
     /// marks it can draw and its version.
-    static func catalog(from plugins: PluginRegistry) -> AppearanceCatalog {
+    static func catalog(from plugins: PluginRegistry, assets: CelebrationAssetStore? = nil) -> AppearanceCatalog {
         let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
         return AppearanceCatalog(
             plugins.plugins.filter { plugins.isEnabled($0.id) }.map { loaded in
@@ -56,7 +59,8 @@ enum CelebrationsWiring {
                 return AppearanceCatalog.Plugin(
                     source: ContributionSource(
                         pluginID: loaded.id, location: location, assetExists: PlatformAppIcon.hasAsset(named:),
-                        homeMarks: HomeLandingEdition.drawableMarks, nativeVersion: version),
+                        homeMarks: HomeLandingEdition.drawableMarks, nativeVersion: version,
+                        packState: { assets?.state($0) ?? .notDownloaded }),
                     iconSets: loaded.plugin.manifest.iconSets, celebrations: loaded.plugin.manifest.celebrations)
             })
     }

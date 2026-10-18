@@ -1,8 +1,8 @@
 import AppAppearance
 import SwiftUI
 
-/// A celebration's edition for this build: its app icon when the artwork is complete, otherwise its
-/// Home mark on a tile, otherwise its palette. Previews follow the running channel, so a Nightly
+/// A celebration's edition for this build: its app icon when it's here, otherwise its bundled
+/// thumbnail, otherwise its Home mark on a tile. Previews follow the running channel, so a Nightly
 /// build previews the Nightly edition.
 struct CelebrationPreview: View {
     let event: CelebrationEvent
@@ -14,7 +14,9 @@ struct CelebrationPreview: View {
 
     var body: some View {
         Group {
-            if let icon = event.icon(for: center.variant, isDark: colorScheme == .dark) {
+            if let icon = event.icon(for: center.variant, isDark: colorScheme == .dark)
+                ?? event.iconSet?.thumbnail?.image(isDark: colorScheme == .dark)
+            {
                 PlatformAppIcon.preview(icon)
                     .resizable()
                     .interpolation(.high)

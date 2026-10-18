@@ -5,12 +5,20 @@ import SwiftUI
 /// Requests" item (⌘⇧P). Grouped by involvement or repository, filterable, refreshed on its own.
 struct PullRequestsView: View {
     @Environment(GitHubModel.self) private var model
-    @Environment(\.openURL) private var openURL
     @State private var width: CGFloat = 0
 
     var body: some View {
+        if let reference = model.presentedPullRequest {
+            PullRequestPageView(model: model.pageModel(for: reference))
+                .id(reference)
+        } else {
+            list
+        }
+    }
+
+    private var list: some View {
         @Bindable var model = model
-        VStack(spacing: 0) {
+        return VStack(spacing: 0) {
             PullRequestsHeader(sideInset: sideInset)
             SeparatorLine()
             content
@@ -82,7 +90,7 @@ struct PullRequestsView: View {
                             "Pull requests you open, are asked to review, or are assigned show up here, from every repository you can see. Open one from a task's branch with Create Pull Request."
                     ) {
                         Button("Open GitHub") {
-                            if let url = URL(string: "https://github.com/pulls") { openURL(url) }
+                            if let url = URL(string: "https://github.com/pulls") { model.openExternally(url) }
                         }
                         .buttonStyle(.ds(.secondary, size: .medium))
                     }

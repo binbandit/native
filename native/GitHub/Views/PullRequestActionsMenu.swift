@@ -9,6 +9,11 @@ struct PullRequestActionsMenu: View {
     @Environment(GitHubModel.self) private var model
 
     var body: some View {
+        if model.pullRequestOpening == .native {
+            Button("Open", systemImage: "arrow.triangle.pull") {
+                model.open(pullRequest)
+            }
+        }
         Button("Open on GitHub", systemImage: "arrow.up.right") {
             model.openInBrowser(pullRequest)
         }

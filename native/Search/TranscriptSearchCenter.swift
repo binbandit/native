@@ -58,7 +58,7 @@ final class TranscriptSearchCenter {
 
     private static let includesHistoryKey = "search.includesAgentHistory"
     private static let excludedFoldersKey = "search.excludedFolders"
-    private static let logger = Logger(subsystem: "Native", category: "Search")
+    nonisolated private static let logger = Logger(subsystem: "Native", category: "Search")
 
     init(defaults: UserDefaults = .standard) {
         includesAgentHistory = defaults.object(forKey: Self.includesHistoryKey) as? Bool ?? true
@@ -91,6 +91,17 @@ final class TranscriptSearchCenter {
         if isPresented {
             scheduleSearch(debounce: false)
         }
+    }
+
+    /// Whether the Search plugin is on. Off, nothing is indexed and the panel offers to turn it on.
+    var isEnabled: Bool {
+        model?.plugins.isEnabled(BuiltInPlugins.search.manifest.id) ?? true
+    }
+
+    func turnOn() {
+        model?.plugins.setEnabled(true, for: BuiltInPlugins.search.manifest.id)
+        startBackfill()
+        scheduleSearch(debounce: false)
     }
 
     /// Opens the index again after it failed to open.
@@ -195,7 +206,7 @@ final class TranscriptSearchCenter {
 
     private func indexLive(_ session: SessionModel) async {
         liveTasks[session.key] = nil
-        guard let index, let record = record(for: session) else { return }
+        guard isEnabled, let index, let record = record(for: session) else { return }
         await Self.write(record, items: session.state.items, plan: session.state.plan, to: index)
         await refreshStatistics()
     }
@@ -266,7 +277,7 @@ final class TranscriptSearchCenter {
     // MARK: - Past sessions
 
     private func startBackfill() {
-        guard includesAgentHistory, let index, let model, backfillTask == nil else { return }
+        guard isEnabled, includesAgentHistory, let index, let model, backfillTask == nil else { return }
         let readers = model.plugins.historyReaders.map {
             TranscriptSearchBackfill.Reader(agent: $0.agent.rawValue, reader: $0.reader)
         }
@@ -282,7 +293,7 @@ final class TranscriptSearchCenter {
             index: index, readers: readers, known: known, projects: projectFolders, excluded: excludedFolders)
         lastBackfill = .now
         backfillTask = Task(priority: .background) { [weak self] in
-            await backfill.run { state in
+            await backfill.run { [weak self] state in
                 await self?.update(indexing: state)
             }
             self?.backfillTask = nil

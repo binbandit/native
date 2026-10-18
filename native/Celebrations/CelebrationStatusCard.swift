@@ -62,7 +62,8 @@ struct CelebrationStatusCard: View {
         }
         let surfaces = [active.appliesToAppIcon ? "app icon" : nil, active.appliesToHome ? "Home" : nil]
             .compactMap { $0 }.joined(separator: " and ")
-        return "\(title(active.eventID)) is on your \(surfaces) until \(CelebrationDates.shortText(CivilDayRange(day: active.occurrence.display.last)))"
+        return
+            "\(title(active.eventID)) is on your \(surfaces) until \(CelebrationDates.shortText(CivilDayRange(day: active.occurrence.display.last)))"
     }
 
     private var reason: String? {
@@ -144,7 +145,9 @@ private struct CelebrationTimeline: View {
     }
 
     private func days(_ segment: CelebrationScheduleSegment, isLast: Bool) -> String {
-        let start = segment.days.first == center.today ? "Today" : CelebrationDates.shortText(CivilDayRange(day: segment.days.first))
+        let start =
+            segment.days.first == center.today
+            ? "Today" : CelebrationDates.shortText(CivilDayRange(day: segment.days.first))
         if isLast, segment.occurrence == nil { return "From \(start)" }
         if segment.days.first == segment.days.last { return start }
         return "\(start) – \(CelebrationDates.shortText(CivilDayRange(day: segment.days.last)))"
@@ -152,7 +155,8 @@ private struct CelebrationTimeline: View {
 
     private func name(_ segment: CelebrationScheduleSegment) -> String {
         guard let occurrence = segment.occurrence else { return "Your usual look" }
-        return center.catalog.celebration(occurrence.eventID)?.contribution.title.resolved() ?? occurrence.eventID.rawValue
+        return center.catalog.celebration(occurrence.eventID)?.contribution.title.resolved()
+            ?? occurrence.eventID.rawValue
     }
 }
 
