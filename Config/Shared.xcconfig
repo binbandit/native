@@ -19,9 +19,12 @@ NATIVE_PRODUCT_NAME = Native
 NATIVE_APP_ICON_NAME = AppIcon
 
 // The signing team for every target and configuration: the app's embedded host helper must be
-// signed with the app's certificate (Xcode's ValidateEmbeddedBinary), so the team is set only here.
-// scripts/release/release.sh overrides it from NATIVE_TEAM_ID or its signing identity.
-DEVELOPMENT_TEAM = 43TJNHX42U
+// signed with the app's certificate (Xcode's ValidateEmbeddedBinary), so the team is set only in
+// one place. It comes from the optional, untracked Config/Local.xcconfig (`DEVELOPMENT_TEAM = ...`),
+// so a fresh clone builds signed to run locally without anyone's team. scripts/release/release.sh
+// overrides it from NATIVE_TEAM_ID or its signing identity.
+DEVELOPMENT_TEAM =
+#include? "Local.xcconfig"
 
 // TODO(release): Sparkle's EdDSA public key, as printed by `generate_keys` (docs/releasing.md,
 // "One-time setup"). One key signs every channel. Empty means updates aren't set up.

@@ -53,8 +53,11 @@ struct PullRequestDiffBlockText {
             }
             kinds.append(line.kind)
         }
-        self.gutter = PlatformCodeText.attributed(gutter, font: font, lineHeight: lineHeight, in: environment)
-        self.code = PlatformCodeText.attributed(code, font: font, lineHeight: lineHeight, in: environment)
+        let foreground = colors.color(.foreground)
+        self.gutter = PlatformCodeText.attributed(
+            gutter, font: font, lineHeight: lineHeight, foreground: foreground, in: environment)
+        self.code = PlatformCodeText.attributed(
+            code, font: font, lineHeight: lineHeight, foreground: foreground, in: environment)
         self.kinds = kinds
         self.cutOff = cutOff
     }

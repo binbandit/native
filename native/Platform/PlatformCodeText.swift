@@ -43,10 +43,12 @@ struct PlatformCodeText: View, Equatable {
         #endif
     }
 
-    /// `text` ready for a code text view: SwiftUI colors resolved for `environment`, set in `font`,
-    /// and every line exactly `lineHeight` tall with its glyphs centered in it.
+    /// `text` ready for a code text view: SwiftUI colors resolved for `environment`, `foreground`
+    /// where a run has none (the text view would draw black, whatever the appearance), set in
+    /// `font`, and every line exactly `lineHeight` tall with its glyphs centered in it.
     static func attributed(
-        _ text: AttributedString, font: DSPlatformFont, lineHeight: CGFloat, in environment: EnvironmentValues
+        _ text: AttributedString, font: DSPlatformFont, lineHeight: CGFloat, foreground: Color,
+        in environment: EnvironmentValues
     ) -> NSAttributedString {
         let paragraph = NSMutableParagraphStyle()
         paragraph.minimumLineHeight = lineHeight
@@ -57,7 +59,6 @@ struct PlatformCodeText: View, Equatable {
         let base: [NSAttributedString.Key: Any] = [
             .font: font, .paragraphStyle: paragraph, .baselineOffset: max(0, lineHeight - natural) / 2,
         ]
-        let result = NSMutableAttributedString(string: String(text.characters), attributes: base)
         // Runs share a handful of colors; resolving each once keeps building a block cheap.
         var resolved: [Color: DSPlatformColor] = [:]
         func platform(_ color: Color) -> DSPlatformColor {
@@ -71,6 +72,9 @@ struct PlatformCodeText: View, Equatable {
             resolved[color] = value
             return value
         }
+        var attributes = base
+        attributes[.foregroundColor] = platform(foreground)
+        let result = NSMutableAttributedString(string: String(text.characters), attributes: attributes)
         for run in text.runs {
             let range = NSRange(run.range, in: text)
             if let color = run[AttributeScopes.SwiftUIAttributes.ForegroundColorAttribute.self] {
