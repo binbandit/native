@@ -132,7 +132,7 @@ private struct HostSection: View {
                     .font(CompanionType.subheadline)
                 }
                 if host.sessions.isEmpty, host.phase.isConnected {
-                    Text("No tasks on \(host.name) yet. Start one with New Task, or on the Mac.")
+                    Text("No tasks on \(host.name) yet. Start the first one on the Mac; then you can start more from here.")
                         .font(CompanionType.subheadline)
                         .foregroundStyle(.dsTextSecondary)
                 }

@@ -165,6 +165,7 @@ struct MCPSessionPanel: View {
                 Spacer(minLength: DS.Space.md)
                 MCPHealthLabel(health: health)
                 if let key = entry.switchKey {
+                    let lock = library.organizationLock(for: entry)
                     // For the next session here: this one keeps what it started with.
                     SettingsSwitch(
                         "\(entry.name) in \(session.cwd.lastPathComponent)",
@@ -172,8 +173,14 @@ struct MCPSessionPanel: View {
                             get: { library.mode(of: key, in: session.cwd) != .off },
                             set: { library.setMode($0 ? .on : .off, of: key, in: session.cwd) })
                     )
-                    .help("Switch \(entry.name) for new sessions in \(session.cwd.lastPathComponent)")
+                    .disabled(lock != nil)
+                    .help(lock ?? "Switch \(entry.name) for new sessions in \(session.cwd.lastPathComponent)")
                 }
+            }
+            if let lock = library.organizationLock(for: entry) {
+                Label(lock, systemImage: "lock")
+                    .font(.dsCaption)
+                    .foregroundStyle(.dsTextTertiary)
             }
             if let cost = library.contextCost(of: entry.name, in: session.key) {
                 MCPContextCostLabel(cost: cost)

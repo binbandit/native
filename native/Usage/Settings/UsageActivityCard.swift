@@ -62,7 +62,7 @@ struct UsageActivityCard: View {
             stat(
                 "Busiest day",
                 stats.busiest.map {
-                    "\($0.day.formatted(.dateTime.month(.abbreviated).day())) · \(metric.describe($0.value))"
+                    "\(shortDate($0.day)) · \(metric.describe($0.value))"
                 } ?? "–")
             stat("Past year", metric.describe(stats.total))
         }
@@ -106,7 +106,7 @@ struct UsageActivityCard: View {
         let tasks = activity.tasks(on: day, for: filter)
         VStack(alignment: .leading, spacing: 0) {
             ContributorSectionHeader(
-                title: day.formatted(.dateTime.weekday(.wide).month(.wide).day()),
+                title: longDate(day),
                 tokens: tasks.count == 1 ? "1 task" : "\(tasks.count) tasks")
             if tasks.isEmpty {
                 Text("No tasks that day.")
@@ -133,9 +133,24 @@ struct UsageActivityCard: View {
 
     /// "12 prompts on Tuesday, March 4"
     private func describe(_ day: Date, _ entry: (value: Double, isEstimate: Bool)?) -> String {
-        let date = day.formatted(.dateTime.weekday(.wide).month(.wide).day())
+        let date = longDate(day)
         guard let entry else { return "No \(metric.title.lowercased()) on \(date)" }
         return "\(metric.describe(entry.value, isEstimate: entry.isEstimate)) on \(date)"
+    }
+
+    /// "Tuesday, October 13", with the year for last year's days, which share the graph with this
+    /// year's.
+    private func longDate(_ day: Date) -> String {
+        withYearIfPast(day, .dateTime.weekday(.wide).month(.wide).day())
+    }
+
+    /// "Aug 3", or "Nov 3, 2025".
+    private func shortDate(_ day: Date) -> String {
+        withYearIfPast(day, .dateTime.month(.abbreviated).day())
+    }
+
+    private func withYearIfPast(_ day: Date, _ format: Date.FormatStyle) -> String {
+        day.formatted(calendar.isDate(day, equalTo: .now, toGranularity: .year) ? format : format.year())
     }
 
     private func days(_ count: Int) -> String {

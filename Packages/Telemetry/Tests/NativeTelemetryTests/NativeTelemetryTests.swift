@@ -184,3 +184,49 @@ final class CapturingTransport: TelemetryTransport, @unchecked Sendable {
         return inflated
     }
 }
+
+@Suite struct TelemetryMetricTests {
+    /// Every event becomes a count plus a distribution per duration, carrying exactly its own
+    /// attributes: none dropped, none added, all within the allowlist.
+    @Test(arguments: NativeTelemetryTests.everyEvent) func mapsWithoutDroppingOrAddingAttributes(event: TelemetryEvent)
+    {
+        let record = TelemetryRecord(event, at: .now)
+        let metrics = record.metrics
+        let count = metrics.filter { if case .count = $0.value { true } else { false } }
+        #expect(count.map(\.name) == ["native.\(record.name.rawValue)"])
+        let carried = Set(metrics.flatMap(\.tags.keys))
+            .union(
+                metrics.compactMap { metric in
+                    guard case .milliseconds = metric.value else { return nil }
+                    return String(metric.name.dropFirst("native.".count))
+                })
+        #expect(carried == Set(record.attributes.map(\.key.rawValue)))
+        for metric in metrics {
+            #expect(Set(metric.tags.keys).isSubset(of: TelemetryMetric.allowlist.tagKeys))
+            switch metric.value {
+            case .count: #expect(TelemetryMetric.allowlist.counts.contains(metric.name))
+            case .milliseconds: #expect(TelemetryMetric.allowlist.distributions.contains(metric.name))
+            }
+        }
+    }
+
+    @Test func everyEventNameIsCovered() {
+        #expect(
+            Set(NativeTelemetryTests.everyEvent.map { TelemetryRecord($0, at: .now).name })
+                == Set(TelemetryEventName.allCases))
+    }
+
+    @Test func tagsCarryValuesFromTheSchema() {
+        let metrics = TelemetryRecord(
+            .sessionStarted(agent: .codex, agentVersion: TelemetryVersion("0.93.0-beta")), at: .now
+        ).metrics
+        #expect(
+            metrics == [
+                TelemetryMetric(
+                    name: "native.session.started", value: .count(1),
+                    tags: ["agent.id": "codex", "agent.version": "0.93.0"])
+            ])
+        let launch = TelemetryRecord(.appLaunched(launchDuration: .milliseconds(812)), at: .now).metrics
+        #expect(launch.last == TelemetryMetric(name: "native.launch.duration_ms", value: .milliseconds(812), tags: [:]))
+    }
+}

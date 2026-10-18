@@ -43,25 +43,31 @@ struct ApprovalCard: View {
                     .font(CompanionType.caption)
                     .foregroundStyle(.dsDanger)
             }
-            HStack(spacing: DS.Space.md) {
-                ForEach(orderedOptions) { option in
-                    Button {
-                        answer(option)
-                    } label: {
-                        Text(sending == option.optionId ? "Sending…" : option.name)
-                            .font(CompanionType.subheadline)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.8)
-                            .frame(maxWidth: .infinity, minHeight: DS.Size.minimumHitTarget)
-                    }
-                    .buttonStyle(.ds(option.kind.isAllow ? .primary : .secondary, size: .large))
-                    .disabled(sending != nil)
-                    .accessibilityIdentifier("permission-\(option.kind.rawValue)")
-                }
+            // Side by side when the agent's words fit, otherwise one full-width button each.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: DS.Space.md) { optionButtons }
+                VStack(spacing: DS.Space.sm) { optionButtons }
             }
         }
         .padding(isCompact ? 0 : DS.Space.lg)
         .background(isCompact ? Color.clear : Color.dsSurfaceRaised, in: .rect(cornerRadius: DS.Radius.panel))
+    }
+
+    private var optionButtons: some View {
+        ForEach(orderedOptions) { option in
+            Button {
+                answer(option)
+            } label: {
+                Text(sending == option.optionId ? "Sending…" : option.name)
+                    .font(CompanionType.subheadline)
+                    .lineLimit(1)
+                    .padding(.horizontal, DS.Space.md)
+                    .frame(maxWidth: .infinity, minHeight: DS.Size.minimumHitTarget)
+            }
+            .buttonStyle(.ds(option.kind.isAllow ? .primary : .secondary, size: .large))
+            .disabled(sending != nil)
+            .accessibilityIdentifier("permission-\(option.kind.rawValue)")
+        }
     }
 
     /// Rejecting first, allowing last, so the thumb's natural spot is the agent's "allow once".

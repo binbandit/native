@@ -79,6 +79,13 @@ struct TestSigner {
         #expect(throws: HostUpdateError.unsupportedFeed(schema: 2)) { try HostUpdateFeed.decode(Data(future.utf8)) }
     }
 
+    @Test func organizationFeedsSitBesideTheirAppcast() throws {
+        let appcast = try #require(URL(string: "https://updates.example.com/native/appcast.xml"))
+        #expect(
+            HostUpdateSource.feedURL(besideAppcast: appcast, channel: "stable").absoluteString
+                == "https://updates.example.com/native/host-feed.json")
+    }
+
     @Test func feedsLiveBesideTheAppcast() {
         #expect(
             HostUpdateSource.feedURL(repository: "binbandit/native", channel: "stable")?.absoluteString

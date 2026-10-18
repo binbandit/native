@@ -1,6 +1,7 @@
 #if canImport(Sparkle)
 import AppKit
 import Foundation
+import NativePolicy
 import Sparkle
 
 /// Sparkle's user driver and delegate, turning Sparkle's callbacks into `UpdateState` for

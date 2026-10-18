@@ -1,5 +1,5 @@
 import Foundation
-@preconcurrency import Sentry
+@_spi(Private) @preconcurrency import Sentry
 import Testing
 
 @testable import NativeDiagnostics
@@ -37,5 +37,53 @@ struct SentryMetricPrivacyTests {
             attributes: ["prompt": "private prompt", "path": "/Users/person/project"])
         SentrySDK.metrics.distribution(key: "private command", value: 1, unit: .millisecond)
         #expect(callbacks == 2)
+    }
+}
+
+struct SentryMetricAllowlistTests {
+    let allowlist = SentryMetricAllowlist(
+        counts: ["native.session.started"], distributions: ["native.launch.duration_ms"],
+        tagKeys: ["agent.id", "agent.version"])
+
+    private func metric(
+        _ name: String, _ value: SentryMetricValue, unit: SentryUnit? = nil,
+        attributes: [String: SentryAttributeContent]
+    ) -> SentryMetric {
+        SentryMetric(
+            timestamp: .now, traceId: SentryId(), name: name, value: value, unit: unit, attributes: attributes)
+    }
+
+    @Test func keepsOnlyAllowlistedTokenTags() throws {
+        let clean = try #require(
+            SentryPrivacy.sanitize(
+                metric(
+                    "native.session.started", .counter(1),
+                    attributes: [
+                        "agent.id": .string("codex"), "agent.version": .string("0.93.0"),
+                        "prompt": .string("private"), "sentry.environment": .string("production"),
+                    ]), allowlist: allowlist))
+        #expect(clean.attributes == ["agent.id": .string("codex"), "agent.version": .string("0.93.0")])
+    }
+
+    @Test func dropsFreeTextInAllowlistedTags() throws {
+        let clean = try #require(
+            SentryPrivacy.sanitize(
+                metric(
+                    "native.session.started", .counter(1), attributes: ["agent.id": .string("/Users/person/My Agent")]),
+                allowlist: allowlist))
+        #expect(clean.attributes.isEmpty)
+    }
+
+    @Test func dropsMetricsOutsideTheAllowlist() {
+        #expect(
+            SentryPrivacy.sanitize(metric("native.prompt.sent", .counter(1), attributes: [:]), allowlist: allowlist)
+                == nil)
+        #expect(
+            SentryPrivacy.sanitize(metric("native.session.started", .gauge(1), attributes: [:]), allowlist: allowlist)
+                == nil)
+        #expect(
+            SentryPrivacy.sanitize(
+                metric("native.launch.duration_ms", .distribution(-1), unit: .millisecond, attributes: [:]),
+                allowlist: allowlist) == nil)
     }
 }

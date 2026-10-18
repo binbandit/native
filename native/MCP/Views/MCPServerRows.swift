@@ -59,6 +59,7 @@ struct MCPManagedServerRow: View {
                             set: { library.setMode($0 ? .on : .off, of: server.transport.endpoint.key, in: nil) }))
                 }
             }
+            .settingsLocked(library.organizationLock(for: server.config(with: library.secrets(for: server.id))))
             if isExpanded {
                 MCPServerDetails(library: library, key: key, name: server.name, project: nil, onCommand: onCommand)
             }
@@ -128,6 +129,7 @@ struct MCPAgentServerRow: View {
                             get: { isOn }, set: { library.setMode($0 ? .on : .off, of: switchKey, in: project) }))
                 }
             }
+            .settingsLocked(library.organizationLock(for: group.primary.server))
             if isExpanded {
                 MCPServerDetails(
                     library: library, key: group.key, name: group.name, project: group.primary.scope.project,

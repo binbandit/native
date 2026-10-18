@@ -23,6 +23,14 @@ public enum TelemetryAttributeKey: String, CaseIterable, Codable, Sendable {
     case hangDurationMs = "hang.duration_ms"
     case agent = "agent.id"
     case agentVersion = "agent.version"
+
+    /// A duration in milliseconds, which metrics keep as a distribution rather than a tag.
+    public var isDuration: Bool {
+        switch self {
+        case .launchDurationMs, .hangDurationMs: true
+        case .feature, .agent, .agentVersion: false
+        }
+    }
 }
 
 /// An attribute's value: a number, or a token from a closed vocabulary (an enum's raw value or a
