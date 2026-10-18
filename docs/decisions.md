@@ -334,8 +334,9 @@ builds cannot start it. The public DSN is `NATIVE_SENTRY_DSN` (`NativeSentryDSN`
 `Packages/NativeDiagnostics` rebuilds reports from fixed error categories, timestamps, numeric thread
 ids, instruction/load addresses, binary UUIDs, release and channel. It drops messages, paths, source
 context, thread names, requests, user data and attachments. Automatic breadcrumbs, sessions, tracing,
-logging, metrics, screenshots, hierarchy, replay and memory introspection are disabled. Stopping clears
-its offline cache. Product usage and performance traces are not collected by this adapter yet.
+logging, screenshots, hierarchy, replay and memory introspection are disabled. The only manual metrics
+are finite numeric launch/hang durations, with all attributes removed. Stopping clears its offline
+cache. Destination filtering keeps product-use events out of Sentry's queue and sent log.
 
 Release publishing uploads dSYMs to FoxyCorps / `native` before publishing, using the protected GitHub
 `SENTRY_AUTH_TOKEN` secret and checksum-verified official CLI **3.8.0**. It never uploads source bundles.

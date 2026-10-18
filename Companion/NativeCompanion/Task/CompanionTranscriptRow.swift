@@ -14,7 +14,7 @@ struct CompanionTranscriptRow: View {
     var body: some View {
         switch item {
         case .message(let message):
-            message(message)
+            messageRow(message)
         case .toolCall(let call):
             toolCall(call)
         case .notice(let notice):
@@ -40,7 +40,7 @@ struct CompanionTranscriptRow: View {
     }
 
     @ViewBuilder
-    private func message(_ message: TranscriptMessage) -> some View {
+    private func messageRow(_ message: TranscriptMessage) -> some View {
         switch message.role {
         case .user:
             HStack {
@@ -75,7 +75,6 @@ struct CompanionTranscriptRow: View {
 
     private func toolCall(_ call: ToolCallState) -> some View {
         let presentation = CompanionToolSummary(call)
-        let verb = call.status == .inProgress || call.status == .pending ? presentation.verbs?.progressive : presentation.verbs?.past
         return Button {
             openToolCall(call)
         } label: {
@@ -84,11 +83,11 @@ struct CompanionTranscriptRow: View {
                     Image(systemName: presentation.symbol)
                         .foregroundStyle(call.status == .failed ? .dsDanger : .dsTextTertiary)
                         .frame(width: DS.Size.statusGlyph)
-                    Text([verb?, presentation.subject].compactMap { $0 }.joined(separator: " "))
+                    Text(presentation.line)
                         .foregroundStyle(.dsTextSecondary)
                         .lineLimit(1)
                     Spacer(minLength: 0)
-                    if let stats = presentation.stats {
+                    if let stats = presentation.stats, stats != DiffStats() {
                         DiffStatsText(stats: stats)
                     }
                 }
