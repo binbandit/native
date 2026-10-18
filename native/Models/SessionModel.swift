@@ -71,17 +71,10 @@ final class SessionModel {
     var state = SessionState() {
         didSet { mirrorState() }
     }
-    /// Parts of `state`, mirrored so what shows only these (the composer, sidebar rows, the status
-    /// bar, menus) doesn't update with every streamed chunk, which changes `state`.
+    /// `state.title` and `state.configOptions`, mirrored so what shows only these (sidebar rows,
+    /// menus) doesn't update with every streamed chunk, which changes `state`.
     private(set) var title: String?
     private(set) var configOptions: [ConfigOption] = []
-    private(set) var plan: [PlanEntry] = []
-    private(set) var availableCommands: [AvailableCommand] = []
-    private(set) var usage: Usage?
-    /// Tool calls waiting for the user's permission, oldest first.
-    private(set) var permissionRequests: [ToolCallState] = []
-    private(set) var hasSubagents = false
-    private(set) var isTranscriptEmpty = true
     var phase: Phase
     /// When the user last sent a prompt, for ordering the sidebar.
     var lastActivity: Date?
@@ -220,7 +213,7 @@ final class SessionModel {
 
     /// Whether this session, or a subagent under it, is waiting on the user.
     var needsApproval: Bool {
-        !permissionRequests.isEmpty
+        !state.pendingPermissions.isEmpty
             || !questions.isEmpty
             || subagentControls.isAnyWaitingOnUser
             || children.values.contains(where: \.needsApproval)
@@ -256,22 +249,6 @@ final class SessionModel {
                 services.titles.updateConfigChoices(for: titleKey) { $0.follow(configOptions) }
             }
         }
-        if plan != state.plan { plan = state.plan }
-        if availableCommands != state.availableCommands { availableCommands = state.availableCommands }
-        if usage != state.usage { usage = state.usage }
-        // One pass over the transcript, which a streamed chunk only lengthens.
-        var requests: [ToolCallState] = []
-        var subagents = false
-        for item in state.items {
-            switch item {
-            case .toolCall(let call) where call.permission != nil: requests.append(call)
-            case .subagent: subagents = true
-            default: break
-            }
-        }
-        if permissionRequests != requests { permissionRequests = requests }
-        if hasSubagents != subagents { hasSubagents = subagents }
-        if isTranscriptEmpty != state.items.isEmpty { isTranscriptEmpty = state.items.isEmpty }
     }
 
     /// Creates the model for a subagent the agent just announced.

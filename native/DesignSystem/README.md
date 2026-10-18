@@ -77,7 +77,7 @@ Mac) to see everything in light and dark side by side.
 | `TaskRow` (+ `leading`/`accessory` slots), `TaskBadge`, `DiffStatLabel`, `CompactAgeText` | the reference app's workspace rows: one leading visual, trailing badge, diff or age |
 | `TaskStatus`, `StatusIndicator`, `DotGridLoader` | the reference app's statuses and Lottie dot-grid loaders (ported keyframes) |
 | `ContextUsageRing` | the reference app's context ring |
-| `ComposerSurface`, `ComposerControlsBar`, `.pill` / `.pillChrome`, `PillMenu`, `EffortBars`, `ComposerSendButton`, `ComposerStopButton`, `ComposerChip` | the reference app's composer, measured at 1x |
+| `ComposerSurface`, `ComposerControlsBar`, `.pill` / `.pillChrome`, `PillIcon`, `PillMenu`, `EffortBars`, `ComposerSendButton`, `ComposerStopButton`, `ComposerChip` | the reference app's composer, measured at 1x |
 | `SearchField` | The one search and filter field: a magnifier, a clear button once something's typed, Escape to clear, an optional trailing accessory (a shortcut hint, a record-keys button), no fill of its own |
 | `.ds(_:size:iconOnly:)` buttons, `IconButton`, `Badge`, `Kbd`, `Card`, `SeparatorLine`, `SectionHeader`, `StatusDot` | the reference app core-ui v2 buttons and Kbd; the reference app badges and cards |
 | `DiffView`, `DiffStats`, `DiffStatsText` | the reference app's diff layout; shared by the transcript and Git |

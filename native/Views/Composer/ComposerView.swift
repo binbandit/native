@@ -68,7 +68,7 @@ struct ComposerView: View {
         guard !suggestionsDismissed else { return nil }
         if let query = SlashCommandQuery(draft: session.draft) {
             let commands = query.matches(
-                in: nativeCommands + session.availableCommands.map(ComposerSlashCommand.init))
+                in: nativeCommands + session.state.availableCommands.map(ComposerSlashCommand.init))
             return commands.isEmpty ? nil : .commands(commands)
         }
         if let query = mentionQuery, let mentionSource {
@@ -85,10 +85,7 @@ struct ComposerView: View {
     }
 
     var body: some View {
-        #if DEBUG
-        let _ = RenderProbe.hit("ComposerView")
-        #endif
-        let settings = ComposerSettings(session.configOptions)
+        let settings = ComposerSettings(session.state.configOptions)
         let suggestions = suggestions
         surface(settings, suggestions: suggestions)
             .overlay(alignment: .top) {
@@ -120,7 +117,7 @@ struct ComposerView: View {
             // Only a brand-new session takes focus on its own (⌘N, then type). Others wait for ⌘L or a
             // click, so arrowing through the sidebar doesn't hand Return to a composer.
             .onAppear {
-                if session.isTranscriptEmpty, session.phase != .loading {
+                if session.state.items.isEmpty, session.phase != .loading {
                     isFocused = true
                 }
                 takeFocusIfWanted()
@@ -166,7 +163,7 @@ struct ComposerView: View {
     // MARK: - Layout
 
     func surface(_ settings: ComposerSettings, suggestions: ComposerSuggestions?) -> some View {
-        let plan = PlanProgress(entries: session.plan)
+        let plan = PlanProgress(entries: session.state.plan)
         // Each child is a section of the surface, with a rule between it and the next.
         return ComposerSurface(isFloating: true, isDropTargeted: isDropTargeted || drops?.isTargeted == true) {
             // While suggestions are listed, they take the place of the sections above the draft.
@@ -319,7 +316,7 @@ struct ComposerView: View {
             needsApproval: session.needsApproval,
             followUp: followUp,
             supportsSteering: session.supportsSteering,
-            isNewSession: session.isTranscriptEmpty,
+            isNewSession: session.state.items.isEmpty,
             showsFocusHint: canEdit && !isFocused && ComposerPlatform.showsKeyboardHints
         ).text
     }
