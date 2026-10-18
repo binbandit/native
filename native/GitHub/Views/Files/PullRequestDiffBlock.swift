@@ -4,7 +4,7 @@ import SwiftUI
 /// Lines of a hunk drawn as one gutter text and one code text, with the per-line tints painted
 /// behind them. Hovering a line shows "+" in its gutter; clicking the gutter comments on it
 /// (shift-click widens the comment), and the context menu acts on the line under the pointer.
-/// The code scrolls sideways rather than wrapping, so lines stay one row tall and aligned.
+/// Lines don't wrap, so they stay one row tall and aligned with the gutter.
 struct PullRequestDiffBlock: View {
     let model: PullRequestPageModel
     let path: String
@@ -34,12 +34,13 @@ struct PullRequestDiffBlock: View {
                 }
                 .help("Click a line number to comment on it; shift-click to widen the comment")
             SeparatorLine(axis: .vertical)
-            ScrollView(.horizontal) {
-                PullRequestDiffBlockCode(text: text, key: textKey)
-                    .equatable()
-                    .padding(.horizontal, DS.Space.md)
-            }
-            .scrollIndicators(.automatic)
+            // Clipped rather than scrolling sideways: a nested scroll view would swallow the
+            // mouse wheel meant for the page. Long lines stay selectable and copyable.
+            PullRequestDiffBlockCode(text: text, key: textKey)
+                .equatable()
+                .padding(.horizontal, DS.Space.md)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .clipped()
         }
         .background(alignment: .topLeading) { tints }
         .onContinuousHover(coordinateSpace: .local) { phase in
