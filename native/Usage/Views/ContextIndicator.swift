@@ -31,6 +31,7 @@ struct ContextIndicator<Source: ContextSource>: View {
             .accessibilityHint("Shows what fills the context window")
             .popover(isPresented: $isShowingBreakdown, arrowEdge: arrowEdge) {
                 ContextBreakdownView(source: source)
+                    .dsPopoverBackground()
             }
         }
     }

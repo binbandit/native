@@ -11,6 +11,9 @@ final class AgentRuntime {
 
     let agent: AgentDefinition
     private(set) var status = Status.idle
+    /// The environment plugins' launch policy added when the agent last started, to tell when a
+    /// changed policy needs a restart.
+    var launchPolicyEnvironment: [String: String] = [:]
     /// What the agent says about itself, such as its version.
     private(set) var info: Implementation?
     private(set) var capabilities: AgentCapabilities?

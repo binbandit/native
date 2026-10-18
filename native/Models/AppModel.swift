@@ -255,7 +255,9 @@ final class AppModel {
     /// Launches an agent and routes its events. Internal only for AppModel+Recovery.swift.
     func start(_ runtime: AgentRuntime, environment: [String: String]) async {
         let agent = runtime.agent.id
-        await runtime.start(environment: environment) { [weak self] event in
+        // Plugins' policy for every session of the agent, in the agent's terms (AppModel+LaunchPolicy.swift).
+        runtime.launchPolicyEnvironment = plugins.launchEnvironment(for: agent)
+        await runtime.start(environment: environment.merging(runtime.launchPolicyEnvironment) { $1 }) { [weak self] event in
             guard let self else { return }
             if case .disconnected = event {
                 handleCrash(of: agent)

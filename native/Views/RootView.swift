@@ -151,6 +151,7 @@ struct RootView: View {
     private var splitView: some View {
         NavigationSplitView(columnVisibility: $columnVisibility) {
             sidebar
+                .dsSidebarColumnTransparency()
                 // The only sidebar toggle is ours, right after the window controls as in Factory; as a
                 // sidebar toolbar item it stays there when the sidebar is hidden, too. The system's
                 // goes from both the column and the split view. On the column it must come before

@@ -25,6 +25,21 @@ struct MCPServersPlugin: NativePlugin {
     func mcpServers(for session: SessionContext) -> [MCPServer] {
         library.mcpServers(for: session)
     }
+
+    func sessionPolicy(for session: SessionContext) -> SessionPolicy {
+        library.sessionPolicy(for: session)
+    }
+
+    func launchPolicy(for agent: AgentDefinition.ID) -> SessionPolicy {
+        library.launchPolicy(for: agent)
+    }
+
+    /// A turn ending may leave an agent idle with a launch policy to pick up.
+    func handle(_ event: SessionEvent) async {
+        if case .turnEnded = event {
+            await library.host?.mcpApplyLaunchPolicies(force: false)
+        }
+    }
 }
 
 extension MCPServersPlugin {
@@ -33,7 +48,13 @@ extension MCPServersPlugin {
     static func connect(to model: AppModel, contextReports: @escaping @MainActor () -> [SessionKey: ContextReport]) {
         guard let library = library(in: model.plugins) else { return }
         library.host = AppMCPHost(model: model, contextReports: contextReports)
-        Task { await library.readConfigurations() }
+        // Agents launch right after this, and those that apply switches at launch need the
+        // configuration already, so the first read happens now; later reads are off the main thread.
+        library.readConfigurationsAtStartup()
+        Task {
+            await library.readConfigurations()
+            await library.host?.mcpApplyLaunchPolicies(force: false)
+        }
         // Agents' files change outside Native; coming back to the app is when that matters.
         #if canImport(AppKit)
         _ = NotificationCenter.default.addObserver(

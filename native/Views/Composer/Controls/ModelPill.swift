@@ -39,6 +39,7 @@ struct ModelPill: View {
             ModelPicker(model: model, effort: effort, switches: switches, onSet: onSet) {
                 isPickerOpen = false
             }
+            .dsPopoverBackground()
         }
     }
 
