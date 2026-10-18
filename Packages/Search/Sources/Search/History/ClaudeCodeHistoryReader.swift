@@ -29,8 +29,8 @@ public struct ClaudeCodeHistoryReader: SessionHistoryReader {
     }
 
     public func sources() -> [HistorySource] {
-        // Sessions sit one folder down; deeper files are subagents' and tools' own logs.
-        HistorySource.jsonlFiles(under: root, maxDepth: 1)
+        // Sessions sit in a folder per project; deeper files are subagents' and tools' own logs.
+        HistorySource.jsonlFiles(under: root, maxDepth: 2)
     }
 
     public func read(_ source: HistorySource) throws -> HistorySession? {

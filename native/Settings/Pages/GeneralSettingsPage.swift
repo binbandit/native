@@ -18,7 +18,7 @@ extension SettingsPane {
                     title: "Follow-up behavior",
                     description: "Queue messages to send after the agent finishes, or steer the agent mid-turn.",
                     keywords: ["queue", "steer", "return", "send", "message"]
-                ),
+                )
             ]
         },
         content: { GeneralSettingsPage() }

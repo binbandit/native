@@ -341,6 +341,9 @@ introspection are disabled. This intentionally collects no product usage or perf
 Stopping the adapter discards its offline cache. These limits preserve `docs/enterprise.md`'s privacy
 contract; organization's OTLP collectors remain a separate destination.
 
+The project's server-side **Prevent Storing of IP Addresses** setting is enabled as well: disabling
+SDK PII alone does not prevent Sentry from deriving an address from the incoming connection.
+
 Release publishing uploads dSYMs to FoxyCorps's `native` project before publishing binaries, using
 the `SENTRY_AUTH_TOKEN` GitHub Actions secret. The official CLI is pinned to **3.8.0**, checksum verified,
 and never uploads source bundles. Dry runs do not upload. A failed symbol upload stops publication.
