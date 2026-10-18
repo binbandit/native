@@ -14,17 +14,26 @@ struct CodexPolicyTranslator: SessionPolicyTranslator {
     func launchEnvironment(for policy: SessionPolicy) -> [String: String] {
         let names = Set(policy.allProjectsOnly.disabledMCPServers.map(\.name)).sorted()
         guard !names.isEmpty else { return [:] }
-        let overrides = JSONValue.object(
-            Dictionary(uniqueKeysWithValues: names.map { ("mcp_servers.\($0).enabled", JSONValue.bool(false)) }))
+        // Both forms: the nested table survives once the adapter merges session servers into it
+        // (the change in docs/agent-session-overrides.md), and the dotted keys cover the adapter
+        // pinned today as far as it allows.
+        let off = JSONValue.object(["enabled": .bool(false)])
+        var overrides = Dictionary(
+            uniqueKeysWithValues: names.map { ("mcp_servers.\($0).enabled", JSONValue.bool(false)) })
+        overrides["mcp_servers"] = .object(Dictionary(uniqueKeysWithValues: names.map { ($0, off) }))
+        let config = JSONValue.object(overrides)
         let encoder = JSONEncoder()
         encoder.outputFormatting = [.sortedKeys, .withoutEscapingSlashes]
-        guard let data = try? encoder.encode(overrides) else { return [:] }
+        guard let data = try? encoder.encode(config) else { return [:] }
         return ["CODEX_CONFIG": String(decoding: data, as: UTF8.self)]
     }
 
     func support(for kind: SessionPolicySupport.Kind) -> SessionPolicySupport {
         switch kind {
-        case .mcpServers: .atLaunch
+        case .mcpServers:
+            .atLaunch(
+                caveat:
+                    "Codex may still load it in sessions that bring Native's own tools, until its adapter is updated.")
         case .skills: .atLaunch
         }
     }

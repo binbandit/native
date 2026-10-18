@@ -18,6 +18,9 @@ struct TerminalPanel: View {
         VStack(spacing: 0) {
             TerminalResizeDivider(height: $preferences.panelHeight, range: Self.minHeight...maxHeight)
             TerminalTabBar(panel: panel, showsTabs: store.availability == .available)
+            if case .ghosttyInvalid(_, let diagnostics) = store.configStatus {
+                TerminalConfigNotice(diagnostics: diagnostics, reload: store.reloadGhosttyConfig)
+            }
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
@@ -105,5 +108,28 @@ private struct TerminalResizeDivider: View {
 
     private func clamped(_ value: Double) -> Double {
         min(max(value, range.lowerBound), range.upperBound)
+    }
+}
+
+/// Above the terminal when the user's Ghostty config didn't load: what's wrong in a line, what
+/// Native did, and where to see it all.
+private struct TerminalConfigNotice: View {
+    let diagnostics: [String]
+    let reload: () -> Void
+    @Environment(SettingsPresentation.self) private var settings
+
+    var body: some View {
+        NoticeBanner(
+            tone: .warning,
+            title: "Your Ghostty config didn't load, so Native's terminal settings are in use",
+            detail: diagnostics.first
+        ) {
+            Button("Show All") { settings.open(.terminal) }
+                .buttonStyle(.ds(.ghost))
+            Button("Reload", action: reload)
+                .buttonStyle(.ds(.secondary))
+        }
+        .padding(.horizontal, DS.Space.md)
+        .padding(.bottom, DS.Space.xs)
     }
 }
