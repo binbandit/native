@@ -51,10 +51,11 @@ nonisolated struct ChimeSynthesizer: Sendable {
         var room: Room
     }
 
-    /// Every sound's loudness: RMS over its first 600ms, in dBFS. the reference app plays its chime at about
-    /// -23.5 dBFS (its file at a fixed 0.5 gain), so at the default 0.7 volume these match it, and
-    /// switching sounds in the picker never jumps in level.
-    static let loudness = -20.5
+    /// Every sound's loudness: `LoudnessMeter` over its first 600ms. Set so that at the default 0.7
+    /// volume Native's sounds are as loud as the reference app plays its chime (its file at a fixed 0.5
+    /// gain), and switching sounds never jumps in level.
+    static let loudness = -20.2
+    static let loudnessWindow = 0.6
     /// Headroom kept whatever the loudness asks for.
     static let peakCeiling = -3.0
 
@@ -128,11 +129,10 @@ nonisolated struct ChimeSynthesizer: Sendable {
 
     /// Sets the loudness, trims what's inaudible and fades the end so nothing is cut mid-ring.
     private func finish(left: inout [Float], right: inout [Float]) {
-        let opening = Int(0.6 * sampleRate)
-        let mono = vDSP.multiply(0.5, vDSP.add(left.prefix(opening), right.prefix(opening)))
+        let measured = LoudnessMeter(sampleRate: sampleRate).loudness(left: left, right: right, window: Self.loudnessWindow)
         let peak = max(vDSP.maximumMagnitude(left), vDSP.maximumMagnitude(right), .leastNonzeroMagnitude)
         let scale = Float(min(
-            Self.amplitude(decibels: Self.loudness) / Double(max(vDSP.rootMeanSquare(mono), .leastNonzeroMagnitude)),
+            Self.amplitude(decibels: Self.loudness - measured),
             Self.amplitude(decibels: Self.peakCeiling) / Double(peak)
         ))
         left = vDSP.multiply(scale, left)

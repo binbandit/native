@@ -94,7 +94,9 @@ extension Expedition {
             note(
                 .attention,
                 changed.map {
-                    "The lead revised the route (\($0) \($0 == 1 ? "assignment" : "assignments") changed): \(size)."
+                    $0 == 0
+                        ? "The lead sent the route again, unchanged."
+                        : "The lead revised the route (\($0) \($0 == 1 ? "assignment" : "assignments") changed): \(size)."
                 } ?? "The lead proposed a route: \(size).", slot: .lead, at: now)
             return []
         case .failure(let problem):

@@ -1,11 +1,41 @@
-import AppKit
 import SwiftUI
 
-/// The chevron half of the Open In control. It's AppKit underneath so the menu behaves like a
-/// native pull-down: it opens on mouse-down (press, drag to an app, release), from the keyboard
-/// (Space, Return or ↓ with Full Keyboard Access) and from VoiceOver, and it's right-aligned under
-/// the control as the reference app's is. The glyph and hover fill are drawn by SwiftUI around it.
-struct OpenInMenuTrigger: NSViewRepresentable {
+#if canImport(AppKit)
+import AppKit
+#endif
+
+/// The chevron half of the Open In control: the hit area that opens the app menu, with the glyph
+/// and hover fill drawn around it by `OpenInButton`. On the Mac it's AppKit underneath, so the menu
+/// behaves like a native pull-down: it opens on mouse-down (press, drag to an app, release), from
+/// the keyboard (Space, Return or ↓ with Full Keyboard Access) and from VoiceOver, and it's
+/// right-aligned under the control as the reference app's is. Elsewhere it's a SwiftUI menu.
+struct OpenInMenuTrigger: View {
+    let location: OpenInLocation
+    let model: OpenInModel
+    @Binding var isHovered: Bool
+    @Binding var isOpen: Bool
+
+    private static let label = "Open In…"
+
+    var body: some View {
+        #if canImport(AppKit)
+        OpenInMenuTriggerRepresentable(label: Self.label, isHovered: $isHovered, isOpen: $isOpen) {
+            OpenInMenu.make(for: location, model: model)
+        }
+        #else
+        Menu {
+            OpenInMenuContent(location: location, model: model)
+        } label: {
+            Color.clear.contentShape(.rect)
+        }
+        .menuIndicator(.hidden)
+        .accessibilityLabel(Self.label)
+        #endif
+    }
+}
+
+#if canImport(AppKit)
+private struct OpenInMenuTriggerRepresentable: NSViewRepresentable {
     let label: String
     @Binding var isHovered: Bool
     @Binding var isOpen: Bool
@@ -95,3 +125,4 @@ final class OpenInMenuTriggerView: NSView {
         }
     }
 }
+#endif

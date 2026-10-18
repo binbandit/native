@@ -4,17 +4,21 @@ import Foundation
 /// they're ours to distribute and cost nothing in the bundle; `ChimeSynthesizer` renders each once
 /// on first use.
 ///
-/// All three keep what makes the reference app's chime pleasant (a nearly pure tone that dies away within
-/// about a second) and add a character of their own: `chime` is a rising fifth on glass, `soft` a
-/// felt mallet on wood, `bell` a small handbell.
+/// All keep what makes the reference app's chime pleasant (a nearly pure tone that dies away within about a
+/// second) and add a character of their own: `chime` is a rising fifth on glass, `soft` a felt
+/// mallet on wood, `bell` a small handbell. Two more say what happened by their shape, on the same
+/// glass and in the same room: `nudge`, a quick rising "hm?" for when an agent needs the user, and
+/// `fall`, a soft, damped falling minor third for when something didn't work.
 nonisolated enum NativeChime: String, CaseIterable, Identifiable, Sendable {
-    case chime, soft, bell
+    case chime, nudge, fall, soft, bell
 
     var id: String { rawValue }
 
     var title: String {
         switch self {
         case .chime: "Chime"
+        case .nudge: "Nudge"
+        case .fall: "Fall"
         case .soft: "Soft"
         case .bell: "Bell"
         }
@@ -43,6 +47,37 @@ nonisolated enum NativeChime: String, CaseIterable, Identifiable, Sendable {
                     .init(time: 0.11, frequency: Pitch.b5, level: 0, pan: 0.18, partials: glass, attack: 0.0025, contact: -40),
                 ],
                 room: .init(t60: 1.25, predelay: 0.014, wet: -13, brightness: 7_500)
+            )
+        case .nudge:
+            // Higher and quicker than the chime: a short pick-up note that dies at once, then the
+            // fourth above it, a little brighter, left hanging like a question.
+            let bright: [ChimeSynthesizer.Partial] = [
+                .init(ratio: 1, level: 0, t60: 0.85, twin: 0.9, twinLevel: -22),
+                .init(ratio: 2, level: -16, t60: 0.35),
+                .init(ratio: 2.756, level: -27, t60: 0.15),
+                .init(ratio: 5.404, level: -40, t60: 0.06),
+            ]
+            return .init(
+                strikes: [
+                    .init(time: 0, frequency: Pitch.g5, level: -3, pan: -0.12, partials: bright, attack: 0.002, t60Scale: 0.3, contact: -40),
+                    .init(time: 0.13, frequency: Pitch.c6, level: 0, pan: 0.12, partials: bright, attack: 0.002, contact: -40),
+                ],
+                room: .init(t60: 0.9, predelay: 0.012, wet: -15, brightness: 7_500)
+            )
+        case .fall:
+            // Lower and slower, on a felt mallet so nothing about it is sharp: two notes falling a
+            // minor third, the second quieter and damped, like a soft "uh-oh".
+            let damped: [ChimeSynthesizer.Partial] = [
+                .init(ratio: 1, level: 0, t60: 0.9, twin: 0.5, twinLevel: -24),
+                .init(ratio: 2, level: -24, t60: 0.25),
+                .init(ratio: 3.99, level: -30, t60: 0.1),
+            ]
+            return .init(
+                strikes: [
+                    .init(time: 0, frequency: Pitch.c5, level: 0, pan: -0.1, partials: damped, attack: 0.005, t60Scale: 0.6, contact: -44, contactBrightness: 2_000),
+                    .init(time: 0.17, frequency: Pitch.a4, level: -1.5, pan: 0.1, partials: damped, attack: 0.006, t60Scale: 0.85, contact: -46, contactBrightness: 1_800),
+                ],
+                room: .init(t60: 0.8, predelay: 0.016, wet: -13, brightness: 4_500)
             )
         case .soft:
             // A slower attack and a dark contact read as felt; the marimba's tuned fourth harmonic
@@ -86,7 +121,11 @@ nonisolated enum NativeChime: String, CaseIterable, Identifiable, Sendable {
 
 /// Equal-tempered pitches, A4 = 440 Hz.
 nonisolated private enum Pitch {
+    static let a4 = 440.0
+    static let c5 = 523.25
     static let e5 = 659.26
+    static let g5 = 783.99
+    static let c6 = 1_046.5
     static let f5 = 698.46
     static let a5 = 880.0
     static let b5 = 987.77

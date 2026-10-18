@@ -57,14 +57,7 @@ final class SkillLibrary {
         LocalCommandRunner()
         #else
         SkillsHostlessRunner()
-        
-/// Where there's no local process to run (iPadOS without a host), git can't run.
-private struct SkillsHostlessRunner: CommandRunner {
-    func run(_ command: Command) async throws -> CommandResult {
-        throw CommandError.unavailable("Installing from git needs Native on a Mac, or a connected host.")
-    }
-}
-#endif
+        #endif
     }
 
     /// Application Support, per bundle id like the other stores, so dev instances keep their own.
@@ -81,9 +74,8 @@ private struct SkillsHostlessRunner: CommandRunner {
         host?.skillAgents ?? []
     }
 
-    var nativeSkills: [NativeSkillListing] {
-        host?.nativeSkills ?? []
-    }
+    /// Native's own skills, as of the last read.
+    private(set) var nativeSkills: [NativeSkillListing] = []
 
     // MARK: - Reading
 
@@ -132,6 +124,8 @@ private struct SkillsHostlessRunner: CommandRunner {
     }
 
     private func apply(roots: [SkillRoot], items: [SkillItem]) {
+        let native = host?.nativeSkills ?? []
+        if nativeSkills != native { nativeSkills = native }
         if self.roots != roots { self.roots = roots }
         if self.items != items { self.items = items }
         lastRead = .now
@@ -172,11 +166,18 @@ private struct SkillsHostlessRunner: CommandRunner {
     // MARK: - Policy
 
     /// The skills off for a session, by name, for agents that apply switches per session.
+    /// Native's own skills that are off are in it too, by id, so the tools that serve them can
+    /// leave them out for that session.
     func sessionPolicy(for session: SessionContext) -> SessionPolicy {
-        let off = switches.offList(for: items, in: session.cwd)
-        let everywhere = Set(items.filter { switches.mode(of: $0.key, in: nil) == .off }.map(\.name))
+        let off =
+            switches.offList(for: items, in: session.cwd).names
+            + nativeSkills.map(\.id).filter { !isNativeSkillEnabled($0, in: session.cwd) }
+        let everywhere = Set(
+            (items.map(\.name) + nativeSkills.map(\.id)).filter {
+                switches.mode(of: SkillItem.key(for: $0), in: nil) == .off
+            })
         return SessionPolicy(
-            disabledSkills: off.names.map {
+            disabledSkills: off.map {
                 SessionPolicy.DisabledSkill(
                     name: $0, path: nil, scope: everywhere.contains($0) ? .allProjects : .session)
             })

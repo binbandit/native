@@ -25,7 +25,8 @@ extension ProviderLimit {
             window: window?.label,
             resetsAt: resetsAt,
             utilization: utilization,
-            message: message,
+            // The provider's words only stand in for a reset time Native doesn't know.
+            message: resetsAt == nil ? message : nil,
             isSnoozed: isSnoozed,
             resume: resume
         )

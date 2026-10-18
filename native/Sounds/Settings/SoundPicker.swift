@@ -1,20 +1,21 @@
 import SwiftUI
 
-/// The notification sound select: the reference app's outlined trigger over a native menu with the sounds
+/// One trigger's sound select: the reference app's outlined trigger over a native menu with the sounds
 /// grouped as the reference app groups them (its own under a submenu, when the user has them), the user's
 /// files, and ways to add or remove those.
 struct SoundPicker: View {
     let sounds: NotificationSounds
+    let trigger: SoundTrigger
     let onAddSound: () -> Void
 
     @State private var isHovered = false
 
     private var selection: Binding<SoundID> {
-        Binding { sounds.preferences.selection } set: { sounds.select($0) }
+        Binding { sounds.preferences.sound(for: trigger) } set: { sounds.select($0, for: trigger) }
     }
 
     private var title: String {
-        sounds.selectedOption?.title ?? NativeChime.chime.title
+        sounds.option(for: trigger)?.title ?? ""
     }
 
     var body: some View {
@@ -45,7 +46,7 @@ struct SoundPicker: View {
         .fixedSize()
         .contentShape(.focusEffect, shape)
         .trackHover($isHovered)
-        .accessibilityLabel("Notification sound")
+        .accessibilityLabel("Sound for \(trigger.title.lowercased())")
         .accessibilityValue(title)
     }
 
@@ -72,7 +73,7 @@ struct SoundPicker: View {
         }
         Divider()
         Button("Add Sound…", action: onAddSound)
-        if case .custom(let id) = sounds.preferences.selection, let option = sounds.selectedOption {
+        if case .custom(let id) = sounds.preferences.sound(for: trigger), let option = sounds.option(for: trigger) {
             Button("Remove “\(option.title)”") {
                 sounds.removeSound(id)
             }

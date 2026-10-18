@@ -32,9 +32,9 @@ struct UsagePlugin: NativePlugin {
         case .turnFailed(let session, let prompt, let error, let items):
             limits.recordFailure(
                 FailedTurn(prompt: prompt, items: items), error: error, agent: session.agent,
-                agentName: session.agentName, stopping: LimitTarget(session))
+                agentName: session.agentName, stopping: UsageSessionRef(session))
         case .turnEnded(let session, let reason):
-            if let target = LimitTarget(session) {
+            if let target = UsageSessionRef(session) {
                 limits.recordTurnEnded(reason, in: target)
             }
             if let id = session.sessionID {

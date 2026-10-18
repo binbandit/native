@@ -1,10 +1,10 @@
 import SwiftUI
 
-/// The menu bar's Open In commands for the visible task's folder, so they're discoverable and every
-/// app is reachable from the keyboard:
+/// The menu bar's Open In commands for the visible task's folder (or the Home page's project), so
+/// they're discoverable and every app is reachable from the keyboard:
 ///
 ///     CommandMenu("Session") {
-///         OpenInCommands(location: session.map { .local($0.cwd) })
+///         OpenInCommands(location: OpenInLocation(folder: session.cwd, host: project.host))
 ///     }
 ///
 /// "Open in <default app>" (⇧⌘O) does what the control's left half does; the "Open In" submenu
@@ -22,48 +22,20 @@ struct OpenInCommands: View {
     }
 
     var body: some View {
-        Button(model.defaultApp.map { "Open in \($0.name)" } ?? "Open in Default App") {
+        let app = location.flatMap(model.defaultApp(for:))
+        Button(app.map { "Open in \($0.name)" } ?? "Open in Default App") {
             if let location {
                 model.openInDefaultApp(location)
             }
         }
         .keyboardShortcut(Self.shortcut)
-        .disabled(location == nil || model.defaultApp == nil)
+        .disabled(app == nil)
 
         Menu("Open In") {
-            ForEach(Array(model.appGroups.enumerated()), id: \.offset) { index, group in
-                if index > 0 {
-                    Divider()
-                }
-                ForEach(group) { app in
-                    appItem(app)
-                }
-            }
-            Divider()
-            Button("Copy Path", systemImage: "doc.on.doc") {
-                if let location {
-                    model.copyPath(of: location)
-                }
+            if let location {
+                OpenInMenuContent(location: location, model: model)
             }
         }
         .disabled(location == nil)
-    }
-
-    /// Checked when it's the default; choosing it opens the folder there and makes it the default.
-    private func appItem(_ app: OpenInApp) -> some View {
-        let isDefault = Binding {
-            app.id == model.defaultApp?.id
-        } set: { _ in
-            if let location {
-                model.open(location, in: app)
-            }
-        }
-        return Toggle(isOn: isDefault) {
-            Label {
-                Text(app.name)
-            } icon: {
-                Image(nsImage: model.icon(for: app))
-            }
-        }
     }
 }

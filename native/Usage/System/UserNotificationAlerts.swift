@@ -62,7 +62,7 @@ final class UserNotificationAlerts: NSObject, LimitAlerting {
         "native.usage-limit.\(agent.rawValue)"
     }
 
-    private static func reachedBody(_ status: LimitStatus, sessions: [LimitTarget], now: Date) -> String {
+    private static func reachedBody(_ status: LimitStatus, sessions: [UsageSessionRef], now: Date) -> String {
         guard let reset = status.resetText(now: now) else {
             return status.message ?? "Native can’t tell when it resets."
         }
@@ -137,7 +137,7 @@ private struct Payload: Sendable {
     let agentName: String?
     let title: String?
 
-    init(agent: AgentDefinition.ID, target: LimitTarget?) {
+    init(agent: AgentDefinition.ID, target: UsageSessionRef?) {
         self.agent = agent.rawValue
         session = target?.session.rawValue
         agentName = target?.agentName
@@ -156,9 +156,9 @@ private struct Payload: Sendable {
         AgentDefinition.ID(rawValue: agent)
     }
 
-    var target: LimitTarget? {
+    var target: UsageSessionRef? {
         guard let session, let agentName else { return nil }
-        return LimitTarget(agent: agentID, agentName: agentName, session: SessionID(session), title: title)
+        return UsageSessionRef(agent: agentID, agentName: agentName, session: SessionID(session), title: title)
     }
 
     var userInfo: [String: String] {
