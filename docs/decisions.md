@@ -201,3 +201,10 @@ stable, beta and Nightly. They preserve the user's base icon and restore it at t
 including when an app stays running or wakes after the season. The Gregorian date policy lives in
 AppAppearance, with calendar boundary and time-zone tests. Mac Dock access and environment
 notifications live in PlatformAppIcon, outside shared models and views.
+
+## 2026-10-18: Fair source under the Functional Source License
+
+Native is licensed under FSL-1.1-ALv2. Anyone can read, fork, modify and use it, at work too, and
+contribute back; the only use it rules out is offering a competing commercial product built from it.
+Each release becomes Apache 2.0 two years after it's published. This keeps the project open and
+friendly to fork without letting someone repackage the work as a rival app.
