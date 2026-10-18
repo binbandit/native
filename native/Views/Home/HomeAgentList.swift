@@ -9,8 +9,12 @@ struct HomeAgentList<ID: Hashable>: View {
         HStack(spacing: DS.Space.xl) {
             ForEach(agents) { agent in
                 HStack(spacing: DS.Space.sm) {
-                    Image(systemName: agent.symbolName)
-                        .font(.system(size: DS.Size.navIcon))
+                    if let definition = agent.agent {
+                        AgentIcon(agent: definition)
+                    } else {
+                        Image(systemName: agent.symbolName)
+                            .font(.system(size: DS.Size.navIcon))
+                    }
                     Text(agent.name)
                         .font(.dsBody)
                         .tracking(DS.Tracking.tight)

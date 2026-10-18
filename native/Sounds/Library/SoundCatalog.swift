@@ -13,10 +13,9 @@ nonisolated struct SoundCatalog: Sendable {
         custom = customSounds.compactMap(\.option)
     }
 
-    /// The option for `id`; nil for `.none` and for files that have gone missing.
+    /// The option for `id`; nil for files that have gone missing.
     func option(for id: SoundID) -> SoundOption? {
         switch id {
-        case .none: nil
         case .native(let chime): native.first { $0.id == .native(chime) }
         case .conductor: conductor.lazy.flatMap(\.options).first { $0.id == id }
         case .custom: custom.first { $0.id == id }

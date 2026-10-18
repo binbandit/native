@@ -94,6 +94,7 @@
       "design/app-icon/HalloweenNightly.icon"
     ],
     "renderer": "Apple Icon Composer ictool, layered SVG sources",
-    "availability": "October 1 through November 7, inclusive, in the local Gregorian calendar; optional seasonal Dock overrides restore the selected base icon afterwards."
+    "availability": "October 1 through November 7, inclusive, in the local Gregorian calendar; optional seasonal Dock overrides restore the selected base icon afterwards.",
+    "halloween_design": "Haunted interlock: the Native folds become two ghosts with cut-out eyes and flowing tails. Pumpkin orange for Regular, spectral green for Beta, moonlit lavender and a harvest moon for Nightly. Both light and dark variants use editable SVG layers and Apple Icon Composer rendering."
   }
 }

@@ -28,7 +28,7 @@ struct HomeDetail: View {
     }
 
     private func homeAgent(_ runtime: AgentRuntime) -> HomeAgent<AgentDefinition.ID> {
-        HomeAgent(
+        var agent = HomeAgent(
             id: runtime.agent.id,
             name: runtime.agent.displayName,
             symbolName: runtime.agent.symbolName,
@@ -36,6 +36,8 @@ struct HomeDetail: View {
             remedy: remedy(for: runtime),
             shortcut: runtime.agent.id == model.defaultAgent?.id ? KeyboardShortcut("n") : nil
         )
+        agent.agent = runtime.agent
+        return agent
     }
 
     /// The one action that makes an agent that can't start tasks able to again.
@@ -86,7 +88,7 @@ struct HomeDetail: View {
     }
 
     private func homeTask(_ summary: SessionSummary) -> HomeTask<SessionKey> {
-        HomeTask(
+        var task = HomeTask(
             id: summary.id,
             title: model.title(for: summary),
             agentName: summary.agent.displayName,
@@ -94,6 +96,8 @@ struct HomeDetail: View {
             projectName: model.projects.project(summary.project)?.name ?? "",
             date: lastActivity(summary)
         )
+        task.agent = summary.agent
+        return task
     }
 
     private func lastActivity(_ summary: SessionSummary) -> Date? {

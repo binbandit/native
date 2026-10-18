@@ -106,7 +106,9 @@ final class Orchestrator {
         let parent = try requireCallerKey(caller)
         let title = title?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty ?? Self.headline(of: prompt)
 
-        let request = TaskRequest(agent: agent.id, parent: parent, title: title, text: prompt, prompt: taskPrompt(prompt, from: caller))
+        let request = TaskRequest(
+            agent: agent.id, parent: parent, title: title, text: prompt,
+            prompt: TaskPromptFrame.task(prompt, fromParent: agentName(caller.agent)))
         let session: SessionKey
         do {
             session = try await host.startTask(request)
@@ -182,7 +184,8 @@ final class Orchestrator {
         }
 
         let message = TaskMessage(
-            sender: try requireCallerKey(caller), recipient: recipient.session, text: text, prompt: prompt(text, from: caller, to: recipient))
+            sender: try requireCallerKey(caller), recipient: recipient.session, text: text,
+            prompt: TaskPromptFrame.message(text, from: frameSender(from: caller, to: recipient)))
         let delivery: TaskMessage.Delivery
         do {
             delivery = try await host.deliver(message)
@@ -220,32 +223,17 @@ final class Orchestrator {
 
     // MARK: - Messages
 
-    /// Tells a task's agent that its audience is another agent, which only sees its final reply,
-    /// and how to reach the sessions around it.
-    private func taskPrompt(_ text: String, from caller: OrchestrationCaller) -> String {
-        """
-        [A task from your parent session (\(agentName(caller.agent))), handed to you through Native. \
-        What you say at the end of your turn goes back to it as your reply. To message it or its \
-        other tasks while you work, use the native MCP tools list_tasks and send_message.]
-
-        \(text)
-        """
-    }
-
     /// Introduces a message with who it's from, as the recipient knows them, and how to answer.
-    private func prompt(_ text: String, from caller: OrchestrationCaller, to recipient: Peer) -> String {
-        let sender: String
-        let replyTo: String
+    private func frameSender(from caller: OrchestrationCaller, to recipient: Peer) -> TaskPromptFrame.Sender {
         if recipient.relation == .child {
-            sender = "your parent session (\(agentName(caller.agent)))"
-            replyTo = "parent"
-        } else {
-            // Only a task reaches a parent or siblings.
-            let own = callerKey(caller).flatMap { key in tasks.first { $0.session == key } }
-            sender = (recipient.relation == .parent ? "your task " : "sibling task ") + (own?.label ?? "")
-            replyTo = own?.id ?? ""
+            return .parent(agent: agentName(caller.agent))
         }
-        return "[Message from \(sender). To reply, call send_message with to: \"\(replyTo)\".]\n\n\(text)"
+        // Only a task reaches a parent or siblings.
+        let own = callerKey(caller).flatMap { key in tasks.first { $0.session == key } }
+        if recipient.relation == .parent {
+            return .task(id: own?.id ?? "", label: own?.label ?? "")
+        }
+        return .sibling(id: own?.id ?? "", label: own?.label ?? "")
     }
 
     // MARK: - Waiting
