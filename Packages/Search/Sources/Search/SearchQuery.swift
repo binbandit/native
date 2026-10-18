@@ -79,8 +79,9 @@ public struct ParsedSearchQuery: Hashable, Sendable {
             let words = SearchText.words(in: token.text)
             guard !words.isEmpty else { continue }
             let isLast = offset == tokens.count - 1
-            // A one-letter prefix matches half the index; it waits for the next letter.
-            let isPrefix = isLast && endsMidWord && !token.isQuoted && (words.last?.count ?? 0) > 1
+            // One or two letters as a prefix match most of the index; they match as whole words
+            // until the third letter.
+            let isPrefix = isLast && endsMidWord && !token.isQuoted && (words.last?.count ?? 0) > 2
             terms.append(Term(words: words, isPrefix: isPrefix))
         }
     }
@@ -91,6 +92,13 @@ public struct ParsedSearchQuery: Hashable, Sendable {
         // Words hold only letters and digits, so quoting them can't break the expression.
         return terms.map { "\"\($0.words.joined(separator: " "))\"" + ($0.isPrefix ? "*" : "") }
             .joined(separator: " ")
+    }
+
+    /// Whether filters narrow which sessions or pieces count (the default leaving out of archived
+    /// tasks and reasoning doesn't).
+    public var isNarrowed: Bool {
+        !filters.agents.isEmpty || !filters.projects.isEmpty || !filters.roles.isEmpty || filters.after != nil
+            || filters.before != nil || filters.hasDiff || !agentNames.isEmpty || !projectNames.isEmpty
     }
 
     /// Words still being typed, highlighted as prefixes.

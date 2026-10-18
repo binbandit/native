@@ -12,8 +12,9 @@ struct SearchQueryTests {
     @Test func aFinishedWordIsntAPrefix() {
         #expect(ParsedSearchQuery(SearchQuery("timeout ")).expression == #""timeout""#)
         #expect(ParsedSearchQuery(SearchQuery("\"login timeout\"")).expression == #""login timeout""#)
-        // One letter would match half the index.
+        // One or two letters would match most of the index.
         #expect(ParsedSearchQuery(SearchQuery("fix a")).expression == #""fix" "a""#)
+        #expect(ParsedSearchQuery(SearchQuery("fix th")).expression == #""fix" "th""#)
     }
 
     @Test func operatorsBecomeFilters() throws {
@@ -32,6 +33,7 @@ struct SearchQueryTests {
     @Test func unknownOperatorsAreText() {
         #expect(ParsedSearchQuery(SearchQuery("http://localhost:8080 ")).expression == #""http localhost 8080""#)
         #expect(ParsedSearchQuery(SearchQuery("role:wizard")).expression == #""role wizard"*"#)
+        #expect(ParsedSearchQuery(SearchQuery("role:wizard")).isNarrowed == false)
     }
 
     @Test func onlyFiltersHaveNoExpression() {
