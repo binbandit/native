@@ -51,6 +51,7 @@ struct HostUpdateSection: View {
         case .checking:
             HStack(spacing: DS.Space.md) {
                 DotGridLoader(pattern: .settingUp)
+                    .frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
                 Text("Checking for updates…").foregroundStyle(.dsTextSecondary)
             }
         case .available, .ready, .downloading:
@@ -58,6 +59,7 @@ struct HostUpdateSection: View {
         case .installing:
             HStack(spacing: DS.Space.md) {
                 DotGridLoader(pattern: .settingUp)
+                    .frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
                 Text("Installing. \(host.name) restarts, and this phone reconnects on its own.").foregroundStyle(
                     .dsTextSecondary)
             }

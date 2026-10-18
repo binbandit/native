@@ -10,12 +10,14 @@ extension SettingsPane {
     static func usage(registry: PluginRegistry) -> SettingsPane {
         SettingsPane(
             id: .usage, title: "Usage", systemImage: "gauge.with.dots.needle.33percent", group: .agents, order: 25,
-            keywords: ["limits", "rate limit", "quota", "reset", "cost", "tokens", "spend", "activity", "streak", "graph"]
+            keywords: [
+                "limits", "rate limit", "quota", "reset", "cost", "tokens", "spend", "activity", "streak", "graph",
+            ]
         ) {
             UsageSettingsPage(
                 accounts: registry.agents.map { .init(id: $0.id, name: $0.displayName, symbol: $0.symbolName) },
                 limits: BuiltInPlugins.usage.limits, reports: BuiltInPlugins.usage.providerReports,
-                activity: BuiltInPlugins.usage.activity, onOpen: BuiltInPlugins.usage.open)
+                activity: BuiltInPlugins.usage.activity, opener: BuiltInPlugins.usage.opener)
         }
     }
 
@@ -26,11 +28,20 @@ extension SettingsPane {
             keywords: ["alerts", "banner", "permission", "question", "finished", "done", "limit"],
             searchEntries: {
                 [
-                    SettingsSearchEntry(id: NotificationSettingsPage.longWorkRow, title: "When long work finishes", keywords: ["done", "finished"]),
-                    SettingsSearchEntry(id: NotificationSettingsPage.thresholdRow, title: "Long means", keywords: ["seconds", "minutes"]),
-                    SettingsSearchEntry(id: NotificationSettingsPage.needsYouRow, title: "When a task needs you", keywords: ["permission", "approval", "question"]),
-                    SettingsSearchEntry(id: NotificationSettingsPage.limitsRow, title: "Usage limits", keywords: ["reset", "snooze"]),
-                    SettingsSearchEntry(id: NotificationSettingsPage.dockBadgeRow, title: "Dock badge", keywords: ["dock", "badge", "icon", "count", "unread"]),
+                    SettingsSearchEntry(
+                        id: NotificationSettingsPage.longWorkRow, title: "When long work finishes",
+                        keywords: ["done", "finished"]),
+                    SettingsSearchEntry(
+                        id: NotificationSettingsPage.thresholdRow, title: "Long means",
+                        keywords: ["seconds", "minutes"]),
+                    SettingsSearchEntry(
+                        id: NotificationSettingsPage.needsYouRow, title: "When a task needs you",
+                        keywords: ["permission", "approval", "question"]),
+                    SettingsSearchEntry(
+                        id: NotificationSettingsPage.limitsRow, title: "Usage limits", keywords: ["reset", "snooze"]),
+                    SettingsSearchEntry(
+                        id: NotificationSettingsPage.dockBadgeRow, title: "Dock badge",
+                        keywords: ["dock", "badge", "icon", "count", "unread"]),
                 ]
             }
         ) {

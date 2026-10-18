@@ -29,6 +29,9 @@ extension FirstPartyCelebrations {
         edition("songkran", "Songkran", ["Thai New Year"], "cultural", .published),
         edition("matariki", "Matariki", ["Māori New Year"], "cultural", .published),
         edition("kwanzaa", "Kwanzaa", [], "cultural", .fixed(12, 26, to: 1, 1)),
+        edition(
+            "australia-day", "Australia Day", [], "community", .fixed(1, 26), tradition: "Australia",
+            hasArtwork: false),
         edition("pride", "Pride Month", ["Pride"], "community", .fixed(6, 1, to: 6, 30)),
         edition(
             "carnival", "Mardi Gras", ["Carnival", "Fat Tuesday", "Shrove Tuesday"], "cultural",
@@ -138,7 +141,7 @@ extension FirstPartyCelebrations {
 
     private static func edition(
         _ slug: String, _ title: LocalizedText, _ aliases: [String], _ tag: String, _ dates: Dates,
-        tradition: String? = nil, icons pack: String? = nil
+        tradition: String? = nil, icons pack: String? = nil, hasArtwork: Bool = true
     ) -> (celebration: CelebrationContribution, icons: IconSetContribution) {
         let pack = pack ?? slug
         let (calendar, provenance) = dates.calendar(slug, tradition: tradition)
@@ -148,9 +151,11 @@ extension FirstPartyCelebrations {
                 provenance: provenance,
                 calendar: calendar,
                 iconSet: IconSetID("native.\(pack)")),
+            // Until its artwork lands in design/app-icon/celebrations/<edition>, an edition's icon is
+            // forthcoming and its preview is the plain mark.
             IconSetContribution(
-                id: IconSetID("native.\(pack)"), name: title, icons: .pack(pack),
-                thumbnail: thumbnail(pack))
+                id: IconSetID("native.\(pack)"), name: title, icons: hasArtwork ? .pack(pack) : .forthcoming,
+                thumbnail: hasArtwork ? thumbnail(pack) : nil)
         )
     }
 }

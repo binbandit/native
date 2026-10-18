@@ -4,7 +4,8 @@ import SwiftUI
 /// longest streak, the busiest day and the year's total. Picking a day lists its tasks.
 struct UsageActivityCard: View {
     let activity: ActivityLog
-    let onOpen: (ActivityDay.Task) -> Void
+    /// What opens a task; nil when it can't be opened anymore.
+    let opener: (ActivityDay.Task) -> (() -> Void)?
 
     @State private var metric = ActivityMetric.prompts
     @State private var filter = ActivityFilter.all
@@ -114,19 +115,21 @@ struct UsageActivityCard: View {
                     .foregroundStyle(.dsTextSecondary)
             }
             ForEach(tasks) { task in
-                Button {
-                    onOpen(task)
-                    settings.close()
-                } label: {
-                    ContributorRow(
-                        title: task.title ?? "Untitled task",
-                        detail: "\(task.agentName) · \(URL(filePath: task.project).lastPathComponent)",
-                        tokens: "Open"
-                    )
-                    .contentShape(.rect)
+                let detail = "\(task.agentName) · \(URL(filePath: task.project).lastPathComponent)"
+                if let open = opener(task) {
+                    Button {
+                        open()
+                        settings.close()
+                    } label: {
+                        ContributorRow(title: task.title ?? "Untitled task", detail: detail, tokens: "Open")
+                            .contentShape(.rect)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Open this task")
+                } else {
+                    ContributorRow(title: task.title ?? "Untitled task", detail: detail, tokens: "Not listed")
+                        .help("\(task.agentName) no longer lists this task, so it can’t be opened.")
                 }
-                .buttonStyle(.plain)
-                .help("Open this task")
             }
         }
     }

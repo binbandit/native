@@ -75,5 +75,5 @@ struct PullRequestFilesTab: View {
 enum PullRequestFilesLayout {
     static let treeWidth: CGFloat = 248
     /// Past this many lines a file shows the start and a button for the rest.
-    static let initialLineLimit = 600
+    static let initialLineLimit = 400
 }

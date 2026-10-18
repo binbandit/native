@@ -73,12 +73,18 @@ struct CelebrationsSettingsPage: View {
 
     private var catalogue: some View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
-            HStack(spacing: DS.Space.xl) {
-                SettingsSubheading(
-                    "Catalogue",
-                    note: "Choose any time of year; each shows only on its dates. Packs never turn one on for you.")
-                Spacer(minLength: 0)
+            SettingsSubheading(
+                "Catalogue",
+                note: "Choose any time of year; each shows only on its dates. Nothing is turned on for you.")
+            HStack(spacing: DS.Space.sm) {
+                CelebrationCountryMenu(counts: CelebrationPreferences.publicHolidayCountries(in: center.celebrations)) {
+                    country in
+                    changeUndoably("Turn On \(CelebrationCountryMenu.name(country)) Holidays") {
+                        center.turnOnPublicHolidays(of: country)
+                    }
+                }
                 bulkControls
+                Spacer(minLength: DS.Space.xl)
                 CelebrationSearchField(query: $query)
             }
             if matches.isEmpty {

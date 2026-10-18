@@ -59,7 +59,7 @@ struct ExpeditionsPage<Transcript: View>: View {
             Spacer(minLength: DS.Space.lg)
             Button("New Expedition…", systemImage: "plus") { center.isNewExpeditionRequested = true }
                 .buttonStyle(.ds(.primary, size: .medium))
-                .help("Start an expedition in the current project (⌥⌘E)")
+                .help(CommandRegistry.shared.help("Start an expedition in the current project", for: .expeditionNew))
         }
     }
 

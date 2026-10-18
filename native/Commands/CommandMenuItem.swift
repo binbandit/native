@@ -10,16 +10,19 @@ import SwiftUI
 struct CommandMenuItem: View {
     let id: NativeCommand.ID
     let registry: CommandRegistry
+    /// A shorter title where the menu says the rest ("Next Mode" in Keep Mac Awake).
+    var title: String?
     @FocusedCommandContext private var context
 
-    init(_ id: NativeCommand.ID, in registry: CommandRegistry) {
+    init(_ id: NativeCommand.ID, in registry: CommandRegistry, title: String? = nil) {
         self.id = id
         self.registry = registry
+        self.title = title
     }
 
     var body: some View {
         if let command = registry.command(id) {
-            let title = command.menuTitle?(context) ?? command.title
+            let title = title ?? command.menuTitle?(context) ?? command.title
             Group {
                 if let isOn = command.isOn {
                     Toggle(title, isOn: Binding(get: { isOn(context) }, set: { _ in command.perform(context) }))

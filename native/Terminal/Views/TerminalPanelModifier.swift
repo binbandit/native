@@ -36,7 +36,7 @@ private struct TerminalPanelModifier: ViewModifier {
                 } label: {
                     Image(systemName: "apple.terminal")
                 }
-                .help(panel.isVisible ? "Hide Terminal (⌃`)" : "Show Terminal (⌃`)")
+                .help(CommandRegistry.shared.help(panel.isVisible ? "Hide Terminal" : "Show Terminal", for: .terminalToggle))
                 .accessibilityLabel(panel.isVisible ? "Hide Terminal" : "Show Terminal")
             }
         }

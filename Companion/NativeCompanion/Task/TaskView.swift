@@ -27,6 +27,7 @@ struct TaskView: View {
                 if mirror == nil || mirror?.isLoading == true {
                     HStack(spacing: DS.Space.md) {
                         DotGridLoader(pattern: .settingUp)
+                            .frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
                         Text("Loading the conversation from \(host.name)…")
                             .font(CompanionType.subheadline).foregroundStyle(.dsTextSecondary)
                     }

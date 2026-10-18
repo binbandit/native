@@ -26,6 +26,11 @@ extension AppModel: UsageNotificationsHost {
         selection == SessionKey(agent: ref.agent, id: ref.parent ?? ref.session)
     }
 
+    func canShow(_ ref: UsageSessionRef) -> Bool {
+        let key = SessionKey(agent: ref.agent, id: ref.parent ?? ref.session)
+        return session(key) != nil || catalog.contains(key)
+    }
+
     func isNativeTask(_ ref: UsageSessionRef) -> Bool {
         model(for: ref)?.origin == .task
     }

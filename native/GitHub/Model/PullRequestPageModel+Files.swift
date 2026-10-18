@@ -57,6 +57,7 @@ extension PullRequestPageModel {
             let page = try await gitHub.cli().filePatches(reference, page: patchPagesLoaded + 1)
             for patch in page {
                 patches[patch.path] = patch
+                hunks[patch.path] = patch.hunks
             }
             patchPagesLoaded += 1
             patchesComplete = page.count < 100 || patches.count >= totalFiles
@@ -84,7 +85,7 @@ extension PullRequestPageModel {
 
     /// The text of the lines a comment covers, for suggestions: the head side's lines as they read.
     func lineText(for anchor: ReviewAnchor) -> String {
-        guard let hunks = patches[anchor.path]?.hunks else { return "" }
+        guard let hunks = hunks[anchor.path] else { return "" }
         let first = anchor.startLine ?? anchor.line
         return hunks.flatMap(\.lines)
             .filter { line in
@@ -97,7 +98,7 @@ extension PullRequestPageModel {
 
     /// The commented lines as unified diff, with a little context above, for agents.
     func excerpt(for anchor: ReviewAnchor) -> String {
-        guard let hunks = patches[anchor.path]?.hunks else { return "" }
+        guard let hunks = hunks[anchor.path] else { return "" }
         for hunk in hunks {
             guard let end = hunk.index(side: anchor.side, line: anchor.line) else { continue }
             let start = anchor.startLine.flatMap { hunk.index(side: anchor.startSide ?? anchor.side, line: $0) } ?? end

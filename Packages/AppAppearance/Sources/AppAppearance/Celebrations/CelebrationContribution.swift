@@ -58,7 +58,8 @@ public struct CelebrationContribution: AppearanceContribution {
 
     public init(
         id: CelebrationID, title: LocalizedText, aliases: [String] = [], summary: LocalizedText? = nil,
-        tags: [String] = [], publicHolidays: Set<String> = [], provenance: CelebrationProvenance = CelebrationProvenance(),
+        tags: [String] = [], publicHolidays: Set<String> = [],
+        provenance: CelebrationProvenance = CelebrationProvenance(),
         calendar: CelebrationCalendar, display: CelebrationDisplay = CelebrationDisplay(), iconSet: IconSetID? = nil,
         alternateIconSets: [IconSetID] = [],
         compatibility: CelebrationCompatibility = CelebrationCompatibility()
