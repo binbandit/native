@@ -25,7 +25,10 @@ final class UsageLimits {
 
     /// Resumes wait for this; setting it runs any that came due before it was there.
     @ObservationIgnored weak var host: (any UsageLimitsHost)? {
-        didSet { processDue() }
+        didSet {
+            gated = [:]
+            processDue()
+        }
     }
 
     @ObservationIgnored let now: () -> Date
@@ -38,6 +41,8 @@ final class UsageLimits {
     /// Sessions picked back up at a reset, until a turn of theirs ends normally. One that hits the
     /// limit again waits for the next reset on its own rather than asking again.
     @ObservationIgnored private var resumed: Set<UsageSessionRef.ID> = []
+    /// What the host's send gate was last told, per agent.
+    @ObservationIgnored private var gated: [AgentDefinition.ID: String] = [:]
 
     init(store: any UsageLimitsStore, alerts: any LimitAlerting, now: @escaping () -> Date = Date.init) {
         self.store = store
@@ -361,8 +366,25 @@ final class UsageLimits {
                 providers: providers.values.sorted { $0.agent.rawValue < $1.agent.rawValue },
                 sessions: sessions.values.sorted { $0.target.session.rawValue < $1.target.session.rawValue }
             ))
+        updateSendGate()
         let next = (providers.values.compactMap(\.resetsAt) + sessions.values.compactMap(\.resumeAt)).min()
         timer.schedule(at: next, now: now()) { [weak self] in self?.processDue() }
+    }
+
+    /// Tells the host which agents refuse requests, in `LimitStatus`'s words without the countdown,
+    /// which would go stale on a disabled button.
+    private func updateSendGate() {
+        guard let host else { return }
+        var current: [AgentDefinition.ID: String] = [:]
+        for limit in providers.values where limit.status == .reached && isInForce(limit) {
+            let status = limit.limitStatus()
+            current[limit.agent] = [status.headline, limit.resetsAt.map { "resets \(DSFormat.time($0, now: now()))" }]
+                .compactMap(\.self).joined(separator: " · ")
+        }
+        for agent in Set(gated.keys).union(current.keys) where gated[agent] != current[agent] {
+            host.setUsageLimit(current[agent], for: agent)
+        }
+        gated = current
     }
 
     private static func isSameMinute(_ lhs: Date?, _ rhs: Date?) -> Bool {

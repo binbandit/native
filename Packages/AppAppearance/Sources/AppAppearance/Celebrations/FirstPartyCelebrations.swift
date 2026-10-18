@@ -13,7 +13,8 @@ public enum FirstPartyCelebrations {
         public static let diaDeMuertos = "native.dia-de-muertos"
     }
 
-    public static let celebrations: [CelebrationContribution] = [halloween, diaDeMuertos]
+    /// The confirmed editions first, then the rest of the catalogue with its artwork forthcoming.
+    public static let celebrations: [CelebrationContribution] = [halloween, diaDeMuertos] + forthcoming
     public static let iconSets: [IconSetContribution] = [halloweenIcons, diaDeMuertosIcons]
 
     /// The ghost links in every channel, compiled into the app (`design/app-icon/Halloween*.icon`).

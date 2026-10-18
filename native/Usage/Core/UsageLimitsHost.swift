@@ -5,6 +5,8 @@ protocol UsageLimitsHost: AnyObject {
     /// The session, loaded from the agent if it isn't open yet; nil while that isn't possible
     /// (its agent is still starting, or the session is gone).
     func resumableSession(_ target: UsageSessionRef) async -> (any LimitResumable)?
+    /// Holds the composer's Send for the agent while its limit refuses requests, with why; nil lifts it.
+    func setUsageLimit(_ message: String?, for agent: AgentDefinition.ID)
     /// Brings the session forward, as when the user clicks a notification about it.
     func show(_ target: UsageSessionRef)
 }
