@@ -1,3 +1,4 @@
+import AppAppearance
 import SwiftUI
 
 /// Native's lockup at the top of the home page, in the edition that matches the app icon in the

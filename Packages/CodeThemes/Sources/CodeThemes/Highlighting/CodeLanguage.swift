@@ -9,6 +9,8 @@ public struct CodeLanguage: Sendable, Hashable {
         case markup
         /// Whole lines: added, removed, hunk headers and file headers.
         case diff
+        /// Headings, quotes, list markers, code spans, emphasis and links.
+        case markdown
     }
 
     /// A quoted literal: its delimiter, whether a backslash escapes, and whether it may span lines.
@@ -62,7 +64,8 @@ public struct CodeLanguage: Sendable, Hashable {
     }
 
     private static let fileNames: [String: CodeLanguage] = [
-        "Makefile": .shell, "Dockerfile": .shell, "Package.swift": .swift, ".zshrc": .shell, ".bashrc": .shell,
+        "Makefile": .shell, "Dockerfile": .dockerfile, "Containerfile": .dockerfile, "Package.swift": .swift,
+        ".zshrc": .shell, ".bashrc": .shell,
     ]
 
     private static let aliases: [String: CodeLanguage] = {
@@ -87,6 +90,8 @@ public struct CodeLanguage: Sendable, Hashable {
             (.css, ["css", "scss", "less"]),
             (.sql, ["sql", "sqlite", "postgres", "postgresql", "mysql"]),
             (.diff, ["diff", "patch"]),
+            (.markdown, ["markdown", "md", "mdx"]),
+            (.dockerfile, ["dockerfile", "docker", "containerfile"]),
         ]
         for (language, names) in entries {
             for name in names {
@@ -132,7 +137,9 @@ extension CodeLanguage {
             "interface", "type", "enum", "implements", "namespace", "declare", "readonly", "abstract", "private",
             "protected", "public", "keyof", "infer", "satisfies", "as", "is", "asserts", "override", "module",
         ])
-        language.types = ["string", "number", "boolean", "void", "unknown", "never", "any", "object", "bigint", "symbol"]
+        language.types = [
+            "string", "number", "boolean", "void", "unknown", "never", "any", "object", "bigint", "symbol",
+        ]
         return language
     }()
 
@@ -329,7 +336,9 @@ extension CodeLanguage {
         language.lineComments = ["//"]
         language.blockComment = ["/*", "*/"]
         language.quotes = [doubleQuote, singleQuote]
-        language.keywords = ["@media", "@import", "@supports", "@keyframes", "@font-face", "!important", "@use", "@mixin"]
+        language.keywords = [
+            "@media", "@import", "@supports", "@keyframes", "@font-face", "!important", "@use", "@mixin",
+        ]
         language.lineKeys = true
         return language
     }()
@@ -355,6 +364,17 @@ extension CodeLanguage {
     static let markup: CodeLanguage = CodeLanguage(id: "markup", grammar: .markup)
 
     static let diff: CodeLanguage = CodeLanguage(id: "diff", grammar: .diff)
+
+    static let markdown: CodeLanguage = CodeLanguage(id: "markdown", grammar: .markdown)
+
+    static let dockerfile: CodeLanguage = {
+        var language = CodeLanguage(copying: shell, id: "dockerfile")
+        language.keywords.formUnion([
+            "FROM", "RUN", "CMD", "LABEL", "EXPOSE", "ENV", "ADD", "COPY", "ENTRYPOINT", "VOLUME", "USER", "WORKDIR",
+            "ARG", "ONBUILD", "STOPSIGNAL", "HEALTHCHECK", "SHELL", "AS", "MAINTAINER",
+        ])
+        return language
+    }()
 
     /// Another language's rules under a new id.
     private init(copying other: CodeLanguage, id: String) {

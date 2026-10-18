@@ -11,6 +11,20 @@ public struct MCPTool<Context: Sendable>: Sendable {
     /// A JSON Schema the structured results conform to, if they have one.
     public var outputSchema: JSON?
     public var annotations: MCPToolAnnotations
+    /// What one client sees of the tool in `tools/list`, when that depends on the client: a
+    /// description naming what it can reach, say, with annotations to match. Nil lists the tool
+    /// as declared.
+    public var listing: (@Sendable (Context) async -> Listing)?
+
+    public struct Listing: Sendable {
+        public var description: String
+        public var annotations: MCPToolAnnotations
+
+        public init(description: String, annotations: MCPToolAnnotations) {
+            self.description = description
+            self.annotations = annotations
+        }
+    }
 
     private let call: @Sendable (Context, JSON) async -> MCPToolResult
 
@@ -52,11 +66,12 @@ public struct MCPTool<Context: Sendable>: Sendable {
         await call(context, arguments)
     }
 
-    var definition: JSON {
-        var object: [String: JSON] = ["name": .string(name), "description": .string(description), "inputSchema": inputSchema]
+    func definition(for context: Context) async -> JSON {
+        let listed = await listing?(context) ?? Listing(description: description, annotations: annotations)
+        var object: [String: JSON] = ["name": .string(name), "description": .string(listed.description), "inputSchema": inputSchema]
         object["title"] = title.map(JSON.string)
         object["outputSchema"] = outputSchema
-        object["annotations"] = annotations.json
+        object["annotations"] = listed.annotations.json
         return .object(object)
     }
 

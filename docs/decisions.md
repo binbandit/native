@@ -226,3 +226,21 @@ protocols in their replies (a route block, the goal status line, a verdict line)
 validates, and Native is the only writer of the shared artifacts. The engine is the UI-free
 `Packages/Expeditions`, built from the goal loop and the workflow engine's shape, so it moves into
 the durable host unchanged.
+
+## 2026-10-18: Plugins live on hosts and reach every client
+
+Plugins are installed on a host, the machine that runs agents, and every client (the Mac app, the iPad
+app and the iPhone companion) gets that host's plugin catalog over the host protocol. A plugin's
+contributions split by where they run:
+
+- **Host-side:** agents, MCP servers, skills, workflow and automation engines, and sandboxed scripts.
+  These run on the host only, and clients see their effects through sessions, as with any other
+  agent work.
+- **Client-side data:** themes, icon sets, celebrations and experiments. These are data, so the host
+  sends the manifests and their assets to each client, which applies them locally: themes and Home
+  marks everywhere, icon sets as the app icon on the Mac only (iOS can switch only between bundled
+  icons), and experiments in each client's Labs.
+
+A client can also hold appearance-only plugins of its own, for use without a host. Plugin code
+never runs on iOS: built-in code plugins ship inside each app binary, and sandboxed code plugins
+need the V8 runtime, which only hosts have.

@@ -25,6 +25,11 @@ struct CodeHighlighterTests {
         ("yaml", "name: build\nsteps:\n  - run: make # go"),
         ("sql", "SELECT name FROM users WHERE id = 1 -- one"),
         ("swift", "let emoji = \"👩‍💻\"; let 名前 = 1"),
+        (
+            "markdown",
+            "# Title\n> quote\n- item with `code` and **bold** and [link](https://x.y)\n```swift\nlet a = 1\n```"
+        ),
+        ("dockerfile", "FROM swift:6 AS build\n# comment\nRUN swift build -c release"),
     ])
     func segmentsRebuildTheCode(language: String, code: String) {
         let segments = CodeHighlighter.segments(code, language: CodeLanguage.named(language))
@@ -78,6 +83,14 @@ struct CodeHighlighterTests {
         #expect(!tokens("fn f<'a>(c: char) { 'x' }", "rust").contains { $0.hasPrefix("string:'a") })
     }
 
+    @Test func markdownMarksStructureNotProse() {
+        #expect(
+            tokens("## Setup\nRun `make` then read [docs](d.md).", "md") == [
+                "keyword:## Setup", "string:`make`", "function:[docs]", "string:(d.md)",
+            ])
+        #expect(tokens("```\n# not a heading\n```", "md") == ["comment:```", "comment:```"])
+    }
+
     @Test func languagesByNameAndPath() {
         #expect(CodeLanguage.named("TypeScript")?.id == "typescript")
         #expect(CodeLanguage.named("ts {highlight: 2}")?.id == "typescript")
@@ -86,6 +99,8 @@ struct CodeHighlighterTests {
         #expect(CodeLanguage.forPath("native/Views/RootView.swift")?.id == "swift")
         #expect(CodeLanguage.forPath("Packages/x/Package.swift")?.id == "swift")
         #expect(CodeLanguage.forPath("README") == nil)
+        #expect(CodeLanguage.forPath("deploy/Dockerfile")?.id == "dockerfile")
+        #expect(CodeLanguage.named("fish")?.id == "shell")
         #expect(CodeLanguage.forPath(".gitignore") == nil)
     }
 
