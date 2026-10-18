@@ -139,7 +139,7 @@ struct UsageAccountCard: View {
 
     private func explanation(_ status: ProviderUsageReports.Status) -> String {
         switch status {
-        case .unavailable: "Open a \(name) task to read where its limits stand. Reading them costs nothing."
+        case .unavailable: "Start a task with \(name) to read where its limits stand. Reading them costs nothing."
         case .unreported: "\(name) doesn’t report its usage limits."
         case .ready, .refreshing: "Reading \(name)’s limits…"
         }
