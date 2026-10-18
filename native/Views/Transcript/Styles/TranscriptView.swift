@@ -70,7 +70,7 @@ struct TranscriptView: View {
         .focusedSceneValue(\.transcriptJumpToLatest, jumpCommand)
         .overlay {
             if session.phase == .loading {
-                ProgressView("Loading session…")
+                LoadingStateView("Loading session…")
             } else if items.isEmpty {
                 ContentUnavailableView(
                     "What should we work on?", systemImage: "sparkles", description: Text(session.cwd.abbreviatedPath)
