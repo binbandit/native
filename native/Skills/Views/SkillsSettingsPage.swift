@@ -134,7 +134,8 @@ struct SkillsSettingsPage: View {
     private func notices(_ library: SkillLibrary) -> some View {
         if !registry.isEnabled(SkillsPlugin.id) {
             MCPNotice(
-                text: "The Skills plugin is off, so switches here don't reach agents. Turn it on in Plugins.",
+                text:
+                    "The Skills plugin is off, so switches here don't reach agents. Turn it on in Settings ▸ Extensions.",
                 tone: .warning)
         }
         if let problem = library.problem {

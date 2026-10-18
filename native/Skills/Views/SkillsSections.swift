@@ -114,7 +114,7 @@ struct SkillNativeRow: View {
             detail: Text(
                 skill.isServed
                     ? "Every agent, through Native's MCP tools · from \(skill.pluginName)"
-                    : "\(skill.pluginName) is off, so agents don't see it. Turn it on in Plugins.")
+                    : "\(skill.pluginName) is off, so agents don't see it. Turn it on in Settings ▸ Extensions.")
         ) {
             Badge("Native")
         } control: {
