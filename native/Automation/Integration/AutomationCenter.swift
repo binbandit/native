@@ -24,6 +24,9 @@ final class AutomationCenter {
     /// wording); nil when the error isn't a limit. Without it, limits are recognized by their
     /// message and shown as the provider worded them.
     @ObservationIgnored var describeLimit: ((any Error) -> String?)?
+    /// Hands an event to the plugins (sounds, notifications) when a workflow, goal or automation
+    /// needs the user or stops short. The app wires it; until then nothing is announced.
+    @ObservationIgnored var post: ((SessionEvent) -> Void)?
 
     // Goals are created on demand and observed one by one, so the dictionary itself isn't.
     @ObservationIgnored private var goals: [String: GoalController] = [:]
@@ -32,6 +35,16 @@ final class AutomationCenter {
     init(goalStore: GoalStore = .standard) {
         self.goalStore = goalStore
         workflows.onRunChange = { [automations] in automations.workflowRunChanged($0) }
+        workflows.onAttention = { [weak self] run, attention in
+            let reason = "\(run.title) · \(run.phase.label)"
+            switch attention {
+            case .needsUser: self?.post?(.needsUser(nil, reason: reason))
+            case .halted: self?.post?(.failed(nil, reason: reason))
+            }
+        }
+        automations.onStartFailure = { [weak self] automation, message in
+            self?.post?(.failed(nil, reason: "\(automation.name) couldn't start: \(message)"))
+        }
         // Off until the app reports the Automations plugin's state.
         automations.isEnabled = false
     }
@@ -112,7 +125,12 @@ final class AutomationCenter {
 
     private func turnEnded(_ context: SessionContext, outcome: TurnOutcome) async {
         workflows.turnEnded(task: host?.task(forClient: context.clientID) ?? context.clientID, outcome: outcome)
-        await existingGoal(for: context)?.turnDidEnd(outcome)
+        let goal = existingGoal(for: context)
+        let wasBlocked = goal?.goal?.status == .blocked
+        await goal?.turnDidEnd(outcome)
+        if !wasBlocked, let objective = goal?.goal, objective.status == .blocked {
+            post?(.needsUser(context, reason: "Goal blocked: \(objective.objective)"))
+        }
     }
 
     /// The goal of the session an event is about, if it has one: in memory, or saved from an

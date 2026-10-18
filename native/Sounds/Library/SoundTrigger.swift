@@ -33,6 +33,15 @@ nonisolated enum SoundTrigger: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
+    /// Which sound wins when several moments come at once: trouble, then a request, then news.
+    var urgency: Int {
+        switch self {
+        case .taskFinished: 0
+        case .needsYou: 1
+        case .wentWrong: 2
+        }
+    }
+
     var defaultSound: SoundID {
         switch self {
         case .taskFinished: .native(.chime)

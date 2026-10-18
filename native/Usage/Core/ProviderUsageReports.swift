@@ -11,6 +11,11 @@ final class ProviderUsageReports {
     private var failed: Set<AgentDefinition.ID> = []
     @ObservationIgnored weak var host: (any UsageReportingHost)?
 
+    /// `reports` seeds readings, for previews.
+    init(reports: [AgentDefinition.ID: ProviderUsageReport] = [:]) {
+        self.reports = reports
+    }
+
     enum Status: Hashable {
         /// No idle task of the agent to ask, or it has no status command.
         case unavailable

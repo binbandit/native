@@ -2,8 +2,42 @@ import ACP
 import Foundation
 import os
 
-// Listing each agent's sessions in each project with `session/list`.
+// The sidebar's sessions: each project's, in order, and listing them from each agent with `session/list`.
 extension AppModel {
+    /// A project's sessions from every agent, in the user's order, then most recently active first.
+    /// Kept between calls until something it's built from changes, since views ask on every update.
+    func sessions(in project: Project.ID) -> [SessionSummary] {
+        sessionLists.list(for: project) {
+            let summaries = allSessions(in: project).filter { summary in
+                !archivedSessions.contains(summary.id) && !pendingDeletionKeys.contains(summary.id)
+                    && !ordering.isPinned(summary.id)
+            }
+            return ordering.sorted(summaries, in: project, recency: lastActive)
+        }
+    }
+
+    /// A project's sessions from every agent, archived ones included.
+    func allSessions(in project: Project.ID) -> [SessionSummary] {
+        agents.flatMap { runtime in
+            catalog.sessions(in: project, of: runtime.agent.id).map {
+                SessionSummary(project: project, agent: runtime.agent, info: $0)
+            }
+        }
+    }
+
+    /// Every session in the sidebar, in its order: pinned first, then each project's.
+    var sessionList: [SessionSummary] {
+        pinnedSessions + projects.all.flatMap { sessions(in: $0.id) }
+    }
+
+    func moveSessions(in project: Project.ID, fromOffsets source: IndexSet, toOffset destination: Int) {
+        ordering.move(sessions(in: project).map(\.id), in: project, fromOffsets: source, toOffset: destination)
+    }
+
+    private func lastActive(_ summary: SessionSummary) -> Date {
+        sessions.session(summary.id)?.lastActivity ?? summary.info.updatedDate ?? .distantPast
+    }
+
     func refreshSessions() async {
         await withTaskGroup(of: Void.self) { group in
             for project in projects.all {
@@ -55,7 +89,8 @@ extension AppModel {
             }
         } catch {
             if !runtime.noteSignInRequired(by: error) {
-                errorMessage = "Couldn't list \(runtime.agent.displayName) sessions in \(project.name): \(error.localizedDescription)"
+                errorMessage =
+                    "Couldn't list \(runtime.agent.displayName) sessions in \(project.name): \(error.localizedDescription)"
             }
             return
         }
@@ -70,7 +105,9 @@ extension AppModel {
                 merge(page, from: folder)
             }
         }
-        Self.logger.debug("\(runtime.agent.displayName, privacy: .public) lists \(fetched.count) sessions in \(project.path, privacy: .public)")
+        Self.logger.debug(
+            "\(runtime.agent.displayName, privacy: .public) lists \(fetched.count) sessions in \(project.path, privacy: .public)"
+        )
         guard projects.project(project.id) != nil, runtimes[agent] === runtime else { return }
         // Only the user's own sessions are listed: subagents belong under their parent, and task
         // sessions to whatever started them, in this run or an earlier one. While a task session is
@@ -83,7 +120,9 @@ extension AppModel {
                 && (sessions.session(key)?.origin ?? .user) == .user
                 && (!isStartingTask || known.contains(info.sessionId))
         }
-        catalog.replace(agent, in: project.id, with: topLevel) { sessions.session(SessionKey(agent: agent, id: $0)) != nil }
+        catalog.replace(agent, in: project.id, with: topLevel) {
+            sessions.session(SessionKey(agent: agent, id: $0)) != nil
+        }
         if let selection, selection.agent == agent, !catalog.contains(selection) {
             self.selection = nil
         }
