@@ -106,7 +106,9 @@ struct CelebrationStatusCard: View {
                 }
                 Button("Restore Usual Look") { center.restoreBase() }
                     .buttonStyle(.ds(.secondary, size: .medium))
-                    .help("Skip what's showing today. It comes back next time it occurs.")
+                    .help(
+                        CommandRegistry.shared.help(
+                            "Skip what's showing today. It comes back next time it occurs.", for: .celebrationRestore))
                 if case .chosen = active.reason {
                     Button("Use My Order") { center.choose(nil) }
                         .buttonStyle(.ds(.ghost, size: .medium))
@@ -114,7 +116,7 @@ struct CelebrationStatusCard: View {
             } else if !resolution.skipped.isEmpty {
                 Button("Bring Back") { center.resumeToday() }
                     .buttonStyle(.ds(.secondary, size: .medium))
-                    .help("Show the skipped celebration again.")
+                    .help(CommandRegistry.shared.help("Show the skipped celebration again.", for: .celebrationRestore))
             }
         }
     }
