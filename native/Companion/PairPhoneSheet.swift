@@ -88,8 +88,10 @@ struct PairPhoneSheet: View {
                         .monospacedDigit()
                 }
                 if pairing.failedAttempts > 0 {
-                    Text("\(pairing.failedAttempts) wrong code\(pairing.failedAttempts == 1 ? "" : "s") so far. Three closes this code.")
-                        .font(.dsCaption).foregroundStyle(.dsWarning)
+                    Text(
+                        "\(pairing.failedAttempts) wrong code\(pairing.failedAttempts == 1 ? "" : "s") so far. Three closes this code."
+                    )
+                    .font(.dsCaption).foregroundStyle(.dsWarning)
                 }
             }
             footer {
@@ -102,7 +104,9 @@ struct PairPhoneSheet: View {
         Group {
             header(
                 "Pair “\(request.device.name)”?",
-                detail: "\(request.device.model) · \(request.device.system). It will see this Mac's tasks, and can answer agents and send messages.")
+                detail:
+                    "\(request.device.model) · \(request.device.system). It will see this Mac's tasks, and can answer agents and send messages."
+            )
             VStack(alignment: .leading, spacing: DS.Space.xs) {
                 Text("Check that the device shows")
                     .font(.dsBody).foregroundStyle(.dsTextSecondary)

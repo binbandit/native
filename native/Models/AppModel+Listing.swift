@@ -161,7 +161,7 @@ extension AppModel {
     /// and starting a task there fails. Agents still list it, for sessions they kept from before.
     private func checkFolder(of project: Project) {
         guard project.host == .local else { return }
-        guard !FileManager.default.fileExists(atPath: project.url.path(percentEncoded: false)) else {
+        guard !FileManager.default.fileExists(atPath: project.path) else {
             problems.resolve(.folder, in: project.id)
             return
         }
@@ -170,9 +170,8 @@ extension AppModel {
                 project: project.id,
                 work: .folder,
                 title: "Can't find this project's folder",
-                recovery: "Native looked for it at \(project.url.path(percentEncoded: false)).",
-                suggestion: "Move it back and retry, or delete the project from Native.",
-                details: "No folder at \(project.url.path(percentEncoded: false))"
+                recovery: "Native looked for it at \(project.path).",
+                suggestion: "Move it back and retry, or delete the project from Native."
             ))
     }
 
