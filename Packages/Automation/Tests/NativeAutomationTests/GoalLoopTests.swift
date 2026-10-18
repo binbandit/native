@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import NativeAutomation
 
 @Suite struct GoalLoopTests {
@@ -10,7 +11,10 @@ import Testing
     }
 
     /// Sends the loop's own next prompt and ends the turn with `reply`.
-    func runTurn(_ loop: inout GoalLoop, reply: String, outcome: TurnOutcome = .ended, at seconds: TimeInterval, cost: Double? = nil) -> String? {
+    func runTurn(
+        _ loop: inout GoalLoop, reply: String, outcome: TurnOutcome = .ended, at seconds: TimeInterval,
+        cost: Double? = nil
+    ) -> String? {
         loop.turnWillStart(.goal, at: at(seconds))
         return loop.turnDidEnd(outcome, reply: reply, sessionCost: cost, at: at(seconds + 10))
     }
@@ -112,9 +116,9 @@ import Testing
 
     @Test func timeBudgetCountsOnlyActiveTime() {
         var loop = GoalLoop(objective: "x", budget: GoalBudget(maxDuration: 60), at: start)
-        _ = runTurn(&loop, reply: "GOAL: blocked - question", at: 0)   // active 0...10
+        _ = runTurn(&loop, reply: "GOAL: blocked - question", at: 0)  // active 0...10
         #expect(loop.goal.elapsed(at: at(500)) == 10)
-        loop.turnWillStart(.user, at: at(500))                          // active again from 500
+        loop.turnWillStart(.user, at: at(500))  // active again from 500
         let result12 = loop.turnDidEnd(.ended, reply: "GOAL: continuing", sessionCost: nil, at: at(530))
         #expect(result12 != nil)
         #expect(loop.goal.elapsed(at: at(530)) == 40)
@@ -164,6 +168,16 @@ import Testing
         #expect(loop.goal.status == .paused)
     }
 
+    @Test func aPausedGoalStillCompletesWhenATurnReportsItMet() {
+        var loop = GoalLoop(objective: "x", at: start)
+        _ = runTurn(&loop, reply: "", outcome: .failed("The agent is no longer running."), at: 0)
+        loop.turnWillStart(.user, at: at(20))
+        let next = loop.turnDidEnd(.ended, reply: "GOAL: complete - cat shows done", sessionCost: nil, at: at(30))
+        #expect(next == nil)
+        #expect(loop.goal.status == .complete)
+        #expect(loop.goal.lastReason == "cat shows done")
+    }
+
     @Test func userMessagesDontResumeAPausedGoal() {
         var loop = GoalLoop(objective: "x", at: start)
         loop.pause(at: start)
@@ -190,7 +204,8 @@ import Testing
     }
 
     @Test func roundTripsThroughJSON() throws {
-        var loop = GoalLoop(objective: "x", budget: GoalBudget(maxIterations: 3, maxDuration: 600, maxCost: 2), at: start)
+        var loop = GoalLoop(
+            objective: "x", budget: GoalBudget(maxIterations: 3, maxDuration: 600, maxCost: 2), at: start)
         _ = runTurn(&loop, reply: "GOAL: continuing - a", at: 0)
         let data = try JSONEncoder().encode(loop)
         #expect(try JSONDecoder().decode(GoalLoop.self, from: data) == loop)
@@ -199,7 +214,8 @@ import Testing
     }
 
     @Test func agentRunGoalsSendTheCommandOnceAndKeepNativesBudget() {
-        var loop = GoalLoop(objective: "Ship", budget: GoalBudget(maxIterations: 3), strategy: .claudeGoalCommand, at: start)
+        var loop = GoalLoop(
+            objective: "Ship", budget: GoalBudget(maxIterations: 3), strategy: .claudeGoalCommand, at: start)
         #expect(loop.nextPrompt(at: start) == "/goal Ship")
         loop.turnWillStart(.goal, at: start)
         let result17 = loop.turnDidEnd(.ended, reply: "Working on it", sessionCost: nil, at: at(5))
