@@ -17,6 +17,8 @@ extension DS {
         public static let pillPadding: CGFloat = 10
         /// The editor's line height multiple (the reference app 1.5).
         public static let lineHeight: CGFloat = 1.5
+        /// How far the controls row fades out at an edge that has more controls past it.
+        public static let edgeFade: CGFloat = 24
     }
 }
 
@@ -79,10 +81,13 @@ private struct ComposerBackground: ViewModifier {
 }
 
 /// The composer's bottom row: pickers and toggles leading (scrolling sideways when they don't fit,
-/// as in the reference app), the voice or other actions trailing; inset 8pt with 8pt between controls.
+/// as in the reference app, and fading at an edge with more past it), the voice or other actions trailing;
+/// inset 8pt with 8pt between controls.
 public struct ComposerControlsBar<Leading: View, Trailing: View>: View {
     let leading: Leading
     let trailing: Trailing
+    /// The edges with controls scrolled past them, which fade rather than cut a pill in half.
+    @State private var hiddenEdges = HorizontalEdge.Set()
 
     public init(@ViewBuilder leading: () -> Leading, @ViewBuilder trailing: () -> Trailing) {
         self.leading = leading()
@@ -98,6 +103,26 @@ public struct ComposerControlsBar<Leading: View, Trailing: View>: View {
             }
             .scrollIndicators(.never)
             .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
+            .onScrollGeometryChange(for: HorizontalEdge.Set.self) { geometry in
+                var edges = HorizontalEdge.Set()
+                if geometry.contentOffset.x > 1 { edges.insert(.leading) }
+                if geometry.contentOffset.x + geometry.containerSize.width < geometry.contentSize.width - 1 {
+                    edges.insert(.trailing)
+                }
+                return edges
+            } action: { _, edges in
+                hiddenEdges = edges
+            }
+            .mask {
+                HStack(spacing: 0) {
+                    LinearGradient(colors: [.clear, .black], startPoint: .leading, endPoint: .trailing)
+                        .frame(width: hiddenEdges.contains(.leading) ? DS.Composer.edgeFade : 0)
+                    Rectangle()
+                    LinearGradient(colors: [.black, .clear], startPoint: .leading, endPoint: .trailing)
+                        .frame(width: hiddenEdges.contains(.trailing) ? DS.Composer.edgeFade : 0)
+                }
+                .animation(.dsQuick, value: hiddenEdges)
+            }
             trailing
         }
         .padding(DS.Composer.controlsInset)

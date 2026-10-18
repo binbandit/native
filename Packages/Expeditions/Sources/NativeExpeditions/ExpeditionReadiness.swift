@@ -26,6 +26,8 @@ public nonisolated struct ExpeditionReadiness: Hashable, Sendable {
     public var opensPullRequest = true
     /// Whether `gh` is installed and signed in; nil while unknown.
     public var gitHubReady: Bool?
+    /// Whether the project has a GitHub remote to open the pull request on; nil while unknown.
+    public var hasGitHubRemote: Bool?
 
     public init() {}
 
@@ -77,6 +79,14 @@ public nonisolated struct ExpeditionReadiness: Hashable, Sendable {
                     id: "github",
                     message:
                         "The GitHub CLI isn't signed in, so the pull request at the end would fail. Run gh auth login, or leave the pull request off."
+                ))
+        }
+        if opensPullRequest, isRepository == true, gitHubReady == true, hasGitHubRemote == false {
+            warnings.append(
+                Warning(
+                    id: "remote",
+                    message:
+                        "The project has no GitHub remote, so the pull request at the end would fail. Add one, or leave the pull request off; the debrief is still written."
                 ))
         }
         if opensPullRequest, isRepository == false {

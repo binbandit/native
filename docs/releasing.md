@@ -236,8 +236,15 @@ The release script selects the compiled icon with `NATIVE_APP_ICON_NAME`: `AppIc
 update feed; the dedicated icon identifies the installed build. The compiled channel icons retain
 macOS Default, Dark, Clear and Tinted appearances. Source projects live in `design/app-icon/`.
 
+Debug builds launched from Xcode or `scripts/dev/run-isolated.sh` use `AppIconDev`, with a cyan
+blueprint treatment and code signature. This development icon identity is independent of the
+release channel, so previewing Beta or Nightly in a Debug build still uses the development icon.
+Original restores the compiled development icon and its native system appearances.
+
 Settings ▸ Appearance offers Halloween editions from October 1 through November 7, inclusive,
 in the device's local time zone. Each build uses its own Halloween artwork. The seasonal toggle
+uses the development edition in Debug builds, including while previewing another release channel.
+It
 remembers the user's opt-in, preserves their usual icon choice, and restores it on November 8.
 Choosing another icon turns Halloween off immediately. The seasonal option and View ▸ Halloween
 Icon disappear outside the window; a stored opt-in cannot activate an out-of-season icon.

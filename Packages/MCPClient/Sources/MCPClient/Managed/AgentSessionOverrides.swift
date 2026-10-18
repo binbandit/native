@@ -18,7 +18,9 @@ public struct AgentSessionOverrides: Hashable, Sendable {
     /// What couldn't be asked for, in words for the user.
     public var limitations: [String]
 
-    public init(sessionMeta: [String: JSON] = [:], launchConfiguration: [String: JSON] = [:], limitations: [String] = []) {
+    public init(
+        sessionMeta: [String: JSON] = [:], launchConfiguration: [String: JSON] = [:], limitations: [String] = []
+    ) {
         self.sessionMeta = sessionMeta
         self.launchConfiguration = launchConfiguration
         self.limitations = limitations
@@ -67,25 +69,41 @@ public enum MCPSessionOverrides {
     /// - Parameters:
     ///   - servers: Entries off in the session's project.
     ///   - offEverywhere: The subset off in every project, which is all Codex can express.
-    public static func disabling(_ servers: [ConfiguredServer], offEverywhere: [ConfiguredServer], for format: AgentConfigFormat) -> AgentSessionOverrides {
+    public static func disabling(
+        _ servers: [ConfiguredServer], offEverywhere: [ConfiguredServer], for format: AgentConfigFormat
+    ) -> AgentSessionOverrides {
         guard !servers.isEmpty || !offEverywhere.isEmpty else { return .none }
         switch format {
         case .claudeCode:
             // Claude Code merges `deniedMcpServers` from every settings source, the SDK's
             // programmatic tier included, and doesn't start a denied server.
             let denied = Set(servers.map(\.name)).sorted().map { JSON.object(["serverName": .string($0)]) }
-            return AgentSessionOverrides(sessionMeta: ["claudeCode": ["options": ["settings": ["deniedMcpServers": .array(denied)]]]])
+            return AgentSessionOverrides(sessionMeta: [
+                "claudeCode": ["options": ["settings": ["deniedMcpServers": .array(denied)]]]
+            ])
         case .codex:
             // The adapter merges `CODEX_CONFIG` into every session's config: per process, not per
             // session, so only servers off everywhere can be left out.
             let names = Set(offEverywhere.map(\.name)).sorted()
             let projectOnly = Set(servers.map(\.name)).subtracting(names).sorted()
             return AgentSessionOverrides(
-                launchConfiguration: names.isEmpty ? [:] : ["CODEX_CONFIG": ["mcp_servers": .object(Dictionary(uniqueKeysWithValues: names.map { ($0, ["enabled": false]) }))]],
-                limitations: projectOnly.map { "Codex can't leave \($0) out of one project's sessions, only all of them." }
+                launchConfiguration: names.isEmpty
+                    ? [:]
+                    : [
+                        "CODEX_CONFIG": [
+                            "mcp_servers": .object(
+                                Dictionary(uniqueKeysWithValues: names.map { ($0, ["enabled": false]) }))
+                        ]
+                    ],
+                limitations: projectOnly.map {
+                    "Codex can't leave \($0) out of one project's sessions, only all of them."
+                }
             )
         case .cursor:
-            return AgentSessionOverrides(limitations: Set(servers.map(\.name)).sorted().map { "Cursor can't leave \($0) out of a session; turn it off in Cursor's MCP settings." })
+            return AgentSessionOverrides(
+                limitations: Set(servers.map(\.name)).sorted().map {
+                    "Cursor can't leave \($0) out of a session; turn it off in Cursor's MCP settings."
+                })
         }
     }
 }

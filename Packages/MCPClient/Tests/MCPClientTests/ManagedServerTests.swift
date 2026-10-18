@@ -39,11 +39,7 @@ struct ManagedServerTests {
         #expect(
             outcomes([scoped, elsewhere], for: target(agent: "codex", in: URL(filePath: "/work/site/packages/web")))
                 == ["docs": .deliver, "inspector": .deliver])
-        elsewhere.excludedProjects = ["/work/site/packages"]
-        #expect(
-            outcomes([elsewhere], for: target(agent: "codex", in: URL(filePath: "/work/site/packages/web"))) == [
-                "inspector": .notForProject
-            ])
+
     }
 
     @Test func skipsWhatTheAgentCantConnectTo() {

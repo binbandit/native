@@ -31,7 +31,9 @@ enum ExpeditionWiring {
             case .notInstalled, .notAuthenticated: false
             case .offline, nil: nil
             }
+        let hasRemote: Bool? = ready == true ? ((try? await gitHub.repository(of: project)) != nil) : nil
         return ExpeditionProjectProbe(
-            isRepository: model.repository != nil, hasUncommittedChanges: !model.changes.isEmpty, gitHubReady: ready)
+            isRepository: model.repository != nil, hasUncommittedChanges: !model.changes.isEmpty, gitHubReady: ready,
+            hasGitHubRemote: hasRemote)
     }
 }

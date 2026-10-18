@@ -42,7 +42,7 @@ struct ExpeditionRouteTimeline: View {
                     if let checkpoint = expedition.checkpoint(leg.id) {
                         ExpeditionSeatRow(
                             expedition: expedition, slot: .checkpoint(leg.id), status: checkpoint.status,
-                            title: checkpoint.rounds > 0 ? "Checkpoint · round \(checkpoint.rounds)" : "Checkpoint",
+                            title: checkpoint.rounds > 1 ? "Checkpoint · round \(checkpoint.rounds)" : "Checkpoint",
                             agent: expedition.crew.reviewer, started: checkpoint.startedAt, ended: checkpoint.endedAt,
                             cost: checkpoint.sessionCost, isIndented: false, isSelected: selected == .checkpoint(leg.id)
                         ) { selected = .checkpoint(leg.id) }

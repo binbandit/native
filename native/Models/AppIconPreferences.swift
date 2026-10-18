@@ -30,7 +30,7 @@ final class AppIconPreferences {
     private(set) var isHalloweenAvailable: Bool
 
     @ObservationIgnored private let defaults: UserDefaults
-    @ObservationIgnored private let channel: ReleaseChannel
+    @ObservationIgnored private let variant: AppIconVariant
     @ObservationIgnored private let now: () -> Date
     @ObservationIgnored private let timeZone: () -> TimeZone
     @ObservationIgnored private let platform = PlatformAppIcon()
@@ -43,12 +43,12 @@ final class AppIconPreferences {
 
     init(
         defaults: UserDefaults = .standard,
-        channel: ReleaseChannel = .current,
+        variant: AppIconVariant = .current,
         now: @escaping () -> Date = Date.init,
         timeZone: @escaping () -> TimeZone = { .current }
     ) {
         self.defaults = defaults
-        self.channel = channel
+        self.variant = variant
         self.now = now
         self.timeZone = timeZone
         theme = defaults.string(forKey: Self.themeKey).flatMap(AppIconTheme.init(rawValue:)) ?? .original
@@ -62,7 +62,10 @@ final class AppIconPreferences {
 
     var isHalloweenActive: Bool { halloweenEnabled && isHalloweenAvailable }
     var usesSystemIcon: Bool { theme == .original && !isHalloweenActive }
-    var displayName: String { isHalloweenActive ? "Halloween · \(channel.displayName)" : theme.title }
+    var displayName: String {
+        if isHalloweenActive { return "Halloween · \(variant.displayName)" }
+        return theme == .original ? variant.displayName : theme.title
+    }
 
     var isDark: Bool {
         if usesSystemIcon { return systemIsDark }
@@ -74,11 +77,12 @@ final class AppIconPreferences {
     }
 
     var imageName: String {
-        isHalloweenActive ? halloweenImageName : theme.imageName(isDark: isDark)
+        if isHalloweenActive { return halloweenImageName }
+        return theme == .original ? variant.imageName(isDark: isDark) : theme.imageName(isDark: isDark)
     }
 
     var halloweenImageName: String {
-        "AppIcon-halloween-\(channel.rawValue)-\(isDark ? "dark" : "light")"
+        variant.halloweenImageName(isDark: isDark)
     }
 
     func selectTheme(_ theme: AppIconTheme) {

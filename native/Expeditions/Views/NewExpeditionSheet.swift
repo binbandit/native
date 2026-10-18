@@ -235,6 +235,7 @@ struct NewExpeditionSheet: View {
         readiness.budget = budget
         readiness.opensPullRequest = opensPullRequest
         readiness.gitHubReady = probe?.gitHubReady
+        readiness.hasGitHubRemote = probe?.hasGitHubRemote
         return readiness
     }
 

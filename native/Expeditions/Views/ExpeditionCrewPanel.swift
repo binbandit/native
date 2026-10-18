@@ -76,12 +76,13 @@ struct ExpeditionCrewPanel: View {
     }
 
     private var leadDoing: String {
-        switch expedition.lead.job {
-        case .planning: "Planning the route"
-        case .revising: "Revising the route"
-        case .reviewingLeg: "Looking at the legs ahead"
-        case .debriefing: "Writing the debrief"
-        case .conversation: expedition.lead.status.isActive ? "Answering you" : "Standing by"
+        let working = expedition.lead.status.isActive
+        return switch expedition.lead.job {
+        case .planning: working ? "Planning the route" : "Proposed the route"
+        case .revising: working ? "Revising the route" : "Revised the route"
+        case .reviewingLeg: working ? "Looking at the legs ahead" : "Standing by"
+        case .debriefing: working ? "Writing the debrief" : "Wrote the debrief"
+        case .conversation: working ? "Answering you" : "Standing by"
         }
     }
 
@@ -126,13 +127,14 @@ struct ExpeditionCrewPanel: View {
     private func activity(_ member: Member) -> String {
         if member.status.isActive, let task = expedition.task(of: member.slot),
             let session = center.host?.session(for: task),
-            let line = session.state.latestReply?.split(whereSeparator: \.isNewline).last.map(String.init),
+            let line = GoalMarker.stripping(session.state.latestReply ?? "").split(whereSeparator: \.isNewline).last
+                .map(String.init),
             !line.isEmpty
         {
             return "\(member.doing): \(line)"
         }
-        return member.status.isActive || member.status == .waiting
-            ? member.doing : "\(member.doing) · \(member.status.label)"
+        // The glyph already says done or waiting; only a stop needs saying.
+        return member.status.isStopped ? "\(member.doing) · \(member.status.label)" : member.doing
     }
 
     private func sendMessage() {

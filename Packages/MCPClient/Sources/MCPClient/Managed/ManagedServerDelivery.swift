@@ -12,14 +12,17 @@ public enum ManagedServerDelivery {
         public var transports: MCPTransportSupport?
         /// What the agent loads in `directory` from its own configuration.
         public var agentServers: [ConfiguredServer]
+        public var switches: MCPServerSwitches
 
         public init(
-            agentID: String, directory: URL?, transports: MCPTransportSupport?, agentServers: [ConfiguredServer]
+            agentID: String, directory: URL?, transports: MCPTransportSupport?, agentServers: [ConfiguredServer],
+            switches: MCPServerSwitches = MCPServerSwitches()
         ) {
             self.agentID = agentID
             self.directory = directory
             self.transports = transports
             self.agentServers = agentServers
+            self.switches = switches
         }
     }
 
@@ -51,7 +54,9 @@ public enum ManagedServerDelivery {
     }
 
     private static func outcome(of server: ManagedServer, for target: Target, loaded: [ConfiguredServer]) -> Outcome {
-        guard target.switches.mode(of: server.transport.endpoint.key, in: target.directory) == .on else { return .switchedOff }
+        guard target.switches.mode(of: server.transport.endpoint.key, in: target.directory) == .on else {
+            return .switchedOff
+        }
         guard server.agents.includes(target.agentID) else { return .notForAgent }
         guard server.includes(directory: target.directory) else { return .notForProject }
         let support = target.transports ?? MCPTransportSupport(http: true, sse: true)

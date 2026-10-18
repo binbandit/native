@@ -77,4 +77,5 @@ struct ExpeditionProjectProbe {
     var isRepository: Bool
     var hasUncommittedChanges: Bool
     var gitHubReady: Bool?
+    var hasGitHubRemote: Bool?
 }
