@@ -26,6 +26,9 @@ nonisolated struct TranscriptSearchBackfill: Sendable {
     /// Native's project folders, for placing sessions it doesn't list.
     let projects: [String]
     let excluded: [String]
+    /// Sessions last active before this are kept out of the index (an organization's retention
+    /// policy), and dropped from it first.
+    let retainedSince: Date?
 
     /// Sessions per write, and documents per write: big enough to be quick, small enough that a
     /// search never waits on one.
@@ -34,9 +37,14 @@ nonisolated struct TranscriptSearchBackfill: Sendable {
     private static let logger = Logger(subsystem: "Native", category: "Search")
 
     @concurrent func run(report: @escaping @Sendable (TranscriptSearchIndexing) async -> Void) async {
+        if let retainedSince {
+            try? await index.removeSessions(updatedBefore: retainedSince)
+        }
         let stamps = (try? await index.sourceStamps()) ?? [:]
         let work = readers.flatMap { reader in
-            reader.reader.sources().filter { stamps[$0.stamp.path] != $0.stamp.stamp }.map { (reader, $0) }
+            reader.reader.sources()
+                .filter { stamps[$0.stamp.path] != $0.stamp.stamp && $0.modifiedAt >= retainedSince ?? .distantPast }
+                .map { (reader, $0) }
         }
         .sorted { $0.1.modifiedAt > $1.1.modifiedAt }
         guard !work.isEmpty else {
@@ -76,7 +84,9 @@ nonisolated struct TranscriptSearchBackfill: Sendable {
             Self.logger.error("Couldn't read \(reader.agent, privacy: .public) history: \(error, privacy: .public)")
             return nil
         }
-        guard let session, !Self.isExcluded(session.cwd, by: excluded) else { return nil }
+        guard let session, !Self.isExcluded(session.cwd, by: excluded),
+            (session.updatedAt ?? source.modifiedAt) >= retainedSince ?? .distantPast
+        else { return nil }
         let key = SearchSessionKey(agent: reader.agent, session: session.sessionID)
         let known = known[key]
         let record = SearchSessionRecord(

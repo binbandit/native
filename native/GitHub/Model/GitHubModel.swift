@@ -73,6 +73,10 @@ final class GitHubModel {
     ) {
         self.environment = environment
         self.runner = runner
+        // `-gitHubOpenPullRequest <url>` opens a pull request's page at launch, for checks and links.
+        if let link = UserDefaults.standard.string(forKey: "gitHubOpenPullRequest"), let url = URL(string: link) {
+            presentedPullRequest = PullRequestReference(url: url)
+        }
     }
 
     #if os(macOS)

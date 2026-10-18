@@ -139,6 +139,14 @@ actor SearchStore {
         }
     }
 
+    /// Forgets every session last active before `cutoff` (a retention policy).
+    func removeSessions(updatedBefore cutoff: Date) throws {
+        try database.transaction {
+            try database.query(
+                "DELETE FROM sessions WHERE coalesce(updated_at, created_at, 0) < ?", [SQLiteValue(cutoff)])
+        }
+    }
+
     func removeAll() throws {
         try dropSchema()
         try database.execute("VACUUM")

@@ -1,5 +1,6 @@
 import ACP
 import Foundation
+import NativePolicy
 import Observation
 import Search
 import os
@@ -233,6 +234,11 @@ final class TranscriptSearchCenter {
             updatedAt: session.lastActivity ?? .now, isArchived: model.isArchived(session.key))
     }
 
+    /// The oldest activity the organization lets search keep (`policy.search.retentionDays`).
+    var retainedSince: Date? {
+        PolicyCenter.shared.policy.searchRetentionDays.map { Date.now.addingTimeInterval(-Double($0) * 86_400) }
+    }
+
     private var projectFolders: [String] {
         model?.projects.all.map(\.path) ?? []
     }
@@ -290,7 +296,8 @@ final class TranscriptSearchCenter {
             }
         }
         let backfill = TranscriptSearchBackfill(
-            index: index, readers: readers, known: known, projects: projectFolders, excluded: excludedFolders)
+            index: index, readers: readers, known: known, projects: projectFolders, excluded: excludedFolders,
+            retainedSince: retainedSince)
         lastBackfill = .now
         backfillTask = Task(priority: .background) { [weak self] in
             await backfill.run { [weak self] state in

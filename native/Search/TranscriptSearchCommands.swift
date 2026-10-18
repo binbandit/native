@@ -1,12 +1,12 @@
+import NativeCommands
 import SwiftUI
 
-/// Go ▸ Search Tasks… (⇧⌘F, docs/keyboard.md).
+/// Go ▸ Search Tasks… (`search.show`, ⇧⌘F unless remapped; docs/keyboard.md).
 struct TranscriptSearchMenuItem: View {
+    let commands: CommandRegistry
+
     var body: some View {
-        Button("Search Tasks…") {
-            TranscriptSearch.open()
-        }
-        .keyboardShortcut("f", modifiers: [.command, .shift])
+        CommandMenuItem(.searchShow, in: commands)
     }
 }
 
@@ -14,7 +14,10 @@ struct TranscriptSearchMenuItem: View {
 struct TranscriptSearchNavItem: View {
     var body: some View {
         let center = BuiltInPlugins.search.center
-        SidebarNavItem("Search", systemImage: "magnifyingglass", isSelected: center.isPresented, shortcut: "⇧⌘F") {
+        SidebarNavItem(
+            "Search", systemImage: "magnifyingglass", isSelected: center.isPresented,
+            shortcut: CommandRegistry.shared.shortcut(for: .searchShow)?.displayString
+        ) {
             TranscriptSearch.open()
         } accessory: {
             EmptyView()

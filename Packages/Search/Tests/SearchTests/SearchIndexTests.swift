@@ -115,6 +115,15 @@ struct SearchIndexTests {
         #expect(try await index.search(SearchQuery("login "), now: now).groups.isEmpty)
     }
 
+    @Test func retentionForgetsOldSessions() async throws {
+        let index = try await makeIndex()
+        try await seed(index)
+        try await index.removeSessions(updatedBefore: now.addingTimeInterval(-60 * 86_400))
+        let results = try await index.search(SearchQuery("login is:archived"), now: now)
+        #expect(results.groups.map(\.session.key.session) == ["s1"])
+        #expect(try await index.statistics().sessions == 2)
+    }
+
     @Test func remembersWhichHistoryFilesItRead() async throws {
         let index = try await makeIndex()
         let source = SearchSourceStamp(path: "/h/a.jsonl", stamp: "10-1")

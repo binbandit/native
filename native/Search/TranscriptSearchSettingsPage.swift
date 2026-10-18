@@ -1,3 +1,4 @@
+import NativePolicy
 import Search
 import SwiftUI
 
@@ -37,6 +38,7 @@ struct TranscriptSearchSettingsPage: View {
     static let historyRow = SettingsRowID("search.history")
     static let excludedRow = SettingsRowID("search.excluded")
     static let indexRow = SettingsRowID("search.index")
+    static let retentionRow = SettingsRowID("search.retention")
 
     @Bindable var center: TranscriptSearchCenter
 
@@ -60,6 +62,17 @@ struct TranscriptSearchSettingsPage: View {
                     detail: indexingDetail.map(Text.init)
                 ) {
                     SettingsSwitch("Include agents' past sessions", isOn: $center.includesAgentHistory)
+                }
+                if let days = PolicyCenter.shared.policy.searchRetentionDays {
+                    SettingsRow(
+                        id: Self.retentionRow,
+                        "Keep tasks for",
+                        description: Text("Tasks with no activity for longer are left out of search and removed from the index.")
+                    ) {
+                        Text(days == 1 ? "1 day" : "\(days) days")
+                            .foregroundStyle(.dsTextSecondary)
+                    }
+                    .settingsManaged(by: .searchRetentionDays)
                 }
                 SettingsRow(
                     id: Self.indexRow,
