@@ -95,7 +95,7 @@ final class OpenInModel {
     }
 
     func copyPath(of location: OpenInLocation) {
-        OpenInPlatform.copy(location.path)
+        DSPasteboard.copy(location.path)
         copiedLocation = location
         copiedReset?.cancel()
         copiedReset = Task { [weak self] in

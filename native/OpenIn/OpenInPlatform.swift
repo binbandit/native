@@ -8,8 +8,8 @@ import Exec
 import UIKit
 #endif
 
-/// What Open In needs from the platform: which catalog apps are installed and their icons, opening a
-/// location in one, and the clipboard. On the Mac that's NSWorkspace. iPadOS can't hand a host's
+/// What Open In needs from the platform: which catalog apps are installed and their icons, and
+/// opening a location in one. On the Mac that's NSWorkspace. iPadOS can't hand a host's
 /// folder to another app, so it finds none and Open In offers Copy Path alone.
 @MainActor
 enum OpenInPlatform {
@@ -109,15 +109,6 @@ enum OpenInPlatform {
         }
     }
     #endif
-
-    static func copy(_ string: String) {
-        #if canImport(AppKit)
-        NSPasteboard.general.clearContents()
-        NSPasteboard.general.setString(string, forType: .string)
-        #else
-        UIPasteboard.general.string = string
-        #endif
-    }
 
     /// Shows why an app couldn't open the folder (moved, damaged, refused it), as the system words it.
     static func present(_ error: any Error) {

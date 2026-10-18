@@ -1,10 +1,10 @@
 import SwiftUI
 
-/// The menu bar's Open In commands for the visible task's folder (or the Home page's project), so
-/// they're discoverable and every app is reachable from the keyboard:
+/// The menu bar's Open In commands for the visible task's folder, so they're discoverable and every
+/// app is reachable from the keyboard; disabled while no task is in view:
 ///
 ///     CommandMenu("Session") {
-///         OpenInCommands(location: OpenInLocation(folder: session.cwd, host: project.host))
+///         OpenInCommands(location: session.map { OpenInLocation(folder: $0.cwd, host: project.host) })
 ///     }
 ///
 /// "Open in <default app>" (⇧⌘O) does what the control's left half does; the "Open In" submenu

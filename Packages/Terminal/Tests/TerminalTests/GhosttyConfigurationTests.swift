@@ -53,6 +53,14 @@ struct GhosttyConfigurationTests {
         #expect(values(of: "scrollback-limit-lines", in: unlimited) == ["unlimited"])
     }
 
+    @Test func writesTheCursorAndNativesOwnSettings() {
+        let text = configuration(TerminalSettings(cursor: TerminalCursor(style: .underline, blinks: false))).text
+        #expect(values(of: "cursor-style", in: text) == ["underline"])
+        #expect(values(of: "cursor-style-blink", in: text) == ["false"])
+        #expect(values(of: "wait-after-command", in: text) == ["true"])
+        #expect(values(of: "clipboard-read", in: GhosttyConfiguration.embeddingOverrides) == ["deny"])
+    }
+
     @Test func saysItsXtermSoEveryMachineAndSetuidProgramKnowsIt() {
         #expect(values(of: "term", in: configuration().text) == ["xterm-256color"])
     }
