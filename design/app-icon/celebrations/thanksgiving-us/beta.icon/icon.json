@@ -38,19 +38,19 @@
               "value": true
             }
           ],
-          "image-name": "painted-interlock.png",
-          "name": "Painted Native interlock",
+          "image-name": "flat-interlock.png",
+          "name": "Flat Native interlock",
           "position": {
-            "scale": 0.5657492354740061,
+            "scale": 0.6462882096069869,
             "translation-in-points": [
-              -2.2629969418960245,
-              12.84862385321101
+              -0.9694323144104803,
+              -22.89956331877729
             ]
           }
         }
       ],
       "lighting": "individual",
-      "name": "Thanksgiving US · painted Native interlock",
+      "name": "Thanksgiving US · flat Native interlock",
       "refractivity-specializations": [
         {
           "appearance": "tinted",
@@ -62,8 +62,8 @@
         }
       ],
       "shadow": {
-        "kind": "neutral",
-        "opacity": 0.18
+        "kind": "none",
+        "opacity": 0
       },
       "translucency-specializations": [
         {

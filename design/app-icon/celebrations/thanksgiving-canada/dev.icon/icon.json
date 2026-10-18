@@ -38,19 +38,19 @@
               "value": true
             }
           ],
-          "image-name": "painted-interlock.png",
-          "name": "Painted Native interlock",
+          "image-name": "flat-interlock.png",
+          "name": "Flat Native interlock",
           "position": {
-            "scale": 0.5514157973174366,
+            "scale": 0.6445993031358885,
             "translation-in-points": [
-              -0.0,
-              12.0
+              -1.289198606271777,
+              12.966898954703833
             ]
           }
         }
       ],
       "lighting": "individual",
-      "name": "Thanksgiving Canada · painted Native interlock",
+      "name": "Thanksgiving Canada · flat Native interlock",
       "refractivity-specializations": [
         {
           "appearance": "tinted",
@@ -62,8 +62,8 @@
         }
       ],
       "shadow": {
-        "kind": "neutral",
-        "opacity": 0.18
+        "kind": "none",
+        "opacity": 0
       },
       "translucency-specializations": [
         {

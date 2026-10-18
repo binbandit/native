@@ -38,19 +38,19 @@
               "value": true
             }
           ],
-          "image-name": "painted-interlock.png",
-          "name": "Painted Native interlock",
+          "image-name": "flat-interlock.png",
+          "name": "Flat Native interlock",
           "position": {
-            "scale": 0.5510052122114668,
+            "scale": 0.6016260162601627,
             "translation-in-points": [
-              -0.2755026061057334,
-              14.4795234549516
+              -2.4065040650406506,
+              6.585365853658536
             ]
           }
         }
       ],
       "lighting": "individual",
-      "name": "Ada Lovelace Day · painted Native interlock",
+      "name": "Ada Lovelace Day · flat Native interlock",
       "refractivity-specializations": [
         {
           "appearance": "tinted",
@@ -62,8 +62,8 @@
         }
       ],
       "shadow": {
-        "kind": "neutral",
-        "opacity": 0.18
+        "kind": "none",
+        "opacity": 0
       },
       "translucency-specializations": [
         {

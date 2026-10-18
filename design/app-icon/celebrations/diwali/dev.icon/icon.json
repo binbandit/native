@@ -38,19 +38,19 @@
               "value": true
             }
           ],
-          "image-name": "painted-interlock.png",
-          "name": "Painted Native interlock",
+          "image-name": "flat-interlock.png",
+          "name": "Flat Native interlock",
           "position": {
-            "scale": 0.5289492494639028,
+            "scale": 0.6218487394957983,
             "translation-in-points": [
-              0.2644746247319514,
-              15.438170121515368
+              -0.0,
+              15.420168067226891
             ]
           }
         }
       ],
       "lighting": "individual",
-      "name": "Diwali · painted Native interlock",
+      "name": "Diwali · flat Native interlock",
       "refractivity-specializations": [
         {
           "appearance": "tinted",
@@ -62,8 +62,8 @@
         }
       ],
       "shadow": {
-        "kind": "neutral",
-        "opacity": 0.18
+        "kind": "none",
+        "opacity": 0
       },
       "translucency-specializations": [
         {

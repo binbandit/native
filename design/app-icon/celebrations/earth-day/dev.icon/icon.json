@@ -38,19 +38,19 @@
               "value": true
             }
           ],
-          "image-name": "painted-interlock.png",
-          "name": "Painted Native interlock",
+          "image-name": "flat-interlock.png",
+          "name": "Flat Native interlock",
           "position": {
-            "scale": 0.5745341614906833,
+            "scale": 0.584518167456556,
             "translation-in-points": [
               -0.0,
-              14.298136645962733
+              13.46129541864139
             ]
           }
         }
       ],
       "lighting": "individual",
-      "name": "Earth Day · painted Native interlock",
+      "name": "Earth Day · flat Native interlock",
       "refractivity-specializations": [
         {
           "appearance": "tinted",
@@ -62,8 +62,8 @@
         }
       ],
       "shadow": {
-        "kind": "neutral",
-        "opacity": 0.18
+        "kind": "none",
+        "opacity": 0
       },
       "translucency-specializations": [
         {

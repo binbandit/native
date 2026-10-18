@@ -38,19 +38,19 @@
               "value": true
             }
           ],
-          "image-name": "painted-interlock.png",
-          "name": "Painted Native interlock",
+          "image-name": "flat-interlock.png",
+          "name": "Flat Native interlock",
           "position": {
-            "scale": 0.5758754863813229,
+            "scale": 0.5648854961832062,
             "translation-in-points": [
-              -0.8638132295719844,
-              12.287937743190662
+              -0.0,
+              9.17557251908397
             ]
           }
         }
       ],
       "lighting": "individual",
-      "name": "Tết Nguyên Đán · painted Native interlock",
+      "name": "Tết Nguyên Đán · flat Native interlock",
       "refractivity-specializations": [
         {
           "appearance": "tinted",
@@ -62,8 +62,8 @@
         }
       ],
       "shadow": {
-        "kind": "neutral",
-        "opacity": 0.18
+        "kind": "none",
+        "opacity": 0
       },
       "translucency-specializations": [
         {
