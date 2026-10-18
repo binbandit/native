@@ -75,8 +75,9 @@ enum SessionPolicySupport: Hashable, Sendable {
 
     /// For each session, per project.
     case perSession
-    /// For all of the agent's sessions at once, when it launches.
-    case atLaunch
+    /// For all of the agent's sessions at once, when it launches; with a caveat for the user when
+    /// it doesn't always hold.
+    case atLaunch(caveat: String?)
     /// Not at all; the reason is for the user.
     case unsupported(String)
 }
