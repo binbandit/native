@@ -21,14 +21,34 @@ final class PlatformWindowRoom {
         #endif
     }
 
+    /// The narrowest the window's content lets it be now.
+    var minWidth: CGFloat {
+        #if canImport(AppKit)
+        window?.minSize.width ?? 0
+        #else
+        0
+        #endif
+    }
+
     /// Whether content `width` wider than the window's minimum would make the window grow.
     func wouldGrow(adding width: CGFloat) -> Bool {
         #if canImport(AppKit)
-        guard let window else { return false }
-        return window.minSize.width + width > window.frame.width
+        window != nil && minWidth + width > self.width
         #else
         false
         #endif
+    }
+}
+
+extension PlatformWindowRoom {
+    /// Waits, a frame at a time and at most a second, for the window's layout to settle into
+    /// `condition` (a column it just showed or hid counts toward its minimum until it has).
+    func waitUntil(_ condition: () -> Bool) async {
+        var frames = 0
+        while !condition(), frames < 60 {
+            try? await Task.sleep(for: .milliseconds(16))
+            frames += 1
+        }
     }
 }
 

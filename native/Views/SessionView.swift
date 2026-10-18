@@ -20,8 +20,7 @@ struct SessionView: View {
 
     var body: some View {
         TranscriptView(session: session) { id in
-            makeInspectorRoom(Self.subagentInspectorWidth)
-            openSubagent = id
+            openInspector(Self.subagentInspectorWidth) { openSubagent = id }
         }
             .environment(\.turnChangesActions, turnChangesActions)
             .environment(\.isPrimaryTranscript, true)
@@ -121,16 +120,20 @@ struct SessionView: View {
         Binding(
             get: { showsChanges },
             set: { shows in
-                if shows { makeInspectorRoom(GitMetrics.inspectorIdealWidth) }
-                showsChanges = shows
+                if shows {
+                    openInspector(GitMetrics.inspectorIdealWidth) { showsChanges = true }
+                } else {
+                    showsChanges = false
+                }
             }
         )
     }
 
-    /// Before an inspector opens: the window makes room rather than growing, when none is open yet.
-    private func makeInspectorRoom(_ width: CGFloat) {
-        guard !isInspectorPresented.wrappedValue else { return }
-        inspectorRoom.prepare(width)
+    /// Opens an inspector once the window has made room for it, rather than growing; one already
+    /// open has its room.
+    private func openInspector(_ width: CGFloat, _ open: @escaping @MainActor () -> Void) {
+        guard !isInspectorPresented.wrappedValue else { return open() }
+        inspectorRoom.open(width, open)
     }
 
     private var isInspectorPresented: Binding<Bool> {
