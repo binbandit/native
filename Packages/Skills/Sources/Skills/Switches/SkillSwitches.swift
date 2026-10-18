@@ -110,12 +110,14 @@ extension SkillSwitches {
 
     /// Why a switch on `item` doesn't fully reach some agent, in words for the row: agents that
     /// can't leave skills out, plugin skills, and agents that can't do it per project.
-    public func limitations(of item: SkillItem, agents: [SkillAgentFormat]) -> [String] {
+    /// `agents` are the running agents and how each can switch skills (the app asks each agent's
+    /// plugin; `SkillAgentFormat.switching` is what the built-in ones support).
+    public func limitations(of item: SkillItem, agents: [SkillAgentFormat: SkillSwitching]) -> [String] {
         let isOffInAProjectOnly =
             global[item.key] != .off && projects.values.contains { $0[item.key] == .off }
-        return agents.filter(item.agents.contains).compactMap { agent in
+        return SkillAgentFormat.allCases.filter { agents[$0] != nil && item.agents.contains($0) }.compactMap { agent in
             let places = item.places.filter { $0.root.agents.contains(agent) }
-            switch agent.switching {
+            switch agents[agent] ?? .unsupported {
             case .unsupported:
                 return "\(agent.displayName) can't leave a skill out of a session, so it still loads it."
             case .perSession:
