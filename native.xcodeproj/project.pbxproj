@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		00000000000000005E171003 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000005E171002 /* Sentry */; };
+		00000000000000005E171013 /* NativeDiagnostics in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000005E171012 /* NativeDiagnostics */; };
 		000000000000000000000320 /* ACP in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000000310 /* ACP */; };
 		000000000000000000000420 /* MCP in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000000410 /* MCP */; };
 		000000000000000000474820 /* GitHub in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000474810 /* GitHub */; };
@@ -100,6 +102,8 @@
 		000000000000000130000000 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			files = (
+				00000000000000005E171003 /* Sentry in Frameworks */,
+				00000000000000005E171013 /* NativeDiagnostics in Frameworks */,
 				54227E023083ADA900D7771F /* MCPClient in Frameworks */,
 				00000000000000000B5C1020 /* Skills in Frameworks */,
 				000000000000000000000320 /* ACP in Frameworks */,
@@ -200,6 +204,8 @@
 			);
 			name = native;
 			packageProductDependencies = (
+				00000000000000005E171002 /* Sentry */,
+				00000000000000005E171012 /* NativeDiagnostics */,
 				000000000000000000000310 /* ACP */,
 				0000000000000000A99A0010 /* AppAppearance */,
 				0000000000000000C0DE0010 /* CodeThemes */,
@@ -246,6 +252,8 @@
 			mainGroup = 000000000000000000000001;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				00000000000000005E171001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */,
+				00000000000000005E171011 /* XCLocalSwiftPackageReference "Packages/NativeDiagnostics" */,
 				000000000000000071E10000 /* XCLocalSwiftPackageReference "Packages/Terminal" */,
 				000000000000000000000300 /* XCLocalSwiftPackageReference "Packages/ACP" */,
 				0000000000000000A99A0000 /* XCLocalSwiftPackageReference "Packages/AppAppearance" */,
@@ -741,6 +749,10 @@
 /* End XCConfigurationList section */
 
 /* Begin XCLocalSwiftPackageReference section */
+		00000000000000005E171011 /* XCLocalSwiftPackageReference "Packages/NativeDiagnostics" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/NativeDiagnostics;
+		};
 		000000000000000000000300 /* XCLocalSwiftPackageReference "Packages/ACP" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/ACP;
@@ -804,6 +816,14 @@
 /* End XCLocalSwiftPackageReference section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		00000000000000005E171001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/getsentry/sentry-cocoa";
+			requirement = {
+				kind = exactVersion;
+				version = 9.30.2;
+			};
+		};
 		00000000000000005E1EA501 /* XCRemoteSwiftPackageReference "Sparkle" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/sparkle-project/Sparkle";
@@ -815,6 +835,16 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		00000000000000005E171002 /* Sentry */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 00000000000000005E171001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
+			productName = Sentry;
+		};
+		00000000000000005E171012 /* NativeDiagnostics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 00000000000000005E171011 /* XCLocalSwiftPackageReference "Packages/NativeDiagnostics" */;
+			productName = NativeDiagnostics;
+		};
 		000000000000000000000310 /* ACP */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = ACP;

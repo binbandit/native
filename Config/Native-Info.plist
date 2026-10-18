@@ -4,6 +4,8 @@
      docs/releasing.md. -->
 <plist version="1.0">
 <dict>
+	<key>NativeSentryDSN</key>
+	<string>$(NATIVE_SENTRY_DSN)</string>
 	<key>SUFeedURL</key>
 	<string>$(NATIVE_FEED_URL)</string>
 	<key>SUPublicEDKey</key>

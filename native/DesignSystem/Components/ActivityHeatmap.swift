@@ -1,9 +1,9 @@
 import SwiftUI
 
 /// A year of activity as GitHub draws it: one square per day, a column per week, colored in five
-/// steps of the accent by how much happened. Pointer hover, a tap or a drag across the squares
-/// picks a day, so it works with touch; the caller shows the picked day's numbers, and every
-/// square tells VoiceOver and its tooltip exactly what happened that day.
+/// steps of the accent by how much happened. Hovering shows a day; a click or tap picks one (again
+/// to let go), and with focus the arrow keys move the pick a day or a week. The caller shows the
+/// day's numbers, and every square tells VoiceOver and its tooltip exactly what happened that day.
 public struct ActivityHeatmap: View {
     let values: [Date: Double]
     let estimated: Set<Date>
@@ -74,14 +74,29 @@ public struct ActivityHeatmap: View {
                 hovered = nil
             }
         }
-        .gesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { value in
-                    if let day = layout.day(at: value.location, cell: cell, gap: Self.gap) {
-                        selection = day
-                    }
+        // A tap rather than a drag, so a swipe across the graph still scrolls the page on touch.
+        .onTapGesture(coordinateSpace: .local) { point in
+            if let day = layout.day(at: point, cell: cell, gap: Self.gap) {
+                selection = day == selection ? nil : day
+            }
+        }
+        .focusable()
+        .onKeyPress(keys: [.leftArrow, .rightArrow, .upArrow, .downArrow]) { press in
+            let days =
+                switch press.key {
+                case .leftArrow: -7
+                case .rightArrow: 7
+                case .upArrow: -1
+                default: 1
                 }
-        )
+            selection = layout.clamped(selection.flatMap { calendar.date(byAdding: .day, value: days, to: $0) } ?? layout.end)
+            return .handled
+        }
+        .onKeyPress(.escape) {
+            guard selection != nil else { return .ignored }
+            selection = nil
+            return .handled
+        }
     }
 
     @ViewBuilder
@@ -166,6 +181,11 @@ extension ActivityHeatmap {
         func day(week: Int, weekday: Int) -> Date? {
             guard let day = calendar.date(byAdding: .day, value: week * 7 + weekday, to: start), day <= end else { return nil }
             return day
+        }
+
+        /// The day, kept within the graph.
+        func clamped(_ day: Date) -> Date {
+            min(max(day, start), end)
         }
 
         func day(at point: CGPoint, cell: CGFloat, gap: CGFloat) -> Date? {

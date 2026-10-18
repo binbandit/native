@@ -27,4 +27,8 @@ nonisolated enum ComposerMetrics {
     /// Plan step indicators: a 10pt dot in a 12pt slot (Factory `TodoStatusIndicator`).
     static let stepDotSize: CGFloat = 10
     static let stepSlotWidth: CGFloat = 12
+    /// An attachment chip's thumbnail (Factory's tiles are 64pt; a chip with a name needs less).
+    static let attachmentThumbnail: CGFloat = 28
+    /// Long names truncate in the middle past this.
+    static let attachmentChipMaxWidth: CGFloat = 240
 }
