@@ -38,7 +38,7 @@ struct WorkflowRunHeader: View {
                 controls
             }
             HStack(spacing: DS.Space.md) {
-                AutomationStatusGlyph(glyph: AutomationGlyph(run: run.phase))
+                AutomationStatusGlyph(glyph: run.statusGlyph)
                 Badge(run.statusLabel, tone: tone, style: .mono)
                 StepSegments(steps: run.steps)
                 Text("\(run.finishedCount) of \(run.steps.count) steps")

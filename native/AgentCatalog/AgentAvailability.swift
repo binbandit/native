@@ -35,9 +35,9 @@ enum AgentAvailability: Equatable {
     /// From a running agent's runtime, with signing in folded in.
     init(_ runtime: AgentRuntime) {
         switch runtime.status {
-        case .ready: self = runtime.isSigningIn ? .signingIn : runtime.needsSignIn ? .needsSignIn : .ready
-        // Idle agents start on demand, so to the user they're ready.
-        case .idle: self = .ready
+        // An idle agent starts on demand, so to the user it's simply ready; no look of its own.
+        case .ready, .idle:
+            self = runtime.isSigningIn ? .signingIn : runtime.needsSignIn ? .needsSignIn : .ready
         case .starting: self = .starting
         case .notInstalled(let command): self = .notInstalled(missing: command)
         case .failed(let message): self = .failed(message)

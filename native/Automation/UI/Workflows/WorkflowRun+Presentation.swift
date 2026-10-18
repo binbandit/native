@@ -21,4 +21,12 @@ extension WorkflowRun {
         let age = DSFormat.compactAge(createdAt, now: now)
         return age == "now" ? "started just now" : "started \(age) ago"
     }
+
+    /// The run's glyph, matching `statusLabel`: a run that stopped short shows how.
+    var statusGlyph: AutomationGlyph {
+        guard phase == .halted, !hasFailedStep else { return AutomationGlyph(run: phase) }
+        if steps.contains(where: { $0.status == .interrupted }) { return .interrupted }
+        if steps.contains(where: { if case .limited = $0.status { true } else { false } }) { return .task(.limited) }
+        return .task(.cancelled)
+    }
 }

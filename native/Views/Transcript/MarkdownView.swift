@@ -37,10 +37,38 @@ private enum MarkdownParseCache {
 
     static func blocks(for source: String) -> [MarkdownNode]? {
         if let blocks = documents[source] { return blocks }
-        guard let blocks = MarkdownNode.blocks(from: source) else { return nil }
+        guard let blocks = MarkdownNode.blocks(from: source.keepingLineBreaks) else { return nil }
         if documents.count >= capacity { documents.removeAll(keepingCapacity: true) }
         documents[source] = blocks
         return blocks
+    }
+}
+
+extension String {
+    /// Agents write chat, where a single newline is a line break (as in GitHub comments): "one
+    /// number per line" must not collapse into one line. Markdown would join those lines into a
+    /// paragraph, so every line followed by another non-blank line ends in a hard break. Fenced
+    /// code keeps its text as is, and blank lines still separate paragraphs.
+    fileprivate var keepingLineBreaks: String {
+        var lines = components(separatedBy: "\n")
+        var fence: Substring?
+        for index in lines.indices {
+            let trimmed = lines[index].drop { $0 == " " }
+            if let open = fence {
+                if trimmed.hasPrefix(open) { fence = nil }
+                continue
+            }
+            if trimmed.hasPrefix("```") || trimmed.hasPrefix("~~~") {
+                fence = trimmed.prefix(3)
+                continue
+            }
+            let next = index + 1 < lines.count ? lines[index + 1] : ""
+            let isBlank = { (line: String) in line.allSatisfy(\.isWhitespace) }
+            if !isBlank(lines[index]), !isBlank(next), !lines[index].hasSuffix("  "), !lines[index].hasSuffix("\\") {
+                lines[index] += "  "
+            }
+        }
+        return lines.joined(separator: "\n")
     }
 }
 
