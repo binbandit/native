@@ -5,7 +5,176 @@
 extension FirstPartyCelebrations {
     /// Each country's official calendar and the catalogue's celebrations that are public holidays
     /// there, by ISO 3166-1 alpha-2 code.
-    static let publicHolidayCalendars: [String: PublicHolidayCalendar] = [:]
+    static let publicHolidayCalendars: [String: PublicHolidayCalendar] = [
+        "AE": PublicHolidayCalendar(
+            authority: "UAE Government portal (Cabinet Resolution No. 27 of 2024)",
+            source: "https://u.ae/en/information-and-services/public-holidays-and-religious-affairs/public-holidays",
+            holidays: ["eid-al-adha", "eid-al-fitr", "new-year"]),
+        "AR": PublicHolidayCalendar(
+            authority: "Ley 27.399 (Boletín Oficial)",
+            source: "https://www.argentina.gob.ar/sites/default/files/ley_27399_publicada_18-10_0.pdf",
+            holidays: ["carnival", "christmas", "new-year"]),
+        "AU": PublicHolidayCalendar(
+            authority: "Fair Work Ombudsman",
+            source: "https://www.fairwork.gov.au/employment-conditions/public-holidays/2026-public-holidays",
+            holidays: ["australia-day", "christmas", "easter", "new-year"]),
+        "BD": PublicHolidayCalendar(
+            authority: "Embassy of Bangladesh, Tokyo (Ministry of Foreign Affairs)",
+            source: "https://tokyo.mofa.gov.bd/pages/notices/list-of-holidays-for-2026-iosba2-69af7907fcb8e44860e9e452",
+            holidays: ["christmas", "eid-al-adha", "eid-al-fitr", "vesak"]),
+        "BR": PublicHolidayCalendar(
+            authority: "Presidência da República (Lei 662/1949, as amended)",
+            source: "https://www.planalto.gov.br/ccivil_03/leis/l0662.htm",
+            holidays: ["christmas", "new-year"]),
+        "CA": PublicHolidayCalendar(
+            authority: "Canada Labour Code s.166 (Justice Laws)",
+            source: "https://laws-lois.justice.gc.ca/eng/acts/L-2/section-166.html",
+            holidays: ["christmas", "new-year", "thanksgiving-canada"]),
+        "CN": PublicHolidayCalendar(
+            authority: "General Office of the State Council",
+            source: "https://www.gov.cn/zhengce/zhengceku/202511/content_7047091.htm",
+            holidays: ["mid-autumn", "new-year", "spring-festival"]),
+        "DE": PublicHolidayCalendar(
+            authority: "Bundesministerium des Innern",
+            source: "https://www.bmi.bund.de/DE/themen/verfassung/staatliche-symbole/nationale-feiertage/nationale-feiertage-node.html",
+            holidays: ["christmas", "easter", "new-year"]),
+        "EG": PublicHolidayCalendar(
+            authority: "Presidency of the Arab Republic of Egypt",
+            source: "https://www.presidency.eg/en/%D9%85%D8%B5%D8%B1/%D8%A7%D9%84%D8%B9%D8%B7%D9%84%D8%A7%D8%AA-%D8%A7%D9%84%D8%B1%D8%B3%D9%85%D9%8A%D8%A9/",
+            holidays: ["christmas-julian", "eid-al-adha", "eid-al-fitr"]),
+        "ES": PublicHolidayCalendar(
+            authority: "BOE (Resolución fiestas laborales 2026)",
+            source: "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2025-21667",
+            holidays: ["christmas", "new-year"]),
+        "ET": PublicHolidayCalendar(
+            authority: "U.S. Embassy Addis Ababa holiday calendar (Ethiopian holidays marked ET)",
+            source: "https://et.usembassy.gov/events/",
+            holidays: ["christmas-julian", "eid-al-adha", "eid-al-fitr", "meskel", "orthodox-pascha", "timkat"]),
+        "FR": PublicHolidayCalendar(
+            authority: "Service-Public.fr (Code du travail fêtes légales)",
+            source: "https://www.service-public.fr/particuliers/vosdroits/F2405",
+            holidays: ["christmas", "easter", "new-year"]),
+        "GB": PublicHolidayCalendar(
+            authority: "GOV.UK bank holidays",
+            source: "https://www.gov.uk/bank-holidays.json",
+            holidays: ["christmas", "new-year"]),
+        "GR": PublicHolidayCalendar(
+            authority: "Hellenic Ministry of Foreign Affairs (Greek missions in the USA)",
+            source: "https://www.mfa.gr/usa/en/services/citizen-services/holidays/",
+            holidays: ["christmas", "new-year", "orthodox-pascha"]),
+        "HK": PublicHolidayCalendar(
+            authority: "Hong Kong SAR Government (gazetted general holidays)",
+            source: "https://www.gov.hk/en/about/abouthk/holiday/2026.htm",
+            holidays: ["christmas", "easter", "mid-autumn", "new-year", "spring-festival"]),
+        "ID": PublicHolidayCalendar(
+            authority: "Coordinating Ministry for Human Development and Culture (SKB 3 Menteri 2026)",
+            source: "https://www.kemenkopmk.go.id/pemerintah-tetapkan-17-hari-libur-nasional-dan-8-hari-cuti-bersama-tahun-2026",
+            holidays: ["christmas", "easter", "eid-al-adha", "eid-al-fitr", "new-year", "spring-festival", "vesak"]),
+        "IE": PublicHolidayCalendar(
+            authority: "Citizens Information (Irish state information service)",
+            source: "https://www.citizensinformation.ie/en/employment/employment-rights-and-conditions/leave-and-holidays/public-holidays/",
+            holidays: ["christmas", "easter", "new-year", "st-patricks-day"]),
+        "IN": PublicHolidayCalendar(
+            authority: "Government of India, DoPT Office Memorandum (holidays for central government offices)",
+            source: "https://www.staffnews.in/wp-content/uploads/2026/07/Holiday-list-2027.pdf",
+            holidays: ["christmas", "diwali", "eid-al-adha", "eid-al-fitr", "guru-nanak-gurpurab", "vesak"]),
+        "IR": PublicHolidayCalendar(
+            authority: "Embassy of Belgium in Tehran (2026 holiday list)",
+            source: "https://iran.diplomatie.belgium.be/sites/default/files/2025-12/Holidays%202026_1.pdf",
+            holidays: ["nowruz"]),
+        "IT": PublicHolidayCalendar(
+            authority: "Camera dei Deputati (L. 260/1949, DPR 792/1985)",
+            source: "https://www.camera.it/leg17/561?appro=app_festivita_norme",
+            holidays: ["christmas", "easter", "new-year"]),
+        "JP": PublicHolidayCalendar(
+            authority: "Cabinet Office (Act on National Holidays)",
+            source: "https://www8.cao.go.jp/chosei/shukujitsu/gaiyou.html",
+            holidays: ["new-year"]),
+        "KE": PublicHolidayCalendar(
+            authority: "Public Holidays Act Cap. 110 (Kenya Law)",
+            source: "https://new.kenyalaw.org/akn/ke/act/1912/21/eng@2024-04-26/source.pdf",
+            holidays: ["christmas", "easter", "eid-al-fitr", "new-year"]),
+        "KR": PublicHolidayCalendar(
+            authority: "Regulations on Public Holidays of Government Offices (KLRI translation)",
+            source: "https://elaw.klri.re.kr/eng_mobile/viewer.do?hseq=62747&type=part&key=5",
+            holidays: ["christmas", "chuseok", "new-year", "seollal"]),
+        "LK": PublicHolidayCalendar(
+            authority: "Deputy High Commission of Sri Lanka, Chennai",
+            source: "https://www.hc-chennai.gov.lk/en/holidays",
+            holidays: ["christmas", "diwali", "eid-al-adha", "eid-al-fitr", "vesak"]),
+        "MX": PublicHolidayCalendar(
+            authority: "PROFEDET (Ley Federal del Trabajo, art. 74)",
+            source: "https://www.gob.mx/profedet/articulos/sabes-cuales-son-los-dias-de-descanso-obligatorios-163134",
+            holidays: ["christmas", "new-year"]),
+        "MY": PublicHolidayCalendar(
+            authority: "Embassy of Malaysia, Tokyo (Ministry of Foreign Affairs)",
+            source: "https://www.kln.gov.my/web/jpn_tokyo/holidays",
+            holidays: ["christmas", "eid-al-adha", "eid-al-fitr", "spring-festival", "vesak"]),
+        "NG": PublicHolidayCalendar(
+            authority: "U.S. Mission Nigeria holiday calendar (Nigerian holidays marked NG)",
+            source: "https://ng.usembassy.gov/holiday-calendar/",
+            holidays: ["christmas", "easter", "eid-al-adha", "eid-al-fitr", "new-year"]),
+        "NL": PublicHolidayCalendar(
+            authority: "Rijksoverheid",
+            source: "https://www.rijksoverheid.nl/vraag-en-antwoord/arbeidsovereenkomst-en-cao/officiele-feestdagen",
+            holidays: ["christmas", "easter", "new-year"]),
+        "NP": PublicHolidayCalendar(
+            authority: "Nepal Rajpatra (Ministry of Home Affairs notice for 2083 BS)",
+            source: "https://daosunsari.moha.gov.np/post/government-and-public-holidays-for-2083-bs",
+            holidays: ["christmas", "diwali", "eid-al-adha", "eid-al-fitr", "holi", "vesak"]),
+        "NZ": PublicHolidayCalendar(
+            authority: "Employment New Zealand (MBIE)",
+            source: "https://www.employment.govt.nz/leave-and-holidays/public-holidays/public-holidays-and-anniversary-dates",
+            holidays: ["christmas", "easter", "matariki", "new-year"]),
+        "PH": PublicHolidayCalendar(
+            authority: "Philippine Embassy Madrid list, citing Proclamation No. 1006 (2025)",
+            source: "https://www.philembassymadrid.com/wordpress/wp-content/uploads/Forms/Holidays%202026.pdf",
+            holidays: ["christmas", "eid-al-adha", "eid-al-fitr", "new-year", "spring-festival"]),
+        "PK": PublicHolidayCalendar(
+            authority: "Cabinet Division, Government of Pakistan",
+            source: "https://cabinet.gov.pk/SiteImage/Misc/files/Holidays/2026/Public-Holidays-2026.pdf",
+            holidays: ["christmas", "eid-al-adha", "eid-al-fitr"]),
+        "PL": PublicHolidayCalendar(
+            authority: "Zielona Linia (Polish public employment services, Ustawa o dniach wolnych od pracy)",
+            source: "https://zielonalinia.gov.pl/-/swieta-wolne-od-pracy-w-2026-roku",
+            holidays: ["christmas", "easter", "new-year"]),
+        "RU": PublicHolidayCalendar(
+            authority: "Ministry of Labour and Social Protection (Labour Code art. 112)",
+            source: "https://mintrud.gov.ru/labour/relationship/351",
+            holidays: ["christmas-julian", "new-year"]),
+        "SA": PublicHolidayCalendar(
+            authority: "Ministry of Human Resources and Social Development",
+            source: "https://www.hrsd.gov.sa/en/knowledge-centre/articles/322",
+            holidays: ["eid-al-adha", "eid-al-fitr"]),
+        "SG": PublicHolidayCalendar(
+            authority: "Ministry of Manpower",
+            source: "https://www.mom.gov.sg/employment-practices/public-holidays",
+            holidays: ["christmas", "diwali", "eid-al-adha", "eid-al-fitr", "new-year", "spring-festival", "vesak"]),
+        "TH": PublicHolidayCalendar(
+            authority: "Bank of Thailand Notification No. 31/2568",
+            source: "https://www.bot.or.th/content/dam/bot/fipcs/documents/FPG/2568/EngPDF/25680162.pdf",
+            holidays: ["new-year", "songkran", "vesak"]),
+        "TR": PublicHolidayCalendar(
+            authority: "Law 2429 on National Holidays and General Holidays (mevzuat.gov.tr)",
+            source: "https://www.mevzuat.gov.tr/MevzuatMetin/1.5.2429.pdf",
+            holidays: ["eid-al-adha", "eid-al-fitr", "new-year"]),
+        "TW": PublicHolidayCalendar(
+            authority: "Directorate-General of Personnel Administration, Executive Yuan",
+            source: "https://www.dgpa.gov.tw/information?uid=30&pid=12685",
+            holidays: ["mid-autumn", "new-year", "spring-festival"]),
+        "US": PublicHolidayCalendar(
+            authority: "U.S. Office of Personnel Management",
+            source: "https://www.opm.gov/policy-data-oversight/pay-leave/federal-holidays/",
+            holidays: ["christmas", "juneteenth", "new-year", "thanksgiving-us", "us-independence-day"]),
+        "VN": PublicHolidayCalendar(
+            authority: "Công báo (Labour Code 2019, art. 112)",
+            source: "https://congbaocdn.chinhphu.vn/180507251028987904/2026/3/5/468971-1772684381_v1_1772690833_signed.pdf",
+            holidays: ["new-year", "tet"]),
+        "ZA": PublicHolidayCalendar(
+            authority: "South African Government (Public Holidays Act 36 of 1994)",
+            source: "https://www.gov.za/about-sa/public-holidays",
+            holidays: ["christmas", "easter", "new-year"]),
+    ]
 }
 
 /// Where one country's public holidays come from.

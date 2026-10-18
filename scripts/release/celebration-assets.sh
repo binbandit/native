@@ -18,6 +18,7 @@
 #       Regenerates FirstPartyCelebrations+PublicHolidays.swift (the "Turn On a Country's Holidays"
 #       data) from researched official calendars: {"countries": {"US": {"authority", "source",
 #       "holidays": [edition slugs]}}}. Only statutory, nationwide public holidays belong in it.
+#       The researched data, with notes and sources, is scripts/release/data/public-holidays.json.
 #
 # Editions in PENDING are left out until their artwork is chosen or delivered.
 set -euo pipefail

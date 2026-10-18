@@ -15,7 +15,7 @@ extension SettingsPane {
             ]
         ) {
             UsageSettingsPage(
-                accounts: registry.agents.map { .init(id: $0.id, name: $0.displayName, symbol: $0.symbolName) },
+                accounts: registry.agents.map { .init(id: $0.id, name: $0.displayName, definition: $0) },
                 limits: BuiltInPlugins.usage.limits, reports: BuiltInPlugins.usage.providerReports,
                 activity: BuiltInPlugins.usage.activity, opener: BuiltInPlugins.usage.opener)
         }

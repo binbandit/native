@@ -1,0 +1,444 @@
+{
+  "generated": "2026-10-18",
+  "countries": {
+    "US": {
+      "source": "https://www.opm.gov/policy-data-oversight/pay-leave/federal-holidays/",
+      "authority": "U.S. Office of Personnel Management",
+      "holidays": [
+        "new-year",
+        "juneteenth",
+        "us-independence-day",
+        "thanksgiving-us",
+        "christmas"
+      ]
+    },
+    "CA": {
+      "source": "https://laws-lois.justice.gc.ca/eng/acts/L-2/section-166.html",
+      "authority": "Canada Labour Code s.166 (Justice Laws)",
+      "holidays": [
+        "new-year",
+        "thanksgiving-canada",
+        "christmas"
+      ],
+      "notes": "These are the federal 'general holidays' (federally regulated employers). Provinces set their own lists, and Thanksgiving is not statutory in every province. Good Friday is a general holiday; Easter Monday is not."
+    },
+    "MX": {
+      "source": "https://www.gob.mx/profedet/articulos/sabes-cuales-son-los-dias-de-descanso-obligatorios-163134",
+      "authority": "PROFEDET (Ley Federal del Trabajo, art. 74)",
+      "holidays": [
+        "new-year",
+        "christmas"
+      ],
+      "notes": "Día de Muertos is not a mandatory rest day under art. 74."
+    },
+    "BR": {
+      "source": "https://www.planalto.gov.br/ccivil_03/leis/l0662.htm",
+      "authority": "Presidência da República (Lei 662/1949, as amended)",
+      "holidays": [
+        "new-year",
+        "christmas"
+      ],
+      "notes": "Carnival is only a 'ponto facultativo' (Portaria MGI 11.460/2025). Finados (2 Nov, All Souls) is national but was not mapped to dia-de-muertos."
+    },
+    "AR": {
+      "source": "https://www.argentina.gob.ar/sites/default/files/ley_27399_publicada_18-10_0.pdf",
+      "authority": "Ley 27.399 (Boletín Oficial)",
+      "holidays": [
+        "new-year",
+        "carnival",
+        "christmas"
+      ],
+      "notes": "Carnival Monday and Tuesday are 'feriados nacionales inamovibles'. Eid al-Fitr and Eid al-Adha are non-working days only for Muslims (art. 3), so they are excluded."
+    },
+    "GB": {
+      "source": "https://www.gov.uk/bank-holidays.json",
+      "authority": "GOV.UK bank holidays",
+      "holidays": [
+        "new-year",
+        "christmas"
+      ],
+      "notes": "Only days common to England and Wales, Scotland and Northern Ireland. Easter Monday is not a Scottish bank holiday; St Patrick's Day is Northern Ireland only."
+    },
+    "IE": {
+      "source": "https://www.citizensinformation.ie/en/employment/employment-rights-and-conditions/leave-and-holidays/public-holidays/",
+      "authority": "Citizens Information (Irish state information service)",
+      "holidays": [
+        "new-year",
+        "st-patricks-day",
+        "easter",
+        "christmas"
+      ],
+      "notes": "Easter counts via Easter Monday."
+    },
+    "FR": {
+      "source": "https://www.service-public.fr/particuliers/vosdroits/F2405",
+      "authority": "Service-Public.fr (Code du travail fêtes légales)",
+      "holidays": [
+        "new-year",
+        "easter",
+        "christmas"
+      ],
+      "notes": "Easter counts via Lundi de Pâques. Only 1 May is a mandatory day off by law; the other fêtes légales are days off by agreement or custom."
+    },
+    "DE": {
+      "source": "https://www.bmi.bund.de/DE/themen/verfassung/staatliche-symbole/nationale-feiertage/nationale-feiertage-node.html",
+      "authority": "Bundesministerium des Innern",
+      "holidays": [
+        "new-year",
+        "easter",
+        "christmas"
+      ],
+      "notes": "BMI lists nine holidays protected in all Länder (incl. Ostermontag, 1. and 2. Weihnachtstag). The page returned HTTP 400 to direct fetches; its text was read through the search index."
+    },
+    "ES": {
+      "source": "https://www.boe.es/diario_boe/txt.php?id=BOE-A-2025-21667",
+      "authority": "BOE (Resolución fiestas laborales 2026)",
+      "holidays": [
+        "new-year",
+        "christmas"
+      ],
+      "notes": "Lunes de Pascua is regional only; Eid holidays apply only in Ceuta and Melilla."
+    },
+    "IT": {
+      "source": "https://www.camera.it/leg17/561?appro=app_festivita_norme",
+      "authority": "Camera dei Deputati (L. 260/1949, DPR 792/1985)",
+      "holidays": [
+        "new-year",
+        "easter",
+        "christmas"
+      ],
+      "notes": "Easter counts via Lunedì dopo Pasqua."
+    },
+    "NL": {
+      "source": "https://www.rijksoverheid.nl/vraag-en-antwoord/arbeidsovereenkomst-en-cao/officiele-feestdagen",
+      "authority": "Rijksoverheid",
+      "holidays": [
+        "new-year",
+        "easter",
+        "christmas"
+      ],
+      "notes": "Official holidays, but whether employees get the day off depends on their CAO."
+    },
+    "PL": {
+      "source": "https://zielonalinia.gov.pl/-/swieta-wolne-od-pracy-w-2026-roku",
+      "authority": "Zielona Linia (Polish public employment services, Ustawa o dniach wolnych od pracy)",
+      "holidays": [
+        "new-year",
+        "easter",
+        "christmas"
+      ]
+    },
+    "GR": {
+      "source": "https://www.mfa.gr/usa/en/services/citizen-services/holidays/",
+      "authority": "Hellenic Ministry of Foreign Affairs (Greek missions in the USA)",
+      "holidays": [
+        "new-year",
+        "orthodox-pascha",
+        "christmas"
+      ],
+      "notes": "Greek holidays (G) on the mission list include Orthodox Good Friday and Easter Monday (13 Apr 2026). mfa.gr returns 403 to direct fetches; its text was read through the search index."
+    },
+    "RU": {
+      "source": "https://mintrud.gov.ru/labour/relationship/351",
+      "authority": "Ministry of Labour and Social Protection (Labour Code art. 112)",
+      "holidays": [
+        "new-year",
+        "christmas-julian"
+      ],
+      "notes": "Orthodox Easter is not a federal non-working day."
+    },
+    "ET": {
+      "source": "https://et.usembassy.gov/events/",
+      "authority": "U.S. Embassy Addis Ababa holiday calendar (Ethiopian holidays marked ET)",
+      "holidays": [
+        "christmas-julian",
+        "timkat",
+        "eid-al-fitr",
+        "orthodox-pascha",
+        "eid-al-adha",
+        "meskel"
+      ],
+      "notes": "Embassy page used because no Ethiopian government list was reachable."
+    },
+    "NG": {
+      "source": "https://ng.usembassy.gov/holiday-calendar/",
+      "authority": "U.S. Mission Nigeria holiday calendar (Nigerian holidays marked NG)",
+      "holidays": [
+        "new-year",
+        "eid-al-fitr",
+        "easter",
+        "eid-al-adha",
+        "christmas"
+      ],
+      "notes": "The Ministry of Interior's holiday notices (interior.gov.ng) were unavailable (404/503). Easter counts via Easter Monday."
+    },
+    "KE": {
+      "source": "https://new.kenyalaw.org/akn/ke/act/1912/21/eng@2024-04-26/source.pdf",
+      "authority": "Public Holidays Act Cap. 110 (Kenya Law)",
+      "holidays": [
+        "new-year",
+        "easter",
+        "eid-al-fitr",
+        "christmas"
+      ],
+      "notes": "Idd-ul-Azha (Part II) is a public holiday only for Muslims, and Diwali (Part III) only for Hindus, so both are excluded."
+    },
+    "ZA": {
+      "source": "https://www.gov.za/about-sa/public-holidays",
+      "authority": "South African Government (Public Holidays Act 36 of 1994)",
+      "holidays": [
+        "new-year",
+        "easter",
+        "christmas"
+      ],
+      "notes": "Easter counts via Family Day, the Monday after Easter Sunday."
+    },
+    "EG": {
+      "source": "https://www.presidency.eg/en/%D9%85%D8%B5%D8%B1/%D8%A7%D9%84%D8%B9%D8%B7%D9%84%D8%A7%D8%AA-%D8%A7%D9%84%D8%B1%D8%B3%D9%85%D9%8A%D8%A9/",
+      "authority": "Presidency of the Arab Republic of Egypt",
+      "holidays": [
+        "christmas-julian",
+        "eid-al-fitr",
+        "eid-al-adha"
+      ],
+      "notes": "Coptic Christmas (7 Jan) is mapped to christmas-julian. Sham El-Nessim (Monday after Coptic Easter) was not mapped to orthodox-pascha. presidency.eg returns 403 to direct fetches; its text was read through the search index."
+    },
+    "SA": {
+      "source": "https://www.hrsd.gov.sa/en/knowledge-centre/articles/322",
+      "authority": "Ministry of Human Resources and Social Development",
+      "holidays": [
+        "eid-al-fitr",
+        "eid-al-adha"
+      ]
+    },
+    "AE": {
+      "source": "https://u.ae/en/information-and-services/public-holidays-and-religious-affairs/public-holidays",
+      "authority": "UAE Government portal (Cabinet Resolution No. 27 of 2024)",
+      "holidays": [
+        "new-year",
+        "eid-al-fitr",
+        "eid-al-adha"
+      ]
+    },
+    "TR": {
+      "source": "https://www.mevzuat.gov.tr/MevzuatMetin/1.5.2429.pdf",
+      "authority": "Law 2429 on National Holidays and General Holidays (mevzuat.gov.tr)",
+      "holidays": [
+        "new-year",
+        "eid-al-fitr",
+        "eid-al-adha"
+      ]
+    },
+    "IR": {
+      "source": "https://iran.diplomatie.belgium.be/sites/default/files/2025-12/Holidays%202026_1.pdf",
+      "authority": "Embassy of Belgium in Tehran (2026 holiday list)",
+      "holidays": [
+        "nowruz"
+      ],
+      "notes": "Partial: Iranian government lists were unreachable (mfa.gov.ir redirect loop, calendar.ut.ac.ir 404). Secondary sources say Eid al-Fitr and Eid al-Adha are also official Iranian holidays, but no government page confirming them was read, so they are left out."
+    },
+    "IN": {
+      "source": "https://www.staffnews.in/wp-content/uploads/2026/07/Holiday-list-2027.pdf",
+      "authority": "Government of India, DoPT Office Memorandum (holidays for central government offices)",
+      "holidays": [
+        "vesak",
+        "christmas",
+        "diwali",
+        "guru-nanak-gurpurab",
+        "eid-al-fitr",
+        "eid-al-adha"
+      ],
+      "notes": "These are among the 14 holidays compulsory for all central government offices nationwide; states and private employers set their own lists. Holi and Vaisakhi are optional/restricted, so excluded. The source is a mirror of the official O.M."
+    },
+    "PK": {
+      "source": "https://cabinet.gov.pk/SiteImage/Misc/files/Holidays/2026/Public-Holidays-2026.pdf",
+      "authority": "Cabinet Division, Government of Pakistan",
+      "holidays": [
+        "eid-al-fitr",
+        "eid-al-adha",
+        "christmas"
+      ],
+      "notes": "25 December is listed as 'Quaid-e-Azam Day/ Christmas'. New Year's Day, Holi, Easter, Diwali and Guru Nanak's birthday are optional holidays only, so excluded."
+    },
+    "BD": {
+      "source": "https://tokyo.mofa.gov.bd/pages/notices/list-of-holidays-for-2026-iosba2-69af7907fcb8e44860e9e452",
+      "authority": "Embassy of Bangladesh, Tokyo (Ministry of Foreign Affairs)",
+      "holidays": [
+        "eid-al-fitr",
+        "vesak",
+        "eid-al-adha",
+        "christmas"
+      ],
+      "notes": "The mission list also includes Japanese holidays, which are ignored here. Vesak is Budha Purnima."
+    },
+    "LK": {
+      "source": "https://www.hc-chennai.gov.lk/en/holidays",
+      "authority": "Deputy High Commission of Sri Lanka, Chennai",
+      "holidays": [
+        "eid-al-fitr",
+        "vesak",
+        "eid-al-adha",
+        "diwali",
+        "christmas"
+      ],
+      "notes": "The mission list mixes Sri Lankan and Indian holidays. The Sri Lankan government gazette was not reachable. Sinhala and Tamil New Year is not mapped to songkran."
+    },
+    "NP": {
+      "source": "https://daosunsari.moha.gov.np/post/government-and-public-holidays-for-2083-bs",
+      "authority": "Nepal Rajpatra (Ministry of Home Affairs notice for 2083 BS)",
+      "holidays": [
+        "vesak",
+        "diwali",
+        "christmas",
+        "eid-al-fitr",
+        "eid-al-adha",
+        "holi"
+      ],
+      "notes": "From section 2.1 (festivals that are public holidays nationwide). Holi (Fagu Purnima) is on different days: Chait 7 in the 56 hill and mountain districts and Chait 8 in the Terai districts. Diwali is Tihar (from Laxmi Puja). Guru Nanak Jayanti is a holiday only for Nepali Sikhs, so excluded."
+    },
+    "CN": {
+      "source": "https://www.gov.cn/zhengce/zhengceku/202511/content_7047091.htm",
+      "authority": "General Office of the State Council",
+      "holidays": [
+        "new-year",
+        "spring-festival",
+        "mid-autumn"
+      ]
+    },
+    "HK": {
+      "source": "https://www.gov.hk/en/about/abouthk/holiday/2026.htm",
+      "authority": "Hong Kong SAR Government (gazetted general holidays)",
+      "holidays": [
+        "new-year",
+        "spring-festival",
+        "easter",
+        "mid-autumn",
+        "christmas"
+      ],
+      "notes": "Easter counts via Easter Monday. Mid-Autumn counts via 'The day following the Chinese Mid-Autumn Festival'. The Birthday of the Buddha (8th day, 4th lunar month) was not mapped to vesak."
+    },
+    "TW": {
+      "source": "https://www.dgpa.gov.tw/information?uid=30&pid=12685",
+      "authority": "Directorate-General of Personnel Administration, Executive Yuan",
+      "holidays": [
+        "new-year",
+        "spring-festival",
+        "mid-autumn"
+      ],
+      "notes": "1 January is officially 'Founding Day of the Republic of China'. 25 December is Constitution Day, not Christmas. The Lantern Festival is not a day off."
+    },
+    "JP": {
+      "source": "https://www8.cao.go.jp/chosei/shukujitsu/gaiyou.html",
+      "authority": "Cabinet Office (Act on National Holidays)",
+      "holidays": [
+        "new-year"
+      ]
+    },
+    "KR": {
+      "source": "https://elaw.klri.re.kr/eng_mobile/viewer.do?hseq=62747&type=part&key=5",
+      "authority": "Regulations on Public Holidays of Government Offices (KLRI translation)",
+      "holidays": [
+        "new-year",
+        "seollal",
+        "chuseok",
+        "christmas"
+      ],
+      "notes": "Buddha's Birthday (8th day, 4th lunar month) is a public holiday but was not mapped to vesak."
+    },
+    "VN": {
+      "source": "https://congbaocdn.chinhphu.vn/180507251028987904/2026/3/5/468971-1772684381_v1_1772690833_signed.pdf",
+      "authority": "Công báo (Labour Code 2019, art. 112)",
+      "holidays": [
+        "new-year",
+        "tet"
+      ],
+      "notes": "Tết Trung Thu is not a public holiday."
+    },
+    "TH": {
+      "source": "https://www.bot.or.th/content/dam/bot/fipcs/documents/FPG/2568/EngPDF/25680162.pdf",
+      "authority": "Bank of Thailand Notification No. 31/2568",
+      "holidays": [
+        "new-year",
+        "songkran",
+        "vesak"
+      ],
+      "notes": "This is the nationwide financial-institution holiday list, which mirrors the Cabinet's government holidays for these days. The Cabinet Secretariat's own list was not reached. Vesak is Visakha Bucha. Chinese New Year is a holiday only in some southern provinces."
+    },
+    "MY": {
+      "source": "https://www.kln.gov.my/web/jpn_tokyo/holidays",
+      "authority": "Embassy of Malaysia, Tokyo (Ministry of Foreign Affairs)",
+      "holidays": [
+        "spring-festival",
+        "eid-al-fitr",
+        "eid-al-adha",
+        "vesak",
+        "christmas"
+      ],
+      "notes": "The Prime Minister's Department table (kabinet.gov.my/storage/2025/08/HKA-2026.pdf) was unreachable. New Year's Day and Deepavali appear on the mission list but are not observed in every state (New Year: not in Johor, Kedah, Kelantan, Perlis and Terengganu; Deepavali: not in Sarawak, per the federal table as reported), so they are excluded as not nationwide."
+    },
+    "SG": {
+      "source": "https://www.mom.gov.sg/employment-practices/public-holidays",
+      "authority": "Ministry of Manpower",
+      "holidays": [
+        "new-year",
+        "spring-festival",
+        "eid-al-fitr",
+        "eid-al-adha",
+        "vesak",
+        "diwali",
+        "christmas"
+      ]
+    },
+    "ID": {
+      "source": "https://www.kemenkopmk.go.id/pemerintah-tetapkan-17-hari-libur-nasional-dan-8-hari-cuti-bersama-tahun-2026",
+      "authority": "Coordinating Ministry for Human Development and Culture (SKB 3 Menteri 2026)",
+      "holidays": [
+        "new-year",
+        "spring-festival",
+        "easter",
+        "eid-al-fitr",
+        "eid-al-adha",
+        "vesak",
+        "christmas"
+      ],
+      "notes": "Easter counts via Easter Sunday (Hari Kebangkitan Yesus Kristus). Vesak is Waisak."
+    },
+    "PH": {
+      "source": "https://www.philembassymadrid.com/wordpress/wp-content/uploads/Forms/Holidays%202026.pdf",
+      "authority": "Philippine Embassy Madrid list, citing Proclamation No. 1006 (2025)",
+      "holidays": [
+        "new-year",
+        "spring-festival",
+        "eid-al-fitr",
+        "eid-al-adha",
+        "christmas"
+      ],
+      "notes": "pco.gov.ph and officialgazette.gov.ph block automated fetches. New Year's Day and Christmas come from RA 9849's list of regular holidays (read on lawphil.net, a non-government mirror). Chinese New Year is a special non-working day."
+    },
+    "AU": {
+      "source": "https://www.fairwork.gov.au/employment-conditions/public-holidays/2026-public-holidays",
+      "authority": "Fair Work Ombudsman",
+      "holidays": [
+        "new-year",
+        "easter",
+        "christmas",
+        "australia-day"
+      ],
+      "notes": "New Year's Day, Easter Monday and Christmas Day appear in every state and territory list. Australia Day (26 January) is a public holiday in every state and territory."
+    },
+    "NZ": {
+      "source": "https://www.employment.govt.nz/leave-and-holidays/public-holidays/public-holidays-and-anniversary-dates",
+      "authority": "Employment New Zealand (MBIE)",
+      "holidays": [
+        "new-year",
+        "easter",
+        "matariki",
+        "christmas"
+      ],
+      "notes": "Easter counts via Easter Monday."
+    }
+  },
+  "unsourced": {
+    "UA": "Labour Code art. 73 lists holidays, but under martial law (Law 2136-IX, art. 6) they are not days off, according to State Labour Service reporting. The official text on zakon.rada.gov.ua could not be fetched (403 / JS render)."
+  }
+}

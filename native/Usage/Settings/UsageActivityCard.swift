@@ -30,9 +30,11 @@ struct UsageActivityCard: View {
                 ) { day in
                     describe(day, values[day])
                 }
-                readout(values)
+                // A picked day heads its own task list; until then, the line says what's hovered.
                 if let selection {
-                    dayTasks(on: selection)
+                    dayTasks(on: selection, values[selection])
+                } else {
+                    readout(values)
                 }
             }
         }
@@ -81,9 +83,9 @@ struct UsageActivityCard: View {
         .accessibilityElement(children: .combine)
     }
 
-    /// The hovered or picked day in numbers, so the graph never relies on color alone.
+    /// The hovered day in numbers, so the graph never relies on color alone.
     private func readout(_ values: [Date: (value: Double, isEstimate: Bool)]) -> some View {
-        let day = hovered ?? selection
+        let day = hovered
         let text: String =
             if let day {
                 describe(day, values[day])
@@ -102,13 +104,17 @@ struct UsageActivityCard: View {
             .fixedSize(horizontal: false, vertical: true)
     }
 
+    /// The picked day's tasks under one header: "Tuesday, October 13 · 21 prompts · 4 tasks".
     @ViewBuilder
-    private func dayTasks(on day: Date) -> some View {
+    private func dayTasks(on day: Date, _ entry: (value: Double, isEstimate: Bool)?) -> some View {
         let tasks = activity.tasks(on: day, for: filter)
+        let amount =
+            entry.map { metric.describe($0.value, isEstimate: $0.isEstimate) } ?? "No \(metric.title.lowercased())"
         VStack(alignment: .leading, spacing: 0) {
             ContributorSectionHeader(
-                title: longDate(day),
-                tokens: tasks.count == 1 ? "1 task" : "\(tasks.count) tasks")
+                title: [longDate(day), amount, tasks.count == 1 ? "1 task" : "\(tasks.count) tasks"]
+                    .joined(separator: " · "),
+                tokens: nil)
             if tasks.isEmpty {
                 Text("No tasks that day.")
                     .font(.dsBody)
@@ -117,15 +123,17 @@ struct UsageActivityCard: View {
             ForEach(tasks) { task in
                 let detail = "\(task.agentName) · \(URL(filePath: task.project).lastPathComponent)"
                 if let open = opener(task) {
-                    Button {
-                        open()
-                        settings.close()
-                    } label: {
-                        ContributorRow(title: task.title ?? "Untitled task", detail: detail, tokens: "Open")
-                            .contentShape(.rect)
+                    HStack(spacing: DS.Space.md) {
+                        ContributorRow(title: task.title ?? "Untitled task", detail: detail, tokens: nil)
+                        Button("Open") {
+                            open()
+                            settings.close()
+                        }
+                        .buttonStyle(.ds(.secondary))
+                        .help("Open this task")
+                        .accessibilityLabel("Open \(task.title ?? "Untitled task")")
                     }
-                    .buttonStyle(.plain)
-                    .help("Open this task")
+                    .padding(.vertical, DS.Space.xxs)
                 } else {
                     ContributorRow(title: task.title ?? "Untitled task", detail: detail, tokens: "Not listed")
                         .help("\(task.agentName) no longer lists this task, so it can’t be opened.")
