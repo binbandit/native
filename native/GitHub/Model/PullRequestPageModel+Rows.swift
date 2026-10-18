@@ -5,7 +5,7 @@ import GitHub
 /// "…" to open them one at a time, or wrapped for the whole file.
 extension PullRequestPageModel {
     /// Blocks stay short, so scrolling lays out a little at a time.
-    static let blockLines = max(UserDefaults.standard.integer(forKey: "gitHubExperimentBlockLines"), 0) == 0 ? 48 : UserDefaults.standard.integer(forKey: "gitHubExperimentBlockLines")
+    static let blockLines = 48
 
     var rows: [PullRequestFilesRow] {
         var rows: [PullRequestFilesRow] = []

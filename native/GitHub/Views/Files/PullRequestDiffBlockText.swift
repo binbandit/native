@@ -58,11 +58,13 @@ struct PullRequestDiffBlockText {
         plain = lines.map(\.text).joined(separator: "\n")
     }
 
-    /// "…" in the accent, where a cut-off line ends.
+    /// "…" on a tinted chip where a cut-off line ends, so it reads as something to click rather
+    /// than as part of the code.
     static var cutOffMarker: AttributedString {
-        var marker = AttributedString(" …")
-        marker.foregroundColor = .dsAccent
-        return marker
+        var marker = AttributedString("…")
+        marker.foregroundColor = .dsAccentText
+        marker.backgroundColor = .dsAccentSubtle
+        return AttributedString(" ") + marker
     }
 
     /// Both line numbers and the change marker, as the gutter shows them.
