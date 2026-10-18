@@ -189,6 +189,20 @@ import Testing
         _ = try await harness.connect(host)
     }
 
+    @Test func theSameInstallationPairingAgainReplacesItsEntry() async throws {
+        let harness = try GatewayHarness()
+        let secret = Data(repeating: 9, count: 32)
+        for _ in 0..<2 {
+            let invite = try #require(await harness.gateway.openPairingWindow().pairing?.invite)
+            async let answer: Void = harness.answerNextRequest(accept: true)
+            _ = try await LinkInitiator.pair(
+                over: try harness.connection(), identity: LinkIdentity(), credential: .invite(invite),
+                device: harness.device, installationSecret: secret, awaitingConfirmation: { _ in })
+            await answer
+        }
+        #expect(await harness.gateway.status.activeDevices.count == 1)
+    }
+
     @Test func pairedDevicesSurviveARestart() async throws {
         let harness = try GatewayHarness()
         let (host, _) = try await harness.pairDevice()

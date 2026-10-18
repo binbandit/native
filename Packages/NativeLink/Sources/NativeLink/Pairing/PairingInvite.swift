@@ -115,7 +115,8 @@ public struct PairingInvite: Codable, Hashable, Sendable {
         decoder.dataDecodingStrategy = .custom { decoder in
             let text = try decoder.singleValueContainer().decode(String.self)
             guard let data = Data(base64URLEncoded: text) else {
-                throw DecodingError.dataCorrupted(.init(codingPath: decoder.codingPath, debugDescription: "Not base64url"))
+                throw DecodingError.dataCorrupted(
+                    .init(codingPath: decoder.codingPath, debugDescription: "Not base64url"))
             }
             return data
         }

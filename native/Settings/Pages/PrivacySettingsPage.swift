@@ -148,8 +148,8 @@ struct PrivacySettingsPage: View {
         switch sentBatches {
         case nil: "Every batch sent from this Mac, exactly as it was sent."
         case 0: "Nothing has been sent from this Mac."
-        case 1: "1 batch sent from this Mac, kept exactly as it was sent."
-        case let count?: "\(count) batches sent from this Mac, kept exactly as they were sent."
+        case 1: "1 batch in the log, exactly as it was sent."
+        case let count?: "The last \(count) batches sent from this Mac, newest first, exactly as they were sent."
         }
     }
 

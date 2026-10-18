@@ -47,7 +47,7 @@ public enum LinkInitiator {
     /// protocol, with what to remember.
     public static func pair(
         over raw: any ByteStream, identity: LinkIdentity, credential: Credential, device: LinkDeviceInfo,
-        awaitingConfirmation: @escaping @Sendable (VerificationCode) -> Void
+        installationSecret: Data? = nil, awaitingConfirmation: @escaping @Sendable (VerificationCode) -> Void
     ) async throws -> (SecureChannel, LinkPairingResult) {
         let mode: LinkHello.Mode
         let preSharedKey: Data
@@ -61,7 +61,7 @@ public enum LinkInitiator {
         let (channel, hello) = try await withTimeout(handshakeTimeout, closing: raw) {
             try await handshake(
                 over: raw, mode: mode, identity: identity, preSharedKey: preSharedKey, expectedHostKey: expectedHostKey,
-                device: device)
+                device: device, installationSecret: installationSecret)
         }
         // The Mac's user may take a while; the host's own timeout ends the wait.
         while true {
@@ -85,7 +85,7 @@ public enum LinkInitiator {
     /// Hello, then `XX` or `XXpsk3`. The host's key is checked before the device reveals its own.
     private static func handshake(
         over raw: any ByteStream, mode: LinkHello.Mode, identity: LinkIdentity, preSharedKey: Data?,
-        expectedHostKey: LinkPublicKey?, device: LinkDeviceInfo
+        expectedHostKey: LinkPublicKey?, device: LinkDeviceInfo, installationSecret: Data? = nil
     ) async throws -> (SecureChannel, LinkHostHello) {
         let hello = LinkHello(mode: mode)
         var noise = try NoiseHandshake(
@@ -111,6 +111,10 @@ public enum LinkInitiator {
         if let expectedHostKey, hostKey != expectedHostKey {
             raw.close()
             throw LinkError.hostKeyMismatch
+        }
+        var device = device
+        if let secret = installationSecret {
+            device.installation = LinkDeviceInfo.installationTag(secret: secret, hostKey: hostKey)
         }
         let final = try noise.writeMessage(payload: try JSONEncoder().encode(device))
         guard raw.write(LinkFrame(kind: .noise, body: final).encoded) else { throw LinkError.closed }

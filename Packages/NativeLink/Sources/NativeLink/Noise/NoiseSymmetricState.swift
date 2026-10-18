@@ -50,7 +50,9 @@ struct NoiseSymmetricState: Sendable {
     /// The two transport ciphers: the initiator sends with the first, the responder with the second.
     func split() -> (NoiseCipherState, NoiseCipherState) {
         let outputs = derive(from: Data(), count: 2)
-        return (NoiseCipherState(key: SymmetricKey(data: outputs[0])), NoiseCipherState(key: SymmetricKey(data: outputs[1])))
+        return (
+            NoiseCipherState(key: SymmetricKey(data: outputs[0])), NoiseCipherState(key: SymmetricKey(data: outputs[1]))
+        )
     }
 
     /// Noise's HKDF is RFC 5869's with the chaining key as salt and no info, so CryptoKit's computes it.

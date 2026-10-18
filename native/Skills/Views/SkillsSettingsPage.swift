@@ -159,8 +159,7 @@ struct SkillsSettingsPage: View {
 
     private func toolbar(_ library: SkillLibrary) -> some View {
         HStack(spacing: DS.Space.md) {
-            TextField("Filter", text: $filter, prompt: Text("Filter skills"))
-                .mcpFieldStyle()
+            SearchField("Filter skills", text: $filter, size: .large, font: SettingsTextStyle.body.font)
                 .frame(maxWidth: 260)
             Spacer(minLength: DS.Space.xl)
             SettingsSelect(

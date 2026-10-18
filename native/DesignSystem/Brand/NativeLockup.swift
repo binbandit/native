@@ -67,8 +67,8 @@ public struct NativeLockup: View {
             .frame(width: height * NativeMark.aspectRatio, height: height)
     }
 
-    /// The stacked lockup's icon tile, in wordmark sizes: about 104pt of visible tile on Home.
-    private static let artworkSide: CGFloat = 4.6
+    /// The stacked lockup's icon tile, in wordmark sizes: about 108pt of visible tile on Home, the decorated marks' weight.
+    private static let artworkSide: CGFloat = 4.3
 
     private var capHeight: CGFloat {
         DSTypography.platformFont(size: size, weight: .semibold).capHeight

@@ -57,7 +57,7 @@ final class PairingFlow {
             do {
                 let (host, channel) = try await LinkPairing.pair(
                     credential: credential, endpoints: endpoints, device: CompanionDevice.info,
-                    log: { entry in Task { @MainActor in self?.log.append(entry) } },
+                    installationSecret: CompanionDevice.installationSecret, log: { entry in Task { @MainActor in self?.log.append(entry) } },
                     awaitingConfirmation: { code in
                         Task { @MainActor in self?.step = .confirming(hostName: hostName, code) }
                     })

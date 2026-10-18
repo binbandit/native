@@ -21,20 +21,18 @@ struct CodeThemeSettingsRow: View {
     @Environment(PluginRegistry.self) private var plugins
 
     var body: some View {
-        VStack(alignment: .leading, spacing: DS.Space.lg) {
-            SettingsRow(
-                id: Self.rowID,
-                "Code theme",
-                description: Text("Syntax colors for code blocks and diffs, one for light mode and one for dark.")
-            ) {
-                EmptyView()
-            }
+        SettingsRow(
+            id: Self.rowID,
+            "Code theme",
+            description: Text("Syntax colors for code blocks and diffs, one for light mode and one for dark.")
+        ) {
             HStack(alignment: .top, spacing: DS.Space.lg) {
                 let themes = PluginThemeCatalog(plugins).allCodeThemes
                 CodeThemePreview(appearance: .light, selection: $light, themes: themes)
                 CodeThemePreview(appearance: .dark, selection: $dark, themes: themes)
             }
         }
+        .settingsControlBelow()
     }
 }
 

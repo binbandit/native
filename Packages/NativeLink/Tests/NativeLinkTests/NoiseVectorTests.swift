@@ -13,16 +13,16 @@ import Testing
             let ciphertext: String
         }
 
-        let protocol_name: String
-        let init_prologue: String
-        let init_ephemeral: String
-        let init_static: String
-        let init_psks: [String]?
-        let resp_prologue: String
-        let resp_ephemeral: String
-        let resp_static: String
-        let resp_psks: [String]?
-        let handshake_hash: String
+        let protocolName: String
+        let initPrologue: String
+        let initEphemeral: String
+        let initStatic: String
+        let initPsks: [String]?
+        let respPrologue: String
+        let respEphemeral: String
+        let respStatic: String
+        let respPsks: [String]?
+        let handshakeHash: String
         let messages: [Message]
     }
 
@@ -30,24 +30,26 @@ import Testing
         let url = try #require(
             Bundle.module.url(forResource: "noise-vectors", withExtension: "jsonl", subdirectory: "Fixtures"))
         let text = try String(contentsOf: url, encoding: .utf8)
-        return try text.split(separator: "\n").map { try JSONDecoder().decode(Vector.self, from: Data($0.utf8)) }
+        let decoder = JSONDecoder()
+        decoder.keyDecodingStrategy = .convertFromSnakeCase
+        return try text.split(separator: "\n").map { try decoder.decode(Vector.self, from: Data($0.utf8)) }
     }
 
     @Test(arguments: ["Noise_XX_25519_ChaChaPoly_SHA256", "Noise_XXpsk3_25519_ChaChaPoly_SHA256"])
     func matchesVector(protocolName: String) throws {
-        let vector = try #require(try Self.vectors().first { $0.protocol_name == protocolName })
+        let vector = try #require(try Self.vectors().first { $0.protocolName == protocolName })
         let pattern: NoisePattern = protocolName.contains("psk3") ? .xxpsk3 : .xx
         var initiator = try NoiseHandshake(
-            pattern: pattern, isInitiator: true, prologue: hex(vector.init_prologue),
-            localStatic: try .init(rawRepresentation: hex(vector.init_static)),
-            preSharedKey: vector.init_psks?.first.map(hex),
-            presetEphemeral: try .init(rawRepresentation: hex(vector.init_ephemeral))
+            pattern: pattern, isInitiator: true, prologue: hex(vector.initPrologue),
+            localStatic: try .init(rawRepresentation: hex(vector.initStatic)),
+            preSharedKey: vector.initPsks?.first.map(hex),
+            presetEphemeral: try .init(rawRepresentation: hex(vector.initEphemeral))
         )
         var responder = try NoiseHandshake(
-            pattern: pattern, isInitiator: false, prologue: hex(vector.resp_prologue),
-            localStatic: try .init(rawRepresentation: hex(vector.resp_static)),
-            preSharedKey: vector.resp_psks?.first.map(hex),
-            presetEphemeral: try .init(rawRepresentation: hex(vector.resp_ephemeral))
+            pattern: pattern, isInitiator: false, prologue: hex(vector.respPrologue),
+            localStatic: try .init(rawRepresentation: hex(vector.respStatic)),
+            preSharedKey: vector.respPsks?.first.map(hex),
+            presetEphemeral: try .init(rawRepresentation: hex(vector.respEphemeral))
         )
 
         // Three handshake messages, alternating, then transport messages, alternating.
@@ -63,8 +65,8 @@ import Testing
             #expect(payload == hex(message.payload))
         }
         #expect(initiator.isComplete && responder.isComplete)
-        #expect(initiator.handshakeHash == hex(vector.handshake_hash))
-        #expect(responder.handshakeHash == hex(vector.handshake_hash))
+        #expect(initiator.handshakeHash == hex(vector.handshakeHash))
+        #expect(responder.handshakeHash == hex(vector.handshakeHash))
 
         var (initiatorSend, initiatorReceive) = try initiator.split()
         var (responderSend, responderReceive) = try responder.split()

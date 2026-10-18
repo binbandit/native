@@ -57,15 +57,22 @@ public final class NetworkByteStream: ByteStream {
     }
 
     /// Connects to `endpoint`, or throws why it couldn't within `timeout`.
-    public static func connect(to endpoint: NWEndpoint, timeout: Duration = .seconds(5)) async throws -> NetworkByteStream {
+    public static func connect(
+        to endpoint: NWEndpoint, timeout: Duration = .seconds(5)
+    ) async throws -> NetworkByteStream {
         let queue = DispatchQueue(label: "Native.Link.connection")
         let connection = NWConnection(to: endpoint, using: parameters)
         let resumed = LinkLocked(false)
         return try await withTaskCancellationHandler {
-            try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<NetworkByteStream, any Error>) in
+            try await withCheckedThrowingContinuation {
+                (continuation: CheckedContinuation<NetworkByteStream, any Error>) in
                 /// Resumes once; false when the connection already succeeded or failed.
                 @Sendable @discardableResult func finish(_ result: Result<NetworkByteStream, any Error>) -> Bool {
-                    guard resumed.withLock({ done in defer { done = true }; return !done }) else { return false }
+                    guard
+                        resumed.withLock({ done in
+                            defer { done = true }; return !done
+                        })
+                    else { return false }
                     continuation.resume(with: result)
                     return true
                 }
@@ -86,7 +93,8 @@ public final class NetworkByteStream: ByteStream {
                 connection.start(queue: queue)
                 queue.asyncAfter(deadline: .now() + .milliseconds(Int(timeout.components.seconds * 1_000))) {
                     // Only a connection still trying is given up on; a ready one is the caller's now.
-                    if finish(.failure(ConnectError.failed("No answer within \(timeout.components.seconds) seconds."))) {
+                    if finish(.failure(ConnectError.failed("No answer within \(timeout.components.seconds) seconds.")))
+                    {
                         connection.cancel()
                     }
                 }
@@ -103,7 +111,8 @@ public final class NetworkByteStream: ByteStream {
     }
 
     private func receive(into continuation: AsyncStream<Data>.Continuation) {
-        connection.receive(minimumIncompleteLength: 1, maximumLength: 65_536) { [weak self] data, _, isComplete, error in
+        connection.receive(minimumIncompleteLength: 1, maximumLength: 65_536) {
+            [weak self] data, _, isComplete, error in
             if let data, !data.isEmpty {
                 continuation.yield(data)
             }
@@ -169,7 +178,8 @@ func describe(_ error: NWError) -> String {
         switch code {
         case .ECONNREFUSED: return "Nothing is accepting connections there (Native's gateway may be off)."
         case .ETIMEDOUT: return "No answer: the Mac may be asleep or on another network."
-        case .EHOSTUNREACH, .ENETUNREACH, .EHOSTDOWN, .ENETDOWN: return "That address isn't reachable from this network."
+        case .EHOSTUNREACH, .ENETUNREACH, .EHOSTDOWN, .ENETDOWN:
+            return "That address isn't reachable from this network."
         default: return "\(code)"
         }
     case .dns: return "The name didn't resolve on this network."

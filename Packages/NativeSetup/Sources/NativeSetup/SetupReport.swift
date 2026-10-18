@@ -107,6 +107,9 @@ extension SetupReport {
         public var installCommand: String?
         /// A terminal command that signs in.
         public var signInCommand: String?
+        /// Whether its ⋯ menu in Settings ▸ Agents offers Sign In…: the agent named ways to sign in
+        /// when it started. Claude Code's adapter names none, so it signs in from a terminal.
+        public var offersSignIn: Bool
         public var docs: URL?
         /// Why it stopped, without what it logged.
         public var problem: String?
@@ -116,7 +119,8 @@ extension SetupReport {
         public init(
             id: String, name: String, state: State, signIn: SignIn, launch: String, requires: [String] = [],
             missingCommand: String? = nil, version: String? = nil, installCommand: String? = nil,
-            signInCommand: String? = nil, docs: URL? = nil, problem: String? = nil, isCaller: Bool = false
+            signInCommand: String? = nil, offersSignIn: Bool = false, docs: URL? = nil, problem: String? = nil,
+            isCaller: Bool = false
         ) {
             self.id = id
             self.name = name
@@ -128,6 +132,7 @@ extension SetupReport {
             self.version = version
             self.installCommand = installCommand
             self.signInCommand = signInCommand
+            self.offersSignIn = offersSignIn
             self.docs = docs
             self.problem = problem
             self.isCaller = isCaller

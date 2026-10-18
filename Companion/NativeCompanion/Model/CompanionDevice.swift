@@ -19,6 +19,18 @@ enum CompanionDevice {
         )
     }
 
+    /// A random secret for this installation. Hosts only ever see a hash of it with their own key
+    /// (`LinkDeviceInfo.installationTag`), so pairing again replaces the old entry on that host
+    /// without letting two hosts link this phone.
+    static var installationSecret: Data {
+        let key = "installationSecret"
+        if let data = UserDefaults.standard.data(forKey: key), data.count == 32 { return data }
+        var generator = SystemRandomNumberGenerator()
+        let data = Data((0..<32).map { _ in UInt8.random(in: .min ... .max, using: &generator) })
+        UserDefaults.standard.set(data, forKey: key)
+        return data
+    }
+
     /// The keychain service paired hosts are kept under.
     static let keychainService = "native.companion.paired-hosts"
 }
