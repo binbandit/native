@@ -1,3 +1,4 @@
+import ACP
 import SwiftUI
 
 /// Follow-ups waiting for the turn to end, as the composer's top section, after the reference app's queued
@@ -72,11 +73,22 @@ private struct QueuedPromptRow: View {
     var body: some View {
         HStack(spacing: DS.Space.md) {
             // One line each; the full text is a click (or ↑) away in the editor.
-            Text(verbatim: prompt.text.split(whereSeparator: \.isNewline).joined(separator: " "))
-                .foregroundStyle(isEditing ? .dsTextTertiary : .dsTextPrimary)
-                .lineLimit(1)
-                .truncationMode(.tail)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            HStack(spacing: DS.Space.sm) {
+                Text(verbatim: prompt.text.split(whereSeparator: \.isNewline).joined(separator: " "))
+                    .foregroundStyle(isEditing ? .dsTextTertiary : .dsTextPrimary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                if !prompt.attachments.isEmpty {
+                    // The files wait with it, and go out with it.
+                    Label("\(prompt.attachments.count)", systemImage: "paperclip")
+                        .font(.dsCaption)
+                        .foregroundStyle(.dsTextTertiary)
+                        .help(prompt.attachments.map(\.name).joined(separator: ", "))
+                        .accessibilityLabel(
+                            prompt.attachments.count == 1 ? "1 attachment" : "\(prompt.attachments.count) attachments")
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
             // Like the reference app's, the actions show on hover, and while one of them has keyboard focus.
             HStack(spacing: DS.Space.xxs) {
                 switch sendNow {

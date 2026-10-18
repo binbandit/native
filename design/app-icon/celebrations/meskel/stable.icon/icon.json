@@ -38,19 +38,19 @@
               "value": true
             }
           ],
-          "image-name": "painted-interlock.png",
-          "name": "Painted Native interlock",
+          "image-name": "flat-interlock.png",
+          "name": "Flat Native interlock",
           "position": {
-            "scale": 0.5696689761354888,
+            "scale": 0.6166666666666667,
             "translation-in-points": [
-              1.4241724403387221,
-              15.418013856812934
+              -1.2333333333333334,
+              15.391666666666666
             ]
           }
         }
       ],
       "lighting": "individual",
-      "name": "Meskel · painted Native interlock",
+      "name": "Meskel · flat Native interlock",
       "refractivity-specializations": [
         {
           "appearance": "tinted",
@@ -62,8 +62,8 @@
         }
       ],
       "shadow": {
-        "kind": "neutral",
-        "opacity": 0.18
+        "kind": "none",
+        "opacity": 0
       },
       "translucency-specializations": [
         {

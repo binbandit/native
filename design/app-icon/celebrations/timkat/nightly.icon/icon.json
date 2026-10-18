@@ -38,19 +38,19 @@
               "value": true
             }
           ],
-          "image-name": "painted-interlock.png",
-          "name": "Painted Native interlock",
+          "image-name": "flat-interlock.png",
+          "name": "Flat Native interlock",
           "position": {
-            "scale": 0.5644546147978642,
+            "scale": 0.5910543130990416,
             "translation-in-points": [
-              -0.2822273073989321,
-              10.024408848207475
+              -5.319488817891374,
+              3.1341853035143767
             ]
           }
         }
       ],
       "lighting": "individual",
-      "name": "Timkat · painted Native interlock",
+      "name": "Timkat · flat Native interlock",
       "refractivity-specializations": [
         {
           "appearance": "tinted",
@@ -62,8 +62,8 @@
         }
       ],
       "shadow": {
-        "kind": "neutral",
-        "opacity": 0.18
+        "kind": "none",
+        "opacity": 0
       },
       "translucency-specializations": [
         {

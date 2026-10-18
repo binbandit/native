@@ -38,19 +38,19 @@
               "value": true
             }
           ],
-          "image-name": "painted-interlock.png",
-          "name": "Painted Native interlock",
+          "image-name": "flat-interlock.png",
+          "name": "Flat Native interlock",
           "position": {
-            "scale": 0.5327573794096472,
+            "scale": 0.6715063520871143,
             "translation-in-points": [
-              0.2663786897048236,
-              9.868970482361412
+              -0.6715063520871143,
+              4.9491833030853
             ]
           }
         }
       ],
       "lighting": "individual",
-      "name": "Juneteenth · painted Native interlock",
+      "name": "Juneteenth · flat Native interlock",
       "refractivity-specializations": [
         {
           "appearance": "tinted",
@@ -62,8 +62,8 @@
         }
       ],
       "shadow": {
-        "kind": "neutral",
-        "opacity": 0.18
+        "kind": "none",
+        "opacity": 0
       },
       "translucency-specializations": [
         {

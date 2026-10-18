@@ -326,24 +326,18 @@ events to its own OpenTelemetry collector. Design: `docs/enterprise.md`.
 
 ## 2026-10-18: Sentry for opt-in crash diagnostics
 
-Use the official `sentry-cocoa` SDK, pinned to **9.30.2** through SwiftPM, rather than maintaining
-signal handlers, crash persistence and symbolication ourselves. `SentryTelemetry.start(dsn:)` in
-`native/Telemetry/` is an adapter for Native's telemetry gate, never an unconditional launch hook.
-The gate owns user consent and `policy.telemetry.native`; Debug and isolated dev builds cannot start
-the SDK. The public DSN is `NATIVE_SENTRY_DSN` in `Config/Shared.xcconfig`, exposed as `NativeSentryDSN`.
+Use official `sentry-cocoa` **9.30.2**, pinned through SwiftPM, for crash persistence and symbolication
+instead of maintaining signal handlers ourselves. `native/Telemetry/SentryTelemetry.start(dsn:)` is
+called by Native's telemetry gate after consent and `policy.telemetry.native` permit it. Debug/dev
+builds cannot start it. The public DSN is `NATIVE_SENTRY_DSN` (`NativeSentryDSN` in Info.plist).
 
-`Packages/NativeDiagnostics` rebuilds outgoing errors, crashes and hangs from allowed fields:
-fixed error categories, event time, numeric thread identifiers, instruction/load addresses and binary
-UUIDs for symbolication, plus the build's release and channel. Error messages, arbitrary error types,
-paths, source context, thread names, requests, breadcrumbs, user data and attachments are discarded.
-Automatic session tracking, tracing, logging, metrics, screenshots, view hierarchy, replay and memory
-introspection are disabled. This intentionally collects no product usage or performance traces yet.
-Stopping the adapter discards its offline cache. These limits preserve `docs/enterprise.md`'s privacy
-contract; organization's OTLP collectors remain a separate destination.
+`Packages/NativeDiagnostics` rebuilds reports from fixed error categories, timestamps, numeric thread
+ids, instruction/load addresses, binary UUIDs, release and channel. It drops messages, paths, source
+context, thread names, requests, user data and attachments. Automatic breadcrumbs, sessions, tracing,
+logging, metrics, screenshots, hierarchy, replay and memory introspection are disabled. Stopping clears
+its offline cache. Product usage and performance traces are not collected by this adapter yet.
 
-The project's server-side **Prevent Storing of IP Addresses** setting is enabled as well: disabling
-SDK PII alone does not prevent Sentry from deriving an address from the incoming connection.
-
-Release publishing uploads dSYMs to FoxyCorps's `native` project before publishing binaries, using
-the `SENTRY_AUTH_TOKEN` GitHub Actions secret. The official CLI is pinned to **3.8.0**, checksum verified,
-and never uploads source bundles. Dry runs do not upload. A failed symbol upload stops publication.
+Release publishing uploads dSYMs to FoxyCorps / `native` before publishing, using the protected GitHub
+`SENTRY_AUTH_TOKEN` secret and checksum-verified official CLI **3.8.0**. It never uploads source bundles.
+Dry runs don't upload; failed symbol uploads stop publication. Keep server-side IP scrubbing enabled:
+SDK PII settings alone do not prevent connection IP enrichment. See `docs/releasing.md`.

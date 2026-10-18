@@ -15,6 +15,9 @@ public enum GitHubError: Error, Sendable, Hashable {
     case notARepository(String)
     /// The pull request, branch or repository doesn't exist (or isn't visible to the user).
     case notFound(String)
+    /// The account can see this but may not do it: merging without write access, approving one's
+    /// own pull request, commenting on a locked conversation.
+    case permissionDenied(String)
     /// gh didn't finish in time and was stopped.
     case timedOut
     /// The task waiting on gh was cancelled, and gh with it.
@@ -39,7 +42,9 @@ public enum GitHubError: Error, Sendable, Hashable {
     public var isTransient: Bool {
         switch self {
         case .rateLimited, .offline, .timedOut, .failed: true
-        case .notInstalled, .notAuthenticated, .notARepository, .notFound, .cancelled, .unexpectedOutput: false
+        case .notInstalled, .notAuthenticated, .notARepository, .notFound, .permissionDenied, .cancelled,
+            .unexpectedOutput:
+            false
         }
     }
 
@@ -69,6 +74,15 @@ public enum GitHubError: Error, Sendable, Hashable {
         if mentions("rate limit", "http 429", "abuse detection") {
             return .rateLimited(message)
         }
+        // After rate limits, which GitHub also reports as 403s.
+        if mentions(
+            "resource not accessible", "http 403", "must have push access", "must have admin rights",
+            "must have write access", "can not approve your own", "can not request changes on your own",
+            "doesn't have permission", "does not have permission", "not authorized", "is locked",
+            "permission to merge"
+        ) {
+            return .permissionDenied(message)
+        }
         if mentions(
             "error connecting to", "check your internet connection", "no such host", "dial tcp",
             "connection refused", "network is unreachable", "i/o timeout", "tls handshake timeout",
@@ -92,6 +106,7 @@ extension GitHubError: LocalizedError {
         case .offline: "GitHub couldn't be reached."
         case .notARepository: "This folder isn't a GitHub repository."
         case .notFound: "Not found on GitHub."
+        case .permissionDenied(let message): Self.permissionSummary(message)
         case .timedOut: "GitHub CLI took too long to respond."
         case .cancelled: "Cancelled."
         case .failed(_, let message): message.isEmpty ? "GitHub CLI failed." : message
@@ -106,7 +121,21 @@ extension GitHubError: LocalizedError {
         case .rateLimited: "Native will try again once the limit resets."
         case .offline: "Check your connection; Native will try again."
         case .notARepository: "Open a folder whose git remote points at GitHub."
+        case .permissionDenied: "Ask a maintainer of the repository, or do it on GitHub with an account that can."
         case .notFound, .timedOut, .cancelled, .failed, .unexpectedOutput: nil
         }
+    }
+}
+
+extension GitHubError {
+    /// GitHub's reasons say what was refused in its own words; these are the common ones, in plain
+    /// language.
+    fileprivate static func permissionSummary(_ message: String) -> String {
+        let text = message.lowercased()
+        if text.contains("approve your own") { return "You can't approve your own pull request." }
+        if text.contains("request changes on your own") { return "You can't request changes on your own pull request." }
+        if text.contains("is locked") { return "The conversation is locked." }
+        if text.contains("merge") { return "Your account can't merge this pull request." }
+        return "Your account doesn't have permission to do that here."
     }
 }

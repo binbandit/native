@@ -26,8 +26,9 @@ messages go out one per turn, in order. Chips can be edited, removed, or steered
 turn right away. **Steer** adds the message to the running turn (`_session/steering`); agents that
 don't support steering queue it instead, and the hint says so.
 
-The composer always shows the current mapping as a hint while the agent works, e.g.
-"↩ Queue · ⌘↩ Steer".
+The composer shows the current mapping as a hint while the agent works, e.g.
+"↩ Queue · ⌘↩ Steer", when the controls row has room for it; the placeholder always says what
+Return does.
 
 ## Agent questions
 
@@ -79,6 +80,20 @@ recently mentioned files first), narrowing as you type. The chosen file goes int
 | ↑ / ↓ | Move the selection |
 | Return or Tab | Insert the selected file |
 | Escape | Close the list |
+
+## Attachments
+
+Files and images go out with the message as chips above the text: picked with the "+" chip or
+⌘U, pasted, or dropped on the composer or the transcript. Images go to agents that take them
+(scaled to fit 2048 pixels); small text files are embedded for agents that take embedded context;
+anything else goes as its path, and the composer says so when an agent will get a path instead of
+an image.
+
+| Keys | Action | Menu |
+| --- | --- | --- |
+| ⌘U | Attach files | File |
+| ⌘V | Paste copied files or an image as attachments (text pastes as text) | |
+| Space or Return on a chip | Open it in Quick Look | |
 
 ## Permission requests
 

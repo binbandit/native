@@ -84,9 +84,10 @@ nonisolated final class MCPScriptBindings: OrchestrationScriptBindings {
                     throw ScriptToolError(reason)
                 }
                 await run.update(id, to: .inProgress)
+                let arguments = try JSON(encoding: input)
                 let result: JSON
                 do throws(MCPSessionError) {
-                    result = try await session.call(info.name, arguments: try JSON(encoding: input))
+                    result = try await session.call(info.name, arguments: arguments)
                 } catch {
                     await run.update(id, to: .failed)
                     // A server that went away is started again by the next script.

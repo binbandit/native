@@ -42,6 +42,9 @@ struct KeyboardShortcutsView: View {
                     header("Session Settings")
                     row("Next permission mode", ["⇧⌘M"])
                     row("Model picker", ["⇧⌘E"])
+                    header("Attachments")
+                    row("Attach files", ["⌘U"])
+                    row("Paste files or an image", ["⌘V"])
                 }
             }
             HStack {

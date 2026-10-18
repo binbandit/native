@@ -1,4 +1,5 @@
 import ACP
+import QuickLook
 import SwiftUI
 
 /// The files and images going out with the draft, as a row of chips above the text.
