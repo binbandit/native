@@ -318,7 +318,7 @@ final class TranscriptSearchCenter {
         indexing = state
         await refreshStatistics()
         // New sessions land while the panel is open: show them without the user retyping.
-        if isPresented, !query.isEmpty {
+        if isPresented {
             scheduleSearch(debounce: false)
         }
     }
