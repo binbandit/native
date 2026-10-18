@@ -21,6 +21,16 @@ struct PullRequestDiffBlockRow: View {
     @Environment(\.dsCodeThemes) private var codeThemes
 
     var body: some View {
+        content
+            // Diffs read better without ligatures, and shaping them is a large share of laying out
+            // a block. The user's choice still applies to code everywhere else.
+            .codeTextStyle(.compact)
+            .transformEnvironment(\.dsCodeFont) {
+                if !UserDefaults.standard.bool(forKey: "gitHubExperimentLigatures") { $0.ligatures = false }
+            }
+    }
+
+    @ViewBuilder private var content: some View {
         let colors = DSCodeColors(environment, on: .surface)
         let numberWidth = model.numberWidth(path)
         if model.wrapsBlock(path, hunk, range) {
