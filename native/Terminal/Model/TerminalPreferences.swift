@@ -29,6 +29,7 @@ final class TerminalPreferences {
         static let scrollback = "terminal.scrollbackLines"
         static let cursor = "terminal.cursor"
         static let colors = "terminal.colors"
+        static let shell = "terminal.shell"
         static let usesGhosttyConfig = "terminal.usesGhosttyConfig"
         static let panelHeight = "terminal.panelHeight"
     }
@@ -42,6 +43,7 @@ final class TerminalPreferences {
                 ?? .default,
             cursor: Self.decode(TerminalCursor.self, from: defaults.data(forKey: Key.cursor)) ?? TerminalCursor(),
             colors: Self.decode(TerminalColorChoice.self, from: defaults.data(forKey: Key.colors)) ?? .app,
+            shell: Self.decode(TerminalShell.self, from: defaults.data(forKey: Key.shell)) ?? .login,
             usesGhosttyConfig: defaults.bool(forKey: Key.usesGhosttyConfig)
         )
         panelHeight = defaults.object(forKey: Key.panelHeight) as? Double ?? Self.defaultPanelHeight
@@ -53,6 +55,7 @@ final class TerminalPreferences {
         defaults.set(settings.scrollback.storedValue, forKey: Key.scrollback)
         defaults.set(try? JSONEncoder().encode(settings.cursor), forKey: Key.cursor)
         defaults.set(try? JSONEncoder().encode(settings.colors), forKey: Key.colors)
+        defaults.set(try? JSONEncoder().encode(settings.shell), forKey: Key.shell)
         defaults.set(settings.usesGhosttyConfig, forKey: Key.usesGhosttyConfig)
     }
 

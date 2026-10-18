@@ -11,6 +11,8 @@ final class TerminalStore {
     private(set) var availability: TerminalAvailability
     /// Where the terminals' settings come from: Native's, or the user's Ghostty config.
     private(set) var configStatus: TerminalConfigStatus = .native
+    /// The terminals' background opacity in effect; below 1 the panel blurs what's behind it.
+    private(set) var backgroundOpacity: Double = 1
     /// The settings an import from Ghostty replaced, for Undo; cleared once settings change again.
     private(set) var settingsBeforeImport: TerminalSettings?
     /// The app's terminal colors: Native's, or the code theme's terminal palette, which the
@@ -25,7 +27,7 @@ final class TerminalStore {
     @ObservationIgnored private var didStartEngine = false
     /// The app's appearance and its terminal background, text and cursor, reported by the session
     /// view (`TerminalPanelModifier`) before any terminal starts.
-    @ObservationIgnored private var appearance: (TerminalAppearance, TerminalChrome)?
+    @ObservationIgnored private var appearance: (TerminalAppearance, TerminalChrome, TerminalTransparency)?
     @ObservationIgnored private var appliedStyle: TerminalStyle?
     @ObservationIgnored private let makeEngine: @MainActor () -> Result<TerminalEngine, TerminalEngineError>
     @ObservationIgnored private lazy var watcher = TerminalConfigWatcher { [weak self] in
@@ -90,16 +92,22 @@ final class TerminalStore {
         panels.removeValue(forKey: key)?.closeAll()
     }
 
-    /// Records the app's appearance and restyles every terminal to match.
+    /// Records the app's appearance, keeping the transparency already reported, and restyles every
+    /// terminal to match.
     func setAppearance(_ appearance: TerminalAppearance, chrome: TerminalChrome) {
-        self.appearance = (appearance, chrome)
+        setAppearance(appearance, chrome: chrome, transparency: self.appearance?.2 ?? .opaque)
+    }
+
+    /// Records the app's appearance and transparency and restyles every terminal to match.
+    func setAppearance(_ appearance: TerminalAppearance, chrome: TerminalChrome, transparency: TerminalTransparency) {
+        self.appearance = (appearance, chrome, transparency)
         applyStyle()
     }
 
     /// Settings ▸ Terminal is showing: records the appearance and, with "Use my Ghostty settings"
     /// on, starts the engine so the page can say whether the user's config loads.
-    func prepareSettings(_ appearance: TerminalAppearance, chrome: TerminalChrome) {
-        self.appearance = (appearance, chrome)
+    func prepareSettings(_ appearance: TerminalAppearance, chrome: TerminalChrome, transparency: TerminalTransparency) {
+        self.appearance = (appearance, chrome, transparency)
         if preferences.settings.usesGhosttyConfig, availability == .available {
             _ = startedEngine()
         }
@@ -139,6 +147,9 @@ final class TerminalStore {
             self?.startedEngine()
         }
         panel.reloadConfig = { [weak self] in self?.reloadGhosttyConfig() }
+        panel.resolveShell = { [weak self] shell in
+            self?.shellCommand(override: shell) ?? .success(nil)
+        }
         panels[session.key] = panel
         return panel
     }
@@ -160,23 +171,47 @@ final class TerminalStore {
     }
 
     private func applyStyle(force: Bool = false) {
-        guard let (appearance, chrome) = appearance else { return }
+        guard let (appearance, chrome, transparency) = appearance else { return }
         let settings = preferences.settings
         guard let engine else {
             configStatus = settings.usesGhosttyConfig ? .ghosttyPending : .native
             return
         }
-        let style = TerminalStyle(settings: settings, appearance: appearance, appTheme: appTheme, appChrome: chrome)
+        let style = TerminalStyle(
+            settings: settings, appearance: appearance, appTheme: appTheme, appChrome: chrome,
+            transparency: transparency)
         guard force || style != appliedStyle else { return }
         appliedStyle = style
         let locations = settings.usesGhosttyConfig ? GhosttyConfigLocations.current : nil
-        configStatus = engine.apply(style, ghostty: locations)
+        let applied = engine.apply(style, ghostty: locations)
+        configStatus = applied.status
+        backgroundOpacity = applied.backgroundOpacity
         if let locations {
             // The config, its includes, and the user's themes, so edits apply as they're saved.
             watcher.watch(configStatus.files + locations.defaultFiles + [locations.userThemes])
         } else {
             watcher.stop()
         }
+    }
+
+    /// The command a new shell tab runs: `override`, or the shell from Settings (the login shell
+    /// by default), launched as a login shell. Nil when the user's Ghostty config, in use, sets its
+    /// own `command`; a debug command when one was given.
+    private func shellCommand(override: String?) -> Result<String?, TerminalStartFailure> {
+        if let debugCommand = Self.debugCommand {
+            return .success(debugCommand)
+        }
+        let settings = preferences.settings
+        if override == nil, settings.usesGhosttyConfig, case .ghostty = configStatus,
+            let command = GhosttyConfigFile.load(.current, home: .homeDirectory).lastValue("command"), !command.isEmpty
+        {
+            return .success(nil)
+        }
+        let path = override ?? settings.shell.path(loginShell: TerminalLoginShell.current)
+        guard TerminalLoginShell.isRunnable(path) else {
+            return .failure(.shellNotFound(path))
+        }
+        return .success(TerminalShell.command(for: path))
     }
 
     /// A command to run instead of the login shell, for trying failure states by hand:

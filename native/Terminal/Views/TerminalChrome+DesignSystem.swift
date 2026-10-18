@@ -44,3 +44,24 @@ extension TerminalRGB {
         self.init(fractionalRed: components[0], green: components[1], blue: components[2])
     }
 }
+
+extension TerminalTransparency {
+    /// The terminal's background at the app's transparency level. The terminal holds text the
+    /// user reads, so even Standard stays mostly opaque; the panel blurs what shows through.
+    init(_ level: DSTransparency, reduceTransparency: Bool) {
+        let opacity =
+            switch level {
+            case .solid: 1.0
+            case .subtle: 0.92
+            case .standard: 0.85
+            }
+        self.init(backgroundOpacity: opacity, forcesOpaque: reduceTransparency)
+    }
+}
+
+/// Everything about the window's look the terminals follow, for `onChange`.
+struct TerminalAppearanceKey: Equatable {
+    let colorScheme: ColorScheme
+    let palette: DSAccentPalette
+    let transparency: TerminalTransparency
+}

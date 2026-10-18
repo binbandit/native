@@ -61,9 +61,7 @@ struct UpdatesSettingsPage: View {
                 "Updates",
                 description: Text("Native updates itself from its releases on GitHub, verified before it installs.")
             )
-            Card {
-                UpdateStatusView(controller: controller)
-            }
+            UpdateStatusView(controller: controller)
             SettingsRowGroup {
                 versionRow
                 channelRow

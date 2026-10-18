@@ -14,6 +14,8 @@ private struct TerminalPanelModifier: ViewModifier {
     @Environment(TerminalStore.self) private var store
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dsAccentPalette) private var palette
+    @Environment(\.dsTransparency) private var transparency
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
     @State private var availableHeight: CGFloat = 0
 
     func body(content: Content) -> some View {
@@ -29,9 +31,11 @@ private struct TerminalPanelModifier: ViewModifier {
         .animation(.dsPanel, value: panel.isVisible)
         // Reported whether or not the panel shows, so a terminal opened from the menu starts in
         // the right colors.
-        .onChange(of: AppearanceKey(colorScheme: colorScheme, palette: palette), initial: true) { _, key in
+        .onChange(of: appearanceKey, initial: true) { _, key in
             let appearance = TerminalAppearance(key.colorScheme)
-            store.setAppearance(appearance, chrome: .designSystem(appearance: appearance, palette: key.palette))
+            store.setAppearance(
+                appearance, chrome: .designSystem(appearance: appearance, palette: key.palette),
+                transparency: key.transparency)
         }
     }
 
@@ -40,8 +44,9 @@ private struct TerminalPanelModifier: ViewModifier {
         max(TerminalPanel.minHeight, availableHeight - TerminalPanel.minContentAbove)
     }
 
-    private struct AppearanceKey: Equatable {
-        let colorScheme: ColorScheme
-        let palette: DSAccentPalette
+    private var appearanceKey: TerminalAppearanceKey {
+        TerminalAppearanceKey(
+            colorScheme: colorScheme, palette: palette,
+            transparency: TerminalTransparency(transparency, reduceTransparency: reduceTransparency))
     }
 }

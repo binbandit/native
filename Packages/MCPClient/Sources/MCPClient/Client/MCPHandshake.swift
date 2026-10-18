@@ -22,7 +22,8 @@ enum ProbeError: Error {
 }
 
 /// The client side of MCP's lifecycle, as far as listing tools: `initialize`, then
-/// `notifications/initialized`, then `tools/list` until the last page. Tools are never called.
+/// `notifications/initialized`, then `tools/list` until the last page. It never calls a tool; only
+/// `MCPSession` does, when a script asks it to.
 struct MCPHandshake {
     /// Newest first; servers answer with the one they speak.
     static let protocolVersion = "2025-11-25"
@@ -37,6 +38,8 @@ struct MCPHandshake {
         var server: MCPServerInfo
         var tools: [MCPToolInfo]
         var toolDefinitionBytes: Int
+        /// Each tool's definition as sent, by name, for clients that go on to call them.
+        var definitions: [String: JSON] = [:]
     }
 
     func run(on transport: some MCPClientTransport) async throws(ProbeError) -> Outcome {
@@ -68,6 +71,7 @@ struct MCPHandshake {
             return Outcome(server: server, tools: [], toolDefinitionBytes: 0)
         }
         var tools: [MCPToolInfo] = []
+        var definitions: [String: JSON] = [:]
         var bytes = 0
         var cursor: String?
         for page in 0..<Self.pageLimit {
@@ -85,12 +89,13 @@ struct MCPHandshake {
                 if var tool = Self.tool(from: definition) {
                     tool.definitionBytes = size
                     tools.append(tool)
+                    definitions[tool.name] = definition
                 }
             }
             cursor = result["nextCursor"]?.stringValue
             if cursor == nil { break }
         }
-        return Outcome(server: server, tools: tools, toolDefinitionBytes: bytes)
+        return Outcome(server: server, tools: tools, toolDefinitionBytes: bytes, definitions: definitions)
     }
 
     static func tool(from definition: JSON) -> MCPToolInfo? {

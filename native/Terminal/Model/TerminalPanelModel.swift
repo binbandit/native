@@ -26,7 +26,13 @@ final class TerminalPanelModel: TerminalSurfaceEvents {
     @ObservationIgnored var focusComposer: () -> Void = {}
     /// Rereads the user's Ghostty config (`reload_config` in their key bindings).
     @ObservationIgnored var reloadConfig: () -> Void = {}
+    /// A command every tab runs instead of a shell (a sign-in, say); nil for the user's shell.
     @ObservationIgnored private let command: String?
+    /// The command for a new shell: the user's chosen shell, or `shell` when given; nil leaves the
+    /// choice to the terminal's config. Fails when the shell isn't there.
+    @ObservationIgnored var resolveShell: (_ shell: String?) -> Result<String?, TerminalStartFailure> = { _ in
+        .success(nil)
+    }
 
     init(workingDirectory: URL, command: String? = nil, engine: @escaping () -> TerminalEngine?) {
         self.workingDirectory = workingDirectory
@@ -105,11 +111,13 @@ final class TerminalPanelModel: TerminalSurfaceEvents {
 
     /// Starts a fresh shell in a tab whose shell ended or never started, in `directory` or the
     /// task's folder.
-    func restart(_ id: UUID, in directory: URL? = nil) {
+    /// - Parameter shell: A shell to run this time instead of the chosen one, such as the
+    ///   fallback when the chosen one is missing.
+    func restart(_ id: UUID, in directory: URL? = nil, shell: String? = nil) {
         surfaces.removeValue(forKey: id)?.close()
         tabs.setTitle(nil, of: id)
         tabs.setStatus(.running, of: id)
-        start(id, in: directory ?? workingDirectory)
+        start(id, in: directory ?? workingDirectory, shell: shell)
         if tabs.selectedID == id {
             focusSelected()
         }
@@ -134,16 +142,19 @@ final class TerminalPanelModel: TerminalSurfaceEvents {
         surfaces[id]?.focus()
     }
 
-    private func start(_ id: UUID, in directory: URL) {
+    private func start(_ id: UUID, in directory: URL, shell: String? = nil) {
         guard let engine = engine() else {
             tabs.setStatus(.failedToStart(.engineFailed), of: id)
             return
         }
         do {
+            let command = try command ?? resolveShell(shell).get()
             surfaces[id] = try engine.makeSurface(
                 id: id, launch: TerminalLaunch(workingDirectory: directory, command: command), events: self)
+        } catch let failure as TerminalStartFailure {
+            tabs.setStatus(.failedToStart(failure), of: id)
         } catch {
-            tabs.setStatus(.failedToStart(error), of: id)
+            tabs.setStatus(.failedToStart(.engineFailed), of: id)
         }
     }
 

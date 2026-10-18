@@ -1,3 +1,4 @@
+import CodeThemes
 import SwiftUI
 
 /// One plugin on the Extensions page: what it adds, what switching it off does, and where it
@@ -33,6 +34,8 @@ struct ExtensionRow: View {
         if !contributions.isEmpty {
             lines.append(contributions.joined(separator: " · "))
         }
+        // A theme that fails its checks is left out; say which and why, so its author can fix it.
+        lines += PluginThemeCatalog.check(manifest).problems.map { "Theme “\($0.theme)” isn’t used: \($0.reason)." }
         if case .manifest(let url) = loaded.source {
             lines.append(Self.displayPath(url.deletingLastPathComponent()))
         }
@@ -53,6 +56,9 @@ struct ExtensionRow: View {
         if !manifest.workflows.isEmpty {
             effects.append("its workflows aren't offered")
         }
+        if !manifest.themes.isEmpty {
+            effects.append("its themes go back to the defaults")
+        }
         if loaded.plugin.titler != nil {
             effects.append("tasks keep the titles their agents give them")
         }
@@ -70,6 +76,11 @@ struct ExtensionRow: View {
         }
         if !manifest.workflows.isEmpty {
             parts.append("Workflows: \(manifest.workflows.count)")
+        }
+        let themes = PluginThemeCatalog.check(manifest)
+        let themeNames = themes.codeThemes.map(\.name) + themes.accents.map(\.name)
+        if !themeNames.isEmpty {
+            parts.append("Themes: " + themeNames.joined(separator: ", "))
         }
         return parts
     }

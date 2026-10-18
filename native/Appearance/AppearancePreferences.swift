@@ -46,15 +46,14 @@ private struct AppearancePreferencesModifier: ViewModifier {
     }
 }
 
-/// A plugin accent the user picked, over the icon theme's; nothing when they follow the icon.
+/// A plugin accent the user picked, over the icon theme's; the icon theme's when they follow it.
+/// One branch either way, so switching accents keeps every view's state.
 private struct PluginAccent: ViewModifier {
     let palette: DSAccentPalette?
 
+    @Environment(\.dsAccentPalette) private var iconPalette
+
     func body(content: Content) -> some View {
-        if let palette {
-            content.dsAccentPalette(palette)
-        } else {
-            content
-        }
+        content.dsAccentPalette(palette ?? iconPalette)
     }
 }

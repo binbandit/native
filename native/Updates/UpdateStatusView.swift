@@ -9,6 +9,21 @@ struct UpdateStatusView: View {
     @State private var isConfirmingRestart = false
 
     var body: some View {
+        content
+            .updateRestartConfirmation(controller, isPresented: $isConfirmingRestart)
+    }
+
+    /// A failure is its own outlined notice; every other state sits on a card.
+    @ViewBuilder
+    private var content: some View {
+        if case .failed(let failure) = controller.state {
+            failed(failure)
+        } else {
+            Card { status }
+        }
+    }
+
+    private var status: some View {
         Group {
             switch controller.state {
             case .idle:
@@ -30,15 +45,14 @@ struct UpdateStatusView: View {
                 ready(release)
             case .installing(let release):
                 progress("Installing Native \(release.version)…", detail: "Native reopens in a moment.")
-            case .failed(let failure):
-                failed(failure)
+            case .failed:
+                EmptyView()
             case .unavailable(let reason):
                 unavailable(reason)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .animation(.dsStandard, value: controller.state)
-        .updateRestartConfirmation(controller, isPresented: $isConfirmingRestart)
     }
 
     // MARK: - States
@@ -277,7 +291,7 @@ private struct UpdateStatusRow<Actions: View>: View {
         DSPreviewPair {
             VStack(alignment: .leading, spacing: DS.Space.lg) {
                 ForEach(samples, id: \.self) { sample in
-                    Card { UpdateStatusView(controller: .preview(sample)) }
+                    UpdateStatusView(controller: .preview(sample))
                 }
             }
             .frame(width: 560)
