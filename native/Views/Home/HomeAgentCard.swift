@@ -8,7 +8,9 @@ struct HomeAgentCard<ID: Hashable>: View {
     let onNewTask: () -> Void
 
     var body: some View {
-        HomeActionCard(title, systemImage: agent.symbolName, detail: detail, isDetailUrgent: remedy != nil) {
+        HomeActionCard(
+            title, systemImage: agent.symbolName, agent: agent.agent, detail: detail, isDetailUrgent: remedy != nil
+        ) {
             if let remedy {
                 remedy.action()
             } else {

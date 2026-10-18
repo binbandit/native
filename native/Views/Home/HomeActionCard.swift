@@ -10,6 +10,8 @@ import SwiftUI
 struct HomeActionCard<Accessory: View>: View {
     let title: String
     let systemImage: String
+    /// Draws this agent's icon in place of the symbol.
+    var agent: AgentDefinition?
     /// A second line under the label, such as why an agent can't start tasks.
     var detail: String?
     /// Whether the detail asks something of the user, which sets it in the attention color.
@@ -23,6 +25,7 @@ struct HomeActionCard<Accessory: View>: View {
     init(
         _ title: String,
         systemImage: String,
+        agent: AgentDefinition? = nil,
         detail: String? = nil,
         isDetailUrgent: Bool = false,
         action: @escaping () -> Void,
@@ -30,6 +33,7 @@ struct HomeActionCard<Accessory: View>: View {
     ) {
         self.title = title
         self.systemImage = systemImage
+        self.agent = agent
         self.detail = detail
         self.isDetailUrgent = isDetailUrgent
         self.action = action
@@ -69,10 +73,14 @@ struct HomeActionCard<Accessory: View>: View {
         .trackHover($isHovered)
     }
 
-    private var glyph: some View {
-        Image(systemName: systemImage)
-            .font(HomeLayout.cardGlyph)
-            .frame(width: HomeLayout.cardGlyphSlot, height: HomeLayout.cardGlyphSlot)
+    @ViewBuilder private var glyph: some View {
+        if let agent {
+            AgentIcon(agent: agent, style: .tile, size: HomeLayout.cardGlyphSlot)
+        } else {
+            Image(systemName: systemImage)
+                .font(HomeLayout.cardGlyph)
+                .frame(width: HomeLayout.cardGlyphSlot, height: HomeLayout.cardGlyphSlot)
+        }
     }
 
     private var labels: some View {

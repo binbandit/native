@@ -4,6 +4,16 @@ import Observation
 /// The user's sound choices, kept in `UserDefaults` under `sounds.*`.
 @Observable
 final class SoundPreferences {
+    /// The one switch for every sound Native plays.
+    var isEnabled: Bool {
+        didSet { defaults.set(isEnabled, forKey: Key.enabled) }
+    }
+
+    /// Stay silent while Do Not Disturb or another Focus is on (when Native can tell).
+    var staysQuietDuringFocus: Bool {
+        didSet { defaults.set(staysQuietDuringFocus, forKey: Key.staysQuietDuringFocus) }
+    }
+
     var selection: SoundID {
         didSet { defaults.set(selection.rawValue, forKey: Key.selection) }
     }
@@ -30,6 +40,8 @@ final class SoundPreferences {
     @ObservationIgnored private let defaults: UserDefaults
 
     private enum Key {
+        static let enabled = "sounds.enabled"
+        static let staysQuietDuringFocus = "sounds.staysQuietDuringFocus"
         static let selection = "sounds.selection"
         static let volume = "sounds.volume"
         static let triggers = "sounds.triggers"
@@ -39,6 +51,8 @@ final class SoundPreferences {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
+        isEnabled = defaults.object(forKey: Key.enabled) as? Bool ?? true
+        staysQuietDuringFocus = defaults.object(forKey: Key.staysQuietDuringFocus) as? Bool ?? true
         selection = defaults.string(forKey: Key.selection).flatMap(SoundID.init(rawValue:)) ?? .default
         volume = defaults.object(forKey: Key.volume) as? Double ?? Self.defaultVolume
         triggers = defaults.stringArray(forKey: Key.triggers).map { Set($0.compactMap(SoundTrigger.init(rawValue:))) }

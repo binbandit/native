@@ -35,7 +35,7 @@ private struct ResourcesSegment: View {
 
     private var summary: String {
         guard hasSample else { return "Measuring…" }
-        return "\(DSFormat.memory(snapshot.memory)) of memory (\(ResourceFormat.shareOfPhysicalMemory(snapshot.memory))) and \(DSFormat.cpu(snapshot.cpu)) CPU"
+        return "\(DSFormat.memory(snapshot.memory)) of memory (\(Self.shareOfPhysicalMemory(snapshot.memory))) and \(DSFormat.cpu(snapshot.cpu)) CPU"
     }
 
     var body: some View {
@@ -59,6 +59,12 @@ private struct ResourcesSegment: View {
         .task {
             await monitor.run { source.statusBarAgentProcesses }
         }
+    }
+
+    /// "6.7% of 48 GB": the memory against this Mac's.
+    private static func shareOfPhysicalMemory(_ bytes: UInt64) -> String {
+        let total = ProcessInfo.processInfo.physicalMemory
+        return "\(DSFormat.share(Int(clamping: bytes), of: Int(clamping: total))) of \(DSFormat.memory(total))"
     }
 
     /// the reference app tints the figure under memory pressure; here, past a quarter and half of the Mac's RAM.

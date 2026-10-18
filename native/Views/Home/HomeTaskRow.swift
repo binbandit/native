@@ -15,10 +15,16 @@ struct HomeTaskRow<ID: Hashable>: View {
     var body: some View {
         Button(action: action) {
             HStack(spacing: DS.Space.md + DS.Space.xxs) {
-                Image(systemName: task.agentSymbolName)
-                    .font(.system(size: DS.Size.navIcon))
-                    .foregroundStyle(.dsTextTertiary)
-                    .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
+                Group {
+                    if let agent = task.agent {
+                        AgentIcon(agent: agent)
+                    } else {
+                        Image(systemName: task.agentSymbolName)
+                            .font(.system(size: DS.Size.navIcon))
+                    }
+                }
+                .foregroundStyle(.dsTextTertiary)
+                .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
                 Text(task.title)
                     .font(.dsCalloutBook)
                     .foregroundStyle(isHovered ? .dsTextPrimary : .dsTextSecondary)

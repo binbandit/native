@@ -10,6 +10,8 @@ public struct HomeTask<ID: Hashable>: Identifiable {
     public let projectName: String?
     /// When the task was last active.
     public let date: Date?
+    /// The task's agent, so its icon can be drawn; without one (previews) the symbol stands in.
+    var agent: AgentDefinition?
 
     public init(
         id: ID, title: String, agentName: String, agentSymbolName: String, projectName: String? = nil, date: Date?
