@@ -3,7 +3,7 @@ import SwiftUI
 
 /// A pull request at a glance, for a task: its state and checks. `.compact` fits a sidebar row's
 /// trailing edge; `.regular` adds the number, for the session header, and its checks glyph opens
-/// the failing check. Clicking the rest opens the pull request on GitHub.
+/// the failing check. Clicking the rest opens the pull request, in Native or on GitHub as Settings say.
 struct PullRequestBadge: View {
     enum Style {
         case compact
@@ -32,7 +32,7 @@ struct PullRequestBadge: View {
 
     private var compact: some View {
         Button {
-            model.openInBrowser(pullRequest)
+            model.open(pullRequest)
         } label: {
             HStack(spacing: DS.Space.xxs) {
                 PullRequestStateIcon(state: pullRequest.state, isDraft: pullRequest.isDraft, size: DS.Size.navIcon)
@@ -57,7 +57,7 @@ struct PullRequestBadge: View {
         let shape = RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous)
         return HStack(spacing: 0) {
             Button {
-                model.openInBrowser(pullRequest)
+                model.open(pullRequest)
             } label: {
                 HStack(spacing: DS.Space.xs) {
                     PullRequestStateIcon(state: pullRequest.state, isDraft: pullRequest.isDraft, size: DS.Size.navIcon)

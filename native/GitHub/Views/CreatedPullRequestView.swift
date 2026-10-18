@@ -6,7 +6,8 @@ struct CreatedPullRequestView: View {
     let onCopy: () -> Void
     let onDone: () -> Void
 
-    @Environment(\.openURL) private var openURL
+    @Environment(GitHubModel.self) private var gitHub
+
 
     var body: some View {
         VStack(spacing: DS.Space.lg) {
@@ -25,7 +26,7 @@ struct CreatedPullRequestView: View {
             HStack(spacing: DS.Space.md) {
                 Button("Copy URL", systemImage: "link", action: onCopy)
                     .buttonStyle(.ds(.secondary, size: .medium))
-                Button("Open on GitHub", systemImage: "arrow.up.right") { openURL(url) }
+                Button("Open on GitHub", systemImage: "arrow.up.right") { gitHub.openExternally(url) }
                     .buttonStyle(.ds(.secondary, size: .medium))
                 Button("Done", action: onDone)
                     .buttonStyle(.ds(.primary, size: .medium))

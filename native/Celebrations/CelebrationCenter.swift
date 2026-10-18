@@ -20,6 +20,8 @@ final class CelebrationCenter {
     /// Hands the icon over when it changes.
     @ObservationIgnored var onIconChange: ((AppIconCelebration?) -> Void)?
 
+    /// Native's own icons that download when chosen.
+    @ObservationIgnored let assets: CelebrationAssetStore
     @ObservationIgnored let variant: AppIconVariant
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let now: () -> Date
@@ -34,9 +36,11 @@ final class CelebrationCenter {
 
     init(
         defaults: UserDefaults = .standard, variant: AppIconVariant = .current,
+        assets: CelebrationAssetStore = CelebrationAssetStore(),
         now: @escaping () -> Date = Date.init, timeZone: @escaping () -> TimeZone = { .current }
     ) {
         self.defaults = defaults
+        self.assets = assets
         self.variant = variant
         self.now = now
         self.timeZone = timeZone
@@ -81,17 +85,24 @@ final class CelebrationCenter {
         pruned.prune(before: today)
         if pruned != preferences { preferences = pruned }
         resolution = CelebrationPolicy.resolve(
-            catalog.celebrations, preferences: preferences, on: today, canApplyAppIcon: PlatformAppIcon.canApplyAnyImage)
+            catalog.celebrations, preferences: preferences, on: today, canApplyAppIcon: PlatformAppIcon.canApplyAnyImage
+        )
         timer?.invalidate()
         timer = resolution.nextChange.map { boundary in
             // Relative to `now()`, which may be shifted by `-nativeDate`; the wake and clock events
             // catch a timer that sleeps through its boundary.
-            Timer.scheduledTimer(withTimeInterval: max(1, boundary.start(in: zone).timeIntervalSince(date)), repeats: false) {
+            Timer.scheduledTimer(
+                withTimeInterval: max(1, boundary.start(in: zone).timeIntervalSince(date)), repeats: false
+            ) {
                 [weak self] _ in
                 Task { @MainActor [weak self] in self?.refresh() }
             }
         }
         onIconChange?(icon)
+        // Packs for celebrations coming up this week, if a choice made earlier hasn't fetched them.
+        for pack in CelebrationAssets.packsDue(catalog.celebrations, preferences: preferences, on: today) {
+            assets.fetch(pack)
+        }
     }
 
     // MARK: - What's showing
@@ -135,12 +146,21 @@ final class CelebrationCenter {
 
     // MARK: - Changes
 
+    /// Choosing a celebration fetches its icons right away, so they're here before its dates.
     func setAutomatic(_ isOn: Bool, for id: CelebrationID) {
         change { $0.setEnabled(isOn, for: id) }
+        if isOn { fetchIcons(for: id) }
     }
 
     func setAppIcon(_ isOn: Bool, for id: CelebrationID) {
         change { $0.selections[id, default: .init()].appIcon = isOn }
+        if isOn { fetchIcons(for: id) }
+    }
+
+    /// Tries a celebration's icon download again.
+    func fetchIcons(for id: CelebrationID) {
+        guard let pack = catalog.celebration(id)?.iconPack, preferences.selection(for: id).appIcon else { return }
+        assets.fetch(pack)
     }
 
     func setHome(_ isOn: Bool, for id: CelebrationID) {

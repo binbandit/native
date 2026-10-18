@@ -16,7 +16,6 @@ struct GitHubSetupView: View {
     var retry: (() async -> Void)?
 
     @Environment(GitHubModel.self) private var model
-    @Environment(\.openURL) private var openURL
 
     var body: some View {
         EmptyStateView(title, systemImage: systemImage, message: message) {
@@ -35,7 +34,7 @@ struct GitHubSetupView: View {
                 }
                 if case .notInstalled = problem {
                     Button("Other ways to install at cli.github.com") {
-                        if let url = URL(string: "https://cli.github.com") { openURL(url) }
+                        if let url = URL(string: "https://cli.github.com") { model.openExternally(url) }
                     }
                     .buttonStyle(.ds(.ghost))
                 }

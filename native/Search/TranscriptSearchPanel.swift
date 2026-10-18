@@ -97,7 +97,15 @@ struct TranscriptSearchPanel: View {
     // MARK: - Content
 
     @ViewBuilder private func content(rows: [TranscriptSearchRow]) -> some View {
-        if let failure = center.failure {
+        if !center.isEnabled {
+            EmptyStateView(
+                "Search is off",
+                systemImage: "magnifyingglass",
+                message: "Turn it on to index your tasks on this Mac and find any of them by what was said in it."
+            ) {
+                Button("Turn On Search") { center.turnOn() }
+            }
+        } else if let failure = center.failure {
             ErrorState(
                 "Search isn't available",
                 recovery: failure,

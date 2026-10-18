@@ -3,7 +3,7 @@ import SwiftUI
 
 /// One pull request in the list (the reference app `PullRequestSummaryRow`): state glyph, title, size and
 /// checks on the first line; reference, branch, author, age and review status under it. Clicking
-/// opens it on GitHub, the checks glyph opens the failing check, and hovering offers the rest.
+/// opens it (in Native or on GitHub, as Settings say), the checks glyph opens the failing check, and hovering offers the rest.
 struct PullRequestRow: View {
     let pullRequest: PullRequestSummary
     var showsRepository = true
@@ -40,7 +40,7 @@ struct PullRequestRow: View {
         }
         .padding(DS.Space.md)
         .contentShape(.rect)
-        .onTapGesture { model.openInBrowser(pullRequest) }
+        .onTapGesture { model.open(pullRequest) }
         .background {
             RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
                 .fill(isHovered ? .dsHover : .clear)
@@ -50,7 +50,7 @@ struct PullRequestRow: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabel)
         .accessibilityAddTraits(.isLink)
-        .accessibilityAction { model.openInBrowser(pullRequest) }
+        .accessibilityAction { model.open(pullRequest) }
     }
 
     private var metadata: some View {
