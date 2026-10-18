@@ -1,3 +1,4 @@
+import CodeThemes
 import GitHub
 
 /// The Files Changed tab's data. The file list loads whole (it's small); patches come a hundred
@@ -64,6 +65,35 @@ extension PullRequestPageModel {
             patchError = nil
         } catch {
             patchError = error
+        }
+    }
+
+    /// Diffs past this many lines, or with minified lines, wait behind "Load Diff".
+    static let largeDiffLines = 400
+    static let minifiedLineLength = 1_000
+
+    func isLarge(_ path: String) -> Bool {
+        guard let hunks = hunks[path] else { return false }
+        let lines = hunks.flatMap(\.lines)
+        return lines.count > Self.largeDiffLines || lines.contains { $0.text.utf8.count > Self.minifiedLineLength }
+    }
+
+    func lineCount(_ path: String) -> Int {
+        hunks[path]?.reduce(0) { $0 + $1.lines.count } ?? 0
+    }
+
+    static func hunkKey(_ path: String, _ hunk: DiffHunk) -> String {
+        "\(path)#\(hunk.id)"
+    }
+
+    /// Highlights a file's hunks once, off the main thread; they draw plain until it's done.
+    func highlight(_ path: String) async {
+        guard let hunks = hunks[path], let language = CodeLanguage.forPath(path),
+            highlightedPaths.insert(path).inserted
+        else { return }
+        for hunk in hunks {
+            let code = hunk.lines.map { $0.kind == .noNewline ? "" : $0.text }.joined(separator: "\n")
+            highlighted[Self.hunkKey(path, hunk)] = await CodeHighlightCache.shared.highlightLines(code, language: language)
         }
     }
 
