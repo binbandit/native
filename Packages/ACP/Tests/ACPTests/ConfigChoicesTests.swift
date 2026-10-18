@@ -69,18 +69,23 @@ struct ConfigChoicesTests {
     }
 
     @Test func doesNothingWhenTheAgentRestoredItItself() throws {
-        let restored = try Self.options(Self.loaded.replacingOccurrences(of: #""currentValue":"gpt-6-astra""#, with: #""currentValue":"gpt-6.1-sol""#))
+        let restored = try Self.options(
+            Self.loaded.replacingOccurrences(
+                of: #""currentValue":"gpt-6-astra""#, with: #""currentValue":"gpt-6.1-sol""#))
 
         #expect(try Self.chosen().restoration(of: "model", in: restored, allows: Self.allowAll) == nil)
     }
 
     @Test func keepsTheAgentsValueWhenTheChosenOneIsGone() throws {
         // The adapter stopped offering 6.1 Sol.
-        let withoutSol = try Self.options(Self.loaded.replacingOccurrences(of: #"{"value":"gpt-6.1-sol","name":"6.1 Sol"},"#, with: ""))
+        let withoutSol = try Self.options(
+            Self.loaded.replacingOccurrences(of: #"{"value":"gpt-6.1-sol","name":"6.1 Sol"},"#, with: ""))
         let choices = try Self.chosen()
         let sol = ConfigChoices.Choice(value: "gpt-6.1-sol", optionName: "Model", valueName: "6.1 Sol")
 
-        #expect(choices.restoration(of: "model", in: withoutSol, allows: Self.allowAll) == .unavailable(sol, kept: "6 Astra"))
+        #expect(
+            choices.restoration(of: "model", in: withoutSol, allows: Self.allowAll)
+                == .unavailable(sol, kept: "6 Astra"))
     }
 
     @Test func reportsAnOptionTheAgentNoLongerHas() throws {
@@ -109,7 +114,8 @@ struct ConfigChoicesTests {
 
         #expect(
             try Self.chosen().restoration(of: "mode", in: options, allows: noFullAccess)
-                == .forbidden(ConfigChoices.Choice(value: "agent-full-access", optionName: "Mode", valueName: "Full access")))
+                == .forbidden(
+                    ConfigChoices.Choice(value: "agent-full-access", optionName: "Mode", valueName: "Full access")))
     }
 
     /// A user's later choice, or the agent's own change, is what a reopened session goes back to,
@@ -122,12 +128,16 @@ struct ConfigChoicesTests {
             .configOptions(
                 try Self.options(
                     Self.loaded
-                        .replacingOccurrences(of: #""currentValue":"gpt-6-astra""#, with: #""currentValue":"gpt-6.1-sol""#)
-                        .replacingOccurrences(of: #""currentValue":"agent""#, with: #""currentValue":"agent-full-access""#))))
+                        .replacingOccurrences(
+                            of: #""currentValue":"gpt-6-astra""#, with: #""currentValue":"gpt-6.1-sol""#
+                        )
+                        .replacingOccurrences(
+                            of: #""currentValue":"agent""#, with: #""currentValue":"agent-full-access""#))))
         // The agent drops to Read-only itself, and the effort changes, which nobody chose before.
         state.apply(.currentMode("read-only"))
         let effort = try #require(state.configOptions.firstIndex { $0.id == "reasoning_effort" })
-        state.configOptions[effort].kind = .select(currentValue: "low", options: state.configOptions[effort].selectOptions)
+        state.configOptions[effort].kind = .select(
+            currentValue: "low", options: state.configOptions[effort].selectOptions)
 
         let changed = choices.follow(state.configOptions)
         #expect(changed)
