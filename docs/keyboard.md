@@ -71,7 +71,7 @@ only while the card has focus; ⌘1 – ⌘9 stay session navigation.
 
 Typing `@` at the start of a word lists the project's files (ignored files left out; changed and
 recently mentioned files first), narrowing as you type. The chosen file goes into the draft as
-`@path`.
+`@path`. Pasted or dictated `@` text opens the list the same way ([accessibility.md](accessibility.md)).
 
 | Keys | Action |
 | --- | --- |

@@ -54,8 +54,9 @@ Native's `@` mentions accept the same result by other routes:
 
 Sources: [Use Flow with Cursor, VS Code, and other IDEs](https://docs.wisprflow.ai/articles/6434410694-use-flow-with-cursor-vs-code-and-other-ides)
 (file tagging, clipboard insertion, Accessibility permission for reading context), and
-[Tanay Kothari on X](https://x.com/tankots/status/1955643960946499657) (file tagging in Cursor and
-Windsurf).
+[File tagging in Cursor](https://wisprflow.ai/post/file-tagging-in-cursor) and
+[Tanay Kothari on X](https://x.com/tankots/status/1955643960946499657) (file tagging shipped for
+Cursor and Windsurf).
 
 ## Checking it
 
