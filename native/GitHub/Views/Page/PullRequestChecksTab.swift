@@ -14,7 +14,9 @@ struct PullRequestChecksTab: View {
                     if checks.isEmpty {
                         EmptyStateView(
                             "No Checks", systemImage: "checklist",
-                            message: "Nothing reported a status on this pull request's latest commit. Checks appear here when CI runs on a push.")
+                            message:
+                                "Nothing reported a status on this pull request's latest commit. Checks appear here when CI runs on a push."
+                        )
                     } else {
                         summary(checks)
                         Card(padding: 0) {

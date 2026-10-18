@@ -243,10 +243,11 @@ struct ComposerView: View {
         }
         .frame(minHeight: DS.Size.composerInputMinHeight)
         .background {
-            // ⌘. stops the turn too; a button takes one shortcut, so this one is invisible.
+            // Stop's shortcut (⌘. unless remapped) stops the turn too; a button takes one shortcut,
+            // so this one is invisible.
             if session.canCancel {
                 Button("Stop") { Task { await session.cancel() } }
-                    .keyboardShortcut(".", modifiers: .command)
+                    .keyboardShortcut(CommandRegistry.shared.keyboardShortcut(for: .sessionStop))
                     .opacity(0)
                     .allowsHitTesting(false)
                     .accessibilityHidden(true)

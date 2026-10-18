@@ -28,7 +28,9 @@ struct PullRequestReviewThreadView: View {
             }
         }
         .background(.dsSurface, in: shape)
-        .overlay { shape.strokeBorder(thread.isPending ? Color.dsAttention.opacity(0.5) : Color.dsSeparator, lineWidth: 1) }
+        .overlay {
+            shape.strokeBorder(thread.isPending ? Color.dsAttention.opacity(0.5) : Color.dsSeparator, lineWidth: 1)
+        }
         .clipShape(shape)
         .codeTextStyle(.block)
     }
@@ -78,14 +80,19 @@ struct PullRequestReviewThreadView: View {
                 Text(comment.author ?? "ghost")
                     .font(.dsBodyMedium)
                     .foregroundStyle(.dsTextPrimary)
-                Text(DSFormat.compactAge(comment.createdAt, now: .now) + (comment.lastEditedAt == nil ? "" : " · edited"))
-                    .font(.dsCaption)
-                    .foregroundStyle(.dsTextTertiary)
+                Text(
+                    DSFormat.compactAge(comment.createdAt, now: .now) + (comment.lastEditedAt == nil ? "" : " · edited")
+                )
+                .font(.dsCaption)
+                .foregroundStyle(.dsTextTertiary)
                 Spacer(minLength: DS.Space.md)
                 commentMenu(comment)
             }
             if editing == comment.id {
-                GitHubCommentComposer(text: $editText, placeholder: "Edit your comment", isBusy: model.busy.contains(comment.id), focusesOnAppear: true) {
+                GitHubCommentComposer(
+                    text: $editText, placeholder: "Edit your comment", isBusy: model.busy.contains(comment.id),
+                    focusesOnAppear: true
+                ) {
                     Button("Cancel") { editing = nil }
                         .buttonStyle(.ds(.ghost))
                     Button("Save") {
@@ -160,7 +167,10 @@ struct PullRequestReviewThreadView: View {
                         .buttonStyle(.ds(.ghost))
                 }
                 if thread.isResolved ? thread.viewerCanUnresolve : thread.viewerCanResolve {
-                    Button(thread.isResolved ? "Unresolve" : "Resolve Conversation", systemImage: thread.isResolved ? "arrow.uturn.backward" : "checkmark") {
+                    Button(
+                        thread.isResolved ? "Unresolve" : "Resolve Conversation",
+                        systemImage: thread.isResolved ? "arrow.uturn.backward" : "checkmark"
+                    ) {
                         Task { await model.setResolved(!thread.isResolved, thread) }
                     }
                     .buttonStyle(.ds(.ghost))

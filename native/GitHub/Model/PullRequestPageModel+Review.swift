@@ -49,7 +49,9 @@ extension PullRequestPageModel {
             Task {
                 guard let self else { return }
                 if isOnlyComment && comment.isPending {
-                    _ = await self.write(comment.id) { cli, page in try await cli.addReviewComment(comment.body, at: anchor, on: page) }
+                    _ = await self.write(comment.id) { cli, page in
+                        try await cli.addReviewComment(comment.body, at: anchor, on: page)
+                    }
                 } else {
                     // A reply can only come back as a new reply.
                     self.replyDrafts[thread.id] = comment.body
@@ -85,7 +87,9 @@ extension PullRequestPageModel {
     }
 
     func merge(_ method: MergeMethod, deleteBranch: Bool) async -> Bool {
-        let done = await write("merge") { cli, page in try await cli.merge(page, method: method, deleteBranch: deleteBranch) }
+        let done = await write("merge") { cli, page in
+            try await cli.merge(page, method: method, deleteBranch: deleteBranch)
+        }
         if done, let gitHub { Task { await gitHub.refresh() } }
         return done
     }
@@ -100,7 +104,10 @@ extension PullRequestPageModel {
         gitHub?.hasCurrentTask() ?? false
     }
 
-    func askAgent(about anchor: ReviewAnchor, thread: ReviewThread? = nil, request: String? = nil, destination: GitHubAgentDestination) async {
+    func askAgent(
+        about anchor: ReviewAnchor, thread: ReviewThread? = nil, request: String? = nil,
+        destination: GitHubAgentDestination
+    ) async {
         guard let page, let askAgent = gitHub?.askAgent else { return }
         let prompt = ReviewAgentPrompt(
             reference: reference, title: page.title, branch: page.headRefName, anchor: anchor,

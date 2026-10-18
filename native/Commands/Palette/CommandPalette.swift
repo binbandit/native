@@ -6,6 +6,24 @@ extension CommandID {
     static let paletteShow: Self = "palette.show"
 }
 
+extension NativeCommand {
+    /// ⌘K. It steps aside where something else answers the same key (a focused terminal's Clear),
+    /// so the key goes there instead.
+    static func palette(
+        _ palette: CommandPalette, stepsAsideWhen isClaimed: @escaping @MainActor (CommandContext) -> Bool
+    ) -> NativeCommand {
+        NativeCommand(
+            .paletteShow, title: "Command Palette…", category: .general, systemImage: "command",
+            keywords: ["actions", "run", "go to", "jump"]
+        ) { context in
+            context.openMainWindow()
+            palette.toggle(in: context)
+        }
+        .available { palette.isPresented || !isClaimed($0) }
+        .hiddenFromPalette()
+    }
+}
+
 /// The command palette's state: whether it's open, what it acts on, and what the user ran
 /// recently (listed first). What it lists comes from `sources`, which the app wires up: the
 /// registry's commands, the tasks, the projects and the Settings pages. See `docs/commands.md`.
@@ -27,7 +45,7 @@ final class CommandPalette {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        recents = (defaults.stringArray(forKey: Self.recentsKey) ?? []).map(CommandPaletteItem.ID.init)
+        recents = (defaults.stringArray(forKey: Self.recentsKey) ?? []).map { CommandPaletteItem.ID($0) }
     }
 
     /// ⌘K: opens over the window the context came from, or closes it again.

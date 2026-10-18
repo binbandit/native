@@ -8,7 +8,6 @@ struct CreatedPullRequestView: View {
 
     @Environment(GitHubModel.self) private var gitHub
 
-
     var body: some View {
         VStack(spacing: DS.Space.lg) {
             Image(systemName: "checkmark.circle")

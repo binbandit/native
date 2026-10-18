@@ -1,3 +1,4 @@
+import Foundation
 import NativeCommands
 
 /// The palette's list for what's typed: sections of items, best first.

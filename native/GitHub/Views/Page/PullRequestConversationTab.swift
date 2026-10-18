@@ -18,7 +18,10 @@ struct PullRequestConversationTab: View {
                     PullRequestTimelineRow(item: item, model: model)
                 }
                 if page.timelineCursor != nil {
-                    Button(model.isLoadingMoreTimeline ? "Loading…" : "Show \(page.timelineTotal - page.timeline.count) More") {
+                    Button(
+                        model.isLoadingMoreTimeline
+                            ? "Loading…" : "Show \(page.timelineTotal - page.timeline.count) More"
+                    ) {
                         Task { await model.loadMoreTimeline() }
                     }
                     .buttonStyle(.ds(.secondary))
@@ -46,7 +49,9 @@ struct PullRequestConversationTab: View {
             model.tab = .files
         } label: {
             Label(
-                open > 0 ? "\(open) unresolved conversation\(open == 1 ? "" : "s") on Files Changed" : "All \(page.threadsTotal) line conversations are resolved",
+                open > 0
+                    ? "\(open) unresolved conversation\(open == 1 ? "" : "s") on Files Changed"
+                    : "All \(page.threadsTotal) line conversations are resolved",
                 systemImage: "text.bubble")
         }
         .buttonStyle(.ds(.ghost))

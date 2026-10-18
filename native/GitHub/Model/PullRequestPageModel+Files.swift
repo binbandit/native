@@ -70,7 +70,9 @@ extension PullRequestPageModel {
         do {
             try await gitHub.cli().setViewed(viewed, path: file.path, on: page)
         } catch {
-            if let index = files.firstIndex(where: { $0.path == file.path }) { files[index].viewedState = file.viewedState }
+            if let index = files.firstIndex(where: { $0.path == file.path }) {
+                files[index].viewedState = file.viewedState
+            }
             actionError = error
         }
     }

@@ -16,7 +16,8 @@ extension SettingsPane {
         searchEntries: {
             [
                 SettingsSearchEntry(
-                    id: GitHubSettingsPage.openingRow, title: "Open pull requests", keywords: ["browser", "native", "pr"])
+                    id: GitHubSettingsPage.openingRow, title: "Open pull requests",
+                    keywords: ["browser", "native", "pr"])
             ]
         },
         content: { GitHubSettingsPage() }

@@ -23,7 +23,8 @@ struct PullRequestCommentDraftView: View {
                     }
                     if model.canAskAgent {
                         Menu {
-                            PullRequestAskAgentButtons(model: model, anchor: draft.anchor, thread: nil, request: draft.body)
+                            PullRequestAskAgentButtons(
+                                model: model, anchor: draft.anchor, thread: nil, request: draft.body)
                         } label: {
                             Label("Ask an Agent", systemImage: "sparkles")
                         }
@@ -57,7 +58,8 @@ struct PullRequestCommentDraftView: View {
             .padding(DS.Space.md)
             .background(.dsSurface, in: RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous))
             .overlay {
-                RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous).strokeBorder(.dsSeparator, lineWidth: 1)
+                RoundedRectangle(cornerRadius: DS.Radius.card, style: .continuous).strokeBorder(
+                    .dsSeparator, lineWidth: 1)
             }
             .codeTextStyle(.block)
         }

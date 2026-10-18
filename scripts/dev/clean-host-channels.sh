@@ -4,9 +4,11 @@
 #   scripts/dev/clean-host-channels.sh [--apply] [--keep <channel>]...
 #
 # Each Debug build runs its own host on a channel derived from its build folder
-# (docs/durability.md, "Development builds"). A channel is kept when a running Native app uses it or
-# it's named with --keep; every other development host is stopped (launchctl bootout), disabled so
-# it can't come back at the next login, and its folder under
+# (docs/durability.md, "Development builds"). A channel is kept while its build still exists (in
+# /tmp/native-dd or Xcode's DerivedData), while a running Native app uses it, or when it's named with
+# --keep: a durable host outlives its app on purpose, so a host with no app open isn't stale. Every
+# other development host is stopped (launchctl bootout), disabled so it can't come back at the next
+# login, and its folder under
 # ~/Library/Application Support/Native/Channels is removed. Release hosts, whose label has no
 # channel suffix, and their data in ~/Library/Application Support/Native are never touched.
 set -eu
@@ -25,12 +27,20 @@ done
 domain="gui/$(id -u)"
 channels_dir="$HOME/Library/Application Support/Native/Channels"
 
-# Channels in use: those of every running Native app, read from the plist its build generated.
-for app in $(ps -axo command= | sed -n 's|^\(/.*/Native\.app\)/Contents/MacOS/Native$|\1|p' | tr ' ' '?'); do
-    app=$(printf '%s' "$app" | tr '?' ' ')
+keep_channel_of() {
     channel=$(/usr/libexec/PlistBuddy -c "Print :EnvironmentVariables:NATIVE_HOST_CHANNEL" \
-        "$app/Contents/Library/LaunchAgents/NativeHost.plist" 2>/dev/null || true)
-    [ -n "$channel" ] && keep="$keep $channel"
+        "$1/Contents/Library/LaunchAgents/NativeHost.plist" 2>/dev/null || true)
+    case "$channel" in "" | *" "*) ;; *) keep="$keep $channel" ;; esac
+}
+
+# Channels in use: those of every build still on disk and every running Native app (whose bundle may
+# be gone), read from the plist its build generated.
+for app in /tmp/native-dd/*/Build/Products/*/Native.app \
+    "$HOME"/Library/Developer/Xcode/DerivedData/native-*/Build/Products/*/Native.app; do
+    [ -d "$app" ] && keep_channel_of "$app"
+done
+for app in $(ps -axo command= | sed -n 's|^\(/.*/Native\.app\)/Contents/MacOS/Native$|\1|p' | tr ' ' '?'); do
+    keep_channel_of "$(printf '%s' "$app" | tr '?' ' ')"
 done
 
 is_kept() {

@@ -79,7 +79,9 @@ private struct PullRequestFileTreeRow: View {
             }
             .padding(.horizontal, DS.Space.sm)
             .frame(minHeight: DS.Size.listRow)
-            .background(isHovered ? .dsHover : .clear, in: RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous))
+            .background(
+                isHovered ? .dsHover : .clear, in: RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
+            )
             .contentShape(.rect)
         }
         .buttonStyle(.plain)

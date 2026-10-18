@@ -52,7 +52,8 @@ private struct PullRequestSuggestionView: View {
     }
 
     private func lines(_ text: String, kind: DiffHunk.Line.Kind) -> some View {
-        ForEach(Array(text.split(separator: "\n", omittingEmptySubsequences: false).enumerated()), id: \.offset) { _, line in
+        ForEach(Array(text.split(separator: "\n", omittingEmptySubsequences: false).enumerated()), id: \.offset) {
+            _, line in
             HStack(spacing: DS.Space.sm) {
                 Text(kind == .removed ? "-" : "+")
                     .foregroundStyle(kind == .removed ? .dsDanger : .dsSuccess)

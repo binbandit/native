@@ -16,7 +16,9 @@ struct PullRequestAskAgentButtons: View {
         .help("Starts a task in a checkout of this branch with these lines and comments")
         if model.canSendToCurrentTask {
             Button("Send to Current Task", systemImage: "arrow.turn.down.right") {
-                Task { await model.askAgent(about: anchor, thread: thread, request: request, destination: .currentTask) }
+                Task {
+                    await model.askAgent(about: anchor, thread: thread, request: request, destination: .currentTask)
+                }
             }
         }
     }

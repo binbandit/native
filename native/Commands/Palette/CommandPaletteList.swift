@@ -105,7 +105,7 @@ private struct CommandPaletteRow: View {
                 }
             }
             .padding(.horizontal, DS.Space.md)
-            .frame(minHeight: max(DS.Size.controlMD, DS.minimumHitTarget))
+            .frame(minHeight: max(DS.Size.controlMD, DS.Size.minimumHitTarget))
             .background(isSelected ? Color.dsSelected : .clear, in: .rect(cornerRadius: DS.Radius.row))
             .contentShape(.rect)
         }

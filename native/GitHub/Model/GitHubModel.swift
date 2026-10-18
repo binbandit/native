@@ -126,7 +126,11 @@ final class GitHubModel {
             let delay = max(schedule.nextRefresh(activity).timeIntervalSinceNow, 1)
             let wait = Task { _ = try? await Task.sleep(for: .seconds(delay), tolerance: .seconds(delay / 10)) }
             refreshWait = wait
-            await withTaskCancellationHandler { await wait.value } onCancel: { wait.cancel() }
+            await withTaskCancellationHandler {
+                await wait.value
+            } onCancel: {
+                wait.cancel()
+            }
         }
     }
 

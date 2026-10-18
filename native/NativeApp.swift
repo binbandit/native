@@ -12,16 +12,18 @@ struct NativeApp: App {
     @State private var taskWorkspaces: GitTaskWorkspaceProvider
     @State private var iconPreferences = AppIconPreferences()
     /// `-nativeDate yyyy-MM-dd` previews another day's celebrations on the icon and Home.
-    @State private var celebrations = CelebrationCenter(now: HomeDateOverride.now)
+    @State private var celebrations: CelebrationCenter
     /// Settings takes over the main window, as in Conductor, rather than opening one of its own.
     @State private var settings: SettingsPresentation
-    @State private var terminals = TerminalStore()
+    @State private var terminals: TerminalStore
     @State private var keepAwake: KeepAwakeController
     @State private var statusBar: StatusBarRegistry
     /// One connection to this build's background host, shared by the main window and Durable Sessions.
     @State private var durableHost = DurableHost()
-    @State private var updates = UpdateController()
-    @State private var whatsNew = WhatsNewCenter()
+    @State private var updates: UpdateController
+    @State private var whatsNew: WhatsNewCenter
+    /// ⌘K, over the main window (docs/commands.md).
+    @State private var palette: CommandPalette
 
     init() {
         LaunchMetrics.mark(.appInit)
@@ -47,13 +49,32 @@ struct NativeApp: App {
         _settings = State(initialValue: settings)
         let keepAwake = KeepAwakeController()
         _keepAwake = State(initialValue: keepAwake)
-        _statusBar = State(initialValue: AmbientWiring.statusBar(model: model, keepAwake: keepAwake, settings: settings))
+        let statusBar = AmbientWiring.statusBar(model: model, keepAwake: keepAwake, settings: settings)
+        _statusBar = State(initialValue: statusBar)
+        let celebrations = CelebrationCenter(now: HomeDateOverride.now)
+        _celebrations = State(initialValue: celebrations)
+        let terminals = TerminalStore()
+        _terminals = State(initialValue: terminals)
+        let updates = UpdateController()
+        _updates = State(initialValue: updates)
+        let whatsNew = WhatsNewCenter()
+        _whatsNew = State(initialValue: whatsNew)
+        // Every command, before the menu bar first draws.
+        let palette = CommandPalette()
+        _palette = State(initialValue: palette)
+        CommandsWiring.connect(
+            CommandRegistry.shared, palette: palette,
+            features: .init(
+                model: model, settings: settings, terminals: terminals, keepAwake: keepAwake, statusBar: statusBar,
+                celebrations: celebrations, updates: updates, whatsNew: whatsNew))
     }
 
     var body: some Scene {
         Window("Native", id: "main") {
             RootView()
+                .commandPalette(palette)
                 .onAppear { LaunchMetrics.markOnScreen(.firstFrame) }
+                .environment(CommandRegistry.shared)
                 .environment(model)
                 .environment(git)
                 .environment(gitHub)
@@ -126,16 +147,16 @@ struct NativeApp: App {
         }
         .defaultSize(width: 1120, height: 780)
         .commands {
-            UpdateCommands(controller: updates, settings: settings)
-            WhatsNewCommands(center: whatsNew)
-            FileCommands(model: model)
-            ViewCommands(celebrations: celebrations, settings: settings)
+            UpdateCommands(commands: CommandRegistry.shared)
+            WhatsNewCommands(commands: CommandRegistry.shared)
+            FileCommands(commands: CommandRegistry.shared)
+            ViewCommands(commands: CommandRegistry.shared)
             SettingsCommands(settings: settings)
-            GoCommands(model: model, settings: settings)
-            SessionCommands(model: model)
-            TerminalCommands(store: terminals)
-            KeepAwakeCommands(controller: keepAwake)
-            StatusBarCommands(registry: statusBar)
+            GoCommands(commands: CommandRegistry.shared)
+            SessionCommands(model: model, commands: CommandRegistry.shared)
+            TerminalCommands(commands: CommandRegistry.shared)
+            KeepAwakeCommands(controller: keepAwake, commands: CommandRegistry.shared)
+            StatusBarCommands(registry: statusBar, commands: CommandRegistry.shared)
         }
 
         Window("Durable Sessions", id: HostPreviewWindow.id) {
@@ -149,94 +170,46 @@ struct NativeApp: App {
     }
 }
 
-// Every shortcut here is listed in `docs/keyboard.md`; change it there first.
+// The menus place commands; what each does, when it's available and its shortcut come from the
+// registry (docs/commands.md). Default shortcuts are in docs/keyboard.md; change them there first.
 
 private struct FileCommands: Commands {
-    let model: AppModel
-    @FocusedValue(\.activeSession) private var session
+    let commands: CommandRegistry
 
     var body: some Commands {
         CommandGroup(replacing: .newItem) {
-            Button("New Session") {
-                Task { await model.newSession() }
-            }
-            .keyboardShortcut("n")
-            // Never disabled otherwise: without a project or an agent, New Session says what's missing.
-            .disabled(model.isCreatingSession)
-
-            Button("New Session With…") {
-                model.isChoosingAgent = true
-            }
-            .keyboardShortcut("n", modifiers: [.command, .option])
-            .disabled(model.projects.all.isEmpty || model.agents.isEmpty)
-
-            NewExpeditionMenuItem(model: model)
-
-            Button("Open Folder…") {
-                model.isAddingProject = true
-            }
-            .keyboardShortcut("o")
-
+            CommandMenuItem(.sessionNew, in: commands)
+            CommandMenuItem(.sessionNewWithAgent, in: commands)
+            CommandMenuItem(.expeditionNew, in: commands)
+            CommandMenuItem(.projectOpen, in: commands)
             Divider()
-
-            Button("Attach Files…") {
-                session?.isAttachmentPickerRequested = true
-            }
-            .keyboardShortcut("u")
-            .disabled(session == nil || session?.acceptsPrompts == false || session?.phase == .disconnected)
+            CommandMenuItem(.composerAttachFiles, in: commands)
         }
     }
 }
 
 private struct ViewCommands: Commands {
-    let celebrations: CelebrationCenter
-    let settings: SettingsPresentation
-    @FocusedValue(\.sidebarVisibility) private var sidebarVisibility
-    @FocusedValue(\.activeSession) private var session
-    @FocusedValue(\.mcpServersPopover) private var mcpServersPopover
-    @FocusedValue(\.sidebarNeedsYouFilter) private var needsYouFilter
+    let commands: CommandRegistry
 
     var body: some Commands {
         CommandGroup(replacing: .sidebar) {
-            Button(sidebarVisibility?.wrappedValue == .detailOnly ? "Show Sidebar" : "Hide Sidebar") {
-                guard let sidebarVisibility else { return }
-                withAnimation {
-                    sidebarVisibility.wrappedValue = sidebarVisibility.wrappedValue == .detailOnly ? .all : .detailOnly
-                }
-            }
-            .keyboardShortcut("s", modifiers: [.command, .control])
-            .disabled(sidebarVisibility == nil)
-
-            Button("Toggle Subagent Inspector") {
-                session?.isSubagentInspectorToggleRequested = true
-            }
-            .keyboardShortcut("i", modifiers: [.command, .option])
-            .disabled(session?.state.subagents.isEmpty ?? true)
-
-            GitChangesMenuItem()
-
-            Button("Show MCP Servers") {
-                mcpServersPopover?.wrappedValue.toggle()
-            }
-            .keyboardShortcut("m", modifiers: [.command, .control])
-            .disabled(mcpServersPopover == nil)
-
-            Toggle(
-                "Show Only Tasks That Need You",
-                isOn: Binding(
-                    get: { needsYouFilter?.wrappedValue ?? false },
-                    set: { needsYouFilter?.wrappedValue = $0 }
-                )
-            )
-            .keyboardShortcut("j", modifiers: [.command, .option])
-            .disabled(needsYouFilter == nil)
+            CommandMenuItem(.paletteShow, in: commands)
+            Divider()
+            CommandMenuItem(.viewToggleSidebar, in: commands)
+            CommandMenuItem(.viewToggleSubagentInspector, in: commands)
+            CommandMenuItem(.viewToggleChanges, in: commands)
+            CommandMenuItem(.viewMCPServers, in: commands)
+            CommandMenuItem(.viewNeedsYouFilter, in: commands)
 
             Divider()
+            // Its own toggle, so the checkmark follows the preference; the shortcut is the registry's.
             FoldEarlierTurnsToggle()
-            JumpToLatestMenuItem()
+                .keyboardShortcut(commands.keyboardShortcut(for: .transcriptFoldEarlierTurns))
+            CommandMenuItem(.transcriptJumpToLatest, in: commands)
 
             Divider()
-            CelebrationMenuItems(center: celebrations, settings: settings)
+            CommandMenuItem(.celebrationRestore, in: commands)
+            CommandMenuItem(.celebrationChoose, in: commands)
         }
     }
 }
@@ -246,6 +219,7 @@ private struct SettingsCommands: Commands {
     @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
+        // ⌘, is macOS's standard Settings key, so it stays outside the registry.
         CommandGroup(replacing: .appSettings) {
             Button("Settings…") {
                 // Settings lives in the main window, so bring the window back if it was closed.
@@ -258,31 +232,15 @@ private struct SettingsCommands: Commands {
 }
 
 private struct GoCommands: Commands {
-    let model: AppModel
-    let settings: SettingsPresentation
+    let commands: CommandRegistry
 
     var body: some Commands {
         CommandMenu("Go") {
-            // In Settings, Back returns to where you were, like its Back button and Escape.
-            Button("Back") {
-                if settings.isShown {
-                    settings.close()
-                } else {
-                    model.goBack()
-                }
-            }
-            .keyboardShortcut("[")
-            .disabled(!settings.isShown && !model.canGoBack)
-
-            Button("Forward") {
-                model.goForward()
-            }
-            .keyboardShortcut("]")
-            .disabled(settings.isShown || !model.canGoForward)
-
+            CommandMenuItem(.goBack, in: commands)
+            CommandMenuItem(.goForward, in: commands)
             Divider()
-            PullRequestsMenuItem()
-            ExpeditionsMenuItem()
+            CommandMenuItem(.goPullRequests, in: commands)
+            CommandMenuItem(.goExpeditions, in: commands)
             TranscriptSearchMenuItem()
         }
     }
@@ -290,41 +248,18 @@ private struct GoCommands: Commands {
 
 private struct SessionCommands: Commands {
     let model: AppModel
+    let commands: CommandRegistry
     @FocusedValue(\.activeSession) private var session
-    /// The main window's undo manager, so ⌘Z takes back what these commands do. Read from AppKit
-    /// because a focused value isn't there when the window's focus is outside SwiftUI's reach.
-    private var undoManager: UndoManager? {
-        (NSApp.keyWindow ?? NSApp.mainWindow)?.undoManager
-    }
 
     var body: some Commands {
         CommandMenu("Session") {
-            Button("Focus Composer") {
-                session?.wantsComposerFocus = true
-            }
-            .keyboardShortcut("l")
-            .disabled(session == nil || session?.isSubagent == true)
-
-            Button("Stop") {
-                Task { await session?.cancel() }
-            }
-            .keyboardShortcut(".")
-            .disabled(session?.canCancel != true)
+            CommandMenuItem(.composerFocus, in: commands)
+            CommandMenuItem(.sessionStop, in: commands)
 
             Divider()
 
-            Button("Next Permission Mode") {
-                guard let session else { return }
-                Task { await nextPermissionMode(of: session) }
-            }
-            .keyboardShortcut("m", modifiers: [.command, .shift])
-            .disabled(session.map { ComposerSettings($0.configOptions).autonomy == nil } ?? true)
-
-            Button("Choose Model…") {
-                session?.isModelPickerRequested = true
-            }
-            .keyboardShortcut("e", modifiers: [.command, .shift])
-            .disabled(session.map { ComposerSettings($0.configOptions).model == nil } ?? true)
+            CommandMenuItem(.sessionNextPermissionMode, in: commands)
+            CommandMenuItem(.sessionChooseModel, in: commands)
 
             Divider()
 
@@ -333,80 +268,34 @@ private struct SessionCommands: Commands {
             OpenInCommands(
                 location: session.map {
                     OpenInLocation(folder: $0.cwd, host: model.currentProject?.host ?? .local)
-                })
+                },
+                commands: commands)
 
             Divider()
 
-            AutomationMenuItems(center: BuiltInPlugins.automation.center, session: session)
+            CommandMenuItem(.goalEdit, in: commands)
+            CommandMenuItem(.goalPauseOrResume, in: commands)
+            CommandMenuItem(.goalClear, in: commands)
+            CommandMenuItem(.workflowRun, in: commands)
 
             Divider()
 
-            Button("Rename Session…") {
-                model.renaming = model.selection
-            }
-            .disabled(model.selection == nil)
+            CommandMenuItem(.sessionRename, in: commands)
+            CommandMenuItem(.sessionArchive, in: commands)
+            CommandMenuItem(.sessionTogglePin, in: commands)
+            CommandMenuItem(.sessionToggleUnread, in: commands)
+            CommandMenuItem(.sidebarMoveUp, in: commands)
+            CommandMenuItem(.sidebarMoveDown, in: commands)
+            CommandMenuItem(.sessionNext, in: commands)
+            CommandMenuItem(.sessionPrevious, in: commands)
 
-            Button("Archive Task") {
-                guard let key = model.selection else { return }
-                Task { await model.archiveSession(key, undoManager: undoManager) }
-            }
-            .keyboardShortcut("a", modifiers: [.command, .shift])
-            .disabled(model.selection == nil)
-
-            Button(model.selection.map(model.isPinned) == true ? "Unpin Task" : "Pin Task") {
-                guard let key = model.selection else { return }
-                model.setPinned(key, !model.isPinned(key), undoManager: undoManager)
-            }
-            .disabled(model.selection == nil)
-
-            Button(model.selection.map(model.isUnread) == true ? "Mark as Read" : "Mark as Unread") {
-                guard let key = model.selection else { return }
-                model.setUnread(key, !model.isUnread(key))
-            }
-            .disabled(model.selection == nil)
-
-            // From the model rather than the sidebar's focused value, so they work wherever focus is
-            // and while the sidebar is hidden.
-            Button("Move Up") {
-                model.sidebarMoveTarget.map { model.move($0, .up) }
-            }
-            .keyboardShortcut(.upArrow, modifiers: [.command, .option])
-            .disabled(model.sidebarMoveTarget.map { model.canMove($0, .up) } != true)
-
-            Button("Move Down") {
-                model.sidebarMoveTarget.map { model.move($0, .down) }
-            }
-            .keyboardShortcut(.downArrow, modifiers: [.command, .option])
-            .disabled(model.sidebarMoveTarget.map { model.canMove($0, .down) } != true)
-
-            Button("Next Session") {
-                model.selectSession(offset: 1)
-            }
-            .keyboardShortcut(.tab, modifiers: .control)
-            .disabled(model.sessionList.isEmpty)
-
-            Button("Previous Session") {
-                model.selectSession(offset: -1)
-            }
-            .keyboardShortcut(.tab, modifiers: [.control, .shift])
-            .disabled(model.sessionList.isEmpty)
-
-            let shortcuts = Array(model.sessionList.prefix(9).enumerated())
-            if !shortcuts.isEmpty {
+            let listed = min(model.sessionList.count, CommandID.sessionSelectPositions.upperBound)
+            if listed > 0 {
                 Divider()
-                ForEach(shortcuts, id: \.element.id) { index, listed in
-                    Button(model.title(for: listed)) {
-                        model.selection = listed.id
-                    }
-                    .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")))
+                ForEach(1...listed, id: \.self) { position in
+                    CommandMenuItem(.sessionSelect(position), in: commands)
                 }
             }
         }
-    }
-
-    /// Moves the permission mode one step up the autonomy scale, wrapping around; Plan Mode isn't a step.
-    private func nextPermissionMode(of session: SessionModel) async {
-        guard let change = ComposerSettings(session.state.configOptions).nextAutonomy else { return }
-        await session.setConfigOption(change.setting.option, to: change.value)
     }
 }

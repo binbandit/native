@@ -15,7 +15,8 @@ struct PullRequestsNavItem: View {
 
     var body: some View {
         SidebarNavItem(
-            "Pull Requests", systemImage: "arrow.triangle.pull", isSelected: isSelected, shortcut: "⌘⇧P", action: showList
+            "Pull Requests", systemImage: "arrow.triangle.pull", isSelected: isSelected, shortcut: "⌘⇧P",
+            action: showList
         ) {
             if model.reviewRequestCount > 0 {
                 Text("\(model.reviewRequestCount)")

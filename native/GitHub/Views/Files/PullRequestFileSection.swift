@@ -39,10 +39,12 @@ struct PullRequestFileSection: View {
                         .font(.system(size: DS.Size.navIcon - DS.Space.xs, weight: .semibold))
                         .foregroundStyle(.dsTextTertiary)
                         .frame(width: DS.Size.navIcon)
-                    Text("\(Text(folder.isEmpty ? "" : folder + "/").foregroundStyle(.dsTextTertiary))\(Text(name).foregroundStyle(.dsTextPrimary))")
-                        .font(.dsMonoCaption)
-                        .lineLimit(1)
-                        .truncationMode(.head)
+                    Text(
+                        "\(Text(folder.isEmpty ? "" : folder + "/").foregroundStyle(.dsTextTertiary))\(Text(name).foregroundStyle(.dsTextPrimary))"
+                    )
+                    .font(.dsMonoCaption)
+                    .lineLimit(1)
+                    .truncationMode(.head)
                     if file.isGenerated {
                         Badge("Generated", style: .outline)
                     }

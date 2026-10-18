@@ -27,7 +27,11 @@ struct PullRequestFilesTab: View {
                 diffs
             }
         }
-        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { width = $0 }
+        .onGeometryChange(for: CGFloat.self) {
+            $0.size.width
+        } action: {
+            width = $0
+        }
         .task(id: page.headRefOid) {
             await model.loadNextPatchPage()
             await model.loadAllFiles()
@@ -39,7 +43,9 @@ struct PullRequestFilesTab: View {
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: DS.Space.lg) {
                     if let error = model.patchError {
-                        NoticeBanner(tone: .warning, title: "Some diffs couldn't load", detail: error.localizedDescription) {
+                        NoticeBanner(
+                            tone: .warning, title: "Some diffs couldn't load", detail: error.localizedDescription
+                        ) {
                             Button("Try Again") { Task { await model.loadNextPatchPage() } }
                                 .buttonStyle(.ds(.secondary))
                         }
