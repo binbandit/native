@@ -83,7 +83,9 @@ nonisolated enum AgentIconSVGPath {
                 guard let radiusX = scanner.number(), let radiusY = scanner.number(), let rotation = scanner.number(),
                     let largeArc = scanner.flag(), let sweep = scanner.flag(), let end = scanner.point(offset: origin)
                 else { return false }
-                arc(to: end, radius: CGSize(width: radiusX, height: radiusY), rotation: rotation, largeArc: largeArc, sweep: sweep)
+                arc(
+                    to: end, radius: CGSize(width: radiusX, height: radiusY), rotation: rotation, largeArc: largeArc,
+                    sweep: sweep)
             case UInt8(ascii: "z"):
                 path.closeSubpath()
                 current = subpathStart
@@ -186,7 +188,8 @@ nonisolated struct AgentIconSVGScanner {
             skipSeparators()
             guard index < bytes.count else { return false }
             let byte = bytes[index]
-            return Self.isDigit(byte) || byte == UInt8(ascii: "-") || byte == UInt8(ascii: "+") || byte == UInt8(ascii: ".")
+            return Self.isDigit(byte) || byte == UInt8(ascii: "-") || byte == UInt8(ascii: "+")
+                || byte == UInt8(ascii: ".")
         }
     }
 
@@ -235,7 +238,9 @@ nonisolated struct AgentIconSVGScanner {
         if index < bytes.count, bytes[index] == UInt8(ascii: "e") || bytes[index] == UInt8(ascii: "E") {
             let mantissaEnd = index
             index += 1
-            if index < bytes.count, bytes[index] == UInt8(ascii: "-") || bytes[index] == UInt8(ascii: "+") { index += 1 }
+            if index < bytes.count, bytes[index] == UInt8(ascii: "-") || bytes[index] == UInt8(ascii: "+") {
+                index += 1
+            }
             if consumeDigits() == 0 { index = mantissaEnd }
         }
         guard let text = String(bytes: bytes[start..<index], encoding: .ascii), let value = Double(text) else {

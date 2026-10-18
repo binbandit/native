@@ -4,7 +4,7 @@ import SwiftUI
 /// to know about them. A feature adds its pane here (one line) rather than in `NativeApp` or
 /// `RootView`; Settings orders them by their group and order.
 enum AppSettingsPanes {
-    static func all(plugins: PluginRegistry, terminals: TerminalStore) -> [SettingsPane] {
-        [.labs, .git, .mcpServers(registry: plugins), .terminal(terminals.preferences)]
+    static func all(plugins: PluginRegistry, terminals: TerminalStore, keepAwake: KeepAwakeController) -> [SettingsPane] {
+        [.labs, .git, .mcpServers(registry: plugins), .terminal(terminals.preferences), .sounds(), .keepAwake(keepAwake)]
     }
 }

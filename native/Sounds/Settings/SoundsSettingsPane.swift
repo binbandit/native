@@ -16,6 +16,12 @@ extension SettingsPane {
             keywords: ["chime", "sound", "audio", "notification", "volume", "conductor"],
             searchEntries: {
                 [
+                    SettingsSearchEntry(id: SoundsSettingsPage.enabledRow, title: "Play sounds", keywords: ["mute", "silence", "off"]),
+                    SettingsSearchEntry(
+                        id: SoundsSettingsPage.focusRow,
+                        title: "Stay quiet during Focus",
+                        keywords: ["do not disturb", "dnd", "focus", "quiet"]
+                    ),
                     SettingsSearchEntry(
                         id: SoundsSettingsPage.soundRow,
                         title: "Notification sound",

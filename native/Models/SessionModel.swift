@@ -246,6 +246,8 @@ final class SessionModel {
             state.configOptions = configOptions
         }
         phase = .idle
+        // Messages sent while it loaded.
+        drainQueue()
     }
 
     func failLoading(_ error: any Error) {

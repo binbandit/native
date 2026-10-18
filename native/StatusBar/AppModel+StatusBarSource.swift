@@ -10,7 +10,8 @@ extension AppModel: StatusBarSource {
                 title: session.displayTitle,
                 agentName: session.agentName,
                 projectName: projects.project(summary.project)?.name,
-                status: status
+                status: status,
+                since: session.lastActivity
             )
         }
         // Waiting on the user first: those are the ones to act on.
@@ -29,9 +30,14 @@ extension AppModel: StatusBarSource {
         selection = id
     }
 
-    /// A task's status while it's busy or needs the user; nil when it's neither.
+    /// A task's status while it's busy or needs the user; nil when it's neither. What it waits for
+    /// comes first: a task can be both working and waiting on an approval.
     private static func activeStatus(of session: SessionModel) -> TaskStatus? {
-        if session.needsApproval { return .needsPermission }
-        return session.phase == .prompting ? .working : nil
+        switch session.wait {
+        case .input: .needsInput
+        case .permission: .needsPermission
+        case .planReview: .needsPlanReview
+        case nil: session.phase == .prompting ? .working : nil
+        }
     }
 }

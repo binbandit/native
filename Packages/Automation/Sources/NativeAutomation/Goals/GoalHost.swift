@@ -12,6 +12,7 @@ public protocol GoalHost: AnyObject {
     /// What the agent said to close its latest turn.
     var goalLatestReply: String? { get }
     /// Sends `text` as the next prompt through the same path as the user's prompts, so the turn is
-    /// reported back like any other. Returns once the turn is under way.
-    func sendGoalPrompt(_ text: String) async
+    /// reported back like any other. Returns once the turn is under way; throws when the prompt
+    /// couldn't go out, for example because the agent isn't running.
+    func sendGoalPrompt(_ text: String) async throws
 }

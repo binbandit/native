@@ -14,6 +14,8 @@ struct NativeApp: App {
     /// Settings takes over the main window, as in the reference app, rather than opening one of its own.
     @State private var settings = SettingsPresentation()
     @State private var terminals = TerminalStore()
+    @State private var keepAwake: KeepAwakeController
+    @State private var statusBar: StatusBarRegistry
 
     init() {
         // Git and GitHub run with the login-shell environment the agents get.
@@ -34,6 +36,9 @@ struct NativeApp: App {
             MainActor.assumeIsolated { model.stopAgents() }
         }
         GitAutomationWiring.connect(git, to: BuiltInPlugins.automation.center.automations)
+        let keepAwake = KeepAwakeController()
+        _keepAwake = State(initialValue: keepAwake)
+        _statusBar = State(initialValue: AmbientWiring.statusBar(model: model, keepAwake: keepAwake))
     }
 
     var body: some Scene {
@@ -49,6 +54,8 @@ struct NativeApp: App {
                 .environment(model.plugins)
                 .environment(git.settings)
                 .environment(iconPreferences)
+                .environment(keepAwake)
+                .environment(statusBar)
                 .createPullRequestSheet(gitHub)
                 .dsAccentPalette(themeID: iconPreferences.theme.rawValue)
                 .task {
@@ -66,6 +73,7 @@ struct NativeApp: App {
                         }
                     )
                     ExpeditionWiring.connect(BuiltInPlugins.expeditions.center, model: model, git: git, gitHub: gitHub)
+                    AmbientWiring.connect(model: model, keepAwake: keepAwake)
                     iconPreferences.start()
                     await model.start()
                 }
@@ -90,6 +98,7 @@ struct NativeApp: App {
             GoCommands(model: model, settings: settings)
             SessionCommands(model: model)
             TerminalCommands(store: terminals)
+            KeepAwakeCommands(controller: keepAwake)
         }
 
         Window("Durable Sessions", id: HostPreviewWindow.id) {

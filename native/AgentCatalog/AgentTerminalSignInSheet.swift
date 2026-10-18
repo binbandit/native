@@ -45,10 +45,12 @@ struct AgentTerminalSignInSheet: View {
                 Text("Sign In to \(request.agent.displayName)")
                     .font(.dsTitle3)
                     .foregroundStyle(.dsTextPrimary)
-                Text("\(request.agent.displayName) signs in from a terminal. Follow its steps below; Native checks again when it finishes.")
-                    .font(.dsBody)
-                    .foregroundStyle(.dsTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
+                Text(
+                    "\(request.agent.displayName) signs in from a terminal. Follow its steps below; Native checks again when it finishes."
+                )
+                .font(.dsBody)
+                .foregroundStyle(.dsTextSecondary)
+                .fixedSize(horizontal: false, vertical: true)
             }
         }
         .padding(DS.Space.xl)
@@ -84,8 +86,11 @@ struct AgentTerminalSignInSheet: View {
         if case .failed(let code) = run?.outcome {
             ErrorState(
                 "Signing in didn't finish",
-                suggestion: [code.map { "“\(request.command)” exited with code \($0)." }, "Its output is above; fix what it reported, then try again."]
-                    .compactMap(\.self).joined(separator: " "),
+                suggestion: [
+                    code.map { "“\(request.command)” exited with code \($0)." },
+                    "Its output is above; fix what it reported, then try again.",
+                ]
+                .compactMap(\.self).joined(separator: " "),
                 primary: .init("Try Again") { run?.restart() },
                 secondary: .init("Cancel") { dismiss() }
             )

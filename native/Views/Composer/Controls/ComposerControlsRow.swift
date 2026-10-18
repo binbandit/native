@@ -2,7 +2,7 @@ import ACP
 import SwiftUI
 
 /// The composer's bottom row, after the reference app's: attach, model with its effort meter, autonomy, plan
-/// mode and help leading; the follow-up hint and context usage trailing.
+/// mode and help leading; the follow-up hint (while it fits) and context usage trailing.
 struct ComposerControlsRow<Extras: View, Context: View>: View {
     let settings: ComposerSettings
     /// The autonomy level shown while Plan Mode suspends it, and restored when Plan Mode ends.
@@ -21,6 +21,19 @@ struct ComposerControlsRow<Extras: View, Context: View>: View {
     @ViewBuilder let context: () -> Context
 
     var body: some View {
+        if followUpHint != nil {
+            // The hint goes first when room runs out, so the pills never crowd it; the placeholder
+            // still says what Return does.
+            ViewThatFits(in: .horizontal) {
+                bar(showsHint: true)
+                bar(showsHint: false)
+            }
+        } else {
+            bar(showsHint: false)
+        }
+    }
+
+    private func bar(showsHint: Bool) -> some View {
         ComposerControlsBar {
             AttachButton(onPick: onAttach)
             if settings.model != nil || settings.effort != nil {
@@ -55,7 +68,7 @@ struct ComposerControlsRow<Extras: View, Context: View>: View {
             extras()
             HelpButton()
         } trailing: {
-            if let followUpHint {
+            if showsHint, let followUpHint {
                 Text(followUpHint.text)
                     .font(.dsBody)
                     .foregroundStyle(.dsTextTertiary)

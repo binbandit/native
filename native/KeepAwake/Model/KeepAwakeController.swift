@@ -1,4 +1,4 @@
-import AppKit
+import Foundation
 import Observation
 
 /// The app's side of keeping awake: the user's policy (kept under `keepAwake.policy`), the app's
@@ -21,22 +21,19 @@ final class KeepAwakeController {
     /// Choices for "Stay awake for": 30 minutes to 8 hours.
     static let timerDurations: [Duration] = [.seconds(30 * 60), .seconds(3600), .seconds(2 * 3600), .seconds(4 * 3600), .seconds(8 * 3600)]
 
-    @ObservationIgnored private let engine = KeepAwake()
+    @ObservationIgnored private let engine: any KeepAwakeEngine
     @ObservationIgnored private let defaults: UserDefaults
     private static let policyKey = "keepAwake.policy"
 
-    init(defaults: UserDefaults = .standard) {
+    /// Quitting needs nothing: the system drops a process's power assertions when it exits.
+    init(engine: any KeepAwakeEngine = KeepAwake(), defaults: UserDefaults = .standard) {
+        self.engine = engine
         self.defaults = defaults
         policy = defaults.data(forKey: Self.policyKey).flatMap { try? JSONDecoder().decode(KeepAwakePolicy.self, from: $0) } ?? KeepAwakePolicy()
         engine.onChange = { [weak self] status in
             self?.engineChanged(status)
         }
         apply()
-        NotificationCenter.default.addObserver(forName: NSApplication.willTerminateNotification, object: nil, queue: .main) { [weak self] _ in
-            MainActor.assumeIsolated {
-                self?.engine.stop()
-            }
-        }
     }
 
     // MARK: - Choices

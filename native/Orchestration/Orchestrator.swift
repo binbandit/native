@@ -48,7 +48,10 @@ final class Orchestrator {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        tasks = defaults.data(forKey: Self.tasksKey).flatMap { try? JSONDecoder().decode([OrchestrationTask].self, from: $0) } ?? []
+        tasks =
+            defaults.data(forKey: Self.tasksKey).flatMap {
+                try? JSONDecoder().decode([OrchestrationTask].self, from: $0)
+            } ?? []
     }
 
     /// The token in the MCP URL `session` is given; the same one every time it's asked for. A session
@@ -90,16 +93,26 @@ final class Orchestrator {
         }
         let structured: JSON = [
             "agents": .array(
-                agents.map { ["id": .string($0.id.rawValue), "name": .string($0.displayName), "is_you": .bool($0.id == caller.agent)] })
+                agents.map {
+                    [
+                        "id": .string($0.id.rawValue), "name": .string($0.displayName),
+                        "is_you": .bool($0.id == caller.agent),
+                    ]
+                })
         ]
         return MCPToolResult(
-            text: "Agents you can start tasks on (pass the id as `agent`):\n" + lines.joined(separator: "\n"), structuredContent: structured)
+            text: "Agents you can start tasks on (pass the id as `agent`):\n" + lines.joined(separator: "\n"),
+            structuredContent: structured)
     }
 
-    func startTask(agent id: String, prompt: String, title: String?, for caller: OrchestrationCaller) async throws -> MCPToolResult {
+    func startTask(
+        agent id: String, prompt: String, title: String?, for caller: OrchestrationCaller
+    ) async throws -> MCPToolResult {
         let host = try requireHost()
         guard let agent = host.taskAgents.first(where: { $0.id.rawValue == id }) else {
-            throw MCPToolError("There's no agent \"\(id)\". Available agents: \(host.taskAgents.map(\.id.rawValue).joined(separator: ", ")).")
+            throw MCPToolError(
+                "There's no agent \"\(id)\". Available agents: \(host.taskAgents.map(\.id.rawValue).joined(separator: ", "))."
+            )
         }
         let prompt = prompt.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !prompt.isEmpty else { throw MCPToolError("The prompt is empty; say what the task should do.") }
@@ -120,7 +133,8 @@ final class Orchestrator {
             parentAgentName: agentName(caller.agent))
         tasks.append(task)
         var result = report(peer(for: task, relation: .child), host.taskSnapshot(session))
-        result.text = "Started \(task.label). It runs in the background; call wait_for_task with task_id \"\(task.id)\" for its reply."
+        result.text =
+            "Started \(task.label). It runs in the background; call wait_for_task with task_id \"\(task.id)\" for its reply."
         return result
     }
 
@@ -137,7 +151,9 @@ final class Orchestrator {
         if peers.isEmpty {
             lines.append("You haven't started any tasks.")
         } else {
-            lines.append("Sessions you can reach (pass the id to send_message, wait_for_task or get_task; a closed one reopens):")
+            lines.append(
+                "Sessions you can reach (pass the id to send_message, wait_for_task or get_task; a closed one reopens):"
+            )
             for peer in peers {
                 let role =
                     switch peer.relation {
@@ -151,7 +167,8 @@ final class Orchestrator {
 
         let entries = peers.map { peer in
             var entry: [String: JSON] = [
-                "id": .string(peer.id), "agent": .string(peer.session.agent.rawValue), "relation": .string(peer.relation.rawValue),
+                "id": .string(peer.id), "agent": .string(peer.session.agent.rawValue),
+                "relation": .string(peer.relation.rawValue),
                 "status": .string(status(peer)),
             ]
             entry["title"] = peer.title.map(JSON.string)
@@ -174,7 +191,8 @@ final class Orchestrator {
         return report(peer, try requireHost().taskSnapshot(peer.session))
     }
 
-    func sendMessage(to id: String, message text: String, for caller: OrchestrationCaller) async throws -> MCPToolResult {
+    func sendMessage(to id: String, message text: String, for caller: OrchestrationCaller) async throws -> MCPToolResult
+    {
         let recipient = try await openPeer(id, of: caller)
         let host = try requireHost()
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -260,14 +278,16 @@ final class Orchestrator {
 
     private func report(_ peer: Peer, _ snapshot: TaskSnapshot?, waited: Bool = false) -> MCPToolResult {
         var structured: [String: JSON] = [
-            "task_id": .string(peer.id), "agent": .string(peer.session.agent.rawValue), "relation": .string(peer.relation.rawValue),
+            "task_id": .string(peer.id), "agent": .string(peer.session.agent.rawValue),
+            "relation": .string(peer.relation.rawValue),
         ]
         structured["title"] = peer.title.map(JSON.string)
         let name = peer.relation == .parent ? "Your parent session (\(peer.agentName))" : peer.label
         guard let snapshot else {
             structured["status"] = "failed"
             structured["detail"] = "The session is no longer open in Native."
-            return MCPToolResult(text: "The session of \(name) is no longer open in Native.", structuredContent: .object(structured))
+            return MCPToolResult(
+                text: "The session of \(name) is no longer open in Native.", structuredContent: .object(structured))
         }
         structured["status"] = .string(snapshot.status.rawValue)
         structured["reply"] = snapshot.reply.map(JSON.string)
@@ -305,7 +325,9 @@ final class Orchestrator {
     }
 
     private func requireCallerKey(_ caller: OrchestrationCaller) throws -> SessionKey {
-        guard let key = callerKey(caller) else { throw MCPToolError("Native doesn't have your session open, so it can't act for it.") }
+        guard let key = callerKey(caller) else {
+            throw MCPToolError("Native doesn't have your session open, so it can't act for it.")
+        }
         return key
     }
 
@@ -315,11 +337,16 @@ final class Orchestrator {
         let own = tasks.first { $0.session == key }
         var peers: [Peer] = []
         if let own {
-            peers.append(Peer(id: "parent", session: own.parent, agentName: own.parentAgentName, title: nil, relation: .parent, task: nil))
+            peers.append(
+                Peer(
+                    id: "parent", session: own.parent, agentName: own.parentAgentName, title: nil, relation: .parent,
+                    task: nil))
         }
         peers += tasks.filter { $0.parent == key }.map { peer(for: $0, relation: .child) }
         if let own {
-            peers += tasks.filter { $0.parent == own.parent && $0.session != key }.map { peer(for: $0, relation: .sibling) }
+            peers += tasks.filter { $0.parent == own.parent && $0.session != key }.map {
+                peer(for: $0, relation: .sibling)
+            }
         }
         return peers
     }
@@ -329,7 +356,9 @@ final class Orchestrator {
         let peers = peers(of: caller)
         guard let peer = peers.first(where: { $0.id == id }) else {
             let reachable =
-                peers.isEmpty ? "It hasn't started any tasks and isn't one itself." : "It can reach: \(peers.map(\.id).joined(separator: ", "))."
+                peers.isEmpty
+                ? "It hasn't started any tasks and isn't one itself."
+                : "It can reach: \(peers.map(\.id).joined(separator: ", "))."
             throw MCPToolError("This session can't reach a task \"\(id)\". \(reachable)")
         }
         return peer
@@ -349,7 +378,9 @@ final class Orchestrator {
     }
 
     private func peer(for task: OrchestrationTask, relation: Peer.Relation) -> Peer {
-        Peer(id: task.id, session: task.session, agentName: task.agentName, title: task.title, relation: relation, task: task)
+        Peer(
+            id: task.id, session: task.session, agentName: task.agentName, title: task.title, relation: relation,
+            task: task)
     }
 
     private func agentName(_ id: AgentDefinition.ID) -> String {

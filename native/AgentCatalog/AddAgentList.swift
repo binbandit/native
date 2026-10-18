@@ -60,7 +60,8 @@ struct AddAgentList: View {
         isChecking = true
         defer { isChecking = false }
         let found = await checkAgain()
-        outcome = found.isEmpty
+        outcome =
+            found.isEmpty
             ? "Nothing new on your PATH. Open a new terminal to check the install worked."
             : "Added \(found.map(\.displayName).formatted(.list(type: .and)))."
     }

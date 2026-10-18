@@ -67,7 +67,8 @@ public struct TaskPromptFrame: Hashable, Sendable {
             senderPhrase = siblingSenderPrefix + label
             replyTo = id
         }
-        return messageHeaderPrefix + senderPhrase + messageReplyPrefix + replyTo + messageHeaderSuffix + headerTerminator + body
+        return messageHeaderPrefix + senderPhrase + messageReplyPrefix + replyTo + messageHeaderSuffix
+            + headerTerminator + body
     }
 
     private static func parseSender(_ phrase: String, replyTo: String) -> Sender? {
@@ -99,7 +100,8 @@ public struct TaskPromptFrame: Hashable, Sendable {
 
     private static let headerTerminator = "]\n\n"
     private static let taskHeaderPrefix = "[A task from your parent session ("
-    private static let taskHeaderSuffix = "), handed to you through Native. What you say at the end of your turn goes back to it as your reply. To message it or its other tasks while you work, use the native MCP tools list_tasks and send_message."
+    private static let taskHeaderSuffix =
+        "), handed to you through Native. What you say at the end of your turn goes back to it as your reply. To message it or its other tasks while you work, use the native MCP tools list_tasks and send_message."
     private static let messageHeaderPrefix = "[Message from "
     private static let messageReplyPrefix = ". To reply, call send_message with to: \""
     private static let messageHeaderSuffix = "\"."
