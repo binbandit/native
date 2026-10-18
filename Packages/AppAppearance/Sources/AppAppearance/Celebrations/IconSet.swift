@@ -24,6 +24,8 @@ public enum IconPackState: Hashable, Sendable {
     case downloading
     /// Why the last attempt failed, in the user's terms.
     case failed(String)
+    /// This build can't download icons at all (no release to fetch from); said before anyone tries.
+    case unavailable(String)
     case ready([AppIconVariant: AppIconImagePair])
 }
 

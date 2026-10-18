@@ -125,12 +125,19 @@ public enum CelebrationAssets {
         events.map(preferences.styled).compactMap { event in
             let selection = preferences.selection(for: event.id)
             guard selection.isEnabled, selection.appIcon, let pack = event.iconPack,
-                case .downloadable(let state) = event.appIcon, state != .downloading,
+                case .downloadable(let state) = event.appIcon, state == .notDownloaded || state.isFailed,
                 let next = event.nextOccurrence(window: selection.window, from: day),
                 next.display.first <= day.adding(days: leadDays)
             else { return nil }
             return pack
         }
+    }
+}
+
+extension IconPackState {
+    var isFailed: Bool {
+        if case .failed = self { return true }
+        return false
     }
 }
 

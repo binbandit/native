@@ -179,6 +179,21 @@ final class CelebrationCenter {
         change { $0.selections[id, default: .init()].window = window }
     }
 
+    /// Turns every celebration that can be chosen on, or every one off, keeping each one's style,
+    /// surfaces and window. Turning them on downloads nothing now: each pack comes a week before
+    /// its dates (`CelebrationAssets.packsDue`), so Native stays slim.
+    func setAllAutomatic(_ isOn: Bool) {
+        let ids = (isOn ? celebrations.filter { $0.canBeChosen(on: today) } : catalog.celebrations).map(\.id)
+        change { preferences in
+            for id in ids { preferences.setEnabled(isOn, for: id) }
+        }
+    }
+
+    /// Puts back earlier choices, for Undo.
+    func restore(_ earlier: CelebrationPreferences) {
+        change { $0 = earlier }
+    }
+
     /// Picks one of a celebration's styles; its icons download if it's switched on.
     func setStyle(_ style: IconSetID, for id: CelebrationID) {
         let isDefault = catalog.celebration(id)?.contribution.iconSet == style
