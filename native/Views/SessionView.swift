@@ -13,6 +13,8 @@ struct SessionView: View {
     @Environment(SettingsPresentation.self) private var settings
     @Environment(AppModel.self) private var model
     @Experiment(.transcriptWidth) private var columnWidth: TranscriptWidth
+    /// Files dropped on the transcript, for the composer to attach.
+    @State private var drops = ComposerDropInbox()
 
     var body: some View {
         TranscriptView(session: session) { openSubagent = $0 }
@@ -29,6 +31,7 @@ struct SessionView: View {
             .safeAreaBar(edge: .top, spacing: 0) {
                 GitTaskSetupBanner(store: git, folder: session.cwd)
             }
+            .composerDropTarget(drops)
             .terminalPanel(for: session)
             .focusedSceneValue(\.activeSession, session)
             .navigationTitle(session.displayTitle)

@@ -13,6 +13,8 @@ struct ComposerView: View {
     @Environment(\.composerNextSteps) var nextSteps
     @Environment(\.transcriptColumnMaxWidth) var columnWidth
     @Environment(AutomationCenter.self) var automation
+    /// Drops on the transcript around the composer, when its host takes them.
+    @Environment(ComposerDropInbox.self) var drops: ComposerDropInbox?
     @FocusState var isFocused: Bool
     @State var selection: TextSelection?
     /// The highlighted row of the suggestion list.
@@ -136,6 +138,11 @@ struct ComposerView: View {
                 isModelPickerOpen = true
                 session.isModelPickerRequested = false
             }
+            .onChange(of: drops?.items.isEmpty == false) { _, hasDrops in
+                guard hasDrops, let drops else { return }
+                attach(drops.items)
+                drops.items = []
+            }
             .onChange(of: session.isAttachmentPickerRequested, initial: true) { _, isRequested in
                 guard isRequested else { return }
                 isPickingFiles = true
@@ -153,7 +160,7 @@ struct ComposerView: View {
     func surface(_ settings: ComposerSettings, suggestions: ComposerSuggestions?) -> some View {
         let plan = PlanProgress(entries: session.state.plan)
         // Each child is a section of the surface, with a rule between it and the next.
-        return ComposerSurface(isFloating: true, isDropTargeted: isDropTargeted) {
+        return ComposerSurface(isFloating: true, isDropTargeted: isDropTargeted || drops?.isTargeted == true) {
             // While suggestions are listed, they take the place of the sections above the draft.
             if suggestions == nil {
                 SessionGoalBar(session: session)

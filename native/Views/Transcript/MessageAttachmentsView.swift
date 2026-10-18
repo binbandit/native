@@ -1,4 +1,5 @@
 import ACP
+import QuickLook
 import SwiftUI
 
 /// The files and images that went with a user's message, trailing above its text: images as

@@ -51,9 +51,9 @@ final class PolicyCenter {
     /// `defaults write <bundle id> policy.debug.managedKeys -array policy.scripts.enabled …`.
     nonisolated static func platformSource() -> any PolicySource {
         #if DEBUG
-            let simulated = Set(UserDefaults.standard.stringArray(forKey: "policy.debug.managedKeys") ?? [])
+        let simulated = Set(UserDefaults.standard.stringArray(forKey: "policy.debug.managedKeys") ?? [])
         #else
-            let simulated: Set<String> = []
+        let simulated: Set<String> = []
         #endif
         return NativePolicy.platformSource(simulatedManagedKeys: simulated)
     }
