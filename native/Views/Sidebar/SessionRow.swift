@@ -179,18 +179,15 @@ extension TaskStatus {
 }
 
 extension SessionModel {
-    /// What the session is waiting on the user for, in a few words: "Allow Run `rm -rf build`?", or
-    /// nil when it isn't waiting.
+    /// What the session (or a subagent under it) is waiting on the user for, in a line: "Allow Run
+    /// `rm -rf build`?", "Waiting for your answer: …", or nil when it isn't waiting.
     var sidebarAsk: String? {
-        let pending = state.pendingPermissions
-        if let first = pending.first {
-            let title = state.items.lazy.compactMap { item -> String? in
-                if case .toolCall(let call) = item, call.id == first.toolCallID { call.title } else { nil }
-            }.first
-            let ask = "Allow \(title ?? "a tool call")?"
-            return pending.count > 1 ? "\(ask) (\(pending.count - 1) more)" : ask
+        guard let wait else { return nil }
+        let more = state.pendingPermissions.count - 1
+        if case .permission = wait, more > 0 {
+            return "\(wait.summary) (\(more) more)"
         }
-        return needsApproval ? "A subagent is waiting for approval" : nil
+        return wait.summary
     }
 }
 

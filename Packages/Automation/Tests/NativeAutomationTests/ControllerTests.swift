@@ -172,4 +172,49 @@ final class FakeWorkflowHost: WorkflowHost {
         #expect(message.hasPrefix("Couldn't start Claude Code"))
         #expect(runner.run(id)?.phase == .halted)
     }
+
+    @Test func announcesWhenARunNeedsTheUserOrStops() async throws {
+        let host = FakeWorkflowHost()
+        let runner = WorkflowRunner()
+        runner.host = host
+        var heard: [WorkflowAttention] = []
+        runner.onAttention = { _, attention in heard.append(attention) }
+        let definition = try #require(BuiltInWorkflows.all.first { $0.id == "plan-implement-review" })
+        let id = runner.start(definition, input: "Add CSV export", cwd: URL(filePath: "/work/app"))
+        await settle()
+        #expect(heard.isEmpty)
+        let planTask = try #require(runner.run(id)?.stepRun("plan")?.task)
+        runner.turnEnded(task: planTask, outcome: .ended)
+        #expect(heard == [.needsUser])
+        // Another change while still at the gate isn't news.
+        runner.turnEnded(task: UUID(), outcome: .ended)
+        #expect(heard == [.needsUser])
+
+        let failing = FakeWorkflowHost()
+        failing.failCreation = true
+        let stopped = WorkflowRunner()
+        stopped.host = failing
+        var stops: [WorkflowAttention] = []
+        stopped.onAttention = { _, attention in stops.append(attention) }
+        stopped.start(WorkflowDefinition(id: "w", name: "W", summary: "", steps: [WorkflowStep(id: "a", title: "A", prompt: "a")]), input: "", cwd: URL(filePath: "/"))
+        await settle()
+        #expect(stops == [.halted])
+    }
+}
+
+@Suite struct WorkflowAttentionTests {
+    @Test func waitingAndStoppingNeedTheUser() {
+        #expect(WorkflowAttention(from: .running, to: .awaitingApproval) == .needsUser)
+        #expect(WorkflowAttention(from: .running, to: .blocked) == .needsUser)
+        #expect(WorkflowAttention(from: .running, to: .halted) == .halted)
+        #expect(WorkflowAttention(from: nil, to: .awaitingApproval) == .needsUser)
+    }
+
+    @Test func otherChangesStayQuiet() {
+        #expect(WorkflowAttention(from: .awaitingApproval, to: .awaitingApproval) == nil)
+        #expect(WorkflowAttention(from: .awaitingApproval, to: .running) == nil)
+        #expect(WorkflowAttention(from: .running, to: .succeeded) == nil)
+        #expect(WorkflowAttention(from: .running, to: .cancelled) == nil)
+        #expect(WorkflowAttention(from: .running, to: .paused) == nil)
+    }
 }

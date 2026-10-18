@@ -73,11 +73,15 @@ extension AppModel {
         Self.logger.debug("\(runtime.agent.displayName, privacy: .public) lists \(fetched.count) sessions in \(project.path, privacy: .public)")
         guard projects.project(project.id) != nil, runtimes[agent] === runtime else { return }
         // Only the user's own sessions are listed: subagents belong under their parent, and task
-        // sessions to whatever started them, in this run or an earlier one.
+        // sessions to whatever started them, in this run or an earlier one. While a task session is
+        // starting, its id isn't known yet, so sessions new to the listing wait for the next one.
+        let isStartingTask = taskStartsInFlight[agent, default: 0] > 0
+        let known = Set(catalog.sessions(in: project.id, of: agent).map(\.sessionId))
         let topLevel = fetched.filter { info in
             let key = SessionKey(agent: agent, id: info.sessionId)
             return !taskRecords.contains(key) && !deletedSessions.contains(key)
                 && (sessions.session(key)?.origin ?? .user) == .user
+                && (!isStartingTask || known.contains(info.sessionId))
         }
         catalog.replace(agent, in: project.id, with: topLevel) { sessions.session(SessionKey(agent: agent, id: $0)) != nil }
         if let selection, selection.agent == agent, !catalog.contains(selection) {

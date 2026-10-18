@@ -13,6 +13,9 @@ public final class WorkflowRunner {
     @ObservationIgnored public var host: (any WorkflowHost)?
     /// Called after every change to a run, for whoever follows runs from outside (automations).
     @ObservationIgnored public var onRunChange: ((WorkflowRun) -> Void)?
+    /// Called when a run starts waiting on the user or stops short, for sounds and notifications.
+    /// Runs restored at launch don't call it: nothing changed while the user watched.
+    @ObservationIgnored public var onAttention: ((WorkflowRun, WorkflowAttention) -> Void)?
     @ObservationIgnored private let store: WorkflowRunStore?
     @ObservationIgnored private let now: () -> Date
 
@@ -44,8 +47,12 @@ public final class WorkflowRunner {
 
     public func send(_ event: WorkflowEvent, to id: WorkflowRun.ID) {
         guard let index = runs.firstIndex(where: { $0.id == id }) else { return }
+        let previous = runs[index].phase
         let effects = runs[index].handle(event, at: now())
         onRunChange?(runs[index])
+        if let attention = WorkflowAttention(from: previous, to: runs[index].phase) {
+            onAttention?(runs[index], attention)
+        }
         perform(effects, for: id)
     }
 
