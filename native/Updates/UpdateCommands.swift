@@ -1,21 +1,33 @@
 #if os(macOS)
+import NativeCommands
 import SwiftUI
 
-/// "Check for Updates…" in the app menu, under About. It opens Settings ▸ Updates in the main
-/// window, which shows the check and what it found (or why this build can't update).
-struct UpdateCommands: Commands {
-    let controller: UpdateController
-    let settings: SettingsPresentation
+extension CommandID {
+    static let appCheckForUpdates: Self = "app.checkForUpdates"
+}
 
-    @Environment(\.openWindow) private var openWindow
+extension NativeCommand {
+    /// Opens Settings ▸ Updates in the main window, which shows the check and what it found (or
+    /// why this build can't update).
+    static func checkForUpdates(_ controller: UpdateController, settings: SettingsPresentation) -> NativeCommand {
+        NativeCommand(
+            .appCheckForUpdates, title: "Check for Updates…", category: .general,
+            systemImage: "arrow.down.circle", keywords: ["version", "upgrade"]
+        ) { context in
+            context.openMainWindow()
+            settings.open(.updates)
+            controller.checkForUpdates()
+        }
+    }
+}
+
+/// "Check for Updates…" in the app menu, under About.
+struct UpdateCommands: Commands {
+    let commands: CommandRegistry
 
     var body: some Commands {
         CommandGroup(after: .appInfo) {
-            Button("Check for Updates…") {
-                openWindow(id: "main")
-                settings.open(.updates)
-                controller.checkForUpdates()
-            }
+            CommandMenuItem(.appCheckForUpdates, in: commands)
         }
     }
 }

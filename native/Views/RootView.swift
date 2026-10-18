@@ -1,7 +1,7 @@
 import ACP
+import NativeAutomation
 import NativeHostClient
 import NativeHostProtocol
-import NativeAutomation
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -75,6 +75,7 @@ struct RootView: View {
                 }
             }
             .newExpeditionSheet()
+            .transcriptSearchPanel()
             .sheet(isPresented: $automation.isWorkflowPickerRequested) {
                 WorkflowPickerSheet(cwd: model.currentProject?.url, onAddProject: { model.isAddingProject = true }) {
                     run in
@@ -239,6 +240,7 @@ struct RootView: View {
 
     private var sidebar: some View {
         SidebarView {
+            TranscriptSearchNavItem()
             PullRequestsNavItem(isSelected: showsPullRequests) { showsPullRequests = true }
             // Minimal by default: only when goals and workflows are on, or a run is there to see.
             if model.plugins.isEnabled(BuiltInPlugins.automation.manifest.id) || !automation.workflows.runs.isEmpty {

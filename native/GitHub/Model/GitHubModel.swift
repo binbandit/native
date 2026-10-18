@@ -19,7 +19,9 @@ final class GitHubModel {
     var filter = PullRequestFilter()
     var collapsedGroups: Set<PullRequestGroup.ID> = []
     /// Whether the pull request list is on screen, which refreshes it more often.
-    var isWatching = false
+    var isWatching = false {
+        didSet { wakeRefreshLoop() }
+    }
 
     /// Pull requests behind task branches, for badges.
     private(set) var branchPullRequests: [BranchReference: BranchPullRequest] = [:]
@@ -58,6 +60,8 @@ final class GitHubModel {
     @ObservationIgnored private let environment: @MainActor (_ refresh: Bool) async -> [String: String]
     @ObservationIgnored private let runner: any CommandRunner
     @ObservationIgnored private var cachedCLI: GitHubCLI?
+    /// The refresh loop's wait for the next refresh; cancelling it wakes the loop early.
+    @ObservationIgnored private var refreshWait: Task<Void, Never>?
 
     /// - Parameters:
     ///   - environment: The login-shell environment of the machine gh runs on; `true` reads it again.
@@ -94,14 +98,23 @@ final class GitHubModel {
     // MARK: - Refreshing
 
     /// Refreshes on schedule, and when the user comes back to the app, until cancelled. Run it once,
-    /// from the app's root view. The 5 second tick only compares dates; gh runs when a refresh is
-    /// due, at most every two minutes while the list is visible and every ten otherwise.
+    /// from the app's root view. Between refreshes it sleeps until the next one is due, so an idle
+    /// app doesn't wake for it: gh runs at most every two minutes while the list is visible and
+    /// every ten otherwise, and coming back to the app or opening the list wakes it early.
     func keepFresh() async {
         watchNetwork()
-        defer { pathMonitor.cancel() }
-        var wasActive = PlatformApplication.isActive
+        let activation = NotificationCenter.default.addObserver(
+            forName: NSApplication.didBecomeActiveNotification, object: nil, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated { self?.wakeRefreshLoop() }
+        }
+        defer {
+            pathMonitor.cancel()
+            NotificationCenter.default.removeObserver(activation)
+        }
+        var wasActive = NSApplication.shared.isActive
         while !Task.isCancelled {
-            let isActive = PlatformApplication.isActive
+            let isActive = NSApplication.shared.isActive
             let returned = isActive && !wasActive
             wasActive = isActive
             let activity: RefreshSchedule.Activity = isWatching && isActive ? .watching : .background
@@ -109,8 +122,15 @@ final class GitHubModel {
                 await refresh()
                 refreshBranches(olderThan: returned ? 0 : Self.branchMaxAge)
             }
-            try? await Task.sleep(for: .seconds(5), tolerance: .seconds(2))
+            let delay = max(schedule.nextRefresh(activity).timeIntervalSinceNow, 1)
+            let wait = Task { try? await Task.sleep(for: .seconds(delay), tolerance: .seconds(delay / 10)) }
+            refreshWait = wait
+            await withTaskCancellationHandler { await wait.value } onCancel: { wait.cancel() }
         }
+    }
+
+    private func wakeRefreshLoop() {
+        refreshWait?.cancel()
     }
 
     /// Retries as soon as the network comes back, rather than waiting out the backoff.

@@ -22,11 +22,17 @@ struct SchemaDecodingTests {
 
     /// Captured from Copilot CLI 1.0.98 and pi-acp 0.0.34 (2026-10-17).
     @Test func authMethodsCarryTerminalSignIn() throws {
-        let copilot = Data(#"{"id":"copilot-login","name":"Log in with Copilot CLI","description":"Run `copilot login` in the terminal","_meta":{"terminal-auth":{"command":"/opt/homebrew/bin/copilot","args":["login"],"label":"Copilot Login"}}}"#.utf8)
-        let pi = Data(#"{"id":"pi_terminal_login","name":"Launch pi in the terminal","description":"Start pi in an interactive terminal to configure API keys or login","type":"terminal","args":["--terminal-login"],"env":{}}"#.utf8)
+        let copilot = Data(
+            #"{"id":"copilot-login","name":"Log in with Copilot CLI","description":"Run `copilot login` in the terminal","_meta":{"terminal-auth":{"command":"/opt/homebrew/bin/copilot","args":["login"],"label":"Copilot Login"}}}"#
+                .utf8)
+        let pi = Data(
+            #"{"id":"pi_terminal_login","name":"Launch pi in the terminal","description":"Start pi in an interactive terminal to configure API keys or login","type":"terminal","args":["--terminal-login"],"env":{}}"#
+                .utf8)
         let codex = Data(#"{"id":"chat-gpt","name":"ChatGPT","description":"Use ChatGPT to authenticate"}"#.utf8)
 
-        #expect(try JSONDecoder().decode(AuthMethod.self, from: copilot).terminal == .command("/opt/homebrew/bin/copilot", arguments: ["login"]))
+        #expect(
+            try JSONDecoder().decode(AuthMethod.self, from: copilot).terminal
+                == .command("/opt/homebrew/bin/copilot", arguments: ["login"]))
         #expect(try JSONDecoder().decode(AuthMethod.self, from: pi).terminal == .agent(arguments: ["--terminal-login"]))
         #expect(try JSONDecoder().decode(AuthMethod.self, from: codex).terminal == nil)
     }
@@ -37,6 +43,23 @@ struct SchemaDecodingTests {
 
         #expect(try JSONDecoder().decode(AgentCapabilities.self, from: advertised).deleteSessions)
         #expect(try !JSONDecoder().decode(AgentCapabilities.self, from: absent).deleteSessions)
+    }
+
+    /// codex-acp 2.2.2 advertises these (2026-10-18).
+    @Test func sessionCapabilitiesAdvertiseClose() throws {
+        let codex = Data(
+            #"{"loadSession":true,"sessionCapabilities":{"resume":{},"list":{},"close":{},"delete":{},"fork":{}}}"#.utf8
+        )
+        let absent = Data(#"{"sessionCapabilities":{"list":{}}}"#.utf8)
+
+        #expect(try JSONDecoder().decode(AgentCapabilities.self, from: codex).closeSessions)
+        #expect(try !JSONDecoder().decode(AgentCapabilities.self, from: absent).closeSessions)
+    }
+
+    @Test func closeSessionSendsTheSessionID() throws {
+        let request = try JSONEncoder().encode(CloseSessionRequest(sessionId: SessionID("s1")))
+        #expect(CloseSessionRequest.method == "session/close")
+        #expect(try JSONDecoder().decode(JSONValue.self, from: request) == .object(["sessionId": .string("s1")]))
     }
 
     @Test func newSessionResponseCarriesSelectConfigOptions() throws {
@@ -117,8 +140,9 @@ struct SchemaDecodingTests {
 
         // Only Claude Code's own data: the tool's response, kept as `_meta`.
         #expect(metaOnly.title == nil && metaOnly.status == nil && metaOnly.content == nil)
-        #expect(metaOnly.meta?["claudeCode"]?["toolResponse"]?["file"]?["filePath"]?.stringValue
-            == "/private/tmp/acp-research/sandbox/notes.txt")
+        #expect(
+            metaOnly.meta?["claudeCode"]?["toolResponse"]?["file"]?["filePath"]?.stringValue
+                == "/private/tmp/acp-research/sandbox/notes.txt")
 
         var expectedCompleted = ToolCallUpdate(toolCallId: Wire.readToolCallID, status: .completed)
         expectedCompleted.rawOutput = .string("1\thello\n2\t")

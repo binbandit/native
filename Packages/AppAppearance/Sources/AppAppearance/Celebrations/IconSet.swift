@@ -7,8 +7,24 @@ public enum AppearanceSurfaceStatus: Hashable, Sendable {
     case forthcoming
     /// Declared but unusable, such as missing icon files; the reason is for the catalogue.
     case unavailable(String)
+    /// Native's own artwork that downloads when chosen; until it's here the surface stays as it is.
+    case downloadable(IconPackState)
 
     public var isReady: Bool { self == .ready }
+
+    public var isDownloadable: Bool {
+        if case .downloadable = self { return true }
+        return false
+    }
+}
+
+/// Where a downloadable icon pack stands on this device.
+public enum IconPackState: Hashable, Sendable {
+    case notDownloaded
+    case downloading
+    /// Why the last attempt failed, in the user's terms.
+    case failed(String)
+    case ready([AppIconVariant: AppIconImagePair])
 }
 
 /// How the Home page's emblem dresses up.
@@ -29,10 +45,13 @@ public struct IconSet: Hashable, Sendable, Identifiable {
     public let homeStatus: AppearanceSurfaceStatus
     /// What Home draws, when `homeStatus` is ready.
     public let home: HomeLook?
+    /// A small Regular icon for previews: the bundled thumbnail, or the stable icon itself.
+    public let thumbnail: AppIconImagePair?
 
     public init(
         contribution: IconSetContribution, pluginID: String, appIcon: AppearanceSurfaceStatus,
-        icons: [AppIconVariant: AppIconImagePair], homeStatus: AppearanceSurfaceStatus, home: HomeLook?
+        icons: [AppIconVariant: AppIconImagePair], homeStatus: AppearanceSurfaceStatus, home: HomeLook?,
+        thumbnail: AppIconImagePair? = nil
     ) {
         self.contribution = contribution
         self.pluginID = pluginID
@@ -40,6 +59,7 @@ public struct IconSet: Hashable, Sendable, Identifiable {
         self.icons = icons
         self.homeStatus = homeStatus
         self.home = home
+        self.thumbnail = thumbnail ?? icons[.stable]
     }
 
     public var id: IconSetID { contribution.id }

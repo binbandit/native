@@ -44,6 +44,14 @@ final class SessionStore {
         }
     }
 
+    /// Drops a session and its subagents, for when Native closes it.
+    func remove(_ session: SessionModel) {
+        for child in session.children.values {
+            remove(child)
+        }
+        sessions[session.key] = nil
+    }
+
     /// Drops an agent's sessions, for when its process is replaced or goes away for good.
     func removeAll(of agent: AgentDefinition.ID) {
         sessions = sessions.filter { $0.key.agent != agent }

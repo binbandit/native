@@ -1,0 +1,123 @@
+import Search
+import SwiftUI
+
+extension SettingsPane.ID {
+    static let search = Self("search")
+}
+
+extension SettingsPane {
+    /// Settings › Search: past sessions, excluded projects and the index itself.
+    static func search(_ center: TranscriptSearchCenter) -> SettingsPane {
+        SettingsPane(
+            id: .search,
+            title: "Search",
+            systemImage: "magnifyingglass",
+            group: .personal,
+            order: 18,
+            keywords: ["find", "index", "history", "transcripts", "privacy", "exclude"],
+            searchEntries: {
+                [
+                    SettingsSearchEntry(
+                        id: TranscriptSearchSettingsPage.historyRow, title: "Include agents' past sessions",
+                        keywords: ["history", "backfill"]),
+                    SettingsSearchEntry(
+                        id: TranscriptSearchSettingsPage.excludedRow, title: "Excluded projects",
+                        keywords: ["privacy", "exclude", "ignore"]),
+                    SettingsSearchEntry(
+                        id: TranscriptSearchSettingsPage.indexRow, title: "Clear search index",
+                        keywords: ["delete", "reset", "privacy"]),
+                ]
+            },
+            content: { TranscriptSearchSettingsPage(center: center) }
+        )
+    }
+}
+
+struct TranscriptSearchSettingsPage: View {
+    static let historyRow = SettingsRowID("search.history")
+    static let excludedRow = SettingsRowID("search.excluded")
+    static let indexRow = SettingsRowID("search.index")
+
+    @Bindable var center: TranscriptSearchCenter
+
+    @Environment(AppModel.self) private var model
+    @State private var isClearing = false
+
+    var body: some View {
+        SettingsPage {
+            SettingsHeader(
+                "Search",
+                description: Text(
+                    "Find any task by what was said in it (⇧⌘F). The index lives on this Mac and is never sent anywhere."
+                ))
+            SettingsRowGroup {
+                SettingsRow(
+                    id: Self.historyRow,
+                    "Include agents' past sessions",
+                    description: Text(
+                        "Also index the sessions your agents keep in their own history, including ones started outside Native. Read only; nothing there changes."
+                    ),
+                    detail: indexingDetail.map(Text.init)
+                ) {
+                    SettingsSwitch("Include agents' past sessions", isOn: $center.includesAgentHistory)
+                }
+                SettingsRow(
+                    id: Self.indexRow,
+                    "Search index",
+                    description: Text(indexDescription)
+                ) {
+                    Button(isClearing ? "Clearing…" : "Clear Index") {
+                        isClearing = true
+                        Task {
+                            await center.clearIndex()
+                            isClearing = false
+                        }
+                    }
+                    .buttonStyle(.ds(.secondary))
+                    .disabled(isClearing)
+                }
+            }
+            SettingsSubheading(
+                "Excluded projects", note: "Sessions in these folders are never indexed, and are removed from the index.")
+            SettingsRowGroup {
+                ForEach(center.excludedFolders, id: \.self) { folder in
+                    SettingsRow(URL(filePath: folder).lastPathComponent, description: Text(folder)) {
+                        Button("Include") {
+                            Task { await center.include(folder) }
+                        }
+                        .buttonStyle(.ds(.secondary))
+                    }
+                }
+                SettingsRow(
+                    id: Self.excludedRow,
+                    center.excludedFolders.isEmpty ? "No excluded projects" : "Exclude another project",
+                    description: Text("Keep a project's sessions out of search, such as one with sensitive work.")
+                ) {
+                    Menu("Exclude Project") {
+                        ForEach(model.projects.all.filter { !center.excludedFolders.contains($0.path) }) { project in
+                            Button(project.name) {
+                                Task { await center.exclude(project.path) }
+                            }
+                        }
+                    }
+                    .fixedSize()
+                    .disabled(model.projects.all.allSatisfy { center.excludedFolders.contains($0.path) })
+                }
+            }
+        }
+    }
+
+    private var indexDescription: String {
+        guard let statistics = center.statistics else { return "Native rebuilds it from your tasks whenever it's cleared." }
+        let size = DSFormat.memory(UInt64(max(statistics.bytes, 0)))
+        return "\(statistics.sessions) tasks, \(size) on disk. Clearing it forgets everything indexed; Native rebuilds it from your tasks."
+    }
+
+    private var indexingDetail: String? {
+        switch center.indexing {
+        case .idle: nil
+        case .indexing(let done, let total): "Indexing: \(done) of \(total) sessions."
+        case .paused(let done, let total): "Paused on battery at \(done) of \(total); continues when your Mac is plugged in."
+        }
+    }
+}

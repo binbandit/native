@@ -14,8 +14,12 @@ final class KeepAwakeController {
     }
 
     private(set) var status = KeepAwakeStatus.off
+    /// Reassigned on every change to what it's read from (every streamed chunk, while agents work),
+    /// so only a different value reaches the engine, which asks the power source each time.
     private(set) var activity = KeepAwakeActivity() {
-        didSet { apply() }
+        didSet {
+            if activity != oldValue { apply() }
+        }
     }
 
     /// Choices for "Stay awake for": 30 minutes to 8 hours.

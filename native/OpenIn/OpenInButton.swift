@@ -65,7 +65,7 @@ struct OpenInButton: View {
         }
         .buttonStyle(SegmentButtonStyle(isHovered: isPrimaryHovered && isEnabled))
         .trackHover($isPrimaryHovered)
-        .help(app == nil ? title : "\(title) (\(OpenInCommands.shortcut.displayString))")
+        .help(app == nil ? title : OpenInCommands.shortcut.map { "\(title) (\($0.displayString))" } ?? title)
         .accessibilityLabel(title)
     }
 

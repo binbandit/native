@@ -32,14 +32,22 @@ struct MarkdownView: View, Equatable {
 /// messages never re-parse, and a streaming one only when a chunk arrives.
 private enum MarkdownParseCache {
     private static var documents: [String: [MarkdownNode]] = [:]
-    /// Plenty for every message on screen; past it the cache starts over rather than tracking age.
+    private static var bytes = 0
+    /// Plenty for every message on screen; past either limit the cache starts over rather than
+    /// tracking age. The byte limit matters while a long reply streams: every chunk is a new
+    /// source, and each one holds the whole reply so far.
     private static let capacity = 512
+    private static let byteCapacity = 4 << 20
 
     static func blocks(for source: String) -> [MarkdownNode]? {
         if let blocks = documents[source] { return blocks }
         guard let blocks = MarkdownNode.blocks(from: source.keepingLineBreaks) else { return nil }
-        if documents.count >= capacity { documents.removeAll(keepingCapacity: true) }
+        if documents.count >= capacity || bytes >= byteCapacity {
+            documents.removeAll(keepingCapacity: true)
+            bytes = 0
+        }
         documents[source] = blocks
+        bytes += source.utf8.count
         return blocks
     }
 }

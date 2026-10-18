@@ -3,8 +3,8 @@ import Experiments
 import Foundation
 import NativePolicy
 import Observation
-import os
 import Search
+import os
 
 /// The plugins Native runs with: the built-in ones plus any manifests in `~/.native/plugins`, each on
 /// or off by the user's choice, or by its default until they choose. Everything else asks this for

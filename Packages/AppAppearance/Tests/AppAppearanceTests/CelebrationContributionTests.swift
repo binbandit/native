@@ -201,16 +201,14 @@ struct CelebrationContributionTests {
         let catalog = F.catalog()
         #expect(catalog.problems.isEmpty)
         #expect(catalog.celebrations.prefix(2).map(\.id) == [F.halloween, F.muertos])
-        // The rest of the catalogue is listed, dated where it can be, and can't apply until drawn.
-        let forthcoming = catalog.celebrations.dropFirst(2)
-        #expect(forthcoming.count == FirstPartyCelebrations.forthcoming.count)
-        #expect(forthcoming.allSatisfy { !$0.isApplicable && $0.appIcon == .forthcoming })
-        #expect(
-            catalog.celebration(CelebrationID("native.kwanzaa"))?.nextOccurrence(
-                window: nil, from: try F.day("2026-12-30"))?.core.last == (try F.day("2027-01-01")))
-        #expect(
-            catalog.celebration(CelebrationID("native.diwali"))?.dateStatus(on: try F.day("2026-10-18"))
-                == .unsupportedCalendar("hindu-lunisolar"))
+        // The rest of the catalogue is listed; editions with resolvers can be chosen and download
+        // their icons, the others are coming soon.
+        let catalogue = catalog.celebrations.dropFirst(2)
+        #expect(catalogue.allSatisfy { !$0.isApplicable })
+        #expect(catalog.celebration(CelebrationID("native.kwanzaa"))?.nextOccurrence(window: nil, from: try F.day("2026-12-30"))?.core.last == (try F.day("2027-01-01")))
+        #expect(catalog.celebration(CelebrationID("native.thanksgiving-us"))?.canBeChosen(on: try F.day("2026-10-18")) == true)
+        #expect(catalog.celebration(CelebrationID("native.diwali"))?.canBeChosen(on: try F.day("2026-10-18")) == false)
+        #expect(catalog.celebration(CelebrationID("native.christmas-julian"))?.iconSet?.id == IconSetID("native.christmas"))
         #expect(catalog.celebrations.contains { $0.contribution.matches("deepavali") })
         let halloween = try #require(catalog.celebration(F.halloween))
         #expect(halloween.appIcon == .ready)

@@ -268,12 +268,13 @@ struct AgentDefinition: Identifiable, Hashable, Sendable {
                 environment[variable] = path
             }
         }
+        // npm would otherwise sit between Native and an npx adapter for as long as it runs.
         return AgentCommand(
             executable: manifest.command,
             arguments: manifest.args,
             environment: environment,
             workingDirectory: URL.homeDirectory
-        )
+        ).skippingNpx()
     }
 
     private static func executable(named name: String, in environment: [String: String]) -> String? {

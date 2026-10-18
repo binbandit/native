@@ -1,29 +1,42 @@
 import AppAppearance
+import NativeCommands
 import SwiftUI
 
-/// The View menu's celebration commands: put the usual look back (or bring a skipped celebration
-/// back) with ⌥⇧⌘H, and open the chooser.
-struct CelebrationMenuItems: View {
-    let center: CelebrationCenter
-    let settings: SettingsPresentation
-    @Environment(\.openWindow) private var openWindow
+extension CommandID {
+    static let celebrationRestore: Self = "celebration.restore"
+    static let celebrationChoose: Self = "celebration.choose"
+}
 
-    var body: some View {
-        Group {
-            if let skipped = center.resolution.skipped.first, center.resolution.active == nil,
+extension NativeCommand {
+    /// Put the usual look back (or bring a skipped celebration back) with ⌥⇧⌘H, and open the chooser.
+    static func celebrations(_ center: CelebrationCenter, settings: SettingsPresentation) -> [NativeCommand] {
+        func skipped() -> String? {
+            guard let skipped = center.resolution.skipped.first, center.resolution.active == nil,
                 let event = center.catalog.celebration(skipped.eventID)
-            {
-                Button("Bring Back \(event.contribution.title.resolved())") { center.resumeToday() }
-            } else {
-                Button("Restore Usual Appearance") { center.restoreBase() }
-                    .disabled(center.resolution.active == nil)
+            else { return nil }
+            return event.contribution.title.resolved()
+        }
+        return [
+            NativeCommand(
+                .celebrationRestore, title: "Restore Usual Appearance", category: .view, systemImage: "sparkles",
+                keywords: ["celebration", "icon", "halloween", "holiday"]
+            ) { _ in
+                if skipped() != nil {
+                    center.resumeToday()
+                } else {
+                    center.restoreBase()
+                }
             }
-        }
-        .keyboardShortcut("h", modifiers: [.command, .option, .shift])
+            .menuTitle { _ in skipped().map { "Bring Back \($0)" } ?? "Restore Usual Appearance" }
+            .available { _ in skipped() != nil || center.resolution.active != nil },
 
-        Button("Celebrations…") {
-            openWindow(id: "main")
-            settings.open(.celebrations)
-        }
+            NativeCommand(
+                .celebrationChoose, title: "Celebrations…", category: .view, systemImage: "party.popper",
+                keywords: ["holiday", "theme"]
+            ) { context in
+                context.openMainWindow()
+                settings.open(.celebrations)
+            },
+        ]
     }
 }
