@@ -25,7 +25,7 @@ final class AppOrchestrationHost: OrchestrationHost {
     }
 
     var taskAgents: [AgentDefinition] {
-        model?.agents.filter(\.isReady).map(\.agent) ?? []
+        model?.agents.filter(\.isAvailable).map(\.agent) ?? []
     }
 
     func sessionKey(of clientID: UUID) -> SessionKey? {

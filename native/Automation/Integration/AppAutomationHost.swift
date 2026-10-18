@@ -46,7 +46,7 @@ final class AppAutomationHost: WorkflowHost {
     // MARK: - WorkflowHost
 
     var workflowAgents: [WorkflowAgent] {
-        (model?.agents ?? []).filter(\.isReady).map { runtime in
+        (model?.agents ?? []).filter(\.isAvailable).map { runtime in
             WorkflowAgent(id: runtime.agent.id.rawValue, name: runtime.agent.displayName, symbol: runtime.agent.symbolName)
         }
     }

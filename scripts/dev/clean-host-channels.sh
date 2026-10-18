@@ -45,8 +45,8 @@ run() {
 echo "Channels in use: ${keep:- none}"
 found=0
 
-# Development host jobs: labels ending in .host.<10 hex digits>.
-for label in $(launchctl list | awk '{print $3}' | grep -E '\.Native\.host\.[0-9a-f]{10}$' || true); do
+# Development host jobs: labels ending in .host.<10 hex digits>, including isolated builds (.Native.dev.<name>).
+for label in $(launchctl list | awk '{print $3}' | grep -E '\.Native(\.dev\.[A-Za-z0-9_-]+)?\.host\.[0-9a-f]{10}$' || true); do
     found=1
     channel=${label##*.}
     details=$(launchctl print "$domain/$label" 2>/dev/null || true)
