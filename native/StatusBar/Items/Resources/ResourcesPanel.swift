@@ -19,7 +19,7 @@ struct ResourcesPanel: View {
     }
 
     var body: some View {
-        StatusBarPanel(title: "Memory and CPU", systemImage: "memorychip") {
+        PopoverPanel(title: "Memory and CPU", systemImage: "memorychip") {
             #if os(macOS)
             IconButton("Open Activity Monitor", systemImage: "arrow.up.forward.app") {
                 openURL(URL(filePath: "/System/Applications/Utilities/Activity Monitor.app"))
@@ -48,7 +48,7 @@ struct ResourcesPanel: View {
             }
             .frame(maxHeight: StatusBarMetrics.panelListHeight)
             .fixedSize(horizontal: false, vertical: true)
-            StatusBarPanelFootnote("Memory is each process's footprint, as Activity Monitor shows it. CPU is a share of one core. Updated every 2 seconds.")
+            PopoverPanelFootnote("Memory is each process's footprint, as Activity Monitor shows it. CPU is a share of one core. Updated every 2 seconds.")
         }
     }
 

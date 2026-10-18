@@ -56,12 +56,17 @@ public nonisolated enum DS {
         public static let contentColumn: CGFloat = 760
         /// Default sidebar width (Conductor 256px; Factory ~260px).
         public static let sidebarWidth: CGFloat = 256
+        /// Popover panels that hold a list or a table (Orca's Resource Manager, `w-[26rem]`).
+        public static let popoverWidth: CGFloat = 400
     }
 
     /// The window's traffic-light row, for headers drawn under a transparent title bar.
     public enum Window {
         /// Height of Factory's sidebar header row (`SESSION_HEADER_HEIGHT`, 36px).
         public static let headerHeight: CGFloat = 36
+        /// The window's bottom chrome strips, the status bar and the sidebar footer, so their glyphs
+        /// sit on one line. A full touch target on iPadOS.
+        public static let footerHeight: CGFloat = DS.isTouchPlatform ? 44 : 32
     }
 
     /// Drop shadows. Factory keeps elevation subtle: menus and dialogs only.

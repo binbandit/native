@@ -38,7 +38,7 @@ private struct KeepAwakeSegment: View {
                 label
                 StatusDot(color: controller.status.isActive ? .dsTextPrimary : .dsTextQuaternary)
             }
-            .statusBarSegmentChrome()
+            .statusBarSegment()
         }
         .menuStyle(.button)
         .buttonStyle(.plain)

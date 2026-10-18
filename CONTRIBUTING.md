@@ -9,6 +9,8 @@ platforms, Swift style). This page is the short path to a good pull request.
 - macOS 27 with Xcode 27.1. Optional: Rust (`cargo`) for the script runtime. The terminal's Zig
   toolchain is fetched for you. Missing tools disable that feature with a build warning.
 - Build: `xcodebuild -project native.xcodeproj -scheme native -derivedDataPath /tmp/native-dd/<you> build`
+- Hooks: run `scripts/dev/install-hooks.sh` once. Commits then format and lint staged Swift files and
+  check that the title is a conventional commit.
 - Run: `scripts/dev/run-isolated.sh <name>`. It builds an isolated instance (own bundle id, defaults
   and host) and prints its pid and window id. `--quit` stops it, `--reset` also forgets its data.
 

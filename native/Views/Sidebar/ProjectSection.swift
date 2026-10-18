@@ -174,15 +174,18 @@ private struct ProjectEmptyRow: View {
             .trackHover($isHovered)
             .help("New session in \(project.name)")
         } else {
-            Text(
-                model.agents.contains { $0.status == .starting }
-                    ? "No sessions yet. Agents are starting…" : "No sessions yet. Set up an agent below to start one."
-            )
-            .font(.dsBody)
-            .foregroundStyle(.dsTextTertiary)
-            .padding(.leading, TaskRowIndent.grouped.leading)
-            .padding(.vertical, DS.Space.sm)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            // Only reached when no agent is installed: starting agents can already take a session.
+            Button {
+                model.isAddingAgent = true
+            } label: {
+                Label("Add an agent to start a session", systemImage: "plus")
+                    .labelStyle(EmptyRowLabelStyle())
+                    .foregroundStyle(isHovered ? .dsTextSecondary : .dsTextTertiary)
+                    .contentShape(.rect)
+            }
+            .buttonStyle(SidebarRowButtonStyle())
+            .trackHover($isHovered)
+            .help("Install an agent to work in \(project.name)")
         }
     }
 }
