@@ -51,5 +51,13 @@ protocol TerminalEngine: AnyObject {
         -> TerminalSurface
     /// Restyles every terminal, running ones included. With `ghostty`, the user's Ghostty config
     /// at those locations replaces `style`'s settings; the result says which applied.
-    func apply(_ style: TerminalStyle, ghostty: GhosttyConfigLocations?) -> TerminalConfigStatus
+    func apply(_ style: TerminalStyle, ghostty: GhosttyConfigLocations?) -> TerminalApplied
+}
+
+/// What restyling the terminals did.
+struct TerminalApplied: Equatable {
+    var status: TerminalConfigStatus
+    /// The terminals' background opacity in effect (the user's Ghostty config can set it), so the
+    /// panel puts a blur behind a translucent one.
+    var backgroundOpacity: Double
 }

@@ -92,8 +92,10 @@ final class GhosttyRuntime: TerminalEngine {
         return view
     }
 
-    func apply(_ style: TerminalStyle, ghostty: GhosttyConfigLocations?) -> TerminalConfigStatus {
-        guard let built = GhosttyConfigBuilder.build(style, ghostty: ghostty) else { return .native }
+    func apply(_ style: TerminalStyle, ghostty: GhosttyConfigLocations?) -> TerminalApplied {
+        guard let built = GhosttyConfigBuilder.build(style, ghostty: ghostty) else {
+            return TerminalApplied(status: .native, backgroundOpacity: 1)
+        }
         defer { ghostty_config_free(built.config) }
         self.style = style
         // Updates the app's config and every running terminal's.
@@ -103,7 +105,7 @@ final class GhosttyRuntime: TerminalEngine {
         for surface in surfaces.allObjects {
             surface.setColorScheme(scheme)
         }
-        return built.status
+        return TerminalApplied(status: built.status, backgroundOpacity: built.backgroundOpacity)
     }
 
     private func tick() {

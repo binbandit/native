@@ -12,6 +12,13 @@ enum GhosttyConfigBuilder {
     struct Built {
         let config: ghostty_config_t
         let status: TerminalConfigStatus
+
+        var backgroundOpacity: Double {
+            var opacity = 1.0
+            let key = "background-opacity"
+            _ = ghostty_config_get(config, &opacity, key, UInt(key.utf8.count))
+            return opacity
+        }
     }
 
     /// The config for `style`: the user's Ghostty config when `ghostty` is given and it loads
@@ -26,15 +33,16 @@ enum GhosttyConfigBuilder {
         guard !files.isEmpty else {
             return native(style).map { Built(config: $0, status: .ghosttyNotFound(searched: ghostty.defaultFiles)) }
         }
-        let loaded = GhosttyConfigFile.load(ghostty, home: .homeDirectory).map(\.url)
-        let (config, diagnostics) = user(files)
+        let loaded = GhosttyConfigFile.load(ghostty, home: .homeDirectory)
+        let (config, diagnostics) = user(files, transparency: style.transparency)
         guard let config, diagnostics.isEmpty else {
             if let config { ghostty_config_free(config) }
+            let located = diagnostics.map { GhosttyConfigFile.locate($0, in: loaded) }
             return native(style).map {
-                Built(config: $0, status: .ghosttyInvalid(files: loaded, diagnostics: diagnostics))
+                Built(config: $0, status: .ghosttyInvalid(files: loaded.map(\.url), diagnostics: located))
             }
         }
-        return Built(config: config, status: .ghostty(files: loaded))
+        return Built(config: config, status: .ghostty(files: loaded.map(\.url)))
     }
 
     /// Native's settings alone.
@@ -43,7 +51,8 @@ enum GhosttyConfigBuilder {
             settings: style.settings,
             colors: style.colors,
             defaultFont: defaultFont,
-            padding: .init(horizontal: Int(DS.Space.lg), vertical: Int(DS.Space.md))
+            padding: .init(horizontal: Int(DS.Space.lg), vertical: Int(DS.Space.md)),
+            transparency: style.transparency
         )
         return withTemporaryFiles([configuration.text]) { paths in
             guard let config = ghostty_config_new() else { return nil }
@@ -60,8 +69,10 @@ enum GhosttyConfigBuilder {
     /// way Ghostty loads them (`config-file` includes, then themes when finalizing). Ghostty's own
     /// `loadDefaultFiles` isn't used: it writes a template config when none exists, and Native
     /// never writes to the user's Ghostty files.
-    private static func user(_ files: [URL]) -> (ghostty_config_t?, [String]) {
-        let parts = [GhosttyConfiguration.userConfigDefaults, GhosttyConfiguration.embeddingOverrides]
+    private static func user(_ files: [URL], transparency: TerminalTransparency) -> (ghostty_config_t?, [String]) {
+        let parts = [
+            GhosttyConfiguration.userConfigDefaults, GhosttyConfiguration.userConfigOverrides(transparency),
+        ]
         let built: (ghostty_config_t?, [String])? = withTemporaryFiles(parts) { paths in
             guard let config = ghostty_config_new() else { return (nil, []) }
             load(paths[0], into: config)

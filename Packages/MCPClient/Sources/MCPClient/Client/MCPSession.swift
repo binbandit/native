@@ -8,8 +8,17 @@ import Synchronization
 /// to `run_script`, so their schemas don't load into the agent's context. Probes never call tools;
 /// this is the one place that does, and only when asked.
 public final class MCPSession: Sendable {
+    /// A tool with the schemas a caller needs to use it.
+    public struct Tool: Hashable, Sendable, Identifiable {
+        public var info: MCPToolInfo
+        public var inputSchema: JSON?
+        public var outputSchema: JSON?
+
+        public var id: String { info.name }
+    }
+
     public let server: MCPServerInfo
-    public let tools: [MCPToolInfo]
+    public let tools: [Tool]
     public let transportKind: MCPTransport.Kind
     private let transport: any MCPClientTransport
     private let ids = RequestIDs()
@@ -39,13 +48,17 @@ public final class MCPSession: Sendable {
             }
             let outcome = try await MCPHandshake(clientName: "native", clientTitle: "Native", clientVersion: clientVersion)
                 .run(on: transport)
-            return MCPSession(server: outcome.server, tools: outcome.tools, transportKind: kind, transport: transport)
+            let tools = outcome.tools.map { info in
+                let definition = outcome.definitions[info.name]
+                return Tool(info: info, inputSchema: definition?["inputSchema"], outputSchema: definition?["outputSchema"])
+            }
+            return MCPSession(server: outcome.server, tools: tools, transportKind: kind, transport: transport)
         } catch {
             throw MCPSessionError(error)
         }
     }
 
-    private init(server: MCPServerInfo, tools: [MCPToolInfo], transportKind: MCPTransport.Kind, transport: any MCPClientTransport) {
+    private init(server: MCPServerInfo, tools: [Tool], transportKind: MCPTransport.Kind, transport: any MCPClientTransport) {
         self.server = server
         self.tools = tools
         self.transportKind = transportKind

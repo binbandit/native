@@ -13,6 +13,7 @@ struct TerminalSettingsPage: View {
     static let cursorRow = SettingsRowID("terminal.cursor")
     static let scrollbackRow = SettingsRowID("terminal.scrollback")
     static let colorsRow = SettingsRowID("terminal.colors")
+    static let shellRow = SettingsRowID("terminal.shell")
 
     /// Wide enough for most font family names.
     static let fontSelectWidth: CGFloat = 220
@@ -22,6 +23,8 @@ struct TerminalSettingsPage: View {
     @State private var families: [String] = []
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dsAccentPalette) private var palette
+    @Environment(\.dsTransparency) private var transparency
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
 
     var body: some View {
         @Bindable var preferences = store.preferences
@@ -29,6 +32,9 @@ struct TerminalSettingsPage: View {
         SettingsPage {
             SettingsHeader("Terminal", description: Text("Each task's terminal, opened with ⌃` in its folder."))
             TerminalGhosttySection(store: store)
+            SettingsRowGroup {
+                TerminalShellRow(store: store)
+            }
             VStack(alignment: .leading, spacing: DS.Space.lg) {
                 SettingsSubheading(
                     "Native's terminal settings",
@@ -81,9 +87,11 @@ struct TerminalSettingsPage: View {
             .opacity(usesGhostty ? 0.5 : 1)
         }
         .task { families = Self.monospacedFamilies() }
-        .onChange(of: AppearanceKey(colorScheme: colorScheme, palette: palette), initial: true) { _, key in
+        .onChange(of: appearanceKey, initial: true) { _, key in
             let appearance = TerminalAppearance(key.colorScheme)
-            store.prepareSettings(appearance, chrome: .designSystem(appearance: appearance, palette: key.palette))
+            store.prepareSettings(
+                appearance, chrome: .designSystem(appearance: appearance, palette: key.palette),
+                transparency: key.transparency)
         }
     }
 
@@ -140,9 +148,10 @@ struct TerminalSettingsPage: View {
         }
     }
 
-    private struct AppearanceKey: Equatable {
-        let colorScheme: ColorScheme
-        let palette: DSAccentPalette
+    private var appearanceKey: TerminalAppearanceKey {
+        TerminalAppearanceKey(
+            colorScheme: colorScheme, palette: palette,
+            transparency: TerminalTransparency(transparency, reduceTransparency: reduceTransparency))
     }
 }
 

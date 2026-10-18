@@ -124,12 +124,12 @@ public struct GhosttyConfigFile: Hashable, Sendable {
 
 extension Array where Element == GhosttyConfigFile {
     /// Every entry for `key` across the files, in load order.
-    func entries(_ key: String) -> [GhosttyConfigEntry] {
+    public func entries(_ key: String) -> [GhosttyConfigEntry] {
         flatMap { $0.entries.filter { $0.key == key } }
     }
 
     /// The value Ghostty ends up with for a single-valued key: the last one set.
-    func lastValue(_ key: String) -> String? {
+    public func lastValue(_ key: String) -> String? {
         entries(key).last.map(\.value)
     }
 }

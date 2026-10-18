@@ -6,6 +6,7 @@ import Terminal
 struct TerminalTabContent: View {
     let panel: TerminalPanelModel
     let tab: TerminalTabList.Tab
+    @Environment(SettingsPresentation.self) private var settings
 
     var body: some View {
         switch tab.status {
@@ -16,6 +17,17 @@ struct TerminalTabContent: View {
                     + "start there.",
                 primary: .init("Open in Home Folder") { panel.restart(tab.id, in: .homeDirectory) },
                 secondary: .init("Close Tab") { panel.close(tab.id) },
+                layout: .pane
+            )
+        case .failedToStart(.shellNotFound(let path)):
+            ErrorState(
+                "\(path) isn't there",
+                suggestion: "The shell this terminal runs can't be found or run. Open this tab with "
+                    + "\(TerminalShell.fallback) instead, or choose another shell in Settings.",
+                primary: .init("Use \(TerminalShell.fallback)") {
+                    panel.restart(tab.id, shell: TerminalShell.fallback)
+                },
+                secondary: .init("Choose Shell…") { settings.open(.terminal) },
                 layout: .pane
             )
         case .failedToStart(.engineFailed):
@@ -52,9 +64,11 @@ struct TerminalTabContent: View {
             ErrorState(
                 "The shell didn't start",
                 suggestion: "It quit as soon as it launched; its output is above. Check your shell and its "
-                    + "startup files, then try again.",
+                    + "startup files, or open this tab with \(TerminalShell.fallback) for now.",
                 primary: .init("Try Again") { panel.restart(tab.id) },
-                secondary: .init("Close Tab") { panel.close(tab.id) }
+                secondary: .init("Use \(TerminalShell.fallback)") {
+                    panel.restart(tab.id, shell: TerminalShell.fallback)
+                }
             )
         case .running:
             EmptyView()

@@ -18,6 +18,7 @@ struct TerminalPanel: View {
         VStack(spacing: 0) {
             TerminalResizeDivider(height: $preferences.panelHeight, range: Self.minHeight...maxHeight)
             TerminalTabBar(panel: panel, showsTabs: store.availability == .available)
+                .background(.dsSurfaceSunken.opacity(store.backgroundOpacity))
             if case .ghosttyInvalid(_, let diagnostics) = store.configStatus {
                 TerminalConfigNotice(diagnostics: diagnostics, reload: store.reloadGhosttyConfig)
             }
@@ -25,7 +26,7 @@ struct TerminalPanel: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .frame(height: height)
-        .background(.dsSurfaceSunken)
+        .background { backdrop }
         .confirmationDialog(
             "Close this terminal?",
             isPresented: isConfirmingClose,
@@ -47,6 +48,7 @@ struct TerminalPanel: View {
             }
         case .notBuilt:
             TerminalUnavailableView()
+                .background(.dsSurfaceSunken.opacity(store.backgroundOpacity))
         case .failed(let reason):
             ErrorState(
                 "The terminal couldn't start",
@@ -54,6 +56,20 @@ struct TerminalPanel: View {
                 suggestion: "Quit and reopen Native to try again.",
                 layout: .pane
             )
+        }
+    }
+
+    /// Behind a translucent terminal, a blur of what's behind the window, as the sidebar has; the
+    /// tab bar and the terminal each lay their own color over it at the terminal's opacity.
+    @ViewBuilder private var backdrop: some View {
+        if store.backgroundOpacity < 1 {
+            #if os(macOS)
+            DSBehindWindowMaterial(material: .underWindowBackground)
+            #else
+            Rectangle().fill(.thinMaterial)
+            #endif
+        } else {
+            Color.dsSurfaceSunken
         }
     }
 

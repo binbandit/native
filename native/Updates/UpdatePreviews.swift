@@ -37,14 +37,14 @@ extension UpdateController {
             "failedOffline": .failed(
                 UpdateFailure(
                     kind: .offline, title: "Native couldn't reach GitHub",
-                    recovery: "Native is still on version 1.3.2. It checks again on its own.",
+                    recovery: "Native is still on version \(current.version). It checks again on its own.",
                     suggestion: "Check your internet connection, then try again.",
                     details: "The Internet connection appears to be offline. (NSURLErrorDomain -1009)")),
             "failedSecurity": .failed(
                 UpdateFailure(
                     kind: .security, title: "The update failed a security check",
                     recovery:
-                        "Native is still on version 1.3.2. Native didn't install the download because it couldn't verify who made it.",
+                        "Native is still on version \(current.version). Native didn't install the download because it couldn't verify who made it.",
                     suggestion: "Download the latest release from GitHub instead.",
                     details: "EdDSA signature does not match. (SUSparkleErrorDomain 3001)")),
             "developmentBuild": .unavailable(.developmentBuild),

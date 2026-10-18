@@ -2,12 +2,17 @@ import AppAppearance
 import Foundation
 import Observation
 
+/// The app icon: the user's base choice (a built-in theme or a plugin's icon set), in light, dark or
+/// the system's appearance, with a celebration on top while one is showing. The base comes back on
+/// its own when the celebration ends, and nothing here knows about dates.
 @MainActor
 @Observable
 final class AppIconPreferences {
-    var theme: AppIconTheme {
+    /// What the user picked. A plugin set that's switched off or removed shows Original until it's
+    /// back, without forgetting the choice.
+    private(set) var choice: AppIconOption.ID {
         didSet {
-            defaults.set(theme.rawValue, forKey: Self.themeKey)
+            defaults.set(choice.rawValue, forKey: Self.themeKey)
             apply()
         }
     }
@@ -19,51 +24,89 @@ final class AppIconPreferences {
         }
     }
 
-    var halloweenEnabled: Bool {
+    /// Plain icon sets from enabled plugins, offered beside the built-in themes.
+    var iconSets: [IconSet] = [] {
+        didSet { apply() }
+    }
+
+    /// Plugin names by id, to credit an icon set in the picker.
+    var pluginNames: [String: String] = [:]
+
+    /// The celebration on the icon, set by `CelebrationCenter`; it covers the base until it ends.
+    var celebration: AppIconCelebration? {
         didSet {
-            defaults.set(halloweenEnabled, forKey: Self.halloweenKey)
+            guard celebration != oldValue else { return }
             apply()
         }
     }
 
     private(set) var systemIsDark = false
-    private(set) var isHalloweenAvailable: Bool
 
     @ObservationIgnored private let defaults: UserDefaults
-    @ObservationIgnored private let variant: AppIconVariant
-    @ObservationIgnored private let now: @MainActor () -> Date
-    @ObservationIgnored private let timeZone: () -> TimeZone
+    @ObservationIgnored let variant: AppIconVariant
     @ObservationIgnored private let platform = PlatformAppIcon()
-    @ObservationIgnored private var seasonalTimer: Timer?
     @ObservationIgnored private var hasStarted = false
 
     private static let themeKey = "appIconTheme"
     private static let appearanceKey = "appIconAppearance"
-    private static let halloweenKey = "appIconHalloweenEnabled"
 
-    init(
-        defaults: UserDefaults = .standard,
-        variant: AppIconVariant = .current,
-        now: @escaping @MainActor () -> Date = Date.init,
-        timeZone: @escaping () -> TimeZone = { .current }
-    ) {
+    init(defaults: UserDefaults = .standard, variant: AppIconVariant = .current) {
         self.defaults = defaults
         self.variant = variant
-        self.now = now
-        self.timeZone = timeZone
-        theme = defaults.string(forKey: Self.themeKey).flatMap(AppIconTheme.init(rawValue:)) ?? .original
-        appearance = defaults.string(forKey: Self.appearanceKey).flatMap(AppIconAppearance.init(rawValue:)) ?? .system
-        halloweenEnabled = defaults.bool(forKey: Self.halloweenKey)
-        isHalloweenAvailable = SeasonalAppIcons.halloweenIsAvailable(on: now(), timeZone: timeZone())
         if defaults.string(forKey: Self.themeKey) == "glass" {
             defaults.set(AppIconTheme.original.rawValue, forKey: Self.themeKey)
         }
+        choice = defaults.string(forKey: Self.themeKey).map(AppIconOption.ID.init(rawValue:)) ?? .theme(.original)
+        appearance = defaults.string(forKey: Self.appearanceKey).flatMap(AppIconAppearance.init(rawValue:)) ?? .system
     }
 
-    var isHalloweenActive: Bool { halloweenEnabled && isHalloweenAvailable }
-    var usesSystemIcon: Bool { theme == .original && !isHalloweenActive }
+    // MARK: - The base icon
+
+    var options: [AppIconOption] {
+        AppIconOption.all(iconSets: iconSets, pluginNames: pluginNames, variant: variant)
+    }
+
+    /// The chosen plugin icon set, while an enabled plugin provides it.
+    var baseIconSet: IconSet? {
+        choice.iconSet.flatMap { id in iconSets.first { $0.id == id } }
+    }
+
+    /// The built-in theme in effect: the chosen one, or Original under a plugin set or a missing one.
+    /// The accent palette follows it.
+    var theme: AppIconTheme {
+        choice.theme ?? .original
+    }
+
+    /// The choice the picker marks: Original while a chosen plugin set is unavailable.
+    var effectiveChoice: AppIconOption.ID {
+        choice.theme != nil || baseIconSet != nil ? choice : .theme(.original)
+    }
+
+    func select(_ id: AppIconOption.ID) {
+        choice = id
+    }
+
+    /// The base icon's images for this build, or nil for the compiled icon.
+    private var baseImages: AppIconImagePair? {
+        if let baseIconSet { return baseIconSet.icons[variant] }
+        return theme == .original ? nil : theme.images
+    }
+
+    /// How Home dresses up for the base icon: a plugin set's mark or palette.
+    var baseHomeLook: HomeLook? {
+        baseIconSet?.home
+    }
+
+    // MARK: - What's showing
+
+    var isCelebrating: Bool { celebration != nil }
+
+    /// Whether the compiled icon shows, with every system appearance (Default, Dark, Clear, Tinted).
+    var usesSystemIcon: Bool { currentImages == nil }
+
     var displayName: String {
-        if isHalloweenActive { return "Halloween · \(variant.displayName)" }
+        if let celebration { return "\(celebration.title) · \(variant.displayName)" }
+        if let baseIconSet { return baseIconSet.name.resolved() }
         return theme == .original ? variant.displayName : theme.title
     }
 
@@ -76,50 +119,33 @@ final class AppIconPreferences {
         }
     }
 
-    var imageName: String {
-        if isHalloweenActive { return halloweenImageName }
-        return theme == .original ? variant.imageName(isDark: isDark) : theme.imageName(isDark: isDark)
+    /// The image the Dock shows, or nil for the compiled icon.
+    var currentImage: AppIconImage? {
+        currentImages?.image(isDark: isDark)
     }
 
-    var halloweenImageName: String {
-        variant.halloweenImageName(isDark: isDark)
-    }
-
-    func selectTheme(_ theme: AppIconTheme) {
-        self.theme = theme
-        halloweenEnabled = false
+    private var currentImages: AppIconImagePair? {
+        celebration?.icons ?? baseImages
     }
 
     func start() {
         guard !hasStarted else { return }
         hasStarted = true
-        platform.onEnvironmentChange = { [weak self] isDark in
+        platform.onAppearanceChange = { [weak self] isDark in
             self?.systemIsDark = isDark
-            self?.refreshSeason()
+            self?.apply()
         }
         platform.start()
     }
 
-    /// Re-evaluated on activation, wake, clock/time-zone changes and the seasonal boundary itself.
-    func refreshSeason() {
-        let date = now()
-        let zone = timeZone()
-        isHalloweenAvailable = SeasonalAppIcons.halloweenIsAvailable(on: date, timeZone: zone)
-        seasonalTimer?.invalidate()
-        if let boundary = SeasonalAppIcons.nextHalloweenBoundary(after: date, timeZone: zone) {
-            seasonalTimer = Timer.scheduledTimer(
-                withTimeInterval: max(1, boundary.timeIntervalSince(date)), repeats: false
-            ) {
-                [weak self] _ in
-                Task { @MainActor [weak self] in self?.refreshSeason() }
-            }
-        }
-        apply()
-    }
-
     private func apply() {
-        platform.apply(imageNamed: usesSystemIcon ? nil : imageName)
+        guard hasStarted else { return }
+        platform.apply(currentImage.flatMap { PlatformAppIcon.canApply($0) ? $0 : nil })
     }
+}
 
-    isolated deinit { seasonalTimer?.invalidate() }
+/// A celebration's icon for this build's channel, as `CelebrationCenter` hands it over.
+struct AppIconCelebration: Equatable {
+    let title: String
+    let icons: AppIconImagePair
 }

@@ -15,7 +15,10 @@ extension SettingsPane {
         order: 10,
         keywords: ["app icon", "dock", "theme", "light", "dark", "transparency", "translucent", "wool", "paper", "code theme", "syntax"],
         searchEntries: {
-            [LightToneSettingsRow.searchEntry, TransparencySettingsRow.searchEntry, CodeThemeSettingsRow.searchEntry]
+            [
+                LightToneSettingsRow.searchEntry, TransparencySettingsRow.searchEntry,
+                CodeThemeSettingsRow.searchEntry, AccentSettingsRow.searchEntry,
+            ]
         },
         content: {
             SettingsPage {
@@ -28,6 +31,7 @@ extension SettingsPane {
                     LightToneSettingsRow()
                     TransparencySettingsRow()
                     CodeThemeSettingsRow()
+                    AccentSettingsRow()
                 }
             }
         }

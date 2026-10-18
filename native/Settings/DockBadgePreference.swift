@@ -8,15 +8,15 @@ import Observation
 final class DockBadgePreference {
     enum Mode: String, CaseIterable, Identifiable, Sendable {
         case needsYou
-        case needsYouAndUnread
+        case needsYouOrUnread
         case off
 
         var id: Self { self }
 
         var title: String {
             switch self {
-            case .needsYou: "Tasks that need you"
-            case .needsYouAndUnread: "Needs you and unread"
+            case .needsYou: "Needs you"
+            case .needsYouOrUnread: "Needs you or unread"
             case .off: "Off"
             }
         }

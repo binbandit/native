@@ -3,16 +3,12 @@ import AppKit
 import Terminal
 
 extension GhosttyConfigLocations {
-    /// This user's Ghostty config locations, with Ghostty.app's themes when it's installed.
-    ///
-    /// `-NativeGhosttyConfigHome <folder>` stands in for `XDG_CONFIG_HOME`, for trying a throwaway
-    /// config in a development build (`open` doesn't pass the environment on).
+    /// This user's Ghostty config locations (honoring `XDG_CONFIG_HOME`, which `open` passes on,
+    /// so a throwaway config can be tried with `XDG_CONFIG_HOME=/tmp/x scripts/dev/run-isolated.sh`),
+    /// with Ghostty.app's themes when it's installed.
     static var current: GhosttyConfigLocations {
-        var environment = ProcessInfo.processInfo.environment
-        if let override = UserDefaults.standard.string(forKey: "NativeGhosttyConfigHome") {
-            environment["XDG_CONFIG_HOME"] = override
-        }
-        return GhosttyConfigLocations(environment: environment, home: .homeDirectory, bundledThemes: ghosttyThemes)
+        GhosttyConfigLocations(
+            environment: ProcessInfo.processInfo.environment, home: .homeDirectory, bundledThemes: ghosttyThemes)
     }
 
     /// Ghostty.app's bundled themes, wherever the app is installed.

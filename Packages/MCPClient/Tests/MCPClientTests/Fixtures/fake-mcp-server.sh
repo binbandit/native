@@ -1,5 +1,5 @@
 #!/bin/sh
-# A minimal stdio MCP server for tests: answers initialize and two pages of tools/list.
+# A minimal stdio MCP server for tests: answers initialize, two pages of tools/list and tools/call.
 # "crash" exits with status 3 after logging; "hang" reads and never answers; "clean" leaves out the
 # stray stdout line, which strict clients (Codex) treat as a broken server.
 mode="$1"
@@ -25,6 +25,16 @@ while IFS= read -r line; do
         *)
           printf '{"jsonrpc":"2.0","id":99,"method":"roots/list"}\n'
           printf '{"jsonrpc":"2.0","id":%s,"result":{"tools":[{"name":"search","title":"Search","description":"Finds things.","inputSchema":{"type":"object","properties":{"limit":{"type":"number"},"query":{"type":"string"}},"required":["query"]},"annotations":{"readOnlyHint":true}}],"nextCursor":"page-2"}}\n' "$id"
+          ;;
+      esac
+      ;;
+    *'"method":"tools/call"'*)
+      case "$line" in
+        *'"name":"search"'*)
+          printf '{"jsonrpc":"2.0","id":%s,"result":{"content":[{"type":"text","text":"1 match"}],"structuredContent":{"matches":["thing"]}}}\n' "$id"
+          ;;
+        *)
+          printf '{"jsonrpc":"2.0","id":%s,"result":{"content":[{"type":"text","text":"Nothing to delete."}],"isError":true}}\n' "$id"
           ;;
       esac
       ;;
