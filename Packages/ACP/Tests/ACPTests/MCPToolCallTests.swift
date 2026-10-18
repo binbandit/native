@@ -31,7 +31,7 @@ struct MCPToolCallTests {
     @Test func codexCallNamesItsServerAndTool() throws {
         let call = try #require(try state(after: CodexMCPWire.toolCall).call("call_mcp_1"))
         #expect(call.mcpTool == MCPToolCall(server: "native", tool: "setup_status", rawName: "mcp.native.setup_status"))
-        #expect(call.mcpArguments == .object(["verbose": .bool(true)]))
+        #expect(call.mcpArguments == JSONValue.object(["verbose": .bool(true)]))
         #expect(call.mcpResultText == nil)
     }
 
@@ -47,7 +47,7 @@ struct MCPToolCallTests {
         call.name = "mcp__native__get_skill"
         call.rawInput = .object(["name": .string("set-up-native")])
         #expect(call.mcpTool == MCPToolCall(server: "native", tool: "get_skill", rawName: "mcp__native__get_skill"))
-        #expect(call.mcpArguments == .object(["name": .string("set-up-native")]))
+        #expect(call.mcpArguments == JSONValue.object(["name": .string("set-up-native")]))
     }
 
     @Test func aTitleAloneStillCounts() {
@@ -67,5 +67,14 @@ struct MCPToolCallTests {
         #expect(bash.mcpTool == nil)
         bash.name = "mcp__"
         #expect(bash.mcpTool == nil)
+    }
+}
+
+private extension SessionState {
+    func call(_ id: String) -> ToolCallState? {
+        items.lazy.compactMap { item -> ToolCallState? in
+            guard case .toolCall(let call) = item, call.id == id else { return nil }
+            return call
+        }.first
     }
 }

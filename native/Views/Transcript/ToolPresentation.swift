@@ -26,8 +26,8 @@ struct ToolPresentation {
         case command(String)
         /// Plain output lines, like search results; Markdown would join them into one paragraph.
         case lines
-        /// MCP input and output, split by a hairline.
-        case mcp
+        /// MCP input and output, split by a hairline, under the tool's name as the agent sent it.
+        case mcp(rawName: String)
         /// The file diffs of an edit.
         case diff
     }
@@ -89,14 +89,14 @@ extension ToolPresentation {
         let input = call.rawInput
         let name = call.name ?? ""
 
-        if let mcp = MCPToolName(name) {
+        if let mcp = call.mcpTool {
             // A call a script made through Native's run_script also says where in the script.
             let line = call.meta?["native"]?["script"]?["line"].flatMap { value -> Int? in
                 if case .number(let number) = value { Int(number) } else { nil }
             }
             self.init(
-                symbol: "puzzlepiece.extension", subject: mcp.tool.titleCased,
-                subtitle: mcp.server.humanized + (line.map { " · script line \($0)" } ?? ""), body: .mcp)
+                symbol: "puzzlepiece.extension", subject: "\(mcp.server.titleCased) · \(mcp.tool.sentenceCased)",
+                subtitle: line.map { "script line \($0)" }, body: .mcp(rawName: mcp.rawName))
             return
         }
 
@@ -204,23 +204,6 @@ extension ToolPresentation {
     }
 }
 
-/// Claude Code names MCP tools `mcp__<server>__<tool>`: the server runs to the next `__` and the
-/// tool is the rest.
-private struct MCPToolName {
-    let server: String
-    let tool: String
-
-    init?(_ name: String) {
-        guard name.hasPrefix("mcp__") else { return nil }
-        let rest = name.dropFirst("mcp__".count)
-        guard let separator = rest.range(of: "__"), separator.lowerBound > rest.startIndex else { return nil }
-        let tool = rest[separator.upperBound...]
-        guard !tool.isEmpty else { return nil }
-        server = String(rest[..<separator.lowerBound])
-        self.tool = String(tool)
-    }
-}
-
 private extension JSONValue {
     var intValue: Int? {
         guard case .number(let number) = self else { return nil }
@@ -253,6 +236,15 @@ private extension String {
         humanized.split(separator: " ").map { word in
             word.allSatisfy { $0.isUppercase || $0.isNumber }
                 ? String(word) : word.prefix(1).uppercased() + word.dropFirst().lowercased()
+        }
+        .joined(separator: " ")
+    }
+
+    /// `setup_status` -> `Setup status`; acronyms stay upper case.
+    var sentenceCased: String {
+        humanized.split(separator: " ").enumerated().map { index, word in
+            if word.allSatisfy({ $0.isUppercase || $0.isNumber }) { return String(word) }
+            return index == 0 ? word.prefix(1).uppercased() + word.dropFirst().lowercased() : word.lowercased()
         }
         .joined(separator: " ")
     }
