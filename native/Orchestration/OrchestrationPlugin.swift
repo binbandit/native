@@ -15,13 +15,16 @@ struct OrchestrationPlugin: NativePlugin {
 
     /// Set its `host` to let the tools run tasks.
     let orchestrator: Orchestrator
+    /// Other features' tools for `run_script`.
+    let scriptExtensions: OrchestrationScriptExtensions
     private let server: MCPHTTPServer<OrchestrationCaller>
 
     init() {
         let orchestrator = Orchestrator()
         let tools = OrchestrationTools.all(orchestrator)
         // run_script exists only where the script runtime does; without it the server just lacks it.
-        let script = OrchestrationScriptTool.make(binding: tools)
+        let extensions = OrchestrationScriptExtensions()
+        let script = OrchestrationScriptTool.make(binding: tools, extensions: extensions)
         let server = MCPHTTPServer(
             name: "native",
             version: Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0",
@@ -32,6 +35,7 @@ struct OrchestrationPlugin: NativePlugin {
             await orchestrator.caller(for: token)
         }
         self.orchestrator = orchestrator
+        self.scriptExtensions = extensions
         self.server = server
         // Listening takes a moment, long before the first session asks for the URL.
         Task {
