@@ -8,6 +8,7 @@ struct CelebrationRow: View {
     let event: CelebrationEvent
 
     @Environment(CelebrationCenter.self) private var center
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     private var contribution: CelebrationContribution { event.contribution }
     private var selection: CelebrationPreferences.Selection { center.preferences.selection(for: event.id) }
@@ -40,7 +41,7 @@ struct CelebrationRow: View {
                     .transition(.opacity)
             }
         }
-        .animation(.dsQuick, value: selection.isEnabled)
+        .animation(reduceMotion ? nil : .dsQuick, value: selection.isEnabled)
     }
 
     private var description: String {
@@ -96,10 +97,10 @@ private struct CelebrationOptions: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
             surface(
-                "App icon", preview: AnyView(iconPreview), status: event.appIcon,
+                "App icon", isIcon: true, preview: AnyView(iconPreview), status: event.appIcon,
                 isOn: Binding(get: { selection.appIcon }, set: { center.setAppIcon($0, for: event.id) }))
             surface(
-                "Home", preview: AnyView(CelebrationHomePreview(look: event.homeLook, channel: channel)),
+                "Home", isIcon: false, preview: AnyView(CelebrationHomePreview(look: event.homeLook, channel: channel)),
                 status: event.home,
                 isOn: Binding(get: { selection.home }, set: { center.setHome($0, for: event.id) }))
             if !event.display.windows.isEmpty {
@@ -131,9 +132,9 @@ private struct CelebrationOptions: View {
         }
     }
 
-    private func surface(_ title: String, preview: AnyView, status: AppearanceSurfaceStatus, isOn: Binding<Bool>)
-        -> some View
-    {
+    private func surface(
+        _ title: String, isIcon: Bool, preview: AnyView, status: AppearanceSurfaceStatus, isOn: Binding<Bool>
+    ) -> some View {
         HStack(spacing: DS.Space.lg) {
             preview
                 .frame(width: CelebrationMetrics.surfacePreview, height: CelebrationMetrics.surfacePreview)
@@ -142,7 +143,7 @@ private struct CelebrationOptions: View {
                 Text(title)
                     .settingsText(.body)
                     .foregroundStyle(.dsTextPrimary)
-                if let note = note(for: status, isIcon: title == "App icon") {
+                if let note = note(for: status, isIcon: isIcon) {
                     Text(note)
                         .settingsText(.caption)
                         .foregroundStyle(.dsTextSecondary)

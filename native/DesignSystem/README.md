@@ -18,7 +18,11 @@ Mac) to see everything in light and dark side by side.
 3. **Liquid Glass only for the control layer:** the floating composer
    (`ComposerSurface(isFloating: true)`) and toolbars. Never for content.
 4. **The sidebar is translucent.** Nothing on it paints an opaque background: rows use the
-   translucent `.dsHover`/`.dsSelected` fills, and a hand-built sidebar uses `.dsSidebarBackground()`.
+   translucent `.dsHover`/`.dsSelected` fills, and a hand-built sidebar uses `.dsSidebarBackground()`
+   (a split-view sidebar column, `.dsSidebarColumnTransparency()`). Anything see-through follows
+   `\.dsTransparency`: overlays use `.dsOverlayBackground(in:)` or `.dsPopoverBackground()`, floating
+   controls `.dsGlassEffect(in:)` or `.dsGlassButtonStyle()`, never a material or glass directly.
+   Code is set with `.codeTextStyle(_:)` and colored with `HighlightedCode`, never `.dsMono` alone.
 5. **One pattern per situation.** Use the patterns below; don't invent a new error box, empty state,
    loader or time format. Agree on a new one here first.
 6. **Mac and iPad.** Code here compiles for macOS and iPadOS (`scripts/check-ios.sh
@@ -56,6 +60,9 @@ Mac) to see everything in light and dark side by side.
 | `Tokens/TokensLayout.swift` | Spacing, radii, sizes (including `contentColumn` 760, `listRow` 26), shadows |
 | `Tokens/TokensMotion.swift` | Animations and `.trackHover` (instant in, 100ms out, as Factory) |
 | `Tokens/Platform.swift` | macOS/iPadOS adapters and touch metrics |
+| `Tokens/TokensTransparency.swift` | `DSTransparency` (Solid, Subtle, Standard) from `.dsTransparency(_:)`; Reduce Transparency forces Solid |
+| `Tokens/TokensLightTone.swift` | `DSLightTone` (Paper, Wool) from `.dsLightTone(_:)`; neutrals, text and statuses have Wool values |
+| `Tokens/TokensCode.swift`, `TokensCodeFont.swift` | Code themes (`.dsCodeThemes`), `HighlightedCode`, `.dsCodeBlockBackground`, and the code font (`.codeTextStyle(_:)`) |
 
 ## Components
 

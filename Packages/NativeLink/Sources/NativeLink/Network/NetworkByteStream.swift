@@ -63,7 +63,7 @@ public final class NetworkByteStream: ByteStream {
         let resumed = Mutex(false)
         return try await withTaskCancellationHandler {
             try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<NetworkByteStream, any Error>) in
-                func finish(_ result: Result<NetworkByteStream, any Error>) {
+                @Sendable func finish(_ result: Result<NetworkByteStream, any Error>) {
                     guard resumed.withLock({ done in defer { done = true }; return !done }) else { return }
                     continuation.resume(with: result)
                 }

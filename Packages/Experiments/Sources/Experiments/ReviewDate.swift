@@ -13,6 +13,13 @@ public struct ReviewDate: Hashable, Sendable, Comparable {
         self.day = day
     }
 
+    /// Reads `YYYY-MM-DD`, as plugin manifests write it.
+    public init?(iso text: String) {
+        let parts = text.split(separator: "-", omittingEmptySubsequences: false).compactMap { Int($0) }
+        guard parts.count == 3, (1...12).contains(parts[1]), (1...31).contains(parts[2]) else { return nil }
+        self.init(year: parts[0], month: parts[1], day: parts[2])
+    }
+
     /// Midnight at the start of the day, in `calendar`'s time zone.
     public func date(in calendar: Calendar = .current) -> Date? {
         calendar.date(from: DateComponents(year: year, month: month, day: day))

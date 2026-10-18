@@ -6,23 +6,43 @@ import Observation
 @MainActor
 @Observable
 public final class ExperimentStore {
-    public let catalog: ExperimentCatalog
+    /// The app's own experiments plus those of enabled plugins.
+    public private(set) var catalog: ExperimentCatalog
     /// What the user chose, as Labs shows it.
     public private(set) var saved: ExperimentSnapshot
 
+    @ObservationIgnored private let base: ExperimentCatalog
     @ObservationIgnored private let storage: any ExperimentStorage
-    /// The saved values of experiments that need a relaunch, as they were at launch.
-    @ObservationIgnored private let launchOverrides: [ExperimentID: StoredValue]
+    /// The saved values of experiments that need a relaunch, as they were when each first appeared
+    /// (at launch, or when its plugin was turned on).
+    @ObservationIgnored private var launchOverrides: [ExperimentID: StoredValue] = [:]
+    @ObservationIgnored private var launched: Set<ExperimentID> = []
 
     public init(catalog: ExperimentCatalog, storage: any ExperimentStorage) {
+        base = catalog
         self.catalog = catalog
         self.storage = storage
+        saved = ExperimentSnapshot(catalog: catalog, overrides: [:])
+        load()
+    }
+
+    /// Replaces the experiments plugins contribute, such as when one is turned on or off. Values
+    /// stay in storage while a plugin is off or updated, so they come back with it.
+    public func setContributedExperiments(_ descriptors: [ExperimentDescriptor]) {
+        catalog = ExperimentCatalog(descriptors: base.experiments + descriptors)
+        load()
+    }
+
+    private func load() {
         let loaded = catalog.experiments.reduce(into: [ExperimentID: StoredValue]()) { values, descriptor in
             values[descriptor.id] = storage.value(for: descriptor.id, as: descriptor.defaultValue.kind)
         }
-        let saved = ExperimentSnapshot(catalog: catalog, overrides: loaded)
-        self.saved = saved
-        launchOverrides = saved.overrides.filter { catalog.descriptor(for: $0.key)?.requiresRelaunch == true }
+        saved = ExperimentSnapshot(catalog: catalog, overrides: loaded)
+        for descriptor in catalog.experiments where launched.insert(descriptor.id).inserted {
+            if descriptor.requiresRelaunch {
+                launchOverrides[descriptor.id] = saved.overrides[descriptor.id]
+            }
+        }
     }
 
     /// The values in effect now: the user's choices, except that experiments needing a relaunch

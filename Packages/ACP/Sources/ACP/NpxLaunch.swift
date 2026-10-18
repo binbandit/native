@@ -10,14 +10,15 @@ extension AgentCommand {
     /// npx's own install, with the `PATH` npx gives it. Anything else (a range or tag, other npx
     /// options, a version npx hasn't installed yet) stays as it is, and npx installs it as usual.
     public func skippingNpx(fileManager: FileManager = .default) -> AgentCommand {
-        guard let launch = NpxLaunch(self), let binaries = launch.installedBinaries(fileManager: fileManager) else {
+        guard let launch = NpxLaunch(self), let binary = launch.installedBinary(fileManager: fileManager) else {
             return self
         }
         var environment = environment
-        environment["PATH"] = [binaries.path(percentEncoded: false), environment["PATH"]].compactMap(\.self)
-            .joined(separator: ":")
+        // The folder npx adds to the PATH, which holds the package's dependencies' binaries too.
+        let binaries = String(binary.deletingLastPathComponent().path(percentEncoded: false).dropLast())
+        environment["PATH"] = [binaries, environment["PATH"]].compactMap(\.self).joined(separator: ":")
         return AgentCommand(
-            executable: binaries.appending(path: launch.binary).path(percentEncoded: false),
+            executable: binary.path(percentEncoded: false),
             arguments: launch.arguments,
             environment: environment,
             workingDirectory: workingDirectory
@@ -58,24 +59,16 @@ struct NpxLaunch: Equatable {
         return cache.appending(path: "_npx/\(hash)", directoryHint: .isDirectory)
     }
 
-    /// The binary npx runs, by npm's rule: the only one the package has, or the one named after it.
-    var binary: String {
-        name.split(separator: "/").last.map(String.init) ?? name
-    }
-
-    /// The installed `node_modules/.bin`, when it holds exactly this version and its binary.
-    func installedBinaries(fileManager: FileManager) -> URL? {
+    /// The installed binary npx would run, when npx's folder holds exactly this version.
+    func installedBinary(fileManager: FileManager) -> URL? {
         let modules = folder.appending(path: "node_modules", directoryHint: .isDirectory)
         let manifestURL = modules.appending(path: name).appending(path: "package.json")
         guard let data = try? Data(contentsOf: manifestURL),
-            let manifest = try? JSONDecoder().decode(Manifest.self, from: data),
-            manifest.version == version, manifest.binaries(unscopedName: binary).contains(binary)
+            let manifest = try? JSONDecoder().decode(Manifest.self, from: data), manifest.version == version,
+            let binary = manifest.binary(unscopedName: name.split(separator: "/").last.map(String.init) ?? name)
         else { return nil }
-        let binaries = modules.appending(path: ".bin", directoryHint: .isDirectory)
-        guard fileManager.isExecutableFile(atPath: binaries.appending(path: binary).path(percentEncoded: false)) else {
-            return nil
-        }
-        return binaries
+        let url = modules.appending(path: ".bin").appending(path: binary)
+        return fileManager.isExecutableFile(atPath: url.path(percentEncoded: false)) ? url : nil
     }
 
     private struct Manifest: Decodable {
@@ -96,13 +89,13 @@ struct NpxLaunch: Equatable {
             }
         }
 
-        /// The binary names npx would pick from: one, or the one named after the package.
-        func binaries(unscopedName: String) -> [String] {
+        /// npm's rule: the package's only binary, or the one named after it.
+        func binary(unscopedName: String) -> String? {
             switch bin {
-            case .single: [unscopedName]
-            case .named(let binaries) where Set(binaries.values).count == 1: binaries.keys.sorted().prefix(1).map(\.self)
-            case .named(let binaries): binaries.keys.filter { $0 == unscopedName }
-            case nil: []
+            case .single: unscopedName
+            case .named(let binaries) where binaries.count == 1: binaries.keys.first
+            case .named(let binaries) where binaries[unscopedName] != nil: unscopedName
+            default: nil
             }
         }
     }

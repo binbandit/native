@@ -12,7 +12,7 @@ across agents, and installs, updates and removes skills. Research and the per-ag
 | `native/Skills/Plugin` | `SkillsPlugin`: owns the `SkillLibrary`, contributes the switched-off skills to `SessionPolicy` |
 | `native/Skills/Model` | `SkillLibrary` (observable state and every user action) and `SkillLibraryHost` (`AppSkillsHost` adapts `AppModel`) |
 | `native/Skills/Views` | The page, rows, details, install and update sheets |
-| `native/Plugins/*PolicyTranslator.swift` | Each agent's translation of skill intents into its own mechanism |
+| `native/Plugins/*PolicyTranslator.swift`, `Packages/ACP/Sources/ACP/Adapters` | Each agent's translation of skill intents into its own mechanism (`ClaudeCodeSessionSettings`, `CodexConfigOverrides`, tested in ACP) |
 
 ## One list
 

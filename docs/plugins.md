@@ -61,6 +61,7 @@ A plugin that fails to load is skipped and listed in Settings ▸ Plugins with t
 | `agents` | no | Coding agents, see [Agents](#agents). |
 | `mcpServers` | no | MCP servers for every session, see [MCP servers](#mcp-servers). |
 | `workflows` | no | Multi-agent workflows, see [Workflows](#workflows). |
+| `themes` | no | Code themes and accent palettes, see [Themes](#themes). |
 
 Unknown fields are ignored. Nothing in `plugin.json` is secret: don't put API keys in it.
 
@@ -175,6 +176,36 @@ Step fields:
 Template variables: `{{input}}`, `{{title}}`, `{{cwd}}`, `{{project}}`,
 `{{steps.<id>.output}}` (a finished step's result) and `{{steps.<id>.agent}}` (the agent it ran
 on).
+
+## Themes
+
+A plugin can add code themes and accent palettes. They are data only: nothing runs. Each one is
+checked when the plugin loads, and one that fails is left out with its reason on the plugin's row
+in Settings ▸ Extensions; the plugin and its other themes still work. Themes appear in Settings ▸
+Appearance beside the built-in ones, named with the plugin (“Midnight (Acme Themes)”). Turning the
+plugin off takes them away at once, and a window using one goes back to the default.
+
+```json
+"themes": {
+  "code": [
+    {"id": "midnight", "name": "Midnight", "dark": {"foreground": "#E6E6E6", "background": "#101318", "comment": "#7A8494", "...": "..."}}
+  ],
+  "accents": [
+    {"id": "sea", "name": "Sea",
+     "light": {"accent": "#2C5BA9", "hover": "#244B8C", "pressed": "#1B3A6E", "text": "#2C5BA9", "onAccent": "#FFFFFF", "subtle": "#ECF0F7"},
+     "dark": {"accent": "#9DBCF0", "hover": "#AEC8F3", "pressed": "#7F9CCB", "text": "#9DBCF0", "onAccent": "#0D1A30", "subtle": "#222A38"}}
+  ]
+}
+```
+
+| Field | Meaning |
+| --- | --- |
+| `code[].id`, `name` | The theme's id (no slashes; unique within the plugin) and what the user sees. |
+| `code[].light`, `dark` | One or both palettes, each with every role as `#RRGGBB` or `#RRGGBBAA`: `foreground`, `background`, `comment`, `keyword`, `string`, `constant`, `function`, `variable`, `tag`, `type`, `operator`, `regex`, `invalid`, `punctuation`, `insertedForeground`, `insertedBackground`, `deletedForeground`, `deletedBackground`, `changedForeground`, `changedBackground`, `selection`, `lineHighlight`. `foreground` must reach 4.5:1 on `background`, the syntax colors 2:1 (no fainter than the faintest built-in theme). The terminal takes its ANSI colors from these roles. |
+| `accents[].id`, `name` | As for code themes. Accents appear under Settings ▸ Appearance ▸ Accent, beside “Match app icon”. |
+| `accents[].light`, `dark` | Both, each with `accent`, `hover`, `pressed`, `text`, `onAccent` and `subtle` as opaque `#RRGGBB`. `onAccent` must reach 4.5:1 on `accent`, and `text` 4.5:1 on Native's background in each tone (Paper, Wool) and in dark mode. |
+
+Light-mode tone sets like Paper and Wool aren't open to plugins yet (see `docs/decisions.md`).
 
 ## Built-in plugins
 
