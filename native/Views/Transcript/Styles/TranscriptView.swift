@@ -31,6 +31,9 @@ struct TranscriptView: View {
         ScrollView {
             if let containerWidth {
                 column(transcript, in: containerWidth)
+            } else {
+                // Keeps the scroll view full width while the rows wait for its size; empty, it has none.
+                Color.clear.frame(maxWidth: .infinity, maxHeight: 0)
             }
         }
         // Start at the latest message and stay there as rows grow. Short transcripts sit at the top,
