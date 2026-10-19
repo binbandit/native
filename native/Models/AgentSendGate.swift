@@ -38,7 +38,7 @@ final class AgentSendGate {
 }
 
 /// Why a session can't take a message now, for the composer to say instead of sending.
-enum SessionSendBlock: Equatable {
+nonisolated enum SessionSendBlock: Equatable {
     /// An agent's own subagent, which only its parent gives work to.
     case notAcceptingPrompts
     /// A conversation `/clear` set aside, kept to read.

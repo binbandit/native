@@ -86,9 +86,10 @@ public struct SessionState: Sendable {
 
     /// Records a prompt the user sent. Agents don't echo live prompts back, only on replay.
     /// `steered` marks a message added to a turn already in progress; any other prompt starts a live
-    /// turn, timed from `date` until `endTurn`.
+    /// turn, timed from `date` until `endTurn`. `preamble` marks instructions that went ahead of it.
     public mutating func appendUserMessage(
-        _ text: String, attachments: [MessageAttachment] = [], steered: Bool = false, at date: Date = .now
+        _ text: String, attachments: [MessageAttachment] = [], preamble: PromptPreamble.Marker? = nil,
+        steered: Bool = false, at date: Date = .now
     ) {
         if !steered {
             openTurn = items.count
@@ -96,7 +97,20 @@ public struct SessionState: Sendable {
         }
         var message = TranscriptMessage(role: .user, text: text, wasSteered: steered, startedAt: date, updatedAt: date)
         message.attachments = attachments
+        message.preamble = preamble
         appendItem(.message(message))
+    }
+
+    /// The instructions the agent had last (`PromptPreamble`): the newest prompt's that carried
+    /// any. A live turn that failed doesn't count, since its prompt may never have reached the agent.
+    public var deliveredPreamble: PromptPreamble.Marker? {
+        for index in promptIndices.reversed() {
+            guard case .message(let message) = items[index], let marker = message.preamble,
+                turnClocks[index]?.stopReason != .error
+            else { continue }
+            return marker
+        }
+        return nil
     }
 
     public mutating func appendNotice(_ text: String, isError: Bool) {
@@ -220,6 +234,14 @@ public struct SessionState: Sendable {
     // MARK: - Folding
 
     private mutating func appendChunk(_ chunk: ContentChunk, role: TranscriptMessage.Role, at date: Date?) {
+        // A replayed prompt's instructions show as their marker, and begin the prompt they went with.
+        if role == .user, case .text(let text) = chunk.content, let (preamble, rest) = PromptPreamble.leading(text) {
+            var message = TranscriptMessage(
+                role: .user, text: String(rest), messageID: chunk.messageId, startedAt: date, updatedAt: date)
+            message.preamble = preamble.marker
+            appendItem(.message(message))
+            return
+        }
         // A replayed prompt's files and images show with it, not as their paths in its text.
         if role == .user, let attachment = MessageAttachment(chunk.content) {
             if case .message(var last) = items.last, last.role == .user,
@@ -370,6 +392,8 @@ public struct TranscriptMessage: Hashable, Sendable {
     public var wasSteered = false
     /// Files and images that went with a user message.
     public var attachments: [MessageAttachment] = []
+    /// Instructions that went ahead of a user message (`PromptPreamble`), shown as a marker.
+    public var preamble: PromptPreamble.Marker?
     /// When a live message began and last grew; nil for replayed history.
     public var startedAt: Date?
     public var updatedAt: Date?

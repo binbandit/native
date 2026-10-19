@@ -11,13 +11,15 @@ final class ComposerDropInbox {
 }
 
 extension View {
-    /// Drops on this view go to the composer inside it, as attachments.
-    func composerDropTarget(_ inbox: ComposerDropInbox) -> some View {
+    /// Drops on this view go to the composer inside it, as attachments. Refused while `isEnabled` is
+    /// off, when there's no composer to take them.
+    func composerDropTarget(_ inbox: ComposerDropInbox, isEnabled: Bool = true) -> some View {
         dropDestination(for: ComposerDropItem.self) { items, _ in
+            guard isEnabled else { return false }
             inbox.items += items
             return !items.isEmpty
         } isTargeted: {
-            inbox.isTargeted = $0
+            inbox.isTargeted = isEnabled && $0
         }
         .environment(inbox)
     }

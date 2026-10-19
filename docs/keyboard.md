@@ -122,7 +122,7 @@ it to the agent.
 
 | Slash command | What Native does |
 | --- | --- |
-| `/clear` | Starts a fresh conversation in the same task: a new session of the same agent, in the same folder, with the same settings and title. The earlier conversation stays with the agent, a click away: Earlier Conversation in the toolbar, or Session ▸ Open Earlier Conversation. Session ▸ Clear Conversation and the palette do the same as `/clear` |
+| `/clear` | Starts a fresh conversation in the same task: a new session of the same agent, in the same folder, with the same settings and title. The earlier conversation stays with the agent, a click away: Earlier Conversation in the toolbar, or Session ▸ Open Earlier Conversation. It opens read-only, with Current Conversation (or Session ▸ Open Current Conversation) where the composer was. Session ▸ Clear Conversation and the palette do the same as `/clear` |
 | `/goal …` | Sets, pauses, resumes or clears the task's goal |
 
 | Keys | Action |
