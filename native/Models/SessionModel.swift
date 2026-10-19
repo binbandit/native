@@ -105,7 +105,11 @@ final class SessionModel {
     private(set) var isTranscriptEmpty = true
     var phase: Phase {
         didSet {
-            if oldValue == .loading { announceReplay() }
+            if oldValue == .loading {
+                announceReplay()
+                // Drops what `shownConfigOptions` showed while it loaded.
+                mirrorState()
+            }
         }
     }
     /// When the user last sent a prompt, for ordering the sidebar.
@@ -319,10 +323,12 @@ final class SessionModel {
         if title != transcript.title {
             title = transcript.title
         }
-        if configOptions != transcript.configOptions {
-            configOptions = transcript.configOptions
-            // A loading session reports the agent's defaults until its settings are set back
-            // (SessionModel+ConfigRestore.swift); after that, chosen settings follow the session.
+        let shownOptions = shownConfigOptions(transcript.configOptions)
+        if configOptions != shownOptions {
+            configOptions = shownOptions
+            // A loading session reports the agent's defaults until its settings are set back, and
+            // shows the settings it's getting back meanwhile (SessionModel+ConfigRestore.swift);
+            // after that, chosen settings follow the session.
             if phase != .loading {
                 services.titles.updateConfigChoices(for: titleKey) { $0.follow(configOptions) }
             }

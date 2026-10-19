@@ -360,7 +360,9 @@ final class AppModel {
     /// Starts a fresh session in an empty one's place, for one the agent never saved (it had no turn
     /// yet) and so can't reopen. Internal only for AppModel+Recovery.swift.
     func replaceEmptySession(_ old: SessionModel, on runtime: AgentRuntime) async -> SessionModel? {
-        guard let session = try? await launcher.start(on: runtime, cwd: old.cwd) else { return nil }
+        let project = catalog.lookup(old.key)?.project
+        guard let session = try? await launcher.start(on: runtime, cwd: old.cwd, project: project) else { return nil }
+        await session.adoptConfigChoices(of: old)
         session.draft = old.draft
         catalog.swap(old.key, for: SessionInfo(sessionId: session.id, cwd: old.cwd.folderPath, updatedAt: .now))
         if selection == old.key {

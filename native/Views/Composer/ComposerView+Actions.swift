@@ -155,7 +155,7 @@ extension ComposerView {
     }
 
     func set(_ setting: SelectSetting, to value: String) {
-        Task { await session.setConfigOption(setting.option, to: value) }
+        Task { await session.pick(setting.option, value: value) }
     }
 
     func apply(_ change: ComposerSettings.Change?) {
