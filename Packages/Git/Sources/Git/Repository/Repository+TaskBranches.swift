@@ -84,7 +84,15 @@ extension Repository {
         try await run(
             ["config", "--rename-section", "branch.\(branch)", "\(Self.archivedConfigSection).\(branch)"],
             acceptingStatus: [0, 128])
-        try await run(["branch", "--delete", "--force", branch])
+        do {
+            try await run(["branch", "--delete", "--force", branch])
+        } catch {
+            // The branch stays, so its config goes back with it.
+            _ = try? await run(
+                ["config", "--rename-section", "\(Self.archivedConfigSection).\(branch)", "branch.\(branch)"],
+                acceptingStatus: [0, 128])
+            throw error
+        }
         return reference
     }
 

@@ -1,11 +1,12 @@
 import ACP
 
-/// What the agent may do without asking at a permission mode, in plain words. Native knows the
-/// modes the bundled adapters offer (by their wire values, never by agent); any other mode reads as
-/// the agent describes it.
+/// What the agent may do without asking at a permission mode, in plain words, shown under the mode's
+/// name, so never restating it. Native has its own words for the modes the bundled adapters offer
+/// (by their wire values, never by agent); any other mode reads as the agent describes it, less a
+/// leading "<name>:".
 enum AutonomySummary {
     static func summary(of choice: SelectSetting.Choice) -> String? {
-        known[choice.value] ?? choice.description
+        known[choice.value] ?? choice.descriptionWithoutName
     }
 
     /// The plain words for Plan Mode, which suspends the level while it's on.
@@ -21,7 +22,7 @@ enum AutonomySummary {
         "default": "Asks before edits and commands",
         "acceptEdits": "Edits files, asks before commands",
         "auto": "Decides for itself, asks only when something looks risky",
-        "dontAsk": "Never asks: does only what’s already allowed, refuses the rest",
+        "dontAsk": "Does only what’s already allowed and refuses the rest, without asking",
         "bypassPermissions": "Does everything without asking",
     ]
 }

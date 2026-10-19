@@ -154,6 +154,27 @@ struct ConfigChoicesTests {
                 == .set(try Self.option("mode", in: reopened), value: "read-only"))
     }
 
+    /// While the session loads, it shows what restoring will set, so the agent's defaults never
+    /// flash up first; a value that can't come back shows as the agent's.
+    @Test func previewsTheSessionAsRestoringLeavesIt() throws {
+        let options = try Self.options()
+        var choices = try Self.chosen()
+        choices.choose(try Self.option("fast-mode", in: options), value: "on")
+        choices.choose(try Self.option("reasoning_effort", in: options), value: "minimal")
+        let noFastMode: (ConfigOption, String) -> Bool = { option, value in !(option.id == "fast-mode" && value == "on") }
+
+        let shown = choices.preview(options, allows: noFastMode)
+
+        let current = Dictionary(uniqueKeysWithValues: shown.map { ($0.id, $0.currentValue) })
+        #expect(current["model"] == "gpt-6.1-sol")
+        #expect(current["mode"] == "agent-full-access")
+        // Not offered, and forbidden: both stay the agent's.
+        #expect(current["reasoning_effort"] == "xhigh")
+        #expect(current["fast-mode"] == "off")
+        #expect(shown.map(\.id) == options.map(\.id))
+        #expect(ConfigChoices().preview(options, allows: Self.allowAll) == options)
+    }
+
     @Test func survivesBeingSaved() throws {
         let choices = try Self.chosen()
         let saved = try JSONEncoder().encode(choices)
@@ -165,5 +186,9 @@ struct ConfigChoicesTests {
 extension ConfigOption {
     fileprivate var selectOptions: [SelectOption] {
         if case .select(_, let options) = kind { options } else { [] }
+    }
+
+    fileprivate var currentValue: String? {
+        if case .select(let current, _) = kind { current } else { nil }
     }
 }

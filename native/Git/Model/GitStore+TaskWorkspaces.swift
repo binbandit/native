@@ -19,7 +19,15 @@ extension GitStore {
         case .worktree:
             let folder = Self.taskLocation(of: repository).appending(path: code, directoryHint: .isDirectory)
             let base = try? await repository.currentBranchName()
-            let worktree = try await repository.addWorktree(at: folder, newBranch: branch)
+            let worktree: Worktree
+            do {
+                worktree = try await repository.addWorktree(at: folder, newBranch: branch)
+            } catch {
+                // A checkout that fails (no room, no permission) can leave the new branch behind. It
+                // was free a moment ago, so it's this task's, and a retry makes another.
+                try? await repository.deleteBranch(branch)
+                throw error
+            }
             try await repository.markProvisional(branch)
             return try await setUp(worktree, of: repository, branch: branch, baseBranch: base)
         }

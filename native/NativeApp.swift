@@ -43,6 +43,7 @@ struct NativeApp: App {
 
     init() {
         LaunchMetrics.mark(.appInit)
+        FramePacing.startIfRequested()
         // Before any window exists, so the first one opens in the user's appearance.
         let appearance = AppearanceModeController()
         _appearance = State(initialValue: appearance)
@@ -201,7 +202,7 @@ struct NativeApp: App {
         .commands {
             UpdateCommands(commands: CommandRegistry.shared)
             WhatsNewCommands(commands: CommandRegistry.shared)
-            KeyboardShortcutsCommands(commands: CommandRegistry.shared)
+            HelpCommands(commands: CommandRegistry.shared, model: model)
             FileCommands(commands: CommandRegistry.shared)
             ViewCommands(commands: CommandRegistry.shared)
             AppearanceCommands(commands: CommandRegistry.shared)

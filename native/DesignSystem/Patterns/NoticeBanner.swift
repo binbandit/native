@@ -55,7 +55,8 @@ public struct NoticeBanner<Actions: View>: View {
 
     public var body: some View {
         let shape = RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous)
-        HStack(alignment: .top, spacing: DS.Space.md) {
+        // The glyph and the actions' labels sit on the title's baseline.
+        HStack(alignment: .firstTextBaseline, spacing: DS.Space.md) {
             Image(systemName: systemImage ?? tone.defaultSymbol)
                 .font(.system(size: 13))
                 .foregroundStyle(tone.color)
@@ -79,8 +80,10 @@ public struct NoticeBanner<Actions: View>: View {
             }
             .tracking(DS.Tracking.tight)
             .textSelection(.enabled)
-            .frame(maxWidth: .infinity, alignment: .leading)
             .fixedSize(horizontal: false, vertical: true)
+            // Beside buttons, a title line as tall as they are, so the margins stay even.
+            .padding(.vertical, Actions.self == EmptyView.self ? 0 : DS.Space.xs)
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             HStack(spacing: DS.Space.xs) {
                 actions
@@ -113,6 +116,9 @@ extension NoticeBanner where Actions == EmptyView {
                 detail: "Sign in to keep going; your draft stays put."
             ) {
                 Button("Sign In") {}.buttonStyle(.ds(.primary))
+            }
+            NoticeBanner(tone: .success, title: "Imported your terminal settings") {
+                Button("Undo") {}.buttonStyle(.ds(.secondary))
             }
         }
         .frame(width: 520)

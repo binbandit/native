@@ -55,3 +55,31 @@ struct AskPromptTests {
         #expect(try #require(PullRequestAskPrompt.message(text)) == .init(kind: .refreshed, question: "Still risky?"))
     }
 }
+
+/// A conversation's folder names its pull request, and reads back to it.
+struct AskFolderTests {
+    @Test func folderReadsBackToItsPullRequest() {
+        let reference = PullRequestReference(owner: "binbandit", name: "oh-fx", number: 952)
+        let path =
+            "/Users/me/Library/Application Support/dev.app/PullRequestQuestions/"
+            + PullRequestAskFolder.relativePath(for: reference)
+
+        #expect(PullRequestAskFolder.relativePath(for: reference) == "github.com/binbandit/oh-fx-952")
+        #expect(PullRequestAskFolder.reference(inPath: path) == reference)
+        #expect(PullRequestAskFolder.reference(inPath: path + "/") == reference)
+    }
+
+    @Test func dashedNamesAndEnterpriseHostsSurvive() {
+        let reference = PullRequestReference(host: "git.example.com", owner: "team", name: "my-repo-2", number: 7)
+        let path = "/x/PullRequestQuestions/" + PullRequestAskFolder.relativePath(for: reference)
+
+        #expect(PullRequestAskFolder.reference(inPath: path) == reference)
+    }
+
+    @Test func otherFoldersAreNotConversations() {
+        #expect(PullRequestAskFolder.reference(inPath: "/Users/me/code/oh-fx-952") == nil)
+        #expect(PullRequestAskFolder.reference(inPath: "/x/PullRequestQuestions/github.com/owner") == nil)
+        #expect(PullRequestAskFolder.reference(inPath: "/x/PullRequestQuestions/github.com/o/name-x") == nil)
+        #expect(PullRequestAskFolder.reference(inPath: "/x/PullRequestQuestions/github.com/o/-3") == nil)
+    }
+}

@@ -17,14 +17,3 @@ extension NativeCommand {
         }
     }
 }
-
-/// Help ▸ Keyboard Shortcuts.
-struct KeyboardShortcutsCommands: Commands {
-    let commands: CommandRegistry
-
-    var body: some Commands {
-        CommandGroup(after: .help) {
-            CommandMenuItem(.helpKeyboardShortcuts, in: commands)
-        }
-    }
-}

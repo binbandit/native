@@ -147,7 +147,7 @@ extension AppModel {
             sessions.session(SessionKey(agent: agent, id: $0)) != nil
         }
         problems.resolve(.listing(agent), in: project.id)
-        if let selection, selection.agent == agent, !catalog.contains(selection) {
+        if let selection, selection.agent == agent, !catalog.contains(selection), startingTask(selection) == nil {
             self.selection = nil
         }
     }

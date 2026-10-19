@@ -57,7 +57,7 @@ struct AutonomyPicker: View {
             onSet(setting, choice.value)
             dismiss()
         }
-        .help(isSuspended ? "Resumes when Plan Mode ends" : choice.description ?? choice.name)
+        .help(isSuspended ? "Resumes when Plan Mode ends" : choice.descriptionWithoutName ?? choice.name)
     }
 
     private func planRow(_ plan: PlanToggle) -> some View {

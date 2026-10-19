@@ -283,6 +283,24 @@ struct MergedCleanupTests {
     }
 }
 
+extension MergedCleanupTests {
+    @Test func aBranchThatCantBeDeletedKeepsItsConfig() async throws {
+        let scenario = try await Scenario.make()
+        defer { scenario.remove() }
+        let folder = try await scenario.task("locked")
+        try await scenario.test.git("push", "--quiet", "--set-upstream", "origin", "locked", in: folder)
+        try await scenario.repository.removeWorktree(at: folder)
+        let common = try await scenario.test.git("rev-parse", "--git-common-dir").trimmingCharacters(in: .newlines)
+        let lock = URL(filePath: common, relativeTo: scenario.test.folder).appending(path: "refs/heads/locked.lock")
+        try Data().write(to: lock)
+
+        await #expect(throws: GitError.self) { try await scenario.repository.archiveBranch("locked") }
+
+        #expect(try await scenario.repository.hasBranch("locked"))
+        #expect(try await scenario.repository.isPublished("locked"))
+    }
+}
+
 /// Collects what the planner asked GitHub.
 private actor QueryRecorder {
     private(set) var queries: [CleanupPullRequestLookup.Query] = []

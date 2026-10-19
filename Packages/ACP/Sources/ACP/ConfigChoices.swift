@@ -76,6 +76,22 @@ public struct ConfigChoices: Codable, Hashable, Sendable {
         return (models + others).map(\.id) + missing
     }
 
+    /// `options` as restoring will leave them: each chosen value the option offers and `allows`
+    /// permits, in place of the agent's. For showing a reopening session as it's about to be, so
+    /// the agent's defaults don't show first.
+    public func preview(_ options: [ConfigOption], allows: (ConfigOption, String) -> Bool) -> [ConfigOption] {
+        guard !choices.isEmpty else { return options }
+        return options.map { option in
+            guard let choice = choices[option.id], case .select(let current, let values) = option.kind,
+                current != choice.value, values.contains(where: { $0.value == choice.value }),
+                allows(option, choice.value)
+            else { return option }
+            var shown = option
+            shown.kind = .select(currentValue: choice.value, options: values)
+            return shown
+        }
+    }
+
     /// What to do about the choice for option `id` in a reopened session whose options are
     /// `options`: nothing (nil) when the agent restored it itself or nothing was chosen. `allows`
     /// says whether a value is still permitted.

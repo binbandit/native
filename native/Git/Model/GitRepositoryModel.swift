@@ -141,12 +141,14 @@ final class GitRepositoryModel {
         refreshTask = Task { [weak self] in await self?.runPendingRefreshes() }
     }
 
+    /// Runs until nothing is pending. A direct refresh that takes over cancels this task, possibly
+    /// before it has started, and the pending request is then the new task's to run.
     private func runPendingRefreshes() async {
         while let pending = pendingRefresh {
             if pending == .settled {
-                // Cancelled: a direct refresh took over.
                 do { try await Task.sleep(for: settledRefreshDelay) } catch { return }
             }
+            if Task.isCancelled { return }
             pendingRefresh = nil
             isScanning = true
             await load()
@@ -185,8 +187,8 @@ final class GitRepositoryModel {
             apply(status)
             state = .ready
         } catch {
-            // A failed rescan keeps the last good status on screen.
-            if status == nil { state = .failed(error.localizedDescription) }
+            // A failed rescan keeps the last good status on screen; a cancelled one isn't a failure.
+            if status == nil, !Task.isCancelled { state = .failed(error.localizedDescription) }
         }
     }
 

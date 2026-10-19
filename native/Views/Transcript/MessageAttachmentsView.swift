@@ -61,7 +61,7 @@ struct MessageAttachmentsView: View {
         return Button {
             if let url = attachment.url { PlatformFileBrowser.reveal(url) }
         } label: {
-            Label(attachment.name, systemImage: "doc")
+            Label(attachment.name, systemImage: attachment.isFolder ? "folder" : "doc")
                 .font(.dsBody)
                 .foregroundStyle(.dsTextSecondary)
                 .lineLimit(1)
@@ -78,6 +78,11 @@ struct MessageAttachmentsView: View {
 }
 
 extension MessageAttachment {
+    /// A mentioned folder (`@folder/`), which the composer sends as a link to the directory.
+    var isFolder: Bool {
+        url?.hasDirectoryPath == true || name.hasSuffix("/")
+    }
+
     /// A file Quick Look can open: the image's own file while it's still there, else a copy of the
     /// bytes the message carried.
     var previewURL: URL? {
