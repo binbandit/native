@@ -129,10 +129,6 @@ private struct PlatformCodeTextRepresentable: NSViewRepresentable {
         view.isAutomaticTextReplacementEnabled = false
         view.enabledTextCheckingTypes = 0
         view.layoutManager?.backgroundLayoutEnabled = false
-        if UserDefaults.standard.bool(forKey: "experimentAsyncTextDrawing") {
-            view.wantsLayer = true
-            view.layer?.drawsAsynchronously = true
-        }
         // Links keep the text's own look; only the cursor says they're clickable.
         view.linkTextAttributes = [.cursor: NSCursor.pointingHand]
         view.delegate = context.coordinator

@@ -56,17 +56,22 @@ extension PullRequestPageModel {
         defer { isLoadingPatches = false }
         do {
             let page = try await gitHub.cli().filePatches(reference, page: patchPagesLoaded + 1)
-            for patch in page {
-                let parsed = patch.hunks
-                let lines = parsed.flatMap(\.lines)
-                patches[patch.path] = patch
-                hunks[patch.path] = parsed
-                lineCounts[patch.path] = lines.count
-                if lines.count > Self.largeDiffLines
-                    || lines.contains(where: { $0.text.utf8.count > Self.minifiedLineLength })
-                {
-                    largeDiffs.insert(patch.path)
+            // A page is a hundred patches, often loaded while the list scrolls: parsed off the main
+            // thread so the scrolling doesn't stall for it.
+            let (largeLines, minifiedLength) = (Self.largeDiffLines, Self.minifiedLineLength)
+            let parsed = await Task.detached(priority: .userInitiated) {
+                page.map { patch in
+                    let hunks = patch.hunks
+                    let lines = hunks.flatMap(\.lines)
+                    let isLarge = lines.count > largeLines || lines.contains { $0.text.utf8.count > minifiedLength }
+                    return (patch: patch, hunks: hunks, lineCount: lines.count, isLarge: isLarge)
                 }
+            }.value
+            for file in parsed {
+                patches[file.patch.path] = file.patch
+                hunks[file.patch.path] = file.hunks
+                lineCounts[file.patch.path] = file.lineCount
+                if file.isLarge { largeDiffs.insert(file.patch.path) }
             }
             patchPagesLoaded += 1
             patchesComplete = page.count < 100 || patches.count >= totalFiles

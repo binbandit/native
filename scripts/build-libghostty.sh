@@ -67,20 +67,33 @@ bundle_resources() {
     fi
 }
 
+# Xcode's script sandbox lets the phase write its declared outputs, the terminfo and ghostty folders,
+# but not always what's inside them, so each folder is assembled in the cache and renamed into place
+# whole, and an old one is renamed out of the way the same way.
 unstage_resources() {
-    local resources
+    local resources name trash
     resources="$(bundle_resources)"
     [ -n "$resources" ] || return 0
-    rm -rf "$resources/terminfo" "$resources/ghostty"
+    trash="$cache/bundle-resources.$$"
+    mkdir -p "$trash"
+    for name in terminfo ghostty; do
+        if [ -e "$resources/$name" ]; then mv "$resources/$name" "$trash/$name"; fi
+    done
+    rm -rf "$trash"
 }
 
 stage_resources() {
-    local resources
+    local resources name next
     resources="$(bundle_resources)"
     [ -n "$resources" ] || return 0
-    mkdir -p "$resources/terminfo" "$resources/ghostty"
-    rsync -a --delete "$stage/share/terminfo/" "$resources/terminfo/"
-    rsync -a --delete "$stage/share/ghostty/" "$resources/ghostty/"
+    next="$cache/bundle-resources.next.$$"
+    rm -rf "$next"
+    mkdir -p "$next" "$resources"
+    cp -R "$stage/share/terminfo" "$next/terminfo"
+    cp -R "$stage/share/ghostty" "$next/ghostty"
+    unstage_resources
+    for name in terminfo ghostty; do mv "$next/$name" "$resources/$name"; done
+    rm -rf "$next"
 }
 
 is_staged() {
