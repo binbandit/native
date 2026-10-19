@@ -83,14 +83,15 @@ jobs:
     name: Build app
     runs-on: ${{ vars.MACOS_RUNNER || 'macos-26' }}
     timeout-minutes: 60
-    env:
-      # Cargo and Zig outputs (V8, Ghostty) land here, so caching it keeps later builds short.
-      NATIVE_SCRIPT_RUNTIME_CACHE: ${{ github.workspace }}/.ci-cache/ScriptRuntime
     steps:
       - uses: actions/checkout@v5
+      # The build scripts keep Cargo and Zig outputs (V8, Ghostty) in their default caches, outside the
+      # checkout: Xcode's script sandbox doesn't let a build phase write into the source tree.
       - uses: actions/cache@v4
         with:
-          path: .ci-cache
+          path: |
+            ~/Library/Caches/Native/ScriptRuntime
+            ~/Library/Caches/native-build
           key: app-cache-${{ runner.os }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'scripts/build-libghostty.sh') }}
           restore-keys: app-cache-${{ runner.os }}-
       - name: Build (unsigned)
