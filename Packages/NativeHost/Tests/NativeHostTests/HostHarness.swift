@@ -54,7 +54,9 @@ final class HostHarness: @unchecked Sendable {
     func kill() {
         guard let process, process.isRunning else { return }
         Darwin.kill(process.processIdentifier, SIGKILL)
-        process.waitUntilExit()
+        // Polled: `waitUntilExit` waits on the run loop for a wakeup that sometimes never came while
+        // other harnesses stopped their hosts at once (`swift test --parallel`), hanging the run.
+        while process.isRunning { usleep(10_000) }
         self.process = nil
     }
 
