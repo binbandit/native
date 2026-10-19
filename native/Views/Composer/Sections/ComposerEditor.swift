@@ -10,6 +10,11 @@ import SwiftUI
 /// text view can only draw behind each line's text, leaving a ragged edge. Only the look changes:
 /// the draft is exactly what was typed or pasted, and anything pasted text brought along (fonts,
 /// colors, links) is dropped.
+///
+/// Styling needs SwiftUI's rich-text editor, which leaks its text storage every time it's torn down
+/// (its `NSSwiftMutableAttributedString` and that string's proxy keep each other alive), and every
+/// task switch tears the composer down. So a draft without code uses the plain editor, and an editor
+/// switches to rich text, for good, once code may appear in it.
 struct ComposerEditor: View {
     @Binding var text: String
     /// Where the cursor is, for `@` mentions in the middle of the draft.
@@ -20,7 +25,11 @@ struct ComposerEditor: View {
     var hidesCaret = false
     let onKey: (KeyPress) -> KeyPress.Result
 
-    /// The draft as the editor holds it: `text`'s characters, with code styled.
+    /// Whether the rich-text editor is in use, from the first backtick or `~~~` on.
+    @State private var showsCode = false
+    /// The editor had focus when it switched to rich text, so the new one takes it.
+    @State private var refocusRichEditor = false
+    /// The draft as the rich-text editor holds it: `text`'s characters, with code styled.
     @State private var styled = AttributedString()
     @State private var styledSelection = AttributedTextSelection()
     /// The selection both sides last agreed on, as UTF-8 offsets, so a change to `text` from outside
@@ -41,19 +50,31 @@ struct ComposerEditor: View {
             .fixedSize(horizontal: false, vertical: true)
             .hidden()
             .overlay {
-                TextEditor(text: $styled, selection: $styledSelection)
-                    .font(.dsCallout)
-                    .lineSpacing(ComposerMetrics.editorLineSpacing)
-                    .foregroundStyle(.dsTextPrimary)
-                    // The window's tint (`dsAccentPalette`) colors the caret; nil would reset it to blue.
-                    .tint(hidesCaret ? .clear : .dsAccent)
-                    .textEditorStyle(.plain)
-                    .scrollIndicators(.never)
-                    .focused(isFocused)
-                    .onKeyPress(phases: [.down, .repeat], action: onKey)
-                    .accessibilityLabel("Message")
-                    // Files and images dropped on the text attach instead (the composer's drop area).
-                    .textViewTakesOnlyTextDrops()
+                Group {
+                    if showsCode {
+                        TextEditor(text: $styled, selection: $styledSelection)
+                            .onAppear {
+                                if refocusRichEditor {
+                                    refocusRichEditor = false
+                                    isFocused.wrappedValue = true
+                                }
+                            }
+                    } else {
+                        TextEditor(text: $text, selection: $selection)
+                    }
+                }
+                .font(.dsCallout)
+                .lineSpacing(ComposerMetrics.editorLineSpacing)
+                .foregroundStyle(.dsTextPrimary)
+                // The window's tint (`dsAccentPalette`) colors the caret; nil would reset it to blue.
+                .tint(hidesCaret ? .clear : .dsAccent)
+                .textEditorStyle(.plain)
+                .scrollIndicators(.never)
+                .focused(isFocused)
+                .onKeyPress(phases: [.down, .repeat], action: onKey)
+                .accessibilityLabel("Message")
+                // Files and images dropped on the text attach instead (the composer's drop area).
+                .textViewTakesOnlyTextDrops()
             }
             .overlay(alignment: .topLeading) {
                 if text.isEmpty {
@@ -73,6 +94,20 @@ struct ComposerEditor: View {
             .onChange(of: text, textChangedOutside)
             .onChange(of: selection, textChangedOutside)
             .onChange(of: codeFont) { restyle() }
+    }
+
+    /// Whether `text` may hold code: a backtick or a tilde fence.
+    private static func mayHaveCode(_ text: String) -> Bool {
+        text.contains("`") || text.contains("~~~")
+    }
+
+    /// Moves the draft, the selection and focus over to the rich-text editor.
+    private func switchToRichText() {
+        styled = styledString(text)
+        let end = text.utf8.count
+        select(Self.offsets(of: selection, in: text) ?? end..<end)
+        refocusRichEditor = isFocused.wrappedValue
+        showsCode = true
     }
 
     /// The text for sizing, with a space after a trailing line break so the empty last line counts.
@@ -108,6 +143,13 @@ struct ComposerEditor: View {
     /// The composer changed the draft or the selection itself (a completion, a recalled prompt, a
     /// code edit). A new draft without a new selection puts the caret at its end.
     private func textChangedOutside() {
+        // The plain editor is bound to the draft itself, until code may appear.
+        guard showsCode else {
+            if Self.mayHaveCode(text) {
+                switchToRichText()
+            }
+            return
+        }
         let wanted = Self.offsets(of: selection, in: text)
         if String(styled.characters) != text {
             styled = styledString(text)
@@ -123,13 +165,16 @@ struct ComposerEditor: View {
         let lower = styled.utf8.index(styled.startIndex, offsetBy: offsets.lowerBound)
         let upper = styled.utf8.index(styled.startIndex, offsetBy: offsets.upperBound)
         styledSelection =
-            offsets.isEmpty ? AttributedTextSelection(insertionPoint: lower) : AttributedTextSelection(range: lower..<upper)
+            offsets.isEmpty
+            ? AttributedTextSelection(insertionPoint: lower) : AttributedTextSelection(range: lower..<upper)
         syncedSelection = offsets
     }
 
     /// The editor's selection as UTF-8 offsets into its text.
     private var editorSelection: Range<Int>? {
-        let offset = { (index: AttributedString.Index) in self.styled.utf8.distance(from: self.styled.startIndex, to: index) }
+        let offset = { (index: AttributedString.Index) in
+            self.styled.utf8.distance(from: self.styled.startIndex, to: index)
+        }
         switch styledSelection.indices(in: styled) {
         case .insertionPoint(let index):
             return offset(index)..<offset(index)
@@ -140,8 +185,9 @@ struct ComposerEditor: View {
 
     private static func offsets(of selection: TextSelection?, in text: String) -> Range<Int>? {
         guard case .selection(let range)? = selection?.indices, range.upperBound <= text.endIndex else { return nil }
-        return text.utf8.distance(from: text.startIndex, to: range.lowerBound)
-            ..< text.utf8.distance(from: text.startIndex, to: range.upperBound)
+        return text.utf8.distance(
+            from: text.startIndex, to: range.lowerBound)..<text.utf8.distance(
+                from: text.startIndex, to: range.upperBound)
     }
 
     private static func textSelection(_ offsets: Range<Int>, in text: String) -> TextSelection {
@@ -162,6 +208,7 @@ struct ComposerEditor: View {
     /// Restyles the editor's text in place, keeping the selection where it is. Nothing changes when
     /// the styling already fits, which is most keystrokes.
     private func restyle() {
+        guard showsCode else { return }
         let typed = String(styled.characters)
         guard styled != styledString(typed) else { return }
         styled.transform(updating: &styledSelection) { styled in

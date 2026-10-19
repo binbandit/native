@@ -274,14 +274,15 @@ printed instead. On CI:
 
 Each uploads two workflow artifacts, kept for a week: what it would have published (the update
 archive, deltas, notes, appcast, DMG, standalone host and its feed, celebration packs) and the
-dSYMs. `gh run download <run id>` fetches them. Check one before the first release of its kind:
+dSYMs. Check one before the first release of its kind:
 
 ```sh
-app="Native Nightly.app"                     # or Native.app
-ditto -x -k Native-Nightly-*.zip check && cd check
+gh run download <run id> --dir rehearsal && cd rehearsal/native-nightly-<run number>
+ditto -x -k appcast/Native-Nightly-*.zip check
+app="check/Native Nightly.app"               # Native.app for stable and beta
 codesign --verify --deep --strict --verbose=2 "$app"
 spctl -a -vv "$app"                          # accepted, source=Notarized Developer ID
-xcrun stapler validate "$app" && xcrun stapler validate ../Native-Nightly.dmg
+xcrun stapler validate "$app" && xcrun stapler validate Native-Nightly.dmg
 grep -aqF "ghostty version=" "$app/Contents/MacOS/Native Nightly" && echo "libghostty is linked"
 codesign -dvv "$app/Contents/Helpers/native-script-runtime"   # the script runtime, Developer ID, timestamped
 plutil -extract SUPublicEDKey raw "$app/Contents/Info.plist"   # matches NATIVE_SPARKLE_PUBLIC_KEY
