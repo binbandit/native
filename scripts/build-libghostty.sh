@@ -166,6 +166,14 @@ if [ "$xcode" = 0 ]; then
     (cd "$src" && "${zig_env[@]}" "$zig" build --fetch "${zig_args[@]}") || give_up "couldn't fetch Ghostty's Zig packages."
 fi
 
+# Ghostty compiles its Metal shaders with Xcode's Metal toolchain, a separate download since Xcode 26
+# that fresh machines and CI images may not have.
+if ! "${zig_env[@]}" xcrun -sdk macosx metal --version >/dev/null 2>&1; then
+    [ "$xcode" = 1 ] && give_up "Xcode's Metal toolchain isn't installed. Run scripts/build-libghostty.sh once to download it."
+    echo "Downloading Xcode's Metal toolchain"
+    xcodebuild -downloadComponent MetalToolchain || give_up "couldn't download Xcode's Metal toolchain."
+fi
+
 echo "Building libghostty ($GHOSTTY_COMMIT) with Zig $ZIG_VERSION; the first build takes a few minutes"
 started=$SECONDS
 rm -rf "$prefix"
