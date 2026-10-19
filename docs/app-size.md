@@ -19,12 +19,14 @@ noticed while there's still room to choose what to cut; lower them as the cuts i
 | App binary (`Contents/MacOS/Native`) | 58 MB | 53.2 MB |
 | Script runtime (`Contents/Helpers/native-script-runtime`) | 42 MB | 41.4 MB |
 
-`scripts/release/size-check.sh` holds the same numbers and fails when anything is over:
+`scripts/release/size-check.sh` holds the same numbers and fails when anything is over. It also
+fails an app without the terminal (libghostty in the binary, Ghostty's terminfo and shell
+integration in its resources) or the script runtime: Xcode's build phases only warn when they can't
+build them, and such an app looks 12 to 40 MB smaller than what ships.
 
-- `scripts/release/check.sh` (every pull request, through `check.yml`) builds Release and Nightly and
-  checks both apps. It compresses each one the way a release packs its update archive, so the
-  download is measured without a release. CI has no Zig, so its builds have no terminal and come in
-  about 12 MB under a release; the script says so when that's the case.
+- `scripts/release/check.sh` (every pull request, through `check.yml`) builds the terminal and the
+  script runtime, then Release and Nightly, and checks both apps. It compresses each one the way a
+  release packs its update archive, so the download is measured without a release.
 - `scripts/release/release.sh` checks the app, update archive and disk image it's about to publish,
   dry runs included, and stops before publishing when they're over.
 
@@ -162,6 +164,14 @@ host helper from 5.9 to 2.6 MB. Releases were already stripped, so their numbers
   and the budgets came down with them. All three still color keywords, types, strings, numbers and
   comments in transcript code blocks, light and dark; what they lose is what only a parse knows,
   like C++ template brackets versus comparisons, or Ruby symbols.
+- **Updates come as deltas.** `release.sh` now seeds `generate_appcast`'s folder with the last few
+  releases' archives (`docs/releasing.md`, "Delta updates"), so most updates are a delta of a few MB
+  instead of the whole archive: between two release builds an hour (31 commits) apart it was 2.7 MB
+  instead of 43.6 MB, and applying it reproduced the new app exactly. Users on an older build than
+  the last three releases (two for Nightly) still download the whole archive.
+- **The standalone host is stripped.** `host.sh` makes its dSYM first (15 MB, uploaded to Sentry
+  with the app's, same UUIDs) and then strips it: the universal `native-host` that hosts download
+  went from 10.6 MB to 4.6 MB, and still starts and serves.
 
 ## The script runtime: V8 or JavaScriptCore
 
@@ -235,11 +245,9 @@ Largest first.
 
 | What | Saves, installed / download | Owner |
 | --- | --- | --- |
-| Sparkle delta updates: `generate_appcast` only makes deltas from earlier archives in its folder, and `release.sh` starts it from an empty one, so every update downloads the whole app. A delta between two release builds an hour (31 commits) apart was 2.7 MB instead of 43.6 MB, and applied to reproduce the new app exactly | about 40 MB of most updates | Release pipeline: put the last few releases' archives in the folder before `generate_appcast` |
-| Ship each channel only its own icons: a stable build carries the dev and nightly variants (1.8 MB) and Nightly carries stable, beta and dev ones; seasonal icons could come with their downloadable celebration pack instead | 2 to 3 MB, both | App icons (the code is ours, the artwork the icon artist's) |
-| Lossy compression for the 24 alternate icons (lossless 1024 px images, 4.4 MB that zip can't shrink) | perhaps half of that, both | Icon artwork |
 | libghostty without its embedded fonts (3.05 MB; the Nerd Font symbols render prompt icons) or custom shaders (glslang and SPIRV-Cross, 3.5 MB) | up to 6.5 / 2.5 MB | Terminal; needs a patch on the pinned Ghostty, since its build has no option |
-| Strip the standalone `native-host` (`host.sh`); it has no Sentry, so keep its dSYM somewhere first | 5.9 / 0.9 MB per host download | Release pipeline |
+| Lossy compression for the 24 alternate icons (lossless 1024 px images, 4.4 MB that zip can't shrink) | perhaps half of that, both | Icon artwork |
+| Per-channel icon catalogs: needs the icon artist to export them that way. Xcode can't leave single imagesets out of a catalog per configuration, only whole catalogs, so the channel-only imagesets would move from `native/Assets.xcassets` into one catalog per channel that `Config/*.xcconfig` excludes elsewhere. Stable could drop `AppIcon-dev-*`, `AppIcon-halloween-dev-*`, `-nightly-*` and `-beta-*` (1.9 MB); `AppIcon-nightly-*` stays, since Nightly is an icon theme in every channel. Seasonal icons could come with their downloadable celebration pack instead | about 1.5 to 1.9 MB, both | Icon artwork, then the release pipeline |
 
 Considered and not worth it now:
 

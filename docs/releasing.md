@@ -9,8 +9,8 @@ in `docs/decisions.md` ("Releases on GitHub", "Sparkle for updates", "Nightly be
 | `native/Updates/` | `UpdateController` (observable state over Sparkle), the update button, Settings ▸ Updates, Check for Updates…, the host version notice |
 | `Config/*.xcconfig`, `Config/Native-Info.plist` | channels, bundle identifiers, feed URLs and the signing key, in one place |
 | `Packages/HostUpdater` | how a standalone host updates itself: the signed host feed, Ed25519 checks, atomic install with rollback |
-| `scripts/release/` | `release.sh` (archive → notarize → package → appcast → publish), `host.sh` (standalone host and its feed), `check.sh` (compile Release and Nightly), `size-check.sh` (the size budget, `docs/app-size.md`), `release-notes.sh`, `ci-signing.sh` |
-| `.github/workflows/` | `check.yml` (every pull request), `nightly.yml` (every night), `release.yml` (on a `v*` tag) |
+| `scripts/release/` | `release.sh` (archive → notarize → package → appcast → publish), `host.sh` (standalone host and its feed), `check.sh` (compile Release and Nightly), `size-check.sh` (the size budget, `docs/app-size.md`, and that the terminal and script runtime made it in), `sentry.sh` (dSYMs to Sentry), `release-notes.sh`, `ci-signing.sh` |
+| `.github/workflows/` | `check.yml` (every pull request), `nightly.yml` (every night, or a rehearsal on demand), `release.yml` (on a `v*` tag, or a rehearsal on demand) |
 
 ## Sentry crash symbols
 
@@ -32,10 +32,12 @@ replacement; existing builds containing the disabled DSN need an app update to r
 Both publishing workflows read the protected `SENTRY_AUTH_TOKEN` repository secret. This is Sentry's
 organization CI token named **Native GitHub release symbols**. Keep it out of source and app bundles.
 For a local publication, supply the same token in the environment. `scripts/release/sentry.sh` verifies
-the pinned Sentry CLI download and uploads only the archive's dSYMs, waiting for processing before
-the release can publish. It does not include source bundles. A local dry run prints this step without
-uploading. `bash scripts/release/sentry.sh <archive/dSYMs> --no-upload` checks symbol discovery without
-uploading files; Sentry still requires the token to look up the project's upload configuration.
+the pinned Sentry CLI download and uploads only dSYMs, waiting for processing before the release can
+publish: the archive's and the standalone `native-host`'s, which `host.sh` strips after keeping its
+symbols. It does not include source bundles.
+A local dry run prints this step without uploading. A rehearsal (`--rehearse`) runs
+`sentry.sh --no-upload`, which finds the symbols and checks the token and project without uploading
+anything; Sentry still requires the token to look up the project's upload configuration.
 
 If symbols fail to upload, publication stops; resolve the token, network or missing-dSYMs error and
 rerun the release. Release and Nightly configurations already generate dSYMs.
@@ -208,7 +210,7 @@ values. `Config/Native-Info.plist` is merged into the app's generated Info.plist
 | --- | --- |
 | `NATIVE_GITHUB_REPOSITORY` | `binbandit/native`: the feeds, release links and `release.sh`'s target |
 | `NATIVE_BUNDLE_IDENTIFIER_BASE` | the app's bundle id; Nightly appends `.nightly`, the host helper `.Host` |
-| `NATIVE_SPARKLE_PUBLIC_KEY` | Sparkle's EdDSA public key → `SUPublicEDKey`. Until it's set, release builds say updates aren't set up and `release.sh --publish` refuses to run |
+| `NATIVE_SPARKLE_PUBLIC_KEY` | Sparkle's EdDSA public key → `SUPublicEDKey`. Empty in the repository: official builds get it from the environment (the CI variable of the same name, which `release.sh` passes to Xcode and `host.sh`), so builds from source, `just install` included, never update themselves from Native's feed and say updates aren't set up. `release.sh --publish` refuses to run without it |
 | `NATIVE_FEED_URL` | `SUFeedURL`: empty in Debug, the stable feed in Release, the nightly feed in Nightly |
 | `NATIVE_CHANNEL_CONDITION` | `NATIVE_BETA` or `NATIVE_NIGHTLY`, read by `ReleaseChannel` |
 | `NATIVE_HOST_CHANNEL` | `nightly` in Nightly, so its host lives apart |
@@ -223,21 +225,29 @@ requires of every executable.
 scripts/release/release.sh --channel nightly            # dry run: builds and packages locally, prints the rest
 scripts/release/release.sh --channel stable --plan      # print every command, run nothing
 scripts/release/release.sh --channel beta --version 1.5.0-beta.1 --notarize   # also notarize
+gh workflow run nightly.yml --ref <branch> -f dry_run=true   # rehearse a nightly on CI, publish nothing
+gh workflow run release.yml --ref <branch> -f version=1.4.0  # rehearse a stable release on CI
 git tag v1.4.0 && git push origin v1.4.0                # CI publishes (release.yml)
 ```
 
 A dry run is the default: archiving, signing, packaging and the appcast run for real (into
 `$TMPDIR/native-release/<channel>`, outside the repo so quicksaves never pick them up), while
-notarization and everything on GitHub is printed. `--notarize` also talks to Apple; `--publish`
-does everything. On a Mac without a Developer ID identity a dry run signs ad hoc and says so; ad hoc
-builds go without the hardened runtime, whose library validation would refuse to load the ad hoc
-signed Sparkle framework. Nothing here depends on git hooks: the scripts only read history.
+notarization and everything on GitHub is printed. `--notarize` also talks to Apple; `--rehearse`
+does everything `--publish` does except publish (below); `--publish` does everything. On a Mac
+without a Developer ID identity a dry run signs ad hoc and says so; ad hoc builds go without the
+hardened runtime, whose library validation would refuse to load the ad hoc signed Sparkle framework.
+Nothing here depends on git hooks: the scripts only read history.
 
-Each run: archives with `MARKETING_VERSION` and `CURRENT_PROJECT_VERSION` → copies the signed app
-out of the archive → notarizes and staples it → zips it for Sparkle (`ditto`) and builds a signed,
-notarized, stapled DMG for first installs (the app, an Applications link and `LICENSE.md`; the app
-also carries `LICENSE.md` in its resources) → drafts notes → runs `generate_appcast` on the zip and
-the published feed (so earlier items and the other channel's stay) → publishes.
+Each run: builds the terminal and the script runtime for real (`scripts/build-libghostty.sh`,
+`scripts/build-script-runtime.sh`; Xcode's build phases only warn when they can't, so this is what
+keeps a release from shipping without them) → archives with `MARKETING_VERSION` and
+`CURRENT_PROJECT_VERSION` → copies the signed app out of the archive → notarizes and staples it →
+zips it for Sparkle (`ditto`) and builds a signed, notarized, stapled DMG for first installs (the
+app, an Applications link and `LICENSE.md`; the app also carries `LICENSE.md` in its resources) →
+checks sizes, and that the terminal and script runtime are in the app (`size-check.sh`) → drafts
+notes → runs `generate_appcast` on the zip, the published feed (so earlier items and the other
+channel's stay) and earlier archives for deltas → builds the standalone host → uploads symbols to
+Sentry → publishes.
 
 - **Versions.** Stable is `v1.4.0`; beta is `v1.5.0-beta.1`. Nightly derives
   `<last stable>-nightly.<yyyymmdd>.<sha>`. The build number is the commit count of `HEAD`, so
@@ -246,8 +256,54 @@ the published feed (so earlier items and the other channel's stay) → publishes
   the feed never sees a half-made release. Beta also refreshes the appcast on the latest stable
   release (see "The feed URLs").
 - **Publishing nightly** moves the `nightly` tag to the commit, uploads the archive (named with its
-  build number, so a download in flight never meets a replaced file) and the DMG, then the appcast,
-  and keeps the two newest archives.
+  build number, so a download in flight never meets a replaced file), its deltas and the DMG, then
+  the appcast, and keeps the two newest archives and only the deltas the appcast lists.
+
+### Rehearsing a release
+
+`--rehearse` runs everything `--publish` does short of publishing: its checks (the Sparkle keys, the
+Sentry token and DSN, a clean tree), the archive, notarizing and stapling the app, the DMG and the
+standalone host, the appcast with its deltas (signed, and checked to be), the host feed, the
+celebration packs, and `sentry.sh --no-upload`. Everything that would change GitHub or Sentry is
+printed instead. On CI:
+
+- `gh workflow run nightly.yml --ref <branch> -f dry_run=true` rehearses a nightly from that branch
+  (the real one always builds `main`).
+- `gh workflow run release.yml --ref <branch> -f version=1.4.0` rehearses a stable release, or a beta
+  with `-f version=1.5.0-beta.1`. Only a pushed tag publishes.
+
+Each uploads two workflow artifacts, kept for a week: what it would have published (the update
+archive, deltas, notes, appcast, DMG, standalone host and its feed, celebration packs) and the
+dSYMs. `gh run download <run id>` fetches them. Check one before the first release of its kind:
+
+```sh
+app="Native Nightly.app"                     # or Native.app
+ditto -x -k Native-Nightly-*.zip check && cd check
+codesign --verify --deep --strict --verbose=2 "$app"
+spctl -a -vv "$app"                          # accepted, source=Notarized Developer ID
+xcrun stapler validate "$app" && xcrun stapler validate ../Native-Nightly.dmg
+grep -aqF "ghostty version=" "$app/Contents/MacOS/Native Nightly" && echo "libghostty is linked"
+codesign -dvv "$app/Contents/Helpers/native-script-runtime"   # the script runtime, Developer ID, timestamped
+plutil -extract SUPublicEDKey raw "$app/Contents/Info.plist"   # matches NATIVE_SPARKLE_PUBLIC_KEY
+```
+
+### Delta updates
+
+Sparkle can update with a delta, the difference between two builds, instead of the whole app: a
+few MB where the update archive is over 40. `generate_appcast` makes a delta from every earlier
+archive in its folder to the new one, so before running it `release.sh` downloads the archives
+users are most likely to have, at most three (`delta_seeds`): for stable and beta the last three
+`v*` releases' archives, for nightly the ones the rolling release still holds (it keeps two). The
+deltas are uploaded beside the archive and listed in the new item; a user on any other version gets
+the whole archive, as before. Two details:
+
+- `generate_appcast` points every feed item whose archive is in the folder at the new release, so
+  `release.sh` puts each earlier item's original URL back.
+- It names deltas after the app, `Native Nightly<new>-<old>.delta`, and GitHub turns spaces in asset
+  names into dots, so Nightly's deltas are renamed with a dash, like its archives.
+
+Seeding needs `gh`; without it, or with no earlier releases, the update simply has no deltas. A delta
+needs the old build's `SUPublicEDKey` to match, which every official build has.
 
 ### Release notes
 
@@ -287,10 +343,22 @@ both apps against the size budget (`docs/app-size.md`). Run it locally before la
 touches `#if DEBUG` code or build settings.
 
 `nightly.yml` runs at 07:00 UTC (and on demand), builds `main`, and skips when `main` hasn't moved
-since the last nightly. `release.yml` runs on `v*` tags. Both need Xcode with the macOS 27 SDK; set
-the `MACOS_RUNNER` and `XCODE_DEVELOPER_DIR` repository variables to point them at another runner
-or Xcode (defaults: `macos-26` and Xcode 27.1). `ci-signing.sh` puts the certificate and notary
+since the last nightly. `release.yml` runs on `v*` tags. Both also rehearse on demand ("Rehearsing a
+release"). All three need Xcode with the macOS 27 SDK; set the `MACOS_RUNNER` and
+`XCODE_DEVELOPER_DIR` repository variables to point them at another runner or Xcode (defaults:
+`macos-26` and Xcode 27.1; the repository uses `xcode-27` and `/Applications/Xcode.app/Contents/Developer`,
+GitHub's preview image with the macOS 27 SDK). `ci-signing.sh` puts the certificate and notary
 credentials in a throwaway keychain and removes it afterwards.
+
+**What CI builds.** Everything that ships, and `check.yml`, builds the terminal and the script runtime
+for real: `check.sh` and `release.sh` run `scripts/build-libghostty.sh` (fetching the pinned Zig and
+Ghostty, a Zig build of several minutes) and `scripts/build-script-runtime.sh` (Rust, which the runner
+image has, and a 37 MB V8 download) before Xcode, and `size-check.sh` fails an app without either.
+Their outputs live in the default caches outside the checkout, because Xcode's script sandbox lets a
+build phase write only its declared outputs: `~/Library/Caches/native-build/libghostty` (the staged
+library, about 130 MB; the toolchain and source aren't cached) and `~/Library/Caches/Native/ScriptRuntime`
+(Cargo's target folder with V8). All three workflows cache both under the same keys, keyed on the
+build scripts and `Cargo.lock`, so a release restores what `main`'s checks built.
 
 ### Repository secrets
 
@@ -307,6 +375,14 @@ credentials in a throwaway keychain and removes it afterwards.
 
 `GITHUB_TOKEN` publishes; the workflows ask for `contents: write`.
 
+### Repository variables
+
+| Variable | What it holds |
+| --- | --- |
+| `NATIVE_SPARKLE_PUBLIC_KEY` | Sparkle's EdDSA public key, printed by `generate_keys`. Official builds embed it; it must be the public half of `SPARKLE_PRIVATE_KEY`, which `release.sh` checks (an appcast item it can't sign stops the release) |
+| `MACOS_RUNNER` | the runner label (`xcode-27`) |
+| `XCODE_DEVELOPER_DIR` | that runner's Xcode (`/Applications/Xcode.app/Contents/Developer`) |
+
 ## One-time setup
 
 1. **Bundle identifier.** The repository is `binbandit/native`. Replace
@@ -319,8 +395,8 @@ credentials in a throwaway keychain and removes it afterwards.
    `xcrun notarytool store-credentials native-notary --key AuthKey_XXXX.p8 --key-id <id> --issuer <issuer>`.
 4. **Sparkle keys.** Build once so SwiftPM fetches Sparkle, then run its `generate_keys`
    (`<DerivedData>/SourcePackages/artifacts/sparkle/Sparkle/bin/generate_keys`). It stores the
-   private key in your login keychain and prints the public key: put that in
-   `NATIVE_SPARKLE_PUBLIC_KEY`. Export the private key for CI with `generate_keys -x sparkle.key`,
+   private key in your login keychain and prints the public key: put that in the
+   `NATIVE_SPARKLE_PUBLIC_KEY` repository variable. Export the private key for CI with `generate_keys -x sparkle.key`,
    store it as `SPARKLE_PRIVATE_KEY`, and delete the file. Back the key up somewhere safe: losing it
    means existing installs can't verify updates.
 5. **Secrets.** Add the secrets above (`gh secret set NAME < file`).

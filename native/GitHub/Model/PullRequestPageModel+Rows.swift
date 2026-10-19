@@ -141,7 +141,9 @@ extension PullRequestPageModel {
     var pathsDrawnLineByLine: Set<String> {
         // A line's key is `path#hunk#line`; hunk ids have no "#", paths might.
         var paths = Set(
-            expandedLines.map { $0.split(separator: "#", omittingEmptySubsequences: false).dropLast(2).joined(separator: "#") })
+            expandedLines.map {
+                $0.split(separator: "#", omittingEmptySubsequences: false).dropLast(2).joined(separator: "#")
+            })
         let prefix = "\(reference.host)/\(reference.repository):"
         for key in wrappedFiles where key.hasPrefix(prefix) {
             paths.insert(String(key.dropFirst(prefix.count)))
