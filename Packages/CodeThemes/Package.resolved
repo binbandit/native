@@ -1,5 +1,5 @@
 {
-  "originHash" : "cb982aeae25e49a589a402ddb5f298be4ecdc862196804afad248eea7eb7a445",
+  "originHash" : "8be52f863c72366c243d46ecb30170bd1ddaeb89a7c649791290a3822bddda47",
   "pins" : [
     {
       "identity" : "swift-tree-sitter",
@@ -35,15 +35,6 @@
       "state" : {
         "revision" : "b780e47fc780ddc8da13afa35a3f4ed5c157823d",
         "version" : "0.24.2"
-      }
-    },
-    {
-      "identity" : "tree-sitter-cpp",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/tree-sitter/tree-sitter-cpp",
-      "state" : {
-        "revision" : "f41e1a044c8a84ea9fa8577fdd2eab92ec96de02",
-        "version" : "0.23.4"
       }
     },
     {
@@ -101,15 +92,6 @@
       }
     },
     {
-      "identity" : "tree-sitter-kotlin",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/fwcd/tree-sitter-kotlin",
-      "state" : {
-        "revision" : "e1a2d5ad1f61f5740677183cd4125bb071cd2f30",
-        "version" : "0.3.8"
-      }
-    },
-    {
       "identity" : "tree-sitter-markdown",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/tree-sitter-grammars/tree-sitter-markdown",
@@ -125,15 +107,6 @@
       "state" : {
         "revision" : "bffb65a8cfe4e46290331dfef0dbf0ef3679de11",
         "version" : "0.23.6"
-      }
-    },
-    {
-      "identity" : "tree-sitter-ruby",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/tree-sitter/tree-sitter-ruby",
-      "state" : {
-        "revision" : "71bd32fb7607035768799732addba884a37a6210",
-        "version" : "0.23.1"
       }
     },
     {

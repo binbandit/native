@@ -79,6 +79,9 @@ Keep the shared build green: about a dozen agents build this one tree. Develop u
 compilation condition or in a scratch package until they compile, and fix a break you caused before
 anything else.
 
+The shell here is zsh: an unquoted `$files` is one argument, not a list, and `$sha:refs/...` reads as a
+modifier. List files explicitly (or use an array), and write `"${sha}:refs/..."`.
+
 Format only the files you change, so parallel work doesn't collide on whitespace. A repo-wide
 `swift format lint --recursive --strict native Packages` becomes a required check once the one-time
 formatting pass has landed.
