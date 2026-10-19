@@ -141,6 +141,7 @@ final class AppModel {
     init(plugins: PluginRegistry = PluginRegistry(), titles: SessionTitles = SessionTitles()) {
         // Writing to an agent that just exited must surface as an error, not kill the app.
         signal(SIGPIPE, SIG_IGN)
+        LaunchMetrics.checkpoint("AppModel stored properties")
         self.plugins = plugins
         self.titles = titles
         let (pluginEvents, continuation) = AsyncStream.makeStream(of: SessionEvent.self)
@@ -156,13 +157,18 @@ final class AppModel {
         } titleLanded: { key, folder, title in
             titleContinuation.yield(TitleEvent(key: key, folder: folder, title: title))
         }
+        LaunchMetrics.checkpoint("services")
         runtimes = AgentRuntimes(plugins: plugins)
         sendGate.runtimes = runtimes
         projects = Projects()
+        LaunchMetrics.checkpoint("projects")
         catalog = SessionCatalog()
+        LaunchMetrics.checkpoint("catalog")
         ordering = SessionOrdering()
+        LaunchMetrics.checkpoint("ordering")
         sessions = SessionStore(services: services)
         unread = UnreadSessions()
+        LaunchMetrics.checkpoint("sessions+unread")
         launcher = SessionLauncher(plugins: plugins, services: services, store: sessions)
         lastUsedAgent = UserDefaults.standard.string(forKey: Self.lastUsedAgentKey).map(
             AgentDefinition.ID.init(rawValue:))

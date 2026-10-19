@@ -49,7 +49,13 @@ struct NativeApp: App {
         _appearance = State(initialValue: appearance)
         // Git and GitHub run with the login-shell environment the agents get.
         LaunchMetrics.checkpoint("appearance")
-        let model = AppModel()
+        _ = BuiltInPlugins.all
+        LaunchMetrics.checkpoint("builtIns")
+        let pluginRegistry = PluginRegistry()
+        LaunchMetrics.checkpoint("PluginRegistry")
+        let sessionTitles = SessionTitles()
+        LaunchMetrics.checkpoint("SessionTitles")
+        let model = AppModel(plugins: pluginRegistry, titles: sessionTitles)
         LaunchMetrics.checkpoint("AppModel")
         _model = State(initialValue: model)
         let git = GitStore { await model.shellEnvironment() }
