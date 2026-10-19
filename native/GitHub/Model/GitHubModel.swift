@@ -131,30 +131,41 @@ final class GitHubModel {
 
     /// Refreshes on schedule, and when the user comes back to the app, until cancelled. Run it once,
     /// from the app's root view. Between refreshes it sleeps until the next one is due, so an idle
-    /// app doesn't wake for it: gh runs at most every two minutes while the list is visible and
-    /// every ten otherwise, and coming back to the app or opening the list wakes it early.
+    /// app doesn't wake for it: gh runs at most every two minutes while the list is visible, every
+    /// ten while a window shows, and not at all while none does. Coming back to the app, a window
+    /// showing again or opening the list wakes it early.
     func keepFresh() async {
         watchNetwork()
-        let activation = NotificationCenter.default.addObserver(
-            forName: PlatformApplication.didBecomeActiveNotification, object: nil, queue: .main
-        ) { [weak self] _ in
-            MainActor.assumeIsolated { self?.wakeRefreshLoop() }
-        }
+        // Coming back to Native, or its windows coming into view, wakes the loop early.
+        let observers =
+            ([PlatformApplication.didBecomeActiveNotification] + PlatformApplication.visibilityNotifications)
+            .map { name in
+                NotificationCenter.default.addObserver(forName: name, object: nil, queue: .main) { [weak self] _ in
+                    MainActor.assumeIsolated { self?.wakeRefreshLoop() }
+                }
+            }
         defer {
             pathMonitor.cancel()
-            NotificationCenter.default.removeObserver(activation)
+            observers.forEach(NotificationCenter.default.removeObserver)
         }
         var wasActive = PlatformApplication.isActive
+        var wasVisible = PlatformApplication.isVisible
         while !Task.isCancelled {
             let isActive = PlatformApplication.isActive
-            let returned = isActive && !wasActive
+            let isVisible = PlatformApplication.isVisible
+            let returned = (isActive && !wasActive) || (isVisible && !wasVisible)
             wasActive = isActive
+            wasVisible = isVisible
             let activity: RefreshSchedule.Activity = isWatching && isActive ? .watching : .background
-            if (returned && schedule.refreshesOnReturn(at: .now)) || schedule.isDue(activity, at: .now) {
+            // Nobody sees the badges and counts while no window shows, so nothing refreshes then.
+            if isVisible,
+                (returned && schedule.refreshesOnReturn(at: .now)) || schedule.isDue(activity, at: .now)
+            {
                 await refresh()
                 refreshBranches(olderThan: returned ? 0 : Self.branchMaxAge)
             }
-            let delay = max(schedule.nextRefresh(activity).timeIntervalSinceNow, 1)
+            // Hidden, it sleeps until a window shows again (a notification wakes it), not on a timer.
+            let delay = isVisible ? max(schedule.nextRefresh(activity).timeIntervalSinceNow, 1) : 24 * 60 * 60
             let wait = Task { _ = try? await Task.sleep(for: .seconds(delay), tolerance: .seconds(delay / 10)) }
             refreshWait = wait
             await withTaskCancellationHandler {
