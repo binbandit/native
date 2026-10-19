@@ -28,7 +28,9 @@ struct ModePicker: View {
                         group("Your modes", catalog.custom, current: current)
                     }
                     if !catalog.project.isEmpty {
-                        group(control.projectName.map { "From \($0)" } ?? "From the project", catalog.project, current: current)
+                        group(
+                            control.projectName.map { "From \($0)" } ?? "From the project", catalog.project,
+                            current: current)
                     }
                 }
             }

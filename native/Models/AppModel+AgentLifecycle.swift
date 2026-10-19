@@ -49,7 +49,7 @@ extension AppModel {
         }
         guard let runtime = runtimes[agent] else { return nil }
         if runtime.status == .idle {
-            let environment = await shellEnvironment()
+            let environment = await launchEnvironment()
             // Another caller may have started it while the environment loaded.
             if runtime.status == .idle {
                 await start(runtime, environment: environment)

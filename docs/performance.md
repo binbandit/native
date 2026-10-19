@@ -247,6 +247,15 @@ comes from a 10 s `sample` right after. "Before" is the build from the start of 
   content for its minimum size whenever it changes, and SwiftUI lays the content out at zero width
   to answer, the transcript included: every line of the reply wrapped a character at a time, on
   every chunk. The transcript is now an overlay sized by the space it's given.
+  The same measurement can crash the app: text that keeps its full height
+  (`.fixedSize(horizontal: false, vertical: true)`) in window content outside a scroll view, an
+  overlay or a fixed-width sheet or popover reports its height at no width, one character a line,
+  as the window's minimum. Each change grows the window until AppKit aborts the layout pass ("more
+  Update Constraints in Window passes than there are views"); a task-scripts banner did this. The
+  main window's columns are now measured at least `DS.Window.sidebarMinWidth` and
+  `DS.Window.detailMinWidth` wide (`platformMinimumContentWidth`), and the rule is: in window
+  content, let text wrap from the width it's given, and give `fixedSize` only to text with a
+  bounded width (a fixed frame, a line limit) or inside a scroll view.
 - **The composer, sidebar rows, status bar and menus read `session.state`.** `needsApproval` and
   `wait` scanned the transcript for permission requests, and the composer read the plan, slash
   commands and settings from `state`, so all of them re-rendered on every chunk, `RootView` and

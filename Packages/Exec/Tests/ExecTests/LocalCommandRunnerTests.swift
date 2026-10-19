@@ -64,6 +64,20 @@ struct LocalCommandRunnerTests {
         #expect(clock.now - start < .seconds(3))
     }
 
+    /// Input used to be written before the timeout started, blocking for as long as the command
+    /// didn't read it, so a command that never read its input could outlive its timeout.
+    @Test func timeoutStopsACommandThatIgnoresItsInput() async {
+        let clock = ContinuousClock()
+        let start = clock.now
+        await #expect(throws: CommandError.timedOut("sleep", after: .milliseconds(200))) {
+            try await runner.run(
+                Command(
+                    "sleep", ["5"], environment: environment, standardInput: Data(repeating: 0, count: 1 << 20),
+                    timeout: .milliseconds(200)))
+        }
+        #expect(clock.now - start < .seconds(3))
+    }
+
     @Test func streamsOutputAsItArrives() async throws {
         let clock = ContinuousClock()
         let start = clock.now

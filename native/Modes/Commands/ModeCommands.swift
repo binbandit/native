@@ -17,7 +17,8 @@ extension NativeCommand {
     static func modes(_ modes: TaskModes, settings: SettingsPresentation) -> [NativeCommand] {
         [
             NativeCommand(
-                .sessionNextMode, title: "Next Mode", category: .composer, systemImage: "arrow.trianglehead.2.clockwise",
+                .sessionNextMode, title: "Next Mode", category: .composer,
+                systemImage: "arrow.trianglehead.2.clockwise",
                 keywords: ["plan", "ask", "debug", "review", "build", "cycle"]
             ) { context in
                 guard let session = context.session else { return }

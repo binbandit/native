@@ -90,7 +90,8 @@ struct ModesSettingsPage: View {
     }
 
     private var nextModeKey: String {
-        CommandRegistry.shared.shortcut(for: .sessionNextMode).map { ", or press \($0.displayString) for the next" } ?? ""
+        CommandRegistry.shared.shortcut(for: .sessionNextMode).map { ", or press \($0.displayString) for the next" }
+            ?? ""
     }
 
     private var defaultMode: Binding<Mode.ID> {
@@ -213,7 +214,9 @@ struct ModeRowMenu: View {
         Menu {
             Button("Duplicate", action: duplicate)
             Button("Copy as File") { DSPasteboard.copy(ModeFile.contents(of: mode)) }
-                .help("Copies it as \(ModeFile.fileName(for: mode.name)), to commit in a project's \(ModeFile.folder) folder")
+                .help(
+                    "Copies it as \(ModeFile.fileName(for: mode.name)), to commit in a project's \(ModeFile.folder) folder"
+                )
             Divider()
             Button("Delete", role: .destructive, action: delete)
         } label: {

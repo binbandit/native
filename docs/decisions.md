@@ -498,3 +498,30 @@ queues it. Queueing by default read as "steering doesn't work": a follow-up is u
 the agent should see now, and both bundled agents (Claude Code, Codex) steer. Agents that can't
 steer still queue, and the composer's hint says so. Every queued message can also be sent now:
 steered in, or after stopping the turn for an agent that can't steer.
+
+## 2026-10-19: Modes send their instructions with the next prompt
+
+A mode (Build, Plan, Ask, Debug, Review, the user's own, or a project's `.native/modes/<name>.md`)
+is a way of working for one task: instructions plus settings it applies as it's picked (an autonomy
+level, the agent's own plan mode, a model). The settings change at once through the session like
+any other change, so they're remembered and set back on `session/load` with the rest. The
+instructions go to the agent once, as the first text block of the next prompt after the mode
+changes, framed as `<native_instructions id label symbol>…</native_instructions>`
+(`PromptPreamble`, Packages/ACP); the transcript shows a quiet "Debug mode" line in their place.
+Agents replay each text block as a chunk of its own, so a reopened session reads the frame back
+and shows the same marker, and which mode's instructions the agent last had comes from the
+transcript itself (`SessionState.deliveredPreamble`), with nothing else to keep in step.
+
+Rejected: an agent-level system prompt. claude-agent-acp 0.93.0 takes `systemPrompt` only on
+`session/new`, `load`, `resume` and `fork` (a different one tears the live session down and makes
+it again), and codex-acp 2.2.2 takes developer instructions only on `session/new`, through another
+client's `_meta`; neither changes them mid-session. Sending the instructions with every prompt
+would cost their tokens on every turn and clutter what the agent reads.
+
+A mode's autonomy is one of five levels that hold across agents (read-only, ask, edit, auto,
+full), mapped to the nearest level the agent offers (`ModeResolver`, Packages/Modes). Read-only
+uses a level named that, else the agent's plan mode when it's a permission mode (Claude Code),
+else the most careful level, and the picker says plainly what it can't enforce. Policy always
+wins: a forbidden level gives way to the nearest allowed one and the transcript says so once. A
+project's mode can only make the agent more careful (read-only or ask), never give it more freedom,
+since anyone who can commit to the repo writes it.

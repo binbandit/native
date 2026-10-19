@@ -276,7 +276,8 @@ final class MCPLibrary {
         let projects = host.mcpProjects
         firstRead = Task {
             let read = await Task.detached {
-                Dictionary(uniqueKeysWithValues: AgentConfigFormat.allCases.map { ($0, reader.read($0, projects: projects)) })
+                Dictionary(
+                    uniqueKeysWithValues: AgentConfigFormat.allCases.map { ($0, reader.read($0, projects: projects)) })
             }.value
             // A full read that landed first is the better one.
             guard configurations.isEmpty else { return }

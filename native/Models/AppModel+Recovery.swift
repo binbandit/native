@@ -23,7 +23,7 @@ extension AppModel {
     private func recover(_ agent: AgentDefinition.ID, interrupted: [SessionKey]) async {
         let previous = sessions.open(of: agent)
         guard let runtime = runtimes.replace(agent) else { return }
-        await start(runtime, environment: await shellEnvironment())
+        await start(runtime, environment: await launchEnvironment())
         guard runtime.isReady else {
             // Keep the old transcripts on screen, with what went wrong and what to do.
             let reason = runtime.status.guidance ?? runtime.status.label

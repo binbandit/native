@@ -230,7 +230,7 @@ final class AppModel {
     func restart(_ agent: AgentDefinition.ID) async {
         sessions.removeAll(of: agent)
         guard let runtime = runtimes.replace(agent) else { return }
-        await start(runtime, environment: await environment.current(refresh: true))
+        await start(runtime, environment: await launchEnvironment(refresh: true))
         // The selected session's model went with the old process; replay it from the new one.
         if let selection, selection.agent == agent {
             await loadSession(selection)
@@ -241,6 +241,14 @@ final class AppModel {
     /// own tools (git, gh) use it too, since an app launched from the Finder has a bare PATH.
     func shellEnvironment(refresh: Bool = false) async -> [String: String] {
         await environment.current(refresh: refresh)
+    }
+
+    /// The environment agents launch with, once plugins have what launches depend on
+    /// (`NativePlugin.prepareForLaunch`). Internal only for the AppModel+ extensions.
+    func launchEnvironment(refresh: Bool = false) async -> [String: String] {
+        async let shell = environment.current(refresh: refresh)
+        await plugins.prepareForLaunch()
+        return await shell
     }
 
     /// Signs in to `agent`, reporting whether that worked.
@@ -292,7 +300,7 @@ final class AppModel {
     /// Creates and removes runtimes as plugins and installations say, and starts the new ones (and
     /// `alsoStarting`, ones made earlier) that are worth starting.
     private func syncAgents(alsoStarting earlier: [AgentRuntime] = []) async {
-        let environment = await self.environment.current()
+        let environment = await launchEnvironment()
         installations.check(plugins.agents, environment: environment)
         let (added, removed) = runtimes.sync(including: installations.isInstalled)
         let worthStarting = agentsWorthStarting()

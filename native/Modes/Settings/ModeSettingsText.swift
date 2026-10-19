@@ -10,7 +10,8 @@ enum ModeSettingsText {
         if let model = settings.model { parts.append("Model \(model)") }
         if let effort = settings.effort { parts.append("\(effort) effort") }
         if parts.isEmpty {
-            return mode.instructions.isEmpty ? "No instructions, and the task's settings as they are" : "Instructions only"
+            return mode.instructions.isEmpty
+                ? "No instructions, and the task's settings as they are" : "Instructions only"
         }
         return parts.joined(separator: " · ")
     }

@@ -3,15 +3,32 @@ import Exec
 import Foundation
 import Testing
 
+/// Runs that crash end the process, so these run in child processes of their own.
 struct LocalCommandRunnerStressTests {
-    @Test(arguments: 0..<4) func manyShortCommandsNeverTrap(_ child: Int) async {
+    /// The pipe readers used to let their `FileHandle` close each descriptor as soon as its read
+    /// finished, while libdispatch was still watching it. With many short commands finishing at once,
+    /// libdispatch then trapped ("Unexpected EV_VANISHED") and took the app down. The race is narrow,
+    /// so several batches run at once, each in its own process.
+    @Test(arguments: 0..<4) func manyShortCommandsNeverCrash(batch: Int) async {
         await #expect(processExitsWith: .success) {
-            signal(SIGPIPE, SIG_IGN)
             await LocalCommandRunnerStress.run(commands: 2000, concurrency: 48)
+        }
+    }
+
+    /// Input for a command that exits without reading it used to raise SIGPIPE, which ends the
+    /// process unless it happens to ignore the signal.
+    @Test func inputTheCommandNeverReadsIsHarmless() async {
+        await #expect(processExitsWith: .success) {
+            let command = Command(
+                "true", environment: ["PATH": "/usr/bin:/bin"], standardInput: Data(repeating: 0, count: 1 << 20))
+            let result = try await LocalCommandRunner().run(command)
+            if !result.succeeded { exit(EXIT_FAILURE) }
         }
     }
 }
 
+/// Short commands that end every way a command can, mostly at once, so pipe descriptors close and
+/// their numbers are reused constantly.
 private enum LocalCommandRunnerStress {
     static func run(commands: Int, concurrency: Int) async {
         let runner = LocalCommandRunner()
@@ -25,20 +42,26 @@ private enum LocalCommandRunnerStress {
     }
 
     private static func runOne(_ index: Int, runner: LocalCommandRunner, environment: [String: String]) async {
-        switch ProcessInfo.processInfo.environment["ONLYTRUE"] != nil ? 0 : index % 8 {
-        case 0, 1, 2:
+        switch index % 10 {
+        case 0..<4:
             _ = try? await runner.run(Command("true", environment: environment))
-        case 3, 4:
-            _ = try? await runner.run(Command("sh", ["-c", "printf out; printf err >&2; exit 1"], environment: environment))
-        case 5:
-            _ = try? await runner.run(Command("true", environment: environment, standardInput: Data(repeating: 0, count: 256 * 1024)))
+        case 4, 5:
+            let script = "printf out; printf err >&2; exit 1"
+            _ = try? await runner.run(Command("sh", ["-c", script], environment: environment))
         case 6:
+            let input = Data(repeating: 0, count: 256 * 1024)
+            _ = try? await runner.run(Command("true", environment: environment, standardInput: input))
+        case 7:
             let task = Task { try await runner.run(Command("sleep", ["1"], environment: environment)) }
             if index.isMultiple(of: 4) { await Task.yield() }
             task.cancel()
             _ = try? await task.value
+        case 8:
+            let command = Command("sleep", ["1"], environment: environment, timeout: .milliseconds(5))
+            _ = try? await runner.run(command)
         default:
-            _ = try? await runner.run(Command("sleep", ["1"], environment: environment, timeout: .milliseconds(5)))
+            let command = Command("sh", ["-c", "printf x"], environment: environment, outputEndsAtExit: true)
+            _ = try? await runner.run(command)
         }
     }
 }
