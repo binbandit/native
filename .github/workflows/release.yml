@@ -87,7 +87,7 @@ jobs:
           swift build -c release --package-path Packages/NativeHost --product native-host --static-swift-stdlib
           cp "$(swift build -c release --package-path Packages/NativeHost --show-bin-path)/native-host" \
             "native-host-linux-${{ matrix.arch }}"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: native-host-linux-${{ matrix.arch }}
           path: native-host-linux-${{ matrix.arch }}
