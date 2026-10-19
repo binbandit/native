@@ -11,7 +11,7 @@ struct GitCleanupGroupSection: View {
         Card(padding: DS.Space.md) {
             VStack(alignment: .leading, spacing: 0) {
                 header(items)
-                if let note {
+                if let note = note(count: items.count) {
                     Text(note)
                         .font(.dsCaption)
                         .foregroundStyle(.dsTextTertiary)
@@ -51,16 +51,20 @@ struct GitCleanupGroupSection: View {
     }
 
     /// What the group means, where it isn't obvious.
-    private var note: String? {
+    private func note(count: Int) -> String? {
         switch group {
         case .worktrees:
             "Archived the usual way: teardown scripts run, uncommitted work is saved as a checkpoint, and Unarchive brings each back."
         case .branches:
             "Native keeps each one's commit, so Undo can bring it back."
+        case .staleRecords where count == 1:
+            "Its folder was deleted outside Native; git still lists it."
         case .staleRecords:
             "Their folders were deleted outside Native; git still lists them."
         case .leftoverFolders:
             "Folders in Native's worktree location that git no longer knows about."
+        case .otherBranches where count == 1:
+            "Not made by Native, so it's left alone unless you include it."
         case .otherBranches:
             "Not made by Native, so they're left alone unless you include them."
         }

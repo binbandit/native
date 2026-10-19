@@ -123,7 +123,7 @@ extension GitCleanupModel {
             : "Cleaned up \(done) of \(states.count) items in “\(project.name)”"
         let bytes = items.filter { states[$0.id] == .done }.compactMap(\.bytes).reduce(0, +)
         if bytes > 0 { message += ", reclaiming \(DSFormat.fileSize(bytes))" }
-        services.app.offerUndo(message + ".", name: "Clean Up Merged", undoManager: PlatformWindow.keyUndoManager) {
+        services.app.offerUndo(message + ".", name: "Clean Up Merged", undoManager: undoManager) {
             [self] _ in
             Task { await undo() }
         }

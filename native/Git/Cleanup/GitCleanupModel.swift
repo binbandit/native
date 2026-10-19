@@ -39,6 +39,7 @@ final class GitCleanupModel: Identifiable {
     /// What the last run did, for Undo.
     var undoRecord: GitCleanupUndo?
     @ObservationIgnored var isUndoOffered = false
+    @ObservationIgnored weak var undoManager: UndoManager?
 
     @ObservationIgnored let services: GitCleanupServices
     /// Told when a run ends, so the center can close the sheet or bring it back.
@@ -64,7 +65,8 @@ final class GitCleanupModel: Identifiable {
         let root = project.url
         do {
             let plan = try await services.git.mergedCleanupPlan(in: root, branchPrefix: prefix) { [weak self] queries in
-                await self?.setScanning("Asking GitHub about \(queries.count == 1 ? "1 branch" : "\(queries.count) branches")…")
+                await self?.setScanning(
+                    "Asking GitHub about \(queries.count == 1 ? "1 branch" : "\(queries.count) branches")…")
                 let answer = await lookup(queries, root)
                 await self?.setScanning("Measuring worktrees…")
                 return answer

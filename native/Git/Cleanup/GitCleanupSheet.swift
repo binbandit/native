@@ -135,8 +135,11 @@ struct GitCleanupSheet: View {
                         Image(systemName: "chevron.right")
                             .font(.dsCaption)
                             .rotationEffect(.degrees(showsKept ? 90 : 0))
-                        Text(plan.kept.count == 1 ? "Kept 1 of Native's branches" : "Kept \(plan.kept.count) of Native's branches")
-                            .font(.dsBody)
+                        Text(
+                            plan.kept.count == 1
+                                ? "Kept 1 of Native's branches" : "Kept \(plan.kept.count) of Native's branches"
+                        )
+                        .font(.dsBody)
                     }
                     .foregroundStyle(.dsTextTertiary)
                     .contentShape(.rect)

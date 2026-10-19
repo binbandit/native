@@ -33,14 +33,17 @@ final class GitCleanupFakeGitHubRunner: CommandRunner {
     func run(_ command: Command) async throws -> CommandResult {
         let arguments = command.arguments
         if arguments.prefix(2) == ["repo", "view"] {
-            return Self.success(#"{"name":"scratch","nameWithOwner":"native-dev/scratch","url":"https://github.com/native-dev/scratch"}"#)
+            return Self.success(
+                #"{"name":"scratch","nameWithOwner":"native-dev/scratch","url":"https://github.com/native-dev/scratch"}"#
+            )
         }
         guard arguments.prefix(2) == ["api", "graphql"], let input = command.standardInput,
             let request = try? JSONSerialization.jsonObject(with: input) as? [String: Any],
             let query = request["query"] as? String, query.contains("query MergedCleanup"),
             let variables = request["variables"] as? [String: Any]
         else { return try await base.run(command) }
-        let merged = (try? JSONDecoder().decode([String: Merged].self, from: Data(contentsOf: URL(filePath: path)))) ?? [:]
+        let merged =
+            (try? JSONDecoder().decode([String: Merged].self, from: Data(contentsOf: URL(filePath: path)))) ?? [:]
         var repository: [String: Any] = [:]
         for (alias, value) in variables where alias.hasPrefix("h") {
             guard let head = value as? String else { continue }

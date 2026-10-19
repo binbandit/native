@@ -9,7 +9,8 @@ extension NativeCommand {
     /// stale worktree records, to review before anything goes. Also in a project's context menu.
     static func gitCleanUpMerged(_ center: GitCleanupCenter, model: AppModel) -> NativeCommand {
         NativeCommand(
-            .gitCleanUpMerged, title: "Clean Up Merged Branches…", category: .tasks, systemImage: "arrow.triangle.merge",
+            .gitCleanUpMerged, title: "Clean Up Merged Branches…", category: .tasks,
+            systemImage: "arrow.triangle.merge",
             keywords: ["git", "branches", "worktrees", "merged", "prune", "delete", "tidy", "clean up", "squash"]
         ) { context in
             guard let project = model.currentProject else { return }

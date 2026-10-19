@@ -25,6 +25,8 @@ final class GitCleanupCenter {
         }
         presented?.work?.cancel()
         let model = GitCleanupModel(project: project, services: services)
+        // The window the user asked from, so ⌘Z there takes the cleanup back after the sheet closes.
+        model.undoManager = PlatformWindow.keyUndoManager
         model.onFinished = { [weak self] in self?.finished($0) }
         presented = model
         model.work = Task { await model.scan() }
