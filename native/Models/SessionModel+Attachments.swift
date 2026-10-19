@@ -34,7 +34,7 @@ extension SessionModel {
     /// Why a message can't go out now, or nil when it can. A session that's loading or busy isn't
     /// blocked: what's sent then waits in the queue.
     var sendBlock: SessionSendBlock? {
-        if !acceptsPrompts { return .notAcceptingPrompts }
+        if !acceptsPrompts { return isEarlierConversation ? .earlierConversation : .notAcceptingPrompts }
         if phase == .disconnected { return .disconnected(agentName: agentName) }
         return services.sendGate.block(for: agent)
     }

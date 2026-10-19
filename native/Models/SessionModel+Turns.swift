@@ -19,6 +19,8 @@ extension SessionModel {
         case emptyMessage
         /// An agent's own subagent, which only its parent can give work to.
         case notAcceptingPrompts
+        /// A conversation `/clear` set aside.
+        case earlierConversation
         case loading
         case disconnected
         case busy
@@ -27,6 +29,7 @@ extension SessionModel {
             switch self {
             case .emptyMessage: "There's nothing to send."
             case .notAcceptingPrompts: "This subagent only takes work from the session that started it."
+            case .earlierConversation: SessionSendBlock.earlierConversation.message
             case .loading: "The session is still loading."
             case .disconnected: "The session's agent stopped running."
             case .busy: "The session is busy."
@@ -60,7 +63,8 @@ extension SessionModel {
     func submit(_ behavior: FollowUpBehavior) async {
         let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         let attachments = self.attachments
-        guard origin == .user, phase == .idle || phase == .prompting, !text.isEmpty || !attachments.isEmpty else {
+        guard origin == .user, acceptsPrompts, phase == .idle || phase == .prompting, !text.isEmpty || !attachments.isEmpty
+        else {
             return
         }
         draft = ""
@@ -87,7 +91,9 @@ extension SessionModel {
     ) async throws -> FollowUpDelivery {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty || !attachments.isEmpty else { throw SendError.emptyMessage }
-        guard acceptsPrompts else { throw SendError.notAcceptingPrompts }
+        guard acceptsPrompts else {
+            throw isEarlierConversation ? SendError.earlierConversation : .notAcceptingPrompts
+        }
         switch phase {
         case .loading:
             // Sent the moment the session has loaded (`finishLoading`), rather than refused.

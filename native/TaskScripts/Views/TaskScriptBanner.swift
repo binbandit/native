@@ -69,11 +69,12 @@ struct TaskScriptStripText: View {
         Text(title)
             .font(.dsBodyMedium)
             .foregroundStyle(.dsTextPrimary)
+        // Wrapping comes from the strip's width. `fixedSize` here would size the window's minimum
+        // height from the text laid out at no width at all, growing the window until AppKit gives up.
         if let message {
             Text(message)
                 .font(.dsBody)
                 .foregroundStyle(.dsTextSecondary)
-                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }

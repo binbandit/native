@@ -2,7 +2,7 @@
 # Measures Native's launch time, idle cost and child processes in its own isolated instance
 # (`just perf`), for the numbers and budgets in docs/performance.md. Never touches another Native.
 #
-#   scripts/perf/measure.sh [--name NAME] [--no-build] [--launches N] [--seconds S] [--settle S] [--sessions N] [-- app arguments…]
+#   scripts/perf/measure.sh [--name NAME] [--no-build] [--launches N] [--seconds S] [--settle S] [--sessions N] [--fixture] [--launch-only] [-- app arguments…]
 #
 # Launch times come from the app's own `launch <milestone> <ms> ms` log lines (LaunchMetrics), from
 # the moment the kernel started the process. Idle numbers are kernel counters for the app alone and
@@ -10,7 +10,9 @@
 # minimized, and the app hidden. `--sessions N` first opens N Codex sessions that each answer one
 # short prompt. The instance (`perf` unless --name gives another, so agents measuring at once don't
 # quit each other's runs) works in a scratch project with Codex as its default agent, and is quit at
-# the end.
+# the end. `--fixture` launches into a workspace like a real one instead: four projects, three with
+# icons of their own (an SVG favicon, an SVG logo, an app icon in an asset catalog), and 30 tasks.
+# `--launch-only` stops after the launches.
 set -euo pipefail
 
 name=perf
@@ -19,8 +21,10 @@ launches=5
 seconds=30
 settle=20
 sessions=0
+fixture=0
+launch_only=0
 app_args=()
-usage="usage: $0 [--name NAME] [--no-build] [--launches N] [--seconds S] [--settle S] [--sessions N] [-- app arguments…]"
+usage="usage: $0 [--name NAME] [--no-build] [--launches N] [--seconds S] [--settle S] [--sessions N] [--fixture] [--launch-only] [-- app arguments…]"
 while [ $# -gt 0 ]; do
     case "$1" in
         --name) name=$2; shift ;;
@@ -29,6 +33,8 @@ while [ $# -gt 0 ]; do
         --seconds) seconds=$2; shift ;;
         --settle) settle=$2; shift ;;
         --sessions) sessions=$2; shift ;;
+        --fixture) fixture=1 ;;
+        --launch-only) launch_only=1 ;;
         --) shift; app_args=("$@"); break ;;
         *) echo "$usage" >&2; exit 2 ;;
     esac
@@ -56,9 +62,55 @@ seed() {
     mkdir -p "$project"
     [ -f "$project/README.md" ] || printf '# Scratch project\n\nA throwaway folder for measuring Native.\n' >"$project/README.md"
     bundle=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$plist" 2>/dev/null) || return 0
+    if [ "$fixture" = 1 ]; then
+        seed_fixture "$bundle"
+        return 0
+    fi
     defaults read "$bundle" projects >/dev/null 2>&1 && return 0
     defaults write "$bundle" workspace "$project"
     defaults write "$bundle" defaultAgent codex
+}
+
+# The fixture's projects are made once; its tasks are written before every launch, since Codex
+# lists none for these folders and its listing replaces them.
+seed_fixture() {
+    local bundle=$1 root=/private/tmp/native-perf/$name/fixture
+    local names=(web api ios tools) counts=(10 8 7 5)
+    if [ ! -d "$root/tools/.git" ]; then
+        mkdir -p "$root"/{web/public,api/assets,ios/App/Assets.xcassets/AppIcon.appiconset,tools}
+        cat >"$root/web/public/favicon.svg" <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5b8cff"/><stop offset="1" stop-color="#9b5bff"/></linearGradient></defs><rect width="64" height="64" rx="14" fill="url(#g)"/><path d="M16 44 L32 14 L48 44 Z" fill="#fff" opacity=".9"/><circle cx="32" cy="36" r="6" fill="#5b8cff"/></svg>
+SVG
+        cat >"$root/api/assets/logo.svg" <<'SVG'
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><circle cx="24" cy="24" r="22" fill="#1f9d74"/><path d="M14 25c4 6 16 6 20 0M16 18h4M28 18h4" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
+SVG
+        sips -s format png -z 1024 1024 /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns \
+            --out "$root/ios/App/Assets.xcassets/AppIcon.appiconset/icon-1024.png" >/dev/null
+        printf '{"images":[{"filename":"icon-1024.png","idiom":"universal","platform":"ios","size":"1024x1024"}],"info":{"author":"xcode","version":1}}\n' \
+            >"$root/ios/App/Assets.xcassets/AppIcon.appiconset/Contents.json"
+        for project in "${names[@]}"; do
+            printf '# %s\n' "$project" >"$root/$project/README.md"
+            git -C "$root/$project" init -q -b main
+            git -C "$root/$project" add -A
+            git -C "$root/$project" -c user.name=perf -c user.email=perf@example.com commit -qm "First commit"
+        done
+    fi
+    local projects="" catalog="" i j n=0 now
+    now=$(date +%s)
+    for i in "${!names[@]}"; do
+        local id sessions=""
+        id=$(printf '00000000-0000-4000-8000-%012d' $((i + 1)))
+        projects+="${projects:+,}{\"id\":\"$id\",\"url\":\"file://$root/${names[$i]}/\",\"host\":\"local\"}"
+        for ((j = 1; j <= counts[i]; j++)); do
+            n=$((n + 1))
+            sessions+="${sessions:+,}{\"sessionId\":\"$(printf '00000000-0000-4000-9000-%012d' "$n")\",\"cwd\":\"$root/${names[$i]}\",\"title\":\"Task $n in ${names[$i]}: tidy the module and update its tests\",\"updatedAt\":\"$(date -u -r $((now - n * 3600)) +%Y-%m-%dT%H:%M:%S.000Z)\"}"
+        done
+        catalog+="${catalog:+,}\"$id\",[{\"rawValue\":\"codex\"},[$sessions]]"
+    done
+    defaults write "$bundle" projects -data "$(printf '[%s]' "$projects" | xxd -p | tr -d '\n')"
+    defaults write "$bundle" defaultAgent codex
+    mkdir -p "$HOME/Library/Application Support/$bundle"
+    printf '[%s]' "$catalog" >"$HOME/Library/Application Support/$bundle/session-catalog.json"
 }
 seed
 
@@ -96,12 +148,16 @@ processes() {
 echo "== launch (ms from process start)"
 printf "%-6s %8s %10s %18s %11s %14s %17s\n" run appInit firstFrame sidebarInteractive agentsReady \
     "main cpu@frame" "process cpu@frame"
+[ "$build" = 1 ] && "$run" "$name" --build >/dev/null
 for ((i = 1; i <= launches; i++)); do
+    # Quit first, so the fixture's tasks aren't saved over as the last launch quits.
+    "$run" "$name" --quit >/dev/null 2>&1 || true
+    seed
     log=$(mktemp)
     /usr/bin/log stream --style compact --predicate 'subsystem == "Native" AND category == "Launch"' >"$log" 2>/dev/null &
     stream=$!
     sleep 1
-    if [ "$i" = 1 ] && [ "$build" = 1 ]; then pid=$(launch); else pid=$(launch --no-build); fi
+    pid=$(launch --no-build)
     # Compact lines read `… Native[<pid>:<thread>] [Native:Launch] launch firstFrame 212 ms, main …`.
     value() { grep -F "Native[$pid:" "$log" | grep -oE "launch $1 [0-9]+" | awk '{ print $3 }' | head -1; }
     for _ in $(seq 1 150); do
@@ -111,12 +167,13 @@ for ((i = 1; i <= launches; i++)); do
     kill "$stream" 2>/dev/null || true
     wait "$stream" 2>/dev/null || true
     label=$([ "$i" = 1 ] && [ "$build" = 1 ] && echo cold || echo "warm$i")
-    seed
     cpu() { grep -F "Native[$pid:" "$log" | grep -oE "launch firstFrame .* $1 [0-9]+ ms cpu" | grep -oE "$1 [0-9]+" | awk '{ print $2 }'; }
     printf "%-6s %8s %10s %18s %11s %14s %17s\n" "$label" "$(value appInit)" "$(value firstFrame)" \
         "$(value sidebarInteractive)" "$(value agentsReady)" "$(cpu main)" "$(cpu process)"
     rm -f "$log"
 done
+
+[ "$launch_only" = 1 ] && exit 0
 
 # Sessions, each answering one prompt; `Session › Stop` is enabled while a turn runs.
 for ((i = 1; i <= sessions; i++)); do

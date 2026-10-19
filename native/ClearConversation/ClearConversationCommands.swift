@@ -26,7 +26,8 @@ extension NativeCommand {
             }
             .available { context in
                 guard let session = context.session else { return false }
-                return session.origin == .user && !session.isSubagent && session.hasStarted && session.phase == .idle
+                return session.origin == .user && session.acceptsPrompts && !session.isSubagent && session.hasStarted
+                    && session.phase == .idle
             },
 
             NativeCommand(
