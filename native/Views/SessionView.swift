@@ -113,7 +113,7 @@ struct SessionView: View {
     private var turnChangesActions: TurnChangesActions {
         let repository = repository
         let gitHub = gitHub
-        let canCommit = repository.status.map { !$0.isClean && $0.conflicted.isEmpty } ?? false
+        let canCommit = repository.canCommit
         return TurnChangesActions(
             review: { showsChangesBinding.wrappedValue = true },
             commitForm: canCommit
@@ -136,17 +136,19 @@ struct SessionView: View {
                 if shows {
                     openInspector(GitMetrics.inspectorIdealWidth) { showsChanges = true }
                 } else {
-                    showsChanges = false
+                    withTransaction(\.disablesAnimations, true) { showsChanges = false }
                 }
             }
         )
     }
 
     /// Opens an inspector once the window has made room for it, rather than growing; one already
-    /// open has its room.
+    /// open has its room. The column appears without sliding in: sliding lays the whole window out
+    /// again every frame.
     private func openInspector(_ width: CGFloat, _ open: @escaping @MainActor () -> Void) {
-        guard !isInspectorPresented.wrappedValue else { return open() }
-        inspectorRoom.open(width, open)
+        let appear: @MainActor () -> Void = { withTransaction(\.disablesAnimations, true, open) }
+        guard !isInspectorPresented.wrappedValue else { return appear() }
+        inspectorRoom.open(width, appear)
     }
 
     private var isInspectorPresented: Binding<Bool> {
