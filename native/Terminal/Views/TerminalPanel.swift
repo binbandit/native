@@ -44,7 +44,7 @@ struct TerminalPanel: View {
         switch store.availability {
         case .available:
             if let tab = panel.tabs.selected {
-                TerminalTabContent(panel: panel, tab: tab)
+                TerminalTabContent(panel: panel, tab: tab, backgroundOpacity: store.backgroundOpacity)
             }
         case .notBuilt:
             TerminalUnavailableView()

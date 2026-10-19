@@ -46,6 +46,8 @@ struct RootView: View {
                 .onChange(of: gitHub.presentedPullRequest, initial: true) { _, reference in
                     if reference != nil { showsPullRequests = true }
                 }
+                // Over the content, so the toast clears the status bar.
+                .undoToast($undoToast)
             StatusBar(registry: statusBar)
         }
         // After an update with highlights, once nothing waits on the user.
@@ -53,7 +55,6 @@ struct RootView: View {
         // Asked once, after real use, and never while an agent works (docs/enterprise.md).
         .telemetryConsentPrompt(isTurnRunning: isAnyTurnRunning)
         .focusedSceneValue(\.sidebarVisibility, $columnVisibility)
-        .undoToast($undoToast)
         .onChange(of: model.lastUndoable?.id) {
             undoToast = model.lastUndoable.map { action in UndoToastItem(action.message, undo: action.undo) }
         }

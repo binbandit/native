@@ -36,6 +36,7 @@ struct GitChangeRow: View {
         .trackHover($isHovered)
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
+        .accessibilityAction(.default, onSelect)
         .accessibilityAction(named: stageLabel, onToggleStaged)
         .accessibilityAction(named: "Discard Changes", onDiscard)
     }

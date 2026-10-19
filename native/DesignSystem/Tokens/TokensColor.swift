@@ -52,16 +52,20 @@ nonisolated extension ShapeStyle where Self == Color {
     /// A quiet tint behind content set apart inline, such as inline code and the user's prompt in
     /// the transcript. Translucent, so it reads on any layer.
     public static var dsFill: Color { DSPalette.fill }
+    /// The resting fill of outlined buttons, a step above whatever they sit on: the surface in
+    /// light mode, a faint lift in dark, where an opaque surface would sink into a raised panel,
+    /// an overlay or a toast.
+    public static var dsControlFill: Color { DSPalette.controlFill }
 
     // MARK: Borders
 
     /// Hairlines between regions: sidebar edge, card outlines, section rules.
     public static var dsSeparator: Color { DSPalette.separator }
-    /// Outline of the composer and its pills.
+    /// Outline of the composer, its pills and secondary buttons.
     public static var dsBorder: Color { DSPalette.border }
     /// Outline of a hovered control.
     public static var dsBorderHover: Color { DSPalette.borderHover }
-    /// Outline of secondary buttons.
+    /// Outline of unchecked checkboxes and focused fields.
     public static var dsBorderStrong: Color { DSPalette.borderStrong }
     /// Outline of keyboard hints and unlit level bars.
     public static var dsBorderInner: Color { DSPalette.borderInner }
@@ -153,6 +157,11 @@ nonisolated private enum DSPalette {
     static let fill = toned(
         dynamic("fill", light: 0x000000, lightAlpha: 0.07, dark: 0xFFFFFF, darkAlpha: 0.05),
         wool: 0x3B2B14, woolAlpha: 0.07, trueBlack: 0xFFFFFF, trueBlackAlpha: 0.055)
+    // Light's is the surface. Dark's lands on the surface over the content pane (#141416 on
+    // #0D0D0E, #0E0E0E on black) and stays that step up on cards, overlays and raised panels.
+    static let controlFill = toned(
+        dynamic("controlFill", light: 0xFFFFFF, dark: 0xFFFFFF, darkAlpha: 0.03),
+        wool: 0xFBF9F5, trueBlack: 0xFFFFFF, trueBlackAlpha: 0.055)
 
     static let separator = toned(
         dynamic("separator", light: 0xE8E8E8, dark: 0x1F1F22), wool: 0xE6E1D8, trueBlack: 0x1A1A1D)

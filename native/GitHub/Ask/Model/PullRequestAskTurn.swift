@@ -78,7 +78,8 @@ struct PullRequestAskTurn: Identifiable {
         // Reasoning stays out of the panel; only tool work folds into the activity line.
         activity = TranscriptRow.rows(from: work.filter { if case .message = $0 { false } else { true } })
         if isRunning {
-            current = Self.current(in: items)
+            // A turn without a question is Native asking the agent to finish after it stopped.
+            current = Self.current(in: items) ?? (question == nil && answer.isEmpty ? "Picking up where it stopped" : nil)
         }
     }
 
@@ -90,7 +91,8 @@ struct PullRequestAskTurn: Identifiable {
         case .toolCall(let call): call.title
         case .message(let message) where message.role == .thought: "Thinking"
         case .message(let message) where message.role == .agent: nil
-        default: "Reading the pull request"
+        case .message(let message) where message.role == .user: "Reading the pull request"
+        default: nil
         }
     }
 }

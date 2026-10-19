@@ -12,7 +12,7 @@ public struct DSButtonStyle: ButtonStyle {
     public enum Variant: Sendable {
         /// Accent fill, black text.
         case primary
-        /// Outlined.
+        /// Outlined, on a fill a step above whatever it sits on (`dsControlFill`).
         case secondary
         /// Text only, with a ghost wash on hover.
         case ghost
@@ -85,6 +85,7 @@ private struct DSButtonBody: View {
             .foregroundStyle(foreground)
             .padding(.horizontal, isIconOnly ? 0 : DS.Space.lg)
             .frame(minWidth: isIconOnly ? size.height : nil, minHeight: size.height)
+            .background(wash, in: shape)
             .background(fill, in: shape)
             .overlay { shape.strokeBorder(border, lineWidth: 1) }
             .contentShape(shape)
@@ -111,11 +112,18 @@ private struct DSButtonBody: View {
         guard isEnabled else { return variant == .ghost ? .clear : .dsSelected }
         return switch variant {
         case .primary: isPressed ? .dsAccentPressed : isHighlighted ? .dsAccentHover : .dsAccent
-        case .secondary: isPressed ? .dsPressed : isHighlighted ? .dsHover : .dsSurface
-        case .ghost: isPressed ? .dsPressed : isHighlighted ? .dsHover : .clear
+        case .secondary: .dsControlFill
+        case .ghost: .clear
         case .destructive: isPressed ? .dsDangerFillPressed : isHighlighted ? .dsDangerFillHover : .dsDangerFill
         case .neutral: isHighlighted ? .dsTextSecondary : .dsTextPrimary
         }
+    }
+
+    /// Hover and press on the outlined and ghost buttons, washed over the fill so both states show
+    /// on whatever layer the button sits on.
+    private var wash: Color {
+        guard isEnabled, variant == .secondary || variant == .ghost else { return .clear }
+        return isPressed ? .dsPressed : isHighlighted ? .dsHover : .clear
     }
 
     private var border: Color {

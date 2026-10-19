@@ -6,6 +6,8 @@ import Terminal
 struct TerminalTabContent: View {
     let panel: TerminalPanelModel
     let tab: TerminalTabList.Tab
+    /// The terminal's background opacity, which the strip under a job's output matches.
+    let backgroundOpacity: Double
     @Environment(SettingsPresentation.self) private var settings
 
     var body: some View {
@@ -61,6 +63,7 @@ struct TerminalTabContent: View {
                 if let job = tab.job, let outcome = job.outcome {
                     TerminalJobOutcomeBanner(job: job, outcome: outcome) { panel.rerunJob(in: tab.id) }
                         .padding(DS.Space.md)
+                        .background(.dsSurfaceSunken.opacity(backgroundOpacity))
                 }
             }
         }

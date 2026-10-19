@@ -38,7 +38,8 @@ public struct ProjectActionLaunch: Hashable, Sendable {
         #"printf '\033]133;C\007'"#,
         #""$1" -l -i -c "$2""#,
         "status=$?",
-        #"printf '\033]133;D;%d\007' "$status""#,
+        // The status, and the cursor hidden: nothing more can be typed there.
+        #"printf '\033]133;D;%d\007\033[?25l' "$status""#,
         #"exit "$status""#,
     ].joined(separator: "; ")
 

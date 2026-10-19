@@ -82,18 +82,22 @@ extension Repository {
         return merged
     }
 
-    /// Whether the branch ever moved after it was made, from its reflog. A branch made for a task
+    /// Whether the branch has work of its own, from its reflog: a branch made from HEAD for a task
     /// that never committed sits where it started, which `git branch --merged` counts as merged.
-    /// Without a reflog (expired, or turned off) it's assumed to have.
+    /// A branch made from anything else (a pull request's head, an archived copy brought back) or
+    /// without a reflog (expired, or turned off) is assumed to have.
     func hasCommitsOfItsOwn(_ branch: String) async -> Bool {
         guard
             let output = try? await run(
-                ["reflog", "show", "--format=%H", "refs/heads/\(branch)", "--"], readOnly: true,
+                ["reflog", "show", "--format=%H%x00%gs", "refs/heads/\(branch)", "--"], readOnly: true,
                 acceptingStatus: [0, 128]),
             output.status == 0
         else { return true }
-        let tips = Set(output.text.split(separator: "\n"))
-        return tips.count != 1
+        let entries = output.text.split(separator: "\n").map { $0.split(separator: "\0", maxSplits: 1) }
+        let tips = Set(entries.compactMap(\.first))
+        // Newest first, so the last entry is how the branch was made.
+        guard tips.count == 1, let made = entries.last, made.count == 2 else { return true }
+        return !made[1].hasPrefix("branch: Created from HEAD")
     }
 
     /// Whether merging `branch` into one of the base refs would change nothing, so its changes are

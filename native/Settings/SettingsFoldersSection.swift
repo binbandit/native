@@ -50,6 +50,8 @@ struct SettingsFoldersSection<Footer: View>: View {
                             withAnimation(.dsDisclosure) { showsMissing.toggle() }
                         }
                         .buttonStyle(.ds(.ghost, size: .small))
+                        // Out by the ghost button's padding, so its text lines up with the paths above.
+                        .padding(.leading, -DS.Space.lg)
                     }
                     footer
                 }

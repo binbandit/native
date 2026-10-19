@@ -145,6 +145,21 @@ struct MergedCleanupTests {
         #expect(kept == ["working": .unmergedCommits(3), "just-started": .noCommits])
     }
 
+    @Test func aMergedBranchBroughtBackFromItsArchivedCopyStillQualifies() async throws {
+        let scenario = try await Scenario.make()
+        defer { scenario.remove() }
+        let folder = try await scenario.task("restored")
+        try await scenario.test.git("merge", "--quiet", "--no-ff", "-m", "Merge restored", "restored")
+        try await scenario.repository.removeWorktree(at: folder)
+        try await scenario.repository.archiveBranch("restored")
+        try await scenario.repository.restoreArchivedBranch("restored")
+
+        let plan = try await scenario.plan()
+
+        #expect(plan.branches.map(\.name) == ["restored"])
+        #expect(plan.branches.first?.isNative == true)
+    }
+
     @Test func protectedAndCurrentBranchesAreNeverOffered() async throws {
         let scenario = try await Scenario.make()
         defer { scenario.remove() }

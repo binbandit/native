@@ -10,7 +10,7 @@ struct PullRequestAskHeader: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.xs) {
             HStack(spacing: DS.Space.sm) {
-                Text("Ask About #\(conversation.reference.number)")
+                Text(verbatim: "Ask About #\(conversation.reference.number)")
                     .font(.dsCalloutSemibold)
                     .foregroundStyle(.dsTextPrimary)
                     .lineLimit(1)
