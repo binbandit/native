@@ -4,7 +4,9 @@ import Testing
 @testable import Modes
 
 struct ModeInstructionsTests {
-    private func preamble(_ mode: Mode, after delivered: PromptPreamble.Marker?, json: String = Fixtures.codex) throws
+    private func preamble(
+        _ mode: Mode, after delivered: PromptPreamble.Marker?, json: String = Fixtures.codex
+    ) throws
         -> PromptPreamble?
     {
         ModeInstructions.preamble(

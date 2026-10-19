@@ -22,7 +22,8 @@ extension ExtensionPoint where Contract == any TranscriptStyle {
 /// are, which pending request answers the permission shortcuts, and how to name other sessions.
 struct TranscriptStyleConfiguration {
     let session: SessionModel
-    let rows: [TranscriptRow]
+    /// Whether reads and searches show one by one rather than folded into exploration rows.
+    let unfoldsExploration: Bool
     let openSubagent: (SessionID) -> Void
     /// Another session's title, for naming the tasks this one exchanges messages with.
     let sessionTitle: (SessionID) -> String?
@@ -34,6 +35,13 @@ struct TranscriptStyleConfiguration {
 
     var isWorking: Bool {
         session.phase == .prompting
+    }
+
+    /// The whole transcript's rows. Worked out on each read, which costs a pass over every item, so
+    /// a style that plans turn by turn keeps its own per turn instead.
+    var rows: [TranscriptRow] {
+        let items = session.state.items
+        return unfoldsExploration ? items.map(TranscriptRow.item) : TranscriptRow.rows(from: items)
     }
 
     /// How to refer to another session in this transcript's session messages.

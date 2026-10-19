@@ -1,5 +1,5 @@
-import Foundation
 import ACP
+import Foundation
 import Testing
 
 @testable import Modes
@@ -9,7 +9,8 @@ struct ModeSelectionTests {
     private func switching(
         _ selection: ModeSelection, to mode: Mode, on options: [ConfigOption]
     ) -> (ModeSelection, [ConfigOption], [ModeResolution.Change]) {
-        let (changes, next) = selection.switching(to: mode.id, ModeResolver.resolve(mode, options: options), options: options)
+        let (changes, next) = selection.switching(
+            to: mode.id, ModeResolver.resolve(mode, options: options), options: options)
         return (next, Fixtures.applying(changes, to: options), changes)
     }
 

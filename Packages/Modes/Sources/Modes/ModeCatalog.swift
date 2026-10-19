@@ -74,7 +74,8 @@ public struct ProjectModes: Hashable, Sendable {
                         problems.append(
                             ModeFile.Problem(
                                 file: name,
-                                reason: "Another mode is already called \(parsed.mode.name). Give this one its own name."
+                                reason:
+                                    "Another mode is already called \(parsed.mode.name). Give this one its own name."
                             ))
                         continue
                     }

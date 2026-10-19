@@ -61,13 +61,16 @@ struct ModeResolverTests {
         }
         #expect(resolution.changes == [.init(optionID: "mode", value: "workspace-write")])
         #expect(resolution.limits == [.forbidden(wanted: "Read-only", using: "Workspace access")])
-        #expect(resolution.limits.allSatisfy(\.isPolicy))
+        #expect(resolution.limits.allSatisfy { $0.isPolicy })
     }
 
     @Test func forbiddenLevelFallsBackToTheNearestAllowed() throws {
         let fast = custom(ModeSettings(autonomy: .full))
         let options = try Fixtures.options(Fixtures.codex)
-        #expect(ModeResolver.resolve(fast, options: options).changes == [.init(optionID: "mode", value: "agent-full-access")])
+        #expect(
+            ModeResolver.resolve(fast, options: options).changes == [
+                .init(optionID: "mode", value: "agent-full-access")
+            ])
         let resolution = ModeResolver.resolve(fast, options: options) { _, value in value != "agent-full-access" }
         #expect(resolution.changes == [.init(optionID: "mode", value: "agent")])
         #expect(resolution.limits == [.forbidden(wanted: "Full access", using: "Auto review")])
@@ -101,10 +104,14 @@ struct ModeResolverTests {
         let missing = ModeResolver.resolve(custom(ModeSettings(model: "opus")), options: options)
         #expect(missing.changes.isEmpty)
         #expect(missing.limits == [.modelUnavailable("opus")])
-        #expect(missing.limits[0].text(agent: "Codex", mode: "Fast") == "Codex doesn't offer opus, so Fast keeps the task's model.")
+        #expect(
+            missing.limits[0].text(agent: "Codex", mode: "Fast")
+                == "Codex doesn't offer opus, so Fast keeps the task's model.")
     }
 
     private func custom(_ settings: ModeSettings) -> Mode {
-        Mode(id: .custom("fast"), name: "Fast", symbol: "hare", summary: "", instructions: "Go.", settings: settings, source: .custom)
+        Mode(
+            id: .custom("fast"), name: "Fast", symbol: "hare", summary: "", instructions: "Go.", settings: settings,
+            source: .custom)
     }
 }

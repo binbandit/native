@@ -37,7 +37,9 @@ public enum ModeFile {
     /// Reads `text`, the contents of the file named `fileName` ("security-review.md").
     /// `source` decides the id, and limits a project's modes to settings that can only make the
     /// agent more careful (`ModeAutonomy.isAllowedInProjects`).
-    public static func parse(_ text: String, fileName: String, source: Mode.Source = .project) -> Result<
+    public static func parse(
+        _ text: String, fileName: String, source: Mode.Source = .project
+    ) -> Result<
         Parsed, Problem
     > {
         let slug = slug(for: fileName)
@@ -131,7 +133,8 @@ public enum ModeFile {
     }
 
     static func slug(for fileName: String) -> String {
-        let base = fileName.hasSuffix(".\(fileExtension)") ? String(fileName.dropLast(fileExtension.count + 1)) : fileName
+        let base =
+            fileName.hasSuffix(".\(fileExtension)") ? String(fileName.dropLast(fileExtension.count + 1)) : fileName
         return base.lowercased()
     }
 

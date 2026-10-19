@@ -24,7 +24,9 @@ struct ModeFileTests {
         #expect(parsed.mode.symbol == "lock.shield")
         #expect(parsed.mode.summary == "Looks for security problems in the current changes")
         #expect(parsed.mode.settings == ModeSettings(autonomy: .readOnly, effort: "high"))
-        #expect(parsed.mode.instructions == "Review the current changes for security problems.\n\nReport each with path:line.")
+        #expect(
+            parsed.mode.instructions
+                == "Review the current changes for security problems.\n\nReport each with path:line.")
     }
 
     @Test func everySettingIsOptional() throws {
@@ -71,7 +73,8 @@ struct ModeFileTests {
     @Test func writesWhatItReads() throws {
         let mode = Mode(
             id: .custom("security-review"), name: "Security Review", symbol: "lock.shield", summary: "Finds holes",
-            instructions: "Look for holes.", settings: ModeSettings(autonomy: .readOnly, usesPlanMode: true, model: "opus"),
+            instructions: "Look for holes.",
+            settings: ModeSettings(autonomy: .readOnly, usesPlanMode: true, model: "opus"),
             source: .custom)
         let text = ModeFile.contents(of: mode)
         let parsed = try ModeFile.parse(text, fileName: ModeFile.fileName(for: mode.name), source: .custom).get()
@@ -84,10 +87,14 @@ struct ModeFileTests {
         let folder = root.appending(path: ModeFile.folder)
         try FileManager.default.createDirectory(at: folder, withIntermediateDirectories: true)
         defer { try? FileManager.default.removeItem(at: root) }
-        try "---\nname: Triage\n---\nSort the issues.".write(to: folder.appending(path: "a-triage.md"), atomically: true, encoding: .utf8)
-        try "---\nname: triage\n---\nAgain.".write(to: folder.appending(path: "b-triage.md"), atomically: true, encoding: .utf8)
-        try "---\nname: Review\n---\nMine.".write(to: folder.appending(path: "c-review.md"), atomically: true, encoding: .utf8)
-        try "---\nautonomy: nope\n---\nGo.".write(to: folder.appending(path: "d-bad.md"), atomically: true, encoding: .utf8)
+        try "---\nname: Triage\n---\nSort the issues.".write(
+            to: folder.appending(path: "a-triage.md"), atomically: true, encoding: .utf8)
+        try "---\nname: triage\n---\nAgain.".write(
+            to: folder.appending(path: "b-triage.md"), atomically: true, encoding: .utf8)
+        try "---\nname: Review\n---\nMine.".write(
+            to: folder.appending(path: "c-review.md"), atomically: true, encoding: .utf8)
+        try "---\nautonomy: nope\n---\nGo.".write(
+            to: folder.appending(path: "d-bad.md"), atomically: true, encoding: .utf8)
         try "Not a mode".write(to: folder.appending(path: "notes.txt"), atomically: true, encoding: .utf8)
         let modes = ProjectModes.read(in: root)
         #expect(modes.modes.map(\.mode.name) == ["Triage"])
@@ -96,7 +103,8 @@ struct ModeFileTests {
     }
 
     @Test func catalogCyclesInPickerOrder() {
-        let mine = Mode(id: .custom("x"), name: "X", symbol: "x.circle", summary: "", instructions: "x", source: .custom)
+        let mine = Mode(
+            id: .custom("x"), name: "X", symbol: "x.circle", summary: "", instructions: "x", source: .custom)
         let catalog = ModeCatalog(custom: [mine])
         #expect(catalog.next(after: .build).id == .plan)
         #expect(catalog.next(after: .review).id == mine.id)

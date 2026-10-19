@@ -188,7 +188,8 @@ public enum ModeResolver {
         return levels.min { lhs, rhs in
             let left = abs((scale.firstIndex(of: lhs.rank) ?? 0) - target)
             let right = abs((scale.firstIndex(of: rhs.rank) ?? 0) - target)
-            return left == right ? (scale.firstIndex(of: lhs.rank) ?? 0) < (scale.firstIndex(of: rhs.rank) ?? 0) : left < right
+            return left == right
+                ? (scale.firstIndex(of: lhs.rank) ?? 0) < (scale.firstIndex(of: rhs.rank) ?? 0) : left < right
         }
     }
 

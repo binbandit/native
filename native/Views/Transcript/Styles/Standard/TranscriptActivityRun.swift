@@ -8,16 +8,24 @@ struct TranscriptActivityRun: Identifiable, Equatable {
     /// condensing never takes more room than the rows would.
     static let threshold = 6
 
-    /// The run's transcript items, indexed as in `SessionState.items`.
-    let items: ArraySlice<TranscriptItem>
+    /// The run's transcript items. A copy rather than a slice: lines are kept per turn, and a slice
+    /// would keep the whole transcript of its day alive with it.
+    let items: [TranscriptItem]
+    /// Where the first item sits in `SessionState.items`.
+    let firstIndex: Int
     /// How many transcript rows it stands for.
     let rowCount: Int
-    /// When each live thought in the run started and ended, by transcript index.
+    /// When each live thought in the run started and ended, by its index in `items`.
     let thinking: [Int: ThinkingClock]
 
     /// The first item never changes as the run grows, so the run keeps its identity.
     var id: String {
         "run-\(items.first?.id ?? "")"
+    }
+
+    /// Where the run's items sit in `SessionState.items`.
+    var transcriptIndices: Range<Int> {
+        firstIndex..<firstIndex + items.count
     }
 
     var calls: [ToolCallState] {
@@ -31,12 +39,14 @@ struct TranscriptActivityRun: Identifiable, Equatable {
         let run = rows.prefix { $0.row.isFoldableActivity }
         let callCount = run.reduce(0) { count, entry in count + entry.row.callCount }
         guard callCount > Self.threshold, let first = run.first, let last = run.last else { return nil }
-        items = state.items[first.itemIndex..<last.itemIndex + last.row.itemCount]
+        let range = first.itemIndex..<last.itemIndex + last.row.itemCount
+        items = Array(state.items[range])
+        firstIndex = range.lowerBound
         rowCount = run.count
         var thinking: [Int: ThinkingClock] = [:]
-        for index in items.indices {
+        for index in range {
             if let interval = state.thinkingInterval(at: index) {
-                thinking[index] = ThinkingClock(start: interval.start, end: interval.end)
+                thinking[index - range.lowerBound] = ThinkingClock(start: interval.start, end: interval.end)
             }
         }
         self.thinking = thinking

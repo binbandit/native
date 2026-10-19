@@ -25,9 +25,8 @@ struct TranscriptView: View {
 
     var body: some View {
         let items = session.state.items
-        let rows = unfoldsExploration ? items.map(TranscriptRow.item) : TranscriptRow.rows(from: items)
         let transcript = TranscriptStyleConfiguration(
-            session: session, rows: rows, openSubagent: openSubagent,
+            session: session, unfoldsExploration: unfoldsExploration, openSubagent: openSubagent,
             sessionTitle: { model.session(id: $0)?.displayTitle }
         )
         // Sized by the space it's given, never by its rows. The window works out its minimum size by
