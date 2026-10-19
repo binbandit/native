@@ -65,7 +65,8 @@ extension SessionModel {
     func submit(_ behavior: FollowUpBehavior) async {
         let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         let attachments = self.attachments
-        guard origin == .user, acceptsPrompts, phase == .idle || phase == .prompting, !text.isEmpty || !attachments.isEmpty
+        guard origin == .user, acceptsPrompts, phase == .idle || phase == .prompting,
+            !text.isEmpty || !attachments.isEmpty
         else {
             return
         }
