@@ -16,9 +16,6 @@ struct TaskScriptBanner: View {
         let failures = center.failures(in: folder)
         if setup != nil || !failures.isEmpty {
             VStack(spacing: 0) {
-                // HOOKS-EXPERIMENT
-                NoticeBanner(tone: .warning, title: "Measuring the minimum size", detail: String(repeating: "A notice with a long detail that wraps over several lines. ", count: 6)) { Button("Act") {} }
-                UsageBannerRow(systemImage: "gauge", tint: .dsWarning, title: "Context nearly full", detail: String(repeating: "A usage row with a long detail that wraps. ", count: 6)) { Button("Compact") {} }
                 if let setup {
                     TaskScriptSetupStrip(run: setup) { editing = $0 }
                     SeparatorLine()

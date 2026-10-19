@@ -30,7 +30,6 @@ struct UsageBannerRow<Actions: View>: View {
             }
             .tracking(DS.Tracking.tight)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .fixedSize(horizontal: false, vertical: true)
             HStack(spacing: DS.Space.xs) {
                 actions
             }

@@ -10,7 +10,7 @@ the repository itself, so a team shares them.
 
 | Event | `NATIVE_EVENT` | Repository file | Runs | Time limit |
 | --- | --- | --- | --- | --- |
-| Setup | `setup` | `.native/setup.sh` | When Native makes a task's worktree, after copying its env files. The task waits for it (below). | 10 minutes |
+| Setup | `setup` | `.native/setup.sh` | When Native makes a task's worktree, or brings one back when the task is unarchived, after copying its env files. The task waits for it (below). | 10 minutes |
 | Task started | `task-started` | `.native/task-started.sh` | When a task starts, in its worktree or the project's folder | 1 minute |
 | Turn finished | `turn-finished` | `.native/turn-finished.sh` | Each time the agent finishes a turn. A new turn's script stops the last one's if it's still running | 1 minute |
 | Teardown | `teardown` | `.native/teardown.sh` | Before Native removes a task's worktree: archiving, deleting, deleting the project, cleaning up merged tasks | 1 minute |

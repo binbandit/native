@@ -80,7 +80,6 @@ public struct NoticeBanner<Actions: View>: View {
             }
             .tracking(DS.Tracking.tight)
             .textSelection(.enabled)
-            .fixedSize(horizontal: false, vertical: true)
             // Beside buttons, a title line as tall as they are, so the margins stay even.
             .padding(.vertical, Actions.self == EmptyView.self ? 0 : DS.Space.xs)
             .frame(maxWidth: .infinity, alignment: .leading)

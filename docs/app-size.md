@@ -221,14 +221,16 @@ and make it the default.
 
 ## Still to do
 
+Largest first.
+
 | What | Saves, installed / download | Owner |
 | --- | --- | --- |
+| Sparkle delta updates: `generate_appcast` only makes deltas from earlier archives in its folder, and `release.sh` starts it from an empty one, so every update downloads the whole app. A delta between two release builds an hour (31 commits) apart was 2.7 MB instead of 43.6 MB, and applied to reproduce the new app exactly | about 40 MB of most updates | Release pipeline: put the last few releases' archives in the folder before `generate_appcast` |
 | Run scripts on JavaScriptCore (above) | 41 / 15 MB | Brayden's call, then the script runtime |
 | Or, keeping V8: publish a build without the compilers and make it the default | 16.2 / 4.9 MB | Script runtime |
 | Leave Kotlin, C++ and Ruby on the lexer, as "Tree-sitter for highlighting" in `docs/decisions.md` already proposes | 9.6 / about 1 MB | Code highlighting (`Packages/CodeThemes`) |
 | Ship each channel only its own icons: a stable build carries the dev and nightly variants (1.8 MB) and Nightly carries stable, beta and dev ones; seasonal icons could come with their downloadable celebration pack instead | 2 to 3 MB, both | App icons (the code is ours, the artwork the icon artist's) |
 | Lossy compression for the 24 alternate icons (lossless 1024 px images, 4.4 MB that zip can't shrink) | perhaps half of that, both | Icon artwork |
-| Sparkle delta updates: `generate_appcast` only makes deltas from earlier archives in its folder, and `release.sh` starts it from an empty one | DELTA_SAVE | Release pipeline |
 | libghostty without its embedded fonts (3.05 MB; the Nerd Font symbols render prompt icons) or custom shaders (glslang and SPIRV-Cross, 3.5 MB) | up to 6.5 / 2.5 MB | Terminal; needs a patch on the pinned Ghostty, since its build has no option |
 | Strip the standalone `native-host` (`host.sh`); it has no Sentry, so keep its dSYM somewhere first | 5.9 / 0.9 MB per host download | Release pipeline |
 

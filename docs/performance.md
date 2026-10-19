@@ -296,9 +296,8 @@ SwiftUI's accessibility tree up to date, which both columns pay (15–30% of the
 - **The list wasn't lazy.** It was a `LazyVStack` of sections, but each section was a plain
   `VStack` of all its rows, so the stack's one child per section measured every row before the
   first frame: 90% of opening in the profile. Every row is now a child of the lazy stack
-  (`Section` inside it), so only the rows on screen are built and measured. Opening on a clean
-  repository costs nearly as much as on 250 files now; the rest is the inspector column animating
-  open, which lays the whole window out each frame.
+  (`Section` inside it), so only the rows on screen are built and measured. Most of what was
+  left was the inspector column sliding open, which the second pass below takes out.
 - **Rows built buttons nobody saw, and any change rebuilt every row.** Each row built its stage
   and discard buttons hidden, and took closures, which SwiftUI can't compare, so a selection,
   a diff arriving or a rescan re-ran every row. Rows now build their buttons only while they
@@ -321,6 +320,30 @@ SwiftUI's accessibility tree up to date, which both columns pay (15–30% of the
   for the same settled scan; ending a turn still rescans at once.
 - **Rows had no default action.** A row's button trait had nothing to press, so VoiceOver (and
   automation) couldn't select a file. It now selects it.
+
+A second pass, the same evening and method, took the three things the first left (on a fresh copy
+of the 250-change repository; the clean one has a single committed file):
+
+| Measurement | Before | After |
+| --- | --- | --- |
+| Opening the inspector on a clean repository | 280–383 ms | 69–77 ms (174 ms the first time) |
+| Opening it on 250 files | 150–550 ms | 218–392 ms |
+| Selecting a small file | 184–220 ms | 105–196 ms; of a profiled one, over half was the Accessibility press driving it and the accessibility tree it updates, leaving about 40 ms |
+| An agent writing 3 files every 100 ms for 10 s: main-thread time | 147 ms | 44 ms |
+
+- **The column slid open, laying the window out every frame.** The inspector's split view item
+  animated in: a layout of the whole window before and after, and another on each frame of the
+  slide, for about two thirds of opening on a clean repository. Inspectors now appear and go
+  without sliding (`SessionView.openInspector`, a transaction without animations), in one layout.
+- **The session view re-rendered on every rescan.** It read `status` for its subtitle and the
+  Commit action on the files-changed card, so each rescan re-ran its body, transcript included.
+  `GitRepositoryModel` now mirrors what it shows, `summary` and `canCommit`, writing each only when
+  it changes, as `SessionModel` does for its state.
+- **Selecting a file drew the pane three times.** A loader replaced the previous diff, the new diff
+  drew plain, then again once highlighted. The pane now shows the model's `shownDiff`, which moves
+  to the new file once its diff is ready, so a quick load replaces the previous diff in one draw
+  (a slow one shows the loader after 150 ms), and diffs under the Load Diff limit come back
+  highlighted (`DiffLayout(path:oldText:newText:)`), so the first draw is in color.
 
 ### Long transcripts
 
@@ -400,9 +423,7 @@ views as they were with the model fixes below already in (scrolling runs none of
 | Find what holds memory after a Codex reply | After the first long Codex reply, footprint stayed about 85 MB up (167 MB → 252 MB, mostly Malloc Small) after leaving the session; replies from a fake agent come back within 20 MB | Transcript, app model |
 | Read MCP config files off the main thread at launch | About 14 ms in Debug before the first frame; agents can wait for it instead | MCP |
 | Park the default agent when it has no open sessions for a long while, or start it on the first New Session | It's kept running so New Session never waits; with direct adapter launch that wait is now about 0.3 s for Codex | App model |
-| Open inspectors without laying the window out every frame | Opening the changes inspector costs 220–295 ms of main-thread time even on a clean repository: the column's open animation lays out the whole window, transcript included, each frame | Session view |
-| Selecting a file in the changes inspector under 50 ms | Still 115–165 ms in Debug with Accessibility on: the pane draws a loader, then the diff, then again with colors | Git |
+| Opening the changes inspector on many files under 100 ms | Still 218–392 ms on 250 files against 69–77 ms on a clean repository: laying out and drawing the rows on screen (text measuring, the diff's selectable text) and the first file's diff, in Debug | Git |
 | Scroll a long transcript at 120 Hz | Still 7–33% of refreshes dropped in a fast flick and 7–13% at reading speed (Debug): new rows lay out their selectable text on the main thread. Then lists without `Grid`, and code blocks without a scroll view each | Transcript |
 | Streaming into a long session within budget | 42% CPU in the 500-turn session against 30% in a 20-turn one: every chunk still has SwiftUI read the id of each of the transcript's thousands of lines (19%), and plans the streaming turn. Measure again on a quiet Mac first | Transcript |
 | Release-build numbers for long transcripts | Everything above is Debug; Release is faster, but the lazy stack and text layout are system code either way | Performance |
-| Stop re-rendering the session view on every git rescan | `SessionView` reads `repository.summary` and `status` for the subtitle and the Commit action, so each rescan re-runs its body | Session view, Git |
