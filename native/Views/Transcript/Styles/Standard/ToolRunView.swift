@@ -14,6 +14,8 @@ struct ToolRunView: View, Equatable {
     @State private var isHovering = false
     /// Whether the list shows its end, so new calls should scroll into view.
     @State private var isFollowing = true
+    /// Whether the list is scrolled away from its first row.
+    @State private var isScrolledDown = false
     @State private var position = ScrollPosition(edge: .bottom)
 
     /// A run changes only with its items; the session is always the same one.
@@ -57,27 +59,39 @@ struct ToolRunView: View, Equatable {
             .padding(.vertical, DS.Space.xs)
         }
         .scrollPosition($position)
-        // The row cut off at the top fades out rather than being sliced through.
-        .scrollEdgeEffectStyle(.soft, for: .top)
         .defaultScrollAnchor(.bottom, for: .initialOffset)
         .scrollBounceBehavior(.basedOnSize)
         .onScrollGeometryChange(for: ToolRunScrollState.self) { [threshold = DS.Space.lg] geometry in
             ToolRunScrollState(
                 contentHeight: geometry.contentSize.height,
+                isAtStart: geometry.visibleRect.minY <= 1,
                 isAtEnd: geometry.visibleRect.maxY >= geometry.contentSize.height - threshold)
         } action: { old, new in
             // A new call moves the end away without the user doing anything; only their scrolling
             // decides whether the list follows.
-            if new.contentHeight == old.contentHeight {
+            if new.contentHeight == old.contentHeight, isFollowing != new.isAtEnd {
                 isFollowing = new.isAtEnd
+            }
+            if isScrolledDown == new.isAtStart {
+                isScrolledDown = !new.isAtStart
             }
         }
         .onChange(of: run.items.count) {
             if isFollowing { position.scrollTo(edge: .bottom) }
         }
         .frame(height: TranscriptMetrics.toolRunListHeight)
+        // Rows cut off where the list scrolls fade rather than being sliced through: at the top once
+        // it's scrolled down, at the bottom while it isn't following the newest call.
+        .dsEdgeFade(fadedEdges)
         .overlay { shape.strokeBorder(.dsSeparator) }
         .clipShape(shape)
+    }
+
+    private var fadedEdges: Edge.Set {
+        var edges: Edge.Set = []
+        if isScrolledDown { edges.insert(.top) }
+        if !isFollowing { edges.insert(.bottom) }
+        return edges
     }
 
     @ViewBuilder private func row(_ item: TranscriptItem, at index: Int) -> some View {
@@ -111,6 +125,7 @@ struct ToolRunView: View, Equatable {
 
 private struct ToolRunScrollState: Equatable {
     var contentHeight: CGFloat
+    var isAtStart: Bool
     var isAtEnd: Bool
 }
 
