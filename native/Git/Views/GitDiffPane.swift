@@ -4,15 +4,14 @@ import SwiftUI
 /// The selected file's diff, under a header naming the file and its line counts. Lines come from
 /// the transcript's `DiffView`, so edits look the same wherever they're shown.
 struct GitDiffPane: View {
-    let change: FileChange?
-    let content: GitDiffContent?
+    let model: GitRepositoryModel
 
     var body: some View {
         VStack(spacing: 0) {
-            if let change {
+            if let change = model.selectedChange {
                 header(change)
                 SeparatorLine()
-                lines
+                lines(model.selectedDiff)
             } else {
                 EmptyStateView("No file selected", systemImage: "doc.text")
             }
@@ -37,7 +36,7 @@ struct GitDiffPane: View {
         .frame(height: GitMetrics.summaryHeight)
     }
 
-    @ViewBuilder private var lines: some View {
+    @ViewBuilder private func lines(_ content: GitDiffContent?) -> some View {
         switch content {
         case nil:
             DotGridLoader(pattern: .waiting)
@@ -48,7 +47,17 @@ struct GitDiffPane: View {
             // Lines wrap rather than scroll sideways: the column is narrow, and `DiffView` keeps its
             // gutter intact for wrapped lines.
             ScrollView {
-                DiffView(diff: diff, isEmbedded: true)
+                DiffView(
+                    path: diff.path, oldText: diff.oldText, newText: diff.newText, layout: diff.layout,
+                    isEmbedded: true, isLazy: true)
+            }
+        case .collapsed(let changedLines, let size):
+            EmptyStateView(
+                "Large diff", systemImage: "doc.text.magnifyingglass",
+                message: Self.collapsedMessage(changedLines: changedLines, size: size)
+            ) {
+                Button("Load Diff") { model.expandSelectedDiff() }
+                    .buttonStyle(.ds(.secondary))
             }
         case .binary:
             EmptyStateView(
@@ -65,5 +74,11 @@ struct GitDiffPane: View {
         case .unavailable(let reason):
             EmptyStateView("Couldn't load the diff", systemImage: "exclamationmark.triangle", message: reason)
         }
+    }
+
+    private static func collapsedMessage(changedLines: Int?, size: Int) -> String {
+        let file = size.formatted(.byteCount(style: .file))
+        guard let changedLines else { return "This file is \(file), so its diff waits until you ask for it." }
+        return "\(changedLines.formatted()) lines changed in a \(file) file, so the diff waits until you ask for it."
     }
 }

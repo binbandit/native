@@ -24,7 +24,7 @@ public enum TaskBadge: Equatable, Sendable {
 
 /// A task (an agent session) in the sidebar: status glyph, title and a
 /// trailing badge, diff or age; 36pt tall with 6pt-rounded hover and selection fills. Unread tasks
-/// set their title semibold in the primary color. With `onArchive`, an archive button takes the
+/// set their title semibold in the primary color; inline code in a title shows in monospace. With `onArchive`, an archive button takes the
 /// trailing items' place on hover (and is offered to VoiceOver as an action).
 ///
 /// Two optional slots: `leading`, a 16pt type glyph (the agent: `Image(systemName:)` or any view,
@@ -104,7 +104,8 @@ public struct TaskRow<Leading: View, Accessory: View>: View {
 
                 VStack(alignment: .leading, spacing: DS.Space.xxs) {
                     HStack(spacing: DS.Space.sm) {
-                        Text(title)
+                        // Titles often carry inline code ("Add `maxLength` option").
+                        DSInlineCodeText(title)
                             .font(isUnread ? .dsCalloutSemibold : .dsCalloutBook)
                             .foregroundStyle(isUnread || isSelected ? .dsTextPrimary : .dsTextSecondary)
                             .lineLimit(1)

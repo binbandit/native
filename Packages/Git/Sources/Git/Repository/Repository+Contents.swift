@@ -29,27 +29,48 @@ extension Repository {
         }
     }
 
-    /// The two sides of a change, as a diff of it would compare them.
+    /// The two sides of a change, as a diff of it would compare them, read at the same time.
     public func versions(of change: FileChange) async throws(GitError) -> FileVersions {
-        let old: Data?
-        let new: Data?
+        let old: Side?
+        let new: Side?
         switch change.area {
         case .staged:
             old =
-                change.kind == .added || change.kind == .copied
-                ? nil : try await contents(of: change.originalPath ?? change.path, at: .head)
-            new = change.kind == .deleted ? nil : try await contents(of: change.path, at: .index)
+                change.kind == .added || change.kind == .copied ? nil : Side(change.originalPath ?? change.path, .head)
+            new = change.kind == .deleted ? nil : Side(change.path, .index)
         case .unstaged:
-            old = change.kind == .added ? nil : try await contents(of: change.path, at: .index)
-            new = change.kind == .deleted ? nil : try await contents(of: change.path, at: .workingTree)
+            old = change.kind == .added ? nil : Side(change.path, .index)
+            new = change.kind == .deleted ? nil : Side(change.path, .workingTree)
         case .untracked:
             old = nil
-            new = try await contents(of: change.path, at: .workingTree)
+            new = Side(change.path, .workingTree)
         case .conflicted:
-            old = try await contents(of: change.path, at: .head)
-            new = try await contents(of: change.path, at: .workingTree)
+            old = Side(change.path, .head)
+            new = Side(change.path, .workingTree)
         }
-        return FileVersions(path: change.path, old: old, new: new)
+        do {
+            async let oldData = contents(of: old)
+            async let newData = contents(of: new)
+            return FileVersions(path: change.path, old: try await oldData, new: try await newData)
+        } catch {
+            throw error as? GitError ?? .unexpectedOutput("\(error)")
+        }
+    }
+
+    /// One side of a change: a path at a revision.
+    private struct Side {
+        let path: String
+        let revision: Revision
+
+        init(_ path: String, _ revision: Revision) {
+            self.path = path
+            self.revision = revision
+        }
+    }
+
+    private func contents(of side: Side?) async throws(GitError) -> Data? {
+        guard let side else { return nil }
+        return try await contents(of: side.path, at: side.revision)
     }
 
     /// A unified diff of the changes against HEAD, untracked files included as additions. Meant

@@ -1,4 +1,3 @@
-import ACP
 import Git
 import SwiftUI
 
@@ -31,7 +30,7 @@ enum GitPreviewFixtures {
     )
 
     static let diff = GitDiffContent.text(
-        FileDiff(
+        GitDiffText(
             path: "native/Git/Model/GitStore.swift",
             oldText: nil,
             newText: """

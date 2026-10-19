@@ -9,7 +9,9 @@ public struct DiffView: View {
     let path: String
     let oldText: String?
     let newText: String
+    let layout: DiffLayout?
     let isEmbedded: Bool
+    let isLazy: Bool
 
     @Environment(\.colorScheme) private var colorScheme
     @Environment(\.dsLightTone) private var lightTone
@@ -27,17 +29,26 @@ public struct DiffView: View {
 
     /// - Parameters:
     ///   - oldText: The file before the change; nil for a new file.
+    ///   - layout: The texts' rows, worked out ahead off the main thread; without it the diff is
+    ///     laid out while drawing.
     ///   - isEmbedded: Draws only the lines, for frames that already name the file and its counts
     ///     (a tool row's details, a Git pane).
-    public init(path: String, oldText: String?, newText: String, isEmbedded: Bool = false) {
+    ///   - isLazy: Builds lines as they scroll into view, for a diff that is a scroll view's whole
+    ///     content (a Git pane), where hundreds of lines would otherwise all be laid out at once.
+    public init(
+        path: String, oldText: String?, newText: String, layout: DiffLayout? = nil, isEmbedded: Bool = false,
+        isLazy: Bool = false
+    ) {
         self.path = path
         self.oldText = oldText
         self.newText = newText
+        self.layout = layout
         self.isEmbedded = isEmbedded
+        self.isLazy = isLazy
     }
 
     public var body: some View {
-        let (rows, stats) = DiffRow.rows(oldText: oldText, newText: newText)
+        let (rows, stats) = layout.map { ($0.rows, $0.stats) } ?? DiffRow.rows(oldText: oldText, newText: newText)
         let key = HighlightKey(path: path, oldText: oldText, newText: newText)
         let current = highlighted?.key == key ? highlighted : nil
         let lines = DiffHighlightedLines(
@@ -49,7 +60,7 @@ public struct DiffView: View {
         )
         Group {
             if isEmbedded {
-                DiffLines(rows: rows, lines: lines)
+                DiffLines(rows: rows, lines: lines, isLazy: isLazy)
             } else {
                 framed(rows: rows, stats: stats, lines: lines)
             }
@@ -69,7 +80,7 @@ public struct DiffView: View {
             VStack(alignment: .leading, spacing: 0) {
                 header(stats)
                 SeparatorLine()
-                DiffLines(rows: rows, lines: lines)
+                DiffLines(rows: rows, lines: lines, isLazy: isLazy)
             }
             .background(.dsDiffBackground, in: shape)
             .clipShape(shape)
@@ -114,14 +125,17 @@ private struct DiffHighlightedLines {
 private struct DiffLines: View {
     let rows: [DiffRow]
     let lines: DiffHighlightedLines
+    let isLazy: Bool
 
     var body: some View {
         // A hidden template reserves the gutter width for the longest line number.
         let largest = rows.compactMap(\.number).max() ?? 0
         let numberTemplate = String(repeating: "8", count: max(String(largest).count, 2))
-        VStack(alignment: .leading, spacing: 0) {
-            ForEach(rows.indices, id: \.self) { index in
-                DiffRowView(row: rows[index], numberTemplate: numberTemplate, lines: lines)
+        Group {
+            if isLazy {
+                LazyVStack(alignment: .leading, spacing: 0) { rowViews(numberTemplate) }
+            } else {
+                VStack(alignment: .leading, spacing: 0) { rowViews(numberTemplate) }
             }
         }
         .padding(.vertical, DS.Space.xs)
@@ -130,6 +144,12 @@ private struct DiffLines: View {
         // A themed diff draws on its theme's background wherever it's embedded.
         .background(lines.colors.isNative ? AnyShapeStyle(.clear) : AnyShapeStyle(.dsDiffBackground))
         .textSelection(.enabled)
+    }
+
+    private func rowViews(_ numberTemplate: String) -> some View {
+        ForEach(rows.indices, id: \.self) { index in
+            DiffRowView(row: rows[index], numberTemplate: numberTemplate, lines: lines)
+        }
     }
 }
 

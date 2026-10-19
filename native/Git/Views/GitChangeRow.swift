@@ -6,9 +6,9 @@ import SwiftUI
 struct GitChangeRow: View {
     let change: FileChange
     let isSelected: Bool
-    let onSelect: () -> Void
-    let onToggleStaged: () -> Void
-    let onDiscard: () -> Void
+    let model: GitRepositoryModel
+    /// Where a discard waits for the user to confirm it.
+    @Binding var pendingDiscard: [FileChange]
 
     @State private var isHovered = false
 
@@ -16,13 +16,14 @@ struct GitChangeRow: View {
         HStack(spacing: DS.Space.sm) {
             label
                 .frame(maxWidth: .infinity, alignment: .leading)
-            ZStack(alignment: .trailing) {
-                summary
-                    .opacity(showsActions ? 0 : 1)
-                actions
-                    .opacity(showsActions ? 1 : 0)
-                    .allowsHitTesting(showsActions)
-            }
+            // The buttons are only built while they show, over the summary, which keeps its room
+            // so the path doesn't shift.
+            summary
+                .opacity(showsActions ? 0 : 1)
+                .frame(minWidth: GitMetrics.rowActionsWidth, alignment: .trailing)
+                .overlay(alignment: .trailing) {
+                    if showsActions { actions }
+                }
         }
         .padding(.leading, DS.Space.md)
         .padding(.trailing, DS.Space.xs)
@@ -32,13 +33,14 @@ struct GitChangeRow: View {
                 .fill(isSelected ? .dsSelected : isHovered ? .dsHover : .clear)
         }
         .contentShape(.rect)
-        .onTapGesture(perform: onSelect)
+        .onTapGesture(perform: select)
         .trackHover($isHovered)
+        .contextMenu { menu }
         .accessibilityElement(children: .combine)
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
-        .accessibilityAction(.default, onSelect)
-        .accessibilityAction(named: stageLabel, onToggleStaged)
-        .accessibilityAction(named: "Discard Changes", onDiscard)
+        .accessibilityAction(.default, select)
+        .accessibilityAction(named: stageLabel, toggleStaged)
+        .accessibilityAction(named: "Discard Changes", discard)
     }
 
     @ViewBuilder private var label: some View {
@@ -72,11 +74,18 @@ struct GitChangeRow: View {
 
     private var actions: some View {
         HStack(spacing: 0) {
-            IconButton("Discard Changes", systemImage: "arrow.uturn.backward", action: onDiscard)
+            IconButton("Discard Changes", systemImage: "arrow.uturn.backward", action: discard)
                 .dsHitTarget(DS.Size.controlXS)
-            IconButton(stageLabel, systemImage: change.area == .staged ? "minus" : "plus", action: onToggleStaged)
+            IconButton(stageLabel, systemImage: change.area == .staged ? "minus" : "plus", action: toggleStaged)
                 .dsHitTarget(DS.Size.controlXS)
         }
+    }
+
+    @ViewBuilder private var menu: some View {
+        Button(stageLabel, action: toggleStaged)
+        Button("Discard Changes…", role: .destructive, action: discard)
+        Divider()
+        GitFileMenuItems(path: change.path, root: model.repository?.root)
     }
 
     /// Hovering shows a row's actions; selecting it does too, so touch can reach them.
@@ -86,5 +95,18 @@ struct GitChangeRow: View {
 
     private var stageLabel: String {
         change.area == .staged ? "Unstage" : "Stage"
+    }
+
+    private func select() {
+        model.selection = change.id
+    }
+
+    private func toggleStaged() {
+        let change = change
+        Task { change.area == .staged ? await model.unstage([change]) : await model.stage([change]) }
+    }
+
+    private func discard() {
+        pendingDiscard = [change]
     }
 }

@@ -2,20 +2,34 @@ import Git
 import SwiftUI
 
 /// The changed files, grouped by where they live: conflicts, staged, unstaged, untracked. Each
-/// group's header stages or unstages the whole group.
+/// group's header stages or unstages the whole group. Every row is a child of the lazy stack
+/// itself, so only the rows on screen are built, however many files changed.
 struct GitChangeList: View {
     let model: GitRepositoryModel
-    /// Asks for confirmation before anything is thrown away.
-    let onDiscard: ([FileChange]) -> Void
+    /// Changes waiting for the user to confirm throwing them away.
+    @Binding var pendingDiscard: [FileChange]
 
     var body: some View {
         let status = model.status
+        let selection = model.selection
+        let sections = FileChange.Area.allCases.compactMap { area in
+            let changes = status?.changes(in: area) ?? []
+            return changes.isEmpty ? nil : (area: area, changes: changes)
+        }
         ScrollView {
-            LazyVStack(alignment: .leading, spacing: DS.Space.xxs) {
-                ForEach(FileChange.Area.allCases, id: \.self) { area in
-                    let changes = status?.changes(in: area) ?? []
-                    if !changes.isEmpty {
-                        section(area, changes: changes)
+            LazyVStack(alignment: .leading, spacing: 0) {
+                ForEach(sections, id: \.area) { section in
+                    Section {
+                        ForEach(section.changes) { change in
+                            GitChangeRow(
+                                change: change, isSelected: selection == change.id, model: model,
+                                pendingDiscard: $pendingDiscard)
+                        }
+                    } header: {
+                        GitChangeSectionHeader(
+                            area: section.area, changes: section.changes,
+                            isFirst: section.area == sections.first?.area, model: model,
+                            pendingDiscard: $pendingDiscard)
                     }
                 }
                 if let omitted = status?.omittedUntrackedCount, omitted > 0 {
@@ -35,57 +49,6 @@ struct GitChangeList: View {
     static func contentHeight(for status: RepositoryStatus) -> CGFloat {
         let sections = CGFloat(Set(status.changes.map(\.area)).count)
         let rows = CGFloat(status.changes.count + (status.omittedUntrackedCount > 0 ? 1 : 0))
-        return sections * (DS.Size.controlXS + DS.Space.sm + DS.Space.xxs) + rows * GitMetrics.rowHeight + DS.Space.md
-    }
-
-    private func section(_ area: FileChange.Area, changes: [FileChange]) -> some View {
-        VStack(alignment: .leading, spacing: 0) {
-            HStack(spacing: DS.Space.sm) {
-                Text(area.title)
-                    .font(.dsBody)
-                    .foregroundStyle(.dsTextTertiary)
-                Text("\(changes.count)")
-                    .font(.dsMonoCaption)
-                    .foregroundStyle(.dsTextQuaternary)
-                Spacer(minLength: DS.Space.md)
-                if area != .staged {
-                    IconButton("Discard All \(area.title)", systemImage: "arrow.uturn.backward") { onDiscard(changes) }
-                        .dsHitTarget(DS.Size.controlXS)
-                }
-                IconButton(
-                    area == .staged ? "Unstage All" : "Stage All", systemImage: area == .staged ? "minus" : "plus"
-                ) {
-                    Task { area == .staged ? await model.unstage(changes) : await model.stage(changes) }
-                }
-                .dsHitTarget(DS.Size.controlXS)
-            }
-            .tracking(DS.Tracking.tight)
-            .padding(.leading, DS.Space.md)
-            .frame(height: DS.Size.controlXS)
-            .padding(.top, DS.Space.sm)
-            .accessibilityElement(children: .contain)
-            .accessibilityLabel("\(area.title), \(changes.count) files")
-            ForEach(changes) { change in
-                GitChangeRow(
-                    change: change,
-                    isSelected: model.selection == change.id,
-                    onSelect: { model.selection = change.id },
-                    onToggleStaged: {
-                        Task { change.area == .staged ? await model.unstage([change]) : await model.stage([change]) }
-                    },
-                    onDiscard: { onDiscard([change]) }
-                )
-                .contextMenu { menu(for: change) }
-            }
-        }
-    }
-
-    @ViewBuilder private func menu(for change: FileChange) -> some View {
-        Button(change.area == .staged ? "Unstage" : "Stage") {
-            Task { change.area == .staged ? await model.unstage([change]) : await model.stage([change]) }
-        }
-        Button("Discard Changes…", role: .destructive) { onDiscard([change]) }
-        Divider()
-        GitFileMenuItems(path: change.path, root: model.repository?.root)
+        return sections * GitChangeSectionHeader.height + rows * GitMetrics.rowHeight + DS.Space.md
     }
 }

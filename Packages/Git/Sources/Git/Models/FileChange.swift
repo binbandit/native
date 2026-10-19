@@ -46,7 +46,13 @@ public struct FileChange: Hashable, Sendable, Identifiable {
         self.stats = stats
     }
 
-    public var id: String { "\(area):\(path)" }
+    /// A change's identity: its path in its area, so a partly staged file has two.
+    public struct ID: Hashable, Sendable {
+        public var area: Area
+        public var path: String
+    }
+
+    public var id: ID { ID(area: area, path: path) }
 
     /// Every path the change touches: the path, and the original path of a rename.
     public var paths: [String] {

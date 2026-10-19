@@ -75,6 +75,25 @@ struct RepositoryTests {
         #expect(try await repository.status().staged.isEmpty)
     }
 
+    @Test func changedFilesListFirstThenLineStatsFillIn() async throws {
+        let test = try await TestRepository.make()
+        defer { test.remove() }
+        try test.write("README.md", "# Test\n\nHello, again.\nAnd more.\n")
+        try test.write("new.txt", "a\nb\n")
+        let repository = try await test.repository
+
+        let files = try await repository.changedFiles()
+        #expect(files.changes.map(\.path) == ["README.md", "new.txt"])
+        #expect(files.changes.allSatisfy { $0.stats == nil })
+        #expect(files.totals == .zero)
+
+        // Nothing staged, so the unstaged diff gives the totals.
+        let status = try await repository.lineStats(for: files)
+        #expect(status == (try await repository.status()))
+        #expect(status.unstaged.first?.stats == LineStats(additions: 2, deletions: 1))
+        #expect(status.totals == LineStats(additions: 4, deletions: 1))
+    }
+
     @Test func versionsOfEachArea() async throws {
         let test = try await TestRepository.make()
         defer { test.remove() }

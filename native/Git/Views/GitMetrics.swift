@@ -12,6 +12,8 @@ nonisolated enum GitMetrics {
     static let summaryHeight: CGFloat = DS.Size.controlMD
     /// File rows, a little padding around 20pt text.
     static let rowHeight: CGFloat = DS.Size.controlSM
+    /// A row's discard and stage buttons side by side, which its line counts make room for.
+    static let rowActionsWidth: CGFloat = DS.Size.controlXS * 2
     /// The status glyph at a row's trailing edge.
     static let statusGlyph: CGFloat = DS.Size.navIcon
     /// The file list grows with its content up to this share of the column (at least

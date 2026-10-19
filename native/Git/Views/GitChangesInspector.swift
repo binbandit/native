@@ -68,13 +68,14 @@ struct GitChangesInspector: View {
             // The list takes what it needs, up to a share of the column, and the diff the rest.
             GeometryReader { proxy in
                 VStack(spacing: 0) {
-                    GitChangeList(model: model) { pendingDiscard = $0 }
+                    GitChangeList(model: model, pendingDiscard: $pendingDiscard)
                         .frame(
                             height: min(
                                 GitChangeList.contentHeight(for: status),
                                 max(proxy.size.height * GitMetrics.listShare, GitMetrics.listMinHeight)))
                     SeparatorLine()
-                    GitDiffPane(change: model.selectedChange, content: model.selectedDiff)
+                    // Reads the selection and its diff itself, so a diff arriving redraws only the pane.
+                    GitDiffPane(model: model)
                 }
             }
         } else {

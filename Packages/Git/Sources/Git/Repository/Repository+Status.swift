@@ -7,26 +7,15 @@ extension Repository {
 
     /// The branch, every changed file with its line counts, and the working tree's totals.
     public func status() async throws(GitError) -> RepositoryStatus {
+        try await lineStats(for: changedFiles())
+    }
+
+    /// The branch and every changed file, without line counts or totals: one `git status`, quick
+    /// enough to list the files while `lineStats(for:)` diffs them.
+    public func changedFiles() async throws(GitError) -> RepositoryStatus {
         let output = try await run(
             ["status", "--porcelain=v2", "--branch", "-z", "--untracked-files=all"], readOnly: true)
         var (branch, changes) = try StatusParser.parse(output.text)
-
-        // The working tree against HEAD, or against the empty tree before the first commit.
-        let base = branch.isUnborn ? try await emptyTree() : "HEAD"
-        let numstat = ["--numstat", "-z", "--no-ext-diff", "--no-textconv", "--no-color"]
-        let staged: [String: LineStats]
-        let unstaged: [String: LineStats]
-        let total: [String: LineStats]
-        do {
-            async let stagedOutput = run(["diff", "--cached", "-M"] + numstat, readOnly: true)
-            async let unstagedOutput = run(["diff"] + numstat, readOnly: true)
-            async let totalOutput = run(["diff", "-M", base] + numstat, readOnly: true)
-            staged = NumstatParser.parse(try await stagedOutput.text)
-            unstaged = NumstatParser.parse(try await unstagedOutput.text)
-            total = NumstatParser.parse(try await totalOutput.text)
-        } catch {
-            throw error as? GitError ?? .unexpectedOutput("\(error)")
-        }
 
         let untrackedCount = changes.count { $0.area == .untracked }
         var omitted = 0
@@ -39,26 +28,48 @@ extension Repository {
             }
             omitted = untrackedCount - Self.untrackedLimit
         }
-
-        let untracked = try await untrackedStats(changes.filter { $0.area == .untracked }.map(\.path))
-        let totals = (Array(total.values) + Array(untracked.values)).reduce(LineStats.zero, +)
-        for index in changes.indices {
-            switch changes[index].area {
-            case .staged:
-                changes[index].stats = staged[changes[index].path]
-            case .unstaged:
-                changes[index].stats = unstaged[changes[index].path]
-            case .conflicted:
-                changes[index].stats = unstaged[changes[index].path]
-            case .untracked:
-                changes[index].stats = untracked[changes[index].path]
-            }
-        }
         changes.sort { lhs, rhs in
             lhs.area != rhs.area
                 ? lhs.area < rhs.area : lhs.path.localizedStandardCompare(rhs.path) == .orderedAscending
         }
-        return RepositoryStatus(branch: branch, changes: changes, totals: totals, omittedUntrackedCount: omitted)
+        return RepositoryStatus(branch: branch, changes: changes, totals: .zero, omittedUntrackedCount: omitted)
+    }
+
+    /// `status` with each change's line counts and the working tree's totals filled in.
+    public func lineStats(for status: RepositoryStatus) async throws(GitError) -> RepositoryStatus {
+        var status = status
+        let numstat = ["--numstat", "-z", "--no-ext-diff", "--no-textconv", "--no-color"]
+        // With nothing staged or conflicted the working tree differs from HEAD exactly as it does
+        // from the index, so the unstaged diff gives the totals and git diffs each file once.
+        let diffsAgainstHead = status.changes.contains { $0.area == .staged || $0.area == .conflicted }
+        let staged: [String: LineStats]
+        let unstaged: [String: LineStats]
+        var total: [String: LineStats]?
+        do {
+            async let stagedOutput = run(["diff", "--cached", "-M"] + numstat, readOnly: true)
+            async let unstagedOutput = run(["diff"] + numstat, readOnly: true)
+            if diffsAgainstHead {
+                // The working tree against HEAD, or against the empty tree before the first commit.
+                let base = status.branch.isUnborn ? try await emptyTree() : "HEAD"
+                total = NumstatParser.parse(try await run(["diff", "-M", base] + numstat, readOnly: true).text)
+            }
+            staged = NumstatParser.parse(try await stagedOutput.text)
+            unstaged = NumstatParser.parse(try await unstagedOutput.text)
+        } catch {
+            throw error as? GitError ?? .unexpectedOutput("\(error)")
+        }
+
+        let untracked = try await untrackedStats(status.untracked.map(\.path))
+        status.totals = (Array((total ?? unstaged).values) + Array(untracked.values)).reduce(LineStats.zero, +)
+        for index in status.changes.indices {
+            let path = status.changes[index].path
+            switch status.changes[index].area {
+            case .staged: status.changes[index].stats = staged[path]
+            case .unstaged, .conflicted: status.changes[index].stats = unstaged[path]
+            case .untracked: status.changes[index].stats = untracked[path]
+            }
+        }
+        return status
     }
 
     /// Line counts of files git doesn't track, from one diff rather than reading each file.

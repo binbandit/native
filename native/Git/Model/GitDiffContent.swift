@@ -1,10 +1,12 @@
-import ACP
 import Foundation
 import Git
 
 /// What the diff pane can show for the selected change.
-enum GitDiffContent: Equatable {
-    case text(FileDiff)
+nonisolated enum GitDiffContent: Equatable, Sendable {
+    case text(GitDiffText)
+    /// Big enough that diffing and drawing it takes a moment, so it waits for Load Diff. Lines are
+    /// git's count of changed lines when known; the size is the larger side's, in bytes.
+    case collapsed(changedLines: Int?, size: Int)
     case binary
     /// Too big to diff line by line; the size is in bytes.
     case tooLarge(Int)
@@ -13,16 +15,52 @@ enum GitDiffContent: Equatable {
 
     /// Line diffs past this size are slow to compute and unreadable in a side panel.
     static let sizeLimit = 300 * 1024
+    /// Changes past either of these show collapsed until the user asks for them.
+    static let collapseSize = 96 * 1024
+    static let collapseLines = 600
 
-    init(change: FileChange, versions: FileVersions) {
-        if change.isSubmodule {
-            self = .submodule
-        } else if versions.isBinary {
+    /// Reads both sides of `change` and diffs them, off the main thread. A big change comes back
+    /// `.collapsed` unless `expanded`.
+    @concurrent
+    static func load(_ change: FileChange, from repository: Repository, expanded: Bool) async -> Self {
+        if change.isSubmodule { return .submodule }
+        do {
+            return Self(change: change, versions: try await repository.versions(of: change), expanded: expanded)
+        } catch {
+            return .unavailable(error.localizedDescription)
+        }
+    }
+
+    init(change: FileChange, versions: FileVersions, expanded: Bool) {
+        let changedLines = change.stats.map { $0.additions + $0.deletions }
+        if versions.isBinary {
             self = .binary
         } else if versions.size > Self.sizeLimit {
             self = .tooLarge(versions.size)
+        } else if !expanded, versions.size > Self.collapseSize || (changedLines ?? 0) > Self.collapseLines {
+            self = .collapsed(changedLines: changedLines, size: versions.size)
         } else {
-            self = .text(FileDiff(path: change.path, oldText: versions.oldText, newText: versions.newText ?? ""))
+            self = .text(GitDiffText(path: change.path, oldText: versions.oldText, newText: versions.newText ?? ""))
         }
+    }
+}
+
+/// A text change's two sides and the rows the diff pane draws for them.
+nonisolated struct GitDiffText: Equatable, Sendable {
+    let path: String
+    let oldText: String?
+    let newText: String
+    let layout: DiffLayout
+
+    init(path: String, oldText: String?, newText: String) {
+        self.path = path
+        self.oldText = oldText
+        self.newText = newText
+        layout = DiffLayout(oldText: oldText, newText: newText)
+    }
+
+    /// The layout follows from the texts.
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.path == rhs.path && lhs.oldText == rhs.oldText && lhs.newText == rhs.newText
     }
 }

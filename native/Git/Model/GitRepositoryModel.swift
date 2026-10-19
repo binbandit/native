@@ -37,13 +37,25 @@ final class GitRepositoryModel {
     /// Called after each successful push with the checkout it ran in and the branch.
     @ObservationIgnored var onPushed: ((_ project: URL, _ branch: String) -> Void)?
     @ObservationIgnored private var refreshTask: Task<Void, Never>?
-    @ObservationIgnored private var isRefreshPending = false
+    @ObservationIgnored private var pendingRefresh: PendingRefresh?
+    @ObservationIgnored private var isScanning = false
+    @ObservationIgnored private var lastScan: ContinuousClock.Instant?
     @ObservationIgnored private var watchTask: Task<Void, Never>?
     @ObservationIgnored private var diffTask: Task<Void, Never>?
     @ObservationIgnored private var selectedDiffID: FileChange.ID?
+    /// The change the user asked to see in full past the size diffs collapse at.
+    @ObservationIgnored private var expandedDiffID: FileChange.ID?
+
+    /// A rescan someone asked for: right away (an action, the user), or once file events settle.
+    private enum PendingRefresh {
+        case now
+        case settled
+    }
 
     /// How long file events settle before a rescan, so a burst of agent writes costs one scan.
     static let settleDelay = Duration.milliseconds(250)
+    /// While file events keep coming (an agent writing), rescans run at most this often.
+    static let busyInterval = Duration.seconds(1)
     /// Beyond this many changed paths an event batch isn't worth checking against `.gitignore`.
     static let ignoreCheckLimit = 500
     /// How long a plain confirmation stays up.
@@ -104,7 +116,13 @@ final class GitRepositoryModel {
 
     /// Rescans soon. Calls while a scan runs coalesce into one more scan after it.
     func refresh() {
-        requestRefresh(settling: false)
+        requestRefresh(.now)
+    }
+
+    /// Rescans once things settle, for signals that come in bursts, like an agent's file edits;
+    /// coalesces with the repository's own file events.
+    func refreshWhenSettled() {
+        requestRefresh(.settled)
     }
 
     /// Rescans and waits for the result.
@@ -113,17 +131,36 @@ final class GitRepositoryModel {
         await refreshTask?.value
     }
 
-    private func requestRefresh(settling: Bool) {
-        isRefreshPending = true
-        guard refreshTask == nil else { return }
-        refreshTask = Task { [weak self] in
-            if settling { try? await Task.sleep(for: Self.settleDelay) }
-            while let self, self.isRefreshPending, !Task.isCancelled {
-                self.isRefreshPending = false
-                await self.load()
-            }
-            self?.refreshTask = nil
+    private func requestRefresh(_ request: PendingRefresh) {
+        pendingRefresh = request == .now ? .now : pendingRefresh ?? .settled
+        if let refreshTask {
+            // A rescan still waiting for file events to settle runs now when asked for directly.
+            guard request == .now, !isScanning else { return }
+            refreshTask.cancel()
         }
+        refreshTask = Task { [weak self] in await self?.runPendingRefreshes() }
+    }
+
+    private func runPendingRefreshes() async {
+        while let pending = pendingRefresh {
+            if pending == .settled {
+                // Cancelled: a direct refresh took over.
+                do { try await Task.sleep(for: settledRefreshDelay) } catch { return }
+            }
+            pendingRefresh = nil
+            isScanning = true
+            await load()
+            isScanning = false
+            lastScan = .now
+        }
+        refreshTask = nil
+    }
+
+    /// The settle delay, stretched so that file events arriving all the time cost one scan per
+    /// `busyInterval`.
+    private var settledRefreshDelay: Duration {
+        guard let lastScan else { return Self.settleDelay }
+        return max(Self.settleDelay, Self.busyInterval - lastScan.duration(to: .now))
     }
 
     private func load() async {
@@ -134,8 +171,16 @@ final class GitRepositoryModel {
                 return
             }
             async let remotes = repository.remotes()
-            let status = try await repository.status()
+            let files = try await repository.changedFiles()
             hasRemote = !(try await remotes).isEmpty
+            guard !Task.isCancelled else { return }
+            // The first scan lists the files while git counts their lines; later scans keep the
+            // last counts on screen until the new ones are in.
+            if status == nil {
+                apply(files)
+                state = .ready
+            }
+            let status = try await repository.lineStats(for: files)
             guard !Task.isCancelled else { return }
             apply(status)
             state = .ready
@@ -223,8 +268,10 @@ final class GitRepositoryModel {
         watchTask = Task { [weak self] in
             for await change in changes {
                 guard let self else { return }
+                // A rescan that hasn't started yet covers these events too.
+                guard self.pendingRefresh == nil else { continue }
                 if await self.matters(change, in: repository) {
-                    self.requestRefresh(settling: true)
+                    self.requestRefresh(.settled)
                 }
             }
         }
@@ -240,6 +287,15 @@ final class GitRepositoryModel {
 
     // MARK: - Diff
 
+    /// Shows the selected change's diff in full, past the size diffs collapse at.
+    func expandSelectedDiff() {
+        guard let selection else { return }
+        expandedDiffID = selection
+        selectedDiff = nil
+        loadSelectedDiff()
+    }
+
+    /// Reads and diffs the selected change off the main thread; the pane shows a loader meanwhile.
     private func loadSelectedDiff() {
         diffTask?.cancel()
         guard let change = selectedChange, let repository else {
@@ -252,13 +308,9 @@ final class GitRepositoryModel {
             selectedDiff = nil
             selectedDiffID = change.id
         }
+        let expanded = expandedDiffID == change.id
         diffTask = Task { [weak self] in
-            let content: GitDiffContent
-            do {
-                content = GitDiffContent(change: change, versions: try await repository.versions(of: change))
-            } catch {
-                content = .unavailable(error.localizedDescription)
-            }
+            let content = await GitDiffContent.load(change, from: repository, expanded: expanded)
             guard !Task.isCancelled, let self, self.selection == change.id else { return }
             self.selectedDiff = content
         }
