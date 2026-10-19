@@ -72,6 +72,11 @@ public nonisolated enum DS {
     public enum Window {
         /// Height of the sidebar's header row.
         public static let headerHeight: CGFloat = 36
+        /// The narrowest the main window's columns are measured at when the Mac asks for the
+        /// window's minimum size, which it would otherwise answer at no width at all
+        /// (`platformMinimumContentWidth`). At or under how narrow each can be anyway.
+        public static let sidebarMinWidth: CGFloat = 220
+        public static let detailMinWidth: CGFloat = 200
     }
 
     /// Drop shadows. Elevation stays subtle: menus and dialogs only.

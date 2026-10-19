@@ -212,7 +212,7 @@ private struct MarkdownBlockView: View {
                 .font(Self.headerFont(level))
                 .frame(maxWidth: .infinity, alignment: .leading)
         case .codeBlock(let language):
-            CodeBlockView(code: String(node.text.characters), language: language)
+            TranscriptCodeBlock(code: String(node.text.characters), language: language)
         case .thematicBreak:
             Divider()
                 .padding(.vertical, DS.Space.xs)
@@ -276,31 +276,6 @@ private struct MarkdownBlockView: View {
         case 2: .ds(15, weight: .semibold)
         default: .dsCalloutSemibold
         }
-    }
-}
-
-private struct CodeBlockView: View {
-    let code: String
-    let language: String?
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: DS.Space.sm) {
-            if let language, !language.isEmpty {
-                Text(language)
-                    .font(.dsMicro)
-                    .foregroundStyle(.dsTextSecondary)
-            }
-            ScrollView(.horizontal) {
-                HighlightedCode(code.hasSuffix("\n") ? String(code.dropLast()) : code, language: language)
-                    .codeTextStyle()
-            }
-            .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
-            .fixedSize(horizontal: false, vertical: true)
-        }
-        .padding(.horizontal, DS.Space.lg)
-        .padding(.vertical, DS.Space.lg)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .nestedSurface(.dsCodeBlockBackground, minimumRadius: DS.Radius.card)
     }
 }
 

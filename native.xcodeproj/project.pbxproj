@@ -33,6 +33,7 @@
 		00000000000000007E1E0020 /* NativeTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000007E1E0010 /* NativeTelemetry */; };
 		0000000000000000901C0020 /* NativePolicy in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000901C0010 /* NativePolicy */; };
 		0000000000000000A1150020 /* AIInstructions in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000A1150010 /* AIInstructions */; };
+		00000000000000004D0DE520 /* Modes in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000004D0DE510 /* Modes */; };
 		00000000000000009C010020 /* ProjectIcons in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000009C010010 /* ProjectIcons */; };
 		0000000000000000AC7A0020 /* ProjectActions in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000AC7A0010 /* ProjectActions */; };
 		0000000000000000A99A0020 /* AppAppearance in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000A99A0010 /* AppAppearance */; };
@@ -123,6 +124,7 @@
 				0000000000000000C0DC1020 /* NativeCommands in Frameworks */,
 				0000000000000000901C0020 /* NativePolicy in Frameworks */,
 				0000000000000000A1150020 /* AIInstructions in Frameworks */,
+				00000000000000004D0DE520 /* Modes in Frameworks */,
 				00000000000000009C010020 /* ProjectIcons in Frameworks */,
 				0000000000000000AC7A0020 /* ProjectActions in Frameworks */,
 				00000000000000007E1E0020 /* NativeTelemetry in Frameworks */,
@@ -249,6 +251,7 @@
 				0000000000000000C0DC1010 /* NativeCommands */,
 				0000000000000000901C0010 /* NativePolicy */,
 				0000000000000000A1150010 /* AIInstructions */,
+				00000000000000004D0DE510 /* Modes */,
 				00000000000000009C010010 /* ProjectIcons */,
 				0000000000000000AC7A0010 /* ProjectActions */,
 				00000000000000007E1E0010 /* NativeTelemetry */,
@@ -307,6 +310,7 @@
 				0000000000000000C0DC1000 /* XCLocalSwiftPackageReference "Packages/NativeCommands" */,
 				0000000000000000901C0000 /* XCLocalSwiftPackageReference "Packages/NativePolicy" */,
 				0000000000000000A1150000 /* XCLocalSwiftPackageReference "Packages/AIInstructions" */,
+				00000000000000004D0DE500 /* XCLocalSwiftPackageReference "Packages/Modes" */,
 				00000000000000009C010000 /* XCLocalSwiftPackageReference "Packages/ProjectIcons" */,
 				0000000000000000AC7A0000 /* XCLocalSwiftPackageReference "Packages/ProjectActions" */,
 				00000000000000007E1E0000 /* XCLocalSwiftPackageReference "Packages/Telemetry" */,
@@ -867,6 +871,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/AIInstructions;
 		};
+		00000000000000004D0DE500 /* XCLocalSwiftPackageReference "Packages/Modes" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Modes;
+		};
 		00000000000000009C010000 /* XCLocalSwiftPackageReference "Packages/ProjectIcons" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/ProjectIcons;
@@ -1013,6 +1021,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 0000000000000000A1150000 /* XCLocalSwiftPackageReference "Packages/AIInstructions" */;
 			productName = AIInstructions;
+		};
+		00000000000000004D0DE510 /* Modes */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 00000000000000004D0DE500 /* XCLocalSwiftPackageReference "Packages/Modes" */;
+			productName = Modes;
 		};
 		00000000000000009C010010 /* ProjectIcons */ = {
 			isa = XCSwiftPackageProductDependency;

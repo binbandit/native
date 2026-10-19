@@ -185,7 +185,8 @@ struct RootView: View {
                 } action: {
                     sidebarWidth.value = $0
                 }
-                .navigationSplitViewColumnWidth(min: 220, ideal: sidebarWidth.value, max: 380)
+                .platformMinimumContentWidth(DS.Window.sidebarMinWidth)
+                .navigationSplitViewColumnWidth(min: DS.Window.sidebarMinWidth, ideal: sidebarWidth.value, max: 380)
                 .toolbar {
                     ToolbarItem {
                         SidebarCollapseButton(isExpanded: columnVisibility != .detailOnly) {
@@ -228,6 +229,8 @@ struct RootView: View {
                 }
         } detail: {
             detail
+                // Never measured at no width for the window's minimum size (docs/performance.md).
+                .platformMinimumContentWidth(DS.Window.detailMinWidth)
                 // Under every page, so the transcript and anything else without a background of its
                 // own sits on the design system's background in the user's light tone, not the system's.
                 .background(.dsBackground)
