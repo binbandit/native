@@ -174,9 +174,9 @@ enum AgentLaunch {
         process.arguments = [command.executable] + command.arguments
         process.environment = command.environment
         process.currentDirectoryURL = command.workingDirectory
-        let stdin = Pipe()
-        let stdout = Pipe()
-        let stderrPipe = Pipe()
+        let stdin = closeOnExecPipe()
+        let stdout = closeOnExecPipe()
+        let stderrPipe = closeOnExecPipe()
         process.standardInput = stdin
         process.standardOutput = stdout
         process.standardError = stderrPipe
@@ -191,15 +191,26 @@ enum AgentLaunch {
         }
         try process.run()
         // The channel gets its own copies of our ends; closing the originals means that when the
-        // channel closes stdin, the agent sees EOF.
+        // channel closes stdin, the agent sees EOF. Close-on-exec copies, like the pipes themselves.
         let channel = ByteChannel(
-            reading: dup(stdout.fileHandleForReading.fileDescriptor),
-            writing: dup(stdin.fileHandleForWriting.fileDescriptor),
+            reading: fcntl(stdout.fileHandleForReading.fileDescriptor, F_DUPFD_CLOEXEC, 0),
+            writing: fcntl(stdin.fileHandleForWriting.fileDescriptor, F_DUPFD_CLOEXEC, 0),
             label: command.executable
         )
         try? stdout.fileHandleForReading.close()
         try? stdin.fileHandleForWriting.close()
         return (process, channel, stderr)
+    }
+
+    /// A pipe whose descriptors are close-on-exec, so no process this one starts by other means than
+    /// `Process` inherits an end and holds it open: an agent would never see the end of its input.
+    /// `Process` passes the agent its ends explicitly, so they still arrive.
+    private static func closeOnExecPipe() -> Pipe {
+        let pipe = Pipe()
+        for handle in [pipe.fileHandleForReading, pipe.fileHandleForWriting] {
+            _ = fcntl(handle.fileDescriptor, F_SETFD, FD_CLOEXEC)
+        }
+        return pipe
     }
 
     private static func executablePath(_ name: String, in environment: [String: String]) -> String? {

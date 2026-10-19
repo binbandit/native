@@ -6,7 +6,7 @@ import Synchronization
 /// process has launched, and `Process.terminate()` raises an Objective-C exception for a process that
 /// never ran.
 ///
-/// Stopping signals the command's process group, never a bare pid: `Process` makes each command a
+/// Stopping signals the command's process group rather than its pid: `Process` makes each command a
 /// group leader, and a group's id can't be handed to a new process while anything in the group is
 /// alive, so a signal can't reach an unrelated process that was given a recycled pid. It also reaches
 /// what a script started, which would otherwise hold the output open after the script was killed.
@@ -17,8 +17,9 @@ final class CommandLifecycle: @unchecked Sendable {
     }
 
     private struct State {
-        /// The process group to signal, once launched.
-        var group: pid_t?
+        /// What `kill` signals once launched: the command's process group (a negative id), or the
+        /// command alone if it somehow isn't a group leader.
+        var target: pid_t?
         var hasExited = false
         var stopReason: StopReason?
         var timeout: Task<Void, Never>?
@@ -46,7 +47,7 @@ final class CommandLifecycle: @unchecked Sendable {
             let pid = process.processIdentifier
             // getpgid fails only once the command has been reaped, and then its group is all that's left.
             let group = getpgid(pid)
-            state.group = group == -1 || group == pid ? pid : nil
+            state.target = group == -1 || group == pid ? -pid : pid
             if let timeout {
                 state.timeout = Task { [self] in
                     guard (try? await Task.sleep(for: timeout)) != nil else { return }
@@ -71,20 +72,20 @@ final class CommandLifecycle: @unchecked Sendable {
     /// and outlived the command itself, which would otherwise hold its output open. The first reason
     /// wins; stopping a command that already exited does nothing.
     func stop(_ reason: StopReason) {
-        let group: pid_t? = state.withLock { state in
+        let target: pid_t? = state.withLock { state in
             guard state.stopReason == nil, !state.hasExited else { return nil }
             state.stopReason = reason
             state.timeout?.cancel()
             state.timeout = nil
-            guard let group = state.group else { return nil }
-            kill(-group, SIGTERM)
-            return group
+            guard let target = state.target else { return nil }
+            kill(target, SIGTERM)
+            return target
         }
-        guard let group else { return }
+        guard let target else { return }
         let gracePeriod = gracePeriod
         Task {
             try? await Task.sleep(for: gracePeriod)
-            kill(-group, SIGKILL)
+            kill(target, SIGKILL)
         }
     }
 }

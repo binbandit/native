@@ -60,6 +60,8 @@ final class GitRepositoryModel {
     struct ShownDiff: Equatable {
         let change: FileChange
         let content: GitDiffContent?
+        /// What the content was made from (`FileVersions.fingerprint`), to recheck it by.
+        var fingerprint: Int?
     }
 
     /// A rescan someone asked for: right away (an action, the user), or once file events settle.
@@ -213,6 +215,7 @@ final class GitRepositoryModel {
             guard !Task.isCancelled else { return }
             apply(status)
             state = .ready
+            recheckShownDiff()
         } catch {
             // A failed rescan keeps the last good status on screen; a cancelled one isn't a failure.
             if status == nil, !Task.isCancelled { state = .failed(error.localizedDescription) }
@@ -324,8 +327,19 @@ final class GitRepositoryModel {
         loadSelectedDiff()
     }
 
-    /// Reads and diffs the selected change off the main thread.
-    private func loadSelectedDiff() {
+    /// After a scan: reloads the diff on screen if its file changed. The status can't always tell,
+    /// since an edit can keep its line counts, so this compares the file's contents, which costs
+    /// reading the one file however many changed.
+    private func recheckShownDiff() {
+        guard diffTask == nil, let shown = shownDiff, let fingerprint = shown.fingerprint,
+            shown.change == selectedChange
+        else { return }
+        loadSelectedDiff(unlessStill: fingerprint)
+    }
+
+    /// Reads and diffs the selected change off the main thread; with `unchanged`, only if its
+    /// contents no longer match it.
+    private func loadSelectedDiff(unlessStill unchanged: Int? = nil) {
         diffTask?.cancel()
         diffLoadingTask?.cancel()
         guard let change = selectedChange, let repository else {
@@ -344,10 +358,14 @@ final class GitRepositoryModel {
         }
         let expanded = expandedDiffID == change.id
         diffTask = Task { [weak self] in
-            let content = await GitDiffContent.load(change, from: repository, expanded: expanded)
-            guard !Task.isCancelled, let self, self.selection == change.id else { return }
+            let loaded = await GitDiffContent.load(
+                change, from: repository, expanded: expanded, unlessStill: unchanged)
+            // Cancelled: a newer load replaced this one.
+            guard !Task.isCancelled, let self else { return }
+            self.diffTask = nil
+            guard let loaded, self.selection == change.id else { return }
             self.diffLoadingTask?.cancel()
-            self.shownDiff = ShownDiff(change: change, content: content)
+            self.shownDiff = ShownDiff(change: change, content: loaded.content, fingerprint: loaded.fingerprint)
         }
     }
 }

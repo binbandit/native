@@ -5,8 +5,9 @@ import Foundation
 public enum RebuiltArchivedWorktree: Hashable, Sendable {
     /// Everything needed to restore it, as a record would have had it.
     case found(ArchivedWorktree)
-    /// No branch, kept or deleted with a copy, could have been the one it was on.
-    case noBranch
+    /// No branch, kept or deleted with a copy, could have been the one it was on. The checkpoint
+    /// of its uncommitted work, if it had any, is still saved.
+    case noBranch(checkpoint: Checkpoint?)
     /// More than one branch could have been the one it was on, by name; Native doesn't guess.
-    case ambiguous([String])
+    case ambiguous([String], checkpoint: Checkpoint?)
 }

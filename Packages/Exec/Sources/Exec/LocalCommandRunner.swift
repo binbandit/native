@@ -36,9 +36,9 @@ public struct LocalCommandRunner: CommandRunner {
         if let directory = command.directory {
             process.currentDirectoryURL = URL(filePath: directory, directoryHint: .isDirectory)
         }
-        let inputPipe = Pipe()
-        let outputPipe = Pipe()
-        let errorPipe = Pipe()
+        let inputPipe = Self.makePipe()
+        let outputPipe = Self.makePipe()
+        let errorPipe = Self.makePipe()
         process.standardInput = inputPipe
         process.standardOutput = outputPipe
         process.standardError = errorPipe
@@ -58,24 +58,20 @@ public struct LocalCommandRunner: CommandRunner {
         }
         inputEnd.write(command.standardInput)
 
-        let lifecycle = Lifecycle(process)
+        let lifecycle = CommandLifecycle(process, gracePeriod: Self.stopGracePeriod)
         let exitCode: Int32
         do {
             exitCode = try await withTaskCancellationHandler {
                 try await withCheckedThrowingContinuation { continuation in
-                    process.terminationHandler = { continuation.resume(returning: $0.terminationStatus) }
+                    process.terminationHandler = {
+                        lifecycle.exited()
+                        continuation.resume(returning: $0.terminationStatus)
+                    }
                     do {
-                        try lifecycle.launch()
+                        try lifecycle.launch(timeout: command.timeout)
                     } catch {
                         process.terminationHandler = nil
                         continuation.resume(throwing: error)
-                        return
-                    }
-                    if let timeout = command.timeout {
-                        Task {
-                            try? await Task.sleep(for: timeout)
-                            lifecycle.stop(.timedOut)
-                        }
                     }
                 }
             } onCancel: {
@@ -107,6 +103,18 @@ public struct LocalCommandRunner: CommandRunner {
         case .timedOut: throw CommandError.timedOut(command.executable, after: command.timeout ?? .zero)
         case nil: return result
         }
+    }
+
+    /// A pipe whose descriptors are close-on-exec, so no process this one starts by other means than
+    /// `Process` (a terminal's shell, say) inherits an end and holds it open: a command would never
+    /// see the end of its input, or a reader the end of the output. `Process` passes the command its
+    /// ends explicitly, so they still arrive.
+    private static func makePipe() -> Pipe {
+        let pipe = Pipe()
+        for handle in [pipe.fileHandleForReading, pipe.fileHandleForWriting] {
+            _ = fcntl(handle.fileDescriptor, F_SETFD, FD_CLOEXEC)
+        }
+        return pipe
     }
 
     private static func resolve(_ executable: String, path: String?) -> URL? {

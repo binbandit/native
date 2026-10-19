@@ -71,6 +71,7 @@ public enum UnixSocket {
             throw Failure.system("socketpair", errno: errno)
         }
         for descriptor in descriptors {
+            _ = fcntl(descriptor, F_SETFD, FD_CLOEXEC)
             var on: Int32 = 1
             setsockopt(descriptor, SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size))
         }
@@ -80,6 +81,8 @@ public enum UnixSocket {
     private static func makeSocket() throws -> Int32 {
         let descriptor = socket(AF_UNIX, SOCK_STREAM, 0)
         guard descriptor >= 0 else { throw Failure.system("socket", errno: errno) }
+        // No process we start inherits the connection and holds it open.
+        _ = fcntl(descriptor, F_SETFD, FD_CLOEXEC)
         // A peer that vanished must surface as a write error, not kill the process.
         var on: Int32 = 1
         setsockopt(descriptor, SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size))

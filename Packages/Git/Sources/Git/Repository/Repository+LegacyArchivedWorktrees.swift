@@ -61,11 +61,11 @@ extension Repository {
 
         for matches in [byName, byTitle, byCheckpoint] where !matches.isEmpty {
             guard matches.count == 1, let branch = matches.first else {
-                return .ambiguous(matches.map(\.name).sorted())
+                return .ambiguous(matches.map(\.name).sorted(), checkpoint: checkpoint)
             }
             return .found(ArchivedWorktree(path: path, branch: branch.name, checkpoint: checkpoint))
         }
-        return .noBranch
+        return .noBranch(checkpoint: checkpoint)
     }
 
     // MARK: - Helpers

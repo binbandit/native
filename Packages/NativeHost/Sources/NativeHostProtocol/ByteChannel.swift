@@ -48,10 +48,11 @@ public final class ByteChannel: ByteStream {
     }
 
     /// A channel over a connected socket. Reading and writing get their own descriptor so each
-    /// direction can shut down on its own. The copy is close-on-exec, so no process we start inherits
-    /// the connection and holds it open.
+    /// direction can shut down on its own. Both are close-on-exec, so no process we start inherits the
+    /// connection and holds it open (an accepted socket arrives without the flag).
     public static func socket(_ descriptor: Int32, label: String) -> ByteChannel {
-        ByteChannel(reading: descriptor, writing: fcntl(descriptor, F_DUPFD_CLOEXEC, 0), label: label)
+        _ = fcntl(descriptor, F_SETFD, FD_CLOEXEC)
+        return ByteChannel(reading: descriptor, writing: fcntl(descriptor, F_DUPFD_CLOEXEC, 0), label: label)
     }
 
     /// The bytes the other end sends, until it closes its end. Call once.

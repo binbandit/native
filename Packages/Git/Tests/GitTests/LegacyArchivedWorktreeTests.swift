@@ -51,7 +51,10 @@ struct LegacyArchivedWorktreeTests {
         let rebuilt = try await legacy.test.repository.rebuildArchivedWorktree(
             at: legacy.path, title: "OK", archivedAt: nil)
 
-        #expect(rebuilt == .ambiguous(["a/ok", "b/ok"]))
+        guard case .ambiguous(let names, let checkpoint) = rebuilt else { Issue.record("Got \(rebuilt)"); return }
+        #expect(names == ["a/ok", "b/ok"])
+        // Its uncommitted work is still saved, which the user hears.
+        #expect(checkpoint != nil)
     }
 
     @Test func aBranchDeletedForGoodLeavesNothingToRestoreOn() async throws {
@@ -63,7 +66,8 @@ struct LegacyArchivedWorktreeTests {
         let rebuilt = try await legacy.test.repository.rebuildArchivedWorktree(
             at: legacy.path, title: "Gone", archivedAt: nil)
 
-        #expect(rebuilt == .noBranch)
+        guard case .noBranch(let checkpoint) = rebuilt else { Issue.record("Got \(rebuilt)"); return }
+        #expect(checkpoint != nil)
     }
 
     @Test func aCheckpointFromBeforeTheArchiveIsntItsWork() async throws {
