@@ -21,43 +21,60 @@ env:
   DEVELOPER_DIR: ${{ vars.XCODE_DEVELOPER_DIR || '/Applications/Xcode_27.1.app/Contents/Developer' }}
 
 jobs:
+  # The package tests run in three shards rather than a job each: the preview runners are few, so
+  # sixteen jobs queued behind each other and each paid its own setup. The shards are balanced by
+  # measured `swift test` time (about 3.5 minutes each). Each package's output is its own group, and
+  # a failure is annotated with the package's name.
   packages:
-    name: Test ${{ matrix.package }}
+    name: Test ${{ matrix.shard }}
     runs-on: ${{ vars.MACOS_RUNNER || 'macos-26' }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        package:
-          - ACP
-          - AppAppearance
-          - Automation
-          - CodeThemes
-          - Exec
-          - Expeditions
-          - Experiments
-          - Git
-          - GitHub
-          - MCPClient
-          - MCPServer
-          - NativeDiagnostics
-          - NativeHost
-          - ScriptRuntime
-          - Telemetry
-          - Terminal
+        include:
+          - shard: NativeHost, GitHub, NativeDiagnostics, Telemetry, Experiments, MCPServer
+            packages: NativeHost GitHub NativeDiagnostics Telemetry Experiments MCPServer
+          - shard: ScriptRuntime, Git, Exec, Terminal, Expeditions
+            packages: ScriptRuntime Git Exec Terminal Expeditions
+          - shard: MCPClient, ACP, AppAppearance, CodeThemes, Automation
+            packages: MCPClient ACP AppAppearance CodeThemes Automation
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/cache@v4
+      - name: Cache package builds
+        uses: actions/cache@v4
         with:
-          path: Packages/${{ matrix.package }}/.build
-          key: spm-${{ matrix.package }}-${{ runner.os }}-${{ hashFiles(format('Packages/{0}/Package.swift', matrix.package)) }}
-          restore-keys: spm-${{ matrix.package }}-${{ runner.os }}-
-      - name: Build the script runtime helper
-        if: matrix.package == 'ScriptRuntime'
-        run: scripts/build-script-runtime.sh
+          path: Packages/*/.build
+          key: spm-${{ runner.os }}-shard${{ strategy.job-index }}-${{ hashFiles('Packages/*/Package.swift', 'Packages/*/Package.resolved') }}
+          restore-keys: spm-${{ runner.os }}-shard${{ strategy.job-index }}-
+      # The same Cargo cache as Check and the release workflows.
+      - name: Cache the script runtime
+        if: contains(matrix.packages, 'ScriptRuntime')
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/Native/ScriptRuntime
+          key: script-runtime-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'scripts/build-script-runtime.sh') }}
+          restore-keys: script-runtime-${{ runner.os }}-${{ runner.arch }}-
       - name: swift test
-        working-directory: Packages/${{ matrix.package }}
-        run: swift test
+        env:
+          PACKAGES: ${{ matrix.packages }}
+        run: |
+          failed=""
+          for package in $PACKAGES; do
+            echo "::group::$package"
+            started=$SECONDS
+            # The script runtime's Swift tests drive the real helper.
+            if [ "$package" = ScriptRuntime ]; then scripts/build-script-runtime.sh; fi
+            if (cd "Packages/$package" && swift test); then
+              echo "::endgroup::"
+              echo "$package passed in $((SECONDS - started))s"
+            else
+              echo "::endgroup::"
+              echo "::error title=$package::swift test failed in Packages/$package"
+              failed="$failed $package"
+            fi
+          done
+          if [ -n "$failed" ]; then echo "Failed:$failed"; exit 1; fi
 
   lint:
     name: Lint changed Swift files
@@ -85,22 +102,56 @@ jobs:
     timeout-minutes: 60
     steps:
       - uses: actions/checkout@v5
+      - name: Cache locations
+        run: |
+          echo "SOURCE_PACKAGES=$HOME/Library/Caches/native-ci/SourcePackages" >> "$GITHUB_ENV"
+          echo "COMPILATION_CACHE=$HOME/Library/Caches/native-ci/CompilationCache" >> "$GITHUB_ENV"
       # The build scripts keep Cargo and Zig outputs (V8, Ghostty) in their default caches, outside the
-      # checkout: Xcode's script sandbox doesn't let a build phase write into the source tree.
-      - uses: actions/cache@v4
+      # checkout: Xcode's script sandbox doesn't let a build phase write into the source tree. These are
+      # the caches Check and the releases use, so the Debug build has the terminal too (libghostty as
+      # Check last built it; this job doesn't build it itself).
+      - name: Cache libghostty
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/Library/Caches/native-build/libghostty
+          key: libghostty-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/build-libghostty.sh') }}
+          restore-keys: libghostty-${{ runner.os }}-${{ runner.arch }}-
+      - name: Cache the script runtime
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/Native/ScriptRuntime
+          key: script-runtime-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'scripts/build-script-runtime.sh') }}
+          restore-keys: script-runtime-${{ runner.os }}-${{ runner.arch }}-
+      # Package checkouts and Xcode's compilation cache, as in check.yml (scripts/release/check.sh
+      # explains the compilation cache).
+      - name: Cache Swift package checkouts
+        uses: actions/cache@v4
         with:
           path: |
-            ~/Library/Caches/Native/ScriptRuntime
-            ~/Library/Caches/native-build
-          key: app-cache-${{ runner.os }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'scripts/build-libghostty.sh') }}
-          restore-keys: app-cache-${{ runner.os }}-
+            ${{ env.SOURCE_PACKAGES }}
+            !${{ env.SOURCE_PACKAGES }}/artifacts
+          key: source-packages-${{ runner.os }}-${{ hashFiles('native.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+          restore-keys: source-packages-${{ runner.os }}-
+      - name: Restore the compilation cache
+        id: compilation-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.COMPILATION_CACHE }}
+          key: compilation-cache-${{ runner.os }}-Debug-${{ github.sha }}
+          restore-keys: compilation-cache-${{ runner.os }}-Debug-
+      - name: Resolve Swift packages
+        run: >-
+          xcodebuild -resolvePackageDependencies -project native.xcodeproj -scheme native
+          -clonedSourcePackagesDirPath "$SOURCE_PACKAGES" -quiet
       # The full log goes to a file rather than through -quiet, which prints a misleading "failed with
       # exit code 0" error for every step that only warned. On a failure, its errors and summary show.
       - name: Build (unsigned)
         run: |
           xcodebuild build -project native.xcodeproj -scheme native -configuration Debug \
-            -derivedDataPath "$RUNNER_TEMP/DerivedData" -destination 'platform=macOS' \
-            CODE_SIGNING_ALLOWED=NO > "$RUNNER_TEMP/build.log" 2>&1 || {
+            -derivedDataPath "$RUNNER_TEMP/DerivedData" -clonedSourcePackagesDirPath "$SOURCE_PACKAGES" \
+            -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO \
+            COMPILATION_CACHE_ENABLE_CACHING=YES COMPILATION_CACHE_CAS_PATH="$COMPILATION_CACHE" \
+            COMPILATION_CACHE_LIMIT_SIZE=2G > "$RUNNER_TEMP/build.log" 2>&1 || {
               grep -E '^[^[:space:]|].*error: ' "$RUNNER_TEMP/build.log" | sort -u
               tail -n 30 "$RUNNER_TEMP/build.log"
               exit 1
@@ -108,6 +159,12 @@ jobs:
       # The app builds without warnings; this keeps it that way.
       - name: No warnings
         run: scripts/check-warnings.sh "$RUNNER_TEMP/build.log"
+      - name: Save the compilation cache
+        if: success() && github.event_name != 'pull_request' && steps.compilation-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.COMPILATION_CACHE }}
+          key: ${{ steps.compilation-cache.outputs.cache-primary-key }}
       - name: Upload the build log
         if: failure()
         uses: actions/upload-artifact@v4

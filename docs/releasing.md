@@ -341,10 +341,10 @@ or four highlights per release; more page.
 ## CI
 
 `check.yml` runs `scripts/release/check.sh` on every pull request and push to `main`: it compiles
-the Release and Nightly configurations without signing, so a break that only shows up outside
-Debug (a `#Preview` calling a DEBUG-only fixture) is caught before a release needs it, then checks
-both apps against the size budget (`docs/app-size.md`). Run it locally before landing anything that
-touches `#if DEBUG` code or build settings.
+the Release and Nightly configurations without signing, as two jobs side by side, so a break that
+only shows up outside Debug (a `#Preview` calling a DEBUG-only fixture) is caught before a release
+needs it, then checks each app against the size budget (`docs/app-size.md`) and for warnings. Run it
+locally before landing anything that touches `#if DEBUG` code or build settings.
 
 `nightly.yml` runs at 07:00 UTC (and on demand), builds `main`, and skips when `main` hasn't moved
 since the last nightly. `release.yml` runs on `v*` tags. Both also rehearse on demand ("Rehearsing a
@@ -363,6 +363,22 @@ build phase write only its declared outputs: `~/Library/Caches/native-build/libg
 library, about 130 MB; the toolchain and source aren't cached) and `~/Library/Caches/Native/ScriptRuntime`
 (Cargo's target folder with V8). All three workflows cache both under the same keys, keyed on the
 build scripts and `Cargo.lock`, so a release restores what `main`'s checks built.
+
+**How CI stays quick.** The preview runners are few, so jobs are few: `ci.yml` runs the package tests
+in three shards balanced by measured time, the Debug build and the lint, and `check.yml` the two
+release configurations. App builds are arm64 only (the packages declare macOS 15 and would otherwise
+compile an x86_64 slice nothing links). The Debug, Release and Nightly builds also cache:
+
+- Swift package checkouts (`-clonedSourcePackagesDirPath`), keyed by the project's
+  `Package.resolved`, without Sentry's 3 GB of unpacked binary artifacts, which download faster.
+- Xcode's compilation cache (`COMPILATION_CACHE_ENABLE_CACHING`, `check.sh --compilation-cache`), one
+  per configuration. It's content-addressed, a compile's inputs being its key, so each build starts
+  from an empty DerivedData and still skips every compile whose inputs haven't changed, with none of
+  incremental builds' stale state; cached compiles replay their warnings, so the warnings gate sees
+  them. Builds on `main` save it and pull requests only read it. `COMPILATION_CACHE_LIMIT_SIZE=2G`
+  keeps it bounded: past that, Xcode starts a new generation and drops what later builds don't use.
+
+Releases cache neither: an archive that ships compiles from scratch.
 
 ### Repository secrets
 

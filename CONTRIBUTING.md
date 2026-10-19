@@ -50,7 +50,8 @@ to the coordinator. Outside this repo's shared working tree, normal git and PRs 
 
 ## How CI builds
 
-`ci.yml` runs on `macos-26` with Xcode 27.1 (override with the `MACOS_RUNNER` and `XCODE_DEVELOPER_DIR`
-repository variables). It does not install Rust or Zig: it uses the `cargo` already on the runner and
-lets the build phases fetch V8 and the Ghostty toolchain into `.ci-cache/`, which is cached. If a
-phase fails it warns and the feature is skipped, as on a contributor's machine.
+`ci.yml` and `check.yml` run on `macos-26` with Xcode 27.1 by default (the repository sets the
+`MACOS_RUNNER` and `XCODE_DEVELOPER_DIR` variables to GitHub's `xcode-27` preview image). They don't
+install Rust: they use the `cargo` already on the runner. `check.yml` builds libghostty and the script
+runtime for real and fails without them; the Debug build in `ci.yml` uses the copies Check cached.
+How the jobs are split and what they cache is in `docs/releasing.md` ("How CI stays quick").
