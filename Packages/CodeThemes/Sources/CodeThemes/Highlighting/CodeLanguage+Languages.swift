@@ -143,7 +143,8 @@ extension CodeLanguage {
 
     static let kotlin: CodeLanguage = {
         var language = CodeLanguage(copying: java, id: "kotlin")
-        language.treeSitter = .kotlin
+        // Lexed: Java's grammar would misread Kotlin, and Kotlin's own was 4 MB (docs/app-size.md).
+        language.treeSitter = nil
         language.keywords.formUnion([
             "fun", "val", "object", "companion", "data", "sealed", "when", "is", "in", "as", "suspend", "override",
             "open", "internal", "lateinit", "typealias", "init",
@@ -179,11 +180,7 @@ extension CodeLanguage {
         return language
     }()
 
-    static let cpp: CodeLanguage = {
-        var language = CodeLanguage(copying: cFamily, id: "cpp")
-        language.treeSitter = .cpp
-        return language
-    }()
+    static let cpp = CodeLanguage(copying: cFamily, id: "cpp")
 
     static let cSharp: CodeLanguage = {
         var language = CodeLanguage(copying: java, id: "csharp")
@@ -198,7 +195,6 @@ extension CodeLanguage {
 
     static let ruby: CodeLanguage = {
         var language = CodeLanguage(id: "ruby")
-        language.treeSitter = .ruby
         language.lineComments = ["#"]
         language.quotes = [doubleQuote, singleQuote]
         language.keywords = [

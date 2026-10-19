@@ -1,18 +1,15 @@
 import SwiftTreeSitter
 import TreeSitterBash
 import TreeSitterC
-import TreeSitterCPP
 import TreeSitterCSS
 import TreeSitterGo
 import TreeSitterHTML
 import TreeSitterJSON
 import TreeSitterJava
 import TreeSitterJavaScript
-import TreeSitterKotlin
 import TreeSitterMarkdown
 import TreeSitterMarkdownInline
 import TreeSitterPython
-import TreeSitterRuby
 import TreeSitterRust
 import TreeSitterSwift
 import TreeSitterTOML
@@ -25,7 +22,7 @@ import TreeSitterYAML
 enum TreeSitterGrammar: String, CaseIterable, Sendable {
     case swift, typescript, tsx, javascript, python, rust, go, json, bash, yaml, toml, html, css, markdown
     case markdownInline = "markdown_inline"
-    case c, cpp, java, kotlin, ruby
+    case c, java
 
     /// The parser's tables; the C entry points return a pointer, which is never null in practice.
     var language: Language? {
@@ -47,10 +44,7 @@ enum TreeSitterGrammar: String, CaseIterable, Sendable {
             case .markdown: tree_sitter_markdown()
             case .markdownInline: tree_sitter_markdown_inline()
             case .c: tree_sitter_c()
-            case .cpp: tree_sitter_cpp()
             case .java: tree_sitter_java()
-            case .kotlin: tree_sitter_kotlin()
-            case .ruby: tree_sitter_ruby()
             }
         return pointer.map { Language(language: $0) }
     }
@@ -64,7 +58,6 @@ enum TreeSitterGrammar: String, CaseIterable, Sendable {
             ["javascript/highlights", "javascript/highlights-jsx", "javascript/highlights-params"]
         case .typescript: ["javascript/highlights", "typescript/highlights"]
         case .tsx: ["javascript/highlights", "javascript/highlights-jsx", "typescript/highlights"]
-        case .cpp: ["c/highlights", "cpp/highlights"]
         default: ["\(rawValue)/highlights"]
         }
     }

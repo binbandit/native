@@ -47,11 +47,8 @@ first line and says what changed, if anything.
 | CSS | [tree-sitter/tree-sitter-css](https://github.com/tree-sitter/tree-sitter-css) | MIT | Copyright (c) 2018 Max Brunsfeld |
 | Markdown | [tree-sitter-grammars/tree-sitter-markdown](https://github.com/tree-sitter-grammars/tree-sitter-markdown) | MIT | Copyright (c) 2021 Matthias Deiml |
 | C | [tree-sitter/tree-sitter-c](https://github.com/tree-sitter/tree-sitter-c) | MIT | Copyright (c) 2014 Max Brunsfeld |
-| C++ | [tree-sitter/tree-sitter-cpp](https://github.com/tree-sitter/tree-sitter-cpp) | MIT | Copyright (c) 2014 Max Brunsfeld |
 | Java | [tree-sitter/tree-sitter-java](https://github.com/tree-sitter/tree-sitter-java) | MIT | Copyright (c) 2017 Ayman Nadeem |
-| Kotlin | [fwcd/tree-sitter-kotlin](https://github.com/fwcd/tree-sitter-kotlin) | MIT | Copyright (c) 2019 fwcd |
-| Ruby | [tree-sitter/tree-sitter-ruby](https://github.com/tree-sitter/tree-sitter-ruby) | MIT | Copyright (c) 2016 Rob Rix |
 
-The Markdown and Kotlin queries say they derive from
-[nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) (Apache-2.0), which their
-grammar repositories redistribute under their own MIT license.
+The Markdown queries say they derive from
+[nvim-treesitter](https://github.com/nvim-treesitter/nvim-treesitter) (Apache-2.0), which the
+grammar's repository redistributes under its own MIT license.

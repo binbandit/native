@@ -1,14 +1,19 @@
 #if os(macOS)
+import Exec
 import Foundation
 
 /// A local project's files from git: tracked and untracked ones, without what .gitignore excludes,
 /// which stays fast on large repositories. Outside a repository it has no files to offer.
 nonisolated struct GitProjectFileIndex: ProjectFileIndex {
+    /// Room for a very large repository; a git that hangs (on a stale lock or a network volume) gives
+    /// up rather than leaving the `@` list loading. Cancelling the listing stops git too.
+    private static let timeout = Duration.seconds(20)
+
     let root: URL
 
     @concurrent
     func files() async throws -> [String] {
-        try Self.git(["ls-files", "-z", "--cached", "--others", "--exclude-standard"], in: root)
+        try await git(["ls-files", "-z", "--cached", "--others", "--exclude-standard"])
             .split(separator: "\0")
             .map(String.init)
     }
@@ -16,7 +21,7 @@ nonisolated struct GitProjectFileIndex: ProjectFileIndex {
     @concurrent
     func changedFiles() async -> Set<String> {
         // Porcelain -z: "XY path\0", with a rename's original path as an extra entry.
-        guard let output = try? Self.git(["status", "--porcelain", "-z", "--untracked-files=all"], in: root) else {
+        guard let output = try? await git(["status", "--porcelain", "-z", "--untracked-files=all"]) else {
             return []
         }
         return Set(
@@ -25,17 +30,12 @@ nonisolated struct GitProjectFileIndex: ProjectFileIndex {
             })
     }
 
-    private static func git(_ arguments: [String], in folder: URL) throws -> String {
-        let process = Process()
-        process.executableURL = URL(filePath: "/usr/bin/git")
-        process.arguments = ["-C", folder.path(percentEncoded: false)] + arguments
-        let output = Pipe()
-        process.standardOutput = output
-        process.standardError = FileHandle.nullDevice
-        try process.run()
-        let data = output.fileHandleForReading.readDataToEndOfFile()
-        process.waitUntilExit()
-        return String(decoding: data, as: UTF8.self)
+    /// git's output; outside a repository git fails without any, so there's nothing to list.
+    private func git(_ arguments: [String]) async throws -> String {
+        let command = Command(
+            "/usr/bin/git", ["-C", root.path(percentEncoded: false)] + arguments,
+            environment: ProcessInfo.processInfo.environment, timeout: Self.timeout)
+        return try await LocalCommandRunner().run(command).output
     }
 }
 #endif

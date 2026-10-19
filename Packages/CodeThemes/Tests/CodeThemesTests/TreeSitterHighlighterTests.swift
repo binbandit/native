@@ -71,13 +71,19 @@ struct TreeSitterHighlighterTests {
         #expect(roles(of: " e", in: code, "python") == [.string])
     }
 
-    @Test func cppTemplatesAreTypesNotOperators() {
-        let code = "template <typename T>\nstd::vector<std::map<int, T>> group(const T& value);"
-        #expect(roles(of: "typename", in: code, "cpp") == [.keyword])
-        #expect(roles(of: "vector", in: code, "cpp") == [.type])
-        #expect(roles(of: "int", in: code, "cpp") == [.type])
-        #expect(roles(of: ">>", in: code, "cpp").allSatisfy { $0 != .operator })
-        #expect(roles(of: "group", in: code, "cpp") == [.function])
+    /// C++, Kotlin and Ruby are lexed, on their own and in a fence: their grammars were 9.6 MB of the
+    /// app (docs/app-size.md).
+    @Test(arguments: [
+        ("cpp", "template <typename T> class Box { int value; };", "class"),
+        ("kotlin", "fun main() { val answer = 42 }", "fun"),
+        ("ruby", "def greet(name)\n  puts name\nend", "def"),
+    ])
+    func languagesLeftOnTheLexerStillColorTheirKeywords(language: String, code: String, keyword: String) throws {
+        let lexed = try #require(CodeLanguage.named(language))
+        #expect(lexed.treeSitter == nil)
+        #expect(CodeHighlighter.segments(code, language: lexed) == CodeLexer.segments(code, language: lexed))
+        #expect(roles(of: keyword, in: code, language) == [.keyword])
+        #expect(roles(of: keyword, in: "```\(language)\n\(code)\n```\n", "md") == [.keyword])
     }
 
     @Test func markdownFencesHighlightTheirLanguage() {

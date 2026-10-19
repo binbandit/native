@@ -16,7 +16,9 @@ extension GitStore {
     /// The task worktree put away at `folder`, whichever spelling each path uses (`/tmp/x` and
     /// `/private/tmp/x`), as a session's folder may differ from git's.
     func archivedTaskWorktree(at folder: URL, of project: URL) async throws -> ArchivedWorktree? {
-        try await archivedTaskWorktrees(of: project).first { SessionFolder.isSame($0.path.folderPath, folder.folderPath) }
+        try await archivedTaskWorktrees(of: project).first {
+            SessionFolder.isSame($0.path.folderPath, folder.folderPath)
+        }
     }
 
     /// Brings a task worktree back where it was, on its branch with its uncommitted work, then sets

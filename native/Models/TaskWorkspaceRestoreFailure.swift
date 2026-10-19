@@ -9,11 +9,14 @@ enum TaskWorkspaceRestoreFailure: LocalizedError, Hashable {
     case branchAmbiguous([String], checkpoint: String?)
 
     var errorDescription: String? {
-        switch self {
+        let archivedEarly = "It was archived before Native kept a record of archived worktrees, and "
+        return switch self {
         case .branchNotFound:
-            "It was archived before Native kept a record of archived worktrees, and none of the repository's branches, or the copies Native keeps of deleted ones, is the one it was on."
+            archivedEarly + "the branch it was on is gone: no branch, or copy Native keeps of a deleted one,"
+                + " matches it."
         case .branchAmbiguous(let names, _):
-            "It was archived before Native kept a record of archived worktrees, and more than one branch could be the one it was on (\(names.joined(separator: ", "))), so Native won't guess."
+            archivedEarly + "more than one branch could be the one it was on (\(names.joined(separator: ", ")))"
+                + ", so Native won't guess."
         }
     }
 

@@ -2,7 +2,8 @@
 import PackageDescription
 
 /// Tree-sitter grammars, each pinned to an upstream release (docs/decisions.md, "Tree-sitter for highlighting").
-/// Their highlight queries are copied into `Sources/CodeThemes/Queries`, matched to these versions.
+/// Their highlight queries are copied into `Sources/CodeThemes/Queries`, matched to these versions. C++, Kotlin
+/// and Ruby stay on the lexer: their grammars were 9.6 MB of the app (docs/app-size.md).
 let grammars: [(url: String, version: Version, products: [String])] = [
     ("https://github.com/alex-pinkus/tree-sitter-swift", "0.7.4-with-generated-files", ["TreeSitterSwift"]),
     ("https://github.com/tree-sitter/tree-sitter-typescript", "0.23.2", ["TreeSitterTypeScript"]),
@@ -18,10 +19,7 @@ let grammars: [(url: String, version: Version, products: [String])] = [
     ("https://github.com/tree-sitter/tree-sitter-css", "0.23.2", ["TreeSitterCSS"]),
     ("https://github.com/tree-sitter-grammars/tree-sitter-markdown", "0.5.3", ["TreeSitterMarkdown"]),
     ("https://github.com/tree-sitter/tree-sitter-c", "0.24.2", ["TreeSitterC"]),
-    ("https://github.com/tree-sitter/tree-sitter-cpp", "0.23.4", ["TreeSitterCPP"]),
     ("https://github.com/tree-sitter/tree-sitter-java", "0.23.5", ["TreeSitterJava"]),
-    ("https://github.com/fwcd/tree-sitter-kotlin", "0.3.8", ["TreeSitterKotlin"]),
-    ("https://github.com/tree-sitter/tree-sitter-ruby", "0.23.1", ["TreeSitterRuby"]),
 ]
 
 let package = Package(

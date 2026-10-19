@@ -50,7 +50,8 @@ extension Repository {
             guard let titleSlug else { return false }
             // Made unique with a number when the name was taken: "fix-login-2".
             let last = Self.lastComponent(of: candidate.name)
-            return last == titleSlug || (last.hasPrefix(titleSlug + "-") && Int(last.dropFirst(titleSlug.count + 1)) != nil)
+            let suffix = last.hasPrefix(titleSlug + "-") ? last.dropFirst(titleSlug.count + 1) : nil
+            return last == titleSlug || suffix.flatMap { Int($0) } != nil
         }
         // A commit only this branch is at: the task's own work. The checked-out branches count, so
         // a task that never committed (at its base's commit) isn't matched to some other branch.
