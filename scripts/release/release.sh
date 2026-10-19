@@ -162,6 +162,8 @@ fi
 run rm -rf "$archive" "$app"
 run mkdir -p "$output"
 build_embedded
+# arm64 only: macOS 27 doesn't run on Intel, and without this the packages (which still support macOS
+# 15) also compile an x86_64 slice nothing links. The standalone host is built universal on its own.
 run xcodebuild archive \
     -project native.xcodeproj -scheme native -configuration "$configuration" \
     -archivePath "$archive" -derivedDataPath "$output/DerivedData" -destination 'generic/platform=macOS' \
@@ -170,7 +172,7 @@ run xcodebuild archive \
     NATIVE_SENTRY_DSN="${NATIVE_SENTRY_DSN:-}" NATIVE_SPARKLE_PUBLIC_KEY="$public_key" \
     CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="$identity" DEVELOPMENT_TEAM="$team" \
     CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO OTHER_CODE_SIGN_FLAGS="$sign_flags" ${runtime[@]+"${runtime[@]}"} \
-    ${settings[@]+"${settings[@]}"} -quiet
+    ARCHS=arm64 ${settings[@]+"${settings[@]}"} -quiet
 run ditto "$archive/Products/Applications/$product.app" "$app"
 # Xcode signs the Sparkle framework it embeds but leaves the helpers inside it ad hoc, as Sparkle ships
 # them, and notarization refuses ad hoc code. Sign them inside out the way Sparkle's documentation

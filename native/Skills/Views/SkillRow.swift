@@ -11,7 +11,7 @@ struct SkillRow: View {
     @Binding var isExpanded: Bool
     let onUpdate: () -> Void
     let onRemove: () -> Void
-    let onToggle: (Bool) -> Void
+    let onToggle: @MainActor (Bool) -> Void
 
     private var isOn: Bool {
         library.mode(of: item.key, in: project) == .on
@@ -72,11 +72,11 @@ struct SkillRow: View {
         var text = Text(parts.joined(separator: " · "))
         if !isOn || !library.switches.projectOverrides(for: item.key).isEmpty {
             for limitation in library.limitations(of: item) {
-                text = text + Text("\n" + limitation).foregroundStyle(.dsWarning)
+                text = Text("\(text)\(Text("\n" + limitation).foregroundStyle(.dsWarning))")
             }
         }
         if let problem = item.problems.first(where: { $0.severity == .error }), item.description != nil {
-            text = text + Text("\n" + problem.message).foregroundStyle(.dsDanger)
+            text = Text("\(text)\(Text("\n" + problem.message).foregroundStyle(.dsDanger))")
         }
         return text
     }

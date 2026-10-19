@@ -65,12 +65,12 @@ struct WhatsNewSheet: View {
 
     private var header: some View {
         VStack(alignment: .leading, spacing: DS.Space.xs) {
-            Text(releases.first.map { "What's New in Native \($0.version)" } ?? "What's New in Native")
+            Text(releases.first.map { "What's New in Native \($0.version.description)" } ?? "What's New in Native")
                 .font(.dsTitle3)
                 .foregroundStyle(.dsTextPrimary)
                 .accessibilityAddTraits(.isHeader)
             if releases.count > 1, let oldest = releases.last {
-                Text("Highlights from Native \(oldest.version) onward, in one place.")
+                Text("Highlights from Native \(oldest.version.description) onward, in one place.")
                     .font(.dsBody)
                     .foregroundStyle(.dsTextSecondary)
             }

@@ -103,7 +103,7 @@ struct SkillNativeRow: View {
     let library: SkillLibrary
     let skill: NativeSkillListing
     let project: URL?
-    let onToggle: (Bool) -> Void
+    let onToggle: @MainActor (Bool) -> Void
 
     var body: some View {
         let isOn = library.mode(of: SkillItem.key(for: skill.id), in: project) == .on

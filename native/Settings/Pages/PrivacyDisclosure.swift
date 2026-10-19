@@ -72,7 +72,7 @@ private struct PrivacyList: View {
     }
 }
 
-private enum PrivacyMetrics {
+nonisolated private enum PrivacyMetrics {
     static let bullet: CGFloat = 4
     /// Half the x-height of the 14pt body text.
     static let bulletRise: CGFloat = 4

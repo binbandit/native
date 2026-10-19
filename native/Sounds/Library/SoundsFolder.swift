@@ -48,9 +48,7 @@ nonisolated struct SoundsFolder: Codable, Hashable, Sendable {
     }
 
     /// The audio types AVFoundation can open, so the list never offers a file that won't play.
-    private static let playableTypes = AVURLAsset.audiovisualTypes()
-        .compactMap { UTType($0.rawValue) }
-        .filter { $0.conforms(to: .audio) }
+    private static let playableTypes = AVURLAsset.audiovisualContentTypes.filter { $0.conforms(to: .audio) }
 
     private static func isPlayable(_ file: URL) -> Bool {
         guard let values = try? file.resourceValues(forKeys: [.contentTypeKey, .isRegularFileKey]),

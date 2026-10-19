@@ -130,7 +130,7 @@ public struct CodexHistoryReader: SessionHistoryReader {
     private func threadNames() -> [String: String] {
         guard let index, FileManager.default.fileExists(atPath: index.path(percentEncoded: false)) else { return [:] }
         var names: [String: String] = [:]
-        try? JSONLines.forEach(in: index, containing: [#""thread_name""#]) { record in
+        _ = try? JSONLines.forEach(in: index, containing: [#""thread_name""#]) { record in
             if let id = record["id"] as? String, let name = record["thread_name"] as? String, !name.isEmpty {
                 names[id] = name
             }
