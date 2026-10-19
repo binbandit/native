@@ -26,6 +26,10 @@ public struct SessionState: Sendable {
     private var turnSummaries: [Int: TurnSummary] = [:]
     /// Tool calls waiting for permission, in transcript order.
     private var permissionIndices: [Int] = []
+    /// How many times each turn's items changed, by the index of the turn's first item.
+    private var turnRevisions: [Int: Int] = [:]
+    /// Completed tool calls of the kinds that may write files.
+    private var completedWriteIndices: Set<Int> = []
 
     public init() {}
 
@@ -191,6 +195,7 @@ public struct SessionState: Sendable {
 
     /// Brings the indexes up to date with the item at `index`, which was just added or changed.
     private mutating func index(_ index: Int) {
+        defer { turnRevisions[turnRange(containing: index).lowerBound, default: 0] += 1 }
         switch items[index] {
         case .message(let message) where message.role == .user && !message.wasSteered:
             // Only a new item starts a turn; a prompt growing chunk by chunk is already one.
@@ -205,6 +210,11 @@ public struct SessionState: Sendable {
                 permissionIndices.insert(
                     index, at: permissionIndices.firstIndex { $0 > index } ?? permissionIndices.endIndex)
             }
+            if call.status == .completed, [.edit, .delete, .move, .execute].contains(call.kind) {
+                completedWriteIndices.insert(index)
+            } else {
+                completedWriteIndices.remove(index)
+            }
             summarizeTurn(containing: index)
         case .subagent:
             summarizeTurn(containing: index)
@@ -213,22 +223,36 @@ public struct SessionState: Sendable {
         }
     }
 
+    /// The items of the turn holding `index`, as `turns` splits them.
+    private func turnRange(containing index: Int) -> Range<Int> {
+        guard let position = promptIndices.lastIndex(where: { $0 <= index }) else {
+            // Before the first prompt: a turn of its own.
+            return 0..<(promptIndices.first ?? items.count)
+        }
+        let next = position + 1 < promptIndices.count ? promptIndices[position + 1] : items.count
+        return promptIndices[position]..<next
+    }
+
     /// Counts again what the turn holding `index` did; only tool calls and subagents count.
     private mutating func summarizeTurn(containing index: Int) {
-        let range: Range<Int>
-        if let position = promptIndices.lastIndex(where: { $0 <= index }) {
-            let next = position + 1 < promptIndices.count ? promptIndices[position + 1] : items.count
-            range = promptIndices[position]..<next
-        } else {
-            // Before the first prompt: the turn of its own that `turns` makes of those items.
-            range = 0..<(promptIndices.first ?? items.count)
-        }
+        let range = turnRange(containing: index)
         turnSummaries[range.lowerBound] = TurnSummary(items: items[range])
     }
 
     /// What `turn` did, counted when its items last changed.
     func cachedSummary(of turn: TranscriptTurn) -> TurnSummary? {
         turnSummaries[turn.items.lowerBound]
+    }
+
+    /// How many times the items of the turn starting at `start` changed.
+    func revision(ofTurnAt start: Int) -> Int {
+        turnRevisions[start] ?? 0
+    }
+
+    /// Completed tool calls that may have written files (edits, deletes, moves, commands), for
+    /// noticing new writes without a pass over the transcript.
+    public var completedWriteCount: Int {
+        completedWriteIndices.count
     }
 
     // MARK: - Folding

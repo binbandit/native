@@ -7,6 +7,9 @@ public struct TranscriptTurn: Hashable, Sendable, Identifiable {
     public let id: String
     /// Where the turn's items sit in `SessionState.items`.
     public let items: Range<Int>
+    /// Goes up whenever one of the turn's items is added or changes, so whatever is worked out from
+    /// a turn (a transcript's rows for it) can be kept until the turn changes.
+    public let revision: Int
     /// When a live turn started and ended. Replayed history has no times.
     public var startedAt: Date?
     public var endedAt: Date?
@@ -46,7 +49,8 @@ extension SessionState {
             let end = position + 1 < starts.count ? starts[position + 1] : items.count
             let clock = turnClocks[start]
             return TranscriptTurn(
-                id: items[start].id, items: start..<end, startedAt: clock?.startedAt, endedAt: clock?.endedAt,
+                id: items[start].id, items: start..<end, revision: revision(ofTurnAt: start),
+                startedAt: clock?.startedAt, endedAt: clock?.endedAt,
                 stopReason: clock?.stopReason
             )
         }
