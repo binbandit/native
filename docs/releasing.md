@@ -260,7 +260,11 @@ Sentry → publishes.
   release (see "The feed URLs").
 - **Publishing nightly** moves the `nightly` tag to the commit, uploads the archive (named with its
   build number, so a download in flight never meets a replaced file), its deltas and the DMG, then
-  the appcast, and keeps the two newest archives and only the deltas the appcast lists.
+  the appcast, and keeps the two newest archives and only the deltas the appcast lists. GitHub won't
+  let the workflow token tag a commit whose `.github/workflows` differ from `main`'s (a 403, "Resource
+  not accessible by integration"), which happens when `main` moves on with workflow changes while a
+  nightly builds, so `release.sh` checks that before building and again before tagging, and asks for
+  a run on `main`'s head instead.
 
 ### Rehearsing a release
 

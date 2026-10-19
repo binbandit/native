@@ -93,6 +93,16 @@ build_embedded() {
     run "$ROOT/scripts/build-script-runtime.sh"
 }
 
+# Stops unless <commit>'s .github/workflows match main's on GitHub. The workflow token can't create or
+# move a tag onto a commit whose workflows differ from main's (GitHub answers 403 "Resource not
+# accessible by integration"), which happens when main moves on with workflow changes while a
+# nightly builds.
+require_workflows_of_main() {
+    run git fetch --quiet origin main || die "couldn't fetch main to compare its workflows with ${1:0:7}"
+    git diff --quiet "$1" FETCH_HEAD -- .github/workflows ||
+        die "main's workflows changed since ${1:0:7}, and GitHub doesn't let the workflow token tag a commit whose workflows differ from main's. Run the nightly again on main's head."
+}
+
 require_tool() {
     command -v "$1" >/dev/null 2>&1 || die "$1 isn't installed. $2"
 }

@@ -128,6 +128,8 @@ if [ "$MODE" = publish ] || [ "$MODE" = rehearse ]; then
     [ -n "${SENTRY_AUTH_TOKEN:-}" ] || die "set SENTRY_AUTH_TOKEN before publishing (docs/releasing.md, Sentry crash symbols)"
     [ -n "${NATIVE_SENTRY_DSN:-}" ] || die "set NATIVE_SENTRY_DSN before publishing (docs/releasing.md, repository secrets)"
 fi
+# Publishing a nightly tags the commit, so fail now rather than after the build if it can't.
+if [ "$MODE" = publish ] && [ "$channel" = nightly ]; then require_workflows_of_main "$sha"; fi
 
 # Developer ID for anything that leaves this Mac; ad hoc is fine for a local dry run.
 if [ -z "$identity" ]; then
@@ -392,6 +394,8 @@ assets=("$output/appcast/$zip_name" "$output/host/native-host-$build_number-maco
 notes_flag=(--notes-file "$notes")
 
 if [ "$channel" = nightly ]; then
+    # Again, since main may have moved while this built.
+    [ "$MODE" != publish ] || require_workflows_of_main "$sha"
     if [ "$MODE" = publish ] && gh release view nightly --repo "$repo" >/dev/null 2>&1; then
         # The rolling release keeps its URL; its tag moves to this commit.
         remote gh api -X PATCH "repos/$repo/git/refs/tags/nightly" -f sha="$sha" -F force=true
