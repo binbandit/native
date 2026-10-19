@@ -93,12 +93,20 @@ cargo build "${cargo_args[@]}" || give_up "native-script-runtime didn't build; s
 built="$CARGO_TARGET_DIR/release/native-script-runtime"
 
 # Its own signature and entitlements are the second boundary: the App Sandbox with no network and
-# no files outside its container, whatever happens inside V8.
+# no files outside its container, whatever happens inside V8. From Xcode it also takes the flags
+# the app is signed with: a release passes --timestamp, which notarization requires, and its keychain.
+sign_flags=()
+if [ "$identity" != "-" ] && [ -n "${OTHER_CODE_SIGN_FLAGS:-}" ]; then
+    read -r -a sign_flags <<<"$OTHER_CODE_SIGN_FLAGS"
+fi
+# Signed in the cache and then moved into place, so the output is never half-signed and a running
+# copy keeps its file. Xcode's script sandbox lets a phase write only its declared outputs, so the
+# staged copy can't sit beside the output.
 mkdir -p "$(dirname "$output")"
-staged="$output.staged.$$"
+staged="$cache/native-script-runtime.staged.$$"
 cp "$built" "$staged"
 codesign --force --sign "$identity" --identifier "$identifier" --options runtime \
-    --entitlements "$crate/ScriptRuntime.entitlements" "$staged" \
+    ${sign_flags[@]+"${sign_flags[@]}"} --entitlements "$crate/ScriptRuntime.entitlements" "$staged" \
     || { rm -f "$staged"; give_up "native-script-runtime couldn't be signed."; }
-mv -f "$staged" "$output"
+mv -f "$staged" "$output" || { rm -f "$staged"; give_up "native-script-runtime couldn't be copied to $output."; }
 echo "Built $output in $((SECONDS - started))s"

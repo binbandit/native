@@ -37,6 +37,19 @@ struct ProjectProblem: Identifiable, Hashable {
     var suggestion: String?
     /// The underlying error, for Show Details; a failed retry replaces it.
     var details: String?
+    /// Another way forward, offered first where Retry alone won't help.
+    var alternative: Alternative?
+
+    enum Alternative: Hashable {
+        /// Start the task again in its project's own folder, when its worktree can't be rebuilt.
+        case startInProjectFolder(SessionKey)
+
+        var title: String {
+            switch self {
+            case .startInProjectFolder: "Start in Project Folder"
+            }
+        }
+    }
 
     var id: ID {
         ID(project: project, work: work)

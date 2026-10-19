@@ -45,6 +45,23 @@ extension AppModel {
         }
     }
 
+    /// Takes the other way forward a problem offers (`ProjectProblem.alternative`), which settles it.
+    func takeAlternative(of problem: ProjectProblem) async {
+        guard let alternative = problem.alternative, let project = projects.project(problem.project) else { return }
+        switch alternative {
+        case .startInProjectFolder(let key):
+            do {
+                _ = try await startTask(
+                    in: project.id, folder: project.url, title: titleOfSession(key), agent: key.agent)
+                problems.resolve(problem.id)
+            } catch {
+                var again = problem
+                again.details = error.localizedDescription.withoutTerminalEscapes
+                problems.report(again)
+            }
+        }
+    }
+
     /// Lets a problem go without fixing it.
     func dismiss(_ problem: ProjectProblem) {
         problems.resolve(problem.id)

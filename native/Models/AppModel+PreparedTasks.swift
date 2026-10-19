@@ -16,14 +16,16 @@ extension AppModel {
         }
     }
 
-    /// Starts a task in `project` that runs in `folder`, with the project's agent and model (or the
-    /// defaults), lists it in the sidebar under the project, titles it and selects it. When the
-    /// agent wants a sign-in, its sign-in prompt shows too.
-    func startTask(in project: Project.ID, folder: URL, title: String?) async throws -> SessionModel {
-        if defaultAgent(in: projects.project(project)) == nil {
+    /// Starts a task in `project` that runs in `folder`, with `agent` or the project's agent and
+    /// model (or the defaults), lists it in the sidebar under the project, titles it and selects it.
+    /// When the agent wants a sign-in, its sign-in prompt shows too.
+    func startTask(
+        in project: Project.ID, folder: URL, title: String?, agent requested: AgentDefinition.ID? = nil
+    ) async throws -> SessionModel {
+        if requested == nil, defaultAgent(in: projects.project(project)) == nil {
             await agentsChecked()
         }
-        guard let agent = defaultAgent(in: projects.project(project))?.id else {
+        guard let agent = requested ?? defaultAgent(in: projects.project(project))?.id else {
             // Add Agent says how to get one.
             isAddingAgent = true
             throw PreparedTaskError.noAgent

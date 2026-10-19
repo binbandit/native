@@ -56,6 +56,7 @@ extension AppModel {
     /// Brings an archived task back to the sidebar, with its workspace if Native put one away.
     func unarchiveSession(_ key: SessionKey) async {
         guard archivedSessions.contains(key) else { return }
+        archiveDatesAwaitingRestore[key] = archivedSessions.date(key)
         archivedSessions.set(key, archived: false)
         if let project = catalog.lookup(key)?.project {
             // A workspace that couldn't be put away is where it should be now.
@@ -75,10 +76,12 @@ extension AppModel {
         guard let listed = catalog.lookup(key), let project = projects.project(listed.project),
             let folder = taskFolder(of: key, in: project)
         else { return }
+        let task = ArchivedTaskDetails(title: titleOfSession(key), archivedAt: archiveDatesAwaitingRestore[key])
         try await inWorkspaceOrder(at: folder) {
             // Archived again before its turn came: it stays put away.
             guard !self.archivedSessions.contains(key) else { return }
-            try await self.taskWorkspaces?.restoreWorkspace(at: folder, in: project)
+            try await self.taskWorkspaces?.restoreWorkspace(at: folder, in: project, task: task)
+            self.archiveDatesAwaitingRestore[key] = nil
         }
     }
 
@@ -107,6 +110,19 @@ extension AppModel {
     private func reportRestoreFailure(of key: SessionKey, _ error: any Error) {
         // Without a project, the task isn't in the sidebar to come back to either.
         guard let project = catalog.lookup(key)?.project else { return }
+        if let failure = error as? TaskWorkspaceRestoreFailure {
+            // Nothing says how to rebuild it, so Retry alone wouldn't help: say what's missing, and
+            // offer the project's folder instead.
+            let saved = failure.savedWork.map { " " + $0 } ?? ""
+            problems.report(
+                ProjectProblem(
+                    project: project, work: .workspaceRestore(key),
+                    title: "Couldn't rebuild “\(titleOfSession(key))”'s worktree",
+                    recovery: "The task is back with its conversation. " + (failure.errorDescription ?? "") + saved,
+                    suggestion: "Start it again in the project's folder, or check out its branch yourself and Retry.",
+                    alternative: .startInProjectFolder(key)))
+            return
+        }
         problems.report(
             ProjectProblem(
                 project: project, work: .workspaceRestore(key),

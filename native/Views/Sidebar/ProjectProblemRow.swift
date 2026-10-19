@@ -64,10 +64,7 @@ struct ProjectProblemRow: View {
                 recovery: problem.recovery,
                 suggestion: problem.suggestion,
                 details: problem.details,
-                primary: .init("Retry") {
-                    isShowingDetails = false
-                    retry()
-                },
+                primary: primaryAction,
                 secondary: .init("Dismiss") {
                     isShowingDetails = false
                     model.dismiss(problem)
@@ -78,6 +75,9 @@ struct ProjectProblemRow: View {
             .fixedSize(horizontal: false, vertical: true)
         }
         .contextMenu {
+            if let alternative = problem.alternative {
+                Button(alternative.title) { Task { await model.takeAlternative(of: problem) } }
+            }
             Button("Retry") { retry() }
             Button("Show Details") { isShowingDetails = true }
             if let details = problem.details {
@@ -88,8 +88,25 @@ struct ProjectProblemRow: View {
         }
         .accessibilityElement(children: .contain)
         .accessibilityActions {
+            if let alternative = problem.alternative {
+                Button(alternative.title) { Task { await model.takeAlternative(of: problem) } }
+            }
             Button("Retry") { retry() }
             Button("Dismiss") { model.dismiss(problem) }
+        }
+    }
+
+    /// What the details lead with: the problem's other way forward where Retry alone won't help.
+    private var primaryAction: ErrorState.Action {
+        guard let alternative = problem.alternative else {
+            return .init("Retry") {
+                isShowingDetails = false
+                retry()
+            }
+        }
+        return .init(alternative.title) {
+            isShowingDetails = false
+            Task { await model.takeAlternative(of: problem) }
         }
     }
 

@@ -26,7 +26,7 @@ struct TreeSitterHighlighterTests {
 
     @Test(arguments: [
         ("tsx", "const App = () => <Card title=\"Hi\">{items.map((x) => <li key={x}>{x}</li>)}</Card>;"),
-        ("cpp", "template <typename T> std::vector<std::map<int, T>> f(T a) { return {}; }"),
+        ("rust", "println!(\"{} {}\", a, \"名前 👩‍💻\"); let r = r#\"raw\"#; vec![1, 2]"),
         ("markdown", "# Title\n\n```swift\nlet a = \"\\(b)\"\n```\n\n<div>hi</div>\n- **bold** `code`"),
         ("html", "<style>p { color: red }</style><script>let x = `${1}`</script><p class=a>&amp;</p>"),
         ("python", "s = f\"{a!r:>{width}} {'q'}\"  # 名前 👩‍💻"),

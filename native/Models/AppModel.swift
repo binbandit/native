@@ -84,6 +84,9 @@ final class AppModel {
     /// Each task folder's workspace work under way (putting it away, bringing it back), by path, so
     /// the next waits for it. Internal only for AppModel+Archive.swift.
     @ObservationIgnored var workspaceWork: [String: Task<Void, Never>] = [:]
+    /// When each unarchived task was archived, until its workspace is back: it tells that archive's
+    /// checkpoint from earlier ones when nothing was recorded. Internal only for AppModel+Archive.swift.
+    @ObservationIgnored var archiveDatesAwaitingRestore: [SessionKey: Date] = [:]
     @ObservationIgnored let deletedSessions = DeletedSessions()
     var history = NavigationHistory<SessionKey>()
     @ObservationIgnored var isNavigatingHistory = false
