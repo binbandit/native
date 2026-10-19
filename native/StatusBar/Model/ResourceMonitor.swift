@@ -62,10 +62,12 @@ final class ResourceMonitor {
     /// - Parameters:
     ///   - roots: The running agents' processes.
     ///   - isWorking: Whether any task is working, which samples at the busy pace.
-    func run(roots: @escaping @MainActor () -> [ProcessSampler.Root], isWorking: @escaping @MainActor () -> Bool)
+    func run(
+        roots: @escaping @MainActor () -> [ProcessSampler.Root], isWorking: @escaping @MainActor () -> Bool
+    )
         async
     {
-        let activity = { [weak self] in
+        let activity: @MainActor () -> Activity = { [weak self] in
             Activity(roots: roots(), isWorking: isWorking(), isShowingDetails: self?.isShowingDetails ?? false)
         }
         while !Task.isCancelled {

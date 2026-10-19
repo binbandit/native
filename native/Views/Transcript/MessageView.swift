@@ -11,6 +11,18 @@ struct MessageView: View, Equatable {
     var thinking: ThinkingClock?
 
     var body: some View {
+        // Instructions that went ahead of a prompt (a mode's) show as a marker above it.
+        if message.role == .user, let marker = message.preamble {
+            VStack(spacing: DS.Space.lg) {
+                PromptPreambleMarker(marker: marker)
+                content
+            }
+        } else {
+            content
+        }
+    }
+
+    @ViewBuilder private var content: some View {
         switch message.role {
         case .user where GoalPrompt(parsing: message.text) != nil:
             // Native's own goal prompts read as one quiet line, not a wall of instructions.

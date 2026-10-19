@@ -347,6 +347,7 @@ private struct SessionCommands: Commands {
             Divider()
 
             CommandMenuItem(.sessionNextPermissionMode, in: commands)
+            ModeMenuItems(commands: commands)
             CommandMenuItem(.sessionChooseModel, in: commands)
 
             Divider()

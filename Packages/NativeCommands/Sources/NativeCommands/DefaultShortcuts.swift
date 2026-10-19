@@ -42,6 +42,7 @@ public enum DefaultShortcuts {
         "search.show": "⇧⌘F",
         // Session settings
         "session.nextPermissionMode": "⇧⌘M",
+        "session.nextMode": "⌃⇧M",
         "session.chooseModel": "⇧⌘E",
         "goal.edit": "⌥⌘G",
         "workflow.run": "⌥⌘R",

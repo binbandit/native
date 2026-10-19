@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Compiles the configurations releases ship from, Release and Nightly, without signing, so a break
 # that only shows up outside Debug (an unguarded #Preview fixture, a DEBUG-only helper) is caught
-# before a release needs it. Then checks each app against its size budget (size.sh,
-# docs/app-size.md).
+# before a release needs it. Then checks each app against its size budget
+# (size-check.sh, docs/app-size.md).
 #
 #   scripts/release/check.sh [--derived-data <dir>] [configuration...]   # default: Release Nightly
 set -euo pipefail
@@ -27,8 +27,4 @@ for configuration in "${configurations[@]}"; do
         -derivedDataPath "$derived" -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO -quiet
 done
 log "Release and Nightly compile"
-for configuration in "${configurations[@]}"; do
-    product=Native
-    [ "$configuration" = Nightly ] && product="Native Nightly"
-    run "$ROOT/scripts/release/size.sh" "$derived/Build/Products/$configuration/$product.app"
-done
+run "$ROOT/scripts/release/size-check.sh" --built "$derived" "${configurations[@]}"

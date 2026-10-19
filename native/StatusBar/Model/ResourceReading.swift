@@ -18,6 +18,8 @@ struct ResourceReading: Hashable {
     let agents: Figures?
     /// How much of the Mac's memory everything together takes.
     let pressure: MemoryPressure
+    /// The tooltip and VoiceOver value: what each figure is, in words.
+    let summary: String
 
     enum MemoryPressure: Hashable {
         case normal
@@ -30,9 +32,6 @@ struct ResourceReading: Hashable {
     /// Before the first sample.
     static let measuring = ResourceReading(
         app: Figures(memory: "–", cpu: "–"), agents: nil, pressure: .normal, summary: "Measuring…")
-
-    /// The tooltip and VoiceOver value: what each figure is, in words.
-    let summary: String
 
     private init(app: Figures, agents: Figures?, pressure: MemoryPressure, summary: String) {
         self.app = app

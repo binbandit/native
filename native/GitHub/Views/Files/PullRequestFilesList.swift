@@ -38,8 +38,9 @@ struct PullRequestFilesList: View {
                 .coordinateSpace(.named(PullRequestPageModel.filesSpace))
             }
             .scrollContentBackground(.hidden)
-            #if DEBUG
-            .modifier(PullRequestFilesAutoScroll())
+            #if DEBUG && os(macOS)
+            // `-nativeAutoScroll`: scrolls this list by itself, for measuring frame times.
+            .task { PlatformAutoScroll.startIfRequested() }
             #endif
             .overlay(alignment: .bottom) { selectionLimit }
             .onGeometryChange(for: CGFloat.self) {

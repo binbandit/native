@@ -100,12 +100,13 @@ struct CelebrationsSettingsPage: View {
                     .frame(width: CelebrationMetrics.searchWidth)
             }
             if let lastChange {
-                HStack(spacing: DS.Space.md) {
+                // Settings' button, on the summary's baseline, so its label matches the text.
+                HStack(alignment: .firstTextBaseline, spacing: DS.Space.md) {
                     Text(lastChange.summary)
                         .settingsText(.body)
                         .foregroundStyle(.dsTextSecondary)
                     Button("Undo") { undo(lastChange) }
-                        .buttonStyle(.ds(.secondary, size: .small))
+                        .buttonStyle(.settings)
                         .help("Put your choices back (⌘Z)")
                 }
                 .transition(.opacity)

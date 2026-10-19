@@ -256,6 +256,9 @@ asks first.
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
 | ⌘⇧M | Next permission mode | Session | `session.nextPermissionMode` |
+| ⌃⇧M | Next mode: Build, Plan, Ask, Debug, Review, then your own modes and the project's (the composer's Mode pill) | Session ▸ Mode | `session.nextMode` |
+| | Put the task in a mode, one command per mode ("Debug Mode"); your own and the project's modes get theirs too | Session ▸ Mode | `mode.build` / `mode.plan` / `mode.ask` / `mode.debug` / `mode.review` |
+| | Edit Modes… (Settings ▸ Modes) | Session ▸ Mode | `modes.edit` |
 | ⌘⇧E | Model picker | Session | `session.chooseModel` |
 | ⌥⌘G | Set or edit the session's goal | Session | `goal.edit` |
 | ⌥⌘R | Run a workflow | Session | `workflow.run` |

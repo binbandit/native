@@ -49,9 +49,11 @@ struct ResourcesPanel: View {
             .frame(maxHeight: StatusBarMetrics.panelListHeight)
             .fixedSize(horizontal: false, vertical: true)
             PopoverPanelFootnote(
-                "Memory is each process's footprint, as Activity Monitor shows it. CPU is a share of one core. Updated every 2 seconds."
+                "Memory is each process's footprint, as Activity Monitor shows it. CPU is a share of one core. Updated every 3 seconds while this is open."
             )
         }
+        .onAppear { monitor.setShowingDetails(true) }
+        .onDisappear { monitor.setShowingDetails(false) }
     }
 
     /// The summary line: total CPU and memory, with the total's trend.

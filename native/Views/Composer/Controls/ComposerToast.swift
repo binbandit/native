@@ -10,7 +10,8 @@ struct ComposerToast: View {
 
     var body: some View {
         ComposerSurface(isFloating: true) {
-            HStack(spacing: DS.Space.sm) {
+            // The glyph and Undo sit on the message's first baseline, as in every undo toast.
+            HStack(alignment: .firstTextBaseline, spacing: DS.Space.sm) {
                 Image(systemName: symbol)
                     .foregroundStyle(color)
                 Text(message)
@@ -18,15 +19,14 @@ struct ComposerToast: View {
                     .lineLimit(2)
                 if let onUndo {
                     Button("Undo", action: onUndo)
-                        .buttonStyle(.plain)
-                        .font(.dsBodyMedium)
-                        .foregroundStyle(.dsAccentText)
+                        .buttonStyle(.ds(.secondary))
                         .help("Undo (⌘Z)")
                 }
             }
             .font(.dsBody)
             .padding(.horizontal, DS.Space.md)
-            .padding(.vertical, DS.Space.sm)
+            // The 24pt Undo button sets the height, so the toast stays as compact as a plain one.
+            .padding(.vertical, onUndo == nil ? DS.Space.sm : DS.Space.xs)
         }
         .fixedSize(horizontal: false, vertical: true)
         .accessibilityElement(children: .contain)

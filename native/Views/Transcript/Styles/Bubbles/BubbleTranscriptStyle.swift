@@ -74,13 +74,19 @@ private struct BubbleRowView: View {
         case .notice(let notice) where limitStops[notice.id.uuidString] != nil:
             limitCard(for: notice.id.uuidString)
         case .message(let message, let side, let position):
-            BubbleLane(side: side, hugsContent: true) {
-                VStack(alignment: .trailing, spacing: DS.Space.sm) {
-                    if !message.attachments.isEmpty {
-                        MessageAttachmentsView(attachments: message.attachments)
-                    }
-                    if !message.text.isEmpty || message.attachments.isEmpty {
-                        BubbleMessageView(message: message, side: side, position: position)
+            VStack(spacing: DS.Space.lg) {
+                // Instructions that went ahead of a prompt (a mode's) show as a marker above it.
+                if let marker = message.preamble {
+                    PromptPreambleMarker(marker: marker)
+                }
+                BubbleLane(side: side, hugsContent: true) {
+                    VStack(alignment: .trailing, spacing: DS.Space.sm) {
+                        if !message.attachments.isEmpty {
+                            MessageAttachmentsView(attachments: message.attachments)
+                        }
+                        if !message.text.isEmpty || message.attachments.isEmpty {
+                            BubbleMessageView(message: message, side: side, position: position)
+                        }
                     }
                 }
             }

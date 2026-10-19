@@ -1,6 +1,6 @@
 import SwiftUI
 
-/// The memory and CPU Native and its agents use: the totals in the bar,
+/// The memory and CPU Native and its agents use: Native's own and its agents' figures in the bar,
 /// each process tree and process on click. Samples only while the bar is on screen.
 struct ResourcesStatusItem: StatusBarItem {
     let source: any StatusBarSource
@@ -25,53 +25,53 @@ private struct ResourcesSegment: View {
     let source: any StatusBarSource
     let monitor: ResourceMonitor
 
-    private var snapshot: ResourceSnapshot {
-        monitor.snapshot
-    }
-
-    private var hasSample: Bool {
-        snapshot.date != .distantPast
-    }
-
-    private var summary: String {
-        guard hasSample else { return "Measuring…" }
-        return
-            "\(DSFormat.memory(snapshot.memory)) of memory (\(Self.shareOfPhysicalMemory(snapshot.memory))) and \(DSFormat.cpu(snapshot.cpu)) CPU"
+    /// Only the reading: the full sample changes on every one, the reading only when a figure does.
+    private var reading: ResourceReading {
+        monitor.reading
     }
 
     var body: some View {
         StatusBarSegment(
-            help: "Native and its agents are using \(summary). Click for each process.",
+            help: "\(reading.summary) Click for each process.",
             accessibilityLabel: "Memory and CPU",
-            accessibilityValue: summary,
-            onOpen: { Task { await monitor.sample(roots: source.statusBarAgentProcesses) } }
+            accessibilityValue: reading.summary
         ) {
             HStack(spacing: DS.Space.sm) {
                 StatusBarGlyph("memorychip")
-                Text(hasSample ? DSFormat.memory(snapshot.memory) : "–")
-                    .modifier(Tint(color: memoryTint))
-                StatusBarDivider()
-                StatusBarGlyph("cpu")
-                Text(hasSample ? DSFormat.cpu(snapshot.cpu) : "–")
+                    .modifier(Tint(color: pressureTint))
+                figures("Native", reading.app)
+                if let agents = reading.agents {
+                    StatusBarDivider()
+                    figures("Agents", agents)
+                }
             }
         } details: {
             ResourcesPanel(monitor: monitor)
         }
         .task {
-            await monitor.run { source.statusBarAgentProcesses }
+            await monitor.run(
+                roots: { source.statusBarAgentProcesses },
+                isWorking: { source.statusBarTasks.contains { $0.status == .working } })
         }
     }
 
-    /// "6.7% of 48 GB": the memory against this Mac's.
-    private static func shareOfPhysicalMemory(_ bytes: UInt64) -> String {
-        let total = ProcessInfo.processInfo.physicalMemory
-        return "\(DSFormat.share(Int(clamping: bytes), of: Int(clamping: total))) of \(DSFormat.memory(total))"
+    /// "Native 104 MB 0.3%": whose, then memory and CPU.
+    private func figures(_ title: String, _ figures: ResourceReading.Figures) -> some View {
+        HStack(spacing: DS.Space.xs) {
+            Text(title)
+                .foregroundStyle(.dsTextTertiary)
+            Text(figures.memory)
+            Text(figures.cpu)
+        }
     }
 
-    /// Tints the figure as memory gets tight: past a quarter and half of the Mac's RAM.
-    private var memoryTint: Color? {
-        let share = Double(snapshot.memory) / Double(max(ProcessInfo.processInfo.physicalMemory, 1))
-        return share >= 0.5 ? .dsDanger : share >= 0.25 ? .dsWarning : nil
+    /// Tints the glyph as memory gets tight: past a quarter and half of the Mac's RAM.
+    private var pressureTint: Color? {
+        switch reading.pressure {
+        case .normal: nil
+        case .high: .dsWarning
+        case .critical: .dsDanger
+        }
     }
 }
 

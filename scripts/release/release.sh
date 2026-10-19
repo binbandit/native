@@ -210,7 +210,7 @@ fi
 # What users download and install, against the budgets in docs/app-size.md; over budget stops here.
 size_args=(--zip "$output/appcast/$zip_name")
 [ "$make_dmg" = 1 ] && size_args+=(--dmg "$output/$dmg_name")
-run "$ROOT/scripts/release/size.sh" "$app" "${size_args[@]}"
+run "$ROOT/scripts/release/size-check.sh" "$app" "${size_args[@]}"
 
 # MARK: - Appcast
 

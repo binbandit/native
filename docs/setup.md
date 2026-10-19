@@ -139,8 +139,11 @@ the agent's own sign-in command, and closes it once that succeeds. Codex and Cur
 from Sign In…. Claude Code's adapter offers no sign-in, so the user runs `claude` and `/login` in a
 terminal, then Restart Claude Code from its ⋯ menu.
 
-**Defaults.** Under each agent in Settings ▸ Agents, "Defaults for new tasks" sets its default model
-and effort, once a task has run on it. Settings ▸ General ▸ Follow-up behavior chooses whether
+**Defaults.** A task keeps its own model and variants (effort, Fast mode) for its whole life,
+through switching tasks, relaunching and agent restarts. A new task starts on what the user last
+picked for that agent in any task (`AgentSessionDefaults.lastUsed`); under each agent in Settings ▸
+Agents, "Defaults for new tasks" can pin a model and effort instead, and a project's model
+(Settings ▸ Projects) wins over both. Settings ▸ General ▸ Follow-up behavior chooses whether
 Return queues a message for after the turn (Queue) or adds it to the turn in progress (Steer).
 
 An agent Native doesn't know is a plugin: see the `build-a-native-plugin` skill.
