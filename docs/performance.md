@@ -332,7 +332,9 @@ searches, commands with output, edits with diffs, and Markdown replies with head
 blocks and tables. Folded, the transcript is about 290,000 points tall. `scripts/perf/scroll.swift`
 scrolls it from the bottom up and back for 12 s; frames come from `-framePacing YES`, the main
 thread's profile from `sample`. The view fixes were tried one at a time in a copy of the tree, in one
-build switched by a launch argument, then made in the transcript.
+build switched by a launch argument, then made in the transcript. The original build couldn't open
+the 500-turn session in reasonable time, so "before" for scrolling and streaming is the transcript's
+views as they were with the model fixes below already in (scrolling runs none of the model's code).
 
 | Measurement | Before | After |
 | --- | --- | --- |
