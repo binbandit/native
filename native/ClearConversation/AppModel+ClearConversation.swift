@@ -42,7 +42,7 @@ extension AppModel {
             titles.rename(session.titleKey, to: title)
         }
         session.addNotice(
-            "Fresh conversation: \(old.agentName) starts over without the earlier context. The earlier conversation is a click away (Earlier Conversation in the toolbar).",
+            "Fresh conversation: \(old.agentName) starts without the earlier context, which stays under Earlier Conversation in the toolbar.",
             isError: false)
         history.replace(old.key, with: session.key)
         if selection == old.key {

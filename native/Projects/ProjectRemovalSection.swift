@@ -1,8 +1,8 @@
 import SwiftUI
 
 /// What archiving a task does in the project, and putting the project itself away: archiving it
-/// (it comes back from Archived) or removing it from Native. Neither touches its folder, and both
-/// can be undone.
+/// (it comes back from Archived) or deleting it from Native, worded and confirmed as in the
+/// sidebar. Neither touches its folder, and both can be undone.
 struct ProjectRemovalSection: View {
     let project: Project
 
@@ -45,15 +45,15 @@ struct ProjectRemovalSection: View {
                     }
                 }
             }
-            SettingsSubheading("Remove from Native")
+            SettingsSubheading("Delete from Native")
             SettingsRowGroup {
                 SettingsRow(
-                    id: rows.remove, "Remove \(project.name) from Native",
+                    id: rows.remove, "Delete \(project.name) from Native",
                     description: Text(
                         "Native forgets the project and removes the task worktrees it made. Its folder and everything in it stay where they are. You can undo for a few seconds."
                     )
                 ) {
-                    Button("Remove Project…", role: .destructive) { isConfirmingRemoval = true }
+                    Button("Delete Project…", role: .destructive) { isConfirmingRemoval = true }
                 }
             }
         }

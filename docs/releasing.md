@@ -22,6 +22,13 @@ Keep **Security & Privacy → Prevent Storing of IP Addresses** enabled in the S
 settings alone do not prevent server-side IP enrichment. Keep the advanced rule **Remove Anything
 from `$user.geo.**`** as well, to discard geography added by Sentry before IP scrubbing.
 
+To rotate an exposed ingestion key, generate a replacement in the project's
+[Client Keys settings](https://foxycorps.sentry.io/settings/projects/native/keys/), update the
+`NATIVE_SENTRY_DSN` repository secret, and disable the exposed key. Keep the replacement out of
+source and command output. Verify it with a synthetic event and confirm the old key is disabled;
+Sentry's ingestion configuration can take time to propagate. New release builds pick up the
+replacement; existing builds containing the disabled DSN need an app update to report again.
+
 Both publishing workflows read the protected `SENTRY_AUTH_TOKEN` repository secret. This is Sentry's
 organization CI token named **Native GitHub release symbols**. Keep it out of source and app bundles.
 For a local publication, supply the same token in the environment. `scripts/release/sentry.sh` verifies

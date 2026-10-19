@@ -156,7 +156,9 @@ extension ToolPresentation {
         let isNewFile = diffs.first.map { $0.oldText == nil } ?? (call.name == "Write")
         let verb = isNewFile ? ToolVerb.write : .edit
         let lines = stats.added + stats.removed
-        let path = diffs.first?.path ?? call.rawInput?["file_path"]?.stringValue ?? call.locations.first?.path
+        let path =
+            diffs.first?.path ?? call.rawInput?["file_path"]?.stringValue ?? call.locations.first?.path
+            ?? call.rawInput?["path"]?.stringValue
         return ToolPresentation(
             verbs: verb.appending(lines > 0 ? "\(lines) \(lines == 1 ? "line" : "lines")" : "file"),
             subject: path.map { ($0 as NSString).lastPathComponent } ?? call.title,
@@ -176,7 +178,8 @@ extension ToolPresentation {
                 verbs: .read,
                 subject: (call.locations.first?.path ?? title.dropping(prefix: "Read file '").dropping(suffix: "'"))
                     .abbreviatedPath)
-        case .read where title.hasPrefix("Read "): ToolPresentation(verbs: .read, subject: title.dropping(prefix: "Read "))
+        case .read where title.hasPrefix("Read "):
+            ToolPresentation(verbs: .read, subject: title.dropping(prefix: "Read "))
         // Codex lists files as a read titled "List files", which reads wrong after the verb.
         case .read: ToolPresentation(subject: title.replacingOccurrences(of: "'", with: ""))
         case .edit: fileChange(call)

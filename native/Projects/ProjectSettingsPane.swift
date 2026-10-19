@@ -34,7 +34,7 @@ extension SettingsPane {
                     SettingsSearchEntry(id: rows.skills, title: "Skills", keywords: ["skill"]),
                     SettingsSearchEntry(id: rows.archive, title: "When a task is archived", keywords: ["branch"]),
                     SettingsSearchEntry(
-                        id: rows.remove, title: "Remove from Native", keywords: ["delete", "forget", "remove"]),
+                        id: rows.remove, title: "Delete from Native", keywords: ["remove", "forget"]),
                 ]
             },
             content: { ProjectSettingsPage(projectID: project.id) }

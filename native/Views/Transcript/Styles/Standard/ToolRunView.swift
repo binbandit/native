@@ -57,6 +57,8 @@ struct ToolRunView: View, Equatable {
             .padding(.vertical, DS.Space.xs)
         }
         .scrollPosition($position)
+        // The row cut off at the top fades out rather than being sliced through.
+        .scrollEdgeEffectStyle(.soft, for: .top)
         .defaultScrollAnchor(.bottom, for: .initialOffset)
         .scrollBounceBehavior(.basedOnSize)
         .onScrollGeometryChange(for: ToolRunScrollState.self) { [threshold = DS.Space.lg] geometry in
@@ -88,9 +90,18 @@ struct ToolRunView: View, Equatable {
             .equatable()
             .environment(\.permissionShortcutsEnabled, false)
         case .message(let message):
-            MessageView(message: message, thinking: run.thinking[index])
-                .equatable()
-                .padding(.vertical, DS.Space.xs)
+            // In line with the tool rows: reasoning gets the think glyph in their glyph column.
+            HStack(alignment: .firstTextBaseline, spacing: DS.Space.sm) {
+                Image(systemName: DSToolGlyph.think.systemImage)
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(.dsTextSecondary)
+                    .font(.dsBody)
+                    .frame(width: DS.Size.rowLeading)
+                    .accessibilityHidden(true)
+                MessageView(message: message, thinking: run.thinking[index])
+                    .equatable()
+            }
+            .padding(.vertical, DS.Space.xs)
         case .notice, .subagent, .sessionMessage:
             // Runs hold only tool calls and reasoning.
             EmptyView()
