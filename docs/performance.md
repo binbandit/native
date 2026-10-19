@@ -341,7 +341,7 @@ build switched by a launch argument, then made in the transcript.
 | Scrolling at 5,000 points a second (a fast flick) | 45–54% of refreshes drawn, 56–66 dropped a second, worst stall 154–304 ms, 15.5–22.8 s of CPU for 12 s (the main thread always busy, the scroll fell behind) | 67–89% drawn, 13–40 dropped a second, worst stall 75–123 ms, 7.1–11.8 s of CPU |
 | Scrolling at 2,000 points a second (reading) | 84% drawn, 20 dropped a second, worst stall 129 ms | 87–93% drawn, 9–16 dropped a second, worst stall 81–139 ms |
 | The whole transcript and back in 10 s (every frame all new rows) | not measured | 20–23% drawn; the main thread lays out a screenful of new text each frame |
-| Streaming a long reply into the 500-turn session | main thread 99–100% busy, 3% of refreshes drawn, worst stall 2.7 s | 36% drawn, worst stall 565 ms with the reply-sections cache fixed; the per-turn plan cache isn't measured yet. A 20-turn session: 52% busy, 72% drawn |
+| Streaming a long reply into the 500-turn session | main thread 99–100% busy, 3% of refreshes drawn, worst stall 2.7 s | 36% drawn, worst stall 565 ms with the reply-sections cache fixed; with the per-turn plan cache as well, 42% CPU and 55% drawn (below). A 20-turn session: 30% CPU, 72–79% drawn |
 | Footprint over three passes over the whole transcript | not measured | 169 → 209 → 227 → 224 MB, 371 MB at the peak of a pass |
 
 - **Reopening a session laid the transcript out once per replayed update.** `ACPConnection` hands
@@ -372,6 +372,13 @@ build switched by a launch argument, then made in the transcript.
   tree under the cursor on every frame the content moved (12–19% of a fast scroll). The transcript
   stops taking hits while a scroll gesture is under way. This one wasn't measured: driving the
   scroll bar has no scroll phase, and the real cursor isn't ours to move.
+- **The transcript's own changes, measured in the shared tree** (19:15, after everything above
+  landed): an external 240 Hz display had become the main one (the probe still counts at 120 Hz) and
+  the load average was 135 to 275, ten times the cores, so these only bound the earlier rows. Scrolling
+  at 5,000 points a second drew 47% of refreshes with a worst stall of 66 ms, at 2,000 points 80%
+  with 71 ms; streaming into the 500-turn session took 42% CPU (100% before) and drew 55% of
+  refreshes, with `plan()` down to 27% of the main thread's samples. Most of what's left there is
+  SwiftUI reading the id of every line of the `ForEach` on every chunk (19%).
 - **What's left is text.** On a pass over the whole transcript, a quarter to a third of the main
   thread lays out selectable text (TextKit 2) for rows coming into view. Lists lay out with a `Grid`
   (4.6–8.3%), every code block hosts a scroll view of its own (3.8%), and keeping the accessibility
@@ -394,6 +401,6 @@ build switched by a launch argument, then made in the transcript.
 | Open inspectors without laying the window out every frame | Opening the changes inspector costs 220–295 ms of main-thread time even on a clean repository: the column's open animation lays out the whole window, transcript included, each frame | Session view |
 | Selecting a file in the changes inspector under 50 ms | Still 115–165 ms in Debug with Accessibility on: the pane draws a loader, then the diff, then again with colors | Git |
 | Scroll a long transcript at 120 Hz | Still 7–33% of refreshes dropped in a fast flick and 7–13% at reading speed (Debug): new rows lay out their selectable text on the main thread. Then lists without `Grid`, and code blocks without a scroll view each | Transcript |
-| Measure streaming into a long session with the per-turn plan cache | Before the cache it drew 36% of refreshes; the budget is the same as in a new session | Transcript |
+| Streaming into a long session within budget | 42% CPU in the 500-turn session against 30% in a 20-turn one: every chunk still has SwiftUI read the id of each of the transcript's thousands of lines (19%), and plans the streaming turn. Measure again on a quiet Mac first | Transcript |
 | Release-build numbers for long transcripts | Everything above is Debug; Release is faster, but the lazy stack and text layout are system code either way | Performance |
 | Stop re-rendering the session view on every git rescan | `SessionView` reads `repository.summary` and `status` for the subtitle and the Commit action, so each rescan re-runs its body | Session view, Git |

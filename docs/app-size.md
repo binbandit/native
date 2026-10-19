@@ -204,6 +204,24 @@ default to it.
 
 ## Still to do
 
-| What | Saves | Owner |
+| What | Saves, installed / download | Owner |
 | --- | --- | --- |
-| STILL_TO_DO | | |
+| Run scripts on JavaScriptCore (above) | 41 / 15 MB | Brayden's call, then the script runtime |
+| Or, keeping V8: publish the jitless build and make it the default | LITE_SAVE | Script runtime |
+| Leave Kotlin, C++ and Ruby on the lexer, as "Tree-sitter for highlighting" in `docs/decisions.md` already proposes | 9.6 / about 1 MB | Code highlighting (`Packages/CodeThemes`) |
+| Ship each channel only its own icons: a stable build carries the dev and nightly variants (1.8 MB) and Nightly carries stable, beta and dev ones; seasonal icons could come with their downloadable celebration pack instead | 2 to 3 MB, both | App icons (the code is ours, the artwork the icon artist's) |
+| Lossy compression for the 24 alternate icons (lossless 1024 px images, 4.4 MB that zip can't shrink) | perhaps half of that, both | Icon artwork |
+| Sparkle delta updates: `generate_appcast` only makes deltas from earlier archives in its folder, and `release.sh` starts it from an empty one | DELTA_SAVE | Release pipeline |
+| libghostty without its embedded fonts (3.05 MB; the Nerd Font symbols render prompt icons) or custom shaders (glslang and SPIRV-Cross, 3.5 MB) | up to 6.5 / 2.5 MB | Terminal; needs a patch on the pinned Ghostty, since its build has no option |
+| Strip the standalone `native-host` (`host.sh`); it has no Sentry, so keep its dSYM somewhere first | 5.9 / 0.9 MB per host download | Release pipeline |
+
+Considered and not worth it now:
+
+- **`-Osize` for cold Swift modules.** The GitHub package's code goes from 0.89 MB to 0.77 MB (14%),
+  so every cold module together would save about 1 MB installed and 0.3 MB of download, for slower
+  code and per-package compiler flags. The transcript, Markdown and diff code live in the app module
+  and must stay at `-O`.
+- **Sharing code between the app and its host helper.** ACP, NativeLink and the host protocol are in
+  both (about 1.5 MB installed, 0.5 MB download). A shared framework would cost launch time and
+  cross-module optimization on ACP's streaming path.
+- **Dead code stripping** is already on in every configuration.

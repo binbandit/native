@@ -34,14 +34,14 @@ private struct StandardTranscript: View {
                         self.line(line)
                     }
                     .background {
-                            if line.id == revealedLine {
-                                RoundedRectangle(cornerRadius: DS.Radius.card)
-                                    .fill(Color.dsAccentSubtle)
-                                    .padding(-DS.Space.sm)
-                                    .transition(.opacity)
-                            }
+                        if line.id == revealedLine {
+                            RoundedRectangle(cornerRadius: DS.Radius.card)
+                                .fill(Color.dsAccentSubtle)
+                                .padding(-DS.Space.sm)
+                                .transition(.opacity)
                         }
-                        .padding(.top, line.spacing)
+                    }
+                    .padding(.top, line.spacing)
                 }
                 if transcript.isWorking {
                     WorkingIndicator(quietSince: transcript.session.state.quietSince)
