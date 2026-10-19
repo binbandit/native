@@ -7,6 +7,8 @@ import CoreGraphics
 struct PullRequestFilesTable {
     /// Each row's top, then the bottom of the last.
     let offsets: [CGFloat]
+    /// Whether each row's height is known without measuring it.
+    let isExact: [Bool]
 
     /// What a row's height is estimated from before it's measured.
     enum Kind: Hashable {
@@ -44,11 +46,15 @@ struct PullRequestFilesTable {
         exactHeight: (PullRequestFilesRow) -> CGFloat?
     ) {
         var offsets: [CGFloat] = []
+        var isExact: [Bool] = []
         offsets.reserveCapacity(rows.count + 1)
+        isExact.reserveCapacity(rows.count)
         var y: CGFloat = 0
         for row in rows {
             offsets.append(y)
-            if let height = exactHeight(row) ?? measured[row.id] {
+            let exact = exactHeight(row)
+            isExact.append(exact != nil)
+            if let height = exact ?? measured[row.id] {
                 y += height
             } else if let kind = Kind(row) {
                 y += estimates[kind] ?? kind.fallback
@@ -56,6 +62,7 @@ struct PullRequestFilesTable {
         }
         offsets.append(y)
         self.offsets = offsets
+        self.isExact = isExact
     }
 
     var total: CGFloat {

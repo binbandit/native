@@ -10,7 +10,9 @@ budget, enforced on every pull request: `docs/app-size.md`.
 
 Measured with `just perf` in a Debug build unless it says otherwise. On a busy Mac (a dozen
 agents compiling) wall-clock launch times swing by hundreds of milliseconds, so launch also has a
-CPU budget, which doesn't.
+CPU budget. CPU time still doubles when the main thread lands on efficiency cores, so launch is
+also counted in main-thread instructions, which a busy Mac doesn't change: an idle performance
+core runs about 10 M of them a millisecond here, so 150 ms is about 1.5 G.
 
 Frames are budgeted for 120 Hz, the refresh rate of ProMotion displays (MacBook Pro, iPad Pro,
 iPhone Pro): 8.3 ms a frame. On a 60 Hz display the same work has 16.7 ms, which is the floor:
@@ -18,7 +20,7 @@ anything that misses that misses everywhere.
 
 | What | Budget |
 | --- | --- |
-| Launch, warm, to the first frame | under 350 ms on an idle Mac (half a Dock bounce), and under 150 ms of main-thread CPU |
+| Launch, warm, to the first frame | under 350 ms on an idle Mac (half a Dock bounce), and under 150 ms of main-thread CPU (about 1.5 G main-thread instructions), with 30 tasks in four projects (`just perf --fixture`) |
 | Launch, to `appInit` | under 60 ms |
 | An agent ready to take a session | under 1 s after it's needed (the adapter's own start, plus Native's login-shell read once) |
 | Idle, window visible, nothing working | about 0% CPU (under 0.1%), under 1 wakeup per second |
@@ -35,19 +37,24 @@ anything that misses that misses everywhere.
 ## Measuring
 
 Always in an isolated instance (`scripts/dev/run-isolated.sh perf`), never a copy someone is
-using, and quit it afterwards (`just quit perf`). Debug builds are what the instance runs; Release
-is faster, so a Debug number inside the budget is a Release number well inside it.
+using, and quit it afterwards (`just quit perf`). Debug builds are what the instance runs. Release
+runs Native's own code several times faster, but launch is mostly AppKit and SwiftUI building the
+window, which is the same code in both: a Release launch does only about 10% less work.
 
 `just perf` (`scripts/perf/measure.sh`) builds the instance, launches it five times and prints the
 launch milestones, then leaves the last launch idle and samples it with the window visible,
 minimized and hidden, and lists the processes under it. Options: `--no-build`, `--launches N`,
-`--seconds S` (each idle sample, default 30), `--settle S` (wait before sampling, default 20).
+`--seconds S` (each idle sample, default 30), `--settle S` (wait before sampling, default 20),
+`--fixture` (launch into four projects, three with icons of their own, and 30 tasks, written again
+before every launch by `scripts/perf/fixture.sh`, instead of one empty scratch project) and
+`--launch-only` (stop after the launches).
 
 | Tool | What it gives | Notes |
 | --- | --- | --- |
-| `scripts/perf/rusage.swift` | CPU %, idle and interrupt wakeups per second, energy (mW), physical footprint, for one process or a process tree, over an interval | Kernel counters (`proc_pid_rusage`), so no sudo. Idle wakeups are what Activity Monitor shows; footprint is its Memory column |
+| `scripts/perf/rusage.swift` | CPU %, idle and interrupt wakeups per second, energy (mW), physical footprint and instructions per second, for one process or a process tree, over an interval | Kernel counters (`proc_pid_rusage`), so no sudo. Idle wakeups are what Activity Monitor shows; footprint is its Memory column; instructions don't depend on the core or the load |
 | `scripts/perf/drive.swift` | Presses menu items, writes and sends a prompt, minimizes, hides | Accessibility API, scoped to one pid: no keystrokes, nothing comes to the front |
-| `LaunchMetrics` signposts | `launch appInit/firstFrame/sidebarInteractive/agentsReady <ms> ms` in the log, and Points of Interest in Instruments | Milliseconds from the moment the kernel started the process |
+| `LaunchMetrics` signposts | `launch appInit/firstFrame/sidebarInteractive/agentsReady <ms> ms` in the log, with the main thread's and the process's CPU time and the main thread's instructions, and Points of Interest in Instruments | Milliseconds from the moment the kernel started the process |
+| `scripts/perf/profile-launch.sh --name <instance> [--fixture]` | A Time Profiler trace of a launch from its first instructions | Opens the instance's own build, stops it at once, attaches, lets it run. Never `xctrace --launch` a Native binary: it can start the installed Native instead. A stopped launch does less of the window's first layout and focus work than a normal one, so take totals from `just perf` |
 | `footprint <pid>`, `vmmap --summary <pid>` | Memory by category | `footprint` is the number macOS uses for memory pressure |
 | `leaks <pid>` | Leaked allocations and retain cycles | Run after a workload, compare to a fresh launch |
 | `sample <pid> 10` | Where the main thread spends its time | Quick; `xctrace` for more |

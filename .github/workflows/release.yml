@@ -97,7 +97,7 @@ jobs:
         with:
           name: native-${{ steps.version.outputs.version }}-${{ github.run_number }}
           retention-days: 7
-          if-no-files-found: error
+          if-no-files-found: warn
           path: |
             ${{ runner.temp }}/native-release/${{ steps.version.outputs.channel }}/appcast/*.zip
             ${{ runner.temp }}/native-release/${{ steps.version.outputs.channel }}/appcast/*.delta

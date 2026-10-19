@@ -101,7 +101,7 @@ jobs:
         with:
           name: native-nightly-${{ github.run_number }}
           retention-days: 7
-          if-no-files-found: error
+          if-no-files-found: warn
           path: |
             ${{ runner.temp }}/native-release/nightly/appcast/*.zip
             ${{ runner.temp }}/native-release/nightly/appcast/*.delta

@@ -64,6 +64,10 @@ public_key=${NATIVE_SPARKLE_PUBLIC_KEY:-$(xcconfig_value NATIVE_SPARKLE_PUBLIC_K
 notary_profile=${NATIVE_NOTARY_PROFILE:-native-notary}
 keychain_args=()
 [ -n "${NATIVE_KEYCHAIN:-}" ] && keychain_args=(--keychain "$NATIVE_KEYCHAIN")
+# `security find-identity` takes the keychain as a plain argument, not --keychain.
+identities() {
+    security find-identity -v -p codesigning ${NATIVE_KEYCHAIN:+"$NATIVE_KEYCHAIN"}
+}
 
 # MARK: - What to build
 
@@ -126,7 +130,7 @@ fi
 
 # Developer ID for anything that leaves this Mac; ad hoc is fine for a local dry run.
 if [ -z "$identity" ]; then
-    if security find-identity -v -p codesigning ${keychain_args[@]+"${keychain_args[@]}"} | grep -q "Developer ID Application"; then
+    if identities | grep -q "Developer ID Application"; then
         identity="Developer ID Application"
     elif [ "$MODE" = dry-run ] || [ "$MODE" = plan ]; then
         identity="-"
@@ -137,7 +141,7 @@ if [ -z "$identity" ]; then
 fi
 team=${NATIVE_TEAM_ID:-}
 if [ -z "$team" ] && [ "$identity" != "-" ]; then
-    team=$(security find-identity -v -p codesigning ${keychain_args[@]+"${keychain_args[@]}"} | sed -n "s/.*\"$identity.*(\([A-Z0-9]*\))\".*/\1/p" | head -1)
+    team=$(identities | sed -n "s/.*\"$identity.*(\([A-Z0-9]*\))\".*/\1/p" | head -1)
 fi
 
 log "$product $version (build $build_number) from ${sha:0:7}, $MODE"
@@ -244,7 +248,9 @@ appcast_args=(--download-url-prefix "$url_prefix" --embed-release-notes --full-r
 replace_in_appcast() {
     local xml
     xml=$(<"$appcast")
-    printf '%s\n' "${xml//"$1"/"$2"}" >"$appcast"
+    # Assigned first: inside double quotes, bash 3.2 would keep the replacement's quotes.
+    xml=${xml//"$1"/"$2"}
+    printf '%s\n' "$xml" >"$appcast"
 }
 
 # Sparkle makes a delta update from every earlier archive in the folder to this one: a few MB instead
