@@ -55,10 +55,11 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
             ScrollView {
                 ProjectList(
                     listing: listing, taskAccessory: taskAccessory, filter: filterBinding, selection: selection,
-                    select: select)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.horizontal, DS.Space.sm)
-                    .padding(.vertical, DS.Space.md)
+                    select: select
+                )
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, DS.Space.sm)
+                .padding(.vertical, DS.Space.md)
             }
             .scrollIndicators(.automatic)
             .focusable()

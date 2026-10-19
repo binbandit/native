@@ -89,7 +89,8 @@ import Testing
     }
 
     @Test func survivesEncoding() throws {
-        let filter = TaskFilter(statuses: [.running], agents: ["codex"], requiresUncommittedChanges: true, sort: .status)
+        let filter = TaskFilter(
+            statuses: [.running], agents: ["codex"], requiresUncommittedChanges: true, sort: .status)
         let decoded = try JSONDecoder().decode(TaskFilter.self, from: JSONEncoder().encode(filter))
         #expect(decoded == filter)
     }

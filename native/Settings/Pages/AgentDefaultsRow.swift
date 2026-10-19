@@ -52,13 +52,18 @@ private struct AgentDefaultPicker: View {
     let agentID: AgentDefinition.ID
     let setting: AgentSessionDefaults.Setting
 
-    @AppStorage private var value: String?
+    @AppStorage private var stored: String?
 
     init(agentName: String, agentID: AgentDefinition.ID, setting: AgentSessionDefaults.Setting) {
         self.agentName = agentName
         self.agentID = agentID
         self.setting = setting
-        _value = AppStorage(setting.key(for: agentID))
+        _stored = AppStorage(setting.key(for: agentID))
+    }
+
+    /// Empty counts as unset, as it does for new sessions (`AgentSessionDefaults.apply`).
+    private var value: Binding<String?> {
+        Binding(get: { stored.flatMap { $0.isEmpty ? nil : $0 } }, set: { stored = $0 })
     }
 
     private var options: [SettingsSelect<String?>.Option] {
@@ -69,7 +74,7 @@ private struct AgentDefaultPicker: View {
         var options =
             [SettingsSelect<String?>.Option(value: nil, title: lastUsed ?? "Last used \(setting.rawValue)")] + offered
         // A value set elsewhere (a launch argument, an older choice) stays visible so it can be cleared.
-        if let value, !offered.contains(where: { $0.value == value }) {
+        if let value = value.wrappedValue, !offered.contains(where: { $0.value == value }) {
             options.append(.init(value: value, title: value))
         }
         return options
@@ -77,7 +82,7 @@ private struct AgentDefaultPicker: View {
 
     var body: some View {
         SettingsSelect(
-            label: "\(agentName) \(setting.title.lowercased())", selection: $value, options: options,
+            label: "\(agentName) \(setting.title.lowercased())", selection: value, options: options,
             width: SettingsMetrics.selectWidth + DS.Space.xxl
         )
         .disabled(options.count == 1)

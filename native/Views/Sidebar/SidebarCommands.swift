@@ -23,7 +23,8 @@ extension NativeCommand {
             _ id: CommandID, _ title: String, systemImage: String, applies: @escaping (BulkTaskActions) -> Bool,
             perform: @escaping @MainActor (SidebarSelectionModel, CommandContext) -> Void
         ) -> NativeCommand {
-            NativeCommand(id, title: title, category: .tasks, systemImage: systemImage, keywords: ["selected", "bulk"]) {
+            NativeCommand(id, title: title, category: .tasks, systemImage: systemImage, keywords: ["selected", "bulk"])
+            {
                 context in
                 guard let selection = context.sidebarSelection, !selection.keys.isEmpty else { return }
                 perform(selection, context)

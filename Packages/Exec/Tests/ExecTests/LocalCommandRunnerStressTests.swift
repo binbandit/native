@@ -10,7 +10,7 @@ struct LocalCommandRunnerStressTests {
     /// git commands finished at once. The trap kills the process, so the load runs in a child.
     @Test func manyShortCommandsNeverTrap() async {
         await #expect(processExitsWith: .success) {
-            await LocalCommandRunnerStress.run(commands: 3000, concurrency: 48)
+            signal(SIGPIPE, SIG_IGN); await LocalCommandRunnerStress.run(commands: 3000, concurrency: 48)
         }
     }
 }
@@ -21,7 +21,7 @@ private enum LocalCommandRunnerStress {
     static func run(commands: Int, concurrency: Int) async {
         let runner = LocalCommandRunner()
         let environment = ["PATH": "/usr/bin:/bin"]
-        await withTaskGroup { group in
+        await withTaskGroup(of: Void.self) { group in
             for index in 0..<commands {
                 if index >= concurrency { await group.next() }
                 group.addTask { await runOne(index, runner: runner, environment: environment) }
