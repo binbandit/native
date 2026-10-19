@@ -45,6 +45,26 @@ notary() {
     fi
 }
 
+# Notarizes a file and waits. notarytool exits 0 even when Apple rejects the file, so this reads the
+# verdict, and on a rejection prints Apple's log of what was wrong before stopping. NOTARY_ARGS holds
+# the credentials (--keychain-profile, and --keychain in CI).
+notarize() {
+    local verdict status id
+    if [ "$MODE" = plan ] || [ "$MODE" = dry-run ]; then
+        notary xcrun notarytool submit "$1" "${NOTARY_ARGS[@]}" --wait
+        return
+    fi
+    printf '  $ %s\n' "$(quoted xcrun notarytool submit "$1" "${NOTARY_ARGS[@]}" --wait)" >&2
+    verdict=$(xcrun notarytool submit "$1" "${NOTARY_ARGS[@]}" --wait --timeout 1h --output-format json) || true
+    status=$(plutil -extract status raw -o - - <<<"$verdict" 2>/dev/null || true)
+    id=$(plutil -extract id raw -o - - <<<"$verdict" 2>/dev/null || true)
+    if [ "$status" != Accepted ]; then
+        [ -z "$id" ] || xcrun notarytool log "$id" "${NOTARY_ARGS[@]}" >&2 || true
+        die "Apple didn't notarize $(basename "$1"): ${status:-no verdict} ${id:+(submission $id)}"
+    fi
+    log "Notarized $(basename "$1") (submission $id)"
+}
+
 # A step that changes GitHub: runs only with --publish.
 remote() {
     if [ "$MODE" = publish ]; then

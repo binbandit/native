@@ -64,6 +64,7 @@ public_key=${NATIVE_SPARKLE_PUBLIC_KEY:-$(xcconfig_value NATIVE_SPARKLE_PUBLIC_K
 notary_profile=${NATIVE_NOTARY_PROFILE:-native-notary}
 keychain_args=()
 [ -n "${NATIVE_KEYCHAIN:-}" ] && keychain_args=(--keychain "$NATIVE_KEYCHAIN")
+NOTARY_ARGS=(--keychain-profile "$notary_profile" ${keychain_args[@]+"${keychain_args[@]}"})
 # `security find-identity` takes the keychain as a plain argument, not --keychain.
 identities() {
     security find-identity -v -p codesigning ${NATIVE_KEYCHAIN:+"$NATIVE_KEYCHAIN"}
@@ -171,13 +172,22 @@ run xcodebuild archive \
     CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO OTHER_CODE_SIGN_FLAGS="$sign_flags" ${runtime[@]+"${runtime[@]}"} \
     ${settings[@]+"${settings[@]}"} -quiet
 run ditto "$archive/Products/Applications/$product.app" "$app"
+# Xcode signs the Sparkle framework it embeds but leaves the helpers inside it ad hoc, as Sparkle ships
+# them, and notarization refuses ad hoc code. Sign them inside out the way Sparkle's documentation
+# says, then the framework and the app around them again.
+if [ "$identity" != "-" ]; then
+    sparkle="$app/Contents/Frameworks/Sparkle.framework"
+    sign=(codesign --force --sign "$identity" --options runtime --timestamp ${keychain_args[@]+"${keychain_args[@]}"})
+    run "${sign[@]}" "$sparkle/Versions/B/XPCServices/Installer.xpc"
+    run "${sign[@]}" --preserve-metadata=entitlements "$sparkle/Versions/B/XPCServices/Downloader.xpc"
+    run "${sign[@]}" "$sparkle/Versions/B/Autoupdate"
+    run "${sign[@]}" "$sparkle/Versions/B/Updater.app"
+    run "${sign[@]}" "$sparkle"
+    run "${sign[@]}" --preserve-metadata=entitlements,requirements,flags "$app"
+fi
 run codesign --verify --deep --strict --verbose=2 "$app"
 
 # MARK: - Notarize and staple
-
-notarize() {
-    notary xcrun notarytool submit "$1" --keychain-profile "$notary_profile" ${keychain_args[@]+"${keychain_args[@]}"} --wait
-}
 
 log "Notarizing"
 run ditto -c -k --sequesterRsrc --keepParent "$app" "$output/notarize.zip"

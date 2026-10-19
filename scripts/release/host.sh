@@ -89,8 +89,8 @@ fi
 # Bare binaries can't carry a stapled ticket; notarizing registers it so Gatekeeper finds it online
 # when the binary is copied to a Mac by hand.
 run ditto -c -k "$host/$binary_name" "$output/host-notarize.zip"
-notary xcrun notarytool submit "$output/host-notarize.zip" --keychain-profile "${NATIVE_NOTARY_PROFILE:-native-notary}" \
-    ${keychain_args[@]+"${keychain_args[@]}"} --wait
+NOTARY_ARGS=(--keychain-profile "${NATIVE_NOTARY_PROFILE:-native-notary}" ${keychain_args[@]+"${keychain_args[@]}"})
+notarize "$output/host-notarize.zip"
 run rm -f "$output/host-notarize.zip"
 
 sign() {
