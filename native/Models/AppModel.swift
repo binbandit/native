@@ -147,7 +147,9 @@ final class AppModel {
         self.titleEvents = titleEvents
         let sendGate = AgentSendGate()
         self.sendGate = sendGate
-        services = SessionServices(plugins: plugins, titles: titles, sendGate: sendGate) {
+        services = SessionServices(
+            plugins: plugins, titles: titles, sendGate: sendGate, earlierConversations: earlierConversations
+        ) {
             continuation.yield($0)
         } titleLanded: { key, folder, title in
             titleContinuation.yield(TitleEvent(key: key, folder: folder, title: title))

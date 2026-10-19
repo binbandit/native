@@ -240,9 +240,10 @@ final class SessionModel {
     }
 
     /// Whether the session takes prompts at all: the user's sessions and task sessions do, but an
-    /// agent's own subagents only take work from their parent.
+    /// agent's own subagents only take work from their parent, and a conversation `/clear` set aside
+    /// is kept to read.
     var acceptsPrompts: Bool {
-        origin != .announced
+        origin != .announced && !isEarlierConversation
     }
 
     /// What the session's turns wait for outside it, such as "the worktree's setup script". Messages

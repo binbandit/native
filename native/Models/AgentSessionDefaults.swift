@@ -86,7 +86,10 @@ enum AgentSessionDefaults {
         let agent = session.agent.id
         var categories: [String: String] = [:]
         for setting in Setting.allCases {
-            categories[setting.category] = defaults.string(forKey: setting.key(for: agent))
+            // Empty is unset, as a launch argument (`-agentDefaults.codex.model ""`) can make it.
+            categories[setting.category] = defaults.string(forKey: setting.key(for: agent)).flatMap {
+                $0.isEmpty ? nil : $0
+            }
         }
         if let project, let model = ProjectTaskDefaults.model(for: project, agent: agent, defaults: defaults) {
             categories[Setting.model.category] = model

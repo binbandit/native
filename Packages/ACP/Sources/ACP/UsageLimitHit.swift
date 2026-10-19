@@ -66,9 +66,13 @@ public struct UsageLimitHit: Hashable, Sendable {
     /// Whether `text` is a provider's "usage limit reached" message: one of the Agent SDK's
     /// `USAGE_LIMIT_ERROR_PREFIXES`, or Codex's equivalents.
     public static func isLimitMessage(_ text: String) -> Bool {
-        let text = normalized(text).trimmingCharacters(in: .whitespacesAndNewlines)
-        return limitPrefixes.contains { text.hasPrefix($0) }
+        // Only the start can match, and transcripts ask this of every reply in a session on every
+        // update, so whole replies are never folded or copied.
+        let start = normalized(String(text.drop(while: \.isWhitespace).prefix(longestPrefix)))
+        return limitPrefixes.contains { start.hasPrefix($0) }
     }
+
+    private static let longestPrefix = limitPrefixes.map(\.count).max() ?? 0
 
     private static let limitPrefixes = [
         // Claude Code (`USAGE_LIMIT_ERROR_PREFIXES` in the Agent SDK).

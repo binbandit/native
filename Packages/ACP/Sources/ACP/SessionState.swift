@@ -188,7 +188,8 @@ public struct SessionState: Sendable {
             if call.permission == nil, let position {
                 permissionIndices.remove(at: position)
             } else if call.permission != nil, position == nil {
-                permissionIndices.insert(index, at: permissionIndices.firstIndex { $0 > index } ?? permissionIndices.endIndex)
+                permissionIndices.insert(
+                    index, at: permissionIndices.firstIndex { $0 > index } ?? permissionIndices.endIndex)
             }
             summarizeTurn(containing: index)
         case .subagent:

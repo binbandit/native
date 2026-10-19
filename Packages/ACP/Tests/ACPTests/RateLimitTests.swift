@@ -132,6 +132,10 @@ struct RateLimitTests {
         #expect(UsageLimitHit(text: "I've hit your limit of patience") == nil)
         #expect(UsageLimitHit.isLimitMessage("  You've hit your Opus limit · resets 5pm"))
         #expect(UsageLimitHit.isLimitMessage("Your org is out of usage · add funds to continue"))
+        #expect(
+            UsageLimitHit.isLimitMessage(
+                "\u{00A0}\nYou\u{2019}ve hit your limit" + String(repeating: " and on", count: 5_000)))
+        #expect(!UsageLimitHit.isLimitMessage(String(repeating: " ", count: 100) + "Done. You've hit your"))
     }
 
     @Test func readsResetTimes() {
