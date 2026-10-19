@@ -64,7 +64,7 @@ public_key=${NATIVE_SPARKLE_PUBLIC_KEY:-$(xcconfig_value NATIVE_SPARKLE_PUBLIC_K
 notary_profile=${NATIVE_NOTARY_PROFILE:-native-notary}
 keychain_args=()
 [ -n "${NATIVE_KEYCHAIN:-}" ] && keychain_args=(--keychain "$NATIVE_KEYCHAIN")
-NOTARY_ARGS=(--keychain-profile "$notary_profile" ${keychain_args[@]+"${keychain_args[@]}"})
+notary_args=(--keychain-profile "$notary_profile" ${keychain_args[@]+"${keychain_args[@]}"})
 # `security find-identity` takes the keychain as a plain argument, not --keychain.
 identities() {
     security find-identity -v -p codesigning ${NATIVE_KEYCHAIN:+"$NATIVE_KEYCHAIN"}
@@ -191,7 +191,7 @@ run codesign --verify --deep --strict --verbose=2 "$app"
 
 log "Notarizing"
 run ditto -c -k --sequesterRsrc --keepParent "$app" "$output/notarize.zip"
-notarize "$output/notarize.zip"
+notarize "$output/notarize.zip" "${notary_args[@]}"
 notary xcrun stapler staple "$app"
 notary spctl --assess --type execute --verbose=2 "$app"
 run rm -f "$output/notarize.zip"
@@ -228,7 +228,7 @@ if [ "$make_dmg" = 1 ]; then
     run hdiutil create -quiet -volname "$product" -srcfolder "$staging" -ov -format ULFO "$output/$dmg_name"
     run rm -rf "$staging"
     [ "$identity" = "-" ] || run codesign --sign "$identity" --timestamp ${keychain_args[@]+"${keychain_args[@]}"} "$output/$dmg_name"
-    notarize "$output/$dmg_name"
+    notarize "$output/$dmg_name" "${notary_args[@]}"
     notary xcrun stapler staple "$output/$dmg_name"
 fi
 
