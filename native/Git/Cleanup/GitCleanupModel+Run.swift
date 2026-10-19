@@ -71,8 +71,16 @@ extension GitCleanupModel {
             try await body()
             states[item.id] = .done
         } catch {
-            states[item.id] = .failed(error.localizedDescription)
+            states[item.id] = .failed(Self.describe(error))
         }
+    }
+
+    /// A failure in plain words where git's are cryptic, otherwise git's own.
+    private static func describe(_ error: any Error) -> String {
+        guard let error = error as? GitError, error.failure == .repositoryLocked else {
+            return error.localizedDescription
+        }
+        return "Another git process has the repository locked, so this was left as it was. Try again when it's done."
     }
 
     /// Archives the worktree's tasks, which removes it the way archiving one does (teardown script,
@@ -127,6 +135,12 @@ extension GitCleanupModel {
             [self] _ in
             Task { await undo() }
         }
+    }
+
+    /// The sheet's Undo, after a run with failures: takes the run back instead of offering it.
+    func undoFromSheet() {
+        isUndoOffered = true
+        work = Task { await undo() }
     }
 
     /// Brings back what the run removed: branches at their old commits with their config, tasks

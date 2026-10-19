@@ -1,3 +1,4 @@
+import ACP
 import SwiftUI
 
 /// The Help menu's own items: Keyboard Shortcuts, the protocol's docs, and every version on one

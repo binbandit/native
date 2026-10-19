@@ -190,7 +190,7 @@ struct GitCleanupSheet: View {
             case .finished:
                 if model.undoRecord?.isEmpty == false {
                     Button("Undo") {
-                        Task { await model.undo() }
+                        model.undoFromSheet()
                         center.close()
                     }
                     .buttonStyle(.ds(.secondary, size: .medium))
@@ -228,7 +228,7 @@ struct GitCleanupSheet: View {
                 failed == 0
                     ? "Cleaned up \(model.doneCount == 1 ? "1 item" : "\(model.doneCount) items")."
                     : "Cleaned up \(model.doneCount) of \(model.states.count). "
-                        + "\(failed == 1 ? "1 item was" : "\(failed) items were") left as they were."
+                        + (failed == 1 ? "1 item was left as it was." : "\(failed) items were left as they were.")
             )
             .font(.dsBody)
             .foregroundStyle(failed == 0 ? .dsTextSecondary : .dsDanger)

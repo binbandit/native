@@ -139,13 +139,24 @@ final class PullRequestAskConversation {
         record = nil
         session = nil
         failure = nil
-        center.records[reference] = nil
+        center.records.setCurrent(nil, for: reference)
         undo = UndoToastItem("Started a new conversation") { [weak self] in
             guard let self, record == nil else { return }
             record = previous
             session = previousSession
-            center.records[reference] = previous
+            center.records.setCurrent(previous, for: reference)
         }
+    }
+
+    /// Makes an earlier conversation (one search found) this pull request's again, keeping the
+    /// current one as an earlier one, and reopens it.
+    func adopt(_ found: PullRequestAskRecord) async {
+        guard found.key != record?.key, !isBusy else { return await restore() }
+        center.records.setCurrent(found, for: reference)
+        record = found
+        session = nil
+        failure = nil
+        await restore()
     }
 
     /// The user's last question, read back from the transcript.
@@ -204,7 +215,7 @@ final class PullRequestAskConversation {
             key: session.key, folder: folder, headRefOid: source.headRefOid, inclusion: context.inclusion,
             startedAt: .now)
         self.record = record
-        center.records[reference] = record
+        center.records.setCurrent(record, for: reference)
         // The conversation runs in a folder of its own, outside any project: the global instructions apply.
         let instructions = AIInstructionsStore.shared.addition(for: .pullRequestQuestions, in: nil)
         try await session.submit(
@@ -221,7 +232,7 @@ final class PullRequestAskConversation {
             record.headRefOid = source.headRefOid
             record.inclusion = context.inclusion
             self.record = record
-            center.records[reference] = record
+            center.records.setCurrent(record, for: reference)
             refreshed = context
         }
         activity = .idle

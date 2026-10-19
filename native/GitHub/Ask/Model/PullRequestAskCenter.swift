@@ -56,26 +56,35 @@ final class PullRequestAskCenter {
     }
 
     /// Opens a conversation that search found on its pull request's page, rather than as a task in
-    /// the sidebar. Returns whether `key` was one.
-    func openSearched(_ key: SessionKey) -> Bool {
-        guard let reference = records.reference(of: key) else { return false }
+    /// the sidebar, making it the pull request's conversation again if the user had started over.
+    /// One known only by its folder (`PullRequestAskFolder`) opens too. Returns whether `key` was one.
+    func openSearched(_ key: SessionKey, cwd: String) -> Bool {
+        let found =
+            records.find(key)
+            ?? PullRequestAskFolder.reference(inPath: cwd).map { reference in
+                (
+                    reference,
+                    PullRequestAskRecord(
+                        key: key, folder: URL(filePath: cwd, directoryHint: .isDirectory), headRefOid: "",
+                        inclusion: nil, startedAt: .now)
+                )
+            }
+        guard let (reference, record) = found else { return false }
         setPanelOpen(true, for: reference)
         gitHub?.open(reference)
-        Task { await conversation(for: reference).restore() }
+        let conversation = conversation(for: reference)
+        Task { await conversation.adopt(record) }
         return true
     }
 
     // MARK: - Folders
 
     /// Where a pull request's conversation runs and keeps its saved copy:
-    /// `Application Support/<bundle id>/PullRequestQuestions/<host>/<owner>/<name>-<number>`. Named
-    /// so that whatever shows a session's folder (Usage, search) reads as the pull request.
+    /// `Application Support/<bundle id>/PullRequestQuestions/<host>/<owner>/<name>-<number>`.
     func folder(for reference: PullRequestReference) -> URL {
         URL.applicationSupportDirectory
             .appending(path: Bundle.main.bundleIdentifier ?? "Native", directoryHint: .isDirectory)
-            .appending(path: "PullRequestQuestions", directoryHint: .isDirectory)
-            .appending(path: reference.host, directoryHint: .isDirectory)
-            .appending(path: reference.owner, directoryHint: .isDirectory)
-            .appending(path: "\(reference.name)-\(reference.number)", directoryHint: .isDirectory)
+            .appending(path: PullRequestAskFolder.root, directoryHint: .isDirectory)
+            .appending(path: PullRequestAskFolder.relativePath(for: reference), directoryHint: .isDirectory)
     }
 }

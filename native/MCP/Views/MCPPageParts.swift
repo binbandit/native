@@ -25,8 +25,9 @@ struct MCPNotice: View {
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
             if let actionTitle {
+                // Settings' action button, so its label matches the notice's text.
                 Button(actionTitle, action: action)
-                    .buttonStyle(.ds(.secondary, size: .medium))
+                    .buttonStyle(.settings)
             }
         }
         .padding(.horizontal, DS.Space.xl)

@@ -42,6 +42,7 @@ extension AppModel {
         if agent ?? defaultAgent(in: project)?.id == nil {
             await agentsChecked()
         }
+        let isAgentPicked = agent != nil
         guard let agent = agent ?? defaultAgent(in: project)?.id else {
             // No agent is installed; Add Agent says how to get one.
             isAddingAgent = true
@@ -58,7 +59,7 @@ extension AppModel {
             return
         }
         let task = StartingTask(
-            project: project.id, agent: definition,
+            project: project.id, agent: definition, isAgentPicked: isAgentPicked,
             workspaceLabel: taskWorkspaces?.newTaskWorkspaceLabel(in: project) ?? "Preparing the workspace")
         startingTasks.insert(task, at: 0)
         selection = task.id
@@ -99,8 +100,7 @@ extension AppModel {
             return
         }
         do {
-            let session = try await launcher.start(
-                on: ready, cwd: folder, settings: ProjectTaskDefaults.sessionSettings(for: project.id, agent: agent))
+            let session = try await launcher.start(on: ready, cwd: folder, project: project.id)
             guard !task.isDiscarded else {
                 sessions.remove(session)
                 return removeWorkspace(of: task)
@@ -155,7 +155,10 @@ extension AppModel {
             session.wantsComposerFocus = !task.isSendRequested
             selection = session.key
         }
-        rememberLastUsed(task.agent.id)
+        // The project's agent is the project's choice, not the user's pick for every project.
+        if task.isAgentPicked {
+            rememberLastUsed(task.agent.id)
+        }
         if task.isSendRequested {
             Task { await session.submit(.queue) }
         }

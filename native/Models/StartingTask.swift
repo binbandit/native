@@ -33,6 +33,9 @@ final class StartingTask: Identifiable {
     let id: SessionKey
     let project: Project.ID
     let agent: AgentDefinition
+    /// The user chose the agent, rather than taking the project's or the one used last; only then
+    /// does it become the one new tasks start with.
+    let isAgentPicked: Bool
     let startedAt = Date.now
     /// What the provider makes for the task ("Creating a worktree"), for the first step's label.
     let workspaceLabel: String
@@ -48,10 +51,11 @@ final class StartingTask: Identifiable {
     /// The user discarded the task while it was starting.
     @ObservationIgnored var isDiscarded = false
 
-    init(project: Project.ID, agent: AgentDefinition, workspaceLabel: String) {
+    init(project: Project.ID, agent: AgentDefinition, isAgentPicked: Bool, workspaceLabel: String) {
         id = SessionKey(agent: agent.id, id: SessionID("native-starting-\(UUID().uuidString)"))
         self.project = project
         self.agent = agent
+        self.isAgentPicked = isAgentPicked
         self.workspaceLabel = workspaceLabel
     }
 

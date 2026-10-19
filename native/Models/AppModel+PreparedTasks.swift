@@ -16,14 +16,14 @@ extension AppModel {
         }
     }
 
-    /// Starts a task in `project` that runs in `folder`, with the default agent, lists it in the
-    /// sidebar under the project, titles it and selects it. When the agent wants a sign-in, its
-    /// sign-in prompt shows too.
+    /// Starts a task in `project` that runs in `folder`, with the project's agent and model (or the
+    /// defaults), lists it in the sidebar under the project, titles it and selects it. When the
+    /// agent wants a sign-in, its sign-in prompt shows too.
     func startTask(in project: Project.ID, folder: URL, title: String?) async throws -> SessionModel {
-        if defaultAgent == nil {
+        if defaultAgent(in: projects.project(project)) == nil {
             await agentsChecked()
         }
-        guard let agent = defaultAgent?.id else {
+        guard let agent = defaultAgent(in: projects.project(project))?.id else {
             // Add Agent says how to get one.
             isAddingAgent = true
             throw PreparedTaskError.noAgent
@@ -32,7 +32,7 @@ extension AppModel {
             throw PreparedTaskError.agentUnavailable(startFailure(of: agent))
         }
         do {
-            let session = try await launcher.start(on: runtime, cwd: folder)
+            let session = try await launcher.start(on: runtime, cwd: folder, project: project)
             catalog.add(
                 SessionInfo(sessionId: session.id, cwd: folder.folderPath, updatedAt: .now), for: agent, in: project)
             if let title {

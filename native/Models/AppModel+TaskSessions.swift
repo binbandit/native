@@ -24,7 +24,9 @@ extension AppModel {
         taskStartsInFlight[agent, default: 0] += 1
         defer { taskStartsInFlight[agent, default: 1] -= 1 }
         do {
-            let session = try await launcher.start(on: runtime, cwd: cwd, origin: .task, parent: parentSession)
+            let project = await project(of: parentSession, folder: cwd)
+            let session = try await launcher.start(
+                on: runtime, cwd: cwd, project: project, origin: .task, parent: parentSession)
             taskRecords.add(TaskSessionRecords.Record(key: session.key, cwd: cwd, parent: parentSession?.key))
             return session
         } catch {

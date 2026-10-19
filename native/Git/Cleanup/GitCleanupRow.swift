@@ -50,7 +50,6 @@ struct GitCleanupRow: View {
             }
         }
         .padding(.vertical, DS.Space.sm)
-        .help(item.location ?? "")
         .opacity(model.phase == .review && !isEnabled ? GitCleanupMetrics.disabledOpacity : 1)
         .contentShape(.rect)
         .onTapGesture { model.toggle(item) }
@@ -59,6 +58,7 @@ struct GitCleanupRow: View {
         .accessibilityAddTraits(model.phase == .review ? .isToggle : [])
         .accessibilityValue(accessibilityValue)
         .accessibilityAction { model.toggle(item) }
+        .help(item.location ?? "")
     }
 
     @ViewBuilder private var leading: some View {

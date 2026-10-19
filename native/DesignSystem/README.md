@@ -102,7 +102,7 @@ Mac) to see everything in light and dark side by side.
 | A failure | `ErrorState(what, recovery: what Native did, suggestion: what you can do, details:, primary:)`, `.inline` or `.pane` |
 | Any other inline notice (offline, sign-in expired) | `NoticeBanner(tone:title:detail:) { one action }` |
 | Nothing to show | `EmptyStateView(what, systemImage:, message: why, actionTitle:, action:)` |
-| Something that can be taken back | `.undoToast($item)` with `UndoToastItem(message) { undo }`, instead of a confirmation |
+| Something that can be taken back | `.undoToast($item)` with `UndoToastItem(message) { undo }`, instead of a confirmation, on the content above any status bar. An Undo anywhere else (a notice, a composer toast) is `.ds(.secondary)` on the message's first baseline, with the message in the label's size; in Settings, `.buttonStyle(.settings)` |
 | Usage limits | `LimitStatus` (one value from Usage), rendered by `LimitBanner` and `LimitChip`, worded by `LimitStatus.line(now:)` |
 | Task state | `TaskStatus` + `StatusIndicator`; paused and limited included |
 | Loading | `DotGridLoader`, or `LoadingStateView(what)` filling a pane; never ad-hoc spinners |

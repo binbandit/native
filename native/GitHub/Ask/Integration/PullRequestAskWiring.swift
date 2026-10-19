@@ -10,8 +10,8 @@ enum PullRequestAskWiring {
         gitHub.askAboutPullRequest = { [weak center] reference in
             center?.ask(about: reference)
         }
-        app.searchedSessionOpeners.append { [weak center] key in
-            center?.openSearched(key) ?? false
+        app.searchedSessionOpeners.append { [weak center] key, cwd in
+            center?.openSearched(key, cwd: cwd) ?? false
         }
         // `-gitHubAskPullRequest <url>` opens a pull request's page with Ask open, for checks.
         if let link = UserDefaults.standard.string(forKey: "gitHubAskPullRequest"), let url = URL(string: link),

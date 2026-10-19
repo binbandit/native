@@ -17,8 +17,8 @@ struct PullRequestAskTurnView: View {
             if let question = turn.question {
                 PullRequestAskQuestionBubble(text: question)
             }
-            if let carried = turn.carried, carried != .followUp, let record = conversation.record {
-                PullRequestAskContextNote(inclusion: record.inclusion, isRefresh: carried == .refreshed)
+            if let carried = turn.carried, carried != .followUp, let inclusion = conversation.record?.inclusion {
+                PullRequestAskContextNote(inclusion: inclusion, isRefresh: carried == .refreshed)
             }
             ForEach(turn.commentary.indices, id: \.self) { index in
                 Text(verbatim: turn.commentary[index])

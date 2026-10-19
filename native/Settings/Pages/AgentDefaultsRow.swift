@@ -8,14 +8,6 @@ extension AgentSessionDefaults.Setting {
         case .effort: "Default effort"
         }
     }
-
-    /// The choice that leaves it to the agent; it names the setting, since the pickers sit side by side.
-    var unsetTitle: String {
-        switch self {
-        case .model: "Agent's model"
-        case .effort: "Agent's effort"
-        }
-    }
 }
 
 /// The settings new tasks with one agent start with, one picker each.
@@ -39,7 +31,7 @@ struct AgentDefaultsRow: View {
             "Defaults for new tasks",
             description: Text(
                 hasChoices
-                    ? "Left on the agent's choice, \(agentName) picks. A value it stops offering is skipped."
+                    ? "New tasks start on what you last picked for \(agentName), unless you choose a default here. A value it stops offering is skipped."
                     : "Start a task with \(agentName) once to choose from its models and efforts."
             )
         ) {
@@ -54,7 +46,7 @@ struct AgentDefaultsRow: View {
     }
 }
 
-/// Picks one default, or clears it so the agent picks.
+/// Picks one default, or leaves it to the last pick.
 private struct AgentDefaultPicker: View {
     let agentName: String
     let agentID: AgentDefinition.ID
@@ -73,7 +65,8 @@ private struct AgentDefaultPicker: View {
         let offered = AgentSessionDefaults.offeredChoices(for: agentID, setting: setting).map {
             SettingsSelect<String?>.Option(value: $0.value, title: $0.name)
         }
-        var options = [SettingsSelect<String?>.Option(value: nil, title: setting.unsetTitle)] + offered
+        let lastUsed = AgentSessionDefaults.lastUsedName(for: agentID, setting: setting).map { "Last used (\($0))" }
+        var options = [SettingsSelect<String?>.Option(value: nil, title: lastUsed ?? "Last used \(setting.rawValue)")] + offered
         // A value set elsewhere (a launch argument, an older choice) stays visible so it can be cleared.
         if let value, !offered.contains(where: { $0.value == value }) {
             options.append(.init(value: value, title: value))
