@@ -16,7 +16,7 @@ struct CommitMessageDrafter {
         var subject: String
         @Guide(
             description:
-                "An optional body explaining why the change was made, wrapped at 72 characters. Leave it empty for small, self-explanatory changes."
+                "An optional body explaining why the change was made, wrapped at 72 characters. Leave it empty for small, self-explanatory changes, unless the user's instructions ask for one."
         )
         var body: String?
     }

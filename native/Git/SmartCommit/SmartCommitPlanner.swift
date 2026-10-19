@@ -21,7 +21,9 @@ struct SmartCommitPlanner {
         @Guide(description: "The commit subject: one line under 72 characters, imperative mood, no trailing period.")
         var subject: String
         @Guide(
-            description: "An optional body saying why, wrapped at 72 characters. Empty for self-explanatory commits.")
+            description:
+                "An optional body saying why, wrapped at 72 characters. Empty for self-explanatory commits, unless the user's instructions ask for one."
+        )
         var body: String?
         @Guide(
             description:
