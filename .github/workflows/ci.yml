@@ -44,7 +44,7 @@ jobs:
           - Telemetry
           - Terminal
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: actions/cache@v4
         with:
           path: Packages/${{ matrix.package }}/.build
@@ -62,7 +62,7 @@ jobs:
     runs-on: ${{ vars.MACOS_RUNNER || 'macos-26' }}
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
       - name: swift format lint --strict
@@ -85,7 +85,7 @@ jobs:
       # Cargo and Zig outputs (V8, Ghostty) land here, so caching it keeps later builds short.
       NATIVE_SCRIPT_RUNTIME_CACHE: ${{ github.workspace }}/.ci-cache/ScriptRuntime
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - uses: actions/cache@v4
         with:
           path: .ci-cache

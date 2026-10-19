@@ -31,7 +31,7 @@ jobs:
       NATIVE_TEAM_ID: ${{ secrets.NATIVE_TEAM_ID }}
       NATIVE_SENTRY_DSN: ${{ secrets.NATIVE_SENTRY_DSN }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
         with:
           ref: main
           fetch-depth: 0 # build numbers and release notes come from history
@@ -84,7 +84,7 @@ jobs:
     runs-on: ${{ matrix.runner }}
     container: swift:6.2
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Build native-host
         run: |
           swift build -c release --package-path Packages/NativeHost --product native-host --static-swift-stdlib

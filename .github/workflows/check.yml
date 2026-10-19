@@ -21,6 +21,6 @@ jobs:
     env:
       DEVELOPER_DIR: ${{ vars.XCODE_DEVELOPER_DIR || '/Applications/Xcode_27.1.app/Contents/Developer' }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
       - name: Build Release and Nightly
         run: scripts/release/check.sh --derived-data "$RUNNER_TEMP/DerivedData"
