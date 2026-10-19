@@ -6,7 +6,8 @@
 #   scripts/release/host.sh --channel <name> --version <v> --build-number <n> --output <dir>
 #       [--identity <name>] [--ed-key-file <path>] [--notes <file>] [--linux <dir>] [--plan | --notarize]
 #
-# Writes <output>/host/: native-host-<build>-macos-universal, host-feed[-beta].json and its .sig.
+# Writes <output>/host/: native-host-<build>-macos-universal (stripped), host-feed[-beta].json and its
+# .sig, and the binary's symbols to <output>/host-dSYMs.
 # --linux adds the native-host-linux-<arch> binaries in <dir> (built by CI; TODO(linux)).
 set -euo pipefail
 source "$(dirname "$0")/lib.sh"
@@ -71,6 +72,13 @@ bin_path=$output/host-build/out/Products/Release
 [ "$MODE" = plan ] || bin_path=$(swift build -c release --package-path Packages/NativeHost --arch arm64 --arch x86_64 \
     --scratch-path "$output/host-build" --show-bin-path)
 run cp "$bin_path/native-host" "$host/$binary_name"
+# Every symbol goes into a dSYM, made while SwiftPM's object files are still there, then the binary
+# hosts download is stripped (about 10.5 to 4.6 MB). release.sh sends the dSYM to Sentry with the
+# app's, so a host's crash log can still be symbolicated.
+run rm -rf "$output/host-dSYMs"
+run mkdir -p "$output/host-dSYMs"
+run dsymutil "$host/$binary_name" -o "$output/host-dSYMs/$binary_name.dSYM"
+run strip "$host/$binary_name"
 if [ "$identity" = "-" ]; then
     run codesign --force --sign - --identifier native-host "$host/$binary_name"
 else

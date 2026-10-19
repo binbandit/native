@@ -1,12 +1,21 @@
 #!/usr/bin/env bash
 # Upload only release dSYMs, never a source bundle. The token stays in the environment.
-# Usage: scripts/release/sentry.sh <archive/dSYMs> [--no-upload]
+# Usage: scripts/release/sentry.sh [--no-upload] <dSYMs folder>...
+#   --no-upload finds the symbols and checks the token and project without uploading anything.
 set -euo pipefail
 
-symbols=${1:?Pass the archive dSYMs directory}
-mode=${2:-}
-[[ -z "$mode" || "$mode" = --no-upload ]] || { echo "Unknown option: $mode" >&2; exit 2; }
-[[ -d "$symbols" ]] || { echo "Sentry: dSYMs directory is missing: $symbols" >&2; exit 1; }
+mode="" folders=()
+for arg in "$@"; do
+    case $arg in
+        --no-upload) mode=$arg ;;
+        -*) echo "Unknown option: $arg" >&2; exit 2 ;;
+        *) folders+=("$arg") ;;
+    esac
+done
+[[ ${#folders[@]} -gt 0 ]] || { echo "Pass the dSYMs folders, e.g. the archive's dSYMs" >&2; exit 2; }
+for folder in "${folders[@]}"; do
+    [[ -d "$folder" ]] || { echo "Sentry: dSYMs folder is missing: $folder" >&2; exit 1; }
+done
 if [[ -z "${SENTRY_AUTH_TOKEN:-}" ]]; then
     echo "Sentry: set SENTRY_AUTH_TOKEN to the release-upload token (also required for --no-upload)." >&2
     exit 1
@@ -27,4 +36,4 @@ fi
 args=(debug-files upload --org "${SENTRY_ORG:-foxycorps}" --project "${SENTRY_PROJECT:-native}"
     --type dsym --no-sources --wait)
 [[ -z "$mode" ]] || args+=("$mode")
-"$cli" "${args[@]}" "$symbols"
+"$cli" "${args[@]}" "${folders[@]}"

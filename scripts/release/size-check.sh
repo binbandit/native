@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # Reports what Native costs to download and to install, and fails when either is over its budget, so
-# size can't creep back unnoticed. The budgets and where the bytes go are in docs/app-size.md.
+# size can't creep back unnoticed. The budgets and where the bytes go are in docs/app-size.md. It
+# also fails when the app has no terminal (libghostty) or no script runtime: Xcode's build phases
+# only warn when they can't build them, and such an app would look small and ship broken.
 #
 #   scripts/release/size-check.sh <app> [--zip <file>] [--dmg <file>]   # one app, e.g. a release's
 #   scripts/release/size-check.sh --built <derived data> <configuration>...   # what check.sh built
@@ -23,7 +25,7 @@ while [ $# -gt 0 ]; do
         --zip) zip=$2; shift ;;
         --dmg) dmg=$2; shift ;;
         --built) derived=$2; shift ;;
-        -h | --help) sed -n '2,9p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h | --help) sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) apps+=("${1%/}") ;;
     esac
     shift
@@ -48,7 +50,7 @@ bytes() {
 
 scratch=$(mktemp -d "${TMPDIR:-/tmp}/native-size.XXXXXX")
 trap 'rm -rf "$scratch"' EXIT
-over=0
+over=0 incomplete=0
 
 # Prints one row; with a budget, says how it compares and remembers when it's over.
 row() {
@@ -79,10 +81,12 @@ check() {
     row "Installed" "$(bytes "$app")" "$BUDGET_INSTALLED"
     row "  App binary" "$(bytes "$app/Contents/MacOS/$executable")" "$BUDGET_BINARY"
     runtime="$app/Contents/Helpers/native-script-runtime"
-    if [ -f "$runtime" ]; then
+    if [ -x "$runtime" ]; then
         row "  Script runtime (V8)" "$(bytes "$runtime")" "$BUDGET_SCRIPT_RUNTIME"
     else
-        printf '  %-30s %10s\n' "  Script runtime (V8)" "not built"
+        printf '  %-30s %10s\n' "  Script runtime (V8)" "missing"
+        warn "$name has no script runtime (scripts/build-script-runtime.sh needs Rust)"
+        incomplete=1
     fi
     host=$(find "$app/Contents/Library/LoginItems" -maxdepth 1 -name '*.app' 2>/dev/null | head -1)
     [ -z "$host" ] || row "  Host helper" "$(bytes "$host")"
@@ -91,12 +95,16 @@ check() {
     if [ -f "$app/Contents/Resources/Assets.car" ]; then
         row "    Assets.car" "$(bytes "$app/Contents/Resources/Assets.car")"
     fi
-    # Builds without Zig have no terminal (scripts/build-libghostty.sh), so they come in about 12 MB
-    # under what ships; say so rather than let the numbers look better than they are.
-    if [ ! -d "$app/Contents/Resources/terminfo" ]; then
-        warn "$name has no terminal (libghostty); with it, it's about 12 MB bigger"
+    # The terminal is libghostty linked into the binary (its log line below comes from Ghostty's Zig
+    # core, which nothing else in the app has) plus Ghostty's terminfo and shell integration.
+    if ! LC_ALL=C grep -aqF "ghostty version=" "$app/Contents/MacOS/$executable" ||
+        [ ! -f "$app/Contents/Resources/terminfo/78/xterm-ghostty" ] ||
+        [ ! -d "$app/Contents/Resources/ghostty/shell-integration" ]; then
+        warn "$name has no terminal: libghostty or Ghostty's resources are missing (scripts/build-libghostty.sh)"
+        incomplete=1
     fi
 }
 
 for app in "${apps[@]}"; do check "$app"; done
+[ "$incomplete" = 0 ] || die "a build that ships needs the terminal and the script runtime; build them first (docs/releasing.md, \"CI\")."
 [ "$over" = 0 ] || die "over the size budget. docs/app-size.md says where the bytes go and how to find what grew."

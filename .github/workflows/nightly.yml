@@ -1,5 +1,9 @@
 # Builds Native Nightly from main every night and publishes it to the rolling "nightly" release.
 # docs/releasing.md explains the release flow and the secrets this uses.
+#
+# Rehearse it without publishing anything: `gh workflow run nightly.yml --ref <branch> -f dry_run=true`
+# builds that branch, signs, notarizes and packages it and writes the appcast, then uploads the
+# results as workflow artifacts instead of a release.
 name: Nightly
 
 on:
@@ -11,12 +15,17 @@ on:
         description: Publish even if main hasn't changed since the last nightly
         type: boolean
         default: false
+      dry_run:
+        description: Build the dispatched branch and upload the results as artifacts; publish nothing
+        type: boolean
+        default: false
 
 permissions:
   contents: write
 
 concurrency:
-  group: nightly
+  # A rehearsal never waits behind, or holds up, the real nightly.
+  group: nightly${{ inputs.dry_run && '-dry-run' || '' }}
   cancel-in-progress: false
 
 jobs:
@@ -24,27 +33,48 @@ jobs:
     # Needs Xcode with the macOS 27 SDK. Set the MACOS_RUNNER and XCODE_DEVELOPER_DIR repository
     # variables to use another runner or Xcode without editing this file.
     runs-on: ${{ vars.MACOS_RUNNER || 'macos-26' }}
-    timeout-minutes: 90
+    timeout-minutes: 120
     env:
       DEVELOPER_DIR: ${{ vars.XCODE_DEVELOPER_DIR || '/Applications/Xcode_27.1.app/Contents/Developer' }}
       GH_TOKEN: ${{ github.token }}
       NATIVE_TEAM_ID: ${{ secrets.NATIVE_TEAM_ID }}
       NATIVE_SENTRY_DSN: ${{ secrets.NATIVE_SENTRY_DSN }}
+      NATIVE_SPARKLE_PUBLIC_KEY: ${{ vars.NATIVE_SPARKLE_PUBLIC_KEY }}
     steps:
       - uses: actions/checkout@v5
+        id: checkout
         with:
-          ref: main
+          # A rehearsal builds the branch it was dispatched on; the real nightly always builds main.
+          ref: ${{ inputs.dry_run && github.ref || 'main' }}
           fetch-depth: 0 # build numbers and release notes come from history
           fetch-tags: true
 
       - name: Check for changes since the last nightly
         id: changes
+        if: ${{ !inputs.dry_run }}
         run: |
           last=$(git rev-parse --quiet --verify 'refs/tags/nightly^{commit}' || true)
           if [ "$last" = "$(git rev-parse HEAD)" ] && [ "${{ inputs.force }}" != "true" ]; then
             echo "main hasn't changed since the last nightly; nothing to publish."
             echo "skip=true" >> "$GITHUB_OUTPUT"
           fi
+
+      # The terminal (libghostty, a Zig build of several minutes) and the script runtime's Cargo
+      # build, V8 included. release.sh builds both before archiving; these keep that quick.
+      - name: Cache libghostty
+        if: steps.changes.outputs.skip != 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/native-build/libghostty
+          key: libghostty-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/build-libghostty.sh') }}
+          restore-keys: libghostty-${{ runner.os }}-${{ runner.arch }}-
+      - name: Cache the script runtime
+        if: steps.changes.outputs.skip != 'true'
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/Native/ScriptRuntime
+          key: script-runtime-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'scripts/build-script-runtime.sh') }}
+          restore-keys: script-runtime-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Set up signing
         if: steps.changes.outputs.skip != 'true'
@@ -58,13 +88,40 @@ jobs:
         run: scripts/release/ci-signing.sh setup
 
       - name: Build, notarize and publish
+        if: steps.changes.outputs.skip != 'true'
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-        if: steps.changes.outputs.skip != 'true'
-        run: scripts/release/release.sh --channel nightly --publish --ed-key-file "$SPARKLE_KEY_FILE"
+          MODE: ${{ inputs.dry_run && '--rehearse' || '--publish' }}
+        run: scripts/release/release.sh --channel nightly "$MODE" --ed-key-file "$SPARKLE_KEY_FILE"
+
+      # What a rehearsal would have published, to download and check by hand (docs/releasing.md).
+      - name: Upload the rehearsal
+        if: inputs.dry_run && !cancelled()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-nightly-${{ github.run_number }}
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/native-release/nightly/appcast/*.zip
+            ${{ runner.temp }}/native-release/nightly/appcast/*.delta
+            ${{ runner.temp }}/native-release/nightly/appcast/*.md
+            ${{ runner.temp }}/native-release/nightly/appcast/appcast.xml
+            ${{ runner.temp }}/native-release/nightly/*.dmg
+            ${{ runner.temp }}/native-release/nightly/host/
+            ${{ runner.temp }}/native-release/nightly/celebrations/
+      - name: Upload the rehearsal's symbols
+        if: inputs.dry_run && !cancelled()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-nightly-${{ github.run_number }}-dSYMs
+          retention-days: 7
+          path: |
+            ${{ runner.temp }}/native-release/nightly/*.xcarchive/dSYMs/
+            ${{ runner.temp }}/native-release/nightly/host-dSYMs/
 
       - name: Tear down signing
-        if: always()
+        if: always() && steps.checkout.outcome == 'success'
         run: scripts/release/ci-signing.sh teardown
 
   # TODO(linux): enable once the host core builds on Linux (docs/releasing.md, "Remote updates").

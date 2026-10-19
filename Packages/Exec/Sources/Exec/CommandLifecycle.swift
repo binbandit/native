@@ -43,18 +43,26 @@ final class CommandLifecycle: @unchecked Sendable {
     func launch(timeout: Duration?) throws {
         try state.withLock { state in
             if state.stopReason == .cancelled { throw CancellationError() }
-            try process.run()
-            let pid = process.processIdentifier
-            // getpgid fails only once the command has been reaped, and then its group is all that's left.
-            let group = getpgid(pid)
-            state.target = group == -1 || group == pid ? -pid : pid
-            if let timeout {
+        }
+        // Not under the lock: `Process` reports the exit (`exited()`) from inside its own locking, and
+        // may do so before `run()` returns.
+        try process.run()
+        let pid = process.processIdentifier
+        // getpgid fails only once the command has been reaped, and then its group is all that's left.
+        let group = getpgid(pid)
+        let target = group == -1 || group == pid ? -pid : pid
+        let stoppedWhileLaunching = state.withLock { state in
+            state.target = target
+            guard state.stopReason == nil else { return !state.hasExited }
+            if let timeout, !state.hasExited {
                 state.timeout = Task { [self] in
                     guard (try? await Task.sleep(for: timeout)) != nil else { return }
                     stop(.timedOut)
                 }
             }
+            return false
         }
+        if stoppedWhileLaunching { terminate(target) }
     }
 
     /// Records that the command exited: stopping it does nothing from here on, and its timeout is
@@ -77,11 +85,14 @@ final class CommandLifecycle: @unchecked Sendable {
             state.stopReason = reason
             state.timeout?.cancel()
             state.timeout = nil
-            guard let target = state.target else { return nil }
-            kill(target, SIGTERM)
-            return target
+            // Not launched yet: `launch` stops it once it is.
+            return state.target
         }
-        guard let target else { return }
+        if let target { terminate(target) }
+    }
+
+    private func terminate(_ target: pid_t) {
+        kill(target, SIGTERM)
         let gracePeriod = gracePeriod
         Task {
             try? await Task.sleep(for: gracePeriod)

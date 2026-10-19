@@ -46,19 +46,6 @@ enum LaunchMetrics {
         )
     }
 
-    // TEMPORARY (launch perf work): main-thread CPU at points before the first frame.
-    static var pluginReads = 0
-    static func checkpoint(_ label: String) {
-        guard !reached.contains(.firstFrame) else { return }
-        let micro = clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID) / 1000
-        var counts: (instructions: UInt64, cycles: UInt64) = (0, 0)
-        _ = withUnsafeMutableBytes(of: &counts) { threadSelfCounts?(1, $0.baseAddress, $0.count) }
-        signposter.emitEvent("Launch checkpoint", "\(label, privacy: .public)")
-        logger.notice(
-            "launch checkpoint \(label, privacy: .public) \(micro) us \(counts.instructions / 1000) Kinstr plugins \(pluginReads)"
-        )
-    }
-
     /// Marks `milestone` once the frame showing what just appeared is on screen: when the main run
     /// loop next goes to sleep, after Core Animation has committed that frame and nothing else is
     /// waiting on the main thread. Call it from `onAppear`.

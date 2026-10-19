@@ -49,8 +49,7 @@ final class PluginRegistry {
 
     /// Every loaded plugin, as its experiments leave it (`PluginExperimentSet`).
     var plugins: [LoadedPlugin] {
-        LaunchMetrics.pluginReads += 1
-        return contributions.plugins
+        contributions.plugins
     }
     /// What's wrong with enabled plugins' experiments, for Labs.
     private(set) var experimentProblems: [PluginExperimentProblem] = []
@@ -238,15 +237,8 @@ final class PluginRegistry {
     /// a change before it happens, so lists worked out meanwhile may be stale and aren't kept.
     @ObservationIgnored private var isSettling = false
 
-    // TEMPORARY A/B switch for launch measurements.
-    private static let noCache = UserDefaults.standard.bool(forKey: "launchperf.noPluginCache")
-
     private var contributions: Contributions {
         _ = revision
-        if Self.noCache {
-            _ = ExperimentStore.shared.current
-            return makeContributions()
-        }
         if let cached { return cached }
         let fresh = withObservationTracking(makeContributions) { [weak self] in
             MainActor.assumeIsolated { self?.inputWillChange() }

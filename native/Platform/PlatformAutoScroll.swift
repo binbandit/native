@@ -49,6 +49,8 @@ final class PlatformAutoScroll: NSObject {
 
     private func begin() {
         let link = scrollView.displayLink(target: self, selector: #selector(step(_:)))
+        // As fast as ProMotion goes, as a trackpad flick would drive it.
+        link.preferredFrameRateRange = CAFrameRateRange(minimum: 120, maximum: 120, preferred: 120)
         link.add(to: .main, forMode: .common)
         self.link = link
     }

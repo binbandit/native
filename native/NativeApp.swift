@@ -48,25 +48,15 @@ struct NativeApp: App {
         let appearance = AppearanceModeController()
         _appearance = State(initialValue: appearance)
         // Git and GitHub run with the login-shell environment the agents get.
-        LaunchMetrics.checkpoint("appearance")
-        _ = BuiltInPlugins.all
-        LaunchMetrics.checkpoint("builtIns")
-        let pluginRegistry = PluginRegistry()
-        LaunchMetrics.checkpoint("PluginRegistry")
-        let sessionTitles = SessionTitles()
-        LaunchMetrics.checkpoint("SessionTitles")
-        let model = AppModel(plugins: pluginRegistry, titles: sessionTitles)
-        LaunchMetrics.checkpoint("AppModel")
+        let model = AppModel()
         _model = State(initialValue: model)
         let git = GitStore { await model.shellEnvironment() }
         let gitHub = GitHubModel { await model.shellEnvironment(refresh: $0) }
         _git = State(initialValue: git)
         _gitHub = State(initialValue: gitHub)
-        LaunchMetrics.checkpoint("git+gitHub")
         let taskScripts = TaskScriptCenter(settings: TaskScriptSettings(), runner: LocalCommandRunner())
         _taskScripts = State(initialValue: taskScripts)
         TaskScriptsWiring.connect(taskScripts, model: model, git: git)
-        LaunchMetrics.checkpoint("taskScripts")
         // New tasks get a worktree or branch as the Git settings say.
         let taskWorkspaces = GitTaskWorkspaceProvider(git: git, gitHub: gitHub, scripts: taskScripts)
         _taskWorkspaces = State(initialValue: taskWorkspaces)
@@ -77,9 +67,7 @@ struct NativeApp: App {
         ) { _ in
             MainActor.assumeIsolated { model.stopAgents() }
         }
-        LaunchMetrics.checkpoint("workspaces")
         GitAutomationWiring.connect(git, to: BuiltInPlugins.automation.center.automations)
-        LaunchMetrics.checkpoint("gitAutomation")
         let settings = SettingsPresentation()
         _settings = State(initialValue: settings)
         let keepAwake = KeepAwakeController()
@@ -89,29 +77,24 @@ struct NativeApp: App {
         let statusBar = AmbientWiring.statusBar(
             model: model, keepAwake: keepAwake, settings: settings, shortcutsHelp: shortcutsHelp)
         _statusBar = State(initialValue: statusBar)
-        LaunchMetrics.checkpoint("statusBar")
         statusBar.register(
             TaskScriptsStatusItem(center: taskScripts, folder: { model.selection.flatMap(model.session)?.cwd }) {
                 settings.open(.scripts)
             })
         let celebrations = CelebrationCenter(now: HomeDateOverride.now)
         _celebrations = State(initialValue: celebrations)
-        LaunchMetrics.checkpoint("celebrations")
         let terminals = TerminalStore()
-        LaunchMetrics.checkpoint("terminals")
         _terminals = State(initialValue: terminals)
         // Repo actions share the repo scripts' per-project switch and policy.
         let projectActions = ProjectActionsWiring.runner(
             model: model, terminals: terminals, settings: settings, trust: .scripts(taskScripts.settings),
             commandRunner: LocalCommandRunner())
         _projectActions = State(initialValue: projectActions)
-        LaunchMetrics.checkpoint("projectActions")
         let updates = UpdateController()
         _updates = State(initialValue: updates)
         let whatsNew = WhatsNewCenter()
         _whatsNew = State(initialValue: whatsNew)
         // Every command, before the menu bar first draws.
-        LaunchMetrics.checkpoint("updates+whatsNew")
         let palette = CommandPalette()
         _palette = State(initialValue: palette)
         let pullRequestTasks = PullRequestTaskOpener(
@@ -121,7 +104,6 @@ struct NativeApp: App {
         let gitCleanup = GitCleanupWiring.center(app: model, git: git, gitHub: gitHub)
         _gitCleanup = State(initialValue: gitCleanup)
         gitHub.linkedPullRequest = { [git] in await GitHubGitWiring.linkedPullRequest(for: $0, git: git) }
-        LaunchMetrics.checkpoint("palette+prTasks+cleanup")
         CommandsWiring.connect(
             CommandRegistry.shared, palette: palette,
             features: .init(
@@ -129,14 +111,13 @@ struct NativeApp: App {
                 celebrations: celebrations, updates: updates, whatsNew: whatsNew, appearance: appearance,
                 pullRequestTasks: pullRequestTasks, shortcutsHelp: shortcutsHelp, gitCleanup: gitCleanup,
                 projectActions: projectActions))
-        LaunchMetrics.checkpoint("init end")
     }
 
     var body: some Scene {
         Window("Native", id: "main") {
             RootView()
                 .commandPalette(palette)
-                .onAppear { LaunchMetrics.checkpoint("onAppear"); LaunchMetrics.markOnScreen(.firstFrame) }
+                .onAppear { LaunchMetrics.markOnScreen(.firstFrame) }
                 .environment(CommandRegistry.shared)
                 .environment(model)
                 .environment(git)
@@ -171,15 +152,10 @@ struct NativeApp: App {
                 .appearancePreferences(plugins: model.plugins)
                 .dsAccentPalette(themeID: iconPreferences.theme.rawValue)
                 .task {
-                    LaunchMetrics.checkpoint("task start")
                     OrchestrationPlugin.connect(to: model, updates: updates, durableHost: durableHost)
-                    LaunchMetrics.checkpoint("orchestration")
                     MCPServersPlugin.connect(to: model) { BuiltInPlugins.usage.contextReports.reports }
-                    LaunchMetrics.checkpoint("mcp")
                     SkillsPlugin.connect(to: model)
-                    LaunchMetrics.checkpoint("skills")
                     BuiltInPlugins.search.center.connect(to: model)
-                    LaunchMetrics.checkpoint("search")
                     BuiltInPlugins.usage.connect(to: model)
                     BuiltInPlugins.automation.center.connect(to: model) { [git, gitHub] draft in
                         try await AutomationGitHubWiring.openPullRequest(draft, git: git, gitHub: gitHub)
@@ -191,24 +167,18 @@ struct NativeApp: App {
                             try await AutomationGitHubWiring.pullRequestSnapshots(gitHub: gitHub)
                         }
                     )
-                    LaunchMetrics.checkpoint("usage+automation")
                     ExpeditionWiring.connect(BuiltInPlugins.expeditions.center, model: model, git: git, gitHub: gitHub)
                     AmbientWiring.connect(model: model, keepAwake: keepAwake)
                     DockBadgeWiring.connect(model: model, workflows: BuiltInPlugins.automation.center.workflows)
-                    LaunchMetrics.checkpoint("expedition+ambient+dock")
                     CelebrationsWiring.connect(
                         celebrations, plugins: model.plugins, icons: iconPreferences, settings: settings)
-                    LaunchMetrics.checkpoint("celebrationsWiring")
                     iconPreferences.start()
-                    LaunchMetrics.checkpoint("iconPreferences")
                     PolicyCenter.shared.start()
                     ExperimentsPolicyWiring.connect()
-                    LaunchMetrics.checkpoint("policy+experiments")
                     TelemetryCenter.shared.start { [model] in model.runtime($0)?.info?.version }
                     updates.restartContext = { [model] in model.updateRestartContext }
                     updates.start()
                     whatsNew.start()
-                    LaunchMetrics.checkpoint("telemetry+updates+whatsNew")
                     await model.start()
                     LaunchMetrics.mark(.agentsReady)
                 }

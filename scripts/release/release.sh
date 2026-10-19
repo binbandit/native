@@ -101,7 +101,10 @@ fi
 tag="v$version"
 [ "$channel" = nightly ] && tag=nightly
 releases="https://github.com/$repo/releases"
-[ -n "$url_prefix" ] || url_prefix="$releases/download/$tag/"
+custom_url_prefix=1
+[ -n "$url_prefix" ] || { url_prefix="$releases/download/$tag/"; custom_url_prefix=0; }
+# How many earlier archives each update gets a delta from (see Appcast).
+delta_seeds=3
 output=${output:-${RUNNER_TEMP:-${TMPDIR:-/tmp}}/native-release/$channel}
 output=${output%/}
 archive="$output/$asset_base.xcarchive"
@@ -223,23 +226,98 @@ run "$ROOT/scripts/release/size-check.sh" "$app" "${size_args[@]}"
 # MARK: - Appcast
 
 log "Generating the appcast"
+appcast="$output/appcast/appcast.xml"
 feed="$releases/latest/download/appcast.xml"
 [ "$channel" = nightly ] && feed="$releases/download/nightly/appcast.xml"
 # Start from the published feed so earlier items (and the other channel's) stay in it.
 if [ "$MODE" != plan ] && [[ $repo != *PLACEHOLDER* ]]; then
-    curl -fsSL "$feed" -o "$output/appcast/appcast.xml" 2>/dev/null || log "No published feed yet; starting a new one"
+    curl -fsSL "$feed" -o "$appcast" 2>/dev/null || log "No published feed yet; starting a new one"
 fi
 sparkle_bin=${SPARKLE_BIN:-$output/DerivedData/SourcePackages/artifacts/sparkle/Sparkle/bin}
-appcast_args=(--download-url-prefix "$url_prefix" --embed-release-notes --full-release-notes-url "$releases")
+appcast_args=(--download-url-prefix "$url_prefix" --embed-release-notes --full-release-notes-url "$releases"
+    --maximum-deltas "$delta_seeds")
 [ "$channel" = beta ] && appcast_args+=(--channel beta)
 [ "$channel" = nightly ] && appcast_args+=(--maximum-versions 1)
 [ -n "$key_file" ] && appcast_args+=(--ed-key-file "$key_file")
+
+# Replaces text in the appcast, literally.
+replace_in_appcast() {
+    local xml
+    xml=$(<"$appcast")
+    printf '%s\n' "${xml//"$1"/"$2"}" >"$appcast"
+}
+
+# Sparkle makes a delta update from every earlier archive in the folder to this one: a few MB instead
+# of the whole app. Seed it with the archives users are most likely to have: the last few v* releases'
+# for stable and beta, or the ones the rolling nightly release still holds (it keeps two). Prints
+# "<tag> <asset>" for each.
+delta_seed_assets() {
+    if [ "$channel" = nightly ]; then
+        gh release view nightly --repo "$repo" --json assets --jq '.assets[].name' |
+            grep -E "^$asset_base-[0-9]+\.zip$" | grep -vxF "$zip_name" | sort -t- -k3 -n | tail -n "$delta_seeds" |
+            sed 's/^/nightly /'
+    else
+        gh release list --repo "$repo" --limit 30 --json tagName,isDraft --jq '.[] | select(.isDraft | not) | .tagName' |
+            grep -E '^v[0-9]' | grep -vxF "$tag" | head -n "$delta_seeds" |
+            while read -r seed_tag; do echo "$seed_tag $asset_base-${seed_tag#v}.zip"; done
+    fi
+}
+
 # generate_keys keeps the private key in the login keychain under this service and account.
+can_sign=1
 if [ -z "$key_file" ] && [ "$MODE" = dry-run ] && ! security find-generic-password -s https://sparkle-project.org -a ed25519 >/dev/null 2>&1; then
+    can_sign=0
+fi
+
+seeds=()
+if [ "$can_sign" = 1 ] && [ "$MODE" != plan ] && [ "$custom_url_prefix" = 0 ] && [[ $repo != *PLACEHOLDER* ]]; then
+    if ! command -v gh >/dev/null 2>&1; then
+        warn "gh isn't installed, so this update has no deltas: every user downloads the whole app"
+    else
+        while read -r seed_tag seed_name; do
+            [ -n "$seed_name" ] || continue
+            if run gh release download "$seed_tag" --repo "$repo" --pattern "$seed_name" --dir "$output/appcast" --clobber; then
+                seeds+=("$seed_name $releases/download/$seed_tag/$seed_name")
+            else
+                warn "couldn't download $seed_name from $seed_tag; no delta from it"
+            fi
+        done < <(delta_seed_assets 2>/dev/null || true)
+        [ ${#seeds[@]} -gt 0 ] || log "No earlier releases to make deltas from"
+    fi
+fi
+
+if [ "$can_sign" = 0 ]; then
     warn "no Sparkle signing key in the keychain (docs/releasing.md, \"One-time setup\"); not signing an appcast"
     printf '  [dry run] would run: %s\n' "$(quoted "$sparkle_bin/generate_appcast" "${appcast_args[@]}" "$output/appcast")" >&2
 else
     run "$sparkle_bin/generate_appcast" "${appcast_args[@]}" "$output/appcast"
+fi
+
+deltas=()
+if [ -f "$appcast" ]; then
+    # generate_appcast points every item whose archive is in the folder at this release; a seed that's
+    # still in the feed keeps the URL it was published with.
+    for seed in ${seeds[@]+"${seeds[@]}"}; do
+        replace_in_appcast "url=\"$url_prefix${seed%% *}\"" "url=\"${seed#* }\""
+    done
+    # GitHub turns spaces in asset names into dots, so Native Nightly's deltas take a dash like its
+    # archives do.
+    for delta in "$output/appcast"/*.delta; do
+        [ -e "$delta" ] || continue
+        name=$(basename "$delta")
+        if [[ $name == *" "* ]]; then
+            run mv "$delta" "$output/appcast/${name// /-}"
+            replace_in_appcast "/${name// /%20}\"" "/${name// /-}\""
+        fi
+        deltas+=("$output/appcast/${name// /-}")
+    done
+    [ ${#deltas[@]} = 0 ] || log "Made ${#deltas[@]} delta updates"
+    # generate_appcast only warns when the app's SUPublicEDKey doesn't match the signing key, and then
+    # leaves the archive unsigned, which no installed copy would accept.
+    if [ -n "$public_key" ]; then
+        signed=$(xmllint --xpath "count(//item/enclosure[contains(@url, '/$zip_name')][@*[local-name()='edSignature']])" "$appcast")
+        [ "$signed" = 1 ] || die "the appcast has no EdDSA signature for $zip_name: is the signing key the one NATIVE_SPARKLE_PUBLIC_KEY belongs to?"
+    fi
 fi
 
 # MARK: - Host
@@ -249,7 +327,7 @@ host_args=(--channel "$channel" --version "$version" --build-number "$build_numb
     --identity "$identity" --notes "$notes")
 [ -n "$key_file" ] && host_args+=(--ed-key-file "$key_file")
 [ -n "${NATIVE_LINUX_HOST_DIR:-}" ] && host_args+=(--linux "$NATIVE_LINUX_HOST_DIR")
-case $MODE in plan) host_args+=(--plan) ;; notarize | publish) host_args+=(--notarize) ;; esac
+case $MODE in plan) host_args+=(--plan) ;; notarize | rehearse | publish) host_args+=(--notarize) ;; esac
 SPARKLE_BIN=$sparkle_bin "$ROOT/scripts/release/host.sh" "${host_args[@]}"
 host_feed="host-feed.json"
 [ "$channel" = beta ] && host_feed="host-feed-beta.json"
@@ -276,10 +354,22 @@ else
     celebration_files=("$output/celebrations"/celebration-*.json "$output/celebrations/celebration-assets.json.sig")
 fi
 
+# MARK: - Symbols
+
+# Symbols reach Sentry before users can receive this build: the app's dSYMs and the standalone host's.
+# A rehearsal checks the token and finds the symbols but uploads nothing; dry runs print the upload.
+symbols=("$archive/dSYMs" "$output/host-dSYMs")
+case $MODE in
+    publish) run bash "$ROOT/scripts/release/sentry.sh" "${symbols[@]}" ;;
+    rehearse) run bash "$ROOT/scripts/release/sentry.sh" --no-upload "${symbols[@]}" ;;
+    *) printf '  [dry run] would run: %s\n' "$(quoted bash "$ROOT/scripts/release/sentry.sh" "${symbols[@]}")" >&2 ;;
+esac
+
 # MARK: - Publish
 
 log "Publishing to $repo"
-assets=("$output/appcast/$zip_name" "$output/host/native-host-$build_number-macos-universal")
+assets=("$output/appcast/$zip_name" "$output/host/native-host-$build_number-macos-universal"
+    ${deltas[@]+"${deltas[@]}"})
 [ "$make_dmg" = 1 ] && assets+=("$output/$dmg_name")
 notes_flag=(--notes-file "$notes")
 
@@ -296,10 +386,15 @@ if [ "$channel" = nightly ]; then
         ${celebration_files[@]+"${celebration_files[@]}"}
     remote gh release upload nightly --repo "$repo" --clobber "$output/appcast/appcast.xml" ${host_files[@]+"${host_files[@]}"}
     if [ "$MODE" = publish ]; then
-        # Keep the newest two archives and hosts so downloads already in flight still finish.
+        # Keep the newest two archives and hosts so downloads already in flight still finish (and the
+        # next nightly has deltas from both), and only the deltas this appcast lists.
         names=$(gh release view nightly --repo "$repo" --json assets --jq '.assets[].name')
+        current_deltas=" $(for delta in ${deltas[@]+"${deltas[@]}"}; do basename "$delta"; done | tr '\n' ' ')"
         { grep -E "^$asset_base-[0-9]+\.zip$" <<<"$names" | sort -t- -k3 -n | keep_all_but_two
-          grep -E "^native-host-[0-9]+-" <<<"$names" | sort -t- -k3 -n | keep_all_but_two; } |
+          grep -E "^native-host-[0-9]+-" <<<"$names" | sort -t- -k3 -n | keep_all_but_two
+          grep -E '\.delta$' <<<"$names" | while read -r name; do
+              [[ $current_deltas == *" $name "* ]] || echo "$name"
+          done; } |
             while read -r old; do run gh release delete-asset nightly "$old" --repo "$repo" --yes; done
     fi
 else

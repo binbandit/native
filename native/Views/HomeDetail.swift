@@ -8,7 +8,6 @@ struct HomeDetail: View {
     @Environment(AppModel.self) private var model
 
     var body: some View {
-        let _ = LaunchMetrics.checkpoint("HomeDetail body start")
         let agents = model.agents.map(homeAgent)
         if let current = model.currentProject {
             HomeView(
