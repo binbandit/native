@@ -1,9 +1,11 @@
 #!/usr/bin/env bash
 # Drafts release notes in Markdown from the conventional commits between two refs:
 #   scripts/release/release-notes.sh <from-ref|""> [<to-ref>]
-# An empty <from-ref> takes the whole history. Only user-facing types make the notes (feat, fix,
-# perf, and anything marked breaking); chores, docs, tests, refactors and quicksaves are left out.
-# The notes are generated, never hand-edited (docs/releasing.md, "Release notes").
+# An empty <from-ref> takes the whole history and marks the first release. Only user-facing types make
+# the notes (feat, fix, perf, and anything marked breaking); chores, docs, tests, refactors and
+# quicksaves are left out, as are fixes and features scoped to how Native is built and shipped
+# (release, ci, build, deps). The notes are generated, never hand-edited (docs/releasing.md, "Release
+# notes").
 set -euo pipefail
 
 from=${1-}
@@ -29,6 +31,7 @@ while IFS= read -r -d '' record; do
         breaking+="$line"$'\n'
         continue
     fi
+    case $scope in release | ci | build | deps) continue ;; esac
     case $type in
         feat) features+="$line"$'\n' ;;
         fix) fixes+="$line"$'\n' ;;
@@ -42,7 +45,10 @@ section() {
 }
 
 notes=$(section "Breaking changes" "$breaking"; section "New" "$features"; section "Fixes" "$fixes"; section "Performance" "$performance")
-if [ -z "$notes" ]; then
+if [ -z "$from" ]; then
+    echo "The first release of Native, a native Mac app for running coding agents side by side."
+    [ -z "$notes" ] || printf '\n%s\n' "$notes"
+elif [ -z "$notes" ]; then
     echo "Small improvements and fixes under the hood."
 else
     printf '%s\n' "$notes"

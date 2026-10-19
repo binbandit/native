@@ -317,7 +317,7 @@ needs the old build's `SUPublicEDKey` to match, which every official build has.
 
 Notes are drafted from conventional commits by `scripts/release/release-notes.sh <from> <to>`:
 breaking changes, `feat` (New), `fix` (Fixes) and `perf` (Performance), each with its scope. Chores,
-docs, tests, refactors and quicksaves stay out. The notes become the GitHub release body and are
+docs, tests, refactors and quicksaves stay out, as do fixes and features scoped to how Native is built and shipped (`release`, `ci`, `build`, `deps`). The first release (no earlier tag) opens with a one-line introduction. The notes become the GitHub release body and are
 embedded in the appcast as Markdown, which Settings ▸ Updates renders. They're generated, never
 hand-edited, and there's no CHANGELOG: to change what users read, write a better commit title.
 
