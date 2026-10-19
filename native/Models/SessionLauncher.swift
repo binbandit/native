@@ -60,7 +60,7 @@ final class SessionLauncher {
             configOptions: response.configOptions ?? [], origin: origin, parent: parent
         )
         store.register(session)
-        AgentSessionDefaults.remember(session.state.configOptions, for: runtime.agent.id)
+        AgentSessionDefaults.remember(session.state.configOptions, for: runtime.agent.id, isNew: true)
         await AgentSessionDefaults.apply(to: session, project: project)
         if origin == .user, parent == nil {
             // After the defaults, so what the task starts in (its mode) wins over them.

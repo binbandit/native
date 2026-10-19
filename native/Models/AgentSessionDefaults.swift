@@ -52,15 +52,47 @@ enum AgentSessionDefaults {
     }
 
     /// Remembers what a session of `agent` offers, for `offeredChoices`, and which of its options
-    /// holds each setting, for `lastUsedName`.
-    static func remember(_ options: [ConfigOption], for agent: AgentDefinition.ID, defaults: UserDefaults = .standard) {
+    /// holds each setting, for `fallback`. A session that has just started (`isNew`) is also on the
+    /// agent's own defaults, which `fallback` names until the user picks something.
+    static func remember(
+        _ options: [ConfigOption], for agent: AgentDefinition.ID, isNew: Bool = false,
+        defaults: UserDefaults = .standard
+    ) {
         for setting in Setting.allCases {
             guard let option = options.first(where: { $0.category == setting.category }),
-                case .select(_, let choices) = option.kind,
+                case .select(let current, let choices) = option.kind,
                 let data = try? JSONEncoder().encode(choices.map(OfferedChoice.init))
             else { continue }
             defaults.set(data, forKey: setting.key(for: agent) + ".offered")
             defaults.set(option.id, forKey: setting.key(for: agent) + ".option")
+            if isNew {
+                defaults.set(current, forKey: setting.key(for: agent) + ".agentDefault")
+            }
+        }
+    }
+
+    /// What new sessions start on for `setting` when nothing pins it (Settings, a project).
+    enum Fallback: Equatable {
+        /// What the user last picked, by name.
+        case lastUsed(String)
+        /// The agent's own default, by name, before the user has picked one.
+        case agentDefault(String)
+    }
+
+    /// Nil until a session of the agent has said what it offers.
+    static func fallback(
+        for agent: AgentDefinition.ID, setting: Setting, defaults: UserDefaults = .standard
+    ) -> Fallback? {
+        let key = setting.key(for: agent)
+        if let name = defaults.string(forKey: key + ".option")
+            .flatMap({ lastUsed(for: agent, defaults: defaults).choices[$0]?.valueName })
+        {
+            return .lastUsed(name)
+        }
+        return defaults.string(forKey: key + ".agentDefault").map { value in
+            .agentDefault(
+                offeredChoices(for: agent, setting: setting, defaults: defaults).first { $0.value == value }?.name
+                    ?? value)
         }
     }
 
@@ -68,15 +100,6 @@ enum AgentSessionDefaults {
     static func lastUsed(for agent: AgentDefinition.ID, defaults: UserDefaults = .standard) -> ConfigChoices {
         defaults.data(forKey: lastUsedKey(for: agent))
             .flatMap { try? JSONDecoder().decode(ConfigChoices.self, from: $0) } ?? ConfigChoices()
-    }
-
-    /// The name of what new sessions start on for `setting` when Settings leaves it to the last
-    /// pick, if there's been one.
-    static func lastUsedName(
-        for agent: AgentDefinition.ID, setting: Setting, defaults: UserDefaults = .standard
-    ) -> String? {
-        defaults.string(forKey: setting.key(for: agent) + ".option")
-            .flatMap { lastUsed(for: agent, defaults: defaults).choices[$0]?.valueName }
     }
 
     static func updateLastUsed(

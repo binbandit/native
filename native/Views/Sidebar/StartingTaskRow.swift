@@ -22,6 +22,9 @@ struct StartingTaskRow: View {
         )
         .help(tooltip)
         .contextMenu {
+            if task.failure?.canUseProjectFolder == true {
+                Button("Start in Project Folder") { Task { await model.startInProjectFolder(task) } }
+            }
             if task.failure != nil {
                 Button("Retry") { Task { await model.retry(task) } }
             }

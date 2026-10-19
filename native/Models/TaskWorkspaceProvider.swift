@@ -11,24 +11,13 @@ protocol TaskWorkspaceProvider: AnyObject {
     /// runs: "Creating a worktree", "Creating a branch".
     func newTaskWorkspaceLabel(in project: Project) -> String
 
-    /// Puts away what Native made for a task leaving the sidebar (archive), keeping what
-    /// `restoreWorkspace` needs with the project itself, so it can come back in a later run of
-    /// Native too. Returns what was done as a sentence for the archive's toast ("Removed its
-    /// worktree, saving uncommitted work as a checkpoint."), or nil when there was nothing of
-    /// Native's to put away. Never touches the user's own project folder.
-    func archiveWorkspace(at folder: URL, in project: Project) async throws -> String?
-
-    /// Brings back what `archiveWorkspace` put away at `folder`, picking up where an archive or
-    /// restore that Native quit during stopped. Returns whether there was anything to bring back.
-    @discardableResult
-    func restoreWorkspace(at folder: URL, in project: Project) async throws -> Bool
-
-    /// The folders `archiveWorkspace` put away in `project` that haven't been brought back.
-    func archivedWorkspaceFolders(of project: Project) async -> [URL]
+    /// Puts away what Native made for a task leaving the sidebar (archive). Returns how to bring it
+    /// back, or nil when there was nothing of Native's to put away. Never touches the user's own
+    /// project folder.
+    func archiveWorkspace(at folder: URL, in project: Project) async throws -> TaskWorkspaceRemoval?
 
     /// Removes what Native made for a task for good (delete), saving a checkpoint of uncommitted
-    /// work first, or forgets what it put away if the task was archived. Never touches the user's
-    /// own project folder.
+    /// work first. Never touches the user's own project folder.
     func deleteWorkspace(at folder: URL, in project: Project) async throws
 
     /// Removes everything Native made for a project's tasks, for when the project is deleted.
@@ -51,4 +40,23 @@ protocol TaskWorkspaceProvider: AnyObject {
 
 extension TaskWorkspaceProvider {
     func taskWasDeleted(_ task: SessionKey, title: String, folder: URL, in project: Project) async {}
+}
+
+/// A task's workspace that was put away, and how to restore it.
+struct TaskWorkspaceRemoval {
+    /// What was done, in a sentence: "Removed its worktree, saving uncommitted work as a checkpoint."
+    let summary: String
+    let restore: () async throws -> Void
+}
+
+/// Why a new task's workspace couldn't be made, when the user can do something about it.
+enum TaskWorkspaceError: LocalizedError {
+    /// The project is a repository without commits, so there's nothing to branch a worktree from.
+    case noCommits
+
+    var errorDescription: String? {
+        switch self {
+        case .noCommits: "This repository has no commits yet, so there's nothing to branch a worktree from."
+        }
+    }
 }

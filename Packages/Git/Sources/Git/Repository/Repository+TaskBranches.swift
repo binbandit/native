@@ -11,6 +11,12 @@ extension Repository {
         throw .failed(arguments: ["branch"], status: 1, stderr: "Every branch name for “\(base)” is taken.")
     }
 
+    /// Whether HEAD names a commit. A repository just made with `git init` has none, and nothing
+    /// can branch from it yet.
+    public func hasCommits() async throws(GitError) -> Bool {
+        try await resolve("HEAD") != nil
+    }
+
     /// Creates `name` at HEAD and switches this working tree to it, carrying uncommitted changes
     /// along, for tasks that work on a branch in the main checkout instead of a worktree.
     public func createAndSwitchBranch(_ name: String) async throws(GitError) {

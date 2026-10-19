@@ -26,7 +26,10 @@ final class StartingTask: Identifiable {
         /// Why, in the tool's own words.
         let message: String
         /// The agent wants the user to sign in first; the window's sign-in prompt is showing.
-        let needsSignIn: Bool
+        var needsSignIn = false
+        /// No worktree can be made (the repository has no commits), but the task can run in the
+        /// project folder instead.
+        var canUseProjectFolder = false
     }
 
     /// Stands in for the session's key in the sidebar and the selection until the session exists.

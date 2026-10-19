@@ -72,6 +72,13 @@ extension AppModel {
         await start(task)
     }
 
+    /// Starts a task that couldn't get a worktree in the project's own folder instead.
+    func startInProjectFolder(_ task: StartingTask) async {
+        guard task.failure?.canUseProjectFolder == true, let project = projects.project(task.project) else { return }
+        task.folder = project.url
+        await start(task)
+    }
+
     /// Gives up on a starting task. A workspace already made for it is removed; one still being
     /// made is removed once it's done.
     func discard(_ task: StartingTask) {
@@ -90,6 +97,13 @@ extension AppModel {
         let folder: URL
         do {
             folder = try await workspace
+        } catch TaskWorkspaceError.noCommits {
+            task.failure = StartingTask.Failure(
+                title: "This repository has no commits yet",
+                message:
+                    "A worktree starts from a commit, so there's nothing to make one from. Start the task in the project folder, or make a first commit and retry.",
+                canUseProjectFolder: true)
+            return
         } catch {
             fail(task, "Couldn't create the task's workspace", error.localizedDescription.withoutTerminalEscapes)
             return

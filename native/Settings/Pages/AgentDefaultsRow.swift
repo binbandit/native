@@ -8,6 +8,16 @@ extension AgentSessionDefaults.Setting {
         case .effort: "Default effort"
         }
     }
+
+    /// The choice that leaves it to the last pick, named after what a new task gets with it: the
+    /// last pick, or before there's one, the agent's own default. Shared with a project's Model row.
+    func followTitle(for agent: AgentDefinition.ID) -> String {
+        switch AgentSessionDefaults.fallback(for: agent, setting: self) {
+        case .lastUsed(let name)?: "Last used (\(name))"
+        case .agentDefault(let name)?: "Agent default (\(name))"
+        case nil: "Agent default"
+        }
+    }
 }
 
 /// The settings new tasks with one agent start with, one picker each.
@@ -70,9 +80,7 @@ private struct AgentDefaultPicker: View {
         let offered = AgentSessionDefaults.offeredChoices(for: agentID, setting: setting).map {
             SettingsSelect<String?>.Option(value: $0.value, title: $0.name)
         }
-        let lastUsed = AgentSessionDefaults.lastUsedName(for: agentID, setting: setting).map { "Last used (\($0))" }
-        var options =
-            [SettingsSelect<String?>.Option(value: nil, title: lastUsed ?? "Last used \(setting.rawValue)")] + offered
+        var options = [SettingsSelect<String?>.Option(value: nil, title: setting.followTitle(for: agentID))] + offered
         // A value set elsewhere (a launch argument, an older choice) stays visible so it can be cleared.
         if let value = value.wrappedValue, !offered.contains(where: { $0.value == value }) {
             options.append(.init(value: value, title: value))
@@ -83,7 +91,7 @@ private struct AgentDefaultPicker: View {
     var body: some View {
         SettingsSelect(
             label: "\(agentName) \(setting.title.lowercased())", selection: value, options: options,
-            width: SettingsMetrics.selectWidth + DS.Space.xxl
+            width: SettingsMetrics.selectWidth + DS.Space.xxxl * 2
         )
         .disabled(options.count == 1)
     }

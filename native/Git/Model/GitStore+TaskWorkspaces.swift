@@ -17,6 +17,8 @@ extension GitStore {
             model(for: repository.root).refresh()
             return GitTaskCheckout(folder: repository.root, branch: branch, copiedFiles: [])
         case .worktree:
+            // A worktree branches from a commit; `git init` alone leaves nothing to branch from.
+            guard try await repository.hasCommits() else { throw TaskWorkspaceError.noCommits }
             let folder = Self.taskLocation(of: repository).appending(path: code, directoryHint: .isDirectory)
             let base = try? await repository.currentBranchName()
             let worktree: Worktree

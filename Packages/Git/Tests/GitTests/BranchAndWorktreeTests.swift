@@ -148,6 +148,25 @@ struct BranchAndWorktreeTests {
                 atPath: worktree.path.appending(path: "link.txt").path(percentEncoded: false)) == "README.md")
     }
 
+    /// A new task in a repository without commits can't get a worktree: there's no commit to
+    /// branch from. `hasCommits` is what tells the app to offer the project folder instead.
+    @Test func aRepositoryWithoutCommitsHasNothingToBranchFrom() async throws {
+        let test = try await TestRepository.make(commit: false)
+        defer { test.remove() }
+        let repository = try await test.repository
+        let folder = test.folder.deletingLastPathComponent().appending(path: "task", directoryHint: .isDirectory)
+
+        #expect(try await repository.hasCommits() == false)
+        await #expect(throws: GitError.self) {
+            try await repository.addWorktree(at: folder, newBranch: "task/first")
+        }
+
+        try test.write("README.md", "# Test\n")
+        try await test.git("add", "README.md")
+        try await test.git("commit", "--quiet", "-m", "First")
+        #expect(try await repository.hasCommits())
+    }
+
     @Test func listsLocalAndRemoteBranches() async throws {
         let (test, _) = try await repositoryWithRemote()
         defer { test.remove() }

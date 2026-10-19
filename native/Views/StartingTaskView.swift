@@ -12,7 +12,17 @@ struct StartingTaskView: View {
     var body: some View {
         VStack(spacing: 0) {
             Group {
-                if let failure = task.failure {
+                if let failure = task.failure, failure.canUseProjectFolder {
+                    ErrorState(
+                        failure.title,
+                        suggestion: failure.message,
+                        primary: ErrorState.Action("Start in Project Folder") {
+                            Task { await model.startInProjectFolder(task) }
+                        },
+                        secondary: ErrorState.Action("Retry") { Task { await model.retry(task) } },
+                        layout: .pane
+                    )
+                } else if let failure = task.failure {
                     ErrorState(
                         failure.title,
                         recovery: failure.needsSignIn

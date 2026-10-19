@@ -53,6 +53,7 @@ enum LaunchMetrics {
         let micro = clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID) / 1000
         var counts: (instructions: UInt64, cycles: UInt64) = (0, 0)
         _ = withUnsafeMutableBytes(of: &counts) { threadSelfCounts?(1, $0.baseAddress, $0.count) }
+        signposter.emitEvent("Launch checkpoint", "\(label, privacy: .public)")
         logger.notice(
             "launch checkpoint \(label, privacy: .public) \(micro) us \(counts.instructions / 1000) Kinstr plugins \(pluginReads)"
         )
