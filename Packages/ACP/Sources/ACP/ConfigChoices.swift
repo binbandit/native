@@ -63,6 +63,11 @@ public struct ConfigChoices: Codable, Hashable, Sendable {
         choices[id] = nil
     }
 
+    /// Takes on `other`'s choices, which win over these where both chose an option.
+    public mutating func adopt(_ other: ConfigChoices) {
+        choices.merge(other.choices) { _, theirs in theirs }
+    }
+
     /// The order to restore the choices in: the model first, since changing it can change what the
     /// other options offer (a model's efforts), then the rest as the agent lists them, then the
     /// options it no longer lists. None when the agent lists no options at all: it hasn't said what

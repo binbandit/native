@@ -2,20 +2,42 @@ import ACP
 import Foundation
 
 // Setting a reopened session's settings back. Agents replay a loaded session's transcript, but some
-// reopen it on their defaults (codex-acp comes back on its default model and mode), so Native sets
-// back what was chosen for the session (`ConfigChoices`, kept by `SessionTitles`). Only options
-// someone changed are touched, once per load, so whatever the user or the agent changes afterwards
-// stands.
+// reopen it on their defaults (codex-acp comes back on its default model and mode, claude-agent-acp
+// on its default effort), so Native sets back what was chosen for the session (`ConfigChoices`,
+// kept by `SessionTitles`). Only options someone changed are touched, once per load, so whatever
+// the user or the agent changes afterwards stands. While it loads, the session shows the choices
+// already, so the agent's defaults never flash up first.
 extension SessionModel {
     /// Sets the chosen settings back where the agent reopened the session on others, then holds it
     /// to the organization's policy, which wins over any choice. What couldn't come back is said
     /// once, in one quiet notice.
     func restoreConfigChoices() async {
+        await setBackConfigChoices { $0.phase == .loading }
+    }
+
+    /// Takes on the settings chosen in `old`, a session this one replaces because its agent never
+    /// saved it (it went away before the first turn), so the task carries on as the user left it.
+    func adoptConfigChoices(of old: SessionModel) async {
+        let chosen = services.titles.configChoices(for: old.titleKey)
+        services.titles.updateConfigChoices(for: titleKey) { $0.adopt(chosen) }
+        await setBackConfigChoices { $0.phase != .disconnected }
+    }
+
+    /// The options to show for `reported`, the agent's: while the session loads, as restoring will
+    /// leave them; otherwise as they are.
+    func shownConfigOptions(_ reported: [ConfigOption]) -> [ConfigOption] {
+        guard phase == .loading else { return reported }
+        return services.titles.configChoices(for: titleKey)
+            .preview(reported) { !PolicyPermissionModes.forbids($0, value: $1) }
+    }
+
+    /// Sets each chosen setting back, for as long as `isOpen` holds (the agent may go away; then
+    /// reopening the session restores again).
+    private func setBackConfigChoices(while isOpen: (SessionModel) -> Bool) async {
         var notes: [String] = []
         var forbidden: [(id: String, choice: ConfigChoices.Choice)] = []
         for id in services.titles.configChoices(for: titleKey).restoreOrder(in: state.configOptions) {
-            // The agent went away; reopening the session restores again.
-            guard phase == .loading else { return }
+            guard isOpen(self) else { return }
             // Read again each time: the user may have changed it meanwhile, and an earlier change
             // (the model) can change what this option offers.
             let choices = services.titles.configChoices(for: titleKey)
