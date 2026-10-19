@@ -63,7 +63,7 @@ seed() {
     [ -f "$project/README.md" ] || printf '# Scratch project\n\nA throwaway folder for measuring Native.\n' >"$project/README.md"
     bundle=$(/usr/libexec/PlistBuddy -c "Print :CFBundleIdentifier" "$plist" 2>/dev/null) || return 0
     if [ "$fixture" = 1 ]; then
-        seed_fixture "$bundle"
+        "$root/scripts/perf/fixture.sh" "$bundle" "/private/tmp/native-perf/$name/fixture"
         return 0
     fi
     defaults read "$bundle" projects >/dev/null 2>&1 && return 0
@@ -71,47 +71,6 @@ seed() {
     defaults write "$bundle" defaultAgent codex
 }
 
-# The fixture's projects are made once; its tasks are written before every launch, since Codex
-# lists none for these folders and its listing replaces them.
-seed_fixture() {
-    local bundle=$1 root=/private/tmp/native-perf/$name/fixture
-    local names=(web api ios tools) counts=(10 8 7 5)
-    if [ ! -d "$root/tools/.git" ]; then
-        mkdir -p "$root"/{web/public,api/assets,ios/App/Assets.xcassets/AppIcon.appiconset,tools}
-        cat >"$root/web/public/favicon.svg" <<'SVG'
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5b8cff"/><stop offset="1" stop-color="#9b5bff"/></linearGradient></defs><rect width="64" height="64" rx="14" fill="url(#g)"/><path d="M16 44 L32 14 L48 44 Z" fill="#fff" opacity=".9"/><circle cx="32" cy="36" r="6" fill="#5b8cff"/></svg>
-SVG
-        cat >"$root/api/assets/logo.svg" <<'SVG'
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48"><circle cx="24" cy="24" r="22" fill="#1f9d74"/><path d="M14 25c4 6 16 6 20 0M16 18h4M28 18h4" stroke="#fff" stroke-width="3" fill="none" stroke-linecap="round"/></svg>
-SVG
-        sips -s format png -z 1024 1024 /System/Library/CoreServices/CoreTypes.bundle/Contents/Resources/GenericApplicationIcon.icns \
-            --out "$root/ios/App/Assets.xcassets/AppIcon.appiconset/icon-1024.png" >/dev/null
-        printf '{"images":[{"filename":"icon-1024.png","idiom":"universal","platform":"ios","size":"1024x1024"}],"info":{"author":"xcode","version":1}}\n' \
-            >"$root/ios/App/Assets.xcassets/AppIcon.appiconset/Contents.json"
-        for project in "${names[@]}"; do
-            printf '# %s\n' "$project" >"$root/$project/README.md"
-            git -C "$root/$project" init -q -b main
-            git -C "$root/$project" add -A
-            git -C "$root/$project" -c user.name=perf -c user.email=perf@example.com commit -qm "First commit"
-        done
-    fi
-    local projects="" catalog="" i j n=0 now
-    now=$(date +%s)
-    for i in "${!names[@]}"; do
-        local id sessions=""
-        id=$(printf '00000000-0000-4000-8000-%012d' $((i + 1)))
-        projects+="${projects:+,}{\"id\":\"$id\",\"url\":\"file://$root/${names[$i]}/\",\"host\":\"local\"}"
-        for ((j = 1; j <= counts[i]; j++)); do
-            n=$((n + 1))
-            sessions+="${sessions:+,}{\"sessionId\":\"$(printf '00000000-0000-4000-9000-%012d' "$n")\",\"cwd\":\"$root/${names[$i]}\",\"title\":\"Task $n in ${names[$i]}: tidy the module and update its tests\",\"updatedAt\":\"$(date -u -r $((now - n * 3600)) +%Y-%m-%dT%H:%M:%S.000Z)\"}"
-        done
-        catalog+="${catalog:+,}\"$id\",[{\"rawValue\":\"codex\"},[$sessions]]"
-    done
-    defaults write "$bundle" projects -data "$(printf '[%s]' "$projects" | xxd -p | tr -d '\n')"
-    defaults write "$bundle" defaultAgent codex
-    mkdir -p "$HOME/Library/Application Support/$bundle"
-    printf '[%s]' "$catalog" >"$HOME/Library/Application Support/$bundle/session-catalog.json"
-}
 seed
 
 # Every process under `pid`, itself included.
