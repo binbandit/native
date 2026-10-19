@@ -381,11 +381,10 @@ without a grammar uses the lexer for its range.
 
 Dependencies, all exact pins through SwiftPM: tree-sitter runtime 0.25.10 (MIT), SwiftTreeSitter
 0.10.0 (BSD-3-Clause), and grammars (MIT) for Swift, TypeScript and TSX, JavaScript, Python, Rust,
-Go, JSON, Bash, YAML, TOML, HTML, CSS, Markdown, C, C++, Java, Kotlin and Ruby. JavaScript, Python,
+Go, JSON, Bash, YAML, TOML, HTML, CSS, Markdown, C and Java. JavaScript, Python,
 CSS and YAML are pinned to their last releases whose Package.swift finds the external scanner
 (later ones look it up relative to the working directory and fail as a dependency). The Markdown
-and Kotlin queries derive from nvim-treesitter (Apache-2.0). `Packages/CodeThemes/NOTICE.md` lists
-them all.
+queries derive from nvim-treesitter (Apache-2.0). `Packages/CodeThemes/NOTICE.md` lists them all.
 
 Cost, measured on an arm64 Release build: the app binary grows from 70.9 MB to 94.6 MB (`__TEXT`
 32.1 MB to 54.7 MB), nearly all parse tables, which compress about tenfold (roughly 2.3 MB more to
@@ -403,9 +402,11 @@ interpolation from the string around it); the C API without a wrapper (about twi
 highlight, but our own predicate evaluation and pointer handling); SwiftTreeSitterLayer or Neon (an
 incremental editing model a transcript doesn't need); the grammars' own query bundles (TypeScript
 needs JavaScript's joined in, and their precedence varies); and an SQL grammar, left on the lexer:
-its releases don't include the generated parser, and it alone would add 10.5 MB. Proposed, for
-Brayden: leave Kotlin, C++ and Ruby on the lexer too, 9.2 MB for languages agents rarely write;
-each comes out with its line in Package.swift, its case in `TreeSitterGrammar` and its queries.
+its releases don't include the generated parser, and it alone would add 10.5 MB.
+
+2026-10-19, Brayden: Kotlin, C++ and Ruby went back to the lexer too, 9.6 MB of the app for
+languages agents rarely write (`docs/app-size.md`). Kotlin copies Java's lexer but not its grammar,
+which would misread it, and C++ uses the C-family lexer Objective-C does.
 
 ## 2026-10-18: Native's appearance is set on the app, not on views
 
