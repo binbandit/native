@@ -6,6 +6,10 @@ extension AppModel {
     func addProject(_ url: URL) async {
         let project = projects.add(url)
         focusProject(project.id)
+        // Agents that are parked list it once they've started (starting lists every project).
+        for runtime in agents where runtime.status == .idle && !catalog.hasListed(runtime.agent.id, in: project.id) {
+            Task { await ensureRunning(runtime.agent.id) }
+        }
         await refreshSessions(in: project)
     }
 
@@ -47,13 +51,31 @@ extension AppModel {
         Task { await refreshSessions(in: project) }
     }
 
+    /// Names a project in Native, open or archived; the folder keeps its own name. Nil, blank or the
+    /// folder's name goes back to the folder's. ⌘Z puts the previous name back.
+    func renameProject(_ id: Project.ID, to name: String?, undoManager: UndoManager? = nil) {
+        guard let project = projects.project(id) ?? projects.archived.first(where: { $0.id == id }) else { return }
+        let trimmed = name?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let displayName = trimmed?.isEmpty == false && trimmed != project.folderName ? trimmed : nil
+        guard displayName != project.displayName else { return }
+        projects.rename(id, to: displayName)
+        undoManager?.registerUndo(withTarget: self) { model in
+            MainActor.assumeIsolated {
+                model.renameProject(id, to: project.displayName, undoManager: undoManager)
+            }
+        }
+        undoManager?.setActionName("Rename Project")
+    }
+
     func moveProjects(fromOffsets source: IndexSet, toOffset destination: Int) {
         projects.move(fromOffsets: source, toOffset: destination)
     }
 
     /// The project new sessions go to unless the user picks one: the selected session's, else the first.
     var currentProject: Project? {
-        if let selection, let listed = catalog.lookup(selection), let project = projects.project(listed.project) {
+        if let selection, let listed = catalog.lookup(selection)?.project ?? startingTask(selection)?.project,
+            let project = projects.project(listed)
+        {
             return project
         }
         return focusedProjectID.flatMap(projects.project) ?? projects.all.first

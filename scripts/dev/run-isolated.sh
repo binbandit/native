@@ -3,6 +3,7 @@
 # change in the running app while other agents do the same.
 #
 #   scripts/dev/run-isolated.sh <name> [--no-build] [-- app arguments…]
+#   scripts/dev/run-isolated.sh <name> --build    # build only (compile checks), into the same folder
 #   scripts/dev/run-isolated.sh <name> --quit     # quit this instance and its host
 #   scripts/dev/run-isolated.sh <name> --reset    # also forget its defaults and Application Support
 #   scripts/dev/run-isolated.sh <name> --remove   # reset, then delete its build (about 6 GB); run when done
@@ -15,7 +16,7 @@
 set -euo pipefail
 
 usage() {
-    echo "usage: $0 <name> [--no-build | --quit | --reset | --remove] [-- app arguments…]" >&2
+    echo "usage: $0 <name> [--build | --no-build | --quit | --reset | --remove] [-- app arguments…]" >&2
     exit 2
 }
 
@@ -33,6 +34,7 @@ while [ $# -gt 0 ]; do
         --reset) action=reset ;;
         --remove) action=remove ;;
         --no-build) build=0 ;;
+        --build) action=build ;;
         --) shift; app_args=("$@"); break ;;
         *) usage ;;
     esac
@@ -111,6 +113,10 @@ if [ "$build" = 1 ]; then
         echo "build failed; full log: $log" >&2
         exit 1
     fi
+fi
+if [ "$action" = build ]; then
+    echo "built $name"
+    exit 0
 fi
 [ -d "$app" ] || { echo "no build at $app; run without --no-build" >&2; exit 1; }
 bundle_id >/dev/null || { echo "run without --no-build to rebuild it as $name" >&2; exit 1; }

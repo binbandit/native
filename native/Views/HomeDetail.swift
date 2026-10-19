@@ -34,7 +34,7 @@ struct HomeDetail: View {
             symbolName: runtime.agent.symbolName,
             availability: availability(of: runtime),
             remedy: remedy(for: runtime),
-            shortcut: runtime.agent.id == model.defaultAgent?.id
+            shortcut: runtime.agent.id == model.defaultAgent(in: model.currentProject)?.id
                 ? CommandRegistry.shared.keyboardShortcut(for: .sessionNew) : nil
         )
         agent.agent = runtime.agent

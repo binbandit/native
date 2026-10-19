@@ -11,7 +11,9 @@ enum FollowUpBehavior: String, CaseIterable, Identifiable, Sendable {
 
     /// The `@AppStorage` key for the user's preference.
     static let storageKey = "followUpBehavior"
-    static let defaultValue = FollowUpBehavior.queue
+    /// Steer: a message typed while the agent works is usually a correction it should see now.
+    /// Agents that can't steer queue it either way.
+    static let defaultValue = FollowUpBehavior.steer
 
     var id: Self { self }
 

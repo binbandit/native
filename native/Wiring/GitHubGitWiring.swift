@@ -3,18 +3,16 @@ import Git
 import GitHub
 
 /// Connects the Git and GitHub features, which don't know about each other: creating a pull
-/// request from the commit UI, and opening a pull request as a task in its own worktree.
+/// request from the commit UI, opening a pull request as a task in its own worktree, and finding
+/// the pull request a task's branch was checked out for.
 enum GitHubGitWiring {
     enum TaskError: LocalizedError {
         case noProject(repository: String)
-        case noAgent
 
         var errorDescription: String? {
             switch self {
             case .noProject(let repository):
-                "None of your projects is a checkout of \(repository). Add it as a project, then try again."
-            case .noAgent:
-                "No agent is ready to start a task. Check the agents at the bottom of the sidebar."
+                "None of your projects is a checkout of \(repository). Open the pull request as a task to clone it, then try again."
             }
         }
     }
@@ -46,54 +44,41 @@ enum GitHubGitWiring {
             ))
     }
 
-    /// Checks a pull request out in a fresh worktree of the project it belongs to and starts a task
-    /// there with the default agent, returning it.
+    /// Opens a pull request as a task without asking, for "Ask an Agent" in a new task: the task
+    /// already working on it, or a new checkout in the project that has its repository. Without
+    /// such a project it throws; Open as Task is where cloning one is offered.
     @discardableResult
     static func openAsTask(
         _ pullRequest: PullRequestSummary, app: AppModel, git: GitStore, gitHub: GitHubModel
-    )
-        async throws -> SessionModel
-    {
-        guard let project = await project(for: pullRequest.repository, app: app, gitHub: gitHub) else {
+    ) async throws -> SessionModel {
+        guard let reference = PullRequestReference(pullRequest) else {
             throw TaskError.noProject(repository: pullRequest.repository)
         }
-        guard let agent = app.defaultAgent?.id else { throw TaskError.noAgent }
-        let worktree = try await git.createTaskWorktree(
-            in: project.url, title: "pr \(pullRequest.number) \(pullRequest.title)", detached: true)
-        let localBranch = await localBranchName(for: pullRequest, in: project.url, git: git)
-        try await gitHub.cli().checkout(.number(pullRequest.number), in: worktree, localBranch: localBranch)
-        return try await app.startTaskSession(agent: agent, cwd: worktree)
+        let checkout = PullRequestTaskCheckout(app: app, git: git, gitHub: gitHub)
+        switch try await checkout.resolve(reference) {
+        case .existing(let task):
+            await checkout.show(task)
+            guard let session = await app.loadedSession(task.key) else {
+                throw SessionLauncher.LaunchError.agentUnavailable(task.key.agent.rawValue)
+            }
+            return session
+        case .checkout(let project):
+            return try await checkout.open(project, includeReviews: false) { _ in }
+        case .noProject:
+            throw TaskError.noProject(repository: pullRequest.repository)
+        }
+    }
+
+    /// The pull request a task's branch was checked out for, from the note Open as Task keeps with
+    /// it, so the task's badge finds it although the branch has a name of its own.
+    static func linkedPullRequest(for branch: BranchReference, git: GitStore) async -> URL? {
+        guard let repository = try? await git.requireRepository(at: branch.directory),
+            let link = try? await repository.notes(PullRequestTaskCheckout.linkNote)[branch.branch]
+        else { return nil }
+        return URL(string: link)
     }
 
     // MARK: - Helpers
-
-    private static func project(for repository: String, app: AppModel, gitHub: GitHubModel) async -> Project? {
-        for project in app.projects.all {
-            if let match = try? await gitHub.repository(of: project.url),
-                match.nameWithOwner.caseInsensitiveCompare(repository) == .orderedSame
-            {
-                return project
-            }
-        }
-        return nil
-    }
-
-    /// The pull request's own branch name, so pushes go back to it, unless a local branch already
-    /// has that name (often checked out in the main checkout, where git won't share it).
-    private static func localBranchName(
-        for pullRequest: PullRequestSummary, in folder: URL, git: GitStore
-    ) async
-        -> String
-    {
-        let fallback = "pr-\(pullRequest.number)"
-        let model = git.model(for: folder)
-        if model.repository == nil { await model.refreshNow() }
-        guard let head = pullRequest.headRefName,
-            let repository = model.repository,
-            let branches = try? await repository.branches(includingRemote: false)
-        else { return fallback }
-        return branches.contains { $0.name == head } ? fallback : head
-    }
 
     private static func template(in repository: Repository) async -> String? {
         for path in templatePaths {

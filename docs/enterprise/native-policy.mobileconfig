@@ -127,6 +127,13 @@
             <key>policy.scripts.enabled</key>
             <true/>
 
+            <!-- Task scripts (docs/scripts.md): the ones users write in Settings > Scripts and per
+                 project, and the ones repositories commit as .native/<event>.sh. -->
+            <key>policy.taskScripts.userScripts</key>
+            <true/>
+            <key>policy.taskScripts.repositoryScripts</key>
+            <false/>
+
             <!-- Labs and experiments, including plugins' experiments. -->
             <key>policy.labs.enabled</key>
             <false/>
@@ -159,6 +166,18 @@
             <dict>
                 <key>session.archive</key>
                 <string>opt+cmd+a</string>
+            </dict>
+
+            <!-- Instructions added to what Native writes with AI, by purpose: title, branchName,
+                 commitMessage, commitGrouping, pullRequest, reviewRequest, pullRequestQuestions.
+                 Native's own format rules still apply. Setting this replaces and locks the user's
+                 instructions; purposes it doesn't name get none. -->
+            <key>policy.ai.instructions</key>
+            <dict>
+                <key>branchName</key>
+                <string>Start with the Jira key, like ABC-123.</string>
+                <key>commitMessage</key>
+                <string>End the body with the Jira key on its own line.</string>
             </dict>
 
             <!-- Native's own anonymous telemetry: on, off, or user (the user decides; the default). -->

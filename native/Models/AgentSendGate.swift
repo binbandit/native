@@ -9,10 +9,23 @@ final class AgentSendGate {
     /// Set by the app once its runtimes exist.
     @ObservationIgnored weak var runtimes: AgentRuntimes?
     private var usageLimits: [AgentDefinition.ID: String] = [:]
+    /// Folders whose sessions take no new turn yet, with why, by their standardized `folderPath`.
+    private var workspaceHolds: [String: String] = [:]
 
     /// The limit's message ("Claude's usage limit resets at 3:05 PM"), or nil once it's lifted.
     func setUsageLimit(_ message: String?, for agent: AgentDefinition.ID) {
         usageLimits[agent] = message
+    }
+
+    /// Holds the turns of every session in `folder` while something prepares it, such as the
+    /// worktree's setup script: messages sent meanwhile queue. Nil lifts the hold; the caller then
+    /// lets the queued messages go (`AppModel.holdTurns(in:because:)` does both).
+    func setWorkspaceHold(_ reason: String?, for folder: URL) {
+        workspaceHolds[folder.standardizedFileURL.folderPath] = reason
+    }
+
+    func workspaceHold(for folder: URL) -> String? {
+        workspaceHolds.isEmpty ? nil : workspaceHolds[folder.standardizedFileURL.folderPath]
     }
 
     func block(for agent: AgentDefinition) -> SessionSendBlock? {

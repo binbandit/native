@@ -20,6 +20,8 @@ struct TranscriptView: View {
     /// The scroll container's width, which a legacy scroller doesn't change; nil until the container
     /// has a real size.
     @State private var containerWidth: CGFloat?
+    /// Rows the user opened, kept while they're scrolled away.
+    @State private var disclosures = TranscriptDisclosures()
 
     var body: some View {
         let items = session.state.items
@@ -91,6 +93,7 @@ struct TranscriptView: View {
     /// The rows in a centered column, as wide as the width setting allows with a margin each side.
     private func column(_ transcript: TranscriptStyleConfiguration, in containerWidth: CGFloat) -> some View {
         AnyView(style.makeBody(transcript))
+            .environment(disclosures)
             .frame(maxWidth: maxColumnWidth(in: containerWidth))
             .padding(.top, DS.Space.xl)
             .padding(.bottom, DS.Space.lg)

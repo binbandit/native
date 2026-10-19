@@ -1,3 +1,4 @@
+import AIInstructions
 import Foundation
 import FoundationModels
 import Git
@@ -36,11 +37,16 @@ struct SmartCommitPlanner {
     private static let responseTokens = 900
     private static let charactersPerToken = 3
 
+    /// The user's instructions for commit messages, and for how changes are split.
+    var messageInstructions: AIInstructionAddition?
+    var groupingInstructions: AIInstructionAddition?
+
     func plan(files: [GitCommitFile], patch: String, style: CommitStyle) async throws -> CommitPlan {
         let paths = files.map(\.path)
         guard Self.isAvailable, files.count > 1 else { return Self.fallback(paths) }
         let model = SystemLanguageModel.default
-        let instructions = Self.instructions(for: style)
+        let instructions = CommitPrompts.plan(
+            style: style, messages: messageInstructions, grouping: groupingInstructions)
         let fixed =
             try await model.tokenCount(for: Instructions(instructions))
             + model.tokenCount(for: PlanDraft.generationSchema)
@@ -77,28 +83,6 @@ struct SmartCommitPlanner {
     /// One commit per top-level folder.
     static func fallback(_ paths: [String]) -> CommitPlan {
         CommitPlan.byFolder(paths)
-    }
-
-    private static func instructions(for style: CommitStyle) -> String {
-        var lines = [
-            "You split a developer's uncommitted changes into a few logical commits, the way a careful engineer would: one coherent change per commit, with tests next to the code they test. Base everything on the diff; never invent details."
-        ]
-        if style.isConventional {
-            var convention =
-                "Subjects use Conventional Commits: \"type(scope): summary\" with type one of feat, fix, refactor, docs, test, chore, perf, style, build, ci."
-            if !style.commonScopes.isEmpty {
-                convention += " Scopes this repository uses: \(style.commonScopes.joined(separator: ", "))."
-            }
-            lines.append(convention)
-        } else {
-            lines.append("Subjects match the repository's style: a short sentence-case summary, no type prefix.")
-        }
-        if !style.examples.isEmpty {
-            lines.append(
-                "Recent subjects in this repository. Match their style only; describe the diff, not these:\n"
-                    + style.examples.map { "- \($0)" }.joined(separator: "\n"))
-        }
-        return lines.joined(separator: "\n\n")
     }
 
     private static func prompt(files: [GitCommitFile], patch: String) -> String {

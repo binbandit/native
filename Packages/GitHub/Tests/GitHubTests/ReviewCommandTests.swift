@@ -215,4 +215,27 @@ struct ReviewCommandTests {
         asked.request = "Rename it."
         #expect(asked.text.hasSuffix("Rename it."))
     }
+
+    @Test func queueAndAutoMergeNameTheHeadTheUserSaw() throws {
+        let enqueue = GitHubCommand.enqueue(pullRequestID: "PR_1", expectedHeadOid: "abc123")
+        #expect(enqueue.isMutating)
+        #expect(try body(enqueue).query.contains("enqueuePullRequest(input: $input)"))
+        #expect(try input(enqueue) == ["pullRequestId": .string("PR_1"), "expectedHeadOid": .string("abc123")])
+
+        let auto = GitHubCommand.enableAutoMerge(pullRequestID: "PR_1", method: .squash, expectedHeadOid: "abc123")
+        #expect(try body(auto).query.contains("mutation($input: EnablePullRequestAutoMergeInput!)"))
+        #expect(
+            try input(auto) == [
+                "pullRequestId": .string("PR_1"), "mergeMethod": .string("SQUASH"),
+                "expectedHeadOid": .string("abc123"),
+            ])
+
+        #expect(try input(GitHubCommand.dequeue(pullRequestID: "PR_1")) == ["id": .string("PR_1")])
+        #expect(try input(GitHubCommand.disableAutoMerge(pullRequestID: "PR_1")) == ["pullRequestId": .string("PR_1")])
+    }
+
+    @Test func adminMergeSaysSo() {
+        let command = GitHubCommand.merge(.number(9), in: .remote("a/b"), method: .squash, admin: true)
+        #expect(command.arguments == ["pr", "merge", "9", "--squash", "--admin", "--repo=a/b"])
+    }
 }

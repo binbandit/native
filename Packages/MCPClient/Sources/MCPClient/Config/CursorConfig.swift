@@ -10,13 +10,14 @@ struct CursorConfig {
     func read(projects: [URL]) -> AgentMCPConfiguration {
         var problems: [ConfigProblem] = []
         let userFile = home.appending(path: ".cursor/mcp.json")
-        var files = [ConfigFile(url: userFile, role: "User servers", exists: reader.exists(userFile))]
+        var files = [ConfigFile(url: userFile, role: "User servers", scope: .user, exists: reader.exists(userFile))]
         var servers = servers(in: userFile, scope: .user, problems: &problems)
         for project in projects {
             let file = project.appending(path: ".cursor/mcp.json")
             files.append(
                 ConfigFile(
-                    url: file, role: "Project servers for \(project.lastPathComponent)", exists: reader.exists(file)))
+                    url: file, role: "Project servers for \(project.lastPathComponent)", scope: .project(project),
+                    exists: reader.exists(file)))
             servers += self.servers(in: file, scope: .project(project), problems: &problems)
         }
         return AgentMCPConfiguration(format: .cursor, servers: servers, files: files, problems: problems)

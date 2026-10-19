@@ -30,7 +30,11 @@ extension Repository {
             ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"], readOnly: true,
             acceptingStatus: [0, 128])
         if upstream.status == 0 {
-            try await run(["push"])
+            if let target = try await renamedUpstream(of: branch) {
+                try await run(["push", target.remote, "HEAD:\(target.merge)"])
+            } else {
+                try await run(["push"])
+            }
             return
         }
         let remote = try await pushRemote(for: branch)
@@ -55,6 +59,24 @@ extension Repository {
         if remotes.contains("origin") { return "origin" }
         guard let first = remotes.first else { throw .noRemote }
         return first
+    }
+
+    /// The upstream of a branch that tracks one with another name (`pr-12-fix` tracking `origin/fix`,
+    /// a pull request opened as a task) and pushes where it pulls from. git's default
+    /// `push.default=simple` refuses a bare `git push` there, so the push names the branch. `nil`
+    /// for the usual same-named upstream, and when a push remote of its own sends pushes elsewhere.
+    private func renamedUpstream(of branch: String) async throws(GitError) -> (remote: String, merge: String)? {
+        func config(_ key: String) async throws(GitError) -> String? {
+            let output = try await run(["config", "--get", key], readOnly: true, acceptingStatus: [0, 1])
+            let value = output.text.trimmingCharacters(in: .whitespacesAndNewlines)
+            return output.status == 0 && !value.isEmpty ? value : nil
+        }
+        guard let remote = try await config("branch.\(branch).remote"), remote != ".",
+            let merge = try await config("branch.\(branch).merge"), merge != "refs/heads/\(branch)"
+        else { return nil }
+        var pushRemote = try await config("branch.\(branch).pushRemote")
+        if pushRemote == nil { pushRemote = try await config("remote.pushDefault") }
+        return (pushRemote ?? remote) == remote ? (remote, merge) : nil
     }
 
     /// The names of the configured remotes, e.g. `["origin"]`.

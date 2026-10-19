@@ -107,6 +107,18 @@ struct CommandTests {
             ])
     }
 
+    @Test func closeReopenAndCommentNameTheRepository() {
+        let close = GitHubCommand.close(.number(7), in: .remote("a/b"))
+        #expect(close.arguments == ["pr", "close", "7", "--repo=a/b"])
+        #expect(close.isMutating)
+        #expect(GitHubCommand.reopen(.number(7), in: .remote("a/b")).arguments == ["pr", "reopen", "7", "--repo=a/b"])
+        let comment = GitHubCommand.comment("-- looks good", on: .number(7), in: .remote("a/b"))
+        // The body goes through stdin, so one starting with "-" can't be read as a flag.
+        #expect(comment.arguments == ["pr", "comment", "7", "--body-file=-", "--repo=a/b"])
+        #expect(comment.input == Data("-- looks good".utf8))
+        #expect(comment.isMutating)
+    }
+
     @Test func mergeIsExplicitAboutMethodAndHead() {
         let command = GitHubCommand.merge(
             .number(9), in: .remote("a/b"), method: .squash, deleteBranch: true, matchHeadCommit: "abc123")

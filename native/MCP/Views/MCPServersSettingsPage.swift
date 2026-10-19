@@ -49,6 +49,7 @@ enum MCPEditorTarget: Identifiable, Hashable {
 
 struct MCPServersSettingsPage: View {
     @Environment(PluginRegistry.self) private var registry
+    @Environment(SettingsPresentation.self) private var presentation
     @Environment(\.undoManager) private var undoManager
     @State private var editing: MCPEditorTarget?
     @State private var pendingCommand: AgentCLICommand?
@@ -117,6 +118,8 @@ struct MCPServersSettingsPage: View {
             agentsSection(library)
         }
         .task { if library.lastRead == nil { await library.readConfigurations() } }
+        // A project's settings link here to show its switches.
+        .onAppear { if let project = presentation.takeProjectScope() { projectPath = ProjectPath.key(project) } }
         .sheet(item: $editing) { target in
             MCPServerEditor(library: library, target: target)
         }
@@ -200,7 +203,7 @@ struct MCPServersSettingsPage: View {
                     }
                 }
             }
-            MCPConfigFilesFooter(library: library)
+            MCPConfigFoldersSection(library: library, project: project)
         }
     }
 

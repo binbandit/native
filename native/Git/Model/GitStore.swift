@@ -14,8 +14,12 @@ final class GitStore {
     /// Told about every push Native makes, with the checkout it ran in and the branch, e.g. for
     /// "branch pushed" automations. Set by the app's wiring so Git doesn't know who listens.
     @ObservationIgnored var onBranchPushed: (@MainActor (_ project: URL, _ branch: String) -> Void)?
-    /// Setup of task worktrees, by worktree folder, for the task's setup notice.
-    var setupRuns: [URL: GitSetupRun] = [:]
+    /// Told about each task worktree Native makes, once its env files are copied, so its setup
+    /// scripts can start. Set by the app's wiring so Git doesn't know who runs them.
+    @ObservationIgnored var onTaskWorktreeCreated: (@MainActor (GitTaskWorktree) -> Void)?
+    /// Awaited before Native removes a task worktree, for its teardown scripts. It never stops the
+    /// removal.
+    @ObservationIgnored var beforeRemovingTaskWorktree: (@MainActor (GitTaskWorktree) async -> Void)?
 
     @ObservationIgnored private let environmentProvider: EnvironmentProvider
     /// Builds git for the host the projects are on; a client passes one that runs on its host.
@@ -67,13 +71,10 @@ final class GitStore {
 
     /// Gives a new task its own worktree of the repository at `folder`, on a new branch from its
     /// current HEAD, and returns the worktree's folder to run the session in.
-    /// `detached` skips the branch, for checking a pull request out in the worktree.
-    func createTaskWorktree(
-        in folder: URL, title: String, branchPrefix: String = "", detached: Bool = false
-    ) async throws -> URL {
+    func createTaskWorktree(in folder: URL, title: String, branchPrefix: String = "") async throws -> URL {
         let repository = try await requireRepository(at: folder)
         let worktree = try await repository.createWorktree(
-            forTask: title, branchPrefix: branchPrefix, detached: detached)
+            forTask: title, branchPrefix: branchPrefix, in: Self.worktreesBase(of: repository))
         return worktree.path
     }
 
@@ -83,11 +84,11 @@ final class GitStore {
         let repository = try await requireRepository(at: folder)
         let main = try await repository.worktrees().first(where: \.isMain)?.path ?? repository.root
         let branch = try await repository.status().branch.name
+        await beforeRemovingTaskWorktree?(GitTaskWorktree(folder: repository.root, projectRoot: main, branch: branch))
         let checkpoint = try await repository.removeWorktree(at: repository.root, force: true)
         models.removeValue(forKey: folder.standardizedFileURL)
-        setupRuns[folder.standardizedFileURL] = nil
         var archivedBranch = false
-        if settings.deletesBranchOnArchive, let branch {
+        if settings.deletesBranchOnArchive(forProjectAt: main), let branch {
             // The checkpoint, if any, sits on the branch's tip, so archiving keeps both reachable.
             archivedBranch = (try? await requireRepository(at: main).archiveBranch(branch)) != nil
         }
@@ -102,7 +103,12 @@ final class GitStore {
             throw GitError.detachedHead
         }
         let main = try await requireRepository(at: removed.mainRoot)
-        if removed.archivedBranch {
+        var restoresBranch = removed.archivedBranch
+        // Clean Up Merged may have deleted the branch since, keeping a copy the same way.
+        if !restoresBranch, try await main.hasArchivedBranch(branch), try await !main.hasBranch(branch) {
+            restoresBranch = true
+        }
+        if restoresBranch {
             try await main.restoreArchivedBranch(branch)
         }
         return try await main.restoreWorktree(at: removed.path, branch: branch, from: removed.checkpoint).path

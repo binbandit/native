@@ -102,6 +102,11 @@ final class GhosttySurfaceView: NSView, TerminalSurface {
         }
     }
 
+    func interrupt() {
+        // Written to the pty as typed, unlike `ghostty_surface_text`, which pastes.
+        perform(binding: #"text:\x03"#)
+    }
+
     func close() {
         if let surface {
             ghostty_surface_free(surface)
@@ -131,6 +136,12 @@ final class GhosttySurfaceView: NSView, TerminalSurface {
         case GHOSTTY_ACTION_SHOW_CHILD_EXITED:
             let runtime = Duration.milliseconds(Int64(clamping: action.action.child_exited.timetime_ms))
             events?.surface(id, didChangeStatus: TerminalStatus(exitedAfter: runtime))
+            return true
+        case GHOSTTY_ACTION_COMMAND_FINISHED:
+            let finished = action.action.command_finished
+            events?.surface(
+                id, didFinishCommandWith: Int32(finished.exit_code),
+                after: .nanoseconds(Int64(clamping: finished.duration)))
             return true
         case GHOSTTY_ACTION_CLOSE_WINDOW, GHOSTTY_ACTION_CLOSE_TAB:
             requestClose()

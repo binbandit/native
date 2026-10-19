@@ -1,9 +1,9 @@
 import ACP
 import SwiftUI
 
-/// The "…" chip that takes the controls the row has no room for: Plan Mode, the agent's other
-/// settings and the keyboard shortcuts, and at the tightest the model and autonomy too. The model
-/// picker opens from it then, so ⇧⌘E still has somewhere to show it.
+/// The "…" chip that takes the controls the row has no room for: Plan Mode and the agent's other
+/// settings, and at the tightest the model and autonomy too, plus the keyboard shortcuts (Help ▸
+/// Keyboard Shortcuts). The model picker opens from it then, so ⇧⌘E still has somewhere to show it.
 struct ComposerMoreMenu: View {
     let settings: ComposerSettings
     /// The model and autonomy are in the menu too (the row's `minimal` density).
@@ -12,7 +12,8 @@ struct ComposerMoreMenu: View {
     let onSet: (SelectSetting, String) -> Void
     let onTogglePlan: () -> Void
 
-    @State private var isShowingShortcuts = false
+    @Environment(CommandRegistry.self) private var commands
+    @FocusedCommandContext private var context
 
     var body: some View {
         Menu {
@@ -24,7 +25,6 @@ struct ComposerMoreMenu: View {
                 }
                 if let autonomy = settings.autonomy, !settings.autonomyLevels.isEmpty {
                     AutonomyLevelPicker(setting: autonomy, levels: settings.autonomyLevels, onSet: onSet)
-                        .disabled(settings.isAutonomySuspended)
                 }
                 Divider()
             }
@@ -39,7 +39,9 @@ struct ComposerMoreMenu: View {
                 }
             }
             Divider()
-            Button("Keyboard Shortcuts", systemImage: "questionmark") { isShowingShortcuts = true }
+            Button("Keyboard Shortcuts", systemImage: "keyboard") {
+                commands.perform(.helpKeyboardShortcuts, in: context)
+            }
         } label: {
             Label("More Controls", systemImage: "ellipsis")
                 .labelStyle(.iconOnly)
@@ -56,9 +58,6 @@ struct ComposerMoreMenu: View {
                 isModelPickerOpen = false
             }
             .dsPopoverBackground()
-        }
-        .sheet(isPresented: $isShowingShortcuts) {
-            KeyboardShortcutsView()
         }
     }
 }

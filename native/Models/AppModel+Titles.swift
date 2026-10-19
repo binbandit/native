@@ -21,7 +21,11 @@ extension AppModel {
             let projectID = catalog.lookup(event.key)?.project, let project = projects.project(projectID)
         else { return }
         titledWorkspaces.insert(event.key)
-        await provider.taskDidGetTitle(event.title, workspace: event.folder, in: project)
+        let request = sessions.session(event.key)?.state.items.lazy.compactMap { item -> String? in
+            guard case .message(let message) = item, message.role == .user else { return nil }
+            return message.text
+        }.first
+        await provider.taskDidGetTitle(event.title, request: request, workspace: event.folder, in: project)
     }
 
     /// Gives the session the user's own title; an empty one goes back to the automatic title.

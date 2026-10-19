@@ -114,6 +114,32 @@ struct CLITests {
         #expect(command.arguments.contains("--head=fix"))
     }
 
+    @Test func closeReopenAndCommentRunOnceEach() async throws {
+        let runner = FakeRunner { _ in FakeRunner.success(Data()) }
+        let cli = GitHubCLI(environment: environment, runner: runner)
+        try await cli.close(.number(3), in: .remote("binbandit/test-repo"))
+        try await cli.reopen(.number(3), in: .remote("binbandit/test-repo"))
+        try await cli.comment("Thanks!", on: .number(3), in: .remote("binbandit/test-repo"))
+        #expect(
+            runner.commands.map { Array($0.arguments.prefix(2)) } == [
+                ["pr", "close"], ["pr", "reopen"], ["pr", "comment"],
+            ])
+        #expect(runner.commands.last?.standardInput == Data("Thanks!".utf8))
+    }
+
+    @Test func closeFailureKeepsGhsReason() async {
+        let runner = FakeRunner { _ in
+            FakeRunner.failure(
+                1, "GraphQL: binbandit does not have the correct permissions to execute `ClosePullRequest`")
+        }
+        await #expect(
+            throws: GitHubError.failed(
+                exitCode: 1, "GraphQL: binbandit does not have the correct permissions to execute `ClosePullRequest`")
+        ) {
+            try await GitHubCLI(environment: environment, runner: runner).close(.number(3), in: .remote("a/b"))
+        }
+    }
+
     @Test func createFailureKeepsGhsReason() async {
         let runner = FakeRunner { _ in
             FakeRunner.failure(1, #"a pull request for branch "fix" into branch "main" already exists"#)

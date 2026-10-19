@@ -394,6 +394,10 @@ protocol NativePlugin: Sendable {
 }
 ```
 
+A titler gets the user's own instructions for titles (Settings ▸ AI Instructions) in
+`TitleRequest.instructions` and adds them after its own rules with `AIInstructionAddition.applied(to:)`,
+so they change a title's style but never its format.
+
 Every requirement but `manifest` has a default. `SessionContext` describes a session: Native's own
 `clientID` (assigned before the agent creates the session, so per-session resources key by it),
 the agent, the agent's `sessionID` once it exists, `cwd`, `title`, and `parentID` for subagents.

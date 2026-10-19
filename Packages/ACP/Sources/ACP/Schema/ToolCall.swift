@@ -44,14 +44,40 @@ public struct ToolCallLocation: Decodable, Hashable, Sendable {
 public struct FileDiff: Hashable, Sendable {
     public var path: String
     /// `nil` when the tool creates the file.
-    public var oldText: String?
-    public var newText: String
+    public let oldText: String?
+    public let newText: String
+    /// Worked out once, when the diff arrives (decoded off the main thread). Turn summaries count
+    /// every edit of a session each time its transcript updates, and diffing them all again then
+    /// took most of the main thread in a long session.
+    private let counts: LineCounts
+
+    private struct LineCounts: Hashable, Sendable {
+        var added: Int
+        var removed: Int
+    }
 
     /// For diffs a client computes itself, such as a file's uncommitted changes.
     public init(path: String, oldText: String?, newText: String) {
         self.path = path
         self.oldText = oldText
         self.newText = newText
+        counts = Self.count(oldText: oldText, newText: newText)
+    }
+
+    /// Lines added and removed, counted the way a line diff draws them.
+    public var lineCounts: (added: Int, removed: Int) {
+        (counts.added, counts.removed)
+    }
+
+    private static func count(oldText: String?, newText: String) -> LineCounts {
+        func lines(_ text: String) -> [Substring] {
+            var lines = text.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
+            // A trailing newline doesn't start an extra empty line.
+            if lines.last?.isEmpty == true { lines.removeLast() }
+            return lines
+        }
+        let difference = lines(newText).difference(from: oldText.map(lines) ?? [])
+        return LineCounts(added: difference.insertions.count, removed: difference.removals.count)
     }
 }
 

@@ -119,10 +119,16 @@ private struct NavItem: View {
         let shape = RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
         Button(action: action) {
             HStack(spacing: DS.Space.lg) {
-                Image(systemName: pane.systemImage)
-                    .font(.system(size: SettingsMetrics.navGlyph, weight: .thin))
-                    .foregroundStyle(isSelected || isHovered ? Color.dsTextPrimary : Color.dsTextSecondary)
-                    .frame(width: SettingsMetrics.navIcon, height: SettingsMetrics.navIcon)
+                Group {
+                    if let navIcon = pane.navIcon {
+                        navIcon()
+                    } else {
+                        Image(systemName: pane.systemImage)
+                            .font(.system(size: SettingsMetrics.navGlyph, weight: .thin))
+                            .foregroundStyle(isSelected || isHovered ? Color.dsTextPrimary : Color.dsTextSecondary)
+                    }
+                }
+                .frame(width: SettingsMetrics.navIcon, height: SettingsMetrics.navIcon)
                 Text(pane.title)
                     .settingsText(isSelected ? .bodyMedium : .body)
                     .foregroundStyle(isSelected ? Color.dsTextPrimary : Color.dsTextSecondary)

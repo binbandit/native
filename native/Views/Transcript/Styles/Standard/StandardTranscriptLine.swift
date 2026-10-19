@@ -1,8 +1,9 @@
 import ACP
 import SwiftUI
 
-/// One line of the standard transcript: a row, an earlier turn's folded tool work, a finished
-/// turn's footer, or the files-changed card after the latest turn.
+/// One line of the standard transcript: a row, a long run of tool work condensed into one list,
+/// an earlier turn's folded tool work, a finished turn's footer, or the files-changed card after
+/// the latest turn.
 struct StandardTranscriptLine: Identifiable {
     enum Kind {
         /// A transcript row and the index of its first item, which times reasoning.
@@ -11,6 +12,8 @@ struct StandardTranscriptLine: Identifiable {
         /// `itemIndex`. A long reply is a line per section, so the lazy stack lays out and draws only
         /// the sections on screen, and while it streams only the last one changes.
         case replySection(String, isFirst: Bool, itemIndex: Int)
+        /// More tool calls in a row than fit on screen, as one condensed list (`ToolRunView`).
+        case activityRun(TranscriptActivityRun)
         /// An earlier turn's tool work as one line ("Explored 6 files, edited 3 files").
         case fold(TranscriptTurn, TurnSummary, isUnfolded: Bool)
         /// How a finished turn went: how it ended, how long it took, what it changed, its agents.
@@ -29,7 +32,7 @@ struct StandardTranscriptLine: Identifiable {
     private var isDense: Bool {
         switch kind {
         case .row(let row, _): row.isToolActivity
-        case .fold: true
+        case .fold, .activityRun: true
         case .replySection, .footer, .changes, .usageLimit: false
         }
     }
@@ -75,15 +78,26 @@ struct StandardTranscriptLine: Identifiable {
             let folds = folding && !isLatest && turnRows.count(where: { $0.row.isFoldableActivity }) > 1
             let isUnfolded = unfolded.contains(turn.id)
             var placedFold = false
-            for (row, index) in turnRows {
+            var position = turnRows.startIndex
+            while position < turnRows.endIndex {
+                let (row, index) = turnRows[position]
                 if folds, row.isFoldableActivity {
                     if !placedFold {
                         lines.append(Self(id: "fold-\(turn.id)", kind: .fold(turn, summary, isUnfolded: isUnfolded)))
                         placedFold = true
                     }
-                    guard isUnfolded else { continue }
+                    guard isUnfolded else {
+                        position += 1
+                        continue
+                    }
+                }
+                if let run = TranscriptActivityRun(rows: turnRows[position...], in: state) {
+                    lines.append(Self(id: run.id, kind: .activityRun(run)))
+                    position += run.rowCount
+                    continue
                 }
                 lines += Self.lines(for: row, itemIndex: index)
+                position += 1
             }
             if let limitStop {
                 lines.append(Self(id: "limit-\(turn.id)", kind: .usageLimit(limitStop, isLatestTurn: isLatest)))
@@ -129,7 +143,8 @@ struct StandardTranscriptLine: Identifiable {
         // A reply's later sections space themselves, as in the reply as a whole.
         case .replySection(_, isFirst: false, _): 0
         case .footer, .changes: DS.Space.md
-        case .row, .replySection, .fold, .usageLimit: previous.isDense && next.isDense ? DS.Space.xxs : DS.Space.xl
+        case .row, .replySection, .fold, .activityRun, .usageLimit:
+            previous.isDense && next.isDense ? DS.Space.xxs : DS.Space.xl
         }
     }
 }

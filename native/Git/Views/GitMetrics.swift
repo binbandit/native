@@ -32,10 +32,9 @@ nonisolated enum GitMetrics {
     static let checkboxGlyph: CGFloat = 9
     /// Where `TextEditor` starts its text (NSTextView's line fragment padding), for placeholders.
     static let textEditorInset: CGFloat = 5
-    /// Settings fields and the setup script editor.
+    /// Settings fields.
     static let prefixFieldWidth: CGFloat = 140
     static let patternsFieldWidth: CGFloat = 200
-    static let scriptEditorHeight: CGFloat = 180
     /// The smart commit sheet.
     static let smartCommitWidth: CGFloat = 560
     static let smartCommitHeight: CGFloat = 620

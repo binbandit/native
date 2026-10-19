@@ -12,7 +12,10 @@ extension Repository {
     public func addWorktree(
         at path: URL, newBranch branch: String, startPoint: String = "HEAD"
     ) async throws(GitError) -> Worktree {
-        try await run(["worktree", "add", "-b", branch, "--", path.path(percentEncoded: false), startPoint])
+        try await run(
+            Self.parallelCheckout + [
+                "worktree", "add", "-b", branch, "--", path.path(percentEncoded: false), startPoint,
+            ])
         return try await requireListedWorktree(at: path)
     }
 
@@ -47,10 +50,39 @@ extension Repository {
             }
             do {
                 if detached {
-                    try await run(["worktree", "add", "--detach", "--", path.path(percentEncoded: false), startPoint])
+                    try await run(
+                        Self.parallelCheckout + [
+                            "worktree", "add", "--detach", "--", path.path(percentEncoded: false), startPoint,
+                        ])
                     return try await requireListedWorktree(at: path)
                 }
                 return try await addWorktree(at: path, newBranch: branch, startPoint: startPoint)
+            } catch .failed(_, _, let stderr) where stderr.contains("already exists") {
+                // A folder left at that path by something else; try the next name.
+                continue
+            }
+        }
+        throw .failed(arguments: ["worktree", "add"], status: 1, stderr: "Every worktree name for “\(slug)” is taken.")
+    }
+
+    /// Checks out `branch`, which must exist, in a new task worktree at
+    /// `<location>/<repository>/<folderName>`, numbered like `createWorktree(forTask:)` when that
+    /// folder is taken.
+    public func createWorktree(
+        checkingOut branch: String, folderName: String, in location: URL? = nil
+    ) async throws(GitError) -> Worktree {
+        let slug = Worktree.slug(folderName)
+        let base = location ?? Worktree.defaultLocation(home: git.environment["HOME"])
+        let repositoryFolder = base.appending(path: Worktree.slug(name, maxLength: 60), directoryHint: .isDirectory)
+        let existing = Set(try await worktrees().map { Self.spelling(of: $0.path) })
+        for attempt in 1...100 {
+            let path = repositoryFolder.appending(
+                path: attempt == 1 ? slug : "\(slug)-\(attempt)", directoryHint: .isDirectory)
+            guard !existing.contains(Self.spelling(of: path)) else { continue }
+            do {
+                try await run(
+                    Self.parallelCheckout + ["worktree", "add", "--", path.path(percentEncoded: false), branch])
+                return try await requireListedWorktree(at: path)
             } catch .failed(_, _, let stderr) where stderr.contains("already exists") {
                 // A folder left at that path by something else; try the next name.
                 continue
@@ -103,7 +135,7 @@ extension Repository {
     public func restoreWorktree(
         at path: URL, branch: String, from checkpoint: Checkpoint?
     ) async throws(GitError) -> Worktree {
-        try await run(["worktree", "add", "--", path.path(percentEncoded: false), branch])
+        try await run(Self.parallelCheckout + ["worktree", "add", "--", path.path(percentEncoded: false), branch])
         let worktree = try await requireListedWorktree(at: path)
         if let checkpoint, let repository = try await git.repository(at: worktree.path) {
             try await repository.restore(checkpoint)
@@ -112,6 +144,11 @@ extension Repository {
     }
 
     // MARK: - Helpers
+
+    /// Checks a new worktree out with a worker per core instead of one file at a time: on a large
+    /// repository (96,000 files) that halves `worktree add`, from about 21 s to 10 s. Git falls back
+    /// to one at a time where it has to (files with smudge filters, small checkouts).
+    static let parallelCheckout = ["-c", "checkout.workers=0"]
 
     /// Local and remote branch names; remote ones count so a first push never lands on someone
     /// else's branch.

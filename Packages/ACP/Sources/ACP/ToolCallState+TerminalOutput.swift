@@ -16,3 +16,14 @@ extension ToolCallState {
         return .object(fields)
     }
 }
+
+extension ToolCallState {
+    /// How the command exited, when the agent says: codex-acp 2.2.2 puts it in
+    /// `_meta.terminal_exit.exit_code` for a command it ran in a terminal and in
+    /// `rawOutput.exit_code` for one it reports as a read or search.
+    public var exitCode: Int? {
+        let value = meta?["terminal_exit"]?["exit_code"] ?? rawOutput?["exit_code"]
+        guard case .number(let number)? = value else { return nil }
+        return Int(exactly: number)
+    }
+}

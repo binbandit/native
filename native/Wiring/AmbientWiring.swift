@@ -4,9 +4,11 @@ import SwiftUI
 /// only holds them and `RootView` only shows the bar.
 enum AmbientWiring {
     /// The status bar's items. Kept minimal by default: what's urgent (limits, tasks needing you)
-    /// and what's worth a glance (keep awake, memory and CPU); the rest is a right-click away.
+    /// and what's worth a glance (keep awake, memory and CPU), with help at the far end; the rest is
+    /// a right-click away.
     static func statusBar(
-        model: AppModel, keepAwake: KeepAwakeController, settings: SettingsPresentation
+        model: AppModel, keepAwake: KeepAwakeController, settings: SettingsPresentation,
+        shortcutsHelp: KeyboardShortcutsHelp
     ) -> StatusBarRegistry {
         let registry = StatusBarRegistry()
         registry.register(
@@ -17,6 +19,7 @@ enum AmbientWiring {
         registry.register(KeepAwakeStatusItem(controller: keepAwake))
         registry.register(ResourcesStatusItem(source: model))
         registry.register(MCPStatusItem(model: model) { settings.open(.mcpServers) }, isVisibleByDefault: false)
+        registry.register(HelpStatusItem(help: shortcutsHelp))
         return registry
     }
 

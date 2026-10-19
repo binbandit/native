@@ -159,11 +159,31 @@ extension GitHubCommand {
     /// isn't merged unseen; and a `.remote` location, so `deleteBranch` leaves local checkouts alone.
     public static func merge(
         _ pullRequest: PullRequestSelector, in location: RepositoryLocation, method: MergeMethod,
-        deleteBranch: Bool = false, matchHeadCommit: String? = nil
+        deleteBranch: Bool = false, matchHeadCommit: String? = nil, admin: Bool = false
     ) -> GitHubCommand {
         var arguments = ["pr", "merge", pullRequest.argument, "--\(method.rawValue)"]
         if deleteBranch { arguments.append("--delete-branch") }
+        if admin { arguments.append("--admin") }
         if let matchHeadCommit { arguments.append("--match-head-commit=\(matchHeadCommit)") }
         return GitHubCommand(arguments, in: location, isMutating: true, timeout: .seconds(120))
+    }
+
+    /// Closes without merging. The branch stays, so it can be reopened.
+    public static func close(_ pullRequest: PullRequestSelector, in location: RepositoryLocation) -> GitHubCommand {
+        GitHubCommand(["pr", "close", pullRequest.argument], in: location, isMutating: true)
+    }
+
+    public static func reopen(_ pullRequest: PullRequestSelector, in location: RepositoryLocation) -> GitHubCommand {
+        GitHubCommand(["pr", "reopen", pullRequest.argument], in: location, isMutating: true)
+    }
+
+    /// A comment on the conversation. The body goes through stdin, so its length and content don't
+    /// matter.
+    public static func comment(
+        _ body: String, on pullRequest: PullRequestSelector, in location: RepositoryLocation
+    ) -> GitHubCommand {
+        GitHubCommand(
+            ["pr", "comment", pullRequest.argument, "--body-file=-"], in: location, input: Data(body.utf8),
+            isMutating: true)
     }
 }

@@ -14,7 +14,9 @@ struct TaskPullRequestBadge: View {
 
     var body: some View {
         let reference = BranchReference(directory: directory, branch: branch)
-        Group {
+        // A real container, not a Group: modifiers on an empty Group apply to no views, so the
+        // lookup would never start for a branch with nothing cached yet.
+        ZStack {
             if let pullRequest = model.pullRequest(for: reference) {
                 PullRequestBadge(pullRequest: pullRequest, style: style)
             }

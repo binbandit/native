@@ -1,9 +1,9 @@
 import ACP
 import Foundation
 
-/// How a tool call reads as a single transcript row: a verb in
-/// secondary text, the subject after it in tertiary, a per-tool icon, and per-tool failure wording.
-/// The verb's tense follows the call: "Reading" while it runs, "Read" once it's done.
+/// How a tool call reads as a single transcript row: a verb in secondary text, the subject after it
+/// in tertiary, its category's glyph (`ToolCategory`, the same for every agent), and per-tool
+/// failure wording. The verb's tense follows the call: "Reading" while it runs, "Read" once it's done.
 ///
 /// Claude Code names its tools (`call.name`), so known tools get tailored rows; other agents fall
 /// back to the ACP kind and the agent's own title.
@@ -32,7 +32,6 @@ struct ToolPresentation {
         case diff
     }
 
-    var symbol: String
     var verbs: ToolVerb?
     var subject: String
     var subtitle: String?
@@ -44,9 +43,16 @@ struct ToolPresentation {
     var showsStatusIcon = false
     /// Where the call is, which picks the verb's tense.
     var phase = ToolPhase.completed
+    var glyph = DSToolGlyph.other
 
     var verb: String? {
         verbs?.form(for: phase)
+    }
+
+    /// Why the call failed, in a word or two: the exit status when the agent reports one.
+    func failureText(exitCode: Int?) -> String {
+        guard let exitCode, exitCode != 0 else { return failureLabel }
+        return "Exit \(exitCode)"
     }
 }
 
@@ -77,12 +83,14 @@ struct ToolVerb {
     static let delete = ToolVerb(base: "Delete", progressive: "Deleting", past: "Deleted")
     static let grep = ToolVerb(base: "Grep for", progressive: "Grepping for", past: "Grepped for")
     static let search = ToolVerb(base: "Search", progressive: "Searching", past: "Searched")
+    static let searchTheWeb = search.appending("the web for")
 }
 
 extension ToolPresentation {
     init(_ call: ToolCallState) {
         self.init(describing: call)
         phase = ToolPhase(call)
+        glyph = call.category.glyph
     }
 
     private init(describing call: ToolCallState) {
@@ -95,49 +103,46 @@ extension ToolPresentation {
                 if case .number(let number) = value { Int(number) } else { nil }
             }
             self.init(
-                symbol: "puzzlepiece.extension", subject: "\(mcp.server.titleCased) · \(mcp.tool.sentenceCased)",
+                subject: "\(mcp.server.titleCased) · \(mcp.tool.sentenceCased)",
                 subtitle: line.map { "script line \($0)" }, body: .mcp(rawName: mcp.rawName))
             return
         }
 
         switch name {
         case "Read":
-            self.init(
-                symbol: "book", verbs: .read, subject: Self.readSubject(input) ?? call.title.dropping(prefix: "Read "))
+            self.init(verbs: .read, subject: Self.readSubject(input) ?? call.title.dropping(prefix: "Read "))
         case "Edit", "MultiEdit", "Write", "NotebookEdit":
             self = .fileChange(call)
         case "Bash":
             let command = call.shellCommand
             if let description = input?["description"]?.stringValue, !description.isEmpty {
-                self.init(symbol: "terminal", subject: description.capitalizingFirstLetter)
+                self.init(subject: description.capitalizingFirstLetter)
             } else {
-                self.init(
-                    symbol: "terminal", subject: command ?? call.title, subjectStyle: command == nil ? .plain : .command
-                )
+                self.init(subject: command ?? call.title, subjectStyle: command == nil ? .plain : .command)
             }
             failureLabel = "Command failed"
             body = .command(command ?? call.title)
         case "Grep":
             let pattern = input?["pattern"]?.stringValue.map { "\"\($0)\"" }
             self.init(
-                symbol: "magnifyingglass", verbs: .grep,
+                verbs: .grep,
                 subject: Self.join(pattern, in: input?["path"]?.stringValue) ?? call.title, body: .lines)
         case "Glob":
             let pattern = input?["pattern"]?.stringValue
             self.init(
-                symbol: "doc.text.magnifyingglass", verbs: ToolVerb.search.appending("files for"),
+                verbs: ToolVerb.search.appending("files for"),
                 subject: Self.join(pattern, in: input?["path"]?.stringValue) ?? call.title, body: .lines)
         case "WebSearch":
             let query = input?["query"]?.stringValue.map { "\"\($0)\"" }
-            self.init(symbol: "globe", verbs: ToolVerb.search.appending("the web for"), subject: query ?? call.title)
+            self.init(verbs: .searchTheWeb, subject: query ?? call.title)
         case "WebFetch":
-            self.init(symbol: "globe", subject: "Fetch Content", subtitle: input?["url"]?.stringValue)
+            self.init(subject: "Fetch Content", subtitle: input?["url"]?.stringValue)
         case "Task", "Agent":
             let description = input?["description"]?.stringValue ?? call.title
-            self.init(symbol: "sparkles", subject: description, subjectStyle: .emphasized)
+            self.init(subject: description, subjectStyle: .emphasized)
             showsStatusIcon = true
         case "TodoWrite":
-            self.init(symbol: "checklist", subject: "Updated plan", subjectStyle: .emphasized)
+            self.init(subject: "Updated plan", subjectStyle: .emphasized)
         default:
             self = .byKind(call)
         }
@@ -153,7 +158,6 @@ extension ToolPresentation {
         let lines = stats.added + stats.removed
         let path = diffs.first?.path ?? call.rawInput?["file_path"]?.stringValue ?? call.locations.first?.path
         return ToolPresentation(
-            symbol: isNewFile ? "doc.badge.plus" : "pencil.line",
             verbs: verb.appending(lines > 0 ? "\(lines) \(lines == 1 ? "line" : "lines")" : "file"),
             subject: path.map { ($0 as NSString).lastPathComponent } ?? call.title,
             subjectStyle: path == nil ? .plain : .chip,
@@ -166,22 +170,29 @@ extension ToolPresentation {
     private static func byKind(_ call: ToolCallState) -> ToolPresentation {
         let title = call.title
         return switch call.kind {
+        // codex-acp: "Read file '/a/b/notes.txt'".
+        case .read where title.hasPrefix("Read file '"):
+            ToolPresentation(
+                verbs: .read,
+                subject: (call.locations.first?.path ?? title.dropping(prefix: "Read file '").dropping(suffix: "'"))
+                    .abbreviatedPath)
+        case .read where title.hasPrefix("Read "): ToolPresentation(verbs: .read, subject: title.dropping(prefix: "Read "))
         // Codex lists files as a read titled "List files", which reads wrong after the verb.
-        case .read where !title.hasPrefix("Read "): ToolPresentation(symbol: "book", subject: title)
-        case .read: ToolPresentation(symbol: "book", verbs: .read, subject: title.dropping(prefix: "Read "))
+        case .read: ToolPresentation(subject: title.replacingOccurrences(of: "'", with: ""))
         case .edit: fileChange(call)
-        case .delete: ToolPresentation(symbol: "trash", verbs: .delete, subject: title.dropping(prefix: "Delete "))
-        case .move: ToolPresentation(symbol: "arrow.right.doc.on.clipboard", subject: title)
-        case .search: ToolPresentation(symbol: "magnifyingglass", subject: title, body: .lines)
+        case .delete: ToolPresentation(verbs: .delete, subject: title.dropping(prefix: "Delete "))
+        case .move: ToolPresentation(subject: title)
+        // codex-acp files web searches under `search`: "Web search: swift testing".
+        case .search where title.hasPrefix("Web search: "):
+            ToolPresentation(verbs: .searchTheWeb, subject: "\"\(title.dropping(prefix: "Web search: "))\"")
+        case .search: ToolPresentation(subject: title, body: .lines)
         case .execute:
             // Codex's permission request retitles the call "Run command"; the input still has it.
             ToolPresentation(
-                symbol: "terminal", subject: call.shellCommand ?? title, subjectStyle: .command,
-                failureLabel: "Command failed", body: .command(call.shellCommand ?? title))
-        case .think: ToolPresentation(symbol: "brain", subject: title)
-        case .fetch: ToolPresentation(symbol: "globe", subject: title)
-        case .switchMode: ToolPresentation(symbol: "arrow.triangle.branch", subject: title)
-        case .other: ToolPresentation(symbol: "doc", subject: call.name.map(\.humanized) ?? title)
+                subject: call.shellCommand ?? title, subjectStyle: .command, failureLabel: "Command failed",
+                body: .command(call.shellCommand ?? title))
+        case .think, .fetch, .switchMode: ToolPresentation(subject: title)
+        case .other: ToolPresentation(subject: call.name.map(\.humanized) ?? title)
         }
     }
 
@@ -263,5 +274,9 @@ private extension String {
 
     func dropping(prefix: String) -> String {
         hasPrefix(prefix) ? String(dropFirst(prefix.count)) : self
+    }
+
+    func dropping(suffix: String) -> String {
+        hasSuffix(suffix) ? String(dropLast(suffix.count)) : self
     }
 }

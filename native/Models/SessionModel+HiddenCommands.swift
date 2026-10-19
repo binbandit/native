@@ -16,6 +16,7 @@ extension SessionModel {
         hiddenCommand = HiddenCommandCapture()
         isRunningHiddenCommand = true
         defer {
+            hiddenCommandEcho = hiddenCommand
             hiddenCommand = nil
             isRunningHiddenCommand = false
             drainQueue()

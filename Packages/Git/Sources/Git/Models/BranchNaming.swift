@@ -37,7 +37,7 @@ public enum BranchNaming {
     }
 
     /// The prefix of a provisional name, which renaming keeps.
-    static func prefix(ofProvisional name: String) -> String {
+    public static func prefix(ofProvisional name: String) -> String {
         String(name.dropLast(codeLength))
     }
 }

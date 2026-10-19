@@ -22,6 +22,10 @@ enum ComposerKeyMap {
         var isDraftEmpty: Bool
         var isWorking: Bool
         var hasQueuedPrompts: Bool
+        /// A queued message is open in the editor.
+        var isEditingQueued = false
+        /// There's a turn (or a retry) for Escape to stop.
+        var canStop = false
         var hasLastPrompt: Bool
         /// An input method is composing text, so every key is its own.
         var isComposing: Bool
@@ -35,6 +39,13 @@ enum ComposerKeyMap {
         case recallLastPrompt
         case editLastQueuedPrompt
         case submit(FollowUpBehavior)
+        /// Sends the queued message being edited now, with the edits.
+        case sendQueuedNow
+        /// Closes the queued message being edited, leaving it as it was.
+        case cancelQueuedEdit
+        /// Moves the queued message being edited sooner (`true`) or later in the queue.
+        case moveQueued(up: Bool)
+        case stop
         /// Tab moves on to the controls rather than typing a tab character.
         case moveFocus(forward: Bool)
         /// Nothing happens, but the text view doesn't get the key either.
@@ -53,22 +64,33 @@ enum ComposerKeyMap {
             }
         }
         switch key {
+        // Session ▸ Move Up / Down take these first when the menu bar can; this covers the rest.
+        case .up where modifiers == [.command, .option] && context.isEditingQueued:
+            return .moveQueued(up: true)
+        case .down where modifiers == [.command, .option] && context.isEditingQueued:
+            return .moveQueued(up: false)
         case .up where modifiers.isEmpty && context.isDraftEmpty:
-            if context.isWorking {
-                return context.hasQueuedPrompts ? .editLastQueuedPrompt : nil
+            // Queued messages first: they're what's about to go out (or waiting after a stop).
+            if context.hasQueuedPrompts {
+                return .editLastQueuedPrompt
             }
-            return context.hasLastPrompt ? .recallLastPrompt : nil
+            return !context.isWorking && context.hasLastPrompt ? .recallLastPrompt : nil
         // Shift- and Option-Return fall through to the text view as a newline.
         case .return where modifiers.isEmpty || modifiers == .command:
             guard !isRepeat else { return .swallow }
+            if context.isEditingQueued, modifiers == .command {
+                return .sendQueuedNow
+            }
             let preferred = context.preferredFollowUp
             return .submit(modifiers == .command ? preferred.opposite : preferred)
         case .tab where modifiers.isEmpty || modifiers == .shift:
             return isRepeat ? .swallow : .moveFocus(forward: modifiers.isEmpty)
-        // The Stop button takes Escape through its shortcut; swallowed otherwise, so the text view
-        // doesn't open its completion list.
+        // Handled here rather than by the Stop button's shortcut, which never sees the key while the
+        // editor has it. Otherwise swallowed, so the text view doesn't open its completion list.
         case .escape:
-            return .swallow
+            if isRepeat { return .swallow }
+            if context.isEditingQueued { return .cancelQueuedEdit }
+            return context.canStop ? .stop : .swallow
         default:
             return nil
         }

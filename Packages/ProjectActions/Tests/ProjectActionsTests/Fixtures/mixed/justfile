@@ -1,0 +1,7 @@
+# Run all the tests
+test:
+    bun run test
+    cargo test
+
+fmt:
+    cargo fmt

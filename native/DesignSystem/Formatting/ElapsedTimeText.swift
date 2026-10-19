@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// Elapsed work time in `DSFormat.duration`'s form with tabular figures: a clock that ticks every
-/// second while the work runs (`end` nil) and a fixed total once it's done.
+/// second while the work runs (`end` nil) and a fixed total once it's done. Running clocks share
+/// `DSSecondClock`, so each costs a redraw of its own label once a second and nothing else.
 ///
 ///     ElapsedTimeText(since: turn.startedAt, until: turn.finishedAt)
 public struct ElapsedTimeText: View {
@@ -15,15 +16,27 @@ public struct ElapsedTimeText: View {
 
     public var body: some View {
         if let end {
-            label(end.timeIntervalSince(start))
+            ElapsedTimeLabel(seconds: end.timeIntervalSince(start))
         } else {
-            TimelineView(.periodic(from: start, by: 1)) { context in
-                label(context.date.timeIntervalSince(start))
-            }
+            RunningElapsedTime(start: start)
         }
     }
+}
 
-    private func label(_ seconds: TimeInterval) -> some View {
+/// Reads the shared clock in its own body, so a tick redraws this label and not its container.
+private struct RunningElapsedTime: View {
+    let start: Date
+
+    var body: some View {
+        ElapsedTimeLabel(seconds: DSSecondClock.shared.now.timeIntervalSince(start))
+            .task { await DSSecondClock.shared.hold() }
+    }
+}
+
+private struct ElapsedTimeLabel: View {
+    let seconds: TimeInterval
+
+    var body: some View {
         Text(DSFormat.duration(seconds))
             .monospacedDigit()
             .accessibilityLabel(

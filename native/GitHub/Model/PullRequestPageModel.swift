@@ -91,6 +91,8 @@ final class PullRequestPageModel {
     @ObservationIgnored var blockOrigins: [String: [Int: (end: Int, minY: CGFloat)]] = [:]
     var replyDrafts: [String: String] = [:]
     var conversationDraft = ""
+    /// Bumped to scroll to the conversation's comment box and focus it.
+    var composerFocusRequest = 0
     /// Writes under way, by what they're about, so the right control shows progress.
     var busy: Set<String> = []
     var actionError: GitHubError?

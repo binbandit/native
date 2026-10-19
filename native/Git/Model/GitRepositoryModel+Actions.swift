@@ -1,3 +1,4 @@
+import AIInstructions
 import Foundation
 import Git
 
@@ -126,7 +127,8 @@ extension GitRepositoryModel {
         async let patch = repository.patch(for: files)
         async let subjects = repository.recentCommitSubjects()
         return try await CommitMessageDrafter().draft(
-            patch: patch, files: files, style: CommitStyle(subjects: subjects))
+            patch: patch, files: files, style: CommitStyle(subjects: subjects),
+            instructions: AIInstructionsStore.shared.addition(for: .commitMessage, in: folder))
     }
 
     /// `git init` for a folder that isn't a repository yet.

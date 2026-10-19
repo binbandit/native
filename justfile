@@ -22,6 +22,26 @@ build configuration="Debug":
     esac
     xcodebuild -project native.xcodeproj -scheme native -configuration "$configuration" -derivedDataPath "{{derived}}" build
 
+# Sign builds with your Apple team: writes Config/Local.xcconfig from your Apple Development certificate.
+signing team="":
+    #!/usr/bin/env bash
+    set -euo pipefail
+    team='{{team}}'
+    if [ -z "$team" ]; then
+        # The team id is the certificate subject's OU; the id in its name is your member id.
+        team=$(security find-certificate -c "Apple Development" -p 2>/dev/null \
+            | openssl x509 -noout -subject 2>/dev/null | sed -n 's/.*OU *= *\([A-Z0-9]\{10\}\).*/\1/p' | head -1)
+    fi
+    if [ -z "$team" ]; then
+        echo "No Apple Development certificate found. Add your Apple account in Xcode ▸ Settings ▸ Accounts," >&2
+        echo "or pass your team id: just signing ABCDE12345. Without one, builds sign to run locally." >&2
+        exit 1
+    fi
+    printf '%s\n' "// Your own settings, never committed (see Config/Shared.xcconfig). Written by \`just signing\`." \
+        "DEVELOPMENT_TEAM = $team" "CODE_SIGN_STYLE = Automatic" "CODE_SIGN_IDENTITY = Apple Development" \
+        > Config/Local.xcconfig
+    echo "Builds now sign with team $team (Config/Local.xcconfig)."
+
 # Build Release (or `just install nightly`) into ~/Applications (no admin needed), replacing the running copy.
 install configuration="Release":
     #!/usr/bin/env bash

@@ -7,6 +7,4 @@ struct GitTaskCheckout: Hashable, Sendable {
     let branch: String
     /// Ignored files copied in from the project (worktrees only).
     let copiedFiles: [String]
-    /// A setup script started running in the worktree.
-    let runsSetupScript: Bool
 }

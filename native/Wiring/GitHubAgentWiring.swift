@@ -1,3 +1,4 @@
+import AIInstructions
 import Foundation
 import Git
 import GitHub
@@ -20,9 +21,11 @@ enum GitHubAgentWiring {
         _ prompt: ReviewAgentPrompt, destination: GitHubAgentDestination, app: AppModel, git: GitStore,
         gitHub: GitHubModel
     ) async throws {
+        var prompt = prompt
         switch destination {
         case .currentTask:
             guard let session = currentTask(app: app) else { throw AskError.noCurrentTask }
+            prompt.instructions = AIInstructionsStore.shared.addition(for: .reviewRequest, in: session.cwd)
             try await session.submit(prompt.text, .queue)
         case .newTask:
             // The same checkout as "Open as Task": a fresh worktree on the pull request's branch.
@@ -30,6 +33,7 @@ enum GitHubAgentWiring {
                 url: prompt.reference.url, repository: prompt.reference.repository, number: prompt.reference.number,
                 title: prompt.title, createdAt: .now, updatedAt: .now, headRefName: prompt.branch)
             let session = try await GitHubGitWiring.openAsTask(pullRequest, app: app, git: git, gitHub: gitHub)
+            prompt.instructions = AIInstructionsStore.shared.addition(for: .reviewRequest, in: session.cwd)
             try await session.submit(prompt.text, .queue)
             app.selection = session.key
         }

@@ -1,14 +1,15 @@
+import ACP
 import Foundation
 import Observation
 
-/// The files the `@` list offers for one project: listed once when the first `@` is typed (and
-/// again when the session's folder changes), ranked per keystroke.
+/// The files and folders the `@` list offers for one project: listed once when the first `@` is
+/// typed (and again when the session's folder changes), ranked per keystroke. Folders end in "/".
 @Observable
 final class FileMentionSource {
     private let index: (any ProjectFileIndex)?
-    private(set) var files: [String] = []
+    private(set) var entries: [String] = []
     private(set) var changed: Set<String> = []
-    /// Files mentioned in this composer, most recent first.
+    /// Files and folders mentioned in this composer, most recent first.
     private(set) var recent: [String] = []
     private var isLoaded = false
 
@@ -21,12 +22,12 @@ final class FileMentionSource {
         isLoaded = true
         async let files = index.files()
         async let changed = index.changedFiles()
-        self.files = (try? await files) ?? []
+        entries = FileMention.entries(forFiles: (try? await files) ?? [])
         self.changed = await changed
     }
 
     func matches(for query: String) -> [String] {
-        FileMentionMatcher(changed: changed, recent: recent).matches(for: query, in: files, limit: 50)
+        FileMentionMatcher(changed: changed, recent: recent).matches(for: query, in: entries, limit: 50)
     }
 
     func noteMentioned(_ path: String) {

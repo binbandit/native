@@ -182,8 +182,9 @@ extension GitHubCLI {
     }
 
     /// Merges at the commit the page shows, so a push that lands in between isn't merged unseen.
+    /// `admin` merges past unmet requirements or the merge queue, for those allowed to.
     public func merge(
-        _ page: PullRequestPage, method: MergeMethod, deleteBranch: Bool
+        _ page: PullRequestPage, method: MergeMethod, deleteBranch: Bool, admin: Bool = false
     )
         async throws(GitHubError)
     {
@@ -192,7 +193,24 @@ extension GitHubCLI {
                 ?? page.reference.repository)
         try await forPullRequest(page.reference).merge(
             .number(page.reference.number), in: location, method: method, deleteBranch: deleteBranch,
-            matchHeadCommit: page.headRefOid)
+            matchHeadCommit: page.headRefOid, admin: admin)
+    }
+
+    public func enqueue(_ page: PullRequestPage) async throws(GitHubError) {
+        _ = try await run(page, .enqueue(pullRequestID: page.id, expectedHeadOid: page.headRefOid))
+    }
+
+    public func dequeue(_ page: PullRequestPage) async throws(GitHubError) {
+        _ = try await run(page, .dequeue(pullRequestID: page.id))
+    }
+
+    public func enableAutoMerge(_ page: PullRequestPage, method: MergeMethod) async throws(GitHubError) {
+        _ = try await run(
+            page, .enableAutoMerge(pullRequestID: page.id, method: method, expectedHeadOid: page.headRefOid))
+    }
+
+    public func disableAutoMerge(_ page: PullRequestPage) async throws(GitHubError) {
+        _ = try await run(page, .disableAutoMerge(pullRequestID: page.id))
     }
 
     private func run(

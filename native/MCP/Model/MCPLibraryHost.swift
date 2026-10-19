@@ -41,6 +41,8 @@ protocol MCPLibraryHost: AnyObject {
 /// An agent whose own MCP configuration Native can read.
 struct MCPAgent: Identifiable, Hashable {
     let id: AgentDefinition.ID
+    /// For its glyph.
+    let definition: AgentDefinition
     let name: String
     let symbol: String
     let format: AgentConfigFormat
@@ -91,8 +93,8 @@ final class AppMCPHost: MCPLibraryHost {
             }
             let transports = runtime.capabilities.map { MCPTransportSupport(http: $0.mcpHTTP, sse: $0.mcpSSE) }
             return MCPAgent(
-                id: runtime.agent.id, name: runtime.agent.displayName, symbol: runtime.agent.symbolName, format: format,
-                transports: transports, isRunning: runtime.isReady)
+                id: runtime.agent.id, definition: runtime.agent, name: runtime.agent.displayName,
+                symbol: runtime.agent.symbolName, format: format, transports: transports, isRunning: runtime.isReady)
         }
     }
 

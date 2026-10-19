@@ -86,12 +86,44 @@ struct TranscriptTurnTests {
         state.appendUserMessage("Go", at: at(0))
         state.apply(.agentThoughtChunk(ContentChunk(content: .text("Let me"), messageId: nil)), at: at(1))
         state.apply(.agentThoughtChunk(ContentChunk(content: .text(" think"), messageId: nil)), at: at(3))
-        // Still the newest item of the running turn: still thinking.
-        #expect(state.thinkingInterval(at: 1)?.start == at(1))
+        // Still the newest item of the running turn: still thinking, since the prompt went out.
+        #expect(state.thinkingInterval(at: 1)?.start == at(0))
         #expect(state.thinkingInterval(at: 1)?.end == nil)
 
         state.apply(.agentMessageChunk(ContentChunk(content: .text("Done"), messageId: nil)), at: at(13))
         #expect(state.thinkingInterval(at: 1)?.end == at(13))
+    }
+
+    /// Codex thinks in silence and sends the thought's summary in a burst at its end.
+    @Test func aSilentThoughtCountsFromWhenTheAgentWentQuiet() throws {
+        var state = SessionState()
+        state.appendUserMessage("Go", at: at(0))
+        state.apply(try Wire.update(Wire.readToolCall), at: at(1))
+        state.apply(try Wire.update(Wire.readCompletedUpdate), at: at(4))
+        #expect(state.quietSince == at(4))
+
+        state.apply(.agentThoughtChunk(ContentChunk(content: .text("**Checking**"), messageId: nil)), at: at(30))
+        state.apply(.agentThoughtChunk(ContentChunk(content: .text(" the output"), messageId: nil)), at: at(31))
+        // The thought has its own clock.
+        #expect(state.quietSince == nil)
+        state.apply(.agentMessageChunk(ContentChunk(content: .text("Done"), messageId: nil)), at: at(31))
+
+        let thought = try #require(state.thinkingInterval(at: 2))
+        #expect(thought.start == at(4))
+        #expect(thought.end == at(31))
+        #expect(state.quietSince == at(31))
+    }
+
+    @Test func quietOnlyWhileATurnRunsAndNothingElseKeepsTime() throws {
+        var state = SessionState()
+        #expect(state.quietSince == nil)
+        state.appendUserMessage("Go", at: at(0))
+        #expect(state.quietSince == at(0))
+        state.apply(try Wire.update(Wire.bashToolCall), at: at(1))
+        // A running tool call shows its own clock.
+        #expect(state.quietSince == nil)
+        state.endTurn(.endTurn, at: at(5))
+        #expect(state.quietSince == nil)
     }
 
     @Test func thinkingThatEndsTheTurnLastsUntilItsLastChunk() {
@@ -136,6 +168,23 @@ struct TranscriptTurnTests {
         let summary = state.summary(of: try #require(state.turns.only))
         #expect(summary.changedFiles.isEmpty)
         #expect(summary.activityDescription == nil)
+    }
+
+    @Test func aCallFinishingAfterTheNextPromptCountsInItsOwnTurn() {
+        var state = SessionState()
+        state.appendUserMessage("Edit it", at: at(0))
+        var edit = ToolCallUpdate(toolCallId: "edit", title: "Edit a.swift", kind: .edit, status: .inProgress)
+        edit.content = [.diff(FileDiff(path: "/a.swift", oldText: "a\n", newText: "b\n"))]
+        state.apply(.toolCall(edit), at: at(1))
+        state.endTurn(.endTurn, at: at(2))
+        state.appendUserMessage("Now run it", at: at(3))
+        state.apply(.toolCallUpdate(ToolCallUpdate(toolCallId: "edit", status: .completed)), at: at(4))
+
+        let turns = state.turns
+        #expect(turns.map(\.items) == [0..<2, 2..<3])
+        #expect(state.summary(of: turns[0]).changedFiles == [.init(path: "/a.swift", added: 1, removed: 1)])
+        #expect(state.summary(of: turns[0]).duration == 2)
+        #expect(state.summary(of: turns[1]).changedFiles.isEmpty)
     }
 
     @Test func editsToOneFileAddUp() {

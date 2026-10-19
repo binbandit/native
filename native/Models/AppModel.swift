@@ -18,11 +18,17 @@ final class AppModel {
     let sessions: SessionStore
     let unread: UnreadSessions
     let archivedSessions = ArchivedSessions()
+    /// Conversations `/clear` set aside (AppModel+ClearConversation.swift).
+    let earlierConversations = EarlierConversations()
     /// Makes and removes the folders tasks run in (worktrees). Set by the app from the Git feature;
     /// without it tasks run in the project folder.
     weak var taskWorkspaces: (any TaskWorkspaceProvider)?
     /// The latest action the user can take back, for the window's undo toast.
     var lastUndoable: UndoableAction?
+    /// Features that keep sessions out of the sidebar claim them here (a pull request's private
+    /// questions), so a session search found opens their way instead of as a task under a project.
+    /// Each returns whether it opened the session.
+    @ObservationIgnored var searchedSessionOpeners: [@MainActor (SessionKey) -> Bool] = []
 
     var selection: SessionKey? {
         didSet {
@@ -55,8 +61,15 @@ final class AppModel {
     /// Listed tasks that couldn't be opened before they had a model, shown in their place (a load
     /// that fails later says so in the task's transcript).
     var openFailures: [SessionKey: SessionOpenFailure] = [:]
-    /// The agent a session is being created with, while that's under way.
-    private(set) var creatingSessionWith: AgentDefinition.ID?
+    /// Tasks the user asked for whose session doesn't exist yet, newest first
+    /// (AppModel+StartingTasks.swift).
+    var startingTasks: [StartingTask] = []
+    /// Each project's latest workspace preparation, so new tasks' git work runs one at a time per
+    /// project. Internal only for AppModel+StartingTasks.swift.
+    @ObservationIgnored var workspacePreparations: [Project.ID: Task<Void, Never>] = [:]
+    /// Each project's listings (`session/list`) under way, for "Finding sessions…". Internal only
+    /// for AppModel+Listing.swift.
+    var projectListingsInFlight: [Project.ID: Int] = [:]
     /// The project whose home was shown last, for when no session is selected. Internal only for
     /// AppModel+Projects.swift.
     var focusedProjectID: Project.ID?
@@ -164,6 +177,23 @@ final class AppModel {
         let lastUsed = agents.first { $0.agent.id == lastUsedAgent }
         if let lastUsed, lastUsed.isAvailable { return lastUsed.agent }
         return (agents.first(where: \.isAvailable) ?? lastUsed ?? agents.first)?.agent
+    }
+
+    /// The agent a new task in `project` starts with unless the user picks another: the project's
+    /// own (Settings ▸ Projects) while it can start sessions, else `defaultAgent`.
+    func defaultAgent(in project: Project?) -> AgentDefinition? {
+        if let project, let id = ProjectTaskDefaults.agent(for: project.id), let runtime = runtimes[id],
+            runtime.isAvailable
+        {
+            return runtime.agent
+        }
+        return defaultAgent
+    }
+
+    /// Makes `agent` the one new sessions start with. Internal only for AppModel+StartingTasks.swift.
+    func rememberLastUsed(_ agent: AgentDefinition.ID) {
+        lastUsedAgent = agent
+        UserDefaults.standard.set(agent.rawValue, forKey: Self.lastUsedAgentKey)
     }
 
     /// Starts the agents worth having running (`agentsWorthStarting`), and keeps up as plugins come
@@ -325,62 +355,6 @@ final class AppModel {
     /// have the id (another session's name in a transcript).
     func session(id: SessionID) -> SessionModel? {
         sessions.session(id: id)
-    }
-
-    var isCreatingSession: Bool {
-        creatingSessionWith != nil
-    }
-
-    /// Starts a session in `project` with `agent`, defaulting to the current project and the
-    /// default agent.
-    func newSession(in project: Project.ID? = nil, with agent: AgentDefinition.ID? = nil) async {
-        guard let project = project.flatMap(projects.project) ?? currentProject else {
-            isAddingProject = true
-            return
-        }
-        // A task can't start in a folder that's gone. The project already says so, with Retry, so show
-        // it rather than an alert about git; looking again first lets a folder that's back through.
-        checkFolder(of: project)
-        guard missingFolder(of: project.id) == nil else {
-            focusProject(project.id)
-            return
-        }
-        // One at a time; the one under way shows its progress.
-        guard !isCreatingSession else { return }
-        // Right after launch there may be no default agent yet, until the check for agents is done.
-        if agent ?? defaultAgent?.id == nil {
-            await agentsChecked()
-        }
-        guard let agent = agent ?? defaultAgent?.id else {
-            // No agent is installed; Add Agent says how to get one.
-            isAddingAgent = true
-            return
-        }
-        creatingSessionWith = agent
-        defer { creatingSessionWith = nil }
-        // Waits for an agent that's still starting, and starts an idle one.
-        guard let runtime = await ensureRunning(agent) else {
-            actionFailure = ActionFailure("Couldn't Start a Session", startFailure(of: agent))
-            return
-        }
-        do {
-            let cwd = try await taskWorkspaces?.workspace(forNewTaskIn: project, title: nil) ?? project.url
-            let session = try await launcher.start(on: runtime, cwd: cwd)
-            catalog.add(
-                SessionInfo(sessionId: session.id, cwd: cwd.folderPath, updatedAt: .now), for: agent, in: project.id)
-            session.wantsComposerFocus = true
-            selection = session.key
-            lastUsedAgent = agent
-            UserDefaults.standard.set(agent.rawValue, forKey: Self.lastUsedAgentKey)
-        } catch {
-            if runtime.noteSignInRequired(by: error), !runtime.authMethods.isEmpty {
-                signInPrompt = agent
-            } else {
-                actionFailure = ActionFailure(
-                    "Couldn't Start a \(runtime.agent.displayName) Session",
-                    error.localizedDescription.withoutTerminalEscapes)
-            }
-        }
     }
 
     /// Starts a fresh session in an empty one's place, for one the agent never saved (it had no turn

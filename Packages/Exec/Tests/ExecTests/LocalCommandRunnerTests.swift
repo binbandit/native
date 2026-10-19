@@ -1,6 +1,7 @@
 #if os(macOS)
 import Exec
 import Foundation
+import Synchronization
 import Testing
 
 struct LocalCommandRunnerTests {
@@ -47,6 +48,50 @@ struct LocalCommandRunnerTests {
         await #expect(throws: CommandError.timedOut("sleep", after: .milliseconds(200))) {
             try await runner.run(Command("sleep", ["5"], environment: environment, timeout: .milliseconds(200)))
         }
+    }
+
+    /// A shell killed for running too long used to leave its children holding the output open, so the
+    /// run waited for them instead of stopping.
+    @Test func timeoutStopsWhatTheCommandStarted() async {
+        let clock = ContinuousClock()
+        let start = clock.now
+        await #expect(throws: CommandError.timedOut("sh", after: .milliseconds(300))) {
+            try await runner.run(
+                Command(
+                    "sh", ["-c", "echo started; sleep 30; echo never"], environment: environment,
+                    timeout: .milliseconds(300)))
+        }
+        #expect(clock.now - start < .seconds(3))
+    }
+
+    @Test func streamsOutputAsItArrives() async throws {
+        let clock = ContinuousClock()
+        let start = clock.now
+        let firstChunk = Mutex<ContinuousClock.Instant?>(nil)
+        let chunks = Mutex<[CommandOutput]>([])
+        let result = try await runner.run(
+            Command("sh", ["-c", "printf one; sleep 0.6; printf two >&2"], environment: environment)
+        ) { chunk in
+            firstChunk.withLock { $0 = $0 ?? clock.now }
+            chunks.withLock { $0.append(chunk) }
+        }
+        let finished = clock.now
+        #expect(try #require(firstChunk.withLock { $0 }) - start < finished - start - .milliseconds(400))
+        let streamed = chunks.withLock { $0 }
+        #expect(streamed.filter { $0.stream == .standardOutput }.map(\.data).reduce(Data(), +) == Data("one".utf8))
+        #expect(streamed.filter { $0.stream == .standardError }.map(\.data).reduce(Data(), +) == Data("two".utf8))
+        #expect(result.output == "one")
+        #expect(result.errorOutput == "two")
+    }
+
+    /// A setup script that starts a server in the background is done when it exits.
+    @Test func outputCanEndAtExit() async throws {
+        let clock = ContinuousClock()
+        let start = clock.now
+        let result = try await runner.run(
+            Command("sh", ["-c", "sleep 3 & echo done"], environment: environment, outputEndsAtExit: true))
+        #expect(result.output == "done\n")
+        #expect(clock.now - start < .seconds(2))
     }
 
     /// Under parallel load, output that arrived while the pipes were being drained used to go missing.

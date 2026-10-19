@@ -12,6 +12,8 @@ extension ComposerView {
             isDraftEmpty: session.draft.isEmpty,
             isWorking: isWorking,
             hasQueuedPrompts: !session.queuedPrompts.isEmpty,
+            isEditingQueued: session.editingQueuedPrompt != nil,
+            canStop: session.canCancel,
             hasLastPrompt: session.state.lastPrompt != nil,
             isComposing: PlatformTextInput.isComposing,
             preferredFollowUp: followUp
@@ -53,6 +55,18 @@ extension ComposerView {
             }
         case .submit(let behavior):
             submit(behavior)
+        case .sendQueuedNow:
+            if let id = session.editingQueuedPrompt {
+                sendNow(id, savingDraft: true)
+            }
+        case .cancelQueuedEdit:
+            stopEditingQueued()
+        case .moveQueued(let up):
+            if let id = session.editingQueuedPrompt {
+                session.moveQueued(id, up ? .up : .down)
+            }
+        case .stop:
+            stop()
         // Focus moves in `handleKey`, which needs to know whether it did.
         case .moveFocus, .swallow:
             break

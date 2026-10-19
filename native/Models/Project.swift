@@ -6,11 +6,14 @@ struct Project: Identifiable, Hashable, Codable, Sendable {
     let url: URL
     /// Where the folder is. Projects saved before hosts existed are on this Mac.
     let host: HostID
+    /// What the user renamed it to in Native; the folder keeps its own name.
+    var displayName: String?
 
-    init(id: UUID = UUID(), url: URL, host: HostID = .local) {
+    init(id: UUID = UUID(), url: URL, host: HostID = .local, displayName: String? = nil) {
         self.id = id
         self.url = url
         self.host = host
+        self.displayName = displayName
     }
 
     init(from decoder: any Decoder) throws {
@@ -18,9 +21,15 @@ struct Project: Identifiable, Hashable, Codable, Sendable {
         id = try container.decode(UUID.self, forKey: .id)
         url = try container.decode(URL.self, forKey: .url)
         host = try container.decodeIfPresent(HostID.self, forKey: .host) ?? .local
+        displayName = try container.decodeIfPresent(String.self, forKey: .displayName)
     }
 
+    /// The name Native shows: the user's, else the folder's.
     var name: String {
+        displayName ?? folderName
+    }
+
+    var folderName: String {
         url.lastPathComponent
     }
 

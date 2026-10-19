@@ -85,6 +85,19 @@ final class SessionOrdering {
         orders[project]
     }
 
+    /// Gives `new` the place `old` had, in a project's order and among the pinned: `/clear`'s fresh
+    /// conversation stays where the task was.
+    func replace(_ old: SessionKey, with new: SessionKey) {
+        if let index = pinned.firstIndex(of: old) {
+            pinned[index] = new
+        }
+        for (project, order) in orders {
+            if let index = order.firstIndex(of: old) {
+                orders[project]?[index] = new
+            }
+        }
+    }
+
     func restore(_ order: [SessionKey]?, in project: Project.ID) {
         orders[project] = order
     }

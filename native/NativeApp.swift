@@ -1,5 +1,6 @@
 import ACP
 import AppKit
+import Exec
 import NativeAutomation
 import NativeCommands
 import SwiftUI
@@ -9,6 +10,10 @@ struct NativeApp: App {
     @State private var model: AppModel
     @State private var git: GitStore
     @State private var gitHub: GitHubModel
+    /// The user's and repositories' scripts that run around tasks (docs/scripts.md).
+    @State private var taskScripts: TaskScriptCenter
+    /// Private questions about pull requests, beside their pages.
+    @State private var pullRequestQuestions = PullRequestAskCenter()
     /// Held here because AppModel keeps its provider weakly.
     @State private var taskWorkspaces: GitTaskWorkspaceProvider
     @State private var iconPreferences = AppIconPreferences()
@@ -17,14 +22,22 @@ struct NativeApp: App {
     /// Settings takes over the main window rather than opening one of its own.
     @State private var settings: SettingsPresentation
     @State private var terminals: TerminalStore
+    /// Each project's quick actions (Test, Install…) and their runs (docs/actions.md).
+    @State private var projectActions: ProjectActionRunner
     @State private var keepAwake: KeepAwakeController
     @State private var statusBar: StatusBarRegistry
+    /// The keyboard shortcuts sheet: Help ▸ Keyboard Shortcuts and the status bar's "?".
+    @State private var shortcutsHelp: KeyboardShortcutsHelp
     /// One connection to this build's background host, shared by the main window and Durable Sessions.
     @State private var durableHost = DurableHost()
     @State private var updates: UpdateController
     @State private var whatsNew: WhatsNewCenter
     /// ⌘K, over the main window (docs/commands.md).
     @State private var palette: CommandPalette
+    /// Open as Task: a pull request checked out in a worktree of its project, with a task there.
+    @State private var pullRequestTasks: PullRequestTaskOpener
+    /// Clean Up Merged: a project's merged task worktrees and branches, reviewed before they go.
+    @State private var gitCleanup: GitCleanupCenter
     /// Light, dark or the system's, for the whole app.
     @State private var appearance: AppearanceModeController
 
@@ -40,8 +53,11 @@ struct NativeApp: App {
         let gitHub = GitHubModel { await model.shellEnvironment(refresh: $0) }
         _git = State(initialValue: git)
         _gitHub = State(initialValue: gitHub)
+        let taskScripts = TaskScriptCenter(settings: TaskScriptSettings(), runner: LocalCommandRunner())
+        _taskScripts = State(initialValue: taskScripts)
+        TaskScriptsWiring.connect(taskScripts, model: model, git: git)
         // New tasks get a worktree or branch as the Git settings say.
-        let taskWorkspaces = GitTaskWorkspaceProvider(git: git, gitHub: gitHub)
+        let taskWorkspaces = GitTaskWorkspaceProvider(git: git, gitHub: gitHub, scripts: taskScripts)
         _taskWorkspaces = State(initialValue: taskWorkspaces)
         model.taskWorkspaces = taskWorkspaces
         // Agents are child processes; ending them with the app keeps them from outliving it.
@@ -55,12 +71,24 @@ struct NativeApp: App {
         _settings = State(initialValue: settings)
         let keepAwake = KeepAwakeController()
         _keepAwake = State(initialValue: keepAwake)
-        let statusBar = AmbientWiring.statusBar(model: model, keepAwake: keepAwake, settings: settings)
+        let shortcutsHelp = KeyboardShortcutsHelp()
+        _shortcutsHelp = State(initialValue: shortcutsHelp)
+        let statusBar = AmbientWiring.statusBar(
+            model: model, keepAwake: keepAwake, settings: settings, shortcutsHelp: shortcutsHelp)
         _statusBar = State(initialValue: statusBar)
+        statusBar.register(
+            TaskScriptsStatusItem(center: taskScripts, folder: { model.selection.flatMap(model.session)?.cwd }) {
+                settings.open(.scripts)
+            })
         let celebrations = CelebrationCenter(now: HomeDateOverride.now)
         _celebrations = State(initialValue: celebrations)
         let terminals = TerminalStore()
         _terminals = State(initialValue: terminals)
+        // Repo actions share the repo scripts' per-project switch and policy.
+        let projectActions = ProjectActionsWiring.runner(
+            model: model, terminals: terminals, settings: settings, trust: .scripts(taskScripts.settings),
+            commandRunner: LocalCommandRunner())
+        _projectActions = State(initialValue: projectActions)
         let updates = UpdateController()
         _updates = State(initialValue: updates)
         let whatsNew = WhatsNewCenter()
@@ -68,11 +96,20 @@ struct NativeApp: App {
         // Every command, before the menu bar first draws.
         let palette = CommandPalette()
         _palette = State(initialValue: palette)
+        let pullRequestTasks = PullRequestTaskOpener(
+            checkout: PullRequestTaskCheckout(app: model, git: git, gitHub: gitHub))
+        _pullRequestTasks = State(initialValue: pullRequestTasks)
+        gitHub.openAsTask = { pullRequestTasks.open($0) }
+        let gitCleanup = GitCleanupWiring.center(app: model, git: git, gitHub: gitHub)
+        _gitCleanup = State(initialValue: gitCleanup)
+        gitHub.linkedPullRequest = { [git] in await GitHubGitWiring.linkedPullRequest(for: $0, git: git) }
         CommandsWiring.connect(
             CommandRegistry.shared, palette: palette,
             features: .init(
                 model: model, settings: settings, terminals: terminals, keepAwake: keepAwake, statusBar: statusBar,
-                celebrations: celebrations, updates: updates, whatsNew: whatsNew, appearance: appearance))
+                celebrations: celebrations, updates: updates, whatsNew: whatsNew, appearance: appearance,
+                pullRequestTasks: pullRequestTasks, shortcutsHelp: shortcutsHelp, gitCleanup: gitCleanup,
+                projectActions: projectActions))
     }
 
     var body: some Scene {
@@ -84,9 +121,11 @@ struct NativeApp: App {
                 .environment(model)
                 .environment(git)
                 .environment(gitHub)
+                .environment(pullRequestQuestions)
                 .environment(BuiltInPlugins.automation.center)
                 .environment(BuiltInPlugins.expeditions.center)
                 .environment(terminals)
+                .environment(projectActions)
                 .environment(durableHost)
                 .environment(updates)
                 .environment(whatsNew)
@@ -95,12 +134,19 @@ struct NativeApp: App {
                 .environment(PolicyCenter.shared)
                 .environment(TelemetryCenter.shared)
                 .environment(git.settings)
+                .environment(taskScripts)
+                .environment(taskScripts.settings)
                 .environment(iconPreferences)
                 .environment(appearance)
                 .environment(celebrations)
                 .environment(keepAwake)
                 .environment(statusBar)
                 .createPullRequestSheet(gitHub)
+                .keyboardShortcutsSheet(shortcutsHelp)
+                .pullRequestTaskSheet(pullRequestTasks, app: model, gitHub: gitHub)
+                .projectActionsPresentation(projectActions)
+                .gitCleanupSheet(gitCleanup)
+                .environment(gitCleanup)
                 .terminalCodeTheme(terminals)
                 .appearancePreferences(plugins: model.plugins)
                 .dsAccentPalette(themeID: iconPreferences.theme.rawValue)
@@ -136,16 +182,13 @@ struct NativeApp: App {
                     LaunchMetrics.mark(.agentsReady)
                 }
                 .task { [gitHub] in
-                    gitHub.openAsTask = { [model, git, weak gitHub] pullRequest in
-                        guard let gitHub else { return }
-                        try await GitHubGitWiring.openAsTask(pullRequest, app: model, git: git, gitHub: gitHub)
-                    }
                     gitHub.askAgent = { [model, git, weak gitHub] prompt, destination in
                         guard let gitHub else { return }
                         try await GitHubAgentWiring.ask(
                             prompt, destination: destination, app: model, git: git, gitHub: gitHub)
                     }
                     gitHub.hasCurrentTask = { [model] in GitHubAgentWiring.currentTask(app: model) != nil }
+                    PullRequestAskWiring.connect(pullRequestQuestions, app: model, gitHub: gitHub)
                     await gitHub.keepFresh()
                 }
                 .task(id: model.plugins.enabledPlugins.map(\.manifest)) {
@@ -158,12 +201,16 @@ struct NativeApp: App {
         .commands {
             UpdateCommands(commands: CommandRegistry.shared)
             WhatsNewCommands(commands: CommandRegistry.shared)
+            KeyboardShortcutsCommands(commands: CommandRegistry.shared)
             FileCommands(commands: CommandRegistry.shared)
             ViewCommands(commands: CommandRegistry.shared)
             AppearanceCommands(commands: CommandRegistry.shared)
             SettingsCommands(settings: settings)
             GoCommands(commands: CommandRegistry.shared)
             SessionCommands(model: model, commands: CommandRegistry.shared)
+            ProjectActionCommands(
+                runner: projectActions, commands: CommandRegistry.shared,
+                target: { [model] in ProjectActionsWiring.target(for: $0, model: model) })
             TerminalCommands(commands: CommandRegistry.shared)
             KeepAwakeCommands(controller: keepAwake, commands: CommandRegistry.shared)
             StatusBarCommands(registry: statusBar, commands: CommandRegistry.shared)
@@ -192,6 +239,9 @@ private struct FileCommands: Commands {
             CommandMenuItem(.sessionNewWithAgent, in: commands)
             CommandMenuItem(.expeditionNew, in: commands)
             CommandMenuItem(.projectOpen, in: commands)
+            CommandMenuItem(.projectSettings, in: commands)
+            CommandMenuItem(.pullRequestOpenAsTask, in: commands)
+            CommandMenuItem(.gitCleanUpMerged, in: commands)
             Divider()
             CommandMenuItem(.composerAttachFiles, in: commands)
         }
@@ -265,6 +315,8 @@ private struct SessionCommands: Commands {
         CommandMenu("Session") {
             CommandMenuItem(.composerFocus, in: commands)
             CommandMenuItem(.sessionStop, in: commands)
+            CommandMenuItem(.sessionClearConversation, in: commands)
+            CommandMenuItem(.sessionOpenEarlierConversation, in: commands)
 
             Divider()
 
@@ -294,6 +346,21 @@ private struct SessionCommands: Commands {
             CommandMenuItem(.sessionArchive, in: commands)
             CommandMenuItem(.sessionTogglePin, in: commands)
             CommandMenuItem(.sessionToggleUnread, in: commands)
+            Menu("Selected Tasks") {
+                CommandMenuItem(.sidebarSelectMode, in: commands)
+                CommandMenuItem(.sidebarSelectAll, in: commands)
+                CommandMenuItem(.selectionClear, in: commands)
+                Divider()
+                CommandMenuItem(.selectionMarkRead, in: commands)
+                CommandMenuItem(.selectionMarkUnread, in: commands)
+                CommandMenuItem(.selectionPin, in: commands)
+                CommandMenuItem(.selectionUnpin, in: commands)
+                CommandMenuItem(.selectionStop, in: commands)
+                Divider()
+                CommandMenuItem(.selectionArchive, in: commands)
+                CommandMenuItem(.selectionUnarchive, in: commands)
+                CommandMenuItem(.selectionDelete, in: commands)
+            }
             CommandMenuItem(.sidebarMoveUp, in: commands)
             CommandMenuItem(.sidebarMoveDown, in: commands)
             CommandMenuItem(.sessionNext, in: commands)

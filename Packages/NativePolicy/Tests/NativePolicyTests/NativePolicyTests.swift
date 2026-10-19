@@ -74,6 +74,14 @@ import Testing
         #expect(!policy.scriptsEnabled && !policy.labsEnabled && !policy.companionEnabled && !policy.remoteHostsEnabled)
     }
 
+    @Test func taskScriptsAreOnUnlessTheOrganizationTurnsAKindOff() {
+        #expect(NativePolicy.default.taskScripts.userScriptsEnabled)
+        #expect(NativePolicy.default.taskScripts.repositoryScriptsEnabled)
+        let policy = load(managed: [.taskScriptsRepository: false])
+        #expect(policy.taskScripts.userScriptsEnabled && !policy.taskScripts.repositoryScriptsEnabled)
+        #expect(policy.isManaged(.taskScriptsRepository) && !policy.isManaged(.taskScriptsUser))
+    }
+
     @Test func updatesAndSearch() {
         let policy = load(managed: [
             .updatesEnabled: false,
@@ -191,6 +199,15 @@ import Testing
         #expect(managed.diagnostics.map(\.problem) == ["bad should be a string; skipped"])
         let user = load(user: [.shortcutBindings: ["session.archive": "opt+cmd+a"]])
         #expect(user.shortcutBindings == ["session.archive": "opt+cmd+a"] && !user.isManaged(.shortcutBindings))
+    }
+
+    @Test func aiInstructions() {
+        #expect(load().aiInstructions == nil)
+        let managed = load(managed: [.aiInstructions: ["branchName": "Start with the Jira key.", "title": 3]])
+        #expect(managed.aiInstructions == ["branchName": "Start with the Jira key."])
+        #expect(managed.isManaged(.aiInstructions))
+        #expect(managed.diagnostics.map(\.problem) == ["title should be a string; skipped"])
+        #expect(load(managed: [.aiInstructions: "Be brief."]).aiInstructions == nil)
     }
 
     @Test func wildcards() {

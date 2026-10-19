@@ -20,7 +20,8 @@ struct TerminalTabBar: View {
                                 isSelected: tab.id == panel.tabs.selectedID,
                                 select: { panel.select(tab.id) },
                                 close: { panel.requestClose(tab.id) },
-                                restart: { panel.restart(tab.id) }
+                                restart: { panel.restart(tab.id) },
+                                stop: { panel.stopJob(in: tab.id) }
                             )
                         }
                     }
@@ -35,6 +36,9 @@ struct TerminalTabBar: View {
                     .padding(.horizontal, DS.Space.sm)
             }
             Spacer(minLength: DS.Space.md)
+            if showsTabs, let tab = panel.tabs.selected, let job = tab.job, job.isRunning {
+                TerminalJobControls(job: job) { panel.stopJob(in: tab.id) }
+            }
             IconButton("Hide Terminal", systemImage: "chevron.down") { panel.hide() }
         }
         .padding(.horizontal, DS.Space.md)
@@ -51,6 +55,7 @@ private struct TerminalTabButton: View {
     let select: () -> Void
     let close: () -> Void
     let restart: () -> Void
+    let stop: () -> Void
 
     @State private var isHovered = false
 
@@ -75,7 +80,14 @@ private struct TerminalTabButton: View {
         .onTapGesture(perform: select)
         .trackHover($isHovered)
         .contextMenu {
-            Button("Restart Shell", action: restart)
+            if let job = tab.job {
+                Button("Run Again", action: restart)
+                if job.isRunning {
+                    Button(job.isStopping ? "End Now" : "Stop", action: stop)
+                }
+            } else {
+                Button("Restart Shell", action: restart)
+            }
             Button("Close Tab", action: close)
         }
         .accessibilityElement(children: .combine)
@@ -85,6 +97,14 @@ private struct TerminalTabButton: View {
     }
 
     @ViewBuilder private var statusDot: some View {
+        if let job = tab.job {
+            TerminalJobStatusDot(job: job)
+        } else {
+            shellStatusDot
+        }
+    }
+
+    @ViewBuilder private var shellStatusDot: some View {
         switch tab.status {
         case .running:
             EmptyView()
@@ -96,7 +116,10 @@ private struct TerminalTabButton: View {
     }
 
     private var accessibilityLabel: String {
-        switch tab.status {
+        if let job = tab.job {
+            return TerminalJobStatusDot.accessibilityLabel(label, job: job)
+        }
+        return switch tab.status {
         case .running: label
         case .exited: "\(label), exited"
         case .failedToStart: "\(label), didn't start"

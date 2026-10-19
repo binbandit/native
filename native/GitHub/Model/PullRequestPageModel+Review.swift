@@ -78,6 +78,17 @@ extension PullRequestPageModel {
         _ = await write("review") { cli, page in try await cli.discardReview(reviewID, on: page) }
     }
 
+    /// Puts text into the conversation's comment box, under anything already there, and shows it.
+    /// Nothing posts until the user sends it: how other features (an agent's answer) offer a comment.
+    func draftConversationComment(_ text: String) {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        let existing = conversationDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+        conversationDraft = existing.isEmpty ? trimmed : existing + "\n\n" + trimmed
+        tab = .conversation
+        composerFocusRequest += 1
+    }
+
     func addConversationComment() async {
         let body = conversationDraft
         guard !body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
@@ -86,12 +97,63 @@ extension PullRequestPageModel {
         }
     }
 
-    func merge(_ method: MergeMethod, deleteBranch: Bool) async -> Bool {
-        let done = await write("merge") { cli, page in
-            try await cli.merge(page, method: method, deleteBranch: deleteBranch)
+    /// What merging does here: queue, auto-merge or merge now, decided from the loaded page.
+    var mergePlan: PullRequestMergePlan? {
+        page.map { PullRequestMergePlan(page: $0) }
+    }
+
+    /// Merges now. `admin` merges past the merge queue or unmet requirements, for those allowed to.
+    func merge(_ method: MergeMethod, deleteBranch: Bool, admin: Bool = false) async -> Bool {
+        await mergeWrite("Merged") { cli, page in
+            try await cli.merge(page, method: method, deleteBranch: deleteBranch, admin: admin)
         }
-        if done, let gitHub { Task { await gitHub.refresh() } }
-        return done
+    }
+
+    /// "Merge When Ready" on a base with a merge queue: adds it to the queue.
+    func enqueue() async -> Bool {
+        await mergeWrite("Added to the merge queue") { cli, page in try await cli.enqueue(page) }
+    }
+
+    func dequeue() async -> Bool {
+        await mergeWrite("Removed from the merge queue") { cli, page in try await cli.dequeue(page) }
+    }
+
+    /// "Merge When Ready" without a queue: GitHub merges it once requirements pass.
+    func enableAutoMerge(_ method: MergeMethod) async -> Bool {
+        await mergeWrite("Auto-merge on") { cli, page in try await cli.enableAutoMerge(page, method: method) }
+    }
+
+    func disableAutoMerge() async -> Bool {
+        await mergeWrite("Auto-merge off") { cli, page in try await cli.disableAutoMerge(page) }
+    }
+
+    /// Every merge write: one at a time, then the list's row says what happened and refreshes.
+    private func mergeWrite(_ done: String, _ body: (GitHubCLI, PullRequestPage) async throws -> Void) async -> Bool {
+        let succeeded = await write("merge", body)
+        if succeeded, let gitHub {
+            gitHub.report(.done(done), for: reference.url)
+            Task { await gitHub.refresh() }
+        }
+        return succeeded
+    }
+
+    /// Closes or reopens it. Either can be undone, so it happens at once with an undo.
+    func setOpen(_ open: Bool) async {
+        let location = location
+        let number = reference.number
+        let done = await write("state") { cli, page in
+            let cli = cli.forPullRequest(page.reference)
+            if open {
+                try await cli.reopen(.number(number), in: location)
+            } else {
+                try await cli.close(.number(number), in: location)
+            }
+        }
+        guard done, let gitHub else { return }
+        Task { await gitHub.refresh() }
+        undo = UndoToastItem(open ? "Reopened \(reference.display)" : "Closed \(reference.display)") { [weak self] in
+            Task { await self?.setOpen(!open) }
+        }
     }
 
     // MARK: - Agents

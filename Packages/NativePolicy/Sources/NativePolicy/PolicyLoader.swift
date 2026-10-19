@@ -28,6 +28,10 @@ public enum PolicyLoader {
             resolver.resolve(
                 .forbiddenPermissionModes, expecting: "an array of permission mode ids", PolicyParse.stringSet) ?? []
         policy.scriptsEnabled = resolver.resolve(.scriptsEnabled, expecting: "a Boolean", PolicyParse.bool) ?? true
+        policy.taskScripts.userScriptsEnabled =
+            resolver.resolve(.taskScriptsUser, expecting: "a Boolean", PolicyParse.bool) ?? true
+        policy.taskScripts.repositoryScriptsEnabled =
+            resolver.resolve(.taskScriptsRepository, expecting: "a Boolean", PolicyParse.bool) ?? true
         policy.labsEnabled = resolver.resolve(.labsEnabled, expecting: "a Boolean", PolicyParse.bool) ?? true
         policy.companionEnabled = resolver.resolve(.companionEnabled, expecting: "a Boolean", PolicyParse.bool) ?? true
         policy.remoteHostsEnabled =
@@ -42,6 +46,8 @@ public enum PolicyLoader {
                 .searchRetentionDays, expecting: "a whole number of days, 1 or more", PolicyParse.positiveInt)
         policy.shortcutBindings = resolver.resolve(
             .shortcutBindings, expecting: "a dictionary of command ids to shortcuts", PolicyParse.stringDictionary)
+        policy.aiInstructions = resolver.resolve(
+            .aiInstructions, expecting: "a dictionary of purpose ids to instructions", PolicyParse.stringDictionary)
         policy.telemetry.native =
             resolver.resolve(.telemetryNative, expecting: "on, off or user", PolicyParse.telemetryMode) ?? .user
         policy.telemetry.endpoints =

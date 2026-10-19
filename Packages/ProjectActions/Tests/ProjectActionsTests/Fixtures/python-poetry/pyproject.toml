@@ -1,0 +1,5 @@
+[tool.poetry]
+name = "svc"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8"

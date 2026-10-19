@@ -1,3 +1,4 @@
+import AIInstructions
 import Foundation
 import Git
 import Observation
@@ -55,7 +56,11 @@ final class GitSmartCommitModel {
             async let patch = source.patch(for: repository.changes)
             async let subjects = source.recentCommitSubjects()
             let style = CommitStyle(subjects: try await subjects)
-            let plan = try await SmartCommitPlanner().plan(files: files, patch: try await patch, style: style)
+            let instructions = AIInstructionsStore.shared
+            let planner = SmartCommitPlanner(
+                messageInstructions: instructions.addition(for: .commitMessage, in: source.root),
+                groupingInstructions: instructions.addition(for: .commitGrouping, in: source.root))
+            let plan = try await planner.plan(files: files, patch: try await patch, style: style)
             groups = plan.groups
             note =
                 SmartCommitPlanner.isAvailable

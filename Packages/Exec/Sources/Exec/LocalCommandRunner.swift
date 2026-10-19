@@ -4,9 +4,27 @@ import Synchronization
 
 /// Runs commands on this Mac.
 public struct LocalCommandRunner: CommandRunner {
+    /// How long a command that ignores being asked to stop gets before it's killed.
+    static let stopGracePeriod = Duration.seconds(3)
+    /// How long output already written by a command that exited gets to arrive, when the command's
+    /// output ends at exit.
+    static let exitDrainPeriod = Duration.milliseconds(100)
+
     public init() {}
 
     public func run(_ command: Command) async throws -> CommandResult {
+        try await run(command, streaming: nil)
+    }
+
+    public func run(
+        _ command: Command, onOutput: @escaping @Sendable (CommandOutput) -> Void
+    ) async throws -> CommandResult {
+        try await run(command, streaming: onOutput)
+    }
+
+    private func run(
+        _ command: Command, streaming onOutput: (@Sendable (CommandOutput) -> Void)?
+    ) async throws -> CommandResult {
         try Task.checkCancellation()
         guard let executable = Self.resolve(command.executable, path: command.environment["PATH"]) else {
             throw CommandError.notFound(command.executable)
@@ -27,8 +45,12 @@ public struct LocalCommandRunner: CommandRunner {
 
         // Both pipes are drained from the start, so a command that fills one pipe's buffer can't block,
         // and each read ends only at EOF, so no output is lost or reordered.
-        async let standardOutput = Self.readToEnd(outputPipe.fileHandleForReading)
-        async let standardError = Self.readToEnd(errorPipe.fileHandleForReading)
+        let standardOutput = PipeReader(outputPipe.fileHandleForReading) {
+            onOutput?(CommandOutput(stream: .standardOutput, data: $0))
+        }
+        let standardError = PipeReader(errorPipe.fileHandleForReading) {
+            onOutput?(CommandOutput(stream: .standardError, data: $0))
+        }
 
         let lifecycle = Lifecycle(process)
         let exitCode: Int32
@@ -61,39 +83,25 @@ public struct LocalCommandRunner: CommandRunner {
             // Nothing launched, so nothing will close the write ends: close them to end the reads.
             try? outputPipe.fileHandleForWriting.close()
             try? errorPipe.fileHandleForWriting.close()
-            _ = await (standardOutput, standardError)
+            _ = await (standardOutput.untilClosed(), standardError.untilClosed())
             throw error
         }
-        let result = CommandResult(
-            exitCode: exitCode,
-            standardOutput: await standardOutput,
-            standardError: await standardError
-        )
+        let output: Data
+        let errors: Data
+        if command.outputEndsAtExit {
+            // What it wrote before exiting is in the pipes already; what it left running keeps writing.
+            try? await Task.sleep(for: Self.exitDrainPeriod)
+            output = standardOutput.detach()
+            errors = standardError.detach()
+        } else {
+            (output, errors) = await (standardOutput.untilClosed(), standardError.untilClosed())
+        }
+        let result = CommandResult(exitCode: exitCode, standardOutput: output, standardError: errors)
 
         switch lifecycle.stopReason {
         case .cancelled: throw CancellationError()
         case .timedOut: throw CommandError.timedOut(command.executable, after: command.timeout ?? .zero)
         case nil: return result
-        }
-    }
-
-    /// Reads a pipe until every writer has closed it.
-    private static func readToEnd(_ handle: FileHandle) async -> Data {
-        await withCheckedContinuation { continuation in
-            let queue = DispatchQueue(label: "Exec.LocalCommandRunner.read")
-            let buffer = Mutex(Data())
-            let channel = DispatchIO(type: .stream, fileDescriptor: handle.fileDescriptor, queue: queue) { _ in }
-            channel.setLimit(lowWater: 1)
-            channel.read(offset: 0, length: .max, queue: queue) { done, data, _ in
-                if let data, !data.isEmpty {
-                    buffer.withLock { $0.append(contentsOf: data) }
-                }
-                guard done else { return }
-                channel.close()
-                // The handle owns the descriptor; keep it open until the read is done.
-                withExtendedLifetime(handle) {}
-                continuation.resume(returning: buffer.withLock { $0 })
-            }
         }
     }
 
@@ -104,6 +112,67 @@ public struct LocalCommandRunner: CommandRunner {
         return (path ?? "").split(separator: ":")
             .map { URL(filePath: String($0)).appending(path: executable) }
             .first { FileManager.default.isExecutableFile(atPath: $0.path(percentEncoded: false)) }
+    }
+}
+
+/// Reads a pipe until every writer has closed it, handing over each piece as it arrives.
+private final class PipeReader: Sendable {
+    private struct State {
+        var data = Data()
+        var isDetached = false
+        var isClosed = false
+        var waiter: CheckedContinuation<Data, Never>?
+    }
+
+    private let state = Mutex(State())
+
+    init(_ handle: FileHandle, onData: @escaping @Sendable (Data) -> Void) {
+        let queue = DispatchQueue(label: "Exec.LocalCommandRunner.read")
+        let channel = DispatchIO(type: .stream, fileDescriptor: handle.fileDescriptor, queue: queue) { _ in }
+        channel.setLimit(lowWater: 1)
+        // The handler keeps the reader (and the handle, which owns the descriptor) alive until EOF,
+        // even once nobody waits for it any more.
+        channel.read(offset: 0, length: .max, queue: queue) { [self] done, data, _ in
+            if let data, !data.isEmpty {
+                let chunk = Data(data)
+                let isKept = state.withLock { state in
+                    if !state.isDetached { state.data.append(chunk) }
+                    return !state.isDetached
+                }
+                if isKept { onData(chunk) }
+            }
+            guard done else { return }
+            channel.close()
+            withExtendedLifetime(handle) {}
+            let (waiter, data) = state.withLock { state in
+                state.isClosed = true
+                defer { state.waiter = nil }
+                return (state.waiter, state.data)
+            }
+            waiter?.resume(returning: data)
+        }
+    }
+
+    /// Everything read, once every writer has closed the pipe.
+    func untilClosed() async -> Data {
+        await withCheckedContinuation { continuation in
+            let data: Data? = state.withLock { state in
+                guard state.isClosed else {
+                    state.waiter = continuation
+                    return nil
+                }
+                return state.data
+            }
+            if let data { continuation.resume(returning: data) }
+        }
+    }
+
+    /// What's arrived so far. Reading goes on until the pipe closes, dropping what comes after.
+    func detach() -> Data {
+        state.withLock { state in
+            state.isDetached = true
+            return state.data
+        }
     }
 }
 
@@ -139,17 +208,34 @@ private final class Lifecycle: @unchecked Sendable {
         }
     }
 
-    /// Records why the command stopped early and terminates it if it's still running. The first reason
-    /// wins; stopping a process that already exited does nothing.
+    /// Records why the command stopped early and asks it, and everything it started, to stop, killing
+    /// them if they're still running after a grace period. The first reason wins; stopping a process
+    /// that already exited does nothing.
     func stop(_ reason: StopReason) {
-        state.withLock { state in
-            guard state.stopReason == nil else { return }
+        let stopped = state.withLock { state -> Bool in
+            guard state.stopReason == nil else { return false }
             if state.launched {
-                guard process.isRunning else { return }
-                process.terminate()
+                guard process.isRunning else { return false }
+                signal(SIGTERM)
             }
             state.stopReason = reason
+            return state.launched
         }
+        guard stopped else { return }
+        Task {
+            try? await Task.sleep(for: LocalCommandRunner.stopGracePeriod)
+            state.withLock { _ in
+                if process.isRunning { signal(SIGKILL) }
+            }
+        }
+    }
+
+    /// Signals the command's process group: `Process` makes the command a group leader, so this
+    /// reaches the processes a script started too (a shell that's killed leaves its children holding
+    /// the output open otherwise). Only the command itself if it somehow isn't a leader.
+    private func signal(_ signal: Int32) {
+        let pid = process.processIdentifier
+        kill(getpgid(pid) == pid ? -pid : pid, signal)
     }
 }
 #endif

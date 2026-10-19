@@ -33,6 +33,20 @@ public struct PullRequestPage: Sendable, Hashable {
     public var changedFiles: Int
     public var viewerDidAuthor: Bool
     public var viewerCanMergeAsAdmin: Bool
+    public var viewerCanClose: Bool
+    public var viewerCanReopen: Bool
+    public var viewerCanEnableAutoMerge: Bool
+    public var viewerCanDisableAutoMerge: Bool
+    /// The repository lets pull requests merge on their own once requirements pass.
+    public var autoMergeAllowed: Bool
+    /// The base branch merges through a merge queue.
+    public var isMergeQueueEnabled: Bool
+    /// How the base branch's merge queue merges, when it has one.
+    public var mergeQueueMethod: MergeMethod?
+    /// Queued or set to auto-merge, when it is.
+    public var mergeState: PullRequestMergeState?
+    /// Why it last left the merge queue, when that's the latest queue event.
+    public var removedFromQueueReason: String?
     public var labels: [PullRequestLabel]
     public var requestedReviewers: [String]
     /// Each reviewer's latest approval or change request.
@@ -64,6 +78,11 @@ public struct PullRequestPage: Sendable, Hashable {
     }
 
     /// Whether the viewer may merge: push access, or admin rights that bypass protections.
+    /// Close when it's open, Reopen when it's closed: GitHub says whether the viewer may.
+    public var viewerCanCloseOrReopen: Bool {
+        isOpen ? viewerCanClose : (state == .closed && viewerCanReopen)
+    }
+
     public var viewerCanMerge: Bool {
         permission.canMerge || viewerCanMergeAsAdmin
     }
@@ -130,6 +149,17 @@ extension PullRequestPage {
         changedFiles = pullRequest.changedFiles ?? 0
         viewerDidAuthor = pullRequest.viewerDidAuthor ?? false
         viewerCanMergeAsAdmin = pullRequest.viewerCanMergeAsAdmin ?? false
+        viewerCanClose = pullRequest.viewerCanClose ?? false
+        viewerCanReopen = pullRequest.viewerCanReopen ?? false
+        viewerCanEnableAutoMerge = pullRequest.viewerCanEnableAutoMerge ?? false
+        viewerCanDisableAutoMerge = pullRequest.viewerCanDisableAutoMerge ?? false
+        autoMergeAllowed = repository.autoMergeAllowed ?? false
+        isMergeQueueEnabled = pullRequest.isMergeQueueEnabled ?? false
+        mergeQueueMethod = pullRequest.mergeQueue?.configuration?.mergeMethod.flatMap {
+            MergeMethod(rawValue: $0.lowercased())
+        }
+        mergeState = pullRequest.mergeStatePayload.state
+        removedFromQueueReason = pullRequest.queueEvents?.nodes.last?.reason
         labels = pullRequest.labels?.nodes ?? []
         requestedReviewers = (pullRequest.reviewRequests?.nodes ?? []).compactMap {
             $0.requestedReviewer?.name
@@ -159,6 +189,7 @@ extension PullRequestPage {
             var squashMergeAllowed: Bool?
             var rebaseMergeAllowed: Bool?
             var viewerDefaultMergeMethod: String?
+            var autoMergeAllowed: Bool?
             var pullRequest: PullRequest?
         }
 
@@ -186,6 +217,15 @@ extension PullRequestPage {
             var changedFiles: Int?
             var viewerDidAuthor: Bool?
             var viewerCanMergeAsAdmin: Bool?
+            var viewerCanClose: Bool?
+            var viewerCanReopen: Bool?
+            var viewerCanEnableAutoMerge: Bool?
+            var viewerCanDisableAutoMerge: Bool?
+            var isMergeQueueEnabled: Bool?
+            var mergeQueue: MergeQueue?
+            var mergeQueueEntry: PullRequestMergeState.Payload.Entry?
+            var autoMergeRequest: PullRequestMergeState.Payload.AutoMerge?
+            var queueEvents: Nodes<QueueEvent>?
             var labels: Nodes<PullRequestLabel>?
             var reviewRequests: Nodes<ReviewRequest>?
             var latestOpinionatedReviews: Nodes<PullRequestReview>?
@@ -194,6 +234,10 @@ extension PullRequestPage {
             var timelineItems: Page<PullRequestTimelineItem>
             var reviewThreads: Page<ReviewThread>
             var files: Page<ChangedFile>
+
+            var mergeStatePayload: PullRequestMergeState.Payload {
+                PullRequestMergeState.Payload(mergeQueueEntry: mergeQueueEntry, autoMergeRequest: autoMergeRequest)
+            }
         }
 
         struct ReviewRequest: Decodable {
@@ -210,6 +254,19 @@ extension PullRequestPage {
             }
 
             var requestedReviewer: Reviewer?
+        }
+
+        struct MergeQueue: Decodable {
+            struct Configuration: Decodable {
+                var mergeMethod: String?
+            }
+
+            var configuration: Configuration?
+        }
+
+        /// The latest queue event; only a removal has a reason.
+        struct QueueEvent: Decodable {
+            var reason: String?
         }
 
         struct Pending: Decodable {

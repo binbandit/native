@@ -75,11 +75,15 @@ public struct ConfigFile: Hashable, Sendable, Identifiable {
     public var url: URL
     /// Such as "User and local servers" or "Project servers for app".
     public var role: String
+    /// Where its servers apply. A file holding several scopes (Claude Code's `~/.claude.json` has
+    /// user and local servers) has the one its place says: `.user` for a file in the home folder.
+    public var scope: ConfiguredServer.Scope
     public var exists: Bool
 
-    public init(url: URL, role: String, exists: Bool) {
+    public init(url: URL, role: String, scope: ConfiguredServer.Scope, exists: Bool) {
         self.url = url
         self.role = role
+        self.scope = scope
         self.exists = exists
     }
 

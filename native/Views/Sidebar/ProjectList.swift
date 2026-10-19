@@ -1,39 +1,33 @@
 import SwiftUI
+import TaskList
 
-/// The projects and their sessions as a tree: a "Projects" header with the Needs You
-/// filter and an add button, each project as a collapsible group in the user's order, then what's
-/// archived. Collapsed projects are remembered, and a project expands when one of its sessions is
-/// selected.
+/// The projects and their sessions as a tree: a "Projects" header with the window's filters and an
+/// add button, the active filters as chips, each project as a collapsible group in the user's
+/// order, then what's archived. Collapsed projects are remembered, and a project expands when one
+/// of its sessions is selected. While filters narrow the list, projects with matches show expanded
+/// and the rest collapse with a note saying so.
 struct ProjectList<TaskAccessory: View>: View {
     @Environment(AppModel.self) private var model
+    let listing: SidebarListing
     let taskAccessory: (SessionSummary) -> TaskAccessory
-    @Binding var showsOnlyNeedsYou: Bool
+    @Binding var filter: TaskFilter
+    let selection: SidebarSelectionModel
     let select: (SessionKey) -> Void
 
     @AppStorage(CollapsedProjects.storageKey) private var collapsed = CollapsedProjects()
     @State private var drag = SidebarDragState()
 
     var body: some View {
-        // Each project's order is worked out once per update and handed to its rows as plain values.
-        let groups = model.projects.all.map { project in (project, model.sessions(in: project.id)) }
-        let allPinned = model.pinnedSessions
-        let pinned = visible(allPinned)
+        @Bindable var selection = selection
+        let isNarrowing = filter.isNarrowing
         VStack(alignment: .leading, spacing: DS.Space.xxs) {
-            if !pinned.isEmpty {
+            if !listing.pinned.isEmpty {
                 PinnedSection(
-                    sessions: pinned, order: Self.positions(allPinned), drag: drag, taskAccessory: taskAccessory,
-                    select: select)
+                    sessions: listing.pinned, order: Self.positions(listing.allPinned), drag: drag,
+                    taskAccessory: taskAccessory, select: select)
             }
-            SectionHeader(showsOnlyNeedsYou ? "Needs You" : "Projects") {
-                IconButton(
-                    CommandRegistry.shared.help(
-                        showsOnlyNeedsYou ? "Show All Tasks" : "Show Only Tasks That Need You", for: .viewNeedsYouFilter
-                    ),
-                    systemImage: "line.3.horizontal.decrease",
-                    isActive: showsOnlyNeedsYou
-                ) {
-                    showsOnlyNeedsYou.toggle()
-                }
+            SectionHeader("Projects") {
+                SidebarFilterButton(filter: $filter, isSelecting: $selection.isSelecting)
                 IconButton("Add Project", systemImage: "folder.badge.plus") {
                     model.isAddingProject = true
                 }
@@ -41,38 +35,42 @@ struct ProjectList<TaskAccessory: View>: View {
             // Lines the buttons up with the projects' "+" buttons.
             .padding(.trailing, DS.Space.sm)
 
+            if filter.isActive {
+                SidebarFilterChips(filter: $filter)
+            }
             if model.projects.all.isEmpty {
                 AddProjectPrompt()
-            } else if showsOnlyNeedsYou, pinned.isEmpty, groups.allSatisfy({ visible($0.1).isEmpty }) {
-                NothingNeedsYou { showsOnlyNeedsYou = false }
+            } else if isNarrowing, listing.isEmpty, model.startingTasks.isEmpty {
+                NothingMatches { filter.clearFilters() }
             }
-            ForEach(Array(groups.enumerated()), id: \.element.0.id) { index, group in
-                let (project, all) = group
-                let sessions = visible(all)
-                if !showsOnlyNeedsYou || !sessions.isEmpty {
-                    ProjectSection(
-                        project: project,
-                        sessions: sessions,
-                        order: Self.positions(all),
-                        position: (index, groups.count),
-                        isFiltered: showsOnlyNeedsYou,
-                        isExpanded: Binding(
-                            get: { showsOnlyNeedsYou || !collapsed.contains(project.id) },
-                            set: { collapsed.set(project.id, collapsed: !$0) }
-                        ),
-                        drag: drag,
-                        taskAccessory: taskAccessory,
-                        select: select
-                    )
-                }
+            ForEach(Array(listing.groups.enumerated()), id: \.element.project.id) { index, group in
+                let project = group.project
+                let hasNoMatches =
+                    isNarrowing && group.visible.isEmpty && model.startingTasks(in: project.id).isEmpty
+                ProjectSection(
+                    project: project,
+                    sessions: group.visible,
+                    order: Self.positions(group.all),
+                    position: (index, listing.groups.count),
+                    isFiltered: isNarrowing,
+                    hasNoMatches: hasNoMatches,
+                    isExpanded: Binding(
+                        get: { isNarrowing ? !hasNoMatches : !collapsed.contains(project.id) },
+                        set: { collapsed.set(project.id, collapsed: !$0) }
+                    ),
+                    drag: drag,
+                    taskAccessory: taskAccessory,
+                    select: select
+                )
             }
-            if !showsOnlyNeedsYou {
+            // Archived tasks show in their projects while the filter includes them.
+            if !isNarrowing, !filter.includesArchived {
                 ArchivedSection(select: select)
             }
         }
         .onChange(of: model.selection) {
             guard let selection = model.selection,
-                let project = model.sessionList.first(where: { $0.id == selection })?.project,
+                let project = model.catalog.lookup(selection)?.project ?? model.startingTask(selection)?.project,
                 collapsed.contains(project)
             else { return }
             withAnimation(.dsDisclosure) {
@@ -83,13 +81,6 @@ struct ProjectList<TaskAccessory: View>: View {
 
     private static func positions(_ sessions: [SessionSummary]) -> [SessionKey: Int] {
         Dictionary(sessions.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { first, _ in first })
-    }
-
-    /// Sessions as the list shows them: all of them, or with the filter on, only those waiting on
-    /// the user (asking for something, or finished while they looked elsewhere).
-    private func visible(_ sessions: [SessionSummary]) -> [SessionSummary] {
-        guard showsOnlyNeedsYou else { return sessions }
-        return sessions.filter { TaskStatus(model.session($0.id)).needsAttention || model.isUnread($0.id) }
     }
 }
 
@@ -122,18 +113,18 @@ private struct AddProjectPrompt: View {
     }
 }
 
-/// The Needs You filter with nothing to show: say so, and offer the way back.
-private struct NothingNeedsYou: View {
-    let showAll: () -> Void
+/// The filters match no task anywhere: say so, and offer the way back.
+private struct NothingMatches: View {
+    let clear: () -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.sm) {
-            Text("Nothing needs you right now. Tasks show up here when they ask for something or finish.")
+            Text("No tasks match these filters. Tasks show up here as soon as they do.")
                 .font(.dsBody)
                 .foregroundStyle(.dsTextTertiary)
                 .fixedSize(horizontal: false, vertical: true)
             // Ghost, so nothing opaque sits on the translucent sidebar.
-            Button("Show All Tasks", action: showAll)
+            Button("Clear Filters", action: clear)
                 .buttonStyle(.ds(.ghost))
         }
         .padding(.horizontal, DS.Space.sm)

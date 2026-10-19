@@ -5,6 +5,40 @@ import Foundation
 /// same code works wherever the project lives.
 public protocol CommandRunner: Sendable {
     func run(_ command: Command) async throws -> CommandResult
+    /// Runs like `run(_:)`, handing over output as it arrives, for showing a long command's
+    /// progress. Output already handed over stays handed over when the command then times out.
+    func run(_ command: Command, onOutput: @escaping @Sendable (CommandOutput) -> Void) async throws -> CommandResult
+}
+
+extension CommandRunner {
+    /// For runners that can't stream: all the output at once, when the command ends.
+    public func run(
+        _ command: Command, onOutput: @escaping @Sendable (CommandOutput) -> Void
+    ) async throws -> CommandResult {
+        let result = try await run(command)
+        if !result.standardOutput.isEmpty {
+            onOutput(CommandOutput(stream: .standardOutput, data: result.standardOutput))
+        }
+        if !result.standardError.isEmpty {
+            onOutput(CommandOutput(stream: .standardError, data: result.standardError))
+        }
+        return result
+    }
+}
+
+/// A piece of a command's output, as it arrived.
+public struct CommandOutput: Hashable, Sendable {
+    public enum Stream: Hashable, Sendable {
+        case standardOutput, standardError
+    }
+
+    public var stream: Stream
+    public var data: Data
+
+    public init(stream: Stream, data: Data) {
+        self.stream = stream
+        self.data = data
+    }
 }
 
 /// One command invocation. `executable` is a name looked up on `environment`'s PATH, or an absolute
@@ -17,8 +51,12 @@ public struct Command: Hashable, Sendable {
     /// (and remote hosts) don't inherit a terminal's.
     public var environment: [String: String]
     public var standardInput: Data?
-    /// Kills the command after this long; nil waits as long as it takes.
+    /// Kills the command, and everything it started, after this long; nil waits as long as it takes.
     public var timeout: Duration?
+    /// Whether the command is done when it exits, rather than once everything it started has closed
+    /// its output: for scripts that leave a server running in the background. That output is still
+    /// read, so the server never blocks on a full pipe, but dropped.
+    public var outputEndsAtExit: Bool
 
     public init(
         _ executable: String,
@@ -26,7 +64,8 @@ public struct Command: Hashable, Sendable {
         in directory: String? = nil,
         environment: [String: String],
         standardInput: Data? = nil,
-        timeout: Duration? = nil
+        timeout: Duration? = nil,
+        outputEndsAtExit: Bool = false
     ) {
         self.executable = executable
         self.arguments = arguments
@@ -34,6 +73,7 @@ public struct Command: Hashable, Sendable {
         self.environment = environment
         self.standardInput = standardInput
         self.timeout = timeout
+        self.outputEndsAtExit = outputEndsAtExit
     }
 }
 

@@ -2,24 +2,22 @@ import ACP
 import SwiftUI
 
 /// Follow-ups waiting for the turn to end, as the composer's top section. The first goes out next.
-/// Each can be sent right away (steered into the running turn, when the agent supports it), edited
-/// in the composer, or removed.
+/// Each can be sent now (steered into the running turn, or sent after stopping it when the agent
+/// can't steer), edited in the composer, moved (drag, its menu, or ⌥⌘↑ / ⌥⌘↓ while it's open in the
+/// editor) or removed.
 struct QueuedPromptsSection: View {
     typealias Prompt = SessionModel.QueuedPrompt
-
-    /// How a queued message can skip the wait, if it can.
-    enum SendNow {
-        /// Into the running turn.
-        case steer
-        /// As the next prompt, while the agent is idle.
-        case send
-    }
 
     let prompts: [Prompt]
     /// The prompt open in the editor, if any.
     let editing: Prompt.ID?
-    let sendNow: SendNow?
+    /// How Send Now delivers a message right now; nil when it can't.
+    let sendNow: SessionModel.SendNowRoute?
+    let agentName: String
     let onSendNow: (Prompt.ID) -> Void
+    let onMove: (Prompt.ID, PromptQueue.Direction) -> Void
+    /// A drag dropped the first message just before the second, or last with no second.
+    let onDrop: (Prompt.ID, Prompt.ID?) -> Void
     let onEdit: (Prompt) -> Void
     let onRemove: (Prompt.ID) -> Void
 
@@ -44,8 +42,12 @@ struct QueuedPromptsSection: View {
                     prompt: prompts[index],
                     isNext: index == 0,
                     isEditing: prompts[index].id == editing,
-                    sendNow: sendNow,
+                    canMoveUp: index > 0,
+                    canMoveDown: index < prompts.count - 1,
+                    sendNow: sendNow.map { QueuedSendNow(route: $0, agentName: agentName) },
                     onSendNow: onSendNow,
+                    onMove: onMove,
+                    onDrop: onDrop,
                     onEdit: onEdit,
                     onRemove: onRemove
                 )
@@ -53,6 +55,27 @@ struct QueuedPromptsSection: View {
         }
         .font(.dsBody)
         .padding(DS.Space.md)
+        // A message dragged below the last row goes to the back.
+        .dropDestination(for: String.self) { ids, _ in
+            guard let id = ids.first.flatMap(UUID.init(uuidString:)) else { return false }
+            onDrop(id, nil)
+            return true
+        }
+    }
+}
+
+/// What Send Now does for a queued message, said in its help.
+struct QueuedSendNow {
+    let route: SessionModel.SendNowRoute
+    let agentName: String
+
+    var help: String {
+        switch route {
+        case .steer: "Send Now: add it to \(agentName)’s running turn"
+        case .interrupt:
+            "Send Now: stop \(agentName)’s turn, then send it (\(agentName) can’t add a message to a turn in progress)"
+        case .send: "Send Now: send it as the next message"
+        }
     }
 }
 
@@ -62,12 +85,17 @@ private struct QueuedPromptRow: View {
     let prompt: Prompt
     let isNext: Bool
     let isEditing: Bool
-    let sendNow: QueuedPromptsSection.SendNow?
+    let canMoveUp: Bool
+    let canMoveDown: Bool
+    let sendNow: QueuedSendNow?
     let onSendNow: (Prompt.ID) -> Void
+    let onMove: (Prompt.ID, PromptQueue.Direction) -> Void
+    let onDrop: (Prompt.ID, Prompt.ID?) -> Void
     let onEdit: (Prompt) -> Void
     let onRemove: (Prompt.ID) -> Void
 
     @State private var isHovered = false
+    @State private var isDropTarget = false
     @FocusState private var focusedAction: String?
 
     var body: some View {
@@ -92,13 +120,11 @@ private struct QueuedPromptRow: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             // The actions show on hover, and while one of them has keyboard focus, so rows stay quiet.
             HStack(spacing: DS.Space.xxs) {
-                switch sendNow {
-                case .steer: action("Steer Now", systemImage: "chevron.up") { onSendNow(prompt.id) }
-                case .send: action("Send Now", systemImage: "chevron.up") { onSendNow(prompt.id) }
-                case nil: EmptyView()
+                if let sendNow {
+                    action("Send Now", systemImage: "arrow.up", help: sendNow.help) { onSendNow(prompt.id) }
                 }
-                action("Remove from Queue", systemImage: "trash") { onRemove(prompt.id) }
                 action("Edit Message", systemImage: "square.and.pencil") { onEdit(prompt) }
+                action("Remove from Queue", systemImage: "trash") { onRemove(prompt.id) }
             }
             .opacity(!ComposerPlatform.revealsControlsOnHover || isHovered || focusedAction != nil ? 1 : 0)
         }
@@ -106,29 +132,73 @@ private struct QueuedPromptRow: View {
         .padding(.horizontal, DS.Space.md)
         .frame(minHeight: DS.Size.listRow)
         .background(isNext ? Color.dsSelected : .clear, in: .rect(cornerRadius: DS.Radius.control, style: .continuous))
+        // Where a dragged message lands: just above this one.
+        .overlay(alignment: .top) {
+            if isDropTarget {
+                // Centered in the gap between rows, as the sidebar marks a drop.
+                Capsule()
+                    .fill(.dsTextTertiary)
+                    .frame(height: DS.Space.xxs)
+                    .padding(.horizontal, DS.Space.xs)
+                    .offset(y: -DS.Space.xxs)
+                    .allowsHitTesting(false)
+                    .accessibilityHidden(true)
+            }
+        }
         .contentShape(.rect)
         .onTapGesture { onEdit(prompt) }
+        // Dragged by its id; dropping on a row puts it there, pushing that row down.
+        .draggable(prompt.id.uuidString) {
+            ComposerSurface(isFloating: true) {
+                Text(verbatim: line)
+                    .font(.dsBody)
+                    .foregroundStyle(.dsTextPrimary)
+                    .lineLimit(1)
+                    .padding(.horizontal, DS.Space.md)
+                    .padding(.vertical, DS.Space.sm)
+            }
+        }
+        .dropDestination(for: String.self) { ids, _ in
+            guard let id = ids.first.flatMap(UUID.init(uuidString:)) else { return false }
+            onDrop(id, prompt.id)
+            return true
+        } isTargeted: {
+            isDropTarget = $0
+        }
         // The same actions without hovering: long-press on iPad, right-click on the Mac.
         .contextMenu {
-            switch sendNow {
-            case .steer: Button("Steer Now", systemImage: "chevron.up") { onSendNow(prompt.id) }
-            case .send: Button("Send Now", systemImage: "chevron.up") { onSendNow(prompt.id) }
-            case nil: EmptyView()
+            if let sendNow {
+                Button("Send Now", systemImage: "arrow.up") { onSendNow(prompt.id) }
+                    .help(sendNow.help)
             }
             Button("Edit Message", systemImage: "square.and.pencil") { onEdit(prompt) }
+            Divider()
+            Button("Move Up", systemImage: "arrow.up.to.line") { onMove(prompt.id, .up) }
+                .disabled(!canMoveUp)
+            Button("Move Down", systemImage: "arrow.down.to.line") { onMove(prompt.id, .down) }
+                .disabled(!canMoveDown)
+            Divider()
             Button("Remove from Queue", systemImage: "trash", role: .destructive) { onRemove(prompt.id) }
         }
         .trackHover($isHovered)
         .accessibilityElement(children: .contain)
         .accessibilityLabel(isEditing ? "Editing: \(prompt.text)" : isNext ? "Next: \(prompt.text)" : prompt.text)
+        // The hover actions, for VoiceOver and Switch Control, which don't hover.
+        .accessibilityAction(named: "Send Now") { if sendNow != nil { onSendNow(prompt.id) } }
+        .accessibilityAction(named: "Edit Message") { onEdit(prompt) }
+        .accessibilityAction(named: "Remove from Queue") { onRemove(prompt.id) }
+        .accessibilityAction(named: "Move Up") { onMove(prompt.id, .up) }
+        .accessibilityAction(named: "Move Down") { onMove(prompt.id, .down) }
     }
 
     private var line: String {
         prompt.text.split(whereSeparator: \.isNewline).joined(separator: " ")
     }
 
-    private func action(_ title: String, systemImage: String, perform: @escaping () -> Void) -> some View {
-        ActionIcon(title: title, systemImage: systemImage, perform: perform)
+    private func action(
+        _ title: String, systemImage: String, help: String? = nil, perform: @escaping () -> Void
+    ) -> some View {
+        ActionIcon(title: title, systemImage: systemImage, help: help ?? title, perform: perform)
             .focused($focusedAction, equals: title)
     }
 }
@@ -137,6 +207,7 @@ private struct QueuedPromptRow: View {
 private struct ActionIcon: View {
     let title: String
     let systemImage: String
+    let help: String
     let perform: () -> Void
 
     @State private var isHovered = false
@@ -150,6 +221,6 @@ private struct ActionIcon: View {
             .frame(width: ComposerMetrics.rowActionSize, height: ComposerMetrics.rowActionSize)
             .contentShape(.rect)
             .trackHover($isHovered)
-            .help(title)
+            .help(help)
     }
 }

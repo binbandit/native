@@ -77,10 +77,10 @@ extension GitHubModel {
         DSPasteboard.copy(text)
     }
 
-    /// Asks the user to confirm before anything touches a working tree.
+    /// Hands the pull request to the app's Open as Task sheet, which asks before anything touches
+    /// a working tree.
     func requestOpenAsTask(_ pullRequest: PullRequestSummary) {
-        guard canOpenAsTask else { return }
-        openAsTaskCandidate = pullRequest
+        openAsTask?(pullRequest)
     }
 
     // MARK: - Creating

@@ -1,0 +1,11 @@
+{
+  "name": "web",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "test": "vitest run",
+    "lint": "eslint .",
+    "db:migrate": "drizzle-kit migrate",
+    "postinstall": "patch-package"
+  }
+}

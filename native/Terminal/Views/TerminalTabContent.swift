@@ -10,6 +10,16 @@ struct TerminalTabContent: View {
 
     var body: some View {
         switch tab.status {
+        case .failedToStart(.directoryMissing) where tab.job != nil:
+            let folder = panel.jobDirectory(of: tab.id)?.abbreviatedPath ?? "Its folder"
+            ErrorState(
+                "“\(tab.displayTitle)” couldn't start",
+                suggestion: "\(folder) doesn't exist in this task's folder. Change the action's folder, or "
+                    + "check out the branch that has it.",
+                primary: .init("Try Again") { panel.rerunJob(in: tab.id) },
+                secondary: .init("Close Tab") { panel.close(tab.id) },
+                layout: .pane
+            )
         case .failedToStart(.directoryMissing):
             ErrorState(
                 "This task's folder is gone",
@@ -49,6 +59,16 @@ struct TerminalTabContent: View {
 
     /// What happened to the shell, over its last output.
     @ViewBuilder private var outcome: some View {
+        if let job = tab.job {
+            if let outcome = job.outcome {
+                TerminalJobOutcomeBanner(job: job, outcome: outcome) { panel.rerunJob(in: tab.id) }
+            }
+        } else {
+            shellOutcome
+        }
+    }
+
+    @ViewBuilder private var shellOutcome: some View {
         switch tab.status {
         case .exited:
             NoticeBanner(

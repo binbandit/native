@@ -55,9 +55,10 @@ struct TranscriptStyleConfiguration {
 // The leaf rows every style shows the same way, wired to the session.
 extension TranscriptStyleConfiguration {
     func toolCall(_ call: ToolCallState) -> some View {
-        ToolCallView(call: call) { option in
+        ToolCallView(call: call) { [session] option in
             Task { await session.choose(option, forToolCall: call.id) }
         }
+        .equatable()
         .environment(\.permissionShortcutsEnabled, call.id == shortcutTarget)
     }
 

@@ -176,6 +176,15 @@ final class LayerMaskedHost<Mask: CALayer>: UIView {
 }
 #endif
 
+extension CAFrameRateRange {
+    /// Motion the eye follows (a band sweeping, dots pulsing): as smooth as the display goes, 120 Hz on
+    /// ProMotion, and never under 60. It's the render server's work, so it costs the app nothing.
+    nonisolated static let dsMotion = CAFrameRateRange(minimum: 60, maximum: 120, preferred: 120)
+    /// Ambient change (stars twinkling, bats drifting by the moon): slow enough that 30 Hz reads
+    /// the same, for a quarter of the frames.
+    nonisolated static let dsAmbient = CAFrameRateRange(minimum: 15, maximum: 30, preferred: 30)
+}
+
 extension CALayer {
     /// Stops the layer's animations where they are, or lets them run on from there.
     nonisolated func setAnimationsPaused(_ isPaused: Bool) {

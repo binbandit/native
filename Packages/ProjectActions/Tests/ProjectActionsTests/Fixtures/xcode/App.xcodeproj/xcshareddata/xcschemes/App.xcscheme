@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Scheme version = "1.7">
+   <TestAction>
+      <Testables>
+         <TestableReference skipped = "NO"></TestableReference>
+      </Testables>
+   </TestAction>
+</Scheme>

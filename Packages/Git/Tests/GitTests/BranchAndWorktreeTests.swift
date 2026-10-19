@@ -113,6 +113,41 @@ struct BranchAndWorktreeTests {
         #expect(try await repository.branches(includingRemote: false).map(\.name) == ["main"])
     }
 
+    /// Enough files for git to check them out in parallel (`Repository.parallelCheckout`), with an
+    /// executable and a symlink among them: the worktree gets every one, unchanged.
+    @Test func checksOutEveryFileOfALargeTreeInParallel() async throws {
+        let test = try await TestRepository.make()
+        defer { test.remove() }
+        for index in 0..<300 {
+            try test.write("src/module\(index % 10)/file\(index).txt", "contents \(index)\n")
+        }
+        try test.write("run.sh", "#!/bin/sh\necho hi\n")
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o755], ofItemAtPath: test.folder.appending(path: "run.sh").path(percentEncoded: false))
+        try FileManager.default.createSymbolicLink(
+            atPath: test.folder.appending(path: "link.txt").path(percentEncoded: false),
+            withDestinationPath: "README.md")
+        try await test.git("add", "-A")
+        try await test.git("commit", "--quiet", "-m", "Many files")
+        let repository = try await test.repository
+        let folder = test.folder.deletingLastPathComponent().appending(path: "big", directoryHint: .isDirectory)
+
+        let worktree = try await repository.addWorktree(at: folder, newBranch: "task/big")
+
+        let files = try await test.git("ls-files", in: worktree.path).split(separator: "\n")
+        #expect(files.count == 303)
+        #expect(try await test.git("status", "--porcelain", in: worktree.path).isEmpty)
+        let file = try String(contentsOf: worktree.path.appending(path: "src/module7/file157.txt"), encoding: .utf8)
+        #expect(file == "contents 157\n")
+        let mode =
+            try FileManager.default.attributesOfItem(
+                atPath: worktree.path.appending(path: "run.sh").path(percentEncoded: false))[.posixPermissions] as? Int
+        #expect(mode == 0o755)
+        #expect(
+            try FileManager.default.destinationOfSymbolicLink(
+                atPath: worktree.path.appending(path: "link.txt").path(percentEncoded: false)) == "README.md")
+    }
+
     @Test func listsLocalAndRemoteBranches() async throws {
         let (test, _) = try await repositoryWithRemote()
         defer { test.remove() }

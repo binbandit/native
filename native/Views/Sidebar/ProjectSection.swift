@@ -1,9 +1,12 @@
 import SwiftUI
+import TaskList
 
 /// One project and its sessions: the header collapses it, "+" starts
-/// a session in it, and its menu (also its context menu) reveals it, changes its icon, archives or
-/// deletes it. The header drags to reorder projects; sessions drag to reorder within the project,
-/// by mouse or by touch.
+/// a session in it, and its menu (also its context menu) opens its settings, reveals it, changes its
+/// icon, archives or deletes it. The header drags to reorder projects; sessions drag to reorder within the project,
+/// by mouse or by touch. Sessions being started come first, and until its first listing a project
+/// says it's finding its sessions rather than that it has none. Collapsed, the header says what its
+/// tasks are doing.
 struct ProjectSection<TaskAccessory: View>: View {
     @Environment(AppModel.self) private var model
     @Environment(\.undoManager) private var undoManager
@@ -16,6 +19,8 @@ struct ProjectSection<TaskAccessory: View>: View {
     /// The project's place among the projects, and how many there are.
     let position: (index: Int, count: Int)
     let isFiltered: Bool
+    /// The filters leave none of its tasks.
+    var hasNoMatches = false
     let isExpanded: Binding<Bool>
     let drag: SidebarDragState
     let taskAccessory: (SessionSummary) -> TaskAccessory
@@ -32,11 +37,15 @@ struct ProjectSection<TaskAccessory: View>: View {
     var body: some View {
         let item = SidebarDragState.Item.project(project.id)
         let problems = model.problems.list(for: project.id)
+        let starting = model.startingTasks(in: project.id)
         ProjectGroup(
             name: project.name,
             icon: iconStore.icon(for: project),
             isExpanded: isExpanded,
             taskCount: sessions.count,
+            // Only while collapsed, so an expanded project doesn't watch every task for it.
+            activity: isExpanded.wrappedValue ? ProjectActivity() : activity(starting: starting.count),
+            note: hasNoMatches ? "No matching tasks" : nil,
             // Not while its folder is gone; the problem under it says so, with Retry.
             onNewTask: model.missingFolder(of: project.id) == nil
                 ? { Task { await model.newSession(in: project.id) } } : nil
@@ -50,6 +59,9 @@ struct ProjectSection<TaskAccessory: View>: View {
                 ForEach(problems) { problem in
                     ProjectProblemRow(problem: problem)
                 }
+            }
+            ForEach(starting) { task in
+                StartingTaskRow(task: task)
             }
             ForEach(sessions) { summary in
                 let row = SidebarDragState.Item.session(summary.id, in: project.id)
@@ -65,8 +77,12 @@ struct ProjectSection<TaskAccessory: View>: View {
             }
             // A project whose folder is gone or whose listing failed isn't known to be empty; its
             // problem row says why.
-            if sessions.isEmpty, !isFiltered, !problems.contains(where: \.leavesListUnknown) {
-                ProjectEmptyRow(project: project)
+            if sessions.isEmpty, starting.isEmpty, !isFiltered, !problems.contains(where: \.leavesListUnknown) {
+                if model.isFindingSessions(in: project.id) {
+                    FindingSessionsRow()
+                } else {
+                    ProjectEmptyRow(project: project)
+                }
             }
         }
         // The icon picker hangs off the project's header, not the middle of its sessions.
@@ -93,11 +109,26 @@ struct ProjectSection<TaskAccessory: View>: View {
             Button("Delete") { isConfirmingDelete = true }
         }
     }
+
+    /// How many of the project's tasks need the user and how many are working, every task counted
+    /// whatever the filter shows; sessions being started count as working.
+    private func activity(starting: Int) -> ProjectActivity {
+        var activity = ProjectActivity(working: starting)
+        for summary in model.sessions(in: project.id) {
+            switch TaskFacts.Activity(model.session(summary.id)) {
+            case .needsYou: activity.needsYou += 1
+            case .running: activity.working += 1
+            case .failed, .done, .idle: break
+            }
+        }
+        return activity
+    }
 }
 
 /// A project's actions, from its "…" button and its context menu.
 private struct ProjectMenu: View {
     @Environment(AppModel.self) private var model
+    @Environment(SettingsPresentation.self) private var settings
     @Environment(\.undoManager) private var undoManager
     @Environment(\.displayScale) private var displayScale
     @Environment(\.colorScheme) private var colorScheme
@@ -136,7 +167,11 @@ private struct ProjectMenu: View {
         Button("Show Project Home") {
             model.focusProject(project.id)
         }
+        ProjectActionsProjectMenu(project: project)
         Divider()
+        Button("Project Settings…") {
+            settings.open(.project(project.id))
+        }
         Button("Change Icon…") {
             isPickingIcon = true
         }
@@ -151,6 +186,7 @@ private struct ProjectMenu: View {
         Button("Copy Path") {
             DSPasteboard.copy(project.path)
         }
+        GitCleanupMenuItem(project: project)
         Divider()
         Button("Move Up") { model.move(.project(project.id), .up) }
             .disabled(position.index == 0)
@@ -201,6 +237,22 @@ private struct ProjectEmptyRow: View {
             .trackHover($isHovered)
             .help("Install an agent to work in \(project.name)")
         }
+    }
+}
+
+/// A project whose sessions haven't been listed yet: the loader and what's happening, so a project
+/// just added doesn't look empty while its agents list it.
+private struct FindingSessionsRow: View {
+    var body: some View {
+        Label {
+            Text("Finding sessions…")
+        } icon: {
+            DotGridLoader(pattern: .settingUp)
+                .frame(width: DS.Size.rowLeading * 0.75, height: DS.Size.rowLeading * 0.75)
+        }
+        .labelStyle(EmptyRowLabelStyle())
+        .foregroundStyle(.dsTextTertiary)
+        .accessibilityElement(children: .combine)
     }
 }
 

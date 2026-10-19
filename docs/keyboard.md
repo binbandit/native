@@ -20,21 +20,39 @@ cancels, so those keys don't get rows of their own.
 
 | Keys | While the agent is idle | While the agent is working | Command |
 | --- | --- | --- | --- |
-| Return | Send | The preferred follow-up behavior (Settings: Queue or Steer) | |
+| Return | Send | The preferred follow-up behavior (Settings: Steer, the default, or Queue) | |
 | ⌘Return | Send | The other follow-up behavior | |
 | Shift-Return, Option-Return | New line | New line | |
-| Escape | Close the slash-command list if open | Stop the turn (with the slash-command list closed) | |
-| ⌘. | | Stop the turn | `session.stop` |
-| ↑ in an empty composer | Recall the last prompt | Edit the last queued message | |
+| Escape | Close the slash-command list if open | Stop the turn (with the slash-command list closed); again, stop waiting for the agent | |
+| ⌘. | | Stop the turn; again, stop waiting for the agent | `session.stop` |
+| ↑ in an empty composer | Edit the last queued message, if any; else recall the last prompt | Edit the last queued message | |
 
-**Queue** holds the message as a chip above the composer and sends it when the turn ends; queued
-messages go out one per turn, in order. Chips can be edited, removed, or steered into the running
-turn right away. **Steer** adds the message to the running turn (`_session/steering`); agents that
-don't support steering queue it instead, and the hint says so.
+**Steer** adds the message to the running turn (`_session/steering`); agents that don't support
+steering queue it instead, and the hint says so. **Queue** holds the message above the composer
+and sends it when the turn ends; queued messages go out one per turn, in order. A stopped or failed
+turn holds the queue until you send again.
 
 The composer shows the current mapping as a hint while the agent works, e.g.
-"↩ Queue · ⌘↩ Steer", when the controls row has room for it; the placeholder always says what
+"↩ Steer · ⌘↩ Queue", when the controls row has room for it; the placeholder always says what
 Return does.
+
+**Stop** asks the agent to end the turn, answers its open permission requests as rejected, and the
+transcript marks the turn Stopped. If the agent hasn't ended it after 10 seconds, or Stop is pressed
+again, Native stops waiting and says so.
+
+### Queued messages
+
+Each queued message has Send Now, Edit and Remove on hover; its menu (a right-click, or touch and
+hold on iPad) adds Move Up and Move Down. Send Now steers the message into the running turn when the
+agent can steer; otherwise it stops the turn and sends the message next. Drag a message to reorder
+the queue. Clicking a message, or ↑ in an empty composer, opens it in the editor:
+
+| Keys (queued message open in the editor) | Action |
+| --- | --- |
+| Return | Save the edit; the message keeps its place |
+| ⌘Return | Save the edit and Send Now |
+| ⌥⌘↑ / ⌥⌘↓ | Move it up / down the queue (Session ▸ Move Queued Message Up / Down) |
+| Escape | Close it without saving |
 
 ## Agent questions
 
@@ -77,6 +95,7 @@ sidebar, the projects and the Settings pages, recently used ones first. With a t
 | --- | --- |
 | ⌘Return in Smart Commit | Commit the planned groups |
 | ⌘Return in the setup-script editor | Save the script new worktrees run (Settings ▸ Git) |
+| ⌘Return in Clean Up Merged | Clean up the included items |
 
 ## Pull request page
 
@@ -84,13 +103,27 @@ sidebar, the projects and the Settings pages, recently used ones first. With a t
 | --- | --- |
 | ⌘Return in a comment box | Send it: comment, reply, add to the review, or save an edit |
 | Escape in a new line comment | Discard it |
+| Escape in a pull request row's comment box | Close it, keeping the text for next time |
 | Click a line number | Comment on that line |
 | Drag across line numbers | Comment on the lines dragged over, within one hunk and one side (on iPad: touch and hold a line number, then drag) |
 | Shift-click a line number | Widen the line comment to a range (on iPad: "Extend Comment to Here" in the line's menu) |
 | Return in the review sheet | Submit the review (merging always takes a click) |
 | Escape in the review or merge sheet | Close it without submitting |
+| ⌥⌘A | Show or hide Ask, the private question panel beside the page ("Ask" in the header) |
+| Return in Ask's composer | Ask; while an answer is coming, queue the question for after it |
+| Shift-Return, Option-Return in Ask's composer | New line |
+| Escape in Ask's composer | Stop the answer |
 
 ## Slash commands
+
+The list has Native's own commands first, then the agent's. Native runs its own rather than
+sending them; an agent's command of the same name stays listed, and picking it from the list sends
+it to the agent.
+
+| Slash command | What Native does |
+| --- | --- |
+| `/clear` | Starts a fresh conversation in the same task: a new session of the same agent, in the same folder, with the same settings and title. The earlier conversation stays with the agent, a click away: Earlier Conversation in the toolbar, or Session ▸ Open Earlier Conversation. Session ▸ Clear Conversation and the palette do the same as `/clear` |
+| `/goal …` | Sets, pauses, resumes or clears the task's goal |
 
 | Keys | Action |
 | --- | --- |
@@ -101,15 +134,17 @@ sidebar, the projects and the Settings pages, recently used ones first. With a t
 
 ## File mentions
 
-Typing `@` at the start of a word lists the project's files (ignored files left out; changed and
-recently mentioned files first), narrowing as you type. The chosen file goes into the draft as
-`@path`. Pasted or dictated `@` text opens the list the same way ([accessibility.md](accessibility.md)).
+Typing `@` at the start of a word lists the project's files and folders (ignored files left out;
+changed and recently mentioned ones first, a folder ahead of the files in it when its name matches),
+narrowing as you type. A folder shows with a folder icon and a trailing `/`. The choice goes into
+the draft as `@path` (`@src/components/` for a folder) and reaches the agent as a link to the file
+or folder. Pasted or dictated `@` text opens the list the same way ([accessibility.md](accessibility.md)).
 
 | Keys | Action |
 | --- | --- |
 | @ | Open the file list |
 | ↑ / ↓ | Move the selection |
-| Return or Tab | Insert the selected file |
+| Return or Tab | Insert the selected file or folder |
 | Escape | Close the list |
 
 ## Attachments
@@ -148,15 +183,29 @@ They're chosen not to collide with text editing in the composer.
 On an expedition's route review, ⌘Return approves too, and ⌘L focuses the message field for the
 expedition's lead (the composer key, on a page without a composer).
 
+## Transcript
+
+Tool rows start closed: one line with the tool, its subject and how it went. Each row, exploration
+group and condensed run of tool calls is a button, so it opens with a click, a tap, or from the
+keyboard.
+
+| Keys | Action |
+| --- | --- |
+| Space on a focused tool row (Tab moves focus, with Keyboard Navigation on) | Show or hide its output |
+| Space on a focused run of tool calls | Show or hide the run's list |
+
 ## Sessions and navigation
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
 | ⌘K | Command palette: run any command, or jump to a task, project or Settings page | View | `palette.show` |
+| ⌘/ | Keyboard shortcuts (also the "?" at the status bar's trailing end) | Help | `help.keyboardShortcuts` |
 | ⌘N | New session with the last-used agent | File | `session.new` |
 | ⌥⌘N | New session with… (agent picker) | File | `session.newWithAgent` |
 | ⌥⌘E | New expedition (`docs/expeditions.md`) | File | `expedition.new` |
 | ⌘O | Open folder | File | `project.open` |
+| | The current project's settings (Settings ▸ Projects; also in the project's menu in the sidebar) | File | `project.settings` |
+| | Clean up the current project's merged task worktrees, branches and stale worktree records, after a review (also "Clean Up Merged…" in the project's menu in the sidebar) | File | `git.cleanUpMerged` |
 | ⇧⌘O | Open the task's folder in the default app (Open In) | Session | `session.openInDefaultApp` |
 | ⌘L | Focus the composer | Session | `composer.focus` |
 | ⌘[ / ⌘] | Back / forward through the sessions you've viewed | Go | `go.back` / `go.forward` |
@@ -164,9 +213,9 @@ expedition's lead (the composer key, on a page without a composer).
 | ⌃Tab / ⌃⇧Tab | Next / previous session | Session | `session.next` / `session.previous` |
 | Return on a selected sidebar session | Rename it (Escape cancels, Return commits) | Session | |
 | ⌃⌘S | Show or hide the sidebar | View | `view.toggleSidebar` |
-| ⌥⌘↑ / ⌥⌘↓ | Move the selected project or session up / down | Session | `sidebar.moveUp` / `sidebar.moveDown` |
-| ⇧⌘A | Archive the selected task (Undo brings it back), or unarchive an archived one | Session | `session.archive` |
-| ⌥⌘J | Show only tasks that need you | View | `view.needsYouFilter` |
+| ⌥⌘↑ / ⌥⌘↓ | Move the selected project or session up / down (a queued message instead, while one is open in the composer) | Session | `sidebar.moveUp` / `sidebar.moveDown` |
+| ⇧⌘A | Archive the selected task (Undo brings it back), or unarchive an archived one; with several tasks picked, archive them all | Session | `session.archive` |
+| ⌥⌘J | Turn the sidebar's Needs you filter on or off (its filter menu has the rest) | View | `view.needsYouFilter` |
 | ⌘⇧P | Pull requests | Go | `go.pullRequests` |
 | ⌘⇧X | Expeditions | Go | `go.expeditions` |
 | ⇧⌘F | Search every task (`docs/search.md`) | Go | `search.show` |
@@ -174,6 +223,33 @@ expedition's lead (the composer key, on a page without a composer).
 | ⌘⇧D | Show or hide the changes inspector (the task's uncommitted git changes) | View | `view.toggleChanges` |
 | ⌃⌘M | Show the session's MCP servers (the server chip beside the composer's context ring) | View | `view.mcpServers` |
 | ⌃⌘A | Keep Mac awake: cycle Off → While agents work → On (View ▸ Keep Mac Awake) | View | `keepAwake.nextMode` |
+| | Show or hide the status bar along the window's bottom edge (on by default) | View | `statusBar.toggle` |
+
+## Picking tasks in the sidebar
+
+Several tasks can be picked at once and acted on together. While more than one is picked (or Select
+Tasks is on, which makes taps pick, for touch), a bar at the foot of the sidebar says how many, with
+Archive, Mark as Read, Delete and the rest under More; a picked task's context menu offers the same.
+Each action applies to the picked tasks it would change and offers one Undo for all of them; Delete
+asks first.
+
+| Keys | Action | Menu | Command |
+| --- | --- | --- | --- |
+| ⌘-click a sidebar task | Pick it, or let it go; the first ⌘-click picks the open task too | | |
+| ⇧-click a sidebar task | Pick every task from the last one picked (or the open task) to it | | |
+| ⌘A with the sidebar focused | Pick every task in the open task's project (in Pinned, every pinned task) | | |
+| Escape with tasks picked | Let them go | | |
+| | Select Tasks: taps pick instead of opening (also in the filter popover on iPad) | Session ▸ Selected Tasks | `sidebar.selectMode` |
+| | Pick every task in the project | Session ▸ Selected Tasks | `sidebar.selectAll` |
+| | Let the picked tasks go | Session ▸ Selected Tasks | `selection.clear` |
+| | Archive the picked tasks | Session ▸ Selected Tasks | `selection.archive` |
+| | Unarchive the picked tasks | Session ▸ Selected Tasks | `selection.unarchive` |
+| | Delete the picked tasks (asks first; Undo for a few seconds) | Session ▸ Selected Tasks | `selection.delete` |
+| | Mark the picked tasks as read | Session ▸ Selected Tasks | `selection.markRead` |
+| | Mark the picked tasks as unread | Session ▸ Selected Tasks | `selection.markUnread` |
+| | Pin the picked tasks | Session ▸ Selected Tasks | `selection.pin` |
+| | Unpin the picked tasks | Session ▸ Selected Tasks | `selection.unpin` |
+| | Stop the turns running in the picked tasks | Session ▸ Selected Tasks | `selection.stop` |
 
 ## Session settings
 
@@ -229,6 +305,26 @@ bindings (`docs/terminal.md`); otherwise they're these:
 | ⌘← / ⌘→, ⌘⌫ | Start / end of the line, delete to the start of the line (sent to the shell) |
 | ⌥← / ⌥→ | Back / forward one word (sent to the shell) |
 
+## Project actions
+
+A project's actions (Test, Install, Dev…) run in the visible task's worktree, from the header's Run
+menu, the Run menu in the menu bar, the palette and the project's menu (`docs/actions.md`).
+
+| Keys | Action | Menu | Command |
+| --- | --- | --- | --- |
+| ⇧⌘R | Run the project's last action again, in the visible task | Run | `projectActions.runLast` |
+| | Stop the visible task's running actions (⌃C; again to end them) | Run | `projectActions.stop` |
+| | Edit the project's actions (its settings page) | Run | `projectActions.edit` |
+
+Every action is also a command of its own, "Run: Test" (`projectActions.run.test`, named after the
+action), listed in the Run menu and the palette while the visible task's project has it. None has a
+default key; one given in Settings ▸ Keyboard Shortcuts runs that action in whichever project is in
+view.
+
+| Keys | Action |
+| --- | --- |
+| ⌘Return in the action editor | Save the action |
+
 ## Appearance
 
 Light, dark or the system's, as in Settings ▸ Appearance (View ▸ Appearance). No default keys; give
@@ -244,9 +340,10 @@ them one in Settings ▸ Keyboard Shortcuts.
 
 Commands live with their features and register in `NativeApp` (`docs/commands.md`); the menus place
 them. Composer keys in `native/Views/Composer*`; permission keys in
-`native/Views/Transcript/ToolCallView.swift`; sidebar keys in `SidebarView`; Settings keys in
+`native/Views/Transcript/ToolPermissionButtons.swift`; sidebar keys in `SidebarView`; Settings keys in
 `SettingsScreen` and `SettingsSearchField`; search panel keys in `TranscriptSearchPanel`; terminal commands in
-`native/Terminal/Views/TerminalCommands.swift` and keys inside a terminal in
+`native/Terminal/Views/TerminalCommands.swift`; project action commands in
+`native/ProjectActions/Commands/ProjectActionCommands.swift`; keys inside a terminal in
 `GhosttyConfiguration.keybinds` (`Packages/Terminal`). Change a key here first, then in code.
 
 ## Celebrations

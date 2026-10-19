@@ -1,3 +1,4 @@
+import AIInstructions
 import Foundation
 import FoundationModels
 import Git
@@ -29,9 +30,13 @@ struct CommitMessageDrafter {
     /// A rough first guess at characters per token for code, refined by measuring.
     private static let charactersPerToken = 3
 
-    func draft(patch: String, files: [FileChange], style: CommitStyle) async throws -> String {
+    /// A message for the diff, in the repository's `style`, following the user's `instructions`
+    /// for commit messages too.
+    func draft(
+        patch: String, files: [FileChange], style: CommitStyle, instructions addition: AIInstructionAddition? = nil
+    ) async throws -> String {
         let model = SystemLanguageModel.default
-        let instructions = Self.instructions(for: style)
+        let instructions = CommitPrompts.message(style: style, adding: addition)
         let fixed =
             try await model.tokenCount(for: Instructions(instructions)) + model.tokenCount(for: Draft.generationSchema)
         var budget = max(model.contextSize - fixed - Self.responseTokens, 256) * Self.charactersPerToken
@@ -59,28 +64,6 @@ struct CommitMessageDrafter {
         throw CocoaError(
             .featureUnsupported,
             userInfo: [NSLocalizedDescriptionKey: "The changes are too large to summarize on this Mac."])
-    }
-
-    private static func instructions(for style: CommitStyle) -> String {
-        var lines = [
-            "You write git commit messages for a developer's staged changes. Describe what the change does and why, based only on the diff. Never invent details."
-        ]
-        if style.isConventional {
-            var convention =
-                "Use Conventional Commits: \"type(scope): summary\" with type one of feat, fix, refactor, docs, test, chore, perf, style, build, ci."
-            if !style.commonScopes.isEmpty {
-                convention += " Scopes this repository uses: \(style.commonScopes.joined(separator: ", "))."
-            }
-            lines.append(convention)
-        } else {
-            lines.append("Match the repository's own style: a short sentence-case summary, no type prefix.")
-        }
-        if !style.examples.isEmpty {
-            lines.append(
-                "Recent subjects in this repository. Match their style only; describe the diff below, not these:\n"
-                    + style.examples.map { "- \($0)" }.joined(separator: "\n"))
-        }
-        return lines.joined(separator: "\n\n")
     }
 
     private static func prompt(patch: String, files: [FileChange]) -> String {

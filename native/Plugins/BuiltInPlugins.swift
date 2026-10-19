@@ -1,4 +1,5 @@
 import ACP
+import AIInstructions
 import Foundation
 import FoundationModels
 import Search
@@ -87,18 +88,11 @@ struct OnDeviceTitler: SessionTitler {
         var title: String
     }
 
-    /// Long prompts are trimmed; the start of a request says what it's about, and the on-device
-    /// model's context is small.
-    private static let promptLimit = 2_000
-
     func title(for request: TitleRequest) async throws -> String? {
         guard SystemLanguageModel.default.isAvailable else { return nil }
-        let session = LanguageModelSession(
-            instructions:
-                "You title tasks in a coding agent app's sidebar so the user can find them later. Title what the user wants done, not what was said about it."
-        )
+        let session = LanguageModelSession(instructions: SessionTitlePrompt.instructions(adding: request.instructions))
         let response = try await session.respond(
-            to: "Project: \(request.projectName)\nUser's request:\n\(request.prompt.prefix(Self.promptLimit))",
+            to: SessionTitlePrompt.prompt(projectName: request.projectName, request: request.prompt),
             generating: Title.self
         )
         let title = response.content.title

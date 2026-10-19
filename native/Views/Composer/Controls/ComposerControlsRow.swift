@@ -1,11 +1,12 @@
 import ACP
 import SwiftUI
 
-/// The composer's bottom row: attach, model with its effort meter, autonomy, plan
-/// mode and help leading; the follow-up hint (while it fits) and context usage trailing. As room runs
+/// The composer's bottom row: attach, model with its effort meter, autonomy and plan
+/// mode leading; the follow-up hint (while it fits) and context usage trailing. As room runs
 /// out, labels give way to icons and controls move into a More menu (`ComposerControlDensity`).
 struct ComposerControlsRow<Extras: View, Context: View>: View {
     let settings: ComposerSettings
+    let agentName: String
     /// The autonomy level shown while Plan Mode suspends it, and restored when Plan Mode ends.
     let resumedAutonomy: String?
     /// What Return and ⌘Return do with a follow-up, shown while the agent works.
@@ -16,7 +17,6 @@ struct ComposerControlsRow<Extras: View, Context: View>: View {
     let onAttach: (IncomingAttachments) -> Void
     let onSet: (SelectSetting, String) -> Void
     let onCycleEffort: () -> Void
-    let onCycleAutonomy: () -> Void
     let onTogglePlan: () -> Void
     /// Other features' controls, after the composer's own (the goal pill), at the row's density.
     @ViewBuilder let extras: (ComposerControlDensity) -> Extras
@@ -56,9 +56,11 @@ struct ComposerControlsRow<Extras: View, Context: View>: View {
                     levels: settings.autonomyLevels,
                     level: settings.shownAutonomyLevel(resumed: resumedAutonomy),
                     isSuspended: settings.isAutonomySuspended,
+                    agentName: agentName,
+                    plan: settings.plan,
                     showsIcon: density.showsIcons,
                     onSet: onSet,
-                    onCycle: onCycleAutonomy
+                    onTogglePlan: onTogglePlan
                 )
             }
             if density == .regular || density == .compact {
@@ -79,9 +81,7 @@ struct ComposerControlsRow<Extras: View, Context: View>: View {
                 }
             }
             extras(density)
-            if density == .regular || density == .compact {
-                HelpButton()
-            } else {
+            if density == .overflow || density == .minimal {
                 ComposerMoreMenu(
                     settings: settings,
                     includesModel: density == .minimal,

@@ -282,12 +282,29 @@ public struct GitHubCLI: Sendable {
     /// branch and leaves local checkouts alone.
     public func merge(
         _ pullRequest: PullRequestSelector, in location: RepositoryLocation, method: MergeMethod,
-        deleteBranch: Bool = false, matchHeadCommit: String? = nil
+        deleteBranch: Bool = false, matchHeadCommit: String? = nil, admin: Bool = false
     ) async throws(GitHubError) {
         _ = try await run(
             .merge(
-                pullRequest, in: location, method: method, deleteBranch: deleteBranch, matchHeadCommit: matchHeadCommit)
-        )
+                pullRequest, in: location, method: method, deleteBranch: deleteBranch, matchHeadCommit: matchHeadCommit,
+                admin: admin))
+    }
+}
+
+extension GitHubCLI {
+    public func close(_ pullRequest: PullRequestSelector, in location: RepositoryLocation) async throws(GitHubError) {
+        _ = try await run(.close(pullRequest, in: location))
+    }
+
+    public func reopen(_ pullRequest: PullRequestSelector, in location: RepositoryLocation) async throws(GitHubError) {
+        _ = try await run(.reopen(pullRequest, in: location))
+    }
+
+    /// Adds a comment to the pull request's conversation.
+    public func comment(
+        _ body: String, on pullRequest: PullRequestSelector, in location: RepositoryLocation
+    ) async throws(GitHubError) {
+        _ = try await run(.comment(body, on: pullRequest, in: location))
     }
 }
 

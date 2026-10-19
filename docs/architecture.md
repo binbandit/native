@@ -73,7 +73,7 @@ feature can only use what other modules make `public`, and parallel work rarely 
 files.
 
 ```
-Foundation (UI-free, macOS + iOS, tested)    ACP · MCPServer · Git · GitHub
+Foundation (UI-free, macOS + iOS, tested)    ACP · MCPServer · Git · GitHub · AIInstructions
         ▲
 Core (state, plugins, engines)                NativeCore: AppModel, SessionModel, agent runtimes,
         ▲                                     plugin API + registry, titles, limits, goals and
@@ -192,6 +192,7 @@ messages name other sessions.
 | Settings chosen per session (model, mode, effort), set back after `session/load` | `UserDefaults`, kept with the titles by `SessionTitles` |
 | User plugins | `~/.native/plugins/<id>/plugin.json` |
 | Scheduled resumes and similar durable app state | Application Support, owned by the feature |
+| A project's settings (Settings ▸ Projects) | With each value's owner: the name on `Project`, the icon in `ProjectIconStore` (Application Support), git overrides in `GitSettings` by project path, the agent and model under `projectDefaults.<project id>`, scripts, AI instructions and actions with their features (each contributes a section), MCP and skill switches in their libraries |
 
 ## Related docs
 

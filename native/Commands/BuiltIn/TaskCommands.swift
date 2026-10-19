@@ -1,3 +1,4 @@
+import ACP
 import NativeCommands
 
 extension CommandID {
@@ -27,9 +28,7 @@ extension NativeCommand {
         [
             NativeCommand(.sessionNew, title: "New Session", category: .tasks, systemImage: "square.and.pencil") { _ in
                 Task { await model.newSession() }
-            }
-            // Never disabled otherwise: without a project or an agent, New Session says what's missing.
-            .available { _ in !model.isCreatingSession },
+            },
 
             NativeCommand(
                 .sessionNewWithAgent, title: "New Session With…", category: .tasks,
@@ -61,6 +60,12 @@ extension NativeCommand {
             NativeCommand(
                 .sessionArchive, title: "Archive or Unarchive Task", category: .tasks, systemImage: "archivebox"
             ) { context in
+                // With several tasks picked in the sidebar, it archives them all.
+                if let keys = context.sidebarSelection?.keys, keys.count > 1 {
+                    context.sidebarSelection?.clear()
+                    Task { await model.archiveSessions(keys, undoManager: context.undoManager) }
+                    return
+                }
                 guard let key = model.selection else { return }
                 if model.isArchived(key) {
                     Task { await model.unarchiveSession(key) }
@@ -68,8 +73,11 @@ extension NativeCommand {
                     Task { await model.archiveSession(key, undoManager: context.undoManager) }
                 }
             }
-            .menuTitle { _ in model.selection.map(model.isArchived) == true ? "Unarchive Task" : "Archive Task" }
-            .available { _ in model.selection != nil },
+            .menuTitle { context in
+                if let count = context.sidebarSelection?.keys.count, count > 1 { return "Archive \(count) Tasks" }
+                return model.selection.map(model.isArchived) == true ? "Unarchive Task" : "Archive Task"
+            }
+            .available { context in model.selection != nil || (context.sidebarSelection?.keys.count ?? 0) > 1 },
 
             NativeCommand(.sessionTogglePin, title: "Pin or Unpin Task", category: .tasks, systemImage: "pin") {
                 context in
@@ -89,16 +97,38 @@ extension NativeCommand {
             .available { _ in model.selection != nil },
 
             // From the model rather than the sidebar's focused value, so they work wherever focus is
-            // and while the sidebar is hidden.
-            NativeCommand(.sidebarMoveUp, title: "Move Up", category: .tasks, systemImage: "arrow.up") { _ in
-                model.sidebarMoveTarget.map { model.move($0, .up) }
+            // and while the sidebar is hidden. While a queued message is open in the composer, they
+            // move it in the queue instead.
+            NativeCommand(.sidebarMoveUp, title: "Move Up", category: .tasks, systemImage: "arrow.up") { context in
+                if let session = context.session, let id = session.editingQueuedPrompt {
+                    session.moveQueued(id, .up)
+                } else {
+                    model.sidebarMoveTarget.map { model.move($0, .up) }
+                }
             }
-            .available { _ in model.sidebarMoveTarget.map { model.canMove($0, .up) } == true },
+            .menuTitle { $0.session?.editingQueuedPrompt == nil ? "Move Up" : "Move Queued Message Up" }
+            .available { context in
+                if let session = context.session, let id = session.editingQueuedPrompt {
+                    return session.canMoveQueued(id, .up)
+                }
+                return model.sidebarMoveTarget.map { model.canMove($0, .up) } == true
+            },
 
-            NativeCommand(.sidebarMoveDown, title: "Move Down", category: .tasks, systemImage: "arrow.down") { _ in
-                model.sidebarMoveTarget.map { model.move($0, .down) }
+            NativeCommand(.sidebarMoveDown, title: "Move Down", category: .tasks, systemImage: "arrow.down") {
+                context in
+                if let session = context.session, let id = session.editingQueuedPrompt {
+                    session.moveQueued(id, .down)
+                } else {
+                    model.sidebarMoveTarget.map { model.move($0, .down) }
+                }
             }
-            .available { _ in model.sidebarMoveTarget.map { model.canMove($0, .down) } == true },
+            .menuTitle { $0.session?.editingQueuedPrompt == nil ? "Move Down" : "Move Queued Message Down" }
+            .available { context in
+                if let session = context.session, let id = session.editingQueuedPrompt {
+                    return session.canMoveQueued(id, .down)
+                }
+                return model.sidebarMoveTarget.map { model.canMove($0, .down) } == true
+            },
 
             NativeCommand(.sessionNext, title: "Next Session", category: .navigation, systemImage: "chevron.down") {
                 _ in

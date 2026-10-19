@@ -15,6 +15,10 @@ enum CommandsWiring {
         let updates: UpdateController
         let whatsNew: WhatsNewCenter
         let appearance: AppearanceModeController
+        let pullRequestTasks: PullRequestTaskOpener
+        let shortcutsHelp: KeyboardShortcutsHelp
+        let gitCleanup: GitCleanupCenter
+        let projectActions: ProjectActionRunner
     }
 
     static func connect(_ registry: CommandRegistry, palette: CommandPalette, features: Features) {
@@ -24,6 +28,9 @@ enum CommandsWiring {
         registry.register(
             [.palette(palette, stepsAsideWhen: { NativeCommand.terminalHasFocus(terminals, in: $0) })])
         registry.register(NativeCommand.newTasks(model: model))
+        registry.register([.projectSettings(model: model, settings: settings)])
+        registry.register([.pullRequestTasks(features.pullRequestTasks)])
+        registry.register([.gitCleanUpMerged(features.gitCleanup, model: model)])
         registry.register(NativeCommand.expeditions(model: model))
         registry.register([
             .openInDefaultApp { context in
@@ -31,19 +38,22 @@ enum CommandsWiring {
             }
         ])
         registry.register(NativeCommand.taskActions(model: model))
+        registry.register(NativeCommand.sidebarSelection(model: model))
         registry.register(NativeCommand.navigation(model: model, settings: settings))
         registry.register([.searchShow])
         registry.register(NativeCommand.composer)
+        registry.register(NativeCommand.clearConversation(model: model))
         registry.register(NativeCommand.automation(BuiltInPlugins.automation.center))
         registry.register(NativeCommand.windowView)
         registry.register(NativeCommand.appearance(features.appearance))
         registry.register([.gitChanges, .keepAwake(features.keepAwake), .statusBar(features.statusBar)])
         registry.register(NativeCommand.celebrations(features.celebrations, settings: settings))
         registry.register(NativeCommand.terminal(terminals))
+        ProjectActionsWiring.registerCommands(registry, runner: features.projectActions, model: model)
         #if os(macOS)
         registry.register([.checkForUpdates(features.updates, settings: settings)])
         #endif
-        registry.register([.whatsNew(features.whatsNew)])
+        registry.register([.whatsNew(features.whatsNew), .keyboardShortcuts(features.shortcutsHelp)])
         registry.reportUnregisteredDefaults()
 
         palette.sources = [
@@ -54,7 +64,8 @@ enum CommandsWiring {
                 {
                     (SettingsPane.builtIn(registry: model.plugins)
                         + AppSettingsPanes.all(
-                            plugins: model.plugins, terminals: terminals, keepAwake: features.keepAwake))
+                            plugins: model.plugins, terminals: terminals, keepAwake: features.keepAwake,
+                            projects: model.projects.all))
                         .sorted { ($0.group, $0.order) < ($1.group, $1.order) }
                 }, settings: settings),
             .queryCommands(registry),

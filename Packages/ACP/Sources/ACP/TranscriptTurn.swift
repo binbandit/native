@@ -37,9 +37,7 @@ extension SessionState {
     /// steered into a running turn; anything before the first prompt (a subagent's hand-off, say)
     /// is a turn of its own.
     public var turns: [TranscriptTurn] {
-        var starts = items.indices.filter { index in
-            if case .message(let message) = items[index] { message.role == .user && !message.wasSteered } else { false }
-        }
+        var starts = promptIndices
         if !items.isEmpty, starts.first != 0 {
             starts.insert(0, at: 0)
         }
@@ -56,21 +54,40 @@ extension SessionState {
 
     /// What a turn did, for its folded summary, its footer and the "done" notification.
     public func summary(of turn: TranscriptTurn) -> TurnSummary {
-        TurnSummary(items: items[turn.items], duration: turn.duration, stopReason: turn.stopReason)
+        // Turns without tool work have nothing kept, and nothing much to count.
+        var summary = cachedSummary(of: turn) ?? TurnSummary(items: items[turn.items])
+        summary.duration = turn.duration
+        summary.stopReason = turn.stopReason
+        return summary
     }
 
     /// When the reasoning at `index` started and, once the agent moved on, ended. Nil for anything
-    /// but a live thought. The end is when the agent produced its next item, or its last thought
-    /// chunk when nothing followed; while it's still the newest item of the open turn, there's none.
+    /// but a live thought. It starts when the item before it settled: agents often think in silence
+    /// and send a summary of the thought at its end (Codex sends a 30-second thought in its last
+    /// second), so the first chunk would time only the summary. The end is when the agent produced
+    /// its next item, or its last thought chunk when nothing followed; while it's still the newest
+    /// item of the open turn, there's none.
     public func thinkingInterval(at index: Int) -> (start: Date, end: Date?)? {
         guard items.indices.contains(index), case .message(let thought) = items[index], thought.role == .thought,
-            let start = thought.startedAt
+            let firstChunk = thought.startedAt
         else { return nil }
+        let settled = index > 0 ? items[index - 1].settledAt : nil
+        let start = settled.map { min($0, firstChunk) } ?? firstChunk
         if index + 1 < items.count {
             return (start, items[index + 1].startedAt ?? thought.updatedAt)
         }
         let isStreaming = openTurn.map { $0 <= index } ?? false
         return (start, isStreaming ? nil : thought.updatedAt)
+    }
+
+    /// Since when the running turn has shown nothing new: the moment its newest item settled (the
+    /// prompt was sent, a reply stopped streaming, a tool call finished), which is when the agent
+    /// went back to thinking. Nil when no live turn runs, or while its newest item is a thought or a
+    /// tool call still running, which have clocks of their own.
+    public var quietSince: Date? {
+        guard let openTurn, let last = items.last, items.count > openTurn else { return nil }
+        if case .message(let message) = last, message.role == .thought { return nil }
+        return last.settledAt
     }
 }
 
@@ -80,6 +97,16 @@ extension TranscriptItem {
         switch self {
         case .message(let message): message.startedAt
         case .toolCall(let call): call.startedAt
+        case .notice, .subagent, .sessionMessage: nil
+        }
+    }
+
+    /// When a live item last changed for good: a message's last chunk, a tool call's finish. Nil for
+    /// replayed history and for a tool call still running.
+    var settledAt: Date? {
+        switch self {
+        case .message(let message): message.updatedAt
+        case .toolCall(let call): call.finishedAt
         case .notice, .subagent, .sessionMessage: nil
         }
     }
@@ -182,19 +209,5 @@ public struct TurnSummary: Hashable, Sendable {
         ].compactMap(\.self)
         guard let first = parts.first else { return nil }
         return ([first.prefix(1).uppercased() + first.dropFirst()] + parts.dropFirst()).joined(separator: ", ")
-    }
-}
-
-extension FileDiff {
-    /// Lines added and removed, counted the way a line diff draws them.
-    public var lineCounts: (added: Int, removed: Int) {
-        func lines(_ text: String) -> [Substring] {
-            var lines = text.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
-            // A trailing newline doesn't start an extra empty line.
-            if lines.last?.isEmpty == true { lines.removeLast() }
-            return lines
-        }
-        let difference = lines(newText).difference(from: oldText.map(lines) ?? [])
-        return (difference.insertions.count, difference.removals.count)
     }
 }

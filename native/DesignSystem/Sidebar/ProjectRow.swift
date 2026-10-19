@@ -12,13 +12,16 @@ public enum ProjectIcon {
     case image(Image)
 }
 
-/// A project header: avatar, name and, while collapsed, the task count.
-/// Hovering swaps the avatar for a chevron and reveals the actions menu; "+" creates a task.
+/// A project header: avatar, name and, while collapsed, what its tasks are doing (the needs-you
+/// marker and the working loader with their counts) or else the task count, or a note in their
+/// place. Hovering swaps the avatar for a chevron and reveals the actions menu; "+" creates a task.
 public struct ProjectRow<MenuContent: View>: View {
     let name: String
     let icon: ProjectIcon
     let isExpanded: Bool
     let taskCount: Int?
+    let activity: ProjectActivity
+    let note: String?
     let onToggle: () -> Void
     let onNewTask: (() -> Void)?
     let menu: MenuContent
@@ -26,13 +29,17 @@ public struct ProjectRow<MenuContent: View>: View {
     @State private var isHovered = false
 
     /// - Parameters:
-    ///   - taskCount: Shown after the name, in mono, while collapsed.
+    ///   - taskCount: Shown after the name, in mono, while collapsed and nothing is happening.
+    ///   - activity: Shown after the name while collapsed, instead of the count.
+    ///   - note: Shown after the name while collapsed, instead of either ("No matching tasks").
     ///   - menu: The project's actions, shown from the "…" button and as a context menu.
     public init(
         name: String,
         icon: ProjectIcon = .initial,
         isExpanded: Bool,
         taskCount: Int? = nil,
+        activity: ProjectActivity = ProjectActivity(),
+        note: String? = nil,
         onToggle: @escaping () -> Void,
         onNewTask: (() -> Void)? = nil,
         @ViewBuilder menu: () -> MenuContent
@@ -41,6 +48,8 @@ public struct ProjectRow<MenuContent: View>: View {
         self.icon = icon
         self.isExpanded = isExpanded
         self.taskCount = taskCount
+        self.activity = activity
+        self.note = note
         self.onToggle = onToggle
         self.onNewTask = onNewTask
         self.menu = menu()
@@ -67,10 +76,19 @@ public struct ProjectRow<MenuContent: View>: View {
                         .foregroundStyle(.dsTextSecondary)
                         .lineLimit(1)
 
-                    if !isExpanded, let taskCount, taskCount > 0 {
-                        Text("\(taskCount)")
-                            .font(.dsMonoCaption)
-                            .foregroundStyle(.dsTextTertiary)
+                    if !isExpanded {
+                        if let note {
+                            Text(note)
+                                .font(.dsCaption)
+                                .foregroundStyle(.dsTextTertiary)
+                                .lineLimit(1)
+                        } else if !activity.isEmpty {
+                            ProjectActivityLabel(activity: activity)
+                        } else if let taskCount, taskCount > 0 {
+                            Text("\(taskCount)")
+                                .font(.dsMonoCaption)
+                                .foregroundStyle(.dsTextTertiary)
+                        }
                     }
                     Spacer(minLength: 0)
                 }
@@ -81,7 +99,7 @@ public struct ProjectRow<MenuContent: View>: View {
             }
             .buttonStyle(SidebarRowButtonStyle())
             .accessibilityLabel(name)
-            .accessibilityValue(isExpanded ? "Expanded" : "Collapsed")
+            .accessibilityValue(accessibilityValue)
             .accessibilityHint(isExpanded ? "Hides the project's tasks" : "Shows the project's tasks")
 
             if hasMenu {
@@ -121,6 +139,12 @@ public struct ProjectRow<MenuContent: View>: View {
             }
         }
     }
+
+    /// "Collapsed, 1 needs you, 2 working", so VoiceOver hears what the hidden tasks are doing.
+    private var accessibilityValue: String {
+        guard !isExpanded else { return "Expanded" }
+        return ["Collapsed", note ?? activity.label].compactMap(\.self).joined(separator: ", ")
+    }
 }
 
 extension ProjectRow where MenuContent == EmptyView {
@@ -129,53 +153,63 @@ extension ProjectRow where MenuContent == EmptyView {
         icon: ProjectIcon = .initial,
         isExpanded: Bool,
         taskCount: Int? = nil,
+        activity: ProjectActivity = ProjectActivity(),
         onToggle: @escaping () -> Void,
         onNewTask: (() -> Void)? = nil
     ) {
         self.init(
-            name: name, icon: icon, isExpanded: isExpanded, taskCount: taskCount, onToggle: onToggle,
-            onNewTask: onNewTask
+            name: name, icon: icon, isExpanded: isExpanded, taskCount: taskCount, activity: activity,
+            onToggle: onToggle, onNewTask: onNewTask
         ) {
             EmptyView()
         }
     }
 }
 
-/// A 16pt project avatar: emoji, image, symbol or a lettered tile.
+/// A project avatar, 16pt in rows: emoji, image, symbol or a lettered tile. Larger ones (Settings)
+/// scale the type and the tile's corner with it. A template image (an SVG drawn in
+/// `currentColor`) takes the same secondary foreground as the symbol and the initial.
 public struct ProjectAvatar: View {
     let name: String
     let icon: ProjectIcon
+    let size: CGFloat
 
-    public init(name: String, icon: ProjectIcon = .initial) {
+    public init(name: String, icon: ProjectIcon = .initial, size: CGFloat = DS.Size.rowLeading) {
         self.name = name
         self.icon = icon
+        self.size = size
     }
 
+    /// How much larger than a row's avatar this one is.
+    private var scale: CGFloat { size / DS.Size.rowLeading }
+
     public var body: some View {
+        let tile = RoundedRectangle(cornerRadius: DS.Radius.control * scale, style: .continuous)
         Group {
             switch icon {
             case .initial:
                 Text(name.first.map { String($0).uppercased() } ?? "?")
-                    .font(.ds(10, weight: .medium))
+                    .font(.ds(10 * scale, weight: .medium))
                     .foregroundStyle(.dsTextSecondary)
-                    .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
-                    .background(.dsSelected, in: .rect(cornerRadius: DS.Radius.control, style: .continuous))
+                    .frame(width: size, height: size)
+                    .background(.dsSelected, in: tile)
             case .symbol(let name):
                 Image(systemName: name)
-                    .font(.system(size: 12, weight: .regular))
+                    .font(.system(size: 12 * scale, weight: .regular))
                     .foregroundStyle(.dsTextSecondary)
             case .emoji(let emoji):
                 Text(emoji)
-                    .font(.system(size: 12))
+                    .font(.system(size: 12 * scale))
             case .image(let image):
                 image
                     .resizable()
                     .scaledToFill()
-                    .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
-                    .clipShape(.rect(cornerRadius: DS.Radius.control, style: .continuous))
+                    .foregroundStyle(.dsTextSecondary)
+                    .frame(width: size, height: size)
+                    .clipShape(tile)
             }
         }
-        .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
+        .frame(width: size, height: size)
         .accessibilityHidden(true)
     }
 }

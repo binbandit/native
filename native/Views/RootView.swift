@@ -17,6 +17,7 @@ struct RootView: View {
     @State private var undoToast: UndoToastItem?
     @State private var showsPullRequests = false
     @Environment(GitHubModel.self) private var gitHub
+    @Environment(GitStore.self) private var git
     @Environment(AutomationCenter.self) private var automation
     /// Workflows or Automations, when one of them has the detail column.
     @State private var automationPage: AutomationPage?
@@ -162,7 +163,7 @@ struct RootView: View {
             SettingsScreen(
                 pane: $settings.pane,
                 additionalPanes: AppSettingsPanes.all(
-                    plugins: model.plugins, terminals: terminals, keepAwake: keepAwake))
+                    plugins: model.plugins, terminals: terminals, keepAwake: keepAwake, projects: model.projects.all))
         } else {
             splitView
         }
@@ -278,6 +279,7 @@ struct RootView: View {
         } taskAccessory: { summary in
             AppTaskRowAccessory(summary: summary)
         }
+        .environment(\.sidebarTaskInsights, AppSidebarTaskInsights.make(model: model, git: git, gitHub: gitHub))
     }
 
     /// Turns Automations on and opens it, from the Workflows page; nil once it's in the sidebar.
@@ -312,7 +314,10 @@ struct RootView: View {
                 automationPage = .workflows
             }
         } else if let key = model.selection {
-            if let session = model.session(key) {
+            if let task = model.startingTask(key) {
+                StartingTaskView(task: task)
+                    .id(key)
+            } else if let session = model.session(key) {
                 SessionView(session: session)
                     .id(key)
             } else {

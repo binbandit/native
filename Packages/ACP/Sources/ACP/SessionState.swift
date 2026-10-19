@@ -18,6 +18,14 @@ public struct SessionState: Sendable {
     private(set) var openTurn: Int?
     private var subagentIndices: [SessionID: Int] = [:]
     private var sessionMessageIndices: [String: Int] = [:]
+    // Kept as items change, so what a transcript asks for on every update costs the size of the
+    // answer rather than a pass over thousands of items.
+    /// The prompts that start turns: every user message that wasn't steered into a running one.
+    private(set) var promptIndices: [Int] = []
+    /// What each turn's items did, by the index of the turn's first item.
+    private var turnSummaries: [Int: TurnSummary] = [:]
+    /// Tool calls waiting for permission, in transcript order.
+    private var permissionIndices: [Int] = []
 
     public init() {}
 
@@ -67,9 +75,13 @@ public struct SessionState: Sendable {
 
     /// The subagents this session has started, in the order they were announced.
     public var subagents: [SubagentState] {
-        items.compactMap { item in
-            if case .subagent(let subagent) = item { subagent } else { nil }
+        subagentIndices.values.sorted().compactMap { index in
+            if case .subagent(let subagent) = items[index] { subagent } else { nil }
         }
+    }
+
+    public var hasSubagents: Bool {
+        !subagentIndices.isEmpty
     }
 
     /// Records a prompt the user sent. Agents don't echo live prompts back, only on replay.
@@ -84,11 +96,11 @@ public struct SessionState: Sendable {
         }
         var message = TranscriptMessage(role: .user, text: text, wasSteered: steered, startedAt: date, updatedAt: date)
         message.attachments = attachments
-        items.append(.message(message))
+        appendItem(.message(message))
     }
 
     public mutating func appendNotice(_ text: String, isError: Bool) {
-        items.append(.notice(TranscriptNotice(text: text, isError: isError)))
+        appendItem(.notice(TranscriptNotice(text: text, isError: isError)))
     }
 
     public mutating func requestPermission(_ request: RequestPermissionRequest, id: RequestID, at date: Date = .now) {
@@ -98,7 +110,7 @@ public struct SessionState: Sendable {
             return
         }
         call.permission = PendingPermission(requestID: id, options: request.options)
-        items[index] = .toolCall(call)
+        replaceItem(at: index, with: .toolCall(call))
     }
 
     /// Clears a permission request once it's been answered and returns it.
@@ -107,14 +119,18 @@ public struct SessionState: Sendable {
         guard let index = toolCallIndices[toolCallID], case .toolCall(var call) = items[index] else { return nil }
         let permission = call.permission
         call.permission = nil
-        items[index] = .toolCall(call)
+        replaceItem(at: index, with: .toolCall(call))
         return permission
     }
 
     public var pendingPermissions: [(toolCallID: String, permission: PendingPermission)] {
-        items.compactMap { item in
-            guard case .toolCall(let call) = item, let permission = call.permission else { return nil }
-            return (call.id, permission)
+        permissionRequests.compactMap { call in call.permission.map { (call.id, $0) } }
+    }
+
+    /// The tool calls waiting for the user's permission, oldest first.
+    public var permissionRequests: [ToolCallState] {
+        permissionIndices.compactMap { index in
+            if case .toolCall(let call) = items[index] { call } else { nil }
         }
     }
 
@@ -127,7 +143,7 @@ public struct SessionState: Sendable {
                 call.status = .cancelled
                 call.permission = nil
                 if call.startedAt != nil { call.finishedAt = date }
-                items[index] = .toolCall(call)
+                replaceItem(at: index, with: .toolCall(call))
             }
         }
         if let openTurn {
@@ -147,6 +163,59 @@ public struct SessionState: Sendable {
         }
     }
 
+    // MARK: - Indexing
+
+    private mutating func appendItem(_ item: TranscriptItem) {
+        items.append(item)
+        index(items.count - 1)
+    }
+
+    private mutating func replaceItem(at index: Int, with item: TranscriptItem) {
+        items[index] = item
+        self.index(index)
+    }
+
+    /// Brings the indexes up to date with the item at `index`, which was just added or changed.
+    private mutating func index(_ index: Int) {
+        switch items[index] {
+        case .message(let message) where message.role == .user && !message.wasSteered:
+            // Only a new item starts a turn; a prompt growing chunk by chunk is already one.
+            if promptIndices.last.map({ $0 < index }) ?? true {
+                promptIndices.append(index)
+            }
+        case .toolCall(let call):
+            let position = permissionIndices.firstIndex(of: index)
+            if call.permission == nil, let position {
+                permissionIndices.remove(at: position)
+            } else if call.permission != nil, position == nil {
+                permissionIndices.insert(index, at: permissionIndices.firstIndex { $0 > index } ?? permissionIndices.endIndex)
+            }
+            summarizeTurn(containing: index)
+        case .subagent:
+            summarizeTurn(containing: index)
+        case .message, .notice, .sessionMessage:
+            break
+        }
+    }
+
+    /// Counts again what the turn holding `index` did; only tool calls and subagents count.
+    private mutating func summarizeTurn(containing index: Int) {
+        let range: Range<Int>
+        if let position = promptIndices.lastIndex(where: { $0 <= index }) {
+            let next = position + 1 < promptIndices.count ? promptIndices[position + 1] : items.count
+            range = promptIndices[position]..<next
+        } else {
+            // Before the first prompt: the turn of its own that `turns` makes of those items.
+            range = 0..<(promptIndices.first ?? items.count)
+        }
+        turnSummaries[range.lowerBound] = TurnSummary(items: items[range])
+    }
+
+    /// What `turn` did, counted when its items last changed.
+    func cachedSummary(of turn: TranscriptTurn) -> TurnSummary? {
+        turnSummaries[turn.items.lowerBound]
+    }
+
     // MARK: - Folding
 
     private mutating func appendChunk(_ chunk: ContentChunk, role: TranscriptMessage.Role, at date: Date?) {
@@ -159,12 +228,12 @@ public struct SessionState: Sendable {
                 if attachment.url == nil || !last.attachments.contains(where: { $0.url == attachment.url }) {
                     last.attachments.append(attachment)
                 }
-                items[items.count - 1] = .message(last)
+                replaceItem(at: items.count - 1, with: .message(last))
             } else {
                 var message = TranscriptMessage(
                     role: .user, text: "", messageID: chunk.messageId, startedAt: date, updatedAt: date)
                 message.attachments = [attachment]
-                items.append(.message(message))
+                appendItem(.message(message))
             }
             return
         }
@@ -181,11 +250,11 @@ public struct SessionState: Sendable {
         {
             last.text += text
             last.updatedAt = date ?? last.updatedAt
-            items[items.count - 1] = .message(last)
+            replaceItem(at: items.count - 1, with: .message(last))
         } else {
             let message = TranscriptMessage(
                 role: role, text: text, messageID: chunk.messageId, startedAt: date, updatedAt: date)
-            items.append(.message(message))
+            appendItem(.message(message))
         }
     }
 
@@ -200,10 +269,10 @@ public struct SessionState: Sendable {
         subagent.canCancel = update.canCancel.applied(to: subagent.canCancel) ?? false
         subagent.workState = update.state.applied(to: subagent.workState)
         if let index = subagentIndices[update.sessionId] {
-            items[index] = .subagent(subagent)
+            replaceItem(at: index, with: .subagent(subagent))
         } else {
             subagentIndices[update.sessionId] = items.count
-            items.append(.subagent(subagent))
+            appendItem(.subagent(subagent))
         }
     }
 
@@ -219,10 +288,10 @@ public struct SessionState: Sendable {
         message.recipient = recipient ?? message.recipient
         change(&message)
         if let index = sessionMessageIndices[messageID] {
-            items[index] = .sessionMessage(message)
+            replaceItem(at: index, with: .sessionMessage(message))
         } else {
             sessionMessageIndices[messageID] = items.count
-            items.append(.sessionMessage(message))
+            appendItem(.sessionMessage(message))
         }
     }
 
@@ -232,14 +301,14 @@ public struct SessionState: Sendable {
             if call.status.isFinished, call.finishedAt == nil, call.startedAt != nil {
                 call.finishedAt = date
             }
-            items[index] = .toolCall(call)
+            replaceItem(at: index, with: .toolCall(call))
         } else {
             var call = ToolCallState(id: update.toolCallId)
             call.merge(update)
             call.startedAt = date
             if call.status.isFinished { call.finishedAt = date }
             toolCallIndices[update.toolCallId] = items.count
-            items.append(.toolCall(call))
+            appendItem(.toolCall(call))
         }
     }
 }

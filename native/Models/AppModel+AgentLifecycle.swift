@@ -24,12 +24,11 @@ extension AppModel {
     }
 
     /// Whether starting a session makes sense now, in `project` with `agent` (by default the
-    /// current project and the default agent): the project's folder is there, one isn't already
-    /// starting, and the agent can take it, even if it has to start first. Before the first check
+    /// current project and the default agent): the project's folder is there and the agent can take
+    /// it, even if it has to start first. Before the first check
     /// for agents, it assumes so; New Session waits for the check.
     func canCreateSession(in project: Project.ID? = nil, with agent: AgentDefinition.ID? = nil) -> Bool {
-        guard let project = project ?? currentProject?.id, missingFolder(of: project) == nil, !isCreatingSession
-        else { return false }
+        guard let project = project ?? currentProject?.id, missingFolder(of: project) == nil else { return false }
         guard let agent = agent ?? defaultAgent?.id, let runtime = runtimes[agent] else { return !hasCheckedAgents }
         return runtime.isAvailable
     }
@@ -177,7 +176,8 @@ extension AppModel {
     /// listing under way, or an open session (or the one that started it) that's busy, showing or
     /// holding a draft.
     private func isInUse(_ agent: AgentDefinition.ID) -> Bool {
-        if creatingSessionWith == agent || runtimes[agent]?.isSigningIn == true
+        if startingTasks.contains(where: { $0.agent.id == agent && $0.failure == nil })
+            || runtimes[agent]?.isSigningIn == true
             || listingsInFlight[agent, default: 0] > 0
         {
             return true

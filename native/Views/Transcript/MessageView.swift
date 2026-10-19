@@ -46,6 +46,7 @@ struct MessageView: View, Equatable {
                 .frame(maxWidth: .infinity, alignment: .leading)
         case .thought:
             ThoughtView(
+                id: message.id.uuidString,
                 text: message.text,
                 clock: thinking ?? message.startedAt.map { ThinkingClock(start: $0, end: message.updatedAt) })
         }
@@ -67,16 +68,29 @@ struct NoticeView: View {
 /// The agent's reasoning, collapsed behind one quiet row named by a fact: "Thinking 4s…" with a
 /// ticking count while it streams, "Thought for 12s" once it's done.
 private struct ThoughtView: View {
+    let id: String
     let text: String
     /// Nil for replayed history, which has no times.
     let clock: ThinkingClock?
 
-    @State private var isExpanded = false
+    @Environment(TranscriptDisclosures.self) private var disclosures: TranscriptDisclosures?
+    /// For thoughts shown outside a transcript, which has no `TranscriptDisclosures`.
+    @State private var isOpenHere = false
+
+    private var isExpanded: Bool {
+        disclosures?.isOpen(id) ?? isOpenHere
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.md) {
             Button {
-                withAnimation(.dsDisclosure) { isExpanded.toggle() }
+                withAnimation(.dsDisclosure) {
+                    if let disclosures {
+                        disclosures.toggle(id)
+                    } else {
+                        isOpenHere.toggle()
+                    }
+                }
             } label: {
                 HStack(spacing: DS.Space.sm) {
                     label
@@ -87,6 +101,7 @@ private struct ThoughtView: View {
                 .contentShape(.rect)
             }
             .buttonStyle(.plain)
+            .accessibilityValue(isExpanded ? "expanded" : "collapsed")
 
             if isExpanded {
                 MarkdownView(text)

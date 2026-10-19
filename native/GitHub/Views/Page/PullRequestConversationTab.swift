@@ -9,6 +9,17 @@ struct PullRequestConversationTab: View {
     let page: PullRequestPage
 
     var body: some View {
+        ScrollViewReader { proxy in
+            content
+                .onChange(of: model.composerFocusRequest) {
+                    withAnimation(.dsStandard) { proxy.scrollTo(Self.composerID, anchor: .bottom) }
+                }
+        }
+    }
+
+    private static let composerID = "composer"
+
+    private var content: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: DS.Space.lg) {
                 PullRequestCommentCard(
@@ -35,6 +46,7 @@ struct PullRequestConversationTab: View {
                 SeparatorLine()
                     .padding(.vertical, DS.Space.xs)
                 PullRequestConversationComposer(model: model, page: page)
+                    .id(Self.composerID)
             }
             .padding(DS.Space.xl)
             .frame(maxWidth: DS.Size.contentColumn)

@@ -57,6 +57,15 @@ public struct NativePolicy: Equatable, Sendable {
         public var endpoints: [TelemetryEndpoint] = []
     }
 
+    /// The scripts Native runs as tasks' worktrees are made and removed, tasks start and are deleted,
+    /// and turns finish (docs/scripts.md). Not the script runtime, which is `scriptsEnabled`.
+    public struct TaskScripts: Equatable, Sendable {
+        /// Scripts users write in Native's settings: global, and each project's own.
+        public var userScriptsEnabled = true
+        /// Scripts committed to repositories (`.native/<event>.sh`).
+        public var repositoryScriptsEnabled = true
+    }
+
     public var agents = Agents()
     public var mcp = MCP()
     /// Ids of the plugins installed from manifests that may load; nil allows all. Built-in plugins
@@ -67,6 +76,7 @@ public struct NativePolicy: Equatable, Sendable {
     /// Permission mode ids (an agent's `mode` choices) users can't pick.
     public var forbiddenPermissionModes: Set<String> = []
     public var scriptsEnabled = true
+    public var taskScripts = TaskScripts()
     public var labsEnabled = true
     public var companionEnabled = true
     public var remoteHostsEnabled = true
@@ -77,6 +87,10 @@ public struct NativePolicy: Equatable, Sendable {
     /// Keyboard Shortcuts exports them; nil keeps Native's defaults. The organization's set replaces
     /// the user's changes and locks them.
     public var shortcutBindings: [String: String]?
+    /// Instructions for what Native writes with AI, by purpose id ("branchName": "Start with the
+    /// Jira key"); nil leaves them to the user. The organization's set replaces the user's and
+    /// locks them, and a purpose it doesn't name gets none.
+    public var aiInstructions: [String: String]?
     public var telemetry = Telemetry()
 
     /// The keys the organization sets with a valid value.

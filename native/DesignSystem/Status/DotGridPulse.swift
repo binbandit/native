@@ -55,6 +55,7 @@ nonisolated final class DotGridPulseLayer: CALayer {
             pulse.beginTime = now - now.truncatingRemainder(dividingBy: duration)
             pulse.repeatCount = .infinity
             pulse.isRemovedOnCompletion = false
+            pulse.preferredFrameRateRange = .dsMotion
             layer.add(pulse, forKey: "pulse")
             addSublayer(layer)
         }

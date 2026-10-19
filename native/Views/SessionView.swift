@@ -30,12 +30,13 @@ struct SessionView: View {
                 ComposerView(session: session)
             }
         }
-        // How the task's worktree setup went: the project's setup script running, or why it failed.
+        // How the task's worktree setup is going, and any of its scripts that failed (TaskScripts).
         .safeAreaBar(edge: .top, spacing: 0) {
-            GitTaskSetupBanner(store: git, folder: session.cwd)
+            TaskScriptBanner(folder: session.cwd)
         }
         .composerDropTarget(drops)
         .terminalPanel(for: session)
+        .projectActions(for: session)
         .focusedSceneValue(\.activeSession, session)
         .navigationTitle(session.displayTitle)
         .navigationSubtitle(
@@ -70,6 +71,10 @@ struct SessionView: View {
             // The header controls draw their own outline (`.header` buttons, Open In) rather than
             // sitting on the toolbar's glass, so each hides the shared background. The session's
             // MCP servers live in the composer, beside the context ring.
+            ToolbarItem {
+                EarlierConversationButton(session: session)
+            }
+            .sharedBackgroundVisibility(.hidden)
             ToolbarItem {
                 OpenInButton(location: OpenInLocation(folder: session.cwd, host: projectHost))
             }

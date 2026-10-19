@@ -169,4 +169,34 @@ extension GitHubCommand {
     public static func addComment(subjectID: String, body: String) -> GitHubCommand {
         mutation("addComment", ["subjectId": .string(subjectID), "body": .string(body)])
     }
+
+    /// Adds it to its base branch's merge queue at the head commit the user saw, so a push in
+    /// between fails instead of queueing unseen code.
+    public static func enqueue(pullRequestID: String, expectedHeadOid: String) -> GitHubCommand {
+        mutation(
+            "enqueuePullRequest",
+            ["pullRequestId": .string(pullRequestID), "expectedHeadOid": .string(expectedHeadOid)],
+            returning: "mergeQueueEntry { position }")
+    }
+
+    public static func dequeue(pullRequestID: String) -> GitHubCommand {
+        mutation("dequeuePullRequest", ["id": .string(pullRequestID)])
+    }
+
+    /// Lets GitHub merge it with `method` once requirements pass, if the head is still the one the
+    /// user saw.
+    public static func enableAutoMerge(
+        pullRequestID: String, method: MergeMethod, expectedHeadOid: String
+    ) -> GitHubCommand {
+        mutation(
+            "enablePullRequestAutoMerge",
+            [
+                "pullRequestId": .string(pullRequestID), "mergeMethod": .string(method.rawValue.uppercased()),
+                "expectedHeadOid": .string(expectedHeadOid),
+            ])
+    }
+
+    public static func disableAutoMerge(pullRequestID: String) -> GitHubCommand {
+        mutation("disablePullRequestAutoMerge", ["pullRequestId": .string(pullRequestID)])
+    }
 }

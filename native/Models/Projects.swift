@@ -54,6 +54,17 @@ final class Projects {
         return project
     }
 
+    /// Names the project in Native, open or archived; nil or blank goes back to the folder's name.
+    func rename(_ id: Project.ID, to name: String?) {
+        let trimmed = name?.trimmingCharacters(in: .whitespacesAndNewlines)
+        let displayName = trimmed?.isEmpty == false ? trimmed : nil
+        if let index = all.firstIndex(where: { $0.id == id }) {
+            all[index].displayName = displayName
+        } else if let index = archived.firstIndex(where: { $0.id == id }) {
+            archived[index].displayName = displayName
+        }
+    }
+
     func remove(_ id: Project.ID) {
         all.removeAll { $0.id == id }
     }

@@ -2,7 +2,8 @@ import GitHub
 import SwiftUI
 
 /// Where the pull request stands, at the end of the conversation (GitHub's merge box): reviews,
-/// checks and mergeability, then the next step: merge, or why the user can't.
+/// checks and mergeability, then the next step, named for what it does: "Merge When Ready" for a
+/// merge queue or auto-merge, exactly how it merges otherwise, or why the user can't.
 struct PullRequestMergeBox: View {
     let model: PullRequestPageModel
     let page: PullRequestPage
@@ -77,9 +78,14 @@ struct PullRequestMergeBox: View {
                 .foregroundStyle(.dsTextSecondary)
                 .lineLimit(2)
             Spacer(minLength: DS.Space.md)
-            if page.isOpen, page.viewerCanMerge, !page.isDraft {
-                Button("Merge…", systemImage: "arrow.triangle.merge") { model.isMergeSheetPresented = true }
-                    .buttonStyle(.ds(.secondary))
+            if page.isOpen, page.viewerCanMerge, !page.isDraft, let plan = model.mergePlan {
+                Button(
+                    plan.state == nil ? plan.title + "…" : "Manage…",
+                    systemImage: plan.state == nil ? "arrow.triangle.merge" : "list.number"
+                ) {
+                    model.isMergeSheetPresented = true
+                }
+                .buttonStyle(.ds(.secondary))
             }
         }
         .padding(.horizontal, DS.Space.lg)
@@ -98,6 +104,20 @@ struct PullRequestMergeBox: View {
                 "Only people with write access to \(page.reference.repository) can merge it. Your account has \(page.permission.rawValue.lowercased()) access."
         }
         if page.mergeable == .conflicting { return "This branch has conflicts that must be resolved." }
+        if let state = page.mergeState {
+            return switch state {
+            case .queued: "\(state.summary) in \(page.baseRefName)'s merge queue."
+            case .autoMerge:
+                "Auto-merge is on: it merges into \(page.baseRefName) once required checks and reviews pass."
+            }
+        }
+        if page.isMergeQueueEnabled {
+            if let reason = page.removedFromQueueReason {
+                return "Removed from the merge queue: \(reason). Merge When Ready adds it back."
+            }
+            return
+                "\(page.baseRefName) merges through a merge queue: Merge When Ready adds it, and the queue merges it once its checks pass."
+        }
         return switch page.mergeStatus {
         case .clean, .hasHooks: "Ready to merge."
         case .unstable: "Mergeable, though some checks that aren't required failed."
@@ -109,7 +129,9 @@ struct PullRequestMergeBox: View {
     }
 
     private var mergeSymbol: String {
-        page.state == .merged ? "arrow.triangle.merge" : page.viewerCanMerge ? "arrow.triangle.merge" : "lock"
+        if page.state == .merged { return "arrow.triangle.merge" }
+        if page.mergeState != nil { return "list.number" }
+        return page.viewerCanMerge ? "arrow.triangle.merge" : "lock"
     }
 
     private var mergeTint: Color {

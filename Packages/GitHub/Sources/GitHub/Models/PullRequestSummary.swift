@@ -22,6 +22,8 @@ public struct PullRequestSummary: Sendable, Hashable, Identifiable {
     public var additions: Int?
     public var deletions: Int?
     public var commentsCount: Int?
+    /// Queued or set to auto-merge, when it is. Only the list's status lookup fills it in.
+    public var mergeState: PullRequestMergeState?
 
     /// The URL is unique across hosts and repositories.
     public var id: URL { url }
@@ -114,5 +116,6 @@ public struct PullRequestSummary: Sendable, Hashable, Identifiable {
             deletions: status?.deletions,
             commentsCount: result.commentsCount
         )
+        mergeState = status?.mergeState
     }
 }

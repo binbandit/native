@@ -1,0 +1,150 @@
+import ACP
+import SwiftUI
+
+/// How a project's new tasks start: the agent and model, and the worktree or branch they get with
+/// its prefix. Each picker's Default follows the setting for every project, and says what that is.
+struct ProjectNewTasksSection: View {
+    let project: Project
+
+    @Environment(AppModel.self) private var model
+    @Environment(GitSettings.self) private var git
+    @AppStorage private var agentID: String?
+    @AppStorage private var modelValue: String?
+
+    init(project: Project) {
+        self.project = project
+        _agentID = AppStorage(ProjectTaskDefaults.agentKey(for: project.id))
+        _modelValue = AppStorage(ProjectTaskDefaults.modelKey(for: project.id))
+    }
+
+    private var rows: ProjectSettingsRows { ProjectSettingsRows(project: project.id) }
+    private var overrides: GitSettings.ProjectOverrides { git.overrides(forProjectAt: project.url) }
+    private var agent: AgentRuntime? { agentID.flatMap { model.runtime(AgentDefinition.ID(rawValue: $0)) } }
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: DS.Space.lg) {
+            SettingsSubheading(
+                "New tasks", note: "How tasks you start in \(project.name) begin, unless you choose otherwise.")
+            SettingsRowGroup {
+                SettingsRow(id: rows.agent, "Agent", description: Text(agentDescription)) {
+                    SettingsSelect(
+                        label: "Agent for new tasks", selection: agentSelection, options: agentOptions,
+                        width: Self.selectWidth)
+                }
+                SettingsRow(id: rows.model, "Model", description: Text(modelDescription)) {
+                    SettingsSelect(
+                        label: "Model for new tasks", selection: $modelValue, options: modelOptions,
+                        width: Self.selectWidth
+                    )
+                    .disabled(modelOptions.count == 1)
+                }
+                SettingsRow(
+                    id: rows.workspace, "New tasks get",
+                    description: Text("A worktree keeps parallel tasks from editing the same files.")
+                ) {
+                    SettingsSelect(
+                        label: "New tasks get", selection: override(\.newTaskWorkspace),
+                        options: [.init(value: nil, title: "Default (\(git.newTaskWorkspace.title))")]
+                            + GitSettings.NewTaskWorkspace.allCases.map { .init(value: $0, title: $0.title) },
+                        width: Self.selectWidth)
+                }
+                SettingsRow(
+                    id: rows.prefix, "Branch prefix",
+                    description: Text(
+                        "New branches start with it, like \(git.branchPrefix(forProjectAt: project.url, gitHubLogin: "you"))fix-login-bug."
+                    )
+                ) {
+                    HStack(spacing: DS.Space.sm) {
+                        if overrides.branchPrefixMode == .custom {
+                            TextField("prefix", text: customPrefix)
+                                .settingsField()
+                                .frame(width: GitMetrics.prefixFieldWidth)
+                        }
+                        SettingsSelect(
+                            label: "Branch prefix", selection: override(\.branchPrefixMode),
+                            options: [.init(value: nil, title: "Default (\(git.branchPrefixMode.title))")]
+                                + GitSettings.BranchPrefixMode.allCases.map { .init(value: $0, title: $0.title) },
+                            width: Self.selectWidth)
+                    }
+                }
+            }
+        }
+    }
+
+    private static let selectWidth = SettingsMetrics.selectWidth + DS.Space.xxxl * 2
+
+    // MARK: - Agent and model
+
+    private var agentSelection: Binding<String?> {
+        Binding(
+            get: { agentID },
+            set: { ProjectTaskDefaults.setAgent($0.map(AgentDefinition.ID.init(rawValue:)), for: project.id) })
+    }
+
+    private var agentOptions: [SettingsSelect<String?>.Option] {
+        let lastUsed = model.defaultAgent.map { "Last used (\($0.displayName))" } ?? "Last used"
+        var options = [SettingsSelect<String?>.Option(value: nil, title: lastUsed)]
+        options += model.agents.map { .init(value: $0.agent.id.rawValue, title: $0.agent.displayName) }
+        // An agent that's gone stays visible, so it can be changed.
+        if let agentID, agent == nil {
+            options.append(.init(value: agentID, title: "\(agentID) (not installed)"))
+        }
+        return options
+    }
+
+    private var agentDescription: String {
+        guard let agentID else { return "New tasks start with the agent you used last, unless you pick one." }
+        guard let agent, agent.isAvailable else {
+            return
+                "\(agent?.agent.displayName ?? agentID) can't start tasks right now, so new tasks start with the agent you used last."
+        }
+        return "New tasks start with \(agent.agent.displayName), unless you pick another."
+    }
+
+    private var offeredModels: [ConfigOption.SelectOption] {
+        agentID.map { AgentSessionDefaults.offeredChoices(for: AgentDefinition.ID(rawValue: $0), setting: .model) }
+            ?? []
+    }
+
+    private var modelOptions: [SettingsSelect<String?>.Option] {
+        guard let agentID else { return [.init(value: nil, title: "The agent's default")] }
+        let id = AgentDefinition.ID(rawValue: agentID)
+        let global = UserDefaults.standard.string(forKey: AgentSessionDefaults.Setting.model.key(for: id))
+        let globalName = global.map { value in offeredModels.first { $0.value == value }?.name ?? value }
+        var options = [
+            SettingsSelect<String?>.Option(value: nil, title: globalName.map { "Default (\($0))" } ?? "Default")
+        ]
+        options += offeredModels.map { .init(value: $0.value, title: $0.name) }
+        if let modelValue, !offeredModels.contains(where: { $0.value == modelValue }) {
+            options.append(.init(value: modelValue, title: modelValue))
+        }
+        return options
+    }
+
+    private var modelDescription: String {
+        guard agentID != nil else { return "Choose an agent above to pick its model." }
+        let name = agent?.agent.displayName ?? "the agent"
+        if offeredModels.isEmpty {
+            return "Start a task with \(name) once to choose from its models."
+        }
+        return "Default uses \(name)'s default from Settings ▸ Agents. A model \(name) stops offering is skipped."
+    }
+
+    // MARK: - Git overrides
+
+    private func override<Value>(_ field: WritableKeyPath<GitSettings.ProjectOverrides, Value?>) -> Binding<Value?> {
+        Binding(
+            get: { overrides[keyPath: field] },
+            set: { value in
+                var changed = overrides
+                changed[keyPath: field] = value
+                git.setOverrides(changed, forProjectAt: project.url)
+            })
+    }
+
+    private var customPrefix: Binding<String> {
+        Binding(
+            get: { overrides.customBranchPrefix ?? "" },
+            set: { override(\.customBranchPrefix).wrappedValue = $0 })
+    }
+}

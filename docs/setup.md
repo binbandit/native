@@ -47,8 +47,9 @@ same fields. Call it again after the user changes something, rather than assumin
 - Write a `plugin.json` into Native's plugins folder, for an agent Native doesn't know or an MCP
   server every session should get. Read the `build-a-native-plugin` skill first; this skill's
   "On this Mac" section names the folder Native reads.
-- Draft a project's setup script, a Ghostty config, or a configuration profile from the sample, and
-  write it where the user says.
+- Draft a project's scripts ([docs/scripts.md](https://github.com/binbandit/native/blob/main/docs/scripts.md)),
+  a Ghostty config, or a configuration profile from the sample, and write it where the user says. A
+  script the team should share can be committed as `.native/setup.sh` (and so on) in the repository.
 - Read Native's logs: `log show --last 15m --style compact --predicate 'subsystem == "Native"'`.
 
 **Leave Native's window to the user.** You can't click its UI, and its settings aren't files to
@@ -157,9 +158,14 @@ new tasks get their branch and worktree, with the user's own git:
 - **Files to copy into new worktrees**: ignored files a task needs, as gitignore patterns (`.env*`
   by default).
 - **Delete the branch when archiving** (off by default; the commits stay reachable).
-- **Setup scripts**, per project: Add Script…, pick the project's folder, write the script, ⌘Return
-  saves. It runs in each new worktree after the env files are copied, to install dependencies or
-  start services. You can draft the script; the user pastes it in.
+- **Scripts**: Settings ▸ Scripts sets commands that run when a task's worktree is made (setup:
+  install dependencies, start services; the agent waits for it), when a task starts, after each
+  turn, before a worktree is removed (teardown) and when a task is deleted. A project's own scripts
+  are in its settings, and a repository can commit them as `.native/<event>.sh` for the whole team,
+  which run once the user allows that project's repo scripts. Each editor has Run Test. You can draft
+  a script; the user pastes it in, or you write the repository file where they say. Everything about
+  them, including the variables they get:
+  [docs/scripts.md](https://github.com/binbandit/native/blob/main/docs/scripts.md).
 
 Pull requests go through the user's GitHub CLI: Settings ▸ GitHub needs `gh` (`brew install gh`)
 signed in (`gh auth login`), and sets whether pull requests open in Native or the browser.
@@ -261,7 +267,8 @@ task, project or Settings page. Defaults:
 
 Install Native on each Mac; nothing syncs between them. To match a setup, run this skill on each
 one, copy the plugins folder (`~/.native/plugins`), export and import shortcuts, and redo the
-choices in Settings ▸ Git (setup scripts are stored per Mac). Agents keep their own sign-ins and
+choices in Settings ▸ Git and Settings ▸ Scripts (scripts kept in Native are per Mac; ones committed
+to a repository as `.native/<event>.sh` come with it). Agents keep their own sign-ins and
 configuration on each machine.
 
 ### The durable host
@@ -351,6 +358,7 @@ manage. The keys:
 | `policy.skills.blocked` | skills turned off for every session |
 | `policy.permissions.forbiddenModes` | permission modes users can't pick |
 | `policy.scripts.enabled`, `policy.labs.enabled` | the script runtime and `run_script`; Labs and experiments |
+| `policy.taskScripts.userScripts`, `policy.taskScripts.repositoryScripts` | task scripts written in Native; ones committed to repositories (docs/scripts.md) |
 | `policy.companion.enabled` | pairing devices |
 | `policy.remoteHosts.enabled` | remote hosts, which aren't available yet |
 | `policy.updates.feedURL`, `policy.updates.enabled`, `policy.updates.channels` | an internal update feed, updates off, allowed channels |

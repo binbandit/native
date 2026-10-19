@@ -43,6 +43,15 @@ struct ComposerFeedback: Equatable, Identifiable {
         }
     }
 
+    /// A queued message sent ahead of the rest. One sent as the next prompt shows in the transcript.
+    init?(sendingNow route: SessionModel.SendNowRoute, agentName: String) {
+        switch route {
+        case .steer: self.init(tone: .done, message: "Adding it to the running turn")
+        case .interrupt: self.init(tone: .notice, message: "Stopping \(agentName)’s turn, then sending it")
+        case .send: return nil
+        }
+    }
+
     init(tone: Tone, message: String, canUndo: Bool = false) {
         self.tone = tone
         self.message = message

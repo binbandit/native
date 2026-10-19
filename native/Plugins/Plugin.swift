@@ -1,4 +1,5 @@
 import ACP
+import AIInstructions
 import AppAppearance
 import CodeThemes
 import Experiments
@@ -243,7 +244,7 @@ struct MCPServerManifest: Codable, Hashable, Sendable {
 
 /// An agent contributed by an enabled plugin.
 struct AgentDefinition: Identifiable, Hashable, Sendable {
-    struct ID: Hashable, Sendable, Codable, CustomStringConvertible {
+    nonisolated struct ID: Hashable, Sendable, Codable, CustomStringConvertible {
         let rawValue: String
         var description: String { rawValue }
     }
@@ -335,4 +336,7 @@ struct TitleRequest: Hashable, Sendable {
     var projectName: String
     /// The user's first prompt in the session.
     var prompt: String
+    /// The user's own instructions for titles (Settings ▸ AI Instructions), which a titler adds
+    /// after its own rules.
+    var instructions: AIInstructionAddition?
 }

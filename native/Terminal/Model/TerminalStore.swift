@@ -79,6 +79,22 @@ final class TerminalStore {
         panel(for: session).newTab()
     }
 
+    /// Runs a job in the task's terminal, in a tab of its own (`TerminalPanelModel.run(_:)`).
+    @discardableResult
+    func run(_ request: TerminalJobRequest, for session: SessionModel) -> UUID {
+        panel(for: session).run(request)
+    }
+
+    /// The shell a job runs its command with: the one Settings ▸ Terminal chose, or
+    /// `TerminalShell.fallback` when that one isn't there.
+    var jobShell: String {
+        let path = preferences.settings.shell.path(loginShell: TerminalLoginShell.current)
+        return TerminalLoginShell.isRunnable(path) ? path : TerminalShell.fallback
+    }
+
+    /// Told when a job ends in any task's terminal, with the task and the job as it ended.
+    @ObservationIgnored var jobFinished: (SessionKey, TerminalJob) -> Void = { _, _ in }
+
     /// A panel outside any task, running `command` instead of a login shell, for one-off jobs
     /// such as signing in to an agent. It isn't kept: the caller ends it with `closeAll()`.
     func standalonePanel(running command: String, in directory: URL) -> TerminalPanelModel {
@@ -137,6 +153,8 @@ final class TerminalStore {
             self?.startedEngine()
         }
         panel.reloadConfig = { [weak self] in self?.reloadGhosttyConfig() }
+        let key = session.key
+        panel.jobFinished = { [weak self] job in self?.jobFinished(key, job) }
         panel.resolveShell = { [weak self] shell in
             self?.shellCommand(override: shell) ?? .success(nil)
         }

@@ -52,6 +52,8 @@ struct PullRequestPageView: View {
             }
         )
         .undoToast($model.undo)
+        // Private questions about the pull request, beside the page (native/GitHub/Ask).
+        .pullRequestAskPanel(for: model.reference)
         .sheet(isPresented: $model.isReviewSheetPresented) {
             SubmitReviewSheet(model: model)
                 .environment(gitHub)

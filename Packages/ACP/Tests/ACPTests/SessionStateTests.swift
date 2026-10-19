@@ -130,6 +130,23 @@ struct SessionStateTests {
         #expect(state.resolvePermission(toolCallID: "native-script-1")?.options == [allow])
     }
 
+    @Test func pendingRequestsKeepTranscriptOrder() {
+        var state = SessionState()
+        let allow = PermissionOption(optionId: "once", name: "Allow Once", kind: .allowOnce)
+        for id in ["first", "second"] {
+            state.apply(.toolCall(ToolCallUpdate(toolCallId: id, title: id, status: .pending)))
+        }
+        for id in ["second", "first"] {
+            state.requestPermission(
+                RequestPermissionRequest(
+                    sessionId: SessionID("s"), toolCall: ToolCallUpdate(toolCallId: id), options: [allow]),
+                id: .string(id))
+        }
+        #expect(state.pendingPermissions.map(\.toolCallID) == ["first", "second"])
+        state.resolvePermission(toolCallID: "first")
+        #expect(state.permissionRequests.map(\.id) == ["second"])
+    }
+
     @Test func cancelledTurnClosesOpenToolCalls() throws {
         var state = folded(
             try [Wire.readToolCall, Wire.readCompletedUpdate, Wire.writeToolCall, Wire.bashToolCall].map(Wire.update))

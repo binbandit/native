@@ -81,8 +81,10 @@ struct PullRequestPageStatusLine: View {
     private var mergeText: (label: String, tint: Color)? {
         guard page.isOpen, !page.isDraft else { return nil }
         if page.mergeable == .conflicting { return ("Has conflicts", .dsDanger) }
+        // A queue or auto-merge already arranged says where it stands, not whether it could merge.
+        if let state = page.mergeState { return (state.summary, .dsInfo) }
         return switch page.mergeStatus {
-        case .clean, .hasHooks: ("Ready to merge", .dsSuccess)
+        case .clean, .hasHooks: (page.isMergeQueueEnabled ? "Ready for the merge queue" : "Ready to merge", .dsSuccess)
         case .unstable: ("Mergeable, some checks failed", .dsWarning)
         case .blocked: ("Blocked by branch protection", .dsWarning)
         case .behind: ("Behind \(page.baseRefName)", .dsWarning)

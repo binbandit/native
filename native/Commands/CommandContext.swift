@@ -8,6 +8,8 @@ struct CommandContext {
     var session: SessionModel?
     var sidebarVisibility: Binding<NavigationSplitViewVisibility>?
     var needsYouFilter: Binding<Bool>?
+    /// The window's sidebar multi-selection, for the bulk commands.
+    var sidebarSelection: SidebarSelectionModel?
     var mcpServersPopover: Binding<Bool>?
     var changesInspector: Binding<Bool>?
     var pullRequestsPage: Binding<Bool>?
@@ -28,6 +30,7 @@ struct FocusedCommandContext: DynamicProperty {
     @FocusedValue(\.activeSession) private var session
     @FocusedValue(\.sidebarVisibility) private var sidebarVisibility
     @FocusedValue(\.sidebarNeedsYouFilter) private var needsYouFilter
+    @FocusedValue(\.sidebarSelection) private var sidebarSelection
     @FocusedValue(\.mcpServersPopover) private var mcpServersPopover
     @FocusedValue(\.gitChangesInspector) private var changesInspector
     @FocusedValue(\.showsPullRequests) private var pullRequestsPage
@@ -39,6 +42,7 @@ struct FocusedCommandContext: DynamicProperty {
             session: session,
             sidebarVisibility: sidebarVisibility,
             needsYouFilter: needsYouFilter,
+            sidebarSelection: sidebarSelection,
             mcpServersPopover: mcpServersPopover,
             changesInspector: changesInspector,
             pullRequestsPage: pullRequestsPage,

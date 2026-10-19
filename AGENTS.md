@@ -66,7 +66,7 @@ these rules exist to keep changes small, isolated and easy to review.
 `just` lists the everyday commands (build, run an isolated instance, test, format, lint, the iPad check, release checks); the commands it wraps are below.
 
 ```sh
-xcodebuild -project native.xcodeproj -scheme native -derivedDataPath /tmp/native-dd/<you>-build build
+scripts/dev/run-isolated.sh <you> --build   # compile check, in the same folder your instance uses
 (cd Packages/ACP && swift test)          # likewise for every package
 scripts/release/check.sh                  # Release and Nightly compile; run before landing #if DEBUG or build-setting changes
 scripts/dev/install-hooks.sh              # once per clone: format + lint staged Swift, conventional commit titles
@@ -95,8 +95,8 @@ render harness) as soon as a check is done; never leave apps running between che
 agents share one Mac.
 
 Builds are about 6 GB each and the disk is shared: when your task is done, run
-`scripts/dev/run-isolated.sh <name> --remove` for each instance you used and delete your
-`/tmp/native-dd/<you>-build`, and keep extra scratch builds to the minute you need them. Profiling
+`scripts/dev/run-isolated.sh <name> --remove` for the one instance you used. Use one build folder
+per agent: compile checks with `--build` reuse it. Keep extra scratch builds to the minute you need them. Profiling
 with `xctrace` leaves 8-13 GB `instruments*.ktrace` files in `$TMPDIR` and large `.trace` bundles:
 delete yours as soon as you've read the numbers.
 

@@ -8,10 +8,17 @@ let package = Package(
         .library(name: "Git", targets: ["Git"])
     ],
     dependencies: [
-        .package(path: "../Exec")
+        .package(path: "../Exec"),
+        .package(path: "../AIInstructions"),
     ],
     targets: [
-        .target(name: "Git", dependencies: [.product(name: "Exec", package: "Exec")]),
-        .testTarget(name: "GitTests", dependencies: ["Git"]),
+        .target(
+            name: "Git",
+            dependencies: [
+                .product(name: "Exec", package: "Exec"),
+                .product(name: "AIInstructions", package: "AIInstructions"),
+            ]),
+        .testTarget(
+            name: "GitTests", dependencies: ["Git", .product(name: "AIInstructions", package: "AIInstructions")]),
     ]
 )

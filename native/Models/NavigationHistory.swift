@@ -22,6 +22,11 @@ nonisolated struct NavigationHistory<Entry: Equatable>: Equatable {
         position = entries.count - 1
     }
 
+    /// Puts `new` wherever `old` was, as when a starting task's session takes its place.
+    mutating func replace(_ old: Entry, with new: Entry) {
+        entries = entries.map { $0 == old ? new : $0 }
+    }
+
     /// Whether moving in `direction` from `current` would land anywhere.
     func canMove(_ direction: Direction, from current: Entry?, isAvailable: (Entry) -> Bool) -> Bool {
         destination(direction, from: current, isAvailable: isAvailable) != nil

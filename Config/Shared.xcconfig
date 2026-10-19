@@ -24,6 +24,10 @@ NATIVE_APP_ICON_NAME = AppIcon
 // so a fresh clone builds signed to run locally without anyone's team. scripts/release/release.sh
 // overrides it from NATIVE_TEAM_ID or its signing identity.
 DEVELOPMENT_TEAM =
+// Without a team, sign to run locally (ad hoc), which needs no account. `just signing` writes
+// Config/Local.xcconfig with your team and automatic signing.
+CODE_SIGN_STYLE = Manual
+CODE_SIGN_IDENTITY = -
 #include? "Local.xcconfig"
 
 // TODO(release): Sparkle's EdDSA public key, as printed by `generate_keys` (docs/releasing.md,

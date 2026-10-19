@@ -37,6 +37,7 @@ consistent across agents. A user's own title wins, then the generated one, then 
 
 Messages sent while an agent works are queued by default (every agent supports it). Steering uses
 the `_session/steering` extension where available. ⌘Return does the opposite of the setting.
+Superseded by "Steer by default" (2026-10-19).
 
 ## 2026-10-17: Orchestration over MCP
 
@@ -435,3 +436,65 @@ Dark mode has a second tone, True Black, a sibling of Wool (`\.dsDarkTone`): pur
 sidebar, chrome and terminal for OLED screens, opaque whatever the transparency, with separators
 (#1A1A1D), borders (#2A2A2E), the selection (#141416) and raised surfaces (#0E0E10) lifted just enough
 to stay readable. Text, accent and status colors are Standard's.
+
+## 2026-10-19: Private pull request questions send the context once, and save the rest beside the agent
+
+Ask (the panel beside a pull request's page) is a read-only task session of the user's default agent
+(`startTaskSession`, so out of the sidebar), switched to the agent's read-only permission mode (one
+named read-only, else Plan Mode, else the least autonomous level). Its first message carries the
+pull request's context, built by `PullRequestAskContext` (Packages/GitHub, tested) from what the
+page already loaded: metadata, description, conversation, review threads, and the diff from the
+REST patches Files Changed fetches anyway. The context stays in the conversation, and in the
+provider's prompt cache, so follow-ups cost only the question; new commits since are sent once,
+before the next question.
+
+The budget is about 20k tokens. A typical pull request fits whole, so the first answer takes one
+turn and no tool calls. A larger one sends an outline (every file with its size, the newest comments
+and unresolved threads that fit, and the diffs of files reviewers are discussing first, skipping
+generated ones), and the panel says what was left out. Everything goes into a saved copy in the
+session's folder (`PULL_REQUEST.md`, `changes.diff`, `diff/<path>.diff`) under Application Support,
+which the agent reads with its own file tools when a question needs it: no network, so a read-only
+sandbox allows it without asking. Rejected: a read-only checkout (a clone per pull request, slow
+and large for what questions need), the whole diff every time (expensive on large pull requests,
+and over some agents' limits), and having the agent fetch everything through `gh` (a permission
+prompt per call in a read-only sandbox, and a round trip before every answer). `gh api` for a
+file's whole contents stays available, with the user's permission. The conversation is remembered
+per pull request (`pullRequestQuestions` in the user defaults); search opens it on the pull
+request's page (`AppModel.searchedSessionOpeners`), never as a project.
+
+## 2026-10-19: SVG project icons, drawn by AppKit and checked first
+
+Project icons accept SVG: a picked file, or a `favicon.svg`, `icon.svg` or `logo.svg` found in the
+project (found SVGs are tried before bitmaps, since they're sharp at every size; a found SVG wider
+or taller than 2:1 is a wordmark and isn't picked automatically). They're drawn with the platform's
+own SVG support, so there's no dependency: `NSImage(data:)` on the Mac decodes SVG into a vector
+representation (CoreSVG) and draws it at any size. Native rasterizes each icon for the exact size
+it's shown at (4 pixels per point), because SwiftUI draws an `NSImage` at its intrinsic size and
+scales the bitmap, which blurs a 16pt SVG shown at 32pt.
+
+Every SVG is checked before the renderer sees it (`SVGIcon` in `Packages/ProjectIcons`, tested),
+because the renderer fails badly: for an `<image>` element or entity declarations it draws a red
+cross and still reports a valid image, and it follows references, loading other files (and would
+fetch addresses). The check rejects files over 512 KB or 10,000 elements, entity declarations,
+`<image>`, `<script>`, `<foreignObject>` and other embedding elements, and any `href`, `url(…)`,
+`@import` or `xml-stylesheet` that points outside the file. The picker says which, in words.
+
+An SVG that paints with `currentColor`, or only in black, is a glyph: it's drawn as a template
+image in the sidebar's secondary foreground, like a symbol, so it follows light, dark, Wool and True
+Black. That foreground isn't one color (it comes from the environment), and the renderer resolves
+`currentColor` only from a fixed value, so a file mixing `currentColor` with other colors is drawn
+in the foreground alone. Other SVGs keep their own colors.
+
+iPadOS has no public SVG decoder: `UIImage(data:)` returns nil for SVG on iOS 27.1, and ImageIO
+lists no SVG type. There `PlatformSVGImage.canDraw` is false, found SVGs are skipped for the next
+candidate and a picked one is refused with the reason. We don't write or vendor a renderer for
+that: an iPad client gets its projects' icons from its Mac host, which will send them rendered,
+and a renderer of our own would be a large, security-sensitive parser to maintain for one icon.
+
+## 2026-10-19: Steer by default
+
+A message sent while an agent works now steers into the running turn by default, and ⌘Return
+queues it. Queueing by default read as "steering doesn't work": a follow-up is usually a correction
+the agent should see now, and both bundled agents (Claude Code, Codex) steer. Agents that can't
+steer still queue, and the composer's hint says so. Every queued message can also be sent now:
+steered in, or after stopping the turn for an agent that can't steer.

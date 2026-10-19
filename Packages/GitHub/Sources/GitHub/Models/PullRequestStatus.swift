@@ -12,6 +12,8 @@ public struct PullRequestStatus: Sendable, Hashable, Decodable {
     public var deletions: Int
     /// `nil` when the head commit has no checks.
     public var checks: CheckSummary?
+    /// Queued or set to auto-merge, when it is.
+    public var mergeState: PullRequestMergeState?
 
     static let query = """
         query($ids: [ID!]!) {
@@ -24,6 +26,7 @@ public struct PullRequestStatus: Sendable, Hashable, Decodable {
               mergeable
               additions
               deletions
+              \(PullRequestMergeState.fields)
               commits(last: 1) {
                 nodes {
                   commit {
@@ -56,6 +59,7 @@ public struct PullRequestStatus: Sendable, Hashable, Decodable {
         additions = try container.decodeIfPresent(Int.self, forKey: .additions) ?? 0
         deletions = try container.decodeIfPresent(Int.self, forKey: .deletions) ?? 0
         checks = try container.decodeIfPresent(CheckRollup.LastCommit.self, forKey: .commits)?.rollup?.summary
+        mergeState = try PullRequestMergeState.Payload(from: decoder).state
     }
 
     /// The GraphQL response around a batch of statuses.

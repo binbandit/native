@@ -18,7 +18,7 @@ struct CodexConfig {
 
     func read(projects: [URL]) -> AgentMCPConfiguration {
         var problems: [ConfigProblem] = []
-        var files = [ConfigFile(url: userFile, role: "User servers", exists: reader.exists(userFile))]
+        var files = [ConfigFile(url: userFile, role: "User servers", scope: .user, exists: reader.exists(userFile))]
         let user = table(at: userFile, problems: &problems)
         var servers = Self.servers(in: user, scope: .user, source: userFile)
 
@@ -26,7 +26,9 @@ struct CodexConfig {
             let file = project.appending(path: ".codex/config.toml")
             let exists = reader.exists(file)
             files.append(
-                ConfigFile(url: file, role: "Project servers for \(project.lastPathComponent)", exists: exists))
+                ConfigFile(
+                    url: file, role: "Project servers for \(project.lastPathComponent)", scope: .project(project),
+                    exists: exists))
             guard exists else { continue }
             let isTrusted = user?["projects"]?[ProjectPath.key(project)]?["trust_level"]?.stringValue == "trusted"
             servers += Self.servers(in: table(at: file, problems: &problems), scope: .project(project), source: file)

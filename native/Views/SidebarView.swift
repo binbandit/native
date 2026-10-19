@@ -1,4 +1,5 @@
 import SwiftUI
+import TaskList
 
 /// The sidebar. Its top half holds "New Session" and the navigation items other features add, then
 /// their accessories (the usage meter). Below a hairline, the projects and their sessions form a
@@ -10,12 +11,18 @@ import SwiftUI
 /// and `taskAccessory` supplies each task row's trailing indicator (context usage by default).
 ///
 /// Keys (docs/keyboard.md): ↑ and ↓ move the selection once the list has focus, keeping focus here;
-/// clicking a row means "work here", so it focuses that session's composer. Return renames the
-/// selected session, and the sidebar publishes `sidebarReorder` for ⌥⌘↑ / ⌥⌘↓.
+/// clicking a row means "work here", so it focuses that session's composer. ⌘-click and ⇧-click
+/// pick tasks for bulk actions instead, ⌘A picks the project's, and Escape lets them go. Return
+/// renames the selected session, and the sidebar publishes `sidebarReorder` for ⌥⌘↑ / ⌥⌘↓.
+///
+/// Each window keeps its own filters (`TaskFilter`, restored on relaunch) and its own picks.
 struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View>: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.undoManager) private var undoManager
+    @Environment(\.sidebarTaskInsights) private var insights
     @FocusState private var isListFocused: Bool
-    @AppStorage("sidebar.showsOnlyNeedsYou") private var showsOnlyNeedsYou = false
+    @SceneStorage("sidebar.taskFilter") private var storedFilter = ""
+    @State private var selection = SidebarSelectionModel()
 
     private let navigationItems: NavigationItems
     private let accessories: Accessories
@@ -32,6 +39,8 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
     }
 
     var body: some View {
+        let filter = self.filter
+        let listing = SidebarListing(model: model, filter: filter, insights: insights)
         VStack(alignment: .leading, spacing: 0) {
             // The primary nav group: 6pt insets, 2pt between rows.
             VStack(alignment: .leading, spacing: DS.Space.xxs) {
@@ -44,7 +53,9 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
                 .padding(.horizontal, DS.Space.lg)
 
             ScrollView {
-                ProjectList(taskAccessory: taskAccessory, showsOnlyNeedsYou: $showsOnlyNeedsYou, select: select)
+                ProjectList(
+                    listing: listing, taskAccessory: taskAccessory, filter: filterBinding, selection: selection,
+                    select: select)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal, DS.Space.sm)
                     .padding(.vertical, DS.Space.md)
@@ -66,19 +77,94 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
                 model.renaming = selection
                 return .handled
             }
+            // ⌘A picks every task in the open task's project; Escape lets the picks go.
+            .onKeyPress(characters: ["a"]) { press in
+                guard press.modifiers == .command else { return .ignored }
+                let targets = model.selectAllTargets(after: selection)
+                guard !targets.isEmpty else { return .ignored }
+                selection.selectAll(targets)
+                return .handled
+            }
+            .onKeyPress(.escape) {
+                guard selection.isActive else { return .ignored }
+                selection.clear()
+                return .handled
+            }
             .accessibilityLabel("Projects")
             .onAppear { LaunchMetrics.markOnScreen(.sidebarInteractive) }
 
+            if selection.isActive {
+                SidebarSelectionBar(selection: selection)
+                    .transition(.move(edge: .bottom).combined(with: .opacity))
+            }
             SidebarFooter()
         }
+        .animation(.dsQuick, value: selection.isActive)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .environment(\.sidebarSelection, selection)
+        .onModifierKeysChanged(mask: [.command, .shift]) { _, modifiers in
+            selection.modifiers = modifiers
+        }
+        .onChange(of: listing.order, initial: true) { _, order in
+            selection.update(order: order)
+        }
+        // Rows a filter hides never load their checkout, so look up what the checkout filters ask
+        // about when they're turned on.
+        .task(id: filter.requiresUncommittedChanges || filter.requiresPullRequest) {
+            guard filter.requiresUncommittedChanges || filter.requiresPullRequest else { return }
+            await insights.prepare(model.projects.all.flatMap { model.allSessions(in: $0.id) })
+        }
+        .confirmationDialog(
+            "Delete \(selection.keys.count) Tasks?", isPresented: Bindable(selection).isConfirmingDelete
+        ) {
+            Button("Delete \(selection.keys.count) Tasks", role: .destructive) {
+                let keys = selection.keys
+                selection.clear()
+                model.deleteSessions(keys, undoManager: undoManager)
+            }
+        } message: {
+            Text(
+                "Their history goes from Native and, where the agent supports it, from the agent too. You can undo for a few seconds. To keep them out of sight instead, archive them."
+            )
+        }
         .focusedSceneValue(\.sidebarReorder, reorder)
-        .focusedSceneValue(\.sidebarNeedsYouFilter, $showsOnlyNeedsYou)
+        .focusedSceneValue(\.sidebarNeedsYouFilter, needsYouBinding)
+        .focusedSceneValue(\.sidebarSelection, selection)
+    }
+
+    /// The window's filters, kept in its scene storage so each window restores its own.
+    private var filter: TaskFilter {
+        storedFilter.data(using: .utf8).flatMap { try? JSONDecoder().decode(TaskFilter.self, from: $0) }
+            ?? TaskFilter()
+    }
+
+    private var filterBinding: Binding<TaskFilter> {
+        Binding(
+            get: { filter },
+            set: { newValue in
+                let data = (try? JSONEncoder().encode(newValue)) ?? Data()
+                storedFilter = newValue == TaskFilter() ? "" : String(decoding: data, as: UTF8.self)
+            }
+        )
+    }
+
+    /// The Needs You filter alone, for its command (⌥⌘J).
+    private var needsYouBinding: Binding<Bool> {
+        Binding(
+            get: { filter.statuses.contains(.needsYou) },
+            set: { isOn in
+                var filter = filter
+                if isOn != filter.statuses.contains(.needsYou) { filter.toggle(.needsYou) }
+                filterBinding.wrappedValue = filter
+            }
+        )
     }
 
     /// A row was clicked or tapped, which means "work here": select it and focus its composer once
     /// the session is open. Keyboard navigation selects without this, so focus stays in the list.
+    /// With ⌘ or ⇧ held, or in select mode, the click picks the row for bulk actions instead.
     private func select(_ key: SessionKey) {
+        if selection.handleClick(on: key, current: model.selection) { return }
         model.selection = key
         Task {
             await model.loadSession(key)

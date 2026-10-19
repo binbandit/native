@@ -4,73 +4,71 @@ import Git
 /// New tasks' checkouts: a worktree (or a branch in the project's checkout) on a provisional
 /// branch, set up from the project, then renamed after the task's title.
 extension GitStore {
-    /// How long a setup script may run before it's stopped.
-    static let setupTimeout = Duration.seconds(15 * 60)
-
     /// Makes the checkout a new task runs in, following `settings`. A worktree gets the project's
     /// ignored env files before this returns, so the agent sees them from its first turn, and its
-    /// setup script starts in the background. `nil` when the project isn't a git repository.
+    /// setup scripts start in the background. `nil` when the project isn't a git repository.
     func prepareTaskCheckout(in project: URL, prefix: String) async throws -> GitTaskCheckout? {
         guard let repository = try await resolveGit().repository(at: project) else { return nil }
         let (branch, code) = try await provisionalBranch(in: repository, prefix: prefix)
-        switch settings.newTaskWorkspace {
+        switch settings.newTaskWorkspace(forProjectAt: project) {
         case .branch:
             try await repository.createAndSwitchBranch(branch)
             try await repository.markProvisional(branch)
             model(for: repository.root).refresh()
-            return GitTaskCheckout(folder: repository.root, branch: branch, copiedFiles: [], runsSetupScript: false)
+            return GitTaskCheckout(folder: repository.root, branch: branch, copiedFiles: [])
         case .worktree:
-            let main = try await repository.worktrees().first(where: \.isMain)?.path ?? repository.root
             let folder = Self.taskLocation(of: repository).appending(path: code, directoryHint: .isDirectory)
+            let base = try? await repository.currentBranchName()
             let worktree = try await repository.addWorktree(at: folder, newBranch: branch)
             try await repository.markProvisional(branch)
-            var run = GitSetupRun(state: .running, copiedFiles: [], projectRoot: main)
-            do {
-                run.copiedFiles = try await requireRepository(at: main).copyIgnoredFiles(
-                    matching: settings.envFilePatterns, to: worktree.path)
-            } catch {
-                run.copyFailure = error.localizedDescription
-            }
-            let script = settings.setupScript(forProjectAt: main)
-            let key = worktree.path.standardizedFileURL
-            if let script {
-                setupRuns[key] = run
-                startSetup(script, in: worktree.path, branch: branch, run: run)
-            } else if run.copyFailure != nil {
-                run.state = .failed("Couldn't copy the project's env files.")
-                setupRuns[key] = run
-            }
-            return GitTaskCheckout(
-                folder: worktree.path, branch: branch, copiedFiles: run.copiedFiles, runsSetupScript: script != nil)
+            return try await setUp(worktree, of: repository, branch: branch, baseBranch: base)
         }
     }
 
-    /// Runs the project's setup script in a task worktree again, e.g. after fixing it.
-    func retrySetup(in folder: URL) {
-        let key = folder.standardizedFileURL
-        guard var run = setupRuns[key] else { return }
-        guard let script = settings.setupScript(forProjectAt: run.projectRoot) else {
-            setupRuns[key] = nil
-            return
-        }
-        run.state = .running
-        setupRuns[key] = run
-        startSetup(script, in: folder, branch: model(for: folder).branch?.name, run: run)
+    /// A task worktree that checks out `branch`, which must exist (a pull request's head, fetched
+    /// for it), named after it and set up like any new task's. The branch keeps its name.
+    func prepareTaskCheckout(in project: URL, existingBranch branch: String) async throws -> GitTaskCheckout {
+        let repository = try await requireRepository(at: project)
+        let worktree = try await repository.createWorktree(
+            checkingOut: branch, folderName: branch, in: Self.worktreesBase(of: repository))
+        return try await setUp(worktree, of: repository, branch: branch)
     }
 
-    func dismissSetup(in folder: URL) {
-        setupRuns[folder.standardizedFileURL] = nil
+    /// Copies the project's ignored env files into a new task worktree before returning, so the
+    /// agent sees them from its first turn, then tells `onTaskWorktreeCreated`, which starts its
+    /// setup scripts.
+    private func setUp(
+        _ worktree: Worktree, of repository: Repository, branch: String, baseBranch: String? = nil
+    ) async throws -> GitTaskCheckout {
+        let main = try await repository.worktrees().first(where: \.isMain)?.path ?? repository.root
+        var created = GitTaskWorktree(
+            folder: worktree.path, projectRoot: main, branch: branch, baseBranch: baseBranch)
+        do {
+            created.copiedFiles = try await requireRepository(at: main).copyIgnoredFiles(
+                matching: settings.envFilePatterns, to: worktree.path)
+        } catch {
+            created.copyFailure = error.localizedDescription
+        }
+        onTaskWorktreeCreated?(created)
+        return GitTaskCheckout(folder: worktree.path, branch: branch, copiedFiles: created.copiedFiles)
     }
 
     /// Renames a task's provisional branch after its title, if the settings allow it and the
     /// branch hasn't been renamed or pushed. Generic titles ("New Session") are skipped.
-    func renameProvisionalBranch(at folder: URL, title: String) async {
+    /// `suggestion` names it from the title and the provisional name's prefix instead, when it can.
+    func renameProvisionalBranch(
+        at folder: URL, title: String, suggestion: ((_ title: String, _ prefix: String) async -> String?)? = nil
+    ) async {
         let title = title.trimmingCharacters(in: .whitespacesAndNewlines)
         guard settings.renamesBranches, !title.isEmpty, title != "New Session" else { return }
         let model = model(for: folder)
         if model.repository == nil { await model.refreshNow() }
-        guard let repository = model.repository, let branch = model.branch?.name else { return }
-        if (try? await repository.renameProvisionalBranch(branch, title: title)) != nil {
+        guard let repository = model.repository, let branch = model.branch?.name,
+            (try? await repository.isRenamableProvisional(branch)) == true
+        else { return }
+        let prefix = BranchNaming.prefix(ofProvisional: branch)
+        let name = await suggestion?(title, prefix) ?? BranchNaming.name(forTitle: title, prefix: prefix)
+        if (try? await repository.renameProvisionalBranch(branch, to: name)) != nil {
             model.refresh()
         }
     }
@@ -96,16 +94,20 @@ extension GitStore {
 
     // MARK: - Helpers
 
-    /// Where a repository's task worktrees go, in the home folder of the machine it's on. On this Mac
+    /// Where a repository's task worktrees go: a folder per repository in `worktreesBase(of:)`.
+    static func taskLocation(of repository: Repository) -> URL {
+        worktreesBase(of: repository).appending(
+            path: Worktree.slug(repository.name, maxLength: 60), directoryHint: .isDirectory)
+    }
+
+    /// Where task worktrees go, in the home folder of the machine the repository is on. On this Mac
     /// the `gitWorktreesFolder` default can move them, which isolated development instances use so
     /// their test worktrees never mix with real ones (scripts/dev/run-isolated.sh).
-    private static func taskLocation(of repository: Repository) -> URL {
+    static func worktreesBase(of repository: Repository) -> URL {
         let home = repository.git.environment["HOME"]
         let isThisMac = home == nil || home == NSHomeDirectory()
         let override = isThisMac ? UserDefaults.standard.string(forKey: "gitWorktreesFolder") : nil
-        let base =
-            override.map { URL(filePath: $0, directoryHint: .isDirectory) } ?? Worktree.defaultLocation(home: home)
-        return base.appending(path: Worktree.slug(repository.name, maxLength: 60), directoryHint: .isDirectory)
+        return override.map { URL(filePath: $0, directoryHint: .isDirectory) } ?? Worktree.defaultLocation(home: home)
     }
 
     /// `<prefix><code>` with a code no branch uses yet.
@@ -116,30 +118,5 @@ extension GitStore {
             if try await repository.uniqueBranchName(branch) == branch { return (branch, code) }
         }
         throw GitError.failed(arguments: ["branch"], status: 1, stderr: "Couldn't find a free branch name.")
-    }
-
-    private func startSetup(_ script: String, in folder: URL, branch: String?, run: GitSetupRun) {
-        let key = folder.standardizedFileURL
-        Task {
-            var run = run
-            do {
-                let repository = try await requireRepository(at: folder)
-                let result = try await repository.runSetupScript(
-                    script,
-                    environment: [
-                        "NATIVE_WORKSPACE_PATH": folder.path(percentEncoded: false),
-                        "NATIVE_ROOT_PATH": run.projectRoot.path(percentEncoded: false),
-                        "NATIVE_BRANCH": branch ?? "",
-                    ],
-                    timeout: Self.setupTimeout
-                )
-                run.state = .finished(result)
-            } catch {
-                run.state = .failed(error.localizedDescription)
-            }
-            // A dismissed or removed run stays gone.
-            if setupRuns[key] != nil { setupRuns[key] = run }
-            model(for: folder).refresh()
-        }
     }
 }

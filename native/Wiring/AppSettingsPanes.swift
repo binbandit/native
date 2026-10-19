@@ -5,14 +5,16 @@ import SwiftUI
 /// to know about them. A feature adds its pane here (one line) rather than in `NativeApp` or
 /// `RootView`; Settings orders them by their group and order.
 enum AppSettingsPanes {
-    static func all(plugins: PluginRegistry, terminals: TerminalStore, keepAwake: KeepAwakeController) -> [SettingsPane]
-    {
+    static func all(
+        plugins: PluginRegistry, terminals: TerminalStore, keepAwake: KeepAwakeController, projects: [Project]
+    ) -> [SettingsPane] {
         [
-            .labs, .git, .gitHub, .mcpServers(registry: plugins), .skills(registry: plugins), .terminal(terminals),
-            .sounds(), .keepAwake(keepAwake), .updates, .usage(registry: plugins), .notifications, .pairedDevices,
-            .celebrations(registry: plugins), .search(BuiltInPlugins.search.center),
+            .labs, .git, .gitHub, .scripts, .aiInstructions, .mcpServers(registry: plugins), .skills(registry: plugins),
+            .terminal(terminals), .sounds(), .keepAwake(keepAwake), .updates, .usage(registry: plugins), .notifications,
+            .pairedDevices, .celebrations(registry: plugins), .search(BuiltInPlugins.search.center),
         ]
         // Labs goes away when the organization turns experiments off.
         .filter { $0.id != .labs || PolicyCenter.shared.policy.labsEnabled }
+            + SettingsPane.projects(projects)
     }
 }

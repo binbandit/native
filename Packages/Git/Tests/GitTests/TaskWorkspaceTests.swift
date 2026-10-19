@@ -119,25 +119,15 @@ struct TaskWorkspaceTests {
                 atPath: worktree.path.appending(path: "node_modules").path(percentEncoded: false)))
     }
 
-    @Test func runsSetupScriptsAndReportsFailuresAndTimeouts() async throws {
+    @Test func readsTheCheckedOutBranchUnlessHEADIsDetached() async throws {
         let test = try await TestRepository.make()
         defer { test.remove() }
         let repository = try await test.repository
+        let branch = try await repository.currentBranchName()
+        #expect(branch == "main")
 
-        let success = try await repository.runSetupScript(
-            "echo \"setting up $NATIVE_WORKSPACE_NAME\"; pwd", environment: ["NATIVE_WORKSPACE_NAME": "demo"],
-            timeout: .seconds(10))
-        #expect(success.succeeded)
-        #expect(success.output.contains("setting up demo"))
-        #expect(success.output.contains(test.folder.lastPathComponent))
-
-        let failure = try await repository.runSetupScript(
-            "echo nope >&2; exit 3", environment: [:], timeout: .seconds(10))
-        #expect(failure.exitCode == 3)
-        #expect(failure.output.contains("nope"))
-
-        let slow = try await repository.runSetupScript("sleep 5", environment: [:], timeout: .milliseconds(300))
-        #expect(slow.timedOut)
+        try await test.git("checkout", "--detach")
+        #expect(try await repository.currentBranchName() == nil)
     }
 
     // MARK: - Commit plans

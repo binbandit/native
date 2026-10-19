@@ -48,10 +48,15 @@ enum AgentSessionDefaults {
         }
     }
 
-    static func apply(to session: SessionModel, defaults: UserDefaults = .standard) async {
+    /// Applies the agent's defaults to a new session; `overrides` (a project's, say) win over them.
+    static func apply(
+        to session: SessionModel, overrides: [Setting: String] = [:], defaults: UserDefaults = .standard
+    ) async {
         for setting in Setting.allCases {
             let category = setting.category
-            guard let value = defaults.string(forKey: setting.key(for: session.agent.id)) else { continue }
+            guard let value = overrides[setting] ?? defaults.string(forKey: setting.key(for: session.agent.id)) else {
+                continue
+            }
             guard let option = session.state.configOptions.first(where: { $0.category == category }),
                 case .select(let current, let choices) = option.kind
             else {

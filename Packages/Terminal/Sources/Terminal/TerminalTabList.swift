@@ -38,9 +38,14 @@ public struct TerminalTabList: Hashable, Sendable {
         /// The title the shell or program set (OSC 0/2), such as the directory or running command.
         public var title: String?
         public var status: TerminalStatus = .running
+        /// The command the tab runs instead of a shell, when it runs one; it names the tab.
+        public var job: TerminalJob?
 
-        /// "Terminal", "Terminal 2", ..., or the shell's title once it sets one.
+        /// "Terminal", "Terminal 2", ..., the job's name, or the shell's title once it sets one.
         public var displayTitle: String {
+            if let job {
+                return job.name
+            }
             if let title, !title.trimmingCharacters(in: .whitespaces).isEmpty {
                 return title
             }
@@ -69,10 +74,10 @@ public struct TerminalTabList: Hashable, Sendable {
 
     /// Adds a tab after the others and selects it.
     @discardableResult
-    public mutating func add(id: UUID = UUID()) -> Tab {
+    public mutating func add(id: UUID = UUID(), job: TerminalJob? = nil) -> Tab {
         let used = Set(tabs.map(\.number))
         let number = (1...).first { !used.contains($0) } ?? tabs.count + 1
-        let tab = Tab(id: id, number: number)
+        let tab = Tab(id: id, number: number, job: job)
         tabs.append(tab)
         selectedID = id
         return tab
@@ -107,5 +112,21 @@ public struct TerminalTabList: Hashable, Sendable {
     public mutating func setStatus(_ status: TerminalStatus, of id: UUID) {
         guard let index = tabs.firstIndex(where: { $0.id == id }) else { return }
         tabs[index].status = status
+    }
+
+    /// The tab that runs the job with this key, running or finished.
+    public func tab(forJob key: String) -> Tab? {
+        tabs.first { $0.job?.key == key }
+    }
+
+    public mutating func updateJob(of id: UUID, _ change: (inout TerminalJob) -> Void) {
+        guard let index = tabs.firstIndex(where: { $0.id == id }), var job = tabs[index].job else { return }
+        change(&job)
+        tabs[index].job = job
+    }
+
+    public mutating func setJob(_ job: TerminalJob?, of id: UUID) {
+        guard let index = tabs.firstIndex(where: { $0.id == id }) else { return }
+        tabs[index].job = job
     }
 }

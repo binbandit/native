@@ -1,3 +1,4 @@
+import AIInstructions
 import Foundation
 
 /// The prompt for drafting a pull request's title and description from a branch's commits and
@@ -30,6 +31,11 @@ public struct PullRequestDraftPrompt: Sendable, Hashable {
         only for several distinct changes. Never invent details the commits and diff don't support, \
         and don't mention files that weren't changed.
         """
+
+    /// The instructions with the user's own after them, which never replace the rules above.
+    public static func instructions(adding addition: AIInstructionAddition?) -> String {
+        AIInstructionAddition.applying(addition, to: instructions)
+    }
 
     /// The prompt, no longer than `characterBudget`.
     public func text(characterBudget: Int) -> String {

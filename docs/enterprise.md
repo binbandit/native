@@ -37,11 +37,14 @@ shipped as a sample `.mobileconfig` in `docs/enterprise/`.
 | `policy.skills.blocked` | Skills by name, denied per session like MCP. |
 | `policy.permissions.forbiddenModes` | Permission modes users can't pick (for example, modes that skip approvals). |
 | `policy.scripts.enabled` | The V8 script runtime and `run_script`. |
+| `policy.taskScripts.userScripts` | Task scripts written in Native, global and per project (`docs/scripts.md`): `false` stops them running and locks their settings. |
+| `policy.taskScripts.repositoryScripts` | Task scripts committed to repositories as `.native/<event>.sh`: `false` ignores them and locks each project's "Run scripts from the repo" off. |
 | `policy.labs.enabled` | Labs and experiments, including plugin experiments. |
 | `policy.companion.enabled` / `policy.remoteHosts.enabled` | Pairing devices; connecting to hosts other than this Mac. |
 | `policy.updates.feedURL` / `policy.updates.enabled` / `policy.updates.channels` | An internal update feed, or updates off; which channels are allowed. |
 | `policy.search.retentionDays` | How long the search index keeps sessions. |
 | `policy.shortcuts.bindings` | Keyboard shortcuts by command id, as Settings ▸ Keyboard Shortcuts exports them (`docs/commands.md`); they replace the user's changes and lock the page. |
+| `policy.ai.instructions` | Instructions added to what Native writes with AI (titles, branch names, commit messages, pull request drafts, the prompts behind "Ask an Agent"), by purpose id: `title`, `branchName`, `commitMessage`, `commitGrouping`, `pullRequest`, `reviewRequest`, `pullRequestQuestions`. Native's format rules still come first. They replace the user's own instructions and lock Settings ▸ AI Instructions; a purpose it doesn't name gets none. |
 | `policy.telemetry.native` | `on`, `off`, or `user` (the user chooses; the default). |
 | `policy.telemetry.endpoints` | The organization's own collectors (see below). |
 

@@ -1,0 +1,89 @@
+{
+  "data": {
+    "repository": {
+      "autoMergeAllowed": true,
+      "mergeCommitAllowed": true,
+      "pullRequest": {
+        "additions": 1,
+        "author": {
+          "login": "octocat"
+        },
+        "autoMergeRequest": null,
+        "baseRefName": "main",
+        "body": "",
+        "changedFiles": 1,
+        "commits": {
+          "nodes": []
+        },
+        "createdAt": "2026-10-17T17:58:19Z",
+        "deletions": 1,
+        "files": {
+          "nodes": [],
+          "pageInfo": {
+            "endCursor": null,
+            "hasNextPage": false
+          },
+          "totalCount": 0
+        },
+        "headRefName": "atlassian-mcp-native-http",
+        "headRefOid": "758d23240ee736d361406d242306efa04f250386",
+        "id": "PR_kwDOC01lZ88AAAABJDca_A",
+        "isCrossRepository": true,
+        "isDraft": false,
+        "isMergeQueueEnabled": true,
+        "labels": {
+          "nodes": []
+        },
+        "latestOpinionatedReviews": {
+          "nodes": []
+        },
+        "mergeQueue": {
+          "configuration": null
+        },
+        "mergeQueueEntry": null,
+        "mergeStateStatus": "BLOCKED",
+        "mergeable": "MERGEABLE",
+        "number": 46358,
+        "queueEvents": {
+          "nodes": []
+        },
+        "reviewDecision": "REVIEW_REQUIRED",
+        "reviewRequests": {
+          "nodes": []
+        },
+        "reviewThreads": {
+          "nodes": [],
+          "totalCount": 0
+        },
+        "reviews": {
+          "nodes": []
+        },
+        "state": "OPEN",
+        "timelineItems": {
+          "nodes": [],
+          "pageInfo": {
+            "endCursor": null,
+            "hasNextPage": false
+          },
+          "totalCount": 0
+        },
+        "title": "Fix a typo in the merge docs",
+        "updatedAt": "2026-10-19T01:15:24Z",
+        "url": "https://github.com/github/docs/pull/46358",
+        "viewerCanClose": false,
+        "viewerCanDisableAutoMerge": false,
+        "viewerCanEnableAutoMerge": false,
+        "viewerCanMergeAsAdmin": false,
+        "viewerCanReopen": false,
+        "viewerDidAuthor": false
+      },
+      "rebaseMergeAllowed": false,
+      "squashMergeAllowed": true,
+      "viewerDefaultMergeMethod": "MERGE",
+      "viewerPermission": "READ"
+    },
+    "viewer": {
+      "login": "octocat"
+    }
+  }
+}

@@ -1,4 +1,3 @@
-import Exec
 import Foundation
 
 extension Repository {
@@ -38,26 +37,12 @@ extension Repository {
         return files
     }
 
-    /// Runs a project's setup script in this working tree with the user's shell, as a terminal
-    /// would, with `environment` added (Native passes the worktree and main checkout paths). The
-    /// script is stopped after `timeout`.
-    public func runSetupScript(
-        _ script: String, environment: [String: String], timeout: Duration
-    ) async throws(GitError) -> SetupScriptResult {
-        let shell = git.environment["SHELL"] ?? "sh"
-        let command = Command(
-            shell, ["-c", script], in: root.path(percentEncoded: false),
-            environment: git.environment.merging(environment) { $1 }, timeout: timeout)
-        let clock = ContinuousClock()
-        let start = clock.now
-        do {
-            let result = try await git.runner.run(command)
-            return SetupScriptResult(
-                exitCode: result.exitCode, output: result.output + result.errorOutput, duration: clock.now - start)
-        } catch CommandError.timedOut {
-            return SetupScriptResult(exitCode: nil, output: "", duration: clock.now - start)
-        } catch {
-            throw .launchFailed(error.localizedDescription)
-        }
+    /// The branch checked out here, or nil when HEAD is detached. Cheaper than `status()`, for
+    /// noting the branch a new worktree starts from.
+    public func currentBranchName() async throws(GitError) -> String? {
+        let output = try await run(
+            ["symbolic-ref", "--quiet", "--short", "HEAD"], readOnly: true, acceptingStatus: [0, 1])
+        let name = output.text.trimmingCharacters(in: .whitespacesAndNewlines)
+        return output.status == 0 && !name.isEmpty ? name : nil
     }
 }

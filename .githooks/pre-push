@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+# Uploads the Git LFS objects a push needs (design/**/*.png). core.hooksPath points here, so Git LFS's
+# own hook never runs; without this, a push would publish pointers to images the server doesn't have.
+set -euo pipefail
+
+if ! command -v git-lfs >/dev/null 2>&1; then
+    echo "pre-push: design images are stored with Git LFS. Install git-lfs to push." >&2
+    exit 2
+fi
+exec git lfs pre-push "$@"

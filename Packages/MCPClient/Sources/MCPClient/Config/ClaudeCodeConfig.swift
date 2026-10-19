@@ -32,7 +32,9 @@ struct ClaudeCodeConfig {
     func read(projects: [URL]) -> AgentMCPConfiguration {
         var problems: [ConfigProblem] = []
         var servers: [ConfiguredServer] = []
-        var files = [ConfigFile(url: globalFile, role: "User and local servers", exists: reader.exists(globalFile))]
+        var files = [
+            ConfigFile(url: globalFile, role: "User and local servers", scope: .user, exists: reader.exists(globalFile))
+        ]
         let global = reader.json(at: globalFile, problems: &problems)
         let userSettings = reader.json(at: configDirectory.appending(path: "settings.json"), problems: &problems)
 
@@ -52,7 +54,9 @@ struct ClaudeCodeConfig {
             let mcpJSON = project.appending(path: ".mcp.json")
             let exists = reader.exists(mcpJSON)
             files.append(
-                ConfigFile(url: mcpJSON, role: "Project servers for \(project.lastPathComponent)", exists: exists))
+                ConfigFile(
+                    url: mcpJSON, role: "Project servers for \(project.lastPathComponent)", scope: .project(project),
+                    exists: exists))
             guard exists else { continue }
             let settings =
                 [projectEntry, userSettings]
@@ -80,7 +84,7 @@ struct ClaudeCodeConfig {
         var isManagedOnly = false
         if reader.exists(managedFile) {
             isManagedOnly = true
-            files.append(ConfigFile(url: managedFile, role: "Managed servers", exists: true))
+            files.append(ConfigFile(url: managedFile, role: "Managed servers", scope: .managed, exists: true))
             let managed = reader.json(at: managedFile, problems: &problems)
             servers += ServerMap.servers(in: managed?["mcpServers"], file: managedFile, problems: &problems).map {
                 entry($0, scope: .managed, source: managedFile)
@@ -121,7 +125,9 @@ struct ClaudeCodeConfig {
             let root = URL(filePath: path, directoryHint: .isDirectory)
             let plugin = String(id.prefix { $0 != "@" })
             for (file, map) in pluginServerMaps(root: root, problems: &problems) {
-                files.append(ConfigFile(url: file, role: "Servers of the \(plugin) plugin", exists: true))
+                files.append(
+                    ConfigFile(url: file, role: "Servers of the \(plugin) plugin", scope: .plugin(plugin), exists: true)
+                )
                 servers += ServerMap.servers(in: map, file: file, problems: &problems).map { server in
                     var server = server
                     server.name = "plugin:\(plugin):\(server.name)"

@@ -45,6 +45,7 @@ nonisolated final class ShimmerBandLayer: CALayer {
         sweep.duration = Self.duration
         sweep.repeatCount = .infinity
         sweep.isRemovedOnCompletion = false
+        sweep.preferredFrameRateRange = .dsMotion
         // Every shimmer on screen on the same beat, as when they all followed the clock.
         let now = convertTime(CACurrentMediaTime(), from: nil)
         sweep.beginTime = now - now.truncatingRemainder(dividingBy: Self.duration)

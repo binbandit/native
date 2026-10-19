@@ -1,9 +1,10 @@
 import Foundation
 import Observation
 
-/// The items the status bar shows, and whether it shows at all. The bar starts hidden (View ▸ Show
-/// Status Bar turns it on); each item is shown or hidden by default when it's registered, and the
-/// user's own choices override that. Kept under `statusBar.isShown` and `statusBar.visibility`.
+/// The items the status bar shows, and whether it shows at all. The bar shows until the user hides
+/// it (View ▸ Hide Status Bar, or its own menu); each item is shown or hidden by default when it's
+/// registered, and the user's own choices override that. Kept under `statusBar.isShown` and
+/// `statusBar.visibility`.
 @Observable
 final class StatusBarRegistry {
     private(set) var items: [AnyStatusBarItem] = []
@@ -22,7 +23,8 @@ final class StatusBarRegistry {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        isShown = defaults.bool(forKey: Self.shownKey)
+        // On unless the user hid it: `bool(forKey:)` would read "never chosen" as hidden.
+        isShown = defaults.object(forKey: Self.shownKey) as? Bool ?? true
         choices = defaults.dictionary(forKey: Self.visibilityKey) as? [String: Bool] ?? [:]
     }
 

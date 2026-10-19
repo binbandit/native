@@ -77,6 +77,14 @@ final class CommandRegistry {
         }
     }
 
+    /// Removes commands that went away, such as a deleted project action's. Their bindings stay in
+    /// preferences, so a command that comes back gets its shortcut back.
+    func unregister(_ ids: Set<NativeCommand.ID>) {
+        guard !ids.isEmpty else { return }
+        commands.removeAll { ids.contains($0.id) }
+        positions = Dictionary(uniqueKeysWithValues: commands.enumerated().map { ($1.id, $0) })
+    }
+
     func command(_ id: NativeCommand.ID) -> NativeCommand? {
         positions[id].map { commands[$0] }
     }

@@ -55,6 +55,11 @@ Why libghostty, and the pin, are in `docs/decisions.md`.
   Reduce Transparency forces 1, even over a Ghostty config's `background-opacity`.
 - **Tabs** are named by their shell's title (the folder, or the running command), numbered when two
   show the same title, and fall back to "Terminal", "Terminal 2", ... once their shell exits.
+- **Jobs.** A tab can run a command instead of a shell (`TerminalStore.run(_:for:)`, used by
+  project actions, `docs/actions.md`): it's named after the job, shows a loader, then a green, red
+  or gray dot, the elapsed time and Stop while it runs (⌃C, then End Now), and a banner with how it
+  ended (exit code and duration) and Run Again. Running the same job again reuses its tab. The
+  command reports its exit status with OSC 133 (`133;D;<status>`), since `login(1)` hides it.
 - **Keys.** Native's menu shortcuts come first while a terminal has focus, then the terminal's key
   bindings, then the shell. In Native's settings Ghostty's default bindings are cleared (they claim
   ⌘N, ⌘W, ⌘Q, ⌘T) and only the terminal-local ones in `docs/keyboard.md` come back. Copy, paste and

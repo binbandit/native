@@ -9,6 +9,8 @@ protocol TerminalSurface: AnyObject {
     var isFocused: Bool { get }
     /// Moves keyboard focus into the terminal, now or as soon as it's on screen.
     func focus()
+    /// Sends ⌃C to the program running in the terminal, as pressing it would.
+    func interrupt()
     /// Ends the shell and frees the terminal. The surface is unusable afterwards.
     func close()
 }
@@ -17,6 +19,9 @@ protocol TerminalSurface: AnyObject {
 protocol TerminalSurfaceEvents: AnyObject {
     func surface(_ id: UUID, didSetTitle title: String?)
     func surface(_ id: UUID, didChangeStatus status: TerminalStatus)
+    /// A command marked with OSC 133 ended with `status` (`133;D;<status>`). A job's frame reports
+    /// its exit status this way, since the login wrapper hides the shell's own on the Mac.
+    func surface(_ id: UUID, didFinishCommandWith status: Int32, after duration: Duration)
     /// The terminal asked to go away: its shell exited and the user pressed a key.
     func surfaceDidRequestClose(_ id: UUID)
     func surface(_ id: UUID, didChangeFocus isFocused: Bool)

@@ -1,3 +1,4 @@
+import AIInstructions
 import FoundationModels
 import GitHub
 
@@ -29,15 +30,18 @@ enum PullRequestDrafter {
         }
     }
 
-    /// Streams the draft into `update` as it's written: title first, then the description.
+    /// Streams the draft into `update` as it's written: title first, then the description. The
+    /// user's `instructions` for pull requests come after Native's own.
     static func draft(
-        _ prompt: PullRequestDraftPrompt, update: (_ title: String?, _ body: String?) -> Void
+        _ prompt: PullRequestDraftPrompt, instructions addition: AIInstructionAddition? = nil,
+        update: (_ title: String?, _ body: String?) -> Void
     ) async throws {
         let model = SystemLanguageModel.default
         // About 2.5 characters per token for code, leaving room for the instructions and the answer.
         var budget = max(Int(Double(model.contextSize - 1_500) * 2.5), 2_000)
         for attempt in 0..<2 {
-            let session = LanguageModelSession(model: model, instructions: PullRequestDraftPrompt.instructions)
+            let session = LanguageModelSession(
+                model: model, instructions: PullRequestDraftPrompt.instructions(adding: addition))
             do {
                 let stream = session.streamResponse(
                     to: prompt.text(characterBudget: budget), generating: PullRequestDraft.self)

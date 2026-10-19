@@ -7,6 +7,8 @@ struct ComposerPlaceholder {
     var needsApproval: Bool
     var followUp: FollowUpBehavior
     var supportsSteering: Bool
+    /// Stop was pressed and the agent hasn't ended the turn yet.
+    var isStopping = false
     var isNewSession: Bool
     /// Adds how to get back to the composer without the mouse.
     var showsFocusHint: Bool
@@ -17,6 +19,7 @@ struct ComposerPlaceholder {
             switch phase {
             case .loading: "Loading… messages send when \(agent) is ready"
             case .disconnected: "\(agent) isn’t running"
+            case .prompting where isStopping: "Stopping \(agent)… press Stop again to stop waiting"
             case .prompting where hasQuestion: "\(agent) is waiting for your answer above…"
             case .prompting where needsApproval: "\(agent) is waiting for your approval…"
             case .prompting where followUp == .steer && supportsSteering: "Steer \(agent)’s current turn…"

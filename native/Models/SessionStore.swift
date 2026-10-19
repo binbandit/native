@@ -36,6 +36,12 @@ final class SessionStore {
         sessions.filter { $0.key.agent == agent }.map(\.value)
     }
 
+    /// The sessions open now that work in `folder`, subagents included.
+    func open(in folder: URL) -> [SessionModel] {
+        let path = folder.standardizedFileURL.folderPath
+        return sessions.values.filter { $0.cwd.standardizedFileURL.folderPath == path }
+    }
+
     /// Adds a session and delivers whatever arrived for it before it existed.
     func register(_ session: SessionModel) {
         sessions[session.key] = session

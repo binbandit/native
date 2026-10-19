@@ -13,6 +13,7 @@ struct ComposerView: View {
     @Environment(\.composerNextSteps) var nextSteps
     @Environment(\.transcriptColumnMaxWidth) var columnWidth
     @Environment(AutomationCenter.self) var automation
+    @Environment(AppModel.self) var app
     /// Drops on the transcript around the composer, when its host takes them.
     @Environment(ComposerDropInbox.self) var drops: ComposerDropInbox?
     @FocusState var isFocused: Bool
@@ -21,14 +22,15 @@ struct ComposerView: View {
     @State var highlighted = 0
     /// Escape closes the suggestion list until the draft stops asking for one.
     @State var suggestionsDismissed = false
+    /// The draft as an agent's command left it when picked from the list, so it goes to the agent
+    /// even where Native has a command of the same name.
+    @State var agentCommandDraft: String?
     @State var mentionSource: FileMentionSource?
     @State var isPlanExpanded = false
     @State var isModelPickerOpen = false
     @State var isDropTargeted = false
     /// The file picker, from the "+" chip or File ▸ Attach Files….
     @State var isPickingFiles = false
-    /// The queued follow-up open in the editor; Return saves it back to the queue.
-    @State var editingQueued: SessionModel.QueuedPrompt.ID?
     /// The autonomy level Plan Mode returns to, remembered from before it started.
     @State var autonomyBeforePlan: String?
     /// What the last action did, shown for a moment just above the composer.
@@ -83,8 +85,16 @@ struct ComposerView: View {
 
     /// Commands Native handles itself, listed before the agent's.
     var nativeCommands: [ComposerSlashCommand] {
-        guard automation.goal(for: session) != nil else { return [] }
-        return [ComposerSlashCommand(name: "goal", description: GoalCommand.usage)]
+        var commands: [ComposerSlashCommand] = []
+        if session.origin == .user, !session.isSubagent {
+            commands.append(
+                ComposerSlashCommand(
+                    native: ClearConversationCommand.name, description: ClearConversationCommand.summary))
+        }
+        if automation.goal(for: session) != nil {
+            commands.append(ComposerSlashCommand(native: "goal", description: GoalCommand.usage))
+        }
+        return commands
     }
 
     var body: some View {
@@ -191,11 +201,12 @@ struct ComposerView: View {
                 if !session.queuedPrompts.isEmpty {
                     QueuedPromptsSection(
                         prompts: session.queuedPrompts,
-                        editing: editingQueued,
-                        // After a cancelled turn the queue waits, idle, until one is sent by hand.
-                        sendNow: isWorking
-                            ? (session.supportsSteering ? .steer : nil) : session.phase == .idle ? .send : nil,
-                        onSendNow: { id in Task { await session.steerQueued(id) } },
+                        editing: session.editingQueuedPrompt,
+                        sendNow: session.sendNowRoute,
+                        agentName: session.agentName,
+                        onSendNow: { sendNow($0) },
+                        onMove: { id, direction in session.moveQueued(id, direction) },
+                        onDrop: { id, target in session.moveQueued(id, before: target) },
                         onEdit: edit,
                         onRemove: remove
                     )
@@ -221,17 +232,14 @@ struct ComposerView: View {
             inputSection(suggestions: suggestions)
             ComposerControlsRow(
                 settings: settings,
+                agentName: session.agentName,
                 resumedAutonomy: autonomyBeforePlan,
-                followUpHint: isWorking
-                    ? FollowUpHint(
-                        preferred: followUp, supportsSteering: session.supportsSteering, agentName: session.agentName)
-                    : nil,
+                followUpHint: followUpHint,
                 isModelPickerOpen: $isModelPickerOpen,
                 isPickingFiles: $isPickingFiles,
                 onAttach: attach,
                 onSet: set,
                 onCycleEffort: { apply(settings.nextEffort) },
-                onCycleAutonomy: { apply(settings.nextAutonomy) },
                 onTogglePlan: { apply(settings.togglingPlan(resumedAutonomy: autonomyBeforePlan)) },
                 extras: { density in SessionGoalControl(session: session, showsIcon: density.showsIcons) },
                 context: { density in
@@ -275,10 +283,12 @@ struct ComposerView: View {
                 if session.canCancel {
                     actionSlot { if hasContent { sendButton } }
                     actionSlot {
-                        // Escape deselects a chip before it stops anything.
-                        ComposerStopButton(isEscapeEnabled: suggestions == nil && selectedAttachmentIndex == nil) {
-                            Task { await session.cancel() }
-                        }
+                        // Escape stops from the editor through its keys (`ComposerKeyMap`), which
+                        // see it first; the button's own Escape covers focus anywhere else.
+                        ComposerStopButton(
+                            isEscapeEnabled: !isFocused && suggestions == nil && selectedAttachmentIndex == nil,
+                            action: stop
+                        )
                     }
                 } else {
                     actionSlot { if hasContent { sendButton } }
@@ -291,7 +301,7 @@ struct ComposerView: View {
             // Stop's shortcut (⌘. unless remapped) stops the turn too; a button takes one shortcut,
             // so this one is invisible.
             if session.canCancel {
-                Button("Stop") { Task { await session.cancel() } }
+                Button("Stop", action: stop)
                     .keyboardShortcut(CommandRegistry.shared.keyboardShortcut(for: .sessionStop))
                     .opacity(0)
                     .allowsHitTesting(false)
@@ -310,6 +320,18 @@ struct ComposerView: View {
                     ? FollowUpHint(
                         preferred: followUp, supportsSteering: session.supportsSteering, agentName: session.agentName
                     ).help : "Send (↩)")
+    }
+
+    /// What the controls row's hint says: the keys for the queued message open in the editor, or
+    /// while the agent works, what Return and ⌘Return do with a follow-up.
+    var followUpHint: FollowUpHint? {
+        if session.editingQueuedPrompt != nil {
+            return .editingQueued(
+                sendNow: session.sendNowRoute.map { QueuedSendNow(route: $0, agentName: session.agentName) })
+        }
+        guard isWorking else { return nil }
+        return FollowUpHint(
+            preferred: followUp, supportsSteering: session.supportsSteering, agentName: session.agentName)
     }
 
     func actionSlot(@ViewBuilder _ content: () -> some View) -> some View {
@@ -341,6 +363,7 @@ struct ComposerView: View {
             needsApproval: session.needsApproval,
             followUp: followUp,
             supportsSteering: session.supportsSteering,
+            isStopping: session.isStopping,
             isNewSession: session.isTranscriptEmpty,
             showsFocusHint: canEdit && !isFocused && ComposerPlatform.showsKeyboardHints
         ).text

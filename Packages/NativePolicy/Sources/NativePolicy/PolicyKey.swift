@@ -10,6 +10,8 @@ public enum PolicyKey: String, CaseIterable, Hashable, Sendable {
     case skillsBlocked = "policy.skills.blocked"
     case forbiddenPermissionModes = "policy.permissions.forbiddenModes"
     case scriptsEnabled = "policy.scripts.enabled"
+    case taskScriptsUser = "policy.taskScripts.userScripts"
+    case taskScriptsRepository = "policy.taskScripts.repositoryScripts"
     case labsEnabled = "policy.labs.enabled"
     case companionEnabled = "policy.companion.enabled"
     case remoteHostsEnabled = "policy.remoteHosts.enabled"
@@ -18,6 +20,7 @@ public enum PolicyKey: String, CaseIterable, Hashable, Sendable {
     case updatesChannels = "policy.updates.channels"
     case searchRetentionDays = "policy.search.retentionDays"
     case shortcutBindings = "policy.shortcuts.bindings"
+    case aiInstructions = "policy.ai.instructions"
     case telemetryNative = "policy.telemetry.native"
     case telemetryEndpoints = "policy.telemetry.endpoints"
 

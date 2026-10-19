@@ -1,0 +1,30 @@
+set shell := ["bash", "-c"]
+version := "1.0"
+alias t := test
+
+# Run every test
+test *args:
+    cargo test {{args}}
+
+[doc("Start the dev server")]
+dev port="3000":
+    bun run dev --port {{port}}
+
+@lint:
+    cargo clippy
+
+deploy env:
+    ./deploy.sh {{env}}
+
+_helper:
+    echo private
+
+[private]
+secret:
+    echo hidden
+
+release target="a b": build
+    echo {{target}}
+
+build:
+    cargo build

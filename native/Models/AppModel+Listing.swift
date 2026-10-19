@@ -8,9 +8,10 @@ extension AppModel {
     /// Kept between calls until something it's built from changes, since views ask on every update.
     func sessions(in project: Project.ID) -> [SessionSummary] {
         sessionLists.list(for: project) {
+            // A conversation `/clear` set aside opens from the one that replaced it, not the sidebar.
             let summaries = allSessions(in: project).filter { summary in
                 !archivedSessions.contains(summary.id) && !pendingDeletionKeys.contains(summary.id)
-                    && !ordering.isPinned(summary.id)
+                    && !ordering.isPinned(summary.id) && !earlierConversations.isSetAside(summary.id)
             }
             return ordering.sorted(summaries, in: project, recency: lastActive)
         }
@@ -67,7 +68,11 @@ extension AppModel {
         guard let connection = runtime.connection, runtime.capabilities?.listSessions == true else { return }
         let agent = runtime.agent.id
         listingsInFlight[agent, default: 0] += 1
-        defer { listingsInFlight[agent, default: 1] -= 1 }
+        projectListingsInFlight[project.id, default: 0] += 1
+        defer {
+            listingsInFlight[agent, default: 1] -= 1
+            projectListingsInFlight[project.id, default: 1] -= 1
+        }
         var fetched: [SessionInfo] = []
         var positions: [SessionID: Int] = [:]
         // The project's own folder, and the folders Native made for its tasks (worktrees).
@@ -144,6 +149,16 @@ extension AppModel {
         problems.resolve(.listing(agent), in: project.id)
         if let selection, selection.agent == agent, !catalog.contains(selection) {
             self.selection = nil
+        }
+    }
+
+    /// Whether a project's sessions are still being found: no agent has listed it yet, and one is
+    /// listing it, or starting and able to. Until then an empty project isn't known to be empty.
+    func isFindingSessions(in project: Project.ID) -> Bool {
+        guard !agents.contains(where: { catalog.hasListed($0.agent.id, in: project) }) else { return false }
+        if projectListingsInFlight[project, default: 0] > 0 || !hasCheckedAgents { return true }
+        return agents.contains { runtime in
+            runtime.status == .starting || (runtime.isReady && runtime.capabilities?.listSessions == true)
         }
     }
 

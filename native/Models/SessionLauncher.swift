@@ -35,7 +35,8 @@ final class SessionLauncher {
     /// Starts a session in `cwd`. A task session's `parent` adopts it as a subagent. The agent's
     /// error comes through as is, so callers can tell when it wants the user to sign in.
     func start(
-        on runtime: AgentRuntime, cwd: URL, origin: SessionModel.Origin = .user, parent: SessionModel? = nil
+        on runtime: AgentRuntime, cwd: URL, origin: SessionModel.Origin = .user, parent: SessionModel? = nil,
+        settings: [AgentSessionDefaults.Setting: String] = [:]
     ) async throws -> SessionModel {
         guard let connection = runtime.connection else {
             throw LaunchError.agentUnavailable(runtime.agent.displayName)
@@ -58,7 +59,7 @@ final class SessionLauncher {
         )
         store.register(session)
         AgentSessionDefaults.remember(session.state.configOptions, for: runtime.agent.id)
-        await AgentSessionDefaults.apply(to: session)
+        await AgentSessionDefaults.apply(to: session, overrides: settings)
         services.post(.sessionStarted(session.context))
         return session
     }

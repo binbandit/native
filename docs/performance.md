@@ -170,6 +170,38 @@ history, telemetry, the command palette), so not every difference is this work's
   extra CPU, down from 15-45% for minutes, and the footprint stays at 88-93 MB instead of up to
   370 MB. Details in docs/search.md, Performance.
 
+### New sessions on a large repository
+
+2026-10-19, Debug build in an isolated instance, Codex (`gpt-6.1-sol`), a shallow clone of the
+Linux kernel (96,080 files, 2 GB checked out) with 20,000 remote branches, a `.env` and an ignored
+folder of 2,000 files; worktree mode. The Mac was busy (load average 7 to 40). "Usable" is the
+composer taking typing in the new task.
+
+| Measurement | Before | After |
+| --- | --- | --- |
+| "+" to visible feedback in the sidebar | none until the session existed (18.2 s); the empty project read "Add an agent to start a session" meanwhile | AFTER_ROW |
+| "+" to a usable composer | 18.2 s | AFTER_COMPOSER |
+| "+" to the session open (agent ready for the first message) | 18.2 s | AFTER_SESSION |
+| `git worktree add` alone | 20.5-22.0 s | 10.1-11.0 s (`checkout.workers=0`) |
+| A second "+" while the first was starting | dropped silently | a second starting task, queued behind the first's git work |
+| Main thread while the worktree is made | idle (git runs in its own process) | idle |
+
+- **The click waited for everything before showing anything.** New Session made the worktree,
+  waited for the agent and asked for the session before the task existed anywhere on screen, and
+  ignored any other New Session meanwhile ("one at a time"). Now the click adds a starting task to
+  the sidebar and selects it at once (`AppModel+StartingTasks.swift`): its composer takes the first
+  message, which goes out when the session exists, and the worktree and the agent start at the same
+  time. A failure stays on the task with Retry and Discard instead of an alert.
+- **Git checked a new worktree out one file at a time.** `git worktree add` now runs with a checkout
+  worker per core (`Repository.parallelCheckout`), which halves it on this repository. Sparse and
+  `--no-checkout` worktrees were ruled out: the agent has to see the whole project from its first
+  turn. Cloning the main checkout's files (APFS clones) was measured too and lost: populating took
+  9 s and refreshing the index another 18 s.
+- **Nothing scans the repository on the main thread.** The worktree, the env-file copy
+  (`git ls-files --ignored`, 0.35 s here), the status scan of the new worktree (0.4-0.8 s) and the
+  file list for `@` mentions (only when one is typed) all run in git's own processes or off the
+  main actor; `sample` shows the main thread idle throughout.
+
 ### Streaming
 
 2026-10-18, evening, Debug build in an isolated instance with about 30 sessions in the sidebar

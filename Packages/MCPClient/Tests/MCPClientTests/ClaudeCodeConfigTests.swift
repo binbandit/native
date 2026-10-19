@@ -33,6 +33,11 @@ struct ClaudeCodeConfigTests {
         #expect(!config.isManagedOnly)
     }
 
+    /// Settings lists the files by scope, so each file says where its servers apply.
+    @Test func filesSayWhereTheyApply() {
+        #expect(read().files.map(\.scope) == [.user, .project(.app), .project(.site), .plugin("notes")])
+    }
+
     @Test func reportsServersItCantConnectTo() {
         let config = read()
         #expect(config.problems.map(\.message) == ["\"socket\": the ws transport isn't supported."])

@@ -88,6 +88,8 @@ enum CommandCategory: Int, CaseIterable, Comparable, Identifiable {
     case composer
     case view
     case terminal
+    /// Running a project's actions (`docs/actions.md`).
+    case actions
     /// Commands plugins add.
     case plugins
 
@@ -101,6 +103,7 @@ enum CommandCategory: Int, CaseIterable, Comparable, Identifiable {
         case .composer: "Composer and agent"
         case .view: "View"
         case .terminal: "Terminal"
+        case .actions: "Project actions"
         case .plugins: "Plugins"
         }
     }

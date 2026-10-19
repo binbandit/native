@@ -62,6 +62,16 @@ enum ToolOutput {
         return output.isEmpty ? nil : output
     }
 
+    /// The first line of what a failed call printed or returned, which is usually why it failed.
+    static func failureHint(of call: ToolCallState) -> String? {
+        let output = text(of: call) ?? call.mcpResultText
+        return output?
+            .split(whereSeparator: \.isNewline)
+            .lazy
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .first { !$0.isEmpty && !$0.hasPrefix("```") }
+    }
+
     static func copyText(command: String, call: ToolCallState) -> String {
         let output = ToolPhase(call) == .running ? nil : text(of: call)
         return (["$ \(command)"] + [output].compactMap(\.self)).joined(separator: "\n")

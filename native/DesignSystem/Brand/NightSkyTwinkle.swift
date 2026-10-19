@@ -79,6 +79,7 @@ nonisolated final class NightSkyTwinkleLayer: CALayer {
         animation.duration = period
         animation.repeatCount = .infinity
         animation.isRemovedOnCompletion = false
+        animation.preferredFrameRateRange = .dsAmbient
         return animation
     }
 }

@@ -1,5 +1,4 @@
 import SwiftUI
-import UniformTypeIdentifiers
 
 extension SettingsPane.ID {
     static let git = Self("git")
@@ -12,7 +11,7 @@ extension SettingsPane {
         systemImage: "arrow.triangle.branch",
         group: .agents,
         order: 25,
-        keywords: ["branch", "worktree", "prefix", "env", "setup script", "archive"],
+        keywords: ["branch", "worktree", "prefix", "env", "archive"],
         searchEntries: {
             [
                 SettingsSearchEntry(
@@ -21,8 +20,6 @@ extension SettingsPane {
                     id: GitSettingsPage.workspaceRow, title: "New tasks get", keywords: ["worktree", "branch"]),
                 SettingsSearchEntry(
                     id: GitSettingsPage.envFilesRow, title: "Files to copy into new worktrees", keywords: [".env"]),
-                SettingsSearchEntry(
-                    id: GitSettingsPage.scriptsRow, title: "Setup scripts", keywords: ["setup", "install"]),
             ]
         },
         content: { GitSettingsPage() }
@@ -34,11 +31,9 @@ struct GitSettingsPage: View {
     static let prefixRow = SettingsRowID("git.prefix")
     static let workspaceRow = SettingsRowID("git.workspace")
     static let envFilesRow = SettingsRowID("git.env-files")
-    static let scriptsRow = SettingsRowID("git.scripts")
 
     @Environment(GitSettings.self) private var settings
-    @State private var isChoosingProject = false
-    @State private var editingScript: URL?
+    @Environment(SettingsPresentation.self) private var presentation
 
     var body: some View {
         @Bindable var settings = settings
@@ -93,35 +88,14 @@ struct GitSettingsPage: View {
                 ) {
                     SettingsSwitch("Delete the branch when archiving", isOn: $settings.deletesBranchOnArchive)
                 }
-            }
-            SettingsSubheading(
-                "Setup scripts", note: "Run in each new worktree of the project, after env files are copied."
-            )
-            .settingsRevealTarget(Self.scriptsRow)
-            SettingsRowGroup {
-                ForEach(settings.setupScripts.keys.sorted(), id: \.self) { path in
-                    let root = URL(filePath: path, directoryHint: .isDirectory)
-                    SettingsRow(root.lastPathComponent, description: Text(root.abbreviatedPath)) {
-                        HStack(spacing: DS.Space.sm) {
-                            Button("Edit…") { editingScript = root }
-                            Button("Remove", role: .destructive) { settings.setSetupScript("", forProjectAt: root) }
-                        }
-                    }
-                }
                 SettingsRow(
-                    settings.setupScripts.isEmpty ? "No setup scripts yet" : "Another project",
-                    description: Text("Install dependencies or start services for a project's new worktrees.")
+                    "Setup and teardown scripts",
+                    description: Text(
+                        "Commands that run as worktrees are made and removed, and as tasks start, finish turns and are deleted."
+                    )
                 ) {
-                    Button("Add Script…") { isChoosingProject = true }
+                    Button("Open Scripts") { presentation.open(.scripts) }
                 }
-            }
-        }
-        .fileImporter(isPresented: $isChoosingProject, allowedContentTypes: [.folder]) { result in
-            if case .success(let url) = result { editingScript = url }
-        }
-        .sheet(isPresented: Binding(get: { editingScript != nil }, set: { if !$0 { editingScript = nil } })) {
-            if let editingScript {
-                GitSetupScriptEditor(settings: settings, root: editingScript)
             }
         }
     }

@@ -8,6 +8,8 @@ struct GitHubCommentComposer<Actions: View>: View {
     var isBusy = false
     /// Grabs focus when shown, for a comment the user just started.
     var focusesOnAppear = false
+    /// Grabs focus each time this changes, for text put in from elsewhere.
+    var focusRequest = 0
     let actions: Actions
 
     @State private var isPreviewing = false
@@ -15,12 +17,13 @@ struct GitHubCommentComposer<Actions: View>: View {
 
     init(
         text: Binding<String>, placeholder: String, isBusy: Bool = false, focusesOnAppear: Bool = false,
-        @ViewBuilder actions: () -> Actions
+        focusRequest: Int = 0, @ViewBuilder actions: () -> Actions
     ) {
         _text = text
         self.placeholder = placeholder
         self.isBusy = isBusy
         self.focusesOnAppear = focusesOnAppear
+        self.focusRequest = focusRequest
         self.actions = actions()
     }
 
@@ -69,5 +72,9 @@ struct GitHubCommentComposer<Actions: View>: View {
             }
         }
         .onAppear { if focusesOnAppear { isFocused = true } }
+        .onChange(of: focusRequest) {
+            isPreviewing = false
+            isFocused = true
+        }
     }
 }

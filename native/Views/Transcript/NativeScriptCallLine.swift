@@ -19,7 +19,7 @@ struct NativeScriptCallLine: View {
                 .font(.dsCaption)
                 .foregroundStyle(.dsTextTertiary)
                 .accessibilityHidden(true)
-            Text(call.title ?? call.name ?? "Script call")
+            Text(label)
                 .font(.dsCaption)
                 .foregroundStyle(.dsTextSecondary)
                 .lineLimit(1)
@@ -32,6 +32,10 @@ struct NativeScriptCallLine: View {
         }
         .padding(.leading, DS.Space.xl)
         .accessibilityElement(children: .combine)
-        .accessibilityLabel("Script called \(call.title ?? call.name ?? "a tool")")
+        .accessibilityLabel("Script called \(label)")
+    }
+
+    private var label: String {
+        call.title.isEmpty ? call.name ?? "a tool" : call.title
     }
 }

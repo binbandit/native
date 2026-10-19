@@ -52,6 +52,7 @@ enum SkillsUndoNotice: Identifiable {
 
 struct SkillsSettingsPage: View {
     @Environment(PluginRegistry.self) private var registry
+    @Environment(SettingsPresentation.self) private var presentation
     @Environment(\.undoManager) private var undoManager
     @State private var projectPath = ""
     @State private var filter = ""
@@ -112,6 +113,8 @@ struct SkillsSettingsPage: View {
             }
         }
         .task { if library.lastRead == nil || library.items.isEmpty { await library.read() } }
+        // A project's settings link here to show its switches.
+        .onAppear { if let project = presentation.takeProjectScope() { projectPath = SkillPaths.key(project) } }
         .sheet(isPresented: $isInstalling) {
             SkillInstallSheet(library: library, project: project) { record, agents in
                 show(.installed(record, agents: agents))

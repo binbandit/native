@@ -4,6 +4,6 @@ import NativePolicy
 /// with the enabled plugins but never listed in Settings ▸ Extensions or switched off.
 enum SystemPlugins {
     static var current: [any NativePlugin] {
-        [PolicyPlugin(policy: PolicyCenter.shared.policy), TelemetrySessionPlugin()]
+        [PolicyPlugin(policy: PolicyCenter.shared.policy), TelemetrySessionPlugin(), TaskScriptsSessionPlugin()]
     }
 }

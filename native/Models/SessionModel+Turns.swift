@@ -1,4 +1,5 @@
 import ACP
+import AIInstructions
 import Foundation
 
 // Turns: prompting, and what happens to messages sent while a turn runs (queued for when it ends,
@@ -36,20 +37,22 @@ extension SessionModel {
     /// Messages waiting for the running turn to end, in the order they'll go out. Messages that
     /// don't show in the transcript (`echo: false`) aren't listed.
     var queuedPrompts: [QueuedPrompt] {
-        queue.items.filter(\.isEchoed)
+        queue.visible
     }
 
     /// Sends the user's draft as a prompt, if the agent is idle, and waits for the turn to end.
     func send() async {
         let text = draft.trimmingCharacters(in: .whitespacesAndNewlines)
         let attachments = self.attachments
-        guard origin == .user, phase == .idle, !isRunningHiddenCommand, !text.isEmpty || !attachments.isEmpty else {
+        guard origin == .user, phase == .idle, !isRunningHiddenCommand, turnHold == nil,
+            !text.isEmpty || !attachments.isEmpty
+        else {
             return
         }
         draft = ""
         self.attachments = []
         let start = beginTurn(text, attachments: attachments, echo: true)
-        await finishTurn(text, attachments: attachments, itemsStart: start)
+        await finishTurn(text, attachments: attachments, itemsStart: start, generation: turnGeneration)
     }
 
     /// Sends the user's draft whatever the agent is doing: right away when it's idle, otherwise
@@ -62,7 +65,7 @@ extension SessionModel {
         }
         draft = ""
         self.attachments = []
-        if phase == .idle, !isRunningHiddenCommand {
+        if phase == .idle, !isRunningHiddenCommand, turnHold == nil {
             // The user sending again lifts a pause after a cancelled turn. Waiting messages go first.
             queue.resume()
             queue.append(text, attachments: attachments)
@@ -92,7 +95,7 @@ extension SessionModel {
             return .queued
         case .disconnected:
             throw SendError.disconnected
-        case .idle where !isRunningHiddenCommand:
+        case .idle where !isRunningHiddenCommand && turnHold == nil:
             startTurn(text, attachments: attachments, echo: echo)
             return .prompted
         case .prompting where behavior == .steer && supportsSteering:
@@ -119,21 +122,64 @@ extension SessionModel {
         undoManager?.setActionName("Delete Queued Message")
     }
 
-    /// Sends a queued message now instead of waiting: into the running turn, or as the next prompt
-    /// when the agent is idle (as it is after a cancelled turn paused the queue).
-    func steerQueued(_ id: QueuedPrompt.ID) async {
-        if phase == .prompting, supportsSteering, let item = queue.remove(id) {
-            await steer(item.text, attachments: item.attachments, echo: item.isEchoed)
-        } else if phase == .idle, !isRunningHiddenCommand, let item = queue.remove(id) {
-            queue.resume()
-            startTurn(item.text, attachments: item.attachments, echo: item.isEchoed)
+    /// How "Send Now" delivers a queued message right now, if it can.
+    enum SendNowRoute: Equatable {
+        /// Into the running turn.
+        case steer
+        /// The running turn stops, then the message goes as the next prompt.
+        case interrupt
+        /// As the next prompt, while the agent is idle (as it is after a stopped turn).
+        case send
+    }
+
+    var sendNowRoute: SendNowRoute? {
+        switch phase {
+        case .prompting: supportsSteering ? .steer : .interrupt
+        case .idle where !isRunningHiddenCommand && turnHold == nil: .send
+        case .idle, .loading, .disconnected: nil
         }
+    }
+
+    /// Sends a queued message now instead of waiting, as `sendNowRoute` says. Like any new turn, it
+    /// lifts the pause a stopped turn put on the rest.
+    func sendQueuedNow(_ id: QueuedPrompt.ID) async {
+        guard queue.index(of: id) != nil else { return }
+        if editingQueuedPrompt == id {
+            editingQueuedPrompt = nil
+        }
+        switch sendNowRoute {
+        case .steer:
+            guard let item = queue.remove(id) else { return }
+            await steer(item.text, attachments: item.attachments, echo: item.isEchoed)
+        case .interrupt:
+            sendAfterStop = id
+            await cancel()
+        case .send:
+            guard let item = queue.remove(id) else { return }
+            startTurn(item.text, attachments: item.attachments, echo: item.isEchoed)
+        case nil:
+            break
+        }
+    }
+
+    func canMoveQueued(_ id: QueuedPrompt.ID, _ direction: PromptQueue.Direction) -> Bool {
+        queue.canMove(id, direction)
+    }
+
+    /// Moves a queued message one place sooner or later.
+    func moveQueued(_ id: QueuedPrompt.ID, _ direction: PromptQueue.Direction) {
+        queue.move(id, direction)
+    }
+
+    /// Moves a queued message to just before `target`, or to the end: where a drag dropped it.
+    func moveQueued(_ id: QueuedPrompt.ID, before target: QueuedPrompt.ID?) {
+        queue.move(id, before: target)
     }
 
     /// Starts the next queued message once nothing is running, one per turn, unless the queue is
     /// paused.
     func drainQueue() {
-        guard phase == .idle, !isRunningHiddenCommand, let next = queue.next() else { return }
+        guard phase == .idle, !isRunningHiddenCommand, turnHold == nil, let next = queue.next() else { return }
         startTurn(next.text, attachments: next.attachments, echo: next.isEchoed)
     }
 
@@ -143,13 +189,17 @@ extension SessionModel {
     /// returns.
     private func startTurn(_ text: String, attachments: [PromptAttachment], echo: Bool) {
         let start = beginTurn(text, attachments: attachments, echo: echo)
-        Task { await finishTurn(text, attachments: attachments, itemsStart: start) }
+        let generation = turnGeneration
+        Task { await finishTurn(text, attachments: attachments, itemsStart: start, generation: generation) }
     }
 
     /// Records the prompt and marks the turn as running, before anything suspends. Returns where the
     /// turn's own items begin in the transcript.
     private func beginTurn(_ text: String, attachments: [PromptAttachment], echo: Bool) -> Int {
         cancelRetry()
+        // A new turn puts a stopped one behind it: what's queued now goes out as this one ends.
+        queue.resume()
+        hiddenCommandEcho = nil
         let isFirstPrompt = !state.items.contains { item in
             if case .message(let message) = item { message.role == .user } else { false }
         }
@@ -162,7 +212,9 @@ extension SessionModel {
         if isFirstPrompt {
             // Named alongside the turn rather than before it, so the prompt goes out right away.
             let prompt = text.isEmpty ? attachments.map(\.name).joined(separator: ", ") : text
-            let request = TitleRequest(projectName: cwd.lastPathComponent, prompt: prompt)
+            let request = TitleRequest(
+                projectName: cwd.lastPathComponent, prompt: prompt,
+                instructions: AIInstructionsStore.shared.addition(for: .title, in: cwd))
             Task {
                 await services.titles.generateIfNeeded(for: titleKey, request: request, using: services.plugins.titler)
                 if let title = services.titles.title(for: titleKey, agentTitle: nil) {
@@ -174,14 +226,20 @@ extension SessionModel {
         return state.items.count
     }
 
-    private func finishTurn(_ text: String, attachments: [PromptAttachment], itemsStart start: Int) async {
+    /// Waits for the turn's answer and records how it ended. `generation` is the turn's
+    /// `turnGeneration`: if Native stopped waiting for it (`abandonTurn`), the answer changes nothing.
+    private func finishTurn(
+        _ text: String, attachments: [PromptAttachment], itemsStart start: Int, generation: Int
+    ) async {
         do {
             let prompt = promptBlocks(text, attachments: attachments)
             let response = try await connection.send(PromptRequest(sessionId: id, prompt: prompt))
+            guard generation == turnGeneration else { return }
             state.endTurn(response.stopReason)
             lastStopReason = response.stopReason
             services.post(.turnEnded(context, response.stopReason))
         } catch {
+            guard generation == turnGeneration else { return }
             let items = Array(state.items[min(start, state.items.count)...])
             let madeProgress = items.contains { item in
                 switch item {
@@ -216,7 +274,22 @@ extension SessionModel {
         if phase == .prompting {
             phase = .idle
         }
-        // Queued messages wait out a cancelled or failed turn, until the user sends again.
+        turnDidEnd()
+    }
+
+    /// What follows the end of a turn: the stop is over, and the next queued message goes out. A
+    /// message the user sent while stopping goes first; otherwise queued messages wait out a
+    /// cancelled or failed turn, until the user sends again.
+    func turnDidEnd() {
+        turnGeneration += 1
+        finishStopping()
+        if let id = sendAfterStop {
+            sendAfterStop = nil
+            if phase == .idle, let item = queue.remove(id) {
+                startTurn(item.text, attachments: item.attachments, echo: item.isEchoed)
+                return
+            }
+        }
         if lastStopReason == .cancelled || lastStopReason == .error {
             queue.pause()
         } else {

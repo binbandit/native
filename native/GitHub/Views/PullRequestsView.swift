@@ -8,11 +8,22 @@ struct PullRequestsView: View {
     @State private var width: CGFloat = 0
 
     var body: some View {
-        if let reference = model.presentedPullRequest {
-            PullRequestPageView(model: model.pageModel(for: reference))
-                .id(reference)
-        } else {
-            list
+        // The page and the list share the alert for actions that failed.
+        Group {
+            if let reference = model.presentedPullRequest {
+                PullRequestPageView(model: model.pageModel(for: reference))
+                    .id(reference)
+            } else {
+                list
+            }
+        }
+        .alert(
+            "Something went wrong",
+            isPresented: Binding(get: { model.actionError != nil }, set: { if !$0 { model.actionError = nil } })
+        ) {
+            Button("OK", role: .cancel) {}
+        } message: {
+            Text(model.actionError ?? "")
         }
     }
 
@@ -33,29 +44,15 @@ struct PullRequestsView: View {
         .onAppear { model.isWatching = true }
         .onDisappear { model.isWatching = false }
         .task { await model.refreshIfDue() }
-        .confirmationDialog(
-            openAsTaskTitle,
-            isPresented: Binding(
-                get: { model.openAsTaskCandidate != nil }, set: { if !$0 { model.openAsTaskCandidate = nil } }),
-            titleVisibility: .visible
+        // Merging from a row: the page's own sheet, over the list.
+        .sheet(
+            isPresented: Binding(get: { model.mergeRequest != nil }, set: { if !$0 { model.mergeRequest = nil } })
         ) {
-            Button("Check Out in New Worktree") {
-                Task { await model.confirmOpenAsTask() }
+            if let reference = model.mergeRequest {
+                MergePullRequestSheet(model: model.pageModel(for: reference))
             }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text(
-                "Native checks the pull request's branch out into a new worktree and starts a task there. Your current checkout isn't touched."
-            )
         }
-        .alert(
-            "Something went wrong",
-            isPresented: Binding(get: { model.actionError != nil }, set: { if !$0 { model.actionError = nil } })
-        ) {
-            Button("OK", role: .cancel) {}
-        } message: {
-            Text(model.actionError ?? "")
-        }
+        .undoToast($model.undo)
     }
 
     @ViewBuilder private var content: some View {
@@ -148,10 +145,6 @@ struct PullRequestsView: View {
         }
         return model.filter.includesDrafts
             ? "Nothing here with these filters." : "Only drafts are left, and drafts are hidden."
-    }
-
-    private var openAsTaskTitle: String {
-        model.openAsTaskCandidate.map { "Open \($0.reference) as a task?" } ?? ""
     }
 }
 

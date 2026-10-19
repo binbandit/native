@@ -1,3 +1,4 @@
+import AIInstructions
 import GitHub
 import SwiftUI
 
@@ -219,7 +220,8 @@ struct CreatePullRequestSheet: View {
         drafting = Task {
             defer { drafting = nil }
             do {
-                try await PullRequestDrafter.draft(prompt) { title, body in
+                let instructions = AIInstructionsStore.shared.addition(for: .pullRequest, in: request.directory)
+                try await PullRequestDrafter.draft(prompt, instructions: instructions) { title, body in
                     if let title { self.title = title }
                     if let body { self.description = body }
                 }

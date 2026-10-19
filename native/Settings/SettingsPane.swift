@@ -12,7 +12,7 @@ struct SettingsPane: Identifiable {
         }
     }
 
-    /// The nav's sections, in order ("Personal", "Agents", "Extensions", "More").
+    /// The nav's sections, in order ("Personal", "Agents", "Extensions", "More", "Projects").
     /// Empty groups are hidden.
     enum Group: Int, CaseIterable, Comparable {
         case personal
@@ -21,6 +21,8 @@ struct SettingsPane: Identifiable {
         /// minimal; see `docs/decisions.md`).
         case extensions
         case more
+        /// A page per open project, after everything that applies to all of them.
+        case projects
 
         var title: String {
             switch self {
@@ -28,6 +30,7 @@ struct SettingsPane: Identifiable {
             case .agents: "Agents"
             case .extensions: "Extensions"
             case .more: "More"
+            case .projects: "Projects"
             }
         }
 
@@ -46,6 +49,8 @@ struct SettingsPane: Identifiable {
     let keywords: [String]
     /// The rows search can jump to; each id must be a `settingsRevealTarget` on the page.
     let searchEntries: @MainActor () -> [SettingsSearchEntry]
+    /// What leads its nav row instead of `systemImage`, such as a project's own icon.
+    private(set) var navIcon: (@MainActor () -> AnyView)?
     private let content: @MainActor () -> AnyView
 
     init<Content: View>(
@@ -71,6 +76,13 @@ struct SettingsPane: Identifiable {
 
     func makeContent() -> AnyView {
         content()
+    }
+
+    /// The pane with `icon` leading its nav row, 16pt square.
+    func navIcon<Icon: View>(@ViewBuilder _ icon: @escaping @MainActor () -> Icon) -> Self {
+        var pane = self
+        pane.navIcon = { AnyView(icon()) }
+        return pane
     }
 }
 

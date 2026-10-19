@@ -8,6 +8,9 @@ nonisolated enum TranscriptMetrics {
     static let quoteRailWidth: CGFloat = 3
     static let sessionMessageRailWidth: CGFloat = 3
     static let toolDetailMaxHeight: CGFloat = 266
+    /// A condensed run of tool calls shows about six and a half rows, so the cut-off row says it
+    /// scrolls.
+    static let toolRunListHeight: CGFloat = 164
     static let toolImageMaxHeight: CGFloat = 200
     /// An image a user sent is shown whole, this tall (less when it's very wide).
     static let attachmentImageHeight: CGFloat = 140

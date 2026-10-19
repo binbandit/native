@@ -40,7 +40,7 @@ enum PullRequestQueries {
           viewer { login }
           repository(owner: $owner, name: $name) {
             viewerPermission
-            mergeCommitAllowed squashMergeAllowed rebaseMergeAllowed viewerDefaultMergeMethod
+            mergeCommitAllowed squashMergeAllowed rebaseMergeAllowed viewerDefaultMergeMethod autoMergeAllowed
             pullRequest(number: $number) {
               id number title body url state isDraft
               author { login }
@@ -48,7 +48,13 @@ enum PullRequestQueries {
               headRefName baseRefName headRefOid isCrossRepository
               reviewDecision mergeable mergeStateStatus
               additions deletions changedFiles
-              viewerDidAuthor viewerCanMergeAsAdmin
+              viewerDidAuthor viewerCanMergeAsAdmin viewerCanClose viewerCanReopen
+              viewerCanEnableAutoMerge viewerCanDisableAutoMerge
+              isMergeQueueEnabled mergeQueue { configuration { mergeMethod } }
+              \(PullRequestMergeState.fields)
+              queueEvents: timelineItems(last: 1, itemTypes: [ADDED_TO_MERGE_QUEUE_EVENT, REMOVED_FROM_MERGE_QUEUE_EVENT]) {
+                nodes { __typename ... on RemovedFromMergeQueueEvent { reason } }
+              }
               labels(first: 20) { nodes { name color description } }
               reviewRequests(first: 20) { nodes { requestedReviewer { ... on User { login } ... on Team { name } ... on Bot { login } } } }
               latestOpinionatedReviews(first: 20) { nodes { author { login } state submittedAt } }

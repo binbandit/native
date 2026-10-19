@@ -21,6 +21,10 @@ final class TerminalPanelModel: TerminalSurfaceEvents {
     }
 
     @ObservationIgnored private var surfaces: [UUID: TerminalSurface] = [:]
+    /// What each job tab runs, to run it again.
+    @ObservationIgnored private var jobRequests: [UUID: TerminalJobRequest] = [:]
+    /// Told when a tab's job ends, with the job as it ended.
+    @ObservationIgnored var jobFinished: (TerminalJob) -> Void = { _ in }
     @ObservationIgnored private let engine: () -> TerminalEngine?
     /// Hands focus back to the task's composer when the terminal gives it up.
     @ObservationIgnored var focusComposer: () -> Void = {}
@@ -80,6 +84,62 @@ final class TerminalPanelModel: TerminalSurfaceEvents {
         focusSelected()
     }
 
+    /// Runs a job in a tab of its own: the tab that already has it (ending a run still going), or a
+    /// new one. Shows the panel and selects the tab, leaving keyboard focus where it was.
+    @discardableResult
+    func run(_ request: TerminalJobRequest) -> UUID {
+        let job = TerminalJob(key: request.key, name: request.name, command: request.command)
+        let id: UUID
+        if let existing = tabs.tab(forJob: request.key) {
+            id = existing.id
+            surfaces.removeValue(forKey: id)?.close()
+            tabs.select(id)
+            tabs.setJob(job, of: id)
+            tabs.setTitle(nil, of: id)
+            tabs.setStatus(.running, of: id)
+        } else {
+            id = tabs.add(job: job).id
+        }
+        jobRequests[id] = request
+        isVisible = true
+        start(id, in: request.directory, jobCommand: request.commandLine)
+        return id
+    }
+
+    /// Runs a tab's job again, in the same tab.
+    func rerunJob(in id: UUID) {
+        if let request = jobRequests[id] {
+            run(request)
+        }
+    }
+
+    /// The folder a job tab's command runs in.
+    func jobDirectory(of id: UUID) -> URL? {
+        jobRequests[id]?.directory
+    }
+
+    /// Stops a tab's running job: first by interrupting it (⌃C), so it can clean up; asked again
+    /// while it's stopping, by ending its terminal.
+    func stopJob(in id: UUID) {
+        guard let job = tabs.tabs.first(where: { $0.id == id })?.job, job.isRunning else { return }
+        if job.isStopping {
+            surfaces.removeValue(forKey: id)?.close()
+            tabs.setStatus(.exited, of: id)
+            finishJob(in: id, status: nil)
+        } else {
+            tabs.updateJob(of: id) { $0.isStopping = true }
+            surfaces[id]?.interrupt()
+        }
+    }
+
+    private func finishJob(in id: UUID, status: Int32?, duration: Duration? = nil) {
+        guard let job = tabs.tabs.first(where: { $0.id == id })?.job, job.isRunning else { return }
+        tabs.updateJob(of: id) { $0.finish(status: status, duration: duration) }
+        if let finished = tabs.tabs.first(where: { $0.id == id })?.job {
+            jobFinished(finished)
+        }
+    }
+
     /// Closes a tab, first asking when a program is still running in it.
     func requestClose(_ id: UUID) {
         if surfaces[id]?.needsConfirmClose == true {
@@ -95,6 +155,7 @@ final class TerminalPanelModel: TerminalSurfaceEvents {
             confirmingClose = nil
         }
         surfaces.removeValue(forKey: id)?.close()
+        jobRequests[id] = nil
         tabs.close(id)
         if focusedTab == id {
             focusedTab = nil
@@ -114,6 +175,12 @@ final class TerminalPanelModel: TerminalSurfaceEvents {
     /// - Parameter shell: A shell to run this time instead of the chosen one, such as the
     ///   fallback when the chosen one is missing.
     func restart(_ id: UUID, in directory: URL? = nil, shell: String? = nil) {
+        // A job tab runs its job again rather than a shell.
+        if jobRequests[id] != nil, directory == nil, shell == nil {
+            return rerunJob(in: id)
+        }
+        jobRequests[id] = nil
+        tabs.setJob(nil, of: id)
         surfaces.removeValue(forKey: id)?.close()
         tabs.setTitle(nil, of: id)
         tabs.setStatus(.running, of: id)
@@ -129,6 +196,7 @@ final class TerminalPanelModel: TerminalSurfaceEvents {
             surfaces.removeValue(forKey: id)?.close()
             tabs.close(id)
         }
+        jobRequests = [:]
         isVisible = false
     }
 
@@ -142,13 +210,14 @@ final class TerminalPanelModel: TerminalSurfaceEvents {
         surfaces[id]?.focus()
     }
 
-    private func start(_ id: UUID, in directory: URL, shell: String? = nil) {
+    /// - Parameter jobCommand: What a job tab runs instead of a shell.
+    private func start(_ id: UUID, in directory: URL, shell: String? = nil, jobCommand: String? = nil) {
         guard let engine = engine() else {
             tabs.setStatus(.failedToStart(.engineFailed), of: id)
             return
         }
         do {
-            let command = try command ?? resolveShell(shell).get()
+            let command = try jobCommand ?? command ?? resolveShell(shell).get()
             surfaces[id] = try engine.makeSurface(
                 id: id, launch: TerminalLaunch(workingDirectory: directory, command: command), events: self)
         } catch let failure as TerminalStartFailure {
@@ -165,11 +234,23 @@ final class TerminalPanelModel: TerminalSurfaceEvents {
     }
 
     func surface(_ id: UUID, didChangeStatus status: TerminalStatus) {
-        tabs.setStatus(status, of: id)
+        if jobRequests[id] != nil {
+            // A job that ends at once (a typo, a missing script) ran; it didn't fail to start.
+            tabs.setStatus(status == .running ? .running : .exited, of: id)
+            finishJob(in: id, status: nil)
+        } else {
+            tabs.setStatus(status, of: id)
+        }
         if status != .running {
             // The last title is the command that ended the shell ("exit"); the tab's name reads better.
             tabs.setTitle(nil, of: id)
         }
+    }
+
+    func surface(_ id: UUID, didFinishCommandWith status: Int32, after duration: Duration) {
+        // Shells report every command they run; only a job's own frame counts.
+        guard jobRequests[id] != nil else { return }
+        finishJob(in: id, status: status, duration: duration)
     }
 
     func surfaceDidRequestClose(_ id: UUID) {

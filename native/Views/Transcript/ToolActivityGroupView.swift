@@ -67,8 +67,18 @@ struct ToolActivityGroupView: View {
     let calls: [ToolCallState]
     let onChoose: (PermissionOption) -> Void
 
-    @State private var isExpanded = false
+    @Environment(TranscriptDisclosures.self) private var disclosures: TranscriptDisclosures?
+    /// For groups shown outside a transcript, which has no `TranscriptDisclosures`.
+    @State private var isOpenHere = false
     @State private var isHovering = false
+
+    private var id: String {
+        TranscriptRow.exploration(calls).id
+    }
+
+    private var isExpanded: Bool {
+        disclosures?.isOpen(id) ?? isOpenHere
+    }
 
     private var isRunning: Bool {
         calls.contains { !$0.status.isFinished }
@@ -77,48 +87,55 @@ struct ToolActivityGroupView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             Button {
-                withAnimation(.reveal) { isExpanded.toggle() }
+                withAnimation(.reveal) {
+                    if let disclosures {
+                        disclosures.toggle(id)
+                    } else {
+                        isOpenHere.toggle()
+                    }
+                }
             } label: {
                 summary
             }
             .buttonStyle(.plain)
-            .onHover { isHovering = $0 }
+            .trackHover($isHovering)
 
             if isExpanded {
                 VStack(alignment: .leading, spacing: 0) {
                     ForEach(calls, id: \.id) { call in
                         ToolCallView(call: call, onChoose: onChoose)
+                            .equatable()
                     }
                 }
-                .padding(.leading, 12)
+                .padding(.leading, DS.Space.lg)
                 .transition(RevealTransition())
             }
         }
     }
 
     private var summary: some View {
-        let allReads = calls.allSatisfy { $0.name == "Read" || ($0.name == nil && $0.kind == .read) }
+        let allReads = calls.allSatisfy { $0.category == .read }
         let noun = allReads ? (calls.count == 1 ? "file" : "files") : (calls.count == 1 ? "search" : "searches")
-        return HStack(spacing: 6) {
-            Image(systemName: "text.magnifyingglass")
+        return HStack(spacing: DS.Space.sm) {
+            Image(systemName: (allReads ? DSToolGlyph.read : .search).systemImage)
                 .symbolRenderingMode(.hierarchical)
-                .foregroundStyle(.secondary)
-                .font(.callout)
-                .frame(width: 16)
+                .foregroundStyle(.dsTextSecondary)
+                .font(.dsBody)
+                .frame(width: DS.Size.rowLeading)
             Text(isRunning ? "Exploring" : "Explored")
-                .foregroundStyle(isHovering ? .primary : .secondary)
+                .foregroundStyle(isHovering ? Color.dsTextPrimary : .dsTextSecondary)
                 .shimmering(isRunning)
             Text(verbatim: "\(calls.count) \(noun)")
                 .monospacedDigit()
-                .foregroundStyle(isHovering ? .primary : .tertiary)
+                .foregroundStyle(isHovering ? Color.dsTextPrimary : .dsTextTertiary)
             DisclosureChevron(isExpanded: isExpanded)
-                .opacity(isHovering ? 1 : 0)
+                .opacity(isHovering || isExpanded || DS.isTouchPlatform ? 1 : 0)
             Spacer(minLength: 0)
         }
-        .padding(.vertical, 5)
+        .padding(.vertical, DS.Space.xs)
         .contentShape(.rect)
-        .animation(.easeOut(duration: 0.1), value: isHovering)
         .accessibilityElement(children: .combine)
+        .accessibilityValue(isExpanded ? "expanded" : "collapsed")
         .accessibilityHint(isExpanded ? "Collapses the calls" : "Shows the calls")
     }
 }
@@ -126,12 +143,7 @@ struct ToolActivityGroupView: View {
 private extension ToolCallState {
     /// Reads and searches: the calls that fold into exploration summaries.
     var isExploration: Bool {
-        guard permission == nil else { return false }
-        switch name {
-        case "Read", "Grep", "Glob", "LS", "WebSearch": return true
-        case nil: return kind == .read || kind == .search
-        default: return false
-        }
+        permission == nil && (category == .read || category == .search)
     }
 }
 

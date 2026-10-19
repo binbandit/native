@@ -2,18 +2,23 @@ import ACP
 import NativeCommands
 import SwiftUI
 
-/// An autonomy meter over the agent's permission modes; a click steps up a level, wrapping
-/// back to the lowest, and a right-click picks one. When Plan Mode stands in for the permission mode,
-/// the meter dims and shows the level that resumes afterwards.
+/// The agent's permission mode: its name and an autonomy meter, or just the meter (with a shield)
+/// when the composer is short of room. A click opens `AutonomyPicker`, listing every level with what
+/// the agent may do without asking; ⇧⌘M steps to the next. When Plan Mode stands in for the
+/// permission mode, the meter dims and shows the level that resumes afterwards.
 struct AutonomyPill: View {
     let setting: SelectSetting
     let levels: [SelectSetting.Choice]
     let level: Int
     let isSuspended: Bool
-    /// The shield in place of the word, when the composer is short of room.
+    let agentName: String
+    let plan: PlanToggle?
+    /// The shield in place of the name, when the composer is short of room.
     var showsIcon = false
     let onSet: (SelectSetting, String) -> Void
-    let onCycle: () -> Void
+    let onTogglePlan: () -> Void
+
+    @State private var isPickerOpen = false
 
     private var shown: SelectSetting.Choice {
         levels[min(level, levels.count - 1)]
@@ -25,52 +30,68 @@ struct AutonomyPill: View {
     }
 
     var body: some View {
-        Button(action: onCycle) {
+        Button {
+            isPickerOpen.toggle()
+        } label: {
             HStack(spacing: DS.Space.md) {
                 if showsIcon {
                     PillIcon("lock.shield")
                 } else {
-                    Text("Autonomy")
+                    Text(shown.name)
+                        .foregroundStyle(isSuspended ? .dsTextTertiary : .dsTextPrimary)
                 }
-                EffortBars(total: max(levels.count - 1, 1), level: level, tint: isUnchecked ? .dsDanger : .dsAccent)
+                EffortBars(
+                    total: max(levels.count - 1, 1), level: level, isMuted: isSuspended,
+                    tint: isUnchecked ? .dsDanger : .dsAccent)
             }
         }
-        .buttonStyle(.pill)
-        .disabled(isSuspended)
+        .buttonStyle(.pill(isOpen: isPickerOpen))
         .help(help)
         .accessibilityLabel("Autonomy: \(shown.name)")
-        .accessibilityHint("Switches to the next autonomy level")
-        .contextMenu {
-            AutonomyLevelPicker(setting: setting, levels: levels, onSet: onSet)
-                .pickerStyle(.inline)
+        .accessibilityHint("Shows the autonomy levels")
+        .popover(isPresented: $isPickerOpen, arrowEdge: .top) {
+            AutonomyPicker(
+                setting: setting, levels: levels, level: level, agentName: agentName, plan: plan, onSet: onSet,
+                onTogglePlan: onTogglePlan
+            ) {
+                isPickerOpen = false
+            }
+            .dsPopoverBackground()
         }
     }
 
     private var help: String {
-        let detail = shown.description.map { "\(shown.name): \($0)" } ?? shown.name
+        let detail = AutonomySummary.summary(of: shown).map { "\(shown.name): \($0)" } ?? shown.name
+        let next = CommandRegistry.shared.shortcut(for: .sessionNextPermissionMode).map {
+            " Press \($0.displayString) for the next level."
+        }
         return isSuspended
             ? "Autonomy resumes at \(detail) when Plan Mode ends"
-            : "Autonomy: \(detail). Click"
-                + (CommandRegistry.shared.shortcut(for: .sessionNextPermissionMode).map {
-                    " or press \($0.displayString)"
-                } ?? "") + " for the next mode."
+            : "Autonomy: \(detail).\(next ?? "")"
     }
 }
 
-/// The autonomy levels to pick from, the ones policy forbids shown but disabled: the pill's
-/// right-click menu, and the More menu when the pill doesn't fit.
+/// The autonomy levels as a submenu, each with what the agent may do without asking, and the ones
+/// policy forbids shown but disabled: the More menu's stand-in for the pill when it doesn't fit.
 struct AutonomyLevelPicker: View {
     let setting: SelectSetting
     let levels: [SelectSetting.Choice]
     let onSet: (SelectSetting, String) -> Void
 
     var body: some View {
-        Picker("Autonomy", selection: Binding(get: { setting.value }, set: { onSet(setting, $0) })) {
+        Menu("Autonomy", systemImage: "lock.shield") {
             ForEach(levels) { choice in
                 let forbidden = PolicyPermissionModes.forbids(setting.option, value: choice.value)
-                Text(forbidden ? "\(choice.name) (\(PolicyCenter.managedExplanation))" : choice.name)
-                    .tag(choice.value)
-                    .selectionDisabled(forbidden)
+                Toggle(
+                    isOn: Binding(get: { choice.value == setting.value }, set: { _ in onSet(setting, choice.value) })
+                ) {
+                    Text(choice.name)
+                    if let detail = forbidden ? "Not allowed by your organization" : AutonomySummary.summary(of: choice)
+                    {
+                        Text(detail)
+                    }
+                }
+                .disabled(forbidden)
             }
         }
     }

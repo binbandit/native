@@ -109,7 +109,8 @@ Mac) to see everything in light and dark side by side.
 | Something blocked on the user, in chrome | `.statusBarSegment(.attention)`: the only boxed item in the status bar, one at a time |
 | Details on click | `.dsPopover` with a `PopoverPanel` |
 | An icon-only button | `Button("Title", systemImage:)` with `.ds(_, iconOnly: true)` or `.pill(isSquare: true)`, or `IconButton`: the title stays VoiceOver's label. Never a bare `Image` label |
-| Elapsed time | `ElapsedTimeText(since:until:)`: ticks while running, a total once done |
+| Elapsed time | `ElapsedTimeText(since:until:)`: ticks while running, a total once done. Anything else that counts seconds reads `DSSecondClock.shared.now` and holds it from `.task { await DSSecondClock.shared.hold() }`: one 1 Hz clock for the app, never a `TimelineView` per label |
+| A tool call's kind | `DSToolGlyph` (read, search, edit, command, web, MCP, think, subagent): one glyph per kind wherever tool work shows |
 | Searching or filtering a list | `SearchField`, never a hand-built `TextField` with a magnifier |
 | Counts, sizes, times | `DSFormat`: `compactAge`, `time`, `countdown`, `timeAndCountdown`, `duration`, `thoughtFor`, `tokens`, `percent`, `share`, `lineCount`, `diffStat`, `cost`, `memory`, `cpu` |
 

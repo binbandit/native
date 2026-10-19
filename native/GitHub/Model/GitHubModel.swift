@@ -28,17 +28,26 @@ final class GitHubModel {
     private(set) var branchPullRequests: [BranchReference: BranchPullRequest] = [:]
     @ObservationIgnored var branchLookupsInFlight: Set<BranchReference> = []
 
-    /// The pull request the user asked to open as a task, while they confirm or it's being set up.
-    var openAsTaskCandidate: PullRequestSummary?
-    private(set) var openingAsTask: URL?
-    /// Checks a pull request out into a fresh worktree and starts a task there. Set by the app,
-    /// which owns worktrees and tasks; "Open as Task" is hidden while it's `nil`.
-    @ObservationIgnored var openAsTask: (@MainActor (PullRequestSummary) async throws -> Void)?
+    /// Opens a pull request as a task: the app's Open as Task sheet takes it from there (which
+    /// project, cloning it, the worktree, the task). Set by the app, which owns worktrees and
+    /// tasks; "Open as Task" is hidden while it's `nil`.
+    @ObservationIgnored var openAsTask: (@MainActor (PullRequestSummary) -> Void)?
 
     /// The branch the Create Pull Request sheet is showing, if any.
     var createRequest: CreatePullRequestRequest?
 
     var actionError: String?
+
+    /// The pull request being merged from the list, through its page's merge sheet.
+    var mergeRequest: PullRequestReference?
+    /// The pull request whose quick comment box is open in the list.
+    var commentingOn: URL?
+    /// Quick comments being written in the list, by pull request.
+    var quickComments: [URL: String] = [:]
+    /// What's happening to each pull request the list acted on: working, done or failed.
+    var rowActivity: [URL: PullRequestRowActivity] = [:]
+    /// The list's undo for its last close or reopen.
+    var undo: UndoToastItem?
 
     /// Where clicking a pull request goes (Settings › GitHub).
     var pullRequestOpening = GitHubPullRequestOpening.stored {
@@ -51,6 +60,14 @@ final class GitHubModel {
     /// Starts a task about lines of a pull request, or sends them to the task on screen. Set by the
     /// app, which owns tasks; "Ask an Agent" is hidden while it's `nil`.
     @ObservationIgnored var askAgent: (@MainActor (ReviewAgentPrompt, GitHubAgentDestination) async throws -> Void)?
+    /// Opens the private "Ask about this pull request" conversation for a pull request (its page's
+    /// panel). Set by that feature; its entry points (the page header, a row's menu) are hidden
+    /// while it's `nil`.
+    @ObservationIgnored var askAboutPullRequest: (@MainActor (PullRequestReference) -> Void)?
+    /// The pull request a branch was made for, when the branch itself says (a task opened from a
+    /// pull request names its branch after the task, so gh can't find it by name). Set by the app,
+    /// which reads git; badges fall back to gh's lookup by branch while it's `nil` or says nothing.
+    @ObservationIgnored var linkedPullRequest: (@MainActor (BranchReference) async -> URL?)?
     /// Whether a task is on screen to send to, for "Send to Current Task".
     @ObservationIgnored var hasCurrentTask: @MainActor () -> Bool = { false }
     /// Opens web links; the platform's browser unless a test swaps it.
@@ -84,7 +101,15 @@ final class GitHubModel {
     #if os(macOS)
     /// gh on this Mac.
     convenience init(environment: @escaping @MainActor (_ refresh: Bool) async -> [String: String]) {
-        self.init(environment: environment, runner: LocalCommandRunner())
+        var runner: any CommandRunner = LocalCommandRunner()
+        #if DEBUG
+        // `-gitHubDryRunWrites YES` answers merges, closes and comments without sending them, so
+        // their flows can be checked against real pull requests.
+        if UserDefaults.standard.bool(forKey: GitHubDryRunRunner.enabledKey) {
+            runner = GitHubDryRunRunner(base: runner)
+        }
+        #endif
+        self.init(environment: environment, runner: runner)
     }
     #endif
 
@@ -235,20 +260,6 @@ final class GitHubModel {
         return cli
     }
 
-    // MARK: - Opening as a task
-
-    func confirmOpenAsTask() async {
-        guard let pullRequest = openAsTaskCandidate, let openAsTask else { return }
-        openAsTaskCandidate = nil
-        openingAsTask = pullRequest.url
-        defer { openingAsTask = nil }
-        do {
-            try await openAsTask(pullRequest)
-        } catch {
-            actionError = "Couldn't open \(pullRequest.reference) as a task: \(error.localizedDescription)"
-        }
-    }
-
     // MARK: - Branches
 
     /// How long a branch's pull request is trusted. Each lookup is one `gh pr list --head` call, so
@@ -272,7 +283,12 @@ final class GitHubModel {
         defer { branchLookupsInFlight.remove(branch) }
         let cli = await cli()
         do {
-            let pullRequest = try await cli.pullRequest(forBranch: branch.branch, in: .directory(branch.directory))
+            let pullRequest: PullRequest?
+            if let link = await linkedPullRequest?(branch) {
+                pullRequest = try await cli.pullRequest(.url(link), in: .directory(branch.directory))
+            } else {
+                pullRequest = try await cli.pullRequest(forBranch: branch.branch, in: .directory(branch.directory))
+            }
             branchPullRequests[branch] = BranchPullRequest(
                 pullRequest: pullRequest.map(PullRequestSummary.init), fetchedAt: .now)
         } catch .notARepository, .notFound {

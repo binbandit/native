@@ -124,10 +124,13 @@ Settings, inside a terminal), which can't be changed.
 
 ## Plugins
 
-`CommandRegistry.register(_:)` takes commands at any time and replaces commands with the same id,
-so a plugin can contribute commands later without changing the registry. A plugin's commands go in
-the `.plugins` category, and their ids are prefixed with the plugin id (`my-plugin.doThing`). Their
-defaults would come from the manifest rather than `DefaultShortcuts`. Since a command needs a menu
+`CommandRegistry.register(_:)` takes commands at any time and replaces commands with the same id, and
+`unregister(_:)` drops ones that went away (project actions register a "Run: <name>" command per
+action name and keep them in step, `docs/actions.md`). The ids stay in the user's bindings, so a
+command that comes back gets its shortcut back. So a plugin can contribute commands later without
+changing the registry. A plugin's commands go in the `.plugins` category, and their ids are
+prefixed with the plugin id (`my-plugin.doThing`). Their defaults would come from the manifest
+rather than `DefaultShortcuts`. Since a command needs a menu
 item to have a shortcut, a "Plugins" menu would place them. None of that is built yet. The
 `NativePlugin` protocol would grow a `commands` capability, and manifest plugins could declare
 commands that run a workflow or a script.

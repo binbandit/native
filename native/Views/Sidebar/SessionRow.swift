@@ -9,6 +9,7 @@ import SwiftUI
 struct SessionRow<Accessory: View>: View {
     @Environment(AppModel.self) private var model
     @Environment(\.undoManager) private var undoManager
+    @Environment(\.sidebarSelection) private var picking
     let summary: SessionSummary
     /// Grouped under a project header, or flush in the Pinned section.
     var indent: TaskRowIndent = .grouped
@@ -35,6 +36,27 @@ struct SessionRow<Accessory: View>: View {
         model.isUnread(summary.id)
     }
 
+    /// Shown only while the filter includes archived tasks.
+    private var isArchived: Bool {
+        model.isArchived(summary.id)
+    }
+
+    /// Open in the detail column, or picked for a bulk action.
+    private var isSelected: Bool {
+        model.selection == summary.id || picking?.contains(summary.id) == true
+    }
+
+    /// Hover's Archive button; an archived task (shown while the filter includes them) has none.
+    private var archiveAction: (() -> Void)? {
+        isArchived ? nil : { archive() }
+    }
+
+    /// Picked along with other tasks, so its context menu acts on all of them.
+    private var isPickedWithOthers: Bool {
+        guard let picking, picking.contains(summary.id) else { return false }
+        return picking.keys.count > 1
+    }
+
     var body: some View {
         if model.renaming == summary.id {
             SessionTitleField(summary: summary, status: TaskStatus(session))
@@ -42,7 +64,7 @@ struct SessionRow<Accessory: View>: View {
             TaskRow(
                 title: title,
                 status: TaskStatus(session),
-                isSelected: model.selection == summary.id,
+                isSelected: isSelected,
                 isUnread: isUnread,
                 date: session?.lastActivity ?? summary.info.updatedDate,
                 badge: badge,
@@ -50,12 +72,12 @@ struct SessionRow<Accessory: View>: View {
                 leading: AgentIcon(agent: summary.agent),
                 accessory: accessory,
                 action: select,
-                onArchive: archive
+                onArchive: archiveAction
             )
             .help(tooltip)
             // Double-clicking renames, like a file in the Finder.
             .simultaneousGesture(TapGesture(count: 2).onEnded(rename))
-            .contextMenu { menu }
+            .contextMenu { contextMenu }
             .sidebarSwipeActions(
                 leading: [readAction, pinAction],
                 trailing: [
@@ -85,6 +107,15 @@ struct SessionRow<Accessory: View>: View {
         }
     }
 
+    /// A row picked with others acts on all of them; otherwise on itself.
+    @ViewBuilder private var contextMenu: some View {
+        if let picking, isPickedWithOthers {
+            SidebarBulkMenu(selection: picking)
+        } else {
+            menu
+        }
+    }
+
     @ViewBuilder private var menu: some View {
         Button("Rename…", action: rename)
         Button(isUnread ? "Mark as Read" : "Mark as Unread", action: toggleUnread)
@@ -99,7 +130,11 @@ struct SessionRow<Accessory: View>: View {
             DSPasteboard.copy(summary.info.sessionId.rawValue)
         }
         Divider()
-        Button("Archive", action: archive)
+        if isArchived {
+            Button("Unarchive") { Task { await model.unarchiveSession(summary.id) } }
+        } else {
+            Button("Archive", action: archive)
+        }
         Button("Delete…", role: .destructive) { isConfirmingDelete = true }
     }
 
@@ -132,7 +167,7 @@ struct SessionRow<Accessory: View>: View {
     /// waiting on, so triage needs no click.
     private var tooltip: String {
         let project = indent == .flat ? model.projects.project(summary.project).map { " · \($0.name)" } : nil
-        let line = "\(summary.agent.displayName) · \(title)\(project ?? "")"
+        let line = "\(summary.agent.displayName) · \(title)\(project ?? "")\(isArchived ? " · Archived" : "")"
         return [line, session?.sidebarAsk].compactMap(\.self).joined(separator: "\n")
     }
 

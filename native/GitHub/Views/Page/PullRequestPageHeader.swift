@@ -52,6 +52,12 @@ struct PullRequestPageHeader: View {
                 IconButton("Refresh", systemImage: "arrow.clockwise") { Task { await model.load() } }
             }
             IconButton("Open on GitHub", systemImage: "arrow.up.right") { gitHub.openExternally(page.url) }
+            PullRequestAskButton(reference: page.reference)
+            if gitHub.canOpenAsTask, page.isOpen {
+                IconButton("Open as Task", systemImage: "arrow.down.to.line.compact") {
+                    gitHub.requestOpenAsTask(PullRequestSummary(page))
+                }
+            }
             if page.isOpen {
                 Button {
                     model.isReviewSheetPresented = true
@@ -60,14 +66,19 @@ struct PullRequestPageHeader: View {
                 }
                 .buttonStyle(.ds(model.pendingCommentCount > 0 ? .primary : .secondary))
                 .help("Comment on, approve or request changes to this pull request")
-                if page.viewerCanMerge {
-                    Button("Merge", systemImage: "arrow.triangle.merge") { model.isMergeSheetPresented = true }
-                        .buttonStyle(.ds(.secondary))
-                        .disabled(page.isDraft)
-                        .help(
-                            page.isDraft
-                                ? "Drafts can't be merged; mark it ready for review on GitHub"
-                                : "Merge this pull request")
+                if page.viewerCanMerge, let plan = model.mergePlan {
+                    // Named for what it does, so it never reads as "merge now" when it queues or waits.
+                    Button(
+                        plan.state?.summary ?? (plan.action == nil ? "Merge…" : plan.title + "…"),
+                        systemImage: plan.state == nil ? "arrow.triangle.merge" : "list.number"
+                    ) {
+                        model.isMergeSheetPresented = true
+                    }
+                    .buttonStyle(.ds(.secondary))
+                    .disabled(page.isDraft)
+                    .help(
+                        page.isDraft
+                            ? "Drafts can't be merged; mark it ready for review on GitHub" : plan.explanation ?? "")
                 }
             }
         }

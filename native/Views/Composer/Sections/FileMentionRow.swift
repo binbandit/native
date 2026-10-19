@@ -1,13 +1,25 @@
+import ACP
 import SwiftUI
 
-/// A file in the `@` list: its name, then the folder it's in, dimmed.
+/// A file or folder in the `@` list: its name (a folder's with a trailing "/"), then the folder it's
+/// in, dimmed.
 struct FileMentionRow: View {
     let path: String
     let isChanged: Bool
     let isHighlighted: Bool
 
-    private var name: Substring {
-        path.split(separator: "/").last ?? Substring(path)
+    private var isFolder: Bool {
+        FileMention.isFolder(path)
+    }
+
+    private var name: String {
+        let name = path.split(separator: "/").last.map(String.init) ?? path
+        return isFolder ? name + "/" : name
+    }
+
+    private var accessibilityLabel: String {
+        let notes: [String?] = [isFolder ? "folder" : nil, isChanged ? "changed" : nil]
+        return ([path] + notes.compactMap(\.self)).joined(separator: ", ")
     }
 
     private var folder: Substring {
@@ -16,7 +28,7 @@ struct FileMentionRow: View {
 
     var body: some View {
         HStack(spacing: DS.Space.md) {
-            Image(systemName: "doc")
+            Image(systemName: isFolder ? "folder" : "doc")
                 .font(.dsCaption)
                 .foregroundStyle(.dsTextTertiary)
                 .frame(width: DS.Size.rowLeading)
@@ -37,6 +49,6 @@ struct FileMentionRow: View {
             }
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(isChanged ? "\(path), changed" : path)
+        .accessibilityLabel(accessibilityLabel)
     }
 }

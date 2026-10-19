@@ -1,0 +1,39 @@
+{
+    "data": {
+        "repository": {
+            "h0": {
+                "nodes": [
+                    {
+                        "number": 14722,
+                        "url": "https://github.com/cli/cli/pull/14722",
+                        "headRefName": "bdehamer-release-create-atomicity-help",
+                        "headRefOid": "9e1e1c929f882fd93e1c67ea520a4529352aab9a",
+                        "baseRefName": "trunk",
+                        "mergedAt": "2026-10-16T21:43:26Z"
+                    }
+                ]
+            },
+            "h1": {
+                "nodes": []
+            }
+        },
+        "u0": {
+            "state": "MERGED",
+            "number": 14722,
+            "url": "https://github.com/cli/cli/pull/14722",
+            "headRefName": "bdehamer-release-create-atomicity-help",
+            "headRefOid": "9e1e1c929f882fd93e1c67ea520a4529352aab9a",
+            "baseRefName": "trunk",
+            "mergedAt": "2026-10-16T21:43:26Z"
+        },
+        "u1": {
+            "state": "OPEN",
+            "number": 14727,
+            "url": "https://github.com/cli/cli/pull/14727",
+            "headRefName": "fix/issue-create-resolve-type-before-create",
+            "headRefOid": "1156f977ff6d12d592bc152987b9d9b378f6718d",
+            "baseRefName": "trunk",
+            "mergedAt": null
+        }
+    }
+}

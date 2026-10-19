@@ -5,8 +5,10 @@ import Foundation
 // agent's own history that `session/list` hasn't reported, or one in a folder that isn't a project.
 extension AppModel {
     /// Selects the session, listing it under its project first when the sidebar doesn't have it,
-    /// and adding the project when Native doesn't have that either.
+    /// and adding the project when Native doesn't have that either. A feature that claims the
+    /// session (`searchedSessionOpeners`) opens it instead, and the sidebar is left alone.
     func showSearchedSession(_ key: SessionKey, cwd: String, title: String?, projectFolder: String) {
+        if searchedSessionOpeners.contains(where: { $0(key) }) { return }
         if !catalog.contains(key) {
             let folder = URL(filePath: projectFolder, directoryHint: .isDirectory)
             let project =

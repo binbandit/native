@@ -1,3 +1,4 @@
+import AIInstructions
 import Foundation
 
 /// What an agent gets when the user asks it about lines of a pull request: which pull request and
@@ -23,6 +24,8 @@ public struct ReviewAgentPrompt: Sendable, Hashable {
     public var notes: [Note]
     /// What the user asked, if they wrote something.
     public var request: String?
+    /// The user's standing instructions for these requests, from Settings, sent after the request.
+    public var instructions: AIInstructionAddition?
 
     public init(
         reference: PullRequestReference, title: String, branch: String, anchor: ReviewAnchor,
@@ -62,6 +65,6 @@ public struct ReviewAgentPrompt: Sendable, Hashable {
         }
         let request = request?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         sections.append(request.isEmpty ? defaultRequest : request)
-        return sections.joined(separator: "\n\n")
+        return AIInstructionAddition.applying(instructions, to: sections.joined(separator: "\n\n"))
     }
 }

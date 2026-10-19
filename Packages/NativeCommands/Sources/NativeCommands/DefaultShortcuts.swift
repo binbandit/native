@@ -38,6 +38,7 @@ public enum DefaultShortcuts {
         "view.mcpServers": "⌃⌘M",
         "keepAwake.nextMode": "⌃⌘A",
         "palette.show": "⌘K",
+        "help.keyboardShortcuts": "⌘/",
         "search.show": "⇧⌘F",
         // Session settings
         "session.nextPermissionMode": "⇧⌘M",
@@ -50,6 +51,8 @@ public enum DefaultShortcuts {
         // Terminal
         "terminal.toggle": "⌃`",
         "terminal.newTab": "⌃⇧`",
+        // Project actions
+        "projectActions.runLast": "⇧⌘R",
         // Celebrations
         "celebration.restore": "⌥⇧⌘H",
     ]

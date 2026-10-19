@@ -8,13 +8,22 @@ let package = Package(
         .library(name: "GitHub", targets: ["GitHub"])
     ],
     dependencies: [
-        .package(path: "../Exec")
+        .package(path: "../Exec"),
+        .package(path: "../AIInstructions"),
     ],
     targets: [
-        .target(name: "GitHub", dependencies: [.product(name: "Exec", package: "Exec")]),
+        .target(
+            name: "GitHub",
+            dependencies: [
+                .product(name: "Exec", package: "Exec"),
+                .product(name: "AIInstructions", package: "AIInstructions"),
+            ]),
         .testTarget(
             name: "GitHubTests",
-            dependencies: ["GitHub", .product(name: "Exec", package: "Exec")],
+            dependencies: [
+                "GitHub", .product(name: "Exec", package: "Exec"),
+                .product(name: "AIInstructions", package: "AIInstructions"),
+            ],
             resources: [.copy("Fixtures")]
         ),
     ]

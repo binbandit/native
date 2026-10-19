@@ -27,11 +27,21 @@ extension AppModel {
         let title = titleOfSession(key)
         archivedSessions.set(key, archived: true)
         leave(key, in: listed.project)
+        let detail = await putAwayWorkspace(of: key, titled: title, in: listed.project)
+        offerUndo("Archived “\(title)”.\(detail)", name: "Archive Task", undoManager: undoManager) { model in
+            Task { await model.unarchiveSession(key) }
+        }
+    }
+
+    /// Puts away the workspace of a task just archived, returning what was done as a sentence to
+    /// add to the undo message (or nothing), and reporting a failure with the project. Internal only
+    /// for AppModel+BulkActions.swift.
+    func putAwayWorkspace(of key: SessionKey, titled title: String, in projectID: Project.ID) async -> String {
         var detail = ""
         if archivedWorkspaces[key] != nil {
             // Bringing its workspace back failed last time, so it's still put away.
-            problems.resolve(.workspaceRestore(key), in: listed.project)
-        } else if let project = projects.project(listed.project) {
+            problems.resolve(.workspaceRestore(key), in: projectID)
+        } else if let project = projects.project(projectID) {
             do {
                 if let removal = try await archiveWorkspace(of: key, in: project) {
                     archivedWorkspaces[key] = removal
@@ -46,9 +56,7 @@ extension AppModel {
                         details: error.localizedDescription))
             }
         }
-        offerUndo("Archived “\(title)”.\(detail)", name: "Archive Task", undoManager: undoManager) { model in
-            Task { await model.unarchiveSession(key) }
-        }
+        return detail
     }
 
     /// Brings an archived task back to the sidebar, with its workspace if Native put one away.
@@ -91,17 +99,25 @@ extension AppModel {
     /// workspace Native made for it (after a checkpoint). Nothing is removed until the undo window
     /// passes; undoing in time brings the task back untouched.
     func deleteSession(_ key: SessionKey, undoManager: UndoManager? = nil) {
-        guard let listed = catalog.lookup(key), pendingDeletions[key] == nil else { return }
         let title = titleOfSession(key)
+        guard scheduleDeletion(of: key) else { return }
+        offerUndo("Deleted “\(title)”.", name: "Delete Task", undoManager: undoManager) { model in
+            model.pendingDeletions.removeValue(forKey: key)?.cancel()
+        }
+    }
+
+    /// Takes a task off the sidebar and deletes it once the undo window passes, unless the deletion
+    /// is cancelled (`pendingDeletions`). Returns whether it was scheduled. Internal only for
+    /// AppModel+BulkActions.swift.
+    func scheduleDeletion(of key: SessionKey) -> Bool {
+        guard let listed = catalog.lookup(key), pendingDeletions[key] == nil else { return false }
         leave(key, in: listed.project)
         pendingDeletions[key] = Task { [weak self] in
             try? await Task.sleep(for: Self.deletionGracePeriod)
             guard !Task.isCancelled else { return }
             await self?.carryOutDeletion(of: key, in: listed.project)
         }
-        offerUndo("Deleted “\(title)”.", name: "Delete Task", undoManager: undoManager) { model in
-            model.pendingDeletions.removeValue(forKey: key)?.cancel()
-        }
+        return true
     }
 
     private func carryOutDeletion(of key: SessionKey, in projectID: Project.ID) async {
@@ -145,6 +161,9 @@ extension AppModel {
                         recovery: "The task is deleted, but its workspace is still on disk.",
                         details: error.localizedDescription))
             }
+        }
+        if let project = projects.project(projectID) {
+            await taskWorkspaces?.taskWasDeleted(key, title: title, folder: folder ?? project.url, in: project)
         }
     }
 
@@ -195,7 +214,8 @@ extension AppModel {
 
     // MARK: - Helpers
 
-    private func titleOfSession(_ key: SessionKey) -> String {
+    /// Internal only for AppModel+BulkActions.swift, as are `leave` and `offerUndo`.
+    func titleOfSession(_ key: SessionKey) -> String {
         sessions.session(key)?.displayTitle
             ?? titles.title(
                 for: SessionTitles.Key(agent: key.agent, session: key.id), agentTitle: catalog.lookup(key)?.info.title)
@@ -203,7 +223,7 @@ extension AppModel {
     }
 
     /// Moves off a task that's leaving the sidebar, to its project's home.
-    private func leave(_ key: SessionKey, in project: Project.ID) {
+    func leave(_ key: SessionKey, in project: Project.ID) {
         if selection == key {
             focusProject(project)
         }
@@ -230,7 +250,7 @@ extension AppModel {
     }
 
     /// Shows the undo toast and registers the same undo with the window's undo manager.
-    private func offerUndo(
+    func offerUndo(
         _ message: String, name: String, undoManager: UndoManager?, undo: @escaping (AppModel) -> Void
     ) {
         undoManager?.registerUndo(withTarget: self) { model in
