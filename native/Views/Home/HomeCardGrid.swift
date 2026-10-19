@@ -33,6 +33,22 @@ struct HomeCardGrid: Layout {
         }
     }
 
+    // The cards set no alignment guides, so there are none to merge. Without these, SwiftUI places
+    // every card (laying out its contents) each time a parent asks the grid for a guide.
+    func explicitAlignment(
+        of guide: HorizontalAlignment, in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews,
+        cache: inout ()
+    ) -> CGFloat? {
+        nil
+    }
+
+    func explicitAlignment(
+        of guide: VerticalAlignment, in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews,
+        cache: inout ()
+    ) -> CGFloat? {
+        nil
+    }
+
     private func columns(for width: CGFloat) -> Int {
         let fitting = Int((width + HomeLayout.cardSpacing) / (HomeLayout.minCardWidth + HomeLayout.cardSpacing))
         return min(HomeLayout.maxColumns, max(1, fitting))

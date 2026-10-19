@@ -1,5 +1,5 @@
-/// The composer editor's keys, as docs/keyboard.md lays them out (Sending, Slash commands, File
-/// mentions).
+/// The composer editor's keys, as docs/keyboard.md lays them out (Sending, Code, Slash commands,
+/// File mentions).
 /// Pure, so the table can be tested without a text view.
 enum ComposerKeyMap {
     enum Key {
@@ -29,6 +29,8 @@ enum ComposerKeyMap {
         var hasLastPrompt: Bool
         /// An input method is composing text, so every key is its own.
         var isComposing: Bool
+        /// The caret is in a fenced code block (`PromptCode.isInBlock`).
+        var isInCodeBlock = false
         var preferredFollowUp: FollowUpBehavior
     }
 
@@ -48,6 +50,8 @@ enum ComposerKeyMap {
         case stop
         /// Tab moves on to the controls rather than typing a tab character.
         case moveFocus(forward: Bool)
+        /// In a code block: a new line indented like the caret's, one indent in, or one out.
+        case codeNewline, codeIndent, codeOutdent
         /// Nothing happens, but the text view doesn't get the key either.
         case swallow
     }
@@ -61,6 +65,17 @@ enum ComposerKeyMap {
             case .down: return .moveHighlight(by: 1)
             case .return, .tab: return isRepeat ? .swallow : .insertHighlightedSuggestion
             case .escape: return .closeSuggestionList
+            }
+        }
+        // In a code block, Return and Tab edit the code, and ⌘Return does what Return does elsewhere.
+        if context.isInCodeBlock {
+            switch key {
+            case .return where modifiers.isEmpty: return .codeNewline
+            case .return where modifiers == .command:
+                return isRepeat ? .swallow : .submit(context.preferredFollowUp)
+            case .tab where modifiers.isEmpty: return .codeIndent
+            case .tab where modifiers == .shift: return .codeOutdent
+            default: break
             }
         }
         switch key {

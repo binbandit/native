@@ -56,6 +56,22 @@ struct StatusBarItemsLayout: Layout {
         }
     }
 
+    // Items set no alignment guides, so there are none to merge. Without these, SwiftUI places
+    // every item each time a parent asks the bar for a guide.
+    func explicitAlignment(
+        of guide: HorizontalAlignment, in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews,
+        cache: inout ()
+    ) -> CGFloat? {
+        nil
+    }
+
+    func explicitAlignment(
+        of guide: VerticalAlignment, in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews,
+        cache: inout ()
+    ) -> CGFloat? {
+        nil
+    }
+
     /// Items fill the bar's height, so the whole strip above and below their text is clickable.
     private func place(_ subview: LayoutSubview, size: CGSize, at x: CGFloat, in bounds: CGRect) {
         subview.place(

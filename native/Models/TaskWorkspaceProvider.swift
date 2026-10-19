@@ -16,8 +16,18 @@ protocol TaskWorkspaceProvider: AnyObject {
     /// project folder.
     func archiveWorkspace(at folder: URL, in project: Project) async throws -> TaskWorkspaceRemoval?
 
+    /// Brings back what `archiveWorkspace` put away at `folder`, in this run of Native or a later
+    /// one, picking up where an archive or restore Native quit during stopped. Returns whether
+    /// there was anything to bring back.
+    @discardableResult
+    func restoreWorkspace(at folder: URL, in project: Project) async throws -> Bool
+
+    /// The folders `archiveWorkspace` put away in `project` that haven't been brought back.
+    func archivedWorkspaceFolders(of project: Project) async -> [URL]
+
     /// Removes what Native made for a task for good (delete), saving a checkpoint of uncommitted
-    /// work first. Never touches the user's own project folder.
+    /// work first, or forgets what was put away for it if it's archived. Never touches the user's
+    /// own project folder.
     func deleteWorkspace(at folder: URL, in project: Project) async throws
 
     /// Removes everything Native made for a project's tasks, for when the project is deleted.

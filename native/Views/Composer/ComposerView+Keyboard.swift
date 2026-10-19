@@ -16,6 +16,7 @@ extension ComposerView {
             canStop: session.canCancel,
             hasLastPrompt: session.state.lastPrompt != nil,
             isComposing: PlatformTextInput.isComposing,
+            isInCodeBlock: isCaretInCodeBlock,
             preferredFollowUp: followUp
         )
         let modifiers = ComposerKeyMap.Modifiers(press)
@@ -67,6 +68,12 @@ extension ComposerView {
             }
         case .stop:
             stop()
+        case .codeNewline:
+            editCode { PromptCode.newline(in: $0, replacing: $1) }
+        case .codeIndent:
+            editCode { PromptCode.indent(in: $0, selection: $1) }
+        case .codeOutdent:
+            editCode { PromptCode.outdent(in: $0, selection: $1) }
         // Focus moves in `handleKey`, which needs to know whether it did.
         case .moveFocus, .swallow:
             break

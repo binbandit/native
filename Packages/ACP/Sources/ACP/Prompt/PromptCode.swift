@@ -52,7 +52,9 @@ public enum PromptCode {
     /// Shift-Tab in a block: one indent (a tab, or up to an indent's worth of spaces) off the caret's
     /// line or each selected line.
     public static func outdent(in text: String, selection: Range<String.Index>) -> Edit {
-        let width = indentUnit(at: selection.lowerBound, in: text).count
+        // A block indented with tabs still loses up to four spaces from a line indented with them.
+        let unit = indentUnit(at: selection.lowerBound, in: text)
+        let width = unit == "\t" ? 4 : unit.count
         let outdented = { (line: Substring) -> Substring in
             line.first == "\t" ? line.dropFirst() : line.dropFirst(min(width, line.prefix { $0 == " " }.count))
         }

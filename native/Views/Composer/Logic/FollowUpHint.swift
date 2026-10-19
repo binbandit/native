@@ -19,6 +19,14 @@ struct FollowUpHint: Equatable {
         return FollowUpHint(text: "↩ Save · ⌘↩ Send Now", help: "\(save)\n⌘Return: \(sendNow.help)\n\(move)")
     }
 
+    /// The keys while the caret is in a code block, where Return makes a new line and ⌘Return does
+    /// what Return does elsewhere (`primary`).
+    static func inCodeBlock(primary: String, explanation: String) -> FollowUpHint {
+        FollowUpHint(
+            text: "↩ New line · ⌘↩ \(primary)",
+            help: "In a code block, Return adds a line and Tab / ⇧Tab indent.\n⌘Return: \(explanation)")
+    }
+
     init(preferred: FollowUpBehavior, supportsSteering: Bool, agentName: String) {
         if supportsSteering {
             text = "↩ \(preferred.title) · ⌘↩ \(preferred.opposite.title)"

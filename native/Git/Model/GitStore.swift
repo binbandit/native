@@ -85,13 +85,20 @@ final class GitStore {
     }
 
     /// Removes a task's worktree, first saving its uncommitted work as a checkpoint. Its branch
-    /// stays, so `restoreTaskWorktree` can bring the whole thing back.
-    func removeTaskWorktree(at folder: URL) async throws -> RemovedTaskWorktree {
+    /// stays (or a copy of it, when the settings delete branches on archive). With `keepingRecord`,
+    /// what brings it back is recorded in the repository before anything is removed, for
+    /// `restoreArchivedTaskWorktree` in this run of Native or a later one.
+    func removeTaskWorktree(at folder: URL, keepingRecord: Bool = false) async throws -> RemovedTaskWorktree {
         let repository = try await requireRepository(at: folder)
         let main = try await repository.worktrees().first(where: \.isMain)?.path ?? repository.root
         let branch = try await repository.status().branch.name
         await beforeRemovingTaskWorktree?(GitTaskWorktree(folder: repository.root, projectRoot: main, branch: branch))
-        let checkpoint = try await repository.removeWorktree(at: repository.root, force: true)
+        let checkpoint = try await repository.checkpoint(named: repository.root.lastPathComponent)
+        if keepingRecord, let branch {
+            try await requireRepository(at: main).recordArchivedWorktree(
+                ArchivedWorktree(path: repository.root, branch: branch, checkpoint: checkpoint))
+        }
+        try await repository.removeWorktree(at: repository.root, force: true, checkpoint: false)
         models.removeValue(forKey: folder.standardizedFileURL)
         var archivedBranch = false
         if settings.deletesBranchOnArchive(forProjectAt: main), let branch {

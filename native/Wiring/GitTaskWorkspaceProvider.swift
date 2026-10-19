@@ -34,19 +34,30 @@ final class GitTaskWorkspaceProvider: TaskWorkspaceProvider {
 
     func archiveWorkspace(at folder: URL, in project: Project) async throws -> TaskWorkspaceRemoval? {
         guard await git.isTaskWorktree(folder, of: project.url) else { return nil }
-        let removed = try await git.removeTaskWorktree(at: folder)
+        let removed = try await git.removeTaskWorktree(at: folder, keepingRecord: true)
         var summary = removed.summary
         if let failure = scripts.teardownFailure(in: folder) {
             // Teardown never stops archiving, but the user hears it didn't work where they archived.
             summary +=
                 " Its teardown script \(failure.result.outcome.phrase); Scripts in the status bar has its output."
         }
-        return TaskWorkspaceRemoval(summary: summary) { [git] in
-            _ = try await git.restoreTaskWorktree(removed)
+        return TaskWorkspaceRemoval(summary: summary) { [weak self] in
+            try await self?.restoreWorkspace(at: folder, in: project)
         }
     }
 
+    func restoreWorkspace(at folder: URL, in project: Project) async throws -> Bool {
+        guard let archived = try await git.archivedTaskWorktree(at: folder, of: project.url) else { return false }
+        _ = try await git.restoreArchivedTaskWorktree(archived, of: project.url)
+        return true
+    }
+
+    func archivedWorkspaceFolders(of project: Project) async -> [URL] {
+        (try? await git.archivedTaskWorktrees(of: project.url))?.map(\.path) ?? []
+    }
+
     func deleteWorkspace(at folder: URL, in project: Project) async throws {
+        try await git.forgetArchivedTaskWorktree(at: folder, of: project.url)
         guard await git.isTaskWorktree(folder, of: project.url) else { return }
         _ = try await git.removeTaskWorktree(at: folder)
     }
@@ -55,6 +66,7 @@ final class GitTaskWorkspaceProvider: TaskWorkspaceProvider {
         for folder in await git.taskWorktrees(of: project.url) {
             _ = try await git.removeTaskWorktree(at: folder)
         }
+        try await git.forgetArchivedTaskWorktrees(of: project.url)
     }
 
     func taskFolders(of project: Project) async -> [URL] {

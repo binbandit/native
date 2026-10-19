@@ -62,9 +62,10 @@ struct ComposerView: View {
             && !hasContent && session.queuedPrompts.isEmpty
     }
 
-    /// The `@` mention at the cursor, if one is being typed.
+    /// The `@` mention at the cursor, if one is being typed. Never in code, where `@` is the code's
+    /// own (a decorator, an attribute).
     var mentionQuery: FileMentionQuery? {
-        guard case .selection(let range)? = selection?.indices else { return nil }
+        guard let range = selectedRange, !PromptCode.isInCode(range.upperBound, in: session.draft) else { return nil }
         return FileMentionQuery(draft: session.draft, cursor: range.upperBound)
     }
 
@@ -322,9 +323,12 @@ struct ComposerView: View {
                     ).help : "Send (↩)")
     }
 
-    /// What the controls row's hint says: the keys for the queued message open in the editor, or
-    /// while the agent works, what Return and ⌘Return do with a follow-up.
+    /// What the controls row's hint says: the keys in a code block, the keys for the queued message
+    /// open in the editor, or while the agent works, what Return and ⌘Return do with a follow-up.
     var followUpHint: FollowUpHint? {
+        if isCaretInCodeBlock {
+            return codeBlockHint
+        }
         if session.editingQueuedPrompt != nil {
             return .editingQueued(
                 sendNow: session.sendNowRoute.map { QueuedSendNow(route: $0, agentName: session.agentName) })
