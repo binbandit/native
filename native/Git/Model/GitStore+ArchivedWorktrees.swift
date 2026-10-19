@@ -27,6 +27,21 @@ extension GitStore {
         return try await setUp(worktree, of: repository, branch: archived.branch).folder
     }
 
+    /// Works out what brings back a task worktree archived before Native recorded archives, from
+    /// its checkpoint and branch (`Repository.rebuildArchivedWorktree`). `nil` unless `folder` is
+    /// where Native puts the project's task worktrees and isn't one now.
+    func rebuildArchivedTaskWorktree(
+        at folder: URL, of project: URL, title: String?, archivedAt: Date?
+    ) async throws -> RebuiltArchivedWorktree? {
+        guard let repository = try await resolveGit().repository(at: project) else { return nil }
+        let location = Self.taskLocation(of: repository).folderPath
+        guard SessionFolder.contains(location, folder.folderPath), !SessionFolder.isSame(location, folder.folderPath),
+            await !isTaskWorktree(folder, of: project)
+        else { return nil }
+        return try await repository.rebuildArchivedWorktree(
+            at: folder, title: title, archivedAt: archivedAt, isSameFolder: SessionFolder.isSame)
+    }
+
     /// Forgets what was put away at `folder`, for a task deleted while archived.
     func forgetArchivedTaskWorktree(at folder: URL, of project: URL) async throws {
         guard let repository = try await resolveGit().repository(at: project),

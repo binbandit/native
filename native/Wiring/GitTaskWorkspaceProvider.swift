@@ -43,8 +43,26 @@ final class GitTaskWorkspaceProvider: TaskWorkspaceProvider {
         return summary
     }
 
-    func restoreWorkspace(at folder: URL, in project: Project) async throws -> Bool {
-        guard let archived = try await git.archivedTaskWorktree(at: folder, of: project.url) else { return false }
+    func restoreWorkspace(at folder: URL, in project: Project, task: ArchivedTaskDetails?) async throws -> Bool {
+        let archived: ArchivedWorktree
+        if let recorded = try await git.archivedTaskWorktree(at: folder, of: project.url) {
+            archived = recorded
+        } else if let task,
+            let rebuilt = try await git.rebuildArchivedTaskWorktree(
+                at: folder, of: project.url, title: task.title, archivedAt: task.archivedAt)
+        {
+            // Archived before archives were recorded: worked out from what that archive left in git.
+            switch rebuilt {
+            case .found(let found):
+                archived = found
+            case .noBranch(let checkpoint):
+                throw TaskWorkspaceRestoreFailure.branchNotFound(checkpoint: checkpoint?.reference)
+            case .ambiguous(let names, let checkpoint):
+                throw TaskWorkspaceRestoreFailure.branchAmbiguous(names, checkpoint: checkpoint?.reference)
+            }
+        } else {
+            return false
+        }
         _ = try await git.restoreArchivedTaskWorktree(archived, of: project.url)
         // Views asked about the folder while it was gone; they show its branch and changes again.
         git.refresh(folder: folder)

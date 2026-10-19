@@ -19,10 +19,12 @@ protocol TaskWorkspaceProvider: AnyObject {
     func archiveWorkspace(at folder: URL, in project: Project) async throws -> String?
 
     /// Brings back what `archiveWorkspace` put away at `folder`, in this run of Native or a later
-    /// one, picking up where an archive or restore Native quit during stopped. Returns whether
-    /// there was anything to bring back.
+    /// one, picking up where an archive or restore Native quit during stopped. With `task`, a
+    /// workspace archived before that was recorded is rebuilt from what the archive left, or
+    /// `TaskWorkspaceRestoreFailure` says what's missing. Returns whether there was anything to
+    /// bring back.
     @discardableResult
-    func restoreWorkspace(at folder: URL, in project: Project) async throws -> Bool
+    func restoreWorkspace(at folder: URL, in project: Project, task: ArchivedTaskDetails?) async throws -> Bool
 
     /// The folders `archiveWorkspace` put away in `project` that haven't been brought back.
     func archivedWorkspaceFolders(of project: Project) async -> [URL]
@@ -52,6 +54,20 @@ protocol TaskWorkspaceProvider: AnyObject {
 
 extension TaskWorkspaceProvider {
     func taskWasDeleted(_ task: SessionKey, title: String, folder: URL, in project: Project) async {}
+
+    /// Brings back only what was recorded, for workspaces no task was archived with.
+    @discardableResult
+    func restoreWorkspace(at folder: URL, in project: Project) async throws -> Bool {
+        try await restoreWorkspace(at: folder, in: project, task: nil)
+    }
+}
+
+/// What Native knows about an archived task that helps rebuild its workspace when nothing was
+/// recorded: its title, and when it was archived, which tells that archive's checkpoint from
+/// earlier ones.
+struct ArchivedTaskDetails: Hashable, Sendable {
+    let title: String
+    let archivedAt: Date?
 }
 
 /// Why a new task's workspace couldn't be made, when the user can do something about it.

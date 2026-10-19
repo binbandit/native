@@ -3,28 +3,30 @@ import Exec
 import Foundation
 import Testing
 
-/// Runs that crash end the process, so these run in child processes of their own.
-struct LocalCommandRunnerStressTests {
-    /// The pipe readers used to let their `FileHandle` close each descriptor as soon as its read
-    /// finished, while libdispatch was still watching it. With many short commands finishing at once,
-    /// libdispatch then trapped ("Unexpected EV_VANISHED") and took the app down. The race is narrow,
-    /// so several batches run at once, each in its own process.
-    @Test(arguments: 0..<4) func manyShortCommandsNeverCrash(batch: Int) async {
-        await #expect(processExitsWith: .success) {
-            await LocalCommandRunnerStress.run(commands: 2000, concurrency: 48)
+extension ExecTests {
+    /// Runs that crash end the process, so these run in child processes of their own.
+    struct LocalCommandRunnerStressTests {
+        /// The pipe readers used to let their `FileHandle` close each descriptor as soon as its read
+        /// finished, while libdispatch was still watching it. With many short commands finishing at once,
+        /// libdispatch then trapped ("Unexpected EV_VANISHED") and took the app down. The race is narrow,
+        /// so this runs several batches, each in a process of its own.
+        @Test(arguments: 0..<4) func manyShortCommandsNeverCrash(batch: Int) async {
+            await #expect(processExitsWith: .success) {
+                await LocalCommandRunnerStress.run(commands: 2000, concurrency: 48)
+            }
         }
-    }
 
-    /// Input for a command that exits without reading it used to raise SIGPIPE, which ends the
-    /// process unless it ignores the signal, or the thread that wrote happens to block it. Repeated,
-    /// since which thread writes varies.
-    @Test func inputTheCommandNeverReadsIsHarmless() async {
-        await #expect(processExitsWith: .success) {
-            let command = Command(
-                "true", environment: ["PATH": "/usr/bin:/bin"], standardInput: Data(repeating: 0, count: 1 << 20))
-            for _ in 0..<20 {
-                let result = try await LocalCommandRunner().run(command)
-                if !result.succeeded { exit(EXIT_FAILURE) }
+        /// Input for a command that exits without reading it used to raise SIGPIPE, which ends the
+        /// process unless it ignores the signal, or the thread that wrote happens to block it. Repeated,
+        /// since which thread writes varies.
+        @Test func inputTheCommandNeverReadsIsHarmless() async {
+            await #expect(processExitsWith: .success) {
+                let command = Command(
+                    "true", environment: ExecTests.environment, standardInput: Data(repeating: 0, count: 1 << 20))
+                for _ in 0..<20 {
+                    let result = try await LocalCommandRunner().run(command)
+                    if !result.succeeded { exit(EXIT_FAILURE) }
+                }
             }
         }
     }
@@ -35,7 +37,7 @@ struct LocalCommandRunnerStressTests {
 private enum LocalCommandRunnerStress {
     static func run(commands: Int, concurrency: Int) async {
         let runner = LocalCommandRunner()
-        let environment = ["PATH": "/usr/bin:/bin"]
+        let environment = ExecTests.environment
         await withTaskGroup(of: Void.self) { group in
             for index in 0..<commands {
                 if index >= concurrency { await group.next() }
