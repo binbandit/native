@@ -32,10 +32,12 @@ struct AgentQuestionSection: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.sm) {
             header
+            // Wraps at the width the composer gives it. A fixed vertical size would be measured at
+            // no width when the window asks for its minimum size, one character per line.
             Text(question.prompt)
                 .font(.dsCalloutMedium)
                 .foregroundStyle(.dsTextPrimary)
-                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
             if !question.options.isEmpty {
                 VStack(spacing: 0) {
                     ForEach(Array(question.options.enumerated()), id: \.element.id) { offset, option in
