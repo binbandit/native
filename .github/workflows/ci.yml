@@ -127,9 +127,7 @@ jobs:
       - name: Cache Swift package checkouts
         uses: actions/cache@v4
         with:
-          path: |
-            ${{ env.SOURCE_PACKAGES }}
-            !${{ env.SOURCE_PACKAGES }}/artifacts
+          path: ${{ env.SOURCE_PACKAGES }}
           key: source-packages-${{ runner.os }}-${{ hashFiles('native.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
           restore-keys: source-packages-${{ runner.os }}-
       - name: Restore the compilation cache

@@ -408,9 +408,11 @@ if [ "$channel" = nightly ]; then
         # next nightly has deltas from both), and only the deltas this appcast lists.
         names=$(gh release view nightly --repo "$repo" --json assets --jq '.assets[].name')
         current_deltas=" $(for delta in ${deltas[@]+"${deltas[@]}"}; do basename "$delta"; done | tr '\n' ' ')"
-        { grep -E "^$asset_base-[0-9]+\.zip$" <<<"$names" | sort -t- -k3 -n | keep_all_but_two
-          grep -E "^native-host-[0-9]+-" <<<"$names" | sort -t- -k3 -n | keep_all_but_two
-          grep -E '\.delta$' <<<"$names" | while read -r name; do
+        # A listing can be empty (the first nightly has no deltas): `|| true` keeps pipefail from
+        # stopping the release over a grep that matched nothing.
+        { { grep -E "^$asset_base-[0-9]+\.zip$" <<<"$names" || true; } | sort -t- -k3 -n | keep_all_but_two
+          { grep -E "^native-host-[0-9]+-" <<<"$names" || true; } | sort -t- -k3 -n | keep_all_but_two
+          { grep -E '\.delta$' <<<"$names" || true; } | while read -r name; do
               [[ $current_deltas == *" $name "* ]] || echo "$name"
           done; } |
             while read -r old; do run gh release delete-asset nightly "$old" --repo "$repo" --yes; done

@@ -369,8 +369,9 @@ in three shards balanced by measured time, the Debug build and the lint, and `ch
 release configurations. App builds are arm64 only (the packages declare macOS 15 and would otherwise
 compile an x86_64 slice nothing links). The Debug, Release and Nightly builds also cache:
 
-- Swift package checkouts (`-clonedSourcePackagesDirPath`), keyed by the project's
-  `Package.resolved`, without Sentry's 3 GB of unpacked binary artifacts, which download faster.
+- Swift package checkouts and binary artifacts (`-clonedSourcePackagesDirPath`), keyed by the
+  project's `Package.resolved`: resolving them from nothing took 3.5 minutes on CI, restoring them
+  about 25 seconds.
 - Xcode's compilation cache (`COMPILATION_CACHE_ENABLE_CACHING`, `check.sh --compilation-cache`), one
   per configuration. It's content-addressed, a compile's inputs being its key, so each build starts
   from an empty DerivedData and still skips every compile whose inputs haven't changed, with none of

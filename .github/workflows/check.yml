@@ -48,14 +48,12 @@ jobs:
           path: ~/Library/Caches/Native/ScriptRuntime
           key: script-runtime-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'scripts/build-script-runtime.sh') }}
           restore-keys: script-runtime-${{ runner.os }}-${{ runner.arch }}-
-      # Package checkouts, keyed by what the project pins. Sentry's binary artifacts stay out: 3 GB
-      # unpacked, quicker to download again than to restore.
+      # Package checkouts and binary artifacts, keyed by what the project pins: about 25 s to restore
+      # where resolving from nothing took 3.5 minutes.
       - name: Cache Swift package checkouts
         uses: actions/cache@v4
         with:
-          path: |
-            ${{ env.SOURCE_PACKAGES }}
-            !${{ env.SOURCE_PACKAGES }}/artifacts
+          path: ${{ env.SOURCE_PACKAGES }}
           key: source-packages-${{ runner.os }}-${{ hashFiles('native.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
           restore-keys: source-packages-${{ runner.os }}-
       # Xcode's compilation cache (check.sh --compilation-cache). Restored from the newest run; saved
