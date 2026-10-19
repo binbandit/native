@@ -66,7 +66,8 @@ private struct AgentDefaultPicker: View {
             SettingsSelect<String?>.Option(value: $0.value, title: $0.name)
         }
         let lastUsed = AgentSessionDefaults.lastUsedName(for: agentID, setting: setting).map { "Last used (\($0))" }
-        var options = [SettingsSelect<String?>.Option(value: nil, title: lastUsed ?? "Last used \(setting.rawValue)")] + offered
+        var options =
+            [SettingsSelect<String?>.Option(value: nil, title: lastUsed ?? "Last used \(setting.rawValue)")] + offered
         // A value set elsewhere (a launch argument, an older choice) stays visible so it can be cleared.
         if let value, !offered.contains(where: { $0.value == value }) {
             options.append(.init(value: value, title: value))

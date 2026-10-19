@@ -90,7 +90,11 @@ final class GitCleanupModel: Identifiable {
     private func tasks(in folder: URL) -> [GitCleanupItem.TaskReference] {
         let app = services.app
         let prefix = GitCleanupItem.abbreviated(folder.resolvingSymlinksInPath())
-        return app.sessions(in: project.id).compactMap { summary in
+        // Pinned tasks too: every task left working in a removed worktree would be stranded.
+        let listed = app.allSessions(in: project.id).filter {
+            !app.isArchived($0.id) && !app.pendingDeletionKeys.contains($0.id)
+        }
+        return listed.compactMap { summary in
             let cwd = GitCleanupItem.abbreviated(URL(filePath: summary.info.cwd).resolvingSymlinksInPath())
             guard cwd == prefix || cwd.hasPrefix(prefix + "/") else { return nil }
             return GitCleanupItem.TaskReference(

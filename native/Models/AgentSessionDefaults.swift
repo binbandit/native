@@ -105,7 +105,8 @@ enum AgentSessionDefaults {
                 // Said once: later sessions start on the agent's model until the user picks another.
                 updateLastUsed(for: agent, defaults: defaults) { $0.forget(id) }
             case nil:
-                logger.info("\(session.agentName, privacy: .public) keeps its own \(id, privacy: .public) for a new session")
+                logger.info(
+                    "\(session.agentName, privacy: .public) keeps its own \(id, privacy: .public) for a new session")
             }
         }
         await PolicyPermissionModes.enforce(on: session)

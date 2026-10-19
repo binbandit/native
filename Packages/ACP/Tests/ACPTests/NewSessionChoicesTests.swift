@@ -107,7 +107,8 @@ struct NewSessionChoicesTests {
     @Test func policyWinsOverTheLastPick() throws {
         let options = try Self.codex()
         let start = NewSessionChoices(lastUsed: try Self.lastPicked())
-        let noFastMode: (ConfigOption, String) -> Bool = { option, value in !(option.id == "fast-mode" && value == "on") }
+        let noFastMode: (ConfigOption, String) -> Bool = { option, value in !(option.id == "fast-mode" && value == "on")
+        }
 
         #expect(start.start(of: "fast-mode", in: options, allows: noFastMode) == nil)
     }

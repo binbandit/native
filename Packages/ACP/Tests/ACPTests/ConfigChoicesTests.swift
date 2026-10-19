@@ -161,7 +161,8 @@ struct ConfigChoicesTests {
         var choices = try Self.chosen()
         choices.choose(try Self.option("fast-mode", in: options), value: "on")
         choices.choose(try Self.option("reasoning_effort", in: options), value: "minimal")
-        let noFastMode: (ConfigOption, String) -> Bool = { option, value in !(option.id == "fast-mode" && value == "on") }
+        let noFastMode: (ConfigOption, String) -> Bool = { option, value in !(option.id == "fast-mode" && value == "on")
+        }
 
         let shown = choices.preview(options, allows: noFastMode)
 
