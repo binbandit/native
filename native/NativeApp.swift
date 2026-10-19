@@ -318,6 +318,7 @@ private struct SessionCommands: Commands {
             CommandMenuItem(.sessionStop, in: commands)
             CommandMenuItem(.sessionClearConversation, in: commands)
             CommandMenuItem(.sessionOpenEarlierConversation, in: commands)
+            CommandMenuItem(.sessionOpenCurrentConversation, in: commands)
 
             Divider()
 

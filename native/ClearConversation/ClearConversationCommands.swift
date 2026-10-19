@@ -4,10 +4,11 @@ import NativeCommands
 extension CommandID {
     static let sessionClearConversation: Self = "session.clearConversation"
     static let sessionOpenEarlierConversation: Self = "session.openEarlierConversation"
+    static let sessionOpenCurrentConversation: Self = "session.openCurrentConversation"
 }
 
 extension NativeCommand {
-    /// `/clear` from the menu and the palette, and the way back to what it set aside.
+    /// `/clear` from the menu and the palette, and the ways between a task's conversations.
     static func clearConversation(model: AppModel) -> [NativeCommand] {
         [
             NativeCommand(
@@ -39,6 +40,17 @@ extension NativeCommand {
             }
             .available { context in
                 context.session.map { model.earlierConversations.conversation(before: $0.key) != nil } ?? false
+            },
+
+            NativeCommand(
+                .sessionOpenCurrentConversation, title: "Open Current Conversation", category: .composer,
+                systemImage: "arrow.uturn.forward", keywords: ["/clear", "latest", "back"]
+            ) { context in
+                guard let session = context.session else { return }
+                model.openConversation(.later, from: session.key)
+            }
+            .available { context in
+                context.session.map { model.earlierConversations.conversation(after: $0.key) != nil } ?? false
             },
         ]
     }
