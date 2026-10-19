@@ -65,12 +65,6 @@ struct PullRequestDiffBlockRow: View {
     /// asks for them.
     private static var metricsCache: [DSCodeFont: PullRequestDiffBlockRowMetrics] = [:]
 
-    /// How tall each line of a block is in `codeFont`: blocks are exactly their lines, so the list
-    /// places them without measuring.
-    static func lineHeight(for codeFont: DSCodeFont) -> CGFloat {
-        metrics(codeFont).lineHeight
-    }
-
     private static func metrics(_ codeFont: DSCodeFont) -> PullRequestDiffBlockRowMetrics {
         if let cached = metricsCache[codeFont] { return cached }
         let font = codeFont.platformFont(offset: DSCodeTextRole.compact.sizeOffset)

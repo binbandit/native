@@ -135,19 +135,4 @@ extension PullRequestPageModel {
     func wrapsBlock(_ path: String, _ hunk: DiffHunk, _ range: Range<Int>) -> Bool {
         wraps(path) || range.contains { expandedLines.contains(Self.lineKey(path, hunk, $0)) }
     }
-
-    /// Files with any block drawn line by line (wrapping, or with a line opened). Every other
-    /// file's blocks are exactly their lines tall, which the list relies on to place them.
-    var pathsDrawnLineByLine: Set<String> {
-        // A line's key is `path#hunk#line`; hunk ids have no "#", paths might.
-        var paths = Set(
-            expandedLines.map {
-                $0.split(separator: "#", omittingEmptySubsequences: false).dropLast(2).joined(separator: "#")
-            })
-        let prefix = "\(reference.host)/\(reference.repository):"
-        for key in wrappedFiles where key.hasPrefix(prefix) {
-            paths.insert(String(key.dropFirst(prefix.count)))
-        }
-        return paths
-    }
 }
