@@ -79,12 +79,13 @@ struct PullRequestAskTurn: Identifiable {
         activity = TranscriptRow.rows(from: work.filter { if case .message = $0 { false } else { true } })
         if isRunning {
             // A turn without a question is Native asking the agent to finish after it stopped.
-            current = Self.current(in: items) ?? (question == nil && answer.isEmpty ? "Picking up where it stopped" : nil)
+            current =
+                Self.current(in: items) ?? (question == nil && answer.isEmpty ? "Picking up where it stopped" : nil)
         }
     }
 
-    /// The agent's latest step, in plain words, for the status line; nil while the answer itself
-    /// is streaming, which shows for itself.
+    /// The agent's latest step, in plain words, for the status line; nil while the answer streams
+    /// (it shows for itself) or when there's no step to name yet.
     private static func current(in items: [TranscriptItem]) -> String? {
         switch items.last {
         case .toolCall(let call) where call.permission != nil: "Waiting for your permission"
