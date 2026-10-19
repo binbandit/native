@@ -75,7 +75,6 @@ struct TaskScriptStripText: View {
             Text(message)
                 .font(.dsBody)
                 .foregroundStyle(.dsTextSecondary)
-                .fixedSize(horizontal: false, vertical: true) // HOOKS-EXPERIMENT
         }
     }
 }
