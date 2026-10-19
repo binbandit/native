@@ -1,5 +1,6 @@
 # Compiles the Release and Nightly configurations on every pull request and push to main, so a
-# break that only shows up outside Debug is caught before a release needs it.
+# break that only shows up outside Debug is caught before a release needs it. Like a release, it
+# builds the terminal and the script runtime for real and fails without them (check.sh).
 name: Check
 
 on:
@@ -19,10 +20,23 @@ concurrency:
 jobs:
   release-configurations:
     runs-on: ${{ vars.MACOS_RUNNER || 'macos-26' }}
-    timeout-minutes: 60
+    timeout-minutes: 90
     env:
       DEVELOPER_DIR: ${{ vars.XCODE_DEVELOPER_DIR || '/Applications/Xcode_27.1.app/Contents/Developer' }}
     steps:
       - uses: actions/checkout@v5
+      # The same caches as the release workflows, so a release finds what main's checks built.
+      - name: Cache libghostty
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/native-build/libghostty
+          key: libghostty-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/build-libghostty.sh') }}
+          restore-keys: libghostty-${{ runner.os }}-${{ runner.arch }}-
+      - name: Cache the script runtime
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/Native/ScriptRuntime
+          key: script-runtime-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'scripts/build-script-runtime.sh') }}
+          restore-keys: script-runtime-${{ runner.os }}-${{ runner.arch }}-
       - name: Build Release and Nightly
         run: scripts/release/check.sh --derived-data "$RUNNER_TEMP/DerivedData"
