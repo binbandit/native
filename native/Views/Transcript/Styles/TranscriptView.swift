@@ -22,6 +22,9 @@ struct TranscriptView: View {
     @State private var containerWidth: CGFloat?
     /// Rows the user opened, kept while they're scrolled away.
     @State private var disclosures = TranscriptDisclosures()
+    /// While the user scrolls, rows don't take the pointer: moving content under a still pointer
+    /// otherwise has every hover-tracking row hit-tested again on each frame.
+    @State private var isScrolling = false
 
     var body: some View {
         let items = session.state.items
@@ -63,6 +66,9 @@ struct TranscriptView: View {
                 guard size.width > 0, size.height > 0 else { return }
                 containerWidth = size.width
             }
+            .onScrollPhaseChange { _, phase in
+                if isScrolling != phase.isScrolling { isScrolling = phase.isScrolling }
+            }
             .onScrollGeometryChange(for: Bool.self) { [threshold = DS.Space.xxxl] geometry in
                 geometry.visibleRect.maxY < geometry.contentSize.height - threshold
             } action: { _, isAway in
@@ -93,6 +99,7 @@ struct TranscriptView: View {
     private func column(_ transcript: TranscriptStyleConfiguration, in containerWidth: CGFloat) -> some View {
         AnyView(style.makeBody(transcript))
             .environment(disclosures)
+            .allowsHitTesting(!isScrolling)
             .frame(maxWidth: maxColumnWidth(in: containerWidth))
             .padding(.top, DS.Space.xl)
             .padding(.bottom, DS.Space.lg)

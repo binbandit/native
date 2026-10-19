@@ -56,10 +56,11 @@ struct MarkdownSectionView: View, Equatable {
 private enum MarkdownParseCache {
     private static var documents: [String: [MarkdownNode]] = [:]
     private static var bytes = 0
-    /// Plenty for every message on screen; past either limit the cache starts over rather than
-    /// tracking age. The byte limit matters while a long reply streams: every chunk is a new
-    /// source, and each one holds the whole reply so far.
-    private static let capacity = 512
+    /// Past either limit the cache starts over rather than tracking age. The count covers every
+    /// section of a long session (500 turns have about 2,500, and a cap below that re-parsed them on
+    /// every trip through it); the byte limit matters while a long reply streams: every chunk is a
+    /// new source, and each one holds the whole reply so far.
+    private static let capacity = 8192
     private static let byteCapacity = 4 << 20
 
     static func blocks(for source: String) -> [MarkdownNode]? {
