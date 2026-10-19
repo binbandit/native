@@ -187,6 +187,24 @@ struct TranscriptTurnTests {
         #expect(state.summary(of: turns[1]).changedFiles.isEmpty)
     }
 
+    @Test func aTurnsRevisionMovesOnlyWhenItsItemsChange() {
+        var state = SessionState()
+        state.appendUserMessage("Run it", at: at(0))
+        state.apply(
+            .toolCall(ToolCallUpdate(toolCallId: "ls", title: "ls", kind: .execute, status: .inProgress)), at: at(1))
+        let first = state.turns[0].revision
+        #expect(state.completedWriteCount == 0)
+
+        state.appendUserMessage("Next", at: at(2))
+        #expect(state.turns[0].revision == first)
+        let second = state.turns[1].revision
+
+        state.apply(.toolCallUpdate(ToolCallUpdate(toolCallId: "ls", status: .completed)), at: at(3))
+        #expect(state.turns[0].revision > first)
+        #expect(state.turns[1].revision == second)
+        #expect(state.completedWriteCount == 1)
+    }
+
     @Test func editsToOneFileAddUp() {
         let diffs = [
             FileDiff(path: "/a.swift", oldText: "one\ntwo\n", newText: "one\n2\nthree\n"),
