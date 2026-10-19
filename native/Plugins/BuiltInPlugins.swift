@@ -33,7 +33,10 @@ enum BuiltInPlugins {
                         install: "npm install -g @anthropic-ai/claude-code",
                         docs: URL(string: "https://code.claude.com/docs/en/setup"),
                         signIn: "claude"
-                    )
+                    ),
+                    // Each session is its own Claude Code process with its own MCP servers (about
+                    // 650 MB and 0.5% CPU idle here), and one loads back faithfully in seconds.
+                    idleSessionTimeout: 600
                 )
             ]
         ), policyTranslator: ClaudeCodePolicyTranslator(), historyReader: ClaudeCodeHistoryReader.standard())

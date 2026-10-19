@@ -148,11 +148,16 @@ struct AgentManifest: Codable, Hashable, Sendable {
     var requires: [String] = []
     /// How to install the agent and sign in, for the Add Agent list and the not-installed state.
     var setup: AgentSetupGuide?
+    /// Seconds one of the user's sessions may sit unused before Native closes it, here and in the
+    /// agent (`session/close`), and loads it back when it's selected again. For agents that pay for
+    /// every open session (a process each) and reopen one faithfully. Nil keeps sessions open.
+    var idleSessionTimeout: Int?
 
     init(
         id: String, name: String, symbol: String? = nil, command: String, args: [String] = [],
         env: [String: String] = [:], resolveExecutables: [String: String] = [:], mcpConfig: String? = nil,
-        icon: AgentIconSource? = nil, requires: [String] = [], setup: AgentSetupGuide? = nil
+        icon: AgentIconSource? = nil, requires: [String] = [], setup: AgentSetupGuide? = nil,
+        idleSessionTimeout: Int? = nil
     ) {
         self.id = id
         self.name = name
@@ -165,6 +170,7 @@ struct AgentManifest: Codable, Hashable, Sendable {
         self.icon = icon
         self.requires = requires
         self.setup = setup
+        self.idleSessionTimeout = idleSessionTimeout
     }
 
     init(from decoder: any Decoder) throws {
@@ -180,6 +186,7 @@ struct AgentManifest: Codable, Hashable, Sendable {
         icon = try container.decodeIfPresent(AgentIconSource.self, forKey: .icon)
         requires = try container.decodeIfPresent([String].self, forKey: .requires) ?? []
         setup = try container.decodeIfPresent(AgentSetupGuide.self, forKey: .setup)
+        idleSessionTimeout = try container.decodeIfPresent(Int.self, forKey: .idleSessionTimeout)
     }
 }
 

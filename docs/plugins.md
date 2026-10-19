@@ -100,6 +100,7 @@ of that agent through it.
 | `icon` | no | The agent's icon: `{"path": "icon.svg"}` (or just `"icon.svg"`), an image in the plugin's folder; `"apps"`, bundle identifiers of apps whose icon to use when installed; `"registry"`, the agent's id in the [ACP registry](https://agentclientprotocol.com/get-started/registry), whose icon Native fetches. A monochrome SVG is drawn in the text color. Without one, Native shows a monogram. |
 | `requires` | no | Commands besides `command` that must be on `PATH` for the agent to count as installed, such as the CLI an adapter drives: `["claude"]`. Native doesn't start an agent that's missing one; it offers it in Add Agent. |
 | `setup` | no | How to get the agent going, shown in Add Agent and never run: `install` (a command to paste in a terminal), `docs` (a URL) and `signIn` (a terminal command that signs in). |
+| `idleSessionTimeout` | no | Seconds one of the user's sessions may sit unused (not shown, not working, no draft) before Native closes it, here and in the agent (`session/close`), loading it back when it's selected again. Set it only for an agent that pays for every open session, such as a process each, and reopens one faithfully: transcript, model and mode. Without it, sessions stay open. |
 
 Agents that don't speak ACP themselves need an adapter, usually run with `npx`. Pin its version so
 upgrades are deliberate:

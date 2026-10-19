@@ -85,19 +85,21 @@ extension AppModel {
     }
 
     /// How long one of the user's sessions sits unused (not shown, not working, no draft) before
-    /// Native closes it, here and in the agent's process; nil, the default, keeps sessions open.
-    /// Set the `sessionIdleTimeout` default (seconds) to turn it on; it's checked as often as agents
-    /// are, so shorten `agentIdleTimeout` with it. Off until closing pays (docs/performance.md):
-    /// Codex keeps a closed session's MCP servers anyway. Reopening is faithful: a session loaded
-    /// back gets its chosen settings set back (SessionModel+ConfigRestore.swift) and keeps
-    /// Native's title.
-    static var sessionIdleTimeout: Duration? {
+    /// Native closes it, here and in the agent's process: the `sessionIdleTimeout` default
+    /// (seconds) for every agent when it's set, else the agent's own `idleSessionTimeout`, else
+    /// never. It's checked as often as agents are, so shorten `agentIdleTimeout` to try a short one.
+    /// Only Claude Code sets its own (docs/performance.md): each of its sessions is a process.
+    /// Codex keeps a closed session's MCP servers anyway, so closing doesn't pay there yet.
+    /// Reopening is faithful: a session loaded back gets its chosen settings set back
+    /// (SessionModel+ConfigRestore.swift) and keeps Native's title.
+    static func sessionIdleTimeout(for agent: AgentDefinition) -> Duration? {
         let seconds = UserDefaults.standard.double(forKey: "sessionIdleTimeout")
-        return seconds > 0 ? .seconds(seconds) : nil
+        if seconds > 0 { return .seconds(seconds) }
+        return agent.manifest.idleSessionTimeout.map { .seconds($0) }
     }
 
     /// Stops agents that sit unused for `agentIdleTimeout`, and closes sessions that sit unused for
-    /// `sessionIdleTimeout`, for as long as the model lives. The default agent keeps running, so a
+    /// `sessionIdleTimeout(for:)`, for as long as the model lives. The default agent keeps running, so a
     /// new session never waits for one to start. Internal only for AppModel.swift.
     func parkAgentsWhenIdle() {
         let timeout = Self.agentIdleTimeout
@@ -133,9 +135,9 @@ extension AppModel {
     /// sessions belong to the engines that started them.
     private func closeIdleSessions(now: ContinuousClock.Instant, idleSince: inout [SessionKey: ContinuousClock.Instant])
     {
-        guard let timeout = Self.sessionIdleTimeout else { return }
         var open: Set<SessionKey> = []
         for runtime in agents where runtime.isReady {
+            guard let timeout = Self.sessionIdleTimeout(for: runtime.agent) else { continue }
             for session in sessions.open(of: runtime.agent.id)
             where session.root === session && session.origin == .user && catalog.lookup(session.key) != nil {
                 open.insert(session.key)
