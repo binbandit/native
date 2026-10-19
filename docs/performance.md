@@ -179,9 +179,9 @@ composer taking typing in the new task.
 
 | Measurement | Before | After |
 | --- | --- | --- |
-| "+" to visible feedback in the sidebar | none until the session existed (18.2 s); the empty project read "Add an agent to start a session" meanwhile | AFTER_ROW |
-| "+" to a usable composer | 18.2 s | AFTER_COMPOSER |
-| "+" to the session open (agent ready for the first message) | 18.2 s | AFTER_SESSION |
+| "+" to visible feedback in the sidebar | none until the session existed (18.2 s); the empty project read "Add an agent to start a session" meanwhile | 84-123 ms: a "Starting…" task, selected, saying what it waits for |
+| "+" to a usable composer | 18.2 s | 89-146 ms; a message sent then goes out when the session exists |
+| "+" to the session open (agent ready for the first message) | 18.2 s | 10.5 s (13.5 s at load average 47) |
 | `git worktree add` alone | 20.5-22.0 s | 10.1-11.0 s (`checkout.workers=0`) |
 | A second "+" while the first was starting | dropped silently | a second starting task, queued behind the first's git work |
 | Main thread while the worktree is made | idle (git runs in its own process) | idle |
