@@ -27,7 +27,8 @@ public enum FencedText {
         for line in text.split(separator: "\n", omittingEmptySubsequences: false) {
             if let block = open {
                 if Fence(closing: line, for: block.fence) != nil {
-                    segments.append(.code(block.lines.joined(separator: "\n"), language: block.language, isClosed: true))
+                    segments.append(
+                        .code(block.lines.joined(separator: "\n"), language: block.language, isClosed: true))
                     open = nil
                 } else {
                     open?.lines.append(Self.dedented(line, by: block.fence.indent))

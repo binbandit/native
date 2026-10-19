@@ -103,6 +103,8 @@ final class SessionModel {
     private(set) var permissionRequests: [ToolCallState] = []
     private(set) var hasSubagents = false
     private(set) var isTranscriptEmpty = true
+    /// Tool calls that may have written files and have finished (`SessionState.completedWriteCount`).
+    private(set) var completedWriteCount = 0
     var phase: Phase {
         didSet {
             if oldValue == .loading {
@@ -342,6 +344,9 @@ final class SessionModel {
         if permissionRequests != requests { permissionRequests = requests }
         if hasSubagents != transcript.hasSubagents { hasSubagents = transcript.hasSubagents }
         if isTranscriptEmpty != transcript.items.isEmpty { isTranscriptEmpty = transcript.items.isEmpty }
+        if completedWriteCount != transcript.completedWriteCount {
+            completedWriteCount = transcript.completedWriteCount
+        }
     }
 
     /// Creates the model for a subagent the agent just announced.

@@ -19,20 +19,10 @@ private struct SessionGitRefresh: ViewModifier {
             .onChange(of: session.phase) { old, _ in
                 if old == .prompting { store.refresh(folder: session.cwd) }
             }
-            .onChange(of: finishedWrites) {
+            // A mirror, not `state`: this updated with every streamed chunk and counted the whole
+            // transcript each time.
+            .onChange(of: session.completedWriteCount) {
                 store.refreshWhenSettled(folder: session.cwd)
             }
-
-    }
-
-    /// Completed tool calls of the kinds that touch files.
-    private var finishedWrites: Int {
-        session.state.items.reduce(0) { count, item in
-            guard case .toolCall(let call) = item, call.status == .completed else { return count }
-            switch call.kind {
-            case .edit, .delete, .move, .execute: return count + 1
-            default: return count
-            }
-        }
     }
 }
