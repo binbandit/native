@@ -43,7 +43,7 @@ again, Native stops waiting and says so.
 ### Code
 
 Fenced code blocks (a line of three or more backticks or tildes) and inline `` `code` `` show in the
-composer in the code font on a quiet fill, as they will in the sent message; the text itself stays
+composer in the code font (a block's fence lines dimmed, an inline span on a quiet fill); the text itself stays
 exactly as typed or pasted, indentation, tabs and trailing spaces included. While the caret is in a
 fenced block, from the moment its opening fence is typed until past its closing fence, Return and
 Tab edit the code and the hint says "↩ New line · ⌘↩ Send":

@@ -5,9 +5,11 @@ import SwiftUI
 /// The composer's text field: 13pt text that grows with the draft to a cap, then scrolls. Keys go
 /// to `onKey` first, so the composer can send, recall and drive its lists.
 ///
-/// Code in the draft (fenced blocks and inline spans, `PromptCode.ranges`) shows in the code font on
-/// a quiet fill, restyled as it's typed. Only the look changes: the draft is exactly what was typed
-/// or pasted, and anything pasted text brought along (fonts, colors, links) is dropped.
+/// Code in the draft (`PromptCode.runs`) shows in the code font, restyled as it's typed: a fenced
+/// block with its fence lines dimmed, an inline span on a quiet fill. Blocks get no fill, which a
+/// text view can only draw behind each line's text, leaving a ragged edge. Only the look changes:
+/// the draft is exactly what was typed or pasted, and anything pasted text brought along (fonts,
+/// colors, links) is dropped.
 struct ComposerEditor: View {
     @Binding var text: String
     /// Where the cursor is, for `@` mentions in the middle of the draft.
@@ -150,7 +152,7 @@ struct ComposerEditor: View {
 
     // MARK: - Styling
 
-    /// `text` with its code set in the code font on the inline-content fill.
+    /// `text` with its code styled.
     private func styledString(_ text: String) -> AttributedString {
         var styled = AttributedString(text)
         applyCodeStyle(to: &styled, from: text)
@@ -171,13 +173,20 @@ struct ComposerEditor: View {
     private func applyCodeStyle(to styled: inout AttributedString, from text: String) {
         var code = AttributeContainer()
         code.font = Font(codeFont.platformFont(offset: DSCodeTextRole.block.sizeOffset) as CTFont)
-        code.backgroundColor = .dsFill
-        for range in PromptCode.ranges(in: text) {
+        var fence = AttributeContainer()
+        fence.foregroundColor = .dsTextSecondary
+        var inline = code
+        inline.backgroundColor = .dsFill
+        for run in PromptCode.runs(in: text) {
             let lower = styled.utf8.index(
-                styled.startIndex, offsetBy: text.utf8.distance(from: text.startIndex, to: range.lowerBound))
+                styled.startIndex, offsetBy: text.utf8.distance(from: text.startIndex, to: run.range.lowerBound))
             let upper = styled.utf8.index(
-                styled.startIndex, offsetBy: text.utf8.distance(from: text.startIndex, to: range.upperBound))
-            styled[lower..<upper].mergeAttributes(code)
+                styled.startIndex, offsetBy: text.utf8.distance(from: text.startIndex, to: run.range.upperBound))
+            switch run.kind {
+            case .block: styled[lower..<upper].mergeAttributes(code)
+            case .fence: styled[lower..<upper].mergeAttributes(fence)
+            case .inline: styled[lower..<upper].mergeAttributes(inline)
+            }
         }
     }
 }
