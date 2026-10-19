@@ -10,15 +10,21 @@ struct PullRequestAskPanel: View {
     @Environment(GitHubModel.self) private var gitHub
 
     var body: some View {
-        @Bindable var conversation = conversation
         VStack(spacing: 0) {
             PullRequestAskHeader(conversation: conversation)
             SeparatorLine()
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                // Above the composer, not over it.
-                .undoToast($conversation.undo)
             VStack(spacing: DS.Space.md) {
+                if conversation.startedOverFrom != nil {
+                    NoticeBanner(
+                        tone: .info, systemImage: "square.and.pencil", title: "Started a new conversation",
+                        detail: "The earlier one stays in \(conversation.agentName)'s history and in Search."
+                    ) {
+                        Button("Undo") { conversation.undoStartOver() }
+                            .buttonStyle(.ds(.secondary))
+                    }
+                }
                 if let failure = conversation.failure {
                     PullRequestAskFailureView(conversation: conversation, failure: failure)
                 }

@@ -50,7 +50,7 @@ struct TaskScriptEnvironmentTests {
         let committed = TaskScript(event: .setup, source: .repository, text: "#!/usr/bin/env bash -e\nset -u\n")
         let shebang = committed.invocation(shell: "/opt/homebrew/bin/fish")
         #expect(shebang.executable == "/bin/sh")
-        #expect(Array(shebang.arguments.suffix(4)) == ["sh", "/usr/bin/env", "bash", "-e"])
+        #expect(Array(shebang.arguments.suffix(5)) == ["sh", "setup.sh", "/usr/bin/env", "bash", "-e"])
         #expect(shebang.input == Data(committed.text.utf8))
     }
 

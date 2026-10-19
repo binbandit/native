@@ -101,6 +101,8 @@ with `xctrace` leaves 8-13 GB `instruments*.ktrace` files in `$TMPDIR` and large
 delete yours as soon as you've read the numbers. Always record with `--time-limit` and let xctrace stop
 itself: if it's killed (a signal or `timeout`), its recording service keeps writing kernel trace with no
 limit, over 100 GB within the hour. `lsof $TMPDIR/instruments*.ktrace` shows one still being written.
+Never `xctrace record --launch` a Native binary: xctrace resolves it by bundle id to Brayden's installed
+app. Launch your instance with run-isolated.sh and `--attach` to its pid.
 
 When a check needs a real agent session, use Codex with `gpt-6.1-sol` (it's the cheapest): launch with
 `-agentDefaults.codex.model gpt-6.1-sol`, or pick it in the composer's model picker. Use another

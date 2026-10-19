@@ -42,8 +42,9 @@ final class PullRequestAskConversation {
     /// The question on its way while the context loads or the session starts, before the agent
     /// has it, so the panel shows it at once.
     private(set) var pendingQuestion: String?
-    /// "Started a new conversation", with Undo.
-    var undo: UndoToastItem?
+    /// The conversation the user just started over from, until they ask something new, so the
+    /// panel can offer to bring it back.
+    private(set) var startedOverFrom: (record: PullRequestAskRecord, session: SessionModel?)?
 
     @ObservationIgnored unowned let center: PullRequestAskCenter
     @ObservationIgnored private var crashWatch: Task<Void, Never>?
@@ -86,6 +87,7 @@ final class PullRequestAskConversation {
         let question = question.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !question.isEmpty, !isBusy, center.app != nil else { return }
         failure = nil
+        startedOverFrom = nil
         draft = ""
         pendingQuestion = question
         defer { pendingQuestion = nil }
@@ -135,17 +137,20 @@ final class PullRequestAskConversation {
     /// history and in search; Undo brings it back here.
     func startOver() {
         guard let previous = record else { return }
-        let previousSession = session
+        startedOverFrom = (previous, session)
         record = nil
         session = nil
         failure = nil
         center.records.setCurrent(nil, for: reference)
-        undo = UndoToastItem("Started a new conversation") { [weak self] in
-            guard let self, record == nil else { return }
-            record = previous
-            session = previousSession
-            center.records.setCurrent(previous, for: reference)
-        }
+    }
+
+    /// Brings back the conversation the user started over from.
+    func undoStartOver() {
+        guard let (previous, previousSession) = startedOverFrom, record == nil else { return }
+        startedOverFrom = nil
+        record = previous
+        session = previousSession
+        center.records.setCurrent(previous, for: reference)
     }
 
     /// Makes an earlier conversation (one search found) this pull request's again, keeping the

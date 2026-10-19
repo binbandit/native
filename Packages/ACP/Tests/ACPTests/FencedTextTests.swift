@@ -54,4 +54,32 @@ struct FencedTextTests {
         let text = "  ```\n  indented\n    deeper\n  ```"
         #expect(FencedText.segments(of: text) == [.code("indented\n  deeper", language: nil, isClosed: true)])
     }
+
+    @Test func blocksLocateTheirFencesAndCode() throws {
+        let text = "Look:\n```swift\nlet x = 1\n```\nand\n```\nopen"
+        let blocks = FencedText.blocks(in: text)
+        #expect(blocks.count == 2)
+        let first = try #require(blocks.first)
+        #expect(text[first.range] == "```swift\nlet x = 1\n```")
+        #expect(text[first.contentRange] == "let x = 1")
+        #expect(first.language == "swift" && first.isClosed)
+        let last = try #require(blocks.last)
+        #expect(text[last.range] == "```\nopen")
+        #expect(text[last.contentRange] == "open")
+        #expect(!last.isClosed)
+        // A block with no code has an empty content range right after its opening line.
+        let empty = try #require(FencedText.blocks(in: "```\n```").first)
+        #expect(empty.contentRange.isEmpty)
+    }
+
+    @Test func inlineCodeFollowsCommonMarkSpans() {
+        let text = "Run `swift test` or ``a ` b``, not \\`this`, and `unmatched"
+        let spans = FencedText.inlineCode(in: text).map { String(text[$0]) }
+        #expect(spans == ["`swift test`", "``a ` b``"])
+    }
+
+    @Test func inlineCodeSkipsFencedBlocks() {
+        let text = "`one`\n```\n`not inline`\n```\n`two`"
+        #expect(FencedText.inlineCode(in: text).map { String(text[$0]) } == ["`one`", "`two`"])
+    }
 }

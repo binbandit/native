@@ -36,11 +36,13 @@ public struct TaskScript: Hashable, Sendable {
 
     func invocation(shell: String?) -> (executable: String, arguments: [String], input: Data?) {
         if let interpreter = Self.interpreter(of: text), let program = interpreter.first {
-            // The script goes into a temporary file the interpreter runs, removed when it's done. Its
-            // standard input is at its end by then, like a terminal's with nothing typed.
+            // The script goes into a temporary file the interpreter runs, removed when it's done, named
+            // after the repository's file so errors point at it ("setup.sh.Xa3b: line 5"). Its standard
+            // input is at its end by then, like a terminal's with nothing typed.
             let wrapper =
-                #"f=$(mktemp "${TMPDIR:-/tmp}/native-script.XXXXXX") || exit 70; trap 'rm -f "$f"' EXIT; trap 'exit 143' TERM INT HUP; cat > "$f"; "$@" "$f""#
-            return ("/bin/sh", ["-c", wrapper, "sh", program] + interpreter.dropFirst(), Data(text.utf8))
+                #"d=${TMPDIR:-/tmp}; f=$(mktemp "${d%/}/$1.XXXXXX") || exit 70; shift; trap 'rm -f "$f"' EXIT; trap 'exit 143' TERM INT HUP; cat > "$f"; "$@" "$f""#
+            let name = "\(event.rawValue).sh"
+            return ("/bin/sh", ["-c", wrapper, "sh", name, program] + interpreter.dropFirst(), Data(text.utf8))
         }
         let shell = shell.flatMap { $0.isEmpty ? nil : $0 } ?? "/bin/sh"
         return (shell, ["-c", text], nil)

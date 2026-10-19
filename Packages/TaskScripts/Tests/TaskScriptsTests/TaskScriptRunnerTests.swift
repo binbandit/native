@@ -68,6 +68,13 @@ struct TaskScriptRunnerTests {
         ) { chunk in output.withLock { $0.append(chunk) } }
         #expect(reports.map(\.result.outcome) == [.failed(exitCode: 4)])
         #expect(output.withLock(\.text) == "two setup\n")
+        // Errors name the event's file, not an anonymous temporary one.
+        let broken = Mutex(TaskScriptOutput())
+        _ = await fish.run(plan("#!/bin/bash\nset -u\necho $missing"), context: context(in: folder)) { chunk in
+            broken.withLock { $0.append(chunk) }
+        }
+        #expect(broken.withLock(\.text).contains("/setup.sh."))
+        #expect(!broken.withLock(\.text).contains("//"))
     }
 
     @Test func stopsAScriptThatRunsTooLongWithWhatItStarted() async throws {

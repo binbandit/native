@@ -8,42 +8,78 @@ public enum FencedTextSegment: Hashable, Sendable {
     case code(String, language: String?, isClosed: Bool)
 }
 
-/// Finds the fenced code blocks in a user's message the way CommonMark (and GitHub) does, so the
-/// composer and the transcript agree on what's code: a fence is a line of three or more backticks
-/// or tildes, indented at most three spaces, with an optional info string whose first word is the
-/// language; a line of the same character, at least as long, with nothing else on it closes it; and
-/// a fence that's never closed runs to the end of the message. Everything else stays plain text.
+/// One fenced code block, located in the text it came from.
+public struct FencedBlock: Hashable, Sendable {
+    /// From the start of the opening fence line to the end of the closing one (without its line
+    /// break), or to the end of the text when the block is never closed.
+    public var range: Range<String.Index>
+    /// The code between the fence lines, without the line breaks next to them.
+    public var contentRange: Range<String.Index>
+    /// The first word of the opening fence's info string.
+    public var language: String?
+    public var isClosed: Bool
+    /// The opening fence's indent, which each code line loses as much of as it has.
+    var indent: Int
+}
+
+/// Finds code in a user's message the way CommonMark (and GitHub) does, so the composer and the
+/// transcript agree on what's code. A fenced block opens at a line of three or more backticks or
+/// tildes, indented at most three spaces, with an optional info string whose first word is the
+/// language; it closes at a line of the same character, at least as long, with nothing else on it;
+/// a block that's never closed runs to the end of the message. Outside blocks, a run of backticks
+/// opens an inline code span that the next run of exactly as many closes. Everything else is plain
+/// text and stays exactly as typed.
 public enum FencedText {
-    public static func segments(of text: String) -> [FencedTextSegment] {
-        var segments: [FencedTextSegment] = []
-        var plain: [Substring] = []
-        var open: (fence: Fence, language: String?, lines: [Substring])?
-
-        func flushPlain() {
-            if !plain.isEmpty { segments.append(.text(plain.joined(separator: "\n"))) }
-            plain.removeAll()
-        }
-
-        for line in text.split(separator: "\n", omittingEmptySubsequences: false) {
+    public static func blocks(in text: String) -> [FencedBlock] {
+        var blocks: [FencedBlock] = []
+        var open: (fence: Fence, start: String.Index, contentStart: String.Index)?
+        var lineStart = text.startIndex
+        while true {
+            let lineEnd = text[lineStart...].firstIndex(of: "\n") ?? text.endIndex
+            let line = text[lineStart..<lineEnd]
+            let nextLine = lineEnd < text.endIndex ? text.index(after: lineEnd) : text.endIndex
             if let block = open {
                 if Fence(closing: line, for: block.fence) != nil {
-                    segments.append(
-                        .code(block.lines.joined(separator: "\n"), language: block.language, isClosed: true))
+                    // The code ends before the line break that precedes the closing fence.
+                    let contentEnd = lineStart > block.contentStart ? text.index(before: lineStart) : block.contentStart
+                    blocks.append(
+                        FencedBlock(
+                            range: block.start..<lineEnd, contentRange: block.contentStart..<contentEnd,
+                            language: block.fence.language, isClosed: true, indent: block.fence.indent))
                     open = nil
-                } else {
-                    open?.lines.append(Self.dedented(line, by: block.fence.indent))
                 }
             } else if let fence = Fence(opening: line) {
-                flushPlain()
-                open = (fence, fence.language, [])
-            } else {
-                plain.append(line)
+                open = (fence, lineStart, nextLine)
             }
+            guard lineEnd < text.endIndex else { break }
+            lineStart = nextLine
         }
         if let block = open {
-            segments.append(.code(block.lines.joined(separator: "\n"), language: block.language, isClosed: false))
+            blocks.append(
+                FencedBlock(
+                    range: block.start..<text.endIndex, contentRange: block.contentStart..<text.endIndex,
+                    language: block.fence.language, isClosed: false, indent: block.fence.indent))
         }
-        flushPlain()
+        return blocks
+    }
+
+    /// The text as plain pieces and code blocks, in order. Plain pieces leave out the line breaks
+    /// next to a fence, and empty ones are dropped.
+    public static func segments(of text: String) -> [FencedTextSegment] {
+        var segments: [FencedTextSegment] = []
+        var cursor = text.startIndex
+        func appendText(upTo end: String.Index) {
+            var piece = text[cursor..<end]
+            if piece.last == "\n" { piece = piece.dropLast() }
+            if !piece.isEmpty { segments.append(.text(String(piece))) }
+        }
+        for block in blocks(in: text) {
+            appendText(upTo: block.range.lowerBound)
+            segments.append(.code(code(of: block, in: text), language: block.language, isClosed: block.isClosed))
+            cursor = block.range.upperBound
+            if cursor < text.endIndex, text[cursor] == "\n" { cursor = text.index(after: cursor) }
+        }
+        appendText(upTo: text.endIndex)
         return segments
     }
 
@@ -52,15 +88,71 @@ public enum FencedText {
         text.split(separator: "\n", omittingEmptySubsequences: false).contains { Fence(opening: $0) != nil }
     }
 
-    /// Code lines lose up to the opening fence's own indent, as CommonMark has it.
-    private static func dedented(_ line: Substring, by indent: Int) -> Substring {
-        var line = line
-        var removed = 0
-        while removed < indent, line.first == " " {
-            line = line.dropFirst()
-            removed += 1
+    /// The inline code spans outside fenced blocks, each range covering its backticks. A run of
+    /// backticks no run of the same length closes stays plain text, and so does one after a
+    /// backslash.
+    public static func inlineCode(in text: String) -> [Range<String.Index>] {
+        var spans: [Range<String.Index>] = []
+        var regionStart = text.startIndex
+        for block in blocks(in: text) {
+            spans += inlineCode(in: text, within: regionStart..<block.range.lowerBound)
+            regionStart = block.range.upperBound
         }
-        return line
+        spans += inlineCode(in: text, within: regionStart..<text.endIndex)
+        return spans
+    }
+
+    private static func inlineCode(in text: String, within region: Range<String.Index>) -> [Range<String.Index>] {
+        var spans: [Range<String.Index>] = []
+        var index = region.lowerBound
+        while let opening = text[index..<region.upperBound].firstIndex(of: "`") {
+            if opening > region.lowerBound, text[text.index(before: opening)] == "\\" {
+                index = text.index(after: opening)
+                continue
+            }
+            let run = backtickRun(in: text, at: opening, before: region.upperBound)
+            var search = run.upperBound
+            var closing: Range<String.Index>?
+            while let next = text[search..<region.upperBound].firstIndex(of: "`") {
+                let candidate = backtickRun(in: text, at: next, before: region.upperBound)
+                if candidate.count(in: text) == run.count(in: text) {
+                    closing = candidate
+                    break
+                }
+                search = candidate.upperBound
+            }
+            if let closing {
+                spans.append(opening..<closing.upperBound)
+                index = closing.upperBound
+            } else {
+                index = run.upperBound
+            }
+        }
+        return spans
+    }
+
+    private static func backtickRun(
+        in text: String, at start: String.Index, before end: String.Index
+    ) -> Range<
+        String.Index
+    > {
+        let runEnd = text[start..<end].firstIndex { $0 != "`" } ?? end
+        return start..<runEnd
+    }
+
+    /// A block's code, each line losing up to the opening fence's own indent.
+    private static func code(of block: FencedBlock, in text: String) -> String {
+        guard block.indent > 0 else { return String(text[block.contentRange]) }
+        return text[block.contentRange]
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .map { line in line.dropFirst(min(block.indent, line.prefix { $0 == " " }.count)) }
+            .joined(separator: "\n")
+    }
+}
+
+private extension Range where Bound == String.Index {
+    func count(in text: String) -> Int {
+        text.distance(from: lowerBound, to: upperBound)
     }
 }
 
