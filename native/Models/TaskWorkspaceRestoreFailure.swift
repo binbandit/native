@@ -12,11 +12,19 @@ enum TaskWorkspaceRestoreFailure: LocalizedError, Hashable {
         let archivedEarly = "It was archived before Native kept a record of archived worktrees, and "
         return switch self {
         case .branchNotFound:
-            archivedEarly + "the branch it was on is gone: no branch, or copy Native keeps of a deleted one,"
-                + " matches it."
+            archivedEarly + "Native can't tell which branch it was on."
         case .branchAmbiguous(let names, _):
-            archivedEarly + "more than one branch could be the one it was on (\(names.joined(separator: ", ")))"
-                + ", so Native won't guess."
+            archivedEarly + "more than one branch could be the one it was on: \(names.joined(separator: ", "))."
+        }
+    }
+
+    /// What the user can do about it.
+    var suggestion: String {
+        switch self {
+        case .branchNotFound:
+            "Start it again in the project's folder."
+        case .branchAmbiguous:
+            "Start it again in the project's folder, or delete the branches it wasn't on and Retry."
         }
     }
 

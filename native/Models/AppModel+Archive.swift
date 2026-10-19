@@ -119,7 +119,7 @@ extension AppModel {
                     project: project, work: .workspaceRestore(key),
                     title: "Couldn't rebuild “\(titleOfSession(key))”'s worktree",
                     recovery: "The task is back with its conversation. " + (failure.errorDescription ?? "") + saved,
-                    suggestion: "Start it again in the project's folder, or check out its branch yourself and Retry.",
+                    suggestion: failure.suggestion,
                     alternative: .startInProjectFolder(key)))
             return
         }
