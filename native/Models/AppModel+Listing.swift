@@ -155,7 +155,7 @@ extension AppModel {
     /// Whether a project's sessions are still being found: no agent has listed it yet, and one is
     /// listing it, or starting and able to. Until then an empty project isn't known to be empty.
     func isFindingSessions(in project: Project.ID) -> Bool {
-        guard !agents.contains(where: { catalog.hasListed($0.agent.id, in: project) }) else { return false }
+        guard !catalog.hasListedAny(in: project) else { return false }
         if projectListingsInFlight[project, default: 0] > 0 || !hasCheckedAgents { return true }
         return agents.contains { runtime in
             runtime.status == .starting || (runtime.isReady && runtime.capabilities?.listSessions == true)

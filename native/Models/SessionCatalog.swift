@@ -74,6 +74,11 @@ final class SessionCatalog {
         listed[project]?[agent] != nil
     }
 
+    /// Whether any agent has ever listed `project`, so whether it has sessions is known.
+    func hasListedAny(in project: Project.ID) -> Bool {
+        listed[project]?.isEmpty == false
+    }
+
     /// Puts another session in a listed one's place, as when a crash takes one the agent never
     /// saved and Native starts a fresh one instead.
     func swap(_ key: SessionKey, for info: SessionInfo) {

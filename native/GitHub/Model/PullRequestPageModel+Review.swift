@@ -109,18 +109,33 @@ extension PullRequestPageModel {
         }
     }
 
-    /// "Merge When Ready" on a base with a merge queue: adds it to the queue.
+    /// "Merge When Ready" on a base with a merge queue: adds it to the queue, with an undo.
     func enqueue() async -> Bool {
-        await mergeWrite("Added to the merge queue") { cli, page in try await cli.enqueue(page) }
+        let base = page?.baseRefName ?? "the base"
+        let done = await mergeWrite("Added to the merge queue") { cli, page in try await cli.enqueue(page) }
+        if done {
+            undo = UndoToastItem("Added to \(base)'s merge queue") { [weak self] in
+                Task { _ = await self?.dequeue() }
+            }
+        }
+        return done
     }
 
     func dequeue() async -> Bool {
         await mergeWrite("Removed from the merge queue") { cli, page in try await cli.dequeue(page) }
     }
 
-    /// "Merge When Ready" without a queue: GitHub merges it once requirements pass.
+    /// "Merge When Ready" without a queue: GitHub merges it once requirements pass. With an undo.
     func enableAutoMerge(_ method: MergeMethod) async -> Bool {
-        await mergeWrite("Auto-merge on") { cli, page in try await cli.enableAutoMerge(page, method: method) }
+        let done = await mergeWrite("Auto-merge on") { cli, page in
+            try await cli.enableAutoMerge(page, method: method)
+        }
+        if done {
+            undo = UndoToastItem("Auto-merge on: it merges when checks pass") { [weak self] in
+                Task { _ = await self?.disableAutoMerge() }
+            }
+        }
+        return done
     }
 
     func disableAutoMerge() async -> Bool {

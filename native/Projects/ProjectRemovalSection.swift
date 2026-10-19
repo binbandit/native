@@ -50,7 +50,7 @@ struct ProjectRemovalSection: View {
                 SettingsRow(
                     id: rows.remove, "Remove \(project.name) from Native",
                     description: Text(
-                        "Native forgets the project and removes the task worktrees it made. \(project.url.abbreviatedPath) and everything in it stay where they are. You can undo for a few seconds."
+                        "Native forgets the project and removes the task worktrees it made. Its folder and everything in it stay where they are. You can undo for a few seconds."
                     )
                 ) {
                     Button("Remove Project…", role: .destructive) { isConfirmingRemoval = true }

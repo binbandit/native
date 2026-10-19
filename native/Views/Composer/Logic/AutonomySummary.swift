@@ -13,15 +13,15 @@ enum AutonomySummary {
 
     private static let known: [String: String] = [
         // Codex
-        "read-only": "Read only: looks around, asks before any edit or network use",
+        "read-only": "Looks around, never changes anything without asking",
         "workspace-write": "Edits files in the project, asks before anything outside it",
         "agent": "Does most things, asks only when something looks risky",
-        "agent-full-access": "Full access: does everything without asking, anywhere on this Mac",
+        "agent-full-access": "Does everything without asking, anywhere on this Mac",
         // Claude Code
-        "default": "Ask: asks before edits and commands",
-        "acceptEdits": "Auto edits: edits files, asks before commands",
+        "default": "Asks before edits and commands",
+        "acceptEdits": "Edits files, asks before commands",
         "auto": "Decides for itself, asks only when something looks risky",
-        "dontAsk": "Never asks: does only what's already allowed, refuses the rest",
-        "bypassPermissions": "Full access: does everything without asking",
+        "dontAsk": "Never asks: does only what’s already allowed, refuses the rest",
+        "bypassPermissions": "Does everything without asking",
     ]
 }

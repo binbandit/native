@@ -16,6 +16,8 @@ struct PullRequestAskPanel: View {
             SeparatorLine()
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                // Above the composer, not over it.
+                .undoToast($conversation.undo)
             VStack(spacing: DS.Space.md) {
                 if let failure = conversation.failure {
                     PullRequestAskFailureView(conversation: conversation, failure: failure)
@@ -25,7 +27,6 @@ struct PullRequestAskPanel: View {
             .padding(DS.Space.md)
         }
         .background(.dsBackground)
-        .undoToast($conversation.undo)
         .task(id: conversation.reference) { await conversation.restore() }
     }
 

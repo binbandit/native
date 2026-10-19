@@ -57,12 +57,6 @@ struct MergePullRequestSheet: View {
 
     @ViewBuilder private func content(_ page: PullRequestPage, plan: PullRequestMergePlan) -> some View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
-            HStack(spacing: DS.Space.xs) {
-                BranchChip(name: page.headRefName)
-                Image(systemName: "arrow.right")
-                    .foregroundStyle(.dsTextTertiary)
-                BranchChip(name: page.baseRefName)
-            }
             PullRequestPageStatusLine(page: page, compact: true)
             if let state = plan.state {
                 arranged(state, plan: plan)

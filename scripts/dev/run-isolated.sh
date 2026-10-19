@@ -104,10 +104,11 @@ reset | remove)
 esac
 
 if [ "$build" = 1 ]; then
-    # Incremental, so an unchanged tree reuses the last build.
+    # Incremental, so an unchanged tree reuses the last build. Package versions come from Package.resolved
+    # without asking the remotes, so a build works offline and doesn't wait on the network.
     log="$derived/build.log"
     mkdir -p "$derived"
-    if ! xcodebuild -project "$root/native.xcodeproj" -scheme native -configuration Debug \
+    if ! xcodebuild -project "$root/native.xcodeproj" -scheme native -configuration Debug -skipPackageUpdates \
         -derivedDataPath "$derived" NATIVE_BUNDLE_IDENTIFIER_SUFFIX=".dev.$name" build >"$log" 2>&1; then
         grep -E "^/.*error:" "$log" | sort -u | head -20 >&2
         echo "build failed; full log: $log" >&2
