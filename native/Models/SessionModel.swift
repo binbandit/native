@@ -107,8 +107,9 @@ final class SessionModel {
         didSet {
             if oldValue == .loading {
                 announceReplay()
-                // Drops what `shownConfigOptions` showed while it loaded.
-                mirrorState()
+                // Drops what `shownConfigOptions` showed while it loaded, without taking the agent's
+                // values as chosen: a load that failed or was cut off restores again next time.
+                if configOptions != transcript.configOptions { configOptions = transcript.configOptions }
             }
         }
     }
