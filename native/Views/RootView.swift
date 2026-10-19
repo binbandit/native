@@ -49,7 +49,9 @@ struct RootView: View {
                 }
                 // Over the content, so the toast clears the status bar.
                 .undoToast($undoToast)
-            StatusBar(registry: statusBar)
+            if !UserDefaults.standard.bool(forKey: "launchperf.noStatusBar") {  // TEMPORARY A/B
+                StatusBar(registry: statusBar)
+            }
         }
         // After an update with highlights, once nothing waits on the user.
         .whatsNewSheet(whatsNew, blocked: model.hasWorkNeedingUser)
@@ -263,7 +265,15 @@ struct RootView: View {
         }
     }
 
-    private var sidebar: some View {
+    @ViewBuilder private var sidebar: some View {
+        if UserDefaults.standard.bool(forKey: "launchperf.noSidebar") {  // TEMPORARY A/B
+            Color.clear
+        } else {
+            realSidebar
+        }
+    }
+
+    private var realSidebar: some View {
         SidebarView {
             TranscriptSearchNavItem()
             PullRequestsNavItem(isSelected: showsPullRequests) { showsPullRequests = true }
@@ -329,7 +339,11 @@ struct RootView: View {
                 openingSession(key)
             }
         } else {
-            HomeDetail()
+            if UserDefaults.standard.bool(forKey: "launchperf.noHome") {  // TEMPORARY A/B
+                Color.clear
+            } else {
+                HomeDetail()
+            }
         }
     }
 

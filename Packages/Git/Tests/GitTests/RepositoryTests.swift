@@ -94,6 +94,24 @@ struct RepositoryTests {
         #expect(status.totals == LineStats(additions: 4, deletions: 1))
     }
 
+    @Test func anEditKeepingItsLineCountsShowsOnlyInTheContent() async throws {
+        let test = try await TestRepository.make()
+        defer { test.remove() }
+        let repository = try await test.repository
+        try test.write("README.md", "# Test\n\nfarewell\n")
+        let before = try await repository.status()
+        let beforeVersions = try await repository.versions(of: try #require(before.unstaged.first))
+
+        try test.write("README.md", "# Test\n\ngoodbye\n")
+        let after = try await repository.status()
+        let afterVersions = try await repository.versions(of: try #require(after.unstaged.first))
+
+        #expect(after == before)
+        #expect(afterVersions.fingerprint != beforeVersions.fingerprint)
+        let again = try await repository.versions(of: try #require(after.unstaged.first))
+        #expect(again.fingerprint == afterVersions.fingerprint)
+    }
+
     @Test func versionsOfEachArea() async throws {
         let test = try await TestRepository.make()
         defer { test.remove() }

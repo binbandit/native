@@ -16,12 +16,14 @@ extension Repository {
     ///    for a pull request's worktree), which a branch renamed after its title keeps in its reflog.
     /// 2. The task's title, which renamed it.
     /// 3. Being the only branch at the commit the checkpoint was made on.
-    /// More than one branch with the same evidence is ambiguous.
+    /// More than one branch with the same evidence is ambiguous. `isSameFolder` compares the
+    /// folder with the one a checkpoint names, as git spelled it (`/private/tmp/x` for `/tmp/x`).
     public func rebuildArchivedWorktree(
-        at path: URL, title: String?, archivedAt: Date?
+        at path: URL, title: String?, archivedAt: Date?,
+        isSameFolder: (_ path: String, _ named: String) -> Bool = { $0 == $1 }
     ) async throws(GitError) -> RebuiltArchivedWorktree {
         let folderName = path.lastPathComponent
-        let checkpoint = try await archiveCheckpoint(of: path, since: archivedAt)
+        let checkpoint = try await archiveCheckpoint(of: path, since: archivedAt, isSameFolder: isSameFolder)
         var base: String?
         if let checkpoint {
             base = try await resolve("\(checkpoint.commit)^1")
@@ -69,10 +71,12 @@ extension Repository {
     // MARK: - Helpers
 
     /// The newest checkpoint archiving made of the folder at `path`, no earlier than `archivedAt`.
-    private func archiveCheckpoint(of path: URL, since archivedAt: Date?) async throws(GitError) -> Checkpoint? {
+    private func archiveCheckpoint(
+        of path: URL, since archivedAt: Date?, isSameFolder: (String, String) -> Bool
+    ) async throws(GitError) -> Checkpoint? {
         var spelling = path.standardizedFileURL.path(percentEncoded: false)
         if spelling.count > 1, spelling.hasSuffix("/") { spelling.removeLast() }
-        let messages: Set = ["Native checkpoint of \(spelling)", "Native checkpoint of \(spelling)/"]
+        let messagePrefix = "Native checkpoint of "
         let prefix = "refs/native-checkpoints/\(Worktree.slug(path.lastPathComponent, maxLength: 60))-"
         let output = try await run(
             [
@@ -84,9 +88,12 @@ extension Repository {
         let earliest = archivedAt.map { $0.timeIntervalSince1970.rounded(.down) } ?? 0
         for line in output.text.split(separator: "\n") {
             let fields = line.split(separator: "\0", omittingEmptySubsequences: false).map(String.init)
-            guard fields.count == 4, fields[0].hasPrefix(prefix), messages.contains(fields[3]),
+            guard fields.count == 4, fields[0].hasPrefix(prefix), fields[3].hasPrefix(messagePrefix),
                 let time = Double(fields[2]), time >= earliest
             else { continue }
+            var named = String(fields[3].dropFirst(messagePrefix.count))
+            if named.count > 1, named.hasSuffix("/") { named.removeLast() }
+            guard isSameFolder(spelling, named) else { continue }
             return Checkpoint(reference: fields[0], commit: fields[1])
         }
         return nil

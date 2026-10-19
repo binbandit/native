@@ -20,6 +20,15 @@ public struct FileVersions: Hashable, Sendable {
     public var oldText: String? { old.map { String(decoding: $0, as: UTF8.self) } }
     public var newText: String? { new.map { String(decoding: $0, as: UTF8.self) } }
 
+    /// Both sides' bytes hashed, to tell whether a file changed when its status didn't: an edit
+    /// can keep its line counts, like renaming a word. Comparable within one process only.
+    public var fingerprint: Int {
+        var hasher = Hasher()
+        hasher.combine(old)
+        hasher.combine(new)
+        return hasher.finalize()
+    }
+
     /// The larger side's size in bytes.
     public var size: Int { max(old?.count ?? 0, new?.count ?? 0) }
 

@@ -362,7 +362,8 @@ them. Composer keys in `native/Views/Composer*`; permission keys in
 `native/Views/Transcript/ToolPermissionButtons.swift`; sidebar keys in `SidebarView`; Settings keys in
 `SettingsScreen` and `SettingsSearchField`; search panel keys in `TranscriptSearchPanel`; terminal commands in
 `native/Terminal/Views/TerminalCommands.swift`; project action commands in
-`native/ProjectActions/Commands/ProjectActionCommands.swift`; keys inside a terminal in
+`native/ProjectActions/Commands/ProjectActionCommands.swift`; mode commands in
+`native/Modes/Commands/ModeCommands.swift`; keys inside a terminal in
 `GhosttyConfiguration.keybinds` (`Packages/Terminal`). Change a key here first, then in code.
 
 ## Celebrations

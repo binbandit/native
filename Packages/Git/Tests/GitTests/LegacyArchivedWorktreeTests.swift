@@ -86,9 +86,12 @@ private struct LegacyArchive {
 
     static func make(folder: String, renamedTo name: String?) async throws -> LegacyArchive {
         let test = try await TestRepository.make()
-        let path = test.folder.deletingLastPathComponent().appending(
+        let requested = test.folder.deletingLastPathComponent().appending(
             path: "worktrees/repo/\(folder)", directoryHint: .isDirectory)
-        try await test.git("worktree", "add", "--quiet", "-b", "me/\(folder)", path.path(percentEncoded: false))
+        try await test.git("worktree", "add", "--quiet", "-b", "me/\(folder)", requested.path(percentEncoded: false))
+        // As git spells it (`/private/var/…`), which its checkpoint names; the app compares spellings.
+        let toplevel = try await test.git("rev-parse", "--show-toplevel", in: requested)
+        let path = URL(filePath: toplevel.trimmingCharacters(in: .whitespacesAndNewlines), directoryHint: .isDirectory)
         if let name {
             try await test.git("branch", "--move", "me/\(folder)", name)
         }
