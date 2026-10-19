@@ -71,8 +71,12 @@ struct ModesSettingsPage: View {
             SettingsRowGroup {
                 ForEach(Mode.builtIn) { mode in
                     modeRow(mode) {
-                        Button("Duplicate") { editing = .copy(mode) }
-                            .disabled(mode.instructions.isEmpty)
+                        if mode.instructions.isEmpty {
+                            // Build: nothing to copy.
+                            SettingsValue("No instructions")
+                        } else {
+                            Button("Duplicate") { editing = .copy(mode) }
+                        }
                     }
                 }
             }
@@ -113,7 +117,6 @@ struct ModesSettingsPage: View {
                     .buttonStyle(.ds(.secondary))
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, DS.Space.xl)
         } else {
             SettingsRowGroup {
                 ForEach(library.custom) { mode in

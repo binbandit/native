@@ -182,16 +182,15 @@ private final class PipeReader: Sendable {
 ///
 /// libdispatch watches a channel's descriptor until just before the channel's cleanup handler runs.
 /// Closed any earlier, the watch vanishes and libdispatch traps ("Unexpected EV_VANISHED"), or, once
-/// the number is reused, acts on someone else's file. The pipe's `FileHandle` would close it as soon as
-/// the handle was released, so the channel gets a copy instead, closes it from that handler, and the
-/// handle is closed straight away: the copy is then this process's only descriptor for the pipe end,
-/// so a reader still sees end of file when the command exits, and the command sees it when its input
-/// is closed.
+/// the number is reused, acts on someone else's file. A pipe's `FileHandle` closes its descriptor
+/// whenever the handle is released, so the channel gets a copy that only its cleanup handler closes,
+/// and the handle is closed right away. The copy is then this process's only descriptor for the pipe
+/// end, so end of file still arrives when it should, in both directions.
 private struct PipeEnd: ~Copyable {
     private let descriptor: Int32
 
     init(_ handle: FileHandle) throws {
-        // Close-on-exec, like the original, so no other command we start inherits the pipe.
+        // Close-on-exec, so nothing else this process starts can inherit the pipe and hold it open.
         let descriptor = fcntl(handle.fileDescriptor, F_DUPFD_CLOEXEC, 0)
         let error = errno
         try? handle.close()

@@ -55,9 +55,15 @@ import Testing
         #expect(!PromptCode.isInCode(end, in: after))
     }
 
-    @Test func rangesCoverBlocksWithTheirFencesAndInlineSpansWithTheirBackticks() {
-        let text = "Run `make`:\n```sh\nmake all\n```\ndone"
-        #expect(PromptCode.ranges(in: text).map { String(text[$0]) }.sorted() == ["```sh\nmake all\n```", "`make`"])
+    @Test func runsCoverBlocksTheirFenceLinesAndInlineSpans() {
+        let text = "Run `make`:\n```sh\nmake all\n```\ndone\n~~~\nopen"
+        let runs = PromptCode.runs(in: text).map { "\($0.kind): \(text[$0.range])" }
+        #expect(
+            runs == [
+                "block: ```sh\nmake all\n```", "fence: ```sh", "fence: ```",
+                "block: ~~~\nopen", "fence: ~~~",  // an unclosed block has no closing fence
+                "inline: `make`",
+            ])
     }
 
     @Test func returnKeepsTheLinesIndentation() throws {

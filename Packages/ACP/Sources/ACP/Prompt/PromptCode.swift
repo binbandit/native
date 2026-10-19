@@ -21,10 +21,29 @@ public enum PromptCode {
             || FencedText.inlineCode(in: text).contains { $0.lowerBound < cursor && cursor < $0.upperBound }
     }
 
-    /// What the composer sets as code: every fenced block, fence lines included, and every inline
-    /// span, backticks included.
-    public static func ranges(in text: String) -> [Range<String.Index>] {
-        FencedText.blocks(in: text).map(\.range) + FencedText.inlineCode(in: text)
+    /// A stretch of the draft the composer sets as code.
+    public struct Run: Hashable, Sendable {
+        public enum Kind: Hashable, Sendable {
+            /// A whole fenced block, fence lines included.
+            case block
+            /// A block's opening or closing fence line.
+            case fence
+            /// An inline span, backticks included.
+            case inline
+        }
+
+        public var range: Range<String.Index>
+        public var kind: Kind
+    }
+
+    /// What the composer sets as code: each fenced block and its fence lines, and each inline span.
+    public static func runs(in text: String) -> [Run] {
+        FencedText.blocks(in: text).flatMap { block in
+            let opener = block.range.lowerBound..<lineEnd(of: block.range.lowerBound, in: text)
+            let closer = lineStart(of: block.range.upperBound, in: text)..<block.range.upperBound
+            return [Run(range: block.range, kind: .block), Run(range: opener, kind: .fence)]
+                + (block.isClosed ? [Run(range: closer, kind: .fence)] : [])
+        } + FencedText.inlineCode(in: text).map { Run(range: $0, kind: .inline) }
     }
 
     /// Return in a block: the selection becomes a line break, and the new line starts with the

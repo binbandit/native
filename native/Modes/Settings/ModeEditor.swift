@@ -74,11 +74,11 @@ struct ModeEditor: View {
             }
             HStack(alignment: .top, spacing: DS.Space.lg) {
                 field("Name") {
-                    TextField("Security Review", text: $draft.name)
+                    TextField("Write Docs", text: $draft.name)
                         .settingsField()
                 }
                 field("Description") {
-                    TextField("Looks for security problems in the changes", text: $draft.summary)
+                    TextField("What it's for, in a line", text: $draft.summary)
                         .settingsField()
                 }
             }
