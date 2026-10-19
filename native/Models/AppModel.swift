@@ -363,7 +363,8 @@ final class AppModel {
     /// yet) and so can't reopen. Internal only for AppModel+Recovery.swift.
     func replaceEmptySession(_ old: SessionModel, on runtime: AgentRuntime) async -> SessionModel? {
         let project = catalog.lookup(old.key)?.project
-        guard let session = try? await launcher.start(on: runtime, cwd: old.cwd, project: project) else { return nil }
+        guard let session = try? await launcher.start(on: runtime, cwd: old.cwd, project: project, continuing: old)
+        else { return nil }
         await session.adoptConfigChoices(of: old)
         session.draft = old.draft
         catalog.swap(old.key, for: SessionInfo(sessionId: session.id, cwd: old.cwd.folderPath, updatedAt: .now))

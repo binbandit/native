@@ -146,8 +146,8 @@ processes() {
 # Launch: the first launch after a build is the coldest this can get without sudo (no `purge`);
 # the rest are warm.
 echo "== launch (ms from process start)"
-printf "%-6s %8s %10s %18s %11s %14s %17s\n" run appInit firstFrame sidebarInteractive agentsReady \
-    "main cpu@frame" "process cpu@frame"
+printf "%-6s %8s %10s %18s %11s %14s %17s %15s\n" run appInit firstFrame sidebarInteractive agentsReady \
+    "main cpu@frame" "process cpu@frame" "main Minstr@frame"
 [ "$build" = 1 ] && "$run" "$name" --build >/dev/null
 for ((i = 1; i <= launches; i++)); do
     # Quit first, so the fixture's tasks aren't saved over as the last launch quits.
@@ -168,8 +168,10 @@ for ((i = 1; i <= launches; i++)); do
     wait "$stream" 2>/dev/null || true
     label=$([ "$i" = 1 ] && [ "$build" = 1 ] && echo cold || echo "warm$i")
     cpu() { grep -F "Native[$pid:" "$log" | grep -oE "launch firstFrame .* $1 [0-9]+ ms cpu" | grep -oE "$1 [0-9]+" | awk '{ print $2 }'; }
-    printf "%-6s %8s %10s %18s %11s %14s %17s\n" "$label" "$(value appInit)" "$(value firstFrame)" \
-        "$(value sidebarInteractive)" "$(value agentsReady)" "$(cpu main)" "$(cpu process)"
+    # Instructions the main thread ran: the same work costs the same count on any core.
+    instructions() { grep -F "Native[$pid:" "$log" | grep -oE "launch firstFrame .* [0-9]+ M instructions on main" | grep -oE "[0-9]+ M instructions" | awk '{ print $1 }'; }
+    printf "%-6s %8s %10s %18s %11s %14s %17s %15s\n" "$label" "$(value appInit)" "$(value firstFrame)" \
+        "$(value sidebarInteractive)" "$(value agentsReady)" "$(cpu main)" "$(cpu process)" "$(instructions)"
     rm -f "$log"
 done
 

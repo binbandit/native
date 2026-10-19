@@ -1,7 +1,8 @@
 import ACP
 
 /// The session settings the composer's controls show, picked out by their ACP category and read the
-/// way the controls row presents them: a model with an effort meter, an autonomy meter, and Plan Mode.
+/// way the controls row presents them: a model with an effort meter and an autonomy meter. Plan Mode
+/// is found so it stays out of the plain menus; the Mode pill (native/Modes) is what turns it on.
 /// Every method answers which setting to change to what; the view applies it.
 struct ComposerSettings: Equatable {
     struct Change: Equatable {
@@ -72,18 +73,5 @@ struct ComposerSettings: Equatable {
         let allowed = autonomyLevels.filter { !PolicyPermissionModes.forbids(autonomy.option, value: $0.value) }
         guard let next = autonomy.next(in: allowed) else { return nil }
         return Change(setting: autonomy, value: next.value)
-    }
-
-    /// Turns Plan Mode on, or off again. Leaving it as a permission mode restores `resumedAutonomy`,
-    /// the level from before it started.
-    func togglingPlan(resumedAutonomy: String?) -> Change? {
-        guard let plan else { return nil }
-        guard plan.isOn else { return Change(setting: plan.setting, value: plan.plan.value) }
-        let levels =
-            plan.setting.option.id == autonomy?.option.id
-            ? autonomyLevels
-            : plan.setting.choices.filter { $0.value != plan.plan.value }
-        let off = levels.first { $0.value == resumedAutonomy } ?? levels.first
-        return off.map { Change(setting: plan.setting, value: $0.value) }
     }
 }

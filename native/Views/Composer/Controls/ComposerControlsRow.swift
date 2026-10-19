@@ -1,8 +1,8 @@
 import ACP
 import SwiftUI
 
-/// The composer's bottom row: attach, model with its effort meter, autonomy and plan
-/// mode leading; the follow-up hint (while it fits) and context usage trailing. As room runs
+/// The composer's bottom row: attach, model with its effort meter, autonomy and the task's mode
+/// leading; the follow-up hint (while it fits) and context usage trailing. As room runs
 /// out, labels give way to icons and controls move into a More menu (`ComposerControlDensity`).
 struct ComposerControlsRow<Extras: View, Context: View>: View {
     let settings: ComposerSettings
@@ -17,7 +17,8 @@ struct ComposerControlsRow<Extras: View, Context: View>: View {
     let onAttach: (IncomingAttachments) -> Void
     let onSet: (SelectSetting, String) -> Void
     let onCycleEffort: () -> Void
-    let onTogglePlan: () -> Void
+    /// The task's mode (Build, Plan, Ask…), from the Modes feature.
+    let mode: TaskModeControl?
     /// Other features' controls, after the composer's own (the goal pill), at the row's density.
     @ViewBuilder let extras: (ComposerControlDensity) -> Extras
     /// The context-window indicator, from the Usage feature, at the row's density.
@@ -57,24 +58,13 @@ struct ComposerControlsRow<Extras: View, Context: View>: View {
                     level: settings.shownAutonomyLevel(resumed: resumedAutonomy),
                     isSuspended: settings.isAutonomySuspended,
                     agentName: agentName,
-                    plan: settings.plan,
                     showsIcon: density.showsIcons,
-                    onSet: onSet,
-                    onTogglePlan: onTogglePlan
+                    onSet: onSet
                 )
             }
             if density == .regular || density == .compact {
-                if let plan = settings.plan {
-                    Button(action: onTogglePlan) {
-                        if density.showsIcons {
-                            Label("Plan Mode", systemImage: "list.bullet.clipboard")
-                        } else {
-                            Text("Plan Mode")
-                        }
-                    }
-                    .buttonStyle(.pill(isOn: plan.isOn, isSquare: density.showsIcons))
-                    .help(plan.plan.description ?? "Plan before making changes")
-                    .accessibilityAddTraits(plan.isOn ? .isSelected : [])
+                if let mode {
+                    ModePill(control: mode, showsIcon: density.showsIcons)
                 }
                 ForEach(settings.others, id: \.option.id) { setting in
                     SettingMenuPill(setting: setting, onSet: onSet)
@@ -87,7 +77,7 @@ struct ComposerControlsRow<Extras: View, Context: View>: View {
                     includesModel: density == .minimal,
                     isModelPickerOpen: $isModelPickerOpen,
                     onSet: onSet,
-                    onTogglePlan: onTogglePlan
+                    mode: mode
                 )
             }
         } trailing: {

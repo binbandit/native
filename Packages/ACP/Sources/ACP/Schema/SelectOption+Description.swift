@@ -1,3 +1,5 @@
+import Foundation
+
 extension ConfigOption.SelectOption {
     /// The description without a leading "<name>:" that restates the option's name ("Read Only: looks
     /// around…" for "Read-only"), for showing under the name. Case, spaces and hyphens don't count

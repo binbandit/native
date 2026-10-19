@@ -33,11 +33,12 @@ final class SessionLauncher {
     }
 
     /// Starts a session in `cwd`, on what new sessions in `project` start on (`AgentSessionDefaults`).
-    /// A task session's `parent` adopts it as a subagent. The agent's error comes through as is, so
-    /// callers can tell when it wants the user to sign in.
+    /// A task session's `parent` adopts it as a subagent. `earlier` is the conversation a user's task
+    /// carries on from (`/clear`). The agent's error comes through as is, so callers can tell when it
+    /// wants the user to sign in.
     func start(
         on runtime: AgentRuntime, cwd: URL, project: Project.ID?, origin: SessionModel.Origin = .user,
-        parent: SessionModel? = nil
+        parent: SessionModel? = nil, continuing earlier: SessionModel? = nil
     ) async throws -> SessionModel {
         guard let connection = runtime.connection else {
             throw LaunchError.agentUnavailable(runtime.agent.displayName)
@@ -61,6 +62,10 @@ final class SessionLauncher {
         store.register(session)
         AgentSessionDefaults.remember(session.state.configOptions, for: runtime.agent.id)
         await AgentSessionDefaults.apply(to: session, project: project)
+        if origin == .user, parent == nil {
+            // After the defaults, so what the task starts in (its mode) wins over them.
+            await services.hooks.taskStarted(session, earlier)
+        }
         services.post(.sessionStarted(session.context))
         return session
     }

@@ -30,14 +30,15 @@ struct MessageView: View, Equatable {
                 }
                 if !message.text.isEmpty {
                     TrailingFractionLayout(fraction: 0.85) {
-                        // Prompts are shown as typed; Markdown syntax in them stays literal.
-                        Text(verbatim: message.text)
+                        // Prompts are shown as typed: only their code reads as code.
+                        let bubble = RoundedRectangle(
+                            cornerRadius: TranscriptMetrics.promptBubbleRadius, style: .continuous)
+                        UserMessageText(text: message.text)
                             .textSelection(.enabled)
                             .padding(.horizontal, DS.Space.lg)
                             .padding(.vertical, DS.Space.md)
-                            .background(
-                                .dsFill,
-                                in: .rect(cornerRadius: TranscriptMetrics.promptBubbleRadius, style: .continuous))
+                            .background(.dsFill, in: bubble)
+                            .containerShape(bubble)
                     }
                 }
             }

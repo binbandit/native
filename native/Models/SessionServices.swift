@@ -13,4 +13,6 @@ struct SessionServices {
     /// Tells the app a session has a title of Native's or the user's now, so the folder made for it
     /// can be named after it.
     let titleLanded: (SessionKey, URL, String) -> Void
+    /// How features take part in every session's turns, set once at launch.
+    let hooks = SessionHooks()
 }

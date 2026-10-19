@@ -12,7 +12,10 @@ extension SessionModel {
     /// to the organization's policy, which wins over any choice. What couldn't come back is said
     /// once, in one quiet notice.
     func restoreConfigChoices() async {
-        await setBackConfigChoices { $0.phase == .loading }
+        // Read again each time: the user may change a setting while the session loads.
+        await setBackConfigChoices(from: { $0.services.titles.configChoices(for: $0.titleKey) }) {
+            $0.phase == .loading
+        }
     }
 
     /// Takes on the settings chosen in `old`, a session this one replaces because its agent never
@@ -20,7 +23,9 @@ extension SessionModel {
     func adoptConfigChoices(of old: SessionModel) async {
         let chosen = services.titles.configChoices(for: old.titleKey)
         services.titles.updateConfigChoices(for: titleKey) { $0.adopt(chosen) }
-        await setBackConfigChoices { $0.phase != .disconnected }
+        // From what `old` chose: this session's own record follows each of the agent's answers
+        // meanwhile (setting the model resets the effort), since it isn't loading.
+        await setBackConfigChoices(from: { _ in chosen }) { $0.phase != .disconnected }
     }
 
     /// The options to show for `reported`, the agent's: while the session loads, as restoring will
@@ -31,17 +36,18 @@ extension SessionModel {
             .preview(reported) { !PolicyPermissionModes.forbids($0, value: $1) }
     }
 
-    /// Sets each chosen setting back, for as long as `isOpen` holds (the agent may go away; then
-    /// reopening the session restores again).
-    private func setBackConfigChoices(while isOpen: (SessionModel) -> Bool) async {
+    /// Sets each of the `chosen` settings back, for as long as `isOpen` holds (the agent may go
+    /// away; then reopening the session restores again).
+    private func setBackConfigChoices(
+        from chosen: (SessionModel) -> ConfigChoices, while isOpen: (SessionModel) -> Bool
+    ) async {
         var notes: [String] = []
         var forbidden: [(id: String, choice: ConfigChoices.Choice)] = []
-        for id in services.titles.configChoices(for: titleKey).restoreOrder(in: state.configOptions) {
+        for id in chosen(self).restoreOrder(in: state.configOptions) {
             guard isOpen(self) else { return }
-            // Read again each time: the user may have changed it meanwhile, and an earlier change
-            // (the model) can change what this option offers.
-            let choices = services.titles.configChoices(for: titleKey)
-            switch choices.restoration(
+            // Against the options as they are now: an earlier change (the model) can change what
+            // this one offers.
+            switch chosen(self).restoration(
                 of: id, in: state.configOptions, allows: { !PolicyPermissionModes.forbids($0, value: $1) })
             {
             case .set(let option, let value)?:

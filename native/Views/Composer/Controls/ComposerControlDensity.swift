@@ -3,9 +3,9 @@
 enum ComposerControlDensity: CaseIterable {
     /// Every control with its label.
     case regular
-    /// Autonomy, Plan Mode and the goal as icons, and context usage as a ring.
+    /// Autonomy, the mode and the goal as icons, and context usage as a ring.
     case compact
-    /// Plan Mode and the agent's other settings move to the More menu, which also lists the shortcuts.
+    /// The mode and the agent's other settings move to the More menu, which also lists the shortcuts.
     case overflow
     /// The model and autonomy move to the More menu too, leaving attach, the goal and More.
     case minimal

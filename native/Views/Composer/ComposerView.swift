@@ -240,7 +240,7 @@ struct ComposerView: View {
                 onAttach: attach,
                 onSet: set,
                 onCycleEffort: { apply(settings.nextEffort) },
-                onTogglePlan: { apply(settings.togglingPlan(resumedAutonomy: autonomyBeforePlan)) },
+                mode: TaskModeControl(session: session),
                 extras: { density in SessionGoalControl(session: session, showsIcon: density.showsIcons) },
                 context: { density in
                     // The session's MCP servers sit beside the context ring, quiet like it.

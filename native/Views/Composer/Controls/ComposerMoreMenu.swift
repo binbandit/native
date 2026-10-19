@@ -1,8 +1,8 @@
 import ACP
 import SwiftUI
 
-/// The "…" chip that takes the controls the row has no room for: Plan Mode and the agent's other
-/// settings, and at the tightest the model and autonomy too, plus the keyboard shortcuts (Help ▸
+/// The "…" chip that takes the controls the row has no room for: the task's mode and the agent's
+/// other settings, and at the tightest the model and autonomy too, plus the keyboard shortcuts (Help ▸
 /// Keyboard Shortcuts). The model picker opens from it then, so ⇧⌘E still has somewhere to show it.
 struct ComposerMoreMenu: View {
     let settings: ComposerSettings
@@ -10,7 +10,7 @@ struct ComposerMoreMenu: View {
     let includesModel: Bool
     @Binding var isModelPickerOpen: Bool
     let onSet: (SelectSetting, String) -> Void
-    let onTogglePlan: () -> Void
+    let mode: TaskModeControl?
 
     @Environment(CommandRegistry.self) private var commands
     @FocusedCommandContext private var context
@@ -28,8 +28,8 @@ struct ComposerMoreMenu: View {
                 }
                 Divider()
             }
-            if let plan = settings.plan {
-                Toggle("Plan Mode", isOn: Binding(get: { plan.isOn }, set: { _ in onTogglePlan() }))
+            if let mode {
+                ModeMenu(control: mode)
             }
             ForEach(settings.others, id: \.option.id) { setting in
                 Picker(setting.option.name, selection: Binding(get: { setting.value }, set: { onSet(setting, $0) })) {

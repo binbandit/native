@@ -9,9 +9,6 @@ enum AutonomySummary {
         known[choice.value] ?? choice.descriptionWithoutName
     }
 
-    /// The plain words for Plan Mode, which suspends the level while it's on.
-    static let planMode = "Plans first and changes nothing until you approve the plan"
-
     private static let known: [String: String] = [
         // Codex
         "read-only": "Looks around, never changes anything without asking",

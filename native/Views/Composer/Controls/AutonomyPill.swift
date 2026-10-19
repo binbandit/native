@@ -5,18 +5,16 @@ import SwiftUI
 /// The agent's permission mode: its name and an autonomy meter, or just the meter (with a shield)
 /// when the composer is short of room. A click opens `AutonomyPicker`, listing every level with what
 /// the agent may do without asking; ⇧⌘M steps to the next. When Plan Mode stands in for the
-/// permission mode, the meter dims and shows the level that resumes afterwards.
+/// permission mode (a mode that uses it), the meter dims and shows the level that resumes afterwards.
 struct AutonomyPill: View {
     let setting: SelectSetting
     let levels: [SelectSetting.Choice]
     let level: Int
     let isSuspended: Bool
     let agentName: String
-    let plan: PlanToggle?
     /// The shield in place of the name, when the composer is short of room.
     var showsIcon = false
     let onSet: (SelectSetting, String) -> Void
-    let onTogglePlan: () -> Void
 
     @State private var isPickerOpen = false
 
@@ -51,8 +49,8 @@ struct AutonomyPill: View {
         .accessibilityHint("Shows the autonomy levels")
         .popover(isPresented: $isPickerOpen, arrowEdge: .top) {
             AutonomyPicker(
-                setting: setting, levels: levels, level: level, agentName: agentName, plan: plan, onSet: onSet,
-                onTogglePlan: onTogglePlan
+                setting: setting, levels: levels, level: level, isSuspended: isSuspended, agentName: agentName,
+                onSet: onSet
             ) {
                 isPickerOpen = false
             }

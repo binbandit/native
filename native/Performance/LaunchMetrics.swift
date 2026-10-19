@@ -4,11 +4,12 @@ import Foundation
 import os
 
 /// How long launch takes, from the moment the process started: Points of Interest signposts for
-/// Instruments, and one log line per milestone that `just perf` reads, with the wall-clock time and
-/// the CPU time the main thread and the whole process spent getting there
-/// (`launch firstFrame 212 ms, main 150 ms cpu, process 190 ms cpu`). CPU time is the steadier of
-/// the two on a busy Mac. The bar is half a Dock bounce, so launch feels instant
-/// (`docs/performance.md`).
+/// Instruments, and one log line per milestone that `just perf` reads, with the wall-clock time,
+/// the CPU time the main thread and the whole process spent getting there, and the instructions
+/// the main thread ran (`launch firstFrame 212 ms, main 150 ms cpu, process 190 ms cpu, 900 M
+/// instructions on main`). CPU time is steadier than wall-clock time on a busy Mac, but still
+/// doubles when the main thread lands on efficiency cores; instructions don't depend on the core.
+/// The bar is half a Dock bounce, so launch feels instant (`docs/performance.md`).
 @MainActor
 enum LaunchMetrics {
     enum Milestone: String {
@@ -41,7 +42,7 @@ enum LaunchMetrics {
         }
         signposter.emitEvent("Launch milestone", "\(milestone.rawValue, privacy: .public)")
         logger.notice(
-            "launch \(milestone.rawValue, privacy: .public) \(milliseconds) ms, main \(cpuMilliseconds(CLOCK_THREAD_CPUTIME_ID)) ms cpu, process \(cpuMilliseconds(CLOCK_PROCESS_CPUTIME_ID)) ms cpu"
+            "launch \(milestone.rawValue, privacy: .public) \(milliseconds) ms, main \(cpuMilliseconds(CLOCK_THREAD_CPUTIME_ID)) ms cpu, process \(cpuMilliseconds(CLOCK_PROCESS_CPUTIME_ID)) ms cpu, \(mainInstructions.map(String.init) ?? "?", privacy: .public) M instructions on main"
         )
     }
 
@@ -50,7 +51,11 @@ enum LaunchMetrics {
     static func checkpoint(_ label: String) {
         guard !reached.contains(.firstFrame) else { return }
         let micro = clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID) / 1000
-        logger.notice("launch checkpoint \(label, privacy: .public) \(micro) us plugins \(pluginReads)")
+        var counts: (instructions: UInt64, cycles: UInt64) = (0, 0)
+        _ = withUnsafeMutableBytes(of: &counts) { threadSelfCounts?(1, $0.baseAddress, $0.count) }
+        logger.notice(
+            "launch checkpoint \(label, privacy: .public) \(micro) us \(counts.instructions / 1000) Kinstr plugins \(pluginReads)"
+        )
     }
 
     /// Marks `milestone` once the frame showing what just appeared is on screen: when the main run
@@ -61,7 +66,9 @@ enum LaunchMetrics {
         // After every other before-waiting observer, Core Animation's commit included.
         let observer = CFRunLoopObserverCreateWithHandler(nil, CFRunLoopActivity.beforeWaiting.rawValue, false, .max) {
             _, _ in
-            MainActor.assumeIsolated { checkpoint("beforeWaiting"); mark(milestone) }
+            MainActor.assumeIsolated {
+                checkpoint("beforeWaiting"); mark(milestone)
+            }
         }
         CFRunLoopAddObserver(CFRunLoopGetMain(), observer, .commonModes)
     }
@@ -71,6 +78,22 @@ enum LaunchMetrics {
     private static func cpuMilliseconds(_ clock: clockid_t) -> Int {
         Int(clock_gettime_nsec_np(clock) / 1_000_000)
     }
+
+    /// Millions of instructions the calling thread has run, from the CPU's own counters, which
+    /// cost the same on any core. `thread_selfcounts` isn't in the SDK (Instruments' counters use
+    /// it), so it's looked up and left out where it's missing.
+    private static var mainInstructions: UInt64? {
+        guard let threadSelfCounts else { return nil }
+        var counts: (instructions: UInt64, cycles: UInt64) = (0, 0)
+        let result = withUnsafeMutableBytes(of: &counts) { threadSelfCounts(1, $0.baseAddress, $0.count) }
+        return result == 0 ? counts.instructions / 1_000_000 : nil
+    }
+
+    private typealias ThreadSelfCounts = @convention(c) (Int32, UnsafeMutableRawPointer?, Int) -> Int32
+    private static let threadSelfCounts: ThreadSelfCounts? = {
+        let kernel = dlopen("/usr/lib/system/libsystem_kernel.dylib", RTLD_NOLOAD)
+        return dlsym(kernel, "thread_selfcounts").map { unsafeBitCast($0, to: ThreadSelfCounts.self) }
+    }()
 
     /// When the kernel started this process, which is as close to the Dock click as an app can see.
     private static let processStart: Date = {

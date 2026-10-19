@@ -54,8 +54,10 @@ extension SessionModel {
         }
         draft = ""
         self.attachments = []
-        let start = beginTurn(text, attachments: attachments, echo: true)
-        await finishTurn(text, attachments: attachments, itemsStart: start, generation: turnGeneration)
+        let turn = beginTurn(text, attachments: attachments, echo: true)
+        await finishTurn(
+            text, attachments: attachments, preamble: turn.preamble, itemsStart: turn.itemsStart,
+            generation: turnGeneration)
     }
 
     /// Sends the user's draft whatever the agent is doing: right away when it's idle, otherwise
@@ -194,14 +196,20 @@ extension SessionModel {
     /// Starts a turn and runs it in the background, so the session is prompting by the time this
     /// returns.
     private func startTurn(_ text: String, attachments: [PromptAttachment], echo: Bool) {
-        let start = beginTurn(text, attachments: attachments, echo: echo)
+        let turn = beginTurn(text, attachments: attachments, echo: echo)
         let generation = turnGeneration
-        Task { await finishTurn(text, attachments: attachments, itemsStart: start, generation: generation) }
+        Task {
+            await finishTurn(
+                text, attachments: attachments, preamble: turn.preamble, itemsStart: turn.itemsStart,
+                generation: generation)
+        }
     }
 
     /// Records the prompt and marks the turn as running, before anything suspends. Returns where the
-    /// turn's own items begin in the transcript.
-    private func beginTurn(_ text: String, attachments: [PromptAttachment], echo: Bool) -> Int {
+    /// turn's own items begin in the transcript, and the instructions that go ahead of the prompt.
+    private func beginTurn(
+        _ text: String, attachments: [PromptAttachment], echo: Bool
+    ) -> (itemsStart: Int, preamble: PromptPreamble?) {
         cancelRetry()
         // A new turn puts a stopped one behind it: what's queued now goes out as this one ends.
         queue.resume()
@@ -209,9 +217,12 @@ extension SessionModel {
         let isFirstPrompt = !state.items.contains { item in
             if case .message(let message) = item { message.role == .user } else { false }
         }
+        // A mode's instructions, say, which the transcript shows as a marker (`SessionHooks`).
+        let preamble = services.hooks.preamble(for: self, prompt: text)
         if echo {
             state.appendUserMessage(
-                text, attachments: MessageAttachment.shown(attachments, capabilities: promptCapabilities))
+                text, attachments: MessageAttachment.shown(attachments, capabilities: promptCapabilities),
+                preamble: preamble?.marker)
         }
         phase = .prompting
         lastActivity = .now
@@ -229,16 +240,17 @@ extension SessionModel {
             }
         }
         services.post(.promptSent(context, text: text))
-        return state.items.count
+        return (state.items.count, preamble)
     }
 
     /// Waits for the turn's answer and records how it ended. `generation` is the turn's
     /// `turnGeneration`: if Native stopped waiting for it (`abandonTurn`), the answer changes nothing.
     private func finishTurn(
-        _ text: String, attachments: [PromptAttachment], itemsStart start: Int, generation: Int
+        _ text: String, attachments: [PromptAttachment], preamble: PromptPreamble?, itemsStart start: Int,
+        generation: Int
     ) async {
         do {
-            let prompt = promptBlocks(text, attachments: attachments)
+            let prompt = (preamble.map { [$0.block] } ?? []) + promptBlocks(text, attachments: attachments)
             let response = try await connection.send(PromptRequest(sessionId: id, prompt: prompt))
             guard generation == turnGeneration else { return }
             state.endTurn(response.stopReason)

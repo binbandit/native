@@ -176,6 +176,22 @@ struct ConfigChoicesTests {
         #expect(ConfigChoices().preview(options, allows: Self.allowAll) == options)
     }
 
+    /// A session started in place of one its agent never saved takes on that one's choices, over
+    /// what it started with.
+    @Test func adoptsAnotherSessionsChoices() throws {
+        let options = try Self.options()
+        var started = ConfigChoices()
+        started.choose(try Self.option("model", in: options), value: "gpt-6-luna")
+        started.choose(try Self.option("reasoning_effort", in: options), value: "high")
+
+        started.adopt(try Self.chosen())
+
+        #expect(
+            started.choices.mapValues(\.value) == [
+                "model": "gpt-6.1-sol", "mode": "agent-full-access", "reasoning_effort": "high",
+            ])
+    }
+
     @Test func survivesBeingSaved() throws {
         let choices = try Self.chosen()
         let saved = try JSONEncoder().encode(choices)

@@ -28,7 +28,8 @@ extension AppModel {
         guard let runtime = await ensureRunning(old.agent.id) else {
             throw SessionLauncher.LaunchError.agentUnavailable(old.agentName)
         }
-        let session = try await launcher.start(on: runtime, cwd: old.cwd, project: catalog.lookup(old.key)?.project)
+        let session = try await launcher.start(
+            on: runtime, cwd: old.cwd, project: catalog.lookup(old.key)?.project, continuing: old)
         await session.adoptSettings(of: old)
         if let project = catalog.lookup(old.key)?.project {
             catalog.add(
