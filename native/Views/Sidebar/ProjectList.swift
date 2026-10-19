@@ -20,7 +20,8 @@ struct ProjectList<TaskAccessory: View>: View {
     var body: some View {
         @Bindable var selection = selection
         let isNarrowing = filter.isNarrowing
-        VStack(alignment: .leading, spacing: DS.Space.xxs) {
+        // Lazy, so only the projects on screen are built (each lazy about its own rows too).
+        LazyVStack(alignment: .leading, spacing: DS.Space.xxs) {
             if !listing.pinned.isEmpty {
                 PinnedSection(
                     sessions: listing.pinned, order: Self.positions(listing.allPinned), drag: drag,

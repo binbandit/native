@@ -22,8 +22,6 @@ struct SessionRow<Accessory: View>: View {
     let accessory: Accessory
     let select: () -> Void
 
-    @State private var isConfirmingDelete = false
-
     private var session: SessionModel? {
         model.session(summary.id)
     }
@@ -82,7 +80,7 @@ struct SessionRow<Accessory: View>: View {
                 leading: [readAction, pinAction],
                 trailing: [
                     SidebarSwipeAction("Archive", systemImage: "archivebox", tint: .dsInfo, action: archive),
-                    SidebarSwipeAction("Delete", systemImage: "trash", tint: .dsDanger) { isConfirmingDelete = true },
+                    SidebarSwipeAction("Delete", systemImage: "trash", tint: .dsDanger, action: requestDeletion),
                 ]
             )
             .accessibilityLabel(accessibilityLabel)
@@ -94,15 +92,6 @@ struct SessionRow<Accessory: View>: View {
                 Button("Archive", action: archive)
                 Button("Move Up") { model.move(target, .up) }
                 Button("Move Down") { model.move(target, .down) }
-            }
-            .confirmationDialog("Delete “\(title)”?", isPresented: $isConfirmingDelete) {
-                Button("Delete Task", role: .destructive) {
-                    model.deleteSession(summary.id, undoManager: undoManager)
-                }
-            } message: {
-                Text(
-                    "Its history goes from Native and, if \(summary.agent.displayName) supports it, from \(summary.agent.displayName) too. You can undo for a few seconds. To keep it out of sight instead, archive it."
-                )
             }
         }
     }
@@ -135,7 +124,7 @@ struct SessionRow<Accessory: View>: View {
         } else {
             Button("Archive", action: archive)
         }
-        Button("Delete…", role: .destructive) { isConfirmingDelete = true }
+        Button("Delete…", role: .destructive, action: requestDeletion)
     }
 
     private var readAction: SidebarSwipeAction {
@@ -185,6 +174,11 @@ struct SessionRow<Accessory: View>: View {
 
     private func togglePinned() {
         model.setPinned(summary.id, !isPinned, undoManager: undoManager)
+    }
+
+    /// The sidebar asks first, in its one deletion dialog.
+    private func requestDeletion() {
+        picking?.deletionRequest = summary.id
     }
 
     private func archive() {

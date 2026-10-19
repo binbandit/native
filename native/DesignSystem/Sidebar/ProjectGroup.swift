@@ -53,7 +53,8 @@ public struct ProjectGroup<MenuContent: View, Content: View>: View {
             .padding(.bottom, DS.Space.xs)
 
             if isExpanded {
-                VStack(alignment: .leading, spacing: DS.Space.xs) {
+                // Lazy, so a project with many tasks only builds the rows on screen.
+                LazyVStack(alignment: .leading, spacing: DS.Space.xs) {
                     content
                 }
                 .transition(.opacity)

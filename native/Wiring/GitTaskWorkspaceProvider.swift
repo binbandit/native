@@ -38,8 +38,7 @@ final class GitTaskWorkspaceProvider: TaskWorkspaceProvider {
         var summary = removed.summary
         if let failure = scripts.teardownFailure(in: folder) {
             // Teardown never stops archiving, but the user hears it didn't work where they archived.
-            summary +=
-                " Its teardown script \(failure.result.outcome.phrase); Scripts in the status bar has its output."
+            summary += " Its teardown script \(failure.result.outcome.phrase)."
         }
         return summary
     }
@@ -47,6 +46,8 @@ final class GitTaskWorkspaceProvider: TaskWorkspaceProvider {
     func restoreWorkspace(at folder: URL, in project: Project) async throws -> Bool {
         guard let archived = try await git.archivedTaskWorktree(at: folder, of: project.url) else { return false }
         _ = try await git.restoreArchivedTaskWorktree(archived, of: project.url)
+        // Views asked about the folder while it was gone; they show its branch and changes again.
+        git.refresh(folder: folder)
         return true
     }
 

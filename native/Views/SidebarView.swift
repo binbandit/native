@@ -93,6 +93,22 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
             }
             .accessibilityLabel("Projects")
             .onAppear { LaunchMetrics.markOnScreen(.sidebarInteractive) }
+            .confirmationDialog(
+                "Delete “\(selection.deletionRequest.map(model.titleOfSession) ?? "")”?",
+                isPresented: Binding(
+                    get: { selection.deletionRequest != nil },
+                    set: { if !$0 { selection.deletionRequest = nil } }),
+                presenting: selection.deletionRequest
+            ) { key in
+                Button("Delete Task", role: .destructive) {
+                    model.deleteSession(key, undoManager: undoManager)
+                }
+            } message: { key in
+                let agent = model.runtime(key.agent)?.agent.displayName ?? "the agent"
+                Text(
+                    "Its history goes from Native and, if \(agent) supports it, from \(agent) too. You can undo for a few seconds. To keep it out of sight instead, archive it."
+                )
+            }
 
             if selection.isActive {
                 SidebarSelectionBar(selection: selection)

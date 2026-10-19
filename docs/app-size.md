@@ -51,7 +51,7 @@ data (`__const`). For the script runtime, relink it with a map in a copy of its 
 
 ## Where the bytes go
 
-2026-10-19, a stable release dry run (`release.sh`, arm64, Developer ID-style archive signed ad hoc).
+2026-10-19, from a stable release dry run (`release.sh` on a Mac without a Developer ID, so signed ad hoc).
 
 | Part | Installed | In the download |
 | --- | --- | --- |
@@ -104,8 +104,8 @@ By kind:
 
 - **Tree-sitter grammars, 22.2 MB.** Almost all parse tables (`__const`), which compress about
   tenfold, so they cost about 2.3 MB of download. Kotlin, C++ and Ruby alone are 9.6 MB.
-- **The app's own code (`native/`), 16.4 MB, and Native's Swift packages, about 8 MB.** No single
-  feature stands out; Views, DesignSystem and GitHub are the largest.
+- **The app's own code (`native/`), 16.4 MB, and Native's Swift packages, about 8.5 MB.** No
+  single feature stands out; Views, DesignSystem and GitHub are the largest.
 - **libghostty, 12.4 MB.** Ghostty's Zig core is 7.1 MB, of which 3.05 MB are fonts it embeds and
   always loads as fallbacks: Symbols Nerd Font (2.44 MB, the icons in prompts like Starship's) and
   JetBrains Mono regular and italic (0.61 MB). glslang and SPIRV-Cross, which compile custom
@@ -117,36 +117,42 @@ By kind:
 
 ### The script runtime
 
-V8 through rusty_v8's prebuilt library (150.4.0, pointer compression), 41.4 MB stripped:
+V8 through rusty_v8's prebuilt library (150.4.0, pointer compression), 41.4 MB stripped, by symbol:
 
 | Part | MB |
 | --- | --- |
-| ICU data, embedded (`icudtl.dat`) | 10.82 |
-| Turboshaft and TurboFan, the optimizing compilers | 8.04 |
-| Maglev, the mid-tier compiler | 3.18 |
-| Embedded builtins | 2.11 |
-| WebAssembly | 1.71 |
-| ICU code | 1.52 |
-| Ignition, Sparkplug and the rest of V8 | about 9 |
-| Rust: the runtime, std, serde, Temporal and ICU4X | about 1 |
+| ICU data, embedded (`icudtl.dat`) | 10.8 |
+| The optimizing compilers: Turboshaft and TurboFan 8.0, Maglev 3.2, Sparkplug 0.1 | 11.4 |
+| Embedded builtins | 2.1 |
+| WebAssembly | 1.7 |
+| ICU code | 1.9 |
+| The rest of V8: interpreter, parser, runtime, heap, API | 12.3 |
+| Rust: the runtime itself, std, serde, and the Temporal and ICU4X crates V8 uses | 1.0 |
 
-The runtime runs V8 with `--jitless`, so the 13 MB of compilers and WebAssembly are never used, and
-nothing in it calls `Intl`. "The script runtime: V8 or JavaScriptCore" below weighs what to do.
+The runtime starts V8 with `--jitless`, so it never runs the compilers or WebAssembly; a V8 built
+without them comes out 16.2 MB smaller, since not all of their code carries their namespace. The
+ICU data is what `Intl` and localized formatting in scripts run on. "The script runtime: V8 or
+JavaScriptCore" below weighs what to do.
 
 ## What changed
 
 | | Before | After |
 | --- | --- | --- |
-| `just install` (a plain Release build): installed | 152.8 MB | AFTER_INSTALL |
-| `just install`: app binary / host helper | 95.3 MB / 5.9 MB | AFTER_BINARY |
-| `just install`: what it would cost to download | 47.5 MB | AFTER_DOWNLOAD |
+| `just install` (a plain Release build): installed | 152.8 MB | 116.9 MB |
+| `just install`: app binary / host helper | 95.3 / 5.9 MB | 62.5 / 2.7 MB |
+| `just install`: what it would cost to download | 47.5 MB | 43.4 MB |
 | A release: installed / update archive / disk image | 116.4 / 43.3 / 43.9 MB | unchanged |
+
+"Before" is the copy installed at 09:40 and "after" a build of the tree at 19:30, which has ten more
+hours of features in it; stripping that same 09:40 binary takes it from 95.3 to 58.5 MB and its
+host helper from 5.9 to 2.6 MB. Releases were already stripped, so their numbers don't move.
 
 - **Local builds strip like releases.** Archives already stripped (`DEPLOYMENT_POSTPROCESSING` is on
   for the install action), but a plain Release build, which is what `just install` makes, didn't,
-  so the app it installed carried 229,000 symbols and 36 MB more than users get. `Config/Release.xcconfig`
-  (and so Nightly) now sets `DEPLOYMENT_POSTPROCESSING`, `STRIP_INSTALLED_PRODUCT` and
-  `STRIP_STYLE = all` for every Release and Nightly build. dSYMs are still made first, so Sentry
+  so the app it installed carried 229,000 symbols and 40 MB that users never get.
+  `Config/Release.xcconfig` (and so Nightly) now sets `DEPLOYMENT_POSTPROCESSING`,
+  `STRIP_INSTALLED_PRODUCT` and `STRIP_STYLE = all` for every Release and Nightly build. The dSYM is
+  still made from the unstripped binary first (same UUID, all 255,000 symbols), so Sentry
   symbolication is unchanged.
 - **The budget is enforced** (above), so the next 10 MB shows up in the pull request that adds it.
 
@@ -156,58 +162,69 @@ The runtime is 35% of every download. `docs/script-runtime.md` chose V8 because 
 public API has no heap limit and no way to stop a running script from another thread, and because
 in-process JavaScriptCore would put untrusted code inside the app.
 
-Measured 2026-10-19 on a heavily loaded Mac (load average 40 to 180), so CPU time, which load
-doesn't inflate, is what to compare. JavaScriptCore was measured with a 36 KB C harness signed like
-the runtime (App Sandbox with nothing granted, hardened runtime, script on stdin, a `text()` binding),
-against the runtime as it ships:
+Measured 2026-10-19 on a heavily loaded Mac (load average 100 to 180), so CPU time, which load
+inflates less than wall time, is what to compare. JavaScriptCore was measured with a 36 KB C harness
+signed like the runtime (the App Sandbox with nothing granted, the hardened runtime, the script on
+stdin, a `text()` binding); V8 is the runtime itself, over its protocol.
 
-| | V8 today (prebuilt) | V8, jitless build | JavaScriptCore |
+| | V8 today (rusty_v8's prebuilt) | V8, jitless build | JavaScriptCore |
 | --- | --- | --- | --- |
-| Runtime installed / in the download | 41.4 / 15.0 MB | LITE_SIZE | the engine ships with macOS; a Swift runtime would be well under 1 MB |
-| Start to result, CPU (min / median of 15) | 5 / 8 ms | the same | 6 / 9 ms |
-| CPU-bound script: 1.8 MB of JSON parsed 10 times, a 2M sieve, string and regex work (min CPU of 5) | 263 ms | the same | 638 ms (interpreter: the hardened runtime without the JIT entitlement) |
+| Runtime installed / in the download | 41.4 / 15.0 MB | 25.2 / 10.1 MB | the engine ships with macOS; a Swift runtime would be well under 1 MB |
+| Start to result: wall / CPU (best of 15) | 16 / 7 ms | 16 / 7 ms | 17 / 8 ms |
+| A CPU-bound script: 1.8 MB of JSON parsed 10 times, a 2-million sieve over a `Uint8Array`, string and regex work (CPU, best of 5) | 352 ms | 1,266 ms | 706 ms |
+| Loops of calls / property writes / typed-array reads and writes (best of 3) | 135 / 178 / 251 ms | 34 / 68 / 1,835 ms | 74 / 101 / 331 ms |
+| Peak memory, the CPU-bound script | 51 MB | 53 MB | 40 MB |
 | Memory limit | exact: V8's near-heap-limit callback reports `memory` | the same | a footprint watchdog in the runtime (2 ms polling) stopped a runaway allocation at 149 MB for a 128 MiB limit |
 | Stopping a script | the host's SIGKILL; `terminate_execution` when stdin closes | the same | the host's SIGKILL; the runtime exits when stdin closes (`JSContextGroupSetExecutionTimeLimit` exists too, as private API) |
+| JIT | none (`--jitless`) | none, compiled out | none: the hardened runtime without the JIT entitlement leaves JavaScriptCore its interpreter |
 | `Intl`, `toLocaleString`, `localeCompare` | yes, from 10.8 MB of embedded ICU data | yes | yes, from the system's ICU |
 | Security fixes | when we bump the pinned crate | the same | with every macOS update |
-| Build machines | Rust, a 37 MB V8 download, a 1 GB cargo cache | V8 from source: BUILD_TIME, 5 GiB, once | nothing |
+| Build machines | Rust, a 37 MB V8 download, a 1 GB cargo cache | the same, if we publish the library; 45 minutes and 5 GiB to build it here | nothing |
 
 What each V8 option is:
 
 - **The jitless build** sets the arguments rusty_v8 already uses for iOS devices: `v8_jitless=true
   v8_enable_sparkplug=false v8_enable_maglev=false v8_enable_turbofan=false
-  v8_enable_webassembly=false`. Nothing changes for scripts: the runtime already runs with
-  `--jitless` and removes `WebAssembly`. LITE_TESTS It needs V8 built from source, like
-  `--sandbox` (which could use the same arguments), so it's only practical as a prebuilt library we
-  publish once per V8 pin, with its checksum in `build-script-runtime.sh`.
-- **Without ICU** (`v8_enable_i18n_support=false`) would take off about 12 MB more (the data and
-  ICU's code), but scripts would lose `Intl` and localized formatting, and rusty_v8's own bindings
-  call ICU, so it needs a patch to the crate. Not recommended.
-- **Pointer compression** is already on and doesn't change the binary much. The startup snapshot is
-  already embedded (`v8_use_external_startup_data=false`); moving it to a file saves nothing.
+  v8_enable_webassembly=false`, which leaves out 16 MB of compilers and WebAssembly the runtime never
+  runs (it already starts V8 with `--jitless` and removes `WebAssembly`). Built from source with
+  `build-v8-sandbox.py`'s pinned inputs and these arguments instead of the sandbox (45 minutes on
+  this Mac under load; one unused-variable warning in V8's arm64 builtins stops it, so it also
+  needs `treat_warnings_as_errors=false`, as rusty_v8's iOS build sets), the runtime passes all 17
+  of its Rust tests and all 28 of `Packages/ScriptRuntime`'s, sandbox checks included. It is not
+  the same speed, though: compiling the JIT out also drops the interpreter's feedback collection,
+  so calls get faster and typed-array access much slower. Building with the tiers off but
+  `v8_jitless=false` might keep today's speed; that's untested. It can only be the default as a
+  library we publish once per V8 pin, checksummed in `build-script-runtime.sh` the way rusty_v8's
+  own download is; `--sandbox`, which compiles V8 anyway, could take the same arguments.
+- **Without ICU** (`v8_enable_i18n_support=false`) would take off 12 MB more (10.8 MB of data and
+  ICU's code), but scripts would lose `Intl` and localized formatting, and rusty_v8's bindings call
+  ICU directly, so the crate would need a patch. Not recommended.
+- **Pointer compression** is already on. The startup snapshot is already embedded
+  (`v8_use_external_startup_data=false`); moving it to a file would save nothing.
 
-The decision's two objections to JavaScriptCore were about running it in the app's process. Out of
+The decision's two objections to JavaScriptCore were about running it inside the app. Out of
 process they mostly fall away: the host already enforces the time limit and cancellation with
 SIGKILL, and a process can bound its own footprint. What JavaScriptCore still lacks is V8's exact
-heap accounting and its optional memory sandbox (not in today's default build either), and it runs
-CPU-bound code about 2.4 times slower, which tool-calling glue doesn't notice. ES modules with
-top-level `await` are available through `JSScript` (macOS 10.15 and later).
+heap accounting and its optional memory sandbox (not in today's default build either). Its
+interpreter is about as fast as V8's for what scripts do (calls, objects, JSON) and slower for
+tight numeric loops. ES modules with top-level `await` are available through `JSScript` (macOS
+10.15 and later).
 
 **Recommendation: move the runtime to JavaScriptCore.** It's the largest single cut available
-(41 MB installed, 15 MB, a third, of every download), it keeps `Intl`, takes Rust and V8 out of every
-build, and gets security fixes from macOS. The cost is rewriting the runtime's 1,200 lines of Rust
-(and keeping its 220-line bootstrap) as a small Swift executable that speaks the same protocol, so
-`Packages/ScriptRuntime` and its tests stay as they are and check the new runtime. A Linux host
-would need another sandbox anyway (the App Sandbox is macOS-only), and could keep V8 there. If V8
-stays, publish the jitless build (with the memory sandbox in the same build) and switch the
-default to it.
+(41 MB installed, 15 MB of every download, a third of it), it keeps `Intl`, takes Rust and V8 out of
+every build, and gets its security fixes from macOS. The cost is rewriting the runtime's 1,200 lines
+of Rust as a small Swift executable that speaks the same protocol (its 220-line bootstrap can stay),
+so `Packages/ScriptRuntime` and its tests stay as they are and check the new runtime. A Linux host
+would need another sandbox anyway (the App Sandbox is macOS-only) and could keep V8 there. If V8
+stays, publish a library built without the compilers (with the memory sandbox in the same build)
+and make it the default.
 
 ## Still to do
 
 | What | Saves, installed / download | Owner |
 | --- | --- | --- |
 | Run scripts on JavaScriptCore (above) | 41 / 15 MB | Brayden's call, then the script runtime |
-| Or, keeping V8: publish the jitless build and make it the default | LITE_SAVE | Script runtime |
+| Or, keeping V8: publish a build without the compilers and make it the default | 16.2 / 4.9 MB | Script runtime |
 | Leave Kotlin, C++ and Ruby on the lexer, as "Tree-sitter for highlighting" in `docs/decisions.md` already proposes | 9.6 / about 1 MB | Code highlighting (`Packages/CodeThemes`) |
 | Ship each channel only its own icons: a stable build carries the dev and nightly variants (1.8 MB) and Nightly carries stable, beta and dev ones; seasonal icons could come with their downloadable celebration pack instead | 2 to 3 MB, both | App icons (the code is ours, the artwork the icon artist's) |
 | Lossy compression for the 24 alternate icons (lossless 1024 px images, 4.4 MB that zip can't shrink) | perhaps half of that, both | Icon artwork |

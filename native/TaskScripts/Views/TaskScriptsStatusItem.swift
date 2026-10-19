@@ -72,7 +72,7 @@ struct TaskScriptLogPanel: View {
             Button("Settings…", action: onManage)
                 .buttonStyle(.ds(.ghost, size: .small))
         } content: {
-            ScrollView {
+            CappedHeightScrollView(maxHeight: TaskScriptMetrics.logMaxHeight) {
                 VStack(alignment: .leading, spacing: 0) {
                     if !runs.isEmpty {
                         section("This task", runs)
@@ -82,7 +82,6 @@ struct TaskScriptLogPanel: View {
                     }
                 }
             }
-            .frame(maxHeight: TaskScriptMetrics.logMaxHeight)
         }
     }
 

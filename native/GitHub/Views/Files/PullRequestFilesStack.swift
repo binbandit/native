@@ -30,6 +30,15 @@ struct PullRequestFilesStack: View {
     private static let contentSpace = "pullRequestFilesContent"
     private static let targetID = "scrollTarget"
 
+    /// Temporary: the old lazy stack, to measure against.
+    private static var usesLazyStack: Bool {
+        #if DEBUG
+        UserDefaults.standard.bool(forKey: "gitHubExperimentLazyStack")
+        #else
+        false
+        #endif
+    }
+
     private struct Placed: Identifiable {
         let row: PullRequestFilesRow
         let top: CGFloat
@@ -42,7 +51,7 @@ struct PullRequestFilesStack: View {
         let table = PullRequestFilesTable(rows: rows, measured: measured, estimates: estimates) {
             exactHeight($0, lineHeight: lineHeight)
         }
-        let range = table.rows(
+        let range = Self.usesLazyStack ? 0..<0 : table.rows(
             from: window.minY - rowsTop - Self.overscan, to: window.maxY - rowsTop + Self.overscan)
         let placed = range.map { index in
             let row = rows[index]
@@ -60,6 +69,16 @@ struct PullRequestFilesStack: View {
                         }
                         .padding(.bottom, DS.Space.lg)
                     }
+                    #if DEBUG
+                    if Self.usesLazyStack {
+                        LazyVStack(alignment: .leading, spacing: 0) {
+                            ForEach(rows) { row in
+                                content(row).fileCardSlice(row.slice)
+                            }
+                        }
+                        .coordinateSpace(.named(PullRequestPageModel.filesSpace))
+                    }
+                    #endif
                     ZStack(alignment: .topLeading) {
                         // Alignment guides place rows against each other; this one at the top makes
                         // their offsets count from the top of the list.

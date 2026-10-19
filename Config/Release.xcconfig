@@ -6,7 +6,7 @@ NATIVE_FEED_URL = $(NATIVE_STABLE_FEED_URL)
 ENABLE_HARDENED_RUNTIME = YES
 
 // Strip every Release and Nightly build, not only archives, so `just install` runs the same binaries
-// users download: an unstripped app binary is about 30 MB bigger (docs/app-size.md). The symbols
+// users download: unstripped, the app binary is about 37 MB bigger (docs/app-size.md). The symbols
 // live on in the dSYMs (DEBUG_INFORMATION_FORMAT = dwarf-with-dsym), which Sentry symbolicates from.
 DEPLOYMENT_POSTPROCESSING = YES
 STRIP_INSTALLED_PRODUCT = YES

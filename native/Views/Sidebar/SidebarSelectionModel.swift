@@ -20,6 +20,9 @@ final class SidebarSelectionModel {
     @ObservationIgnored var order: [SessionKey] = []
     /// Asks the sidebar to confirm deleting the picked tasks.
     var isConfirmingDelete = false
+    /// Asks the sidebar to confirm deleting one task. One dialog for the whole list, rather than
+    /// one per row, keeps rows cheap to build.
+    var deletionRequest: SessionKey?
 
     /// Whether the selection bar shows: in select mode, or with more than one task picked.
     var isActive: Bool {
