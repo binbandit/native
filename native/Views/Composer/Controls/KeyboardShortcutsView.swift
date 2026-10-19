@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Every keyboard shortcut in docs/keyboard.md, opened from the composer's help button. Keep it in
-/// step with that table.
+/// Every keyboard shortcut in docs/keyboard.md, opened from Help ▸ Keyboard Shortcuts (⌘/), the sidebar's
+/// and the status bar's "?" and the composer's "…" menu. Keep it in step with that table.
 struct KeyboardShortcutsView: View {
     @AppStorage(FollowUpBehavior.storageKey) private var followUp = FollowUpBehavior.defaultValue
     @Environment(\.dismiss) private var dismiss
@@ -39,6 +39,7 @@ struct KeyboardShortcutsView: View {
                     row("Rename the selected session", ["↩"], note: "in the sidebar")
                     row("Show or hide the sidebar", ["⌃⌘S"])
                     row("Show or hide the subagent inspector", ["⌥⌘I"])
+                    row("Keyboard shortcuts", ["⌘/"])
                     header("Session Settings")
                     row("Next permission mode", ["⇧⌘M"])
                     row("Model picker", ["⇧⌘E"])

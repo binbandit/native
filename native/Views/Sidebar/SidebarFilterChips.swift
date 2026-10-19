@@ -25,7 +25,7 @@ struct SidebarFilterChips: View {
             .buttonStyle(.plain)
             .font(.dsCaption)
             .foregroundStyle(.dsTextTertiary)
-            .frame(minHeight: DS.Size.controlXS)
+            .frame(minHeight: SidebarFilterChip.height)
             .dsHitTarget(DS.Size.controlXS)
         }
         .padding(.horizontal, DS.Space.sm)
@@ -47,6 +47,9 @@ struct SidebarFilterChips: View {
 
 /// A compact chip: the filter's name and a remove button.
 private struct SidebarFilterChip: View {
+    /// A little under a small control, so a row of chips stays compact.
+    static let height = DS.Size.controlXS - DS.Space.xs
+
     let title: String
     let remove: () -> Void
 
@@ -64,7 +67,7 @@ private struct SidebarFilterChip: View {
                     .foregroundStyle(isHovered ? .dsTextPrimary : .dsTextTertiary)
             }
             .padding(.horizontal, DS.Space.sm)
-            .frame(minHeight: DS.Size.controlXS - DS.Space.xs)
+            .frame(minHeight: Self.height)
             .background(isHovered ? .dsSelected : .dsHover, in: .capsule)
             .overlay { Capsule().strokeBorder(.dsBorder, lineWidth: 1) }
             .contentShape(.capsule)

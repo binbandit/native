@@ -1,4 +1,5 @@
 import Foundation
+import GitHub
 
 /// Connects private pull request questions to the app: the GitHub feature's entry points (the page
 /// header's Ask, a row's "Ask About This PR…") open the panel, and search opens a conversation it
@@ -11,6 +12,12 @@ enum PullRequestAskWiring {
         }
         app.searchedSessionOpeners.append { [weak center] key in
             center?.openSearched(key) ?? false
+        }
+        // `-gitHubAskPullRequest <url>` opens a pull request's page with Ask open, for checks.
+        if let link = UserDefaults.standard.string(forKey: "gitHubAskPullRequest"), let url = URL(string: link),
+            let reference = PullRequestReference(url: url)
+        {
+            center.ask(about: reference)
         }
     }
 }
