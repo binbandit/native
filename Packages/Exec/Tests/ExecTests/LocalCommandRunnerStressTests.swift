@@ -16,13 +16,16 @@ struct LocalCommandRunnerStressTests {
     }
 
     /// Input for a command that exits without reading it used to raise SIGPIPE, which ends the
-    /// process unless it happens to ignore the signal.
+    /// process unless it ignores the signal, or the thread that wrote happens to block it. Repeated,
+    /// since which thread writes varies.
     @Test func inputTheCommandNeverReadsIsHarmless() async {
         await #expect(processExitsWith: .success) {
             let command = Command(
                 "true", environment: ["PATH": "/usr/bin:/bin"], standardInput: Data(repeating: 0, count: 1 << 20))
-            let result = try await LocalCommandRunner().run(command)
-            if !result.succeeded { exit(EXIT_FAILURE) }
+            for _ in 0..<20 {
+                let result = try await LocalCommandRunner().run(command)
+                if !result.succeeded { exit(EXIT_FAILURE) }
+            }
         }
     }
 }

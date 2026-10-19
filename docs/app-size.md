@@ -156,7 +156,51 @@ The runtime is 35% of every download. `docs/script-runtime.md` chose V8 because 
 public API has no heap limit and no way to stop a running script from another thread, and because
 in-process JavaScriptCore would put untrusted code inside the app.
 
-V8_SECTION
+Measured 2026-10-19 on a heavily loaded Mac (load average 40 to 180), so CPU time, which load
+doesn't inflate, is what to compare. JavaScriptCore was measured with a 36 KB C harness signed like
+the runtime (App Sandbox with nothing granted, hardened runtime, script on stdin, a `text()` binding),
+against the runtime as it ships:
+
+| | V8 today (prebuilt) | V8, jitless build | JavaScriptCore |
+| --- | --- | --- | --- |
+| Runtime installed / in the download | 41.4 / 15.0 MB | LITE_SIZE | the engine ships with macOS; a Swift runtime would be well under 1 MB |
+| Start to result, CPU (min / median of 15) | 5 / 8 ms | the same | 6 / 9 ms |
+| CPU-bound script: 1.8 MB of JSON parsed 10 times, a 2M sieve, string and regex work (min CPU of 5) | 263 ms | the same | 638 ms (interpreter: the hardened runtime without the JIT entitlement) |
+| Memory limit | exact: V8's near-heap-limit callback reports `memory` | the same | a footprint watchdog in the runtime (2 ms polling) stopped a runaway allocation at 149 MB for a 128 MiB limit |
+| Stopping a script | the host's SIGKILL; `terminate_execution` when stdin closes | the same | the host's SIGKILL; the runtime exits when stdin closes (`JSContextGroupSetExecutionTimeLimit` exists too, as private API) |
+| `Intl`, `toLocaleString`, `localeCompare` | yes, from 10.8 MB of embedded ICU data | yes | yes, from the system's ICU |
+| Security fixes | when we bump the pinned crate | the same | with every macOS update |
+| Build machines | Rust, a 37 MB V8 download, a 1 GB cargo cache | V8 from source: BUILD_TIME, 5 GiB, once | nothing |
+
+What each V8 option is:
+
+- **The jitless build** sets the arguments rusty_v8 already uses for iOS devices: `v8_jitless=true
+  v8_enable_sparkplug=false v8_enable_maglev=false v8_enable_turbofan=false
+  v8_enable_webassembly=false`. Nothing changes for scripts: the runtime already runs with
+  `--jitless` and removes `WebAssembly`. LITE_TESTS It needs V8 built from source, like
+  `--sandbox` (which could use the same arguments), so it's only practical as a prebuilt library we
+  publish once per V8 pin, with its checksum in `build-script-runtime.sh`.
+- **Without ICU** (`v8_enable_i18n_support=false`) would take off about 12 MB more (the data and
+  ICU's code), but scripts would lose `Intl` and localized formatting, and rusty_v8's own bindings
+  call ICU, so it needs a patch to the crate. Not recommended.
+- **Pointer compression** is already on and doesn't change the binary much. The startup snapshot is
+  already embedded (`v8_use_external_startup_data=false`); moving it to a file saves nothing.
+
+The decision's two objections to JavaScriptCore were about running it in the app's process. Out of
+process they mostly fall away: the host already enforces the time limit and cancellation with
+SIGKILL, and a process can bound its own footprint. What JavaScriptCore still lacks is V8's exact
+heap accounting and its optional memory sandbox (not in today's default build either), and it runs
+CPU-bound code about 2.4 times slower, which tool-calling glue doesn't notice. ES modules with
+top-level `await` are available through `JSScript` (macOS 10.15 and later).
+
+**Recommendation: move the runtime to JavaScriptCore.** It's the largest single cut available
+(41 MB installed, 15 MB, a third, of every download), it keeps `Intl`, takes Rust and V8 out of every
+build, and gets security fixes from macOS. The cost is rewriting the runtime's 1,200 lines of Rust
+(and keeping its 220-line bootstrap) as a small Swift executable that speaks the same protocol, so
+`Packages/ScriptRuntime` and its tests stay as they are and check the new runtime. A Linux host
+would need another sandbox anyway (the App Sandbox is macOS-only), and could keep V8 there. If V8
+stays, publish the jitless build (with the memory sandbox in the same build) and switch the
+default to it.
 
 ## Still to do
 

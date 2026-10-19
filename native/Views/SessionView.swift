@@ -47,6 +47,9 @@ struct SessionView: View {
         .navigationSubtitle(
             [session.cwd.abbreviatedPath, repository.summary].compactMap(\.self).joined(separator: " · ")
         )
+        // The inspector makes the task its own column, which the window's minimum-size question measures
+        // on its own: never at no width (docs/performance.md).
+        .platformMinimumContentWidth(DS.Window.detailMinWidth)
         // One inspector, showing a subagent or the task's changes; opening one closes the other.
         .inspector(isPresented: isInspectorPresented) {
             if let id = openSubagent, let subagent = session.state.subagents.first(where: { $0.id == id }) {
