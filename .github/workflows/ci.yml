@@ -21,60 +21,36 @@ env:
   DEVELOPER_DIR: ${{ vars.XCODE_DEVELOPER_DIR || '/Applications/Xcode_27.1.app/Contents/Developer' }}
 
 jobs:
-  # The package tests run in three shards rather than a job each: the preview runners are few, so
-  # sixteen jobs queued behind each other and each paid its own setup. The shards are balanced by
-  # measured `swift test` time (about 3.5 minutes each). Each package's output is its own group, and
-  # a failure is annotated with the package's name.
+  # Every package with a Tests folder, found by scripts/ci/test-packages.sh, which deals them into
+  # these shards by measured time (scripts/ci/package-test-times.txt). GitHub runs at most five macOS
+  # jobs at once, and this push also runs the Debug build and Check's two, so two shards finish
+  # sooner than more would: a third waits for a free runner. Each package's output is its own
+  # group, and a failure is annotated with the package's name.
   packages:
-    name: Test ${{ matrix.shard }}
+    name: Test packages (${{ matrix.shard }}/${{ strategy.job-total }})
     runs-on: ${{ vars.MACOS_RUNNER || 'macos-26' }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
-        include:
-          - shard: NativeHost, GitHub, NativeDiagnostics, Telemetry, Experiments, MCPServer
-            packages: NativeHost GitHub NativeDiagnostics Telemetry Experiments MCPServer
-          - shard: ScriptRuntime, Git, Exec, Terminal, Expeditions
-            packages: ScriptRuntime Git Exec Terminal Expeditions
-          - shard: MCPClient, ACP, AppAppearance, CodeThemes, Automation
-            packages: MCPClient ACP AppAppearance CodeThemes Automation
+        shard: [1, 2]
     steps:
       - uses: actions/checkout@v5
       - name: Cache package builds
         uses: actions/cache@v4
         with:
           path: Packages/*/.build
-          key: spm-${{ runner.os }}-shard${{ strategy.job-index }}-${{ hashFiles('Packages/*/Package.swift', 'Packages/*/Package.resolved') }}
-          restore-keys: spm-${{ runner.os }}-shard${{ strategy.job-index }}-
-      # The same Cargo cache as Check and the release workflows.
-      - name: Cache the script runtime
-        if: contains(matrix.packages, 'ScriptRuntime')
-        uses: actions/cache@v4
+          key: spm-${{ runner.os }}-shard${{ matrix.shard }}of${{ strategy.job-total }}-${{ hashFiles('Packages/*/Package.swift', 'Packages/*/Package.resolved', 'scripts/ci/package-test-times.txt') }}
+          restore-keys: spm-${{ runner.os }}-shard${{ matrix.shard }}of${{ strategy.job-total }}-
+      # The Cargo cache Check and the release workflows save, for the ScriptRuntime package's helper.
+      - name: Restore the script runtime
+        uses: actions/cache/restore@v4
         with:
           path: ~/Library/Caches/Native/ScriptRuntime
           key: script-runtime-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'scripts/build-script-runtime.sh') }}
           restore-keys: script-runtime-${{ runner.os }}-${{ runner.arch }}-
       - name: swift test
-        env:
-          PACKAGES: ${{ matrix.packages }}
-        run: |
-          failed=""
-          for package in $PACKAGES; do
-            echo "::group::$package"
-            started=$SECONDS
-            # The script runtime's Swift tests drive the real helper.
-            if [ "$package" = ScriptRuntime ]; then scripts/build-script-runtime.sh; fi
-            if (cd "Packages/$package" && swift test); then
-              echo "::endgroup::"
-              echo "$package passed in $((SECONDS - started))s"
-            else
-              echo "::endgroup::"
-              echo "::error title=$package::swift test failed in Packages/$package"
-              failed="$failed $package"
-            fi
-          done
-          if [ -n "$failed" ]; then echo "Failed:$failed"; exit 1; fi
+        run: scripts/ci/test-packages.sh ${{ matrix.shard }} ${{ strategy.job-total }}
 
   lint:
     name: Lint changed Swift files

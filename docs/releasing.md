@@ -368,10 +368,15 @@ library, about 130 MB; the toolchain and source aren't cached) and `~/Library/Ca
 (Cargo's target folder with V8). All three workflows cache both under the same keys, keyed on the
 build scripts and `Cargo.lock`, so a release restores what `main`'s checks built.
 
-**How CI stays quick.** The preview runners are few, so jobs are few: `ci.yml` runs the package tests
-in three shards balanced by measured time, the Debug build and the lint, and `check.yml` the two
-release configurations. App builds are arm64 only (the packages declare macOS 15 and would otherwise
-compile an x86_64 slice nothing links). The Debug, Release and Nightly builds also cache:
+**How CI stays quick.** GitHub runs at most five macOS jobs at once for this repository, so a push
+runs few: `ci.yml` runs the package tests in two shards, the Debug build and the lint, and
+`check.yml` the two release configurations. `scripts/ci/test-packages.sh` tests every
+`Packages/*/` with a `Tests` folder, so a new package can't be left out, and deals them into the
+shards by the time each took on CI (`scripts/ci/package-test-times.txt`; update it from a run's
+"passed in" lines when the shards drift apart, and an unlisted package counts as 30 seconds). A
+third shard would only wait for a free runner. App builds are arm64 only (the packages declare
+macOS 15 and would otherwise compile an x86_64 slice nothing links). The Debug, Release and Nightly
+builds also cache:
 
 - Swift package checkouts and binary artifacts (`-clonedSourcePackagesDirPath`), keyed by the
   project's `Package.resolved`: resolving them from nothing took 3.5 minutes on CI, restoring them

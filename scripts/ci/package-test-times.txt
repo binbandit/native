@@ -1,0 +1,19 @@
+# Seconds each package's `swift test` took on CI (warm caches), which scripts/ci/test-packages.sh
+# deals into shards by. Update from a CI run's "<package> passed in <n>s" lines when the shards drift
+# apart. A package missing here counts as 30 seconds until it's measured.
+NativeHost 58
+MCPClient 53
+ScriptRuntime 37
+CodeThemes 23
+GitHub 21
+ACP 20
+Git 19
+Exec 18
+Automation 13
+NativeDiagnostics 11
+Expeditions 10
+AppAppearance 9
+MCPServer 8
+Experiments 8
+Terminal 7
+Telemetry 7
