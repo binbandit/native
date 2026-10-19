@@ -19,18 +19,36 @@ nonisolated enum GitDiffContent: Equatable, Sendable {
     static let collapseSize = 96 * 1024
     static let collapseLines = 600
 
-    /// Reads both sides of `change` and diffs them, off the main thread. A big change comes back
-    /// `.collapsed` unless `expanded`; anything smaller comes back highlighted too, so the pane
-    /// draws it once, in color. An expanded one shows plain first rather than wait for its colors.
+    /// A diff and the fingerprint of the two sides it was made from (`FileVersions.fingerprint`).
+    struct Loaded: Sendable {
+        let content: GitDiffContent
+        /// `nil` when the sides couldn't be read.
+        let fingerprint: Int?
+    }
+
+    /// Reads both sides of `change` and diffs them, off the main thread, or returns `nil` when
+    /// they still match `unchanged`: a rescan rechecks the file on screen this way, since an edit
+    /// can keep its line counts. A big change comes back `.collapsed` unless `expanded`; anything
+    /// smaller comes back highlighted too, so the pane draws it once, in color. An expanded one
+    /// shows plain first rather than wait for its colors.
     @concurrent
-    static func load(_ change: FileChange, from repository: Repository, expanded: Bool) async -> Self {
-        if change.isSubmodule { return .submodule }
+    static func load(
+        _ change: FileChange, from repository: Repository, expanded: Bool, unlessStill unchanged: Int? = nil
+    ) async -> Loaded? {
+        // A submodule's entry is all there is to show.
+        if change.isSubmodule { return unchanged == 0 ? nil : Loaded(content: .submodule, fingerprint: 0) }
         let versions: FileVersions
         do {
             versions = try await repository.versions(of: change)
         } catch {
-            return .unavailable(error.localizedDescription)
+            return Loaded(content: .unavailable(error.localizedDescription), fingerprint: nil)
         }
+        let fingerprint = versions.fingerprint
+        guard fingerprint != unchanged else { return nil }
+        return Loaded(content: await content(of: change, versions, expanded: expanded), fingerprint: fingerprint)
+    }
+
+    private static func content(of change: FileChange, _ versions: FileVersions, expanded: Bool) async -> Self {
         let changedLines = change.stats.map { $0.additions + $0.deletions }
         if versions.isBinary { return .binary }
         if versions.size > sizeLimit { return .tooLarge(versions.size) }
