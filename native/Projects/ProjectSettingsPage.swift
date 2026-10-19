@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// One project's settings: what it's called and how it looks, how its new tasks start, its scripts,
-/// AI instructions and actions, its MCP servers and skills, what archiving does, and removing it
+/// AI instructions, modes and actions, its MCP servers and skills, what archiving does, and removing it
 /// from Native. Each value stays with its owner (the project list, the icon store, Git settings,
 /// task scripts, AI instructions, project actions, the MCP and skill switches), and those features
 /// contribute their own sections; a value left on Default follows the setting for every project.
@@ -32,6 +32,7 @@ struct ProjectSettingsPage: View {
                 ProjectNewTasksSection(project: project)
                 ProjectScriptsSection(projectRoot: project.url)
                 AIInstructionsProjectSection(projectRoot: project.url)
+                ModesProjectSection(project: project)
                 ProjectActionsSettingsSection(project: project)
                 ProjectToolsSection(project: project)
                 ProjectRemovalSection(project: project)

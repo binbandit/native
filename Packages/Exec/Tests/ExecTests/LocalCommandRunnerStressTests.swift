@@ -25,7 +25,7 @@ private enum LocalCommandRunnerStress {
     }
 
     private static func runOne(_ index: Int, runner: LocalCommandRunner, environment: [String: String]) async {
-        switch index % 8 {
+        switch ProcessInfo.processInfo.environment["ONLYTRUE"] != nil ? 0 : index % 8 {
         case 0, 1, 2:
             _ = try? await runner.run(Command("true", environment: environment))
         case 3, 4:

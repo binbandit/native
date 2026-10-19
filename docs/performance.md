@@ -11,6 +11,10 @@ Measured with `just perf` in a Debug build unless it says otherwise. On a busy M
 agents compiling) wall-clock launch times swing by hundreds of milliseconds, so launch also has a
 CPU budget, which doesn't.
 
+Frames are budgeted for 120 Hz, the refresh rate of ProMotion displays (MacBook Pro, iPad Pro,
+iPhone Pro): 8.3 ms a frame. On a 60 Hz display the same work has 16.7 ms, which is the floor:
+anything that misses that misses everywhere.
+
 | What | Budget |
 | --- | --- |
 | Launch, warm, to the first frame | under 350 ms on an idle Mac (half a Dock bounce), and under 150 ms of main-thread CPU |
@@ -20,7 +24,10 @@ CPU budget, which doesn't.
 | Idle, minimized or hidden | under 0.05% CPU, under 0.5 wakeups per second; nothing animates, nothing polls |
 | Memory, typical workspace (a few tasks, one long transcript open) | Native itself under 150 MB footprint; one adapter process per running agent (no npm wrapper) |
 | Sessions nobody uses | released, here and in the agent, once that's possible without losing anything (see "Still to do") |
-| Streaming a long reply | main thread under 25% busy; footprint back within 20 MB of where it started once the session is left |
+| Streaming a long reply | main thread under 25% busy, in a long session as in a new one; no frame over 8.3 ms (16.7 ms on 60 Hz displays); footprint back within 20 MB of where it started once the session is left |
+| Scrolling a long transcript (500 turns) | no frame over 8.3 ms at reading speed (2,000 points a second) and hardly any in a fast flick (5,000), 16.7 ms on 60 Hz displays; footprint flat (within 20 MB) from the second pass over the whole transcript on |
+| Reopening a long session (500 turns) | under 5 s in Debug, the transcript laid out once rather than on every replayed update |
+| Animations | Core Animation, never a SwiftUI animation that doesn't stop: motion at up to 120 Hz (`CAFrameRateRange.dsMotion`), ambient loops at 30 Hz (`.dsAmbient`), and nothing while the window can't be seen |
 | Growth and leaks | under 10 MB after 30 task switches and 10 Settings toggles; `leaks` finds 0 |
 | Changes inspector, any number of files | the list adds under 100 ms of main-thread time to opening it; scrolling under 8.3 ms per frame (120 Hz); a typical file's diff in under 50 ms, big ones collapsed behind Load Diff; at most one rescan a second while an agent writes |
 
@@ -43,7 +50,10 @@ minimized and hidden, and lists the processes under it. Options: `--no-build`, `
 | `footprint <pid>`, `vmmap --summary <pid>` | Memory by category | `footprint` is the number macOS uses for memory pressure |
 | `leaks <pid>` | Leaked allocations and retain cycles | Run after a workload, compare to a fresh launch |
 | `sample <pid> 10` | Where the main thread spends its time | Quick; `xctrace` for more |
-| `xctrace record --template 'Time Profiler' --attach <pid> --time-limit 30s` | Time profile | Also `Allocations`, `Leaks`, `Animation Hitches`. Open the `.trace` in Instruments |
+| `xctrace record --template 'Time Profiler' --attach <pid> --time-limit 30s` | Time profile | Also `Allocations`, `Leaks`, `Animation Hitches`. Open the `.trace` in Instruments. Always give a time limit and stop it with Ctrl-C (SIGINT), never `kill -9` or `timeout`: its `DTServiceHub` keeps recording without it, tens of GB a minute into `$TMPDIR/instruments*.ktrace` (`lsof` shows who holds one). Delete traces once read |
+| `-framePacing YES` (`FramePacing`) | Once a second in the log (`Native`/`Frames`): the display's refreshes, how many the main thread missed, in how many stalls, and the longest | A display link on the main run loop, so it sees exactly the frames the app couldn't make. Costs nothing measurable and writes nothing, unlike an Animation Hitches recording, which here slowed a 12 s scroll to 46 s. Read it with `log stream --predicate 'subsystem == "Native" AND category == "Frames"'` |
+| `scripts/perf/scroll.swift` | Scrolls the transcript from one pid: at a speed, or the whole length and back | Sets the scroll bar through Accessibility 120 times a second, so no events reach whatever is under the real cursor. Keeping SwiftUI's accessibility tree current costs the app 10–20% on top |
+| `scripts/perf/long-session-agent.py` | A fake agent with sessions of 20, 100 and 500 turns to reopen, and a long reply streamed on request | `--install <folder>` writes its plugin; launch with `-pluginsDirectory <folder>` |
 
 `powermetrics` needs sudo, so energy comes from `ri_energy_nj` (the same counter Activity Monitor's
 Energy Impact is built on) instead.
@@ -302,6 +312,64 @@ SwiftUI's accessibility tree up to date, which both columns pay (15–30% of the
 - **Rows had no default action.** A row's button trait had nothing to press, so VoiceOver (and
   automation) couldn't select a file. It now selects it.
 
+### Long transcripts
+
+2026-10-19, Debug build in an isolated instance on this Mac's 120 Hz built-in display (M4 Max), with
+a dozen agents building alongside (load average 5 to 130, so each figure is a range over runs). A
+fake agent (`scripts/perf/long-session-agent.py`) replays a 500-turn session the way Codex's history
+looks: about 6,400 items in 9,439 updates (10.8 MB), with prompts, reasoning, commentary, reads,
+searches, commands with output, edits with diffs, and Markdown replies with headings, lists, code
+blocks and tables. Folded, the transcript is about 290,000 points tall. `scripts/perf/scroll.swift`
+scrolls it from the bottom up and back for 12 s; frames come from `-framePacing YES`, the main
+thread's profile from `sample`. The view fixes were tried one at a time in a copy of the tree, in one
+build switched by a launch argument, then made in the transcript.
+
+| Measurement | Before | After |
+| --- | --- | --- |
+| Reopening the 500-turn session | not done after 19 min (19 min of CPU, the main thread pinned) | 4.3–6.6 s, 4.6–8.8 s of CPU |
+| Reopening the 100-turn one | 58 s | 3.3 s |
+| Scrolling at 5,000 points a second (a fast flick) | 45–54% of refreshes drawn, 56–66 dropped a second, worst stall 154–304 ms, 15.5–22.8 s of CPU for 12 s (the main thread always busy, the scroll fell behind) | 67–89% drawn, 13–40 dropped a second, worst stall 75–123 ms, 7.1–11.8 s of CPU |
+| Scrolling at 2,000 points a second (reading) | 84% drawn, 20 dropped a second, worst stall 129 ms | 87–93% drawn, 9–16 dropped a second, worst stall 81–139 ms |
+| The whole transcript and back in 10 s (every frame all new rows) | not measured | 20–23% drawn; the main thread lays out a screenful of new text each frame |
+| Streaming a long reply into the 500-turn session | main thread 99–100% busy, 3% of refreshes drawn, worst stall 2.7 s | 36% drawn, worst stall 565 ms with the reply-sections cache fixed; the per-turn plan cache isn't measured yet. A 20-turn session: 52% busy, 72% drawn |
+| Footprint over three passes over the whole transcript | not measured | 169 → 209 → 227 → 224 MB, 371 MB at the peak of a pass |
+
+- **Reopening a session laid the transcript out once per replayed update.** `ACPConnection` hands
+  updates over one main-actor hop at a time, so SwiftUI updated the transcript between any two of
+  them, and each update planned every turn: it found turns by scanning every item and counted every
+  turn's edits by diffing old and new text (`FileDiff.lineCounts`). That made reopening quadratic.
+  Now a diff's line counts are worked out once, when it's decoded off the main thread;
+  `SessionState` keeps turn starts, turn summaries, pending permissions, subagents and finished
+  writes up to date as items change, instead of scanning for them; and `SessionModel` lets the
+  transcript hear about replayed history at most every 100 ms and once more when loading ends.
+  `SessionModel`'s mirrors no longer pass over the transcript either.
+- **Rows weren't one view each.** The standard transcript's `ForEach` built each line from a switch
+  whose branches don't always make exactly one view, so the lazy stack couldn't map lines to views
+  and walked and built `ForEach` items on every placement pass. That was 70% of the main thread
+  while scrolling. Each line is now wrapped in one stack.
+- **Every streamed chunk planned every turn again.** In the 500-turn session `plan()` was 74% of
+  the main thread while a reply streamed. The cache of reply sections held 512 replies, fewer than
+  a long session has, so every plan cleared it and split every reply again (48%). The usage-limit
+  check folded the whole of every turn's last reply to compare its first words (11–39%). Grouping
+  rows for the whole session took 14%. And the Git refresh counted finished writes over the whole
+  transcript (6%). Now the usage-limit check compares the first characters only, Git reads a count
+  `SessionModel` keeps, and the transcript keeps each earlier turn's lines until
+  `TranscriptTurn.revision` (which moves whenever one of the turn's items changes) says the turn
+  changed. Only the turn that's streaming is planned again.
+- **The Markdown parse cache held 512 sections**, fewer than a long session has (about 2,500 for
+  500 turns), so scrolling back re-parsed. It now holds 8,192, still capped at 4 MB of source.
+- **Hover hit-tested every frame.** Rows that highlight on hover made SwiftUI hit-test the view
+  tree under the cursor on every frame the content moved (12–19% of a fast scroll). The transcript
+  stops taking hits while a scroll gesture is under way. This one wasn't measured: driving the
+  scroll bar has no scroll phase, and the real cursor isn't ours to move.
+- **What's left is text.** On a pass over the whole transcript, a quarter to a third of the main
+  thread lays out selectable text (TextKit 2) for rows coming into view. Lists lay out with a `Grid`
+  (4.6–8.3%), every code block hosts a scroll view of its own (3.8%), and keeping the accessibility
+  tree current for the driver costs 10–20%, which only a user with an accessibility client pays.
+- **120 Hz.** The Core Animation loops ask for the frame rate their motion needs: the shimmer band
+  and the loaders' pulsing dots up to 120 Hz, the night sky's twinkling and drifting at 30 Hz. The
+  iPhone companion opts in to 120 Hz (`CADisableMinimumFrameDurationOnPhone`).
+
 ## Still to do
 
 | What | Why | Owner |
@@ -315,4 +383,7 @@ SwiftUI's accessibility tree up to date, which both columns pay (15–30% of the
 | Park the default agent when it has no open sessions for a long while, or start it on the first New Session | It's kept running so New Session never waits; with direct adapter launch that wait is now about 0.3 s for Codex | App model |
 | Open inspectors without laying the window out every frame | Opening the changes inspector costs 220–295 ms of main-thread time even on a clean repository: the column's open animation lays out the whole window, transcript included, each frame | Session view |
 | Selecting a file in the changes inspector under 50 ms | Still 115–165 ms in Debug with Accessibility on: the pane draws a loader, then the diff, then again with colors | Git |
+| Scroll a long transcript at 120 Hz | Still 7–33% of refreshes dropped in a fast flick and 7–13% at reading speed (Debug): new rows lay out their selectable text on the main thread. Then lists without `Grid`, and code blocks without a scroll view each | Transcript |
+| Measure streaming into a long session with the per-turn plan cache | Before the cache it drew 36% of refreshes; the budget is the same as in a new session | Transcript |
+| Release-build numbers for long transcripts | Everything above is Debug; Release is faster, but the lazy stack and text layout are system code either way | Performance |
 | Stop re-rendering the session view on every git rescan | `SessionView` reads `repository.summary` and `status` for the subtitle and the Commit action, so each rescan re-runs its body | Session view, Git |
