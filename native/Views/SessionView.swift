@@ -43,7 +43,7 @@ struct SessionView: View {
         .terminalPanel(for: session)
         .projectActions(for: session)
         .focusedSceneValue(\.activeSession, session)
-        .navigationTitle(session.displayTitle)
+        .navigationTitle(DSInlineCode.plain(session.displayTitle))
         .navigationSubtitle(
             [session.cwd.abbreviatedPath, repository.summary].compactMap(\.self).joined(separator: " · ")
         )

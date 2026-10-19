@@ -18,15 +18,22 @@ private struct StandardTranscript: View {
     @State private var unfoldedTurns: Set<TranscriptTurn.ID> = []
     /// The line a search result opened at, highlighted for a moment.
     @State private var revealedLine: StandardTranscriptLine.ID?
+    /// Each turn's lines, kept until the turn changes.
+    @State private var lineCache = StandardTranscriptLineCache()
     @Environment(TranscriptDisclosures.self) private var disclosures: TranscriptDisclosures?
 
     var body: some View {
-        let lines = StandardTranscriptLine.plan(transcript, folding: foldsEarlierTurns, unfolded: unfoldedTurns)
+        let lines = StandardTranscriptLine.plan(
+            transcript, folding: foldsEarlierTurns, unfolded: unfoldedTurns, cache: lineCache)
         ScrollViewReader { proxy in
             LazyVStack(alignment: .leading, spacing: 0) {
                 ForEach(lines) { line in
-                    self.line(line)
-                        .background {
+                    // One view per line, whatever the line holds: a lazy stack walks every line of a
+                    // ForEach whose rows can be zero or several views, on every layout pass.
+                    VStack(alignment: .leading, spacing: 0) {
+                        self.line(line)
+                    }
+                    .background {
                             if line.id == revealedLine {
                                 RoundedRectangle(cornerRadius: DS.Radius.card)
                                     .fill(Color.dsAccentSubtle)
@@ -63,7 +70,8 @@ private struct StandardTranscript: View {
         }
         // Let the unfolded rows lay out before scrolling to one of them.
         try? await Task.sleep(for: .milliseconds(80))
-        let lines = StandardTranscriptLine.plan(transcript, folding: foldsEarlierTurns, unfolded: unfoldedTurns)
+        let lines = StandardTranscriptLine.plan(
+            transcript, folding: foldsEarlierTurns, unfolded: unfoldedTurns, cache: lineCache)
         let line = lines.first { line in
             switch line.kind {
             case .row(let row, let start): (start..<start + row.itemCount).contains(index)

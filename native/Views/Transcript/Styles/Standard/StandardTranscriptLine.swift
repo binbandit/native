@@ -40,88 +40,98 @@ struct StandardTranscriptLine: Identifiable {
     /// Lays out `transcript` turn by turn. With `folding` on, every turn but the latest folds its
     /// tool work into one line (unless the user opened it), and each finished turn closes with a
     /// footer; the latest closes with its changes, once it's done.
+    ///
+    /// This runs on every update, and a long session has hundreds of turns, so each turn's lines are
+    /// kept until the turn changes (`TranscriptTurn.revision`) and only the turn that changed is laid
+    /// out again.
     static func plan(
-        _ transcript: TranscriptStyleConfiguration, folding: Bool, unfolded: Set<TranscriptTurn.ID>
+        _ transcript: TranscriptStyleConfiguration, folding: Bool, unfolded: Set<TranscriptTurn.ID>,
+        cache: StandardTranscriptLineCache
     ) -> [StandardTranscriptLine] {
         let state = transcript.session.state
         let turns = state.turns
         var lines: [StandardTranscriptLine] = []
-        var rows = transcript.rows[...]
-        var itemIndex = 0
-
         for (position, turn) in turns.enumerated() {
-            var turnRows: [(row: TranscriptRow, itemIndex: Int)] = []
-            while let row = rows.first, itemIndex < turn.items.upperBound {
-                turnRows.append((row, itemIndex))
-                itemIndex += row.itemCount
-                rows = rows.dropFirst()
-            }
-
             let isLatest = position == turns.count - 1
-            let isRunning = isLatest && transcript.isWorking
-            let summary = state.summary(of: turn)
-            // A usage limit shows once, as a card where the work stopped: the agent relaying the
-            // provider's message and Native's notice of the failure say the same thing.
-            let limitStop = UsageLimitStop(turnItems: state.items[turn.items], stopReason: turn.stopReason)
-            if let limitStop {
-                turnRows.removeAll { entry in
-                    if case .item(let item) = entry.row { limitStop.itemIDs.contains(item.id) } else { false }
-                }
-            }
-            // A turn that didn't end normally closes with the reason; the footer says it instead.
-            var ending: TranscriptNotice?
-            if let reason = turn.stopReason, reason != .endTurn, case .item(.notice(let notice))? = turnRows.last?.row {
-                ending = notice
-                turnRows.removeLast()
-            }
-
-            let folds = folding && !isLatest && turnRows.count(where: { $0.row.isFoldableActivity }) > 1
-            let isUnfolded = unfolded.contains(turn.id)
-            var placedFold = false
-            var position = turnRows.startIndex
-            while position < turnRows.endIndex {
-                let (row, index) = turnRows[position]
-                if folds, row.isFoldableActivity {
-                    if !placedFold {
-                        lines.append(Self(id: "fold-\(turn.id)", kind: .fold(turn, summary, isUnfolded: isUnfolded)))
-                        placedFold = true
-                    }
-                    guard isUnfolded else {
-                        position += 1
-                        continue
-                    }
-                }
-                if let run = TranscriptActivityRun(rows: turnRows[position...], in: state) {
-                    lines.append(Self(id: run.id, kind: .activityRun(run)))
-                    position += run.rowCount
-                    continue
-                }
-                lines += Self.lines(for: row, itemIndex: index)
-                position += 1
-            }
-            if let limitStop {
-                lines.append(Self(id: "limit-\(turn.id)", kind: .usageLimit(limitStop, isLatestTurn: isLatest)))
-            }
-
-            guard !isRunning else { continue }
-            let showsChangesCard = isLatest && !summary.changedFiles.isEmpty
-            if turn.duration != nil || ending != nil || summary.subagents > 0
-                || (!showsChangesCard && !summary.changedFiles.isEmpty)
-            {
-                lines.append(
-                    Self(
-                        id: "footer-\(turn.id)",
-                        kind: .footer(turn, summary, ending: ending, showsChanges: !showsChangesCard)))
-            }
-            if showsChangesCard {
-                lines.append(Self(id: "changes-\(turn.id)", kind: .changes(summary)))
-            }
+            let key = TurnLinesKey(
+                turn: turn, folding: folding, isUnfolded: unfolded.contains(turn.id), isLatest: isLatest,
+                isRunning: isLatest && transcript.isWorking, unfoldsExploration: transcript.unfoldsExploration)
+            lines += cache.lines(for: key) { Self.lines(for: key, in: state) }
         }
-        // Rows past the last turn can't happen (every item is in a turn), but never drop any.
-        lines += rows.flatMap { Self.lines(for: $0, itemIndex: itemIndex) }
-
         for index in lines.indices.dropFirst() {
             lines[index].spacing = spacing(between: lines[index - 1], and: lines[index])
+        }
+        return lines
+    }
+
+    /// One turn's lines, before spacing.
+    private static func lines(for key: TurnLinesKey, in state: SessionState) -> [StandardTranscriptLine] {
+        let turn = key.turn
+        let turnItems = Array(state.items[turn.items])
+        let rows = key.unfoldsExploration ? turnItems.map(TranscriptRow.item) : TranscriptRow.rows(from: turnItems)
+        var turnRows: [(row: TranscriptRow, itemIndex: Int)] = []
+        var itemIndex = turn.items.lowerBound
+        for row in rows {
+            turnRows.append((row, itemIndex))
+            itemIndex += row.itemCount
+        }
+
+        var lines: [StandardTranscriptLine] = []
+        let summary = state.summary(of: turn)
+        // A usage limit shows once, as a card where the work stopped: the agent relaying the
+        // provider's message and Native's notice of the failure say the same thing.
+        let limitStop = UsageLimitStop(turnItems: state.items[turn.items], stopReason: turn.stopReason)
+        if let limitStop {
+            turnRows.removeAll { entry in
+                if case .item(let item) = entry.row { limitStop.itemIDs.contains(item.id) } else { false }
+            }
+        }
+        // A turn that didn't end normally closes with the reason; the footer says it instead.
+        var ending: TranscriptNotice?
+        if let reason = turn.stopReason, reason != .endTurn, case .item(.notice(let notice))? = turnRows.last?.row {
+            ending = notice
+            turnRows.removeLast()
+        }
+
+        let folds = key.folding && !key.isLatest && turnRows.count(where: { $0.row.isFoldableActivity }) > 1
+        var placedFold = false
+        var position = turnRows.startIndex
+        while position < turnRows.endIndex {
+            let (row, index) = turnRows[position]
+            if folds, row.isFoldableActivity {
+                if !placedFold {
+                    lines.append(Self(id: "fold-\(turn.id)", kind: .fold(turn, summary, isUnfolded: key.isUnfolded)))
+                    placedFold = true
+                }
+                guard key.isUnfolded else {
+                    position += 1
+                    continue
+                }
+            }
+            if let run = TranscriptActivityRun(rows: turnRows[position...], in: state) {
+                lines.append(Self(id: run.id, kind: .activityRun(run)))
+                position += run.rowCount
+                continue
+            }
+            lines += Self.lines(for: row, itemIndex: index)
+            position += 1
+        }
+        if let limitStop {
+            lines.append(Self(id: "limit-\(turn.id)", kind: .usageLimit(limitStop, isLatestTurn: key.isLatest)))
+        }
+
+        guard !key.isRunning else { return lines }
+        let showsChangesCard = key.isLatest && !summary.changedFiles.isEmpty
+        if turn.duration != nil || ending != nil || summary.subagents > 0
+            || (!showsChangesCard && !summary.changedFiles.isEmpty)
+        {
+            lines.append(
+                Self(
+                    id: "footer-\(turn.id)",
+                    kind: .footer(turn, summary, ending: ending, showsChanges: !showsChangesCard)))
+        }
+        if showsChangesCard {
+            lines.append(Self(id: "changes-\(turn.id)", kind: .changes(summary)))
         }
         return lines
     }
@@ -149,13 +159,49 @@ struct StandardTranscriptLine: Identifiable {
     }
 }
 
-/// Agents' replies in Markdown sections, kept per message so planning the transcript, which happens
-/// on every streamed chunk, splits only the reply that changed. Replies only grow, so a reply's
-/// length says whether its sections are still current.
+/// Everything a turn's lines depend on. The turn carries its revision, which goes up whenever one
+/// of its items changes, and its clock, which changes as it ends.
+struct TurnLinesKey: Hashable {
+    let turn: TranscriptTurn
+    let folding: Bool
+    let isUnfolded: Bool
+    let isLatest: Bool
+    let isRunning: Bool
+    let unfoldsExploration: Bool
+}
+
+/// Each turn's lines as last laid out, by turn, held by the transcript that shows them so they go
+/// with it. Only the latest version of a turn is kept, so a streaming turn replaces its own entry
+/// rather than piling up versions.
+final class StandardTranscriptLineCache {
+    private var entries: [TranscriptTurn.ID: (key: TurnLinesKey, lines: [StandardTranscriptLine])] = [:]
+    /// Past this many turns the cache starts over rather than tracking age.
+    private let capacity = 4096
+
+    func lines(for key: TurnLinesKey, make: () -> [StandardTranscriptLine]) -> [StandardTranscriptLine] {
+        if let entry = entries[key.turn.id], entry.key == key {
+            return entry.lines
+        }
+        let lines = make()
+        if entries.count >= capacity {
+            entries.removeAll(keepingCapacity: true)
+        }
+        entries[key.turn.id] = (key, lines)
+        return lines
+    }
+}
+
+/// Agents' replies in Markdown sections, kept per message so laying out a turn again splits only
+/// the reply that changed. Replies only grow, so a reply's length says whether its sections are
+/// still current.
 private enum ReplySections {
     private static var sections: [UUID: (length: Int, sections: [String])] = [:]
-    /// Past this many replies the cache starts over rather than tracking age.
-    private static let capacity = 512
+    private static var bytes = 0
+    /// Past either limit the cache starts over rather than tracking age. The count covers every
+    /// reply of a long session (a 500-turn session has more than 512, which made every layout pass
+    /// split every reply again); the byte limit bounds the copies kept.
+    private static let capacity = 8192
+    private static let byteCapacity = 16 << 20
 
     static func sections(of message: TranscriptMessage) -> [String] {
         let length = message.text.utf8.count
@@ -163,9 +209,11 @@ private enum ReplySections {
             return cached.sections
         }
         let split = message.text.markdownSections.map(String.init)
-        if sections.count >= capacity {
+        if sections.count >= capacity || bytes >= byteCapacity {
             sections.removeAll(keepingCapacity: true)
+            bytes = 0
         }
+        bytes += length - (sections[message.id]?.length ?? 0)
         sections[message.id] = (length, split)
         return split
     }

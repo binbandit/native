@@ -15,7 +15,7 @@ struct HomeWaitingTaskRow<ID: Hashable>: View {
                 StatusIndicator(status: task.status)
                     .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + DS.Space.xs }
                 VStack(alignment: .leading, spacing: DS.Space.xxs) {
-                    Text(task.title)
+                    DSInlineCodeText(task.title)
                         .font(.dsCalloutMedium)
                         .foregroundStyle(.dsTextPrimary)
                     Text(task.request)

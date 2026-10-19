@@ -55,7 +55,7 @@ private struct TaskActivityRow: View {
             HStack(spacing: DS.Space.md) {
                 StatusIndicator(status: task.status)
                 VStack(alignment: .leading, spacing: DS.Space.xxs) {
-                    Text(task.title)
+                    DSInlineCodeText(task.title)
                         .font(.dsBody)
                         .foregroundStyle(.dsTextPrimary)
                     Text(detail)

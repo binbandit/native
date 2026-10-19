@@ -85,7 +85,7 @@ private struct CommandPaletteRow: View {
                     .frame(width: DS.Size.rowLeading)
                     .accessibilityHidden(true)
                 HStack(spacing: DS.Space.sm) {
-                    Text(title)
+                    Text(DSInlineCode.styled(title))
                         .lineLimit(1)
                     if let subtitle = item.subtitle {
                         Text(subtitle)
@@ -116,7 +116,8 @@ private struct CommandPaletteRow: View {
     }
 
     /// The title with the matched letters at full strength and the rest dimmed, so it's clear why
-    /// it matched.
+    /// it matched. Inline code in it (a task's title) is set in monospace after highlighting, since the
+    /// matches index the title as written.
     private var title: AttributedString {
         var text = AttributedString(row.item.title)
         guard showsHighlights, !row.highlights.isEmpty else {

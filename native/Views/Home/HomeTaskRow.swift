@@ -24,7 +24,7 @@ struct HomeTaskRow<ID: Hashable>: View {
                 }
                 .foregroundStyle(.dsTextTertiary)
                 .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
-                Text(task.title)
+                DSInlineCodeText(task.title)
                     .font(.dsCalloutBook)
                     .foregroundStyle(isHovered ? .dsTextPrimary : .dsTextSecondary)
                     .lineLimit(1)

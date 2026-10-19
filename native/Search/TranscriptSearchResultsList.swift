@@ -87,7 +87,7 @@ struct TranscriptSearchResultsList: View {
         let session = group.session
         return HStack(spacing: DS.Space.md) {
             agentIcon(session.key.agent)
-            Text(session.title ?? "Untitled task")
+            DSInlineCodeText(session.title ?? "Untitled task")
                 .font(.dsBodyMedium)
                 .foregroundStyle(.dsTextPrimary)
                 .lineLimit(1)
