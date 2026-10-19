@@ -95,7 +95,7 @@ public nonisolated enum DSTypography {
     /// code views) and for metrics such as cap height.
     public static func platformFont(size: CGFloat, weight: Weight = .regular, design: Design = .sans) -> DSPlatformFont
     {
-        guard isGeistAvailable else {
+        guard let geist else {
             return switch design {
             case .sans: .systemFont(ofSize: size, weight: weight.system)
             case .mono: .monospacedSystemFont(ofSize: size, weight: weight.system)
@@ -103,17 +103,9 @@ public nonisolated enum DSTypography {
         }
         // 'wght' as a four-character code.
         let variation = [0x7767_6874: weight.rawValue]
-        let family = design == .sans ? "Geist" : "Geist Mono"
-        #if canImport(AppKit)
-        let descriptor = NSFontDescriptor(fontAttributes: [.family: family, .variation: variation])
-        return NSFont(descriptor: descriptor, size: size) ?? .systemFont(ofSize: size, weight: weight.system)
-        #else
-        let descriptor = UIFontDescriptor(fontAttributes: [
-            .family: family,
-            UIFontDescriptor.AttributeName(rawValue: kCTFontVariationAttribute as String): variation,
-        ])
-        return UIFont(descriptor: descriptor, size: size)
-        #endif
+        let descriptor = CTFontDescriptorCreateCopyWithAttributes(
+            design == .sans ? geist.sans : geist.mono, [kCTFontVariationAttribute as String: variation] as CFDictionary)
+        return CTFontCreateWithFontDescriptor(descriptor, size, nil) as DSPlatformFont
     }
 
     #if canImport(AppKit)
@@ -142,18 +134,30 @@ public nonisolated enum DSTypography {
     /// Fonts already built, so one-off `Font.ds(...)` calls in view bodies stay cheap.
     private static let cache = Mutex<[Key: Font]>([:])
 
-    /// Whether Geist is available; registers the bundled fonts on first use.
-    private static let isGeistAvailable: Bool = {
-        let urls = ["Geist-VariableFont_wght", "GeistMono-VariableFont_wght"].compactMap {
-            resources.url(forResource: $0, withExtension: "ttf")
+    /// The bundled Geist and Geist Mono, registered for the process on first use so text views and
+    /// font names find them too; nil when either is missing or won't register. Fonts are made from
+    /// these rather than by family name, which searches every font installed for each one.
+    private static let geist: GeistFonts? = {
+        let descriptors = ["Geist-VariableFont_wght", "GeistMono-VariableFont_wght"].compactMap {
+            name -> CTFontDescriptor? in
+            guard let url = resources.url(forResource: name, withExtension: "ttf") else { return nil }
+            var error: Unmanaged<CFError>?
+            guard
+                CTFontManagerRegisterFontsForURL(url as CFURL, .process, &error)
+                    || error.map({ CFErrorGetCode($0.takeRetainedValue()) })
+                        == CTFontManagerError.alreadyRegistered.rawValue
+            else { return nil }
+            return (CTFontManagerCreateFontDescriptorsFromURL(url as CFURL) as? [CTFontDescriptor])?.first
         }
-        if !urls.isEmpty {
-            // Already-registered fonts report an error per URL; availability is checked below.
-            CTFontManagerRegisterFontURLs(urls as CFArray, .process, true, nil)
-        }
-        let families = Set(CTFontManagerCopyAvailableFontFamilyNames() as? [String] ?? [])
-        return families.contains("Geist") && families.contains("Geist Mono")
+        guard descriptors.count == 2 else { return nil }
+        return GeistFonts(sans: descriptors[0], mono: descriptors[1])
     }()
+
+    /// CoreText descriptors are immutable, so any thread may use them.
+    private struct GeistFonts: @unchecked Sendable {
+        let sans: CTFontDescriptor
+        let mono: CTFontDescriptor
+    }
 
     /// Where the fonts are bundled: the app today, this module's bundle once it's a package target.
     private static var resources: Bundle {
