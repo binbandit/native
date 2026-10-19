@@ -63,6 +63,12 @@ final class GitStore {
         models[folder.standardizedFileURL]?.refresh()
     }
 
+    /// Re-reads a folder's status once a burst of writes there settles, e.g. an agent's edits;
+    /// the folder's own file events coalesce into the same rescan.
+    func refreshWhenSettled(folder: URL) {
+        models[folder.standardizedFileURL]?.refreshWhenSettled()
+    }
+
     func refreshAll() {
         models.values.forEach { $0.refresh() }
     }

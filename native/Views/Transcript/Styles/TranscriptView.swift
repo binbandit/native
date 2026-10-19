@@ -78,7 +78,7 @@ struct TranscriptView: View {
             }
         }
         .animation(.dsStandard, value: showsJumpToLatest)
-        .focusedSceneValue(\.transcriptJumpToLatest, jumpCommand)
+        // HOOKS-EXPERIMENT .focusedSceneValue(\.transcriptJumpToLatest, jumpCommand)
         .overlay {
             if session.phase == .loading {
                 LoadingStateView("Loading session…")

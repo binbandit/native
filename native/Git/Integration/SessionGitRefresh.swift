@@ -20,7 +20,7 @@ private struct SessionGitRefresh: ViewModifier {
                 if old == .prompting { store.refresh(folder: session.cwd) }
             }
             .onChange(of: finishedWrites) {
-                store.refresh(folder: session.cwd)
+                store.refreshWhenSettled(folder: session.cwd)
             }
 
     }

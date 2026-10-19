@@ -52,7 +52,7 @@ public struct AgentConfigReader: Sendable {
 
     public init(
         files: any ConfigFileSystem = LocalConfigFiles(),
-        home: URL = FileManager.default.homeDirectoryForCurrentUser,
+        home: URL = .homeDirectory,
         environment: [String: String] = ProcessInfo.processInfo.environment,
         claudeManagedFile: URL = URL(filePath: "/Library/Application Support/ClaudeCode/managed-mcp.json")
     ) {

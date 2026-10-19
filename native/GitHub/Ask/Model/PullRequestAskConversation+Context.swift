@@ -28,6 +28,12 @@ extension PullRequestAskConversation {
         return (source, context)
     }
 
+    /// Whether gh couldn't load the pull request at all, so there's nothing to ask about yet.
+    var isPageUnavailable: Bool {
+        guard let model = center.gitHub?.pageModel(for: reference) else { return false }
+        return model.page == nil && model.loadError != nil
+    }
+
     /// The page, loaded if it wasn't and refreshed if it's stale.
     func currentPage() async -> PullRequestPage? {
         guard let model = center.gitHub?.pageModel(for: reference) else { return nil }

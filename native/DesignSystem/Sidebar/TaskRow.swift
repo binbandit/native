@@ -24,8 +24,9 @@ public enum TaskBadge: Equatable, Sendable {
 
 /// A task (an agent session) in the sidebar: status glyph, title and a
 /// trailing badge, diff or age; 36pt tall with 6pt-rounded hover and selection fills. Unread tasks
-/// set their title semibold in the primary color; inline code in a title shows in monospace. With `onArchive`, an archive button takes the
-/// trailing items' place on hover (and is offered to VoiceOver as an action).
+/// set their title semibold in the primary color; inline code in a title shows in monospace. With
+/// `onArchive`, an archive button takes the trailing items' place on hover (and is offered to
+/// VoiceOver as an action).
 ///
 /// Two optional slots: `leading`, a 16pt type glyph (the agent: `Image(systemName:)` or any view,
 /// tinted tertiary), and `accessory`, a view after the age (e.g. `ContextUsageRing`). The

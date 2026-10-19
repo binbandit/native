@@ -43,6 +43,7 @@ struct PullRequestAskComposer: View {
     }
 
     private var disabledReason: String? {
+        if conversation.isPageUnavailable { return "The pull request hasn't loaded" }
         if conversation.isBusy { return "Getting the pull request ready" }
         if conversation.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty { return "Type a question" }
         return nil
@@ -51,7 +52,7 @@ struct PullRequestAskComposer: View {
     private func handle(_ press: KeyPress) -> KeyPress.Result {
         switch press.key {
         case .return where press.modifiers.isDisjoint(with: [.shift, .option]):
-            guard conversation.canSend else { return .handled }
+            guard conversation.canSend, !conversation.isPageUnavailable else { return .handled }
             Task { await conversation.send() }
             return .handled
         case .escape where conversation.isAnswering:

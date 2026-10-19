@@ -34,6 +34,7 @@ struct PullRequestAskPageUnavailable: View {
         case .notAuthenticated: "Sign in to GitHub CLI to ask"
         case .offline, .timedOut: "GitHub can't be reached"
         case .rateLimited: "GitHub's rate limit was reached"
+        case .notFound: "This pull request can't be found"
         default: "This pull request didn't load"
         }
     }
@@ -57,8 +58,10 @@ struct PullRequestAskPageUnavailable: View {
             "Questions start once the pull request loads. Native tries again when the network is back."
         case .rateLimited:
             "Questions start once the pull request loads, when GitHub lets gh ask again."
+        case .notFound:
+            "It may have been deleted, or the account gh is signed in to can't see it. Questions need it to load first."
         default:
-            error.localizedDescription
+            "Questions need it to load first. " + error.localizedDescription
         }
     }
 
