@@ -1,5 +1,9 @@
 # Publishes a stable or beta release when a version tag is pushed: v1.4.0 is stable, v1.5.0-beta.1
 # is beta. docs/releasing.md explains the release flow and the secrets this uses.
+#
+# Rehearse one without publishing anything: `gh workflow run release.yml --ref <branch> -f version=1.4.0`
+# builds that branch as the version given, signs, notarizes and packages it and writes the appcast,
+# then uploads the results as workflow artifacts. Only a pushed tag publishes.
 name: Release
 
 on:
@@ -7,39 +11,64 @@ on:
     tags:
       - "v[0-9]+.[0-9]+.[0-9]+"
       - "v[0-9]+.[0-9]+.[0-9]+-beta.[0-9]+"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: The version to rehearse, e.g. 1.4.0 or 1.5.0-beta.1 (nothing is published)
+        type: string
+        required: true
 
 permissions:
   contents: write
 
 concurrency:
-  group: release
+  group: release${{ github.event_name == 'workflow_dispatch' && '-dry-run' || '' }}
   cancel-in-progress: false
 
 jobs:
   release:
     runs-on: ${{ vars.MACOS_RUNNER || 'macos-26' }}
-    timeout-minutes: 90
+    timeout-minutes: 120
     env:
       DEVELOPER_DIR: ${{ vars.XCODE_DEVELOPER_DIR || '/Applications/Xcode_27.1.app/Contents/Developer' }}
       GH_TOKEN: ${{ github.token }}
       NATIVE_TEAM_ID: ${{ secrets.NATIVE_TEAM_ID }}
       NATIVE_SENTRY_DSN: ${{ secrets.NATIVE_SENTRY_DSN }}
+      NATIVE_SPARKLE_PUBLIC_KEY: ${{ vars.NATIVE_SPARKLE_PUBLIC_KEY }}
     steps:
       - uses: actions/checkout@v5
+        id: checkout
         with:
           fetch-depth: 0
           fetch-tags: true
 
       - name: Work out the channel
         id: version
+        env:
+          VERSION: ${{ inputs.version || github.ref_name }}
         run: |
-          version="${GITHUB_REF_NAME#v}"
+          version="${VERSION#v}"
           case "$version" in
             *-beta.*) channel=beta ;;
             *) channel=stable ;;
           esac
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "channel=$channel" >> "$GITHUB_OUTPUT"
+
+      # The terminal (libghostty, a Zig build of several minutes) and the script runtime's Cargo
+      # build, V8 included. release.sh builds both before archiving; these keep that quick.
+      - name: Cache libghostty
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/native-build/libghostty
+          key: libghostty-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/build-libghostty.sh') }}
+          restore-keys: libghostty-${{ runner.os }}-${{ runner.arch }}-
+      - name: Cache the script runtime
+        uses: actions/cache@v4
+        with:
+          path: ~/Library/Caches/Native/ScriptRuntime
+          key: script-runtime-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'scripts/build-script-runtime.sh') }}
+          restore-keys: script-runtime-${{ runner.os }}-${{ runner.arch }}-
 
       - name: Set up signing
         env:
@@ -54,14 +83,41 @@ jobs:
       - name: Build, notarize and publish
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
+          MODE: ${{ github.event_name == 'workflow_dispatch' && '--rehearse' || '--publish' }}
         run: >-
           scripts/release/release.sh
           --channel "${{ steps.version.outputs.channel }}"
           --version "${{ steps.version.outputs.version }}"
-          --publish --ed-key-file "$SPARKLE_KEY_FILE"
+          "$MODE" --ed-key-file "$SPARKLE_KEY_FILE"
+
+      # What a rehearsal would have published, to download and check by hand (docs/releasing.md).
+      - name: Upload the rehearsal
+        if: github.event_name == 'workflow_dispatch' && !cancelled()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ steps.version.outputs.version }}-${{ github.run_number }}
+          retention-days: 7
+          if-no-files-found: error
+          path: |
+            ${{ runner.temp }}/native-release/${{ steps.version.outputs.channel }}/appcast/*.zip
+            ${{ runner.temp }}/native-release/${{ steps.version.outputs.channel }}/appcast/*.delta
+            ${{ runner.temp }}/native-release/${{ steps.version.outputs.channel }}/appcast/*.md
+            ${{ runner.temp }}/native-release/${{ steps.version.outputs.channel }}/appcast/appcast.xml
+            ${{ runner.temp }}/native-release/${{ steps.version.outputs.channel }}/*.dmg
+            ${{ runner.temp }}/native-release/${{ steps.version.outputs.channel }}/host/
+            ${{ runner.temp }}/native-release/${{ steps.version.outputs.channel }}/celebrations/
+      - name: Upload the rehearsal's symbols
+        if: github.event_name == 'workflow_dispatch' && !cancelled()
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-${{ steps.version.outputs.version }}-${{ github.run_number }}-dSYMs
+          retention-days: 7
+          path: |
+            ${{ runner.temp }}/native-release/${{ steps.version.outputs.channel }}/*.xcarchive/dSYMs/
+            ${{ runner.temp }}/native-release/${{ steps.version.outputs.channel }}/host-dSYMs/
 
       - name: Tear down signing
-        if: always()
+        if: always() && steps.checkout.outcome == 'success'
         run: scripts/release/ci-signing.sh teardown
 
   # TODO(linux): enable once the host core builds on Linux (docs/releasing.md, "Remote updates").

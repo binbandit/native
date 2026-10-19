@@ -11,12 +11,12 @@ MB here are 10^6 bytes, as Finder counts them. "Installed" is the bytes in the a
 install). The budgets sit about 10% above where the app was when they were set, so growth gets
 noticed while there's still room to choose what to cut; lower them as the cuts in "Still to do" land.
 
-| What | Budget | 2026-10-19 |
+| What | Budget | 2026-10-19, after the grammar cut |
 | --- | --- | --- |
-| Download, update archive | 48 MB | 43.3 MB |
-| Download, disk image | 49 MB | 43.9 MB |
-| Installed app | 128 MB | 116.4 MB |
-| App binary (`Contents/MacOS/Native`) | 68 MB | 62.1 MB |
+| Download, update archive | 47 MB | 42.7 MB |
+| Download, disk image | 48 MB | about 43.3 MB |
+| Installed app | 118 MB | 107.5 MB |
+| App binary (`Contents/MacOS/Native`) | 58 MB | 53.2 MB |
 | Script runtime (`Contents/Helpers/native-script-runtime`) | 42 MB | 41.4 MB |
 
 `scripts/release/size-check.sh` holds the same numbers and fails when anything is over:
@@ -51,7 +51,7 @@ data (`__const`). For the script runtime, relink it with a map in a copy of its 
 
 ## Where the bytes go
 
-2026-10-19, from a stable release dry run (`release.sh` on a Mac without a Developer ID, so signed ad hoc).
+2026-10-19, before Kotlin, C++ and Ruby went back to the lexer (below), from a stable release dry run (`release.sh` on a Mac without a Developer ID, so signed ad hoc).
 
 | Part | Installed | In the download |
 | --- | --- | --- |
@@ -103,7 +103,8 @@ adds Swift metadata, unwind tables and data.
 By kind:
 
 - **Tree-sitter grammars, 22.2 MB.** Almost all parse tables (`__const`), which compress about
-  tenfold, so they cost about 2.3 MB of download. Kotlin, C++ and Ruby alone are 9.6 MB.
+  tenfold, so they cost about 2.3 MB of download. Kotlin, C++ and Ruby were 9.6 MB of them, and
+  are lexed now.
 - **The app's own code (`native/`), 16.4 MB, and Native's Swift packages, about 8.5 MB.** No
   single feature stands out; Views, DesignSystem and GitHub are the largest.
 - **libghostty, 12.4 MB.** Ghostty's Zig core is 7.1 MB, of which 3.05 MB are fonts it embeds and
@@ -155,6 +156,12 @@ host helper from 5.9 to 2.6 MB. Releases were already stripped, so their numbers
   still made from the unstripped binary first (same UUID, all 255,000 symbols), so Sentry
   symbolication is unchanged.
 - **The budget is enforced** (above), so the next 10 MB shows up in the pull request that adds it.
+- **Kotlin, C++ and Ruby are lexed** (`docs/decisions.md`, "Tree-sitter for highlighting"): their
+  grammars are out of `Packages/CodeThemes`. On the same day's tree, the app binary went from 63.1 MB
+  to 53.2 MB, the installed app from 117.4 to 107.5 MB and the update archive from 43.8 to 42.7 MB,
+  and the budgets came down with them. All three still color keywords, types, strings, numbers and
+  comments in transcript code blocks, light and dark; what they lose is what only a parse knows,
+  like C++ template brackets versus comparisons, or Ruby symbols.
 
 ## The script runtime: V8 or JavaScriptCore
 
@@ -210,6 +217,9 @@ interpreter is about as fast as V8's for what scripts do (calls, objects, JSON) 
 tight numeric loops. ES modules with top-level `await` are available through `JSScript` (macOS
 10.15 and later).
 
+**Decided 2026-10-19: V8 stays as it is**, neither moved to JavaScriptCore nor rebuilt without
+its compilers. The recommendation was:
+
 **Recommendation: move the runtime to JavaScriptCore.** It's the largest single cut available
 (41 MB installed, 15 MB of every download, a third of it), it keeps `Intl`, takes Rust and V8 out of
 every build, and gets its security fixes from macOS. The cost is rewriting the runtime's 1,200 lines
@@ -226,9 +236,6 @@ Largest first.
 | What | Saves, installed / download | Owner |
 | --- | --- | --- |
 | Sparkle delta updates: `generate_appcast` only makes deltas from earlier archives in its folder, and `release.sh` starts it from an empty one, so every update downloads the whole app. A delta between two release builds an hour (31 commits) apart was 2.7 MB instead of 43.6 MB, and applied to reproduce the new app exactly | about 40 MB of most updates | Release pipeline: put the last few releases' archives in the folder before `generate_appcast` |
-| Run scripts on JavaScriptCore (above) | 41 / 15 MB | Brayden's call, then the script runtime |
-| Or, keeping V8: publish a build without the compilers and make it the default | 16.2 / 4.9 MB | Script runtime |
-| Leave Kotlin, C++ and Ruby on the lexer, as "Tree-sitter for highlighting" in `docs/decisions.md` already proposes | 9.6 / about 1 MB | Code highlighting (`Packages/CodeThemes`) |
 | Ship each channel only its own icons: a stable build carries the dev and nightly variants (1.8 MB) and Nightly carries stable, beta and dev ones; seasonal icons could come with their downloadable celebration pack instead | 2 to 3 MB, both | App icons (the code is ours, the artwork the icon artist's) |
 | Lossy compression for the 24 alternate icons (lossless 1024 px images, 4.4 MB that zip can't shrink) | perhaps half of that, both | Icon artwork |
 | libghostty without its embedded fonts (3.05 MB; the Nerd Font symbols render prompt icons) or custom shaders (glslang and SPIRV-Cross, 3.5 MB) | up to 6.5 / 2.5 MB | Terminal; needs a patch on the pinned Ghostty, since its build has no option |
@@ -236,6 +243,8 @@ Largest first.
 
 Considered and not worth it now:
 
+- **The script runtime on JavaScriptCore (41 / 15 MB) or V8 without its compilers (16.2 / 4.9 MB).**
+  Brayden kept V8 as it is (above).
 - **`-Osize` for cold Swift modules.** The GitHub package's code goes from 0.89 MB to 0.77 MB (14%),
   so every cold module together would save about 1 MB installed and 0.3 MB of download, for slower
   code and per-package compiler flags. The transcript, Markdown and diff code live in the app module

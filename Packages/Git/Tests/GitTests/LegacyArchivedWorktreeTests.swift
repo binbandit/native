@@ -78,7 +78,8 @@ struct LegacyArchivedWorktreeTests {
         let main = try await legacy.test.repository
         try await main.restoreWorktree(at: legacy.path, branch: "me/p0o9i", from: nil)
         try await legacy.commit("later.md")
-        let archivedAt = Date.now
+        // Committer dates are whole seconds; a real archive comes well after the first one's checkpoint.
+        let archivedAt = Date.now.addingTimeInterval(1)
         try await legacy.archive()
 
         let rebuilt = try await main.rebuildArchivedWorktree(at: legacy.path, title: nil, archivedAt: archivedAt)
