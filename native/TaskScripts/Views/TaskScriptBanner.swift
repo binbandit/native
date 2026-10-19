@@ -72,12 +72,9 @@ struct TaskScriptStripText: View {
         // Wrapping comes from the strip's width. `fixedSize` here would size the window's minimum
         // height from the text laid out at no width at all, growing the window until AppKit gives up.
         if let message {
-            HooksProbe {
-                Text(message)
-                    .font(.dsBody)
-                    .foregroundStyle(.dsTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            Text(message)
+                .font(.dsBody)
+                .foregroundStyle(.dsTextSecondary)
         }
     }
 }
@@ -130,17 +127,5 @@ enum TaskScriptFailureText {
             parts.append("Nothing else was affected. Fix the script, then retry.")
         }
         return parts.joined(separator: " ")
-    }
-}
-
-// HOOKS-EXPERIMENT: logs the proposals the banner text gets.
-struct HooksProbe: Layout {
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let size = subviews.first?.sizeThatFits(proposal) ?? .zero
-        NSLog("HOOKSPROBE proposal w=%@ h=%@ -> %.0fx%.0f", proposal.width.map { "\($0)" } ?? "nil", proposal.height.map { "\($0)" } ?? "nil", size.width, size.height)
-        return size
-    }
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        subviews.first?.place(at: bounds.origin, proposal: ProposedViewSize(bounds.size))
     }
 }

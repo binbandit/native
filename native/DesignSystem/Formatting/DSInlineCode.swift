@@ -7,44 +7,76 @@ import SwiftUI
 public enum DSInlineCode {
     /// `text` with its code spans set in `codeFont`, for a `Text`, which keeps truncating it.
     public static func attributed(_ text: String, codeFont: Font = .dsMono) -> AttributedString {
+        styled(AttributedString(text), codeFont: codeFont)
+    }
+
+    /// `text` with its code spans set in `codeFont` and their backticks gone, keeping the attributes
+    /// it already has, such as the letters a search matched.
+    public static func styled(_ text: AttributedString, codeFont: Font = .dsMono) -> AttributedString {
+        let characters = Array(text.characters)
+        func slice(_ start: Int, _ end: Int) -> AttributedString {
+            let all = text.characters
+            return AttributedString(
+                text[all.index(all.startIndex, offsetBy: start)..<all.index(all.startIndex, offsetBy: end)])
+        }
         var result = AttributedString()
-        var rest = Substring(text)
-        while let open = rest.firstIndex(of: "`") {
-            let ticks = rest[open...].prefix { $0 == "`" }
-            let afterOpen = ticks.endIndex
-            guard let close = closingRun(of: ticks.count, in: rest[afterOpen...]) else {
-                // No partner: these backticks are literal, and the search goes on after them.
-                result += AttributedString(rest[..<afterOpen])
-                rest = rest[afterOpen...]
+        // Up to `copied` is in `result`; `index` is where the search for the next span goes on.
+        var copied = 0
+        var index = 0
+        while index < characters.count {
+            guard characters[index] == "`" else {
+                index += 1
                 continue
             }
-            result += AttributedString(rest[..<open])
-            var code = AttributedString(trimmedSpan(rest[afterOpen..<close.lowerBound]))
+            let ticks = run(at: index, in: characters)
+            guard let close = closingRun(of: ticks, in: characters, from: index + ticks) else {
+                // No partner: these backticks are literal.
+                index += ticks
+                continue
+            }
+            result += slice(copied, index)
+            let span = trimmed(index + ticks..<close, in: characters)
+            var code = slice(span.lowerBound, span.upperBound)
             code.font = codeFont
             result += code
-            rest = rest[close.upperBound...]
+            index = close + ticks
+            copied = index
         }
-        result += AttributedString(rest)
+        result += slice(copied, characters.count)
         return result
     }
 
-    /// The next run of exactly `count` backticks.
-    private static func closingRun(of count: Int, in text: Substring) -> Range<Substring.Index>? {
-        var index = text.startIndex
-        while let start = text[index...].firstIndex(of: "`") {
-            let run = text[start...].prefix { $0 == "`" }
-            if run.count == count { return start..<run.endIndex }
-            index = run.endIndex
+    /// `text` without its code spans' backticks, for places that only take a string (a window title).
+    public static func plain(_ text: String) -> String {
+        String(attributed(text).characters)
+    }
+
+    /// How many backticks start at `index`.
+    private static func run(at index: Int, in characters: [Character]) -> Int {
+        characters[index...].prefix { $0 == "`" }.count
+    }
+
+    /// Where the next run of exactly `count` backticks starts.
+    private static func closingRun(of count: Int, in characters: [Character], from start: Int) -> Int? {
+        var index = start
+        while index < characters.count {
+            guard characters[index] == "`" else {
+                index += 1
+                continue
+            }
+            let length = run(at: index, in: characters)
+            if length == count { return index }
+            index += length
         }
         return nil
     }
 
     /// Markdown drops one space each side of a span padded on both, so `` ` `a` ` `` can hold backticks.
-    private static func trimmedSpan(_ span: Substring) -> Substring {
-        guard span.count > 2, span.first == " ", span.last == " ", span.contains(where: { $0 != " " }) else {
-            return span
-        }
-        return span.dropFirst().dropLast()
+    private static func trimmed(_ span: Range<Int>, in characters: [Character]) -> Range<Int> {
+        guard span.count > 2, characters[span.lowerBound] == " ", characters[span.upperBound - 1] == " ",
+            characters[span].contains(where: { $0 != " " })
+        else { return span }
+        return span.lowerBound + 1..<span.upperBound - 1
     }
 }
 

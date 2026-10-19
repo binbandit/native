@@ -22,6 +22,7 @@ CPU budget, which doesn't.
 | Sessions nobody uses | released, here and in the agent, once that's possible without losing anything (see "Still to do") |
 | Streaming a long reply | main thread under 25% busy; footprint back within 20 MB of where it started once the session is left |
 | Growth and leaks | under 10 MB after 30 task switches and 10 Settings toggles; `leaks` finds 0 |
+| Changes inspector, any number of files | the list adds under 100 ms of main-thread time to opening it; scrolling under 8.3 ms per frame (120 Hz); a typical file's diff in under 50 ms, big ones collapsed behind Load Diff; at most one rescan a second while an agent writes |
 
 ## Measuring
 
@@ -250,6 +251,57 @@ comes from a 10 s `sample` right after. "Before" is the build from the start of 
   colors makes sure it's highlighted, at most every 100 ms while it changes, keeping the colors
   of the part that didn't change meanwhile.
 
+### Changes inspector
+
+2026-10-19, Debug build in an isolated instance on scratch repositories: 250 changes (275 rows:
+modified, deleted, renamed, staged, partly staged, binary and untracked files across 150 folders,
+ten of them 200–480 KB with hundreds of changed lines) and the same mix at 1,000 changes (1,100
+rows). The Mac was busy (load average 20 to 90), so each figure is a range over three or four runs.
+Main-thread time is the main thread's CPU time (`proc_pidinfo`), sampled every half millisecond
+after one Accessibility press of the toolbar button or a row. Scrolling steps the list's scroll bar
+through Accessibility, about 23 points at 120 Hz. Driving the app through Accessibility keeps
+SwiftUI's accessibility tree up to date, which both columns pay (15–30% of the work in the profiles).
+
+| Measurement | Before | After |
+| --- | --- | --- |
+| Opening, 250 files: main-thread time | 670–1,140 ms, mostly one 480–700 ms stall | 150–550 ms; opening it on a clean repository costs 220–295 ms |
+| Opening, 1,000 files | 1.4–2.6 s, busy for over 3 s | 395–577 ms |
+| Scrolling, 250 files: main-thread time per step | about 16 ms, and it fell behind (158 of 360 steps) | 4.4 ms, every step |
+| Scrolling, 1,000 files | about 76 ms per step | 3–7 ms per step |
+| Selecting a small file | 190–375 ms | 115–165 ms |
+| Selecting a 243 KB file with 575 changed lines | 8.6 s of main-thread time over 10 s; the diff appeared after more than 4 s; selecting another file then took 2.6 s | 58 ms to a "Large diff" notice; Load Diff 129 ms; selecting another file 176 ms |
+| A first scan of 1,000 changed files | the list waited for every file's line counts (about 450 ms of git here) | the list shows after `git status` (20–90 ms); the counts follow |
+| An agent writing 3 files every 100 ms for 10 s | not measured | 4 scans, 85–153 ms of main-thread time in all |
+
+- **The list wasn't lazy.** It was a `LazyVStack` of sections, but each section was a plain
+  `VStack` of all its rows, so the stack's one child per section measured every row before the
+  first frame: 90% of opening in the profile. Every row is now a child of the lazy stack
+  (`Section` inside it), so only the rows on screen are built and measured. Opening on a clean
+  repository costs nearly as much as on 250 files now; the rest is the inspector column animating
+  open, which lays the whole window out each frame.
+- **Rows built buttons nobody saw, and any change rebuilt every row.** Each row built its stage
+  and discard buttons hidden, and took closures, which SwiftUI can't compare, so a selection,
+  a diff arriving or a rescan re-ran every row. Rows now build their buttons only while they
+  show, act through the model, and are skipped when their file didn't change; the diff pane reads
+  the selection itself, so a diff arriving redraws only the pane. A change's id is a small struct
+  instead of a string interpolated through reflection on every comparison.
+- **Diffs were computed on the main thread, more than once.** Selecting a file diffed it on the
+  main thread to count its lines, and `DiffView` diffed it again in every body evaluation, then
+  laid out up to 400 rows at once. The diff is now read and laid out off the main thread
+  (`GitDiffContent.load`, `DiffLayout`), its rows are built as they scroll into view, and a
+  change past 96 KB or 600 changed lines waits behind Load Diff. Both sides of a file are read at
+  the same time.
+- **The first scan waited for the line counts.** The list now shows from `git status` alone and
+  the counts stream in; later scans keep the old counts on screen until the new ones arrive. With
+  nothing staged, git diffs the working tree once instead of twice for the totals.
+- **Rescans ran back to back while an agent wrote.** Events arriving during a scan queued another
+  right after it, every event batch ran `git check-ignore`, and each finished tool call asked for
+  an immediate rescan on top of the file watcher's. While events keep coming, scans now run at most
+  once a second, batches that a pending scan will cover skip the ignore check, and tool calls wait
+  for the same settled scan; ending a turn still rescans at once.
+- **Rows had no default action.** A row's button trait had nothing to press, so VoiceOver (and
+  automation) couldn't select a file. It now selects it.
+
 ## Still to do
 
 | What | Why | Owner |
@@ -261,3 +313,6 @@ comes from a 10 s `sample` right after. "Before" is the build from the start of 
 | Find what holds memory after a Codex reply | After the first long Codex reply, footprint stayed about 85 MB up (167 MB → 252 MB, mostly Malloc Small) after leaving the session; replies from a fake agent come back within 20 MB | Transcript, app model |
 | Read MCP config files off the main thread at launch | About 14 ms in Debug before the first frame; agents can wait for it instead | MCP |
 | Park the default agent when it has no open sessions for a long while, or start it on the first New Session | It's kept running so New Session never waits; with direct adapter launch that wait is now about 0.3 s for Codex | App model |
+| Open inspectors without laying the window out every frame | Opening the changes inspector costs 220–295 ms of main-thread time even on a clean repository: the column's open animation lays out the whole window, transcript included, each frame | Session view |
+| Selecting a file in the changes inspector under 50 ms | Still 115–165 ms in Debug with Accessibility on: the pane draws a loader, then the diff, then again with colors | Git |
+| Stop re-rendering the session view on every git rescan | `SessionView` reads `repository.summary` and `status` for the subtitle and the Commit action, so each rescan re-runs its body | Session view, Git |
