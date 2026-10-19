@@ -174,7 +174,7 @@ extension Repository {
 
     /// The listed worktree at `path`, compared the way git spells paths (with symlinks such as
     /// `/tmp` resolved), which works whichever machine the repository is on.
-    private func listedWorktree(at path: URL, in worktrees: [Worktree]) async -> Worktree? {
+    func listedWorktree(at path: URL, in worktrees: [Worktree]) async -> Worktree? {
         var spellings: Set = [Self.spelling(of: path)]
         if let toplevel = await toplevel(of: path) {
             spellings.insert(toplevel)

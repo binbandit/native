@@ -4,6 +4,8 @@ import Foundation
 /// client's own actions (sending prompts, answering permission requests).
 public struct SessionState: Sendable {
     public var title: String?
+    /// Changed only through `appendItem(_:)` and `replaceItem(at:with:)`, which keep the indexes
+    /// below up to date.
     public private(set) var items: [TranscriptItem] = []
     /// The agent's latest plan; each `plan` update replaces the previous one.
     public private(set) var plan: [PlanEntry] = []

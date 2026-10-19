@@ -110,9 +110,10 @@ extension AppModel {
                 guard let self else { return }
                 let now = ContinuousClock.now
                 closeIdleSessions(now: now, idleSince: &sessionsIdleSince)
+                let defaultAgent = defaultAgent?.id
                 for runtime in agents where runtime.isReady {
                     let agent = runtime.agent.id
-                    if agent == defaultAgent?.id || isInUse(agent) {
+                    if agent == defaultAgent || isInUse(agent) {
                         idleSince[agent] = nil
                     } else if let since = idleSince[agent] {
                         if now - since >= timeout {

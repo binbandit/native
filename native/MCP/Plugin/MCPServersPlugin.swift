@@ -34,6 +34,11 @@ struct MCPServersPlugin: NativePlugin {
         library.launchPolicy(for: agent)
     }
 
+    /// Agents that apply switches at launch need agents' own configuration read first.
+    func prepareForLaunch() async {
+        await library.configurationsRead()
+    }
+
     /// A turn ending may leave an agent idle with a launch policy to pick up.
     func handle(_ event: SessionEvent) async {
         if case .turnEnded = event {
@@ -53,9 +58,9 @@ extension MCPServersPlugin {
             library.scriptsAvailable = orchestration.hasScripts
             orchestration.scriptExtensions.add(MCPScriptBindings(library: library))
         }
-        // Agents launch right after this, and those that apply switches at launch need the
-        // configuration already, so the first read happens now; later reads are off the main thread.
-        library.readConfigurationsAtStartup()
+        // Agents launch soon after this, and those that apply switches at launch need the
+        // configuration, so the first read starts now; they wait for it (`prepareForLaunch`).
+        library.startReadingConfigurations()
         Task {
             await library.readConfigurations()
             await library.host?.mcpApplyLaunchPolicies(force: false)

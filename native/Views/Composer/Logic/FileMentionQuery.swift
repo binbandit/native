@@ -22,10 +22,6 @@ struct FileMentionQuery: Equatable {
 
     /// The draft with the mention replaced by `path`, and where the cursor goes after it.
     func draft(_ draft: String, inserting path: String) -> (text: String, cursor: String.Index) {
-        let mention = FileMention.mention(of: path) + " "
-        var text = draft
-        text.replaceSubrange(range, with: mention)
-        let cursor = text.index(range.lowerBound, offsetBy: mention.count)
-        return (text, cursor)
+        CompletionInsertion.draft(draft, replacing: range, with: FileMention.mention(of: path))
     }
 }

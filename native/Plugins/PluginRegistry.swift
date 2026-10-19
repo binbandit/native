@@ -19,17 +19,18 @@ final class PluginRegistry {
 
         let plugin: any NativePlugin
         let source: Source
-        /// Whether experiments can change it, worked out once: `plugins` applies experiments on
-        /// every read, and finding out scans every setting of the manifest for placeholders.
+        /// Kept, since reading it through the plugin copies the whole manifest.
+        let id: String
+        /// Whether experiments can change it, worked out once: finding out scans every setting of
+        /// the manifest for placeholders.
         let usesExperiments: Bool
 
         init(plugin: any NativePlugin, source: Source) {
             self.plugin = plugin
             self.source = source
+            id = plugin.manifest.id
             usesExperiments = (plugin as? ManifestPlugin)?.manifest.usesExperiments ?? false
         }
-
-        var id: String { plugin.manifest.id }
     }
 
     struct LoadFailure: Identifiable, Hashable {
@@ -49,8 +50,7 @@ final class PluginRegistry {
     /// Every loaded plugin, as its experiments leave it (`PluginExperimentSet`).
     var plugins: [LoadedPlugin] {
         LaunchMetrics.pluginReads += 1
-        let values = ExperimentStore.shared.current
-        return loadedPlugins.map { $0.applyingExperiments(values) }
+        return contributions.plugins
     }
     /// What's wrong with enabled plugins' experiments, for Labs.
     private(set) var experimentProblems: [PluginExperimentProblem] = []
@@ -139,19 +139,12 @@ final class PluginRegistry {
 
     /// Enabled plugins, plus the system plugins that always run (`SystemPlugins`).
     var enabledPlugins: [any NativePlugin] {
-        plugins.filter { isEnabled($0.id) }.map(\.plugin) + SystemPlugins.current
+        contributions.enabledPlugins
     }
 
     /// Agents of enabled plugins that the organization allows, with any environment it adds.
     var agents: [AgentDefinition] {
-        let policy = PolicyCenter.shared.policy.agents
-        return enabledPlugins.flatMap { plugin in
-            plugin.manifest.agents.filter { policy.allows($0.id) }.map { agent in
-                var agent = agent
-                agent.env.merge(policy.environment[agent.id] ?? [:]) { $1 }
-                return AgentDefinition(agent, pluginID: plugin.manifest.id)
-            }
-        }
+        contributions.agents
     }
 
     func agent(_ id: AgentDefinition.ID) -> AgentDefinition? {
@@ -213,10 +206,82 @@ final class PluginRegistry {
         enabledPlugins.lazy.compactMap(\.titler).first
     }
 
+    /// Returns once every enabled plugin has what agents' launches depend on.
+    func prepareForLaunch() async {
+        for plugin in enabledPlugins {
+            await plugin.prepareForLaunch()
+        }
+    }
+
     func broadcast(_ event: SessionEvent) async {
         for plugin in enabledPlugins {
             await plugin.handle(event)
         }
+    }
+
+    // MARK: - Cached contributions
+
+    /// What the lists above are worked out from changing: the loaded plugins, the user's choices,
+    /// experiment values (only while a plugin uses them) or the organization's policy.
+    private struct Contributions {
+        let plugins: [LoadedPlugin]
+        let enabledPlugins: [any NativePlugin]
+        let agents: [AgentDefinition]
+    }
+
+    /// Views, the agents and the idle loop read the lists many times over, and working them out
+    /// copies every manifest, so they're kept until something they come from changes. Readers
+    /// observe `revision`, which moves whenever the kept lists are dropped.
+    private var revision = 0
+    @ObservationIgnored private var cached: Contributions?
+    /// From the moment an input is about to change until the change has landed. Observation reports
+    /// a change before it happens, so lists worked out meanwhile may be stale and aren't kept.
+    @ObservationIgnored private var isSettling = false
+
+    // TEMPORARY A/B switch for launch measurements.
+    private static let noCache = UserDefaults.standard.bool(forKey: "launchperf.noPluginCache")
+
+    private var contributions: Contributions {
+        _ = revision
+        if Self.noCache {
+            _ = ExperimentStore.shared.current
+            return makeContributions()
+        }
+        if let cached { return cached }
+        let fresh = withObservationTracking(makeContributions) { [weak self] in
+            MainActor.assumeIsolated { self?.inputWillChange() }
+        }
+        if !isSettling { cached = fresh }
+        return fresh
+    }
+
+    private func inputWillChange() {
+        cached = nil
+        revision &+= 1
+        guard !isSettling else { return }
+        isSettling = true
+        Task { [weak self] in self?.isSettling = false }
+    }
+
+    private func makeContributions() -> Contributions {
+        let plugins: [LoadedPlugin]
+        if loadedPlugins.contains(where: \.usesExperiments) {
+            let values = ExperimentStore.shared.current
+            plugins = loadedPlugins.map { $0.applyingExperiments(values) }
+        } else {
+            plugins = loadedPlugins
+        }
+        let enabled = plugins.filter { isEnabled($0.id) }.map(\.plugin) + SystemPlugins.current
+        let policy = PolicyCenter.shared.policy.agents
+        let agents = enabled.flatMap { plugin in
+            let manifest = plugin.manifest
+            return manifest.agents.filter { policy.allows($0.id) }.map { agent in
+                var agent = agent
+                agent.env.merge(policy.environment[agent.id] ?? [:]) { $1 }
+                return AgentDefinition(agent, pluginID: manifest.id)
+            }
+        }
+        return Contributions(plugins: plugins, enabledPlugins: enabled, agents: agents)
     }
 
     // MARK: - Validation

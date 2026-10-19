@@ -9,7 +9,7 @@ in `docs/decisions.md` ("Releases on GitHub", "Sparkle for updates", "Nightly be
 | `native/Updates/` | `UpdateController` (observable state over Sparkle), the update button, Settings ▸ Updates, Check for Updates…, the host version notice |
 | `Config/*.xcconfig`, `Config/Native-Info.plist` | channels, bundle identifiers, feed URLs and the signing key, in one place |
 | `Packages/HostUpdater` | how a standalone host updates itself: the signed host feed, Ed25519 checks, atomic install with rollback |
-| `scripts/release/` | `release.sh` (archive → notarize → package → appcast → publish), `host.sh` (standalone host and its feed), `check.sh` (compile Release and Nightly), `release-notes.sh`, `ci-signing.sh` |
+| `scripts/release/` | `release.sh` (archive → notarize → package → appcast → publish), `host.sh` (standalone host and its feed), `check.sh` (compile Release and Nightly), `size-check.sh` (the size budget, `docs/app-size.md`), `release-notes.sh`, `ci-signing.sh` |
 | `.github/workflows/` | `check.yml` (every pull request), `nightly.yml` (every night), `release.yml` (on a `v*` tag) |
 
 ## Sentry crash symbols
@@ -282,8 +282,9 @@ or four highlights per release; more page.
 
 `check.yml` runs `scripts/release/check.sh` on every pull request and push to `main`: it compiles
 the Release and Nightly configurations without signing, so a break that only shows up outside
-Debug (a `#Preview` calling a DEBUG-only fixture) is caught before a release needs it. Run it
-locally before landing anything that touches `#if DEBUG` code or build settings.
+Debug (a `#Preview` calling a DEBUG-only fixture) is caught before a release needs it, then checks
+both apps against the size budget (`docs/app-size.md`). Run it locally before landing anything that
+touches `#if DEBUG` code or build settings.
 
 `nightly.yml` runs at 07:00 UTC (and on demand), builds `main`, and skips when `main` hasn't moved
 since the last nightly. `release.yml` runs on `v*` tags. Both need Xcode with the macOS 27 SDK; set

@@ -3,7 +3,8 @@
 Native runs all day next to the user's editor and terminal, so it has to be slim: launch feels
 instant, an idle app costs nothing (no CPU, no wakeups, no battery), and memory stays flat however
 long it runs. This document is the budget, how to measure against it, and what the measurements
-showed. `just perf` reruns the key numbers.
+showed. `just perf` reruns the key numbers. What Native costs to download and install has its own
+budget, enforced on every pull request: `docs/app-size.md`.
 
 ## Budgets
 

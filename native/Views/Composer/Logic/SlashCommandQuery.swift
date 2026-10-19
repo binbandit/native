@@ -1,3 +1,5 @@
+import ACP
+
 /// The slash command being typed: the draft while it's a bare "/name", before any argument.
 struct SlashCommandQuery: Equatable {
     /// What's typed after the slash.
@@ -8,9 +10,11 @@ struct SlashCommandQuery: Equatable {
         text = String(draft.dropFirst())
     }
 
-    /// The draft once `command` is inserted, ready for its argument.
-    static func draft(inserting command: ComposerSlashCommand) -> String {
-        "/\(command.name) "
+    /// The draft once `command` replaces the bare "/name" in `draft`, and the cursor after it, ready
+    /// for its argument.
+    static func draft(_ draft: String, inserting command: ComposerSlashCommand) -> (text: String, cursor: String.Index)
+    {
+        CompletionInsertion.draft(draft, replacing: draft.startIndex..<draft.endIndex, with: "/\(command.name)")
     }
 
     /// The commands matching the query, best first: exact names, then prefixes,

@@ -53,6 +53,8 @@ final class MCPLibrary {
     @ObservationIgnored private var trackedSessions: [UUID: SessionContext] = [:]
     /// What each tracked session has, for views to read without computing.
     private(set) var sessionEntries: [UUID: [MCPSessionEntry]] = [:]
+    /// The first read of agents' configuration, until it lands (`startReadingConfigurations`).
+    @ObservationIgnored private var firstRead: Task<Void, Never>?
     /// The projects and environment of the last read.
     @ObservationIgnored private var readProjects: Set<String> = []
     @ObservationIgnored private var readEnvironment: [String: String] = [:]
@@ -264,16 +266,30 @@ final class MCPLibrary {
         recomputeSessionEntries()
     }
 
-    /// The first read, on the main thread before agents launch: just the files, for the projects
-    /// open, with this process's environment (the shell's isn't known yet).
-    func readConfigurationsAtStartup() {
-        guard configurations.isEmpty, let host else { return }
+    /// The first read, started at connect and off the main thread (agents' files can be large):
+    /// just the files, for the projects open, with this process's environment (the shell's isn't
+    /// known yet). Agents that apply switches at launch wait for it (`configurationsRead()`).
+    func startReadingConfigurations() {
+        guard configurations.isEmpty, firstRead == nil, let host else { return }
         let environment = ProcessInfo.processInfo.environment
         let reader = AgentConfigReader(files: files, home: home(in: environment), environment: environment)
-        configurations = Dictionary(
-            uniqueKeysWithValues: AgentConfigFormat.allCases.map { ($0, reader.read($0, projects: host.mcpProjects)) })
-        readProjects = Set(host.mcpProjects.map(ProjectPath.key))
-        readEnvironment = environment
+        let projects = host.mcpProjects
+        firstRead = Task {
+            let read = await Task.detached {
+                Dictionary(uniqueKeysWithValues: AgentConfigFormat.allCases.map { ($0, reader.read($0, projects: projects)) })
+            }.value
+            // A full read that landed first is the better one.
+            guard configurations.isEmpty else { return }
+            configurations = read
+            readProjects = Set(projects.map(ProjectPath.key))
+            readEnvironment = environment
+            recomputeSessionEntries()
+        }
+    }
+
+    /// Returns once the first read has landed, for agents about to launch.
+    func configurationsRead() async {
+        await firstRead?.value
     }
 
     /// Reads again unless the last read is recent, for when the app comes back to the front.

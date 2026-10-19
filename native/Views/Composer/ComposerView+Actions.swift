@@ -86,8 +86,11 @@ extension ComposerView {
         isFocused = true
     }
 
+    /// Tab, Return or a click on a listed command: the caret goes after it, ready for its argument.
     func insert(_ command: ComposerSlashCommand) {
-        session.draft = SlashCommandQuery.draft(inserting: command)
+        let (text, cursor) = SlashCommandQuery.draft(session.draft, inserting: command)
+        session.draft = text
+        selection = TextSelection(insertionPoint: cursor)
         agentCommandDraft = command.isNative ? nil : session.draft
         isFocused = true
     }

@@ -43,14 +43,20 @@ public struct LocalCommandRunner: CommandRunner {
         process.standardOutput = outputPipe
         process.standardError = errorPipe
 
+        // Our ends of the pipes move to descriptors that only their channels close (see `PipeEnd`).
+        let outputEnd = try PipeEnd(outputPipe.fileHandleForReading)
+        let errorEnd = try PipeEnd(errorPipe.fileHandleForReading)
+        let inputEnd = try PipeEnd(inputPipe.fileHandleForWriting)
+
         // Both pipes are drained from the start, so a command that fills one pipe's buffer can't block,
         // and each read ends only at EOF, so no output is lost or reordered.
-        let standardOutput = PipeReader(outputPipe.fileHandleForReading) {
+        let standardOutput = PipeReader(outputEnd) {
             onOutput?(CommandOutput(stream: .standardOutput, data: $0))
         }
-        let standardError = PipeReader(errorPipe.fileHandleForReading) {
+        let standardError = PipeReader(errorEnd) {
             onOutput?(CommandOutput(stream: .standardError, data: $0))
         }
+        inputEnd.write(command.standardInput)
 
         let lifecycle = Lifecycle(process)
         let exitCode: Int32
@@ -65,10 +71,6 @@ public struct LocalCommandRunner: CommandRunner {
                         continuation.resume(throwing: error)
                         return
                     }
-                    if let stdin = command.standardInput {
-                        try? inputPipe.fileHandleForWriting.write(contentsOf: stdin)
-                    }
-                    try? inputPipe.fileHandleForWriting.close()
                     if let timeout = command.timeout {
                         Task {
                             try? await Task.sleep(for: timeout)
@@ -80,9 +82,11 @@ public struct LocalCommandRunner: CommandRunner {
                 lifecycle.stop(.cancelled)
             }
         } catch {
-            // Nothing launched, so nothing will close the write ends: close them to end the reads.
+            // Nothing launched, so nothing will close the command's ends of the pipes: close them to end
+            // the reads and the write.
             try? outputPipe.fileHandleForWriting.close()
             try? errorPipe.fileHandleForWriting.close()
+            try? inputPipe.fileHandleForReading.close()
             _ = await (standardOutput.untilClosed(), standardError.untilClosed())
             throw error
         }
@@ -126,12 +130,11 @@ private final class PipeReader: Sendable {
 
     private let state = Mutex(State())
 
-    init(_ handle: FileHandle, onData: @escaping @Sendable (Data) -> Void) {
+    init(_ end: consuming PipeEnd, onData: @escaping @Sendable (Data) -> Void) {
         let queue = DispatchQueue(label: "Exec.LocalCommandRunner.read")
-        let channel = DispatchIO(type: .stream, fileDescriptor: handle.fileDescriptor, queue: queue) { _ in }
+        let channel = end.makeChannel(queue: queue)
         channel.setLimit(lowWater: 1)
-        // The handler keeps the reader (and the handle, which owns the descriptor) alive until EOF,
-        // even once nobody waits for it any more.
+        // The handler keeps the reader alive until EOF, even once nobody waits for it any more.
         channel.read(offset: 0, length: .max, queue: queue) { [self] done, data, _ in
             if let data, !data.isEmpty {
                 let chunk = Data(data)
@@ -143,7 +146,6 @@ private final class PipeReader: Sendable {
             }
             guard done else { return }
             channel.close()
-            withExtendedLifetime(handle) {}
             let (waiter, data) = state.withLock { state in
                 state.isClosed = true
                 defer { state.waiter = nil }
@@ -172,6 +174,57 @@ private final class PipeReader: Sendable {
         state.withLock { state in
             state.isDetached = true
             return state.data
+        }
+    }
+}
+
+/// Our end of one of the command's pipes, as a descriptor of its own for exactly one dispatch channel.
+///
+/// libdispatch watches a channel's descriptor until just before the channel's cleanup handler runs.
+/// Closed any earlier, the watch vanishes and libdispatch traps ("Unexpected EV_VANISHED"), or, once
+/// the number is reused, acts on someone else's file. The pipe's `FileHandle` would close it as soon as
+/// the handle was released, so the channel gets a copy instead, closes it from that handler, and the
+/// handle is closed straight away: the copy is then this process's only descriptor for the pipe end,
+/// so a reader still sees end of file when the command exits, and the command sees it when its input
+/// is closed.
+private struct PipeEnd: ~Copyable {
+    private let descriptor: Int32
+
+    init(_ handle: FileHandle) throws {
+        // Close-on-exec, like the original, so no other command we start inherits the pipe.
+        let descriptor = fcntl(handle.fileDescriptor, F_DUPFD_CLOEXEC, 0)
+        let error = errno
+        try? handle.close()
+        guard descriptor >= 0 else { throw POSIXError(POSIXErrorCode(rawValue: error) ?? .EMFILE) }
+        // Writing to a command that exited without reading its input fails, rather than raising
+        // SIGPIPE, which ends the whole process unless it ignores the signal.
+        _ = fcntl(descriptor, F_SETNOSIGPIPE, 1)
+        self.descriptor = descriptor
+    }
+
+    /// For an end that never got a channel: setup failed, or there was no input to write.
+    deinit {
+        close(descriptor)
+    }
+
+    /// A stream channel that owns the descriptor, and is the only thing that closes it.
+    consuming func makeChannel(queue: DispatchQueue) -> DispatchIO {
+        let descriptor = descriptor
+        discard self
+        return DispatchIO(type: .stream, fileDescriptor: descriptor, queue: queue) { _ in
+            close(descriptor)
+        }
+    }
+
+    /// Writes `data` without blocking, then closes the pipe so the command sees end of file. A command
+    /// that never reads its input leaves the write pending until it exits; one that has exited fails it.
+    consuming func write(_ data: Data?) {
+        guard let data, !data.isEmpty else { return }
+        let queue = DispatchQueue(label: "Exec.LocalCommandRunner.write")
+        let channel = makeChannel(queue: queue)
+        channel.write(offset: 0, data: data.withUnsafeBytes { DispatchData(bytes: $0) }, queue: queue) {
+            done, _, _ in
+            if done { channel.close() }
         }
     }
 }

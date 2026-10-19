@@ -90,18 +90,21 @@ final class ResourceMonitor {
     private static func pause(
         for duration: Duration, orUntilChanged current: Activity, in activity: @escaping @MainActor () -> Activity
     ) async {
-        await withTaskGroup(of: Void.self) { group in
-            group.addTask {
-                try? await Task.sleep(for: duration, tolerance: duration / 10)
-            }
-            group.addTask { @MainActor in
-                for await next in Observations(activity) where next != current {
-                    return
-                }
-            }
-            await group.next()
-            group.cancelAll()
+        let sleep = Task {
+            try? await Task.sleep(for: duration, tolerance: duration / 10)
         }
+        let watch = Task {
+            for await next in Observations(activity) where next != current {
+                break
+            }
+            sleep.cancel()
+        }
+        await withTaskCancellationHandler {
+            await sleep.value
+        } onCancel: {
+            sleep.cancel()
+        }
+        watch.cancel()
     }
 
     /// Returns when the app is shown, hidden, minimized or uncovered, or the calling task is cancelled.

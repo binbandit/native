@@ -96,10 +96,20 @@ extension Repository {
         return reference
     }
 
-    /// Recreates a branch `archiveBranch` deleted, at the commit it had and with its config.
+    /// Recreates a branch `archiveBranch` deleted, at the commit it had and with its config. A
+    /// branch already there at that commit (an interrupted restore made it) is kept; one at another
+    /// commit is someone else's, so the copy stays put and this throws.
     public func restoreArchivedBranch(_ branch: String) async throws(GitError) {
         let reference = Self.archivedReference(of: branch)
-        try await run(["branch", branch, reference])
+        if let existing = try await resolve("refs/heads/\(branch)") {
+            guard existing == (try await resolve(reference)) else {
+                throw .failed(
+                    arguments: ["branch", branch], status: 128,
+                    stderr: "A branch named “\(branch)” already exists at a different commit.")
+            }
+        } else {
+            try await run(["branch", branch, reference])
+        }
         try await run(
             ["config", "--rename-section", "\(Self.archivedConfigSection).\(branch)", "branch.\(branch)"],
             acceptingStatus: [0, 128])
