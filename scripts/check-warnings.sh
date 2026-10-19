@@ -20,14 +20,14 @@ others=$(awk -v root="$root/" 'NF && index(tolower($0), tolower(root)) != 1' <<<
 
 if [ -n "$others" ]; then
     echo "Warnings from outside this repository (not failing the build):"
-    sed 's/^/  /' <<<"$others"
+    awk '{ print "  " $0 }' <<<"$others"
 fi
 if [ -z "$ours" ]; then
     echo "No warnings from this repository's files."
     exit 0
 fi
 echo "error: $(wc -l <<<"$ours" | tr -d ' ') warning(s) from this repository's files. Fix them; the build stays at zero:" >&2
-sed 's/^/  /' <<<"$ours" >&2
+awk '{ print "  " $0 }' <<<"$ours" >&2
 if [ "${GITHUB_ACTIONS:-}" = true ]; then
     # Annotations, so each one shows on the pull request's diff.
     sed -nE "s#^$root/([^:]+):([0-9]+):([0-9]+): warning: (.*)#::error file=\1,line=\2,col=\3::\4#p" <<<"$ours"

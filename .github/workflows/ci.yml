@@ -94,8 +94,24 @@ jobs:
             ~/Library/Caches/native-build
           key: app-cache-${{ runner.os }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'scripts/build-libghostty.sh') }}
           restore-keys: app-cache-${{ runner.os }}-
+      # The full log goes to a file rather than through -quiet, which prints a misleading "failed with
+      # exit code 0" error for every step that only warned. On a failure, its errors and summary show.
       - name: Build (unsigned)
         run: |
           xcodebuild build -project native.xcodeproj -scheme native -configuration Debug \
             -derivedDataPath "$RUNNER_TEMP/DerivedData" -destination 'platform=macOS' \
-            CODE_SIGNING_ALLOWED=NO -quiet
+            CODE_SIGNING_ALLOWED=NO > "$RUNNER_TEMP/build.log" 2>&1 || {
+              grep -E '^[^[:space:]|].*error: ' "$RUNNER_TEMP/build.log" | sort -u
+              tail -n 30 "$RUNNER_TEMP/build.log"
+              exit 1
+            }
+      # The app builds without warnings; this keeps it that way.
+      - name: No warnings
+        run: scripts/check-warnings.sh "$RUNNER_TEMP/build.log"
+      - name: Upload the build log
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-log
+          path: ${{ runner.temp }}/build.log
+          if-no-files-found: ignore

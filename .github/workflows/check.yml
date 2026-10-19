@@ -39,4 +39,9 @@ jobs:
           key: script-runtime-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'scripts/build-script-runtime.sh') }}
           restore-keys: script-runtime-${{ runner.os }}-${{ runner.arch }}-
       - name: Build Release and Nightly
-        run: scripts/release/check.sh --derived-data "$RUNNER_TEMP/DerivedData"
+        run: |
+          set -o pipefail
+          scripts/release/check.sh --derived-data "$RUNNER_TEMP/DerivedData" 2>&1 | tee "$RUNNER_TEMP/build.log"
+      # Like the Debug build in ci.yml, these build without warnings.
+      - name: No warnings
+        run: scripts/check-warnings.sh "$RUNNER_TEMP/build.log"

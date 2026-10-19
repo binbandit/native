@@ -483,19 +483,89 @@ the changes.
   counts stay within a few percent, so `LaunchMetrics` logs them (`thread_selfcounts`, looked up at
   run time) and `just perf` and `rusage` show them.
 
+### Idle, memory and leaks
+
+2026-10-19, evening, Debug build in an isolated instance: 30 tasks from a fake agent in three small
+projects with icons and repository scripts, a shallow clone of the Linux kernel as a fourth project
+(96,080 files, 20,000 remote branches), GitHub signed in, the status bar shown. Idle numbers are
+kernel counters for Native alone over 120 s windows (30 s ones swing with the Mac's own activity),
+several runs each. Task switches and Settings visits are AX presses on the instance's pid.
+
+| Measurement | Before | After |
+| --- | --- | --- |
+| Idle, visible, status bar shown | 0.18–0.33% CPU, 0.6–0.8 wakeups/s (0.04%, 0.4/s with the bar hidden) | 0.02–0.03% CPU, 0.4–0.5 wakeups/s; 0.08–0.14% later in the evening, where `sample` finds Native's own code in two status bar redraws a minute and the rest in the system |
+| Idle, minimized / hidden | 0.05–0.08% / 0.01–0.07% CPU, 0.5–0.9 / 0.7–1.5 wakeups/s | 0.03–0.06% / 0.03–0.08% CPU, 0.4–0.5 / 0.4–0.6 wakeups/s |
+| Opening tasks one after another | 140 MB → 2.6 GB after 25 tasks, then a core busy for good and still growing (1.15 GB and 4.9% CPU with the bar hidden) | 30 tasks opened: 136 → 174 MB; 30 more switches +27 MB while caches fill, then −3 to +1 MB per 30 |
+| 30 task switches + 10 Settings visits (Projects pages, MCP Servers, AI Instructions and others), after a warm-up | (the run above) | +14, +6, +3 MB in three rounds with the bar hidden; +12.5 MB with it shown |
+| `leaks` after the workload | 0 at launch; 2,024 (416 KB) after 30 tasks, 16,572 (2.9 MB) after about 150 switches | 0 |
+| Footprint with the kernel project | | Home 142 MB (129 without it); a kernel task costs what a small project's does; an `@` mention there +14 MB for the 96,000-file index |
+| Left a session after a long Codex reply | 167 MB → 252 MB (+85 MB) | +28 MB after the first reply of a run (mostly once-only costs of the first Codex session), +8 MB after the next, the same as the fake agent's long reply (+7 to +10 MB) |
+| An open, unused Claude Code session | | About 650 MB (the `claude` process 186–200 MB, plus this Mac's MCP servers, which it starts per session: 62 + 393 MB) and 0.5% CPU, 16 wakeups/s; the adapter itself 65 MB, shared |
+
+- **Keep Awake multiplied its own observers.** It followed the number of working tasks with a
+  `withObservationTracking` re-armed from its `onChange`. Reading that number goes through the
+  sidebar's cached session lists, which bump their generation inside the changing property's
+  `willSet`, so one change reached Keep Awake twice and it re-armed twice. Observers doubled with
+  every change: 327,000 live trackings, 9.5 million key-path sets and 10.5 million closures after
+  the warm-up (4.98 GB), and every later property write walked them all. It now follows with
+  `Observations`, which reads again once per change, and assigns only a changed value. A 60-line
+  standalone program reproduces it; the cache documents that it must be read from SwiftUI or
+  `Observations`.
+- **The status bar sampled and redrew every 3 s for as long as it showed.** Resources sampled every
+  process tree and assigned a new snapshot (a new date each time), so the bar re-rendered, laid
+  out and committed every 3 s: the whole visible-idle regression. It samples every 3 s only while a
+  task works or the details are open, every 30 s otherwise and at once when the working tasks, the
+  agents or the details change; and the bar reads only what it shows, assigned when that changes.
+- **The status bar's memory read as Native's own.** It summed Native and every agent's process tree,
+  MCP servers included: the 1.6–2.6 GB in screenshots with the kernel project was the agents,
+  Native itself was 140–200 MB. The bar now shows Native and Agents as separate figures, memory and
+  CPU each, and the tooltip says what each counts.
+- **GitHub refreshed every 10 minutes while nobody could see it.** About 0.5 s of CPU in `gh` per
+  refresh (four calls), roughly 0.1% averaged, twice the hidden budget, for counts in a hidden
+  window. It now sleeps while no window is visible and refreshes on coming back if results are
+  older than a minute.
+- **The composer's rich text editor leaked on teardown.** SwiftUI's `TextEditor` bound to an
+  `AttributedString` leaves a retain cycle (`NSSwiftMutableAttributedString` and its string proxy)
+  behind each editor that goes away, about 14 KB per task switch, and nothing else in Native leaks.
+  The composer now uses the plain editor until a draft has code in it.
+- **The once-a-minute idle tick re-applied plugin experiments.** About 30 ms of main-thread CPU per
+  tick in Debug, the hidden budget on its own, in `PluginRegistry.plugins`; the registry now keeps
+  its applied list (Launch, above).
+- **Whole-window redraws briefly hold about 257 MB of graphics memory.** At every launch, and on some
+  redraws when other windows uncover Native's, `footprint` shows about 257 MB of "Owned physical
+  footprint (unmapped) (graphics)" for about a second (peak 390–405 MB), then it drops back to
+  130–140 MB. No app code runs meanwhile; it doesn't happen while hidden.
+- **The first task opened costs about 50 MB, in any project.** That's the session view's SwiftUI
+  graph: `malloc_history` finds 26 MB of new live allocations, spread over SwiftUI and
+  AttributeGraph state with no app-side owner, and the allocator keeps the pages its transient
+  allocations freed. Later tasks cost 0.5–3 MB each. With the kernel project, git status,
+  20,000 branches and the worktree list cost nothing measurable until something asks for them.
+- **Idle closing is faithful for Claude Code, and pays.** With claude-agent-acp each session is its
+  own Claude Code process, which starts the user's MCP servers for itself: two unused sessions held
+  1.3 GB and 1% CPU. A closed session's whole process tree exits; selecting it loads it back in
+  about 6 s (Debug, busy Mac) with its transcript, model and effort (Opus 5.5 at Low), autonomy
+  (Accept edits), Native's mode and title. Only the turn's duration and the context gauge wait for
+  the next turn. Claude Code's plugin now closes sessions unused for 10 minutes
+  (`idleSessionTimeout` in the agent manifest, docs/plugins.md); the `sessionIdleTimeout` default
+  still overrides it for every agent. Codex stays open until codex-acp releases a closed session's
+  MCP servers (below).
+
 ## Still to do
 
 | What | Why | Owner |
 | --- | --- | --- |
 | Stop hover hit-testing while the transcript scrolls | 12–19% of a fast scroll; needs proof, by hand with a real mouse wheel and trackpad, that clicks and hover come back the moment a scroll ends | Transcript performance |
 | Let Codex unload closed threads | codex-acp never unsubscribes its title-generation thread, so each session's MCP servers (about 1 GB each here) outlive it until the adapter exits | Upstream codex-acp#628 / #629; then turn idle closing on |
-| Turn on closing idle sessions | Once the row above is done (reopening is faithful now): default `sessionIdleTimeout` to 10 minutes. Also check claude-agent-acp, where each session is its own Claude Code process | App model |
+| Turn idle closing on for Codex | Claude Code closes sessions unused for 10 minutes now (`idleSessionTimeout` in its manifest). Once the row above lands, give Codex's manifest the same | App model |
 | "Couldn't run git: The file “project” doesn't exist" alert | New Session in a project whose folder is gone shows a modal; the sidebar already says "Can't find this project's folder" with Retry | Failures |
-| Find what holds memory after a Codex reply | After the first long Codex reply, footprint stayed about 85 MB up (167 MB → 252 MB, mostly Malloc Small) after leaving the session; replies from a fake agent come back within 20 MB | Transcript, app model |
 | Launch within 150 ms of main-thread CPU | 430-459 ms in Release with 30 tasks (4.6 G instructions), 319-325 ms with none: mostly AppKit and SwiftUI building, laying out and drawing the window (Launch, above). It takes fewer views before the first frame, not faster code | App shell, sidebar, Home |
 | Cheaper sidebar rows | A row that's built costs about 45 M instructions: each has its own context menu, swipe actions, tooltip, accessibility actions and trailing indicators (`AppTaskRowAccessory`), and `ArchivedSection` lists every project's archived tasks to count them. The sidebar is about 1.9 G of a 4.9 G launch with 30 tasks | Sidebar |
 | A cheaper main menu | 8% of launch: 80 `CommandMenuItem`s, each reading eight focused values and the environment through `FocusedCommandContext` | Commands |
 | Launch Services on the main thread at launch | Open In looks up every app it knows (`OpenInModel.refresh`, about 5 ms in Debug) and agent icons look up installed apps (`AgentIconInstalledApps`), both before the first frame; both can wait or move off the main thread | Open In, agent icons |
+| Native under 150 MB with a transcript open | 175–195 MB with one short transcript open (Home 130–140 MB): the first session view's SwiftUI graph is about 26 MB live, the rest pages the allocator kept after its transient allocations | Session view, transcript |
+| About 257 MB of graphics memory on whole-window redraws | For about a second at every launch and on some redraws when other windows uncover Native's (peak 390–405 MB); find what draws in-process with Metal then | App shell |
+| Age labels redraw while nothing is visible | `CompactAgeText` and Home's rows tick with `TimelineView(.everyMinute)`, every row once a minute, hidden or not; a shared minute clock that stops while hidden, like `DSSecondClock` | Sidebar, design system |
+| The composer's rich editor still leaks once it showed code | SwiftUI's rich `TextEditor` leaves about 14 KB behind each editor that goes away; only drafts with code use it now. Keeping one editor across task switches would end it | Composer |
 | Park the default agent when it has no open sessions for a long while, or start it on the first New Session | It's kept running so New Session never waits; with direct adapter launch that wait is now about 0.3 s for Codex | App model |
 | Opening the changes inspector on many files under 100 ms | Still 218–392 ms on 250 files against 69–77 ms on a clean repository: laying out and drawing the rows on screen (text measuring, the diff's selectable text) and the first file's diff, in Debug | Git |
 | Scroll a long transcript at 120 Hz | Still 7–33% of refreshes dropped in a fast flick and 7–13% at reading speed (Debug): new rows lay out their selectable text on the main thread. Then lists without `Grid`, and code blocks without a scroll view each | Transcript |

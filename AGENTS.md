@@ -79,6 +79,9 @@ Keep the shared build green: about a dozen agents build this one tree. Develop u
 compilation condition or in a scratch package until they compile, and fix a break you caused before
 anything else.
 
+The app builds with zero warnings in Debug, Release and Nightly, and CI fails on any new one from our
+files: fix yours in the same change (`scripts/check-warnings.sh /tmp/native-dd/<you>/build.log`).
+
 The shell here is zsh: an unquoted `$files` is one argument, not a list, and `$sha:refs/...` reads as a
 modifier. List files explicitly (or use an array), and write `"${sha}:refs/..."`.
 
