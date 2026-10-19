@@ -15,7 +15,8 @@ nonisolated enum OrchestrationScriptTool {
         " run_script runs JavaScript that calls the read-only tools, to check or wait on several tasks in one call."
 
     /// `run_script` over the scriptable `tools`, or nil without a runner: the app has none when it
-    /// was built without cargo, or its runtime isn't signed into the App Sandbox.
+    /// was built without cargo. A runtime that isn't signed into the App Sandbox is refused when a
+    /// script runs.
     static func make(
         binding tools: [MCPTool<OrchestrationCaller>], extensions: OrchestrationScriptExtensions,
         runner: ScriptRunner? = try? ScriptRunner.embedded()

@@ -394,9 +394,10 @@ views as they were with the model fixes below already in (scrolling runs none of
 - **The Markdown parse cache held 512 sections**, fewer than a long session has (about 2,500 for
   500 turns), so scrolling back re-parsed. It now holds 8,192, still capped at 4 MB of source.
 - **Hover hit-tested every frame.** Rows that highlight on hover made SwiftUI hit-test the view
-  tree under the cursor on every frame the content moved (12–19% of a fast scroll). The transcript
-  stops taking hits while a scroll gesture is under way. This one wasn't measured: driving the
-  scroll bar has no scroll phase, and the real cursor isn't ours to move.
+  tree under the cursor on every frame the content moved (12–19% of a fast scroll). Turning hit
+  testing off while a scroll is under way was tried and taken back out: nobody could check that a
+  mouse wheel's scroll always ends its phase, and if one doesn't, clicks in the transcript stop
+  working. It's in "Still to do".
 - **The transcript's own changes, measured in the shared tree** (19:15, after everything above
   landed): an external 240 Hz display had become the main one (the probe still counts at 120 Hz) and
   the load average was 135 to 275, ten times the cores, so these only bound the earlier rows. Scrolling
@@ -416,6 +417,7 @@ views as they were with the model fixes below already in (scrolling runs none of
 
 | What | Why | Owner |
 | --- | --- | --- |
+| Stop hover hit-testing while the transcript scrolls | 12–19% of a fast scroll; needs proof, by hand with a real mouse wheel and trackpad, that clicks and hover come back the moment a scroll ends | Transcript performance |
 | Let Codex unload closed threads | codex-acp never unsubscribes its title-generation thread, so each session's MCP servers (about 1 GB each here) outlive it until the adapter exits | Upstream codex-acp#628 / #629; then turn idle closing on |
 | Turn on closing idle sessions | Once the row above is done (reopening is faithful now): default `sessionIdleTimeout` to 10 minutes. Also check claude-agent-acp, where each session is its own Claude Code process | App model |
 | Cache the applied plugin list itself | Only the experiment scan is cached; `plugins` still maps every loaded plugin on every read | Experiments / plugins |

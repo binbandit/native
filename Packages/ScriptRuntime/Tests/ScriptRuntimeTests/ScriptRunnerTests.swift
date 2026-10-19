@@ -126,7 +126,7 @@ struct ScriptRunnerTests {
         #expect(report == ["fileRead": "denied", "network": "denied"])
     }
 
-    @Test func refusesAnUnsandboxedRuntime() throws {
+    @Test func refusesAnUnsandboxedRuntime() async throws {
         let unsigned = FileManager.default.temporaryDirectory.appending(
             path: "native-script-runtime-\(UUID().uuidString)")
         try FileManager.default.copyItem(at: helper, to: unsigned)
@@ -136,7 +136,8 @@ struct ScriptRunnerTests {
         strip.arguments = ["--force", "--sign", "-", unsigned.path(percentEncoded: false)]
         try strip.run()
         strip.waitUntilExit()
-        #expect(throws: ScriptRunnerError.notSandboxed(unsigned)) { try ScriptRunner(helper: unsigned) }
+        let runner = try ScriptRunner(helper: unsigned)
+        await #expect(throws: ScriptRunnerError.notSandboxed(unsigned)) { try await runner.run("text('escaped')") }
     }
 
     @Test func stopsAScriptThatRunsTooLong() async throws {

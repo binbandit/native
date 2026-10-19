@@ -1,6 +1,7 @@
 #if os(macOS)
 import Foundation
 import Security
+import os
 
 /// Runs scripts in `native-script-runtime`: a V8 isolate in its own process, signed into the App
 /// Sandbox with no network and no files. Each run is a fresh process that ends with the script.
@@ -12,22 +13,24 @@ public struct ScriptRunner: Sendable {
     public static let embeddedPath = "Contents/Helpers/native-script-runtime"
 
     public let helper: URL
+    /// Nil when the sandbox isn't required.
+    private let sandboxCheck: SandboxCheck?
 
     /// A runner for the runtime at `helper`. Unless `requireSandbox` is false (for tests of an
     /// unsigned development build), the runtime must carry a valid signature with the App Sandbox
-    /// entitlement: without it a script that escaped V8 would have the user's full access.
+    /// entitlement: without it a script that escaped V8 would have the user's full access. That's
+    /// checked before the first run rather than here, since checking hashes the whole runtime
+    /// (about 40 MB) and the app makes its runner at launch.
     public init(helper: URL, requireSandbox: Bool = true) throws {
         guard FileManager.default.isExecutableFile(atPath: helper.path(percentEncoded: false)) else {
             throw ScriptRunnerError.missing(helper)
         }
-        if requireSandbox && !Self.isSandboxed(helper) {
-            throw ScriptRunnerError.notSandboxed(helper)
-        }
         self.helper = helper
+        sandboxCheck = requireSandbox ? SandboxCheck(helper: helper) : nil
     }
 
     /// The runtime embedded in `bundle`, or nil when this build doesn't include one (cargo wasn't
-    /// installed when it was built). Throws if it's there but not sandboxed.
+    /// installed when it was built).
     public static func embedded(in bundle: Bundle = .main) throws -> ScriptRunner? {
         let helper = bundle.bundleURL.appending(path: embeddedPath)
         guard FileManager.default.fileExists(atPath: helper.path(percentEncoded: false)) else { return nil }
@@ -36,13 +39,17 @@ public struct ScriptRunner: Sendable {
 
     /// Runs `code`, an ES module body with top-level `await`, and returns what it printed and how it
     /// ended. Script failures, including running out of time, are in the result's `failure`; this
-    /// throws only when the script can't be started, and `CancellationError` when cancelled.
+    /// throws only when the script can't be started (the runtime isn't sandboxed, say), and
+    /// `CancellationError` when cancelled.
     public func run(
         _ code: String,
         bindings: [ScriptBinding] = [],
         inputs: [String: String] = [:],
         limits: ScriptLimits = .standard
     ) async throws -> ScriptRunResult {
+        if let sandboxCheck, !sandboxCheck.passes() {
+            throw ScriptRunnerError.notSandboxed(helper)
+        }
         _ = try ScriptSession.index(bindings)
         let transport: ScriptProcessTransport
         do {
@@ -68,6 +75,26 @@ public struct ScriptRunner: Sendable {
             let entitlements = information[kSecCodeInfoEntitlementsDict as String] as? [String: Any]
         else { return false }
         return entitlements["com.apple.security.app-sandbox"] as? Bool == true
+    }
+
+    /// `isSandboxed`, worked out on the first run and kept: the runtime is part of the signed app,
+    /// so it doesn't change while the app runs.
+    private final class SandboxCheck: Sendable {
+        let helper: URL
+        private let result = OSAllocatedUnfairLock<Bool?>(initialState: nil)
+
+        init(helper: URL) {
+            self.helper = helper
+        }
+
+        func passes() -> Bool {
+            result.withLock { result in
+                if let result { return result }
+                let checked = ScriptRunner.isSandboxed(helper)
+                result = checked
+                return checked
+            }
+        }
     }
 }
 
