@@ -20,14 +20,16 @@ struct ComposerFeedback: Equatable, Identifiable {
 
     /// What became of a sent message. One that started a turn of its own shows in the transcript, so
     /// it needs no word here. `wasWorking` says whether a turn was running; otherwise the agent
-    /// wasn't ready yet (the session was loading).
+    /// wasn't ready yet (the session was loading), or `heldFor` names what its turns wait for.
     init?(
         delivery: SessionModel.FollowUpDelivery, requested: FollowUpBehavior, wasWorking: Bool, supportsSteering: Bool,
-        agentName: String
+        agentName: String, heldFor hold: String? = nil
     ) {
         switch delivery {
         case .prompted:
             return nil
+        case .queued where !wasWorking && hold != nil:
+            self.init(tone: .done, message: "Sends once \(hold ?? "") is done")
         case .queued where !wasWorking:
             self.init(tone: .done, message: "Sends when \(agentName) is ready")
         case .steered:

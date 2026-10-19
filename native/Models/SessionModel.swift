@@ -240,8 +240,8 @@ final class SessionModel {
         origin != .announced
     }
 
-    /// Why the session's turns wait for something outside it, such as its worktree's setup script.
-    /// Messages sent meanwhile queue, and go out once it's lifted.
+    /// What the session's turns wait for outside it, such as "the worktree's setup script". Messages
+    /// sent meanwhile queue, and go out once it's lifted.
     var turnHold: String? {
         services.sendGate.workspaceHold(for: cwd)
     }

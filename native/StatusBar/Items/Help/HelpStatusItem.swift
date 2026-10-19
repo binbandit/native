@@ -8,7 +8,8 @@ struct HelpStatusItem: StatusBarItem {
     let id = "help"
     let title = "Keyboard Shortcuts and Help"
     let placement = StatusBarPlacement.trailing
-    let order = 0
+    /// Past every other trailing item, so it keeps the window's corner and is the last to drop.
+    let order = 100
 
     var content: some View {
         HelpSegment(help: help)

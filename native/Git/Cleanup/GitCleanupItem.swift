@@ -35,8 +35,10 @@ struct GitCleanupItem: Identifiable, Hashable {
     let reason: String
     /// The merged pull request, for the reason's link.
     var pullRequest: URL?
-    /// Where it is: the branch, the folder.
+    /// What it holds: the branch, or the commit a branch is at.
     var detail: String?
+    /// Its folder, for the row's tooltip.
+    var location: String?
     /// What to know before including it: "3 uncommitted files".
     var warning: String?
     var bytes: Int?
@@ -57,7 +59,8 @@ struct GitCleanupItem: Identifiable, Hashable {
                 title: Self.title(of: working, folder: worktree.path),
                 reason: Self.describe(worktree.reason, base: plan.base, detached: worktree.branch == nil))
             item.pullRequest = worktree.reason.pullRequestURL
-            item.detail = [worktree.branch ?? "Detached HEAD", Self.abbreviated(worktree.path)].joined(separator: " · ")
+            item.detail = worktree.branch ?? "Detached HEAD"
+            item.location = Self.abbreviated(worktree.path)
             item.bytes = worktree.bytes
             item.tasks = working
             var warnings: [String] = []
@@ -96,7 +99,8 @@ struct GitCleanupItem: Identifiable, Hashable {
             var item = GitCleanupItem(
                 id: .staleRecord(record.path), group: .staleRecords, title: record.path.lastPathComponent,
                 reason: "Its folder is gone")
-            item.detail = [record.branch, Self.abbreviated(record.path)].compactMap(\.self).joined(separator: " · ")
+            item.detail = record.branch
+            item.location = Self.abbreviated(record.path)
             items.append(item)
         }
         #if os(macOS)
@@ -106,6 +110,7 @@ struct GitCleanupItem: Identifiable, Hashable {
                 id: .leftoverFolder(folder.path), group: .leftoverFolders, title: folder.path.lastPathComponent,
                 reason: "Left behind by a worktree git no longer knows")
             item.detail = Self.abbreviated(folder.path)
+            item.location = item.detail
             item.bytes = folder.bytes
             items.append(item)
         }

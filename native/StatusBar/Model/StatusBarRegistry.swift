@@ -42,7 +42,7 @@ final class StatusBarRegistry {
         items.removeAll { $0.id == id }
     }
 
-    /// The items shown at one end, outer edge first.
+    /// The items shown at one end, left to right.
     func visibleItems(_ placement: StatusBarPlacement) -> [AnyStatusBarItem] {
         items
             .filter { $0.placement == placement && isVisible($0.id) }

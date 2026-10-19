@@ -65,7 +65,8 @@ extension ComposerView {
                 let delivery = try await session.submit(text, attaching: attachments, behavior)
                 feedback = ComposerFeedback(
                     delivery: delivery, requested: behavior, wasWorking: wasWorking,
-                    supportsSteering: session.supportsSteering, agentName: session.agentName)
+                    supportsSteering: session.supportsSteering, agentName: session.agentName,
+                    heldFor: session.turnHold)
             } catch {
                 // Nothing went out, so the message and its files come back to be sent again.
                 if session.draft.isEmpty {

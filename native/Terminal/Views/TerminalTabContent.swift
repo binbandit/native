@@ -50,24 +50,23 @@ struct TerminalTabContent: View {
             )
         case .running, .exited, .failedToStart(.exitedImmediately):
             // One branch for every state with a terminal on screen, so the terminal view keeps its
-            // identity (and keyboard focus) when its shell ends.
-            surface.overlay(alignment: .bottom) {
-                outcome.padding(DS.Space.md)
+            // identity (and keyboard focus) when its shell ends. A job's ending goes under its
+            // output rather than over it, since its last lines are usually the summary.
+            VStack(spacing: 0) {
+                surface.overlay(alignment: .bottom) {
+                    if tab.job == nil {
+                        shellOutcome.padding(DS.Space.md)
+                    }
+                }
+                if let job = tab.job, let outcome = job.outcome {
+                    TerminalJobOutcomeBanner(job: job, outcome: outcome) { panel.rerunJob(in: tab.id) }
+                        .padding(DS.Space.md)
+                }
             }
         }
     }
 
     /// What happened to the shell, over its last output.
-    @ViewBuilder private var outcome: some View {
-        if let job = tab.job {
-            if let outcome = job.outcome {
-                TerminalJobOutcomeBanner(job: job, outcome: outcome) { panel.rerunJob(in: tab.id) }
-            }
-        } else {
-            shellOutcome
-        }
-    }
-
     @ViewBuilder private var shellOutcome: some View {
         switch tab.status {
         case .exited:

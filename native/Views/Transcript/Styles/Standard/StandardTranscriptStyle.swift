@@ -188,6 +188,7 @@ private struct QuietThinkingLabel: View {
                     ElapsedTimeText(since: since)
                     Text(verbatim: "…")
                 }
+                .accessibilityElement(children: .combine)
             } else {
                 Text("Working…")
             }

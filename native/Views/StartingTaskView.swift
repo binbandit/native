@@ -62,7 +62,9 @@ private struct StartingTaskProgress: View {
             }
             VStack(alignment: .leading, spacing: DS.Space.sm) {
                 row(task.workspaceLabel, done: task.folder != nil, isCurrent: task.step == .preparingWorkspace)
-                row("Starting \(task.agent.displayName)", done: task.isAgentReady, isCurrent: task.step == .startingAgent)
+                row(
+                    "Starting \(task.agent.displayName)", done: task.isAgentReady,
+                    isCurrent: task.step == .startingAgent)
                 row("Opening the session", done: false, isCurrent: task.step == .openingSession)
             }
             Text("Write your first message below. It goes out as soon as the session is ready.")
@@ -125,6 +127,21 @@ private struct StartingTaskComposer: View {
                 }
             }
             .frame(minHeight: DS.Size.composerInputMinHeight)
+            // Where the session's controls go, so the composer keeps its height when they arrive.
+            HStack(spacing: DS.Composer.controlSpacing) {
+                AgentIcon(agent: task.agent)
+                    .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
+                Text(task.agent.displayName)
+                    .font(.dsBody)
+                    .foregroundStyle(.dsTextSecondary)
+                Spacer(minLength: DS.Space.sm)
+                Text("Model and settings once the session is ready")
+                    .font(.dsCaption)
+                    .foregroundStyle(.dsTextTertiary)
+                    .lineLimit(1)
+            }
+            .frame(minHeight: DS.Size.composerPill)
+            .padding(DS.Composer.controlsInset)
         }
         .onAppear(perform: takeFocusIfWanted)
         .onChange(of: task.wantsComposerFocus) { takeFocusIfWanted() }

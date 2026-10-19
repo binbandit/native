@@ -46,12 +46,14 @@ private struct SettingsButton: View {
 /// agent, with the versions line at the bottom.
 private struct SidebarHelpMenu: View {
     @Environment(AppModel.self) private var model
-    @State private var isShowingShortcuts = false
+    @Environment(CommandRegistry.self) private var commands
+    @FocusedCommandContext private var context
 
     var body: some View {
         Menu {
+            // The app's one shortcuts sheet, the same as Help ▸ Keyboard Shortcuts and ⌘/.
             Button("Keyboard Shortcuts", systemImage: "keyboard") {
-                isShowingShortcuts = true
+                commands.perform(.helpKeyboardShortcuts, in: context)
             }
             Link(destination: Self.protocolDocs) {
                 Label("Agent Client Protocol Docs", systemImage: "book")
@@ -92,9 +94,6 @@ private struct SidebarHelpMenu: View {
         .fixedSize()
         .help("Help")
         .accessibilityLabel("Help")
-        .sheet(isPresented: $isShowingShortcuts) {
-            KeyboardShortcutsView()
-        }
     }
 
     private static let protocolDocs = URL(string: "https://agentclientprotocol.com") ?? URL(filePath: "/")

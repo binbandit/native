@@ -51,6 +51,8 @@ struct ProjectIconPicker: View {
 
     /// The found icons' cells.
     private static let foundSide: CGFloat = 24
+    /// Room for the four tabs with the popover's inset either side.
+    private static let width: CGFloat = 340
 
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
@@ -87,7 +89,7 @@ struct ProjectIconPicker: View {
             }
         }
         .padding(DS.Space.lg)
-        .frame(width: 300)
+        .frame(width: Self.width)
         .task { found = await store.foundIcons(in: project) }
         .fileImporter(isPresented: $isImporting, allowedContentTypes: [.svg, .image]) { result in
             guard case .success(let url) = result else { return }

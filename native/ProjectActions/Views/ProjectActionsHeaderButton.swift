@@ -63,7 +63,7 @@ struct ProjectActionsHeaderButton: View {
                 Text(running.count == 1 ? first.name : "\(running.count) running")
             } icon: {
                 DotGridLoader(pattern: .waiting)
-                    .frame(width: DS.Size.navIcon, height: DS.Size.navIcon)
+                    .frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
             }
         } else {
             Label {

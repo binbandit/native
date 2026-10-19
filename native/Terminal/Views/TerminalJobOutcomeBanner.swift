@@ -1,8 +1,8 @@
 import SwiftUI
 import Terminal
 
-/// How a job tab's run ended, over its last output: finished, failed with its exit code, or
-/// stopped, how long it took, and Run Again in the same tab.
+/// How a job tab's run ended, under its output: finished, failed with its exit code, or stopped,
+/// how long it took, and Run Again in the same tab. The command itself heads the output.
 struct TerminalJobOutcomeBanner: View {
     let job: TerminalJob
     let outcome: TerminalJob.Outcome
@@ -14,7 +14,6 @@ struct TerminalJobOutcomeBanner: View {
             tone: outcome.succeeded ? .success : failed ? .danger : .info,
             systemImage: symbol,
             title: outcome.summary(of: job.name),
-            detail: job.command,
             footnote: "Press any key to close this tab."
         ) {
             Button("Run Again", action: runAgain)

@@ -19,11 +19,11 @@ public struct ProjectActionLaunch: Hashable, Sendable {
         ]
     }
 
-    /// The command line a terminal tab runs, for `shell` (the user's terminal shell). It prints
-    /// the command dimmed, marks its start and end with OSC 133 (the end carries the exit status,
-    /// which the terminal reports as a finished command, since a login wrapper hides the shell's
-    /// own exit status on the Mac), and runs it as a login, interactive shell would, so it sees
-    /// what a command typed in a new tab sees.
+    /// The command line a terminal tab runs, for `shell` (the user's terminal shell). It clears
+    /// what `login(1)` printed ("Last login: …"), prints the command dimmed, marks its start and
+    /// end with OSC 133 (the end carries the exit status, which the terminal reports as a finished
+    /// command, since a login wrapper hides the shell's own exit status on the Mac), and runs it as
+    /// a login, interactive shell would, so it sees what a command typed in a new tab sees.
     ///
     /// The terminal hands it to `bash -c`, so every word is single-quoted for bash.
     public func terminalCommand(shell: String) -> String {
@@ -34,7 +34,7 @@ public struct ProjectActionLaunch: Hashable, Sendable {
 
     /// The POSIX script around the command: `$1` is the shell, `$2` the command.
     static let frame = [
-        #"printf '\033[2m$ %s\033[0m\n' "$2""#,
+        #"printf '\033[H\033[2J\033[3J\033[2m$ %s\033[0m\n' "$2""#,
         #"printf '\033]133;C\007'"#,
         #""$1" -l -i -c "$2""#,
         "status=$?",

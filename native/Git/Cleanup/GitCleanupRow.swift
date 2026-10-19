@@ -50,10 +50,12 @@ struct GitCleanupRow: View {
             }
         }
         .padding(.vertical, DS.Space.sm)
+        .help(item.location ?? "")
         .opacity(model.phase == .review && !isEnabled ? GitCleanupMetrics.disabledOpacity : 1)
         .contentShape(.rect)
         .onTapGesture { model.toggle(item) }
         .accessibilityElement(children: .combine)
+        .accessibilityLabel([item.title, item.reason, item.warning].compactMap(\.self).joined(separator: ", "))
         .accessibilityAddTraits(model.phase == .review ? .isToggle : [])
         .accessibilityValue(accessibilityValue)
         .accessibilityAction { model.toggle(item) }

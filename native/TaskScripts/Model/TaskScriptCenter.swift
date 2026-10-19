@@ -26,8 +26,8 @@ struct TaskScriptFolder: Hashable, Sendable {
 /// gives it the environment, the command runner and a way to hold a folder's turns.
 @Observable
 final class TaskScriptCenter {
-    /// Why a task's messages wait while its setup runs.
-    static let setupHold = "Waiting for the worktree's setup script"
+    /// What a task's messages wait for while its setup runs.
+    static let setupHold = "the worktree's setup script"
     /// How many runs each folder's log keeps.
     static let logLimit = 20
 

@@ -28,7 +28,7 @@ struct TerminalJobStatusDot: View {
         switch job.outcome {
         case nil:
             DotGridLoader(pattern: .waiting)
-                .frame(width: DS.Size.navIcon, height: DS.Size.navIcon)
+                .frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
                 .foregroundStyle(.dsTextSecondary)
         case let outcome? where outcome.succeeded:
             StatusDot(color: .dsSuccess)

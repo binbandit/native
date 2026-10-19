@@ -19,8 +19,9 @@ protocol StatusBarItem {
     /// The item's name in the bar's show-and-hide menu.
     var title: String { get }
     var placement: StatusBarPlacement { get }
-    /// Position within its end, low to high from the outer edge inwards. Built-in items use
-    /// multiples of 10 so others can go between.
+    /// Position within its end, low to high from left to right: the leading end from the window's
+    /// edge inwards, the trailing end towards it. Built-in items use multiples of 10 so others can go
+    /// between.
     var order: Int { get }
 
     @MainActor @ViewBuilder var content: Content { get }

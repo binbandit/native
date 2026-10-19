@@ -9,7 +9,8 @@ final class AgentSendGate {
     /// Set by the app once its runtimes exist.
     @ObservationIgnored weak var runtimes: AgentRuntimes?
     private var usageLimits: [AgentDefinition.ID: String] = [:]
-    /// Folders whose sessions take no new turn yet, with why, by their standardized `folderPath`.
+    /// Folders whose sessions take no new turn yet, with what they wait for, by their standardized
+    /// `folderPath`.
     private var workspaceHolds: [String: String] = [:]
 
     /// The limit's message ("Claude's usage limit resets at 3:05 PM"), or nil once it's lifted.
