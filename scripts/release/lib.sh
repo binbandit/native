@@ -4,7 +4,8 @@
 ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 
 # MODE is "plan" (print everything, run nothing), "dry-run" (run local steps, print remote ones),
-# "notarize" (also talk to Apple) or "publish" (also talk to GitHub).
+# "notarize" (also talk to Apple), "rehearse" (everything publishing does except publish) or
+# "publish" (also talk to GitHub).
 MODE=dry-run
 
 log() { printf '\033[1m==>\033[0m %s\n' "$*" >&2; }
@@ -31,9 +32,9 @@ run() {
     fi
 }
 
-# A step that talks to Apple's notary service: runs with --notarize or --publish.
+# A step that talks to Apple's notary service: runs with --notarize, --rehearse or --publish.
 notary() {
-    if [ "$MODE" = notarize ] || [ "$MODE" = publish ]; then
+    if [ "$MODE" = notarize ] || [ "$MODE" = rehearse ] || [ "$MODE" = publish ]; then
         run "$@"
     else
         printf '  [dry run] would run: %s\n' "$(quoted "$@")" >&2
@@ -57,6 +58,14 @@ xcconfig_value() {
 # owner/name of the GitHub repository; the environment wins over Config/Shared.xcconfig.
 github_repository() {
     printf '%s' "${NATIVE_GITHUB_REPOSITORY:-$(xcconfig_value NATIVE_GITHUB_REPOSITORY Shared.xcconfig)}"
+}
+
+# Builds what the app embeds from outside Swift: the terminal (libghostty, fetching Zig and Ghostty
+# the first time) and the script runtime (Rust and V8). Xcode's build phases only warn when they
+# can't, so a build without this step would quietly ship without them; size-check.sh refuses that.
+build_embedded() {
+    run "$ROOT/scripts/build-libghostty.sh"
+    run "$ROOT/scripts/build-script-runtime.sh"
 }
 
 require_tool() {

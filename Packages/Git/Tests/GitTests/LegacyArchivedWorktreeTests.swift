@@ -70,15 +70,36 @@ struct LegacyArchivedWorktreeTests {
         #expect(checkpoint != nil)
     }
 
-    @Test func aCheckpointFromBeforeTheArchiveIsntItsWork() async throws {
+    @Test func aCheckpointFromBeforeLaterCommitsIsntItsWork() async throws {
         let legacy = try await LegacyArchive.make(folder: "p0o9i", renamedTo: nil)
         defer { legacy.test.remove() }
         try await legacy.archive()
+        // Unarchived, the draft dropped and a commit made, then archived again with nothing uncommitted.
+        let main = try await legacy.test.repository
+        try await main.restoreWorktree(at: legacy.path, branch: "me/p0o9i", from: nil)
+        try await legacy.commit("later.md")
+        let archivedAt = Date.now
+        try await legacy.archive()
 
-        let rebuilt = try await legacy.test.repository.rebuildArchivedWorktree(
-            at: legacy.path, title: nil, archivedAt: .now.addingTimeInterval(60))
+        let rebuilt = try await main.rebuildArchivedWorktree(at: legacy.path, title: nil, archivedAt: archivedAt)
 
         #expect(rebuilt == .found(ArchivedWorktree(path: legacy.path, branch: "me/p0o9i", checkpoint: nil)))
+    }
+
+    @Test func aTaskArchivedAgainAfterItsWorktreeWasLostGetsItsWorkBack() async throws {
+        let legacy = try await LegacyArchive.make(folder: "u7y6t", renamedTo: nil)
+        defer { legacy.test.remove() }
+        try await legacy.archive()
+        let main = try await legacy.test.repository
+
+        // An older Native unarchived it without its worktree; archiving it again removed nothing.
+        let rebuilt = try await main.rebuildArchivedWorktree(
+            at: legacy.path, title: nil, archivedAt: .now.addingTimeInterval(60))
+
+        guard case .found(let archived) = rebuilt else { Issue.record("Expected a branch, got \(rebuilt)"); return }
+        #expect(archived.checkpoint != nil)
+        try await main.restoreArchivedWorktree(archived)
+        #expect(try legacy.read("draft.txt") == "unsaved\n")
     }
 }
 

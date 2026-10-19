@@ -9,9 +9,11 @@ extension Repository {
     /// a task titled `title`.
     ///
     /// The checkpoint is the one the archive made of that folder: named after it, its message
-    /// naming the folder, and made no earlier than the archive. Without one the folder had nothing
-    /// uncommitted. The branch is found by the first kind of evidence any branch has, and must
-    /// hold the commit the checkpoint was made on:
+    /// naming the folder, and made no earlier than the archive. Without one, the folder may have
+    /// had nothing uncommitted, or it was already gone when the task was archived again (an older
+    /// Native unarchived it without its worktree); then the newest checkpoint of the folder made on
+    /// the branch's commit is its work. The branch is found by the first kind of evidence any
+    /// branch has, and must hold the commit the checkpoint was made on:
     /// 1. Its name: the folder is named after the provisional branch's code (or after the branch,
     ///    for a pull request's worktree), which a branch renamed after its title keeps in its reflog.
     /// 2. The task's title, which renamed it.
@@ -23,7 +25,10 @@ extension Repository {
         isSameFolder: (_ path: String, _ named: String) -> Bool = { $0 == $1 }
     ) async throws(GitError) -> RebuiltArchivedWorktree {
         let folderName = path.lastPathComponent
-        let checkpoint = try await archiveCheckpoint(of: path, since: archivedAt, isSameFolder: isSameFolder)
+        let checkpoints = try await folderCheckpoints(of: path, isSameFolder: isSameFolder)
+        // Committer dates are whole seconds.
+        let earliest = archivedAt.map { $0.timeIntervalSince1970.rounded(.down) } ?? 0
+        let checkpoint = checkpoints.first { $0.time >= earliest }?.checkpoint
         var base: String?
         if let checkpoint {
             base = try await resolve("\(checkpoint.commit)^1")
@@ -62,19 +67,26 @@ extension Repository {
 
         for matches in [byName, byTitle, byCheckpoint] where !matches.isEmpty {
             guard matches.count == 1, let branch = matches.first else {
-                return .ambiguous(matches.map(\.name).sorted(), checkpoint: checkpoint)
+                return .ambiguous(matches.map(\.name).sorted(), checkpoint: checkpoint ?? checkpoints.first?.checkpoint)
             }
-            return .found(ArchivedWorktree(path: path, branch: branch.name, checkpoint: checkpoint))
+            var work = checkpoint
+            if work == nil {
+                for saved in checkpoints where try await resolve("\(saved.checkpoint.commit)^1") == branch.tip {
+                    work = saved.checkpoint
+                    break
+                }
+            }
+            return .found(ArchivedWorktree(path: path, branch: branch.name, checkpoint: work))
         }
-        return .noBranch(checkpoint: checkpoint)
+        return .noBranch(checkpoint: checkpoint ?? checkpoints.first?.checkpoint)
     }
 
     // MARK: - Helpers
 
-    /// The newest checkpoint archiving made of the folder at `path`, no earlier than `archivedAt`.
-    private func archiveCheckpoint(
-        of path: URL, since archivedAt: Date?, isSameFolder: (String, String) -> Bool
-    ) async throws(GitError) -> Checkpoint? {
+    /// The checkpoints archiving made of the folder at `path`, newest first, with when each was made.
+    private func folderCheckpoints(
+        of path: URL, isSameFolder: (String, String) -> Bool
+    ) async throws(GitError) -> [(checkpoint: Checkpoint, time: Double)] {
         var spelling = path.standardizedFileURL.path(percentEncoded: false)
         if spelling.count > 1, spelling.hasSuffix("/") { spelling.removeLast() }
         let messagePrefix = "Native checkpoint of "
@@ -85,19 +97,16 @@ extension Repository {
                 "--format=%(refname)%00%(objectname)%00%(committerdate:unix)%00%(contents:subject)",
                 "refs/native-checkpoints",
             ], readOnly: true)
-        // Committer dates are whole seconds.
-        let earliest = archivedAt.map { $0.timeIntervalSince1970.rounded(.down) } ?? 0
-        for line in output.text.split(separator: "\n") {
+        return output.text.split(separator: "\n").compactMap { line in
             let fields = line.split(separator: "\0", omittingEmptySubsequences: false).map(String.init)
             guard fields.count == 4, fields[0].hasPrefix(prefix), fields[3].hasPrefix(messagePrefix),
-                let time = Double(fields[2]), time >= earliest
-            else { continue }
+                let time = Double(fields[2])
+            else { return nil }
             var named = String(fields[3].dropFirst(messagePrefix.count))
             if named.count > 1, named.hasSuffix("/") { named.removeLast() }
-            guard isSameFolder(spelling, named) else { continue }
-            return Checkpoint(reference: fields[0], commit: fields[1])
+            guard isSameFolder(spelling, named) else { return nil }
+            return (Checkpoint(reference: fields[0], commit: fields[1]), time)
         }
-        return nil
     }
 
     /// Branches a removed task worktree could have been on: local ones no worktree has checked out,

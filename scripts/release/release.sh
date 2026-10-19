@@ -12,6 +12,8 @@
 #                            to the v* tag at HEAD; nightly derives one from the last stable tag
 #   --build-number <n>       CFBundleVersion (default: the number of commits on HEAD)
 #   --notarize               also notarize and staple (talks to Apple, publishes nothing)
+#   --rehearse               everything --publish does except publishing: its checks, notarizing,
+#                            the appcast with its deltas, and a Sentry check that uploads nothing
 #   --publish                notarize, staple and publish to GitHub Releases
 #   --plan                   print every command and run nothing
 #   --identity <name>        signing identity (default: Developer ID Application, or ad hoc for a
@@ -25,7 +27,8 @@
 #
 # Environment: NATIVE_NOTARY_PROFILE (notarytool keychain profile, default native-notary),
 # NATIVE_KEYCHAIN (keychain holding the identity and profile, for CI), NATIVE_TEAM_ID,
-# NATIVE_GITHUB_REPOSITORY (overrides Config/Shared.xcconfig), GH_TOKEN for --publish in CI,
+# NATIVE_GITHUB_REPOSITORY and NATIVE_SPARKLE_PUBLIC_KEY (override Config/Shared.xcconfig),
+# NATIVE_SENTRY_DSN and SENTRY_AUTH_TOKEN (official builds), GH_TOKEN in CI,
 # NATIVE_LINUX_HOST_DIR (native-host-linux-<arch> binaries to add to the host feed).
 set -euo pipefail
 source "$(dirname "$0")/lib.sh"
@@ -37,7 +40,8 @@ while [ $# -gt 0 ]; do
         --channel) channel=$2; shift ;;
         --version) version=$2; shift ;;
         --build-number) build_number=$2; shift ;;
-        --notarize) [ "$MODE" = publish ] || MODE=notarize ;;
+        --notarize) [ "$MODE" = publish ] || [ "$MODE" = rehearse ] || MODE=notarize ;;
+        --rehearse) [ "$MODE" = publish ] || MODE=rehearse ;;
         --publish) MODE=publish ;;
         --plan) MODE=plan ;;
         --identity) identity=$2; shift ;;
@@ -46,7 +50,7 @@ while [ $# -gt 0 ]; do
         --build-setting) settings+=("$2"); shift ;;
         --output) output=$2; shift ;;
         --no-dmg) make_dmg=0 ;;
-        -h | --help) sed -n '2,29p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+        -h | --help) sed -n '2,33p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
         *) die "unknown option $1 (see --help)" ;;
     esac
     shift
@@ -54,6 +58,9 @@ done
 
 cd "$ROOT"
 repo=$(github_repository)
+# The key every installed copy checks updates against. Official builds get it from the environment
+# (CI's NATIVE_SPARKLE_PUBLIC_KEY variable), so a build from source never trusts Native's feed.
+public_key=${NATIVE_SPARKLE_PUBLIC_KEY:-$(xcconfig_value NATIVE_SPARKLE_PUBLIC_KEY Shared.xcconfig)}
 notary_profile=${NATIVE_NOTARY_PROFILE:-native-notary}
 keychain_args=()
 [ -n "${NATIVE_KEYCHAIN:-}" ] && keychain_args=(--keychain "$NATIVE_KEYCHAIN")
@@ -102,9 +109,12 @@ app="$output/$product.app"
 # Nightly archives carry the build number so a download in flight never meets a replaced file.
 if [ "$channel" = nightly ]; then zip_name="$asset_base-$build_number.zip" dmg_name="$asset_base.dmg"; else zip_name="$asset_base-$version.zip" dmg_name="$asset_base-$version.dmg"; fi
 
-if [ "$MODE" = publish ]; then
+# A rehearsal checks everything publishing needs, so it fails where the real run would.
+if [ "$MODE" = publish ] || [ "$MODE" = rehearse ]; then
     [[ $repo == *PLACEHOLDER* ]] && die "set NATIVE_GITHUB_REPOSITORY in Config/Shared.xcconfig before publishing (docs/releasing.md)"
-    [ -n "$(xcconfig_value NATIVE_SPARKLE_PUBLIC_KEY Shared.xcconfig)" ] || die "set NATIVE_SPARKLE_PUBLIC_KEY in Config/Shared.xcconfig before publishing"
+    [ -n "$public_key" ] || die "set NATIVE_SPARKLE_PUBLIC_KEY before publishing (docs/releasing.md, \"Repository secrets\")"
+    [ -n "$key_file" ] || security find-generic-password -s https://sparkle-project.org -a ed25519 >/dev/null 2>&1 \
+        || die "no Sparkle signing key: pass --ed-key-file or add it to the Keychain (docs/releasing.md, \"One-time setup\")"
     [ -z "$(git status --porcelain)" ] || die "the working tree has changes; release from a clean checkout"
     require_tool gh "brew install gh"
     [ -n "${SENTRY_AUTH_TOKEN:-}" ] || die "set SENTRY_AUTH_TOKEN before publishing (docs/releasing.md, Sentry crash symbols)"
@@ -143,20 +153,18 @@ else
 fi
 run rm -rf "$archive" "$app"
 run mkdir -p "$output"
+build_embedded
 run xcodebuild archive \
     -project native.xcodeproj -scheme native -configuration "$configuration" \
     -archivePath "$archive" -derivedDataPath "$output/DerivedData" -destination 'generic/platform=macOS' \
     MARKETING_VERSION="$version" CURRENT_PROJECT_VERSION="$build_number" \
     NATIVE_CHANNEL_CONDITION="$channel_condition" NATIVE_APP_ICON_NAME="$app_icon" \
-    NATIVE_SENTRY_DSN="${NATIVE_SENTRY_DSN:-}" \
+    NATIVE_SENTRY_DSN="${NATIVE_SENTRY_DSN:-}" NATIVE_SPARKLE_PUBLIC_KEY="$public_key" \
     CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY="$identity" DEVELOPMENT_TEAM="$team" \
     CODE_SIGN_INJECT_BASE_ENTITLEMENTS=NO OTHER_CODE_SIGN_FLAGS="$sign_flags" ${runtime[@]+"${runtime[@]}"} \
     ${settings[@]+"${settings[@]}"} -quiet
 run ditto "$archive/Products/Applications/$product.app" "$app"
 run codesign --verify --deep --strict --verbose=2 "$app"
-
-# Symbols must reach Sentry before users can receive this build. Dry runs print the upload only.
-remote bash "$ROOT/scripts/release/sentry.sh" "$archive/dSYMs"
 
 # MARK: - Notarize and staple
 
