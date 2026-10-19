@@ -13,6 +13,11 @@ final class ProjectSessionLists {
 
     /// The kept list for `project`, or a fresh one from `build`, kept until something `build`
     /// read changes.
+    ///
+    /// Read it from SwiftUI or `Observations`, never from a `withObservationTracking` that re-arms
+    /// in its `onChange`: one change reaches that reader twice (through `generation`, bumped in the
+    /// changed property's willSet, and through the property itself), so its observers double with
+    /// every change. Keep Awake did that, and grew to gigabytes after about 25 tasks.
     func list(for project: Project.ID, build: () -> [SessionSummary]) -> [SessionSummary] {
         _ = generation
         if let list = lists[project] {
