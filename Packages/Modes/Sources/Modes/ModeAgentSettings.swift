@@ -1,4 +1,5 @@
 import ACP
+import Foundation
 
 /// The settings of one agent's session that a mode can change, read from its ACP config options
 /// by category: the permission mode (`mode`), Plan Mode (a `collaboration_mode` with a `plan`

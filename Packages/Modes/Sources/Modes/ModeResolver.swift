@@ -1,4 +1,5 @@
 import ACP
+import Foundation
 
 /// What a mode does on one agent: the settings to change, and what it can't do there, in plain
 /// words. Organization policy always wins: a forbidden level gives way to the nearest allowed one.

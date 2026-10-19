@@ -1,3 +1,5 @@
+import Foundation
+
 /// A named way of working for a task: instructions Native gives the agent, and the settings it
 /// applies on the way in (an autonomy level, the agent's own plan mode, a model). Modes are built
 /// in (`Mode.builtIn`), the user's own, or shared by a project as files (`ModeFile`).

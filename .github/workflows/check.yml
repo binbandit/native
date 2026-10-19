@@ -6,6 +6,8 @@ on:
   pull_request:
   push:
     branches: [main]
+  # Run by hand on any branch: `gh workflow run <file> --ref <branch>`.
+  workflow_dispatch:
 
 permissions:
   contents: read

@@ -1,3 +1,5 @@
+import Foundation
+
 extension Mode.ID {
     public static let build: Self = "build"
     public static let plan: Self = "plan"

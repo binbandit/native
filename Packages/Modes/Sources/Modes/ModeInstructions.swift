@@ -1,4 +1,5 @@
 import ACP
+import Foundation
 
 /// The instructions a mode sends its agent, once: ahead of the first prompt after the mode is
 /// picked or changed (`PromptPreamble`), never repeated while the agent already has them.

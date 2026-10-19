@@ -1,4 +1,5 @@
 import ACP
+import Foundation
 
 /// A task's mode, as Native remembers it: which mode, and the settings that mode changed with
 /// what they were before, so leaving it puts them back.
