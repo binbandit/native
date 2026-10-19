@@ -294,7 +294,7 @@ else
 fi
 
 deltas=()
-if [ -f "$appcast" ]; then
+if [ "$can_sign" = 1 ] && [ "$MODE" != plan ]; then
     # generate_appcast points every item whose archive is in the folder at this release; a seed that's
     # still in the feed keeps the URL it was published with.
     for seed in ${seeds[@]+"${seeds[@]}"}; do
