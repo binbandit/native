@@ -15,10 +15,14 @@ die() {
     exit 1
 }
 
-# Prints a command the way a shell would read it back.
+# Prints a command the way a shell would read it back, with the Sentry DSN (a secret in CI, passed to
+# xcodebuild as a build setting) left out of logs.
 quoted() {
-    local out="" arg
-    for arg in "$@"; do out+=" $(printf '%q' "$arg")"; done
+    local out="" arg dsn=${NATIVE_SENTRY_DSN:-}
+    for arg in "$@"; do
+        [ -z "$dsn" ] || arg=${arg//"$dsn"/<NATIVE_SENTRY_DSN>}
+        out+=" $(printf '%q' "$arg")"
+    done
     printf '%s' "${out# }"
 }
 

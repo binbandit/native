@@ -29,6 +29,7 @@ final class KeepAwakeController {
 
     @ObservationIgnored private let engine: any KeepAwakeEngine
     @ObservationIgnored private let defaults: UserDefaults
+    @ObservationIgnored private var following: Task<Void, Never>?
     private static let policyKey = "keepAwake.policy"
 
     /// Quitting needs nothing: the system drops a process's power assertions when it exits.
@@ -89,9 +90,20 @@ final class KeepAwakeController {
 
     /// Keeps the activity in step with `read`, which reads observable app state (such as how many
     /// tasks are working), for as long as the controller lives.
-    func follow(_ read: @escaping @MainActor () -> KeepAwakeActivity) {
-        activity = withObservationTracking(read) { [weak self] in
-            Task { @MainActor in self?.follow(read) }
+    ///
+    /// `Observations` reads again once per change. A `withObservationTracking` re-armed from its
+    /// own `onChange` can hear about one change twice, when reading updates other observable state
+    /// during it (the sidebar's cached session lists do), and every extra re-arm doubled the
+    /// observers: gigabytes and a busy core after opening a couple of dozen tasks.
+    func follow(_ read: @escaping @MainActor @Sendable () -> KeepAwakeActivity) {
+        following?.cancel()
+        following = Task { [weak self] in
+            for await activity in Observations(read) {
+                guard let self else { return }
+                if activity != self.activity {
+                    self.activity = activity
+                }
+            }
         }
     }
 
