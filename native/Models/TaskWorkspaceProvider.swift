@@ -11,10 +11,12 @@ protocol TaskWorkspaceProvider: AnyObject {
     /// runs: "Creating a worktree", "Creating a branch".
     func newTaskWorkspaceLabel(in project: Project) -> String
 
-    /// Puts away what Native made for a task leaving the sidebar (archive). Returns how to bring it
-    /// back, or nil when there was nothing of Native's to put away. Never touches the user's own
-    /// project folder.
-    func archiveWorkspace(at folder: URL, in project: Project) async throws -> TaskWorkspaceRemoval?
+    /// Puts away what Native made for a task leaving the sidebar (archive), keeping what
+    /// `restoreWorkspace` needs with the project itself, so it can come back in a later run of
+    /// Native too. Returns what was done as a sentence for the archive's toast ("Removed its
+    /// worktree, saving uncommitted work as a checkpoint."), or nil when there was nothing of
+    /// Native's to put away. Never touches the user's own project folder.
+    func archiveWorkspace(at folder: URL, in project: Project) async throws -> String?
 
     /// Brings back what `archiveWorkspace` put away at `folder`, in this run of Native or a later
     /// one, picking up where an archive or restore Native quit during stopped. Returns whether
@@ -50,13 +52,6 @@ protocol TaskWorkspaceProvider: AnyObject {
 
 extension TaskWorkspaceProvider {
     func taskWasDeleted(_ task: SessionKey, title: String, folder: URL, in project: Project) async {}
-}
-
-/// A task's workspace that was put away, and how to restore it.
-struct TaskWorkspaceRemoval {
-    /// What was done, in a sentence: "Removed its worktree, saving uncommitted work as a checkpoint."
-    let summary: String
-    let restore: () async throws -> Void
 }
 
 /// Why a new task's workspace couldn't be made, when the user can do something about it.

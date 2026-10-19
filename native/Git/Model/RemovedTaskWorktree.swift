@@ -1,11 +1,10 @@
 import Foundation
 import Git
 
-/// What removing a task's worktree left behind, so the removal can be described and undone.
+/// What removing a task's worktree left behind, so the removal can be described. Archiving also
+/// records it in the repository, which is what brings it back (`restoreArchivedTaskWorktree`).
 struct RemovedTaskWorktree: Hashable, Sendable {
     let path: URL
-    /// The repository's main working tree, which restores it.
-    let mainRoot: URL
     /// The branch the worktree had checked out; `nil` when it was detached.
     let branch: String?
     /// Uncommitted work saved before removal; `nil` when there was none.

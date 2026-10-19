@@ -108,10 +108,9 @@ extension GitCleanupModel {
         // No task here, or its tasks run in a folder inside it: put the worktree itself away.
         guard await services.git.isTaskWorktree(path, of: project.url) else { return .done }
         do {
-            guard let provider = app.taskWorkspaces,
-                let removal = try await provider.archiveWorkspace(at: path, in: project)
+            guard let provider = app.taskWorkspaces, try await provider.archiveWorkspace(at: path, in: project) != nil
             else { return .failed("Native couldn't remove this worktree.") }
-            record.worktrees.append(removal)
+            record.worktrees.append(path)
             return .done
         } catch {
             return .failed(error.localizedDescription)
@@ -159,9 +158,9 @@ extension GitCleanupModel {
         }
         // Each task that can't get its worktree back says so with the project.
         await services.app.unarchiveSessions(record.tasks)
-        for removal in record.worktrees {
+        for path in record.worktrees {
             do {
-                try await removal.restore()
+                try await services.app.taskWorkspaces?.restoreWorkspace(at: path, in: project)
             } catch {
                 failures.append(error.localizedDescription)
             }

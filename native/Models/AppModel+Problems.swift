@@ -33,9 +33,7 @@ extension AppModel {
             case .workspaceDeletion(_, let folder):
                 try await taskWorkspaces?.deleteWorkspace(at: folder, in: project)
             case .workspaceArchive(let key):
-                if let removal = try await archiveWorkspace(of: key, in: project) {
-                    archivedWorkspaces[key] = removal
-                }
+                _ = try await archiveWorkspace(of: key, in: project)
             case .workspaceRestore(let key):
                 try await restoreWorkspace(of: key)
             }

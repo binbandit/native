@@ -37,62 +37,82 @@ extension AppModel {
     /// add to the undo message (or nothing), and reporting a failure with the project. Internal only
     /// for AppModel+BulkActions.swift.
     func putAwayWorkspace(of key: SessionKey, titled title: String, in projectID: Project.ID) async -> String {
-        var detail = ""
-        if archivedWorkspaces[key] != nil {
-            // Bringing its workspace back failed last time, so it's still put away.
-            problems.resolve(.workspaceRestore(key), in: projectID)
-        } else if let project = projects.project(projectID) {
-            do {
-                if let removal = try await archiveWorkspace(of: key, in: project) {
-                    archivedWorkspaces[key] = removal
-                    detail = " " + removal.summary
-                }
-            } catch {
-                problems.report(
-                    ProjectProblem(
-                        project: project.id, work: .workspaceArchive(key),
-                        title: "Couldn't put away “\(title)”'s workspace",
-                        recovery: "The task is archived; its workspace is still on disk.",
-                        details: error.localizedDescription))
-            }
+        // A workspace that couldn't be brought back last time stays put away now.
+        problems.resolve(.workspaceRestore(key), in: projectID)
+        guard let project = projects.project(projectID) else { return "" }
+        do {
+            return try await archiveWorkspace(of: key, in: project).map { " " + $0 } ?? ""
+        } catch {
+            problems.report(
+                ProjectProblem(
+                    project: project.id, work: .workspaceArchive(key),
+                    title: "Couldn't put away “\(title)”'s workspace",
+                    recovery: "The task is archived; its workspace is still on disk.",
+                    details: error.localizedDescription))
+            return ""
         }
-        return detail
     }
 
     /// Brings an archived task back to the sidebar, with its workspace if Native put one away.
     func unarchiveSession(_ key: SessionKey) async {
         guard archivedSessions.contains(key) else { return }
         archivedSessions.set(key, archived: false)
-        let project = catalog.lookup(key)?.project
-        if let project {
+        if let project = catalog.lookup(key)?.project {
             // A workspace that couldn't be put away is where it should be now.
             problems.resolve(.workspaceArchive(key), in: project)
         }
-        guard archivedWorkspaces[key] != nil else { return }
         do {
             try await restoreWorkspace(of: key)
         } catch {
-            // Without a project, the task isn't in the sidebar to come back to either.
-            guard let project else { return }
-            problems.report(
-                ProjectProblem(
-                    project: project, work: .workspaceRestore(key),
-                    title: "Couldn't restore “\(titleOfSession(key))”'s workspace",
-                    recovery: "The task is back, and the checkpoint of its work is still saved.",
-                    details: error.localizedDescription))
+            reportRestoreFailure(of: key, error)
         }
     }
 
-    /// Brings back the workspace Native put away for an archived task, keeping what it needs to try
-    /// again if that fails. Internal only for AppModel+Problems.swift.
+    /// Brings back the workspace Native put away for a task, if there is one and the task is still
+    /// unarchived when its turn comes. What brings it back is kept with the project, so a failure
+    /// can be retried. Internal only for AppModel+Problems.swift.
     func restoreWorkspace(of key: SessionKey) async throws {
-        guard let removal = archivedWorkspaces.removeValue(forKey: key) else { return }
-        do {
-            try await removal.restore()
-        } catch {
-            archivedWorkspaces[key] = removal
-            throw error
+        guard let listed = catalog.lookup(key), let project = projects.project(listed.project),
+            let folder = taskFolder(of: key, in: project)
+        else { return }
+        try await inWorkspaceOrder(at: folder) {
+            // Archived again before its turn came: it stays put away.
+            guard !self.archivedSessions.contains(key) else { return }
+            try await self.taskWorkspaces?.restoreWorkspace(at: folder, in: project)
         }
+    }
+
+    /// Finishes bringing back the workspaces of tasks unarchived as Native quit (Undo, then quit at
+    /// once): each is in the sidebar, and what brings its workspace back is still kept with its
+    /// project. Run once at launch.
+    func resumeWorkspaceRestores() async {
+        guard let provider = taskWorkspaces else { return }
+        for project in projects.all {
+            let folders = await provider.archivedWorkspaceFolders(of: project)
+            guard !folders.isEmpty else { continue }
+            let unarchived = allSessions(in: project.id).filter { summary in
+                !archivedSessions.contains(summary.id)
+                    && folders.contains { SessionFolder.isSame($0.folderPath, summary.info.cwd) }
+            }
+            for summary in unarchived {
+                do {
+                    try await restoreWorkspace(of: summary.id)
+                } catch {
+                    reportRestoreFailure(of: summary.id, error)
+                }
+            }
+        }
+    }
+
+    private func reportRestoreFailure(of key: SessionKey, _ error: any Error) {
+        // Without a project, the task isn't in the sidebar to come back to either.
+        guard let project = catalog.lookup(key)?.project else { return }
+        problems.report(
+            ProjectProblem(
+                project: project, work: .workspaceRestore(key),
+                title: "Couldn't restore “\(titleOfSession(key))”'s workspace",
+                recovery: "The task is back, and the checkpoint of its work is still saved.",
+                details: error.localizedDescription))
     }
 
     /// Removes a task from Native: the agent's own copy too when it can delete sessions, and the
@@ -238,15 +258,46 @@ extension AppModel {
         }
     }
 
-    /// Puts away the workspace Native made for a task, if it has one. Internal only for
+    /// Puts away the workspace Native made for a task, if it has one and the task is still archived
+    /// when its turn comes. Returns what was done, for the toast. Internal only for
     /// AppModel+Problems.swift.
-    func archiveWorkspace(of key: SessionKey, in project: Project) async throws -> TaskWorkspaceRemoval? {
-        guard let provider = taskWorkspaces,
+    func archiveWorkspace(of key: SessionKey, in project: Project) async throws -> String? {
+        guard let folder = taskFolder(of: key, in: project) else { return nil }
+        return try await inWorkspaceOrder(at: folder) {
+            // Unarchived before its turn came (Undo while a bulk archive works): it stays.
+            guard self.archivedSessions.contains(key) else { return nil }
+            return try await self.taskWorkspaces?.archiveWorkspace(at: folder, in: project)
+        }
+    }
+
+    /// The folder a task runs in, unless it's the project's own, which Native never puts away.
+    private func taskFolder(of key: SessionKey, in project: Project) -> URL? {
+        guard
             let folder = sessions.session(key)?.cwd
                 ?? catalog.lookup(key).map({ URL(filePath: $0.info.cwd, directoryHint: .isDirectory) }),
             !SessionFolder.isSame(folder.folderPath, project.path)
         else { return nil }
-        return try await provider.archiveWorkspace(at: folder, in: project)
+        return folder
+    }
+
+    /// Runs `work` on a folder's workspace after whatever was already started on it, so putting it
+    /// away and bringing it back happen in the order they were asked for (Undo pressed while a bulk
+    /// archive is still removing it), and two tasks in one folder don't bring it back twice.
+    private func inWorkspaceOrder<Value: Sendable>(
+        at folder: URL, _ work: @escaping @MainActor () async throws -> Value
+    ) async throws -> Value {
+        let path = folder.standardizedFileURL.path(percentEncoded: false)
+        let previous = workspaceWork[path]
+        let task = Task { @MainActor in
+            await previous?.value
+            return try await work()
+        }
+        let finished = Task { @MainActor in _ = try? await task.value }
+        workspaceWork[path] = finished
+        defer {
+            if workspaceWork[path] == finished { workspaceWork[path] = nil }
+        }
+        return try await task.value
     }
 
     /// Shows the undo toast and registers the same undo with the window's undo manager.

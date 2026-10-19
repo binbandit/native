@@ -30,8 +30,10 @@ public final class ByteChannel: ByteStream {
         var flushWaiters: [CheckedContinuation<Void, Never>] = []
     }
 
-    /// Takes ownership of both descriptors and closes them when the channel closes. They may not be
-    /// the same descriptor; use `socket(_:)` for a socket.
+    /// Takes ownership of both descriptors: nothing else may close them. Each closes from its dispatch
+    /// channel's cleanup handler, the first moment libdispatch has stopped watching it; closed any
+    /// earlier, libdispatch traps ("Unexpected EV_VANISHED") or, once the number is reused, acts on
+    /// someone else's file. They may not be the same descriptor; use `socket(_:)` for a socket.
     public init(reading readDescriptor: Int32, writing writeDescriptor: Int32, label: String) {
         let queue = DispatchQueue(label: "Native.ByteChannel.\(label)")
         self.queue = queue
@@ -46,9 +48,10 @@ public final class ByteChannel: ByteStream {
     }
 
     /// A channel over a connected socket. Reading and writing get their own descriptor so each
-    /// direction can shut down on its own.
+    /// direction can shut down on its own. The copy is close-on-exec, so no process we start inherits
+    /// the connection and holds it open.
     public static func socket(_ descriptor: Int32, label: String) -> ByteChannel {
-        ByteChannel(reading: descriptor, writing: dup(descriptor), label: label)
+        ByteChannel(reading: descriptor, writing: fcntl(descriptor, F_DUPFD_CLOEXEC, 0), label: label)
     }
 
     /// The bytes the other end sends, until it closes its end. Call once.

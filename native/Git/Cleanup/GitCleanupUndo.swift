@@ -8,8 +8,8 @@ struct GitCleanupUndo {
     var branches: [String] = []
     /// Archived tasks; unarchiving one brings its worktree back (from its checkpoint).
     var tasks: [SessionKey] = []
-    /// Worktrees no task in Native worked in, put away the same way.
-    var worktrees: [TaskWorkspaceRemoval] = []
+    /// Folders of worktrees no task in Native worked in, put away the same way.
+    var worktrees: [URL] = []
     /// Leftover folders moved to the Trash: where each was, and where it is now.
     var folders: [(original: URL, trashed: URL)] = []
 

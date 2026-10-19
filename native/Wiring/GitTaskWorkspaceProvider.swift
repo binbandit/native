@@ -32,7 +32,7 @@ final class GitTaskWorkspaceProvider: TaskWorkspaceProvider {
         }
     }
 
-    func archiveWorkspace(at folder: URL, in project: Project) async throws -> TaskWorkspaceRemoval? {
+    func archiveWorkspace(at folder: URL, in project: Project) async throws -> String? {
         guard await git.isTaskWorktree(folder, of: project.url) else { return nil }
         let removed = try await git.removeTaskWorktree(at: folder, keepingRecord: true)
         var summary = removed.summary
@@ -41,9 +41,7 @@ final class GitTaskWorkspaceProvider: TaskWorkspaceProvider {
             summary +=
                 " Its teardown script \(failure.result.outcome.phrase); Scripts in the status bar has its output."
         }
-        return TaskWorkspaceRemoval(summary: summary) { [weak self] in
-            try await self?.restoreWorkspace(at: folder, in: project)
-        }
+        return summary
     }
 
     func restoreWorkspace(at folder: URL, in project: Project) async throws -> Bool {

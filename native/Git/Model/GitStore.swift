@@ -106,25 +106,7 @@ final class GitStore {
             archivedBranch = (try? await requireRepository(at: main).archiveBranch(branch)) != nil
         }
         return RemovedTaskWorktree(
-            path: repository.root, mainRoot: main, branch: branch, checkpoint: checkpoint,
-            archivedBranch: archivedBranch)
-    }
-
-    /// Checks a removed task worktree's branch out where it was and restores its uncommitted work.
-    func restoreTaskWorktree(_ removed: RemovedTaskWorktree) async throws -> URL {
-        guard let branch = removed.branch else {
-            throw GitError.detachedHead
-        }
-        let main = try await requireRepository(at: removed.mainRoot)
-        var restoresBranch = removed.archivedBranch
-        // Clean Up Merged may have deleted the branch since, keeping a copy the same way.
-        if !restoresBranch, try await main.hasArchivedBranch(branch), try await !main.hasBranch(branch) {
-            restoresBranch = true
-        }
-        if restoresBranch {
-            try await main.restoreArchivedBranch(branch)
-        }
-        return try await main.restoreWorktree(at: removed.path, branch: branch, from: removed.checkpoint).path
+            path: repository.root, branch: branch, checkpoint: checkpoint, archivedBranch: archivedBranch)
     }
 
     // MARK: - Resolving git

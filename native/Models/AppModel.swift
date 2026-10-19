@@ -81,7 +81,9 @@ final class AppModel {
     }
     private(set) var pendingDeletionKeys: Set<SessionKey> = []
     @ObservationIgnored var pendingProjectDeletions: [Project.ID: Task<Void, Never>] = [:]
-    @ObservationIgnored var archivedWorkspaces: [SessionKey: TaskWorkspaceRemoval] = [:]
+    /// Each task folder's workspace work under way (putting it away, bringing it back), by path, so
+    /// the next waits for it. Internal only for AppModel+Archive.swift.
+    @ObservationIgnored var workspaceWork: [String: Task<Void, Never>] = [:]
     @ObservationIgnored let deletedSessions = DeletedSessions()
     var history = NavigationHistory<SessionKey>()
     @ObservationIgnored var isNavigatingHistory = false
@@ -223,6 +225,7 @@ final class AppModel {
                 await workspaceGotTitle(event)
             }
         }
+        Task { await resumeWorkspaceRestores() }
         // Agents with saved sessions were installed last time. Their runtimes come now, so their rows
         // show from the first frame instead of after the login shell answers; checking for agents
         // drops any that went away since.

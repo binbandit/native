@@ -1,6 +1,8 @@
 // Samples processes' resource usage over an interval, from the kernel's per-process counters
 // (`proc_pid_rusage`), so no sudo is needed: CPU %, idle and interrupt wakeups per second, energy
-// in milliwatts and physical footprint (what Activity Monitor calls Memory).
+// in milliwatts, physical footprint (what Activity Monitor calls Memory) and millions of
+// instructions per second, which unlike CPU time don't depend on which core ran them or how busy
+// the Mac is.
 //
 //   rusage <seconds> <label>=<pid>[,<pid>…] …
 //
@@ -10,6 +12,7 @@ import Foundation
 
 struct Sample {
     var cpu: UInt64 = 0, idle: UInt64 = 0, interrupt: UInt64 = 0, energy: UInt64 = 0, footprint: UInt64 = 0
+    var instructions: UInt64 = 0
     var alive = 0
 
     mutating func add(_ pid: pid_t) {
@@ -24,6 +27,7 @@ struct Sample {
         interrupt += info.ri_interrupt_wkups
         energy += info.ri_energy_nj
         footprint += info.ri_phys_footprint
+        instructions += info.ri_instructions
     }
 }
 
@@ -52,7 +56,7 @@ Thread.sleep(forTimeInterval: seconds)
 let after = sample()
 let elapsed = Double(DispatchTime.now().uptimeNanoseconds - start) / 1e9
 
-print("group\tprocesses\tcpu%\tidle_wakeups/s\tinterrupt_wakeups/s\tenergy_mW\tfootprint_MB")
+print("group\tprocesses\tcpu%\tidle_wakeups/s\tinterrupt_wakeups/s\tenergy_mW\tfootprint_MB\tMinstructions/s")
 for (index, (label, _)) in groups.enumerated() {
     let a = before[index], b = after[index]
     let cpu = Double(b.cpu &- a.cpu) * toNanoseconds / 1e9 / elapsed * 100
@@ -60,7 +64,9 @@ for (index, (label, _)) in groups.enumerated() {
     let interrupt = Double(b.interrupt &- a.interrupt) / elapsed
     let energy = Double(b.energy &- a.energy) / elapsed / 1e6
     let footprint = Double(b.footprint) / 1_048_576
+    let instructions = Double(b.instructions &- a.instructions) / elapsed / 1e6
     print(
         String(
-            format: "%@\t%d\t%.2f\t%.1f\t%.1f\t%.1f\t%.1f", label, b.alive, cpu, idle, interrupt, energy, footprint))
+            format: "%@\t%d\t%.2f\t%.1f\t%.1f\t%.1f\t%.1f\t%.2f", label, b.alive, cpu, idle, interrupt, energy,
+            footprint, instructions))
 }
