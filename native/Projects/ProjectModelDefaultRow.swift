@@ -41,7 +41,7 @@ struct ProjectModelDefaultRow: View {
     }
 
     private var defaultTitle: String {
-        if let model = UserDefaults.standard.string(forKey: AgentSessionDefaults.Setting.model.key(for: agent.id)) {
+        if let model = AgentSessionDefaults.explicitValue(for: agent.id, setting: .model) {
             return "Default (\(offered.first { $0.value == model }?.name ?? model))"
         }
         return AgentSessionDefaults.lastUsedName(for: agent.id, setting: .model).map { "Last used (\($0))" }

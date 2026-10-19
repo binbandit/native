@@ -61,7 +61,7 @@ private struct AgentDefaultPicker: View {
         _stored = AppStorage(setting.key(for: agentID))
     }
 
-    /// Empty counts as unset, as it does for new sessions (`AgentSessionDefaults.apply`).
+    /// Empty counts as unset, as it does for new sessions (`AgentSessionDefaults.explicitValue`).
     private var value: Binding<String?> {
         Binding(get: { stored.flatMap { $0.isEmpty ? nil : $0 } }, set: { stored = $0 })
     }

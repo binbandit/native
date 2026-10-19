@@ -73,7 +73,7 @@ struct FencedTextTests {
     }
 
     @Test func inlineCodeFollowsCommonMarkSpans() {
-        let text = "Run `swift test` or ``a ` b``, not \\`this`, and `unmatched"
+        let text = "Run `swift test` or ``a ` b``, not \\`this, and `unmatched"
         let spans = FencedText.inlineCode(in: text).map { String(text[$0]) }
         #expect(spans == ["`swift test`", "``a ` b``"])
     }

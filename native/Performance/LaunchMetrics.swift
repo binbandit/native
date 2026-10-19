@@ -45,6 +45,14 @@ enum LaunchMetrics {
         )
     }
 
+    // TEMPORARY (launch perf work): main-thread CPU at points before the first frame.
+    static var pluginReads = 0
+    static func checkpoint(_ label: String) {
+        guard !reached.contains(.firstFrame) else { return }
+        let micro = clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID) / 1000
+        logger.notice("launch checkpoint \(label, privacy: .public) \(micro) us plugins \(pluginReads)")
+    }
+
     /// Marks `milestone` once the frame showing what just appeared is on screen: when the main run
     /// loop next goes to sleep, after Core Animation has committed that frame and nothing else is
     /// waiting on the main thread. Call it from `onAppear`.
@@ -53,7 +61,7 @@ enum LaunchMetrics {
         // After every other before-waiting observer, Core Animation's commit included.
         let observer = CFRunLoopObserverCreateWithHandler(nil, CFRunLoopActivity.beforeWaiting.rawValue, false, .max) {
             _, _ in
-            MainActor.assumeIsolated { mark(milestone) }
+            MainActor.assumeIsolated { checkpoint("beforeWaiting"); mark(milestone) }
         }
         CFRunLoopAddObserver(CFRunLoopGetMain(), observer, .commonModes)
     }

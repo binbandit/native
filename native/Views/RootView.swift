@@ -34,6 +34,7 @@ struct RootView: View {
     @Environment(WhatsNewCenter.self) private var whatsNew
 
     var body: some View {
+        let _ = LaunchMetrics.checkpoint("RootView body")
         @Bindable var model = model
         @Bindable var automation = automation
         // The status bar is part of the layout, under everything, so nothing ends up beneath it.

@@ -48,6 +48,7 @@ final class PluginRegistry {
 
     /// Every loaded plugin, as its experiments leave it (`PluginExperimentSet`).
     var plugins: [LoadedPlugin] {
+        LaunchMetrics.pluginReads += 1
         let values = ExperimentStore.shared.current
         return loadedPlugins.map { $0.applyingExperiments(values) }
     }

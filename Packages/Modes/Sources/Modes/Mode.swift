@@ -1,7 +1,7 @@
 /// A named way of working for a task: instructions Native gives the agent, and the settings it
 /// applies on the way in (an autonomy level, the agent's own plan mode, a model). Modes are built
 /// in (`Mode.builtIn`), the user's own, or shared by a project as files (`ModeFile`).
-public struct Mode: Identifiable, Hashable, Sendable {
+public struct Mode: Identifiable, Hashable, Codable, Sendable {
     public struct ID: RawRepresentable, Hashable, Codable, Sendable, ExpressibleByStringLiteral {
         public let rawValue: String
 
@@ -24,7 +24,7 @@ public struct Mode: Identifiable, Hashable, Sendable {
         }
     }
 
-    public enum Source: Hashable, Sendable {
+    public enum Source: String, Hashable, Codable, Sendable {
         case builtIn
         /// Made by the user in Settings, for every project.
         case custom

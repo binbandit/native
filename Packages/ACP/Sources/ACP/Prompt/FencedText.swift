@@ -68,18 +68,16 @@ public enum FencedText {
     public static func segments(of text: String) -> [FencedTextSegment] {
         var segments: [FencedTextSegment] = []
         var cursor = text.startIndex
-        func appendText(upTo end: String.Index) {
-            var piece = text[cursor..<end]
+        for block in blocks(in: text) {
+            // Without the line break that ends the text before the fence.
+            var piece = text[cursor..<block.range.lowerBound]
             if piece.last == "\n" { piece = piece.dropLast() }
             if !piece.isEmpty { segments.append(.text(String(piece))) }
-        }
-        for block in blocks(in: text) {
-            appendText(upTo: block.range.lowerBound)
             segments.append(.code(code(of: block, in: text), language: block.language, isClosed: block.isClosed))
             cursor = block.range.upperBound
             if cursor < text.endIndex, text[cursor] == "\n" { cursor = text.index(after: cursor) }
         }
-        appendText(upTo: text.endIndex)
+        if cursor < text.endIndex { segments.append(.text(String(text[cursor...]))) }
         return segments
     }
 

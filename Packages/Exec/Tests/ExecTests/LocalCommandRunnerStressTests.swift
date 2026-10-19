@@ -10,7 +10,7 @@ struct LocalCommandRunnerStressTests {
     /// git commands finished at once. The trap kills the process, so the load runs in a child.
     @Test func manyShortCommandsNeverTrap() async {
         await #expect(processExitsWith: .success) {
-            signal(SIGPIPE, SIG_IGN); await LocalCommandRunnerStress.run(commands: 3000, concurrency: 48)
+            signal(SIGPIPE, SIG_IGN); let s = ContinuousClock.now; await LocalCommandRunnerStress.run(commands: 3000, concurrency: 48); try? "took \(ContinuousClock.now - s)".write(toFile: "/tmp/execfix-child.txt", atomically: true, encoding: .utf8)
         }
     }
 }

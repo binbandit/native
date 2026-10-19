@@ -33,6 +33,14 @@ enum AgentSessionDefaults {
         "agentDefaults.\(agent.rawValue).lastUsed"
     }
 
+    /// The default set for `setting` in Settings or by a launch argument. Empty counts as unset, as
+    /// a launch argument can make it (`-agentDefaults.codex.model ""`).
+    static func explicitValue(
+        for agent: AgentDefinition.ID, setting: Setting, defaults: UserDefaults = .standard
+    ) -> String? {
+        defaults.string(forKey: setting.key(for: agent)).flatMap { $0.isEmpty ? nil : $0 }
+    }
+
     /// The choices the agent offered for `setting` the last time one of its sessions said, so
     /// Settings can list them before any session runs.
     static func offeredChoices(
@@ -86,10 +94,7 @@ enum AgentSessionDefaults {
         let agent = session.agent.id
         var categories: [String: String] = [:]
         for setting in Setting.allCases {
-            // Empty is unset, as a launch argument (`-agentDefaults.codex.model ""`) can make it.
-            categories[setting.category] = defaults.string(forKey: setting.key(for: agent)).flatMap {
-                $0.isEmpty ? nil : $0
-            }
+            categories[setting.category] = explicitValue(for: agent, setting: setting, defaults: defaults)
         }
         if let project, let model = ProjectTaskDefaults.model(for: project, agent: agent, defaults: defaults) {
             categories[Setting.model.category] = model
