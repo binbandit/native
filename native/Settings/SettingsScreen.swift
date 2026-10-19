@@ -110,6 +110,9 @@ struct SettingsScreen: View {
                 flash = reveal
             }
         }
+        // A page's undo toasts show over the visible pane, not at the bottom of a long page; and leave
+        // with the page that raised them, as its Undo goes with it.
+        .undoToastAnchor()
         // A new page starts at the top: each page gets its own scroller.
         .id(selectedPane?.id)
         .environment(\.settingsFlash, flash)

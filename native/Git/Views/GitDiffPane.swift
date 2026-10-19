@@ -2,16 +2,17 @@ import Git
 import SwiftUI
 
 /// The selected file's diff, under a header naming the file and its line counts. Lines come from
-/// the transcript's `DiffView`, so edits look the same wherever they're shown.
+/// the transcript's `DiffView`, so edits look the same wherever they're shown. It reads only the
+/// model's shown diff, which follows the selection once the new diff is ready.
 struct GitDiffPane: View {
     let model: GitRepositoryModel
 
     var body: some View {
         VStack(spacing: 0) {
-            if let change = model.selectedChange {
-                header(change)
+            if let shown = model.shownDiff {
+                header(shown.change)
                 SeparatorLine()
-                lines(model.selectedDiff)
+                lines(shown.content)
             } else {
                 EmptyStateView("No file selected", systemImage: "doc.text")
             }

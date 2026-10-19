@@ -20,28 +20,28 @@ nonisolated enum GitDiffContent: Equatable, Sendable {
     static let collapseLines = 600
 
     /// Reads both sides of `change` and diffs them, off the main thread. A big change comes back
-    /// `.collapsed` unless `expanded`.
+    /// `.collapsed` unless `expanded`; anything smaller comes back highlighted too, so the pane
+    /// draws it once, in color. An expanded one shows plain first rather than wait for its colors.
     @concurrent
     static func load(_ change: FileChange, from repository: Repository, expanded: Bool) async -> Self {
         if change.isSubmodule { return .submodule }
+        let versions: FileVersions
         do {
-            return Self(change: change, versions: try await repository.versions(of: change), expanded: expanded)
+            versions = try await repository.versions(of: change)
         } catch {
             return .unavailable(error.localizedDescription)
         }
-    }
-
-    init(change: FileChange, versions: FileVersions, expanded: Bool) {
         let changedLines = change.stats.map { $0.additions + $0.deletions }
-        if versions.isBinary {
-            self = .binary
-        } else if versions.size > Self.sizeLimit {
-            self = .tooLarge(versions.size)
-        } else if !expanded, versions.size > Self.collapseSize || (changedLines ?? 0) > Self.collapseLines {
-            self = .collapsed(changedLines: changedLines, size: versions.size)
-        } else {
-            self = .text(GitDiffText(path: change.path, oldText: versions.oldText, newText: versions.newText ?? ""))
-        }
+        if versions.isBinary { return .binary }
+        if versions.size > sizeLimit { return .tooLarge(versions.size) }
+        let isBig = versions.size > collapseSize || (changedLines ?? 0) > collapseLines
+        if isBig, !expanded { return .collapsed(changedLines: changedLines, size: versions.size) }
+        let (path, oldText, newText) = (change.path, versions.oldText, versions.newText ?? "")
+        let layout =
+            isBig
+            ? DiffLayout(oldText: oldText, newText: newText)
+            : await DiffLayout(path: path, oldText: oldText, newText: newText)
+        return .text(GitDiffText(path: path, oldText: oldText, newText: newText, layout: layout))
     }
 }
 
@@ -52,11 +52,11 @@ nonisolated struct GitDiffText: Equatable, Sendable {
     let newText: String
     let layout: DiffLayout
 
-    init(path: String, oldText: String?, newText: String) {
+    init(path: String, oldText: String?, newText: String, layout: DiffLayout? = nil) {
         self.path = path
         self.oldText = oldText
         self.newText = newText
-        layout = DiffLayout(oldText: oldText, newText: newText)
+        self.layout = layout ?? DiffLayout(oldText: oldText, newText: newText)
     }
 
     /// The layout follows from the texts.

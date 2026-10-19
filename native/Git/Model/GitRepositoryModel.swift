@@ -16,7 +16,14 @@ final class GitRepositoryModel {
     let folder: URL
     private(set) var state = State.loading
     private(set) var repository: Repository?
-    private(set) var status: RepositoryStatus?
+    private(set) var status: RepositoryStatus? {
+        didSet { mirrorStatus() }
+    }
+    /// "main ↑2 ↓1 · 5 changed" for a window subtitle; `nil` outside a repository. This and
+    /// `canCommit` mirror `status`, so views that show only these don't update with every rescan.
+    private(set) var summary: String?
+    /// There are changes to commit and no conflicts in the way.
+    private(set) var canCommit = false
     /// Whether there's anywhere to push; publishing is only offered when there is.
     private(set) var hasRemote = false
     /// The change whose diff is showing.
@@ -25,7 +32,10 @@ final class GitRepositoryModel {
             if selection != oldValue { loadSelectedDiff() }
         }
     }
-    private(set) var selectedDiff: GitDiffContent?
+    /// The diff on screen. It moves to a newly selected file once that file's diff is ready, so a
+    /// quick load replaces the previous diff in one draw; a slow one shows as loading after
+    /// `diffLoadingDelay`.
+    private(set) var shownDiff: ShownDiff?
     /// A stage, commit or push is running.
     private(set) var isWorking = false
     /// Feedback for the last action: a failure with its next step, or a confirmation.
@@ -42,9 +52,15 @@ final class GitRepositoryModel {
     @ObservationIgnored private var lastScan: ContinuousClock.Instant?
     @ObservationIgnored private var watchTask: Task<Void, Never>?
     @ObservationIgnored private var diffTask: Task<Void, Never>?
-    @ObservationIgnored private var selectedDiffID: FileChange.ID?
+    @ObservationIgnored private var diffLoadingTask: Task<Void, Never>?
     /// The change the user asked to see in full past the size diffs collapse at.
     @ObservationIgnored private var expandedDiffID: FileChange.ID?
+
+    /// A change and its diff; no content while it loads.
+    struct ShownDiff: Equatable {
+        let change: FileChange
+        let content: GitDiffContent?
+    }
 
     /// A rescan someone asked for: right away (an action, the user), or once file events settle.
     private enum PendingRefresh {
@@ -58,6 +74,8 @@ final class GitRepositoryModel {
     static let busyInterval = Duration.seconds(1)
     /// Beyond this many changed paths an event batch isn't worth checking against `.gitignore`.
     static let ignoreCheckLimit = 500
+    /// How long a diff may take before the pane shows it loading.
+    static let diffLoadingDelay = Duration.milliseconds(150)
     /// How long a plain confirmation stays up.
     static let confirmationDuration = Duration.seconds(4)
 
@@ -74,14 +92,15 @@ final class GitRepositoryModel {
         status = fixedStatus
         state = .ready
         selection = fixedStatus.changes.first?.id
-        selectedDiffID = selection
-        selectedDiff = diff
+        shownDiff = fixedStatus.changes.first.map { ShownDiff(change: $0, content: diff) }
+        mirrorStatus()
     }
 
     deinit {
         refreshTask?.cancel()
         watchTask?.cancel()
         diffTask?.cancel()
+        diffLoadingTask?.cancel()
     }
 
     // MARK: - Derived
@@ -102,13 +121,21 @@ final class GitRepositoryModel {
         return changes.first { $0.id == selection }
     }
 
-    /// "main ↑2 ↓1 · 5 changed" for a window subtitle; `nil` outside a repository.
-    var summary: String? {
-        guard let branch else { return nil }
+    /// Writes only what changed, since writing notifies observers even with an equal value.
+    private func mirrorStatus() {
+        let summary = Self.summary(of: status)
+        if self.summary != summary { self.summary = summary }
+        let canCommit = status.map { !$0.isClean && $0.conflicted.isEmpty } ?? false
+        if self.canCommit != canCommit { self.canCommit = canCommit }
+    }
+
+    private static func summary(of status: RepositoryStatus?) -> String? {
+        guard let status else { return nil }
+        let branch = status.branch
         var parts = [branch.displayName]
         if branch.ahead > 0 { parts[0] += " ↑\(branch.ahead)" }
         if branch.behind > 0 { parts[0] += " ↓\(branch.behind)" }
-        if let status, !status.isClean { parts.append("\(status.changedFileCount) changed") }
+        if !status.isClean { parts.append("\(status.changedFileCount) changed") }
         return parts.joined(separator: " · ")
     }
 
@@ -216,7 +243,7 @@ final class GitRepositoryModel {
         }
         // The selected file itself may have changed on disk.
         if let selected = selectedChange,
-            previous?.changes.first(where: { $0.id == selected.id }) != selected || selectedDiff == nil
+            previous?.changes.first(where: { $0.id == selected.id }) != selected || shownDiff == nil
         {
             loadSelectedDiff()
         }
@@ -291,30 +318,36 @@ final class GitRepositoryModel {
 
     /// Shows the selected change's diff in full, past the size diffs collapse at.
     func expandSelectedDiff() {
-        guard let selection else { return }
-        expandedDiffID = selection
-        selectedDiff = nil
+        guard let change = selectedChange else { return }
+        expandedDiffID = change.id
+        shownDiff = ShownDiff(change: change, content: nil)
         loadSelectedDiff()
     }
 
-    /// Reads and diffs the selected change off the main thread; the pane shows a loader meanwhile.
+    /// Reads and diffs the selected change off the main thread.
     private func loadSelectedDiff() {
         diffTask?.cancel()
+        diffLoadingTask?.cancel()
         guard let change = selectedChange, let repository else {
-            selectedDiff = nil
-            selectedDiffID = nil
+            shownDiff = nil
             return
         }
-        // A different file shows as loading rather than under the previous file's diff.
-        if selectedDiffID != change.id {
-            selectedDiff = nil
-            selectedDiffID = change.id
+        if shownDiff == nil {
+            shownDiff = ShownDiff(change: change, content: nil)
+        } else if shownDiff?.change.id != change.id {
+            // Another file's diff stays up a moment, and gives way to a loader only if this one is slow.
+            diffLoadingTask = Task { [weak self] in
+                try? await Task.sleep(for: Self.diffLoadingDelay)
+                guard !Task.isCancelled, let self else { return }
+                self.shownDiff = ShownDiff(change: change, content: nil)
+            }
         }
         let expanded = expandedDiffID == change.id
         diffTask = Task { [weak self] in
             let content = await GitDiffContent.load(change, from: repository, expanded: expanded)
             guard !Task.isCancelled, let self, self.selection == change.id else { return }
-            self.selectedDiff = content
+            self.diffLoadingTask?.cancel()
+            self.shownDiff = ShownDiff(change: change, content: content)
         }
     }
 }

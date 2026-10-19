@@ -51,12 +51,13 @@ public struct DiffView: View {
         let (rows, stats) = layout.map { ($0.rows, $0.stats) } ?? DiffRow.rows(oldText: oldText, newText: newText)
         let key = HighlightKey(path: path, oldText: oldText, newText: newText)
         let current = highlighted?.key == key ? highlighted : nil
+        // A layout highlighted ahead draws in color right away.
         let lines = DiffHighlightedLines(
             colors: DSCodeColors(
                 .code(colorScheme: colorScheme, lightTone: lightTone, darkTone: darkTone, themes: codeThemes),
                 on: .surface),
-            new: current?.new ?? [],
-            old: current?.old ?? []
+            new: current?.new ?? layout?.highlighted?.new ?? [],
+            old: current?.old ?? layout?.highlighted?.old ?? []
         )
         Group {
             if isEmbedded {
@@ -66,7 +67,7 @@ public struct DiffView: View {
             }
         }
         .task(id: key) {
-            guard let language = CodeLanguage.forPath(path), current == nil else { return }
+            guard let language = CodeLanguage.forPath(path), current == nil, layout?.highlighted == nil else { return }
             let cache = CodeHighlightCache.shared
             async let new = cache.highlightLines(newText, language: language)
             async let old = cache.highlightLines(oldText ?? "", language: language)
