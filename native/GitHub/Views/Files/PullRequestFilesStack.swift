@@ -61,6 +61,9 @@ struct PullRequestFilesStack: View {
                         .padding(.bottom, DS.Space.lg)
                     }
                     ZStack(alignment: .topLeading) {
+                        // Alignment guides place rows against each other; this one at the top makes
+                        // their offsets count from the top of the list.
+                        Color.clear.frame(width: 0, height: 0)
                         ForEach(placed) { item in
                             placedRow(item)
                         }

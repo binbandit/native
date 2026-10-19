@@ -40,6 +40,22 @@ Return does.
 transcript marks the turn Stopped. If the agent hasn't ended it after 10 seconds, or Stop is pressed
 again, Native stops waiting and says so.
 
+### Code
+
+Fenced code blocks (a line of three or more backticks or tildes) and inline `` `code` `` show in the
+composer in the code font on a quiet fill, as they will in the sent message; the text itself stays
+exactly as typed or pasted, indentation, tabs and trailing spaces included. While the caret is in a
+fenced block, from the moment its opening fence is typed until past its closing fence, Return and
+Tab edit the code and the hint says "↩ New line · ⌘↩ Send":
+
+| Keys (caret in a fenced block) | Action |
+| --- | --- |
+| Return | New line, indented like the line the caret is on |
+| ⌘Return | What Return does elsewhere: send, the preferred follow-up while the agent works, or save a queued message's edit |
+| Tab / Shift-Tab | Indent / outdent the caret's line or every selected line, by the block's own indent (a tab, or its spaces) |
+
+`@` inside code is the code's own, so it doesn't open the file list.
+
 ### Queued messages
 
 Each queued message has Send Now, Edit and Remove on hover; its menu (a right-click, or touch and
@@ -129,7 +145,7 @@ it to the agent.
 | --- | --- |
 | / at the start of the composer | Open the command list |
 | ↑ / ↓ | Move the selection |
-| Return or Tab | Insert the selected command |
+| Return or Tab | Insert the selected command, then a space, with the caret after it |
 | Escape | Close the list |
 
 ## File mentions
@@ -144,7 +160,7 @@ or folder. Pasted or dictated `@` text opens the list the same way ([accessibili
 | --- | --- |
 | @ | Open the file list |
 | ↑ / ↓ | Move the selection |
-| Return or Tab | Insert the selected file or folder |
+| Return or Tab | Insert the selected file or folder, then a space, with the caret after it |
 | Escape | Close the list |
 
 ## Attachments
