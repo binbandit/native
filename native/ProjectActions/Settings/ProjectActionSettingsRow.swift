@@ -19,12 +19,14 @@ struct ProjectActionSettingsRow<Controls: View>: View {
         }
     }
 
-    /// "In the terminal · in apps/web of the task's worktree".
+    /// "Terminal tab · Task's worktree", "Background, with a toast · apps/web in the project's folder".
     static func whereItRuns(_ action: ProjectAction) -> String {
-        let presentation =
-            action.presentation == .terminal ? "In the terminal" : "In the background, with a toast when it ends"
-        let base = action.directory.base == .worktree ? "the task's worktree" : "the project's folder"
-        let folder = action.directory.path.isEmpty ? "in \(base)" : "in \(action.directory.path) of \(base)"
+        let presentation = action.presentation == .terminal ? "Terminal tab" : "Background, with a toast"
+        let base = action.directory.base == .worktree ? "task's worktree" : "project's folder"
+        guard !action.directory.path.isEmpty else {
+            return "\(presentation) · \(base.prefix(1).uppercased() + base.dropFirst())"
+        }
+        let folder = "\(action.directory.path) in the \(base)"
         return "\(presentation) · \(folder)"
     }
 }

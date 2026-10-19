@@ -27,7 +27,8 @@ struct ProjectActionOutputSheet: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(DS.Space.md)
             }
-            .defaultScrollAnchor(.bottom)
+            // Long output opens on its end, where failures usually are; short output reads from the top.
+            .defaultScrollAnchor(.bottom, for: .initialOffset)
             .background(.dsSurfaceSunken, in: .rect(cornerRadius: DS.Radius.control, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous)

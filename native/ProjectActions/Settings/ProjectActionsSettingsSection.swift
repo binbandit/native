@@ -154,7 +154,10 @@ struct ProjectActionsSettingsSection: View {
                 }
                 if list.suggestions.count > Self.suggestionPreview {
                     SettingsRow(
-                        showsAllSuggestions ? "Showing all \(list.suggestions.count)" : "\(list.suggestions.count - Self.suggestionPreview) more",
+                        showsAllSuggestions
+                            ? "All \(list.suggestions.count) suggestions"
+                            : "\(list.suggestions.count - Self.suggestionPreview) more "
+                                + (list.suggestions.count - Self.suggestionPreview == 1 ? "suggestion" : "suggestions"),
                         description: Text("Every script, recipe and target Native found.")
                     ) {
                         Button(showsAllSuggestions ? "Show Fewer" : "Show All") { showsAllSuggestions.toggle() }

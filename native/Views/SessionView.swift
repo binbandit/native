@@ -26,15 +26,20 @@ struct SessionView: View {
         // A bar rather than an inset, so the transcript gets the system scroll edge effect under it.
         .safeAreaBar(edge: .bottom, spacing: 0) {
             VStack(spacing: 0) {
-                UsageComposerNotices(session: session)
-                ComposerView(session: session)
+                // A conversation `/clear` set aside is kept to read: no composer, the way back instead.
+                if session.isEarlierConversation {
+                    EarlierConversationBar(session: session)
+                } else {
+                    UsageComposerNotices(session: session)
+                    ComposerView(session: session)
+                }
             }
         }
         // How the task's worktree setup is going, and any of its scripts that failed (TaskScripts).
         .safeAreaBar(edge: .top, spacing: 0) {
             TaskScriptBanner(folder: session.cwd)
         }
-        .composerDropTarget(drops)
+        .composerDropTarget(drops, isEnabled: !session.isEarlierConversation)
         .terminalPanel(for: session)
         .projectActions(for: session)
         .focusedSceneValue(\.activeSession, session)

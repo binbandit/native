@@ -15,13 +15,13 @@ private struct ProjectActionsPresentation: ViewModifier {
 
     func body(content: Content) -> some View {
         content
-            .overlay(alignment: .bottomTrailing) {
+            // Under the window's header, where it covers neither the composer nor the terminal's
+            // output, which are what the user looks at next.
+            .overlay(alignment: .topTrailing) {
                 if let toast = runner.toast {
                     ProjectActionToastView(toast: toast) { runner.toast = nil }
-                        // Clear of the status bar, beside where the undo toast sits.
-                        .padding(.trailing, DS.Space.xxl)
-                        .padding(.bottom, DS.Space.xxl + DS.Size.controlMD)
-                        .transition(reduceMotion ? .opacity : .move(edge: .bottom).combined(with: .opacity))
+                        .padding(DS.Space.lg)
+                        .transition(reduceMotion ? .opacity : .move(edge: .top).combined(with: .opacity))
                         .task(id: toast.id) {
                             try? await Task.sleep(for: toast.duration)
                             if runner.toast?.id == toast.id {

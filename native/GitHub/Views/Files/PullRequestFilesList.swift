@@ -38,6 +38,9 @@ struct PullRequestFilesList: View {
                 .coordinateSpace(.named(PullRequestPageModel.filesSpace))
             }
             .scrollContentBackground(.hidden)
+            #if DEBUG
+            .modifier(PullRequestFilesAutoScroll())
+            #endif
             .overlay(alignment: .bottom) { selectionLimit }
             .onGeometryChange(for: CGFloat.self) {
                 $0.size.width
