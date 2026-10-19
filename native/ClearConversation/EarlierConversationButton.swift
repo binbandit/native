@@ -20,7 +20,9 @@ struct EarlierConversationButton: View {
             }
             .buttonStyle(.header())
             .accessibilityLabel("Earlier Conversation")
-            .help(CommandRegistry.shared.help("Open the conversation before /clear", for: .sessionOpenEarlierConversation))
+            .help(
+                CommandRegistry.shared.help("Open the conversation before /clear", for: .sessionOpenEarlierConversation)
+            )
         }
     }
 }

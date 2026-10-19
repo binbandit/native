@@ -50,6 +50,7 @@ enum CommandsWiring {
         registry.register(NativeCommand.celebrations(features.celebrations, settings: settings))
         registry.register(NativeCommand.terminal(terminals))
         ProjectActionsWiring.registerCommands(registry, runner: features.projectActions, model: model)
+        ModesWiring.connect(registry, model: model, settings: settings)
         #if os(macOS)
         registry.register([.checkForUpdates(features.updates, settings: settings)])
         #endif

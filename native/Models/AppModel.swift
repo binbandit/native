@@ -90,6 +90,8 @@ final class AppModel {
     /// Internal only for AppModel+Recovery.swift.
     @ObservationIgnored var restartPolicies: [AgentDefinition.ID: AgentRestartPolicy] = [:]
     @ObservationIgnored private let services: SessionServices
+    /// Where features take part in every session (`SessionHooks`), filled in at launch.
+    var sessionHooks: SessionHooks { services.hooks }
     /// Internal only for AppModel+TaskSessions.swift.
     @ObservationIgnored let launcher: SessionLauncher
     /// Internal only for AppModel+Listing.swift.
@@ -206,6 +208,7 @@ final class AppModel {
         Task { [plugins, pluginEvents] in
             for await event in pluginEvents {
                 markUnread(after: event)
+                keepClearedConversation(after: event)
                 await plugins.broadcast(event)
             }
         }

@@ -68,6 +68,12 @@ extension AppModel {
     enum ConversationDirection {
         case earlier, later
     }
+
+    /// Keeps a `/clear` across launches once its fresh conversation sends its first message.
+    func keepClearedConversation(after event: SessionEvent) {
+        guard case .promptSent(let context, _) = event, let id = context.sessionID else { return }
+        earlierConversations.keep(SessionKey(agent: context.agent, id: id))
+    }
 }
 
 extension SessionModel {

@@ -68,9 +68,13 @@ public struct UsageLimitHit: Hashable, Sendable {
     public static func isLimitMessage(_ text: String) -> Bool {
         // Transcripts ask this of every reply in a session on every update, so it compares the start
         // character by character and stops at the first difference, rather than folding whole replies.
-        let start = text.drop(while: \.isWhitespace).lazy.map(plain)
-        return limitPrefixes.contains { start.starts(with: $0) }
+        let start = text.drop(while: \.isWhitespace)
+        guard let first = start.first, initials.contains(first) else { return false }
+        return limitPrefixes.contains { start.lazy.map(plain).starts(with: $0) }
     }
+
+    /// What every prefix starts with, to turn most text away at its first character.
+    private static let initials = Set(limitPrefixes.compactMap(\.first))
 
     /// One character as `normalized(_:)` folds it.
     private static func plain(_ character: Character) -> Character {

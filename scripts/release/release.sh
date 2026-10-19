@@ -207,6 +207,11 @@ if [ "$make_dmg" = 1 ]; then
     notary xcrun stapler staple "$output/$dmg_name"
 fi
 
+# What users download and install, against the budgets in docs/app-size.md; over budget stops here.
+size_args=(--zip "$output/appcast/$zip_name")
+[ "$make_dmg" = 1 ] && size_args+=(--dmg "$output/$dmg_name")
+run "$ROOT/scripts/release/size.sh" "$app" "${size_args[@]}"
+
 # MARK: - Appcast
 
 log "Generating the appcast"
