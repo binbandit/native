@@ -241,10 +241,13 @@ Nothing here depends on git hooks: the scripts only read history.
 Each run: builds the terminal and the script runtime for real (`scripts/build-libghostty.sh`,
 `scripts/build-script-runtime.sh`; Xcode's build phases only warn when they can't, so this is what
 keeps a release from shipping without them) → archives with `MARKETING_VERSION` and
-`CURRENT_PROJECT_VERSION` → copies the signed app out of the archive → notarizes and staples it →
-zips it for Sparkle (`ditto`) and builds a signed, notarized, stapled DMG for first installs (the
-app, an Applications link and `LICENSE.md`; the app also carries `LICENSE.md` in its resources) →
-checks sizes, and that the terminal and script runtime are in the app (`size-check.sh`) → drafts
+`CURRENT_PROJECT_VERSION` → copies the signed app out of the archive → signs the helpers inside
+Sparkle.framework with the Developer ID (Xcode signs the framework it embeds but leaves them ad hoc,
+as Sparkle ships them, and notarization refuses ad hoc code), then the framework and the app again →
+notarizes and staples it (notarytool reports a rejection without failing, so `release.sh` reads the
+verdict and prints Apple's log when it isn't Accepted) → zips it for Sparkle (`ditto`) and builds a
+signed, notarized, stapled DMG for first installs (the app, an Applications link and `LICENSE.md`;
+the app also carries `LICENSE.md` in its resources) → checks sizes, and that the terminal and script runtime are in the app (`size-check.sh`) → drafts
 notes → runs `generate_appcast` on the zip, the published feed (so earlier items and the other
 channel's stay) and earlier archives for deltas → builds the standalone host → uploads symbols to
 Sentry → publishes.
