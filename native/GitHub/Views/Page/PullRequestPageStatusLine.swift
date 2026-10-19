@@ -6,9 +6,13 @@ struct PullRequestPageStatusLine: View {
     let page: PullRequestPage
     /// Drops the author and the merge explanation, for narrow panes.
     let compact: Bool
+    /// Moves whole parts (state, branches, checks, review) to the next line when they don't fit,
+    /// for a fixed width like a sheet's; otherwise it's one line at its natural width.
+    var wraps = false
 
     var body: some View {
-        HStack(spacing: DS.Space.lg) {
+        let layout = wraps ? AnyLayout(FlowLayout(spacing: DS.Space.lg)) : AnyLayout(HStackLayout(spacing: DS.Space.lg))
+        return layout {
             HStack(spacing: DS.Space.xs) {
                 PullRequestStateIcon(state: page.state, isDraft: page.isDraft, size: DS.Size.navIcon)
                 Text(stateTitle)
@@ -46,7 +50,7 @@ struct PullRequestPageStatusLine: View {
             }
         }
         .font(.dsBody)
-        .fixedSize()
+        .fixedSize(horizontal: !wraps, vertical: true)
     }
 
     private var stateTitle: String {

@@ -1,7 +1,7 @@
 import SwiftUI
 
-/// Every keyboard shortcut in docs/keyboard.md, opened from Help ▸ Keyboard Shortcuts (⌘/), the sidebar's
-/// and the status bar's "?" and the composer's "…" menu. Keep it in step with that table.
+/// Every keyboard shortcut in docs/keyboard.md, opened from Help ▸ Keyboard Shortcuts (⌘/), the status
+/// bar's "?" and the composer's "…" menu. Keep it in step with that table.
 struct KeyboardShortcutsView: View {
     @AppStorage(FollowUpBehavior.storageKey) private var followUp = FollowUpBehavior.defaultValue
     @Environment(\.dismiss) private var dismiss

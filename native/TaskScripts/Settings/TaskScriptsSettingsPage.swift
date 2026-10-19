@@ -69,7 +69,7 @@ struct TaskScriptsSettingsPage: View {
             SettingsSubheading(
                 "Projects",
                 note:
-                    "A project can add its own script for an event or replace the global one, and a repository can commit them as .native/setup.sh and so on, labelled From the repo."
+                    "A project can run its own script for an event, after the global one or instead of it. A repository can commit them as .native/setup.sh and so on; they show as From the repo."
             )
             .settingsRevealTarget(Self.projectsRow)
             if customizedProjects.isEmpty {
@@ -133,8 +133,14 @@ struct TaskScriptProjectSheet: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.xl) {
             ScrollView {
-                ProjectScriptsSection(projectRoot: project.url)
-                    .padding(DS.Space.xxl)
+                VStack(alignment: .leading, spacing: 0) {
+                    Text(project.url.lastPathComponent)
+                        .settingsText(.title)
+                        .foregroundStyle(.dsTextPrimary)
+                        .accessibilityAddTraits(.isHeader)
+                    ProjectScriptsSection(projectRoot: project.url)
+                }
+                .padding(DS.Space.xxl)
             }
             HStack {
                 Spacer()

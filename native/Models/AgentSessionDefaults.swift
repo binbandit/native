@@ -2,12 +2,14 @@ import ACP
 import Foundation
 import os
 
-/// Settings the user wants every new session of an agent to start with, such as a cheaper model:
-/// `agentDefaults.<agent id>.model` and `.effort` in the user defaults, which a launch argument can
-/// also set (`-agentDefaults.codex.model gpt-6.1-sol`). Applied before the first prompt; a value
-/// the agent doesn't offer is skipped, never fatal.
+/// What every new session of an agent starts on. By default that's what the user last picked for
+/// the agent's model and its variants, in any task (`lastUsed`, kept by `SessionModel.pick`). A
+/// default set in Settings wins over that: `agentDefaults.<agent id>.model` and `.effort` in the
+/// user defaults, which a launch argument can also set (`-agentDefaults.codex.model gpt-6.1-sol`).
+/// A project's model wins over both (`ProjectTaskDefaults`). Applied before the first prompt; a
+/// value the agent doesn't offer is skipped, never fatal.
 enum AgentSessionDefaults {
-    /// A setting a default can be given, in the order they're applied: the model first, since
+    /// A setting Settings can give a default, in the order they're applied: the model first, since
     /// changing it can change the efforts on offer.
     enum Setting: String, CaseIterable, Sendable {
         case model, effort
@@ -27,6 +29,10 @@ enum AgentSessionDefaults {
 
     private static let logger = Logger(subsystem: "Native", category: "AgentDefaults")
 
+    private static func lastUsedKey(for agent: AgentDefinition.ID) -> String {
+        "agentDefaults.\(agent.rawValue).lastUsed"
+    }
+
     /// The choices the agent offered for `setting` the last time one of its sessions said, so
     /// Settings can list them before any session runs.
     static func offeredChoices(
@@ -37,7 +43,8 @@ enum AgentSessionDefaults {
             .flatMap { try? JSONDecoder().decode([ConfigOption.SelectOption].self, from: $0) } ?? []
     }
 
-    /// Remembers what a session of `agent` offers, for `offeredChoices`.
+    /// Remembers what a session of `agent` offers, for `offeredChoices`, and which of its options
+    /// holds each setting, for `lastUsedName`.
     static func remember(_ options: [ConfigOption], for agent: AgentDefinition.ID, defaults: UserDefaults = .standard) {
         for setting in Setting.allCases {
             guard let option = options.first(where: { $0.category == setting.category }),
@@ -45,33 +52,61 @@ enum AgentSessionDefaults {
                 let data = try? JSONEncoder().encode(choices.map(OfferedChoice.init))
             else { continue }
             defaults.set(data, forKey: setting.key(for: agent) + ".offered")
+            defaults.set(option.id, forKey: setting.key(for: agent) + ".option")
         }
     }
 
-    /// Applies the agent's defaults to a new session; `overrides` (a project's, say) win over them.
-    static func apply(
-        to session: SessionModel, overrides: [Setting: String] = [:], defaults: UserDefaults = .standard
-    ) async {
+    /// What the user last picked for the agent's model and its variants.
+    static func lastUsed(for agent: AgentDefinition.ID, defaults: UserDefaults = .standard) -> ConfigChoices {
+        defaults.data(forKey: lastUsedKey(for: agent))
+            .flatMap { try? JSONDecoder().decode(ConfigChoices.self, from: $0) } ?? ConfigChoices()
+    }
+
+    /// The name of what new sessions start on for `setting` when Settings leaves it to the last
+    /// pick, if there's been one.
+    static func lastUsedName(
+        for agent: AgentDefinition.ID, setting: Setting, defaults: UserDefaults = .standard
+    ) -> String? {
+        defaults.string(forKey: setting.key(for: agent) + ".option")
+            .flatMap { lastUsed(for: agent, defaults: defaults).choices[$0]?.valueName }
+    }
+
+    static func updateLastUsed(
+        for agent: AgentDefinition.ID, defaults: UserDefaults = .standard, _ change: (inout ConfigChoices) -> Void
+    ) {
+        var choices = lastUsed(for: agent, defaults: defaults)
+        change(&choices)
+        guard let data = try? JSONEncoder().encode(choices) else { return }
+        defaults.set(data, forKey: lastUsedKey(for: agent))
+    }
+
+    /// Starts a new session on what it should: the project's model, then the defaults from
+    /// Settings, then the user's last picks. Policy wins over all of them.
+    static func apply(to session: SessionModel, project: Project.ID?, defaults: UserDefaults = .standard) async {
+        let agent = session.agent.id
+        var categories: [String: String] = [:]
         for setting in Setting.allCases {
-            let category = setting.category
-            guard let value = overrides[setting] ?? defaults.string(forKey: setting.key(for: session.agent.id)) else {
-                continue
+            categories[setting.category] = defaults.string(forKey: setting.key(for: agent))
+        }
+        if let project, let model = ProjectTaskDefaults.model(for: project, agent: agent, defaults: defaults) {
+            categories[Setting.model.category] = model
+        }
+        let start = NewSessionChoices(defaults: categories, lastUsed: lastUsed(for: agent, defaults: defaults))
+        let allows: (ConfigOption, String) -> Bool = { !PolicyPermissionModes.forbids($0, value: $1) }
+        for id in start.order(in: session.state.configOptions) {
+            // Read again each time: setting the model can change what the rest offer.
+            switch start.start(of: id, in: session.state.configOptions, allows: allows) {
+            case .set(let option, let value)?:
+                await session.setConfigOption(option, to: value)
+            case .unavailable(let choice, let kept)?:
+                session.addNotice(
+                    "\(session.agentName) doesn't offer \(choice.valueName) anymore, so this session uses \(kept ?? "its default").",
+                    isError: false)
+                // Said once: later sessions start on the agent's model until the user picks another.
+                updateLastUsed(for: agent, defaults: defaults) { $0.forget(id) }
+            case nil:
+                logger.info("\(session.agentName, privacy: .public) keeps its own \(id, privacy: .public) for a new session")
             }
-            guard let option = session.state.configOptions.first(where: { $0.category == category }),
-                case .select(let current, let choices) = option.kind
-            else {
-                logger.info(
-                    "\(session.agent.displayName, privacy: .public) has no \(category, privacy: .public) setting for the default \(value, privacy: .public)"
-                )
-                continue
-            }
-            guard choices.contains(where: { $0.value == value }) else {
-                logger.info(
-                    "\(session.agent.displayName, privacy: .public) doesn't offer \(value, privacy: .public) for \(option.name, privacy: .public); keeping \(current, privacy: .public)"
-                )
-                continue
-            }
-            await session.setConfigOption(option, to: value)
         }
         await PolicyPermissionModes.enforce(on: session)
     }

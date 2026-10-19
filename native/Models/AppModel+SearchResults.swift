@@ -8,7 +8,7 @@ extension AppModel {
     /// and adding the project when Native doesn't have that either. A feature that claims the
     /// session (`searchedSessionOpeners`) opens it instead, and the sidebar is left alone.
     func showSearchedSession(_ key: SessionKey, cwd: String, title: String?, projectFolder: String) {
-        if searchedSessionOpeners.contains(where: { $0(key) }) { return }
+        if searchedSessionOpeners.contains(where: { $0(key, cwd) }) { return }
         if !catalog.contains(key) {
             let folder = URL(filePath: projectFolder, directoryHint: .isDirectory)
             let project =

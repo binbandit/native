@@ -413,8 +413,8 @@ orchestration tools are built-in plugins written this way.
    for input rather than exit.
 3. Have the user click **Reload** in Settings ▸ Extensions (or restart Native), then check the plugin
    is listed and enabled, with no load failure under it.
-4. Try what it adds: an agent appears in the agent picker and starts (its status shows in the
-   sidebar footer); an MCP server's tools show up in a new session; a workflow appears in the
+4. Try what it adds: an agent appears in the agent picker and starts (its status shows on
+   Home and in Settings ▸ Agents); an MCP server's tools show up in a new session; a workflow appears in the
    workflow picker; an icon set appears in Settings ▸ Appearance; a celebration appears in
    Settings ▸ Celebrations. To see a celebration without waiting for its date, launch Native with
    `-nativeDate yyyy-MM-dd`. Try plugins in a scratch folder with `-pluginsDirectory <path>`.

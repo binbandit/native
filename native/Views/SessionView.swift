@@ -31,7 +31,7 @@ struct SessionView: View {
             }
         }
         // How the task's worktree setup is going, and any of its scripts that failed (TaskScripts).
-        .safeAreaBar(edge: .top, spacing: 0) {
+        .safeAreaInset(edge: .top, spacing: 0) {
             TaskScriptBanner(folder: session.cwd)
         }
         .composerDropTarget(drops)

@@ -36,7 +36,7 @@ design system and used everywhere:
 
 | Situation | The one pattern |
 | --- | --- |
-| Agent status (starting, ready, not installed, needs sign-in, stopped) | `AgentRuntimeStatus` label, severity and guidance, rendered by one status component everywhere: sidebar footer, status bar, settings, new-session menu |
+| Agent status (starting, ready, not installed, needs sign-in, stopped) | `AgentRuntimeStatus` label, severity and guidance, rendered by one status component everywhere: Home, status bar, settings, new-session menu |
 | Task status (working, needs input, needs approval, done, failed) | `TaskStatus` + `StatusIndicator` |
 | Something needs the user (tool permission, workflow step, plan) | One approval card; ⌘Y approves the oldest, ⌘⇧⌫ rejects |
 | Usage limits | Exact numbers and an exact time, the same in the banner, notification, status bar and sidebar: which provider, which window, and when it resets ("Claude Code · 5-hour limit reached · resets 3:05 PM, in 42 min"), plus Resume at Reset / Snooze |

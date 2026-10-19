@@ -9,12 +9,10 @@ struct ProjectNewTasksSection: View {
     @Environment(AppModel.self) private var model
     @Environment(GitSettings.self) private var git
     @AppStorage private var agentID: String?
-    @AppStorage private var modelValue: String?
 
     init(project: Project) {
         self.project = project
         _agentID = AppStorage(ProjectTaskDefaults.agentKey(for: project.id))
-        _modelValue = AppStorage(ProjectTaskDefaults.modelKey(for: project.id))
     }
 
     private var rows: ProjectSettingsRows { ProjectSettingsRows(project: project.id) }
@@ -28,15 +26,26 @@ struct ProjectNewTasksSection: View {
             SettingsRowGroup {
                 SettingsRow(id: rows.agent, "Agent", description: Text(agentDescription)) {
                     SettingsSelect(
-                        label: "Agent for new tasks", selection: agentSelection, options: agentOptions,
+                        label: "Agent for new tasks", selection: $agentID, options: agentOptions,
                         width: Self.selectWidth)
                 }
-                SettingsRow(id: rows.model, "Model", description: Text(modelDescription)) {
-                    SettingsSelect(
-                        label: "Model for new tasks", selection: $modelValue, options: modelOptions,
-                        width: Self.selectWidth
+                if let modelAgent {
+                    // Its own view, since where the model is kept depends on the agent.
+                    ProjectModelDefaultRow(
+                        project: project, agent: modelAgent, rowID: rows.model, width: Self.selectWidth
                     )
-                    .disabled(modelOptions.count == 1)
+                    .id(modelAgent.id)
+                } else {
+                    SettingsRow(
+                        id: rows.model, "Model",
+                        description: Text("Choose an installed agent above to pick its model.")
+                    ) {
+                        SettingsSelect(
+                            label: "Model for new tasks", selection: .constant(String?.none),
+                            options: [.init(value: nil, title: "Default")], width: Self.selectWidth
+                        )
+                        .disabled(true)
+                    }
                 }
                 SettingsRow(
                     id: rows.workspace, "New tasks get",
@@ -75,10 +84,10 @@ struct ProjectNewTasksSection: View {
 
     // MARK: - Agent and model
 
-    private var agentSelection: Binding<String?> {
-        Binding(
-            get: { agentID },
-            set: { ProjectTaskDefaults.setAgent($0.map(AgentDefinition.ID.init(rawValue:)), for: project.id) })
+    /// The agent whose model the project picks: its own, or while it leaves that open, the one
+    /// used last.
+    private var modelAgent: AgentDefinition? {
+        agentID == nil ? model.defaultAgent : agent?.agent
     }
 
     private var agentOptions: [SettingsSelect<String?>.Option] {
@@ -99,35 +108,6 @@ struct ProjectNewTasksSection: View {
                 "\(agent?.agent.displayName ?? agentID) can't start tasks right now, so new tasks start with the agent you used last."
         }
         return "New tasks start with \(agent.agent.displayName), unless you pick another."
-    }
-
-    private var offeredModels: [ConfigOption.SelectOption] {
-        agentID.map { AgentSessionDefaults.offeredChoices(for: AgentDefinition.ID(rawValue: $0), setting: .model) }
-            ?? []
-    }
-
-    private var modelOptions: [SettingsSelect<String?>.Option] {
-        guard let agentID else { return [.init(value: nil, title: "The agent's default")] }
-        let id = AgentDefinition.ID(rawValue: agentID)
-        let global = UserDefaults.standard.string(forKey: AgentSessionDefaults.Setting.model.key(for: id))
-        let globalName = global.map { value in offeredModels.first { $0.value == value }?.name ?? value }
-        var options = [
-            SettingsSelect<String?>.Option(value: nil, title: globalName.map { "Default (\($0))" } ?? "Default")
-        ]
-        options += offeredModels.map { .init(value: $0.value, title: $0.name) }
-        if let modelValue, !offeredModels.contains(where: { $0.value == modelValue }) {
-            options.append(.init(value: modelValue, title: modelValue))
-        }
-        return options
-    }
-
-    private var modelDescription: String {
-        guard agentID != nil else { return "Choose an agent above to pick its model." }
-        let name = agent?.agent.displayName ?? "the agent"
-        if offeredModels.isEmpty {
-            return "Start a task with \(name) once to choose from its models."
-        }
-        return "Default uses \(name)'s default from Settings ▸ Agents. A model \(name) stops offering is skipped."
     }
 
     // MARK: - Git overrides

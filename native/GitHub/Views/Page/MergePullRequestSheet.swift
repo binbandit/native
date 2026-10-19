@@ -57,7 +57,7 @@ struct MergePullRequestSheet: View {
 
     @ViewBuilder private func content(_ page: PullRequestPage, plan: PullRequestMergePlan) -> some View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
-            PullRequestPageStatusLine(page: page, compact: true)
+            PullRequestPageStatusLine(page: page, compact: true, wraps: true)
             if let state = plan.state {
                 arranged(state, plan: plan)
             } else if let blocker = plan.blocker {

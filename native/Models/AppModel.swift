@@ -27,8 +27,8 @@ final class AppModel {
     var lastUndoable: UndoableAction?
     /// Features that keep sessions out of the sidebar claim them here (a pull request's private
     /// questions), so a session search found opens their way instead of as a task under a project.
-    /// Each returns whether it opened the session.
-    @ObservationIgnored var searchedSessionOpeners: [@MainActor (SessionKey) -> Bool] = []
+    /// Each gets the session and its folder, and returns whether it opened the session.
+    @ObservationIgnored var searchedSessionOpeners: [@MainActor (SessionKey, _ cwd: String) -> Bool] = []
 
     var selection: SessionKey? {
         didSet {
