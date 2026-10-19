@@ -39,7 +39,7 @@ anything that misses that misses everywhere.
 Always in an isolated instance (`scripts/dev/run-isolated.sh perf`), never a copy someone is
 using, and quit it afterwards (`just quit perf`). Debug builds are what the instance runs. Release
 runs Native's own code several times faster, but launch is mostly AppKit and SwiftUI building the
-window, which is the same code in both: a Release launch does only about 10% less work.
+window, which is the same code in both: a Release launch does only about 6% less work.
 
 `just perf` (`scripts/perf/measure.sh`) builds the instance, launches it five times and prints the
 launch milestones, then leaves the last launch idle and samples it with the window visible,
@@ -420,6 +420,68 @@ views as they were with the model fixes below already in (scrolling runs none of
   and the loaders' pulsing dots up to 120 Hz, the night sky's twinkling and drifting at 30 Hz. The
   iPhone companion opts in to 120 Hz (`CADisableMinimumFrameDurationOnPhone`).
 
+### Launch
+
+2026-10-19, `just perf --fixture`: an isolated instance in four projects, three with icons of their
+own, and 30 tasks; Codex as the default agent. Counts are the main thread's work before the first
+frame. "Before" is the tree at 19:15, with the plugin cache and the MCP change already in (neither
+shows at this scale); "after" is 20:20. The Mac's load average fell from 130-200 to 5-30 in
+between, so compare instructions: CPU time and wall-clock time moved with the load as much as with
+the changes.
+
+| Measurement | Before | After |
+| --- | --- | --- |
+| Main-thread instructions to the first frame, Debug, 30 tasks | 6.5-7.1 G | 4.87-5.09 G |
+| The same with no tasks | 4.08-4.18 G | 3.70-3.77 G |
+| The same in Release, 30 tasks / no tasks | not measured | 4.54-4.77 G / 3.29-3.33 G |
+| Main-thread CPU to the first frame, Debug, 30 tasks | 1.0-1.28 s (load 130-200) | 470-494 ms (load 5-14) |
+| Main-thread CPU to the first frame, Release, 30 tasks / no tasks | not measured | 430-459 ms / 319-325 ms (load 6-17) |
+| First frame, warm, Release, 30 tasks / no tasks | not measured | 536-570 ms / 424-429 ms |
+| `appInit`, Release / Debug | not measured / 47-66 ms | 40-46 ms / 47-66 ms |
+| What 30 tasks add over none (the sidebar's rows and Home's recent tasks) | 2.7 G | 1.35 G |
+| Making the built-in plugins (`BuiltInPlugins.all`) | 243 M instructions, 60 ms | 73 M, 9 ms (54 M, 8 ms in Release) |
+| Reading the agents' MCP configuration | 14-21 ms of main-thread CPU | 0.3 ms (it reads off the main thread) |
+| From the window's first body to Home's (where Geist's fonts are first made) | 262-267 M | 176 M |
+| Idle and hidden, the idle loop ticking every 2 s (`-agentIdleTimeout 10`) | 1.5-2.6 M instructions/s, 0.05-0.08% CPU | 0.27-0.49 M/s, 0.02-0.03% |
+
+- **Launch is AppKit and SwiftUI building the window.** In a Release profile, about 85% of the main
+  thread's samples before the first frame have no Native code under them: restoring and laying out
+  the window (about 40%), building the main menu from 80 command items (8%), creating the window and
+  its toolbar (7%), Core Animation's first commit and drawing text (10%). Native's own code is the
+  rest: NSApplication starting up, the built-in plugins, and the rows' bodies. That's why Release
+  does only about 6% less work than Debug, and why the budget of 150 ms (about 1.5 G instructions)
+  is out of reach of small fixes: the window has to get simpler.
+- **The sidebar was the largest part Native controls.** Every task row was built and laid out
+  before the first frame, each about 74 M instructions, in a plain `VStack`. The rows are lazy now,
+  so only those on screen are built, and one delete confirmation serves the list instead of one per
+  row: 30 tasks add 1.35 G instead of 2.7 G. A built row still costs about 45 M, and the sidebar
+  with 30 tasks is about 1.9 G of the 4.9 G (it's 3.1-3.6 G with no sidebar at all), the status
+  bar about 0.1 G and Home about 0.25 G.
+- **Checking the script runtime's signature hashed 41 MB on the main thread.** Making the
+  orchestration plugin made its `ScriptRunner`, which checked that the runtime is signed into the
+  App Sandbox: a full static signature check of the 41 MB binary, about 50 ms of Debug launch. The
+  check now runs before the first script, once; a runtime that fails it is refused then.
+- **Geist was looked up by family name.** Each token font searched every font installed (about
+  0.4 ms each, for the dozen or so launch makes), after listing every family to see whether Geist
+  registered. Fonts
+  are now made from the bundled files' own descriptors, and registering them says whether they're
+  there; the text draws the same, pixel for pixel.
+- **The agents' MCP configuration was read on the main thread before the first frame**
+  (`~/.claude.json` is 315 KB here). It's read in the background now; agents that apply MCP
+  switches at launch wait for it through `NativePlugin.prepareForLaunch`, alongside the login
+  shell, which takes longer anyway.
+- **The plugin registry worked its lists out on every read.** `plugins`, `enabledPlugins` and
+  `agents` copied every manifest each time, many times per window update and on every idle tick.
+  They're now kept until something they come from changes (the loaded plugins, the user's choices,
+  experiment values or the organization's policy), which observation reports.
+- **Custom layouts placed their subviews twice.** A `Layout` that doesn't implement
+  `explicitAlignment` gets one that places every subview to merge their alignment guides, whenever
+  a parent asks. Home's card grid and the status bar have no guides to merge, so they answer nil.
+- **CPU time isn't steady on a busy Mac either.** The same launch took 0.5 s or 1.2 s of main-thread
+  CPU depending on the load, since a busy Mac runs the main thread on efficiency cores. Instruction
+  counts stay within a few percent, so `LaunchMetrics` logs them (`thread_selfcounts`, looked up at
+  run time) and `just perf` and `rusage` show them.
+
 ## Still to do
 
 | What | Why | Owner |
@@ -427,10 +489,12 @@ views as they were with the model fixes below already in (scrolling runs none of
 | Stop hover hit-testing while the transcript scrolls | 12–19% of a fast scroll; needs proof, by hand with a real mouse wheel and trackpad, that clicks and hover come back the moment a scroll ends | Transcript performance |
 | Let Codex unload closed threads | codex-acp never unsubscribes its title-generation thread, so each session's MCP servers (about 1 GB each here) outlive it until the adapter exits | Upstream codex-acp#628 / #629; then turn idle closing on |
 | Turn on closing idle sessions | Once the row above is done (reopening is faithful now): default `sessionIdleTimeout` to 10 minutes. Also check claude-agent-acp, where each session is its own Claude Code process | App model |
-| Cache the applied plugin list itself | Only the experiment scan is cached; `plugins` still maps every loaded plugin on every read | Experiments / plugins |
 | "Couldn't run git: The file “project” doesn't exist" alert | New Session in a project whose folder is gone shows a modal; the sidebar already says "Can't find this project's folder" with Retry | Failures |
 | Find what holds memory after a Codex reply | After the first long Codex reply, footprint stayed about 85 MB up (167 MB → 252 MB, mostly Malloc Small) after leaving the session; replies from a fake agent come back within 20 MB | Transcript, app model |
-| Read MCP config files off the main thread at launch | About 14 ms in Debug before the first frame; agents can wait for it instead | MCP |
+| Launch within 150 ms of main-thread CPU | 430-459 ms in Release with 30 tasks (4.6 G instructions), 319-325 ms with none: mostly AppKit and SwiftUI building, laying out and drawing the window (Launch, above). It takes fewer views before the first frame, not faster code | App shell, sidebar, Home |
+| Cheaper sidebar rows | A row that's built costs about 45 M instructions: each has its own context menu, swipe actions, tooltip, accessibility actions and trailing indicators (`AppTaskRowAccessory`), and `ArchivedSection` lists every project's archived tasks to count them. The sidebar is about 1.9 G of a 4.9 G launch with 30 tasks | Sidebar |
+| A cheaper main menu | 8% of launch: 80 `CommandMenuItem`s, each reading eight focused values and the environment through `FocusedCommandContext` | Commands |
+| Launch Services on the main thread at launch | Open In looks up every app it knows (`OpenInModel.refresh`, about 5 ms in Debug) and agent icons look up installed apps (`AgentIconInstalledApps`), both before the first frame; both can wait or move off the main thread | Open In, agent icons |
 | Park the default agent when it has no open sessions for a long while, or start it on the first New Session | It's kept running so New Session never waits; with direct adapter launch that wait is now about 0.3 s for Codex | App model |
 | Opening the changes inspector on many files under 100 ms | Still 218–392 ms on 250 files against 69–77 ms on a clean repository: laying out and drawing the rows on screen (text measuring, the diff's selectable text) and the first file's diff, in Debug | Git |
 | Scroll a long transcript at 120 Hz | Still 7–33% of refreshes dropped in a fast flick and 7–13% at reading speed (Debug): new rows lay out their selectable text on the main thread. Then lists without `Grid`, and code blocks without a scroll view each | Transcript |
