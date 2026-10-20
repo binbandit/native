@@ -10,6 +10,12 @@ import AppKit
 /// `-nativeAutoScrollDistance` points (30,000; negative scrolls up, as from the bottom of a
 /// transcript) at `-nativeAutoScrollSpeed` points a second (6,000) and back, then writes "done" to
 /// `-nativeAutoScrollLog <path>`.
+///
+/// With `-nativeAutoScrollWheel YES` it scrolls the way a trackpad does instead: one continuous
+/// scroll gesture of pixel-delta wheel events, sent through the window to whatever is under the
+/// middle of the scroll view, so SwiftUI's own scrolling and any nested scroll views see them. Setting
+/// the clip view's bounds directly leaves a SwiftUI scroll view with a bound `scrollPosition` (the
+/// transcript) showing rows from before the scroll. The real pointer never moves.
 @MainActor
 final class PlatformAutoScroll: NSObject {
     private static var running: PlatformAutoScroll?
@@ -18,8 +24,12 @@ final class PlatformAutoScroll: NSObject {
     private let origin: CGFloat
     private let distance: CGFloat
     private let speed: CGFloat
+    private let usesWheel: Bool
     private var started: CFTimeInterval?
     private var link: CADisplayLink?
+    /// How far the last frame scrolled, and the part of a pixel wheel events haven't sent yet.
+    private var lastOffset: CGFloat = 0
+    private var remainder: CGFloat = 0
 
     /// Starts once per launch, when the launch arguments ask for it.
     static func startIfRequested() {
@@ -35,17 +45,19 @@ final class PlatformAutoScroll: NSObject {
                 let scrollView = tallest(in: contentView)
             else { return }
             let scroll = PlatformAutoScroll(
-                scrollView: scrollView, distance: distance != 0 ? distance : 30_000, speed: speed > 0 ? speed : 6_000)
+                scrollView: scrollView, distance: distance != 0 ? distance : 30_000, speed: speed > 0 ? speed : 6_000,
+                usesWheel: defaults.bool(forKey: "nativeAutoScrollWheel"))
             running = scroll
             scroll.begin()
         }
     }
 
-    private init(scrollView: NSScrollView, distance: CGFloat, speed: CGFloat) {
+    private init(scrollView: NSScrollView, distance: CGFloat, speed: CGFloat, usesWheel: Bool) {
         self.scrollView = scrollView
         origin = scrollView.contentView.bounds.origin.y
         self.distance = distance
         self.speed = speed
+        self.usesWheel = usesWheel
     }
 
     private func begin() {
@@ -64,13 +76,41 @@ final class PlatformAutoScroll: NSObject {
         let t = now - start
         guard t < leg * 2 else {
             link.invalidate()
+            if usesWheel { wheel(by: 0, phase: .ended) }
             finish()
             return
         }
         let offset = (t < leg ? t : 2 * leg - t) * speed * (distance < 0 ? -1 : 1)
+        if usesWheel {
+            wheel(by: offset - lastOffset, phase: t == 0 ? .began : .changed)
+            lastOffset = offset
+            return
+        }
         let flip: CGFloat = scrollView.documentView?.isFlipped == false ? -1 : 1
         scrollView.contentView.scroll(to: NSPoint(x: scrollView.contentView.bounds.origin.x, y: origin + flip * offset))
         scrollView.reflectScrolledClipView(scrollView.contentView)
+    }
+
+    /// Sends a wheel event moving the content `delta` points (positive scrolls further down the
+    /// document) over the middle of the scroll view.
+    private func wheel(by delta: CGFloat, phase: CGScrollPhase) {
+        remainder += delta
+        let pixels = remainder.rounded(.towardZero)
+        remainder -= pixels
+        guard let window = scrollView.window,
+            let event = CGEvent(
+                scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 1, wheel1: Int32(-pixels), wheel2: 0,
+                wheel3: 0)
+        else { return }
+        let middle = window.convertPoint(
+            toScreen: scrollView.convert(NSPoint(x: scrollView.bounds.midX, y: scrollView.bounds.midY), to: nil))
+        // Core Graphics counts screen coordinates from the top of the main display.
+        event.location = CGPoint(x: middle.x, y: (NSScreen.screens.first?.frame.maxY ?? 0) - middle.y)
+        event.setIntegerValueField(.scrollWheelEventIsContinuous, value: 1)
+        event.setIntegerValueField(.scrollWheelEventScrollPhase, value: Int64(phase.rawValue))
+        if let wheel = NSEvent(cgEvent: event) {
+            window.sendEvent(wheel)
+        }
     }
 
     private func finish() {
