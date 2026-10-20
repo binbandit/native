@@ -1,4 +1,3 @@
-#if NATIVE_PAIRING_WIP
 import Foundation
 import NativeHostProtocol
 import NativeLink
@@ -199,4 +198,3 @@ nonisolated enum AddHostFailure: Hashable, Sendable {
         }
     }
 }
-#endif

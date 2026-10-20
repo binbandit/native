@@ -1,4 +1,3 @@
-#if NATIVE_PAIRING_WIP
 import NativeHostProtocol
 import NativeLink
 import SwiftUI
@@ -339,4 +338,3 @@ private enum AddHostPreview {
         AddHostSheet(model: AddHostPreview.model(.failed(.sshSignIn(destination: "me@mac-mini.local"))), close: {})
     }
 }
-#endif

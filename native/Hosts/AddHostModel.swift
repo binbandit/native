@@ -1,4 +1,3 @@
-#if NATIVE_PAIRING_WIP
 import Foundation
 import NativeHostProtocol
 import NativeLink
@@ -265,4 +264,3 @@ struct AddHostOffer: Equatable {
     /// The most the link gives: what pair was asked for, or nothing beyond tasks for an older link.
     var grants: LinkGrants { invite.grants ?? .standard }
 }
-#endif
