@@ -36,7 +36,7 @@ jobs:
       NATIVE_SENTRY_DSN: ${{ secrets.NATIVE_SENTRY_DSN }}
       NATIVE_SPARKLE_PUBLIC_KEY: ${{ vars.NATIVE_SPARKLE_PUBLIC_KEY }}
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         id: checkout
         with:
           fetch-depth: 0
@@ -58,13 +58,13 @@ jobs:
       # The terminal (libghostty, a Zig build of several minutes) and the script runtime's Cargo
       # build, V8 included. release.sh builds both before archiving; these keep that quick.
       - name: Cache libghostty
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/Library/Caches/native-build/libghostty
           key: libghostty-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/build-libghostty.sh') }}
           restore-keys: libghostty-${{ runner.os }}-${{ runner.arch }}-
       - name: Cache the script runtime
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/Library/Caches/Native/ScriptRuntime
           key: script-runtime-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'scripts/build-script-runtime.sh') }}
@@ -93,7 +93,7 @@ jobs:
       # What a rehearsal would have published, to download and check by hand (docs/releasing.md).
       - name: Upload the rehearsal
         if: github.event_name == 'workflow_dispatch' && !cancelled()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: native-${{ steps.version.outputs.version }}-${{ github.run_number }}
           retention-days: 7
@@ -108,7 +108,7 @@ jobs:
             ${{ runner.temp }}/native-release/${{ steps.version.outputs.channel }}/celebrations/
       - name: Upload the rehearsal's symbols
         if: github.event_name == 'workflow_dispatch' && !cancelled()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: native-${{ steps.version.outputs.version }}-${{ github.run_number }}-dSYMs
           retention-days: 7
@@ -137,13 +137,13 @@ jobs:
     runs-on: ${{ matrix.runner }}
     container: swift:6.2
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       - name: Build native-host
         run: |
           swift build -c release --package-path Packages/NativeHost --product native-host --static-swift-stdlib
           cp "$(swift build -c release --package-path Packages/NativeHost --show-bin-path)/native-host" \
             "native-host-linux-${{ matrix.arch }}"
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: native-host-linux-${{ matrix.arch }}
           path: native-host-linux-${{ matrix.arch }}
