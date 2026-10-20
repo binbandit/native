@@ -17,7 +17,8 @@ struct ToolCallBody: View {
                 phase: phase)
         case .mcp(let rawName):
             MCPOutput(
-                rawName: rawName, input: call.mcpArguments, output: ToolOutput.text(of: call) ?? call.mcpResultText,
+                rawName: rawName, input: call.mcpArguments,
+                output: ToolOutput.text(of: call) ?? ToolOutput.mcpResult(of: call),
                 phase: phase)
         case .lines:
             if let output = ToolOutput.text(of: call) {
@@ -44,14 +45,20 @@ struct ToolCallBody: View {
 
 enum ToolOutput {
     /// The text the tool produced: its text content without an enclosing code fence, else what the
-    /// command printed, else a string `rawOutput`.
+    /// command printed, else a string `rawOutput`, without the tags an agent wraps errors in for its
+    /// model (`ToolErrorMarkup`).
     static func text(of call: ToolCallState) -> String? {
         let texts = call.content.compactMap { content -> String? in
             guard case .content(let block) = content, let text = block.text else { return nil }
-            return text.unfenced ?? text
+            return ToolErrorMarkup.stripped(text.unfenced ?? text)
         }
         if !texts.isEmpty { return texts.joined(separator: "\n") }
-        return printed(by: call) ?? call.rawOutput?.stringValue
+        return printed(by: call) ?? call.rawOutput?.stringValue.map(ToolErrorMarkup.stripped)
+    }
+
+    /// What an MCP tool returned (`mcpResultText`), likewise without error tags.
+    static func mcpResult(of call: ToolCallState) -> String? {
+        call.mcpResultText.map(ToolErrorMarkup.stripped)
     }
 
     /// What a command printed, from the chunks its agent streams (Codex), without the newline that
@@ -64,7 +71,7 @@ enum ToolOutput {
 
     /// The first line of what a failed call printed or returned, which is usually why it failed.
     static func failureHint(of call: ToolCallState) -> String? {
-        let output = text(of: call) ?? call.mcpResultText
+        let output = text(of: call) ?? mcpResult(of: call)
         return output?
             .split(whereSeparator: \.isNewline)
             .lazy
@@ -184,8 +191,8 @@ private struct ContentBlockView: View {
         case .content(.resourceLink(let uri, let name)):
             placeholder(name.isEmpty ? uri : name, systemImage: "link")
         case .content(let block):
-            if let text = block.text {
-                if let code = text.unfenced {
+            if let text = block.text.map(ToolErrorMarkup.stripped) {
+                if let code = text.unfenced.map(ToolErrorMarkup.stripped) {
                     Text(verbatim: code)
                         .foregroundStyle(.dsTextSecondary)
                         .monospacedOutput()

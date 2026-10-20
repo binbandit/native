@@ -13,9 +13,12 @@ public enum SessionFolder {
         return resolved == path ? [path] : [path, resolved]
     }
 
-    /// Whether two paths are the same folder, whichever spelling each one uses.
+    /// Whether two paths are the same folder, whichever spelling each one uses. The same spelling
+    /// needs no look at the disk, which views ask about for every row.
     public static func isSame(_ first: String, _ second: String) -> Bool {
-        resolved(trimmed(first)) == resolved(trimmed(second))
+        let first = trimmed(first)
+        let second = trimmed(second)
+        return first == second || resolved(first) == resolved(second)
     }
 
     /// Whether `path` is `folder` or inside it.
