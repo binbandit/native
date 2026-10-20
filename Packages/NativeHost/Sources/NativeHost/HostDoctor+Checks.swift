@@ -60,7 +60,7 @@ extension HostDoctor {
         let path = locate(cli, in: context.environment) ?? cli
         let version = await version(at: path, context.environment)
         return HostDoctorCheck(
-            id: id, group: .agents, title: agent.name, status: .ok, detail: "\(version ?? cli) at \(path)")
+            id: id, group: .agents, title: agent.name, status: .ok, detail: Self.found(path, version: version))
     }
 
     /// The command, then what it requires and the CLIs it resolves, once each.
@@ -109,7 +109,7 @@ extension HostDoctor {
         }
         let version = await version(at: path, context.environment)
         return HostDoctorCheck(
-            id: id, group: group, title: title, status: .ok, detail: "\(version ?? command) at \(path)")
+            id: id, group: group, title: title, status: .ok, detail: Self.found(path, version: version))
     }
 
     /// Whether `gh` is signed in, from `gh auth status` (which masks the token). Nil without `gh`.
@@ -282,6 +282,11 @@ extension HostDoctor {
             return nil
         }
         return result.firstLine
+    }
+
+    /// "2.1.3 (Claude Code) at /opt/homebrew/bin/claude", or where it is when it didn't say its version.
+    static func found(_ path: String, version: String?) -> String {
+        version.map { "\($0) at \(path)" } ?? "Found at \(path)"
     }
 
     /// "claude", "npx and claude", "a, b and c".
