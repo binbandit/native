@@ -72,9 +72,23 @@ struct ToolCallView: View, Equatable {
                 .transition(RevealTransition())
             }
             if let permission = call.permission {
+                #if DEBUG
+                // Composer direction D (`-composerDesign d`) answers approvals in the composer.
+                if ComposerDirection.answersApprovals {
+                    Label("Answer in the composer below", systemImage: "arrow.down")
+                        .font(.dsCaption)
+                        .foregroundStyle(.dsTextTertiary)
+                        .padding(.top, DS.Space.xs)
+                } else {
+                    ToolPermissionButtons(options: permission.options, onChoose: onChoose)
+                        .padding(.top, DS.Space.sm)
+                        .transition(.opacity)
+                }
+                #else
                 ToolPermissionButtons(options: permission.options, onChoose: onChoose)
                     .padding(.top, DS.Space.sm)
                     .transition(.opacity)
+                #endif
             }
         }
         .animation(.smooth, value: phase)

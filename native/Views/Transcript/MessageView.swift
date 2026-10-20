@@ -54,6 +54,14 @@ struct MessageView: View, Equatable {
                             .containerShape(bubble)
                     }
                 }
+                #if DEBUG
+                // Composer direction C (`-composerDesign c`): the settings the message went out with.
+                if ComposerDirection.showsMessageSettings,
+                    let facts = MessageSettingsLedger.shared.facts(for: message.text)
+                {
+                    SentMessageSettings(facts: facts)
+                }
+                #endif
             }
         case .agent:
             MarkdownView(message.text)

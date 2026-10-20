@@ -95,18 +95,21 @@ struct ComposerView: View {
         if automation.goal(for: session) != nil {
             commands.append(ComposerSlashCommand(native: "goal", description: GoalCommand.usage))
         }
+        #if DEBUG
+        commands += directionCommands
+        #endif
         return commands
     }
 
     var body: some View {
         let settings = ComposerSettings(session.configOptions)
         let suggestions = suggestions
-        surface(settings, suggestions: suggestions)
+        designedSurface(settings, suggestions: suggestions)
             .overlay(alignment: .top) {
                 // Float above the composer instead of growing it, so the transcript doesn't move:
                 // a zero-height frame on the top edge, with the list or toast hanging up out of it.
                 Group {
-                    if let suggestions {
+                    if let suggestions, floatsListedSuggestions {
                         ComposerSuggestionsPanel(
                             suggestions: suggestions,
                             highlighted: $highlighted,
