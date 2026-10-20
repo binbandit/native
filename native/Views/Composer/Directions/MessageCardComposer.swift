@@ -51,7 +51,7 @@ struct MessageCardComposer<Editor: View, Sections: View, Files: View>: View {
     }
 
     /// How far in the draft starts, as a sent message's bubble does (it takes at most 85%).
-    private static let indent: CGFloat = 0.15
+    private static var indent: CGFloat { 0.15 }
 
     /// Send, or while the agent works, Stop beside it.
     @ViewBuilder private var action: some View {
