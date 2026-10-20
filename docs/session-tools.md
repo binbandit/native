@@ -65,5 +65,8 @@ its fact, whether its pane has something now, and its pane, or what its fact doe
 The screen reads tools only from the registry, so features never reach into it, and the registry is
 the session panel seam the lean-core plan (`docs/plans/lean-core.md`) builds modules on.
 
+Settings ▸ Session Tools lists every registered tool with what it shows and a place to put it
+(Under the Title, Beside the Conversation, Under the Composer, Off), and Reset puts them all back.
+
 Where the user put each tool is a `SessionToolArrangement`, saved in user defaults
 (`sessionTools.arrangement`) as only the places that differ from each tool's default.

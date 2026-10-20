@@ -9,7 +9,8 @@ enum AppSettingsPanes {
         plugins: PluginRegistry, terminals: TerminalStore, keepAwake: KeepAwakeController, projects: [Project]
     ) -> [SettingsPane] {
         [
-            .labs, .git, .gitHub, .scripts, .aiInstructions, .modes(projects: projects), .mcpServers(registry: plugins),
+            .labs, .sessionTools(.shared), .git, .gitHub, .scripts, .aiInstructions, .modes(projects: projects),
+            .mcpServers(registry: plugins),
             .skills(registry: plugins), .terminal(terminals), .sounds(), .keepAwake(keepAwake), .updates,
             .usage(registry: plugins), .notifications, .pairedDevices, .celebrations(registry: plugins), .background,
             .search(BuiltInPlugins.search.center),
