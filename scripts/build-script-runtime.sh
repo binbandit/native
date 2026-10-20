@@ -91,13 +91,16 @@ if [ "$sandbox" = 0 ]; then
         || give_up "Cargo.lock has v8 $locked but this script pins $V8_VERSION; update the V8 pins in $0."
     archive="$cache/v8/librusty_v8_ptrcomp_release_aarch64-apple-darwin-$V8_VERSION.a.gz"
     if ! has_sha256 "$archive" "$V8_ARCHIVE_SHA256"; then
+        # Each build downloads to its own file and renames it into place once checked, so builds
+        # sharing the cache never see each other's half-written or vanished downloads.
+        partial="$archive.$$.partial"
         mkdir -p "$(dirname "$archive")"
-        curl -fsSL -o "$archive.partial" \
+        curl -fsSL -o "$partial" \
             "https://github.com/denoland/rusty_v8/releases/download/v$V8_VERSION/librusty_v8_ptrcomp_release_aarch64-apple-darwin.a.gz" \
-            || { rm -f "$archive.partial"; give_up "couldn't download V8 $V8_VERSION."; }
-        has_sha256 "$archive.partial" "$V8_ARCHIVE_SHA256" \
-            || { rm -f "$archive.partial"; give_up "the V8 $V8_VERSION download doesn't match its pinned SHA-256."; }
-        mv -f "$archive.partial" "$archive"
+            || { rm -f "$partial"; give_up "couldn't download V8 $V8_VERSION."; }
+        has_sha256 "$partial" "$V8_ARCHIVE_SHA256" \
+            || { rm -f "$partial"; give_up "the V8 $V8_VERSION download doesn't match its pinned SHA-256."; }
+        mv -f "$partial" "$archive"
     fi
     export RUSTY_V8_ARCHIVE="$archive"
 fi
