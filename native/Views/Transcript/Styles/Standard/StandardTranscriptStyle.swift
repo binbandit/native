@@ -48,6 +48,9 @@ private struct StandardTranscript: View {
                         .padding(.top, DS.Space.xl)
                 }
             }
+            #if DEBUG || NATIVE_PERF
+            .task { await TranscriptAutoScroll.runIfRequested(session: transcript.session, proxy: proxy) }
+            #endif
             .task(id: transcript.session.transcriptReveal) {
                 await reveal(transcript.session.transcriptReveal, with: proxy)
             }

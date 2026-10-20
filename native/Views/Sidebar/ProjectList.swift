@@ -18,7 +18,6 @@ struct ProjectList<TaskAccessory: View>: View {
     @State private var drag = SidebarDragState()
 
     var body: some View {
-        let _ = LaunchExperiment.logChanges ? Self._logChanges() : ()
         @Bindable var selection = selection
         let isNarrowing = filter.isNarrowing
         // Lazy, so only the projects on screen are built (each lazy about its own rows too).

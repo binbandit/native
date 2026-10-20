@@ -65,7 +65,15 @@ struct PlatformCodeText: View, Equatable {
         var resolved: [Color: DSPlatformColor] = [:]
         func platform(_ color: Color) -> DSPlatformColor {
             if let known = resolved[color] { return known }
-            let cgColor = color.resolve(in: environment).cgColor
+            // In plain sRGB: SwiftUI resolves to extended sRGB, whose colors Core Graphics asks
+            // ColorSync about (their HDR headroom) each time a text view draws a run in one, about
+            // 200 times slower than for sRGB. That was a quarter of the main thread while a big
+            // diff scrolled. Code themes are sRGB, so nothing is lost.
+            let resolvedColor = color.resolve(in: environment).cgColor
+            let cgColor =
+                CGColorSpace(name: CGColorSpace.sRGB).flatMap {
+                    resolvedColor.converted(to: $0, intent: .defaultIntent, options: nil)
+                } ?? resolvedColor
             #if canImport(AppKit)
             let value = NSColor(cgColor: cgColor) ?? .labelColor
             #else

@@ -41,7 +41,7 @@ struct PullRequestFilesList: View {
                 .coordinateSpace(.named(PullRequestPageModel.filesSpace))
             }
             .scrollContentBackground(.hidden)
-            #if DEBUG && os(macOS)
+            #if (DEBUG || NATIVE_PERF) && os(macOS)
             // `-nativeAutoScroll`: scrolls this list by itself, for measuring frame times.
             .task { PlatformAutoScroll.startIfRequested() }
             #endif

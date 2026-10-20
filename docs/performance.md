@@ -46,8 +46,9 @@ launch milestones, then leaves the last launch idle and samples it with the wind
 minimized and hidden, and lists the processes under it. Options: `--no-build`, `--launches N`,
 `--seconds S` (each idle sample, default 30), `--settle S` (wait before sampling, default 20),
 `--fixture` (launch into four projects, three with icons of their own, and 30 tasks, written again
-before every launch by `scripts/perf/fixture.sh`, instead of one empty scratch project) and
-`--launch-only` (stop after the launches).
+before every launch by `scripts/perf/fixture.sh`, instead of one empty scratch project; the window
+opens at its default size rather than as the last launch left it, since a different size lays out
+different rows) and `--launch-only` (stop after the launches).
 
 | Tool | What it gives | Notes |
 | --- | --- | --- |
@@ -483,6 +484,51 @@ the changes.
   counts stay within a few percent, so `LaunchMetrics` logs them (`thread_selfcounts`, looked up at
   run time) and `just perf` and `rusage` show them.
 
+#### Round two: the background host, and what's left
+
+2026-10-20, `just perf --fixture` on `main` with the background host on by default, Debug and
+Release (load average 6 to 25). Instructions are the main thread's before the first frame; the
+per-change rows compare the same build with the change switched off, five or six launches each.
+
+| Measurement | Before | After |
+| --- | --- | --- |
+| Debug, 30 tasks | 3.55-3.59 G, but the first frame had no tasks in the sidebar (below); 5.29-5.64 G once it did, in a 1623×1040 window | 3.73-3.98 G (1120×780), 466-567 ms of main-thread CPU, first frame 616-797 ms |
+| Release, 30 tasks | not measured | 3.45-3.68 G, 481-518 ms of main-thread CPU, first frame 669-734 ms, `appInit` 49-68 ms |
+| Rows that don't run their bodies again when the list rebuilds | | 0.4 G less by the window's first layout, about 0.6 G less to the first frame |
+| Skills, Open In's apps, agent app icons and folder comparisons off the main thread or skipped | 5.29-5.64 G | 5.05-5.42 G |
+| The status bar's items a frame after the bar | 3.97-3.98 G | 3.90 G (the bar now costs about nothing in the first frame) |
+| What's left, by taking each away | | the sidebar 0.76 G (its rows 0.19 G of it), Home 0.2 G, the menu bar's items 0.19 G, the rest the window itself |
+
+- **The first frame lost the sidebar's tasks.** With the background host on by default, launch
+  waited for the host before `model.start()`, which is what made the runtimes the sidebar lists
+  tasks by. The first frame showed "Start a session" under every project and the tasks came in
+  later; the launch numbers looked better for it. The saved agents' runtimes are now made with the
+  model, and they run in the host if it connects before they start (`AgentRuntime.runInHost`);
+  nothing starts an agent before the app has decided where agents run.
+- **Every list update rebuilt every row.** The project list rebuilds its rows whenever it updates
+  (the filter binding and each project's expansion binding count as changed every time), and each
+  row's context menu, accessibility actions and tooltip were built again with it. `SessionRow` is
+  `Equatable` on what it shows, so a rebuilt row with the same inputs keeps its body; what changes in
+  a row reaches it through what it observes.
+- **Rows asked the file system about their folders.** The pull request menu and the row's
+  indicators compared each task's folder with its project's by resolving both paths, several times
+  per row. Identical spellings are now the same folder without a look at the disk.
+- **Skills were read on the main thread.** Like the MCP configuration before, the first read of
+  every skills folder now runs in the background and agents wait for it (`prepareForLaunch`).
+- **Launch Services on the main thread.** Open In's list of apps and the agent icons taken from
+  installed apps are looked up in the background.
+- **What stays is the window.** Taking each part away in turn: the sidebar costs 0.76 G, of which the
+  rows on screen are 0.19 G now; Home 0.2 G; the menu bar's 74 command items 0.19 G. In a profile,
+  restoring and laying out the window, building the main menu, creating the window and its toolbar,
+  and Core Animation's first commit are about 85% of the main thread before the first frame, and
+  Native's own code the rest. Release does about 7% less than Debug.
+- **The menu bar can't wait.** Building its items after the first frame took 0.19 G off launch, but
+  SwiftUI drops a menu that has no items when the app starts (File, whose items all come from the
+  registry) and never puts it back, so the items are built at launch as before.
+- **A launch's numbers depend on the window's size.** macOS restores the window as the last launch
+  left it, and a bigger window lays out more rows: the same build measured 3.6 G at one size and 4.2
+  G at another. `just perf --fixture` now opens the window at its default size every time.
+
 ### Idle, memory and leaks
 
 2026-10-19, evening, Debug build in an isolated instance: 30 tasks from a fake agent in three small
@@ -558,10 +604,9 @@ several runs each. Task switches and Settings visits are AX presses on the insta
 | Let Codex unload closed threads | codex-acp never unsubscribes its title-generation thread, so each session's MCP servers (about 1 GB each here) outlive it until the adapter exits | Upstream codex-acp#628 / #629; then turn idle closing on |
 | Turn idle closing on for Codex | Claude Code closes sessions unused for 10 minutes now (`idleSessionTimeout` in its manifest). Once the row above lands, give Codex's manifest the same | App model |
 | "Couldn't run git: The file “project” doesn't exist" alert | New Session in a project whose folder is gone shows a modal; the sidebar already says "Can't find this project's folder" with Retry | Failures |
-| Launch within 150 ms of main-thread CPU | 430-459 ms in Release with 30 tasks (4.6 G instructions), 319-325 ms with none: mostly AppKit and SwiftUI building, laying out and drawing the window (Launch, above). It takes fewer views before the first frame, not faster code | App shell, sidebar, Home |
-| Cheaper sidebar rows | A row that's built costs about 45 M instructions: each has its own context menu, swipe actions, tooltip, accessibility actions and trailing indicators (`AppTaskRowAccessory`), and `ArchivedSection` lists every project's archived tasks to count them. The sidebar is about 1.9 G of a 4.9 G launch with 30 tasks | Sidebar |
-| A cheaper main menu | 8% of launch: 80 `CommandMenuItem`s, each reading eight focused values and the environment through `FocusedCommandContext` | Commands |
-| Launch Services on the main thread at launch | Open In looks up every app it knows (`OpenInModel.refresh`, about 5 ms in Debug) and agent icons look up installed apps (`AgentIconInstalledApps`), both before the first frame; both can wait or move off the main thread | Open In, agent icons |
+| Launch within 150 ms of main-thread CPU | 481-518 ms in Release with 30 tasks (3.45-3.68 G instructions): mostly AppKit and SwiftUI restoring, laying out and drawing the window (Launch, above). It takes fewer views before the first frame, not faster code; the sidebar outside its rows (0.57 G: the navigation items, the project headers, the scroll view and its key handling) is the largest part Native controls | App shell, sidebar |
+| A cheaper main menu | 0.19 G of launch, and every item is built again on each focus change: 74 `CommandMenuItem`s, each reading eight focused values through `FocusedCommandContext`. Building them after the first frame loses the File menu (Launch, round two); reading the context once per menu instead of once per item is the next thing to try | Commands |
+| Home's agent cards arrive after the first frame | The first frame shows a card only for agents with saved sessions; the others come when agents are checked, and the grid reflows from one card to four | App model, Home |
 | Native under 150 MB with a transcript open | 175–195 MB with one short transcript open (Home 130–140 MB): the first session view's SwiftUI graph is about 26 MB live, the rest pages the allocator kept after its transient allocations | Session view, transcript |
 | About 257 MB of graphics memory on whole-window redraws | For about a second at every launch and on some redraws when other windows uncover Native's (peak 390–405 MB); find what draws in-process with Metal then | App shell |
 | Age labels redraw while nothing is visible | `CompactAgeText` and Home's rows tick with `TimelineView(.everyMinute)`, every row once a minute, hidden or not; a shared minute clock that stops while hidden, like `DSSecondClock` | Sidebar, design system |

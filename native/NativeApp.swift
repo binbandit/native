@@ -45,7 +45,6 @@ struct NativeApp: App {
 
     init() {
         LaunchMetrics.mark(.appInit)
-        LaunchExperiment.checkpoint("appInit")
         FramePacing.startIfRequested()
         // Before any window exists, so the first one opens in the user's appearance.
         let appearance = AppearanceModeController()
@@ -117,7 +116,6 @@ struct NativeApp: App {
                 celebrations: celebrations, updates: updates, whatsNew: whatsNew, appearance: appearance,
                 pullRequestTasks: pullRequestTasks, shortcutsHelp: shortcutsHelp, gitCleanup: gitCleanup,
                 projectActions: projectActions, durableHost: durableHost, git: git, gitHub: gitHub))
-        LaunchExperiment.checkpoint("init end")
     }
 
     var body: some Scene {
@@ -125,8 +123,8 @@ struct NativeApp: App {
             RootView()
                 .commandPalette(palette)
                 .onAppear {
-                    LaunchExperiment.checkpoint("onAppear")
                     LaunchMetrics.markOnScreen(.firstFrame)
+                    FirstFrame.shared.watch()
                 }
                 .performanceDriver(model)
                 .environment(CommandRegistry.shared)
@@ -164,7 +162,6 @@ struct NativeApp: App {
                 .appearancePreferences(plugins: model.plugins)
                 .dsAccentPalette(themeID: iconPreferences.theme.rawValue)
                 .task {
-                    LaunchExperiment.checkpoint("task start")
                     OrchestrationPlugin.connect(to: model, updates: updates, durableHost: durableHost)
                     MCPServersPlugin.connect(to: model) { BuiltInPlugins.usage.contextReports.reports }
                     SkillsPlugin.connect(to: model)
@@ -199,7 +196,6 @@ struct NativeApp: App {
                     if let client = await durableHost.launch() {
                         model.connectHost(client: client)
                     }
-                    LaunchExperiment.checkpoint("before model.start")
                     await model.start()
                     LaunchMetrics.mark(.agentsReady)
                 }
@@ -219,10 +215,7 @@ struct NativeApp: App {
                         BuiltInPlugins.automations.manifest.id)
                 }
         }
-        .defaultSize(
-            width: LaunchExperiment.isOn("bigDefault") ? 1623 : 1120,
-            height: LaunchExperiment.isOn("bigDefault") ? 1040 : 780
-        )
+        .defaultSize(width: 1120, height: 780)
         .commands {
             UpdateCommands(commands: CommandRegistry.shared)
             HostQuitCommands(host: durableHost, commands: CommandRegistry.shared)

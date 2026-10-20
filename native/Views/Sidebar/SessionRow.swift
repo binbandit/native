@@ -58,10 +58,7 @@ struct SessionRow<Accessory: View>: View {
     }
 
     var body: some View {
-        let _ = LaunchExperiment.logChanges ? Self._logChanges() : ()
-        if LaunchExperiment.plainRows {
-            Text(title).frame(height: 36)
-        } else if model.renaming == summary.id {
+        if model.renaming == summary.id {
             SessionTitleField(summary: summary, status: TaskStatus(session))
         } else {
             TaskRow(
@@ -72,18 +69,15 @@ struct SessionRow<Accessory: View>: View {
                 date: session?.lastActivity ?? summary.info.updatedDate,
                 badge: badge,
                 indent: indent,
-                leading: LaunchExperiment.noAgentIcon
-                    ? AnyView(Image(systemName: "circle")) : AnyView(AgentIcon(agent: summary.agent)),
+                leading: AgentIcon(agent: summary.agent),
                 accessory: accessory,
                 action: select,
                 onArchive: archiveAction
             )
-            .lxUnless(LaunchExperiment.noRowHelp || LaunchExperiment.noRowExtras) { $0.help(tooltip) }
+            .help(tooltip)
             // Double-clicking renames, like a file in the Finder.
-            .lxUnless(LaunchExperiment.noDoubleTap || LaunchExperiment.noRowExtras) {
-                $0.simultaneousGesture(TapGesture(count: 2).onEnded(rename))
-            }
-            .lxUnless(LaunchExperiment.noContextMenu || LaunchExperiment.noRowExtras) { $0.contextMenu { contextMenu } }
+            .simultaneousGesture(TapGesture(count: 2).onEnded(rename))
+            .contextMenu { contextMenu }
             .sidebarSwipeActions(
                 leading: [readAction, pinAction],
                 trailing: [
@@ -91,22 +85,18 @@ struct SessionRow<Accessory: View>: View {
                     SidebarSwipeAction("Delete", systemImage: "trash", tint: .dsDanger, action: requestDeletion),
                 ]
             )
-            .lxUnless(LaunchExperiment.noRowExtras) {
-                $0.accessibilityLabel(accessibilityLabel)
-                    .accessibilityHint("\(summary.agent.displayName) session. Return renames it.")
-            }
-            .lxUnless(LaunchExperiment.noA11yActions || LaunchExperiment.noRowExtras) {
-                $0.accessibilityActions {
-                    Button("Rename", action: rename)
-                    Button(isUnread ? "Mark as Read" : "Mark as Unread", action: toggleUnread)
-                    Button(isPinned ? "Unpin" : "Pin", action: togglePinned)
-                    Button("Archive", action: archive)
-                    Button("Move Up") { model.move(target, .up) }
-                    Button("Move Down") { model.move(target, .down) }
-                    if let pullRequest = insights.pullRequestMenu(summary) {
-                        ForEach(pullRequest.items) { item in
-                            Button(item.spokenTitle, action: item.perform)
-                        }
+            .accessibilityLabel(accessibilityLabel)
+            .accessibilityHint("\(summary.agent.displayName) session. Return renames it.")
+            .accessibilityActions {
+                Button("Rename", action: rename)
+                Button(isUnread ? "Mark as Read" : "Mark as Unread", action: toggleUnread)
+                Button(isPinned ? "Unpin" : "Pin", action: togglePinned)
+                Button("Archive", action: archive)
+                Button("Move Up") { model.move(target, .up) }
+                Button("Move Down") { model.move(target, .down) }
+                if let pullRequest = insights.pullRequestMenu(summary) {
+                    ForEach(pullRequest.items) { item in
+                        Button(item.spokenTitle, action: item.perform)
                     }
                 }
             }
@@ -220,20 +210,13 @@ struct SessionRow<Accessory: View>: View {
 }
 
 // The list rebuilds its rows whenever it updates (a filter, a project's expansion, another
-// session's change), and every rebuilt row would run its body again: a row's own changes reach it
-// through what it observes, so a rebuilt row with the same inputs can keep its body. `accessory`
-// is made from the summary and `select` only selects it, so they're left out.
+// session's change), and every rebuilt row would build its view again: a row's own changes reach it
+// through what it observes, so a rebuilt row with the same inputs keeps its body. `accessory` is
+// made from the summary and `select` only selects it, so they're left out.
 extension SessionRow: @MainActor Equatable {
     static func == (lhs: Self, rhs: Self) -> Bool {
-        let equal =
-            lhs.summary == rhs.summary && lhs.indent == rhs.indent && lhs.isPinned == rhs.isPinned
+        lhs.summary == rhs.summary && lhs.indent == rhs.indent && lhs.isPinned == rhs.isPinned
             && lhs.canMoveUp == rhs.canMoveUp && lhs.canMoveDown == rhs.canMoveDown
-        if LaunchExperiment.logChanges {
-            LaunchExperiment.note(
-                "row== \(equal) summary \(lhs.summary == rhs.summary) agent \(lhs.summary.agent == rhs.summary.agent) info \(lhs.summary.info == rhs.summary.info)"
-            )
-        }
-        return equal
     }
 }
 

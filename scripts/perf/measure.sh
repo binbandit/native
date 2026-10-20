@@ -84,6 +84,10 @@ tree() {
     echo "$pids" | tr -s ' ' ',' | sed 's/^,//; s/,$//'
 }
 
+# With the fixture, the window opens at its default size rather than as the last launch left it
+# (macOS keeps that outside the app's own files), so every launch lays out the same rows.
+[ "$fixture" = 1 ] && app_args=(-ApplePersistenceIgnoreState YES ${app_args[@]+"${app_args[@]}"})
+
 launch() {
     "$run" "$name" "$@" -- ${app_args[@]+"${app_args[@]}"} | awk '/^pid / { print $2 }'
 }

@@ -35,7 +35,6 @@ struct ProjectSection<TaskAccessory: View>: View {
     }
 
     var body: some View {
-        let _ = LaunchExperiment.logChanges ? Self._logChanges() : ()
         let item = SidebarDragState.Item.project(project.id)
         let problems = model.problems.list(for: project.id)
         let starting = model.startingTasks(in: project.id)
@@ -74,13 +73,8 @@ struct ProjectSection<TaskAccessory: View>: View {
                     select(summary.id)
                 }
                 .equatable()
-                .lxUnless(LaunchExperiment.noRowDrag) {
-                    $0.sidebarDraggable(row, title: model.title(for: summary), state: drag)
-                }
-                .lxUnless(LaunchExperiment.noRowDrop) {
-                    $0.sidebarDropTarget(
-                        row, state: drag, isActive: drag.dragged.isSession, onDrop: model.applySidebarDrop)
-                }
+                .sidebarDraggable(row, title: model.title(for: summary), state: drag)
+                .sidebarDropTarget(row, state: drag, isActive: drag.dragged.isSession, onDrop: model.applySidebarDrop)
             }
             // A project whose folder is gone or whose listing failed isn't known to be empty; its
             // problem row says why.

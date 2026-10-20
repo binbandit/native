@@ -1,7 +1,7 @@
 #!/bin/bash
 # Seeds an isolated instance with a workspace like a real one, for measuring launch: four projects,
 # three with icons of their own (an SVG favicon, an SVG logo, an app icon in an asset catalog), and
-# tasks listed for them (30 unless counts per project are given), in a window at its default size.
+# tasks listed for them (30 unless counts per project are given).
 #
 #   scripts/perf/fixture.sh <bundle id> <folder> [tasks in web api ios tools]
 #
@@ -57,9 +57,7 @@ for i in "${!names[@]}"; do
 done
 defaults write "$bundle" projects -data "$(printf '[%s]' "$projects" | xxd -p | tr -d '\n')"
 defaults write "$bundle" defaultAgent codex
-# The window opens at its default size every time, so every launch lays out the same rows.
-defaults delete "$bundle" "NSWindow Frame main" 2>/dev/null || true
+# The sidebar at its default width every time (`just perf --fixture` also ignores the saved window).
 defaults delete "$bundle" "NSSplitView Subview Frames main, SidebarNavigationSplitView" 2>/dev/null || true
-rm -rf "$HOME/Library/Saved Application State/$bundle.savedState"
 mkdir -p "$HOME/Library/Application Support/$bundle"
 printf '[%s]' "$catalog" >"$HOME/Library/Application Support/$bundle/session-catalog.json"

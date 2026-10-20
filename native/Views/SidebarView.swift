@@ -39,8 +39,6 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
     }
 
     var body: some View {
-        let _ = LaunchExperiment.logChanges ? Self._logChanges() : ()
-        let _ = LaunchExperiment.checkpoint("SidebarView body")
         let filter = self.filter
         let listing = SidebarListing(model: model, filter: filter, insights: insights)
         VStack(alignment: .leading, spacing: 0) {

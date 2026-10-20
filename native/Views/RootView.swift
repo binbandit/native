@@ -34,8 +34,6 @@ struct RootView: View {
     @Environment(WhatsNewCenter.self) private var whatsNew
 
     var body: some View {
-        let _ = LaunchExperiment.logChanges ? Self._logChanges() : ()
-        let _ = LaunchExperiment.checkpoint("RootView body")
         @Bindable var model = model
         @Bindable var automation = automation
         // The status bar is part of the layout, under everything, so nothing ends up beneath it.
@@ -51,7 +49,7 @@ struct RootView: View {
                 }
                 // Over the content, so the toast clears the status bar.
                 .undoToast($undoToast)
-            if !LaunchExperiment.noStatusBar { StatusBar(registry: statusBar) }
+            StatusBar(registry: statusBar)
         }
         // After an update with highlights, once nothing waits on the user.
         .whatsNewSheet(whatsNew, blocked: model.hasWorkNeedingUser)
@@ -253,11 +251,7 @@ struct RootView: View {
         }
     }
 
-    @ViewBuilder private var sidebar: some View {
-        if LaunchExperiment.noSidebar { Color.clear } else { realSidebar }
-    }
-
-    private var realSidebar: some View {
+    private var sidebar: some View {
         SidebarView {
             TranscriptSearchNavItem()
             PullRequestsNavItem(isSelected: showsPullRequests) { showsPullRequests = true }
@@ -323,7 +317,7 @@ struct RootView: View {
                 openingSession(key)
             }
         } else {
-            if LaunchExperiment.noHome { Color.clear } else { HomeDetail() }
+            HomeDetail()
         }
     }
 

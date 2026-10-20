@@ -21,7 +21,6 @@ final class PlatformAutoScroll: NSObject {
     private static var running: PlatformAutoScroll?
 
     private let scrollView: NSScrollView
-    private let origin: CGFloat
     private let distance: CGFloat
     private let speed: CGFloat
     private let usesWheel: Bool
@@ -54,7 +53,6 @@ final class PlatformAutoScroll: NSObject {
 
     private init(scrollView: NSScrollView, distance: CGFloat, speed: CGFloat, usesWheel: Bool) {
         self.scrollView = scrollView
-        origin = scrollView.contentView.bounds.origin.y
         self.distance = distance
         self.speed = speed
         self.usesWheel = usesWheel
@@ -76,7 +74,11 @@ final class PlatformAutoScroll: NSObject {
         let t = now - start
         guard t < leg * 2 else {
             link.invalidate()
-            if usesWheel { wheel(by: 0, phase: .ended) }
+            if usesWheel {
+                wheel(by: 0, phase: .ended)
+            } else {
+                NotificationCenter.default.post(name: NSScrollView.didEndLiveScrollNotification, object: scrollView)
+            }
             finish()
             return
         }
@@ -87,8 +89,18 @@ final class PlatformAutoScroll: NSObject {
             return
         }
         let flip: CGFloat = scrollView.documentView?.isFlipped == false ? -1 : 1
-        scrollView.contentView.scroll(to: NSPoint(x: scrollView.contentView.bounds.origin.x, y: origin + flip * offset))
+        // As a scroll gesture does: SwiftUI's scroll views follow live scrolls.
+        if t == 0 {
+            NotificationCenter.default.post(name: NSScrollView.willStartLiveScrollNotification, object: scrollView)
+        }
+        // By how far it moved since the last frame, from wherever the view is now: a lazy stack's
+        // height changes as it measures rows, and the view moves with it to keep its place.
+        let bounds = scrollView.contentView.bounds
+        scrollView.contentView.scroll(
+            to: NSPoint(x: bounds.origin.x, y: bounds.origin.y + flip * (offset - lastOffset)))
+        lastOffset = offset
         scrollView.reflectScrolledClipView(scrollView.contentView)
+        NotificationCenter.default.post(name: NSScrollView.didLiveScrollNotification, object: scrollView)
     }
 
     /// Sends a wheel event moving the content `delta` points (positive scrolls further down the

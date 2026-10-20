@@ -21,7 +21,7 @@ struct CommandMenuItem: View {
     }
 
     var body: some View {
-        if !LaunchExperiment.emptyMenuItems, let command = registry.command(id) {
+        if let command = registry.command(id) {
             let title = title ?? command.menuTitle?(context) ?? command.title
             Group {
                 if let isOn = command.isOn {

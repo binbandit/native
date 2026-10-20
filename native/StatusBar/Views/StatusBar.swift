@@ -24,8 +24,10 @@ struct StatusBar: View {
         .accessibilityLabel("Status bar")
     }
 
+    /// The bar shows from the window's first frame, and its items from the frame after: they read
+    /// and sample a good deal, and the first frame shouldn't wait for that.
     private func items(_ placement: StatusBarPlacement) -> some View {
-        ForEach(registry.visibleItems(placement)) { item in
+        ForEach(FirstFrame.shared.isOnScreen ? registry.visibleItems(placement) : []) { item in
             item.content
         }
     }
