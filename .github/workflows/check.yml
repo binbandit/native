@@ -1,10 +1,21 @@
-# Compiles the Release and Nightly configurations on every pull request and push to main, so a
-# break that only shows up outside Debug is caught before a release needs it. Like a release, it
-# builds the terminal and the script runtime for real and fails without them (check.sh).
+# Compiles the Release and Nightly configurations, so a break that only shows up outside Debug is
+# caught before a release needs it. Like a release, it builds the terminal and the script runtime for
+# real and fails without them (check.sh). Every push to main runs it. A pull request runs it only when
+# it changes what Release and Nightly build differently (settings, the project, the embedded helpers,
+# the release scripts): the two jobs are a third of a PR's macOS time, and CI's macOS runners are
+# shared by every open PR.
 name: Check
 
 on:
   pull_request:
+    paths:
+      - "Config/**"
+      - "native.xcodeproj/**"
+      - "NativeHostHelper/**"
+      - "Runtime/**"
+      - "scripts/build-*.sh"
+      - "scripts/release/**"
+      - ".github/workflows/check.yml"
   push:
     branches: [main]
   # Run by hand on any branch: `gh workflow run <file> --ref <branch>`.
