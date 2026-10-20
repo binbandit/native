@@ -67,7 +67,8 @@ struct OrchestrationPlugin: NativePlugin {
         self.tokens = tokens
         let status = OrchestrationServerStatus()
         self.status = status
-        // Listening takes a moment, long before the first session asks for the URL.
+        // Listening takes a moment, long before the first session asks for the URL; up to five seconds
+        // when the copy of Native this one replaces still holds the port.
         Task {
             let channel = HostRegistration().location.channel
             do {

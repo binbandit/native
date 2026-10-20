@@ -31,10 +31,10 @@ public enum ParentWatch {
             Task { @HostActor in await stopOnce(core) }
         }
         let parent = getppid()
-        let exit = DispatchSource.makeProcessSource(identifier: parent, eventMask: .exit, queue: .global())
-        exit.setEventHandler(handler: stop)
-        exit.resume()
-        sources.append(exit)
+        let parentExit = DispatchSource.makeProcessSource(identifier: parent, eventMask: .exit, queue: .global())
+        parentExit.setEventHandler(handler: stop)
+        parentExit.resume()
+        sources.append(parentExit)
         for number in stopSignals {
             // The default action would end the process at once, mid-turn.
             signal(number, SIG_IGN)
