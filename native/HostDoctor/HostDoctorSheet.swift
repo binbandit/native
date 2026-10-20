@@ -9,8 +9,12 @@ import SwiftUI
 ///     .sheet(isPresented: $isChecking) { HostDoctorSheet(hostName: "This Mac", client: client) }
 struct HostDoctorSheet: View {
     /// Off until it's verified in the running app: `-NativeHostDoctor YES` shows Check This Mac….
+    static let isAvailableByDefault = false
+
     static var isAvailable: Bool {
-        UserDefaults.standard.object(forKey: "NativeHostDoctor") as? Bool ?? false
+        // `bool(forKey:)` also reads a launch argument, which arrives as text ("YES").
+        UserDefaults.standard.object(forKey: "NativeHostDoctor") == nil
+            ? isAvailableByDefault : UserDefaults.standard.bool(forKey: "NativeHostDoctor")
     }
 
     @State private var model: HostDoctorModel
