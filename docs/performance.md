@@ -707,8 +707,24 @@ several runs each. Task switches and Settings visits are AX presses on the insta
   (Accept edits), Native's mode and title. Only the turn's duration and the context gauge wait for
   the next turn. Claude Code's plugin now closes sessions unused for 10 minutes
   (`idleSessionTimeout` in the agent manifest, docs/plugins.md); the `sessionIdleTimeout` default
-  still overrides it for every agent. Codex stays open until codex-acp releases a closed session's
-  MCP servers (below).
+  still overrides it for every agent. Codex is unloaded by the host instead (next).
+- **Idle Codex tasks give their memory back.** Each open Codex task kept the user's MCP servers
+  running under the host whether or not anything happened: six idle tasks held 63 processes and
+  4.47 GB (6.0 GB right after their turns) while the status bar said "No tasks running". Closing a
+  session in codex-acp frees nothing for 30 minutes (Codex keeps an unsubscribed thread loaded for
+  `thread_unload_delay_secs`, a server setting codex-acp can't pass); ending the codex-acp process
+  frees everything within seconds. So Codex's manifest sets `idleUnloadTimeout` (600 s): the host
+  closes a session once it has sat that long with nothing happening, keeping it, its log and its
+  transcript, and ends codex-acp once none is loaded (`HostCore+IdleUnload.swift`). Checked with
+  five tasks and a 90 s timeout: 49 processes and 4.9 GB, then nothing once Codex was ended. The
+  window doesn't change: transcript, turn durations, context gauge and settings stay as they were.
+  A message sent to an unloaded task shows at once, with "Working…", while codex-acp starts and
+  resumes the session without a replay (`session/resume`); the reply came 6.1 s after sending,
+  cold start included (a full reload took 4.9 s and lost the message, fixed separately). Model,
+  effort and autonomy came back as chosen (Codex's own record of the turn: read-only, gpt-6.1-sol,
+  low). A resumed task costs one set of MCP servers (650 MB with the adapter), since codex-acp
+  never titles a resumed session. After relaunching the app, an unloaded task shows at once and
+  stays unloaded until it's used.
 
 ## Still to do
 
@@ -716,7 +732,6 @@ several runs each. Task switches and Settings visits are AX presses on the insta
 | --- | --- | --- |
 | Stop hover hit-testing while the transcript scrolls | 12–19% of a fast scroll, measured with an accessibility client and the cursor over the transcript. Can't be verified by a script: the cost needs the real cursor over the rows, and the proof (clicks and hover come back the moment a scroll ends) needs a real mouse wheel and trackpad, whose scroll phases no synthetic driver reproduces for this scroll view | Transcript performance, by hand |
 | Let Codex unload closed threads | codex-acp never unsubscribes its title-generation thread, so each session's MCP servers (about 1 GB each here) outlive it until the adapter exits | Upstream codex-acp#628 / #629; then turn idle closing on |
-| Turn idle closing on for Codex | Claude Code closes sessions unused for 10 minutes now (`idleSessionTimeout` in its manifest). Once the row above lands, give Codex's manifest the same | App model |
 | "Couldn't run git: The file “project” doesn't exist" alert | New Session in a project whose folder is gone shows a modal; the sidebar already says "Can't find this project's folder" with Retry | Failures |
 | Launch within 150 ms of main-thread CPU | 481-518 ms in Release with 30 tasks (3.45-3.68 G instructions): mostly AppKit and SwiftUI restoring, laying out and drawing the window (Launch, above). It takes fewer views before the first frame, not faster code; the sidebar outside its rows (0.57 G: the navigation items, the project headers, the scroll view and its key handling) is the largest part Native controls | App shell, sidebar |
 | A cheaper main menu | 0.19 G of launch, and every item is built again on each focus change: 74 `CommandMenuItem`s, each reading eight focused values through `FocusedCommandContext`. Building them after the first frame loses the File menu (Launch, round two); reading the context once per menu instead of once per item is the next thing to try | Commands |
@@ -725,7 +740,7 @@ several runs each. Task switches and Settings visits are AX presses on the insta
 | About 257 MB of graphics memory on whole-window redraws | For about a second at every launch and on some redraws when other windows uncover Native's (peak 390–405 MB); find what draws in-process with Metal then | App shell |
 | Age labels redraw while nothing is visible | `CompactAgeText` and Home's rows tick with `TimelineView(.everyMinute)`, every row once a minute, hidden or not; a shared minute clock that stops while hidden, like `DSSecondClock` | Sidebar, design system |
 | The composer's rich editor still leaks once it showed code | SwiftUI's rich `TextEditor` leaves about 14 KB behind each editor that goes away; only drafts with code use it now. Keeping one editor across task switches would end it | Composer |
-| Park the default agent when it has no open sessions for a long while, or start it on the first New Session | It's kept running so New Session never waits; with direct adapter launch that wait is now about 0.3 s for Codex | App model |
+| Park the default agent when it has no open sessions for a long while, or start it on the first New Session | It's kept running so New Session never waits; with direct adapter launch that wait is now about 0.3 s for Codex. Codex itself is now ended by the host once nothing has used it for 10 minutes (`idleUnloadTimeout`) | App model |
 | Opening the changes inspector on many files under 100 ms | Still 218–392 ms on 250 files against 69–77 ms on a clean repository: laying out and drawing the rows on screen (text measuring, the diff's selectable text) and the first file's diff, in Debug | Git |
 | Scroll a long transcript at 120 Hz | With the SwiftUI driver a screenful of new rows costs 25–80 ms (Release): their selectable text (TextKit 2) and the lazy stack placing them. Lists no longer use `Grid`; code blocks without a scroll view each didn't pay (`ViewThatFits` laid the text out twice). Not measured again on 2026-10-20 (every part of the screen was covered by other windows). Next to measure: what selection costs (reply sections without `.textSelection`); list markers without selection (each item has two marker texts, a hidden widest copy and the marker, both selectable today); and code that fits shown without a scroll view, decided from its longest line and the code font's advance rather than by laying it out twice. First check by hand whether fast trackpad scrolling shows the transcript blank: no synthetic driver can tell | Transcript |
 | Come back to a session at the place you left it | Switching back to a session in memory shows its end at once, but not the place you'd scrolled to. Tracking the top row with scroll targets (`.scrollTargetLayout()` with `scrollPosition(anchor:)` or `onScrollTargetVisibilityChange`) twice put the transcript in a 100% CPU layout loop against its bottom anchor; keeping the last session's view alive would keep its place without that | Session view |

@@ -76,6 +76,10 @@ enum BuiltInPlugins {
                         install: "npm install -g @openai/codex",
                         docs: URL(string: "https://developers.openai.com/codex/cli")
                     ),
+                    // Every loaded session runs the user's MCP servers (half a gigabyte a task here),
+                    // and closing one frees nothing for 30 minutes; ending the adapter frees it all,
+                    // and a session resumes without a replay.
+                    idleUnloadTimeout: 600,
                     // The adapter offers its device code only to clients that open links, so the
                     // host starts it that way for this sign-in (`AuthMethod.Kind.link`).
                     authMethods: [
