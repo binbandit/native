@@ -1,5 +1,6 @@
 import ACP
 import Foundation
+import NativeHostProtocol
 
 // The user's own picks, as opposed to settings Native changes (restoring a session, applying
 // defaults, policy): a pick of the model or one of its variants is also what the agent's new
