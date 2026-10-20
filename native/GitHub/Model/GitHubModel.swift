@@ -309,6 +309,8 @@ final class GitHubModel {
         } catch .notARepository, .notFound {
             branchPullRequests[branch] = BranchPullRequest(pullRequest: nil, fetchedAt: .now)
         } catch {
+            // A lost login anywhere means gh is signed out, which the list and every card then say.
+            if case .notAuthenticated = error { availability = .notAuthenticated }
             // Keep showing what was there, saying why it may be old; the next refresh tries again.
             if var cached = branchPullRequests[branch] {
                 cached.fetchedAt = .now

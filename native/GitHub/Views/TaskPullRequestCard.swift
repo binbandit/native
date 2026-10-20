@@ -27,6 +27,8 @@ struct TaskPullRequestCard: View {
                 VStack(alignment: .leading, spacing: DS.Space.lg) {
                     heading(found, facts)
                     notice(found, page: page)
+                        // A popover sizes to its content's ideal height; this lets the notice wrap.
+                        .fixedSize(horizontal: false, vertical: true)
                     status(facts, page: page)
                 }
                 .padding(DS.Space.lg)
@@ -223,8 +225,9 @@ struct TaskPullRequestCard: View {
                 model.openInNative(pullRequest)
             }
             .buttonStyle(.ds(.primary))
-            // The page's merge sheet, with its checks and confirmation; only for someone who may merge.
-            if let page, page.isOpen, !page.isDraft, page.viewerCanMerge {
+            // The page's merge sheet, with its checks and confirmation; only for someone who may
+            // merge, once the page has said so.
+            if page != nil, model.offersMerge(pullRequest) {
                 Button("Merge…") {
                     dismiss()
                     model.requestMerge(pullRequest)

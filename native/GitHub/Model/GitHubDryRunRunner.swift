@@ -11,6 +11,10 @@ import Foundation
 /// `-gitHubFakeMergeRoute <route>` also shows every pull request as merging one way, to check each
 /// merge control against real data: `queue`, `queued`, `removed` (from the queue), `auto`,
 /// `autoOn`, `direct` (green) or `blocked`; add `+admin` for an admin's view.
+///
+/// `gitHubDryRunOffline` and `gitHubDryRunSignedOut` make every read fail as gh does offline or
+/// signed out. They're read on each command, so `defaults write <bundle id> gitHubDryRunOffline
+/// -bool YES` while the app runs turns what already loaded stale, as a dropped network would.
 final class GitHubDryRunRunner: CommandRunner {
     static let enabledKey = "gitHubDryRunWrites"
 
@@ -22,6 +26,17 @@ final class GitHubDryRunRunner: CommandRunner {
 
     func run(_ command: Command) async throws -> CommandResult {
         guard Self.isWrite(command) else {
+            let defaults = UserDefaults.standard
+            if defaults.bool(forKey: "gitHubDryRunOffline") {
+                return CommandResult(
+                    exitCode: 1, standardOutput: Data(),
+                    standardError: Data("error connecting to api.github.com\ncheck your internet connection".utf8))
+            }
+            if defaults.bool(forKey: "gitHubDryRunSignedOut") {
+                return CommandResult(
+                    exitCode: 4, standardOutput: Data(),
+                    standardError: Data("To get started with GitHub CLI, please run:  gh auth login".utf8))
+            }
             let result = try await base.run(command)
             guard let route = UserDefaults.standard.string(forKey: "gitHubFakeMergeRoute"), !route.isEmpty else {
                 return result

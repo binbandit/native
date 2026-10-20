@@ -15,11 +15,13 @@ extension GitHubModel {
         Task { await page.load() }
     }
 
-    /// Whether to offer Merge… on a pull request: it's open and ready, and the user may merge it as
-    /// far as Native knows. Its page says once loaded; until then the merge sheet checks, and says
-    /// why when they can't.
+    /// Whether to offer Merge… on a pull request: it's open and ready, gh can act, and the user may
+    /// merge it as far as Native knows. Its page says once loaded; until then the merge sheet
+    /// checks, and says why when they can't.
     func offersMerge(_ pullRequest: PullRequestSummary) -> Bool {
-        guard pullRequest.state == .open, !pullRequest.isDraft else { return false }
+        guard pullRequest.state == .open, !pullRequest.isDraft,
+            availability != .notAuthenticated, availability != .notInstalled
+        else { return false }
         guard let reference = PullRequestReference(pullRequest), let page = pages[reference]?.page else { return true }
         return page.isOpen && !page.isDraft && page.viewerCanMerge
     }
