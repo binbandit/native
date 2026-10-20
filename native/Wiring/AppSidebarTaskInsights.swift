@@ -12,6 +12,7 @@ enum AppSidebarTaskInsights {
     static func make(model: AppModel, git: GitStore, gitHub: GitHubModel) -> SidebarTaskInsights {
         let tasks = AppTaskPullRequests(model: model, git: git, gitHub: gitHub)
         return SidebarTaskInsights(
+            source: ObjectIdentifier(model),
             hasUncommittedChanges: { summary in
                 tasks.checkout(of: summary).map { git.model(for: $0).isDirty } ?? false
             },

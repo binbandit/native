@@ -41,6 +41,10 @@ nonisolated enum LaunchExperiment {
     private static let signposter = OSSignposter(subsystem: "Native", category: .pointsOfInterest)
     private nonisolated(unsafe) static var done = false
 
+    static func note(_ text: String) {
+        logger.notice("lxnote \(text, privacy: .public)")
+    }
+
     static func checkpoint(_ label: String) {
         guard logs, !done else { return }
         if label == "beforeWaiting" { done = true }

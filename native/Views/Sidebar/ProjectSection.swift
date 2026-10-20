@@ -73,6 +73,7 @@ struct ProjectSection<TaskAccessory: View>: View {
                 ) {
                     select(summary.id)
                 }
+                .equatable()
                 .lxUnless(LaunchExperiment.noRowDrag) {
                     $0.sidebarDraggable(row, title: model.title(for: summary), state: drag)
                 }

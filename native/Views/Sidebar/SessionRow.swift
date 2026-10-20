@@ -219,6 +219,24 @@ struct SessionRow<Accessory: View>: View {
     }
 }
 
+// The list rebuilds its rows whenever it updates (a filter, a project's expansion, another
+// session's change), and every rebuilt row would run its body again: a row's own changes reach it
+// through what it observes, so a rebuilt row with the same inputs can keep its body. `accessory`
+// is made from the summary and `select` only selects it, so they're left out.
+extension SessionRow: @MainActor Equatable {
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        let equal =
+            lhs.summary == rhs.summary && lhs.indent == rhs.indent && lhs.isPinned == rhs.isPinned
+            && lhs.canMoveUp == rhs.canMoveUp && lhs.canMoveDown == rhs.canMoveDown
+        if LaunchExperiment.logChanges {
+            LaunchExperiment.note(
+                "row== \(equal) summary \(lhs.summary == rhs.summary) agent \(lhs.summary.agent == rhs.summary.agent) info \(lhs.summary.info == rhs.summary.info)"
+            )
+        }
+        return equal
+    }
+}
+
 extension TaskStatus {
     /// How the sidebar shows a session. One that hasn't been opened in this run is idle.
     init(_ session: SessionModel?) {

@@ -25,6 +25,7 @@ struct PinnedSection<TaskAccessory: View>: View {
                 ) {
                     select(summary.id)
                 }
+                .equatable()
                 .sidebarDraggable(row, title: model.title(for: summary), state: drag)
                 .sidebarDropTarget(row, state: drag, onDrop: model.applySidebarDrop)
             }
