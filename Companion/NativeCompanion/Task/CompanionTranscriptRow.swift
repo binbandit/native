@@ -80,7 +80,7 @@ struct CompanionTranscriptRow: View {
         } label: {
             VStack(alignment: .leading, spacing: DS.Space.xxs) {
                 HStack(spacing: DS.Space.md) {
-                    Image(systemName: presentation.symbol)
+                    Image(systemName: presentation.glyph.systemImage)
                         .foregroundStyle(call.status == .failed ? .dsDanger : .dsTextTertiary)
                         .frame(width: DS.Size.statusGlyph)
                     Text(presentation.line)

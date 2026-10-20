@@ -2,9 +2,9 @@ import ACP
 import Foundation
 
 /// A tool call in one line for the phone, in the Mac's own words: `ToolPresentation` (shared from
-/// the Mac's transcript) decides the symbol, verb and subject, so a task reads the same on both.
+/// the Mac's transcript) decides the glyph, verb and subject, so a task reads the same on both.
 struct CompanionToolSummary {
-    let symbol: String
+    let glyph: DSToolGlyph
     /// The row text, in the tense of where the call is ("Editing Composer.swift").
     let line: String
     /// What it asks permission for ("Edit 3 lines Composer.swift", "Run command").
@@ -16,9 +16,8 @@ struct CompanionToolSummary {
     let stats: DiffStats?
 
     init(_ call: ToolCallState) {
-        var presentation = ToolPresentation(call)
-        presentation.phase = ToolPhase(call)
-        symbol = presentation.symbol
+        let presentation = ToolPresentation(call)
+        glyph = presentation.glyph
         line = Self.sentence(presentation.verb, presentation.subject)
         if case .command(let command) = presentation.body {
             self.command = command
