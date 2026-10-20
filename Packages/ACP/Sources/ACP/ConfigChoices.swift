@@ -44,6 +44,24 @@ public struct ConfigChoices: Codable, Hashable, Sendable {
         choices[option.id] = Choice(value: value, optionName: option.name, valueName: name)
     }
 
+    /// Where options a session reports come from, which decides whether the choices follow them.
+    public enum Report: Sendable {
+        /// The session as it runs: a change the agent made itself (leaving Plan Mode), or its answer
+        /// to one the client made.
+        case live
+        /// History: a reload settling, or events a client replays to catch up with a session. An
+        /// agent reopening a session reports its own defaults until the chosen values are set back,
+        /// so following these would take the defaults for the user's choices.
+        case history
+    }
+
+    /// Moves the chosen options to what the session reports, when it's the session itself
+    /// reporting (`live`); history never moves them. Returns whether anything changed.
+    @discardableResult
+    public mutating func follow(_ options: [ConfigOption], from report: Report) -> Bool {
+        report == .live && follow(options)
+    }
+
     /// Moves the chosen options to the values `options` (the session's, now) report. Options the
     /// client never changed stay unrecorded, and ones the session doesn't list stay as they were.
     /// Returns whether anything changed.

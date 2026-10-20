@@ -154,6 +154,30 @@ struct ConfigChoicesTests {
                 == .set(try Self.option("mode", in: reopened), value: "read-only"))
     }
 
+    /// A reopened session replays the agent's reload first, which reports its defaults (6 Astra,
+    /// Xhigh) before the chosen values are set back. Following that history took the defaults for
+    /// the user's choice, and restoring then set 6 Astra back on purpose (seen in E2E after a host
+    /// restart). History never moves the choices; the session's own later changes still do.
+    @Test func historyNeverTakesTheAgentsReloadDefaultsForTheChoice() throws {
+        var choices = try Self.chosen()
+        let reloaded = try Self.options()
+
+        let followedHistory = choices.follow(reloaded, from: .history)
+        #expect(!followedHistory)
+        #expect(choices.choices["model"]?.value == "gpt-6.1-sol")
+        #expect(
+            choices.restoration(of: "model", in: reloaded, allows: Self.allowAll)
+                == .set(try Self.option("model", in: reloaded), value: "gpt-6.1-sol"))
+
+        // Once the session runs, a change it makes itself is followed.
+        var live = reloaded
+        let model = try #require(live.firstIndex { $0.id == "model" })
+        live[model].kind = .select(currentValue: "gpt-6-luna", options: live[model].selectOptions)
+        let followedLive = choices.follow(live, from: .live)
+        #expect(followedLive)
+        #expect(choices.choices["model"]?.value == "gpt-6-luna")
+    }
+
     /// While the session loads, it shows what restoring will set, so the agent's defaults never
     /// flash up first; a value that can't come back shows as the agent's.
     @Test func previewsTheSessionAsRestoringLeavesIt() throws {

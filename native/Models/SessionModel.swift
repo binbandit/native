@@ -390,10 +390,12 @@ final class SessionModel {
             configOptions = shownOptions
             // A loading session reports the agent's defaults until its settings are set back, and
             // shows the settings it's getting back meanwhile (SessionModel+ConfigRestore.swift);
-            // after that, chosen settings follow the session.
-            if phase != .loading {
-                services.titles.updateConfigChoices(for: titleKey) { $0.follow(configOptions) }
-            }
+            // after that, chosen settings follow the session. A host session also replays history
+            // (a reload, or its log when this model starts following it) that reports the agent's
+            // defaults ahead of the set-back, so only what it reports live is followed.
+            let report: ConfigChoices.Report =
+                phase == .loading || isReplaying || mirror.isLoading || isSettingBackConfig ? .history : .live
+            services.titles.updateConfigChoices(for: titleKey) { $0.follow(configOptions, from: report) }
         }
         if plan != transcript.plan { plan = transcript.plan }
         if availableCommands != transcript.availableCommands { availableCommands = transcript.availableCommands }
