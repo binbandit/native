@@ -10,11 +10,18 @@ protocol HostNotificationsAppHost: UsageNotificationsHost {
     func follows(_ ref: UsageSessionRef) -> Bool
     /// The client of the host the session runs on, when this Mac has it open there.
     func hostClient(of ref: UsageSessionRef) -> NativeHostClient?
+    /// The task's title as the sidebar shows it now, while the sidebar lists it.
+    func taskTitle(_ ref: UsageSessionRef) -> String?
 }
 
 extension AppModel: HostNotificationsAppHost {
     func follows(_ ref: UsageSessionRef) -> Bool {
         openModels(of: ref).first != nil
+    }
+
+    func taskTitle(_ ref: UsageSessionRef) -> String? {
+        let key = SessionKey(agent: ref.agent, id: ref.parent ?? ref.session)
+        return sessionList.first { $0.id == key }.map(title(for:))
     }
 
     func hostClient(of ref: UsageSessionRef) -> NativeHostClient? {
