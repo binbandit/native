@@ -12,8 +12,10 @@ struct NewSessionWorkbenchView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
             header
-            NewSessionWorkbenchFacts(context: context)
-                .padding(.top, DS.Space.lg)
+            if NewSessionWorkbenchFacts.hasAny(in: context) {
+                NewSessionWorkbenchFacts(context: context)
+                    .padding(.top, DS.Space.lg)
+            }
             SeparatorLine()
                 .padding(.vertical, DS.Space.xl)
             lists
@@ -129,10 +131,11 @@ private struct NewSessionWorkbenchFacts: View {
             if let repository = context.repository {
                 fact("GitHub", repository)
             }
-            if case .folder = context.workspace {
-                fact("Tasks", "share this folder")
-            }
         }
+    }
+
+    static func hasAny(in context: NewSessionContext) -> Bool {
+        context.setup != nil || context.checkoutChanges > 0 || context.repository != nil
     }
 
     private func fact(_ label: String, _ value: String, tone: Color = .dsTextSecondary) -> some View {
@@ -168,11 +171,11 @@ private struct NewSessionWorkbenchNothingYet: View {
     private var reason: String {
         let tasks = "Tasks you start here show up to continue from"
         return switch context.workspace {
-        case .folder: "\(tasks). Pull requests do once it's a git repository on GitHub. Write below to start the first."
+        case .folder: "\(tasks), and pull requests once it's a repository on GitHub. Write below to start the first."
         case .worktree, .checkout, .unknown:
             context.repository == nil
-                ? "\(tasks), and pull requests once the repository is on GitHub. Write below to start the first."
-                : "\(tasks), with pull requests that wait on you. Write below to start the first."
+                ? "\(tasks), and pull requests once it's on GitHub. Write below to start the first."
+                : "\(tasks), with pull requests that involve you. Write below to start the first."
         }
     }
 }

@@ -74,7 +74,7 @@ struct NewSessionContextBuilder {
 
     private var tasks: [NewSessionContext.RecentTask] {
         model.sessions(in: project.id)
-            .filter { $0.id != session.key && model.session($0.id)?.isTranscriptEmpty != true }
+            .filter { $0.id != session.key && hasWork($0) }
             .map { summary in
                 let live = model.session(summary.id)
                 return NewSessionContext.RecentTask(
@@ -87,6 +87,14 @@ struct NewSessionContextBuilder {
                 )
             }
             .sorted { ($0.date ?? .distantPast) > ($1.date ?? .distantPast) }
+    }
+
+    /// Whether a task has anything to go back to: a conversation, for one open in this run, or a
+    /// title, which the agent or the user only gives a task once it's under way. Another new session
+    /// left empty has neither.
+    private func hasWork(_ summary: SessionSummary) -> Bool {
+        if let live = model.session(summary.id) { return !live.isTranscriptEmpty }
+        return summary.info.title?.isEmpty == false || model.userTitle(for: summary.id) != nil
     }
 
     private func status(of session: SessionModel?) -> TaskStatus {

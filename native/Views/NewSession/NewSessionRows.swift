@@ -114,6 +114,5 @@ struct NewSessionListRow<Content: View>: View {
                 .fill(isHovered ? .dsHover : .clear)
         }
         .trackHover($isHovered)
-        .accessibilityElement(children: .combine)
     }
 }

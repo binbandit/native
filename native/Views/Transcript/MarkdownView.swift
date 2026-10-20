@@ -249,13 +249,21 @@ private struct MarkdownBlockView: View {
     }
 
     private var list: some View {
-        Grid(alignment: .leading, horizontalSpacing: DS.Space.sm, verticalSpacing: DS.Space.xs) {
+        // Rows in a stack rather than a Grid, which measured every item again to line up the marker
+        // column, each time a list scrolled into view. A hidden copy of the widest marker gives every
+        // row the same column, markers trailing in it.
+        let widest = node.children.map { marker(for: $0) }.max { $0.count < $1.count } ?? ""
+        return VStack(alignment: .leading, spacing: DS.Space.xs) {
             ForEach(node.children) { item in
-                GridRow(alignment: .firstTextBaseline) {
-                    Text(marker(for: item))
+                HStack(alignment: .firstTextBaseline, spacing: DS.Space.sm) {
+                    Text(verbatim: widest)
                         .monospacedDigit()
-                        .foregroundStyle(.dsTextSecondary)
-                        .gridColumnAlignment(.trailing)
+                        .hidden()
+                        .overlay(alignment: .trailing) {
+                            Text(verbatim: marker(for: item))
+                                .monospacedDigit()
+                                .foregroundStyle(.dsTextSecondary)
+                        }
                     MarkdownBlockView(node: item, listDepth: listDepth + 1)
                 }
             }

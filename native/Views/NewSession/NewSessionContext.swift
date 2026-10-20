@@ -42,6 +42,10 @@ struct NewSessionContext {
             }
         }
 
+        var isPlainFolder: Bool {
+            if case .folder = self { true } else { false }
+        }
+
         /// Whether the task has a checkout of its own, so the project's changes aren't in it.
         var isIsolated: Bool {
             if case .worktree = self { true } else { false }

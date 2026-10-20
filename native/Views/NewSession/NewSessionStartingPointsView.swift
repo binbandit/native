@@ -31,7 +31,7 @@ struct NewSessionStartingPointsView: View {
             HStack(spacing: DS.Space.sm) {
                 ProjectAvatar(name: context.projectName, icon: context.projectIcon)
                 Text(context.projectName)
-                    .font(.dsHeadline)
+                    .font(.dsTitle3)
                     .foregroundStyle(.dsTextPrimary)
                     .lineLimit(1)
                     .accessibilityAddTraits(.isHeader)
@@ -55,7 +55,7 @@ struct NewSessionStartingPointsView: View {
         if let action = context.actionToRun {
             points.append(.action(action))
         }
-        points.append(.ask(context.tourPrompt, draft: context.draft))
+        points.append(.ask(context.tourPrompt, isFolder: context.workspace.isPlainFolder, draft: context.draft))
         if context.actions.isEmpty {
             points.append(.addActions(context.projectName, open: context.editActions))
         }
@@ -110,9 +110,10 @@ struct NewSessionStartingPoint: Identifiable {
             perform: action.run)
     }
 
-    static func ask(_ prompt: String, draft: @escaping (String) -> Void) -> Self {
+    static func ask(_ prompt: String, isFolder: Bool, draft: @escaping (String) -> Void) -> Self {
         Self(
-            id: "ask", verb: "Ask", object: "For a tour of the project", detail: "Drafts the prompt",
+            id: "ask", verb: "Ask", object: isFolder ? "What's in this folder" : "For a tour of the codebase",
+            detail: "Drafts the prompt",
             glyph: "return", hint: "Puts a prompt in the composer for you to send", perform: { draft(prompt) })
     }
 
@@ -124,7 +125,9 @@ struct NewSessionStartingPoint: Identifiable {
     }
 }
 
-/// A ledger row: the verb in its column, the object, a trailing detail and the row's glyph.
+/// A ledger row: the verb in its column, the object, a trailing detail and the row's glyph. The
+/// detail gives way first: when the object doesn't fit beside it, it goes, rather than both being
+/// cut short.
 private struct NewSessionLedgerRow: View {
     let point: NewSessionStartingPoint
 
@@ -132,28 +135,9 @@ private struct NewSessionLedgerRow: View {
 
     var body: some View {
         Button(action: point.perform) {
-            HStack(spacing: DS.Space.md) {
-                Text(point.verb)
-                    .font(.dsBodyMedium)
-                    .foregroundStyle(.dsTextTertiary)
-                    .frame(width: NewSessionMetrics.verbColumn, alignment: .leading)
-                Text(point.object)
-                    .font(point.objectIsCode ? .dsMono : .dsCallout)
-                    .foregroundStyle(.dsTextPrimary)
-                    .lineLimit(1)
-                    .layoutPriority(1)
-                Spacer(minLength: DS.Space.md)
-                if let detail = point.detail {
-                    Text(detail)
-                        .font(point.detailIsCode ? .dsMonoCaption : .dsBody)
-                        .foregroundStyle(point.tone)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                }
-                Image(systemName: point.glyph)
-                    .font(.dsBody)
-                    .foregroundStyle(isHovered ? .dsTextPrimary : .dsTextTertiary)
-                    .frame(width: DS.Size.rowLeading)
+            ViewThatFits(in: .horizontal) {
+                line(showsDetail: true)
+                line(showsDetail: false)
             }
             .padding(.horizontal, DS.Space.sm)
             .frame(minHeight: max(NewSessionMetrics.ledgerRow, DS.Size.minimumHitTarget))
@@ -162,11 +146,33 @@ private struct NewSessionLedgerRow: View {
         .buttonStyle(SidebarRowButtonStyle())
         .background(isHovered ? Color.dsHover : .clear)
         .trackHover($isHovered)
-        .accessibilityElement(children: .ignore)
         .accessibilityLabel("\(point.verb) \(point.object)")
         .accessibilityValue(point.detail ?? "")
         .accessibilityHint(point.hint)
-        .accessibilityAddTraits(.isButton)
         .help(point.hint)
+    }
+
+    private func line(showsDetail: Bool) -> some View {
+        HStack(spacing: DS.Space.md) {
+            Text(point.verb)
+                .font(.dsBodyMedium)
+                .foregroundStyle(.dsTextTertiary)
+                .frame(width: NewSessionMetrics.verbColumn, alignment: .leading)
+            Text(point.object)
+                .font(point.objectIsCode ? .dsMono : .dsCallout)
+                .foregroundStyle(.dsTextPrimary)
+                .lineLimit(1)
+            Spacer(minLength: DS.Space.md)
+            if showsDetail, let detail = point.detail {
+                Text(detail)
+                    .font(point.detailIsCode ? .dsMonoCaption : .dsBody)
+                    .foregroundStyle(point.tone)
+                    .lineLimit(1)
+            }
+            Image(systemName: point.glyph)
+                .font(.dsBody)
+                .foregroundStyle(isHovered ? .dsTextPrimary : .dsTextTertiary)
+                .frame(width: DS.Size.rowLeading)
+        }
     }
 }
