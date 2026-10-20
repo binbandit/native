@@ -1,5 +1,6 @@
 import ACP
 import Foundation
+import Git
 import NativeHostClient
 import NativeHostProtocol
 import NativeLink
@@ -17,6 +18,14 @@ extension AppModel {
         var seen: Set<SessionKey> = []
         for checkout in project.checkouts {
             guard let host = hosts.host(checkout.host) else { continue }
+            // Sessions the host knows were delegated by another, or belong to one: never a task of
+            // their own, though their agent lists them in the same folder.
+            let notTasks = Set(
+                host.sessions.filter { $0.origin != .user || $0.parentID != nil }.compactMap { summary in
+                    summary.agentSessionID.map {
+                        SessionKey(agent: AgentDefinition.ID(rawValue: summary.agentID), id: $0)
+                    }
+                })
             for summary in host.sessions
             where summary.origin == .user && summary.parentID == nil
                 && host.isTaskFolder(summary.cwd, ofCheckoutAt: checkout.path)
@@ -30,7 +39,7 @@ extension AppModel {
                 if seen.insert(entry.id).inserted { summaries.append(entry) }
             }
             for (folder, listings) in host.history where host.isTaskFolder(folder, ofCheckoutAt: checkout.path) {
-                for listed in listings {
+                for listed in listings where !notTasks.contains(listed.key) {
                     guard let runtime = host.runtime(listed.agent) else { continue }
                     let entry = SessionSummary(project: project.id, agent: runtime.agent, info: listed.info)
                     if seen.insert(entry.id).inserted { summaries.append(entry) }
@@ -146,9 +155,14 @@ extension AppModel {
     /// after it connects.
     func refreshRemoteHistory(on host: RemoteHost) async {
         var folders: [String] = []
+        let git = host.client.map(Git.onHost)
         for project in projects.all {
             guard let checkout = project.checkoutPath(on: .remote(host.id)) else { continue }
             folders.append(checkout)
+            // Its task worktrees are named after the repository, not this checkout's folder.
+            if let name = try? await git?.repository(at: URL(filePath: checkout, directoryHint: .isDirectory))?.name {
+                host.noteRepositoryName(name, ofCheckoutAt: checkout)
+            }
             // Its tasks run in their own worktrees there, as here; their sessions are listed by folder.
             if let workspaces = await taskWorkspaces(on: host) {
                 folders += await workspaces.taskFolders(of: project.onHost(at: checkout)).map(\.folderPath)

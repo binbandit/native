@@ -37,6 +37,8 @@ final class RemoteHost: Identifiable {
     private(set) var history: [String: [RemoteListedSession]] = [:]
     /// Where the host makes task worktrees (`HostProjectList.worktreesFolder`), once it has said.
     var worktreesFolder: String?
+    /// Each checkout's repository name as the host's git reads it, by the checkout's folder.
+    private(set) var repositoryNames: [String: String] = [:]
     /// How the host's machine is doing (system, model, uptime, load, keep-awake), as it last said:
     /// read on each connection, then pushed about every 30 seconds while connected.
     private(set) var status: HostStatus?
@@ -97,13 +99,21 @@ final class RemoteHost: Identifiable {
     }
 
     /// Where the host keeps the task worktrees of the checkout at `checkout`: a folder per
-    /// repository in its worktrees folder, named as the Git feature names it (`GitStore.taskLocation`).
+    /// repository in its worktrees folder, named as the Git feature names it (`GitStore.taskLocation`):
+    /// after the repository, which for a linked checkout is its main checkout's name, as the host's
+    /// git read it (`repositoryNames`), else the checkout's own folder name until it has.
     func taskLocation(ofCheckoutAt checkout: String) -> String? {
         worktreesFolder.map { folder in
-            URL(filePath: folder, directoryHint: .isDirectory)
-                .appending(path: Worktree.slug(URL(filePath: checkout).lastPathComponent, maxLength: 60))
+            let name = repositoryNames[checkout] ?? URL(filePath: checkout).lastPathComponent
+            return URL(filePath: folder, directoryHint: .isDirectory)
+                .appending(path: Worktree.slug(name, maxLength: 60))
                 .path(percentEncoded: false)
         }
+    }
+
+    /// Notes the repository name the host's git gives the checkout at `checkout` (`Repository.name`).
+    func noteRepositoryName(_ name: String, ofCheckoutAt checkout: String) {
+        if repositoryNames[checkout] != name { repositoryNames[checkout] = name }
     }
 
     /// Whether a session in `cwd` works in the checkout at `checkout`: in it, or in one of its task
