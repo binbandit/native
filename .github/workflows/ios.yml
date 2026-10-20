@@ -94,11 +94,15 @@ jobs:
         run: >-
           scripts/ci/build-packages-ios.sh --derived-data "$RUNNER_TEMP/Packages"
           --source-packages "$SOURCE_PACKAGES" --compilation-cache "$COMPILATION_CACHE"
-      # The app has no iPadOS destination yet; these are the folders that already compile for it.
-      # docs/releasing.md ("iOS checks") lists what's missing.
+      # The app has no iPadOS destination yet. The design system and the platform adapters compile
+      # for it on their own; docs/releasing.md ("iOS checks") says what keeps the rest from it.
       - name: Typecheck the app for iPadOS
         if: ${{ !cancelled() }}
-        run: scripts/check-ios.sh native/Platform native/Views/Transcript
+        run: |
+          set -o pipefail
+          # native/DesignSystem always comes along.
+          scripts/check-ios.sh native/Platform 2>&1 | tee "$RUNNER_TEMP/ipad.log"
+          scripts/check-warnings.sh "$RUNNER_TEMP/ipad.log"
 
       - name: Save the compilation cache
         if: success() && github.event_name != 'pull_request' && steps.compilation-cache.outputs.cache-hit != 'true'

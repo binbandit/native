@@ -10,7 +10,7 @@ in `docs/decisions.md` ("Releases on GitHub", "Sparkle for updates", "Nightly be
 | `Config/*.xcconfig`, `Config/Native-Info.plist` | channels, bundle identifiers, feed URLs and the signing key, in one place |
 | `Packages/HostUpdater` | how a standalone host updates itself: the signed host feed, Ed25519 checks, atomic install with rollback |
 | `scripts/release/` | `release.sh` (archive → notarize → package → appcast → publish), `host.sh` (standalone host and its feed), `check.sh` (compile Release and Nightly), `size-check.sh` (the size budget, `docs/app-size.md`, and that the terminal and script runtime made it in), `sentry.sh` (dSYMs to Sentry), `release-notes.sh`, `ci-signing.sh` |
-| `.github/workflows/` | `check.yml` (every pull request), `nightly.yml` (every night, or a rehearsal on demand), `release.yml` (on a `v*` tag, or a rehearsal on demand) |
+| `.github/workflows/` | `check.yml` (every pull request), `nightly.yml` (every night, or a rehearsal on demand), `release.yml` (on a `v*` tag, or a rehearsal on demand), `ios.yml` (iPad and iPhone builds, daily: "iOS checks") |
 
 ## Sentry crash symbols
 
@@ -374,9 +374,9 @@ runs few: `ci.yml` runs the package tests in two shards, the Debug build and the
 `Packages/*/` with a `Tests` folder, so a new package can't be left out, and deals them into the
 shards by the time each took on CI (`scripts/ci/package-test-times.txt`; update it from a run's
 "passed in" lines when the shards drift apart, and an unlisted package counts as 30 seconds). A
-third shard would only wait for a free runner. App builds are arm64 only (the packages declare
-macOS 15 and would otherwise compile an x86_64 slice nothing links). The Debug, Release and Nightly
-builds also cache:
+third shard would only wait for a free runner. The iOS builds stay off pushes for the same reason
+("iOS checks"). App builds are arm64 only (the packages declare macOS 15 and would otherwise compile
+an x86_64 slice nothing links). The Debug, Release and Nightly builds also cache:
 
 - Swift package checkouts and binary artifacts (`-clonedSourcePackagesDirPath`), keyed by the
   project's `Package.resolved`: resolving them from nothing took 3.5 minutes on CI, restoring them
@@ -389,6 +389,36 @@ builds also cache:
   keeps it bounded: past that, Xcode starts a new generation and drops what later builds don't use.
 
 Releases cache neither: an archive that ships compiles from scratch.
+
+### iOS checks
+
+The Mac's builds never compile for iOS, so `ios.yml` does, on one runner: daily at 06:00 UTC, on
+demand (`gh workflow run ios.yml --ref <branch>`), and on pull requests that touch what the iPad or
+iPhone compiles (the companion, `Packages/`, the design system, the platform adapters, the shared
+transcript pieces, these scripts). Not on pushes, which already take most of the five runners. Each
+step runs even when the one before it failed, so one run reports every break:
+
+- **The iPhone companion** for the iOS Simulator. It compiles some of the Mac's transcript files by
+  reference (`docs/companion.md`), so a file one of them comes to need breaks it until the project
+  lists that file too. Its icons are rendered from the icon work's documents, whose images are in
+  Git LFS: the job fetches only those (about 50 MB), cached until the artwork changes.
+- **Every package that declares iOS**, for the simulator: `scripts/ci/build-packages-ios.sh`, which
+  runs the same way locally. NativeHost builds only its client; its host runs agents, which iPadOS
+  can't.
+- **The iPad typecheck** of the design system and the platform adapters:
+  `scripts/check-ios.sh native/Platform` (the design system always comes along).
+
+Our own files build without warnings for iOS too: every log goes through `scripts/check-warnings.sh`.
+Package checkouts and an iOS compilation cache are cached as in the Mac builds (saved from `main`,
+1 GB at most).
+
+**Not yet on iPad.** The app target is one module whose folders use each other freely (models,
+plugins, commands, settings, views), so the smallest set of folders that includes `native/Models`
+is the whole app, and that still imports macOS-only frameworks: ServiceManagement in `native/Host`
+(`HostRegistration`, `HostPreviewWindow`), IOKit in the KeepAwake engine, AppKit in
+`native/Terminal/Settings`, and `NativeApp.swift`, the Mac's entry point. Those move behind
+`native/Platform` adapters with the iPad destination (`docs/architecture.md`, "Getting there"); add
+a folder to the workflow's typecheck once it compiles there.
 
 ### Repository secrets
 

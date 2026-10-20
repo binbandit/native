@@ -3,14 +3,16 @@
 #
 #   scripts/check-ios.sh native/DesignSystem native/Views/Sidebar
 #
-# Run from anywhere in the repo. Compiles the given folders together with native/DesignSystem
-# (every feature uses it) against the iOS simulator SDK in Swift 6 mode with the app's settings
-# (MainActor by default, member import visibility). `#Preview` blocks are stripped, since the
-# preview macro isn't available outside Xcode. Swift packages the files import (ACP, Git, …) are
-# built for iOS first from Packages/*/Sources; a package SwiftPM has to build (remote dependencies
-# or resources, like CodeThemes and its tree-sitter grammars) is built with xcodebuild for the
-# simulator into a cache kept between runs. Code that uses other app folders needs those folders
-# listed too. Prints the errors and warnings, and exits non-zero if there are errors.
+# Run from anywhere in the repo, with paths from its root. Compiles the given folders together with
+# native/DesignSystem (every feature uses it) against the iOS simulator SDK in Swift 6 mode with the
+# app's settings (MainActor by default, member import visibility). `#Preview` blocks are stripped,
+# since the preview macro isn't available outside Xcode. Swift packages the files import (ACP, Git,
+# …) are built for iOS first from Packages/*/Sources, with their own settings; a package SwiftPM has
+# to build (remote dependencies or resources, like CodeThemes and its tree-sitter grammars) is built
+# with xcodebuild for the simulator into a cache kept between runs. Code that uses other app folders
+# needs those folders listed too. Prints the errors and warnings at their files' real paths, and exits
+# non-zero if there are errors. CI also fails on warnings, by passing the output to
+# scripts/check-warnings.sh (.github/workflows/ios.yml).
 set -euo pipefail
 
 if [ $# -eq 0 ]; then
@@ -32,11 +34,13 @@ target="arm64-apple-ios27.0-simulator"
 flags=(-swift-version 6 -target "$target" -sdk "$sdk" -I "$work/modules")
 mapped=" "
 
-# Copies Swift files into $2 with #Preview blocks removed.
+# Copies Swift files into $2 with #Preview blocks removed, at their paths in the repository.
 strip_previews() {
     python3 - "$1" "$2" <<'PY'
 import os, sys
-src, dest = sys.argv[1], sys.argv[2]
+src, dest = os.path.relpath(sys.argv[1]), sys.argv[2]
+if src.startswith("..") or not os.path.exists(src):
+    sys.exit(f"{sys.argv[1]}: no such folder or file in the repository")
 paths = [src] if os.path.isfile(src) else [os.path.join(d, f) for d, _, fs in os.walk(src) for f in fs]
 for path in paths:
     if not path.endswith(".swift"):
@@ -67,8 +71,8 @@ done
 # Builds a package with xcodebuild for the simulator and imports its products, for packages swiftc
 # alone can't build. The cache makes reruns incremental; parallel checks take turns on it.
 build_package() {
-    local package=$1 name=$2
-    local derived="$packages/$(basename "$package")"
+    local package=$1 name=$2 derived
+    derived="$packages/$(basename "$package")"
     mkdir -p "$packages"
     until mkdir "$derived.lock" 2>/dev/null; do sleep 1; done
     lock="$derived.lock"
@@ -91,6 +95,12 @@ build_package() {
     touch "$work/modules/$name.package"
 }
 
+# The Swift files under a folder, into the array `files`.
+swift_files() {
+    files=()
+    while IFS= read -r -d '' file; do files+=("$file"); done < <(find "$1" -name "*.swift" -print0)
+}
+
 # Builds a package module (and the package modules it imports) for iOS, once.
 build_module() {
     local name=$1
@@ -106,18 +116,20 @@ build_module() {
     for dependency in $(grep -rhoE "^(@[a-zA-Z_]+ )*import [A-Za-z_]+" "$dir" | awk '{print $NF}' | sort -u || true); do
         [ "$dependency" != "$name" ] && build_module "$dependency"
     done
+    swift_files "$dir"
     xcrun --sdk iphonesimulator swiftc -emit-module -parse-as-library -module-name "$name" "${flags[@]}" \
-        -emit-module-path "$work/modules/$name.swiftmodule" $(find "$dir" -name "*.swift") >/dev/null
+        -emit-module-path "$work/modules/$name.swiftmodule" "${files[@]}" >/dev/null
 }
 
 for module in $(grep -rhoE "^(@[a-zA-Z_]+ )*import [A-Za-z_]+" "$work/sources" | awk '{print $NF}' | sort -u || true); do
     build_module "$module"
 done
 
+swift_files "$work/sources"
 output=$(xcrun --sdk iphonesimulator swiftc -typecheck -parse-as-library -default-isolation MainActor \
-    -enable-upcoming-feature MemberImportVisibility "${flags[@]}" \
-    $(find "$work/sources" -name "*.swift") 2>&1 || true)
-diagnostics=$(echo "$output" | grep -E "(error|warning):" | sed -e "s|$work/sources/||" | sort -u || true)
+    -enable-upcoming-feature MemberImportVisibility "${flags[@]}" "${files[@]}" 2>&1 || true)
+# At their real paths, so scripts/check-warnings.sh can read a log of this the way it reads a build's.
+diagnostics=$(echo "$output" | grep -E "(error|warning):" | sed -e "s|$work/sources/|$root/|" | sort -u || true)
 if [ -n "$diagnostics" ]; then
     echo "$diagnostics"
 fi
