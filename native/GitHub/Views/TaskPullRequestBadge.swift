@@ -61,23 +61,10 @@ struct TaskPullRequestBadge: View {
         .buttonStyle(.plain)
         .trackHover($isHovered)
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel(accessibilityLabel(pullRequest, checks: checks))
+        .accessibilityLabel("\(pullRequest.spokenSummary): \(pullRequest.title)")
         .accessibilityHint(DS.isTouchPlatform ? "Shows its details." : "Opens it.")
         .accessibilityAddTraits(.isButton)
-        .accessibilityActions {
-            Button("Show Details") { card.toggle() }
-            Button("Open in Native") { model.openInNative(pullRequest) }
-            Button("Open on GitHub") { model.openInBrowser(pullRequest) }
-            Button("Copy Link") { model.copyURL(pullRequest) }
-        }
-    }
-
-    /// "Pull request #12, Open, checks: 1 failing, 9 passed: Fix the thing".
-    private func accessibilityLabel(_ pullRequest: PullRequestSummary, checks: CheckSummary?) -> String {
-        let state = PullRequestStateIcon(state: pullRequest.state, isDraft: pullRequest.isDraft).label
-        let parts = [
-            "Pull request #\(pullRequest.number)", state, checks.map { ChecksIndicator.summary($0).lowercased() },
-        ]
-        return parts.compactMap(\.self).joined(separator: ", ") + ": \(pullRequest.title)"
+        // Inside a row, these join the row's own actions, which already open and copy it.
+        .accessibilityAction(named: "Show Pull Request Details") { card.toggle() }
     }
 }

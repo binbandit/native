@@ -54,7 +54,7 @@ struct AppTaskPullRequests {
                     gitHub.requestMerge(pullRequest)
                 })
         }
-        return SidebarTaskMenu(title: "Pull Request", items: items)
+        return SidebarTaskMenu(title: "Pull Request", spokenSummary: pullRequest.spokenSummary, items: items)
     }
 
     private func checkout(project id: Project.ID, cwd: String) -> URL? {

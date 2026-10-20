@@ -27,7 +27,12 @@ extension SessionStore {
             }
         case .sessionChanged(let summary):
             hostSummaries[summary.id] = summary
-            session(host: summary.id)?.apply(summary)
+            guard let session = session(host: summary.id) else { return }
+            if let agentSessionID = summary.agentSessionID, agentSessionID != session.id, session.origin != .announced {
+                onAgentSessionReplaced?(session, summary)
+            } else {
+                session.apply(summary)
+            }
         case .sessionClosed(let id):
             hostSummaries[id] = nil
             hostBuffered[id] = nil

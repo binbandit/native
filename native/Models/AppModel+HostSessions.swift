@@ -24,8 +24,38 @@ extension AppModel {
     /// for AppModel.swift.
     func followHost() async {
         guard let host = runtimes.host else { return }
+        sessions.onAgentSessionReplaced = { [weak self] session, summary in
+            self?.followReplacedAgentSession(session, summary)
+        }
         _ = await host.addEventHandler { [weak self] event in
             await self?.receiveFromHost(event)
+        }
+    }
+
+    /// The host started a fresh agent session in place of one the agent never saved (it went away
+    /// before the first turn), keeping the task: it carries on under the new id, with its title,
+    /// settings, place in the sidebar and draft.
+    private func followReplacedAgentSession(_ old: SessionModel, _ summary: HostSessionSummary) {
+        guard let host = runtimes.host, let agentSessionID = summary.agentSessionID else { return }
+        let session = SessionModel(
+            agent: old.agent, id: agentSessionID, summary: summary, client: host, services: old.services,
+            promptCapabilities: old.promptCapabilities, origin: old.origin, parent: nil)
+        session.mirror = old.mirror
+        session.draft = old.draft
+        session.attachments = old.attachments
+        session.heldPrompts = old.heldPrompts
+        session.mirrorState()
+        sessions.replace(old, with: session)
+        catalog.swap(old.key, for: SessionInfo(sessionId: agentSessionID, cwd: old.cwd.folderPath, updatedAt: .now))
+        ordering.replace(old.key, with: session.key)
+        if let title = titles.title(for: old.titleKey, agentTitle: nil) {
+            titles.rename(session.titleKey, to: title)
+        }
+        let chosen = titles.configChoices(for: old.titleKey)
+        titles.updateConfigChoices(for: session.titleKey) { $0.adopt(chosen) }
+        history.replace(old.key, with: session.key)
+        if selection == old.key {
+            selection = session.key
         }
     }
 

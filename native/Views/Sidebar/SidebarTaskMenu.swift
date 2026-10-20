@@ -14,5 +14,7 @@ struct SidebarTaskMenu {
     }
 
     let title: String
+    /// What the row's VoiceOver label adds about it: "pull request #12, open, checks failing".
+    let spokenSummary: String
     let items: [Item]
 }

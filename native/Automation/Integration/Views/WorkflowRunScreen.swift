@@ -34,6 +34,8 @@ struct WorkflowRunScreen<Transcript: View>: View {
                     WorkflowStepInspector(step: step, send: { center.workflows.send($0, to: runID) }) {
                         transcript(session)
                     }
+                    // Native's band under the toolbar, in place of the system's.
+                    .dsToolbarBand()
                     .inspectorColumnWidth(
                         min: AutomationMetrics.inspectorWidth.min,
                         ideal: AutomationMetrics.inspectorWidth.ideal,

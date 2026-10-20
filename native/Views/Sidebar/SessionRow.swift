@@ -183,7 +183,8 @@ struct SessionRow<Accessory: View>: View {
 
     private var accessibilityLabel: String {
         let removed = model.removedWorkspaces[summary.id] != nil ? "worktree removed" : nil
-        return [title, removed, session?.sidebarAsk].compactMap(\.self).joined(separator: ", ")
+        let pullRequest = insights.pullRequestMenu(summary)?.spokenSummary
+        return [title, removed, pullRequest, session?.sidebarAsk].compactMap(\.self).joined(separator: ", ")
     }
 
     private func rename() {

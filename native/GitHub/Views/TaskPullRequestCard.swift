@@ -71,14 +71,15 @@ struct TaskPullRequestCard: View {
             .foregroundStyle(.dsTextTertiary)
             .lineLimit(1)
             if let head = facts.head, let base = facts.base {
+                // The base is short (main) and says where it lands; the head truncates first.
                 HStack(spacing: DS.Space.xs) {
                     BranchChip(name: head)
-                        .layoutPriority(1)
                     Image(systemName: "arrow.right")
                         .font(.system(size: DS.Size.navIcon - DS.Space.xxs))
                         .foregroundStyle(.dsTextTertiary)
                         .accessibilityLabel("into")
                     BranchChip(name: base)
+                        .layoutPriority(1)
                 }
             }
         }
@@ -134,17 +135,21 @@ struct TaskPullRequestCard: View {
             VStack(alignment: .leading, spacing: DS.Space.sm) {
                 Grid(alignment: .leadingFirstTextBaseline, horizontalSpacing: DS.Space.lg, verticalSpacing: DS.Space.sm)
                 {
+                    // The values take the rest of the card's width, so they wrap only when they must.
                     GridRow {
                         rowLabel("Checks")
                         checks(facts)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     GridRow {
                         rowLabel("Review")
                         value(Self.review(facts))
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
                     GridRow {
                         rowLabel("Merge")
                         merge(facts, page: page)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
                 // Merging needs push access; saying so explains the missing Merge button.
@@ -186,7 +191,7 @@ struct TaskPullRequestCard: View {
 
     @ViewBuilder private func merge(_ facts: TaskPullRequestFacts, page: PullRequestPageModel?) -> some View {
         if facts.isDraft {
-            value(("Drafts can't merge until they're ready for review", .dsTextTertiary))
+            value(("Mark it ready for review on GitHub to merge", .dsTextTertiary))
         } else if let loaded = page?.page {
             value(loaded.mergeVerdict ?? ("GitHub is still working it out", .dsTextTertiary))
         } else if hasNotice(model.branchPullRequest(for: branch)) {

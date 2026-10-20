@@ -33,6 +33,8 @@ private struct PullRequestAskPanelPresenter: ViewModifier {
                 ) {
                     PullRequestAskPanel(conversation: center.conversation(for: reference))
                         .frame(minWidth: PullRequestAskMetrics.panelMinWidth)
+                        // Native's band under the toolbar, as on the page beside it.
+                        .dsToolbarBand()
                         .inspectorColumnWidth(
                             min: PullRequestAskMetrics.panelMinWidth, ideal: PullRequestAskMetrics.panelIdealWidth,
                             max: PullRequestAskMetrics.panelMaxWidth)

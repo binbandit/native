@@ -20,6 +20,9 @@ final class SessionStore {
     @ObservationIgnored var hostBuffered: [HostSessionID: [SessionMirror.Step]] = [:]
     /// Every session the host has said it has open, attached here or not, by the host's id.
     @ObservationIgnored var hostSummaries: [HostSessionID: HostSessionSummary] = [:]
+    /// Told when the host gave one of the user's sessions a fresh agent session in place of one the
+    /// agent never saved, so the app can follow it under its new key (AppModel+HostSessions.swift).
+    @ObservationIgnored var onAgentSessionReplaced: ((SessionModel, HostSessionSummary) -> Void)?
     @ObservationIgnored let services: SessionServices
 
     init(services: SessionServices) {
@@ -73,6 +76,13 @@ final class SessionStore {
         if let host = session.host {
             stopFollowing(host)
         }
+    }
+
+    /// Puts `new` in `old`'s place: the same host session under another agent session id. The host
+    /// keeps sending its events, so it's still followed.
+    func replace(_ old: SessionModel, with new: SessionModel) {
+        sessions[old.key] = nil
+        register(new)
     }
 
     /// Drops an agent's sessions, for when its process is replaced or goes away for good.

@@ -84,7 +84,7 @@ Mac) to see everything in light and dark side by side.
 | `UsageMeter` | A usage bar (accent, warning at 80%, error at 100%) |
 | `ActivityHeatmap` | GitHub's contribution graph: 53 weeks of days, month and weekday labels, five accent steps over a neutral empty square; hover, tap or arrow keys pick a day, and every square tells VoiceOver its exact count |
 | `ProjectGroup`, `ProjectRow`, `ProjectAvatar` | Collapsible project groups: avatar, name, task count while collapsed |
-| `TaskRow` (+ `leading`/`accessory` slots), `TaskBadge`, `DiffStatLabel`, `CompactAgeText` | Task rows: one leading visual, trailing badge, diff or age |
+| `TaskRow` (+ `leading`/`accessory` slots), `TaskBadge`, `DiffStatLabel`, `CompactAgeText` | Task rows: one leading visual, then a trailing badge, the accessory and the diff or age; on hover Archive takes the age's place, so controls in the accessory stay reachable |
 | `TaskStatus`, `StatusIndicator`, `DotGridLoader` | Agent states and the animated dot-grid loaders |
 | `ContextUsageRing` | A small ring for how much of the context window a session has used |
 | `ComposerSurface`, `ComposerControlsBar`, `.pill` / `.pillChrome`, `PillIcon`, `PillMenu`, `EffortBars`, `ComposerSendButton`, `ComposerStopButton`, `ComposerChip` | The composer: outlined sections with 1pt rules, 28pt pills |
@@ -94,6 +94,7 @@ Mac) to see everything in light and dark side by side.
 | `StatusBarSurface`, `.statusBarSegment(_:isActive:)`, `StatusBarGlyph`, `StatusBarDivider`, `StatusBarSeparator` | The window's bottom strip: the sidebar column's look under a hairline, `DS.Size.chromeBar` tall, tertiary caption text, footer-sized glyphs, hairlines between items, color-only hover. Narrow windows drop whole items |
 | `IconThemePicker`, `IconThemeOption` | The settings select showing the current app icon; a popover lists each option's thumbnail, name, badge and note, with a checkmark. Options are data, so plugins can add their own |
 | `PopoverPanel`, `PopoverPanelFootnote`, `.dsPopover(isPresented:)` | A popover that explains something: glyph and title header, hairline, content, on the overlay backdrop |
+| `.dsHoverCard(_:)`, `DSHoverCardState` | A popover that opens when the pointer rests on its anchor (500ms, or 100ms while another shows), stays while the pointer is on the anchor or the card, and closes 200ms after it leaves both; one at a time. On touch the anchor's tap toggles it |
 | `CappedHeightScrollView` | Natural height up to a cap, then scrolls |
 | `NativeMark`, `NativeLockup`, `.nightSky(isEnabled:)`, `NightlyMark` | Native's brand: the interlock emblem from the app icon, the wordmark, and the nightly sky and moon |
 | `LaunchAnimationView`, `.launchScreen(isPresented:)` | The emblem tracing in and interlocking while agents start |
@@ -111,6 +112,7 @@ Mac) to see everything in light and dark side by side.
 | Loading | `DotGridLoader`, or `LoadingStateView(what)` filling a pane; never ad-hoc spinners |
 | Something blocked on the user, in chrome | `.statusBarSegment(.attention)`: the only boxed item in the status bar, one at a time |
 | Details on click | `.dsPopover` with a `PopoverPanel` |
+| Details on hover (a task's pull request) | `.dsHoverCard` with a `PopoverPanel` at `DS.Size.hoverCardWidth`; the anchor's click still does its own thing, and everything in the card is also in a context menu or a command |
 | An icon-only button | `Button("Title", systemImage:)` with `.ds(_, iconOnly: true)` or `.pill(isSquare: true)`, or `IconButton`: the title stays VoiceOver's label. Never a bare `Image` label |
 | Elapsed time | `ElapsedTimeText(since:until:)`: ticks while running, a total once done. Anything else that counts seconds reads `DSSecondClock.shared.now` and holds it from `.task { await DSSecondClock.shared.hold() }`: one 1 Hz clock for the app, never a `TimelineView` per label |
 | A tool call's kind | `DSToolGlyph` (read, search, edit, command, web, MCP, think, subagent): one glyph per kind wherever tool work shows |

@@ -171,8 +171,9 @@ extension View {
     /// The inspector column's widths, with its content never laid out narrower than the minimum.
     /// The window takes its minimum size from the content laid out at no width at all, where wrapped
     /// text (an empty state's message) comes out thousands of points tall, so opening the inspector
-    /// grew the window to the height of the screen.
+    /// grew the window to the height of the screen. Under the toolbar, the column gets the same
+    /// band as the page beside it.
     fileprivate func sessionInspectorColumn(min: CGFloat, ideal: CGFloat, max: CGFloat) -> some View {
-        frame(minWidth: min).inspectorColumnWidth(min: min, ideal: ideal, max: max)
+        frame(minWidth: min).dsToolbarBand().inspectorColumnWidth(min: min, ideal: ideal, max: max)
     }
 }

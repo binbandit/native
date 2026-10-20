@@ -14,6 +14,7 @@ struct TranscriptView: View {
     @Environment(\.transcriptColumnMaxWidth) private var columnWidth
     @Environment(AppModel.self) private var model
     @Environment(\.isPrimaryTranscript) private var isPrimary
+    @Environment(\.dsDrawsToolbarBand) private var drawsToolbarBand
     @State private var position = ScrollPosition(edge: .bottom)
     /// Whether the newest output is out of view.
     @State private var isAwayFromLatest = false
@@ -49,10 +50,10 @@ struct TranscriptView: View {
             .defaultScrollAnchor(.bottom, for: .sizeChanges)
             .scrollPosition($position)
             // Rows scrolled up under the title bar stay legible through the soft edge, right behind the
-            // session's title; the hard edge keeps the title on a plain backing. Where the transcript is
-            // the page (`SessionView`), `dsToolbarBand` replaces it with a band in Native's colors.
+            // session's title; the hard edge keeps the title on a plain backing. Under a page's or an
+            // inspector's `dsToolbarBand`, the band in Native's colors takes its place.
             .scrollEdgeEffectStyle(.hard, for: .top)
-            .scrollEdgeEffectHidden(isPrimary, for: .top)
+            .scrollEdgeEffectHidden(drawsToolbarBand, for: .top)
             // The scroll view's own size, reported from the first layout on (scroll geometry only
             // reports changes, and a session switched to is laid out at its final size from the start).
             .onGeometryChange(for: CGSize.self) { proxy in

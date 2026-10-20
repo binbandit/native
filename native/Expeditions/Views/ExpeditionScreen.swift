@@ -20,6 +20,8 @@ struct ExpeditionScreen<Transcript: View>: View {
                 .inspector(isPresented: Binding(get: { selected != nil }, set: { if !$0 { selected = nil } })) {
                     if let selected {
                         ExpeditionInspector(expedition: expedition, slot: selected, send: send, transcript: transcript)
+                            // Native's band under the toolbar, in place of the system's.
+                            .dsToolbarBand()
                             .inspectorColumnWidth(
                                 min: ExpeditionsMetrics.inspectorWidth.min,
                                 ideal: ExpeditionsMetrics.inspectorWidth.ideal,

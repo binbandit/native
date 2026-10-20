@@ -19,6 +19,12 @@ extension View {
     }
 }
 
+extension EnvironmentValues {
+    /// Whether the page draws `dsToolbarBand`, so a scroll view in it that picks its own top edge
+    /// effect leaves the effect hidden.
+    @Entry public var dsDrawsToolbarBand = false
+}
+
 #if os(macOS)
 private struct DSToolbarBand: ViewModifier {
     let showsDivider: Bool
@@ -32,6 +38,7 @@ private struct DSToolbarBand: ViewModifier {
             // solid, in the system's colors, and the edge effect blurs rows into the title bar.
             .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
             .scrollEdgeEffectHidden(true, for: .top)
+            .environment(\.dsDrawsToolbarBand, true)
             .onGeometryChange(for: CGFloat.self) { proxy in
                 proxy.frame(in: .global).minY
             } action: { top in
