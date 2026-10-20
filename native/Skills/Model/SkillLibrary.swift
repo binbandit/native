@@ -35,6 +35,8 @@ final class SkillLibrary {
     @ObservationIgnored let registry: SkillsRegistry
     @ObservationIgnored private let supportFolder: URL
     @ObservationIgnored private(set) var environment: [String: String] = [:]
+    /// The first read, until it lands (`startFirstRead`).
+    @ObservationIgnored private var firstRead: Task<Void, Never>?
     @ObservationIgnored let logger = Logger(subsystem: "Native", category: "Skills")
 
     init(
@@ -95,14 +97,25 @@ final class SkillLibrary {
         apply(scan)
     }
 
-    /// The first read, on the main thread: agents that apply switches at launch start right after
-    /// connect and need the inventory already. Only lists folders and reads SKILL.md files.
-    func readAtStartup() {
-        guard let host else { return }
-        let scan = Self.scan(
-            files: files, formats: Set(agents.map(\.format)), home: home, environment: environment,
-            projects: host.skillProjects)
-        apply(scan)
+    /// The first read, started at connect and off the main thread: it lists folders and reads
+    /// SKILL.md files, which takes a while with many skills, and the window shouldn't wait for it.
+    /// Agents that apply switches at launch wait for it instead (`firstReadLanded()`).
+    func startFirstRead() {
+        guard firstRead == nil, let host else { return }
+        firstRead = Task {
+            let scan = await Task.detached {
+                [files, home, environment, formats = Set(agents.map(\.format)), projects = host.skillProjects] in
+                Self.scan(files: files, formats: formats, home: home, environment: environment, projects: projects)
+            }.value
+            // A full read that landed first is the better one.
+            guard lastRead == nil else { return }
+            apply(scan)
+        }
+    }
+
+    /// Returns once the first read has landed, for agents about to launch.
+    func firstReadLanded() async {
+        await firstRead?.value
     }
 
     /// Reads again unless the last read is recent, for when the app comes back to the front.

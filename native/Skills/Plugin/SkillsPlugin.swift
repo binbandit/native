@@ -29,6 +29,11 @@ struct SkillsPlugin: NativePlugin {
     func launchPolicy(for agent: AgentDefinition.ID) -> SessionPolicy {
         library.launchPolicy(for: agent)
     }
+
+    /// Agents that apply switches at launch need the skills read first.
+    func prepareForLaunch() async {
+        await library.firstReadLanded()
+    }
 }
 
 extension SkillsPlugin {
@@ -37,7 +42,7 @@ extension SkillsPlugin {
     static func connect(to model: AppModel) {
         guard let library = library(in: model.plugins) else { return }
         library.host = AppSkillsHost(model: model)
-        library.readAtStartup()
+        library.startFirstRead()
         Task {
             await library.read()
             await library.host?.skillApplyLaunchPolicies(force: false)
