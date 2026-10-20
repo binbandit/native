@@ -95,19 +95,34 @@ extension HostCore {
         client.attached.insert(session.id)
     }
 
+    /// Loads the session if the agent doesn't have it, except one the host unloaded while idle,
+    /// which waits until it's used: its log already shows everything.
     func loadInBackground(_ session: HostSession) {
-        guard session.needsLoad, session.record.origin != .announced else { return }
+        guard session.needsLoad, !session.reloadsQuietly, session.record.origin != .announced else { return }
         Task { try? await load(session) }
     }
 
     /// Makes sure the agent process has the session loaded, replaying it from the agent's store if
-    /// it doesn't (after the host or the agent restarted). Concurrent callers share one load.
+    /// it doesn't (after the host or the agent restarted), or resuming it quietly if the host
+    /// unloaded it while idle. Concurrent callers share one load.
     func load(_ session: HostSession) async throws {
         if let loading = session.loading {
             return try await loading.value
         }
         guard session.needsLoad else { return }
-        let task = Task { try await performLoad(session) }
+        let task = Task {
+            // Recovery reads the replay to tell whether the agent had the interrupted prompt.
+            if session.reloadsQuietly, session.phase != .recovering {
+                do {
+                    return try await reloadQuietly(session)
+                } catch {
+                    logger.error("Couldn't resume a session quietly, loading it: \(error.localizedDescription)")
+                }
+            }
+            // A load starts the log over, so it no longer holds the conversation to resume.
+            session.reloadsQuietly = false
+            try await performLoad(session)
+        }
         session.loading = task
         defer { session.loading = nil }
         try await task.value

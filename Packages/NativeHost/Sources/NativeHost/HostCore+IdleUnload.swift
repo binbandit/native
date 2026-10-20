@@ -11,15 +11,15 @@ import NativeHostProtocol
 // loaded and nothing to do, its process ends too, which frees the rest; it starts again when
 // something needs it.
 extension HostCore {
-    /// Checks for idle sessions and agents for as long as the host runs, a few times per timeout.
+    /// Checks for idle sessions and agents for as long as the host runs, a few times per timeout,
+    /// starting over when agents' specs change.
     func unloadIdleSessionsPeriodically() {
-        Task { [weak self] in
-            var interval = Duration.seconds(30)
-            while !Task.isCancelled {
+        idleUnloadChecks?.cancel()
+        idleUnloadChecks = Task { [weak self] in
+            while let interval = self?.idleUnloadCheckInterval {
                 try? await Task.sleep(for: interval, tolerance: interval / 10)
-                guard let self else { return }
-                unloadIdleSessions()
-                interval = idleUnloadCheckInterval
+                guard !Task.isCancelled else { return }
+                self?.unloadIdleSessions()
             }
         }
     }
@@ -102,5 +102,41 @@ extension HostCore {
                 logger.error("Couldn't unload a \(session.agentName) session: \(error.localizedDescription)")
             }
         }
+    }
+
+    /// Brings back a session `unload` left, with `session/resume`, which replays nothing: its log
+    /// still holds the conversation, so every client's transcript and the session's phase stay as
+    /// they are. Its settings are set back where the agent reopened it on others. A session the
+    /// agent never saved has nothing to resume, so it carries on in a fresh one.
+    func reloadQuietly(_ session: HostSession) async throws {
+        let link = try await readyAgent(session.record.agentID)
+        guard let peer = link.peer, let agentSessionID = session.record.agentSessionID else {
+            throw HostError.agentUnavailable(link.spec.name)
+        }
+        let response: RawConfigOptionsResponse
+        do {
+            if session.record.lastStopReason == nil && !session.record.isAdopted {
+                response = try await replaceUnsaved(session, on: link, peer: peer)
+            } else {
+                let servers = await tasks.agentServers(for: session.id, base: session.mcpServers)
+                route(session, on: link)
+                response = try await peer.request(
+                    "session/resume",
+                    RawLoadSessionRequest(
+                        sessionId: agentSessionID, cwd: session.record.cwd, mcpServers: servers,
+                        _meta: session.record.meta),
+                    as: RawConfigOptionsResponse.self)
+            }
+        } catch {
+            noteAgentError(error, from: link)
+            throw error
+        }
+        await restoreConfigChoices(of: session, on: link, reported: response.configOptions)
+        tasks.sessionLoaded(session)
+        session.needsLoad = false
+        session.reloadsQuietly = false
+        session.supportsSteering = link.supportsSteering
+        session.problem = nil
+        publish(session)
     }
 }
