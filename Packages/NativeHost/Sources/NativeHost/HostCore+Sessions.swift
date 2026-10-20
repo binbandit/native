@@ -87,10 +87,7 @@ extension HostCore {
     /// Subscribes a client to a session and replays its whole log to it, as `attach` does without
     /// `afterSeq`.
     func follow(_ session: HostSession, by client: ClientLink) {
-        for event in session.events(after: nil) {
-            client.notify(
-                HostProtocol.Method.sessionEvent, SessionEventNotification(sessionID: session.id, event: event))
-        }
+        client.send(session.events(after: nil), of: session.id)
         session.subscribers.insert(client.id)
         client.attached.insert(session.id)
     }
@@ -228,11 +225,26 @@ extension HostCore {
         }
     }
 
-    /// Replaces the MCP servers for the session's next load; a loaded session keeps the ones it has.
+    /// Replaces the MCP servers for the session's next load: all of them, or (`replacingNamed`) the
+    /// ones named, adding those it lacks. A loaded session keeps the ones it has. Nothing is written
+    /// when nothing changed.
     func setMCPServers(_ params: SetMCPServersParams) throws {
         let session = try session(params.sessionID)
-        session.record.mcpServers = params.mcpServers
-        session.mcpServers = params.mcpServers
+        var servers = params.mcpServers
+        if params.replacingNamed {
+            servers = session.record.mcpServers
+            for server in params.mcpServers {
+                let name = server["name"]?.stringValue
+                if let index = servers.firstIndex(where: { $0["name"]?.stringValue == name }) {
+                    servers[index] = server
+                } else {
+                    servers.append(server)
+                }
+            }
+        }
+        guard servers != session.record.mcpServers else { return }
+        session.record.mcpServers = servers
+        session.mcpServers = servers
         try store.updateSession(session.record)
     }
 

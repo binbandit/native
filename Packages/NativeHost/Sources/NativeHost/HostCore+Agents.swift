@@ -9,10 +9,8 @@ extension HostCore {
         guard let link = agents[agentID], link.generation == generation else { return }
         switch event {
         case .notification(let message) where message.method == "session/update":
-            // The hot path while an agent streams, so it's parsed the fast way.
-            guard let params = message.rawParams, let sessionID = params["sessionId"]?.stringValue.map(SessionID.init),
-                let update = params["update"]
-            else { return }
+            // The hot path while an agent streams (`AgentUpdate`).
+            guard let (sessionID, update) = AgentUpdate.parse(message.line) else { return }
             if let id = link.routes[sessionID], let session = sessions[id] {
                 apply(update, to: session, on: link)
             } else {
@@ -119,10 +117,9 @@ extension HostCore {
     /// An agent update for a session. A subagent the agent announces becomes a session of its own,
     /// so its traffic has somewhere to go. While a hidden command runs, its reply is collected
     /// instead of logged, and late copies of it are dropped.
-    func apply(_ update: JSONValue, to session: HostSession, on link: AgentLink) {
-        let kind = update["sessionUpdate"]?.stringValue
-        if kind == "agent_message_chunk", session.hiddenCommand != nil || session.hiddenCommandEcho != nil,
-            let decoded = SessionMirror.Step(HostEvent(seq: 0, payload: .update(update))).update
+    func apply(_ update: AgentUpdate, to session: HostSession, on link: AgentLink) {
+        if update.kind == "agent_message_chunk", session.hiddenCommand != nil || session.hiddenCommandEcho != nil,
+            let decoded = update.decoded
         {
             if session.hiddenCommand?.capture(decoded) == true {
                 return
@@ -131,13 +128,13 @@ extension HostCore {
                 return
             }
         }
-        if kind == "subagent_update" || kind == "subagent_spawned",
-            let child = update["sessionId"]?.stringValue.map(SessionID.init), link.routes[child] == nil
+        if update.kind == "subagent_update" || update.kind == "subagent_spawned", let child = update.sessionID,
+            link.routes[child] == nil
         {
             adoptSubagent(child, of: session, on: link)
         }
         let hadTitle = session.record.title
-        append(.update(update), to: session)
+        append(update, to: session)
         if session.record.title != hadTitle {
             try? store.updateSession(session.record)
             publish(session)

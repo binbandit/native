@@ -24,7 +24,11 @@ public final class ByteChannel: ByteStream {
     private let state = Mutex(State())
 
     private struct State {
+        /// Bytes accepted and not yet written.
         var backlog = 0
+        /// Bytes accepted since the last hand-off to the writer; see `write`.
+        var pending = Data()
+        var isFlushScheduled = false
         var isClosed = false
         var onClose: [@Sendable () -> Void] = []
         var flushWaiters: [CheckedContinuation<Void, Never>] = []
@@ -73,17 +77,41 @@ public final class ByteChannel: ByteStream {
 
     /// Queues `data` for the other end. Returns false when the channel is closed or the other end
     /// has stopped reading, in which case the channel closes.
+    ///
+    /// Writes made in a burst (a streaming agent's updates going out to a client) are handed to the
+    /// system together: one write per burst instead of one per message, each of which wakes the
+    /// event loop.
     @discardableResult
     public func write(_ data: Data) -> Bool {
-        let accepted = state.withLock { state in
-            guard !state.isClosed, state.backlog + data.count <= Self.backlogLimit else { return false }
+        enum Outcome { case refused, scheduled, joined }
+        let outcome = state.withLock { state -> Outcome in
+            guard !state.isClosed, state.backlog + data.count <= Self.backlogLimit else { return .refused }
             state.backlog += data.count
-            return true
+            state.pending.append(data)
+            guard !state.isFlushScheduled else { return .joined }
+            state.isFlushScheduled = true
+            return .scheduled
         }
-        guard accepted else {
+        switch outcome {
+        case .refused:
             close(discardingPendingWrites: true)
             return false
+        case .scheduled:
+            queue.async { [weak self] in self?.flush() }
+        case .joined:
+            break
         }
+        return true
+    }
+
+    /// Hands what's pending to the writer. On `queue`.
+    private func flush() {
+        let data = state.withLock { state in
+            state.isFlushScheduled = false
+            defer { state.pending = Data() }
+            return state.pending
+        }
+        guard !data.isEmpty else { return }
         let count = data.count
         let bytes = data.withUnsafeBytes { DispatchData(bytes: $0) }
         writer.write(offset: 0, data: bytes, queue: queue) { [weak self] done, _, error in
@@ -98,7 +126,6 @@ public final class ByteChannel: ByteStream {
                 close(discardingPendingWrites: true)
             }
         }
-        return true
     }
 
     /// Returns once everything written so far has gone out (or failed to).
@@ -132,15 +159,35 @@ public final class ByteChannel: ByteStream {
     /// Stops reading. Queued writes still go out before the descriptors close, unless the other end
     /// has stopped listening anyway (`discardingPendingWrites`).
     public func close(discardingPendingWrites: Bool) {
-        let actions: [@Sendable () -> Void]? = state.withLock { state in
+        let closing: (actions: [@Sendable () -> Void], waiters: [CheckedContinuation<Void, Never>])? = state.withLock {
+            state in
             guard !state.isClosed else { return nil }
             state.isClosed = true
+            var waiters: [CheckedContinuation<Void, Never>] = []
+            if discardingPendingWrites {
+                // What was never handed to the writer won't go out; nobody should wait for it.
+                state.backlog -= state.pending.count
+                state.pending = Data()
+                if state.backlog == 0 {
+                    waiters = state.flushWaiters
+                    state.flushWaiters = []
+                }
+            }
             defer { state.onClose = [] }
-            return state.onClose
+            return (state.onClose, waiters)
         }
-        guard let actions else { return }
+        guard let (actions, waiters) = closing else { return }
+        for waiter in waiters { waiter.resume() }
         reader.close(flags: .stop)
-        writer.close(flags: discardingPendingWrites ? .stop : [])
+        if discardingPendingWrites {
+            writer.close(flags: .stop)
+        } else {
+            // After what's pending, which `queue` hands to the writer first.
+            queue.async { [self] in
+                flush()
+                writer.close(flags: [])
+            }
+        }
         for action in actions { action() }
     }
 }

@@ -46,7 +46,7 @@ final class AgentLink {
     var routes: [SessionID: HostSessionID] = [:]
     /// Updates for agent sessions the host doesn't know yet: an agent may send them before it
     /// answers `session/new`, or for a subagent it hasn't announced.
-    var buffered: [SessionID: [JSONValue]] = [:]
+    var buffered: [SessionID: [AgentUpdate]] = [:]
 
     private var process: Process?
     private var processGroups = AgentProcessGroups()
@@ -190,7 +190,7 @@ final class AgentLink {
         process = nil
     }
 
-    func buffer(_ update: JSONValue, for session: SessionID) {
+    func buffer(_ update: AgentUpdate, for session: SessionID) {
         guard buffered[session, default: []].count < Self.bufferLimit else { return }
         buffered[session, default: []].append(update)
     }

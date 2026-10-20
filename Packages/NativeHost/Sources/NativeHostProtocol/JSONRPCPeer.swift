@@ -23,7 +23,8 @@ public final class JSONRPCPeer: Sendable {
     public struct Message: Sendable {
         public let id: RequestID?
         public let method: String
-        let line: Data
+        /// The whole message as it arrived, for readers with a faster way to parse it.
+        public let line: Data
 
         public func params<Params: Decodable>(as type: Params.Type = Params.self) throws -> Params {
             try JSONRPCPeer.makeDecoder().decode(IncomingParams<Params>.self, from: line).params
@@ -91,6 +92,17 @@ public final class JSONRPCPeer: Sendable {
 
     public func notify(_ method: String, _ params: some Encodable & Sendable) throws {
         try write(OutgoingNotification(method: method, params: params))
+    }
+
+    /// Sends a notification whose params are already JSON (`method` must need no escaping), for a
+    /// message encoded once and sent to many peers.
+    public func notify(_ method: String, encodedParams params: Data) throws {
+        var line = Data(#"{"jsonrpc":"2.0","method":""#.utf8)
+        line.append(contentsOf: method.utf8)
+        line.append(contentsOf: #"","params":"#.utf8)
+        line.append(params)
+        line.append(contentsOf: "}\n".utf8)
+        guard channel.write(line) else { throw PeerError.closed }
     }
 
     public func respond(to id: RequestID, with result: some Encodable & Sendable) throws {

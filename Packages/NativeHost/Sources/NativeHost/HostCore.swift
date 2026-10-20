@@ -241,15 +241,22 @@ public final class HostCore {
 
     // MARK: - Events out
 
-    /// Logs an event for a session and sends it to the clients following it.
-    @discardableResult
-    func append(_ payload: HostEvent.Payload, to session: HostSession) -> HostEvent {
-        let event = session.append(payload)
-        let notification = SessionEventNotification(sessionID: session.id, event: event)
+    /// Logs one of Native's own events for a session and sends it to the clients following it.
+    func append(_ payload: HostEvent.Payload, to session: HostSession) {
+        send(session.append(payload), of: session)
+    }
+
+    /// Logs an agent's update for a session and sends it to the clients following it.
+    func append(_ update: AgentUpdate, to session: HostSession) {
+        send(session.append(update), of: session)
+    }
+
+    private func send(_ event: LoggedEvent, of session: HostSession) {
+        guard !session.subscribers.isEmpty else { return }
+        let params = ClientLink.eventParams(event, of: session.id)
         for id in session.subscribers {
-            clients[id]?.notify(HostProtocol.Method.sessionEvent, notification)
+            clients[id]?.notify(HostProtocol.Method.sessionEvent, encodedParams: params)
         }
-        return event
     }
 
     /// Tells every client the session's summary changed.

@@ -273,12 +273,18 @@ struct HostSessionTests {
         let session = try await recorder.client.newSession(
             NewSessionParams(agentID: "fake", cwd: "/tmp", mcpServers: [server("native-old")], attach: true))
         try await recorder.client.setMCPServers(
-            SetMCPServersParams(sessionID: session.id, mcpServers: [server("native")]))
+            SetMCPServersParams(sessionID: session.id, mcpServers: [server("native"), server("docs")]))
+        let renamed = JSONValue.object([
+            "name": .string("docs"), "command": .string("/usr/bin/false"), "args": .array([]), "env": .array([]),
+        ])
+        // By name: "docs" is replaced, "native" kept, and "extra" (which the session lacked) added.
+        try await recorder.client.setMCPServers(
+            SetMCPServersParams(sessionID: session.id, mcpServers: [renamed, server("extra")], replacingNamed: true))
         _ = try await recorder.client.restartAgent("fake")
         _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "hello"))
         try await recorder.wait("the turn") { await $0.turnsEnded(session.id) == ["end_turn"] }
         let loads = try String(contentsOf: harness.agentStore.appending(path: "loads.log"), encoding: .utf8)
-        #expect(loads == "native\n")
+        #expect(loads == "native /usr/bin/true,docs /usr/bin/false,extra /usr/bin/true\n")
         await recorder.stop()
     }
 

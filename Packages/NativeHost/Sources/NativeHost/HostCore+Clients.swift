@@ -43,6 +43,27 @@ final class ClientLink {
     func notify(_ method: String, _ params: some Encodable & Sendable) {
         try? peer.notify(method, params)
     }
+
+    func notify(_ method: String, encodedParams params: Data) {
+        try? peer.notify(method, encodedParams: params)
+    }
+
+    /// Sends a session's logged events, as `_native/session/event` notifications.
+    func send(_ events: some Sequence<LoggedEvent>, of session: HostSessionID) {
+        for event in events {
+            notify(HostProtocol.Method.sessionEvent, encodedParams: Self.eventParams(event, of: session))
+        }
+    }
+
+    /// A `SessionEventNotification`, around an event encoded already.
+    static func eventParams(_ event: LoggedEvent, of session: HostSessionID) -> Data {
+        var params = Data(#"{"sessionID":""#.utf8)
+        params.append(contentsOf: session.description.utf8)
+        params.append(contentsOf: #"","event":"#.utf8)
+        params.append(event.json)
+        params.append(UInt8(ascii: "}"))
+        return params
+    }
 }
 
 // The client side of the protocol: every request a client can make, answered on the host actor.
@@ -224,10 +245,7 @@ extension HostCore {
     ) throws {
         let session = try session(params.sessionID)
         let afterSeq = params.epoch == epoch ? params.afterSeq : nil
-        for event in session.events(after: afterSeq) {
-            client.notify(
-                HostProtocol.Method.sessionEvent, SessionEventNotification(sessionID: session.id, event: event))
-        }
+        client.send(session.events(after: afterSeq), of: session.id)
         session.subscribers.insert(client.id)
         client.attached.insert(session.id)
         try reply(AttachResult(summary: session.summary))

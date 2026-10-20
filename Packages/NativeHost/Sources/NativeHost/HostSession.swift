@@ -48,17 +48,21 @@ final class HostSession {
     /// are dropped.
     var hiddenCommandEcho: HiddenCommandCapture?
     /// The transcript as the events describe it, folded only when the host reads it (at turn
-    /// boundaries and after a replay), so streaming doesn't decode every update twice.
+    /// boundaries and after a replay), so streaming doesn't decode every update.
     var mirror: SessionMirror {
         for event in log[foldedThrough...] {
-            folded.apply(event)
+            if let step = try? decoder.decode(SessionMirror.Step.self, from: event.json) {
+                folded.apply(step)
+            }
         }
         foldedThrough = log.endIndex
         return folded
     }
     private var folded = SessionMirror()
     private var foldedThrough = 0
-    private(set) var log: [HostEvent] = []
+    private(set) var log: [LoggedEvent] = []
+    private let encoder = HostSession.makeEncoder()
+    private let decoder = HostSession.makeDecoder()
     private var nextSeq = 1
     /// Clients following this session's events.
     var subscribers: Set<ClientLink.ID> = []
@@ -77,27 +81,48 @@ final class HostSession {
         record.id
     }
 
-    /// Adds an event to the log and returns it, numbered.
-    func append(_ payload: HostEvent.Payload, at date: Date = .now) -> HostEvent {
-        let event = HostEvent(seq: nextSeq, at: date, payload: payload)
-        nextSeq += 1
+    /// Adds one of Native's own events to the log and returns it, numbered and encoded.
+    func append(_ payload: HostEvent.Payload, at date: Date = .now) -> LoggedEvent {
         if case .reset = payload {
             log = []
             folded = SessionMirror()
             foldedThrough = 0
         }
-        log.append(event)
-        if case .update(let update) = payload, let title = Self.title(in: update) {
+        let event = HostEvent(seq: nextSeq, at: date, payload: payload)
+        // Native's own events always encode; nothing in them is beyond JSON.
+        let json = (try? encoder.encode(event)) ?? Data("{}".utf8)
+        if case .update(let update) = payload, update["sessionUpdate"]?.stringValue == "session_info_update",
+            let title = update["title"]?.stringValue
+        {
             record.title = title
         }
+        return log(json)
+    }
+
+    /// Adds an agent's update to the log, its JSON spliced in as the agent sent it.
+    func append(_ update: AgentUpdate, at date: Date = .now) -> LoggedEvent {
+        var json = Data(
+            #"{"seq":\#(nextSeq),"at":\#(Int64(date.timeIntervalSince1970 * 1_000)),"type":"update","update":"#.utf8)
+        json.append(update.json)
+        json.append(UInt8(ascii: "}"))
+        if update.kind == "session_info_update", let title = update.title {
+            record.title = title
+        }
+        return log(json)
+    }
+
+    private func log(_ json: Data) -> LoggedEvent {
+        let event = LoggedEvent(seq: nextSeq, json: json)
+        nextSeq += 1
+        log.append(event)
         return event
     }
 
     /// What a client attaching with `afterSeq` (from this host run) hasn't seen: everything after it,
     /// or the whole log from its reset.
-    func events(after seq: Int?) -> [HostEvent] {
-        guard let seq, let first = log.first, seq >= first.seq - 1 else { return log }
-        return log.filter { $0.seq > seq }
+    func events(after seq: Int?) -> ArraySlice<LoggedEvent> {
+        guard let seq, let first = log.first, seq >= first.seq - 1 else { return log[...] }
+        return log[(log.firstIndex { $0.seq > seq } ?? log.endIndex)...]
     }
 
     var isStopping: Bool {
@@ -133,9 +158,25 @@ final class HostSession {
         )
     }
 
-    /// The title in a `session_info_update`.
-    private static func title(in update: JSONValue) -> String? {
-        guard update["sessionUpdate"]?.stringValue == "session_info_update" else { return nil }
-        return update["title"]?.stringValue
+    /// Dates as milliseconds since 1970, as the protocol has them.
+    private static func makeEncoder() -> JSONEncoder {
+        let encoder = JSONEncoder()
+        encoder.outputFormatting = [.withoutEscapingSlashes]
+        encoder.dateEncodingStrategy = .millisecondsSince1970
+        return encoder
     }
+
+    private static func makeDecoder() -> JSONDecoder {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .millisecondsSince1970
+        return decoder
+    }
+}
+
+/// One event as the host keeps it: numbered, and encoded once for every client that follows it or
+/// attaches later.
+struct LoggedEvent {
+    let seq: Int
+    /// The `HostEvent`, as JSON.
+    let json: Data
 }

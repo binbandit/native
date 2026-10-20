@@ -110,10 +110,21 @@ public struct SetMCPServersParams: Codable, Sendable {
     public var sessionID: HostSessionID
     /// ACP `McpServer` objects, verbatim.
     public var mcpServers: [JSONValue]
+    /// Replace the stored servers these name and add the ones it lacks, leaving every other name
+    /// alone. Otherwise the list replaces the whole stored one.
+    public var replacingNamed: Bool
 
-    public init(sessionID: HostSessionID, mcpServers: [JSONValue]) {
+    public init(sessionID: HostSessionID, mcpServers: [JSONValue], replacingNamed: Bool = false) {
         self.sessionID = sessionID
         self.mcpServers = mcpServers
+        self.replacingNamed = replacingNamed
+    }
+
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        sessionID = try container.decode(HostSessionID.self, forKey: .sessionID)
+        mcpServers = try container.decode([JSONValue].self, forKey: .mcpServers)
+        replacingNamed = try container.decodeIfPresent(Bool.self, forKey: .replacingNamed) ?? false
     }
 }
 

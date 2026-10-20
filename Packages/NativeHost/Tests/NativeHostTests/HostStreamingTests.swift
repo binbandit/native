@@ -51,6 +51,9 @@ struct HostStreamingTests {
         var latencies: [Duration] = []
         var first: ContinuousClock.Instant?
         var last: ContinuousClock.Instant?
+        /// CPU time spent per update by the client and, through a host, by the host process.
+        var clientCPU: Duration?
+        var hostCPU: Duration?
 
         mutating func note(_ update: SessionUpdate?) {
             guard case .agentMessageChunk(let chunk)? = update, let text = chunk.content.text,
@@ -77,8 +80,12 @@ struct HostStreamingTests {
 
         var report: String {
             let ms = { (duration: Duration) in String(format: "%.2f ms", Self.seconds(duration) * 1_000) }
+            let cpu = { (label: String, duration: Duration?) in
+                duration.map { String(format: ", %@ CPU %.1f µs/update", label, Self.seconds($0) * 1_000_000) } ?? ""
+            }
             return String(format: "%.0f events/s", eventsPerSecond)
                 + ", latency p50 \(ms(latency(0.5))), p99 \(ms(latency(0.99))), max \(ms(latency(1)))"
+                + cpu("client", clientCPU) + cpu("host", hostCPU)
         }
 
         private static func seconds(_ duration: Duration) -> Double {
@@ -110,11 +117,16 @@ struct HostStreamingTests {
             as: JSONValue.self)
         let session = try await peer.request(
             "session/new", RawNewSessionRequest(cwd: "/tmp", mcpServers: []), as: RawNewSessionResponse.self)
+        let cpu = CPUTime.ofThisProcess()
         _ = try await peer.request(
             "session/prompt", PromptRequest(sessionId: session.sessionId, prompt: [.text(prompt)]),
             as: RawPromptResponse.self)
+        let used = CPUTime.ofThisProcess() - cpu
         peer.close()
-        return measurement.withLock { $0 }
+        return measurement.withLock { measurement in
+            measurement.clientCPU = used / max(measurement.indices.count, 1)
+            return measurement
+        }
     }
 
     /// Through a real host process, to a client that decodes each event as the app does.
@@ -138,12 +150,42 @@ struct HostStreamingTests {
         _ = try await client.connected()
         try await client.syncAgents([harness.agentSpec])
         let session = try await client.newSession(NewSessionParams(agentID: "fake", cwd: "/tmp", attach: true))
+        let host = try #require(await client.hostInfo?.processID)
+        let (clientCPU, hostCPU) = (CPUTime.ofThisProcess(), CPUTime.of(host))
         _ = try await client.prompt(PromptParams(sessionID: session.id, text: prompt))
         let deadline = ContinuousClock.now + .seconds(50)
         while !ended.withLock({ $0 }), ContinuousClock.now < deadline {
             try await Task.sleep(for: .milliseconds(20))
         }
+        let (clientUsed, hostUsed) = (CPUTime.ofThisProcess() - clientCPU, CPUTime.of(host) - hostCPU)
         await client.stop()
-        return measurement.withLock { $0 }
+        return measurement.withLock { measurement in
+            let count = max(measurement.indices.count, 1)
+            measurement.clientCPU = clientUsed / count
+            measurement.hostCPU = hostUsed / count
+            return measurement
+        }
+    }
+}
+
+/// CPU time a process has used, user and system.
+enum CPUTime {
+    static func ofThisProcess() -> Duration {
+        var usage = rusage()
+        getrusage(RUSAGE_SELF, &usage)
+        return .seconds(usage.ru_utime.tv_sec + usage.ru_stime.tv_sec)
+            + .microseconds(usage.ru_utime.tv_usec + usage.ru_stime.tv_usec)
+    }
+
+    static func of(_ pid: Int32) -> Duration {
+        var info = rusage_info_v2()
+        let status = withUnsafeMutablePointer(to: &info) { pointer in
+            pointer.withMemoryRebound(to: rusage_info_t?.self, capacity: 1) { proc_pid_rusage(pid, RUSAGE_INFO_V2, $0) }
+        }
+        guard status == 0 else { return .zero }
+        var timebase = mach_timebase_info_data_t()
+        mach_timebase_info(&timebase)
+        let nanoseconds = (info.ri_user_time + info.ri_system_time) * UInt64(timebase.numer) / UInt64(timebase.denom)
+        return .nanoseconds(Int64(nanoseconds))
     }
 }

@@ -1,10 +1,10 @@
 import ACP
 import Foundation
 
-// Every streamed update passes through `JSONValue` twice (the host reads it from the agent, a
-// client from the host). Its `Decodable` conformance tries each type in turn and pays for a thrown
-// error at every miss, about 28 µs for a one-line text chunk, which capped streaming through the
-// host well below what agents send. These are the fast paths the host protocol uses instead.
+// `JSONValue`'s `Decodable` conformance tries each type in turn and pays for a thrown error at every
+// miss, about 28 µs for a one-line text chunk: on every streamed update a client decodes, that
+// capped streaming through the host well below what agents send. These are the fast paths the host
+// protocol uses instead (the host itself forwards updates without a `JSONValue`, see `AgentUpdate`).
 
 extension JSONValue {
     /// Parses JSON text with `JSONSerialization` (about 4x faster than decoding a `JSONValue`).
