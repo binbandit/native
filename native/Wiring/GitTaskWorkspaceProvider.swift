@@ -13,6 +13,8 @@ final class GitTaskWorkspaceProvider: TaskWorkspaceProvider {
     private let git: GitStore
     private let gitHub: GitHubModel
     private let scripts: TaskScriptCenter
+    /// Each project's last verdicts on removed workspaces, kept while its branches stay put.
+    private var removedVerdicts: [URL: RemovedVerdicts] = [:]
 
     init(git: GitStore, gitHub: GitHubModel, scripts: TaskScriptCenter) {
         self.git = git
@@ -84,6 +86,15 @@ final class GitTaskWorkspaceProvider: TaskWorkspaceProvider {
                 && !archived.contains { SessionFolder.isSame($0.folderPath, task.folder.folderPath) }
         }
         guard !candidates.isEmpty else { return [:] }
+        // Judging asks GitHub and reads every branch; the same branches give the same answers,
+        // except a pull request merged on GitHub since, which a while later catches.
+        let fingerprint = await git.refsFingerprint(of: project.url)
+        if let cached = removedVerdicts[project.url], cached.fingerprint == fingerprint,
+            cached.judgedAt.timeIntervalSinceNow > -Self.verdictLifetime,
+            candidates.allSatisfy({ cached.fates[$0.folder] != nil })
+        {
+            return cached.fates.filter { folder, _ in candidates.contains { $0.folder == folder } }
+        }
         let prefix = git.settings.branchPrefix(forProjectAt: project.url, gitHubLogin: await gitHubLogin(for: project))
         let gitHub = gitHub
         let root = project.url
@@ -99,8 +110,11 @@ final class GitTaskWorkspaceProvider: TaskWorkspaceProvider {
         for (task, verdict) in zip(candidates, verdicts) {
             fates[task.folder] = Self.fate(of: verdict)
         }
+        removedVerdicts[project.url] = RemovedVerdicts(fingerprint: fingerprint, judgedAt: .now, fates: fates)
         return fates
     }
+
+    private static let verdictLifetime: TimeInterval = 10 * 60
 
     func restoreRemovedWorkspace(at folder: URL, branch: String, in project: Project) async throws {
         _ = try await git.restoreRemovedTaskWorktree(at: folder, branch: branch, of: project.url)
@@ -182,4 +196,11 @@ final class GitTaskWorkspaceProvider: TaskWorkspaceProvider {
         if let login = gitHub.currentLogin { return login }
         return try? await gitHub.cli().currentUser().login
     }
+}
+
+/// A project's verdicts on removed workspaces, and the branches they were made from.
+private struct RemovedVerdicts {
+    let fingerprint: String?
+    let judgedAt: Date
+    let fates: [URL: RemovedWorkspace.Fate]
 }

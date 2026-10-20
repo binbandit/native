@@ -12,12 +12,34 @@ extension GitStore {
         guard let repository = try? await resolveGit().repository(at: project),
             let worktrees = try? await repository.worktrees()
         else { return [] }
-        let location = Self.taskLocation(of: repository).folderPath
-        let live = worktrees.filter { !$0.isPrunable }.map(\.path.folderPath)
-        return folders.filter { folder in
-            SessionFolder.contains(location, folder.folderPath) && !SessionFolder.isSame(location, folder.folderPath)
-                && !live.contains { SessionFolder.contains($0, folder.folderPath) }
+        let paths = folders.map(\.folderPath)
+        let removed = await Self.removed(
+            paths, location: Self.taskLocation(of: repository).folderPath,
+            live: worktrees.filter { !$0.isPrunable }.map(\.path.folderPath))
+        return folders.indices.filter { removed.contains($0) }.map { folders[$0] }
+    }
+
+    /// The indices of `paths` inside `location` but in none of `live`. Off the main thread, since
+    /// comparing spellings (`/tmp`, `/private/tmp`) reads the disk, once per path.
+    @concurrent
+    private nonisolated static func removed(_ paths: [String], location: String, live: [String]) async -> Set<Int> {
+        func resolved(_ path: String) -> String { SessionFolder.listingPaths(for: path).last ?? path }
+        let location = resolved(location)
+        let live = live.map(resolved)
+        var removed: Set<Int> = []
+        for (index, path) in paths.enumerated() {
+            let path = resolved(path)
+            guard path.hasPrefix(location + "/"), !live.contains(where: { path == $0 || path.hasPrefix($0 + "/") })
+            else { continue }
+            removed.insert(index)
         }
+        return removed
+    }
+
+    /// Where the repository's branches point (`Repository.refsFingerprint`), to tell whether verdicts
+    /// still hold.
+    func refsFingerprint(of project: URL) async -> String? {
+        try? await requireRepository(at: project).refsFingerprint()
     }
 
     /// What each task whose worktree was removed should become (`Repository.removedWorktreeVerdicts`).

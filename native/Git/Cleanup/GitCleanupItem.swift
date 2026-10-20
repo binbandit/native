@@ -92,7 +92,7 @@ struct GitCleanupItem: Identifiable, Hashable {
             if branch.checkedOutIn == nil {
                 item.tasks = tasksOnBranch(branch.name)
                 if !item.tasks.isEmpty {
-                    item.detail = "At \(branch.tip.prefix(7)) · archives \(Self.title(of: item.tasks, folder: nil))"
+                    item.detail = "At \(branch.tip.prefix(7)) · archives “\(Self.title(of: item.tasks, folder: nil))”"
                 }
             }
             if let folder = branch.checkedOutIn {

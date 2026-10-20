@@ -2,6 +2,10 @@ import Foundation
 import Git
 import Observation
 
+#if os(macOS)
+import UserShell
+#endif
+
 /// The app's entry point to git: one live `GitRepositoryModel` per working folder, shared by the
 /// inspector, the toolbar summary and sidebar badges so a folder is only watched and scanned once.
 @Observable

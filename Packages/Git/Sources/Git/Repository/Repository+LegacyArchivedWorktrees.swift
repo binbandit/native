@@ -40,8 +40,8 @@ extension Repository {
             consistent.append(candidate)
         }
 
-        let tiers = try await branchEvidence(
-            folderName: folderName, title: title, among: consistent)
+        let tiers = branchEvidence(
+            folderName: folderName, title: title, among: consistent, renames: try await branchRenames())
         // A commit only this branch is at: the task's own work. The checked-out branches count, so
         // a task that never committed (at its base's commit) isn't matched to some other branch.
         var byCheckpoint: [RemovedBranchCandidate] = []
@@ -71,18 +71,14 @@ extension Repository {
     /// folder is named after the provisional branch's code, which a branch renamed after its title
     /// keeps in its reflog, or after the branch, for a pull request's worktree), then by the task's
     /// title, which renamed it. Also used for worktrees removed outside Native.
+    /// `renames` is `branchRenames()`, read once for all the folders being tied.
     func branchEvidence(
-        folderName: String, title: String?, among candidates: [RemovedBranchCandidate]
-    ) async throws(GitError) -> [[RemovedBranchCandidate]] {
-        var byName: [RemovedBranchCandidate] = []
-        for candidate in candidates {
-            if Self.isNamed(candidate.name, after: folderName) {
-                byName.append(candidate)
-            } else if !candidate.isArchivedCopy,
-                try await renamedFrom(candidate.name).contains(where: { Self.isNamed($0, after: folderName) })
-            {
-                byName.append(candidate)
-            }
+        folderName: String, title: String?, among candidates: [RemovedBranchCandidate], renames: [String: Set<String>]
+    ) -> [[RemovedBranchCandidate]] {
+        let byName = candidates.filter { candidate in
+            Self.isNamed(candidate.name, after: folderName)
+                || (!candidate.isArchivedCopy
+                    && renames[candidate.name, default: []].contains { Self.isNamed($0, after: folderName) })
         }
         let titleSlug = title.map { Worktree.slug($0) }.flatMap { $0.isEmpty ? nil : $0 }
         let byTitle = candidates.filter { candidate in
@@ -153,13 +149,31 @@ extension Repository {
             .split(separator: "\n").map(String.init)
     }
 
-    /// The names `branch` had before git renamed it, from its reflog.
-    private func renamedFrom(_ branch: String) async throws(GitError) -> [String] {
+    /// The names each branch had before git renamed it, from the branches' reflogs, read in one
+    /// pass: a renamed branch's reflog moves with it, so its rename entries name both.
+    func branchRenames() async throws(GitError) -> [String: Set<String>] {
         let output = try await run(
-            ["reflog", "show", "--format=%gs", "refs/heads/\(branch)", "--"], readOnly: true, acceptingStatus: [0, 128])
-        return output.text.split(separator: "\n").compactMap { line in
-            line.wholeMatch(of: /Branch: renamed refs\/heads\/(.+) to refs\/heads\/.+/).map { String($0.output.1) }
+            ["log", "--walk-reflogs", "--all", "--grep-reflog=Branch: renamed", "--format=%gs"], readOnly: true,
+            acceptingStatus: [0, 128])
+        var previous: [String: Set<String>] = [:]
+        for line in output.text.split(separator: "\n") {
+            guard let match = line.wholeMatch(of: /Branch: renamed refs\/heads\/(.+) to refs\/heads\/(.+)/) else {
+                continue
+            }
+            previous[String(match.output.2), default: []].insert(String(match.output.1))
         }
+        // Renamed more than once (provisional name, title, a fix): every earlier name counts.
+        var renames: [String: Set<String>] = [:]
+        for branch in previous.keys {
+            var names: Set<String> = []
+            var queue = Array(previous[branch, default: []])
+            while let name = queue.popLast() {
+                guard names.insert(name).inserted else { continue }
+                queue += previous[name, default: []]
+            }
+            renames[branch] = names
+        }
+        return renames
     }
 
     /// Whether a task worktree folder named `folderName` was made for `branch`: a provisional

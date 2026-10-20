@@ -20,6 +20,7 @@ extension Repository {
             if let branch = worktree.branch { recorded[Self.cleanupSpelling(of: worktree.path)] = branch }
         }
         let candidates = try await removedBranchCandidates()
+        let renames = try await branchRenames()
         let facts = Dictionary(try await localBranchFacts().map { ($0.name, $0) }) { first, _ in first }
 
         var ties: [Tie] = []
@@ -28,8 +29,8 @@ extension Repository {
                 ties.append(facts[branch] == nil ? .gone : .branch(branch))
                 continue
             }
-            let tiers = try await branchEvidence(
-                folderName: task.path.lastPathComponent, title: task.title, among: candidates)
+            let tiers = branchEvidence(
+                folderName: task.path.lastPathComponent, title: task.title, among: candidates, renames: renames)
             guard let matches = tiers.first(where: { !$0.isEmpty }) else {
                 ties.append(.gone)
                 continue
@@ -58,6 +59,18 @@ extension Repository {
             case .ambiguous(let names): .unknownBranch(names)
             }
         }
+    }
+
+    /// Where every branch, remote branch and copy of a deleted one points, as one string: what
+    /// `removedWorktreeVerdicts` depends on locally, so a caller can keep its verdicts until it
+    /// changes. One `for-each-ref`.
+    public func refsFingerprint() async throws(GitError) -> String {
+        try await run(
+            [
+                "for-each-ref", "--format=%(refname)%00%(objectname)", "refs/heads", "refs/remotes",
+                "refs/native-archived-branches",
+            ], readOnly: true
+        ).text
     }
 
     /// Each branch judged once, asking about merged pull requests for the pushed ones, as the plan does.

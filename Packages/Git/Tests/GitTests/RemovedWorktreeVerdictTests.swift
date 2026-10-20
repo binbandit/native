@@ -70,6 +70,20 @@ struct RemovedWorktreeVerdictTests {
         #expect(try await task.verdict() == .unmerged(branch: "feature/search", why: .unmergedCommits(1)))
     }
 
+    @Test func aBranchRenamedTwiceIsStillTiedToItsFolder() async throws {
+        let task = try await RemovedTask.make()
+        defer { task.test.remove() }
+        try await task.test.git("branch", "--move", task.branch, "me/fix-login")
+        try await task.test.git("branch", "--move", "me/fix-login", "me/fix-login-flow")
+        try await task.commit()
+        try await task.removeWithGit()
+        // Something else the title could mean, which the reflog's evidence outranks.
+        try await task.test.git("branch", "me/login")
+
+        #expect(
+            try await task.verdict(title: "Login") == .unmerged(branch: "me/fix-login-flow", why: .unmergedCommits(1)))
+    }
+
     @Test func twoBranchesTheTitleCouldMeanAreLeftToTheUser() async throws {
         let task = try await RemovedTask.make(folder: "q1w2e", branch: "a/search")
         defer { task.test.remove() }
