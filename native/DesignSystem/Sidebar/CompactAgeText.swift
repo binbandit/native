@@ -10,24 +10,14 @@ public struct CompactAgeText: View {
     }
 
     public var body: some View {
-        if LaunchExperiment.noAgeTimeline {
-            label(now: .now)
-        } else {
-            TimelineView(.everyMinute) { context in
-                label(now: context.date)
-            }
+        TimelineView(.everyMinute) { context in
+            Text(DSFormat.compactAge(date, now: context.date))
+                .font(.dsMicro)
+                .monospacedDigit()
+                .foregroundStyle(.dsTextTertiary)
+                .padding(.horizontal, DS.Space.xs)
+                .accessibilityLabel(date.formatted(.relative(presentation: .named)))
         }
-    }
-
-    private func label(now: Date) -> some View {
-        Text(DSFormat.compactAge(date, now: now))
-            .font(.dsMicro)
-            .monospacedDigit()
-            .foregroundStyle(.dsTextTertiary)
-            .padding(.horizontal, DS.Space.xs)
-            .lxUnless(LaunchExperiment.noAgeA11y) {
-                $0.accessibilityLabel(date.formatted(.relative(presentation: .named)))
-            }
     }
 }
 

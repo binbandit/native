@@ -94,95 +94,80 @@ public struct TaskRow<Leading: View, Accessory: View>: View {
     }
 
     public var body: some View {
-        let _ = LaunchExperiment.logChanges ? Self._logChanges() : ()
-        if LaunchExperiment.rowNoButton { rowContent } else { realBody }
-    }
-
-    private var realBody: some View {
         Button(action: action) {
-            rowContent
-        }
-        .buttonStyle(SidebarRowButtonStyle())
-        .lxUnless(LaunchExperiment.rowNoA11y) {
-            $0.accessibilityLabel(title)
-                .accessibilityValue(accessibilityValue)
-                .accessibilityAddTraits(isSelected ? .isSelected : [])
-                .accessibilityActions {
-                    if let onArchive {
-                        Button("Archive", action: onArchive)
-                    }
-                }
-        }
-        .lxUnless(LaunchExperiment.rowNoChrome) {
-            $0.overlay(alignment: .topTrailing) {
-                if let onArchive, isArchiveShown {
-                    // Over the age's slot, which is at least this wide, at the row's trailing inset.
-                    Button("Archive", systemImage: "archivebox", action: onArchive)
-                        .labelStyle(.iconOnly)
-                        .buttonStyle(.plain)
-                        .font(.system(size: 11))
-                        .foregroundStyle(.dsTextSecondary)
-                        .frame(width: TaskRowMetrics.archiveSide, height: TaskRowMetrics.archiveSide)
-                        .contentShape(.rect)
-                        .dsHitTarget(TaskRowMetrics.archiveSide)
-                        .padding(.top, DS.Space.md)
-                        .padding(.trailing, DS.Space.sm)
-                        .help("Archive Task")
-                }
-            }
-            .background {
-                RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
-                    .fill(isSelected ? .dsSelected : isHovered ? .dsHover : .clear)
-            }
-        }
-        .lxUnless(LaunchExperiment.noHover) { $0.trackHover($isHovered) }
-    }
-
-    private var rowContent: some View {
-        HStack(alignment: .top, spacing: DS.Space.sm) {
-            if !LaunchExperiment.rowNoLeading {
+            HStack(alignment: .top, spacing: DS.Space.sm) {
                 Group {
                     if showsLeading {
                         leading
                             .font(.system(size: 11, weight: .regular))
                             .foregroundStyle(.dsTextTertiary)
                             .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
-                            .lxUnless(LaunchExperiment.noIconHelp) { $0.help(status.label) }
+                            .help(status.label)
                     } else {
                         StatusIndicator(status: status)
                     }
                 }
                 .padding(.top, DS.Space.xxs)
                 .padding(.trailing, DS.Space.xxs)
+
+                VStack(alignment: .leading, spacing: DS.Space.xxs) {
+                    HStack(spacing: DS.Space.sm) {
+                        // Titles often carry inline code ("Add `maxLength` option").
+                        DSInlineCodeText(title)
+                            .font(isUnread ? .dsCalloutSemibold : .dsCalloutBook)
+                            .foregroundStyle(isUnread || isSelected ? .dsTextPrimary : .dsTextSecondary)
+                            .lineLimit(1)
+                        Spacer(minLength: 0)
+                        trailing
+                    }
+                    .frame(height: 20)
+
+                    if let subtitle {
+                        Text(subtitle)
+                            .font(.dsCaption)
+                            .foregroundStyle(.dsTextTertiary)
+                            .lineLimit(1)
+                            .truncationMode(.middle)
+                            .padding(.bottom, DS.Space.xxs)
+                    }
+                }
             }
-
-            VStack(alignment: .leading, spacing: DS.Space.xxs) {
-                HStack(spacing: DS.Space.sm) {
-                    // Titles often carry inline code ("Add `maxLength` option").
-                    Group { if LaunchExperiment.noInlineCode { Text(title) } else { DSInlineCodeText(title) } }
-                        .font(isUnread ? .dsCalloutSemibold : .dsCalloutBook)
-                        .foregroundStyle(isUnread || isSelected ? .dsTextPrimary : .dsTextSecondary)
-                        .lineLimit(1)
-                    Spacer(minLength: 0)
-                    if !LaunchExperiment.rowNoTrailing { trailing }
-                }
-                .frame(height: 20)
-
-                if let subtitle {
-                    Text(subtitle)
-                        .font(.dsCaption)
-                        .foregroundStyle(.dsTextTertiary)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
-                        .padding(.bottom, DS.Space.xxs)
-                }
+            .padding(.vertical, DS.Space.md)
+            .padding(.leading, indent.leading)
+            .padding(.trailing, DS.Space.sm)
+            .frame(minHeight: DS.Size.rowMinHeight)
+            .contentShape(.rect)
+        }
+        .buttonStyle(SidebarRowButtonStyle())
+        .accessibilityLabel(title)
+        .accessibilityValue(accessibilityValue)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
+        .accessibilityActions {
+            if let onArchive {
+                Button("Archive", action: onArchive)
             }
         }
-        .padding(.vertical, DS.Space.md)
-        .padding(.leading, indent.leading)
-        .padding(.trailing, DS.Space.sm)
-        .frame(minHeight: DS.Size.rowMinHeight)
-        .contentShape(.rect)
+        .overlay(alignment: .topTrailing) {
+            if let onArchive, isArchiveShown {
+                // Over the age's slot, which is at least this wide, at the row's trailing inset.
+                Button("Archive", systemImage: "archivebox", action: onArchive)
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(.plain)
+                    .font(.system(size: 11))
+                    .foregroundStyle(.dsTextSecondary)
+                    .frame(width: TaskRowMetrics.archiveSide, height: TaskRowMetrics.archiveSide)
+                    .contentShape(.rect)
+                    .dsHitTarget(TaskRowMetrics.archiveSide)
+                    .padding(.top, DS.Space.md)
+                    .padding(.trailing, DS.Space.sm)
+                    .help("Archive Task")
+            }
+        }
+        .background {
+            RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
+                .fill(isSelected ? .dsSelected : isHovered ? .dsHover : .clear)
+        }
+        .trackHover($isHovered)
     }
 
     private var trailing: some View {
