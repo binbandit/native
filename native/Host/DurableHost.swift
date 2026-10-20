@@ -56,7 +56,7 @@ final class DurableHost {
     /// The host process (its epoch) already asked to restart onto this app's binary.
     @ObservationIgnored var restartRequested: UUID?
     /// Set by Quit Native and Stop Agents, so quitting stops the host too.
-    @ObservationIgnored private var stopsAgentsOnQuit = false
+    @ObservationIgnored var stopsAgentsOnQuit = false
 
     static let logger = Logger(subsystem: "Native", category: "DurableHost")
     private static let dismissedFallbackKey = "NativeHostFallbackNoticeDismissed"
@@ -156,11 +156,21 @@ final class DurableHost {
     }
 
     /// Connects to this channel's socket and waits for the handshake, giving up (but leaving the
-    /// client trying) after `timeout`. Reuses the client across attempts.
+    /// client trying) after `timeout`. Reuses the client across attempts. A host from another
+    /// version counts as there: it's moved onto this app's binary as `HostVersionNotice` says,
+    /// never replaced or bypassed, since it may be running tasks.
     private func connect(within timeout: Duration) async -> NativeHostClient? {
         let client = self.client ?? makeClient()
         let connected = await withTaskGroup(of: Bool.self) { group in
-            group.addTask { (try? await client.connected()) != nil }
+            group.addTask {
+                while !Task.isCancelled {
+                    switch await client.state {
+                    case .connected, .incompatible: return true
+                    case .connecting, .reconnecting, .unreachable: try? await Task.sleep(for: .milliseconds(50))
+                    }
+                }
+                return false
+            }
             group.addTask {
                 try? await Task.sleep(for: timeout)
                 return false
@@ -365,32 +375,6 @@ final class DurableHost {
     private func rememberDismissedFallback(_ fallback: HostFallback?) {
         dismissedFallback = fallback?.noticeKey
         UserDefaults.standard.set(dismissedFallback, forKey: Self.dismissedFallbackKey)
-    }
-
-    // MARK: - Quitting
-
-    /// Quit Native and Stop Agents: the next quit stops the host and its agents too.
-    func stopAgentsOnQuit() {
-        stopsAgentsOnQuit = true
-    }
-
-    /// Whether quitting now should stop the host first: asked for, or background agents were turned
-    /// off while this run had them on (the setting says agents stop when Native quits).
-    var quitStopsHost: Bool {
-        guard placement.usesHost, client != nil else { return false }
-        return stopsAgentsOnQuit || (placement == .background && !HostSessions.isEnabled)
-    }
-
-    /// Asks the host to end running turns as stopped, stop its agents and exit, waiting at most a
-    /// few seconds so quitting never hangs on it.
-    func stopHostForQuit() async {
-        guard let client else { return }
-        await withTaskGroup(of: Void.self) { group in
-            group.addTask { try? await client.shutdownHost(stopAgents: true) }
-            group.addTask { try? await Task.sleep(for: .seconds(3)) }
-            _ = await group.next()
-            group.cancelAll()
-        }
     }
 
     // MARK: - Sessions

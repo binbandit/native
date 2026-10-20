@@ -223,6 +223,7 @@ keyboard.
 | | The current project's settings (Settings ▸ Projects; also in the project's menu in the sidebar) | File | `project.settings` |
 | | Clean up the current project's merged task worktrees, branches and stale worktree records, after a review (also "Clean Up Merged…" in the project's menu in the sidebar) | File | `git.cleanUpMerged` |
 | ⇧⌘O | Open the task's folder in the default app (Open In) | Session | `session.openInDefaultApp` |
+| ⌥⌘P | Open the task's pull request, where clicking one goes (Settings ▸ GitHub); listed while its branch has one | Session | `pullRequest.openForTask` |
 | ⌘L | Focus the composer | Session | `composer.focus` |
 | ⌘[ / ⌘] | Back / forward through the sessions you've viewed | Go | `go.back` / `go.forward` |
 | ⌘1 – ⌘9 | Go to the Nth session in the sidebar | Session | `session.select1` – `session.select9` |

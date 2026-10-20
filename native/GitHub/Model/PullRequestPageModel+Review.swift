@@ -142,11 +142,13 @@ extension PullRequestPageModel {
         await mergeWrite("Auto-merge off") { cli, page in try await cli.disableAutoMerge(page) }
     }
 
-    /// Every merge write: one at a time, then the list's row says what happened and refreshes.
+    /// Every merge write: one at a time, then the list's row says what happened, and the list and
+    /// any task badge showing it refresh.
     private func mergeWrite(_ done: String, _ body: (GitHubCLI, PullRequestPage) async throws -> Void) async -> Bool {
         let succeeded = await write("merge", body)
         if succeeded, let gitHub {
             gitHub.report(.done(done), for: reference.url)
+            gitHub.reloadBranches(showing: reference.url)
             Task { await gitHub.refresh() }
         }
         return succeeded
@@ -165,6 +167,7 @@ extension PullRequestPageModel {
             }
         }
         guard done, let gitHub else { return }
+        gitHub.reloadBranches(showing: reference.url)
         Task { await gitHub.refresh() }
         undo = UndoToastItem(open ? "Reopened \(reference.display)" : "Closed \(reference.display)") { [weak self] in
             Task { await self?.setOpen(!open) }

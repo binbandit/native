@@ -10,7 +10,9 @@ enum AppRelaunch {
         configuration.arguments = Array(ProcessInfo.processInfo.arguments.dropFirst())
         NSWorkspace.shared.openApplication(at: Bundle.main.bundleURL, configuration: configuration) { _, error in
             guard error == nil else { return }
-            Task { @MainActor in NSApplication.shared.terminate(nil) }
+            // A plain main-queue block, not a main-actor task: quitting can wait in a modal run loop
+            // for work that needs the main actor.
+            DispatchQueue.main.async { NSApplication.shared.terminate(nil) }
         }
     }
 }

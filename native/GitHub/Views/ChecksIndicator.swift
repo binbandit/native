@@ -5,6 +5,8 @@ import SwiftUI
 /// passing, an x when failing, a dot while pending. Hover shows the counts.
 struct ChecksIndicator: View {
     let checks: CheckSummary
+    /// Off where a hover card says more (a task's badge), so the two don't stack.
+    var hasTooltip = true
 
     var body: some View {
         Group {
@@ -22,7 +24,7 @@ struct ChecksIndicator: View {
         }
         .foregroundStyle(tint)
         .frame(width: DS.Size.navIcon, height: DS.Size.navIcon)
-        .help(Self.summary(checks))
+        .help(hasTooltip ? Self.summary(checks) : "")
         .accessibilityElement()
         .accessibilityLabel(Self.summary(checks))
     }

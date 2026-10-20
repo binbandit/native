@@ -8,10 +8,15 @@ final class HostQuitDelegate: NSObject, NSApplicationDelegate {
     weak var host: DurableHost?
 
     func applicationShouldTerminate(_ sender: NSApplication) -> NSApplication.TerminateReply {
-        guard let host, host.quitStopsHost else { return .terminateNow }
-        Task {
-            await host.stopHostForQuit()
-            NSApplication.shared.reply(toApplicationShouldTerminate: true)
+        guard let client = host?.hostToStopOnQuit else { return .terminateNow }
+        // AppKit holds the quit in a modal run loop until the reply. The work runs off the main
+        // actor, which may be busy with the very call that asked to quit, and the reply is
+        // scheduled in every run loop mode, the modal one included.
+        Task.detached {
+            await DurableHost.stop(client, within: .seconds(3))
+            RunLoop.main.perform(inModes: [.common]) {
+                MainActor.assumeIsolated { NSApplication.shared.reply(toApplicationShouldTerminate: true) }
+            }
         }
         return .terminateLater
     }

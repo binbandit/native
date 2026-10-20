@@ -65,7 +65,7 @@ struct BackgroundSettingsPage: View {
                     description: Text(
                         "Agents run in Native's background host, listed as Native under Login Items in System Settings. Turn this off to run them inside Native, so quitting stops them."
                     ),
-                    detail: host?.placement.outlivesApp == true ? Text(quitAndStopHint) : nil
+                    detail: host?.placement.outlivesApp == true && keepsRunning ? Text(quitAndStopHint) : nil
                 ) {
                     SettingsSwitch("Keep agents running when Native quits", isOn: $keepsRunning)
                 }

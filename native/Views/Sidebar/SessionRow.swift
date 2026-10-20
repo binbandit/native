@@ -4,12 +4,14 @@ import SwiftUI
 /// A session in the sidebar: the agent's icon or the session's status,
 /// its title and age, and `accessory` (pull request, branch state and context usage, as the app
 /// wires it) at the trailing edge. One line always; what a waiting session asks goes in its tooltip
-/// and VoiceOver label. Every action is in the context menu, hover shows Archive, and on touch the
-/// row swipes. Double-click, Return or the menu renames it in place.
+/// and VoiceOver label. Every action is in the context menu (with a "Pull Request" submenu when its
+/// branch has one), hover shows Archive in place of the age, and on touch the row swipes.
+/// Double-click, Return or the menu renames it in place.
 struct SessionRow<Accessory: View>: View {
     @Environment(AppModel.self) private var model
     @Environment(\.undoManager) private var undoManager
     @Environment(\.sidebarSelection) private var picking
+    @Environment(\.sidebarTaskInsights) private var insights
     let summary: SessionSummary
     /// Grouped under a project header, or flush in the Pinned section.
     var indent: TaskRowIndent = .grouped
@@ -92,6 +94,11 @@ struct SessionRow<Accessory: View>: View {
                 Button("Archive", action: archive)
                 Button("Move Up") { model.move(target, .up) }
                 Button("Move Down") { model.move(target, .down) }
+                if let pullRequest = insights.pullRequestMenu(summary) {
+                    ForEach(pullRequest.items) { item in
+                        Button(item.spokenTitle, action: item.perform)
+                    }
+                }
             }
         }
     }
@@ -109,6 +116,14 @@ struct SessionRow<Accessory: View>: View {
         Button("Rename…", action: rename)
         Button(isUnread ? "Mark as Read" : "Mark as Unread", action: toggleUnread)
         Button(isPinned ? "Unpin" : "Pin", action: togglePinned)
+        if let pullRequest = insights.pullRequestMenu(summary) {
+            Divider()
+            Menu(pullRequest.title) {
+                ForEach(pullRequest.items) { item in
+                    Button(item.title, action: item.perform)
+                }
+            }
+        }
         Divider()
         Button("Move Up") { model.move(target, .up) }
             .disabled(!canMoveUp)

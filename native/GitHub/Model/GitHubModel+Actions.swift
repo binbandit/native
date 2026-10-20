@@ -22,6 +22,16 @@ extension GitHubModel {
         open(reference, tab: PullRequestPageModel.Tab(url: url))
     }
 
+    /// Opens the pull request's page in Native whatever the setting says, for the places that
+    /// offer Native and GitHub side by side (a task's hover card).
+    func openInNative(_ pullRequest: PullRequestSummary) {
+        guard let reference = PullRequestReference(pullRequest) else {
+            openInBrowser(pullRequest)
+            return
+        }
+        open(reference)
+    }
+
     /// - Parameter tab: The tab to show, as GitHub links say with `/files` and `/checks`.
     func open(_ reference: PullRequestReference, tab: PullRequestPageModel.Tab? = nil) {
         if let tab { pageModel(for: reference).tab = tab }

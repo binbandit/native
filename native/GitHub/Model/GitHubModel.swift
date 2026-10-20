@@ -54,7 +54,12 @@ final class GitHubModel {
         didSet { UserDefaults.standard.set(pullRequestOpening.rawValue, forKey: GitHubPullRequestOpening.defaultsKey) }
     }
     /// The pull request page on screen, inside the Pull Requests pane.
-    var presentedPullRequest: PullRequestReference?
+    var presentedPullRequest: PullRequestReference? {
+        didSet { if presentedPullRequest != nil { pageRequests += 1 } }
+    }
+    /// Counts requests to show a page, so the window brings the Pull Requests pane forward even
+    /// when the page asked for is the one it left there (the user went to a task since).
+    private(set) var pageRequests = 0
     /// Pages opened this run, so going back and forth doesn't reload them.
     @ObservationIgnored var pages: [PullRequestReference: PullRequestPageModel] = [:]
     /// Starts a task about lines of a pull request, or sends them to the task on screen. Set by the

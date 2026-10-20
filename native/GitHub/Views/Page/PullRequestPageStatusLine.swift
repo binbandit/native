@@ -43,7 +43,7 @@ struct PullRequestPageStatusLine: View {
                 Text(review.label)
                     .foregroundStyle(review.tint)
             }
-            if !compact, let merge = mergeText {
+            if !compact, let merge = page.mergeVerdict {
                 Text(merge.label)
                     .foregroundStyle(merge.tint)
                     .lineLimit(1)
@@ -78,22 +78,6 @@ struct PullRequestPageStatusLine: View {
         case .changesRequested: ("Changes requested", .dsDanger)
         case .reviewRequired: ("Review required", .dsTextTertiary)
         case .other, nil: nil
-        }
-    }
-
-    /// GitHub's merge verdict, in its own words where it has them.
-    private var mergeText: (label: String, tint: Color)? {
-        guard page.isOpen, !page.isDraft else { return nil }
-        if page.mergeable == .conflicting { return ("Has conflicts", .dsDanger) }
-        // A queue or auto-merge already arranged says where it stands, not whether it could merge.
-        if let state = page.mergeState { return (state.summary, .dsInfo) }
-        return switch page.mergeStatus {
-        case .clean, .hasHooks: (page.isMergeQueueEnabled ? "Ready for the merge queue" : "Ready to merge", .dsSuccess)
-        case .unstable: ("Mergeable, some checks failed", .dsWarning)
-        case .blocked: ("Blocked by branch protection", .dsWarning)
-        case .behind: ("Behind \(page.baseRefName)", .dsWarning)
-        case .dirty: ("Has conflicts", .dsDanger)
-        case .draft, .unknown, .other, nil: nil
         }
     }
 }

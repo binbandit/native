@@ -20,6 +20,8 @@ enum CommandsWiring {
         let gitCleanup: GitCleanupCenter
         let projectActions: ProjectActionRunner
         let durableHost: DurableHost
+        let git: GitStore
+        let gitHub: GitHubModel
     }
 
     static func connect(_ registry: CommandRegistry, palette: CommandPalette, features: Features) {
@@ -39,6 +41,12 @@ enum CommandsWiring {
             }
         ])
         registry.register(NativeCommand.taskActions(model: model))
+        let taskPullRequests = AppTaskPullRequests(model: model, git: features.git, gitHub: features.gitHub)
+        registry.register([
+            .taskPullRequest(features.gitHub) { context in
+                context.session.flatMap { taskPullRequests.pullRequest(for: $0.key) }
+            }
+        ])
         registry.register(NativeCommand.sidebarSelection(model: model))
         registry.register(NativeCommand.navigation(model: model, settings: settings))
         registry.register([.searchShow])

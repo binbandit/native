@@ -115,7 +115,7 @@ struct NativeApp: App {
                 model: model, settings: settings, terminals: terminals, keepAwake: keepAwake, statusBar: statusBar,
                 celebrations: celebrations, updates: updates, whatsNew: whatsNew, appearance: appearance,
                 pullRequestTasks: pullRequestTasks, shortcutsHelp: shortcutsHelp, gitCleanup: gitCleanup,
-                projectActions: projectActions, durableHost: durableHost))
+                projectActions: projectActions, durableHost: durableHost, git: git, gitHub: gitHub))
     }
 
     var body: some Scene {
@@ -148,6 +148,7 @@ struct NativeApp: App {
                 .environment(keepAwake)
                 .environment(statusBar)
                 .createPullRequestSheet(gitHub)
+                .pullRequestMergeSheet(gitHub)
                 .keyboardShortcutsSheet(shortcutsHelp)
                 .pullRequestTaskSheet(pullRequestTasks, app: model, gitHub: gitHub)
                 .projectActionsPresentation(projectActions)
@@ -348,6 +349,7 @@ private struct SessionCommands: Commands {
                     OpenInLocation(folder: $0.cwd, host: model.currentProject?.host ?? .local)
                 },
                 commands: commands)
+            CommandMenuItem(.pullRequestOpenForTask, in: commands)
 
             Divider()
 

@@ -15,6 +15,15 @@ extension GitHubModel {
         Task { await page.load() }
     }
 
+    /// Whether to offer Merge… on a pull request: it's open and ready, and the user may merge it as
+    /// far as Native knows. Its page says once loaded; until then the merge sheet checks, and says
+    /// why when they can't.
+    func offersMerge(_ pullRequest: PullRequestSummary) -> Bool {
+        guard pullRequest.state == .open, !pullRequest.isDraft else { return false }
+        guard let reference = PullRequestReference(pullRequest), let page = pages[reference]?.page else { return true }
+        return page.isOpen && !page.isDraft && page.viewerCanMerge
+    }
+
     /// Closes or reopens from the list. Either can be undone from the toast, and the list refreshes.
     func setOpen(_ open: Bool, _ pullRequest: PullRequestSummary) async {
         let url = pullRequest.url
@@ -79,11 +88,13 @@ extension GitHubModel {
         }
     }
 
-    /// Brings the list, and the page if it's been opened, up to date with a change made from here.
+    /// Brings the list, the page if it's been opened, and any task badge showing the pull request
+    /// up to date with a change made from here.
     private func reloadAfterWrite(_ pullRequest: PullRequestSummary) async {
         if let reference = PullRequestReference(pullRequest), let page = pages[reference] {
             Task { await page.load() }
         }
+        reloadBranches(showing: pullRequest.url)
         await refresh()
     }
 }

@@ -42,9 +42,10 @@ struct RootView: View {
             // checker already finds heavy.
             content
                 .transcriptSearchPanel()
-                // Opening a pull request (from a badge, a link or the list) shows its page there.
-                .onChange(of: gitHub.presentedPullRequest, initial: true) { _, reference in
-                    if reference != nil { showsPullRequests = true }
+                // Opening a pull request (from a badge, a link or the list) shows its page there,
+                // even the one the pane already held while a task had the column.
+                .onChange(of: gitHub.pageRequests, initial: true) {
+                    if gitHub.presentedPullRequest != nil { showsPullRequests = true }
                 }
                 // Over the content, so the toast clears the status bar.
                 .undoToast($undoToast)

@@ -22,6 +22,9 @@ extension View {
 #if os(macOS)
 private struct DSToolbarBand: ViewModifier {
     let showsDivider: Bool
+    /// Where the page starts in the window, under the toolbar (and any bar under it): the band
+    /// reaches from the top of the window down to there.
+    @State private var pageTop: CGFloat = 0
 
     func body(content: Content) -> some View {
         content
@@ -29,10 +32,15 @@ private struct DSToolbarBand: ViewModifier {
             // solid, in the system's colors, and the edge effect blurs rows into the title bar.
             .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
             .scrollEdgeEffectHidden(true, for: .top)
+            .onGeometryChange(for: CGFloat.self) { proxy in
+                proxy.frame(in: .global).minY
+            } action: { top in
+                pageTop = top
+            }
             .overlay {
-                // Laid out over the safe area too, where the proxy says how far down it reaches.
+                // Reaching up over the safe area, which a proxy there no longer reports as an inset.
                 GeometryReader { proxy in
-                    let height = proxy.safeAreaInsets.top
+                    let height = max(0, pageTop - proxy.frame(in: .global).minY)
                     Rectangle()
                         .fill(.dsBackground)
                         .frame(height: height)

@@ -12,6 +12,7 @@ public enum DefaultShortcuts {
         "expedition.new": "⌥⌘E",
         "project.open": "⌘O",
         "session.openInDefaultApp": "⇧⌘O",
+        "pullRequest.openForTask": "⌥⌘P",
         "composer.focus": "⌘L",
         "go.back": "⌘[",
         "go.forward": "⌘]",

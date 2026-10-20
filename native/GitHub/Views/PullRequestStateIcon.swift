@@ -7,13 +7,15 @@ struct PullRequestStateIcon: View {
     let state: PullRequest.State
     let isDraft: Bool
     var size: CGFloat = DS.Size.statusGlyph
+    /// Off where a hover card says more (a task's badge), so the two don't stack.
+    var hasTooltip = true
 
     var body: some View {
         PullRequestGlyph(kind: kind)
             // Lucide's 2-point stroke on its 24-point grid.
             .stroke(tint, style: StrokeStyle(lineWidth: size / 12, lineCap: .round, lineJoin: .round))
             .frame(width: size, height: size)
-            .help(label)
+            .help(hasTooltip ? label : "")
             .accessibilityElement()
             .accessibilityLabel(label)
     }
@@ -26,7 +28,7 @@ struct PullRequestStateIcon: View {
         }
     }
 
-    private var tint: Color {
+    var tint: Color {
         switch state {
         case .merged: .dsMerged
         case .closed: .dsDanger

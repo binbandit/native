@@ -54,11 +54,12 @@ extension SessionLauncher {
         _ client: NativeHostClient, _ key: SessionKey, cwd: URL, title: String?, on runtime: AgentRuntime,
         origin: SessionModel.Origin, parent: SessionModel?
     ) async throws -> SessionModel {
-        let id = HostSessionID()
+        // A session the host already has keeps its id and the servers it was first opened with, so
+        // plugins key what they hand the agent by that id: it's the one the agent's servers know.
+        let id = await openHostSessionID(of: key, on: client) ?? HostSessionID()
         let context = SessionContext(
             clientID: id.rawValue, agent: runtime.agent.id, agentName: runtime.agent.displayName, sessionID: key.id,
             cwd: cwd, title: title, parentID: parent?.id)
-        // A session the host already has keeps its own id, and the servers it was opened with.
         let summary = try await client.openSession(
             OpenSessionParams(
                 sessionID: id, agentID: runtime.agent.id.rawValue, agentSessionID: key.id, cwd: cwd.folderPath,
@@ -72,6 +73,18 @@ extension SessionLauncher {
         }
         store.register(session)
         return session
+    }
+
+    /// The id of the host session holding `key`, if the host has one open: from what it last said,
+    /// or by asking.
+    private func openHostSessionID(of key: SessionKey, on client: NativeHostClient) async -> HostSessionID? {
+        func holding(_ summary: HostSessionSummary) -> Bool {
+            summary.agentID == key.agent.rawValue && summary.agentSessionID == key.id
+        }
+        if let summary = store.hostSummaries.values.first(where: holding) {
+            return summary.id
+        }
+        return (try? await client.sessions())?.first(where: holding)?.id
     }
 
     /// Plugins' MCP servers for the session, as the JSON the host hands the agent.

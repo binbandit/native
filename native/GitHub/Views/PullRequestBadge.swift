@@ -1,56 +1,22 @@
 import GitHub
 import SwiftUI
 
-/// A pull request at a glance, for a task: its state and checks. `.compact` fits a sidebar row's
-/// trailing edge; `.regular` adds the number, for the session header, and its checks glyph opens
-/// the failing check. Clicking the rest opens the pull request, in Native or on GitHub as Settings say.
+/// A pull request at a glance, for a session's header: its state, number and checks, whose glyph
+/// opens the failing check. Clicking the rest opens the pull request, in Native or on GitHub as
+/// Settings say. A sidebar row has its own, smaller badge (`TaskPullRequestBadge`).
 struct PullRequestBadge: View {
-    enum Style {
-        case compact
-        case regular
-    }
-
     let pullRequest: PullRequestSummary
-    var style: Style = .regular
 
     @Environment(GitHubModel.self) private var model
     @State private var isHovered = false
 
     var body: some View {
-        Group {
-            switch style {
-            case .compact: compact
-            case .regular: regular
-            }
-        }
-        .contextMenu { PullRequestActionsMenu(pullRequest: pullRequest) }
+        regular
+            .contextMenu { PullRequestActionsMenu(pullRequest: pullRequest) }
     }
 
     private var checks: CheckSummary? {
         pullRequest.state == .open ? pullRequest.checks : nil
-    }
-
-    private var compact: some View {
-        Button {
-            model.open(pullRequest)
-        } label: {
-            HStack(spacing: DS.Space.xxs) {
-                PullRequestStateIcon(state: pullRequest.state, isDraft: pullRequest.isDraft, size: DS.Size.navIcon)
-                if let checks {
-                    ChecksIndicator(checks: checks)
-                }
-            }
-            .padding(.horizontal, DS.Space.xxs)
-            .frame(height: DS.Size.rowLeading)
-            .background(
-                isHovered ? .dsHover : .clear, in: RoundedRectangle(cornerRadius: DS.Radius.control, style: .continuous)
-            )
-            .contentShape(.rect)
-        }
-        .buttonStyle(.plain)
-        .trackHover($isHovered)
-        .help(summary)
-        .accessibilityLabel(summary)
     }
 
     private var regular: some View {

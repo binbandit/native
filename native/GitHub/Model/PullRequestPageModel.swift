@@ -114,12 +114,15 @@ final class PullRequestPageModel {
 
     // MARK: - Loading
 
-    func loadIfStale() async {
-        if isStale { await load() }
+    func loadIfStale(prefetchingPatches: Bool = true) async {
+        if isStale { await load(prefetchingPatches: prefetchingPatches) }
     }
 
     /// Loads the page in one query, keeping what's shown on failure.
-    func load() async {
+    /// - Parameter prefetchingPatches: Also fetches the first hundred diffs, so Files Changed opens
+    ///   with them ready. Off for a glance (a task's hover card), which only needs the summary;
+    ///   the tab fetches them when it shows.
+    func load(prefetchingPatches: Bool = true) async {
         guard !isLoading, let gitHub else { return }
         isLoading = true
         defer { isLoading = false }
@@ -127,8 +130,7 @@ final class PullRequestPageModel {
             let page = try await gitHub.cli().pullRequestPage(reference)
             apply(page)
             loadError = nil
-            // The first hundred diffs load now, so Files Changed opens with them ready.
-            if patchPagesLoaded == 0 { Task { await loadNextPatchPage() } }
+            if prefetchingPatches, patchPagesLoaded == 0 { Task { await loadNextPatchPage() } }
         } catch {
             loadError = error
         }

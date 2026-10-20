@@ -45,14 +45,8 @@ struct PullRequestsView: View {
         .onAppear { model.isWatching = true }
         .onDisappear { model.isWatching = false }
         .task { await model.refreshIfDue() }
-        // Merging from a row: the page's own sheet, over the list.
-        .sheet(
-            isPresented: Binding(get: { model.mergeRequest != nil }, set: { if !$0 { model.mergeRequest = nil } })
-        ) {
-            if let reference = model.mergeRequest {
-                MergePullRequestSheet(model: model.pageModel(for: reference))
-            }
-        }
+        // Merging from a row opens the page's own sheet, which the window presents
+        // (`pullRequestMergeSheet`).
         .undoToast($model.undo)
     }
 
