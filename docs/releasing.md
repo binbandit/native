@@ -338,8 +338,8 @@ or four highlights per release; more page.
   highlights any time; Settings ▸ Updates ▸ Show What's New turns the automatic sheet off. It links
   to the release notes.
 - The content model is Foundation-only, so the companion can show the same entries.
-- Try it: launch with `-whatsNewVersionOverride 0.3.0 -whatsNew.lastSeenVersion 0.1.0` (an update
-  from 0.1.0 to 0.3.0); without `lastSeenVersion` on a fresh instance it's a new install and stays
+- Try it: launch with `-whatsNewVersionOverride 0.2.0 -whatsNew.lastSeenVersion 0.1.0` (an update
+  from 0.1.0 to 0.2.0); without `lastSeenVersion` on a fresh instance it's a new install and stays
   quiet.
 
 ## CI

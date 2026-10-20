@@ -18,7 +18,7 @@ final class WhatsNewCenter {
 
     static let enabledKey = "whatsNew.enabled"
     static let lastSeenKey = "whatsNew.lastSeenVersion"
-    /// Simulates an update: launch with `-whatsNewVersionOverride 0.3.0 -whatsNew.lastSeenVersion 0.1.0`.
+    /// Simulates an update: launch with `-whatsNewVersionOverride 0.2.0 -whatsNew.lastSeenVersion 0.1.0`.
     static let versionOverrideKey = "whatsNewVersionOverride"
 
     init(
