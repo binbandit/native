@@ -35,13 +35,23 @@ extension DurableHost {
     /// restart onto this app's binary as soon as nothing is running.
     func refreshVersionStatus() {
         guard case .connected(let info) = connection else { return }
-        let appBuild = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0"
+        let labels = Self.versionLabels(host: info.hostInfo)
+        appVersionLabel = labels.app
         versionStatus = .compare(
-            appBuild: appBuild, hostBuild: info.hostInfo.build, hostVersion: info.hostInfo.version,
+            appBuild: AppVersion.current.build, hostBuild: info.hostInfo.build, hostVersion: labels.host,
             workingTasks: workingTasks
         )
         guard case .hostRestartPending = versionStatus, restartRequested != info.epoch, let client else { return }
         restartRequested = info.epoch
         Task { try? await client.shutdownHost(stopAgents: false) }
+    }
+
+    /// The app's and the host's versions as the notice names them: with their build numbers when
+    /// the versions read the same ("1.0 (build 512)"), as they do after a rebuild, so it never says
+    /// "updated to 1.0, still running on 1.0".
+    static func versionLabels(host: PeerInfo) -> (app: String, host: String) {
+        let app = AppVersion.current
+        guard host.version == app.version else { return (app.version, host.version) }
+        return ("\(app.version) (build \(app.build))", "\(host.version) (build \(host.build))")
     }
 }

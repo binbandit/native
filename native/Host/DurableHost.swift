@@ -34,8 +34,10 @@ final class DurableHost {
     private(set) var isUnavailable = false
     /// What agents did while Native was closed ("while you were away"), until dismissed.
     var away: AwaySummary?
-    /// How this app and its host compare, for `HostVersionNotice`.
+    /// How this app and its host compare, for `HostVersionNotice`, which names the two with
+    /// `appVersionLabel` and the status's host version.
     var versionStatus = HostVersionStatus.matched
+    var appVersionLabel = AppVersion.current.version
     /// The fallback notice the user dismissed, so it shows once (`HostFallback.noticeKey`).
     private(set) var dismissedFallback = UserDefaults.standard.string(forKey: DurableHost.dismissedFallbackKey)
     var errorMessage: String?
@@ -299,10 +301,12 @@ final class DurableHost {
             }
         case .incompatible(let protocolVersion, let host):
             // The client already asked an older host to restart once idle.
+            let labels = Self.versionLabels(host: host)
+            appVersionLabel = labels.app
             versionStatus =
                 protocolVersion < HostProtocol.version
-                ? .hostRestartPending(hostVersion: host.version, workingTasks: 0)
-                : .appOutdated(hostVersion: host.version)
+                ? .hostRestartPending(hostVersion: labels.host, workingTasks: 0)
+                : .appOutdated(hostVersion: labels.host)
         case .connecting:
             break
         }

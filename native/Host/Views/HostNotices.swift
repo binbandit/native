@@ -23,7 +23,7 @@ struct HostNotices: View {
                 if host.versionStatus != .matched {
                     HostVersionNotice(
                         status: host.versionStatus,
-                        appVersion: AppVersion.current.version,
+                        appVersion: host.appVersionLabel,
                         onRestartHost: { Task { await host.restartHost() } },
                         onCheckForUpdates: { updates?.checkForUpdates() }
                     )
