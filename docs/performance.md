@@ -61,8 +61,11 @@ different rows) and `--launch-only` (stop after the launches).
 | `sample <pid> 10` | Where the main thread spends its time | Quick; `xctrace` for more |
 | `xctrace record --template 'Time Profiler' --attach <pid> --time-limit 30s` | Time profile | Also `Allocations`, `Leaks`, `Animation Hitches`. Open the `.trace` in Instruments. Always give a time limit and stop it with Ctrl-C (SIGINT), never `kill -9` or `timeout`: its `DTServiceHub` keeps recording without it, tens of GB a minute into `$TMPDIR/instruments*.ktrace` (`lsof` shows who holds one). Delete traces once read |
 | `-framePacing YES` (`FramePacing`) | Once a second in the log (`Native`/`Frames`): the display's refreshes, how many the main thread missed, in how many stalls, and the longest | A display link on the main run loop, so it sees exactly the frames the app couldn't make. Costs nothing measurable and writes nothing, unlike an Animation Hitches recording, which here slowed a 12 s scroll to 46 s. Read it with `log stream --predicate 'subsystem == "Native" AND category == "Frames"'` |
-| `-nativeAutoScroll <seconds>` (`PlatformAutoScroll`, Debug, Mac) | Scrolls the window's tallest scroll view by itself once per refresh at 120 Hz, the way a trackpad moves it, starting that many seconds after a list asks for it (Files Changed does) | No accessibility client attached, which would make SwiftUI update its accessibility tree every frame; pair it with `-framePacing YES`. `-nativeAutoScrollSpeed` (points a second, 6,000), `-nativeAutoScrollDistance` (30,000), `-nativeAutoScrollLog <path>` (written when done) |
-| `scripts/perf/scroll.swift` | Scrolls the transcript from one pid: at a speed, or the whole length and back | Sets the scroll bar through Accessibility 120 times a second, so no events reach whatever is under the real cursor. Keeping SwiftUI's accessibility tree current costs the app 10–20% on top |
+| `-nativeAutoScroll <seconds>` (`PlatformAutoScroll`, Mac) | Scrolls the window's tallest scroll view by itself once per refresh at 120 Hz, starting that many seconds after a list asks for it (Files Changed does) | No accessibility client attached, which would make SwiftUI update its accessibility tree every frame; pair it with `-framePacing YES`. `-nativeAutoScrollSpeed` (points a second, 6,000), `-nativeAutoScrollDistance` (30,000; negative goes up), `-nativeAutoScrollWheel YES` (wheel events instead of moving the clip view), `-nativeAutoScrollLog <path>` (written when done). Right for top-anchored lists; a bottom-anchored SwiftUI scroll view (the transcript) slides its rows off the end under it and draws nothing new, so use the next row there |
+| `-nativeTranscriptAutoScroll <seconds>` (`TranscriptAutoScroll`) | Scrolls the opened session's transcript through SwiftUI itself, a prompt or reply at a time (`-nativeTranscriptAutoScrollRate`, a second; `-nativeTranscriptAutoScrollCount`), up and back | Each step shows a screenful of new rows, so it measures rows coming into view more than smooth scrolling |
+| `-nativeOpenSession <agent>/<session id>` (`PerformanceDriver`) | Selects a session at launch once its agent lists it; then `-nativeOpenSessionLog <path>` (written once loaded), `-nativeOpenSessionPrompt <text>` (sent as the user would), `-nativeRevealItemFromEnd <n>` (scrolls there as search does) | `-nativeWindowFrame "x y w h"` moves the window first. Every isolated instance opens in the same place, and a window other windows cover isn't drawn: its frame numbers measure nothing, and screenshots of it show what was drawn before. Check with `CGWindowListCopyWindowInfo` that nothing is above it |
+| Release builds with the drivers | `xcodebuild -configuration Release … NATIVE_BUNDLE_IDENTIFIER_SUFFIX=.dev.<name> 'SWIFT_ACTIVE_COMPILATION_CONDITIONS=$(inherited) NATIVE_PERF'` into your instance's folder | The drivers and `-framePacing` compile into Debug, and into Release only with `NATIVE_PERF` |
+| `scripts/perf/scroll.swift` | Scrolls the transcript from one pid: at a speed, or the whole length and back | Sets the scroll bar through Accessibility. Keeping SwiftUI's accessibility tree current costs the app 10–20% on top, and like `-nativeAutoScroll` it doesn't move a bottom-anchored transcript the way a trackpad does, so its transcript numbers below are withdrawn |
 | `scripts/perf/long-session-agent.py` | A fake agent with sessions of 20, 100 and 500 turns to reopen, and a long reply streamed on request | `--install <folder>` writes its plugin; launch with `-pluginsDirectory <folder>` |
 
 `powermetrics` needs sudo, so energy comes from `ri_energy_nj` (the same counter Activity Monitor's
@@ -422,6 +425,73 @@ views as they were with the model fixes below already in (scrolling runs none of
   and the loaders' pulsing dots up to 120 Hz, the night sky's twinkling and drifting at 30 Hz. The
   iPhone companion opts in to 120 Hz (`CADisableMinimumFrameDurationOnPhone`).
 
+#### 2026-10-20: measured again, without an accessibility client
+
+On a quieter Mac (load average 7 to 40, a few agents), with sessions in the background host, the
+instance's window moved where nothing covers it (`-nativeWindowFrame`), and no accessibility
+client. Debug and Release (`NATIVE_PERF`).
+
+- **The scroll numbers above don't hold.** Neither driver used for them moves the transcript the
+  way a trackpad does: setting its scroll bar through Accessibility (`scroll.swift`) leaves the
+  rows from before on screen, and moving its clip view or sending it wheel events
+  (`-nativeAutoScroll`) slides the rows off the end, either way, and draws nothing new. Its scroll
+  view is bottom-anchored with a bound `ScrollPosition`, and SwiftUI keeps the rows where it thinks
+  they are. A first pass this morning also measured a window other instances covered, which
+  isn't drawn at all: 99% of frames "drawn" at 12% of the main thread. The transcript is now
+  driven through SwiftUI itself (`-nativeTranscriptAutoScroll`), a prompt or reply at a time,
+  each step a screenful of new rows; that's harsher than reading speed, and the numbers below are
+  for it. Whether a real trackpad shows the transcript blank when scrolled fast is for a person to
+  check.
+- **Reopening a session replayed it on screen.** While history replayed, the transcript heard about
+  it every 100 ms, and "Loading session…" was an overlay with no background, so the transcript
+  showed through it growing and chasing its end: in screenshots every 100 ms of a 500-turn reopen,
+  9 frames in a row with 12–31% of the transcript changing. Now `SessionModel.isRestoringHistory`
+  (host: replaying, the mirror loading, or the host loading; in-app: until `session/load` answers)
+  keeps the loading state in place of the scroll view, and nobody hears about the history until
+  it's all in. The transcript then appears once, already at its end, with no animation: one change
+  between frames, then only code colors arriving 100–200 ms later (5% of the pixels, nothing
+  moves). The same for the 500-turn session in the app and in the host, in light and dark, and
+  for a real Codex session after an app relaunch and after a host restart.
+- **Lists lay out without a Grid.** A Grid measured every item again to line up the marker column;
+  a stack of rows with a hidden copy of the widest marker does the same. GridLayout was 5.7% of the
+  main thread with the SwiftUI driver at 30 steps a second (Release) and no longer shows.
+- **Tried and taken back:** code that fits its block shown without a scroll view
+  (`ViewThatFits`). Sizing the scroll views went from 5.7% to 2.9%, but laying out the code's
+  text twice took more than that back.
+
+| Measurement (500 turns) | Release | Debug |
+| --- | --- | --- |
+| The SwiftUI driver, 10 steps a second, 100 replies up and back | 74% of refreshes drawn, 32 dropped a second, worst stall 245 ms, 6.9 s CPU over 20 s | 76% drawn, 29 dropped a second, worst 91 ms, 5.6 s |
+| The same at 30 steps a second | 56% drawn (load 32) | 77% drawn, worst 76 ms |
+| Where the main thread goes at 30 steps a second (Release, 45% busy) | laying out selectable text (TextKit 2) 16–19%, the lazy stack placing rows 20% (of which finding each step's row, the driver's own cost, 13%), scroll views in code blocks 3–6% | |
+| Streaming a long reply into it | 48% CPU, 70% of refreshes drawn, worst stall 115 ms | 62% CPU, 63% drawn |
+| Streaming into a 20-turn session | 38% CPU, 78% drawn | 54% CPU, 81% drawn |
+
+Streaming in a long session costs about a quarter more than in a short one: on every chunk SwiftUI
+reads the id of each of the transcript's thousands of lines (`ForEachState.update`, about 13% of
+the main thread, and as much again walking them) and `plan()` puts the cached lines together
+(11%). The rest, in both, is laying out the growing section's text on every chunk (20%).
+
+### Pull request diffs
+
+2026-10-20, Files Changed on vercel/next.js#100215 (124 files) opened with `-gitHubOpenPullRequest
+<url>/files`, scrolled by `-nativeAutoScroll` 20,000 points down and back, the window uncovered and
+no accessibility client.
+
+| Measurement | Before | After |
+| --- | --- | --- |
+| 2,000 points a second, Release | 87–91% of refreshes drawn, 10.5–16 dropped a second, worst stall 35–55 ms, 15.8–16.4 s of main-thread CPU over 20 s | 98.5–98.6% drawn, 1.7–1.8 dropped a second, worst stall 29 ms, 9.9–10.2 s |
+| 6,000 points a second, Release | 72% drawn, 34 dropped a second, worst 49 ms | 85% drawn, 18 dropped a second, worst 41 ms |
+| 2,000 points a second, Debug | 88–94% drawn (load 15) | about the same: Debug is bound by Native's own unoptimized code |
+
+- **A quarter of the main thread asked ColorSync about colors.** Diff blocks draw in text views,
+  and Core Graphics asked for each color's HDR headroom every time it drew a run: 24% of the
+  samples, ColorSync tag lookups under `CGColorGetContentHeadroom`. SwiftUI resolves colors in
+  extended sRGB, for which that answer is about 200 times slower than for plain sRGB (42 ms against
+  0.2 ms per 100,000 reads). `PlatformCodeText` now hands its text views plain sRGB colors.
+- **The stall at the start of every scroll** (38–84 ms in earlier notes) didn't reproduce without
+  an accessibility client: the first second's worst frame is 8–22 ms.
+
 ### Launch
 
 2026-10-19, `just perf --fixture`: an isolated instance in four projects, three with icons of their
@@ -600,7 +670,7 @@ several runs each. Task switches and Settings visits are AX presses on the insta
 
 | What | Why | Owner |
 | --- | --- | --- |
-| Stop hover hit-testing while the transcript scrolls | 12–19% of a fast scroll; needs proof, by hand with a real mouse wheel and trackpad, that clicks and hover come back the moment a scroll ends | Transcript performance |
+| Stop hover hit-testing while the transcript scrolls | 12–19% of a fast scroll, measured with an accessibility client and the cursor over the transcript. Can't be verified by a script: the cost needs the real cursor over the rows, and the proof (clicks and hover come back the moment a scroll ends) needs a real mouse wheel and trackpad, whose scroll phases no synthetic driver reproduces for this scroll view | Transcript performance, by hand |
 | Let Codex unload closed threads | codex-acp never unsubscribes its title-generation thread, so each session's MCP servers (about 1 GB each here) outlive it until the adapter exits | Upstream codex-acp#628 / #629; then turn idle closing on |
 | Turn idle closing on for Codex | Claude Code closes sessions unused for 10 minutes now (`idleSessionTimeout` in its manifest). Once the row above lands, give Codex's manifest the same | App model |
 | "Couldn't run git: The file “project” doesn't exist" alert | New Session in a project whose folder is gone shows a modal; the sidebar already says "Can't find this project's folder" with Retry | Failures |
@@ -613,6 +683,7 @@ several runs each. Task switches and Settings visits are AX presses on the insta
 | The composer's rich editor still leaks once it showed code | SwiftUI's rich `TextEditor` leaves about 14 KB behind each editor that goes away; only drafts with code use it now. Keeping one editor across task switches would end it | Composer |
 | Park the default agent when it has no open sessions for a long while, or start it on the first New Session | It's kept running so New Session never waits; with direct adapter launch that wait is now about 0.3 s for Codex | App model |
 | Opening the changes inspector on many files under 100 ms | Still 218–392 ms on 250 files against 69–77 ms on a clean repository: laying out and drawing the rows on screen (text measuring, the diff's selectable text) and the first file's diff, in Debug | Git |
-| Scroll a long transcript at 120 Hz | Still 7–33% of refreshes dropped in a fast flick and 7–13% at reading speed (Debug): new rows lay out their selectable text on the main thread. Then lists without `Grid`, and code blocks without a scroll view each | Transcript |
-| Streaming into a long session within budget | 42% CPU in the 500-turn session against 30% in a 20-turn one: every chunk still has SwiftUI read the id of each of the transcript's thousands of lines (19%), and plans the streaming turn. Measure again on a quiet Mac first | Transcript |
-| Release-build numbers for long transcripts | Everything above is Debug; Release is faster, but the lazy stack and text layout are system code either way | Performance |
+| Scroll a long transcript at 120 Hz | With the SwiftUI driver a screenful of new rows costs 25–80 ms (Release): their selectable text (TextKit 2) and the lazy stack placing them. Lists no longer use `Grid`; code blocks without a scroll view each didn't pay (`ViewThatFits` laid the text out twice). First check by hand whether fast trackpad scrolling shows the transcript blank: no synthetic driver can tell | Transcript |
+| Come back to a session at the place you left it | Switching back to a session in memory shows its end at once, but not the place you'd scrolled to. Tracking the top row with scroll targets (`.scrollTargetLayout()` with `scrollPosition(anchor:)` or `onScrollTargetVisibilityChange`) twice put the transcript in a 100% CPU layout loop against its bottom anchor; keeping the last session's view alive would keep its place without that | Session view |
+| Streaming into a long session within budget | 48% CPU in the 500-turn session against 38% in a 20-turn one (Release): every chunk has SwiftUI read the id of each of the transcript's thousands of lines. Earlier turns' lines as a list of their own, equatable on the line cache's version, would skip that, once their rows stop reading `session.state` (thinking clocks, permission shortcuts), which would invalidate them on every chunk anyway. Laying out the growing section (20%) is the floor for both | Transcript |
+| Code colors arriving after a reopened transcript appears | The code blocks on screen draw plain for 100–200 ms; highlighting them before the transcript appears would make it appear finished | Transcript |

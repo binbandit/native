@@ -8,11 +8,10 @@ import SwiftUI
 /// the rows slide off the end and nothing new is drawn.
 ///
 /// `-nativeTranscriptAutoScroll <seconds>` waits that long after the transcript of the session
-/// `-nativeOpenSession` names appears, then shows
-/// the session's prompts and replies one after another, newest first, `-nativeTranscriptAutoScrollRate`
-/// a second (60), for `-nativeTranscriptAutoScrollCount` of them (all), and back down to the latest.
-/// It writes "done" to `-nativeAutoScrollLog <path>` at the end. Debug builds, and Release builds
-/// compiled with `NATIVE_PERF`.
+/// `-nativeOpenSession` names appears, then shows its prompts and replies one after another, newest
+/// first, `-nativeTranscriptAutoScrollRate` a second (60), for `-nativeTranscriptAutoScrollCount` of
+/// them (all), and back down to the latest. It writes "done" to `-nativeAutoScrollLog <path>` at the
+/// end. Debug builds, and Release builds compiled with `NATIVE_PERF`.
 @MainActor
 enum TranscriptAutoScroll {
     private static var hasRun = false
