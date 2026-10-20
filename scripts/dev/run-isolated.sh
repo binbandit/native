@@ -79,12 +79,17 @@ quit() {
     quit_app
     local id
     id=$(bundle_id 2>/dev/null) || return 0
-    # The instance's development host: its launchd job, then any copy the app started itself
-    # (which exits with the app anyway, given a moment).
+    # The instance's development host: its launchd job, then any copy the app started itself. That
+    # one stops with the app on its own, ending running turns as stopped; SIGTERM asks for the same.
     for label in $(launchctl list | awk '{print $3}' | grep -F "$id.host." || true); do
         launchctl bootout "gui/$(id -u)/$label" 2>/dev/null || true
     done
     pkill -f "$host_process" 2>/dev/null || true
+    # Give it the few seconds a stop takes before anything deletes its folder.
+    for _ in $(seq 1 25); do
+        pgrep -f "$host_process" >/dev/null || break
+        sleep 0.2
+    done
 }
 
 case "$action" in
