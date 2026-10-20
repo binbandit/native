@@ -143,7 +143,7 @@ struct SessionView: View {
                                 Task { await GitHubGitWiring.createPullRequest(from: repository, gitHub: gitHub) }
                             }))
                 } : nil,
-            reviewFile: GitChangesReview.isEnabled ? { reviewTurn(file: $0) } : nil
+            reviewFile: { reviewTurn(file: $0) }
         )
     }
 

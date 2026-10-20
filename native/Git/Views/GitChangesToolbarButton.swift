@@ -25,19 +25,8 @@ struct GitChangesToolbarButton: View {
         .help(CommandRegistry.shared.help(isPresented ? "Hide Changes" : "Show Changes", for: .viewToggleChanges))
         .accessibilityLabel(isPresented ? "Hide Changes" : "Show Changes")
         .accessibilityAddTraits(isPresented ? .isSelected : [])
-        .accessibilityValue(Self.accessibilityValue(for: totals))
+        .accessibilityValue(DSFormat.spokenDiffStat(added: totals.additions, removed: totals.deletions))
         .disabled(model.state == .notRepository)
-    }
-
-    /// "1 line added, 2 removed", "3 lines removed", "No changed lines".
-    static func accessibilityValue(for totals: LineStats) -> String {
-        func lines(_ count: Int) -> String { count == 1 ? "1 line" : "\(count) lines" }
-        return switch (totals.additions, totals.deletions) {
-        case (0, 0): "No changed lines"
-        case (let added, 0): "\(lines(added)) added"
-        case (0, let removed): "\(lines(removed)) removed"
-        case (let added, let removed): "\(lines(added)) added, \(removed) removed"
-        }
     }
 }
 

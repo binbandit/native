@@ -40,7 +40,7 @@ struct GitChangeSectionHeader: View {
         .frame(height: DS.Size.controlXS)
         .padding(.top, isFirst ? DS.Space.sm : DS.Space.sm + DS.Space.xxs)
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("\(area.title), \(changes.count) files")
+        .accessibilityLabel("\(area.title), \(changes.count == 1 ? "1 file" : "\(changes.count) files")")
     }
 }
 

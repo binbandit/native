@@ -211,7 +211,7 @@ private struct GitRangeDiffPane: View {
     }
 }
 
-#if NATIVE_PREVIEWS_WIP
+#if DEBUG
 #Preview("This Turn") {
     DSPreviewPair {
         GitRangeChangesView(

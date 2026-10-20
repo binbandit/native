@@ -21,7 +21,7 @@ struct GitDiffPane: View {
     }
 }
 
-#if NATIVE_PREVIEWS_WIP
+#if DEBUG
 #Preview("Diff pane") {
     DSPreviewPair {
         GitDiffPane(model: GitPreviewFixtures.model)
