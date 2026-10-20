@@ -52,13 +52,13 @@ public struct NewSessionChoices: Sendable {
     /// The options to set, in order: the model first, since changing it can change what the others
     /// offer (a model's efforts), then the rest as the agent lists them.
     public func order(in options: [ConfigOption]) -> [String] {
-        let wanted = options.filter { option in
+        let changes = options.filter { option in
             guard let value = wanted(for: option, in: options)?.value, case .select(let current, _) = option.kind
             else { return false }
             return value != current
         }
-        let models = wanted.filter { $0.category == "model" }
-        return (models + wanted.filter { $0.category != "model" }).map(\.id)
+        let models = changes.filter { $0.category == "model" }
+        return (models + changes.filter { $0.category != "model" }).map(\.id)
     }
 
     /// What to do about option `id` of a session whose options are `options` now: nothing (nil)

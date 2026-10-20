@@ -13,9 +13,11 @@ struct ConfigPickTests {
         return try ConfigChoicesTests.option("reasoning_effort", in: ConfigChoicesTests.options(json))
     }
 
-    @Test func stepsToTheNextLevelAndWrapsAround() throws {
+    /// Stepping never wraps from the highest level to the lowest: the meter stops at the top.
+    @Test func stepsUpAndStopsAtTheTop() throws {
+        #expect(try Self.effort("low").valueAfterCurrent == "medium")
         #expect(try Self.effort("xhigh").valueAfterCurrent == "max")
-        #expect(try Self.effort("ultra").valueAfterCurrent == "low")
+        #expect(try Self.effort("ultra").valueAfterCurrent == nil)
     }
 
     /// A session reloading after the host restarted can report a value the list doesn't have; a

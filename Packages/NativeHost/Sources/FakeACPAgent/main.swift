@@ -18,6 +18,8 @@ import NativeHostProtocol
 //   question …          asks a form question (elicitation/create) and reports the answer
 //   mode?               answers with the session's current mode
 //   config?             answers with its mode, model and effort, as "config: mode=… model=… effort=…"
+//   leave-plan          leaves Plan Mode itself, as an agent does once its plan is approved, and says so
+//                       (config_option_update)
 //   /context            answers "context: 42% used", and sends that again just after the turn ends
 //   tool <name> <json>  calls one of Native's tools (the `native` MCP server it was given) and answers
 //                       "tool: <its text>"
@@ -256,6 +258,10 @@ actor FakeAgent {
             reply = "permission: \(try await askPermission(session))"
         } else if text.hasPrefix("question") {
             reply = "question: \(try await askQuestion(session))"
+        } else if text == "leave-plan" {
+            modes[session] = "default"
+            try update(session, ["sessionUpdate": .string("config_option_update"), "configOptions": options(session)])
+            reply = "left plan mode"
         } else if text == "mode?" {
             reply = "mode: \(modes[session] ?? "default")"
         } else if text == "config?" {
