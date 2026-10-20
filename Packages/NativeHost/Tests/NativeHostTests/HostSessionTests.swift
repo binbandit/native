@@ -260,6 +260,25 @@ struct HostSessionTests {
         await recorder.stop()
     }
 
+    @Test("The model comes back before the effort, so setting it back doesn't undo the effort")
+    func configSetBackModelFirst() async throws {
+        let harness = try HostHarness()
+        let (recorder, session) = try await started(harness)
+        // The agent lists the effort before the model, and "effort" sorts first too; choosing a
+        // model puts the effort back to its default, as codex-acp does.
+        try await recorder.client.setConfigOption(
+            SetConfigOptionParams(sessionID: session, configID: "model", value: "beta"))
+        try await recorder.client.setConfigOption(
+            SetConfigOptionParams(sessionID: session, configID: "effort", value: "high"))
+        _ = try await recorder.client.restartAgent("fake")
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session, text: "config?"))
+        try await recorder.wait("the turn") { await $0.turnsEnded(session) == ["end_turn"] }
+        #expect(await recorder.agentText(session).contains("model=beta effort=high"))
+        let setBack = harness.received.filter { $0.hasPrefix("config\t") }.dropFirst(2)
+        #expect(Array(setBack) == ["config\tmodel=beta", "config\teffort=high"])
+        await recorder.stop()
+    }
+
     @Test("MCP servers replaced for a session go to the agent at its next load")
     func replacedMCPServers() async throws {
         let harness = try HostHarness()

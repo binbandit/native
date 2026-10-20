@@ -17,14 +17,17 @@ import NativeHostProtocol
 //   permission …        asks to approve a tool call and reports the answer
 //   question …          asks a form question (elicitation/create) and reports the answer
 //   mode?               answers with the session's current mode
+//   config?             answers with its mode, model and effort, as "config: mode=… model=… effort=…"
 //   /context            answers "context: 42% used", and sends that again just after the turn ends
 //   anything else       answers "echo: <text>"; Native's interruption notice gets "resumed"
 //
 // Every prompt and steer it receives is appended to $FAKE_AGENT_STORE/received.log, with non-text
 // blocks shown as "[link <name>]" and the like; every load's MCP servers (name and command) go to loads.log. With $FAKE_AGENT_GRANDCHILD set to a file, it starts
 // `sleep` in a process group of its own at launch and writes its pid there, as npm does with the
-// adapters it runs. With $FAKE_AGENT_NO_STEERING=1 it doesn't offer steering. Modes live in memory,
-// so a reloaded session reports the default again.
+// adapters it runs. With $FAKE_AGENT_NO_STEERING=1 it doesn't offer steering. Settings (mode, model,
+// effort) live in memory, so a reloaded session reports the defaults again; like codex-acp, choosing
+// a model puts the effort back to that model's default. It lists the effort (id "effort") before the
+// model.
 
 signal(SIGPIPE, SIG_IGN)
 
@@ -39,6 +42,8 @@ actor FakeAgent {
     var running: Set<SessionID> = []
     var cancelled: Set<SessionID> = []
     var modes: [SessionID: String] = [:]
+    var models: [SessionID: String] = [:]
+    var efforts: [SessionID: String] = [:]
 
     init(store: URL) {
         self.store = store
@@ -135,7 +140,15 @@ actor FakeAgent {
             try peer.respond(to: id, with: JSONValue.object(["outcome": .string("injected")]))
         case "session/set_config_option":
             let params = try message.params(as: ConfigParams.self)
-            modes[params.sessionId] = params.value
+            switch params.configId {
+            case "model":
+                models[params.sessionId] = params.value
+                efforts[params.sessionId] = nil
+            case "effort":
+                efforts[params.sessionId] = params.value
+            default:
+                modes[params.sessionId] = params.value
+            }
             received("config", "\(params.configId)=\(params.value)")
             try peer.respond(to: id, with: JSONValue.object(["configOptions": options(params.sessionId)]))
         default:
@@ -182,6 +195,9 @@ actor FakeAgent {
             reply = "question: \(try await askQuestion(session))"
         } else if text == "mode?" {
             reply = "mode: \(modes[session] ?? "default")"
+        } else if text == "config?" {
+            reply =
+                "config: mode=\(modes[session] ?? "default") model=\(models[session] ?? "alpha") effort=\(efforts[session] ?? "medium")"
         } else if text == "/context" {
             reply = "context: 42% used"
             // claude-agent-acp sends a local command's output twice, the second after the turn.
@@ -304,7 +320,19 @@ actor FakeAgent {
                     .object(["value": .string("default"), "name": .string("Default")]),
                     .object(["value": .string("plan"), "name": .string("Plan")]),
                 ]),
-            ])
+            ]),
+            Self.select(
+                "effort", category: "thought_level", current: efforts[session] ?? "medium",
+                values: ["low", "medium", "high"]),
+            Self.select("model", category: "model", current: models[session] ?? "alpha", values: ["alpha", "beta"]),
+        ])
+    }
+
+    private static func select(_ id: String, category: String, current: String, values: [String]) -> JSONValue {
+        .object([
+            "id": .string(id), "name": .string(id.capitalized), "category": .string(category),
+            "type": .string("select"), "currentValue": .string(current),
+            "options": .array(values.map { .object(["value": .string($0), "name": .string($0.capitalized)]) }),
         ])
     }
 

@@ -194,21 +194,30 @@ extension HostCore {
     }
 
     /// Sets back the config values clients chose where the reloaded session reports others (an agent
-    /// may reopen a session on its default model), before anything else goes out.
+    /// may reopen a session on its default model), before anything else goes out. In the order the
+    /// app restores them (`ConfigChoices.restoreOrder`): the model first, since choosing it can put
+    /// the effort back to the model's default, and each against the options as they are by then.
     private func restoreConfigChoices(of session: HostSession, on link: AgentLink) async {
         guard let peer = link.peer, let agentSessionID = session.record.agentSessionID else { return }
-        for (configID, value) in session.record.configChoices.sorted(by: { $0.key < $1.key }) {
-            guard let option = session.mirror.state.configOptions.first(where: { $0.id == configID }),
-                case .select(let current, let choices) = option.kind, current != value,
-                choices.contains(where: { $0.value == value })
+        let options = session.mirror.state.configOptions
+        var choices = ConfigChoices()
+        for (configID, value) in session.record.configChoices {
+            if let option = options.first(where: { $0.id == configID }) {
+                choices.choose(option, value: value)
+            }
+        }
+        for configID in choices.restoreOrder(in: options) {
+            guard
+                case .set(_, let value)? = choices.restoration(
+                    of: configID, in: session.mirror.state.configOptions, allows: { _, _ in true })
             else { continue }
             do {
                 let response = try await peer.request(
                     "session/set_config_option",
                     RawSetConfigOptionRequest(sessionId: agentSessionID, configId: configID, value: value),
                     as: RawConfigOptionsResponse.self)
-                if let options = response.configOptions {
-                    append(.update(SessionMirror.configOptionsUpdate(options)), to: session)
+                if let reported = response.configOptions {
+                    append(.update(SessionMirror.configOptionsUpdate(reported)), to: session)
                 }
             } catch {
                 logger.error("Couldn't set \(configID) back: \(error.localizedDescription)")
