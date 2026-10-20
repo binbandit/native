@@ -242,6 +242,19 @@ keyboard.
 | ⌃⌘A | Keep Mac awake: cycle Off → While agents work → On (View ▸ Keep Mac Awake) | View | `keepAwake.nextMode` |
 | | Show or hide the status bar along the window's bottom edge (on by default) | View | `statusBar.toggle` |
 
+## Session tools
+
+With Session Tools on (Settings ▸ Labs), each tool on the session screen has one key that shows or
+hides it wherever it lives (`docs/session-tools.md`). ⇧⌘D and ⌥⌘I keep showing Changes and
+Subagents.
+
+| Keys | Action | Menu | Command |
+| --- | --- | --- | --- |
+| ⌥⌘1 | Show or hide Changes | View ▸ Tools | `sessionTools.changes` |
+| ⌥⌘4 | Show or hide Subagents | View ▸ Tools | `sessionTools.subagents` |
+| ⌥⌘5 | Show or hide the branch's pull request | View ▸ Tools | `sessionTools.pullRequest` |
+| Escape | Close the tool open over the conversation; in the side panel, close the panel | | |
+
 ## Quitting
 
 With "Keep agents running when Native quits" on (Settings ▸ Background, the default), ⌘Q quits only
@@ -388,7 +401,8 @@ them. Composer keys in `native/Views/Composer*`; permission keys in
 `native/Views/Transcript/ToolPermissionButtons.swift`; sidebar keys in `SidebarView`; Settings keys in
 `SettingsScreen` and `SettingsSearchField`; search panel keys in `TranscriptSearchPanel`; terminal commands in
 `native/Terminal/Views/TerminalCommands.swift`; project action commands in
-`native/ProjectActions/Commands/ProjectActionCommands.swift`; mode commands in
+`native/ProjectActions/Commands/ProjectActionCommands.swift`; session tool commands in
+`native/SessionTools/Commands/SessionToolCommands.swift`; mode commands in
 `native/Modes/Commands/ModeCommands.swift`; keys inside a terminal in
 `GhosttyConfiguration.keybinds` (`Packages/Terminal`). Change a key here first, then in code.
 

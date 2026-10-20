@@ -13,6 +13,8 @@ struct CommandContext {
     var sidebarSelection: SidebarSelectionModel?
     var mcpServersPopover: Binding<Bool>?
     var changesInspector: Binding<Bool>?
+    /// The window's session tools, while it shows a task with them (`docs/session-tools.md`).
+    var sessionTools: SessionToolsScreenModel?
     var pullRequestsPage: Binding<Bool>?
     var jumpToLatest: TranscriptJumpCommand?
     /// Brings the main window back (it may be closed while the menu bar still works).
@@ -34,6 +36,7 @@ struct FocusedCommandContext: DynamicProperty {
     @FocusedValue(\.sidebarSelection) private var sidebarSelection
     @FocusedValue(\.mcpServersPopover) private var mcpServersPopover
     @FocusedValue(\.gitChangesInspector) private var changesInspector
+    @FocusedValue(\.sessionTools) private var sessionTools
     @FocusedValue(\.showsPullRequests) private var pullRequestsPage
     @FocusedValue(\.transcriptJumpToLatest) private var jumpToLatest
     @Environment(\.openWindow) private var openWindow
@@ -46,6 +49,7 @@ struct FocusedCommandContext: DynamicProperty {
             sidebarSelection: sidebarSelection,
             mcpServersPopover: mcpServersPopover,
             changesInspector: changesInspector,
+            sessionTools: sessionTools,
             pullRequestsPage: pullRequestsPage,
             jumpToLatest: jumpToLatest,
             openMainWindow: { [openWindow] in openWindow(id: NativeWindowID.main) }

@@ -17,6 +17,8 @@ struct SessionToolContribution: Identifiable {
     var pane: (@MainActor (SessionToolContext) -> AnyView)?
     /// What clicking its fact does when it has no pane.
     var perform: @MainActor (SessionToolContext) -> Void = { _ in }
+    /// What it does for the transcript's own controls: the files-changed card, a subagent's card.
+    var transcript: (@MainActor (SessionToolContext) -> SessionTranscriptActions)?
 
     var id: SessionToolID { spec.id }
 }

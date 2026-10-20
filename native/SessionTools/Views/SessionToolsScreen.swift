@@ -1,90 +1,156 @@
 import ACP
 import Git
+import SessionTools
 import SwiftUI
 
 /// The session screen with its tools placed by `SessionToolRegistry` (`docs/session-tools.md`):
-/// the conversation and the composer, and each tool that's on in its one place. The header has no
-/// tool buttons. Behind the Session Tools gate until it replaces `SessionView`'s own screen.
+/// the conversation and the composer, each tool's fact under the title while it has one, and the
+/// open tool's pane in its place. The header has no tool buttons. Behind the Session Tools gate
+/// until it replaces `SessionView`'s own screen.
 struct SessionToolsScreen: View {
     let session: SessionModel
-    /// The subagent whose conversation is open beside the task's.
-    @State private var openSubagent: SessionID?
+    @State private var tools = SessionToolsScreenModel()
     /// Files dropped on the transcript, for the composer to attach.
     @State private var drops = ComposerDropInbox()
+    /// The room the conversation and the side panel share.
+    @State private var width: CGFloat = 0
     @Environment(GitStore.self) private var git
     @Environment(\.inspectorRoom) private var inspectorRoom
     @Experiment(.transcriptWidth) private var columnWidth: TranscriptWidth
 
+    private var registry: SessionToolRegistry { tools.registry }
+
     var body: some View {
-        TranscriptView(session: session) { id in
-            openSidePanel { openSubagent = id }
-        }
-        .environment(\.isPrimaryTranscript, true)
-        .dsToolbarBand()
-        .safeAreaBar(edge: .bottom, spacing: 0) {
-            VStack(spacing: 0) {
-                if session.isEarlierConversation {
-                    EarlierConversationBar(session: session)
-                } else {
-                    RemovedWorkspaceNotice(session: session)
-                    UsageComposerNotices(session: session)
-                    ComposerView(session: session)
+        let layout = registry.layout(for: session, on: tools)
+        let transcript = SessionTranscriptActions.merging(
+            registry.tools.filter { registry.place(of: $0.id) != .off }.compactMap { $0.transcript?(context($0)) })
+        TranscriptView(session: session) { id in transcript.openSubagent?(id) }
+            .environment(\.turnChangesActions, transcript.turnChanges)
+            .environment(\.isPrimaryTranscript, true)
+            .dsToolbarBand()
+            .safeAreaBar(edge: .bottom, spacing: 0) { composer }
+            .safeAreaBar(edge: .top, spacing: 0) {
+                TaskScriptBanner(folder: session.cwd)
+            }
+            .composerDropTarget(drops, isEnabled: !session.isEarlierConversation)
+            .overlay(alignment: .top) { shade }
+            .focusedSceneValue(\.activeSession, session)
+            .focusedSceneValue(\.sessionTools, tools)
+            .focusedSceneValue(\.gitChangesInspector, toggling(.changes))
+            .navigationTitle(DSInlineCode.plain(session.displayTitle))
+            .toolbar(removing: .title)
+            .toolbar {
+                ToolbarItem(placement: .navigation) {
+                    SessionToolsTitle(
+                        title: session.displayTitle, location: location,
+                        facts: layout.facts.compactMap { id in
+                            registry.tool(id).flatMap { tool in tool.fact(context(tool)).map { (tool, $0) } }
+                        },
+                        isOpen: { tools.isOpen($0.id) },
+                        action: { tool in
+                            if tool.pane == nil { tool.perform(context(tool)) } else { tools.toggle(tool.id) }
+                        })
+                }
+                .sharedBackgroundVisibility(.hidden)
+                ToolbarItem {
+                    EarlierConversationButton(session: session)
+                }
+                .sharedBackgroundVisibility(.hidden)
+            }
+            // Measured on its own beside the side panel: never at no width (docs/performance.md).
+            .platformMinimumContentWidth(DS.Window.detailMinWidth)
+            .inspector(isPresented: isSidePanelDocked) { sidePanel(layout) }
+            // Outside the side panel, so the room counts the panel's width while it's docked.
+            .onGeometryChange(for: CGFloat.self, of: \.size.width) { width = $0 }
+            .onChange(of: tools.openByPlace[.side] == nil) { _, isClosed in
+                if isClosed { inspectorRoom.release() }
+            }
+            .onDisappear { inspectorRoom.release() }
+            .onAppear {
+                tools.makeRoomForSidePanel = { [inspectorRoom] show in
+                    guard docksSidePanel else { return show() }
+                    inspectorRoom.open(SessionToolMetrics.sidePanelIdealWidth, show)
                 }
             }
-        }
-        .safeAreaBar(edge: .top, spacing: 0) {
-            TaskScriptBanner(folder: session.cwd)
-        }
-        .composerDropTarget(drops, isEnabled: !session.isEarlierConversation)
-        .focusedSceneValue(\.activeSession, session)
-        .navigationTitle(DSInlineCode.plain(session.displayTitle))
-        .navigationSubtitle(
-            [session.cwd.abbreviatedPath, git.model(for: session.cwd).summary].compactMap(\.self)
-                .joined(separator: " · ")
-        )
-        // Measured on its own beside the side panel: never at no width (docs/performance.md).
-        .platformMinimumContentWidth(DS.Window.detailMinWidth)
-        .inspector(isPresented: isSidePanelPresented) {
-            if let id = openSubagent, let subagent = session.state.subagents.first(where: { $0.id == id }) {
-                SubagentInspector(subagent: subagent, child: session.child(id))
-                    .frame(minWidth: SessionToolMetrics.sidePanelMinWidth)
-                    .dsToolbarBand()
-                    .inspectorColumnWidth(
-                        min: SessionToolMetrics.sidePanelMinWidth, ideal: SessionToolMetrics.sidePanelIdealWidth,
-                        max: SessionToolMetrics.sidePanelMaxWidth)
+            // View ▸ Toggle Subagent Inspector (⌥⌘I) asks the task; the Subagents tool answers.
+            .onChange(of: session.isSubagentInspectorToggleRequested) { _, isRequested in
+                guard isRequested else { return }
+                session.isSubagentInspectorToggleRequested = false
+                tools.toggle(.subagents)
             }
-        }
-        .onChange(of: isSidePanelPresented.wrappedValue) { _, isPresented in
-            if !isPresented { inspectorRoom.release() }
-        }
-        .onDisappear { inspectorRoom.release() }
-        .toolbar {
-            ToolbarItem {
-                EarlierConversationButton(session: session)
-            }
-            .sharedBackgroundVisibility(.hidden)
-        }
-        .mcpServersPresentation()
-        .refreshesGitStatus(of: session, in: git)
-        .environment(\.transcriptColumnMaxWidth, columnWidth.maxWidth)
+            .mcpServersPresentation()
+            .refreshesGitStatus(of: session, in: git)
+            .environment(\.transcriptColumnMaxWidth, columnWidth.maxWidth)
     }
 
-    /// Opens the side panel once the window has made room for it, without sliding it in: sliding
-    /// lays the whole window out again every frame.
-    private func openSidePanel(_ open: @escaping @MainActor () -> Void) {
-        let appear: @MainActor () -> Void = { withTransaction(\.disablesAnimations, true, open) }
-        guard !isSidePanelPresented.wrappedValue else { return appear() }
-        inspectorRoom.open(SessionToolMetrics.sidePanelIdealWidth, appear)
+    private var composer: some View {
+        VStack(spacing: 0) {
+            // A conversation `/clear` set aside is kept to read: no composer, the way back instead.
+            if session.isEarlierConversation {
+                EarlierConversationBar(session: session)
+            } else {
+                RemovedWorkspaceNotice(session: session)
+                UsageComposerNotices(session: session)
+                ComposerView(session: session)
+            }
+        }
     }
 
-    /// Closes without animation too: closing it animated, while the window settles its columns, sent
-    /// AppKit into a constraint loop.
-    private var isSidePanelPresented: Binding<Bool> {
+    /// A fact's tool, or a side tool while the window is too narrow to dock it, over the
+    /// conversation. The fact's wins while both are open.
+    @ViewBuilder private var shade: some View {
+        let id = tools.openByPlace[.fact] ?? (docksSidePanel ? nil : tools.openByPlace[.side])
+        if let id, let tool = registry.tool(id) {
+            GeometryReader { proxy in
+                SessionToolsShade(tool: tool, context: context(tool)) { tools.close(id) }
+                    .frame(height: proxy.size.height * SessionToolMetrics.shadeHeightShare)
+                    .padding(.horizontal, DS.Space.lg)
+            }
+            .transition(.move(edge: .top).combined(with: .opacity))
+        }
+    }
+
+    @ViewBuilder private func sidePanel(_ layout: SessionToolLayout) -> some View {
+        if let id = tools.openByPlace[.side], let open = registry.tool(id) {
+            SessionToolsSidePanel(
+                tabs: layout.side.compactMap(registry.tool), open: open, context: context,
+                select: { tools.open($0) }, close: { tools.close(.side) }
+            )
+            .frame(minWidth: SessionToolMetrics.sidePanelMinWidth)
+            .dsToolbarBand()
+            .inspectorColumnWidth(
+                min: SessionToolMetrics.sidePanelMinWidth, ideal: SessionToolMetrics.sidePanelIdealWidth,
+                max: SessionToolMetrics.sidePanelMaxWidth)
+        }
+    }
+
+    /// Whether a side tool docks beside the conversation: only with room to read both.
+    private var docksSidePanel: Bool {
+        width >= SessionToolMetrics.conversationBesidePanelMinWidth + SessionToolMetrics.sidePanelIdealWidth
+    }
+
+    private var isSidePanelDocked: Binding<Bool> {
         Binding(
-            get: { openSubagent != nil },
-            set: { isPresented in
-                if !isPresented { withTransaction(\.disablesAnimations, true) { openSubagent = nil } }
-            }
+            get: { docksSidePanel && tools.openByPlace[.side] != nil },
+            set: { if !$0 { tools.close(.side) } }
         )
+    }
+
+    /// A tool as a show-or-hide switch, for the commands that toggle it (⇧⌘D for Changes).
+    private func toggling(_ id: SessionToolID) -> Binding<Bool>? {
+        guard registry.place(of: id) != .off else { return nil }
+        return Binding(get: { tools.isOpen(id) }, set: { $0 ? tools.open(id) : tools.close(id) })
+    }
+
+    private func context(_ tool: SessionToolContribution) -> SessionToolContext {
+        SessionToolContext(session: session, screen: tools, tool: tool.id)
+    }
+
+    /// The task's branch, else its folder, at the head of the facts.
+    private var location: String {
+        guard case .branch(let name)? = git.model(for: session.cwd).branch?.head else {
+            return session.cwd.abbreviatedPath
+        }
+        return name
     }
 }

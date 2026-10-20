@@ -69,6 +69,11 @@ private struct ViewCommands: Commands {
             CommandMenuItem(.viewToggleSidebar, in: menu)
             CommandMenuItem(.viewToggleSubagentInspector, in: menu)
             CommandMenuItem(.viewToggleChanges, in: menu)
+            Menu("Tools") {
+                CommandMenuItem(.sessionToolChanges, in: menu)
+                CommandMenuItem(.sessionToolSubagents, in: menu)
+                CommandMenuItem(.sessionToolPullRequest, in: menu)
+            }
             CommandMenuItem(.viewMCPServers, in: menu)
             CommandMenuItem(.viewNeedsYouFilter, in: menu)
 

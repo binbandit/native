@@ -58,6 +58,7 @@ struct NativeApp: App {
         let gitHub = GitHubModel { await model.shellEnvironment(refresh: $0) }
         _git = State(initialValue: git)
         _gitHub = State(initialValue: gitHub)
+        SessionToolsWiring.registerBuiltIns(.shared, model: model, git: git, gitHub: gitHub)
         let taskScripts = TaskScriptCenter(settings: TaskScriptSettings(), runner: LocalCommandRunner())
         _taskScripts = State(initialValue: taskScripts)
         TaskScriptsWiring.connect(taskScripts, model: model, git: git)
