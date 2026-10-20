@@ -24,6 +24,9 @@ struct TranscriptView: View {
     @State private var containerWidth: CGFloat?
     /// Rows the user opened, kept while they're scrolled away.
     @State private var disclosures = TranscriptDisclosures()
+    /// The row at the top of the view, however it got there (the user, search, Jump to Latest). A
+    /// reference, so following it as the view scrolls doesn't redraw the transcript.
+    @State private var topRow = TranscriptTopRow()
 
     init(session: SessionModel, openSubagent: @escaping (SessionID) -> Void) {
         self.session = session
@@ -79,10 +82,7 @@ struct TranscriptView: View {
             .focusedSceneValue(\.transcriptJumpToLatest, jumpCommand)
             .overlay {
                 if !session.isRestoringHistory, items.isEmpty {
-                    ContentUnavailableView(
-                        "What should we work on?", systemImage: "sparkles",
-                        description: Text(session.cwd.abbreviatedPath)
-                    )
+                    NewSessionEmptyState(session: session)
                 }
             }
     }
@@ -115,8 +115,11 @@ struct TranscriptView: View {
         }
         // Coming back to this session shows the same place, or the latest (new rows included) when
         // that's where the user left it.
+        .onScrollTargetVisibilityChange(idType: String.self) { [topRow] visible in
+            topRow.id = visible.first
+        }
         .onDisappear {
-            session.transcriptScrollTarget = isAwayFromLatest ? position.viewID(type: String.self) : nil
+            session.transcriptScrollTarget = isAwayFromLatest ? topRow.id : nil
         }
     }
 
@@ -155,4 +158,9 @@ struct TranscriptView: View {
     private func jumpToLatest() {
         withAnimation(.dsStandard) { position.scrollTo(edge: .bottom) }
     }
+}
+
+/// Which transcript row is at the top of the view, kept outside SwiftUI's state.
+private final class TranscriptTopRow {
+    var id: String?
 }
