@@ -20,7 +20,7 @@ final class AgentIconStore {
     @ObservationIgnored private let pluginsDirectory: URL
 
     /// App icons are rendered once, big enough for every place an agent icon appears.
-    private static let pictureSize = 128
+    private nonisolated static let pictureSize = 128
 
     private struct Lookup: Hashable {
         let agent: AgentDefinition.ID
@@ -105,8 +105,7 @@ final class AgentIconStore {
         {
             return artwork
         }
-        if style == .tile, let image = AgentIconInstalledApps.icon(bundleIDs: source.apps, pixelSize: Self.pictureSize)
-        {
+        if style == .tile, let image = await Self.installedAppIcon(source.apps) {
             return .picture(image)
         }
         if let id = source.registry, let data = await registry.icon(for: id), let glyph = AgentIconGlyph(svg: data) {
@@ -130,6 +129,12 @@ final class AgentIconStore {
             let image = CGImageSourceCreateImageAtIndex(source, 0, nil)
         else { return nil }
         return .picture(image)
+    }
+
+    /// Off the main thread: Launch Services finds the app, and its icon is drawn to size.
+    @concurrent
+    private nonisolated static func installedAppIcon(_ bundleIDs: [String]) async -> CGImage? {
+        AgentIconInstalledApps.icon(bundleIDs: bundleIDs, pixelSize: pictureSize)
     }
 
     @concurrent

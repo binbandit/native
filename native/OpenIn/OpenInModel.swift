@@ -29,11 +29,11 @@ final class OpenInModel {
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         defaultID = defaults.string(forKey: Self.defaultKey)
-        refresh()
-        // Apps come and go while Native runs; looking again is cheap (well under 1 ms).
+        // Apps come and go while Native runs, so it looks again whenever the app comes back.
         activationObserver = Task { [weak self] in
+            await self?.refresh()
             for await _ in NotificationCenter.default.notifications(named: OpenInPlatform.didBecomeActive) {
-                self?.refresh()
+                await self?.refresh()
             }
         }
     }
@@ -64,12 +64,17 @@ final class OpenInModel {
         OpenInPlatform.icon(for: app)
     }
 
-    /// Looks for installed apps again.
-    func refresh() {
-        let installed = OpenInPlatform.installedApps()
+    /// Looks for installed apps again, off the main thread: asking Launch Services about the
+    /// whole catalog takes a few milliseconds, the first time at launch.
+    func refresh() async {
+        let installed = await Self.installedApps()
         if installed != apps {
             apps = installed
         }
+    }
+
+    @concurrent private nonisolated static func installedApps() async -> [OpenInApp] {
+        OpenInPlatform.installedApps()
     }
 
     /// Opens the location in `app` and makes it the default.

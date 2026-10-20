@@ -22,8 +22,9 @@ enum OpenInPlatform {
         #endif
     }
 
-    /// The installed catalog apps, in catalog order. On the Mac, Finder is always among them.
-    static func installedApps() -> [OpenInApp] {
+    /// The installed catalog apps, in catalog order. On the Mac, Finder is always among them. Any
+    /// thread: Launch Services and the file manager are safe off the main one.
+    nonisolated static func installedApps() -> [OpenInApp] {
         #if canImport(AppKit)
         OpenInTarget.catalog.compactMap { target in
             let workspace = NSWorkspace.shared

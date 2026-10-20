@@ -7,8 +7,9 @@ import AppKit
 /// Icons of apps installed on this device, for agents that come with one (Claude, Codex, Cursor).
 /// The Mac asks Launch Services. iPadOS can't see other apps' icons, so there it finds none and
 /// agents use their registry icon or a monogram instead.
-enum AgentIconInstalledApps {
+nonisolated enum AgentIconInstalledApps {
     /// The icon of the first app in `bundleIDs` that's installed, rendered `pixelSize` pixels square.
+    /// Any thread: it draws into its own bitmap.
     static func icon(bundleIDs: [String], pixelSize: Int) -> CGImage? {
         #if canImport(AppKit)
         let workspace = NSWorkspace.shared
