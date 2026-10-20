@@ -3,6 +3,7 @@ import Foundation
 import NativeHostClient
 import NativeHostProtocol
 import Observation
+import os
 
 /// The app's handle on its local Native host (`docs/durability.md`): it decides at launch where
 /// this run's agents live, keeps that host up and connected, says how the connection is doing, and
@@ -57,6 +58,7 @@ final class DurableHost {
     /// Set by Quit Native and Stop Agents, so quitting stops the host too.
     @ObservationIgnored private var stopsAgentsOnQuit = false
 
+    static let logger = Logger(subsystem: "Native", category: "DurableHost")
     private static let dismissedFallbackKey = "NativeHostFallbackNoticeDismissed"
     /// How long launch waits for a host before trying the next way, then running agents in the app.
     private static let quickConnect = Duration.seconds(2)
@@ -306,10 +308,10 @@ final class DurableHost {
             }
             sessions = try await client.sessions().filter { $0.origin != .announced }
             refreshVersionStatus()
-            await readActivity(from: client, host: info, reconnection: reconnection)
         } catch {
-            errorMessage = error.localizedDescription
+            Self.logger.error("Couldn't list the host's sessions: \(error.localizedDescription, privacy: .public)")
         }
+        await readActivity(from: client, host: info, reconnection: reconnection)
         // A new host process hasn't heard the updater's status yet.
         if let updates {
             await report(updates.snapshot)

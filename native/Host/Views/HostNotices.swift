@@ -73,8 +73,10 @@ struct HostNotices: View {
         return SessionKey(agent: AgentDefinition.ID(rawValue: agent), id: session)
     }
 
+    /// The title the sidebar shows, which can differ from the host's (a rename, a generated title).
     private func title(_ item: AwaySummary.Item) -> String? {
-        key(for: item).flatMap { model.session($0)?.displayTitle }
+        guard let key = key(for: item) else { return nil }
+        return model.sessionList.first { $0.id == key }.map(model.title(for:))
     }
 
     private func open(_ item: AwaySummary.Item) -> (() -> Void)? {

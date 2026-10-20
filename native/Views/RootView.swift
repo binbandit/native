@@ -227,24 +227,22 @@ struct RootView: View {
                     }
                 }
         } detail: {
-            detail
-                // Never measured at no width for the window's minimum size (docs/performance.md).
-                .platformMinimumContentWidth(DS.Window.detailMinWidth)
-                // Under every page, so the transcript and anything else without a background of its
-                // own sits on the design system's background in the user's light tone, not the system's.
-                .background(.dsBackground)
-                .safeAreaInset(edge: .top, spacing: 0) {
-                    if let durableHost {
-                        HostNotices(host: durableHost, updates: updates)
-                    }
+            // The background host's notices sit above the page, not over it, so a transcript never
+            // scrolls under them.
+            VStack(spacing: 0) {
+                if let durableHost {
+                    HostNotices(host: durableHost, updates: updates)
                 }
-                .environment(\.inspectorRoom, inspectorRoom.room(sidebar: $columnVisibility))
+                detail
+                    // Never measured at no width for the window's minimum size (docs/performance.md).
+                    .platformMinimumContentWidth(DS.Window.detailMinWidth)
+            }
+            // Under every page, so the transcript and anything else without a background of its
+            // own sits on the design system's background in the user's light tone, not the system's.
+            .background(.dsBackground)
+            .environment(\.inspectorRoom, inspectorRoom.room(sidebar: $columnVisibility))
         }
         .toolbar(removing: .sidebarToggle)
-        // PROBE (temporary): compare with the system's toolbar background.
-        .toolbarBackgroundVisibility(
-            UserDefaults.standard.bool(forKey: "toolbarBandProbe") ? .automatic : .hidden, for: .windowToolbar
-        )
         .tracksWindowRoom(inspectorRoom.window)
         .onChange(of: columnVisibility) { _, visibility in
             inspectorRoom.sidebarChanged(to: visibility)

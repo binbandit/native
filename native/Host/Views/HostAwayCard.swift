@@ -97,24 +97,22 @@ private struct HostAwayRow: View {
             HStack(alignment: .firstTextBaseline, spacing: DS.Space.md) {
                 StatusIndicator(status: status)
                     .alignmentGuide(.firstTextBaseline) { $0[VerticalAlignment.center] + 4 }
-                Text(title)
-                    .font(.dsBody)
-                    .foregroundStyle(.dsTextPrimary)
-                    .lineLimit(1)
-                    .layoutPriority(1)
-                Text(outcome)
-                    .font(.dsBody)
-                    .foregroundStyle(.dsTextSecondary)
-                    .lineLimit(1)
-                    .truncationMode(.tail)
-                Spacer(minLength: DS.Space.md)
-                Text(DSFormat.time(item.at, now: .now))
-                    .font(.dsCaption)
-                    .monospacedDigit()
-                    .foregroundStyle(.dsTextTertiary)
+                // Two lines, so a long title or reason truncates instead of squeezing the time.
+                VStack(alignment: .leading, spacing: DS.Space.xxs) {
+                    Text(title)
+                        .font(.dsBody)
+                        .foregroundStyle(.dsTextPrimary)
+                    Text("\(outcome) · \(DSFormat.time(item.at, now: .now))")
+                        .font(.dsCaption)
+                        .foregroundStyle(.dsTextSecondary)
+                }
+                .lineLimit(1)
+                .truncationMode(.tail)
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
             .padding(.horizontal, DS.Space.lg)
-            .frame(minHeight: max(DS.Size.listRow, DS.Size.minimumHitTarget))
+            .padding(.vertical, DS.Space.sm)
+            .frame(minHeight: DS.Size.minimumHitTarget)
             .background(isHovered && open != nil ? Color.dsHover : .clear)
             .contentShape(.rect)
         }

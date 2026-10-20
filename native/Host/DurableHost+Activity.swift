@@ -1,6 +1,7 @@
 import Foundation
 import NativeHostClient
 import NativeHostProtocol
+import os
 
 /// The host process changed under a live connection: it crashed and launchd started it again, it
 /// restarted onto a new build, or Native started its attached host again.
@@ -58,7 +59,14 @@ extension DurableHost {
     /// got here, sums it up as "while you were away", explains a host restart, or just catches up.
     func readActivity(from client: NativeHostClient, host: HostInfo, reconnection: Reconnection) async {
         let seen = lastSeen(on: host.hostID)
-        guard let entries = try? await Self.activity(after: seen, from: client) else { return }
+        let entries: [ActivityEntry]
+        do {
+            entries = try await Self.activity(after: seen, from: client)
+        } catch {
+            Self.logger.error("Couldn't read the host's activity: \(error.localizedDescription, privacy: .public)")
+            return
+        }
+        Self.logger.debug("Activity after \(seen ?? -1): \(entries.count) entries, \(String(describing: reconnection))")
         if let last = entries.last {
             remember(last.id, on: host.hostID)
         } else if seen == nil {

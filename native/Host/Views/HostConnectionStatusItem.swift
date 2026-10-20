@@ -44,9 +44,11 @@ private struct HostConnectionSegment: View {
             ) {
                 HStack(spacing: DS.Space.sm) {
                     switch condition {
-                    case .reconnecting, .unreachable:
+                    case .reconnecting:
                         DotGridLoader(pattern: .waiting)
                             .frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
+                    case .unreachable:
+                        StatusBarGlyph("bolt.horizontal.circle")
                     case .restarted:
                         StatusBarGlyph("arrow.clockwise")
                     }
@@ -92,7 +94,9 @@ private struct HostConnectionSegment: View {
                     Button("Restart Host") { Task { await host.startHostAgain() } }
                         .buttonStyle(.ds(.secondary))
                 case .restarted(let restart):
-                    paragraph(restart.sentence, footnote: "Each task says so in its transcript, where it happened.")
+                    paragraph(
+                        restart.sentence,
+                        footnote: restart.resumed > 0 ? "Each task says so in its transcript, where it happened." : nil)
                     Button("Dismiss", action: host.dismissRestart)
                         .buttonStyle(.ds(.secondary))
                 }

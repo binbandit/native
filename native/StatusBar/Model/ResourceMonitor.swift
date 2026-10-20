@@ -70,11 +70,16 @@ final class ResourceMonitor {
         let activity: @MainActor () -> Activity = { [weak self] in
             Activity(roots: roots(), isWorking: isWorking(), isShowingDetails: self?.isShowingDetails ?? false)
         }
+        // The first sample's CPU covers launch itself, so the next comes soon rather than leaving a
+        // launch-time figure on the bar for the whole idle interval.
+        var isFirstSample = true
         while !Task.isCancelled {
             if isVisible() {
                 let current = activity()
                 await sample(roots: current.roots)
-                await Self.pause(for: current.interval, orUntilChanged: current, in: activity)
+                let wait = isFirstSample ? Self.interval : current.interval
+                isFirstSample = false
+                await Self.pause(for: wait, orUntilChanged: current, in: activity)
             } else {
                 await Self.visibilityChange()
             }
