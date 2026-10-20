@@ -44,7 +44,8 @@ struct SettingsSearchField: View {
     }
 }
 
-/// The popup under the field (as wide as it, 8pt radius, sidebar fill, at most 480pt tall, results with the matched letters at full strength and the rest dimmed).
+/// The popup under the field (as wide as it, 8pt radius, on the overlay backdrop, at most 480pt
+/// tall, results with the matched letters at full strength and the rest dimmed).
 private struct SettingsSearchResults: View {
     let query: String
     let results: [SettingsSearchIndex.Result]
@@ -84,7 +85,7 @@ private struct SettingsSearchResults: View {
             .frame(height: min(contentHeight, SettingsMetrics.resultsMaxHeight))
             .onChange(of: highlighted) { proxy.scrollTo(highlighted) }
         }
-        .background(.dsSurfaceSunken, in: shape)
+        .dsOverlayBackground(in: shape)
         .clipShape(shape)
         .overlay { shape.strokeBorder(.dsSeparator, lineWidth: 1) }
         .dsShadow(.modal)

@@ -287,7 +287,8 @@ extension AppModel {
     }
 
     /// The folder a task runs in, unless it's the project's own, which Native never puts away.
-    private func taskFolder(of key: SessionKey, in project: Project) -> URL? {
+    /// Internal only for AppModel+RemovedWorkspaces.swift, as is `inWorkspaceOrder`.
+    func taskFolder(of key: SessionKey, in project: Project) -> URL? {
         guard
             let folder = sessions.session(key)?.cwd
                 ?? catalog.lookup(key).map({ URL(filePath: $0.info.cwd, directoryHint: .isDirectory) }),
@@ -299,7 +300,7 @@ extension AppModel {
     /// Runs `work` on a folder's workspace after whatever was already started on it, so putting it
     /// away and bringing it back happen in the order they were asked for (Undo pressed while a bulk
     /// archive is still removing it), and two tasks in one folder don't bring it back twice.
-    private func inWorkspaceOrder<Value: Sendable>(
+    func inWorkspaceOrder<Value: Sendable>(
         at folder: URL, _ work: @escaping @MainActor () async throws -> Value
     ) async throws -> Value {
         let path = folder.standardizedFileURL.path(percentEncoded: false)

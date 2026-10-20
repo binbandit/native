@@ -146,8 +146,13 @@ struct SessionRow<Accessory: View>: View {
         isPinned ? .pinned(summary.id) : .session(summary.id, in: summary.project)
     }
 
-    /// Queued follow-ups, counted at the trailing edge.
+    /// At the trailing edge: what a task whose worktree was removed outside Native wants done, else
+    /// its queued follow-ups, counted.
     private var badge: TaskBadge? {
+        // What to do about it, like "Approve"; the tooltip and VoiceOver say what happened.
+        if let removed = model.removedWorkspaces[summary.id] {
+            return .attention(removed.branch == nil ? "Archive" : "Restore")
+        }
         guard let count = session?.queuedPrompts.count, count > 0 else { return nil }
         return .count(count)
     }
@@ -157,11 +162,13 @@ struct SessionRow<Accessory: View>: View {
     private var tooltip: String {
         let project = indent == .flat ? model.projects.project(summary.project).map { " · \($0.name)" } : nil
         let line = "\(summary.agent.displayName) · \(title)\(project ?? "")\(isArchived ? " · Archived" : "")"
-        return [line, session?.sidebarAsk].compactMap(\.self).joined(separator: "\n")
+        let removed = model.removedWorkspaces[summary.id].map { "Its worktree was removed. \($0.detail)" }
+        return [line, removed, session?.sidebarAsk].compactMap(\.self).joined(separator: "\n")
     }
 
     private var accessibilityLabel: String {
-        [title, session?.sidebarAsk].compactMap(\.self).joined(separator: ", ")
+        let removed = model.removedWorkspaces[summary.id] != nil ? "worktree removed" : nil
+        return [title, removed, session?.sidebarAsk].compactMap(\.self).joined(separator: ", ")
     }
 
     private func rename() {

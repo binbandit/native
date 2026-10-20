@@ -30,6 +30,7 @@ struct SessionView: View {
                 if session.isEarlierConversation {
                     EarlierConversationBar(session: session)
                 } else {
+                    RemovedWorkspaceNotice(session: session)
                     UsageComposerNotices(session: session)
                     ComposerView(session: session)
                 }

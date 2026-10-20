@@ -23,7 +23,9 @@ enum GitCleanupWiring {
                 }))
     }
 
-    private static func mergedPullRequests(
+    /// Merged pull requests for the branches asked about, or why GitHub couldn't be asked. Also
+    /// used for tasks whose worktrees were removed outside Native (GitTaskWorkspaceProvider).
+    static func mergedPullRequests(
         _ queries: [CleanupPullRequestLookup.Query], in project: URL, cli: GitHubCLI
     ) async -> CleanupPullRequestLookup {
         var cli = cli

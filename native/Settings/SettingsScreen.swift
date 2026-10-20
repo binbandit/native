@@ -56,6 +56,7 @@ struct SettingsScreen: View {
                     onPick: open
                 )
             }
+            .dsSidebarColumnTransparency()
             // Applied after the width, this would make SwiftUI ignore the width.
             .toolbar(removing: .sidebarToggle)
             .navigationSplitViewColumnWidth(SettingsMetrics.navWidth)

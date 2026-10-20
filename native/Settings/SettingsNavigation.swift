@@ -35,12 +35,6 @@ struct SettingsNavigation<Search: View>: View {
         .padding(.leading, DS.Space.sm)
         .padding(.trailing, DS.Space.md)
         .frame(maxHeight: .infinity, alignment: .top)
-        .background(.dsBackground)
-        .overlay(alignment: .trailing) {
-            // A full-height divider, under the toolbar too.
-            SeparatorLine(axis: .vertical)
-                .ignoresSafeArea()
-        }
         .onChange(of: focus.wrappedValue) { _, newValue in
             showsFocusRing = newValue == .navigation && !isFocusingQuietly
             isFocusingQuietly = false
@@ -106,7 +100,8 @@ struct SettingsNavigation<Search: View>: View {
 }
 
 /// A nav row (32pt, 6pt radius, 16pt icon 12pt before a 14pt label; muted until
-/// selected, when it fills and turns medium; hovering fills it and brightens the icon).
+/// selected, when it takes the sidebar's selection fill and turns medium; hovering washes it and
+/// brightens the icon). Both fills are translucent, as everything on the sidebar is.
 private struct NavItem: View {
     let pane: SettingsPane
     let isSelected: Bool
@@ -137,7 +132,7 @@ private struct NavItem: View {
             }
             .padding(.horizontal, DS.Space.md)
             .padding(.vertical, DS.Space.sm)
-            .background(isSelected || isHovered ? Color.dsHover : .clear, in: shape)
+            .background(isSelected ? Color.dsSelected : isHovered ? .dsHover : .clear, in: shape)
             .overlay {
                 if showsFocusRing {
                     // A 2pt ring, in the accent color the system draws focus rings in. It

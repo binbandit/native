@@ -87,6 +87,13 @@ final class AppModel {
     /// When each unarchived task was archived, until its workspace is back: it tells that archive's
     /// checkpoint from earlier ones when nothing was recorded. Internal only for AppModel+Archive.swift.
     @ObservationIgnored var archiveDatesAwaitingRestore: [SessionKey: Date] = [:]
+    /// Tasks whose workspace was removed outside Native while their work isn't done, for the
+    /// sidebar and the task (AppModel+RemovedWorkspaces.swift).
+    var removedWorkspaces: [SessionKey: RemovedWorkspace] = [:]
+    /// Removed workspaces being restored. Internal only for AppModel+RemovedWorkspaces.swift.
+    var restoringRemovedWorkspaces: Set<SessionKey> = []
+    @ObservationIgnored var removedWorkspaceCheck: Task<Void, Never>?
+    @ObservationIgnored var isRemovedWorkspaceCheckDue = false
     @ObservationIgnored let deletedSessions = DeletedSessions()
     var history = NavigationHistory<SessionKey>()
     @ObservationIgnored var isNavigatingHistory = false
@@ -223,6 +230,7 @@ final class AppModel {
             }
         }
         Task { await resumeWorkspaceRestores() }
+        watchRemovedWorkspaces()
         // Agents with saved sessions were installed last time. Their runtimes come now, so their rows
         // show from the first frame instead of after the login shell answers; checking for agents
         // drops any that went away since.

@@ -91,8 +91,9 @@ extension GitStore {
             let worktrees = try? await repository.worktrees()
         else { return [] }
         let location = Self.taskLocation(of: repository).standardizedFileURL.path(percentEncoded: false)
+        // A record whose folder was deleted by hand isn't a worktree to list or remove.
         return worktrees.filter {
-            !$0.isMain && $0.path.standardizedFileURL.path(percentEncoded: false).hasPrefix(location)
+            !$0.isMain && !$0.isPrunable && $0.path.standardizedFileURL.path(percentEncoded: false).hasPrefix(location)
         }
         .map(\.path)
     }

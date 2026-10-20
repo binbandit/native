@@ -73,7 +73,8 @@ final class GitCleanupModel: Identifiable {
             }
             guard !Task.isCancelled else { return }
             self.plan = plan
-            items = GitCleanupItem.items(from: plan, tasks: tasks(in:))
+            let onBranches = await removedTasksByBranch(branchPrefix: prefix)
+            items = GitCleanupItem.items(from: plan, tasks: tasks(in:)) { onBranches[$0] ?? [] }
             checked = Set(items.filter(\.isCheckedByDefault).map(\.id))
             states = [:]
             phase = .review
@@ -84,6 +85,39 @@ final class GitCleanupModel: Identifiable {
 
     private func setScanning(_ step: String) {
         if case .scanning = phase { phase = .scanning(step) }
+    }
+
+    /// The project's tasks whose worktrees were removed before this cleanup, by the branch each
+    /// was on, so deleting a branch archives its tasks too.
+    private func removedTasksByBranch(branchPrefix: String) async -> [String: [GitCleanupItem.TaskReference]] {
+        let app = services.app
+        let listed = app.allSessions(in: project.id).filter {
+            !app.isArchived($0.id) && !app.pendingDeletionKeys.contains($0.id)
+        }
+        let folders = listed.map { URL(filePath: $0.info.cwd, directoryHint: .isDirectory) }
+        let removed = Set(await services.git.removedTaskFolders(among: folders, of: project.url))
+        let tasks = listed.filter { removed.contains(URL(filePath: $0.info.cwd, directoryHint: .isDirectory)) }
+        // Only which branch each was on matters here; the plan already judged the branches.
+        guard !tasks.isEmpty,
+            let verdicts = try? await services.git.removedTaskWorktreeVerdicts(
+                tasks.map { RemovedWorktreeTask(path: URL(filePath: $0.info.cwd), title: app.title(for: $0)) },
+                of: project.url, branchPrefix: branchPrefix,
+                pullRequests: { _ in .unavailable("not needed to tie tasks to branches") })
+        else { return [:] }
+        var byBranch: [String: [GitCleanupItem.TaskReference]] = [:]
+        for (summary, verdict) in zip(tasks, verdicts) {
+            let branch: String? =
+                switch verdict {
+                case .done(.merged(let branch, _)), .done(.noCommits(let branch)), .unmerged(let branch, _): branch
+                case .done(.branchGone), .unknownBranch: nil
+                }
+            guard let branch else { continue }
+            byBranch[branch, default: []].append(
+                GitCleanupItem.TaskReference(
+                    key: summary.id, title: app.title(for: summary),
+                    isWorking: app.session(summary.id)?.phase == .prompting))
+        }
+        return byBranch
     }
 
     /// The project's tasks working in `folder` that aren't archived or being deleted.

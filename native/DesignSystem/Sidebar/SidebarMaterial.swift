@@ -67,20 +67,7 @@ private struct SidebarBackdrop: View {
 }
 
 private struct SidebarColumnTransparency: ViewModifier {
-    @Environment(\.dsTransparency) private var transparency
-    @Environment(\.dsLightTone) private var lightTone
-    @Environment(\.dsDarkTone) private var darkTone
-    @Environment(\.colorScheme) private var colorScheme
-
-    /// The system's light sidebar is a cool gray; on Wool a little of Wool's own sidebar color
-    /// keeps it from reading cold beside the warm content.
-    private static let woolWarmth = 0.4
-
-    private var tint: Double {
-        let tint = transparency.sidebarTint(colorScheme: colorScheme, darkTone: darkTone)
-        let isWool = colorScheme == .light && lightTone == .wool
-        return isWool ? max(tint, Self.woolWarmth) : tint
-    }
+    @Environment(\.sidebarColumnTint) private var tint
 
     func body(content: Content) -> some View {
         content
@@ -91,6 +78,59 @@ private struct SidebarColumnTransparency: ViewModifier {
                     .ignoresSafeArea()
                     .animation(.dsStandard, value: tint)
             }
+    }
+}
+
+/// A split-view sidebar column's look, for chrome that continues the column past its edge (the
+/// status bar), so the two read as one surface: the system's sidebar glass as it renders, under
+/// the solid sidebar color at the column's tint.
+struct SidebarColumnBackdrop: View {
+    @Environment(\.sidebarColumnTint) private var tint
+
+    var body: some View {
+        ZStack {
+            if tint < 1 {
+                SidebarColumnGlass()
+            }
+            Rectangle()
+                .fill(.dsSidebarSolid)
+                .opacity(tint)
+        }
+        .animation(.dsStandard, value: tint)
+    }
+}
+
+/// What the system's split-view sidebar glass renders, drawn where that glass can't be: macOS draws
+/// the column with a private sidebar variant of `NSGlassEffectView`, and a public one renders as a
+/// lit pane instead. Measured against the column on macOS 27 (pixel-identical in both appearances,
+/// window active and inactive): in dark mode the glass is all but clear over the window's
+/// background, the content-background material with the wallpaper's tint; in light mode it's
+/// SwiftUI's thin material while the window is active and ultra-thin while it isn't.
+private struct SidebarColumnGlass: View {
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.appearsActive) private var appearsActive
+
+    var body: some View {
+        #if canImport(AppKit)
+        if colorScheme == .dark {
+            DSBehindWindowMaterial(material: .contentBackground)
+        } else {
+            Rectangle().fill(appearsActive ? .thinMaterial : .ultraThinMaterial)
+        }
+        #else
+        Rectangle().fill(.ultraThinMaterial)
+        #endif
+    }
+}
+
+nonisolated extension EnvironmentValues {
+    /// How much of the solid sidebar color covers a split-view sidebar column's glass: the user's
+    /// transparency for this appearance, and on Wool at least a little, since the system's light
+    /// sidebar is a cool gray that would read cold beside Wool's warm content.
+    fileprivate var sidebarColumnTint: Double {
+        let tint = dsTransparency.sidebarTint(colorScheme: colorScheme, darkTone: dsDarkTone)
+        let isWool = colorScheme == .light && dsLightTone == .wool
+        return isWool ? max(tint, 0.4) : tint
     }
 }
 

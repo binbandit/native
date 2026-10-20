@@ -29,6 +29,7 @@ extension GitCleanupModel {
         for item in chosen {
             guard case .staleRecord(let path) = item.id else { continue }
             await step(item) { try await git.forgetStaleWorktree(at: path, in: root) }
+            archiveTasks(of: item, into: &record)
         }
         for item in chosen {
             guard case .worktree(let path) = item.id else { continue }
@@ -48,6 +49,7 @@ extension GitCleanupModel {
                 try await git.deleteMergedBranch(name, in: root)
                 record.branches.append(name)
             }
+            archiveTasks(of: item, into: &record)
         }
         #if os(macOS)
         for item in chosen {
@@ -57,6 +59,7 @@ extension GitCleanupModel {
                 try FileManager.default.trashItem(at: path, resultingItemURL: &trashed)
                 if let trashed = trashed as URL? { record.folders.append((path, trashed)) }
             }
+            archiveTasks(of: item, into: &record)
         }
         #endif
         git.refresh(folder: root)
@@ -81,6 +84,19 @@ extension GitCleanupModel {
             return error.localizedDescription
         }
         return "Another git process has the repository locked, so this was left as it was. Try again when it's done."
+    }
+
+    /// Archives the tasks of a folder or branch the run removed, once it's gone. Their worktrees
+    /// were already gone, so archiving removes nothing else; Undo brings them back with the rest.
+    private func archiveTasks(of item: GitCleanupItem, into record: inout GitCleanupUndo) {
+        guard states[item.id] == .done else { return }
+        let app = services.app
+        let keys = item.tasks.map(\.key).filter { !app.isArchived($0) }
+        for key in keys {
+            app.archivedSessions.set(key, archived: true)
+            app.leave(key, in: project.id)
+        }
+        record.tasks += keys
     }
 
     /// Archives the worktree's tasks, which removes it the way archiving one does (teardown script,

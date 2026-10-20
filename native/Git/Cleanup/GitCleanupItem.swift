@@ -48,8 +48,12 @@ struct GitCleanupItem: Identifiable, Hashable {
     /// The tasks archived with a worktree.
     var tasks: [TaskReference] = []
 
-    /// The sheet's rows for a plan. `tasks` finds the tasks working in a worktree folder.
-    static func items(from plan: MergedCleanupPlan, tasks: (URL) -> [TaskReference]) -> [GitCleanupItem] {
+    /// The sheet's rows for a plan. `tasks` finds the tasks working in a folder, and `tasksOnBranch`
+    /// those whose worktrees were removed before, by the branch they were on: removing the folder or
+    /// deleting the branch archives them.
+    static func items(
+        from plan: MergedCleanupPlan, tasks: (URL) -> [TaskReference], tasksOnBranch: (String) -> [TaskReference]
+    ) -> [GitCleanupItem] {
         var items: [GitCleanupItem] = []
         let worktrees = Set(plan.worktrees.map(\.path))
         for worktree in plan.worktrees {
@@ -85,6 +89,12 @@ struct GitCleanupItem: Identifiable, Hashable {
             item.pullRequest = branch.reason.pullRequestURL
             item.detail = "At \(branch.tip.prefix(7))"
             item.isCheckedByDefault = branch.isNative
+            if branch.checkedOutIn == nil {
+                item.tasks = tasksOnBranch(branch.name)
+                if !item.tasks.isEmpty {
+                    item.detail = "At \(branch.tip.prefix(7)) · archives \(Self.title(of: item.tasks, folder: nil))"
+                }
+            }
             if let folder = branch.checkedOutIn {
                 if worktrees.contains(folder) {
                     item.requires = .worktree(folder)
@@ -96,9 +106,12 @@ struct GitCleanupItem: Identifiable, Hashable {
             items.append(item)
         }
         for record in plan.staleRecords {
+            let working = tasks(record.path)
             var item = GitCleanupItem(
-                id: .staleRecord(record.path), group: .staleRecords, title: record.path.lastPathComponent,
+                id: .staleRecord(record.path), group: .staleRecords,
+                title: Self.title(of: working, folder: record.path),
                 reason: "Its folder is gone")
+            item.tasks = working
             item.detail = record.branch
             item.location = Self.abbreviated(record.path)
             items.append(item)
@@ -106,9 +119,12 @@ struct GitCleanupItem: Identifiable, Hashable {
         #if os(macOS)
         // Moved to the Trash, which only this Mac's folders can be.
         for folder in plan.leftoverFolders {
+            let working = tasks(folder.path)
             var item = GitCleanupItem(
-                id: .leftoverFolder(folder.path), group: .leftoverFolders, title: folder.path.lastPathComponent,
+                id: .leftoverFolder(folder.path), group: .leftoverFolders,
+                title: Self.title(of: working, folder: folder.path),
                 reason: "Left behind by a worktree git no longer knows")
+            item.tasks = working
             item.detail = Self.abbreviated(folder.path)
             item.location = item.detail
             item.bytes = folder.bytes
@@ -142,8 +158,8 @@ struct GitCleanupItem: Identifiable, Hashable {
     }
 
     /// "Fix login bug", "Fix login bug and 1 more", or the folder's name when no task works there.
-    private static func title(of tasks: [TaskReference], folder: URL) -> String {
-        guard let first = tasks.first else { return folder.lastPathComponent }
+    private static func title(of tasks: [TaskReference], folder: URL?) -> String {
+        guard let first = tasks.first else { return folder?.lastPathComponent ?? "" }
         return tasks.count == 1 ? first.title : "\(first.title) and \(tasks.count - 1) more"
     }
 

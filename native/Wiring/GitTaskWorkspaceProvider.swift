@@ -73,6 +73,72 @@ final class GitTaskWorkspaceProvider: TaskWorkspaceProvider {
         (try? await git.archivedTaskWorktrees(of: project.url))?.map(\.path) ?? []
     }
 
+    func removedWorkspaces(
+        among tasks: [(folder: URL, title: String)], in project: Project
+    ) async -> [URL: RemovedWorkspace.Fate] {
+        let removed = await git.removedTaskFolders(among: tasks.map(\.folder), of: project.url)
+        // What was put away by archiving comes back by unarchiving, not here.
+        let archived = await archivedWorkspaceFolders(of: project)
+        let candidates = tasks.filter { task in
+            removed.contains(task.folder)
+                && !archived.contains { SessionFolder.isSame($0.folderPath, task.folder.folderPath) }
+        }
+        guard !candidates.isEmpty else { return [:] }
+        let prefix = git.settings.branchPrefix(forProjectAt: project.url, gitHubLogin: await gitHubLogin(for: project))
+        let gitHub = gitHub
+        let root = project.url
+        guard
+            let verdicts = try? await git.removedTaskWorktreeVerdicts(
+                candidates.map { RemovedWorktreeTask(path: $0.folder, title: $0.title) }, of: root,
+                branchPrefix: prefix,
+                pullRequests: { queries in
+                    await GitCleanupWiring.mergedPullRequests(queries, in: root, cli: await gitHub.cli())
+                })
+        else { return [:] }
+        var fates: [URL: RemovedWorkspace.Fate] = [:]
+        for (task, verdict) in zip(candidates, verdicts) {
+            fates[task.folder] = Self.fate(of: verdict)
+        }
+        return fates
+    }
+
+    func restoreRemovedWorkspace(at folder: URL, branch: String, in project: Project) async throws {
+        _ = try await git.restoreRemovedTaskWorktree(at: folder, branch: branch, of: project.url)
+        git.refresh(folder: folder)
+    }
+
+    /// A verdict in the words the task and the archive toast use.
+    private static func fate(of verdict: RemovedWorktreeVerdict) -> RemovedWorkspace.Fate {
+        switch verdict {
+        case .done(.merged(_, .pullRequest(let number, _, _))):
+            .done(reason: "its branch was merged in pull request #\(number)")
+        case .done(.merged(_, .ancestry(let base))), .done(.merged(_, .sameContent(let base))):
+            .done(reason: "its work is in \(base)")
+        case .done(.noCommits):
+            .done(reason: "its branch had no commits of its own")
+        case .done(.branchGone):
+            .done(reason: "its branch is gone")
+        case .unmerged(let branch, .unmergedCommits(let count)):
+            .kept(
+                RemovedWorkspace(
+                    branch: branch,
+                    detail: count == 1
+                        ? "\(branch) has 1 commit that isn't merged."
+                        : "\(branch) has \(count) commits that aren't merged."))
+        case .unmerged(let branch, .changedSincePullRequest(let number)):
+            .kept(
+                RemovedWorkspace(
+                    branch: branch, detail: "\(branch) has commits since pull request #\(number) was merged."))
+        case .unmerged(let branch, _):
+            .kept(RemovedWorkspace(branch: branch, detail: "Its branch, \(branch), is still there."))
+        case .unknownBranch(let names):
+            .kept(
+                RemovedWorkspace(
+                    branch: nil,
+                    detail: "Native can't tell which branch it was on: \(names.joined(separator: ", "))."))
+        }
+    }
+
     func deleteWorkspace(at folder: URL, in project: Project) async throws {
         try await git.forgetArchivedTaskWorktree(at: folder, of: project.url)
         guard await git.isTaskWorktree(folder, of: project.url) else { return }
