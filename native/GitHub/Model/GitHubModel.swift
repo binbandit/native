@@ -294,22 +294,35 @@ final class GitHubModel {
         defer { branchLookupsInFlight.remove(branch) }
         let cli = await cli()
         do {
-            let pullRequest: PullRequest?
+            let found: BranchPullRequests?
             if let link = await linkedPullRequest?(branch) {
-                pullRequest = try await cli.pullRequest(.url(link), in: .directory(branch.directory))
+                found = BranchPullRequests([try await cli.pullRequest(.url(link), in: .directory(branch.directory))])
             } else {
-                pullRequest = try await cli.pullRequest(forBranch: branch.branch, in: .directory(branch.directory))
+                found = try await cli.pullRequests(forBranch: branch.branch, in: .directory(branch.directory))
             }
-            branchPullRequests[branch] = BranchPullRequest(
-                pullRequest: pullRequest.map(PullRequestSummary.init), fetchedAt: .now)
+            branchPullRequests[branch] = BranchPullRequest(found, fetchedAt: .now)
         } catch .notARepository, .notFound {
             branchPullRequests[branch] = BranchPullRequest(pullRequest: nil, fetchedAt: .now)
         } catch {
-            // Keep showing what was there; the next refresh tries again.
+            // Keep showing what was there, saying why it may be old; the next refresh tries again.
             if var cached = branchPullRequests[branch] {
                 cached.fetchedAt = .now
+                cached.failure = error
                 branchPullRequests[branch] = cached
             }
+        }
+    }
+
+    /// What the last lookup found for a branch, with how fresh it is.
+    func branchPullRequest(for branch: BranchReference) -> BranchPullRequest? {
+        branchPullRequests[branch]
+    }
+
+    /// Reloads every badge showing this pull request, after a change made from Native (a merge, a
+    /// close) so the sidebar says so at once rather than at the next refresh.
+    func reloadBranches(showing url: URL) {
+        for (branch, found) in branchPullRequests where found.pullRequest?.url == url {
+            Task { await loadPullRequest(for: branch, maxAge: 0) }
         }
     }
 

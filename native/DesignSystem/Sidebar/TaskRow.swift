@@ -12,6 +12,12 @@ public enum TaskRowIndent: Sendable {
     }
 }
 
+/// A generic type can't hold static stored properties, so the row's own metrics live here.
+private enum TaskRowMetrics {
+    /// The archive button's side, and the narrowest the age's slot gets so the button covers it.
+    static let archiveSide: CGFloat = 20
+}
+
 /// Something worth a glance at a task row's trailing edge.
 public enum TaskBadge: Equatable, Sendable {
     /// A 6pt unread dot, in the accent.
@@ -23,15 +29,16 @@ public enum TaskBadge: Equatable, Sendable {
 }
 
 /// A task (an agent session) in the sidebar: status glyph, title and a
-/// trailing badge, diff or age; 36pt tall with 6pt-rounded hover and selection fills. Unread tasks
-/// set their title semibold in the primary color; inline code in a title shows in monospace. With
-/// `onArchive`, an archive button takes the trailing items' place on hover (and is offered to
-/// VoiceOver as an action).
+/// trailing badge, then the diff or age at the trailing edge; 36pt tall with 6pt-rounded hover and
+/// selection fills. Unread tasks set their title semibold in the primary color; inline code in a
+/// title shows in monospace. With `onArchive`, an archive button takes the age's place on hover
+/// (and is offered to VoiceOver as an action); the badge and accessory stay put, so a control
+/// there (a pull request badge) can be reached on hover.
 ///
 /// Two optional slots: `leading`, a 16pt type glyph (the agent: `Image(systemName:)` or any view,
-/// tinted tertiary), and `accessory`, a view after the age (e.g. `ContextUsageRing`). The
-/// row has one leading visual: the type glyph at rest (idle or done), the status
-/// glyph while something is happening or wants the user. See `TaskRow+Slots.swift` for the
+/// tinted tertiary), and `accessory`, a view between the badge and the age (e.g.
+/// `ContextUsageRing`). The row has one leading visual: the type glyph at rest (idle or done), the
+/// status glyph while something is happening or wants the user. See `TaskRow+Slots.swift` for the
 /// initializers without slots.
 public struct TaskRow<Leading: View, Accessory: View>: View {
     let title: String
@@ -55,7 +62,7 @@ public struct TaskRow<Leading: View, Accessory: View>: View {
     ///   - date: When the task last changed, shown as a compact age ("now", "5m", "4d").
     ///   - diff: Lines added and removed in the task's worktree; shown instead of the age.
     ///   - leading: An icon before the status glyph, framed at 16pt.
-    ///   - accessory: A small view at the trailing edge, after the age.
+    ///   - accessory: A small view near the trailing edge, before the age.
     public init(
         title: String,
         status: TaskStatus,
@@ -112,7 +119,6 @@ public struct TaskRow<Leading: View, Accessory: View>: View {
                             .lineLimit(1)
                         Spacer(minLength: 0)
                         trailing
-                            .opacity(isArchiveShown ? 0 : 1)
                     }
                     .frame(height: 20)
 
@@ -143,16 +149,17 @@ public struct TaskRow<Leading: View, Accessory: View>: View {
         }
         .overlay(alignment: .topTrailing) {
             if let onArchive, isArchiveShown {
+                // Over the age's slot, which is at least this wide, at the row's trailing inset.
                 Button("Archive", systemImage: "archivebox", action: onArchive)
                     .labelStyle(.iconOnly)
                     .buttonStyle(.plain)
                     .font(.system(size: 11))
                     .foregroundStyle(.dsTextSecondary)
-                    .frame(width: 20, height: 20)
+                    .frame(width: TaskRowMetrics.archiveSide, height: TaskRowMetrics.archiveSide)
                     .contentShape(.rect)
-                    .dsHitTarget(20)
+                    .dsHitTarget(TaskRowMetrics.archiveSide)
                     .padding(.top, DS.Space.md)
-                    .padding(.trailing, DS.Space.xs)
+                    .padding(.trailing, DS.Space.sm)
                     .help("Archive Task")
             }
         }
@@ -184,18 +191,24 @@ public struct TaskRow<Leading: View, Accessory: View>: View {
                 EmptyView()
             }
 
-            if let diff, diff.added > 0 || diff.removed > 0 {
-                DiffStatLabel(added: diff.added, removed: diff.removed)
-            } else if let date {
-                CompactAgeText(date: date)
-            }
-
             accessory
+
+            age
+                .frame(minWidth: onArchive == nil ? nil : TaskRowMetrics.archiveSide, alignment: .trailing)
+                .opacity(isArchiveShown ? 0 : 1)
         }
     }
 
-    /// The archive button replaces the trailing items on hover, and always on touch, which has
-    /// no hover to reveal it.
+    @ViewBuilder private var age: some View {
+        if let diff, diff.added > 0 || diff.removed > 0 {
+            DiffStatLabel(added: diff.added, removed: diff.removed)
+        } else if let date {
+            CompactAgeText(date: date)
+        }
+    }
+
+    /// The archive button replaces the age on hover, and always on touch, which has no hover to
+    /// reveal it.
     private var isArchiveShown: Bool {
         onArchive != nil && (isHovered || DS.isTouchPlatform)
     }

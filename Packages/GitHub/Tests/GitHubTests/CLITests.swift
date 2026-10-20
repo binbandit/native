@@ -94,7 +94,7 @@ struct CLITests {
         let runner = FakeRunner { _ in FakeRunner.success(Data("[]".utf8)) }
         let folder = URL(filePath: "/work/tree", directoryHint: .isDirectory)
         #expect(
-            try await GitHubCLI(environment: environment, runner: runner).pullRequest(
+            try await GitHubCLI(environment: environment, runner: runner).pullRequests(
                 forBranch: "feature", in: .directory(folder)) == nil)
         #expect(runner.commands.first?.directory == "/work/tree/")
     }

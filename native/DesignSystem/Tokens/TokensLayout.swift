@@ -66,6 +66,8 @@ public nonisolated enum DS {
         public static let chromeGlyph: CGFloat = 16
         /// Popover panels that hold a list or a table (the status bar's memory and CPU).
         public static let popoverWidth: CGFloat = 400
+        /// Hover cards (`.dsHoverCard`) that sum one thing up: a task's pull request.
+        public static let hoverCardWidth: CGFloat = 320
         /// How far content fades out toward a scrolling edge it runs past (`dsEdgeFade`): about a
         /// row, so a row cut in half fades rather than being sliced through.
         public static let edgeFade: CGFloat = 20

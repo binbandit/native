@@ -17,6 +17,7 @@ struct PullRequestsView: View {
                 list
             }
         }
+        .dsToolbarBand()
         .alert(
             "Something went wrong",
             isPresented: Binding(get: { model.actionError != nil }, set: { if !$0 { model.actionError = nil } })

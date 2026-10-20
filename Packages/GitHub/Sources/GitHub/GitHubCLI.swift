@@ -221,16 +221,13 @@ public struct GitHubCLI: Sendable {
         try await decode(PullRequest.self, from: .viewPullRequest(pullRequest, in: location))
     }
 
-    /// The pull request for a branch, preferring an open one over the most recently updated closed
-    /// or merged one; `nil` when the branch has none.
-    public func pullRequest(
+    /// A branch's pull requests: the newest open one (else the newest) and the rest; `nil` when the
+    /// branch has none.
+    public func pullRequests(
         forBranch branch: String, in location: RepositoryLocation
-    ) async throws(GitHubError) -> PullRequest? {
-        let candidates = try await pullRequests(
-            PullRequestListFilter(state: .all, head: branch, limit: 10), in: location)
-        return candidates.max { lhs, rhs in
-            (lhs.state == .open ? 1 : 0, lhs.updatedAt) < (rhs.state == .open ? 1 : 0, rhs.updatedAt)
-        }
+    ) async throws(GitHubError) -> BranchPullRequests? {
+        BranchPullRequests(
+            try await pullRequests(PullRequestListFilter(state: .all, head: branch, limit: 10), in: location))
     }
 
     /// Every check on the pull request's head commit; empty when it has none.
