@@ -78,6 +78,12 @@ struct HostAgentTests {
             if case .message(let message) = item, message.role == .user { message.text } else { nil }
         }
         #expect(shown == ["hello", "again"])
+        // Inside the reload, so clients take it for history, not for the turn starting again.
+        let payloads = await recorder.payloads(session.id)
+        let reload = payloads[(payloads.lastIndex { if case .reset = $0 { true } else { false } } ?? 0)...]
+        let echoed = try #require(reload.firstIndex { if case .prompt = $0 { true } else { false } })
+        let loaded = try #require(reload.firstIndex { if case .loaded = $0 { true } else { false } })
+        #expect(echoed < loaded)
         await recorder.stop()
     }
 

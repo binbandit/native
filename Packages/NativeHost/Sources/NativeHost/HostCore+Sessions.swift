@@ -150,6 +150,9 @@ extension HostCore {
             if let options = response.configOptions {
                 append(.update(SessionMirror.configOptionsUpdate(options)), to: session)
             }
+            if !wasRecovering {
+                showPendingMessage(of: session)
+            }
             append(.loaded, to: session)
             tasks.sessionLoaded(session)
             await restoreConfigChoices(of: session, on: link)
@@ -166,6 +169,9 @@ extension HostCore {
             }
         } catch {
             if replaying {
+                if !wasRecovering {
+                    showPendingMessage(of: session)
+                }
                 append(.loaded, to: session)
             }
             if !wasRecovering {
