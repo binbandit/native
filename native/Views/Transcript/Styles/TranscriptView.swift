@@ -103,10 +103,7 @@ struct TranscriptView: View {
     /// The code on the transcript's first screen that has no colors yet. Only looked at until the
     /// transcript appears: it reads the session's state, which changes with every chunk.
     private var openingCode: [TranscriptOpeningCode.Block] {
-        guard !isOpeningCodeColored else { return [] }
-        #if DEBUG || NATIVE_PERF
-        if TranscriptPerfProbe.skipsOpeningColors { return [] }
-        #endif
+        guard TranscriptOpeningCode.isEnabled, !isOpeningCodeColored else { return [] }
         // Before the container's first layout, a tall window's worth.
         return TranscriptOpeningCode.uncolored(in: session.state.items, height: containerHeight ?? 1200)
     }
@@ -127,14 +124,6 @@ struct TranscriptView: View {
         .defaultScrollAnchor(.bottom, for: .initialOffset)
         .defaultScrollAnchor(.bottom, for: .sizeChanges)
         .scrollPosition($position)
-        #if DEBUG || NATIVE_PERF
-        .onAppear { TranscriptPerfProbe.transcriptAppeared() }
-        .onScrollGeometryChange(for: ScrollGeometry.self) {
-            $0
-        } action: { _, geometry in
-            TranscriptPerfProbe.scrolled(geometry)
-        }
-        #endif
         // Rows scrolled up under the title bar stay legible through the soft edge, right behind the
         // session's title; the hard edge keeps the title on a plain backing. Under a page's or an
         // inspector's `dsToolbarBand`, the band in Native's colors takes its place.

@@ -30,9 +30,6 @@ struct StandardTranscriptLines: View, Equatable {
     }
 
     var body: some View {
-        #if DEBUG || NATIVE_PERF
-        let _ = TranscriptPerfProbe.linesBodyRan(count: list.lines.count)
-        #endif
         ForEach(list.lines) { line in
             StandardTranscriptLineView(line: line, context: context)
         }

@@ -16,16 +16,11 @@ struct TranscriptCodeBlock: View {
 
     var body: some View {
         let code = Self.shownCode(code)
-        #if DEBUG || NATIVE_PERF
-        let _ = TranscriptPerfProbe.codeRendered(code, language: language)
-        #endif
         VStack(alignment: .leading, spacing: DS.Space.sm) {
             if let language, !language.isEmpty {
                 Text(language)
                     .font(.dsMicro)
                     .foregroundStyle(.dsTextSecondary)
-                    // A label, not code to copy; selectable text costs a text view's layout.
-                    .textSelection(.disabled)
             }
             ScrollView(.horizontal) {
                 HighlightedCode(code, language: language)

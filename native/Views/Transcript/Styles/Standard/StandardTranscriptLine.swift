@@ -195,12 +195,10 @@ private enum ReplySections {
 
     static func sections(of message: TranscriptMessage) -> [String] {
         let length = message.text.utf8.count
-        let cached = sections[message.id]
-        if let cached, cached.length == length {
+        if let cached = sections[message.id], cached.length == length {
             return cached.sections
         }
-        let split =
-            cached.flatMap { grown(message.text, from: $0.sections) } ?? message.text.markdownSections.map(String.init)
+        let split = message.text.markdownSections.map(String.init)
         if sections.count >= capacity || bytes >= byteCapacity {
             sections.removeAll(keepingCapacity: true)
             bytes = 0
@@ -208,23 +206,5 @@ private enum ReplySections {
         bytes += length - (sections[message.id]?.length ?? 0)
         sections[message.id] = (length, split)
         return split
-    }
-
-    /// The sections of `text`, a reply that grew from the one split into `earlier`: new text only
-    /// changes the last sections, so the ones before them stay and only the rest is split again. A
-    /// streaming reply was split whole on every chunk. The last two are split again because the
-    /// boundary between them depends on the last one's first line, which may still be arriving ("2"
-    /// starts a block, "2. b" continues a list). Nil when `text` doesn't start with the kept ones.
-    private static func grown(_ text: String, from earlier: [String]) -> [String]? {
-        let settled = earlier.dropLast(2)
-        let utf8 = text.utf8
-        var position = utf8.startIndex
-        for section in settled {
-            guard let end = utf8.index(position, offsetBy: section.utf8.count, limitedBy: utf8.endIndex),
-                utf8[position..<end].elementsEqual(section.utf8)
-            else { return nil }
-            position = end
-        }
-        return settled + String(text[position...]).markdownSections.map(String.init)
     }
 }

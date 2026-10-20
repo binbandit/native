@@ -127,7 +127,7 @@ private struct TurnChangesFileRowStyle: ButtonStyle {
     }
 
     private struct Row: View {
-        let configuration: Configuration
+        let configuration: ButtonStyleConfiguration
         @State private var isHovered = false
 
         var body: some View {

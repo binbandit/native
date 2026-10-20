@@ -47,11 +47,7 @@ struct MarkdownSectionView: View, Equatable {
                 Text(verbatim: source)
             }
         }
-        #if DEBUG || NATIVE_PERF
-        .transcriptPerfTextSelection()
-        #else
         .textSelection(.enabled)
-        #endif
     }
 }
 
@@ -284,9 +280,6 @@ private struct MarkdownBlockView: View {
                                 .monospacedDigit()
                                 .foregroundStyle(.dsTextSecondary)
                         }
-                        // Markers aren't text anyone copies, and each selectable text lays itself
-                        // out again in a text view of its own: two per item.
-                        .textSelection(.disabled)
                     MarkdownBlockView(node: item, listDepth: listDepth + 1)
                 }
             }

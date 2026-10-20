@@ -39,9 +39,6 @@ struct CommandMenuItem: View, Equatable {
     }
 
     var body: some View {
-        #if DEBUG || NATIVE_PERF
-        let _ = MenuBench.itemBodies += 1
-        #endif
         switch control {
         case .button:
             Button(title, action: perform)

@@ -11,6 +11,9 @@ enum TranscriptOpeningCode {
         let language: CodeLanguage
     }
 
+    /// Off until it's been seen working in the running app: `-transcriptOpeningColors YES`.
+    static let isEnabled = UserDefaults.standard.bool(forKey: "transcriptOpeningColors")
+
     /// How long a transcript waits for colors before showing anyway: highlighting a screenful of
     /// code takes a few milliseconds, so only something pathological (a huge block) gets here.
     static let patience = Duration.milliseconds(300)

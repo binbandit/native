@@ -20,26 +20,24 @@ struct NativeMenuBar: Commands {
 
     var body: some Commands {
         let menu = registry.menuBar(actingOn: context)
-        if MenuBench.keepsMenus {
-            #if os(macOS)
-            UpdateCommands(menu: menu)
-            HostQuitCommands(host: host, menu: menu)
-            #endif
-            WhatsNewCommands(menu: menu)
-            HelpCommands(menu: menu, model: model)
-            FileCommands(menu: menu)
-            ViewCommands(menu: menu)
-            AppearanceCommands(menu: menu)
-            SettingsCommands(settings: settings)
-            GoCommands(menu: menu)
-            SessionCommands(model: model, menu: menu)
-            ProjectActionCommands(
-                runner: projectActions, menu: menu,
-                target: { [model] in ProjectActionsWiring.target(for: $0, model: model) })
-            TerminalCommands(menu: menu)
-            KeepAwakeCommands(controller: keepAwake, menu: menu)
-            StatusBarCommands(registry: statusBar, menu: menu)
-        }
+        #if os(macOS)
+        UpdateCommands(menu: menu)
+        HostQuitCommands(host: host, menu: menu)
+        #endif
+        WhatsNewCommands(menu: menu)
+        HelpCommands(menu: menu, model: model)
+        FileCommands(menu: menu)
+        ViewCommands(menu: menu)
+        AppearanceCommands(menu: menu)
+        SettingsCommands(settings: settings)
+        GoCommands(menu: menu)
+        SessionCommands(model: model, menu: menu)
+        ProjectActionCommands(
+            runner: projectActions, menu: menu,
+            target: { [model] in ProjectActionsWiring.target(for: $0, model: model) })
+        TerminalCommands(menu: menu)
+        KeepAwakeCommands(controller: keepAwake, menu: menu)
+        StatusBarCommands(registry: statusBar, menu: menu)
     }
 }
 

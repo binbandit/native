@@ -185,16 +185,8 @@ extension SessionTitles {
 
     private func hostConfiguration() -> ConfigureTitlesParams {
         let instructions = SessionTitleInstructions(AIInstructionsStore.shared.settings)
-        var provider = hostTitler().map { $0.hostProvider ?? .client } ?? .off
-        #if DEBUG
-        // TEMPORARY (host-titles check, removed before the report): `-NativeHostTitlesClientOnly YES`
-        // acts as a host with no model, so clients write titles.
-        if provider != .off, UserDefaults.standard.bool(forKey: "NativeHostTitlesClientOnly") {
-            provider = .client
-        }
-        #endif
         return ConfigureTitlesParams(
-            provider: provider,
+            provider: hostTitler().map { $0.hostProvider ?? .client } ?? .off,
             instructions: HostTitleInstructions(
                 global: instructions.global, projects: instructions.projects, managed: instructions.managed))
     }

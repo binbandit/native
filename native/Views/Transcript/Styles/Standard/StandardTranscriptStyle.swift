@@ -77,9 +77,6 @@ private struct StandardTranscript: View {
             default: false
             }
         }
-        #if DEBUG || NATIVE_PERF
-        TranscriptPerfProbe.revealed(line?.id, index: index)
-        #endif
         guard let line else { return }
         if case .activityRun(let run) = line.kind {
             disclosures?.openRun(run.id)
