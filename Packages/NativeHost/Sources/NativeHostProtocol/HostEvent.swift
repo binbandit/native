@@ -140,12 +140,12 @@ extension HostEvent {
             switch type {
             case "reset": .reset(loading: try container.decode(Bool.self, forKey: .loading))
             case "loaded": .loaded
-            case "update": .update(try container.decode(JSONValue.self, forKey: .update))
+            case "update": .update(try container.decodeJSON(forKey: .update))
             case "prompt": .prompt(try container.decode(PromptEcho.self, forKey: .prompt))
             case "permission_requested":
                 .permissionRequested(
                     toolCallID: try container.decode(String.self, forKey: .toolCallID),
-                    request: try container.decode(JSONValue.self, forKey: .request))
+                    request: try container.decodeJSON(forKey: .request))
             case "permission_resolved":
                 .permissionResolved(
                     toolCallID: try container.decode(String.self, forKey: .toolCallID),
@@ -153,7 +153,7 @@ extension HostEvent {
             case "question_asked":
                 .questionAsked(
                     questionID: try container.decode(String.self, forKey: .questionID),
-                    request: try container.decode(JSONValue.self, forKey: .request))
+                    request: try container.decodeJSON(forKey: .request))
             case "question_resolved":
                 .questionResolved(questionID: try container.decode(String.self, forKey: .questionID))
             case "turn_ended": .turnEnded(stopReason: try container.decode(String.self, forKey: .stopReason))

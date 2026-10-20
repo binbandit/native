@@ -19,6 +19,8 @@ struct SettingsScreen: View {
     @State private var highlightedResult = 0
     @State private var reveal: SettingsReveal?
     @State private var flash: SettingsReveal?
+    /// Whether the page has scrolled under the toolbar, which then closes it off with a hairline.
+    @State private var isScrolled = false
     @FocusState private var focus: Focus?
     /// At compact widths (iPad split view and slide over) the split view becomes a stack: the nav
     /// first, and picking a page pushes it.
@@ -103,6 +105,11 @@ struct SettingsScreen: View {
                     .padding(.top, SettingsMetrics.pageTopInset)
                     .padding(.bottom, SettingsMetrics.pageBottomInset)
             }
+            .onScrollGeometryChange(for: Bool.self) { geometry in
+                geometry.contentOffset.y + geometry.contentInsets.top > 0
+            } action: { _, isScrolled in
+                self.isScrolled = isScrolled
+            }
             .task(id: reveal) {
                 guard let reveal else { return }
                 // Let a newly selected page lay out before scrolling into it.
@@ -119,6 +126,9 @@ struct SettingsScreen: View {
         .environment(\.settingsFlash, flash)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.dsBackground)
+        .dsToolbarBand(showsDivider: isScrolled)
+        // Each page starts at the top, with its own scroller.
+        .onChange(of: selectedPane?.id) { isScrolled = false }
     }
 
     private func open(_ item: SettingsSearchIndex.Item) {

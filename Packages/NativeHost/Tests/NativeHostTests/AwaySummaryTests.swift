@@ -87,6 +87,16 @@ struct AwaySummaryTests {
         )
     }
 
+    @Test("A question the agent asked and the user's own stop: one needs them, the other isn't news")
+    func questionsAndStops() throws {
+        let summary = try #require(
+            AwaySummary(
+                entries: [entry(1, .questionAsked, fix, detail: "Which branch?"), entry(2, .stopped, docs)],
+                sessions: [summary(fix), summary(docs)]))
+        #expect(summary.items.map(\.outcome) == [.asked("Which branch?")])
+        #expect(summary.headline == "1 task has a question for you.")
+    }
+
     @Test("A task Native couldn't bring back reads as failed, with the reason")
     func failedRecovery() throws {
         var failed = note(.agentStopped, .failed)

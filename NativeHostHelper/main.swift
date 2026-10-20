@@ -19,17 +19,26 @@ let info = PeerInfo(
     build: bundle.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0"
 )
 let location = MacHost.location()
-let configuration = MacHost.configuration(location: location, info: info)
+var configuration = MacHost.configuration(location: location, info: info)
+// Started by the app itself (background activity is off): it lives exactly as long as the app.
+let isAttached = CommandLine.arguments.contains(HostLocation.exitWithParentArgument)
+if isAttached {
+    configuration.idleExit = nil
+}
+let serving = configuration
 
 Task { @HostActor in
     do {
-        let core = try HostMain.start(configuration, verifier: CodeSignatureVerifier())
+        let core = try HostMain.start(serving, verifier: CodeSignatureVerifier())
+        if isAttached {
+            ParentWatch.stopWithParent(core)
+        }
         logger.info("Serving at \(location.socketPath, privacy: .public)")
         // Paired devices (docs/companion.md): nothing listens on the network until one is paired.
         let gateway = try LinkGateway(
             configuration: .init(
                 directory: LinkGateway.Configuration.directory(inHostDirectory: location.directory),
-                hostID: core.hostID, machineName: configuration.machineName,
+                hostID: core.hostID, machineName: serving.machineName,
                 includesLoopback: location.isDevelopment),
             accept: { stream, grants in
                 Task { @HostActor in

@@ -49,8 +49,10 @@ struct TranscriptView: View {
             .defaultScrollAnchor(.bottom, for: .sizeChanges)
             .scrollPosition($position)
             // Rows scrolled up under the title bar stay legible through the soft edge, right behind the
-            // session's title; the hard edge keeps the title on a plain backing.
+            // session's title; the hard edge keeps the title on a plain backing. Where the transcript is
+            // the page (`SessionView`), `dsToolbarBand` replaces it with a band in Native's colors.
             .scrollEdgeEffectStyle(.hard, for: .top)
+            .scrollEdgeEffectHidden(isPrimary, for: .top)
             // The scroll view's own size, reported from the first layout on (scroll geometry only
             // reports changes, and a session switched to is laid out at its final size from the start).
             .onGeometryChange(for: CGSize.self) { proxy in

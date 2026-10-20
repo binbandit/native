@@ -230,9 +230,7 @@ public actor NativeHostClient {
         typealias Method = HostProtocol.Method
         switch message.method {
         case Method.sessionEvent:
-            return (try? message.params(as: SessionEventNotification.self)).map {
-                .sessionEvent($0.sessionID, SessionMirror.Step($0.event))
-            }
+            return (try? message.params(as: StepNotification.self)).map { .sessionEvent($0.sessionID, $0.event) }
         case Method.sessionChanged:
             return (try? message.params(as: SessionChangedNotification.self)).map { .sessionChanged($0.summary) }
         case Method.sessionClosed:
@@ -258,6 +256,12 @@ public actor NativeHostClient {
         guard state != self.state else { return }
         self.state = state
         await deliver(.connection(state))
+    }
+
+    /// A `SessionEventNotification` decoded straight into a step.
+    private struct StepNotification: Decodable {
+        var sessionID: HostSessionID
+        var event: SessionMirror.Step
     }
 
     private struct VersionMismatch: Error {

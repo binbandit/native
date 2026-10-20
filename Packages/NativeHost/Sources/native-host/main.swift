@@ -8,6 +8,7 @@ import NativeHostProtocol
 // the same host without the app bundle around it.
 //
 //   native-host [serve] [--home <dir>] [--channel <name>] [--plugins <dir>] [--inherit-environment]
+//                       [--exit-with-parent]
 //   native-host attach [--home <dir>] [--channel <name>]
 //
 // `attach` bridges stdin and stdout to a running host's socket, which is how a client reaches a host
@@ -43,9 +44,14 @@ case "serve":
     let info = PeerInfo(
         name: "native-host", version: bundleInfo["CFBundleShortVersionString"] as? String ?? "0",
         build: bundleInfo["CFBundleVersion"] as? String ?? "dev")
-    let configuration = MacHost.configuration(
+    var configuration = MacHost.configuration(
         location: location, info: info, inheritEnvironment: arguments.contains("--inherit-environment"),
         pluginsDirectory: option("--plugins", in: arguments).map { URL(filePath: $0, directoryHint: .isDirectory) })
+    // An attached host lives exactly as long as whoever started it, idle or not.
+    let isAttached = arguments.contains(HostLocation.exitWithParentArgument)
+    if isAttached {
+        configuration.idleExit = nil
+    }
     // A standalone host just updated gets two launches to come up; one that crashed is rolled back.
     let standalone = configuration.updates.selfUpdater as? StandaloneHostUpdater
     var onTrial = false
@@ -62,9 +68,13 @@ case "serve":
         }
     }
     let confirmTrial = onTrial
+    let serving = configuration
     Task { @HostActor in
         do {
-            _ = try HostMain.start(configuration, verifier: CodeSignatureVerifier())
+            let core = try HostMain.start(serving, verifier: CodeSignatureVerifier())
+            if isAttached {
+                ParentWatch.stopWithParent(core)
+            }
             FileHandle.standardError.write(Data("native-host: serving at \(location.socketPath)\n".utf8))
         } catch let error as HostMain.Failure {
             if case .alreadyRunning = error { fail(error.localizedDescription, status: 0) }

@@ -129,6 +129,9 @@ work is lost. Many agents share one working tree, so:
 - If `kt` fails on `.git/index.lock`, another agent is saving: wait a few seconds and retry, up to
   three times. Never delete the lock file.
 - Nothing secret and no third-party assets in the tree (research screenshots are gitignored).
+- Anything in the tree can be published at any moment, temporary experiments included. Write an
+  experiment so its default is today's behavior (a launch argument or `#if DEBUG` switch that's off),
+  and remove it before you report.
 
 ## Pull requests
 

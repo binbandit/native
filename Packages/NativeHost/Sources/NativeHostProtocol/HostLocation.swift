@@ -15,6 +15,9 @@ public struct HostLocation: Hashable, Sendable {
     public static let channelVariable = "NATIVE_HOST_CHANNEL"
     /// Set to `1` by development builds' plists.
     public static let developmentVariable = "NATIVE_HOST_DEVELOPMENT"
+    /// Makes a host the app started itself stop its agents and exit when the app does (an
+    /// attached host, `AttachedHost`).
+    public static let exitWithParentArgument = "--exit-with-parent"
 
     public init(directory: URL, channel: String = "", isDevelopment: Bool = false) {
         self.directory = directory

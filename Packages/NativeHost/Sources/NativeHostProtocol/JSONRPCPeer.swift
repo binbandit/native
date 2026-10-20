@@ -31,7 +31,7 @@ public final class JSONRPCPeer: Sendable {
 
         /// The params exactly as sent, for forwarding.
         public var rawParams: JSONValue? {
-            (try? JSONRPCPeer.makeDecoder().decode(IncomingRawParams.self, from: line))?.params
+            JSONValue(json: line)?["params"]
         }
     }
 
@@ -257,10 +257,6 @@ private struct IncomingEnvelope: Decodable {
 
 private struct IncomingParams<Params: Decodable>: Decodable {
     let params: Params
-}
-
-private struct IncomingRawParams: Decodable {
-    let params: JSONValue?
 }
 
 private struct IncomingResult<Result: Decodable>: Decodable {

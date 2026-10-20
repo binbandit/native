@@ -227,20 +227,20 @@ struct RootView: View {
                     }
                 }
         } detail: {
-            // The background host's notices sit above the page, not over it, so a transcript never
-            // scrolls under them.
-            VStack(spacing: 0) {
-                if let durableHost {
-                    HostNotices(host: durableHost, updates: updates)
+            detail
+                // Never measured at no width for the window's minimum size (docs/performance.md).
+                .platformMinimumContentWidth(DS.Window.detailMinWidth)
+                // Under every page, so the transcript and anything else without a background of its
+                // own sits on the design system's background in the user's light tone, not the system's.
+                .background(.dsBackground)
+                // The background host's notices. A bar rather than an inset, so a transcript scrolls
+                // under them behind the system's scroll edge, as it does under the title.
+                .safeAreaBar(edge: .top, spacing: 0) {
+                    if let durableHost {
+                        HostNotices(host: durableHost, updates: updates)
+                    }
                 }
-                detail
-                    // Never measured at no width for the window's minimum size (docs/performance.md).
-                    .platformMinimumContentWidth(DS.Window.detailMinWidth)
-            }
-            // Under every page, so the transcript and anything else without a background of its
-            // own sits on the design system's background in the user's light tone, not the system's.
-            .background(.dsBackground)
-            .environment(\.inspectorRoom, inspectorRoom.room(sidebar: $columnVisibility))
+                .environment(\.inspectorRoom, inspectorRoom.room(sidebar: $columnVisibility))
         }
         .toolbar(removing: .sidebarToggle)
         .tracksWindowRoom(inspectorRoom.window)

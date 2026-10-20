@@ -28,6 +28,9 @@ final class SessionLauncher {
     let plugins: PluginRegistry
     let services: SessionServices
     let store: SessionStore
+    /// Host sessions being opened, so a second caller (selecting a row opens it from two places)
+    /// gets the same model rather than a second one (SessionLauncher+Host.swift).
+    var hostOpens: [SessionKey: Task<SessionModel, any Error>] = [:]
 
     init(plugins: PluginRegistry, services: SessionServices, store: SessionStore) {
         self.plugins = plugins

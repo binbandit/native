@@ -149,3 +149,27 @@ extension SessionMirror {
         }
     }
 }
+
+extension SessionMirror.Step: Decodable {
+    private enum PayloadKeys: String, CodingKey {
+        case update, request
+    }
+
+    /// Decodes an event and its agent payload from one parse, rather than re-encoding the payload
+    /// to decode it again: what a client does with every streamed update.
+    public init(from decoder: any Decoder) throws {
+        let event = try HostEvent(from: decoder)
+        let container = try decoder.container(keyedBy: PayloadKeys.self)
+        self.event = event
+        decoded =
+            switch event.payload {
+            case .update: (try? container.decode(SessionUpdate.self, forKey: .update)).map(Decoded.update) ?? .none
+            case .permissionRequested:
+                (try? container.decode(RequestPermissionRequest.self, forKey: .request)).map(Decoded.permission)
+                    ?? .none
+            case .questionAsked:
+                (try? container.decode(CreateElicitationRequest.self, forKey: .request)).map(Decoded.question) ?? .none
+            default: .none
+            }
+    }
+}

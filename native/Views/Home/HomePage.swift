@@ -18,6 +18,8 @@ struct HomePage<Notice: View, Cards: View, Footer: View, Content: View>: View {
     @State private var viewport = Viewport()
     @State private var contentHeight: CGFloat = 0
     @State private var isShown = false
+    /// Whether the page has scrolled under the toolbar, which then closes it off with a hairline.
+    @State private var isScrolled = false
 
     var body: some View {
         ScrollView {
@@ -46,7 +48,13 @@ struct HomePage<Notice: View, Cards: View, Footer: View, Content: View>: View {
             .frame(maxWidth: .infinity)
         }
         .scrollBounceBehavior(.basedOnSize)
+        .onScrollGeometryChange(for: Bool.self) { geometry in
+            geometry.contentOffset.y + geometry.contentInsets.top > 0
+        } action: { _, isScrolled in
+            self.isScrolled = isScrolled
+        }
         .background(.dsBackground)
+        .dsToolbarBand(showsDivider: isScrolled)
         #if os(macOS)
         // The lockup names the window here; the toolbar repeating "Native" over it would stutter.
         .toolbar(removing: .title)

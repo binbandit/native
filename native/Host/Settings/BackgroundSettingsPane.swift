@@ -65,7 +65,7 @@ struct BackgroundSettingsPage: View {
                     description: Text(
                         "Agents run in Native's background host, listed as Native under Login Items in System Settings. Turn this off to run them inside Native, so quitting stops them."
                     ),
-                    detail: Text(quitAndStopHint)
+                    detail: host?.placement.outlivesApp == true ? Text(quitAndStopHint) : nil
                 ) {
                     SettingsSwitch("Keep agents running when Native quits", isOn: $keepsRunning)
                 }
@@ -81,12 +81,13 @@ struct BackgroundSettingsPage: View {
         return "To stop them when you quit, use Native ▸ Quit Native and Stop Agents\(keys)."
     }
 
-    /// The setting differs from what this run does.
+    /// The setting differs from what this run does in a way the user would notice. Agents already
+    /// stop with the app in a fallback, so turning the setting off there changes nothing yet.
     private func needsRelaunch(_ host: DurableHost) -> Bool {
         switch host.placement {
-        case .pending: false
         case .inApp: keepsRunning
-        case .background, .attached, .inAppFallback: !keepsRunning
+        case .background: !keepsRunning
+        case .pending, .attached, .inAppFallback: false
         }
     }
 
@@ -98,8 +99,8 @@ struct BackgroundSettingsPage: View {
                 ? "Agents keep running after you quit from the next time Native opens"
                 : "Agents stop when you quit Native from now on",
             detail: keepsRunning
-                ? "Tasks already running stay inside Native until then."
-                : "Native stops its background host when you quit, and runs agents inside itself from the next time it opens."
+                ? "Until then, agents run inside Native and stop when it quits."
+                : "Quitting stops the background host and its agents. From the next time Native opens, agents run inside it."
         ) {
             #if os(macOS)
             Button("Relaunch Now") { AppRelaunch.relaunch() }

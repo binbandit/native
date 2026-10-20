@@ -60,20 +60,41 @@ agent trees, ever. (The opposite failures are as bad: daemons from old versions 
 app that reads "daemon unreachable" as "gone" and starts a second copy of a running conversation.
 The lock and the single launchd label make both impossible.)
 
-**Start.** The app registers the agent on launch (idempotent) and connects. (Development builds
-start a session-only launchd job instead; see "Development builds".) If the user disabled
-Native under System Settings › Login Items › Allow in the Background, `status` is
-`.requiresApproval`: Native says so, offers to open that pane, and runs an *attached* host instead
-(Phase 2): the same binary started by the app, which stops its agents when the app quits. We respect
-the user's choice rather than detaching anyway. If the job is registered but not running (it was
-stopped on purpose), the app unregisters and registers again, which starts it.
+**Start.** One setting decides it: Settings ▸ Background ▸ "Keep agents running when Native quits"
+(`HostSessions`, the user default `NativeHostSessions`, one value for every channel). It's read at
+launch, since a running session can't move between the app and a host; changing it offers Relaunch
+Now. Before any session starts, `DurableHost.launch` decides where this run's agents live
+(`HostPlacement`) and hands the connected client to `AppModel.connectHost(client:)`:
+
+1. **Background.** The app registers the agent (idempotent; development builds start a session-only
+   launchd job instead, see "Development builds") and waits up to 2 s for the socket. A login item
+   that was stopped on purpose (Quit Native and Stop Agents) only starts at login or registration,
+   so if nothing answered the app registers it afresh (a session job is kicked) and waits up to 8 s.
+   The first registration makes macOS post "Background Items Added", naming Native; that's expected,
+   and Settings ▸ Background says the host is listed as Native under Login Items.
+2. **Attached.** If the user disabled Native under System Settings › Login Items › Allow in the
+   Background (`status` is `.requiresApproval`), registration failed, or the socket never answered,
+   the app starts the same helper itself as its child (`AttachedHost`, `--exit-with-parent`), which
+   stops its agents when the app quits. We respect the user's choice rather than detaching anyway.
+   The app restarts an attached host that dies (at most three times a minute).
+3. **In the app.** If no host answers at all, agents run inside the app exactly as before Phase 2.
+
+Either fallback is said once per kind of reason (`HostFallback`), above the detail column, with the
+fix where there is one (Open Login Items); Settings ▸ Background keeps saying it, and a later launch
+that runs in the background again resets it. If the user switches Allow in the Background off while
+Native runs, macOS stops the host; the app notices on the reconnect, starts an attached host on the
+same socket, and says so. With the setting off, a launch that finds a host left from when it was on
+stops it with its agents (`shutdown {stopAgents: true}`) and unregisters it, so nothing the user
+turned off keeps running and no conversation runs twice. Debug builds take `-nativeHostRefused YES`
+to act as if Allow in the Background were off, to try the fallback.
 
 **Quit.**
 
 | Action | What happens |
 | --- | --- |
-| ⌘Q, closing the window | The app quits. The host and its agents keep working. |
-| Native › Quit Native and Stop Agents (Phase 2; its shortcut goes in `docs/keyboard.md` first) | The host cancels running turns (recorded as stopped by the user), stops agents, writes a clean-shutdown mark and exits 0. |
+| ⌘Q, closing the window | The app quits. The host and its agents keep working. (With an attached host or agents in the app, they stop with it, as before.) |
+| Native › Quit Native and Stop Agents (⌃⌥⌘Q, `app.quitAndStopAgents`; listed while agents would outlive the app) | The app holds the quit (`HostQuitDelegate`, at most 3 s) while it asks the host to stop (`_native/host/shutdown {stopAgents: true}`): the host ends running turns as stopped by the user, stops agents, writes a clean-shutdown mark and exits 0, and launchd leaves it down. The next launch starts it again. |
+| ⌘Q after turning "Keep agents running" off | Same as Quit Native and Stop Agents: the setting now says agents stop when Native quits. |
 | Menu bar extra › Stop All Agents | Same as above, without opening the app. |
 | Logout or shutdown | launchd sends SIGTERM; the host is killed with its agents. Next login it starts and resumes what was running (`systemRestarted`). |
 
@@ -130,8 +151,16 @@ Development hosts must not pile up, so they differ from release in three ways:
   `SMAppService`. A Debug build that finds a login item left by an earlier build of itself
   unregisters it, from the owning app as `SMAppService` requires.
 - **Idle exit.** A development host stops after 15 minutes with no clients and nothing running.
-- **Opt-in per channel.** The host starts only after Window › Durable Sessions › Turn On
-  (`NativeHostEnabled.<channel>`). Turn Off stops the host and its agents and unloads the job.
+- **The same switch.** Settings ▸ Background decides for development builds too. Until background
+  agents are on by default, Window › Durable Sessions keeps its own per-channel opt-in
+  (`NativeHostEnabled.<channel>`) for the Phase 1 preview; Turn Off stops that host and its agents
+  and unloads the job.
+
+Every isolated instance (`scripts/dev/run-isolated.sh <name>`) builds into its own folder, so it
+has its own channel, launchd label, socket and store: instances never share a host. The script
+prints the instance's channel; `--quit` boots out its job and ends any host the app started itself
+(running turns resume at its next launch, as after a logout); `--reset` and `--remove` do the same
+and delete its channel folder.
 
 `scripts/dev/clean-host-channels.sh` lists every development host job (labels ending in
 `.host.<10 hex digits>`) and channel folder. With `--apply` it stops and disables the ones no running
@@ -231,14 +260,18 @@ the sidebar groups projects by host and shows each host's connection state.
 
 | State | Meaning | What the user sees |
 | --- | --- | --- |
-| `connecting` | first attempt | the host's projects dimmed, a quiet loader |
+| `connecting` | first attempt | at launch, before any session starts, behind the launch screen |
 | `connected(HostInfo)` | handshake done | normal |
-| `reconnecting(attempt, reason)` | the connection dropped; retrying fast (100 ms, then 0.5–2 s) | "Reconnecting to <host>…"; prompts can still be typed and are sent with their request ids once back |
-| `unreachable(reason)` | four failures in a row; retrying every 5 s | "<host> isn't reachable: <reason>", with Retry and, for a remote host, the SSH command that failed |
-| `incompatible(hostVersion)` | protocol mismatch | "Update Native on <host>" (remote) or "Restart the host" (local) |
+| `reconnecting(attempt, reason)` | the connection dropped; retrying fast (100 ms, then 0.5–2 s) | "Reconnecting…" in the status bar, with a loader; prompts can still be typed and are sent with their request ids once back |
+| `connected` with a new `epoch` | the host process restarted (a crash, an update, Restart Host) | "Host restarted" in the status bar for 30 s; its popover says why and what resumed: "Native's background host stopped unexpectedly and started again at 2:14 PM. It resumed the task that was working." |
+| `unreachable(reason)` | four failures in a row; retrying every 5 s | "Host not responding" in the status bar; after 15 s (longer than launchd takes to restart a crashed host) also a notice above the detail column, since the status bar can be hidden, with Restart Host and the reason. For a remote host (Phase 4), the SSH command that failed |
+| `incompatible(hostVersion)` | protocol mismatch | `HostVersionNotice`: "Update Native on <host>" (remote) or "Restart the host" (local) |
 
-A local host restarting under launchd is back within one launchd throttle interval (10 s), so after
-a host crash the app shows `reconnecting` briefly, then the recovered sessions.
+The status bar item (`HostConnectionStatusItem`) shows only while something is off. A local host
+restarting under launchd is back within one launchd throttle interval (10 s), usually under a
+second, so after a host crash the app shows `reconnecting` briefly, then "Host restarted" and the
+recovered sessions. Restart Host registers the job afresh (a session job is kicked), or starts an
+attached host again.
 
 **Provisioning a remote host** (Phase 4). From "Add Host…", Native runs over the user's SSH: checks
 the OS and architecture, copies the matching `native-host` binary to `~/.native/bin/` (signed and
@@ -363,10 +396,19 @@ The interruption time comes from the host's heartbeat (written every 30 s), so "
 half a minute; for agent crashes it's exact.
 
 **While you were away.** The activity journal records finished and failed turns, approvals asked,
-and every recovery with its cause and action. When the app connects it asks for entries after the
-last one it showed and, if there are any, opens with a summary: "While you were away: 3 tasks
-finished, 1 needs approval, Claude Code stopped once and Native resumed it." Each line links to its
-session. Recoveries also show inline in the transcript, where they happened.
+and every recovery with its cause and action; each entry carries the agent and its session id, so
+it leads to its task even after the host closed the session. The app keeps, per host id, the last
+entry it showed (`NativeHostSeenActivity`). On its first connection of a run it reads everything
+after that (a host's very first connection only sets the baseline) and `AwaySummary`
+(`NativeHostClient`, so every client tells the same story) folds it into one item per task and a
+headline: "1 task finished, 1 needs your approval, and 1 failed. Claude Code stopped once and Native
+resumed it." Approvals already answered elsewhere, the user's own stops and the host's bookkeeping
+are left out; one host crash that interrupted several tasks counts once. `HostAwayCard` shows it
+above the detail column: tasks that need the user first, each with its status, title (the
+sidebar's), what happened and when, opening its task on click; four rows, then Show All. Opening a
+task takes it off the card, and the card goes when it's empty or dismissed. Entries that arrive
+while the app is connected are news already and only move the baseline. Recoveries also show inline
+in the transcript, where they happened.
 
 **Approvals while away** (Phase 3). The host posts a notification for each approval with Approve and
 Reject actions (the `UNNotificationCategory` carries the options' kinds); the action is handled by
@@ -415,8 +457,13 @@ Window › Durable Sessions preview, opt-in per channel. Nothing else in the app
 4. Plugins still supply agents (sent with `_native/agents/sync`) and per-session MCP servers (sent as
    JSON with `session/new`), so the plugin API is unchanged.
 5. `LoginShell` moves to `UserShell` (already in the package); `native/Models/LoginShell.swift` goes.
+   Done.
 6. ⌘Q quits only the client; "Quit Native and Stop Agents" and the attached-host fallback land.
-7. The app shows connection states and the "while you were away" summary.
+   Done, except the attached host, which waits on `AttachedHost` and the helper's
+   `--exit-with-parent` (until then a refused registration falls back to agents in the app).
+7. The app shows connection states and the "while you were away" summary. Done.
+8. Background agents are on by default, once the host-backed path passes its end-to-end checks; the
+   Window › Durable Sessions preview goes then.
 
 **Phase 3: engines move into the host**, one PR each, each keeping its client-side API: the
 orchestration MCP server (so delegated tasks survive the app quitting), titles, notifications with

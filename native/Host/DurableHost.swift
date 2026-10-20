@@ -43,7 +43,7 @@ final class DurableHost {
     @ObservationIgnored let registrar = HostRegistration()
     @ObservationIgnored var client: NativeHostClient?
     @ObservationIgnored var agents: [AgentSpec] = []
-    #if os(macOS) && NATIVE_ATTACHED_HOST
+    #if os(macOS)
     @ObservationIgnored private var attached: AttachedHost?
     /// When the attached host was last started, so one that keeps dying isn't restarted in a loop.
     @ObservationIgnored private var attachedStarts: [Date] = []
@@ -125,7 +125,7 @@ final class DurableHost {
             }
         }
         await disconnect()
-        #if os(macOS) && NATIVE_ATTACHED_HOST
+        #if os(macOS)
         if startAttached(), let client = await connect(within: Self.startTimeout) {
             return use(client, placement: .attached(fallback))
         }
@@ -217,7 +217,7 @@ final class DurableHost {
         try? FileManager.default.removeItem(atPath: location.socketPath)
     }
 
-    #if os(macOS) && NATIVE_ATTACHED_HOST
+    #if os(macOS)
     /// Starts a host as Native's own child, which stops its agents when Native quits.
     private func startAttached() -> Bool {
         attachedStarts = attachedStarts.filter { $0.timeIntervalSinceNow > -60 } + [.now]
@@ -322,7 +322,7 @@ final class DurableHost {
     /// by itself, unless the user just switched Native off under Allow in the Background, in which
     /// case Native runs one of its own; an attached host is Native's to restart.
     private func keepHostUp() {
-        #if os(macOS) && NATIVE_ATTACHED_HOST
+        #if os(macOS)
         switch placement {
         case .background where !registrar.isDevelopmentBuild && registrar.status == .needsApproval:
             registration = .needsApproval
@@ -342,7 +342,7 @@ final class DurableHost {
         unavailableTimer?.cancel()
         unavailableTimer = nil
         isUnavailable = false
-        #if os(macOS) && NATIVE_ATTACHED_HOST
+        #if os(macOS)
         if case .attached = placement {
             attached?.terminate()
             attachedStarts = []

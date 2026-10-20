@@ -5,11 +5,6 @@ import NativeHostProtocol
 // The ACP messages the host exchanges with agents, in the shapes it needs: it forwards most of what
 // agents say verbatim, so payloads it doesn't interpret stay `JSONValue`.
 
-struct RawSessionNotification: Decodable, Sendable {
-    var sessionId: SessionID
-    var update: JSONValue
-}
-
 struct RawSessionRequest: Decodable, Sendable {
     var sessionId: SessionID
 }

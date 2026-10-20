@@ -23,6 +23,8 @@ struct SessionView: View {
         }
         .environment(\.turnChangesActions, turnChangesActions)
         .environment(\.isPrimaryTranscript, true)
+        // Native's band under the toolbar, in place of the system's edge effect; inside the bars.
+        .dsToolbarBand()
         // A bar rather than an inset, so the transcript gets the system scroll edge effect under it.
         .safeAreaBar(edge: .bottom, spacing: 0) {
             VStack(spacing: 0) {

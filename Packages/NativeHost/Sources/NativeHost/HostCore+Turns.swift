@@ -14,11 +14,12 @@ extension HostCore {
     /// turn or queued. A request id seen before gets the same answer and is never delivered twice,
     /// including a repeat that arrives while the first is still being handled.
     func prompt(_ params: PromptParams) async throws -> PromptDelivery {
-        if let delivery = try store.delivery(for: params.requestID) {
-            return delivery
-        }
+        // In flight first: a steer records itself as queued before the agent answers.
         if let inFlight = promptsInFlight[params.requestID] {
             return try await inFlight.value
+        }
+        if let delivery = try store.delivery(for: params.requestID) {
+            return delivery
         }
         let task = Task { try await deliver(params) }
         promptsInFlight[params.requestID] = task

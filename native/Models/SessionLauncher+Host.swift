@@ -39,6 +39,21 @@ extension SessionLauncher {
         _ client: NativeHostClient, _ key: SessionKey, cwd: URL, title: String?, on runtime: AgentRuntime,
         origin: SessionModel.Origin, parent: SessionModel?
     ) async throws -> SessionModel {
+        if let opening = hostOpens[key] {
+            return try await opening.value
+        }
+        let opening = Task {
+            try await performOpen(client, key, cwd: cwd, title: title, on: runtime, origin: origin, parent: parent)
+        }
+        hostOpens[key] = opening
+        defer { hostOpens[key] = nil }
+        return try await opening.value
+    }
+
+    private func performOpen(
+        _ client: NativeHostClient, _ key: SessionKey, cwd: URL, title: String?, on runtime: AgentRuntime,
+        origin: SessionModel.Origin, parent: SessionModel?
+    ) async throws -> SessionModel {
         let id = HostSessionID()
         let context = SessionContext(
             clientID: id.rawValue, agent: runtime.agent.id, agentName: runtime.agent.displayName, sessionID: key.id,

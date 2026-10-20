@@ -22,7 +22,8 @@ struct StoreTests {
     func survivesReopen() throws {
         let session = StoredSession(
             id: HostSessionID(), agentID: "fake", agentSessionID: SessionID("s1"), cwd: "/tmp", parentID: nil,
-            origin: .user, meta: .object(["plugin": .string("x")]), configChoices: ["model": "large"])
+            origin: .user, createdAt: Date(timeIntervalSince1970: 1_700_000_000),
+            meta: .object(["plugin": .string("x")]), configChoices: ["model": "large"])
         let turn = UnfinishedTurn(
             sessionID: session.id,
             prompt: OutgoingPrompt(

@@ -47,9 +47,14 @@ extension HostCore {
         let link = try await readyAgent(params.agentID)
         guard let peer = link.peer else { throw HostError.agentUnavailable(link.spec.name) }
         link.isSigningIn = true
-        defer { link.isSigningIn = false }
-        _ = try await peer.request(
-            "authenticate", RawAuthenticateRequest(methodId: params.methodID), as: JSONValue.self)
+        do {
+            _ = try await peer.request(
+                "authenticate", RawAuthenticateRequest(methodId: params.methodID), as: JSONValue.self)
+        } catch {
+            link.isSigningIn = false
+            throw error
+        }
+        link.isSigningIn = false
         link.needsSignIn = false
         return link.hostAgent
     }

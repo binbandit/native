@@ -47,8 +47,17 @@ final class HostSession {
     /// The last hidden command's reply, until the next turn starts: copies of it that arrive late
     /// are dropped.
     var hiddenCommandEcho: HiddenCommandCapture?
-    /// The transcript as the events describe it; the host reads the agent's replay from it.
-    private(set) var mirror = SessionMirror()
+    /// The transcript as the events describe it, folded only when the host reads it (at turn
+    /// boundaries and after a replay), so streaming doesn't decode every update twice.
+    var mirror: SessionMirror {
+        for event in log[foldedThrough...] {
+            folded.apply(event)
+        }
+        foldedThrough = log.endIndex
+        return folded
+    }
+    private var folded = SessionMirror()
+    private var foldedThrough = 0
     private(set) var log: [HostEvent] = []
     private var nextSeq = 1
     /// Clients following this session's events.
@@ -74,9 +83,10 @@ final class HostSession {
         nextSeq += 1
         if case .reset = payload {
             log = []
+            folded = SessionMirror()
+            foldedThrough = 0
         }
         log.append(event)
-        mirror.apply(event)
         if case .update(let update) = payload, let title = Self.title(in: update) {
             record.title = title
         }

@@ -101,6 +101,8 @@ public struct AwaySummary: Hashable, Sendable {
         case .turnFailed: return .failed(entry.detail)
         case .approvalNeeded:
             return summary?.needsApproval == true ? .needsApproval(entry.detail) : nil
+        case .questionAsked:
+            return .asked(entry.detail)
         case .recovered:
             guard let note = entry.recovery else { return nil }
             item.recoveries.append(note)

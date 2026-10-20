@@ -12,6 +12,10 @@ final class HostHarness: @unchecked Sendable {
     var home: URL { root.appending(path: "host", directoryHint: .isDirectory) }
     var agentStore: URL { root.appending(path: "agent", directoryHint: .isDirectory) }
     var plugins: URL { root.appending(path: "plugins", directoryHint: .isDirectory) }
+    /// Where the fake agent writes the pid of the process it starts in a group of its own.
+    var grandchildFile: URL { root.appending(path: "grandchild.pid") }
+    /// Extra environment for the fake agent (`FAKE_AGENT_NO_STEERING`, `FAKE_AGENT_GRANDCHILD`).
+    var agentEnvironment: [String: String] = [:]
     private var process: Process?
 
     static let products = URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
@@ -22,7 +26,12 @@ final class HostHarness: @unchecked Sendable {
         AgentSpec(
             id: "fake", name: "Fake Agent",
             command: Self.products.appending(path: "FakeACPAgent").path(percentEncoded: false),
-            env: ["FAKE_AGENT_STORE": agentStore.path(percentEncoded: false)])
+            env: agentEnvironment.merging(["FAKE_AGENT_STORE": agentStore.path(percentEncoded: false)]) { $1 })
+    }
+
+    /// The pid the fake agent's own child was given, once it started one.
+    var grandchild: pid_t? {
+        (try? String(contentsOf: grandchildFile, encoding: .utf8)).flatMap { pid_t($0) }
     }
 
     var location: HostLocation {
@@ -35,6 +44,11 @@ final class HostHarness: @unchecked Sendable {
 
     deinit {
         kill()
+        // Killing the host leaves what agents started in groups of their own (the case the host
+        // handles when it stops agents itself); tests mustn't leave those behind.
+        if let grandchild {
+            Darwin.kill(grandchild, SIGKILL)
+        }
         try? FileManager.default.removeItem(at: root)
     }
 
@@ -82,9 +96,9 @@ final class HostHarness: @unchecked Sendable {
         return text.split(separator: "\n").map(String.init)
     }
 
-    func connect() async throws -> Recorder {
+    func connect(transport: (any HostTransport)? = nil) async throws -> Recorder {
         let client = NativeHostClient(
-            transport: LocalSocketTransport(location: location),
+            transport: transport ?? LocalSocketTransport(location: location),
             clientInfo: PeerInfo(name: "tests", version: "1", build: "1"))
         let recorder = Recorder(client: client)
         await recorder.listen()
@@ -100,20 +114,20 @@ actor Recorder {
     let client: NativeHostClient
     private(set) var mirrors: [HostSessionID: SessionMirror] = [:]
     private(set) var events: [HostSessionID: [HostEvent]] = [:]
+    private(set) var summaries: [HostSessionID: HostSessionSummary] = [:]
+    private(set) var agents: [String: HostAgent] = [:]
+    private(set) var closed: Set<HostSessionID> = []
     private(set) var activity: [ActivityEntry] = []
     private(set) var lastPlugins: [HostPlugin]?
-    private var listening: Task<Void, Never>?
-
     init(client: NativeHostClient) {
         self.client = client
     }
 
-    func listen() {
-        let client = client
-        listening = Task { [weak self] in
-            for await event in client.events {
-                await self?.record(event)
-            }
+    /// Records through an ordered handler, so when a request returns, everything the host sent
+    /// before its answer is recorded.
+    func listen() async {
+        await client.addEventHandler { [weak self] event in
+            await self?.record(event)
         }
     }
 
@@ -122,6 +136,12 @@ actor Recorder {
         case .sessionEvent(let session, let step):
             mirrors[session, default: SessionMirror()].apply(step)
             events[session, default: []].append(step.event)
+        case .sessionChanged(let summary):
+            summaries[summary.id] = summary
+        case .sessionClosed(let session):
+            closed.insert(session)
+        case .agentChanged(let agent):
+            agents[agent.id] = agent
         case .activity(let entry):
             activity.append(entry)
         case .pluginsChanged(let plugins):
@@ -129,6 +149,16 @@ actor Recorder {
         default:
             break
         }
+    }
+
+    func notices(_ session: HostSessionID) -> [String] {
+        mirror(session).state.items.compactMap { item in
+            if case .notice(let notice) = item { notice.text } else { nil }
+        }
+    }
+
+    func failures(_ session: HostSessionID) -> [String] {
+        payloads(session).compactMap { if case .turnFailed(let message, _) = $0 { message } else { nil } }
     }
 
     func mirror(_ session: HostSessionID) -> SessionMirror {
@@ -169,7 +199,30 @@ actor Recorder {
 
     func stop() async {
         await client.stop()
-        listening?.cancel()
+    }
+}
+
+/// The local socket, with a way to drop the connection as a flaky network would, without the host
+/// noticing anything but a client going away.
+final class CuttableTransport: HostTransport, @unchecked Sendable {
+    private let base: LocalSocketTransport
+    private let lock = NSLock()
+    private var current: (any ByteStream)?
+
+    init(location: HostLocation) {
+        base = LocalSocketTransport(location: location)
+    }
+
+    var displayName: String { "Cuttable" }
+
+    func connect() async throws -> any ByteStream {
+        let stream = try await base.connect()
+        lock.withLock { current = stream }
+        return stream
+    }
+
+    func cut() {
+        lock.withLock { current }?.close()
     }
 }
 

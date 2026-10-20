@@ -9,11 +9,14 @@ extension HostCore {
         guard let link = agents[agentID], link.generation == generation else { return }
         switch event {
         case .notification(let message) where message.method == "session/update":
-            guard let notification = try? message.params(as: RawSessionNotification.self) else { return }
-            if let id = link.routes[notification.sessionId], let session = sessions[id] {
-                apply(notification.update, to: session, on: link)
+            // The hot path while an agent streams, so it's parsed the fast way.
+            guard let params = message.rawParams, let sessionID = params["sessionId"]?.stringValue.map(SessionID.init),
+                let update = params["update"]
+            else { return }
+            if let id = link.routes[sessionID], let session = sessions[id] {
+                apply(update, to: session, on: link)
             } else {
-                link.buffer(notification.update, for: notification.sessionId)
+                link.buffer(update, for: sessionID)
             }
         case .notification:
             break
