@@ -137,6 +137,7 @@ struct HostStatusTests {
         #expect(report.checks.first { $0.id == "agents.fake" }?.status == .ok)
         #expect(report.checks.first { $0.id == "agents.codex" }?.status == .failed)
         #expect(report.checks.first { $0.id == "host.keepAwake" }?.status == .info)
+        #expect(report.checks.first { $0.id == "host.updates" }?.status == .info)
         await client.stop()
     }
 }

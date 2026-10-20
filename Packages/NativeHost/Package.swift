@@ -45,7 +45,9 @@ let package = Package(
             name: "NativeHostMac",
             dependencies: [
                 "NativeHost", "NativeHostProtocol", "UserShell", .product(name: "Exec", package: "Exec"),
-                .product(name: "HostUpdater", package: "HostUpdater"),
+                // Conditional even though this target is macOS-only: SwiftPM still builds a dependency's
+                // products elsewhere, and HostUpdater's Ed25519 is CryptoKit's (docs/durability.md).
+                .product(name: "HostUpdater", package: "HostUpdater", condition: .when(platforms: [.macOS])),
                 .product(name: "SessionTitling", package: "SessionTitling"),
                 .product(name: "NativeOrchestration", package: "Orchestration"),
             ]),

@@ -213,7 +213,9 @@ green on main. On Linux today:
   or GIF already within the limits, since nothing scales them; anything else goes by path. npx always
   runs as npx (finding its install folder takes SHA-512). Logs go to stderr.
 - **Mac only for now:** plugin assets (their content hashes are SHA-256: a client asking gets "Plugin
-  assets aren't available on this host yet"), updating itself (Ed25519), Native's tools for agents
+  assets aren't available on this host yet"), updating itself (Ed25519: `native-host` is built without
+  `HostUpdater` there, and `_native/host/update/status` and the doctor say "Updates aren't available on
+  this host yet"), Native's tools for agents
   (the MCP server is on Network, its tokens are HMACs), attached hosts (`--exit-with-parent` watches
   the parent with kqueue), on-device titles and `native-host doctor`. The cryptography comes with
   swift-crypto, deferred until Linux is a real target (docs/decisions.md, "swift-crypto for Linux

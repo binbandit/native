@@ -263,6 +263,24 @@ extension HostDoctor {
         }
     }
 
+    // MARK: - Updates
+
+    /// How the host gets its updates: with Native.app, by itself, or not on this host yet.
+    static func updatesCheck(_ status: HostUpdateStatus) -> HostDoctorCheck {
+        func check(_ result: HostDoctorCheck.Status, _ detail: String) -> HostDoctorCheck {
+            HostDoctorCheck(id: "host.updates", group: .host, title: "Updates", status: result, detail: detail)
+        }
+        let current = "\(status.current.version) (\(status.current.channel))"
+        if let rollback = status.lastRollback {
+            return check(.warning, "Native Host \(rollback.from) didn't start, so the host went back to \(rollback.to)")
+        }
+        switch status.provider {
+        case .app: return check(.ok, "Updates with Native, now \(current)")
+        case .standalone: return check(.ok, "Updates itself, now \(current)")
+        case .none, .unknown: return check(.info, status.message ?? "Updates aren't available on this host yet")
+        }
+    }
+
     // MARK: - Reading the machine
 
     /// Finds `command` as a login shell would: an absolute path as is, a name on the PATH.
