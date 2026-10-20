@@ -71,6 +71,9 @@ final class SessionModel {
     /// Set to scroll the transcript to an item and highlight it (search results); the transcript
     /// clears it.
     var transcriptReveal: TranscriptReveal?
+    /// The transcript row at the top of the view when the user last left this session scrolled away
+    /// from the latest, so coming back shows the same place; nil when they left it at the latest.
+    @ObservationIgnored var transcriptScrollTarget: String?
 
     // Turn state. Internal only so the SessionModel+ extensions in other files can drive turns;
     // everything else changes it through the methods.
@@ -116,8 +119,16 @@ final class SessionModel {
     private(set) var isTranscriptEmpty = true
     /// Tool calls that may have written files and have finished (`SessionState.completedWriteCount`).
     private(set) var completedWriteCount = 0
+    /// Whether history is still being replayed into the transcript: a load or reload under way, or
+    /// this model catching up with a host session. The transcript shows a loading state meanwhile,
+    /// never history arriving, and appears whole, at its end, once it's in.
+    private(set) var isRestoringHistory = false
+    /// An in-app session's load has answered, so its history is all in (its settings may still be
+    /// on their way back).
+    @ObservationIgnored private var hasLoadedHistory = false
     var phase: Phase {
         didSet {
+            refreshRestoringHistory()
             if oldValue == .loading {
                 announceReplay()
                 // Drops what `shownConfigOptions` showed while it loaded, without taking the agent's
@@ -163,13 +174,17 @@ final class SessionModel {
     let services: SessionServices
     /// What the host last said about the session (its queue, whether it's stopping, retrying or
     /// running a hidden command), for a host session (SessionModel+Host.swift).
-    var hostSummary: HostSessionSummary?
+    var hostSummary: HostSessionSummary? {
+        didSet { refreshRestoringHistory() }
+    }
     /// Messages held here until the session can take them: while it loads and its settings are
     /// set back, and while a workspace hold lasts (SessionModel+Host.swift).
     var heldPrompts: [HeldPrompt] = []
     /// Set while host events that happened before this model followed the session are applied, so
     /// they rebuild the transcript without telling plugins about them again.
-    @ObservationIgnored var isReplaying = false
+    @ObservationIgnored var isReplaying = false {
+        didSet { refreshRestoringHistory() }
+    }
     /// Set while a host session that just loaded gets its chosen settings back; it shows as still
     /// loading meanwhile, as an in-app session does (SessionModel+ConfigRestore.swift).
     var isSettingBackConfig = false
@@ -362,10 +377,11 @@ final class SessionModel {
         }
     }
 
-    /// Tells `state`'s observers about replayed history at most every 100 ms, and once more when
-    /// loading ends.
+    /// Tells `state`'s observers about history replayed after the transcript shows (a host session
+    /// setting its settings back) at most every 100 ms. While history is being restored nobody
+    /// hears about it: the transcript waits for all of it (`refreshRestoringHistory()`).
     func noteReplayed() {
-        guard replayNotice == nil else { return }
+        guard !isRestoringHistory, replayNotice == nil else { return }
         replayNotice = Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(100))
             guard !Task.isCancelled else { return }
@@ -378,6 +394,24 @@ final class SessionModel {
         replayNotice?.cancel()
         replayNotice = nil
         withMutation(keyPath: \.state) {}
+    }
+
+    /// Brings `isRestoringHistory` up to date. When the history is all in, `state`'s observers hear
+    /// about all of it at once.
+    func refreshRestoringHistory() {
+        let isRestoring =
+            if host != nil {
+                isReplaying || mirror.isLoading || hostSummary?.phase == .loading
+            } else {
+                phase == .loading && !hasLoadedHistory
+            }
+        guard isRestoring != isRestoringHistory else { return }
+        isRestoringHistory = isRestoring
+        if !isRestoring {
+            replayNotice?.cancel()
+            replayNotice = nil
+            withMutation(keyPath: \.state) {}
+        }
     }
 
     /// Writes only what changed, since writing notifies observers even with an equal value.
@@ -407,6 +441,7 @@ final class SessionModel {
         if completedWriteCount != transcript.completedWriteCount {
             completedWriteCount = transcript.completedWriteCount
         }
+        refreshRestoringHistory()
         if host != nil {
             mirrorHostQuestions()
         }
@@ -425,6 +460,8 @@ final class SessionModel {
     }
 
     func finishLoading(configOptions: [ConfigOption]?) async {
+        hasLoadedHistory = true
+        refreshRestoringHistory()
         if let configOptions {
             state.configOptions = configOptions
         }
@@ -439,6 +476,7 @@ final class SessionModel {
     }
 
     func failLoading(_ error: any Error) {
+        hasLoadedHistory = true
         state.appendNotice(
             "Couldn't load this session: \(error.localizedDescription.withoutTerminalEscapes)", isError: true)
         phase = .idle

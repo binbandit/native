@@ -99,7 +99,7 @@ final class PlatformAutoScroll: NSObject {
         remainder -= pixels
         guard let window = scrollView.window,
             let event = CGEvent(
-                scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 1, wheel1: Int32(-pixels), wheel2: 0,
+                scrollWheelEvent2Source: nil, units: .pixel, wheelCount: 1, wheel1: Int32(pixels), wheel2: 0,
                 wheel3: 0)
         else { return }
         let middle = window.convertPoint(
