@@ -18,7 +18,8 @@ extension AppModel {
         for checkout in project.checkouts {
             guard let host = hosts.host(checkout.host) else { continue }
             for summary in host.sessions
-            where summary.origin == .user && summary.parentID == nil && SessionFolder.isSame(summary.cwd, checkout.path)
+            where summary.origin == .user && summary.parentID == nil
+                && host.isTaskFolder(summary.cwd, ofCheckoutAt: checkout.path)
             {
                 guard let agentSessionID = summary.agentSessionID,
                     let runtime = host.runtime(AgentDefinition.ID(rawValue: summary.agentID))
@@ -28,10 +29,12 @@ extension AppModel {
                 let entry = SessionSummary(project: project.id, agent: runtime.agent, info: info)
                 if seen.insert(entry.id).inserted { summaries.append(entry) }
             }
-            for listed in host.history[checkout.path] ?? [] {
-                guard let runtime = host.runtime(listed.agent) else { continue }
-                let entry = SessionSummary(project: project.id, agent: runtime.agent, info: listed.info)
-                if seen.insert(entry.id).inserted { summaries.append(entry) }
+            for (folder, listings) in host.history where host.isTaskFolder(folder, ofCheckoutAt: checkout.path) {
+                for listed in listings {
+                    guard let runtime = host.runtime(listed.agent) else { continue }
+                    let entry = SessionSummary(project: project.id, agent: runtime.agent, info: listed.info)
+                    if seen.insert(entry.id).inserted { summaries.append(entry) }
+                }
             }
         }
         return summaries
@@ -139,10 +142,18 @@ extension AppModel {
         }
     }
 
-    /// Lists the sessions agents saved in each of `host`'s checkouts, after it connects and after
-    /// a session started there.
+    /// Lists the sessions agents saved in each of `host`'s checkouts and their task worktrees there,
+    /// after it connects.
     func refreshRemoteHistory(on host: RemoteHost) async {
-        let folders = projects.all.flatMap { $0.checkouts.filter { $0.host == host.id }.map(\.path) }
+        var folders: [String] = []
+        for project in projects.all {
+            guard let checkout = project.checkoutPath(on: .remote(host.id)) else { continue }
+            folders.append(checkout)
+            // Its tasks run in their own worktrees there, as here; their sessions are listed by folder.
+            if let workspaces = await taskWorkspaces(on: host) {
+                folders += await workspaces.taskFolders(of: project.onHost(at: checkout)).map(\.folderPath)
+            }
+        }
         await host.refreshHistory(in: folders)
     }
 }

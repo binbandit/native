@@ -1,5 +1,6 @@
 import ACP
 import Foundation
+import Git
 import NativeHostClient
 import NativeHostProtocol
 import NativeLink
@@ -93,6 +94,26 @@ final class RemoteHost: Identifiable {
 
     func session(_ id: HostSessionID) -> HostSessionSummary? {
         sessions.first { $0.id == id }
+    }
+
+    /// Where the host keeps the task worktrees of the checkout at `checkout`: a folder per
+    /// repository in its worktrees folder, named as the Git feature names it (`GitStore.taskLocation`).
+    func taskLocation(ofCheckoutAt checkout: String) -> String? {
+        worktreesFolder.map { folder in
+            URL(filePath: folder, directoryHint: .isDirectory)
+                .appending(path: Worktree.slug(URL(filePath: checkout).lastPathComponent, maxLength: 60))
+                .path(percentEncoded: false)
+        }
+    }
+
+    /// Whether a session in `cwd` works in the checkout at `checkout`: in it, or in one of its task
+    /// worktrees.
+    func isTaskFolder(_ cwd: String, ofCheckoutAt checkout: String) -> Bool {
+        if SessionFolder.isSame(cwd, checkout) { return true }
+        return taskLocation(ofCheckoutAt: checkout).map {
+            SessionFolder.contains($0, cwd) && !SessionFolder.isSame($0, cwd)
+        }
+            ?? false
     }
 
     // MARK: - Connection
