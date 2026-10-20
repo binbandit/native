@@ -34,6 +34,7 @@ nonisolated enum LaunchExperiment {
     static let rowNoLeading = isOn("rowNoLeading")
     static let rowNoChrome = isOn("rowNoChrome")
     static let rowNoA11y = isOn("rowNoA11y")
+    static let logChanges = isOn("logChanges")
 
     private static let logs = UserDefaults.standard.bool(forKey: "launchCheckpoints")
     private static let logger = Logger(subsystem: "Native", category: "Launch")

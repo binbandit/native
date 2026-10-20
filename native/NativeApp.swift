@@ -219,7 +219,10 @@ struct NativeApp: App {
                         BuiltInPlugins.automations.manifest.id)
                 }
         }
-        .defaultSize(width: 1120, height: 780)
+        .defaultSize(
+            width: LaunchExperiment.isOn("bigDefault") ? 1623 : 1120,
+            height: LaunchExperiment.isOn("bigDefault") ? 1040 : 780
+        )
         .commands {
             UpdateCommands(commands: CommandRegistry.shared)
             HostQuitCommands(host: durableHost, commands: CommandRegistry.shared)

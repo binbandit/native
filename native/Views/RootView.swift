@@ -34,6 +34,7 @@ struct RootView: View {
     @Environment(WhatsNewCenter.self) private var whatsNew
 
     var body: some View {
+        let _ = LaunchExperiment.logChanges ? Self._logChanges() : ()
         let _ = LaunchExperiment.checkpoint("RootView body")
         @Bindable var model = model
         @Bindable var automation = automation

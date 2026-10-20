@@ -140,6 +140,10 @@ bundle_id >/dev/null || { echo "run without --no-build to rebuild it as $name" >
 # Relaunching replaces the app but leaves its background host running, so durability and host
 # handoffs can be tested by relaunching; --quit and --reset stop the host too.
 quit_app
+# Instances start muted: many run at once on one Mac, and their sounds would play over whatever the
+# person at it is doing. Written once into the instance's own defaults, so turning sounds on in its
+# Settings (to test them) sticks.
+defaults read "$(bundle_id)" sounds.enabled >/dev/null 2>&1 || defaults write "$(bundle_id)" sounds.enabled -bool NO
 defaults_args=()
 [[ " ${app_args[*]-} " == *" -agentDefaults.codex.model "* ]] || defaults_args=(-agentDefaults.codex.model gpt-6.1-sol)
 [[ " ${app_args[*]-} " == *" -gitWorktreesFolder "* ]] || defaults_args+=(-gitWorktreesFolder "$worktrees")

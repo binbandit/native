@@ -35,6 +35,7 @@ struct ProjectSection<TaskAccessory: View>: View {
     }
 
     var body: some View {
+        let _ = LaunchExperiment.logChanges ? Self._logChanges() : ()
         let item = SidebarDragState.Item.project(project.id)
         let problems = model.problems.list(for: project.id)
         let starting = model.startingTasks(in: project.id)

@@ -58,6 +58,7 @@ struct SessionRow<Accessory: View>: View {
     }
 
     var body: some View {
+        let _ = LaunchExperiment.logChanges ? Self._logChanges() : ()
         if LaunchExperiment.plainRows {
             Text(title).frame(height: 36)
         } else if model.renaming == summary.id {

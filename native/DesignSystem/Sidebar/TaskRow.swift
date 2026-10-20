@@ -94,6 +94,7 @@ public struct TaskRow<Leading: View, Accessory: View>: View {
     }
 
     public var body: some View {
+        let _ = LaunchExperiment.logChanges ? Self._logChanges() : ()
         if LaunchExperiment.rowNoButton { rowContent } else { realBody }
     }
 
