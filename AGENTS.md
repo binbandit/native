@@ -83,12 +83,7 @@ you're given a build Mac (`NATIVE_REMOTE_BUILD_HOST=user@machine`), run package 
 (Command Line Tools lack Swift Testing's macros). Run tests here at low priority and filtered to yours:
 `nice -n 10 swift test -j 4 --filter <Suite>`.
 
-Keep the shared build green: about a dozen agents build this one tree. Develop unfinished files behind a
-compilation condition or in a scratch package until they compile, and fix a break you caused before
-anything else. Others build the live files, not your saves, so in a change that spans files add new
-types and functions before their uses, and every edit leaves the tree compiling. When a build fails in
-someone else's files, build once more before reporting it: an edit in flight or a file added since the
-build was planned fails once and then passes.
+Keep `main` green: CI builds every PR, and a break you merged comes before anything else.
 
 The app builds with zero warnings in Debug, Release and Nightly, and CI fails on any new one from our
 files: fix yours in the same change (`scripts/check-warnings.sh /tmp/native-dd/<you>/build.log`).
@@ -131,27 +126,32 @@ When a check needs a real agent session, use Codex with `gpt-6.1-sol` (it's the 
 `-agentDefaults.codex.model gpt-6.1-sol`, or pick it in the composer's model picker. Use another
 agent only when the behavior under test belongs to that agent (Claude Code's questions, say).
 
-## Saving work (Kite)
+## Working on a change
 
-The repo saves progress continuously with [Kite](https://github.com/binbandit/kite) (`kt`), so no
-work is lost. Many agents share one working tree, so:
+Every change reaches `main` through a pull request. Work in a git worktree of your own, on your own
+branch, never in the checkout at the repository root (that one is Brayden's):
 
-- **Save with a bare `kt`** from the repo root at every milestone (something compiles, a feature
-  works, before a risky change), and at least every 20–30 minutes of work. It snapshots the whole
-  tree, other agents' work included; that's intended.
-- **Never stage** (`git add`) and never run `git commit`, `reset`, `checkout`, `restore`, `stash`,
-  `switch` or `rebase`. A staged file would make everyone else's `kt` save only that file.
-- **Never run `kt land`, `kt undo`, `kt go`, `kt publish`, `kt pr` or `kt ship`.** They rewrite or
-  move shared history. The coordinator lands saves into conventional commits at integration points.
-- If `kt` fails on `.git/index.lock`, another agent is saving: wait a few seconds and retry, up to
-  three times. Never delete the lock file.
+```sh
+git fetch origin main
+git worktree add ../worktrees/<you> -b <type>/<topic> origin/main   # e.g. fix/turn-review
+cp Config/Local.xcconfig ../worktrees/<you>/Config/   # signing settings, never committed; if present
+cd ../worktrees/<you>
+```
+
+- Commit as you go with conventional messages, or save with [Kite](https://github.com/binbandit/kite)
+  (`kt`) and group the saves with `kt land` before pushing. The history is yours until you push.
+- Build and run from your worktree: `scripts/dev/run-isolated.sh <you> ...` builds that worktree.
+- Before opening the PR, and again before merging, rebase on the latest `origin/main` and build, test
+  and lint again.
+- `main` ships to users every day (Nightly), so anything unfinished that merges stays behind a switch
+  that defaults to today's behavior, and experiments come out before merge.
 - Nothing secret and no third-party assets in the tree (research screenshots are gitignored).
-- Anything in the tree can be published at any moment, temporary experiments included. Write an
-  experiment so its default is today's behavior (a launch argument or `#if DEBUG` switch that's off),
-  and remove it before you report.
+- When your PR has merged, remove your worktree (`git worktree remove ../worktrees/<you>`) and your
+  build (`scripts/dev/run-isolated.sh <you> --remove`).
 
 ## Pull requests
 
+- Open a real PR, not a draft (`gh pr create`), so the review bot runs on it.
 - One concern per PR, small enough to review in one sitting. Refactors and behavior changes go in
   separate PRs.
 - Conventional commit titles: `feat(composer): queue follow-ups while a turn runs`.
@@ -159,3 +159,9 @@ work is lost. Many agents share one working tree, so:
   for UI changes and the commands you ran to verify.
 - Update the docs a change touches (`docs/keyboard.md`, `docs/architecture.md`, decisions) in the
   same PR. Builds, tests and `swift format lint --strict` on the changed files pass before review.
+- No co-author lines, and nothing in titles, descriptions or commits about how the work was produced.
+- The review bot comments on every PR. Check each finding against the source: fix the real ones, and
+  answer the others with the reason. Fix CI failures, telling real breaks from known infrastructure
+  flakes.
+- Merge when CI and the review are green (`gh pr merge --squash --delete-branch`), unless your task
+  says to stop and report.

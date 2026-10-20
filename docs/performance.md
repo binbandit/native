@@ -505,9 +505,16 @@ after, and only runs whose window stayed 620 points tall with nothing in front o
   permission shortcuts' target from the session's mirror (`permissionRequests`), and the transcript's
   empty state from `isTranscriptEmpty`; `TranscriptView` no longer reads `state` at all once it shows.
   Session messages still name subagents from `state`, so each one on screen updates with a chunk.
-- **A streaming reply is split into sections incrementally** (after the numbers above). It was
-  split whole on every chunk, 1–1.5% of the main thread in both sessions for this reply and growing
-  with a reply's length; now only its last two sections are split again (`ReplySections.grown`).
+- **Checked against the regressions such a split can bring:** reopened, the 500-turn transcript
+  opens at its end and its content measures 362,000 points as rows lay out (as before, not one
+  view's height); a search reveal of an item 2,000 from the end finds its line in the earlier
+  turns' list and scrolls there; and Native's footprint after reopening is 172 MB (208 MB before).
+- **Code colors before a reopened transcript appears**, behind `-transcriptOpeningColors YES`
+  until it's been seen working: the code in the last screen and a half of the transcript is
+  highlighted (off the main thread, all at once, for at most 300 ms) while "Loading session…" stays,
+  so the rows appear with their colors (`TranscriptOpeningCode`). The transcript appeared in every
+  reopen with it on, but no probe could yet tell plain code from colored in the first frame: the
+  rows render before the scroll view's `onAppear`, and screenshots weren't possible.
 
 ### Pull request diffs
 
@@ -720,8 +727,8 @@ several runs each. Task switches and Settings visits are AX presses on the insta
 | The composer's rich editor still leaks once it showed code | SwiftUI's rich `TextEditor` leaves about 14 KB behind each editor that goes away; only drafts with code use it now. Keeping one editor across task switches would end it | Composer |
 | Park the default agent when it has no open sessions for a long while, or start it on the first New Session | It's kept running so New Session never waits; with direct adapter launch that wait is now about 0.3 s for Codex | App model |
 | Opening the changes inspector on many files under 100 ms | Still 218–392 ms on 250 files against 69–77 ms on a clean repository: laying out and drawing the rows on screen (text measuring, the diff's selectable text) and the first file's diff, in Debug | Git |
-| Scroll a long transcript at 120 Hz | With the SwiftUI driver a screenful of new rows costs 25–80 ms (Release): their selectable text (TextKit 2) and the lazy stack placing them. Lists no longer use `Grid`; code blocks without a scroll view each didn't pay (`ViewThatFits` laid the text out twice). First check by hand whether fast trackpad scrolling shows the transcript blank: no synthetic driver can tell | Transcript |
+| Scroll a long transcript at 120 Hz | With the SwiftUI driver a screenful of new rows costs 25–80 ms (Release): their selectable text (TextKit 2) and the lazy stack placing them. Lists no longer use `Grid`; code blocks without a scroll view each didn't pay (`ViewThatFits` laid the text out twice). Not measured again on 2026-10-20 (every part of the screen was covered by other windows). Next to measure: what selection costs (reply sections without `.textSelection`); list markers without selection (each item has two marker texts, a hidden widest copy and the marker, both selectable today); and code that fits shown without a scroll view, decided from its longest line and the code font's advance rather than by laying it out twice. First check by hand whether fast trackpad scrolling shows the transcript blank: no synthetic driver can tell | Transcript |
 | Come back to a session at the place you left it | Switching back to a session in memory shows its end at once, but not the place you'd scrolled to. Tracking the top row with scroll targets (`.scrollTargetLayout()` with `scrollPosition(anchor:)` or `onScrollTargetVisibilityChange`) twice put the transcript in a 100% CPU layout loop against its bottom anchor; keeping the last session's view alive would keep its place without that | Session view |
 | Streaming within budget | The 500-turn session now streams at the 20-turn session's cost (Long transcripts, "2026-10-20, evening"), but both keep the main thread 31–35% busy in an optimized build, over the 25% budget: what's left is laying out and drawing the growing section on every chunk (its text 11–12%, committing the frame 14–16%, which includes that layout). Laying out only the section's last paragraph again, or chunks coalesced to the display's rate, are the next things to try | Transcript |
 | An instance's window grows by itself | Launched with `-nativeWindowFrame` 620 points tall, the main window was 1,651–1,747 points tall in about half of the launches (before and after the transcript work alike), reaching past the bottom of the screen, which makes it lay out and draw more rows. Seen from `CGWindowListCopyWindowInfo` during measurements on 2026-10-20; not reproduced on purpose yet. Likely some content's minimum height measured at no width, as in Streaming above | App shell |
-| Code colors arriving after a reopened transcript appears | The code blocks on screen draw plain for 100–200 ms; highlighting them before the transcript appears would make it appear finished | Transcript |
+| Code colors arriving after a reopened transcript appears | The code blocks on screen draw plain for 100–200 ms. `-transcriptOpeningColors YES` highlights them before the rows appear (Long transcripts, "2026-10-20, evening"); turn it on by default once a screenshot sequence of a reopen shows no plain code. Also: a streaming reply is split into sections whole on every chunk (1–1.5% of the main thread here, growing with the reply); splitting only its last two sections again is equivalent, since new text can only move the boundary before the last one | Transcript |

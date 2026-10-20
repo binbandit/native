@@ -48,7 +48,8 @@ jobs:
           - arch: arm64
             runner: ubuntu-24.04-arm
     runs-on: ${{ matrix.runner }}
-    container: swift:6.2
+    # The Swift the app builds with (Xcode 27.1 ships 6.4), so Linux checks the same language.
+    container: swift:6.4
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@v5
@@ -56,7 +57,7 @@ jobs:
       # (Packages/NativeHost/Sources/CSQLite).
       - name: Install SQLite's headers
         run: apt-get update && apt-get install -y --no-install-recommends libsqlite3-dev
-      # The image's tag follows 6.2's patch releases, and builds from another compiler can't be reused.
+      # The image's tag follows 6.4's patch releases, and builds from another compiler can't be reused.
       - name: Compiler version
         id: swift
         run: echo "version=$(swift --version 2>&1 | head -n 1 | sha256sum | cut -c 1-16)" >> "$GITHUB_OUTPUT"

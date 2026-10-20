@@ -132,7 +132,46 @@ hooks (`native/Telemetry`), Task Scripts session hooks (`native/TaskScripts`).
 
 ## 2. Size
 
-SIZE_SECTION
+Figures are from `docs/app-size.md`'s link map of a stable release dry run on **2026-10-19**
+(Release, stripped, arm64), plus the script runtime measured again on **2026-10-20** (41.37 MB
+installed, 15.02 MB zipped, unchanged). A fresh build wasn't run for this plan; the ranking is what
+matters, and it hasn't moved.
+
+### The whole app (2026-10-19, after Kotlin, C++ and Ruby went to the lexer)
+
+| | Installed | Download |
+| --- | --- | --- |
+| Whole app | 107.5 MB | 42.7 MB (update archive) |
+| App binary | 53.2 MB | about 16 MB |
+| Script runtime (V8 helper) | 41.4 MB | 15.0 MB |
+| `Assets.car` (24 alternate icons) | 6.8 MB | 6.6 MB |
+| Host helper (`Native Host.app`) | 2.7 MB | 1.1 MB |
+| Frameworks (Sparkle, Sentry's loader) | 2.7 MB | 1.0 MB |
+| Fonts (Geist, Geist Mono), terminfo, the rest | 0.7 MB | 0.6 MB |
+
+Most updates are deltas: 2.7 MB between two release builds an hour apart.
+
+### Ranked costs
+
+| # | What | Installed | Download | Ships to everyone? |
+| --- | --- | --- | --- | --- |
+| 1 | V8 script runtime (ICU data 10.8, optimizing compilers it never runs 11.4, the rest of V8 12.3) | 41.4 MB | 15.0 MB | yes, used only by `run_script` and script steps |
+| 2 | libghostty (Zig core 7.1 including 3.05 MB of embedded fonts; shader compilers 3.5) | 12.4 MB | about 4 MB | yes |
+| 3 | tree-sitter grammars (12 left; Swift 4.2, TSX 1.4, TypeScript 1.4, Bash 1.4, Rust 1.1...) | about 12.6 MB | about 1.3 MB (parse tables compress tenfold) | yes |
+| 4 | App icons (24 alternates, lossless PNGs) | 6.8 MB | 6.6 MB | yes; about 1.9 MB are channel icons other channels never show |
+| 5 | Native's own code (`native/`) | 16.4 MB | about 5 MB | yes |
+| 6 | Native's Swift packages | about 8.5 MB | about 3 MB | yes |
+| 7 | Host helper | 2.7 MB | 1.1 MB | yes |
+| 8 | Sentry (static) | 1.95 MB | about 0.7 MB | yes, started only after opt-in |
+| 9 | Sparkle | about 2 MB | about 0.8 MB | yes (Mac) |
+
+Features, by their code (app folder plus package): GitHub 2.65 MB, Views 2.47, Design System 1.74,
+Automation 1.48, Git 1.41, Expeditions 1.24, ACP 0.86, Models 0.83, Usage 0.72, MCP 0.70; every
+other feature is under 0.6 MB. No feature module is worth downloading separately; the three blobs
+and the icons are.
+
+Outside the budget, on the user's disk: the adapters `npx` installs on first use, about 650 MB
+(section 3).
 
 ## 3. Supply chain
 
@@ -358,6 +397,33 @@ Today's feature keys (`policy.scripts.enabled`, `policy.labs.enabled`, `policy.c
 `policy.remoteHosts.enabled`) stay and map onto their modules, so existing profiles keep working.
 Module and policy changes join the audit journal and its export.
 
+### The plugin catalog (decided: the first phase)
+
+One place to find everything Native can add, owned by Native and safe by construction:
+
+- **An official, Native-owned plugins repository.** Each plugin is a folder with its `plugin.json`
+  and assets, reviewed by pull request.
+- **A signed index.** Published with each change and signed with Ed25519 (EdDSA), the scheme and
+  key handling the update feed and celebration packs already use. Native verifies it before reading
+  it.
+- **Pinned content.** Each entry names a commit and a SHA-256 of the plugin's files; Native installs
+  only bytes that match.
+- **An honest install screen.** Before anything installs, it shows what the plugin adds: each agent
+  and the exact command it runs, each MCP server and its command or URL, workflows, themes, icon
+  sets and celebrations.
+- **No silent updates.** A new version is offered with what changed in those same terms; the user
+  installs it, or doesn't.
+- **Agent plugins pin their adapters.** An agent entry carries its adapter's version and lockfile
+  with integrity hashes, installed as in "Adapters" below, which closes the `npx` risk for every
+  catalog agent.
+- **Enterprise.** Policy can turn the catalog off, allowlist plugins from it, or point Native at a
+  mirror of the repository and its index (`policy.catalog.enabled`, `policy.plugins.allowed`,
+  `policy.catalog.indexURL`).
+- **Data moves out of the app first.** Non-default data leaves the bundle for the catalog: extra
+  themes, icon sets, celebrations, sample workflows, experiments, and agents beyond the core few.
+  Built-in code features stay in the binary, off by default, but are listed in the same catalog
+  with the same switch, so there's one place to choose from.
+
 ### Adapters
 
 Pin the whole tree, keep npm out of the launch path, and let an organization choose:
@@ -385,7 +451,14 @@ offline story. A module shipped in the bundle but off costs disk and the first d
 trust root (the notarized app) and costs nothing on most updates, since updates are deltas (2.7 MB
 for a typical one, `docs/app-size.md`) and an unchanged module adds nothing to a delta.
 
-HEAVY_TABLE
+| Option | Installed | Download | New trust paths | Notes |
+| --- | --- | --- | --- | --- |
+| Today: V8 runtime and terminal in the bundle | 107.5 MB | 42.7 MB | none | |
+| Runtime as an on-demand, hash-pinned component | 66 MB | 27.7 MB, plus 15 MB for those who turn on Code mode | one, same keys as updates | V8's prebuilt still needs pinning |
+| Runtime on JavaScriptCore | 66 MB | 27.7 MB | none; fewer (no Rust, no V8 prebuilt) | Swift rewrite, slower numeric loops |
+| V8 rebuilt without its compilers | 91.3 MB | 37.8 MB | we publish our own V8 build | slower typed arrays |
+| Terminal as an on-demand dylib | about 95 MB | about 38.7 MB | one, in-process code | `ghostty.h` is a C API, so it's possible, but it's in-process code from a second source |
+| Terminal trimmed (no embedded fonts or shader compilers) | 101 MB | 40.2 MB | none | needs a patch on the pinned Ghostty |
 
 **Recommendation: ship everything in-process in the bundle, off until chosen, and take the script
 runtime out of the bundle.** The terminal stays in: its download cost is small, most people use it,
@@ -406,7 +479,17 @@ already a separate, sandboxed executable. Two ways out, in order of preference:
 
 ### Target size
 
-TARGET_SECTION
+With every in-process module included, measured against 2026-10-19's 107.5 MB and 42.7 MB:
+
+| Step | Installed | Download |
+| --- | --- | --- |
+| Script runtime out of the bundle | -41.4 MB | -15.0 MB |
+| libghostty without embedded fonts and shader compilers | -6.5 MB | -2.5 MB |
+| Icons: per-channel catalogs and lossy alternates | about -3.5 MB | about -3.5 MB |
+| **Target** | **under 60 MB** | **under 25 MB** |
+
+`size-check.sh`'s budgets come down with each step (today 118 MB installed, 47 MB download). The
+app binary's own target is under 50 MB; the stretch, with fewer grammars, is a 20 MB download.
 
 ### Why people pick Native
 
@@ -431,7 +514,8 @@ Each phase ships on its own; smallest first.
 | Phase | What | Touches | Size |
 | --- | --- | --- | --- |
 | 0. Supply-chain fixes | Pin the V8 prebuilt's SHA-256 and pass it with `RUSTY_V8_ARCHIVE`; `-disableAutomaticPackageResolution` in `release.sh` and `check.sh`; actions pinned by commit; Dependabot for `swift` and `cargo`; `rust-toolchain.toml`; record this plan in `docs/decisions.md` | `scripts/build-script-runtime.sh`, `scripts/release/`, `.github/`, `Runtime/ScriptRuntime` | small |
-| 1. Honest defaults | New installs start with Orchestration, Sounds and the status bar off, as the decision says; existing users' state recorded as choices so nothing changes for them | `native/Plugins`, `native/Sounds`, `native/Orchestration`, `native/StatusBar`, `native/Wiring/AmbientWiring.swift` | small |
+| 1. Plugin catalog | The official plugins repository, signed index, pinned commits and hashes, the install screen, update offers, catalog policy keys; move non-default themes, icon sets, celebrations, workflows, experiments and extra agents into it; built-in code features listed beside them | new `native/PluginCatalog`, a UI-free `Packages/PluginCatalog` (index, verification), `native/Plugins`, `Packages/NativePolicy`, `scripts/release/` | medium |
+| 1b. Honest defaults | New installs start with Orchestration, Sounds and the status bar off, as the decision says; existing users' state recorded as choices so nothing changes for them | `native/Plugins`, `native/Sounds`, `native/Orchestration`, `native/StatusBar`, `native/Wiring/AmbientWiring.swift` | small |
 | 2. Modules contribute UI | `FeatureModule` and `ModuleContributions`; Settings, commands, status bar, sidebar, inspector and task rows read from the registry; move the existing plugins' pages, items and sidebar entries over and delete the `isEnabled` checks in `RootView` | `native/Plugins`, `native/Settings`, `native/Commands`, `native/StatusBar`, `native/Views/RootView.swift`, `native/Wiring` | medium |
 | 3. Hard-wired features become modules | One pull request each, lazily activated: Terminal, GitHub (with PR tasks and clean up), Project actions, Task scripts, Modes, Keep awake, Open in, Companion and hosts, What's New, Labs, Agent icons, Status bar | each feature's folder (`Integration/`), `native/NativeApp.swift`, `native/Wiring` | medium, parallel |
 | 4. Adapters pinned | Lockfiles, `npm ci --ignore-scripts` into Native's folder, `node <bin>` launch, `--omit=optional` if it holds | `Packages/ACP` (`NpxLaunch`), `native/Plugins`, `native/AgentCatalog`, `Packages/NativeHost` (the host launches agents), `docs/agents.md` | medium |
@@ -445,4 +529,4 @@ Each phase ships on its own; smallest first.
 1. The core, and the modules' starting states (the table above), including which preset is the
    default.
 2. Whether to reopen V8 versus JavaScriptCore, or keep V8 as an on-demand component.
-3. Whether adapters move to Native-managed installs from shipped lockfiles (Phase 4).
+3. Whether adapters move to Native-managed installs from shipped lockfiles (Phase 4), with catalog agents first (Phase 1).

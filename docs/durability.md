@@ -201,7 +201,7 @@ specifics (code signatures, boot time, FSEvents, keep-awake, the on-device title
 itself) live in `NativeHostMac`. `native-host` builds on Linux without it: `LinuxHost`, in the
 executable, gives the machine's name, its boot time from `/proc/stat` and the user's login-shell
 environment. The Linux workflow (`.github/workflows/linux.yml`) builds it for x86_64 and arm64 in
-`swift:6.2` and runs ACP's and the host's tests there; it reports without blocking until it's been
+`swift:6.4` and runs ACP's and the host's tests there; it reports without blocking until it's been
 green on main. On Linux today:
 
 - **The same as on a Mac:** sessions, turns, recovery and the store (the system SQLite:
