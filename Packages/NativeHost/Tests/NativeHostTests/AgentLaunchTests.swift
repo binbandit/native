@@ -12,7 +12,7 @@ struct AgentLaunchTests {
     @Test func agentSeesItsInputEndEvenIfAnotherProcessStartedMeanwhile() async throws {
         // `cat` stands in for an agent: it exits once its input ends.
         let command = AgentCommand(executable: "cat", environment: ["PATH": "/usr/bin:/bin"])
-        let (process, channel, _) = try AgentLaunch.spawn(command)
+        let (process, channel, _) = try AgentLaunch.spawn(command) {}
         defer { if process.isRunning { process.terminate() } }
         let inheritor = try spawnInheritingDescriptors()
         defer { reap(inheritor) }

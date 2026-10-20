@@ -56,5 +56,7 @@ public enum DefaultShortcuts {
         "projectActions.runLast": "⇧⌘R",
         // Celebrations
         "celebration.restore": "⌥⇧⌘H",
+        // Quitting
+        "app.quitAndStopAgents": "⌃⌥⌘Q",
     ]
 }

@@ -22,13 +22,22 @@ struct StoreTests {
     func survivesReopen() throws {
         let session = StoredSession(
             id: HostSessionID(), agentID: "fake", agentSessionID: SessionID("s1"), cwd: "/tmp", parentID: nil,
-            origin: .user)
+            origin: .user, meta: .object(["plugin": .string("x")]), configChoices: ["model": "large"])
         let turn = UnfinishedTurn(
-            sessionID: session.id, requestID: UUID(), text: "slow 5", kind: .prompt, echo: true,
-            startedAt: Date(timeIntervalSince1970: 1_700_000_000))
+            sessionID: session.id,
+            prompt: OutgoingPrompt(
+                text: "look at this",
+                content: [.text("look at this"), .resourceLink(uri: "file:///a.txt", name: "a.txt")],
+                attachments: [EchoAttachment(name: "a.png", imageBase64: "AAAA")],
+                preamble: PromptPreambleSpec(
+                    marker: PreambleMarker(id: "plan", label: "Plan mode"), instructions: "Plan."),
+                origin: .task),
+            kind: .prompt, startedAt: Date(timeIntervalSince1970: 1_700_000_000))
         let queued = [
-            StoredQueueItem(prompt: QueuedPrompt(text: "first"), isSteering: false),
-            StoredQueueItem(prompt: QueuedPrompt(text: "second"), isSteering: true),
+            StoredQueueItem(prompt: OutgoingPrompt(text: "first"), isSteering: false),
+            StoredQueueItem(
+                prompt: OutgoingPrompt(text: "second", attachments: [EchoAttachment(name: "b.txt")], isEchoed: false),
+                isSteering: true),
         ]
         do {
             let store = try HostStore(url: url)
@@ -40,7 +49,7 @@ struct StoreTests {
             }
         }
         let reopened = try HostStore(url: url)
-        #expect(try reopened.sessions().map(\.id) == [session.id])
+        #expect(try reopened.sessions() == [session])
         #expect(try reopened.unfinishedTurns() == [turn])
         #expect(try reopened.queue(for: session.id) == queued)
         #expect(try reopened.delivery(for: turn.requestID) == .prompted)
@@ -57,7 +66,7 @@ struct StoreTests {
         #expect(throws: Interrupted.self) {
             try store.transaction {
                 try store.beginTurn(
-                    UnfinishedTurn(sessionID: session.id, requestID: UUID(), text: "x", kind: .prompt, echo: true))
+                    UnfinishedTurn(sessionID: session.id, prompt: OutgoingPrompt(text: "x"), kind: .prompt))
                 throw Interrupted()
             }
         }
@@ -71,9 +80,8 @@ struct StoreTests {
             id: HostSessionID(), agentID: "fake", agentSessionID: SessionID("s"), cwd: "/tmp", parentID: nil,
             origin: .user)
         try store.insertSession(session)
-        try store.beginTurn(
-            UnfinishedTurn(sessionID: session.id, requestID: UUID(), text: "x", kind: .prompt, echo: true))
-        try store.setQueue([StoredQueueItem(prompt: QueuedPrompt(text: "y"), isSteering: false)], for: session.id)
+        try store.beginTurn(UnfinishedTurn(sessionID: session.id, prompt: OutgoingPrompt(text: "x"), kind: .prompt))
+        try store.setQueue([StoredQueueItem(prompt: OutgoingPrompt(text: "y"), isSteering: false)], for: session.id)
         try store.addApproval(sessionID: session.id, toolCallID: "call", title: "Write")
         try store.deleteSession(session.id)
         #expect(try store.unfinishedTurns().isEmpty)
@@ -81,16 +89,64 @@ struct StoreTests {
         #expect(try store.approvals().isEmpty)
     }
 
-    @Test("The activity journal keeps recovery notes")
+    @Test("The activity journal keeps recovery notes and what each entry is about")
     func activity() throws {
         let store = try HostStore(url: url)
         let note = RecoveryNote(
             cause: .hostStopped, action: .resumed, agentName: "Claude Code",
             interruptedAt: Date(timeIntervalSince1970: 1_000))
-        let first = try store.appendActivity(.turnFinished, session: nil, subject: "Fix the build")
+        let at = Date(timeIntervalSince1970: 2_000)
+        let first = try store.appendActivity(
+            ActivityEntry(id: 0, at: at, sessionID: nil, kind: .hostStarted, previousRun: .crashed))
         let second = try store.appendActivity(
-            .recovered, session: HostSessionID(), subject: "Claude Code", recovery: note)
-        #expect(try store.activity(after: nil, limit: 10).map(\.id) == [first.id, second.id])
+            ActivityEntry(
+                id: 0, at: at, sessionID: HostSessionID(), agentID: "claude", agentSessionID: SessionID("s9"),
+                kind: .recovered, subject: "Claude Code", recovery: note))
+        #expect(try store.activity(after: nil, limit: 10) == [first, second])
         #expect(try store.activity(after: first.id, limit: 10).first?.recovery == note)
+        #expect(try store.activity(after: nil, limit: 10).first?.previousRun == .crashed)
+    }
+
+    @Test("A version 2 store gains the new columns and keeps what it had")
+    func migratesFromVersion2() throws {
+        let session = HostSessionID()
+        do {
+            let database = try SQLiteDatabase(url: url)
+            try database.execute(
+                """
+                CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+                CREATE TABLE agents (id TEXT PRIMARY KEY, spec TEXT NOT NULL);
+                CREATE TABLE sessions (id TEXT PRIMARY KEY, agent_id TEXT NOT NULL, agent_session_id TEXT,
+                    cwd TEXT NOT NULL, parent_id TEXT, origin TEXT NOT NULL, title TEXT, created_at REAL NOT NULL,
+                    last_activity REAL, last_stop_reason TEXT, queue_paused INTEGER NOT NULL DEFAULT 0,
+                    mcp_servers TEXT NOT NULL DEFAULT '[]');
+                CREATE TABLE turns (session_id TEXT PRIMARY KEY, request_id TEXT NOT NULL, text TEXT NOT NULL,
+                    kind TEXT NOT NULL, echo INTEGER NOT NULL, started_at REAL NOT NULL, attempts INTEGER NOT NULL DEFAULT 0);
+                CREATE TABLE queue (session_id TEXT NOT NULL, position INTEGER NOT NULL, id TEXT NOT NULL,
+                    text TEXT NOT NULL, echo INTEGER NOT NULL, steering INTEGER NOT NULL DEFAULT 0,
+                    PRIMARY KEY (session_id, position));
+                CREATE TABLE requests (request_id TEXT PRIMARY KEY, session_id TEXT NOT NULL, delivery TEXT NOT NULL,
+                    at REAL NOT NULL);
+                CREATE TABLE approvals (session_id TEXT NOT NULL, tool_call_id TEXT NOT NULL, title TEXT,
+                    requested_at REAL NOT NULL, PRIMARY KEY (session_id, tool_call_id));
+                CREATE TABLE activity (id INTEGER PRIMARY KEY AUTOINCREMENT, at REAL NOT NULL, session_id TEXT,
+                    kind TEXT NOT NULL, subject TEXT, detail TEXT, recovery TEXT);
+                CREATE TABLE plugin_choices (plugin_id TEXT PRIMARY KEY, enabled INTEGER NOT NULL);
+                PRAGMA user_version = 2;
+                """)
+            try database.run(
+                "INSERT INTO sessions (id, agent_id, agent_session_id, cwd, origin, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+                .text(session.description), .text("fake"), .text("s1"), .text("/tmp"), .text("user"), .real(1_000))
+            try database.run(
+                "INSERT INTO queue (session_id, position, id, text, echo) VALUES (?, 0, ?, ?, 1)",
+                .text(session.description), .text(UUID().uuidString), .text("waiting"))
+        }
+        let store = try HostStore(url: url)
+        #expect(try store.pragma("user_version") == "3")
+        let migrated = try #require(try store.sessions().first)
+        #expect(migrated.id == session)
+        #expect(migrated.configChoices.isEmpty)
+        #expect(try store.queue(for: session).map(\.prompt.text) == ["waiting"])
+        #expect(try store.queue(for: session).first?.prompt.origin == .user)
     }
 }

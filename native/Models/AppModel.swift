@@ -217,6 +217,8 @@ final class AppModel {
     func start() async {
         guard !isStarted else { return }
         isStarted = true
+        // Before anything asks the host for work, so none of its events go unheard.
+        await followHost()
         Task { [plugins, pluginEvents] in
             for await event in pluginEvents {
                 markUnread(after: event)
@@ -239,9 +241,13 @@ final class AppModel {
         observeAgents()
         parkAgentsWhenIdle()
         await syncAgents(alsoStarting: early)
+        if runsAgentsInHost {
+            Task { await openWorkingHostSessions() }
+        }
     }
 
     func restart(_ agent: AgentDefinition.ID) async {
+        guard !runsAgentsInHost else { return await restartOnHost(agent) }
         sessions.removeAll(of: agent)
         guard let runtime = runtimes.replace(agent) else { return }
         await start(runtime, environment: await launchEnvironment(refresh: true))
@@ -296,6 +302,8 @@ final class AppModel {
         let missing = Set(agentsToAdd.map(\.id))
         _ = await environment.current(refresh: true)
         AgentIconStore.shared.reset()
+        // The host reads the login shell itself; it reads it again too.
+        await syncHostAgents(refreshEnvironment: true)
         await syncAgents()
         return plugins.agents.filter { missing.contains($0.id) && installations.isInstalled($0.id) }
     }
@@ -317,6 +325,8 @@ final class AppModel {
         let environment = await launchEnvironment()
         installations.check(plugins.agents, environment: environment)
         let (added, removed) = runtimes.sync(including: installations.isInstalled)
+        // The host launches agents from what it was last told; it hears plugins' changes first.
+        await syncHostAgents()
         let worthStarting = agentsWorthStarting()
         if !hasCheckedAgents {
             hasCheckedAgents = true
@@ -352,7 +362,7 @@ final class AppModel {
             if case .disconnected = event {
                 handleCrash(of: agent)
             } else {
-                sessions.handle(event, from: agent, connection: runtimes[agent]?.connection)
+                sessions.handle(event, from: agent, connection: runtimes[agent]?.localConnection)
             }
         }
         if case .failed = runtime.status {

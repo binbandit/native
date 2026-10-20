@@ -21,10 +21,19 @@ struct ProtocolTests {
             .update(
                 .object(["sessionUpdate": .string("usage_update"), "used": .number(12_345), "size": .number(200_000)])),
             .prompt(PromptEcho(text: "Fix it", steered: true, origin: .queued)),
+            .prompt(
+                PromptEcho(
+                    text: "Look", requestID: UUID(), shown: false,
+                    attachments: [EchoAttachment(name: "a.png", url: URL(filePath: "/tmp/a.png"), imageBase64: "AAAA")],
+                    preamble: PreambleMarker(id: "debug", label: "Debug mode", symbol: "ant"))),
             .permissionRequested(toolCallID: "call-1", request: .object(["sessionId": .string("s")])),
             .permissionResolved(toolCallID: "call-1", optionID: nil),
+            .questionAsked(questionID: "q1", request: .object(["sessionId": .string("s"), "mode": .string("form")])),
+            .questionResolved(questionID: "q1"),
             .turnEnded(stopReason: "end_turn"),
-            .turnFailed(message: "Rate limited"),
+            .turnFailed(message: "Rate limited", error: nil),
+            .turnFailed(
+                message: "Sign in", error: RPCError(code: -32000, message: "auth", data: .object(["x": .bool(true)]))),
             .notice(text: "Hi", isError: false),
             .recovered(
                 RecoveryNote(

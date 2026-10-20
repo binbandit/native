@@ -13,7 +13,7 @@ import NativeHostProtocol
 final class HostStore {
     private let database: SQLiteDatabase
 
-    private static let schemaVersion: Int64 = 2
+    private static let schemaVersion: Int64 = 3
 
     init(url: URL) throws {
         database = try SQLiteDatabase(url: url)
@@ -38,71 +38,89 @@ final class HostStore {
         let version = try database.query("PRAGMA user_version").first?.first?.integer ?? 0
         guard version < Self.schemaVersion else { return }
         try database.transaction {
+            if version < 2 {
+                try createVersion2()
+            }
+            // Version 3: what a prompt carries beyond its text (attachments, content, a preamble),
+            // sessions' `_meta` and chosen config values, and activity tied to agent sessions.
             try database.execute(
                 """
-                CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
-                CREATE TABLE IF NOT EXISTS agents (id TEXT PRIMARY KEY, spec TEXT NOT NULL);
-                CREATE TABLE IF NOT EXISTS sessions (
-                    id TEXT PRIMARY KEY,
-                    agent_id TEXT NOT NULL,
-                    agent_session_id TEXT,
-                    cwd TEXT NOT NULL,
-                    parent_id TEXT REFERENCES sessions(id) ON DELETE SET NULL,
-                    origin TEXT NOT NULL,
-                    title TEXT,
-                    created_at REAL NOT NULL,
-                    last_activity REAL,
-                    last_stop_reason TEXT,
-                    queue_paused INTEGER NOT NULL DEFAULT 0,
-                    mcp_servers TEXT NOT NULL DEFAULT '[]'
-                );
-                CREATE UNIQUE INDEX IF NOT EXISTS sessions_agent_session ON sessions(agent_id, agent_session_id);
-                CREATE TABLE IF NOT EXISTS turns (
-                    session_id TEXT PRIMARY KEY REFERENCES sessions(id) ON DELETE CASCADE,
-                    request_id TEXT NOT NULL,
-                    text TEXT NOT NULL,
-                    kind TEXT NOT NULL,
-                    echo INTEGER NOT NULL,
-                    started_at REAL NOT NULL,
-                    attempts INTEGER NOT NULL DEFAULT 0
-                );
-                CREATE TABLE IF NOT EXISTS queue (
-                    session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
-                    position INTEGER NOT NULL,
-                    id TEXT NOT NULL,
-                    text TEXT NOT NULL,
-                    echo INTEGER NOT NULL,
-                    steering INTEGER NOT NULL DEFAULT 0,
-                    PRIMARY KEY (session_id, position)
-                );
-                CREATE TABLE IF NOT EXISTS requests (
-                    request_id TEXT PRIMARY KEY,
-                    session_id TEXT NOT NULL,
-                    delivery TEXT NOT NULL,
-                    at REAL NOT NULL
-                );
-                CREATE TABLE IF NOT EXISTS approvals (
-                    session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
-                    tool_call_id TEXT NOT NULL,
-                    title TEXT,
-                    requested_at REAL NOT NULL,
-                    PRIMARY KEY (session_id, tool_call_id)
-                );
-                CREATE TABLE IF NOT EXISTS activity (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    at REAL NOT NULL,
-                    session_id TEXT,
-                    kind TEXT NOT NULL,
-                    subject TEXT,
-                    detail TEXT,
-                    recovery TEXT
-                );
+                ALTER TABLE turns ADD COLUMN extra TEXT;
+                ALTER TABLE queue ADD COLUMN extra TEXT;
+                ALTER TABLE sessions ADD COLUMN meta TEXT;
+                ALTER TABLE sessions ADD COLUMN config_choices TEXT NOT NULL DEFAULT '{}';
+                ALTER TABLE activity ADD COLUMN agent_id TEXT;
+                ALTER TABLE activity ADD COLUMN agent_session_id TEXT;
+                ALTER TABLE activity ADD COLUMN previous_run TEXT;
                 """)
-            // Version 2: the user's on/off choices for installed plugins.
-            try database.execute(
-                "CREATE TABLE IF NOT EXISTS plugin_choices (plugin_id TEXT PRIMARY KEY, enabled INTEGER NOT NULL)")
             try database.execute("PRAGMA user_version = \(Self.schemaVersion)")
         }
+    }
+
+    private func createVersion2() throws {
+        try database.execute(
+            """
+            CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS agents (id TEXT PRIMARY KEY, spec TEXT NOT NULL);
+            CREATE TABLE IF NOT EXISTS sessions (
+                id TEXT PRIMARY KEY,
+                agent_id TEXT NOT NULL,
+                agent_session_id TEXT,
+                cwd TEXT NOT NULL,
+                parent_id TEXT REFERENCES sessions(id) ON DELETE SET NULL,
+                origin TEXT NOT NULL,
+                title TEXT,
+                created_at REAL NOT NULL,
+                last_activity REAL,
+                last_stop_reason TEXT,
+                queue_paused INTEGER NOT NULL DEFAULT 0,
+                mcp_servers TEXT NOT NULL DEFAULT '[]'
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS sessions_agent_session ON sessions(agent_id, agent_session_id);
+            CREATE TABLE IF NOT EXISTS turns (
+                session_id TEXT PRIMARY KEY REFERENCES sessions(id) ON DELETE CASCADE,
+                request_id TEXT NOT NULL,
+                text TEXT NOT NULL,
+                kind TEXT NOT NULL,
+                echo INTEGER NOT NULL,
+                started_at REAL NOT NULL,
+                attempts INTEGER NOT NULL DEFAULT 0
+            );
+            CREATE TABLE IF NOT EXISTS queue (
+                session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+                position INTEGER NOT NULL,
+                id TEXT NOT NULL,
+                text TEXT NOT NULL,
+                echo INTEGER NOT NULL,
+                steering INTEGER NOT NULL DEFAULT 0,
+                PRIMARY KEY (session_id, position)
+            );
+            CREATE TABLE IF NOT EXISTS requests (
+                request_id TEXT PRIMARY KEY,
+                session_id TEXT NOT NULL,
+                delivery TEXT NOT NULL,
+                at REAL NOT NULL
+            );
+            CREATE TABLE IF NOT EXISTS approvals (
+                session_id TEXT NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
+                tool_call_id TEXT NOT NULL,
+                title TEXT,
+                requested_at REAL NOT NULL,
+                PRIMARY KEY (session_id, tool_call_id)
+            );
+            CREATE TABLE IF NOT EXISTS activity (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                at REAL NOT NULL,
+                session_id TEXT,
+                kind TEXT NOT NULL,
+                subject TEXT,
+                detail TEXT,
+                recovery TEXT
+            );
+            """)
+        // Version 2: the user's on/off choices for installed plugins.
+        try database.execute(
+            "CREATE TABLE IF NOT EXISTS plugin_choices (plugin_id TEXT PRIMARY KEY, enabled INTEGER NOT NULL)")
     }
 
     // MARK: - Meta
@@ -147,27 +165,29 @@ final class HostStore {
     func insertSession(_ session: StoredSession) throws {
         try database.run(
             """
-            INSERT INTO sessions (id, agent_id, agent_session_id, cwd, parent_id, origin, title, created_at, last_activity, last_stop_reason, queue_paused, mcp_servers)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO sessions (id, agent_id, agent_session_id, cwd, parent_id, origin, title, created_at, last_activity, last_stop_reason, queue_paused, mcp_servers, meta, config_choices)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             .text(session.id.description), .text(session.agentID), .text(session.agentSessionID?.rawValue),
             .text(session.cwd),
             .text(session.parentID?.description), .text(session.origin.rawValue), .text(session.title),
             .date(session.createdAt),
             .date(session.lastActivity), .text(session.lastStopReason), .bool(session.isQueuePaused),
-            .text(String(decoding: try JSONEncoder().encode(session.mcpServers), as: UTF8.self))
+            try JSONColumn.encode(session.mcpServers), try session.meta.map(JSONColumn.encode) ?? .null,
+            try JSONColumn.encode(session.configChoices)
         )
     }
 
     func updateSession(_ session: StoredSession) throws {
         try database.run(
             """
-            UPDATE sessions SET agent_session_id = ?, title = ?, last_activity = ?, last_stop_reason = ?, queue_paused = ?
+            UPDATE sessions SET agent_session_id = ?, title = ?, last_activity = ?, last_stop_reason = ?, queue_paused = ?,
+                config_choices = ?
             WHERE id = ?
             """,
             .text(session.agentSessionID?.rawValue), .text(session.title), .date(session.lastActivity),
             .text(session.lastStopReason),
-            .bool(session.isQueuePaused), .text(session.id.description)
+            .bool(session.isQueuePaused), try JSONColumn.encode(session.configChoices), .text(session.id.description)
         )
     }
 
@@ -178,7 +198,7 @@ final class HostStore {
     func sessions() throws -> [StoredSession] {
         try database.query(
             """
-            SELECT id, agent_id, agent_session_id, cwd, parent_id, origin, title, created_at, last_activity, last_stop_reason, queue_paused, mcp_servers
+            SELECT id, agent_id, agent_session_id, cwd, parent_id, origin, title, created_at, last_activity, last_stop_reason, queue_paused, mcp_servers, meta, config_choices
             FROM sessions ORDER BY created_at
             """
         ).compactMap(StoredSession.init(row:))
@@ -191,13 +211,14 @@ final class HostStore {
     func beginTurn(_ turn: UnfinishedTurn) throws {
         try database.run(
             """
-            INSERT INTO turns (session_id, request_id, text, kind, echo, started_at, attempts) VALUES (?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO turns (session_id, request_id, text, kind, echo, started_at, attempts, extra) VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(session_id) DO UPDATE SET request_id = excluded.request_id, text = excluded.text, kind = excluded.kind,
-                echo = excluded.echo, started_at = excluded.started_at, attempts = excluded.attempts
+                echo = excluded.echo, started_at = excluded.started_at, attempts = excluded.attempts, extra = excluded.extra
             """,
             .text(turn.sessionID.description), .text(turn.requestID.uuidString), .text(turn.text),
             .text(turn.kind.rawValue),
-            .bool(turn.echo), .date(turn.startedAt), .integer(Int64(turn.attempts))
+            .bool(turn.prompt.isEchoed), .date(turn.startedAt), .integer(Int64(turn.attempts)),
+            try JSONColumn.encode(turn.prompt.extras)
         )
     }
 
@@ -206,7 +227,7 @@ final class HostStore {
     }
 
     func unfinishedTurns() throws -> [UnfinishedTurn] {
-        try database.query("SELECT session_id, request_id, text, kind, echo, started_at, attempts FROM turns")
+        try database.query("SELECT session_id, request_id, text, kind, echo, started_at, attempts, extra FROM turns")
             .compactMap(UnfinishedTurn.init(row:))
     }
 
@@ -218,22 +239,24 @@ final class HostStore {
         try database.run("DELETE FROM queue WHERE session_id = ?", .text(sessionID.description))
         for (position, item) in items.enumerated() {
             try database.run(
-                "INSERT INTO queue (session_id, position, id, text, echo, steering) VALUES (?, ?, ?, ?, ?, ?)",
+                "INSERT INTO queue (session_id, position, id, text, echo, steering, extra) VALUES (?, ?, ?, ?, ?, ?, ?)",
                 .text(sessionID.description), .integer(Int64(position)), .text(item.prompt.id.uuidString),
                 .text(item.prompt.text),
-                .bool(item.prompt.isEchoed), .bool(item.isSteering)
+                .bool(item.prompt.isEchoed), .bool(item.isSteering), try JSONColumn.encode(item.prompt.extras)
             )
         }
     }
 
     func queue(for sessionID: HostSessionID) throws -> [StoredQueueItem] {
         try database.query(
-            "SELECT id, text, echo, steering FROM queue WHERE session_id = ? ORDER BY position",
+            "SELECT id, text, echo, steering, extra FROM queue WHERE session_id = ? ORDER BY position",
             .text(sessionID.description)
         ).compactMap { row in
             guard let id = row[0].text.flatMap(UUID.init(uuidString:)), let text = row[1].text else { return nil }
-            return StoredQueueItem(
-                prompt: QueuedPrompt(id: id, text: text, isEchoed: row[2].bool), isSteering: row[3].bool)
+            let prompt = OutgoingPrompt(
+                id: id, text: text, isEchoed: row[2].bool, extras: JSONColumn.decode(OutgoingPrompt.Extras.self, row[4])
+            )
+            return StoredQueueItem(prompt: prompt, isSteering: row[3].bool)
         }
     }
 
@@ -294,32 +317,38 @@ final class HostStore {
 
     // MARK: - Activity
 
+    /// Adds an entry; `entry.id` is ignored and the stored entry, numbered, comes back.
     @discardableResult
-    func appendActivity(
-        _ kind: ActivityEntry.Kind, session: HostSessionID?, subject: String?, detail: String? = nil,
-        recovery: RecoveryNote? = nil, at: Date = .now
-    ) throws -> ActivityEntry {
-        let encoded = try recovery.map { String(decoding: try JSONEncoder().encode($0), as: UTF8.self) }
+    func appendActivity(_ entry: ActivityEntry) throws -> ActivityEntry {
         try database.run(
-            "INSERT INTO activity (at, session_id, kind, subject, detail, recovery) VALUES (?, ?, ?, ?, ?, ?)",
-            .date(at), .text(session?.description), .text(kind.rawValue), .text(subject), .text(detail), .text(encoded)
+            """
+            INSERT INTO activity (at, session_id, kind, subject, detail, recovery, agent_id, agent_session_id, previous_run)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            .date(entry.at), .text(entry.sessionID?.description), .text(entry.kind.rawValue), .text(entry.subject),
+            .text(entry.detail), try entry.recovery.map(JSONColumn.encode) ?? .null, .text(entry.agentID),
+            .text(entry.agentSessionID?.rawValue), .text(entry.previousRun?.rawValue)
         )
-        return ActivityEntry(
-            id: database.lastInsertRowID, at: at, sessionID: session, kind: kind, subject: subject, detail: detail,
-            recovery: recovery)
+        var stored = entry
+        stored.id = database.lastInsertRowID
+        return stored
     }
 
     func activity(after id: Int64?, limit: Int) throws -> [ActivityEntry] {
-        let decoder = JSONDecoder()
-        return try database.query(
-            "SELECT id, at, session_id, kind, subject, detail, recovery FROM activity WHERE id > ? ORDER BY id LIMIT ?",
+        try database.query(
+            """
+            SELECT id, at, session_id, kind, subject, detail, recovery, agent_id, agent_session_id, previous_run
+            FROM activity WHERE id > ? ORDER BY id LIMIT ?
+            """,
             .integer(id ?? 0), .integer(Int64(limit))
         ).compactMap { row in
             guard let id = row[0].integer, let at = row[1].date, let kind = row[3].text else { return nil }
             return ActivityEntry(
                 id: id, at: at, sessionID: row[2].text.flatMap(UUID.init(uuidString:)).map(HostSessionID.init),
+                agentID: row[7].text, agentSessionID: row[8].text.map(SessionID.init),
                 kind: ActivityEntry.Kind(rawValue: kind) ?? .unknown, subject: row[4].text, detail: row[5].text,
-                recovery: row[6].text.flatMap { try? decoder.decode(RecoveryNote.self, from: Data($0.utf8)) }
+                recovery: JSONColumn.decode(RecoveryNote.self, row[6]),
+                previousRun: row[9].text.map { ActivityEntry.RunEnding(rawValue: $0) ?? .unknown }
             )
         }
     }

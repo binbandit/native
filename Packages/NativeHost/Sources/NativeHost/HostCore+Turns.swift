@@ -2,37 +2,53 @@ import ACP
 import Foundation
 import NativeHostProtocol
 
-// Turns: prompting, the queue of messages sent while a turn runs, steering, cancelling and
-// answering permission requests. Every turn is committed to the store before its prompt is written
-// to the agent, which is what lets recovery find it again.
+// Turns: prompting, steering, stopping, retrying after a passing failure, and hidden commands.
+// Every turn is committed to the store before its prompt is written to the agent, which is what lets
+// recovery find it again. The queue's edits are in `HostCore+Queue.swift`, the agent's requests
+// (permissions, questions) in `HostCore+Agents.swift`.
 extension HostCore {
+    /// How long the agent gets to confirm a stop before the host stops waiting for it.
+    static let stopGracePeriod: Duration = .seconds(10)
+
     /// Delivers a message: as a new turn when the session is idle, otherwise steered into the running
-    /// turn or queued. A request id seen before gets the same answer and is never delivered twice.
+    /// turn or queued. A request id seen before gets the same answer and is never delivered twice,
+    /// including a repeat that arrives while the first is still being handled.
     func prompt(_ params: PromptParams) async throws -> PromptDelivery {
         if let delivery = try store.delivery(for: params.requestID) {
             return delivery
         }
+        if let inFlight = promptsInFlight[params.requestID] {
+            return try await inFlight.value
+        }
+        let task = Task { try await deliver(params) }
+        promptsInFlight[params.requestID] = task
+        defer { promptsInFlight[params.requestID] = nil }
+        return try await task.value
+    }
+
+    private func deliver(_ params: PromptParams) async throws -> PromptDelivery {
         let session = try session(params.sessionID)
         guard session.record.origin != .announced else { throw HostError.notAcceptingPrompts }
         let text = params.text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !text.isEmpty else { throw HostError.emptyMessage }
-        let item = QueuedPrompt(id: params.requestID, text: text, isEchoed: params.echo)
+        guard !text.isEmpty || params.content?.isEmpty == false || !params.attachments.isEmpty else {
+            throw HostError.emptyMessage
+        }
+        let item = OutgoingPrompt(
+            id: params.requestID, text: text, content: params.content, attachments: params.attachments,
+            preamble: params.preamble, isEchoed: params.echo, origin: params.origin)
         switch session.phase {
-        case .idle where session.turn == nil:
-            // The user sending again lifts a pause after a cancelled turn; waiting messages go first.
+        case .idle where session.turn == nil && session.hiddenCommand == nil:
+            cancelRetry(of: session)
+            // The user sending again lifts a pause after a stopped turn; waiting messages go first.
             if !session.queue.isEmpty {
-                session.queue.append(StoredQueueItem(prompt: item, isSteering: false))
+                try enqueue(item, in: session)
                 session.record.isQueuePaused = false
-                try store.transaction {
-                    try store.setQueue(session.queue, for: session.id)
-                    try store.updateSession(session.record)
-                    try store.recordDelivery(.queued, for: params.requestID, in: session.id)
-                }
+                try store.updateSession(session.record)
                 drainQueue(session)
                 publish(session)
                 return .queued
             }
-            try startTurn(in: session, prompt: item, origin: params.origin)
+            try startTurn(in: session, prompt: item)
             return .prompted
         case .prompting where params.behavior == .steer && session.supportsSteering:
             return try await steer(item, into: session)
@@ -46,7 +62,8 @@ extension HostCore {
         }
     }
 
-    func enqueue(_ item: QueuedPrompt, in session: HostSession, atFront: Bool = false, steering: Bool = false) throws {
+    func enqueue(_ item: OutgoingPrompt, in session: HostSession, atFront: Bool = false, steering: Bool = false) throws
+    {
         let stored = StoredQueueItem(prompt: item, isSteering: steering)
         if atFront {
             session.queue.insert(stored, at: 0)
@@ -61,14 +78,13 @@ extension HostCore {
     }
 
     /// Commits the turn, then runs it in the background: the session is prompting when this returns.
+    /// Any turn starting lifts a pause on the queue.
     func startTurn(
-        in session: HostSession, prompt: QueuedPrompt, origin: PromptEcho.Origin, kind: UnfinishedTurn.Kind = .prompt,
-        attempts: Int = 0
+        in session: HostSession, prompt: OutgoingPrompt, kind: UnfinishedTurn.Kind = .prompt, attempts: Int = 0
     ) throws {
-        let turn = UnfinishedTurn(
-            sessionID: session.id, requestID: prompt.id, text: prompt.text, kind: kind, echo: prompt.isEchoed,
-            attempts: attempts)
+        let turn = UnfinishedTurn(sessionID: session.id, prompt: prompt, kind: kind, attempts: attempts)
         session.record.lastActivity = .now
+        session.record.isQueuePaused = false
         try store.transaction {
             try store.beginTurn(turn)
             try store.recordDelivery(.prompted, for: prompt.id, in: session.id)
@@ -77,14 +93,24 @@ extension HostCore {
         }
         session.turn = turn
         session.phase = .prompting
-        if prompt.isEchoed {
-            append(.prompt(PromptEcho(text: prompt.text, origin: origin)), to: session)
+        session.hiddenCommandEcho = nil
+        // Instructions go ahead of the message unless the agent already has these.
+        let preamble = prompt.preamble.flatMap {
+            session.mirror.state.deliveredPreamble?.id == $0.marker.id ? nil : $0
         }
+        append(
+            .prompt(
+                PromptEcho(
+                    text: prompt.text, origin: prompt.origin, requestID: prompt.origin == .recovery ? nil : prompt.id,
+                    shown: prompt.isEchoed, attachments: prompt.attachments, preamble: preamble?.marker)),
+            to: session)
+        session.turnItemsStart = session.mirror.state.items.count
         publish(session)
-        Task { await run(turn, in: session) }
+        let blocks = (preamble.map { [$0.preamble.block] } ?? []) + (prompt.content ?? [.text(prompt.text)])
+        Task { await run(turn, blocks: blocks, in: session) }
     }
 
-    private func run(_ turn: UnfinishedTurn, in session: HostSession) async {
+    private func run(_ turn: UnfinishedTurn, blocks: [ContentBlock], in session: HostSession) async {
         do {
             try await load(session)
         } catch {
@@ -98,42 +124,57 @@ extension HostCore {
         let generation = link.generation
         do {
             let response = try await peer.request(
-                "session/prompt", PromptRequest(sessionId: agentSessionID, prompt: [.text(turn.text)]),
-                as: RawPromptResponse.self
-            )
+                "session/prompt", PromptRequest(sessionId: agentSessionID, prompt: blocks), as: RawPromptResponse.self)
             finish(turn, in: session, stopReason: response.stopReason)
         } catch PeerError.closed {
             // The agent died mid-turn; recovery takes it from here.
             agentExited(session.record.agentID, generation: generation)
         } catch {
+            noteAgentError(error, from: link)
             fail(turn, in: session, error: error)
         }
     }
 
     func finish(_ turn: UnfinishedTurn, in session: HostSession, stopReason: String) {
         guard session.turn?.requestID == turn.requestID else { return }
-        // Queued messages wait out a cancelled turn until the user sends again.
+        // Queued messages wait out a stopped turn until the user sends again.
         let pause = stopReason == "cancelled"
         endTurn(in: session, stopReason: stopReason, pauseQueue: pause)
+        session.retryAttempts = 0
         append(.turnEnded(stopReason: stopReason), to: session)
         if stopReason == "end_turn", session.record.parentID == nil {
             journal(.turnFinished, session: session)
         }
         publish(session)
-        if !pause {
-            drainQueue(session)
-        }
-        exitIfIdleForRestart()
+        continueAfterTurn(session)
     }
 
+    /// The prompt request failed. A passing failure (the network, an overloaded provider) before the
+    /// agent got anywhere sends the message again a little later; anything else waits for the user.
     private func fail(_ turn: UnfinishedTurn, in session: HostSession, error: any Error) {
         guard session.turn?.requestID == turn.requestID else { return }
+        let madeProgress = session.turnMadeProgress
         // An error isn't a stop reason; draining the queue after one could burn through all of it.
         endTurn(in: session, stopReason: "error", pauseQueue: true)
-        let message = UsageLimitHit(error: error).map(\.message) ?? error.localizedDescription
-        append(.turnFailed(message: message), to: session)
-        journal(.turnFailed, session: session, detail: message)
+        let message: String
+        if !madeProgress, turn.kind == .prompt,
+            let delay = TurnRetry.delay(after: error, attempts: session.retryAttempts)
+        {
+            session.retryAttempts += 1
+            // Already in the transcript, so it goes back without showing again.
+            var again = turn.prompt
+            again.isEchoed = false
+            try? enqueue(again, in: session, atFront: true)
+            scheduleRetry(of: session, after: delay)
+            message =
+                "\(session.agentName) couldn't be reached (\(error.localizedDescription)). Native kept your message and will try again in \(delay.components.seconds) seconds. Use Stop to cancel."
+        } else {
+            message = UsageLimitHit(error: error).map(\.message) ?? error.localizedDescription
+            journal(.turnFailed, session: session, detail: message)
+        }
+        // The summary first: whoever hears of the failure can tell whether a retry is coming.
         publish(session)
+        append(.turnFailed(message: message, error: error as? RPCError), to: session)
         exitIfIdleForRestart()
     }
 
@@ -142,21 +183,44 @@ extension HostCore {
         session.phase = .idle
         session.record.lastStopReason = stopReason
         session.record.isQueuePaused = pauseQueue
+        session.stopRequestedAt = nil
+        session.stopTimeout?.cancel()
+        session.stopTimeout = nil
         withdrawPermissions(of: session)
+        withdrawQuestions(of: session)
         try? store.transaction {
             try store.finishTurn(session.id)
             try store.updateSession(session.record)
         }
     }
 
+    /// What follows a turn's end: the message the user sent while stopping goes first (even though
+    /// stopping pauses the queue), otherwise the queue, unless it's paused.
+    private func continueAfterTurn(_ session: HostSession) {
+        if let id = session.sendAfterStop {
+            session.sendAfterStop = nil
+            if let index = session.queue.firstIndex(where: { $0.prompt.id == id }) {
+                let item = session.queue.remove(at: index)
+                try? startTurn(in: session, prompt: item.prompt)
+                return
+            }
+        }
+        drainQueue(session)
+        exitIfIdleForRestart()
+    }
+
     /// Starts the next queued message once nothing is running, one per turn, unless paused.
     func drainQueue(_ session: HostSession) {
-        guard session.phase == .idle, session.turn == nil, !session.record.isQueuePaused,
-            let index = session.queue.firstIndex(where: { !$0.isSteering })
+        guard session.phase == .idle, session.turn == nil, session.hiddenCommand == nil, session.retryAt == nil,
+            !session.record.isQueuePaused, let index = session.queue.firstIndex(where: { !$0.isSteering })
         else { return }
         let next = session.queue.remove(at: index)
+        var prompt = next.prompt
+        if prompt.origin == .user {
+            prompt.origin = .queued
+        }
         do {
-            try startTurn(in: session, prompt: next.prompt, origin: .queued)
+            try startTurn(in: session, prompt: prompt)
         } catch {
             session.queue.insert(next, at: index)
             logger.error("Couldn't start a queued turn: \(error.localizedDescription)")
@@ -165,7 +229,7 @@ extension HostCore {
 
     /// Adds a message to the running turn. It's recorded as steering first, so if the host stops
     /// before the agent answers, recovery can tell whether it arrived.
-    private func steer(_ item: QueuedPrompt, into session: HostSession) async throws -> PromptDelivery {
+    func steer(_ item: OutgoingPrompt, into session: HostSession) async throws -> PromptDelivery {
         try enqueue(item, in: session, atFront: true, steering: true)
         var delivery = PromptDelivery.queued
         if let link = agents[session.record.agentID], let peer = link.peer,
@@ -173,17 +237,19 @@ extension HostCore {
         {
             do {
                 let response = try await peer.request(
-                    "_session/steering", SteerRequest(sessionId: agentSessionID, prompt: [.text(item.text)]),
-                    as: RawSteerResponse.self
-                )
+                    "_session/steering",
+                    SteerRequest(sessionId: agentSessionID, prompt: item.content ?? [.text(item.text)]),
+                    as: RawSteerResponse.self)
                 switch response.outcome {
                 case "injected", "startedNewTurn":
                     // An older agent takes it as a new turn of its own; either way it's delivered.
                     session.queue.removeAll { $0.prompt.id == item.id }
-                    if item.isEchoed {
-                        append(
-                            .prompt(PromptEcho(text: item.text, steered: response.outcome == "injected")), to: session)
-                    }
+                    append(
+                        .prompt(
+                            PromptEcho(
+                                text: item.text, steered: response.outcome == "injected", origin: item.origin,
+                                requestID: item.id, shown: item.isEchoed, attachments: item.attachments)),
+                        to: session)
                     delivery = .steered
                 default:
                     // The turn ended first; it goes out next, ahead of what was already waiting.
@@ -210,44 +276,102 @@ extension HostCore {
         return delivery
     }
 
-    /// Cancels the running turn, or the recovery of one.
+    // MARK: - Stopping
+
+    /// Stops what the session is doing: a retry waiting to go out, the running turn, or the recovery
+    /// of one. The agent is asked to cancel; if it doesn't confirm within the grace period, or the
+    /// user asks again more than a second later, the turn ends on the host's side.
     func cancel(_ session: HostSession) async {
-        guard let turn = session.turn else { return }
+        if session.retryAt != nil {
+            cancelRetry(of: session)
+            append(
+                .notice(text: "Stopped retrying. Your message is still queued; send again to try it.", isError: false),
+                to: session)
+            publish(session)
+            return
+        }
         let link = agents[session.record.agentID]
-        if session.phase == .prompting, let peer = link?.peer, let agentSessionID = session.record.agentSessionID {
-            // ACP requires answering open permission requests as cancelled when a turn is cancelled.
-            for (_, requestID) in session.pendingPermissions {
-                try? peer.respond(to: requestID, with: RequestPermissionResponse.cancelled)
-            }
-            withdrawPermissions(of: session)
+        if session.record.origin == .announced, let peer = link?.peer,
+            let agentSessionID = session.record.agentSessionID
+        {
+            // An agent's own subagent has no turn of its own; stopping it stops only its work.
+            answerCancelled(session, on: peer)
             try? peer.notify("session/cancel", CancelNotification(sessionId: agentSessionID))
-        } else {
+            publish(session)
+            return
+        }
+        guard let turn = session.turn else { return }
+        guard session.phase == .prompting, let peer = link?.peer, let agentSessionID = session.record.agentSessionID
+        else {
             // Nothing is running to cancel (the agent is being restarted); just let the turn go.
             session.isRecoveryCancelled = true
             finish(turn, in: session, stopReason: "cancelled")
+            return
         }
-    }
-
-    func respondPermission(_ params: RespondPermissionParams) throws {
-        let session = try session(params.sessionID)
-        guard let requestID = session.pendingPermissions.removeValue(forKey: params.toolCallID) else {
-            throw HostError.permissionNotPending
+        if let first = session.stopRequestedAt {
+            // A second press, not a double click, means the user is done waiting for the agent.
+            if Date.now.timeIntervalSince(first) > 1 {
+                abandon(turn, in: session)
+            }
+            return
         }
-        let response = params.optionID.map { RequestPermissionResponse.selected(optionId: $0) } ?? .cancelled
-        try? agents[session.record.agentID]?.peer?.respond(to: requestID, with: response)
-        append(.permissionResolved(toolCallID: params.toolCallID, optionID: params.optionID), to: session)
-        try? store.removeApproval(sessionID: session.id, toolCallID: params.toolCallID)
+        session.stopRequestedAt = .now
+        session.stopTimeout = Task { [weak self, weak session] in
+            try? await Task.sleep(for: Self.stopGracePeriod)
+            guard !Task.isCancelled, let self, let session else { return }
+            abandon(turn, in: session)
+        }
+        answerCancelled(session, on: peer)
+        try? peer.notify("session/cancel", CancelNotification(sessionId: agentSessionID))
         publish(session)
     }
 
-    /// Drops permission requests that can't be answered any more (the turn ended, or the agent died).
-    func withdrawPermissions(of session: HostSession) {
-        for toolCallID in session.pendingPermissions.keys.sorted() {
-            append(.permissionResolved(toolCallID: toolCallID, optionID: nil), to: session)
+    /// ACP requires answering open permission requests and questions as cancelled when a turn is
+    /// cancelled.
+    private func answerCancelled(_ session: HostSession, on peer: JSONRPCPeer) {
+        for (_, requestID) in session.pendingPermissions {
+            try? peer.respond(to: requestID, with: RequestPermissionResponse.cancelled)
         }
-        session.pendingPermissions = [:]
-        try? store.removeApprovals(sessionID: session.id)
+        withdrawPermissions(of: session)
+        withdrawQuestions(of: session)
     }
+
+    /// Ends a turn being stopped without the agent's word; its late answer is ignored.
+    private func abandon(_ turn: UnfinishedTurn, in session: HostSession) {
+        guard session.turn?.requestID == turn.requestID else { return }
+        endTurn(in: session, stopReason: "cancelled", pauseQueue: true)
+        append(.turnEnded(stopReason: "cancelled"), to: session)
+        append(
+            .notice(
+                text:
+                    "\(session.agentName) didn't confirm it stopped, so Native stopped waiting. It may still be finishing its last step.",
+                isError: false), to: session)
+        publish(session)
+        continueAfterTurn(session)
+    }
+
+    // MARK: - Retrying
+
+    private func scheduleRetry(of session: HostSession, after delay: Duration) {
+        session.retryAt = .now.addingTimeInterval(Double(delay.components.seconds))
+        session.retryTask = Task { [weak self, weak session] in
+            try? await Task.sleep(for: delay)
+            guard !Task.isCancelled, let self, let session else { return }
+            session.retryAt = nil
+            session.retryTask = nil
+            session.record.isQueuePaused = false
+            drainQueue(session)
+            publish(session)
+        }
+    }
+
+    func cancelRetry(of session: HostSession) {
+        session.retryTask?.cancel()
+        session.retryTask = nil
+        session.retryAt = nil
+    }
+
+    // MARK: - Settings and hidden commands
 
     func setConfigOption(_ params: SetConfigOptionParams) async throws {
         let session = try session(params.sessionID)
@@ -260,46 +384,69 @@ extension HostCore {
             RawSetConfigOptionRequest(sessionId: agentSessionID, configId: params.configID, value: params.value),
             as: RawConfigOptionsResponse.self
         )
+        // Remembered so a reload that comes back on the agent's default gets it set back.
+        session.record.configChoices[params.configID] = params.value
+        try? store.updateSession(session.record)
         if let options = response.configOptions {
             append(.update(SessionMirror.configOptionsUpdate(options)), to: session)
         }
     }
 
-    // MARK: - Queue edits
-
-    func updateQueued(_ params: QueueItemParams) throws {
+    /// Runs a command such as `/context` as a turn the transcript doesn't show, and returns the
+    /// agent's reply. Meanwhile the session looks idle, but messages queue. Not a durable turn: if
+    /// the host stops, it's simply gone.
+    func runHidden(_ params: RunHiddenParams) async throws -> String {
         let session = try session(params.sessionID)
-        guard let index = session.queue.firstIndex(where: { $0.prompt.id == params.itemID }) else { return }
-        let text = params.text?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-        if text.isEmpty {
-            session.queue.remove(at: index)
-        } else {
-            session.queue[index].prompt.text = text
+        guard session.record.origin != .announced else { throw HostError.notAcceptingPrompts }
+        try await load(session)
+        guard session.phase == .idle, session.turn == nil, session.hiddenCommand == nil else {
+            throw HostError.busy("The session is busy.")
         }
-        try store.setQueue(session.queue, for: session.id)
-        publish(session)
-    }
-
-    func removeQueued(_ params: QueueItemParams) throws {
-        let session = try session(params.sessionID)
-        session.queue.removeAll { $0.prompt.id == params.itemID }
-        try store.setQueue(session.queue, for: session.id)
-        publish(session)
-    }
-
-    /// Sends a queued message now instead of waiting: into the running turn, or as the next prompt
-    /// when the session is idle (as it is after a cancelled turn paused the queue).
-    func sendQueuedNow(_ params: QueueItemParams) async throws {
-        let session = try session(params.sessionID)
-        guard let index = session.queue.firstIndex(where: { $0.prompt.id == params.itemID }) else { return }
-        if session.phase == .prompting, session.supportsSteering {
-            let item = session.queue.remove(at: index)
-            try store.setQueue(session.queue, for: session.id)
-            _ = try await steer(item.prompt, into: session)
-        } else if session.phase == .idle, session.turn == nil {
-            let item = session.queue.remove(at: index)
-            session.record.isQueuePaused = false
-            try startTurn(in: session, prompt: item.prompt, origin: .queued)
+        guard let peer = agents[session.record.agentID]?.peer, let agentSessionID = session.record.agentSessionID else {
+            throw HostError.agentUnavailable(session.agentName)
         }
+        session.hiddenCommand = HiddenCommandCapture()
+        publish(session)
+        defer {
+            session.hiddenCommandEcho = session.hiddenCommand
+            session.hiddenCommand = nil
+            publish(session)
+            drainQueue(session)
+        }
+        _ = try await peer.request(
+            "session/prompt", PromptRequest(sessionId: agentSessionID, prompt: [.text(params.text)]),
+            as: RawPromptResponse.self)
+        return session.hiddenCommand?.output ?? ""
     }
+}
+
+/// When to send a failed prompt again: only when the failure looks like the network or the provider
+/// being briefly unavailable, a few times, further apart each time. Usage limits and sign-in
+/// problems are someone else's to handle.
+enum TurnRetry {
+    static let delays: [Duration] = [.seconds(5), .seconds(20), .seconds(60)]
+
+    /// The wait before the next try, or nil to stop trying.
+    static func delay(after error: any Error, attempts: Int) -> Duration? {
+        guard isTransient(error), attempts < delays.count else { return nil }
+        return delays[attempts]
+    }
+
+    static func isTransient(_ error: any Error) -> Bool {
+        if (error as? RPCError)?.isAuthRequired == true || UsageLimitHit(error: error) != nil {
+            return false
+        }
+        if error is URLError {
+            return true
+        }
+        let text = error.localizedDescription.lowercased()
+        return transientMarkers.contains { text.contains($0) }
+    }
+
+    /// How agents word network and provider outages in the errors they pass on.
+    private static let transientMarkers = [
+        "network", "connection error", "connection refused", "connection reset", "timed out", "timeout",
+        "econnreset", "econnrefused", "enotfound", "eai_again", "socket hang up", "fetch failed",
+        "overloaded", "service unavailable", "bad gateway", "temporarily unavailable", " 502", " 503", " 529",
+    ]
 }

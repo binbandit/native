@@ -1,4 +1,5 @@
 import Foundation
+import UserShell
 
 /// The user's login-shell environment, read once and shared. Agents launch with it, and features
 /// that run the user's own tools (git, gh) need its PATH just the same.

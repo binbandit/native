@@ -119,7 +119,7 @@ final class HostConnection: Identifiable {
             apply(status)
         case .pluginsChanged(let plugins):
             self.plugins = plugins
-        case .activity, .appUpdateCheckRequested, .appUpdateInstallRequested:
+        case .activity, .agentChanged, .appUpdateCheckRequested, .appUpdateInstallRequested:
             // The Mac app's business: the phone reads activity through the sessions themselves.
             break
         }

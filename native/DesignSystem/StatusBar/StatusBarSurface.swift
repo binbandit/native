@@ -31,18 +31,11 @@ public struct StatusBarSurface<Leading: View, Trailing: View>: View {
         .frame(height: DS.Size.chromeBar)
         // Dropped items wait just past the trailing edge.
         .clipped()
+        // The column's look the whole width, under the content too: the bar is the window's chrome,
+        // its items belong to the whole window, and one band frames the content as a pane.
         .background {
-            // PROBE (temporary): content color under the content, for the comparison shot.
-            if UserDefaults.standard.bool(forKey: "statusBarSplitProbe") {
-                HStack(spacing: 0) {
-                    SidebarColumnBackdrop().frame(width: 256)
-                    Rectangle().fill(.dsBackground)
-                }
+            SidebarColumnBackdrop()
                 .ignoresSafeArea()
-            } else {
-                SidebarColumnBackdrop()
-                    .ignoresSafeArea()
-            }
         }
         .overlay(alignment: .top) { SeparatorLine() }
     }

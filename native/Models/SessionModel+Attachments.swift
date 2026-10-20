@@ -35,7 +35,8 @@ extension SessionModel {
     /// blocked: what's sent then waits in the queue.
     var sendBlock: SessionSendBlock? {
         if !acceptsPrompts { return isEarlierConversation ? .earlierConversation : .notAcceptingPrompts }
-        if phase == .disconnected { return .disconnected(agentName: agentName) }
+        // A host session whose agent couldn't run takes a message as its cue to try again.
+        if phase == .disconnected, host == nil { return .disconnected(agentName: agentName) }
         return services.sendGate.block(for: agent)
     }
 

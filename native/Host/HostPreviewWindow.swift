@@ -21,7 +21,14 @@ struct HostPreviewWindow: View {
         VStack(spacing: 0) {
             header
             SeparatorLine()
-            if !host.isEnabled {
+            if HostSessions.isEnabled {
+                EmptyStateView(
+                    "Every task keeps running when Native quits",
+                    systemImage: "moon.zzz",
+                    message:
+                        "Background agents are on, so the main window's tasks run in the background host. This preview isn't needed anymore."
+                )
+            } else if !host.isPreviewEnabled {
                 EmptyStateView(
                     "Keep agents working after Native quits",
                     systemImage: "moon.zzz",
@@ -32,8 +39,8 @@ struct HostPreviewWindow: View {
                     Task { await host.setEnabled(true) }
                 }
             } else {
-                if !host.awayActivity.isEmpty {
-                    awaySummary
+                if let away = host.away {
+                    awaySummary(away)
                 }
                 HStack(spacing: 0) {
                     sessionList
@@ -46,7 +53,7 @@ struct HostPreviewWindow: View {
         .frame(minWidth: 820, minHeight: 520)
         .background(Color.dsBackground)
         .task {
-            await host.start(agents: model.plugins.agents.map(AgentSpec.init))
+            await host.start(plugins: model.plugins.agents)
         }
         .alert("Durable Sessions", isPresented: isShowingError, presenting: host.errorMessage) { _ in
             Button("OK") {}
@@ -72,7 +79,7 @@ struct HostPreviewWindow: View {
                 Button("Allow in Login Items…") { SMAppService.openSystemSettingsLoginItems() }
                     .buttonStyle(.ds(.secondary))
             }
-            if host.isEnabled {
+            if host.isPreviewEnabled, !HostSessions.isEnabled {
                 Button("Stop Host and Agents") { Task { await host.stopHost() } }
                     .buttonStyle(.ds(.ghost))
                 Button("Turn Off") { Task { await host.setEnabled(false) } }
@@ -94,19 +101,17 @@ struct HostPreviewWindow: View {
         }
     }
 
-    private var awaySummary: some View {
+    private func awaySummary(_ away: AwaySummary) -> some View {
         Card {
             VStack(alignment: .leading, spacing: DS.Space.xs) {
                 HStack {
                     Text("While you were away").font(.dsCalloutMedium)
                     Spacer()
-                    Button("Dismiss") { host.dismissAwayActivity() }.buttonStyle(.ds(.ghost))
+                    Button("Dismiss") { host.dismissAway() }.buttonStyle(.ds(.ghost))
                 }
-                ForEach(host.awayActivity) { entry in
-                    Text(Self.describe(entry))
-                        .font(.dsBody)
-                        .foregroundStyle(Color.dsTextSecondary)
-                }
+                Text(away.headline)
+                    .font(.dsBody)
+                    .foregroundStyle(Color.dsTextSecondary)
             }
         }
         .padding(DS.Space.lg)
@@ -253,20 +258,6 @@ struct HostPreviewWindow: View {
             case "error": .failed
             default: .idle
             }
-        }
-    }
-
-    private static func describe(_ entry: ActivityEntry) -> String {
-        let time = entry.at.formatted(date: .omitted, time: .shortened)
-        let subject = entry.subject ?? "A session"
-        return switch entry.kind {
-        case .turnFinished: "\(time) · \(subject) finished"
-        case .turnFailed: "\(time) · \(subject) failed: \(entry.detail ?? "unknown error")"
-        case .approvalNeeded: "\(time) · \(subject) needs approval: \(entry.detail ?? "a tool call")"
-        case .recovered: "\(time) · \(entry.recovery?.sentence() ?? "Native recovered \(subject)")"
-        case .hostStarted: "\(time) · \(entry.detail ?? "Native's host started")"
-        case .updateRequested, .updateRolledBack: "\(time) · \(entry.detail ?? "Native's host updated")"
-        case .unknown: "\(time) · \(subject)"
         }
     }
 }

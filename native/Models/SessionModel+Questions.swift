@@ -18,7 +18,7 @@ extension SessionModel {
     /// so the agent isn't left waiting.
     func requestQuestion(_ request: CreateElicitationRequest, id: RequestID) {
         guard request.mode == .form, request.requestedSchema != nil else {
-            Task { try? await connection.respond(to: id, with: CreateElicitationResponse.cancel) }
+            Task { try? await connection?.respond(to: id, with: CreateElicitationResponse.cancel) }
             return
         }
         questions.append(PendingQuestion(id: id, request: request))
@@ -39,7 +39,7 @@ extension SessionModel {
         let open = questions
         questions.removeAll()
         for question in open {
-            try? await connection.respond(to: question.id, with: CreateElicitationResponse.cancel)
+            try? await connection?.respond(to: question.id, with: CreateElicitationResponse.cancel)
         }
     }
 
@@ -47,7 +47,11 @@ extension SessionModel {
         guard !questions.isEmpty else { return }
         let question = questions.removeFirst()
         do {
-            try await connection.respond(to: question.id, with: response)
+            if host != nil {
+                try await respondOnHost(to: question, with: response)
+            } else {
+                try await connection?.respond(to: question.id, with: response)
+            }
         } catch {
             state.appendNotice("Couldn’t send your answer: \(error.localizedDescription)", isError: true)
         }

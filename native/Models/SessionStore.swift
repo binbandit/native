@@ -1,16 +1,26 @@
 import ACP
 import Foundation
+import NativeHostClient
+import NativeHostProtocol
 import Observation
 
 /// The session models open in this run, subagents included, and the routing of each agent's
-/// events to them.
+/// events to them: an in-app agent's `AgentEvent`s, or the host's events for sessions running there
+/// (SessionStore+Host.swift).
 @Observable
 final class SessionStore {
     private var sessions: [SessionKey: SessionModel] = [:]
     /// Updates for sessions whose model doesn't exist yet. An agent can send these before it answers
     /// `session/new`.
     private var buffered: [SessionKey: [SessionUpdate]] = [:]
-    @ObservationIgnored private let services: SessionServices
+    /// Host sessions' models, by the host's id for them.
+    @ObservationIgnored var hostSessions: [HostSessionID: SessionKey] = [:]
+    /// Host events for sessions whose model doesn't exist yet: the replay a session started or
+    /// opened with `attach` sends before the host answers.
+    @ObservationIgnored var hostBuffered: [HostSessionID: [SessionMirror.Step]] = [:]
+    /// Every session the host has said it has open, attached here or not, by the host's id.
+    @ObservationIgnored var hostSummaries: [HostSessionID: HostSessionSummary] = [:]
+    @ObservationIgnored let services: SessionServices
 
     init(services: SessionServices) {
         self.services = services
@@ -48,6 +58,10 @@ final class SessionStore {
         for update in buffered.removeValue(forKey: session.key) ?? [] {
             deliver(update, to: session)
         }
+        if let host = session.host {
+            hostSessions[host.id] = session.key
+            deliverBuffered(to: session, in: host)
+        }
     }
 
     /// Drops a session and its subagents, for when Native closes it.
@@ -56,10 +70,18 @@ final class SessionStore {
             remove(child)
         }
         sessions[session.key] = nil
+        if let host = session.host {
+            stopFollowing(host)
+        }
     }
 
     /// Drops an agent's sessions, for when its process is replaced or goes away for good.
     func removeAll(of agent: AgentDefinition.ID) {
+        for session in sessions.values where session.key.agent == agent {
+            if let host = session.host {
+                stopFollowing(host)
+            }
+        }
         sessions = sessions.filter { $0.key.agent != agent }
         buffered = buffered.filter { $0.key.agent != agent }
     }

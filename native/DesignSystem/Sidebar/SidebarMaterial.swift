@@ -125,12 +125,13 @@ private struct SidebarColumnGlass: View {
 
 nonisolated extension EnvironmentValues {
     /// How much of the solid sidebar color covers a split-view sidebar column's glass: the user's
-    /// transparency for this appearance, and on Wool at least a little, since the system's light
-    /// sidebar is a cool gray that would read cold beside Wool's warm content.
+    /// transparency for this appearance, except on Wool. The system's light sidebar is a cool gray
+    /// that reads cold beside Wool's warm content, and the glass draws any warm tint inside it at
+    /// close to full strength in an active window, so a Wool column is solid Wool at every level;
+    /// that way chrome beside it (the status bar) can match it exactly.
     fileprivate var sidebarColumnTint: Double {
-        let tint = dsTransparency.sidebarTint(colorScheme: colorScheme, darkTone: dsDarkTone)
         let isWool = colorScheme == .light && dsLightTone == .wool
-        return isWool ? max(tint, 0.4) : tint
+        return isWool ? 1 : dsTransparency.sidebarTint(colorScheme: colorScheme, darkTone: dsDarkTone)
     }
 }
 

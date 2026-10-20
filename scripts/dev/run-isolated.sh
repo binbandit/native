@@ -4,15 +4,16 @@
 #
 #   scripts/dev/run-isolated.sh <name> [--no-build] [-- app arguments…]
 #   scripts/dev/run-isolated.sh <name> --build    # build only (compile checks), into the same folder
-#   scripts/dev/run-isolated.sh <name> --quit     # quit this instance and its host
-#   scripts/dev/run-isolated.sh <name> --reset    # also forget its defaults and Application Support
+#   scripts/dev/run-isolated.sh <name> --quit     # quit this instance and stop its host and agents
+#   scripts/dev/run-isolated.sh <name> --reset    # also forget its defaults, Application Support and host channel
 #   scripts/dev/run-isolated.sh <name> --remove   # reset, then delete its build (about 6 GB); run when done
 #
 # The build goes to /tmp/native-dd/<name> with the bundle id suffixed `.dev.<name>`, so the instance
 # gets its own defaults domain and its own Application Support folder, and its host its own launchd
-# label and channel (docs/durability.md, "Development builds"), and its task worktrees go to
-# ~/.native/worktrees-dev/<name> instead of the real ~/.native/worktrees. Codex runs `gpt-6.1-sol`
-# unless the app arguments say otherwise. Prints the instance's pid and window id, for automation scoped to it.
+# label and channel (docs/durability.md, "Development builds"): instances never share a host, a
+# socket or a store. Its task worktrees go to ~/.native/worktrees-dev/<name> instead of the real
+# ~/.native/worktrees. Codex runs `gpt-6.1-sol` unless the app arguments say otherwise. Prints the
+# instance's pid, window id and host channel, for automation scoped to it.
 set -euo pipefail
 
 usage() {
@@ -46,6 +47,8 @@ derived="/tmp/native-dd/$name"
 app="$derived/Build/Products/Debug/Native.app"
 # Matched without the leading /tmp, which macOS reports as /private/tmp.
 process="native-dd/$name/Build/Products/Debug/Native.app/Contents/MacOS/Native"
+# The instance's host binary, run by its launchd job or, as a fallback, by the app itself.
+host_process="native-dd/$name/Build/Products/Debug/Native.app/Contents/Library/LoginItems/Native Host.app/Contents/MacOS/Native Host"
 support="$HOME/Library/Application Support"
 worktrees="$HOME/.native/worktrees-dev/$name"
 
@@ -66,14 +69,22 @@ quit_app() {
     pkill -f "$process" 2>/dev/null || true
 }
 
+# The channel this build's host runs on (a hash of its build folder), empty if unknown.
+host_channel() {
+    /usr/libexec/PlistBuddy -c "Print :EnvironmentVariables:NATIVE_HOST_CHANNEL" \
+        "$app/Contents/Library/LaunchAgents/NativeHost.plist" 2>/dev/null || true
+}
+
 quit() {
     quit_app
     local id
     id=$(bundle_id 2>/dev/null) || return 0
-    # The instance's development host, if it was turned on (Window › Durable Sessions).
+    # The instance's development host: its launchd job, then any copy the app started itself
+    # (which exits with the app anyway, given a moment).
     for label in $(launchctl list | awk '{print $3}' | grep -F "$id.host." || true); do
         launchctl bootout "gui/$(id -u)/$label" 2>/dev/null || true
     done
+    pkill -f "$host_process" 2>/dev/null || true
 }
 
 case "$action" in
@@ -87,8 +98,7 @@ reset | remove)
     if id=$(bundle_id); then
         defaults delete "$id" 2>/dev/null || true
         rm -rf "$support/$id"
-        channel=$(/usr/libexec/PlistBuddy -c "Print :EnvironmentVariables:NATIVE_HOST_CHANNEL" \
-            "$app/Contents/Library/LaunchAgents/NativeHost.plist" 2>/dev/null || true)
+        channel=$(host_channel)
         [ -n "$channel" ] && rm -rf "$support/Native/Channels/$channel"
         rm -rf "$worktrees"
         echo "reset $name ($id)"
@@ -122,8 +132,8 @@ fi
 [ -d "$app" ] || { echo "no build at $app; run without --no-build" >&2; exit 1; }
 bundle_id >/dev/null || { echo "run without --no-build to rebuild it as $name" >&2; exit 1; }
 
-# Relaunching replaces the app but leaves its host running, so durability and host handoffs can be
-# tested by relaunching; --quit and --reset stop the host too.
+# Relaunching replaces the app but leaves its background host running, so durability and host
+# handoffs can be tested by relaunching; --quit and --reset stop the host too.
 quit_app
 defaults_args=()
 [[ " ${app_args[*]-} " == *" -agentDefaults.codex.model "* ]] || defaults_args=(-agentDefaults.codex.model gpt-6.1-sol)
@@ -157,3 +167,4 @@ echo "name $name"
 echo "bundle $(bundle_id)"
 echo "pid $pid"
 echo "window ${window:-unknown}"
+echo "host channel $(host_channel)"

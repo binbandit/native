@@ -1,5 +1,6 @@
 import ACP
 import Foundation
+import NativeHostClient
 import Observation
 
 /// A runtime for each agent the plugins provide, kept in step with them as plugins come and go.
@@ -8,6 +9,9 @@ import Observation
 final class AgentRuntimes {
     private var runtimes: [AgentDefinition.ID: AgentRuntime] = [:]
     @ObservationIgnored private let plugins: PluginRegistry
+    /// The host agents run in, once the app connects to one (`HostSessions`); runtimes made after
+    /// that run their agents there.
+    @ObservationIgnored var host: NativeHostClient?
 
     init(plugins: PluginRegistry) {
         self.plugins = plugins
@@ -34,7 +38,7 @@ final class AgentRuntimes {
         for id in removed {
             runtimes.removeValue(forKey: id)?.stop()
         }
-        let added = definitions.filter { runtimes[$0.id] == nil }.map(AgentRuntime.init(agent:))
+        let added = definitions.filter { runtimes[$0.id] == nil }.map { AgentRuntime(agent: $0, host: host) }
         for runtime in added {
             runtimes[runtime.agent.id] = runtime
         }
@@ -45,7 +49,7 @@ final class AgentRuntimes {
     func replace(_ agent: AgentDefinition.ID) -> AgentRuntime? {
         runtimes[agent]?.stop()
         guard let definition = plugins.agent(agent) else { return nil }
-        let runtime = AgentRuntime(agent: definition)
+        let runtime = AgentRuntime(agent: definition, host: host)
         runtimes[agent] = runtime
         return runtime
     }

@@ -13,9 +13,15 @@ final class HostSession {
     var mcpServers: [JSONValue]
     /// The turn running (or being recovered), as the store has it.
     var turn: UnfinishedTurn?
+    /// Where the running turn's own items start in `mirror`, to tell whether it got anywhere.
+    var turnItemsStart = 0
     var queue: [StoredQueueItem] = []
+    /// Messages removed from the queue, newest last, so `_native/queue/restore` can put one back.
+    var removedFromQueue: [OutgoingPrompt] = []
     /// Permission requests waiting on the user, by tool call: the agent's request id to answer.
     var pendingPermissions: [String: RequestID] = [:]
+    /// Questions waiting on the user, oldest first: the host's id for each and the agent's request.
+    var pendingQuestions: [(id: String, request: RequestID)] = []
     var supportsSteering = false
     var problem: String?
     /// The agent process doesn't have this session loaded (the host or the agent restarted since).
@@ -24,6 +30,23 @@ final class HostSession {
     var loading: Task<Void, any Error>?
     /// Set when the user cancels while recovery is under way, so it stops.
     var isRecoveryCancelled = false
+    /// When stop was first asked for in the running turn; the agent has until the grace period
+    /// ends to confirm.
+    var stopRequestedAt: Date?
+    var stopTimeout: Task<Void, Never>?
+    /// The queued message to send once the turn being stopped ends ("Send Now" on an agent that
+    /// can't steer).
+    var sendAfterStop: UUID?
+    /// A prompt that failed for a passing reason goes out again then; it waits at the queue's front.
+    var retryAt: Date?
+    var retryTask: Task<Void, Never>?
+    /// Retries of the current message so far (`TurnRetry.delays`).
+    var retryAttempts = 0
+    /// Collecting a hidden command's reply, while one runs.
+    var hiddenCommand: HiddenCommandCapture?
+    /// The last hidden command's reply, until the next turn starts: copies of it that arrive late
+    /// are dropped.
+    var hiddenCommandEcho: HiddenCommandCapture?
     /// The transcript as the events describe it; the host reads the agent's replay from it.
     private(set) var mirror = SessionMirror()
     private(set) var log: [HostEvent] = []
@@ -67,14 +90,36 @@ final class HostSession {
         return log.filter { $0.seq > seq }
     }
 
+    var isStopping: Bool {
+        stopRequestedAt != nil
+    }
+
+    /// Whether anything is under way that stopping the agent would cut off.
+    var isWorking: Bool {
+        turn != nil || phase == .recovering || hiddenCommand != nil || retryAt != nil
+            || (!queue.isEmpty && !record.isQueuePaused)
+    }
+
+    /// Whether the running turn produced anything: an answer, a tool call, a subagent.
+    var turnMadeProgress: Bool {
+        mirror.state.items.dropFirst(turnItemsStart).contains { item in
+            switch item {
+            case .message(let message): message.role != .user
+            case .toolCall, .subagent: true
+            default: false
+            }
+        }
+    }
+
     var summary: HostSessionSummary {
         HostSessionSummary(
             id: record.id, agentID: record.agentID, agentName: agentName, agentSessionID: record.agentSessionID,
             cwd: record.cwd,
             parentID: record.parentID, origin: record.origin, title: record.title, phase: phase,
-            needsApproval: !pendingPermissions.isEmpty,
-            queue: queue.map(\.prompt), isQueuePaused: record.isQueuePaused, supportsSteering: supportsSteering,
-            lastActivity: record.lastActivity, lastStopReason: record.lastStopReason, problem: problem
+            needsApproval: !pendingPermissions.isEmpty || !pendingQuestions.isEmpty,
+            queue: queue.map(\.prompt.queued), isQueuePaused: record.isQueuePaused, supportsSteering: supportsSteering,
+            lastActivity: record.lastActivity, lastStopReason: record.lastStopReason, problem: problem,
+            isStopping: isStopping, isRunningHiddenCommand: hiddenCommand != nil, retryAt: retryAt
         )
     }
 

@@ -32,6 +32,7 @@ struct HostRegistration {
     }
 
     var status: Status {
+        if Self.simulatesRefusal { return .needsApproval }
         if isDevelopmentBuild { return .registered }
         return switch service.status {
         case .enabled: .registered
@@ -41,14 +42,30 @@ struct HostRegistration {
     }
 
     /// Starts the host now (and, for release builds, at every login). Doing it again is harmless.
+    /// The first registration makes macOS post "Background Items Added", which names Native.
     func register() async throws {
+        if Self.simulatesRefusal {
+            throw CocoaError(.featureUnsupported)
+        }
         if isDevelopmentBuild {
             // Earlier development builds registered login items; take this build's back out.
             if service.status != .notRegistered {
                 try? await service.unregister()
             }
             try await sessionJob.start()
+        } else if service.status != .enabled {
+            try service.register()
+        }
+    }
+
+    /// Starts the host again after it stopped on purpose (Quit Native and Stop Agents) or stopped
+    /// answering. A registered login item only starts at login or registration, so it's registered
+    /// afresh; a session job is kicked.
+    func restart() async throws {
+        if isDevelopmentBuild {
+            try await sessionJob.start()
         } else {
+            try? await service.unregister()
             try service.register()
         }
     }
@@ -60,6 +77,16 @@ struct HostRegistration {
         } else {
             try await service.unregister()
         }
+    }
+
+    /// `-nativeHostRefused YES` acts as if Native were off under Allow in the Background, which a
+    /// development build's session job can't be, so the fallback can be tried. Debug builds only.
+    private static var simulatesRefusal: Bool {
+        #if DEBUG
+        UserDefaults.standard.bool(forKey: "nativeHostRefused")
+        #else
+        false
+        #endif
     }
 
     private var sessionJob: LaunchdSessionJob {

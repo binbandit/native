@@ -11,6 +11,10 @@ extension SessionModel {
     /// Cancels the current turn. For a subagent, that stops only its work, never its parent's turn.
     func cancel() async {
         guard canCancel else { return }
+        // The host keeps the stop's grace period and retries itself, so they work with the app closed.
+        if host != nil {
+            return await cancelOnHost()
+        }
         if isRetryScheduled {
             cancelRetry()
             state.appendNotice("Stopped retrying. Your message is still queued; send again to try it.", isError: false)
@@ -39,11 +43,11 @@ extension SessionModel {
             if NativeApprovals.isNative(permission.requestID) {
                 NativeApprovals.answer(permission.requestID, with: nil)
             } else {
-                try? await connection.respond(to: permission.requestID, with: RequestPermissionResponse.cancelled)
+                try? await connection?.respond(to: permission.requestID, with: RequestPermissionResponse.cancelled)
             }
         }
         await cancelQuestions()
-        try? await connection.notify(CancelNotification(sessionId: id))
+        try? await connection?.notify(CancelNotification(sessionId: id))
     }
 
     /// Ends the turn being stopped without the agent's word. Its late answer, if one comes, is

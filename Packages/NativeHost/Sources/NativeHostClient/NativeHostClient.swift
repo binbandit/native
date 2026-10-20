@@ -6,8 +6,9 @@ import NativeHostProtocol
 /// and iPhone's connection to a paired one. It keeps the connection up across host restarts and
 /// network drops, re-attaching every session it follows so no event is missed or applied twice.
 ///
-/// Everything the host says arrives on `events`, in order. Folding a session's events with a
-/// `SessionMirror` gives its transcript.
+/// Everything the host says arrives in order: to each handler added with `addEventHandler`, awaited
+/// one after another, and on `events`. Folding a session's steps with a `SessionMirror` gives its
+/// transcript. Requests live in the `NativeHostClient+…` files.
 public actor NativeHostClient {
     public enum ConnectionState: Hashable, Sendable {
         case connecting
@@ -24,9 +25,12 @@ public actor NativeHostClient {
 
     public enum Event: Sendable {
         case connection(ConnectionState)
-        case sessionEvent(HostSessionID, HostEvent)
+        /// One of a followed session's events, its agent payload already decoded.
+        case sessionEvent(HostSessionID, SessionMirror.Step)
         case sessionChanged(HostSessionSummary)
         case sessionClosed(HostSessionID)
+        /// An agent's status changed.
+        case agentChanged(HostAgent)
         case activity(ActivityEntry)
         /// The host's plugin catalog changed.
         case pluginsChanged([HostPlugin])
@@ -37,6 +41,11 @@ public actor NativeHostClient {
         case appUpdateCheckRequested
         case appUpdateInstallRequested(HostUpdateStatus.When)
     }
+
+    /// Called for every event, in order. A response to a request returns only after every handler
+    /// has finished with the events that arrived before it. A handler must never wait on a request
+    /// to this client: the response can't be read until the handler returns.
+    public typealias EventHandler = @Sendable (Event) async -> Void
 
     public enum Failure: Error, LocalizedError, Equatable {
         case notConnected
@@ -54,12 +63,13 @@ public actor NativeHostClient {
 
     private let clientInfo: PeerInfo
     private let continuation: AsyncStream<Event>.Continuation
+    private var handlers: [(id: UUID, handle: EventHandler)] = []
     private var peer: JSONRPCPeer?
     private var generation = 0
     private var running: Task<Void, Never>?
     /// Sessions this client follows, with the last event seen, to re-attach without gaps.
-    private var attachments: [HostSessionID: Int?] = [:]
-    private var epoch: UUID?
+    var attachments: [HostSessionID: Int?] = [:]
+    private(set) var epoch: UUID?
 
     /// How long the host may stay unreachable before the state says so.
     private static let unreachableAfter = 4
@@ -83,6 +93,18 @@ public actor NativeHostClient {
         continuation.finish()
     }
 
+    /// Adds a handler for everything the host says from now on; see `EventHandler`.
+    @discardableResult
+    public func addEventHandler(_ handler: @escaping EventHandler) -> UUID {
+        let id = UUID()
+        handlers.append((id, handler))
+        return id
+    }
+
+    public func removeEventHandler(_ id: UUID) {
+        handlers.removeAll { $0.id == id }
+    }
+
     public var hostInfo: HostInfo? {
         if case .connected(let info) = state { info } else { nil }
     }
@@ -96,135 +118,17 @@ public actor NativeHostClient {
         throw CancellationError()
     }
 
-    // MARK: - Requests
-
-    public func syncAgents(_ agents: [AgentSpec]) async throws {
-        let _: EmptyMessage = try await call(HostProtocol.Method.syncAgents, SyncAgentsParams(agents: agents))
-    }
-
-    public func sessions() async throws -> [HostSessionSummary] {
-        try await call(HostProtocol.Method.listSessions, EmptyMessage())
-    }
-
-    public func newSession(_ params: NewSessionParams) async throws -> HostSessionSummary {
-        try await call(HostProtocol.Method.newSession, params)
-    }
-
-    public func openSession(_ params: OpenSessionParams) async throws -> HostSessionSummary {
-        try await call(HostProtocol.Method.openSession, params)
-    }
-
-    /// Follows a session: its log is replayed onto `events` before this returns, then live events
-    /// follow. After a reconnect it's re-attached from where it left off.
-    @discardableResult
-    public func attach(_ session: HostSessionID) async throws -> HostSessionSummary {
-        let seen = attachments[session] ?? nil
-        attachments.updateValue(seen, forKey: session)
-        let result: AttachResult = try await call(
-            HostProtocol.Method.attach, AttachParams(sessionID: session, epoch: epoch, afterSeq: seen))
-        return result.summary
-    }
-
-    public func detach(_ session: HostSessionID) async throws {
-        attachments[session] = nil
-        let _: EmptyMessage = try await call(HostProtocol.Method.detach, SessionParams(sessionID: session))
-    }
-
-    /// Sends a message. Retrying with the same `requestID` is safe: the host delivers it once.
-    public func prompt(_ params: PromptParams) async throws -> PromptDelivery {
-        let result: PromptResult = try await call(HostProtocol.Method.prompt, params)
-        return result.delivery
-    }
-
-    public func cancel(_ session: HostSessionID) async throws {
-        let _: EmptyMessage = try await call(HostProtocol.Method.cancel, SessionParams(sessionID: session))
-    }
-
-    public func respondPermission(_ params: RespondPermissionParams) async throws {
-        let _: EmptyMessage = try await call(HostProtocol.Method.respondPermission, params)
-    }
-
-    public func setConfigOption(_ params: SetConfigOptionParams) async throws {
-        let _: EmptyMessage = try await call(HostProtocol.Method.setConfigOption, params)
-    }
-
-    public func updateQueued(_ params: QueueItemParams) async throws {
-        let _: EmptyMessage = try await call(HostProtocol.Method.updateQueued, params)
-    }
-
-    public func removeQueued(_ params: QueueItemParams) async throws {
-        let _: EmptyMessage = try await call(HostProtocol.Method.removeQueued, params)
-    }
-
-    public func sendQueuedNow(_ params: QueueItemParams) async throws {
-        let _: EmptyMessage = try await call(HostProtocol.Method.sendQueuedNow, params)
-    }
-
-    public func closeSession(_ session: HostSessionID) async throws {
-        attachments[session] = nil
-        let _: EmptyMessage = try await call(HostProtocol.Method.closeSession, SessionParams(sessionID: session))
-    }
-
-    /// What happened on the host since `after` (an activity id), for "while you were away".
-    public func activity(after: Int64? = nil, limit: Int = 200) async throws -> [ActivityEntry] {
-        try await call(HostProtocol.Method.listActivity, ListActivityParams(after: after, limit: limit))
-    }
-
-    /// Stops the host and its agents for good, or (`stopAgents: false`) restarts it once idle.
-    // MARK: - Updates
-
-    public func updateStatus() async throws -> HostUpdateStatus {
-        try await call(HostProtocol.Method.updateStatus, EmptyMessage())
-    }
-
-    public func checkForUpdate() async throws -> HostUpdateStatus {
-        try await call(HostProtocol.Method.updateCheck, EmptyMessage())
-    }
-
-    /// Installs the update the host found: `.idle` waits for running tasks, `.now` interrupts them
-    /// (send it only after the user chose to). Needs the manage-host grant.
-    public func installUpdate(_ when: HostUpdateStatus.When) async throws -> HostUpdateStatus {
-        try await call(HostProtocol.Method.updateInstall, HostUpdateInstallParams(when: when))
-    }
-
-    /// For the Mac app: its updater's status, which the host serves to every client as its own.
-    public func reportUpdateStatus(_ status: HostUpdateStatus) async throws {
-        let _: EmptyMessage = try await call(HostProtocol.Method.updateReport, HostUpdateStatusMessage(status: status))
-    }
-
-    // MARK: - Plugins
-
-    /// The plugins installed on the host. `PluginAssets` fetches and caches their files.
-    public func plugins() async throws -> [HostPlugin] {
-        try await call(HostProtocol.Method.listPlugins, EmptyMessage())
-    }
-
-    /// Turns a plugin on or off for everyone using the host; paired devices need the grant.
-    public func setPluginEnabled(_ pluginID: String, _ isEnabled: Bool) async throws -> [HostPlugin] {
-        try await call(
-            HostProtocol.Method.setPluginEnabled, SetPluginEnabledParams(pluginID: pluginID, isEnabled: isEnabled))
-    }
-
-    public func pluginAsset(_ params: PluginAssetParams) async throws -> PluginAsset {
-        try await call(HostProtocol.Method.pluginAsset, params)
-    }
-
-    /// Stops the host and its agents (`stopAgents`), or restarts it onto the binary the app
-    /// carries: once it's idle, or `immediately`, interrupting turns that then resume.
-    public func shutdownHost(stopAgents: Bool, immediately: Bool = false) async throws {
-        do {
-            let _: EmptyMessage = try await call(
-                HostProtocol.Method.shutdown, ShutdownParams(stopAgents: stopAgents, immediately: immediately))
-        } catch PeerError.closed {
-            // The host can exit before its answer gets out; that's the request working.
-        }
-    }
-
-    private func call<Result: Decodable & Sendable>(
+    func call<Result: Decodable & Sendable>(
         _ method: String, _ params: some Encodable & Sendable
     ) async throws -> Result {
         guard let peer, hostInfo != nil || method == HostProtocol.Method.initialize else { throw Failure.notConnected }
         return try await peer.request(method, params, as: Result.self)
+    }
+
+    /// Whether `error` means the request may not have reached the host, so it's worth sending again
+    /// once connected.
+    static func isConnectionLoss(_ error: any Error) -> Bool {
+        (error as? PeerError) == .closed || (error as? Failure) == .notConnected
     }
 
     // MARK: - Connection
@@ -236,9 +140,9 @@ public actor NativeHostClient {
                 try await connectOnce()
                 failures = 0
                 await peer?.closed()
-                setState(.reconnecting(attempt: 0, reason: "The connection to the host closed."))
+                await setState(.reconnecting(attempt: 0, reason: "The connection to the host closed."))
             } catch let error as VersionMismatch {
-                setState(
+                await setState(
                     .incompatible(protocolVersion: error.handshake.protocolVersion, host: error.handshake.hostInfo))
                 // Check again now and then: an older host comes back on the new binary once idle,
                 // and the drop while it restarts reads as reconnecting, not unreachable.
@@ -247,7 +151,7 @@ public actor NativeHostClient {
             } catch {
                 failures += 1
                 let reason = error.localizedDescription
-                setState(
+                await setState(
                     failures >= Self.unreachableAfter
                         ? .unreachable(reason: reason) : .reconnecting(attempt: failures, reason: reason))
             }
@@ -293,7 +197,7 @@ public actor NativeHostClient {
             }
         }
         epoch = info.epoch
-        setState(.connected(info))
+        await setState(.connected(info))
         for (session, seen) in attachments {
             _ = try? await peer.request(
                 HostProtocol.Method.attach, AttachParams(sessionID: session, epoch: epoch, afterSeq: seen),
@@ -301,52 +205,59 @@ public actor NativeHostClient {
         }
     }
 
-    private func receive(_ event: JSONRPCPeer.Event, generation: Int) {
-        guard generation == self.generation, case .notification(let message) = event else { return }
+    private func receive(_ event: JSONRPCPeer.Event, generation: Int) async {
+        guard generation == self.generation, case .notification(let message) = event,
+            let event = Self.event(from: message)
+        else { return }
+        if case .sessionEvent(let session, let step) = event, attachments.keys.contains(session) {
+            attachments[session] = step.event.seq
+        }
+        if case .sessionClosed(let session) = event {
+            attachments[session] = nil
+        }
+        await deliver(event)
+    }
+
+    private func deliver(_ event: Event) async {
+        for handler in handlers {
+            await handler.handle(event)
+        }
+        continuation.yield(event)
+    }
+
+    /// The event a host notification stands for; nil for ones this client doesn't know.
+    private static func event(from message: JSONRPCPeer.Message) -> Event? {
         typealias Method = HostProtocol.Method
         switch message.method {
         case Method.sessionEvent:
-            guard let notification = try? message.params(as: SessionEventNotification.self) else { return }
-            if attachments.keys.contains(notification.sessionID) {
-                attachments[notification.sessionID] = notification.event.seq
+            return (try? message.params(as: SessionEventNotification.self)).map {
+                .sessionEvent($0.sessionID, SessionMirror.Step($0.event))
             }
-            continuation.yield(.sessionEvent(notification.sessionID, notification.event))
         case Method.sessionChanged:
-            if let notification = try? message.params(as: SessionChangedNotification.self) {
-                continuation.yield(.sessionChanged(notification.summary))
-            }
+            return (try? message.params(as: SessionChangedNotification.self)).map { .sessionChanged($0.summary) }
         case Method.sessionClosed:
-            if let notification = try? message.params(as: SessionParams.self) {
-                attachments[notification.sessionID] = nil
-                continuation.yield(.sessionClosed(notification.sessionID))
-            }
+            return (try? message.params(as: SessionParams.self)).map { .sessionClosed($0.sessionID) }
+        case Method.agentChanged:
+            return (try? message.params(as: AgentChangedNotification.self)).map { .agentChanged($0.agent) }
         case Method.activity:
-            if let entry = try? message.params(as: ActivityEntry.self) {
-                continuation.yield(.activity(entry))
-            }
+            return (try? message.params(as: ActivityEntry.self)).map(Event.activity)
         case Method.updateChanged:
-            if let notification = try? message.params(as: HostUpdateStatusMessage.self) {
-                continuation.yield(.updateChanged(notification.status))
-            }
+            return (try? message.params(as: HostUpdateStatusMessage.self)).map { .updateChanged($0.status) }
         case Method.appUpdateCheck:
-            continuation.yield(.appUpdateCheckRequested)
+            return .appUpdateCheckRequested
         case Method.appUpdateInstall:
-            if let params = try? message.params(as: HostUpdateInstallParams.self) {
-                continuation.yield(.appUpdateInstallRequested(params.when))
-            }
+            return (try? message.params(as: HostUpdateInstallParams.self)).map { .appUpdateInstallRequested($0.when) }
         case Method.pluginsChanged:
-            if let notification = try? message.params(as: PluginsChangedNotification.self) {
-                continuation.yield(.pluginsChanged(notification.plugins))
-            }
+            return (try? message.params(as: PluginsChangedNotification.self)).map { .pluginsChanged($0.plugins) }
         default:
-            break
+            return nil
         }
     }
 
-    private func setState(_ state: ConnectionState) {
+    private func setState(_ state: ConnectionState) async {
         guard state != self.state else { return }
         self.state = state
-        continuation.yield(.connection(state))
+        await deliver(.connection(state))
     }
 
     private struct VersionMismatch: Error {

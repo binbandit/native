@@ -13,6 +13,11 @@ extension SessionModel {
         case .idle where isRunningHiddenCommand: throw SendError.busy
         case .idle: break
         }
+        if host != nil {
+            // The host keeps the reply out of the transcript and holds the queue meanwhile.
+            return try await runHiddenCommandOnHost(command)
+        }
+        guard let connection else { throw SendError.disconnected }
         hiddenCommand = HiddenCommandCapture()
         isRunningHiddenCommand = true
         defer {

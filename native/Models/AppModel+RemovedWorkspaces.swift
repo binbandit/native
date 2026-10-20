@@ -1,5 +1,6 @@
 import ACP
 import Foundation
+import os
 
 // Tasks whose workspaces were removed outside Native (a worktree deleted in Terminal or by another
 // tool, or pruned): the agents still list them, in folders that are gone. Each is decided the way
@@ -67,11 +68,17 @@ extension AppModel {
             while let self, self.isRemovedWorkspaceCheckDue {
                 try? await Task.sleep(for: .seconds(1))
                 self.isRemovedWorkspaceCheckDue = false
+                let started = ContinuousClock.now
+                let mainCPU = clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID)
                 var done: [DoneTask] = []
                 for project in self.projects.all {
                     done += await self.checkRemovedWorkspaces(in: project)
                 }
                 self.archive(done)
+                let mainMilliseconds = Double(clock_gettime_nsec_np(CLOCK_THREAD_CPUTIME_ID) - mainCPU) / 1_000_000
+                Self.logger.debug(
+                    "Removed workspaces checked in \(started.duration(to: .now), privacy: .public), main \(mainMilliseconds, format: .fixed(precision: 1), privacy: .public) ms cpu: \(self.removedWorkspaces.count) kept, \(done.count) archived"
+                )
             }
             self?.removedWorkspaceCheck = nil
         }

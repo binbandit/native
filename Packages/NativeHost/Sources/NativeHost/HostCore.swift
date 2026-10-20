@@ -2,8 +2,9 @@ import ACP
 import Foundation
 import NativeHostProtocol
 
-/// The host: owns the agents, the sessions and the store, and serves clients. Turns live in
-/// `HostCore+Turns.swift`, recovery in `HostCore+Recovery.swift`, the client protocol in
+/// The host: owns the agents, the sessions and the store, and serves clients. Sessions live in
+/// `HostCore+Sessions.swift`, turns in `HostCore+Turns.swift`, recovery in
+/// `HostCore+Recovery.swift`, agents in `HostCore+AgentControl.swift`, the client protocol in
 /// `HostCore+Clients.swift`.
 @HostActor
 public final class HostCore {
@@ -68,8 +69,12 @@ public final class HostCore {
     let epoch = UUID()
     let startedAt = Date.now
     var agents: [String: AgentLink] = [:]
+    /// The order clients listed the agents in.
+    var agentOrder: [String] = []
     var sessions: [HostSessionID: HostSession] = [:]
     var clients: [ClientLink.ID: ClientLink] = [:]
+    /// Prompt requests being handled, so a repeat of one waits for its answer instead of sending again.
+    var promptsInFlight: [UUID: Task<PromptDelivery, any Error>] = [:]
     var pluginCatalog: PluginCatalog { PluginCatalog(directory: configuration.pluginsDirectory) }
     /// The catalog clients were last told about, to notify them only of real changes.
     var lastPublishedPlugins: [HostPlugin]?
@@ -83,6 +88,7 @@ public final class HostCore {
     /// Set once a restart was asked for, to exit when nothing is running.
     var isRestartingWhenIdle = false
     let logger = HostLogger(category: "Host")
+    /// The login-shell environment agents start with, read once (again after a sync asks).
     private var environment: Task<[String: String], Never>?
     private var heartbeat: Task<Void, Never>?
     private var server: SocketServer?
@@ -100,8 +106,10 @@ public final class HostCore {
             hostID = HostID()
             try store.setMeta(MetaKey.hostID, hostID.description)
         }
-        for spec in try store.agents() {
-            agents[spec.id] = AgentLink(spec: spec)
+        let specs = try store.agents()
+        agentOrder = specs.map(\.id)
+        for spec in specs {
+            agents[spec.id] = makeLink(spec)
         }
         let queues = try store.sessions().map { record in (record, try store.queue(for: record.id)) }
         for (record, queue) in queues {
@@ -152,13 +160,13 @@ public final class HostCore {
         guard let idleExit = configuration.idleExit else { return }
         let isBusy =
             !clients.isEmpty
-            || sessions.values.contains { $0.turn != nil || $0.phase == .recovering || $0.phase == .loading }
+            || sessions.values.contains { $0.isWorking || $0.phase == .loading }
         if isBusy {
             lastBusy = .now
         } else if Date.now.timeIntervalSince(lastBusy) > Double(idleExit.components.seconds) {
             logger.info("Idle development host stopping")
             for link in agents.values {
-                link.stop()
+                link.endNow()
             }
             try? store.setMeta(MetaKey.cleanShutdown, "1")
             configuration.exit(ExitStatus.stopped)
@@ -178,19 +186,37 @@ public final class HostCore {
         return await task.value
     }
 
-    func syncAgents(_ specs: [AgentSpec]) throws {
+    func syncAgents(_ specs: [AgentSpec], refreshEnvironment: Bool = false) throws {
         try store.replaceAgents(specs)
+        if refreshEnvironment {
+            environment = nil
+        }
+        agentOrder = specs.map(\.id)
         for spec in specs {
             if let link = agents[spec.id] {
                 // A changed launch command applies the next time the agent starts.
-                link.spec = spec
+                if link.spec != spec {
+                    link.spec = spec
+                    publishAgent(link)
+                }
             } else {
-                agents[spec.id] = AgentLink(spec: spec)
+                let link = makeLink(spec)
+                agents[spec.id] = link
+                publishAgent(link)
             }
         }
         for session in sessions.values {
             session.agentName = agents[session.record.agentID]?.spec.name ?? session.agentName
         }
+    }
+
+    private func makeLink(_ spec: AgentSpec) -> AgentLink {
+        let link = AgentLink(spec: spec)
+        link.onChange = { [weak self, weak link] in
+            guard let self, let link else { return }
+            publishAgent(link)
+        }
+        return link
     }
 
     /// The running agent for `agentID`, started if needed.
@@ -211,135 +237,6 @@ public final class HostCore {
     func session(_ id: HostSessionID) throws -> HostSession {
         guard let session = sessions[id] else { throw HostError.unknownSession(id) }
         return session
-    }
-
-    func newSession(_ params: NewSessionParams) async throws -> HostSessionSummary {
-        let link = try await readyAgent(params.agentID)
-        guard let peer = link.peer else { throw HostError.agentUnavailable(link.spec.name) }
-        let record = StoredSession(
-            id: HostSessionID(), agentID: params.agentID, agentSessionID: nil, cwd: params.cwd,
-            parentID: params.parentID,
-            origin: params.origin, mcpServers: params.mcpServers
-        )
-        let response = try await peer.request(
-            "session/new", RawNewSessionRequest(cwd: params.cwd, mcpServers: params.mcpServers),
-            as: RawNewSessionResponse.self
-        )
-        var stored = record
-        stored.agentSessionID = response.sessionId
-        try store.insertSession(stored)
-        let session = HostSession(
-            record: stored, agentName: link.spec.name, phase: .idle, needsLoad: false, mcpServers: params.mcpServers)
-        session.supportsSteering = link.supportsSteering
-        sessions[stored.id] = session
-        append(.reset(loading: false), to: session)
-        if let options = response.configOptions {
-            append(.update(SessionMirror.configOptionsUpdate(options)), to: session)
-        }
-        route(session, on: link)
-        publish(session)
-        return session.summary
-    }
-
-    /// Adopts a session the agent already has, or returns the host session that already holds it.
-    func openSession(_ params: OpenSessionParams) async throws -> HostSessionSummary {
-        if let existing = sessions.values.first(where: {
-            $0.record.agentID == params.agentID && $0.record.agentSessionID == params.agentSessionID
-        }) {
-            try await load(existing)
-            return existing.summary
-        }
-        guard let link = agents[params.agentID] else { throw HostError.unknownAgent(params.agentID) }
-        let record = StoredSession(
-            id: HostSessionID(), agentID: params.agentID, agentSessionID: params.agentSessionID, cwd: params.cwd,
-            parentID: nil,
-            origin: .user, title: params.title, mcpServers: params.mcpServers
-        )
-        try store.insertSession(record)
-        let session = HostSession(
-            record: record, agentName: link.spec.name, phase: .idle, needsLoad: true, mcpServers: params.mcpServers)
-        sessions[record.id] = session
-        append(.reset(loading: false), to: session)
-        publish(session)
-        try await load(session)
-        return session.summary
-    }
-
-    /// Makes sure the agent process has the session loaded, replaying it from the agent's store if
-    /// it doesn't (after the host or the agent restarted). Concurrent callers share one load.
-    func load(_ session: HostSession) async throws {
-        if let loading = session.loading {
-            return try await loading.value
-        }
-        guard session.needsLoad else { return }
-        let task = Task { try await performLoad(session) }
-        session.loading = task
-        defer { session.loading = nil }
-        try await task.value
-    }
-
-    private func performLoad(_ session: HostSession) async throws {
-        let wasRecovering = session.phase == .recovering
-        if !wasRecovering {
-            session.phase = .loading
-        }
-        publish(session)
-        do {
-            let link = try await readyAgent(session.record.agentID)
-            guard let peer = link.peer, let agentSessionID = session.record.agentSessionID else {
-                throw HostError.agentUnavailable(link.spec.name)
-            }
-            guard link.canLoadSessions else { throw HostError.cannotLoad(link.spec.name) }
-            append(.reset(loading: true), to: session)
-            route(session, on: link)
-            let response = try await peer.request(
-                "session/load",
-                RawLoadSessionRequest(
-                    sessionId: agentSessionID, cwd: session.record.cwd, mcpServers: session.mcpServers),
-                as: RawConfigOptionsResponse.self
-            )
-            if let options = response.configOptions {
-                append(.update(SessionMirror.configOptionsUpdate(options)), to: session)
-            }
-            append(.loaded, to: session)
-            session.needsLoad = false
-            session.supportsSteering = link.supportsSteering
-            session.problem = nil
-            if !wasRecovering {
-                session.phase = session.turn == nil ? .idle : .prompting
-            }
-            publish(session)
-        } catch {
-            if !wasRecovering {
-                session.phase = .disconnected
-            }
-            session.problem = error.localizedDescription
-            publish(session)
-            throw error
-        }
-    }
-
-    /// Points the agent's traffic for the session at it, delivering anything that arrived first.
-    func route(_ session: HostSession, on link: AgentLink) {
-        guard let agentSessionID = session.record.agentSessionID else { return }
-        link.routes[agentSessionID] = session.id
-        for update in link.buffered.removeValue(forKey: agentSessionID) ?? [] {
-            apply(update, to: session, on: link)
-        }
-    }
-
-    func closeSession(_ id: HostSessionID) async throws {
-        let session = try session(id)
-        await cancel(session)
-        try store.deleteSession(id)
-        sessions[id] = nil
-        if let agentSessionID = session.record.agentSessionID {
-            agents[session.record.agentID]?.routes[agentSessionID] = nil
-        }
-        for client in clients.values {
-            client.attached.remove(id)
-            client.notify(HostProtocol.Method.sessionClosed, SessionParams(sessionID: id))
-        }
     }
 
     // MARK: - Events out
@@ -363,17 +260,27 @@ public final class HostCore {
         }
     }
 
+    /// Tells every client an agent's status changed.
+    func publishAgent(_ link: AgentLink) {
+        let notification = AgentChangedNotification(agent: link.hostAgent)
+        for client in clients.values {
+            client.notify(HostProtocol.Method.agentChanged, notification)
+        }
+    }
+
     /// Records something the user may want to know about later, and tells clients.
     func journal(
-        _ kind: ActivityEntry.Kind, session: HostSession?, detail: String? = nil, recovery: RecoveryNote? = nil
+        _ kind: ActivityEntry.Kind, session: HostSession?, detail: String? = nil, recovery: RecoveryNote? = nil,
+        previousRun: ActivityEntry.RunEnding? = nil
     ) {
-        let subject = session.map { $0.record.title ?? $0.agentName }
-        guard
-            let entry = try? store.appendActivity(
-                kind, session: session?.id, subject: subject, detail: detail, recovery: recovery)
-        else { return }
+        let entry = ActivityEntry(
+            id: 0, at: .now, sessionID: session?.id, agentID: session?.record.agentID,
+            agentSessionID: session?.record.agentSessionID, kind: kind,
+            subject: session.map { $0.record.title ?? $0.agentName }, detail: detail, recovery: recovery,
+            previousRun: previousRun)
+        guard let stored = try? store.appendActivity(entry) else { return }
         for client in clients.values {
-            client.notify(HostProtocol.Method.activity, entry)
+            client.notify(HostProtocol.Method.activity, stored)
         }
     }
 }

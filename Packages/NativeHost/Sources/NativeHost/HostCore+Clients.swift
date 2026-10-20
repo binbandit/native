@@ -47,7 +47,6 @@ final class ClientLink {
 
 // The client side of the protocol: every request a client can make, answered on the host actor.
 extension HostCore {
-    /// Takes a new connection and serves it until it closes.
     /// Takes a new connection and serves it until it closes. Local clients (this user's own, checked
     /// by `PeerVerifier`) and SSH bridges are the owner; paired devices get what their pairing grants.
     public func accept(_ stream: any ByteStream, grants: ClientGrants = .owner) {
@@ -89,6 +88,8 @@ extension HostCore {
             try? client.peer.respond(to: requestID, error: error)
         } catch let error as HostError {
             try? client.peer.respond(to: requestID, error: error.rpcError)
+        } catch let error as AgentLaunch.Failure {
+            try? client.peer.respond(to: requestID, error: error.rpcError)
         } catch let error as DecodingError {
             try? client.peer.respond(to: requestID, error: .invalidParams(error))
         } catch {
@@ -110,7 +111,23 @@ extension HostCore {
         case Method.syncAgents:
             // What a host launches is its owner's call, never a paired device's.
             guard client.grants.isLocal else { throw HostError.notAuthorized("change the agents this host runs") }
-            try syncAgents(try message.params(as: SyncAgentsParams.self).agents)
+            let params = try message.params(as: SyncAgentsParams.self)
+            try syncAgents(params.agents, refreshEnvironment: params.refreshEnvironment)
+            try reply(EmptyMessage())
+        case Method.listAgents:
+            try reply(hostAgents)
+        case Method.startAgent:
+            try reply(try await startAgent(try message.params(as: AgentParams.self).agentID))
+        case Method.stopAgent:
+            try reply(try stopAgent(try message.params(as: AgentParams.self).agentID))
+        case Method.restartAgent:
+            try reply(try await restartAgent(try message.params(as: AgentParams.self).agentID))
+        case Method.authenticateAgent:
+            try reply(try await authenticateAgent(try message.params(as: AuthenticateAgentParams.self)))
+        case Method.listAgentSessions:
+            try reply(try await listAgentSessions(try message.params(as: ListAgentSessionsParams.self)))
+        case Method.deleteAgentSession:
+            try await deleteAgentSession(try message.params(as: DeleteAgentSessionParams.self))
             try reply(EmptyMessage())
         case Method.listSessions:
             try reply(
@@ -118,9 +135,11 @@ extension HostCore {
                     ($0.lastActivity ?? .distantPast) > ($1.lastActivity ?? .distantPast)
                 })
         case Method.newSession:
-            try reply(try await newSession(try message.params(as: NewSessionParams.self)))
+            let params = try message.params(as: NewSessionParams.self)
+            try reply(try await newSession(params, follower: params.attach ? client : nil))
         case Method.openSession:
-            try reply(try await openSession(try message.params(as: OpenSessionParams.self)))
+            let params = try message.params(as: OpenSessionParams.self)
+            try reply(try await openSession(params, follower: params.attach ? client : nil))
         case Method.attach:
             try attach(try message.params(as: AttachParams.self), client: client, reply: reply)
         case Method.detach:
@@ -136,6 +155,11 @@ extension HostCore {
         case Method.respondPermission:
             try respondPermission(try message.params(as: RespondPermissionParams.self))
             try reply(EmptyMessage())
+        case Method.respondQuestion:
+            try respondQuestion(try message.params(as: RespondQuestionParams.self))
+            try reply(EmptyMessage())
+        case Method.runHidden:
+            try reply(RunHiddenResult(output: try await runHidden(try message.params(as: RunHiddenParams.self))))
         case Method.setConfigOption:
             try await setConfigOption(try message.params(as: SetConfigOptionParams.self))
             try reply(EmptyMessage())
@@ -145,11 +169,18 @@ extension HostCore {
         case Method.removeQueued:
             try removeQueued(try message.params(as: QueueItemParams.self))
             try reply(EmptyMessage())
+        case Method.restoreQueued:
+            try restoreQueued(try message.params(as: RestoreQueuedParams.self))
+            try reply(EmptyMessage())
+        case Method.moveQueued:
+            try moveQueued(try message.params(as: MoveQueuedParams.self))
+            try reply(EmptyMessage())
         case Method.sendQueuedNow:
             try await sendQueuedNow(try message.params(as: QueueItemParams.self))
             try reply(EmptyMessage())
         case Method.closeSession:
-            try await closeSession(try message.params(as: SessionParams.self).sessionID)
+            let params = try message.params(as: CloseSessionParams.self)
+            try await closeSession(params.sessionID, closeInAgent: params.closeInAgent)
             try reply(EmptyMessage())
         case Method.listActivity:
             let params = try message.params(as: ListActivityParams.self)
@@ -197,8 +228,8 @@ extension HostCore {
         session.subscribers.insert(client.id)
         client.attached.insert(session.id)
         try reply(AttachResult(summary: session.summary))
-        if session.needsLoad, session.turn == nil, session.record.origin != .announced {
-            Task { try? await load(session) }
+        if session.turn == nil {
+            loadInBackground(session)
         }
     }
 }

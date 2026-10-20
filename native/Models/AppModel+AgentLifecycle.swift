@@ -119,7 +119,7 @@ extension AppModel {
                         idleSince[agent] = nil
                     } else if let since = idleSince[agent] {
                         if now - since >= timeout {
-                            park(runtime)
+                            await park(runtime)
                             idleSince[agent] = nil
                         }
                     } else {
@@ -158,6 +158,7 @@ extension AppModel {
 
     private func close(_ session: SessionModel, on runtime: AgentRuntime) {
         Self.logger.info("Closing a \(runtime.agent.displayName, privacy: .public) session, unused for a while")
+        guard session.host == nil else { return closeOnHost(session, on: runtime) }
         sessions.remove(session)
         guard runtime.capabilities?.closeSessions == true, let connection = runtime.connection else { return }
         let id = session.key.id
@@ -169,9 +170,14 @@ extension AppModel {
         isBusy(session) || session.children.values.contains(where: isInUse)
     }
 
-    private func park(_ runtime: AgentRuntime) {
+    private func park(_ runtime: AgentRuntime) async {
         Self.logger.info("Stopping \(runtime.agent.displayName, privacy: .public), unused for a while")
-        runtime.park()
+        if runtime.host != nil {
+            // The host keeps an agent that's working, whatever this app knows about it.
+            guard await runtime.parkOnHost() else { return }
+        } else {
+            runtime.park()
+        }
         sessions.removeAll(of: runtime.agent.id)
     }
 
@@ -190,6 +196,6 @@ extension AppModel {
 
     private func isBusy(_ session: SessionModel) -> Bool {
         session.key == selection || session.phase == .loading || session.phase == .prompting
-            || !session.queue.isEmpty || session.isRetryScheduled || session.wait != nil || !session.draft.isEmpty
+            || session.hasQueuedPrompts || session.isRetryScheduled || session.wait != nil || !session.draft.isEmpty
     }
 }

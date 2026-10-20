@@ -103,17 +103,20 @@ public enum PromptDelivery: String, WireEnum {
     case unknown
 }
 
-/// A message waiting for the running turn to end.
+/// A message waiting for the running turn to end. Its id is the request id it was sent with.
 public struct QueuedPrompt: Codable, Hashable, Sendable, Identifiable {
     public var id: UUID
     public var text: String
     /// Whether it shows in the transcript when it goes out.
     public var isEchoed: Bool
+    /// What goes with it, as the transcript will show it; without images in summaries.
+    public var attachments: [EchoAttachment]
 
-    public init(id: UUID = UUID(), text: String, isEchoed: Bool = true) {
+    public init(id: UUID = UUID(), text: String, isEchoed: Bool = true, attachments: [EchoAttachment] = []) {
         self.id = id
         self.text = text
         self.isEchoed = isEchoed
+        self.attachments = attachments
     }
 }
 
@@ -140,6 +143,15 @@ public struct HostSessionSummary: Codable, Hashable, Sendable, Identifiable {
     public var lastStopReason: String?
     /// Why the session can't continue right now, for `disconnected`.
     public var problem: String?
+    /// Stop was asked for and the agent hasn't ended the turn yet. Asking again more than a second
+    /// later, or the agent staying silent for ten, ends it on the host's side.
+    public var isStopping: Bool
+    /// A hidden command (`_native/session/run_hidden`) is running: the session looks idle, but new
+    /// messages queue.
+    public var isRunningHiddenCommand: Bool
+    /// When a prompt that failed for a passing reason (the network, an overloaded provider) goes out
+    /// again. Cancelling stops the retry and leaves the message queued.
+    public var retryAt: Date?
 
     public init(
         id: HostSessionID, agentID: String, agentName: String, agentSessionID: SessionID?, cwd: String,
@@ -147,7 +159,8 @@ public struct HostSessionSummary: Codable, Hashable, Sendable, Identifiable {
         origin: SessionOrigin = .user, title: String? = nil, phase: HostSessionPhase, needsApproval: Bool = false,
         queue: [QueuedPrompt] = [],
         isQueuePaused: Bool = false, supportsSteering: Bool = false, lastActivity: Date? = nil,
-        lastStopReason: String? = nil, problem: String? = nil
+        lastStopReason: String? = nil, problem: String? = nil, isStopping: Bool = false,
+        isRunningHiddenCommand: Bool = false, retryAt: Date? = nil
     ) {
         self.id = id
         self.agentID = agentID
@@ -165,10 +178,13 @@ public struct HostSessionSummary: Codable, Hashable, Sendable, Identifiable {
         self.lastActivity = lastActivity
         self.lastStopReason = lastStopReason
         self.problem = problem
+        self.isStopping = isStopping
+        self.isRunningHiddenCommand = isRunningHiddenCommand
+        self.retryAt = retryAt
     }
 
-    /// Whether a turn is running or about to (recovery resumes one).
+    /// Whether a turn is running or about to (recovery resumes one, a retry sends one).
     public var isWorking: Bool {
-        phase == .prompting || phase == .recovering
+        phase == .prompting || phase == .recovering || retryAt != nil
     }
 }

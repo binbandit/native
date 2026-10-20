@@ -1,10 +1,15 @@
 import ACP
 import Foundation
+import NativeHostClient
+import NativeHostProtocol
 import Observation
 
 /// One agent's process and connection, and how starting it went. Each agent runs on its own, so
 /// one failing leaves the others alone. Agents start when something needs them (`AppModel`
 /// decides when) and can be parked again, so an unused one holds no process.
+///
+/// With `HostSessions` on, the agent runs in Native's host instead: its status comes from the host
+/// (`apply(_:)`), and starting, stopping and signing in are host requests (AgentRuntime+Host.swift).
 @Observable
 final class AgentRuntime {
     typealias Status = AgentRuntimeStatus
@@ -24,17 +29,31 @@ final class AgentRuntime {
     private(set) var isSigningIn = false
 
     private var process: AgentProcess?
+    /// The host the agent runs in; nil for an agent Native runs itself.
+    @ObservationIgnored let host: NativeHostClient?
+    /// The agent's process in the host, while it runs there.
+    private var hostProcessID: Int32?
     /// The launch in flight, so callers that ask for the agent while it starts all wait for it.
     @ObservationIgnored private var launching: Task<Void, Never>?
     /// Bumped whenever the process is replaced, so events from an old one are dropped.
     private var generation = 0
 
-    init(agent: AgentDefinition) {
+    init(agent: AgentDefinition, host: NativeHostClient? = nil) {
         self.agent = agent
+        self.host = host
     }
 
-    /// The connection, while the agent can take requests.
-    var connection: ACPConnection? {
+    /// Where requests outside a session's turns go (listing, deleting, closing sessions), while the
+    /// agent can take them.
+    var connection: (any AgentConnection)? {
+        if let host {
+            return isReady ? HostAgentConnection(client: host, agent: agent.id) : nil
+        }
+        return localConnection
+    }
+
+    /// The agent's own connection, for sessions Native runs in the app, while it can take requests.
+    var localConnection: ACPConnection? {
         status == .ready ? process?.connection : nil
     }
 
@@ -54,7 +73,7 @@ final class AgentRuntime {
     /// The agent's launched process (env, which execs the agent), for resource reporting; nil while
     /// it isn't running.
     var processIdentifier: Int32? {
-        process?.processIdentifier
+        host == nil ? process?.processIdentifier : hostProcessID
     }
 
     /// Launches the agent and initializes the connection. Its events, including `.disconnected`
@@ -66,7 +85,13 @@ final class AgentRuntime {
         guard process == nil else { return }
         // Set before the launch task runs, so callers can tell a launch is under way.
         status = .starting
-        let launch = Task { await self.launch(environment: environment, onEvent: onEvent) }
+        let launch = Task {
+            if host != nil {
+                await self.startOnHost()
+            } else {
+                await self.launch(environment: environment, onEvent: onEvent)
+            }
+        }
         launching = launch
         await launch.value
         launching = nil
@@ -121,7 +146,7 @@ final class AgentRuntime {
     /// Ends a running agent's process to give its memory back, leaving it to start again when
     /// something needs it. Its sessions go with the process; the caller drops their models.
     func park() {
-        guard status == .ready else { return }
+        guard status == .ready, host == nil else { return }
         stop()
         status = .idle
         needsSignIn = false
@@ -129,11 +154,46 @@ final class AgentRuntime {
 
     /// Signs in with one of `authMethods`. The agent may open a browser and wait for the user.
     func signIn(with method: AuthMethod) async throws {
-        guard let connection else { return }
+        if let host {
+            isSigningIn = true
+            defer { isSigningIn = false }
+            apply(try await host.authenticateAgent(agent.id.rawValue, methodID: method.id))
+            needsSignIn = false
+            return
+        }
+        guard let connection = localConnection else { return }
         isSigningIn = true
         defer { isSigningIn = false }
         _ = try await connection.send(AuthenticateRequest(methodId: method.id))
         needsSignIn = false
+    }
+
+    /// Takes in what the host says about the agent: how it's running, what it says about itself,
+    /// whether it wants a sign-in.
+    func apply(_ hostAgent: HostAgent) {
+        let initialize = hostAgent.initialize.flatMap { json in
+            (try? JSONEncoder().encode(json)).flatMap { try? JSONDecoder().decode(InitializeResponse.self, from: $0) }
+        }
+        let status: Status =
+            switch hostAgent.state {
+            case .stopped, .unknown: .idle
+            case .starting: .starting
+            case .ready: .ready
+            case .failed: .failed((hostAgent.problem ?? "\(agent.displayName) couldn't start.").withoutTerminalEscapes)
+            case .notInstalled: .notInstalled(command: hostAgent.problem ?? agent.manifest.command)
+            }
+        if let initialize {
+            if info != initialize.agentInfo { info = initialize.agentInfo }
+            if capabilities != initialize.agentCapabilities { capabilities = initialize.agentCapabilities }
+            if authMethods != initialize.authMethods { authMethods = initialize.authMethods }
+        }
+        if hostProcessID != hostAgent.processID { hostProcessID = hostAgent.processID }
+        // The plugins' launch policy the running agent got: what its launch spec adds to the manifest.
+        let policy = hostAgent.launchedSpec.map { spec in spec.env.filter { agent.manifest.env[$0.key] != $0.value } }
+        if let policy, launchPolicyEnvironment != policy { launchPolicyEnvironment = policy }
+        if needsSignIn != hostAgent.needsSignIn { needsSignIn = hostAgent.needsSignIn }
+        if isSigningIn != hostAgent.isSigningIn { isSigningIn = hostAgent.isSigningIn }
+        if self.status != status { self.status = status }
     }
 
     /// Records whether `error` is the agent asking the user to sign in.

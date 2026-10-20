@@ -16,6 +16,8 @@ extension HostCore {
         let cause =
             wasUpdate
             ? .hostUpdated : RecoveryPlanner.cause(previousBoot: previousBoot, currentBoot: configuration.bootTime)
+        let previousRun = try RecoveryPlanner.ending(
+            wasUpdate: wasUpdate, cleanShutdown: store.meta(MetaKey.cleanShutdown), cause: cause)
         try store.setMeta(MetaKey.restartReason, nil)
         try store.setMeta(MetaKey.bootTime, configuration.bootTime.map { String($0.timeIntervalSince1970) })
         try store.setMeta(MetaKey.cleanShutdown, "0")
@@ -25,10 +27,10 @@ extension HostCore {
             try store.removeApprovals(sessionID: sessionID)
         }
         let turns = try store.unfinishedTurns()
-        if !turns.isEmpty {
-            journal(
-                .hostStarted, session: nil,
-                detail: "Resuming \(turns.count) interrupted \(turns.count == 1 ? "task" : "tasks")")
+        if !turns.isEmpty || (previousRun != nil && previousRun != .stopped) {
+            let detail =
+                turns.isEmpty ? nil : "Resuming \(turns.count) interrupted \(turns.count == 1 ? "task" : "tasks")"
+            journal(.hostStarted, session: nil, detail: detail, previousRun: previousRun)
         }
         for turn in turns {
             guard let session = sessions[turn.sessionID] else {
@@ -53,8 +55,11 @@ extension HostCore {
     /// An agent process went away. Sessions that were mid-turn are recovered on a new process;
     /// the others reload quietly the next time they're used.
     func agentExited(_ agentID: String, generation: Int) {
-        guard let link = agents[agentID], link.noteExit(generation: generation) else { return }
-        let wasStopped = link.status == .stopped
+        guard let link = agents[agentID] else { return }
+        let wasStopped = link.isStopping
+        let cause = link.exitCause ?? .agentStopped
+        guard link.noteExit(generation: generation) else { return }
+        link.exitCause = nil
         let now = Date.now
         for session in sessions.values where session.record.agentID == agentID {
             if session.record.origin == .announced {
@@ -64,13 +69,14 @@ extension HostCore {
             }
             session.needsLoad = true
             withdrawPermissions(of: session)
+            withdrawQuestions(of: session)
             guard session.turn != nil, !wasStopped else {
                 publish(session)
                 continue
             }
             session.phase = .recovering
             publish(session)
-            Task { await recover(session, cause: .agentStopped, interruptedAt: now) }
+            Task { await recover(session, cause: cause, interruptedAt: now) }
         }
     }
 
@@ -120,10 +126,11 @@ extension HostCore {
         let prompt =
             switch decision {
             case .resume:
-                QueuedPrompt(text: RecoveryPlanner.interruptionPrompt(cause: cause), isEchoed: false)
+                OutgoingPrompt(
+                    text: RecoveryPlanner.interruptionPrompt(cause: cause), isEchoed: false, origin: .recovery)
             default:
                 // The reload replaced the transcript, which no longer shows the message; echo it again.
-                QueuedPrompt(id: turn.requestID, text: turn.text, isEchoed: true)
+                turn.prompt
             }
         // Steered messages the agent recorded arrived; the rest wait their turn in the queue.
         let replayed = session.mirror.userMessages
@@ -135,9 +142,8 @@ extension HostCore {
         }
         do {
             try startTurn(
-                in: session, prompt: prompt, origin: .user, kind: decision == .resume ? .recovery : turn.kind,
-                attempts: turn.attempts + 1
-            )
+                in: session, prompt: prompt, kind: decision == .resume ? .recovery : turn.kind,
+                attempts: turn.attempts + 1)
         } catch {
             logger.error("Couldn't restart an interrupted turn: \(error.localizedDescription)")
         }

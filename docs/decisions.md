@@ -292,7 +292,10 @@ Light mode can be drawn on Paper (white, the default) or Wool, a warm off-white 
 Wool is a token set, not a tint: every light neutral has its own Wool value, and text and status
 colors step darker just enough to keep Paper's contrast on Wool's background (accent text still
 clears 4.5:1 for every palette). Tokens resolve the tone from `\.dsLightTone`; dark mode is the same
-under both. Plugin tone sets were left out: a tone is some twenty coordinated values plus text and
+under both. A split-view sidebar on Wool is solid Wool at every transparency level (2026-10-20): the
+system's light sidebar glass is a cool gray, and it draws a translucent warm tint inside it at close
+to full strength in an active window anyway, so only a solid one lets the status bar match the
+column exactly. Plugin tone sets were left out: a tone is some twenty coordinated values plus text and
 status shifts that must each keep their contrast, and Native has no way yet to check a set as a
 whole beyond the per-value rules, so a broken one would degrade every screen.
 

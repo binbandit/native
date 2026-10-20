@@ -19,6 +19,7 @@ enum CommandsWiring {
         let shortcutsHelp: KeyboardShortcutsHelp
         let gitCleanup: GitCleanupCenter
         let projectActions: ProjectActionRunner
+        let durableHost: DurableHost
     }
 
     static func connect(_ registry: CommandRegistry, palette: CommandPalette, features: Features) {
@@ -53,6 +54,7 @@ enum CommandsWiring {
         ModesWiring.connect(registry, model: model, settings: settings)
         #if os(macOS)
         registry.register([.checkForUpdates(features.updates, settings: settings)])
+        registry.register([.quitAndStopAgents(features.durableHost)])
         #endif
         registry.register([.whatsNew(features.whatsNew), .keyboardShortcuts(features.shortcutsHelp)])
         registry.reportUnregisteredDefaults()

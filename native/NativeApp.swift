@@ -28,8 +28,10 @@ struct NativeApp: App {
     @State private var statusBar: StatusBarRegistry
     /// The keyboard shortcuts sheet: Help ▸ Keyboard Shortcuts and the status bar's "?".
     @State private var shortcutsHelp: KeyboardShortcutsHelp
-    /// One connection to this build's background host, shared by the main window and Durable Sessions.
-    @State private var durableHost = DurableHost()
+    /// This build's background host: where agents run, and the connection to it (docs/durability.md).
+    @State private var durableHost: DurableHost
+    /// Holds a quit while the host stops, for Quit Native and Stop Agents.
+    @NSApplicationDelegateAdaptor private var quitDelegate: HostQuitDelegate
     @State private var updates: UpdateController
     @State private var whatsNew: WhatsNewCenter
     /// ⌘K, over the main window (docs/commands.md).
@@ -50,6 +52,8 @@ struct NativeApp: App {
         // Git and GitHub run with the login-shell environment the agents get.
         let model = AppModel()
         _model = State(initialValue: model)
+        let durableHost = DurableHost()
+        _durableHost = State(initialValue: durableHost)
         let git = GitStore { await model.shellEnvironment() }
         let gitHub = GitHubModel { await model.shellEnvironment(refresh: $0) }
         _git = State(initialValue: git)
@@ -77,6 +81,7 @@ struct NativeApp: App {
         let statusBar = AmbientWiring.statusBar(
             model: model, keepAwake: keepAwake, settings: settings, shortcutsHelp: shortcutsHelp)
         _statusBar = State(initialValue: statusBar)
+        statusBar.register(HostConnectionStatusItem(host: durableHost))
         statusBar.register(
             TaskScriptsStatusItem(center: taskScripts, folder: { model.selection.flatMap(model.session)?.cwd }) {
                 settings.open(.scripts)
@@ -110,7 +115,7 @@ struct NativeApp: App {
                 model: model, settings: settings, terminals: terminals, keepAwake: keepAwake, statusBar: statusBar,
                 celebrations: celebrations, updates: updates, whatsNew: whatsNew, appearance: appearance,
                 pullRequestTasks: pullRequestTasks, shortcutsHelp: shortcutsHelp, gitCleanup: gitCleanup,
-                projectActions: projectActions))
+                projectActions: projectActions, durableHost: durableHost))
     }
 
     var body: some Scene {
@@ -179,6 +184,13 @@ struct NativeApp: App {
                     updates.restartContext = { [model] in model.updateRestartContext }
                     updates.start()
                     whatsNew.start()
+                    // Where agents run is decided before any session starts: the background host,
+                    // a host that stops with the app, or the app itself.
+                    quitDelegate.host = durableHost
+                    durableHost.connectUpdates(updates)
+                    if let client = await durableHost.launch(agents: model.plugins.agents) {
+                        model.connectHost(client: client)
+                    }
                     await model.start()
                     LaunchMetrics.mark(.agentsReady)
                 }
@@ -201,6 +213,7 @@ struct NativeApp: App {
         .defaultSize(width: 1120, height: 780)
         .commands {
             UpdateCommands(commands: CommandRegistry.shared)
+            HostQuitCommands(host: durableHost, commands: CommandRegistry.shared)
             WhatsNewCommands(commands: CommandRegistry.shared)
             HelpCommands(commands: CommandRegistry.shared, model: model)
             FileCommands(commands: CommandRegistry.shared)

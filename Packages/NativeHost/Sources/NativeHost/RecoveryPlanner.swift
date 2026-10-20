@@ -51,12 +51,23 @@ enum RecoveryPlanner {
         return .hostStopped
     }
 
+    /// How the previous run ended, from what it left in the store: nil on a first run.
+    static func ending(wasUpdate: Bool, cleanShutdown: String?, cause: RecoveryNote.Cause) -> ActivityEntry.RunEnding? {
+        if wasUpdate { return .updated }
+        switch cleanShutdown {
+        case nil: return nil
+        case "1": return .stopped
+        default: return cause == .systemRestarted ? .systemRestarted : .crashed
+        }
+    }
+
     /// The message that tells an agent its turn was cut off. It reads as Native's, not the user's,
     /// and asks the agent to verify state rather than assume its last step completed.
     static func interruptionPrompt(cause: RecoveryNote.Cause) -> String {
         let reason =
             switch cause {
             case .agentStopped, .unknown: "your process stopped unexpectedly"
+            case .agentRestarted: "the user restarted you"
             case .hostStopped: "Native's background process stopped unexpectedly"
             case .hostUpdated: "Native's background process restarted to update"
             case .systemRestarted: "the computer restarted"

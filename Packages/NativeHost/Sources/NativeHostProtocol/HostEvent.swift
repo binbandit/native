@@ -27,45 +27,28 @@ public struct HostEvent: Codable, Hashable, Sendable {
         case loaded
         /// An agent's `session/update` payload (the `update` object), as it sent it.
         case update(JSONValue)
-        /// A message Native sent the agent. Agents don't echo live prompts, so this is the record.
+        /// A message Native delivered to the agent: a turn's prompt (shown or not) or a steer.
         case prompt(PromptEcho)
         /// The agent asks the user to approve a tool call. `request` is the ACP
         /// `session/request_permission` params, verbatim.
         case permissionRequested(toolCallID: String, request: JSONValue)
         /// Answered (by any client) or withdrawn (the turn was cancelled, or the agent went away).
         case permissionResolved(toolCallID: String, optionID: String?)
+        /// The agent asks the user to fill in a form (`elicitation/create`). `request` is its params,
+        /// verbatim; answer with `_native/session/respond_question`.
+        case questionAsked(questionID: String, request: JSONValue)
+        /// Answered (by any client) or withdrawn (the turn was cancelled, or the agent went away).
+        case questionResolved(questionID: String)
         /// An ACP stop reason, such as `end_turn` or `cancelled`.
         case turnEnded(stopReason: String)
-        /// The prompt request failed instead of ending with a stop reason.
-        case turnFailed(message: String)
+        /// The prompt request failed instead of ending with a stop reason. `error` is the agent's
+        /// JSON-RPC error, verbatim, when it sent one (`auth_required`, usage-limit data).
+        case turnFailed(message: String, error: RPCError?)
         case notice(text: String, isError: Bool)
         /// The session's turn was cut off and Native did something about it.
         case recovered(RecoveryNote)
         /// An event from a newer host that this client doesn't understand; safe to ignore.
         case unsupported(type: String)
-    }
-}
-
-/// A message Native sent on the user's (or a tool's) behalf.
-public struct PromptEcho: Codable, Hashable, Sendable {
-    public enum Origin: String, WireEnum {
-        case user
-        /// Sent from the queue when the previous turn ended.
-        case queued
-        /// Sent by Native's tools (orchestration, workflows).
-        case task
-        case unknown
-    }
-
-    public var text: String
-    /// Added to a turn that was already running.
-    public var steered: Bool
-    public var origin: Origin
-
-    public init(text: String, steered: Bool = false, origin: Origin = .user) {
-        self.text = text
-        self.steered = steered
-        self.origin = origin
     }
 }
 
@@ -75,6 +58,8 @@ public struct RecoveryNote: Codable, Hashable, Sendable {
     public enum Cause: String, WireEnum {
         /// The agent process exited while the host kept running.
         case agentStopped
+        /// The user restarted the agent (`_native/agents/restart`).
+        case agentRestarted
         /// The host process itself stopped (crashed or was killed) and launchd restarted it.
         case hostStopped
         /// The host restarted onto a newer Native ("Restart Host Now" after an update).
@@ -120,12 +105,14 @@ public struct RecoveryNote: Codable, Hashable, Sendable {
         let what =
             switch cause {
             case .agentStopped, .unknown: "\(agentName) stopped unexpectedly at \(time)."
+            case .agentRestarted: "You restarted \(agentName) at \(time)."
             case .hostStopped: "Native's background host stopped unexpectedly at \(time)."
             case .hostUpdated: "Native's background host restarted at \(time) to update."
             case .systemRestarted: "Your Mac restarted at \(time) while \(agentName) was working."
             }
         let did =
             switch action {
+            case .resumed where cause == .agentRestarted: "Native asked it to pick up where it left off."
             case .resumed: "Native restarted \(agentName) and asked it to pick up where it left off."
             case .resent: "Your message hadn't reached \(agentName) yet, so Native sent it again."
             case .paused: "It kept stopping, so Native paused this task. Send a message to continue."
@@ -140,8 +127,8 @@ public struct RecoveryNote: Codable, Hashable, Sendable {
 
 extension HostEvent {
     private enum CodingKeys: String, CodingKey {
-        case seq, at, type, loading, update, prompt, toolCallID, request, optionID, stopReason, message, text, isError,
-            recovery
+        case seq, at, type, loading, update, prompt, toolCallID, request, optionID, questionID, stopReason, message,
+            error, text, isError, recovery
     }
 
     public init(from decoder: any Decoder) throws {
@@ -163,8 +150,17 @@ extension HostEvent {
                 .permissionResolved(
                     toolCallID: try container.decode(String.self, forKey: .toolCallID),
                     optionID: try container.decodeIfPresent(String.self, forKey: .optionID))
+            case "question_asked":
+                .questionAsked(
+                    questionID: try container.decode(String.self, forKey: .questionID),
+                    request: try container.decode(JSONValue.self, forKey: .request))
+            case "question_resolved":
+                .questionResolved(questionID: try container.decode(String.self, forKey: .questionID))
             case "turn_ended": .turnEnded(stopReason: try container.decode(String.self, forKey: .stopReason))
-            case "turn_failed": .turnFailed(message: try container.decode(String.self, forKey: .message))
+            case "turn_failed":
+                .turnFailed(
+                    message: try container.decode(String.self, forKey: .message),
+                    error: try container.decodeIfPresent(RPCError.self, forKey: .error))
             case "notice":
                 .notice(
                     text: try container.decode(String.self, forKey: .text),
@@ -198,12 +194,20 @@ extension HostEvent {
             try container.encode("permission_resolved", forKey: .type)
             try container.encode(toolCallID, forKey: .toolCallID)
             try container.encodeIfPresent(optionID, forKey: .optionID)
+        case .questionAsked(let questionID, let request):
+            try container.encode("question_asked", forKey: .type)
+            try container.encode(questionID, forKey: .questionID)
+            try container.encode(request, forKey: .request)
+        case .questionResolved(let questionID):
+            try container.encode("question_resolved", forKey: .type)
+            try container.encode(questionID, forKey: .questionID)
         case .turnEnded(let stopReason):
             try container.encode("turn_ended", forKey: .type)
             try container.encode(stopReason, forKey: .stopReason)
-        case .turnFailed(let message):
+        case .turnFailed(let message, let error):
             try container.encode("turn_failed", forKey: .type)
             try container.encode(message, forKey: .message)
+            try container.encodeIfPresent(error, forKey: .error)
         case .notice(let text, let isError):
             try container.encode("notice", forKey: .type)
             try container.encode(text, forKey: .text)

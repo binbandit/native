@@ -241,6 +241,18 @@ keyboard.
 | ⌃⌘A | Keep Mac awake: cycle Off → While agents work → On (View ▸ Keep Mac Awake) | View | `keepAwake.nextMode` |
 | | Show or hide the status bar along the window's bottom edge (on by default) | View | `statusBar.toggle` |
 
+## Quitting
+
+With "Keep agents running when Native quits" on (Settings ▸ Background, the default), ⌘Q quits only
+the app: agents keep working in Native's background host, and the next launch shows what they did
+while you were away (`docs/durability.md`). The command below stops them too. It's listed while
+agents would outlive the app; otherwise ⌘Q already stops them. The extra modifier keeps it from
+being hit by accident, since it ends work in progress.
+
+| Keys | Action | Menu | Command |
+| --- | --- | --- | --- |
+| ⌃⌥⌘Q | Quit Native and stop its agents: running turns end as stopped by you, and the background host exits until Native opens again | Native | `app.quitAndStopAgents` |
+
 ## Picking tasks in the sidebar
 
 Several tasks can be picked at once and acted on together. While more than one is picked (or Select

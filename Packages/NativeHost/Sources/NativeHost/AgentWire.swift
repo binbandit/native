@@ -10,6 +10,10 @@ struct RawSessionNotification: Decodable, Sendable {
     var update: JSONValue
 }
 
+struct RawSessionRequest: Decodable, Sendable {
+    var sessionId: SessionID
+}
+
 struct RawPermissionRequest: Decodable, Sendable {
     struct ToolCall: Decodable, Sendable {
         var toolCallId: String
@@ -23,6 +27,7 @@ struct RawPermissionRequest: Decodable, Sendable {
 struct RawNewSessionRequest: Encodable, Sendable {
     var cwd: String
     var mcpServers: [JSONValue]
+    var _meta: JSONValue?
 }
 
 struct RawNewSessionResponse: Decodable, Sendable {
@@ -34,6 +39,20 @@ struct RawLoadSessionRequest: Encodable, Sendable {
     var sessionId: SessionID
     var cwd: String
     var mcpServers: [JSONValue]
+    var _meta: JSONValue?
+}
+
+struct RawSessionIDRequest: Encodable, Sendable {
+    var sessionId: SessionID
+}
+
+struct RawListSessionsRequest: Encodable, Sendable {
+    var cwd: String?
+    var cursor: String?
+}
+
+struct RawAuthenticateRequest: Encodable, Sendable {
+    var methodId: String
 }
 
 struct RawConfigOptionsResponse: Decodable, Sendable {
@@ -54,26 +73,17 @@ struct RawSteerResponse: Decodable, Sendable {
     var outcome: String
 }
 
-/// What the host tells agents about itself in `initialize`.
+/// What the host tells agents about itself in `initialize`: what the app's own `InitializeRequest`
+/// says. Subagents show as their own sessions (Cursor reads that from `_meta`, Claude from the top
+/// level), and form elicitations are answered (Claude Code only offers AskUserQuestion to clients
+/// that do). No other optional client capabilities yet (fs, terminals), so agents do that work.
 struct HostInitializeRequest: Encodable, Sendable {
     var protocolVersion = ACP.protocolVersion
-    /// Subagents show as their own sessions; Cursor reads that from `_meta` and Claude from the top
-    /// level. No other optional client capabilities yet (fs, terminals), so agents do that work.
     var clientCapabilities: JSONValue = .object([
-        "subagents": .object([:]), "_meta": .object(["subagents": .object([:])]),
+        "subagents": .object([:]), "elicitation": .object(["form": .object([:])]),
+        "_meta": .object(["subagents": .object([:])]),
     ])
     var clientInfo: Implementation
-}
-
-struct HostInitializeResponse: Decodable, Sendable {
-    var protocolVersion: Int
-    var agentCapabilities: AgentCapabilities?
-    var agentInfo: Implementation?
-    var _meta: JSONValue?
-
-    var supportsSteering: Bool {
-        _meta?["steering"]?["supported"] == .bool(true)
-    }
 }
 
 extension SessionMirror {

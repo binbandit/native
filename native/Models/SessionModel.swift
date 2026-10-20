@@ -1,10 +1,16 @@
 import ACP
 import Foundation
+import NativeHostClient
+import NativeHostProtocol
 import Observation
 
 /// One agent session: its transcript and settings, plus the user's actions on it. Turns (sending,
 /// queueing, steering) live in `SessionModel+Turns.swift`, hidden commands in
 /// `SessionModel+HiddenCommands.swift`.
+///
+/// A session runs either in Native's host (`host` is set: its transcript is a `SessionMirror` fed by
+/// the host's events, and every action is a host request; see `SessionModel+Host.swift`), or in the
+/// app, talking to the agent's own `connection`.
 ///
 /// Besides the user's own sessions there are task sessions Native's tools start (a session
 /// delegating work, a workflow step), prompted by code rather than the user and never listed in the
@@ -87,11 +93,16 @@ final class SessionModel {
             yield &transcript
         }
     }
-    /// `state`'s value. History replayed while the session loads goes straight in here, and the
-    /// transcript hears about it in batches (`noteReplayed()`): a long session replays thousands of
-    /// updates one at a time, and the transcript lays itself out again on every change it sees.
-    @ObservationIgnored private var transcript = SessionState()
+    /// Holds `state`'s value. History replayed while the session loads goes straight in here, and
+    /// the transcript hears about it in batches (`noteReplayed()`): a long session replays thousands
+    /// of updates one at a time, and the transcript lays itself out again on every change it sees.
+    /// A host session folds the host's events into it; an in-app one, the agent's updates.
+    @ObservationIgnored var mirror = SessionMirror()
     @ObservationIgnored private var replayNotice: Task<Void, Never>?
+    private var transcript: SessionState {
+        get { mirror.state }
+        _modify { yield &mirror.state }
+    }
     /// Parts of `state`, mirrored so what shows only these (the composer, sidebar rows, the status
     /// bar, menus) doesn't update with every streamed chunk, which changes `state`.
     private(set) var title: String?
@@ -145,11 +156,28 @@ final class SessionModel {
     /// The last hidden command's reply, until the next turn starts, so copies of it that arrive after
     /// its turn ended stay out of the transcript too.
     @ObservationIgnored var hiddenCommandEcho: HiddenCommandCapture?
-    let connection: ACPConnection
+    /// The agent's connection, for a session Native runs in the app; nil for one in the host.
+    let connection: ACPConnection?
+    /// Where the session runs in Native's host; nil for one in the app.
+    let host: HostSessionLink?
     let services: SessionServices
+    /// What the host last said about the session (its queue, whether it's stopping, retrying or
+    /// running a hidden command), for a host session (SessionModel+Host.swift).
+    var hostSummary: HostSessionSummary?
+    /// Messages held here until the session can take them: while it loads and its settings are
+    /// set back, and while a workspace hold lasts (SessionModel+Host.swift).
+    var heldPrompts: [HeldPrompt] = []
+    /// Set while host events that happened before this model followed the session are applied, so
+    /// they rebuild the transcript without telling plugins about them again.
+    @ObservationIgnored var isReplaying = false
+    /// Set while a host session that just loaded gets its chosen settings back; it shows as still
+    /// loading meanwhile, as an in-app session does (SessionModel+ConfigRestore.swift).
+    var isSettingBackConfig = false
+    /// Questions answered here whose answer the host hasn't confirmed yet, kept out of `questions`.
+    @ObservationIgnored var answeredQuestions: Set<String> = []
 
     @ObservationIgnored private weak var parent: SessionModel?
-    private var subagentControls = SubagentControls()
+    var subagentControls = SubagentControls()
 
     /// A session of `agent`, the user's or (`origin: .task`) one Native's tools started. A task's
     /// `parent` adopts it as a subagent.
@@ -164,6 +192,7 @@ final class SessionModel {
         self.clientID = clientID
         self.cwd = cwd
         self.connection = connection
+        host = nil
         self.services = services
         self.supportsSteering = supportsSteering
         self.promptCapabilities = promptCapabilities
@@ -177,12 +206,41 @@ final class SessionModel {
         parent?.children[id] = self
     }
 
-    private init(announced id: SessionID, by parent: SessionModel) {
+    /// A session running in Native's host, as its summary describes it. Its transcript arrives as
+    /// the host's events (`receive(_:)`), and `parent` adopts it as a subagent.
+    init(
+        agent: AgentDefinition, id: SessionID, summary: HostSessionSummary, client: NativeHostClient,
+        services: SessionServices, promptCapabilities: PromptCapabilities, origin: Origin, parent: SessionModel?
+    ) {
+        self.agent = agent
+        self.id = id
+        clientID = summary.id.rawValue
+        cwd = URL(filePath: summary.cwd, directoryHint: .isDirectory)
+        connection = nil
+        host = HostSessionLink(client: client, id: summary.id)
+        self.services = services
+        supportsSteering = summary.supportsSteering
+        self.promptCapabilities = promptCapabilities
+        phase = Self.phase(of: summary, isSettingBackConfig: false)
+        self.origin = origin
+        parentID = parent?.id
+        self.parent = parent
+        hostSummary = summary
+        lastActivity = summary.lastActivity
+        lastStopReason = summary.lastStopReason.map(SessionMirror.stopReason)
+        transcript.title = summary.title
+        mirrorState()
+        parent?.children[id] = self
+    }
+
+    private init(announced id: SessionID, by parent: SessionModel, host: HostSessionSummary? = nil) {
         agent = parent.agent
         self.id = id
-        clientID = UUID()
+        clientID = host?.id.rawValue ?? UUID()
         cwd = parent.cwd
         connection = parent.connection
+        self.host = host.flatMap { summary in parent.host.map { HostSessionLink(client: $0.client, id: summary.id) } }
+        hostSummary = host
         services = parent.services
         supportsSteering = false
         promptCapabilities = PromptCapabilities()
@@ -306,7 +364,7 @@ final class SessionModel {
 
     /// Tells `state`'s observers about replayed history at most every 100 ms, and once more when
     /// loading ends.
-    private func noteReplayed() {
+    func noteReplayed() {
         guard replayNotice == nil else { return }
         replayNotice = Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(100))
@@ -315,7 +373,7 @@ final class SessionModel {
         }
     }
 
-    private func announceReplay() {
+    func announceReplay() {
         guard replayNotice != nil else { return }
         replayNotice?.cancel()
         replayNotice = nil
@@ -323,7 +381,7 @@ final class SessionModel {
     }
 
     /// Writes only what changed, since writing notifies observers even with an equal value.
-    private func mirrorState() {
+    func mirrorState() {
         if title != transcript.title {
             title = transcript.title
         }
@@ -347,11 +405,15 @@ final class SessionModel {
         if completedWriteCount != transcript.completedWriteCount {
             completedWriteCount = transcript.completedWriteCount
         }
+        if host != nil {
+            mirrorHostQuestions()
+        }
     }
 
-    /// Creates the model for a subagent the agent just announced.
-    func addSubagent(_ id: SessionID) -> SessionModel {
-        let child = SessionModel(announced: id, by: self)
+    /// Creates the model for a subagent the agent just announced; in the host, the session the host
+    /// made for it.
+    func addSubagent(_ id: SessionID, host: HostSessionSummary? = nil) -> SessionModel {
+        let child = SessionModel(announced: id, by: self, host: host)
         children[id] = child
         return child
     }
@@ -412,7 +474,10 @@ final class SessionModel {
         guard !NativeApprovals.isNative(permission.requestID) else {
             return NativeApprovals.answer(permission.requestID, with: option)
         }
-        try? await connection.respond(
+        if let host {
+            return await host.respondPermission(toolCallID: toolCallID, optionID: option.optionId)
+        }
+        try? await connection?.respond(
             to: permission.requestID, with: RequestPermissionResponse.selected(optionId: option.optionId))
     }
 
@@ -425,9 +490,14 @@ final class SessionModel {
         // Show the choice right away; the agent's answer is authoritative and replaces it.
         replaceConfigOption(option.id, with: .select(currentValue: value, options: choices))
         do {
-            let response = try await connection.send(
-                SetConfigOptionRequest(sessionId: id, configId: option.id, value: value))
-            state.configOptions = response.configOptions
+            if let host {
+                // The agent's answer arrives as an update before the host answers.
+                try await host.setConfigOption(option.id, to: value)
+            } else if let connection {
+                let response = try await connection.send(
+                    SetConfigOptionRequest(sessionId: id, configId: option.id, value: value))
+                state.configOptions = response.configOptions
+            }
         } catch {
             replaceConfigOption(option.id, with: option.kind)
             state.appendNotice("Couldn't change \(option.name): \(error.localizedDescription)", isError: true)

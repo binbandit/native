@@ -1,8 +1,11 @@
 import ACP
 import Foundation
+import NativeHostClient
+import NativeHostProtocol
 
 /// Creates session models on agents: asks the agent for the session with plugins' MCP servers,
-/// builds the model and registers it so the agent's events reach it.
+/// builds the model and registers it so the agent's events reach it. For an agent in Native's host,
+/// the host starts or opens the session (SessionLauncher+Host.swift).
 final class SessionLauncher {
     enum LaunchError: LocalizedError {
         case parentClosed
@@ -22,9 +25,9 @@ final class SessionLauncher {
         }
     }
 
-    private let plugins: PluginRegistry
-    private let services: SessionServices
-    private let store: SessionStore
+    let plugins: PluginRegistry
+    let services: SessionServices
+    let store: SessionStore
 
     init(plugins: PluginRegistry, services: SessionServices, store: SessionStore) {
         self.plugins = plugins
@@ -40,7 +43,13 @@ final class SessionLauncher {
         on runtime: AgentRuntime, cwd: URL, project: Project.ID?, origin: SessionModel.Origin = .user,
         parent: SessionModel? = nil, continuing earlier: SessionModel? = nil
     ) async throws -> SessionModel {
-        guard let connection = runtime.connection else {
+        if let host = runtime.host {
+            let session = try await startOnHost(
+                host, on: runtime, cwd: cwd, origin: origin, parent: parent)
+            return await prepare(
+                session, on: runtime, project: project, origin: origin, parent: parent, earlier: earlier)
+        }
+        guard let connection = runtime.localConnection else {
             throw LaunchError.agentUnavailable(runtime.agent.displayName)
         }
         // Plugins key per-session resources by Native's own id, since the agent's doesn't exist yet.
@@ -60,6 +69,15 @@ final class SessionLauncher {
             configOptions: response.configOptions ?? [], origin: origin, parent: parent
         )
         store.register(session)
+        return await prepare(session, on: runtime, project: project, origin: origin, parent: parent, earlier: earlier)
+    }
+
+    /// Gets a session that just started ready for its first prompt: the settings it starts on, then
+    /// what the task starts in.
+    private func prepare(
+        _ session: SessionModel, on runtime: AgentRuntime, project: Project.ID?, origin: SessionModel.Origin,
+        parent: SessionModel?, earlier: SessionModel?
+    ) async -> SessionModel {
         AgentSessionDefaults.remember(session.state.configOptions, for: runtime.agent.id, isNew: true)
         await AgentSessionDefaults.apply(to: session, project: project)
         if origin == .user, parent == nil {
@@ -78,7 +96,19 @@ final class SessionLauncher {
         _ key: SessionKey, cwd: URL, title: String? = nil, on runtime: AgentRuntime,
         origin: SessionModel.Origin = .user, parent: SessionModel? = nil
     ) async throws -> SessionModel {
-        guard let connection = runtime.connection else {
+        if let host = runtime.host {
+            guard runtime.capabilities?.loadSession == true else {
+                throw LaunchError.cannotLoad(runtime.agent.displayName)
+            }
+            do {
+                return try await openOnHost(
+                    host, key, cwd: cwd, title: title, on: runtime, origin: origin, parent: parent)
+            } catch {
+                runtime.noteSignInRequired(by: error)
+                throw error
+            }
+        }
+        guard let connection = runtime.localConnection else {
             throw LaunchError.agentUnavailable(runtime.agent.displayName)
         }
         guard runtime.capabilities?.loadSession == true else {

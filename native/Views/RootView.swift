@@ -233,32 +233,21 @@ struct RootView: View {
                 // Under every page, so the transcript and anything else without a background of its
                 // own sits on the design system's background in the user's light tone, not the system's.
                 .background(.dsBackground)
-                .safeAreaInset(edge: .top, spacing: 0) { hostVersionNotice }
-                .task {
-                    if let updates { durableHost?.connectUpdates(updates) }
-                    await durableHost?.start(plugins: model.plugins.agents)
+                .safeAreaInset(edge: .top, spacing: 0) {
+                    if let durableHost {
+                        HostNotices(host: durableHost, updates: updates)
+                    }
                 }
                 .environment(\.inspectorRoom, inspectorRoom.room(sidebar: $columnVisibility))
         }
         .toolbar(removing: .sidebarToggle)
+        // PROBE (temporary): compare with the system's toolbar background.
+        .toolbarBackgroundVisibility(
+            UserDefaults.standard.bool(forKey: "toolbarBandProbe") ? .automatic : .hidden, for: .windowToolbar
+        )
         .tracksWindowRoom(inspectorRoom.window)
         .onChange(of: columnVisibility) { _, visibility in
             inspectorRoom.sidebarChanged(to: visibility)
-        }
-    }
-
-    /// Says when the background host runs another version than this app, above whatever the
-    /// detail column shows.
-    @ViewBuilder
-    private var hostVersionNotice: some View {
-        if let durableHost, durableHost.versionStatus != .matched {
-            HostVersionNotice(
-                status: durableHost.versionStatus,
-                appVersion: AppVersion.current.version,
-                onRestartHost: { Task { await durableHost.restartHost() } },
-                onCheckForUpdates: { updates?.checkForUpdates() }
-            )
-            .padding(DS.Space.md)
         }
     }
 

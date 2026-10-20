@@ -13,8 +13,8 @@ public struct PromptQueue: Equatable, Sendable {
         /// Files and images that go with the text.
         public let attachments: [PromptAttachment]
 
-        public init(_ text: String, attachments: [PromptAttachment] = [], isEchoed: Bool = true) {
-            id = UUID()
+        public init(id: UUID = UUID(), _ text: String, attachments: [PromptAttachment] = [], isEchoed: Bool = true) {
+            self.id = id
             self.text = text
             self.attachments = attachments
             self.isEchoed = isEchoed

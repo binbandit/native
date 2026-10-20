@@ -19,6 +19,10 @@ enum HostError: Error, LocalizedError {
     case notAcceptingPrompts
     case emptyMessage
     case permissionNotPending
+    case questionNotPending
+    /// The session is doing something that has to finish first; the reason says what.
+    case busy(String)
+    case notInQueue
     /// The client isn't trusted with this (a paired device without the grant).
     case notAuthorized(String)
     case updateUnavailable(String)
@@ -32,12 +36,32 @@ enum HostError: Error, LocalizedError {
         case .notAcceptingPrompts: "This subagent only takes work from the session that started it."
         case .emptyMessage: "There's nothing to send."
         case .permissionNotPending: "That request was already answered."
+        case .questionNotPending: "That question was already answered."
+        case .busy(let reason): reason
+        case .notInQueue: "That message isn't waiting to be put back any more."
         case .notAuthorized(let action): "This device isn't allowed to \(action) on this host."
         case .updateUnavailable(let reason): reason
         }
     }
 
+    var code: HostErrorCode {
+        switch self {
+        case .unknownAgent: .unknownAgent
+        case .unknownSession: .unknownSession
+        case .agentUnavailable: .agentUnavailable
+        case .cannotLoad: .cannotLoad
+        case .notAcceptingPrompts: .notAcceptingPrompts
+        case .emptyMessage: .emptyMessage
+        case .permissionNotPending: .permissionNotPending
+        case .questionNotPending: .questionNotPending
+        case .busy: .busy
+        case .notInQueue: .notInQueue
+        case .notAuthorized: .notAuthorized
+        case .updateUnavailable: .updateUnavailable
+        }
+    }
+
     var rpcError: RPCError {
-        RPCError(code: -32000, message: errorDescription ?? "Host error")
+        code.rpcError(errorDescription ?? "Host error")
     }
 }

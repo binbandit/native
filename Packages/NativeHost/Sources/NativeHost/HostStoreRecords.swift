@@ -18,13 +18,18 @@ struct StoredSession: Hashable {
     var isQueuePaused: Bool
     /// ACP `McpServer` objects for the agent, handed over again on every reload.
     var mcpServers: [JSONValue]
+    /// The `_meta` for `session/new` and every `session/load`.
+    var meta: JSONValue?
+    /// Config values clients chose, by option id, set back after a reload where the agent reports
+    /// otherwise (an agent may reopen a session on its default model).
+    var configChoices: [String: String]
 
     init(
         id: HostSessionID, agentID: String, agentSessionID: SessionID?, cwd: String, parentID: HostSessionID?,
         origin: SessionOrigin,
         title: String? = nil, createdAt: Date = .now, lastActivity: Date? = nil, lastStopReason: String? = nil,
         isQueuePaused: Bool = false,
-        mcpServers: [JSONValue] = []
+        mcpServers: [JSONValue] = [], meta: JSONValue? = nil, configChoices: [String: String] = [:]
     ) {
         self.id = id
         self.agentID = agentID
@@ -38,20 +43,87 @@ struct StoredSession: Hashable {
         self.lastStopReason = lastStopReason
         self.isQueuePaused = isQueuePaused
         self.mcpServers = mcpServers
+        self.meta = meta
+        self.configChoices = configChoices
     }
 
     init?(row: [SQLiteDatabase.Value]) {
         guard let id = row[0].text.flatMap(UUID.init(uuidString:)), let agentID = row[1].text, let cwd = row[3].text,
             let createdAt = row[7].date
         else { return nil }
-        let servers = row[11].text.flatMap { try? JSONDecoder().decode([JSONValue].self, from: Data($0.utf8)) } ?? []
         self.init(
             id: HostSessionID(id), agentID: agentID, agentSessionID: row[2].text.map(SessionID.init), cwd: cwd,
             parentID: row[4].text.flatMap(UUID.init(uuidString:)).map(HostSessionID.init),
             origin: row[5].text.flatMap(SessionOrigin.init(rawValue:)) ?? .unknown, title: row[6].text,
             createdAt: createdAt,
-            lastActivity: row[8].date, lastStopReason: row[9].text, isQueuePaused: row[10].bool, mcpServers: servers
+            lastActivity: row[8].date, lastStopReason: row[9].text, isQueuePaused: row[10].bool,
+            mcpServers: JSONColumn.decode([JSONValue].self, row[11]) ?? [],
+            meta: JSONColumn.decode(JSONValue.self, row[12]),
+            configChoices: JSONColumn.decode([String: String].self, row[13]) ?? [:]
         )
+    }
+}
+
+/// A message on its way to the agent, with everything needed to send it again after a restart.
+struct OutgoingPrompt: Hashable {
+    /// The request id it was sent with.
+    var id: UUID
+    var text: String
+    /// What goes to the agent when it's more than `text`.
+    var content: [ContentBlock]?
+    var attachments: [EchoAttachment]
+    var preamble: PromptPreambleSpec?
+    var isEchoed: Bool
+    var origin: PromptEcho.Origin
+
+    init(
+        id: UUID = UUID(), text: String, content: [ContentBlock]? = nil, attachments: [EchoAttachment] = [],
+        preamble: PromptPreambleSpec? = nil, isEchoed: Bool = true, origin: PromptEcho.Origin = .user
+    ) {
+        self.id = id
+        self.text = text
+        self.content = content
+        self.attachments = attachments
+        self.preamble = preamble
+        self.isEchoed = isEchoed
+        self.origin = origin
+    }
+
+    /// As clients see it waiting in the queue.
+    var queued: QueuedPrompt {
+        QueuedPrompt(
+            id: id, text: text, isEchoed: isEchoed,
+            attachments: attachments.map { EchoAttachment(name: $0.name, url: $0.url) })
+    }
+
+    /// What's kept beside the columns every prompt has.
+    struct Extras: Codable {
+        var content: [ContentBlock]?
+        var attachments: [EchoAttachment]?
+        var preamble: PromptPreambleSpec?
+        var origin: PromptEcho.Origin?
+    }
+
+    var extras: Extras {
+        Extras(
+            content: content, attachments: attachments.isEmpty ? nil : attachments, preamble: preamble, origin: origin)
+    }
+
+    init(id: UUID, text: String, isEchoed: Bool, extras: Extras?) {
+        self.init(
+            id: id, text: text, content: extras?.content, attachments: extras?.attachments ?? [],
+            preamble: extras?.preamble, isEchoed: isEchoed, origin: extras?.origin ?? .user)
+    }
+}
+
+/// JSON kept in a text column.
+enum JSONColumn {
+    static func decode<Value: Decodable>(_ type: Value.Type, _ value: SQLiteDatabase.Value) -> Value? {
+        value.text.flatMap { try? JSONDecoder().decode(type, from: Data($0.utf8)) }
+    }
+
+    static func encode(_ value: some Encodable) throws -> SQLiteDatabase.Value {
+        .text(String(decoding: try JSONEncoder().encode(value), as: UTF8.self))
     }
 }
 
@@ -65,40 +137,39 @@ struct UnfinishedTurn: Hashable {
     }
 
     var sessionID: HostSessionID
-    var requestID: UUID
-    var text: String
+    var prompt: OutgoingPrompt
     var kind: Kind
-    var echo: Bool
     var startedAt: Date
     /// How many times recovery has already tried to finish this turn.
     var attempts: Int
 
-    init(
-        sessionID: HostSessionID, requestID: UUID, text: String, kind: Kind, echo: Bool, startedAt: Date = .now,
-        attempts: Int = 0
-    ) {
+    init(sessionID: HostSessionID, prompt: OutgoingPrompt, kind: Kind, startedAt: Date = .now, attempts: Int = 0) {
         self.sessionID = sessionID
-        self.requestID = requestID
-        self.text = text
+        self.prompt = prompt
         self.kind = kind
-        self.echo = echo
         self.startedAt = startedAt
         self.attempts = attempts
     }
+
+    var requestID: UUID { prompt.id }
+    var text: String { prompt.text }
 
     init?(row: [SQLiteDatabase.Value]) {
         guard let session = row[0].text.flatMap(UUID.init(uuidString:)),
             let request = row[1].text.flatMap(UUID.init(uuidString:)),
             let text = row[2].text, let kind = row[3].text.flatMap(Kind.init(rawValue:)), let startedAt = row[5].date
         else { return nil }
+        let prompt = OutgoingPrompt(
+            id: request, text: text, isEchoed: row[4].bool,
+            extras: JSONColumn.decode(OutgoingPrompt.Extras.self, row[7]))
         self.init(
-            sessionID: HostSessionID(session), requestID: request, text: text, kind: kind, echo: row[4].bool,
-            startedAt: startedAt, attempts: Int(row[6].integer ?? 0))
+            sessionID: HostSessionID(session), prompt: prompt, kind: kind, startedAt: startedAt,
+            attempts: Int(row[6].integer ?? 0))
     }
 }
 
 struct StoredQueueItem: Hashable {
-    var prompt: QueuedPrompt
+    var prompt: OutgoingPrompt
     /// Being steered into the running turn right now. If the host stops before the agent answers,
     /// recovery checks the agent's transcript to see whether it arrived.
     var isSteering: Bool

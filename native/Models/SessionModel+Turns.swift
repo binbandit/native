@@ -1,6 +1,7 @@
 import ACP
 import AIInstructions
 import Foundation
+import NativeHostProtocol
 
 // Turns: prompting, and what happens to messages sent while a turn runs (queued for when it ends,
 // or steered into it).
@@ -40,7 +41,13 @@ extension SessionModel {
     /// Messages waiting for the running turn to end, in the order they'll go out. Messages that
     /// don't show in the transcript (`echo: false`) aren't listed.
     var queuedPrompts: [QueuedPrompt] {
-        queue.visible
+        host == nil ? queue.visible : hostQueuedPrompts
+    }
+
+    /// Whether any message waits to go out, shown or not.
+    var hasQueuedPrompts: Bool {
+        guard host != nil else { return !queue.isEmpty }
+        return hostSummary?.queue.isEmpty == false || !heldPrompts.isEmpty
     }
 
     /// Sends the user's draft as a prompt, if the agent is idle, and waits for the turn to end.
@@ -54,6 +61,14 @@ extension SessionModel {
         }
         draft = ""
         self.attachments = []
+        if host != nil {
+            guard (try? await submitToHost(text, attachments: attachments, behavior: .queue, echo: true)) == .prompted
+            else { return }
+            for await phase in Observations({ self.phase }) where phase != .prompting {
+                break
+            }
+            return
+        }
         let turn = beginTurn(text, attachments: attachments, echo: true)
         await finishTurn(
             text, attachments: attachments, preamble: turn.preamble, itemsStart: turn.itemsStart,
@@ -72,6 +87,10 @@ extension SessionModel {
         }
         draft = ""
         self.attachments = []
+        if host != nil {
+            _ = try? await submitToHost(text, attachments: attachments, behavior: behavior, echo: true)
+            return
+        }
         if phase == .idle, !isRunningHiddenCommand, turnHold == nil {
             // The user sending again lifts a pause after a cancelled turn. Waiting messages go first.
             queue.resume()
@@ -97,6 +116,11 @@ extension SessionModel {
         guard acceptsPrompts else {
             throw isEarlierConversation ? SendError.earlierConversation : .notAcceptingPrompts
         }
+        if host != nil {
+            // The host takes messages whatever the session is doing: one for a session whose agent
+            // couldn't start is its cue to try again.
+            return try await submitToHost(text, attachments: attachments, behavior: behavior, echo: echo)
+        }
         switch phase {
         case .loading:
             // Sent the moment the session has loaded (`finishLoading`), rather than refused.
@@ -117,11 +141,13 @@ extension SessionModel {
 
     /// Edits a queued message; emptying one that carries no files removes it.
     func updateQueued(_ id: QueuedPrompt.ID, text: String) {
+        guard host == nil else { return updateQueuedOnHost(id, text: text) }
         queue.update(id, text: text)
     }
 
     /// Removes a queued message; with an undo manager, ⌘Z puts it back in its place.
     func removeQueued(_ id: QueuedPrompt.ID, undoManager: UndoManager? = nil) {
+        guard host == nil else { return removeQueuedOnHost(id, undoManager: undoManager) }
         guard let index = queue.index(of: id), let item = queue.remove(id) else { return }
         undoManager?.registerUndo(withTarget: self) { session in
             MainActor.assumeIsolated {
@@ -152,6 +178,12 @@ extension SessionModel {
     /// Sends a queued message now instead of waiting, as `sendNowRoute` says. Like any new turn, it
     /// lifts the pause a stopped turn put on the rest.
     func sendQueuedNow(_ id: QueuedPrompt.ID) async {
+        if host != nil {
+            if editingQueuedPrompt == id {
+                editingQueuedPrompt = nil
+            }
+            return await sendQueuedNowOnHost(id)
+        }
         guard queue.index(of: id) != nil else { return }
         if editingQueuedPrompt == id {
             editingQueuedPrompt = nil
@@ -172,22 +204,31 @@ extension SessionModel {
     }
 
     func canMoveQueued(_ id: QueuedPrompt.ID, _ direction: PromptQueue.Direction) -> Bool {
-        queue.canMove(id, direction)
+        guard host != nil else { return queue.canMove(id, direction) }
+        let visible = queuedPrompts
+        guard let position = visible.firstIndex(where: { $0.id == id }) else { return false }
+        return direction == .up ? position > 0 : position < visible.count - 1
     }
 
     /// Moves a queued message one place sooner or later.
     func moveQueued(_ id: QueuedPrompt.ID, _ direction: PromptQueue.Direction) {
-        queue.move(id, direction)
+        guard host != nil else { return queue.move(id, direction) }
+        let visible = queuedPrompts
+        guard canMoveQueued(id, direction), let position = visible.firstIndex(where: { $0.id == id }) else { return }
+        let target = direction == .up ? visible[position - 1].id : visible.dropFirst(position + 2).first?.id
+        moveQueuedOnHost(id, before: target)
     }
 
     /// Moves a queued message to just before `target`, or to the end: where a drag dropped it.
     func moveQueued(_ id: QueuedPrompt.ID, before target: QueuedPrompt.ID?) {
+        guard host == nil else { return moveQueuedOnHost(id, before: target) }
         queue.move(id, before: target)
     }
 
     /// Starts the next queued message once nothing is running, one per turn, unless the queue is
     /// paused.
     func drainQueue() {
+        guard host == nil else { return sendHeldPrompts() }
         guard phase == .idle, !isRunningHiddenCommand, turnHold == nil, let next = queue.next() else { return }
         startTurn(next.text, attachments: next.attachments, echo: next.isEchoed)
     }
@@ -228,20 +269,25 @@ extension SessionModel {
         phase = .prompting
         lastActivity = .now
         if isFirstPrompt {
-            // Named alongside the turn rather than before it, so the prompt goes out right away.
-            let prompt = text.isEmpty ? attachments.map(\.name).joined(separator: ", ") : text
-            let request = TitleRequest(
-                projectName: cwd.lastPathComponent, prompt: prompt,
-                instructions: AIInstructionsStore.shared.addition(for: .title, in: cwd))
-            Task {
-                await services.titles.generateIfNeeded(for: titleKey, request: request, using: services.plugins.titler)
-                if let title = services.titles.title(for: titleKey, agentTitle: nil) {
-                    services.titleLanded(key, cwd, title)
-                }
-            }
+            nameAfterFirstPrompt(text, attachments: attachments)
         }
         services.post(.promptSent(context, text: text))
         return (state.items.count, preamble)
+    }
+
+    /// Names the session after its first prompt, alongside the turn rather than before it, so the
+    /// prompt goes out right away.
+    func nameAfterFirstPrompt(_ text: String, attachments: [PromptAttachment]) {
+        let prompt = text.isEmpty ? attachments.map(\.name).joined(separator: ", ") : text
+        let request = TitleRequest(
+            projectName: cwd.lastPathComponent, prompt: prompt,
+            instructions: AIInstructionsStore.shared.addition(for: .title, in: cwd))
+        Task {
+            await services.titles.generateIfNeeded(for: titleKey, request: request, using: services.plugins.titler)
+            if let title = services.titles.title(for: titleKey, agentTitle: nil) {
+                services.titleLanded(key, cwd, title)
+            }
+        }
     }
 
     /// Waits for the turn's answer and records how it ended. `generation` is the turn's
@@ -252,6 +298,7 @@ extension SessionModel {
     ) async {
         do {
             let prompt = (preamble.map { [$0.block] } ?? []) + promptBlocks(text, attachments: attachments)
+            guard let connection else { throw SendError.disconnected }
             let response = try await connection.send(PromptRequest(sessionId: id, prompt: prompt))
             guard generation == turnGeneration else { return }
             state.endTurn(response.stopReason)
@@ -318,7 +365,7 @@ extension SessionModel {
 
     /// The prompt as the agent takes it: the text, the attachments, and a link to each file the text
     /// mentions with `@`.
-    private func promptBlocks(_ text: String, attachments: [PromptAttachment]) -> [ContentBlock] {
+    func promptBlocks(_ text: String, attachments: [PromptAttachment]) -> [ContentBlock] {
         let mentions = PromptAttachment.mentions(in: text, relativeTo: cwd)
         return ContentBlock.prompt(text, attachments: attachments + mentions, capabilities: promptCapabilities)
     }
@@ -347,6 +394,7 @@ extension SessionModel {
         var delivery = FollowUpDelivery.queued
         do {
             let prompt = promptBlocks(text, attachments: attachments)
+            guard let connection else { throw SendError.disconnected }
             let response = try await connection.send(SteerRequest(sessionId: id, prompt: prompt))
             switch response.outcome {
             case .injected:

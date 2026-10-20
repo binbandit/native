@@ -119,9 +119,9 @@ actor Recorder {
 
     private func record(_ event: NativeHostClient.Event) {
         switch event {
-        case .sessionEvent(let session, let event):
-            mirrors[session, default: SessionMirror()].apply(event)
-            events[session, default: []].append(event)
+        case .sessionEvent(let session, let step):
+            mirrors[session, default: SessionMirror()].apply(step)
+            events[session, default: []].append(step.event)
         case .activity(let entry):
             activity.append(entry)
         case .pluginsChanged(let plugins):

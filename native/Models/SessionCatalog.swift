@@ -149,7 +149,7 @@ final class SessionCatalog {
     }
 
     /// Everything the agent lists for `cwd`, following its cursor.
-    static func fetch(cwd: String, from connection: ACPConnection) async throws -> [SessionInfo] {
+    static func fetch(cwd: String, from connection: any AgentConnection) async throws -> [SessionInfo] {
         var fetched: [SessionInfo] = []
         var cursor: String?
         var pages = 0

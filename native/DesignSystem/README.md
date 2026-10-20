@@ -22,7 +22,10 @@ Mac) to see everything in light and dark side by side.
    `.dsGlassEffect(in:)`; `.dsBorder` and `.dsBorderHover` do). Check glass with the window active.
 4. **The sidebar is translucent.** Nothing on it paints an opaque background: rows use the
    translucent `.dsHover`/`.dsSelected` fills, and a hand-built sidebar uses `.dsSidebarBackground()`
-   (a split-view sidebar column, `.dsSidebarColumnTransparency()`). Anything see-through follows
+   (a split-view sidebar column, `.dsSidebarColumnTransparency()`, Settings' included). Chrome that
+   continues the column, like the status bar, draws the column's own look (`StatusBarSurface` does)
+   rather than a material of its own, so the two read as one band at every level, in both window
+   states. Anything see-through follows
    `\.dsTransparency`: overlays use `.dsOverlayBackground(in:)` or `.dsPopoverBackground()`, floating
    controls `.dsGlassEffect(in:)` or `.dsGlassButtonStyle()`, never a material or glass directly.
    Code is set with `.codeTextStyle(_:)` and colored with `HighlightedCode`, never `.dsMono` alone.
@@ -88,7 +91,7 @@ Mac) to see everything in light and dark side by side.
 | `SearchField` | The one search and filter field: a magnifier, a clear button once something's typed, Escape to clear, an optional trailing accessory (a shortcut hint, a record-keys button), no fill of its own |
 | `.ds(_:size:iconOnly:)` buttons, `IconButton`, `Badge`, `Kbd`, `Card`, `SeparatorLine`, `SectionHeader`, `StatusDot` | Buttons, shortcut caps, badges and cards |
 | `DiffView`, `DiffStats`, `DiffStatsText` | Line diffs with a colored bar, line numbers and tinted lines; shared by the transcript and Git |
-| `StatusBarSurface`, `.statusBarSegment(_:isActive:)`, `StatusBarGlyph`, `StatusBarDivider`, `StatusBarSeparator` | The window's bottom strip: the sidebar backdrop under a hairline, `DS.Size.chromeBar` tall, tertiary caption text, footer-sized glyphs, hairlines between items, color-only hover. Narrow windows drop whole items |
+| `StatusBarSurface`, `.statusBarSegment(_:isActive:)`, `StatusBarGlyph`, `StatusBarDivider`, `StatusBarSeparator` | The window's bottom strip: the sidebar column's look under a hairline, `DS.Size.chromeBar` tall, tertiary caption text, footer-sized glyphs, hairlines between items, color-only hover. Narrow windows drop whole items |
 | `IconThemePicker`, `IconThemeOption` | The settings select showing the current app icon; a popover lists each option's thumbnail, name, badge and note, with a checkmark. Options are data, so plugins can add their own |
 | `PopoverPanel`, `PopoverPanelFootnote`, `.dsPopover(isPresented:)` | A popover that explains something: glyph and title header, hairline, content, on the overlay backdrop |
 | `CappedHeightScrollView` | Natural height up to a cap, then scrolls |
