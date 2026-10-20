@@ -208,12 +208,14 @@ struct TaskPullRequestCard: View {
                 .buttonStyle(.ds(.ghost))
             }
         } else {
-            HStack(spacing: DS.Space.xs) {
-                DotGridLoader(pattern: .waiting)
-                    .foregroundStyle(.dsTextSecondary)
-                    .frame(width: DS.Size.navIcon, height: DS.Size.navIcon)
-                value(("Checking…", .dsTextSecondary))
-            }
+            // The text leads, so the row's label lines up with its baseline; the loader sits beside.
+            value(("Checking…", .dsTextSecondary))
+                .padding(.leading, DS.Size.navIcon + DS.Space.xs)
+                .overlay(alignment: .leading) {
+                    DotGridLoader(pattern: .waiting)
+                        .foregroundStyle(.dsTextSecondary)
+                        .frame(width: DS.Size.navIcon, height: DS.Size.navIcon)
+                }
         }
     }
 
