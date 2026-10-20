@@ -147,7 +147,11 @@ quit_app
 # Settings (to test them) sticks.
 defaults read "$(bundle_id)" sounds.enabled >/dev/null 2>&1 || defaults write "$(bundle_id)" sounds.enabled -bool NO
 defaults_args=()
+# Test sessions run Codex's cheapest model at its lowest effort, and instances are dark, so a check
+# never flashes a bright window at the person using this Mac. App arguments override each.
 [[ " ${app_args[*]-} " == *" -agentDefaults.codex.model "* ]] || defaults_args=(-agentDefaults.codex.model gpt-6.1-sol)
+[[ " ${app_args[*]-} " == *" -agentDefaults.codex.effort "* ]] || defaults_args+=(-agentDefaults.codex.effort low)
+[[ " ${app_args[*]-} " == *" -appearance.mode "* ]] || defaults_args+=(-appearance.mode dark)
 [[ " ${app_args[*]-} " == *" -gitWorktreesFolder "* ]] || defaults_args+=(-gitWorktreesFolder "$worktrees")
 # In the background (-g): the instance never takes focus from whoever is using this Mac.
 open -g -n "$app" --args ${defaults_args[@]+"${defaults_args[@]}"} ${app_args[@]+"${app_args[@]}"}
