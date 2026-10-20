@@ -46,13 +46,13 @@ jobs:
       # LFS (scripts/companion/app-icons.sh). Only these are fetched, about 50 MB, and kept in a cache.
       ICON_ARTWORK: design/app-icon/channel-themes/*/stable.icon/**,design/app-icon/celebrations/*/stable.icon/**
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       - name: Cache locations
         run: |
           echo "SOURCE_PACKAGES=$HOME/Library/Caches/native-ci/SourcePackages" >> "$GITHUB_ENV"
           echo "COMPILATION_CACHE=$RUNNER_TEMP/CompilationCache" >> "$GITHUB_ENV"
       - name: Cache the icon artwork
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: .git/lfs/objects
           # The checkout has LFS pointers, so this hash changes only when the artwork does.
@@ -64,7 +64,7 @@ jobs:
       # grammars, Sentry) at the same versions. Restored only: the repository's caches are full of the
       # Mac builds' own, and a daily build's would only push theirs out.
       - name: Restore Swift package checkouts
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ env.SOURCE_PACKAGES }}
           key: source-packages-${{ runner.os }}-${{ hashFiles('native.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
@@ -102,7 +102,7 @@ jobs:
 
       - name: Upload the build logs
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: ios-build-logs
           path: |
