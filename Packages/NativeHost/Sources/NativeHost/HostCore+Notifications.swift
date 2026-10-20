@@ -28,7 +28,7 @@ extension HostCore {
             }
         case .turnEnded(let stopReason) where stopReason == "end_turn":
             postTurnFinished(in: session)
-        case .turnFailed(let message, let error):
+        case .turnFailed(let message, let error, _):
             postTurnFailed(message: message, error: error, in: session)
         case .recovered(let note):
             guard var notification = notification(.recovered, about: session) else { return }

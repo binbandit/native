@@ -34,6 +34,9 @@ struct ProtocolTests {
             .turnFailed(message: "Rate limited", error: nil),
             .turnFailed(
                 message: "Sign in", error: RPCError(code: -32000, message: "auth", data: .object(["x": .bool(true)]))),
+            .turnFailed(
+                message: "Codex couldn't be reached", error: nil,
+                retry: DeliveryRetry(agentName: "Codex", reason: "Network error", delay: 5)),
             .notice(text: "Hi", isError: false),
             .recovered(
                 RecoveryNote(

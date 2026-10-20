@@ -14,18 +14,32 @@ public struct SessionState: Sendable {
     public private(set) var usage: Usage?
 
     private var toolCallIndices: [String: Int] = [:]
+    /// Tool calls that haven't finished, so a turn's end settles them without a pass over every call.
+    var openCallIndices: Set<Int> = []
     /// The clocks of live turns, keyed by the index of the prompt that started each one.
-    private(set) var turnClocks: [Int: TurnClock] = [:]
+    var turnClocks: [Int: TurnClock] = [:]
     /// Where the running live turn starts. Only its items get times; replayed history has none.
-    private(set) var openTurn: Int?
+    var openTurn: Int?
+    /// The live turn whose message failed for a passing reason and waits for Native to send it again
+    /// (`failTurn(_:retry:at:)`): not running, but not over either.
+    var suspendedTurn: Int?
+    /// The notice following the message Native is sending again, until the retry settles.
+    var retryNoticeIndex: Int?
+    /// A stop ended the latest turn and nothing has started since, so what the agent sends next came
+    /// after the stop (`TranscriptTurn.isLateOutput`).
+    var isAfterStop = false
     /// How replayed turns that the agent's history says were stopped ended, keyed like `turnClocks`.
-    private(set) var replayedStops: [Int: StopReason] = [:]
+    var replayedStops: [Int: StopReason] = [:]
     private var subagentIndices: [SessionID: Int] = [:]
     private var sessionMessageIndices: [String: Int] = [:]
     // Kept as items change, so what a transcript asks for on every update costs the size of the
     // answer rather than a pass over thousands of items.
     /// The prompts that start turns: every user message that wasn't steered into a running one.
     private(set) var promptIndices: [Int] = []
+    /// Where turns start: at every prompt, and where output an agent sent after a stop begins.
+    var turnStarts: [Int] = []
+    /// The turns of output an agent sent after its turn was stopped, by where each starts.
+    var lateOutputStarts: Set<Int> = []
     /// What each turn's items did, by the index of the turn's first item.
     private var turnSummaries: [Int: TurnSummary] = [:]
     /// Tool calls waiting for permission, in transcript order.
@@ -105,6 +119,8 @@ public struct SessionState: Sendable {
         steered: Bool = false, at date: Date = .now
     ) {
         if !steered {
+            // A new turn ends the wait for a retry; the message waiting is no longer next.
+            stopRetrying(at: date)
             openTurn = items.count
             turnClocks[items.count] = TurnClock(startedAt: date)
         }
@@ -115,11 +131,12 @@ public struct SessionState: Sendable {
     }
 
     /// The instructions the agent had last (`PromptPreamble`): the newest prompt's that carried
-    /// any. A live turn that failed doesn't count, since its prompt may never have reached the agent.
+    /// any. A live turn that failed, or waits to be sent again, doesn't count, since its prompt may
+    /// never have reached the agent.
     public var deliveredPreamble: PromptPreamble.Marker? {
         for index in promptIndices.reversed() {
             guard case .message(let message) = items[index], let marker = message.preamble,
-                turnClocks[index]?.stopReason != .error
+                turnClocks[index]?.stopReason != .error, turnClocks[index]?.suspendedAt == nil
             else { continue }
             return marker
         }
@@ -161,74 +178,14 @@ public struct SessionState: Sendable {
         }
     }
 
-    /// Wraps up a prompt turn. ACP v1 has no status for tool calls a cancellation interrupted, so
-    /// they're marked here; any stop other than a normal one is noted in the transcript.
-    public mutating func endTurn(_ stopReason: StopReason, at date: Date = .now) {
-        if stopReason == .cancelled {
-            for index in toolCallIndices.values {
-                guard case .toolCall(var call) = items[index], !call.status.isFinished else { continue }
-                call.status = .cancelled
-                call.permission = nil
-                if call.startedAt != nil { call.finishedAt = date }
-                replaceItem(at: index, with: .toolCall(call))
-            }
-            if let openTurn {
-                // Claude Code reports a command the stop killed as refused by the user.
-                markStopped(trailingCallsOf: openTurn) { $0.nonExecutionKind == "user-rejected" }
-            }
-        }
-        if let openTurn {
-            turnClocks[openTurn]?.endedAt = date
-            turnClocks[openTurn]?.stopReason = stopReason
-            self.openTurn = nil
-        }
-        switch stopReason {
-        case .endTurn: break
-        case .cancelled: appendNotice(Self.stoppedNotice, isError: false)
-        case .maxTokens: appendNotice("Stopped: the response hit the token limit.", isError: true)
-        case .maxTurnRequests: appendNotice("Stopped: the turn hit its request limit.", isError: true)
-        case .refusal: appendNotice("The agent declined to continue.", isError: true)
-        // `.error` is Native's own, set when the prompt threw: the caller has the error and explains it.
-        case .error: break
-        case .other(let reason): appendNotice("Stopped: \(reason).", isError: true)
-        }
-    }
-
-    private static let stoppedNotice = "Stopped."
-
-    /// The agent's history says the user stopped the turn being replayed (`InterruptionMarker`): it
-    /// ends the way a live stop does. A live turn reports its own ending, so a marker that arrives
-    /// during one, or after its end, adds nothing.
-    private mutating func recordReplayedStop(_ marker: InterruptionMarker) {
-        let start = promptIndices.last ?? 0
-        guard openTurn == nil, turnClocks[start]?.stopReason == nil, replayedStops[start] == nil else { return }
-        replayedStops[start] = .cancelled
-        if marker == .whileUsingTools {
-            // History doesn't say why those calls failed; the marker says the stop cut them off.
-            markStopped(trailingCallsOf: start) { _ in true }
-        }
-        appendNotice(Self.stoppedNotice, isError: false)
-    }
-
-    /// Marks as stopped the failed calls that end the turn starting at `start`, the ones still running
-    /// when the user stopped it, where `wasCutOff` agrees. Earlier calls failed before the stop.
-    private mutating func markStopped(trailingCallsOf start: Int, where wasCutOff: (ToolCallState) -> Bool) {
-        for index in (start..<items.count).reversed() {
-            guard case .toolCall(var call) = items[index] else { break }
-            guard call.status == .failed, wasCutOff(call) else { continue }
-            call.status = .cancelled
-            replaceItem(at: index, with: .toolCall(call))
-        }
-    }
-
     // MARK: - Indexing
 
-    private mutating func appendItem(_ item: TranscriptItem) {
+    mutating func appendItem(_ item: TranscriptItem) {
         items.append(item)
         index(items.count - 1)
     }
 
-    private mutating func replaceItem(at index: Int, with item: TranscriptItem) {
+    mutating func replaceItem(at index: Int, with item: TranscriptItem) {
         items[index] = item
         self.index(index)
     }
@@ -241,8 +198,15 @@ public struct SessionState: Sendable {
             // Only a new item starts a turn; a prompt growing chunk by chunk is already one.
             if promptIndices.last.map({ $0 < index }) ?? true {
                 promptIndices.append(index)
+                turnStarts.append(index)
+                isAfterStop = false
             }
         case .toolCall(let call):
+            if call.status.isFinished {
+                openCallIndices.remove(index)
+            } else {
+                openCallIndices.insert(index)
+            }
             let position = permissionIndices.firstIndex(of: index)
             if call.permission == nil, let position {
                 permissionIndices.remove(at: position)
@@ -264,13 +228,13 @@ public struct SessionState: Sendable {
     }
 
     /// The items of the turn holding `index`, as `turns` splits them.
-    private func turnRange(containing index: Int) -> Range<Int> {
-        guard let position = promptIndices.lastIndex(where: { $0 <= index }) else {
+    func turnRange(containing index: Int) -> Range<Int> {
+        guard let position = turnStarts.lastIndex(where: { $0 <= index }) else {
             // Before the first prompt: a turn of its own.
-            return 0..<(promptIndices.first ?? items.count)
+            return 0..<(turnStarts.first ?? items.count)
         }
-        let next = position + 1 < promptIndices.count ? promptIndices[position + 1] : items.count
-        return promptIndices[position]..<next
+        let next = position + 1 < turnStarts.count ? turnStarts[position + 1] : items.count
+        return turnStarts[position]..<next
     }
 
     /// Counts again what the turn holding `index` did; only tool calls and subagents count.
@@ -339,6 +303,9 @@ public struct SessionState: Sendable {
             last.updatedAt = date ?? last.updatedAt
             replaceItem(at: items.count - 1, with: .message(last))
         } else {
+            if role != .user {
+                beginLateOutputIfStopped()
+            }
             let message = TranscriptMessage(
                 role: role, text: text, messageID: chunk.messageId, startedAt: date, updatedAt: date)
             appendItem(.message(message))
@@ -358,6 +325,7 @@ public struct SessionState: Sendable {
         if let index = subagentIndices[update.sessionId] {
             replaceItem(at: index, with: .subagent(subagent))
         } else {
+            beginLateOutputIfStopped()
             subagentIndices[update.sessionId] = items.count
             appendItem(.subagent(subagent))
         }
@@ -377,6 +345,7 @@ public struct SessionState: Sendable {
         if let index = sessionMessageIndices[messageID] {
             replaceItem(at: index, with: .sessionMessage(message))
         } else {
+            beginLateOutputIfStopped()
             sessionMessageIndices[messageID] = items.count
             appendItem(.sessionMessage(message))
         }
@@ -390,6 +359,7 @@ public struct SessionState: Sendable {
             }
             replaceItem(at: index, with: .toolCall(call))
         } else {
+            beginLateOutputIfStopped()
             var call = ToolCallState(id: update.toolCallId)
             call.merge(update)
             call.startedAt = date
@@ -467,6 +437,8 @@ public struct TranscriptNotice: Hashable, Sendable {
     public let id = UUID()
     public var text: String
     public var isError: Bool
+    /// For the notice of a message Native is sending again: how far that got.
+    public internal(set) var retry: Retry?
 }
 
 public struct ToolCallState: Hashable, Sendable {
@@ -493,7 +465,7 @@ public struct ToolCallState: Hashable, Sendable {
         if let title = update.title { self.title = title }
         if let name = update.name { self.name = name }
         if let kind = update.kind { self.kind = kind }
-        if let status = update.status { self.status = status }
+        if let status = update.status { self.status = self.status.reporting(status) }
         if let content = update.content { self.content = content }
         if let locations = update.locations { self.locations = locations }
         if let rawInput = update.rawInput { self.rawInput = rawInput }

@@ -20,6 +20,10 @@ public struct SessionMirror: Sendable {
     /// The last event applied, for attaching again without missing or repeating any.
     public private(set) var lastSeq: Int?
     public private(set) var questions: [Question] = []
+    /// The request whose turn ran last: a passing failure of it goes out again under the same id.
+    private var turnRequestID: UUID?
+    /// The request Native waits to send again after a passing failure.
+    private var retryRequestID: UUID?
 
     public init() {}
 
@@ -49,15 +53,17 @@ public struct SessionMirror: Sendable {
             state = SessionState()
             questions = []
             isLoading = loading
+            turnRequestID = nil
+            retryRequestID = nil
         case (.loaded, _):
             isLoading = false
+            // Nothing the agent replayed runs any more.
+            state.endReplay()
         case (.update, .update(let update)):
             // The host's time, so a client attaching later times the turn the same.
             state.apply(update, at: event.at)
-        case (.prompt(let prompt), _) where prompt.shown:
-            state.appendUserMessage(
-                prompt.text, attachments: prompt.attachments.map(\.messageAttachment),
-                preamble: prompt.preamble?.marker, steered: prompt.steered, at: event.at)
+        case (.prompt(let prompt), _):
+            receive(prompt, at: event.at)
         case (.permissionRequested(let toolCallID, _), .permission(let request)):
             // The id only has to be unique within the transcript; answers go to the host by tool call.
             state.requestPermission(request, id: .string(toolCallID), at: event.at)
@@ -68,18 +74,57 @@ public struct SessionMirror: Sendable {
         case (.questionResolved(let questionID), _):
             questions.removeAll { $0.id == questionID }
         case (.turnEnded(let stopReason), _):
+            retryRequestID = nil
             state.endTurn(Self.stopReason(stopReason), at: event.at)
-        case (.turnFailed(let message, _), _):
-            // The notice says what went wrong; the turn's clock stops as an error.
-            state.appendNotice(message, isError: true)
-            state.endTurn(.error, at: event.at)
+        case (.turnFailed(let message, _, let retry), _):
+            // The notice says what went wrong, and what Native does about it when it retries.
+            state.failTurn(message, retry: retry, at: event.at)
+            retryRequestID = retry == nil ? nil : turnRequestID
         case (.notice(let text, let isError), _):
+            // The host's only notice while a retry waits is that the user stopped it.
+            retryRequestID = nil
+            state.stopRetrying(at: event.at)
             state.appendNotice(text, isError: isError)
         case (.recovered(let note), _):
+            // A message that never reached the agent cut nothing off.
+            if note.action != .resent {
+                state.interruptTurn(at: note.interruptedAt)
+            }
             state.appendNotice(note.sentence(), isError: note.action == .failed)
+            if note.action == .paused {
+                // Native gave up on the turn.
+                state.endTurn(.error, at: event.at)
+            }
         default:
-            // Unsupported events, unshown prompts, and payloads that didn't decode.
+            // Unsupported events, and payloads that didn't decode.
             break
+        }
+    }
+
+    /// A message Native delivered. One that failed for a passing reason goes out again under the same
+    /// request, and its turn carries on; any other ends the wait for that retry, since it went first.
+    private mutating func receive(_ prompt: PromptEcho, at date: Date) {
+        if prompt.steered {
+            if prompt.shown {
+                state.appendUserMessage(
+                    prompt.text, attachments: prompt.attachments.map(\.messageAttachment),
+                    preamble: prompt.preamble?.marker, steered: true, at: date)
+            }
+            return
+        }
+        if let id = prompt.requestID, id == retryRequestID {
+            retryRequestID = nil
+            state.retryTurn()
+            return
+        }
+        retryRequestID = nil
+        turnRequestID = prompt.requestID
+        if prompt.shown {
+            state.appendUserMessage(
+                prompt.text, attachments: prompt.attachments.map(\.messageAttachment),
+                preamble: prompt.preamble?.marker, at: date)
+        } else {
+            state.stopRetrying(at: date)
         }
     }
 
