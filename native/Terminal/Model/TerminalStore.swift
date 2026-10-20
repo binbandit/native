@@ -26,7 +26,7 @@ final class TerminalStore {
     @ObservationIgnored private var engine: TerminalEngine?
     @ObservationIgnored private var didStartEngine = false
     /// The app's appearance and its terminal background, text and cursor, reported by the session
-    /// view (`TerminalPanelModifier`) before any terminal starts.
+    /// screen (`SessionTerminalCompanion`) before any terminal starts.
     @ObservationIgnored private var appearance: (TerminalAppearance, TerminalChrome, TerminalTransparency)?
     @ObservationIgnored private var appliedStyle: TerminalStyle?
     @ObservationIgnored private let makeEngine: @MainActor () -> Result<TerminalEngine, TerminalEngineError>

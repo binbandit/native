@@ -6,6 +6,8 @@ struct SessionToolFactButton: View {
     let tool: SessionToolContribution
     let fact: SessionToolFact
     let isOpen: Bool
+    /// Its menu, if the tool has one.
+    var menu: AnyView?
     let action: () -> Void
 
     @State private var isHovered = false
@@ -38,6 +40,9 @@ struct SessionToolFactButton: View {
         .buttonStyle(.plain)
         .fixedSize()
         .trackHover($isHovered)
+        .contextMenu {
+            if let menu { menu }
+        }
         .help(isOpen ? "Close \(tool.title)" : tool.title)
         .accessibilityLabel("\(tool.title): \(fact.text)")
         .accessibilityAddTraits(isOpen ? .isSelected : [])

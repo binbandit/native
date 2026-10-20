@@ -9,6 +9,7 @@ struct SessionToolsTitle: View {
     let location: String
     let facts: [(tool: SessionToolContribution, fact: SessionToolFact)]
     let isOpen: (SessionToolContribution) -> Bool
+    let menu: (SessionToolContribution) -> AnyView?
     let action: (SessionToolContribution) -> Void
 
     var body: some View {
@@ -26,7 +27,9 @@ struct SessionToolsTitle: View {
                 ForEach(facts, id: \.tool.id) { item in
                     Text("·")
                         .foregroundStyle(.dsTextQuaternary)
-                    SessionToolFactButton(tool: item.tool, fact: item.fact, isOpen: isOpen(item.tool)) {
+                    SessionToolFactButton(
+                        tool: item.tool, fact: item.fact, isOpen: isOpen(item.tool), menu: menu(item.tool)
+                    ) {
                         action(item.tool)
                     }
                 }

@@ -2,7 +2,7 @@ import SessionTools
 import SwiftUI
 
 /// Open In as a session tool: the default editor's name and icon under the title, which opens the
-/// task's folder there. The others are in the menu bar's Open In (⇧⌘O opens the default).
+/// task's folder there (⇧⌘O too). Its menu lists every app that can open it, and Copy Path.
 @MainActor
 enum SessionOpenInTool {
     static func contribution(model: AppModel, openIn: OpenInModel = .shared) -> SessionToolContribution {
@@ -17,6 +17,7 @@ enum SessionOpenInTool {
                     SessionToolFact(text: $0.name, accessory: .icon(openIn.icon(for: $0)))
                 }
             },
-            perform: { openIn.openInDefaultApp(location($0)) })
+            perform: { openIn.openInDefaultApp(location($0)) },
+            menu: { AnyView(OpenInMenuContent(location: location($0), model: openIn)) })
     }
 }

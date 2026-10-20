@@ -5,7 +5,6 @@ import SwiftUI
 /// title, beside the conversation, under the composer) or Off. A change shows on every task at once.
 struct SessionToolsSettingsPage: View {
     let registry: SessionToolRegistry
-    @Experiment(.sessionTools) private var usesSessionTools
 
     static func row(for tool: SessionToolID) -> SettingsRowID {
         SettingsRowID("sessionTools.\(tool.rawValue)")
@@ -21,11 +20,6 @@ struct SessionToolsSettingsPage: View {
                 description: Text(
                     "A task is the conversation and the composer. Each tool shows up only when it has something to "
                         + "show, in the place you choose. With every tool off, that's all there is."))
-            if !usesSessionTools {
-                SettingsNote("Session Tools is in Labs", systemImage: "flask") {
-                    Text("Turn it on in Labs to see these places on the session screen.")
-                }
-            }
             SettingsRowGroup {
                 ForEach(registry.tools) { tool in
                     SettingsRow(

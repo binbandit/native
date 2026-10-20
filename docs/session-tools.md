@@ -5,8 +5,7 @@ terminals, project actions, subagents, the branch's pull request, Open In) is a 
 the user turns on and places, which shows up only while it has something to show. With every tool
 off, a task is the conversation and the composer, and nothing is missing.
 
-It's behind the Session Tools gate (Settings ▸ Labs) while it's built; `SessionView` shows
-`SessionToolsScreen` when it's on.
+`SessionView` is that screen. Settings ▸ Session Tools says where each tool lives.
 
 ## Places
 

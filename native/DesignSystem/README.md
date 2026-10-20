@@ -122,10 +122,11 @@ Mac) to see everything in light and dark side by side.
 
 ## Do and don't
 
-- Do give the window header's controls one look: a control that acts on the session (Open In, Show
-  Changes, the terminal) is an outlined `.buttonStyle(.header(isOn:iconOnly:))`, in a `ToolbarItem`
-  with `.sharedBackgroundVisibility(.hidden)`. Window chrome (the sidebar toggle, back and forward)
-  stays a ghost `WindowToolbarButton`. Leave the system's toolbar glass to system controls, and put
+- Do keep the session header free of tool buttons: tools speak through facts under the title and
+  open in their place (`docs/session-tools.md`). A control that acts on the session and has to sit
+  in the header (Earlier Conversation) is an outlined `.buttonStyle(.header(isOn:iconOnly:))`, in a
+  `ToolbarItem` with `.sharedBackgroundVisibility(.hidden)`. Window chrome (the sidebar toggle, back
+  and forward) stays a ghost `WindowToolbarButton`. Leave the system's toolbar glass to system controls, and put
   status that belongs to the conversation (MCP servers, context) in the composer instead.
 - Do put a hand-built toolbar control in a `ToolbarItem` with `.sharedBackgroundVisibility(.hidden)`;
   don't add your own fill on top of a system control.

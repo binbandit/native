@@ -17,6 +17,8 @@ struct SessionToolContribution: Identifiable {
     var pane: (@MainActor (SessionToolContext) -> AnyView)?
     /// What clicking its fact does when it has no pane.
     var perform: @MainActor (SessionToolContext) -> Void = { _ in }
+    /// Its fact's menu (a secondary click, or touch and hold): Open In's other apps.
+    var menu: (@MainActor (SessionToolContext) -> AnyView)?
     /// What it does for the transcript's own controls: the files-changed card, a subagent's card.
     var transcript: (@MainActor (SessionToolContext) -> SessionTranscriptActions)?
     /// Its own tabs in a place's strip, for a tool that's several things at once (the terminal's

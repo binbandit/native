@@ -1,197 +1,173 @@
 import ACP
 import Git
+import SessionTools
 import SwiftUI
 
+/// A task's screen: the conversation and the composer, and its tools placed by
+/// `SessionToolRegistry` (`docs/session-tools.md`): each tool's fact under the title while it has
+/// one, and the open tool's pane in its place. The header has no tool buttons.
 struct SessionView: View {
     let session: SessionModel
-    /// The subagent whose conversation is open in the inspector.
-    @State private var openSubagent: SessionID?
-    /// Whether the inspector shows the task's git changes (⌘⇧D) instead of a subagent.
-    @State private var showsChanges = false
-    /// Which changes the inspector shows; the files-changed card's Review points it at the turn.
-    @State private var changesReview = GitChangesReview()
-    @Environment(GitStore.self) private var git
-    @Environment(GitHubModel.self) private var gitHub
-    @Environment(AppModel.self) private var model
-    @Experiment(.transcriptWidth) private var columnWidth: TranscriptWidth
+    @State private var tools = SessionToolsScreenModel()
     /// Files dropped on the transcript, for the composer to attach.
     @State private var drops = ComposerDropInbox()
+    /// The room the conversation, the side panel and the workbench share.
+    @State private var width: CGFloat = 0
+    @State private var height: CGFloat = 0
+    @Environment(GitStore.self) private var git
     @Environment(\.inspectorRoom) private var inspectorRoom
-    @Experiment(.sessionTools) private var usesSessionTools
-    private static let subagentInspectorWidth: CGFloat = 420
+    @Experiment(.transcriptWidth) private var columnWidth: TranscriptWidth
+
+    private var registry: SessionToolRegistry { tools.registry }
 
     var body: some View {
-        if usesSessionTools {
-            SessionToolsScreen(session: session)
-        } else {
-            standardBody
-        }
-    }
-
-    private var standardBody: some View {
-        TranscriptView(session: session) { id in
-            openInspector(Self.subagentInspectorWidth) { openSubagent = id }
-        }
-        .environment(\.turnChangesActions, turnChangesActions)
-        .environment(\.isPrimaryTranscript, true)
-        // Native's band under the toolbar, in place of the system's edge effect; inside the bars.
-        .dsToolbarBand()
-        // A bar rather than an inset, so the transcript gets the system scroll edge effect under it.
-        .safeAreaBar(edge: .bottom, spacing: 0) {
-            VStack(spacing: 0) {
-                // A conversation `/clear` set aside is kept to read: no composer, the way back instead.
-                if session.isEarlierConversation {
-                    EarlierConversationBar(session: session)
-                } else {
-                    RemovedWorkspaceNotice(session: session)
-                    UsageComposerNotices(session: session)
-                    ComposerView(session: session)
+        let layout = registry.layout(for: session, on: tools)
+        let transcript = SessionTranscriptActions.merging(
+            registry.tools.filter { registry.place(of: $0.id) != .off }.compactMap { $0.transcript?(context($0)) })
+        VStack(spacing: 0) {
+            TranscriptView(session: session) { id in transcript.openSubagent?(id) }
+                .environment(\.turnChangesActions, transcript.turnChanges)
+                .environment(\.isPrimaryTranscript, true)
+                .dsToolbarBand()
+                .safeAreaBar(edge: .bottom, spacing: 0) { composer }
+                .safeAreaBar(edge: .top, spacing: 0) {
+                    TaskScriptBanner(folder: session.cwd)
                 }
+                .composerDropTarget(drops, isEnabled: !session.isEarlierConversation)
+                .overlay(alignment: .top) { shade }
+            if !layout.workbench.isEmpty {
+                SessionToolsWorkbench(
+                    tabs: layout.workbench.compactMap(registry.tool),
+                    open: tools.openByPlace[.workbench].flatMap(registry.tool), context: context,
+                    select: { tools.open($0) }, close: { tools.close(.workbench) },
+                    maxHeight: height - SessionToolMetrics.conversationAboveWorkbenchMinHeight)
             }
         }
-        // How the task's worktree setup is going, and any of its scripts that failed (TaskScripts).
-        .safeAreaBar(edge: .top, spacing: 0) {
-            TaskScriptBanner(folder: session.cwd)
+        .onGeometryChange(for: CGFloat.self, of: \.size.height) { height = $0 }
+        .background {
+            // Each tool's own bookkeeping while it's on: the terminal's colors and ⌃`.
+            ForEach(registry.tools.filter { registry.place(of: $0.id) != .off }) { tool in
+                tool.companion?(context(tool))
+            }
         }
-        .composerDropTarget(drops, isEnabled: !session.isEarlierConversation)
-        .terminalPanel(for: session)
-        .projectActions(for: session)
         .focusedSceneValue(\.activeSession, session)
+        .focusedSceneValue(\.sessionTools, tools)
+        .focusedSceneValue(\.gitChangesInspector, toggling(.changes))
         .navigationTitle(DSInlineCode.plain(session.displayTitle))
-        .navigationSubtitle(
-            [session.cwd.abbreviatedPath, repository.summary].compactMap(\.self).joined(separator: " · ")
-        )
-        // The inspector makes the task its own column, which the window's minimum-size question measures
-        // on its own: never at no width (docs/performance.md).
-        .platformMinimumContentWidth(DS.Window.detailMinWidth)
-        // One inspector, showing a subagent or the task's changes; opening one closes the other.
-        .inspector(isPresented: isInspectorPresented) {
-            if let id = openSubagent, let subagent = session.state.subagents.first(where: { $0.id == id }) {
-                SubagentInspector(subagent: subagent, child: session.child(id))
-                    .sessionInspectorColumn(min: 340, ideal: Self.subagentInspectorWidth, max: 640)
-            } else if showsChanges {
-                GitChangesInspector(model: repository, review: changesReview, session: session) {
-                    Task { await GitHubGitWiring.createPullRequest(from: repository, gitHub: gitHub) }
-                }
-                .sessionInspectorColumn(
-                    min: GitMetrics.inspectorMinWidth, ideal: GitMetrics.inspectorIdealWidth,
-                    max: GitMetrics.inspectorMaxWidth)
-            }
-        }
-        .onChange(of: openSubagent) { _, id in
-            if id != nil { showsChanges = false }
-        }
-        .onChange(of: showsChanges) { _, shows in
-            if shows { openSubagent = nil }
-        }
-        .onChange(of: isInspectorPresented.wrappedValue) { _, isPresented in
-            if !isPresented { inspectorRoom.release() }
-        }
-        // Another task or page took the window; the inspector went with this view.
-        .onDisappear { inspectorRoom.release() }
+        .toolbar(removing: .title)
         .toolbar {
-            // The header controls draw their own outline (`.header` buttons, Open In) rather than
-            // sitting on the toolbar's glass, so each hides the shared background. The session's
-            // MCP servers live in the composer, beside the context ring.
+            ToolbarItem(placement: .navigation) {
+                SessionToolsTitle(
+                    title: session.displayTitle, location: location,
+                    facts: layout.facts.compactMap { id in
+                        registry.tool(id).flatMap { tool in tool.fact(context(tool)).map { (tool, $0) } }
+                    },
+                    isOpen: { tools.isOpen($0.id) },
+                    menu: { tool in tool.menu?(context(tool)) },
+                    action: { tool in
+                        if tool.pane == nil { tool.perform(context(tool)) } else { tools.toggle(tool.id) }
+                    })
+            }
+            .sharedBackgroundVisibility(.hidden)
             ToolbarItem {
                 EarlierConversationButton(session: session)
             }
             .sharedBackgroundVisibility(.hidden)
-            ToolbarItem {
-                OpenInButton(location: OpenInLocation(folder: session.cwd, host: projectHost))
+        }
+        // Measured on its own beside the side panel: never at no width (docs/performance.md).
+        .platformMinimumContentWidth(DS.Window.detailMinWidth)
+        .inspector(isPresented: isSidePanelDocked) { sidePanel(layout) }
+        // Outside the side panel, so the room counts the panel's width while it's docked.
+        .onGeometryChange(for: CGFloat.self, of: \.size.width) { width = $0 }
+        .onChange(of: tools.openByPlace[.side] == nil) { _, isClosed in
+            if isClosed { inspectorRoom.release() }
+        }
+        .onDisappear { inspectorRoom.release() }
+        .onAppear {
+            tools.makeRoomForSidePanel = { [inspectorRoom] show in
+                guard docksSidePanel else { return show() }
+                inspectorRoom.open(SessionToolMetrics.sidePanelIdealWidth, show)
             }
-            .sharedBackgroundVisibility(.hidden)
-            ToolbarItem {
-                GitChangesToolbarButton(model: repository, isPresented: showsChangesBinding)
-            }
-            .sharedBackgroundVisibility(.hidden)
-            .visibilityPriority(.high)
+        }
+        // View ▸ Toggle Subagent Inspector (⌥⌘I) asks the task; the Subagents tool answers.
+        .onChange(of: session.isSubagentInspectorToggleRequested) { _, isRequested in
+            guard isRequested else { return }
+            session.isSubagentInspectorToggleRequested = false
+            tools.toggle(.subagents)
         }
         .mcpServersPresentation()
-        .focusedSceneValue(\.gitChangesInspector, showsChangesBinding)
         .refreshesGitStatus(of: session, in: git)
         .environment(\.transcriptColumnMaxWidth, columnWidth.maxWidth)
     }
 
-    /// The machine the task's project is on (the selected task's project is the current one).
-    private var projectHost: HostID {
-        model.currentProject?.host ?? .local
-    }
-
-    private var repository: GitRepositoryModel {
-        git.model(for: session.cwd)
-    }
-
-    /// Review and Commit on the transcript's files-changed card. Commit only shows while there's
-    /// something uncommitted.
-    private var turnChangesActions: TurnChangesActions {
-        let repository = repository
-        let gitHub = gitHub
-        let canCommit = repository.canCommit
-        return TurnChangesActions(
-            review: { reviewTurn(file: nil) },
-            commitForm: canCommit
-                ? { isPresented in
-                    AnyView(
-                        GitCommitPopover(
-                            model: repository, isPresented: isPresented,
-                            onCreatePullRequest: {
-                                Task { await GitHubGitWiring.createPullRequest(from: repository, gitHub: gitHub) }
-                            }))
-                } : nil,
-            reviewFile: GitChangesReview.isEnabled ? { reviewTurn(file: $0) } : nil
-        )
-    }
-
-    /// Opens the changes inspector on the latest turn's changes, and with `file`, that file's.
-    private func reviewTurn(file: String?) {
-        changesReview.showTurn(of: session, file: file)
-        showsChangesBinding.wrappedValue = true
-    }
-
-    /// The changes inspector, making room for it before it opens.
-    private var showsChangesBinding: Binding<Bool> {
-        Binding(
-            get: { showsChanges },
-            set: { shows in
-                if shows {
-                    openInspector(GitMetrics.inspectorIdealWidth) { showsChanges = true }
-                } else {
-                    withTransaction(\.disablesAnimations, true) { showsChanges = false }
-                }
+    private var composer: some View {
+        VStack(spacing: 0) {
+            // A conversation `/clear` set aside is kept to read: no composer, the way back instead.
+            if session.isEarlierConversation {
+                EarlierConversationBar(session: session)
+            } else {
+                RemovedWorkspaceNotice(session: session)
+                UsageComposerNotices(session: session)
+                ComposerView(session: session)
             }
-        )
+        }
     }
 
-    /// Opens an inspector once the window has made room for it, rather than growing; one already
-    /// open has its room. The column appears without sliding in: sliding lays the whole window out
-    /// again every frame.
-    private func openInspector(_ width: CGFloat, _ open: @escaping @MainActor () -> Void) {
-        let appear: @MainActor () -> Void = { withTransaction(\.disablesAnimations, true, open) }
-        guard !isInspectorPresented.wrappedValue else { return appear() }
-        inspectorRoom.open(width, appear)
-    }
-
-    private var isInspectorPresented: Binding<Bool> {
-        Binding(
-            get: { openSubagent != nil || showsChanges },
-            set: { isPresented in
-                if !isPresented {
-                    openSubagent = nil
-                    showsChanges = false
-                }
+    /// A fact's tool, or a side tool while the window is too narrow to dock it, over the
+    /// conversation. The fact's wins while both are open.
+    @ViewBuilder private var shade: some View {
+        let id = tools.openByPlace[.fact] ?? (docksSidePanel ? nil : tools.openByPlace[.side])
+        if let id, let tool = registry.tool(id) {
+            GeometryReader { proxy in
+                SessionToolsShade(tool: tool, context: context(tool)) { tools.close(id) }
+                    .frame(height: proxy.size.height * SessionToolMetrics.shadeHeightShare)
+                    .padding(.horizontal, DS.Space.lg)
             }
+            .transition(.move(edge: .top).combined(with: .opacity))
+        }
+    }
+
+    @ViewBuilder private func sidePanel(_ layout: SessionToolLayout) -> some View {
+        if let id = tools.openByPlace[.side], let open = registry.tool(id) {
+            SessionToolsSidePanel(
+                tabs: layout.side.compactMap(registry.tool), open: open, context: context,
+                select: { tools.open($0) }, close: { tools.close(.side) }
+            )
+            .frame(minWidth: SessionToolMetrics.sidePanelMinWidth)
+            .dsToolbarBand()
+            .inspectorColumnWidth(
+                min: SessionToolMetrics.sidePanelMinWidth, ideal: SessionToolMetrics.sidePanelIdealWidth,
+                max: SessionToolMetrics.sidePanelMaxWidth)
+        }
+    }
+
+    /// Whether a side tool docks beside the conversation: only with room to read both.
+    private var docksSidePanel: Bool {
+        width >= SessionToolMetrics.conversationBesidePanelMinWidth + SessionToolMetrics.sidePanelIdealWidth
+    }
+
+    private var isSidePanelDocked: Binding<Bool> {
+        Binding(
+            get: { docksSidePanel && tools.openByPlace[.side] != nil },
+            set: { if !$0 { tools.close(.side) } }
         )
     }
-}
 
-extension View {
-    /// The inspector column's widths, with its content never laid out narrower than the minimum.
-    /// The window takes its minimum size from the content laid out at no width at all, where wrapped
-    /// text (an empty state's message) comes out thousands of points tall, so opening the inspector
-    /// grew the window to the height of the screen. Under the toolbar, the column gets the same
-    /// band as the page beside it.
-    fileprivate func sessionInspectorColumn(min: CGFloat, ideal: CGFloat, max: CGFloat) -> some View {
-        frame(minWidth: min).dsToolbarBand().inspectorColumnWidth(min: min, ideal: ideal, max: max)
+    /// A tool as a show-or-hide switch, for the commands that toggle it (⇧⌘D for Changes).
+    private func toggling(_ id: SessionToolID) -> Binding<Bool>? {
+        guard registry.place(of: id) != .off else { return nil }
+        return Binding(get: { tools.isOpen(id) }, set: { $0 ? tools.open(id) : tools.close(id) })
+    }
+
+    private func context(_ tool: SessionToolContribution) -> SessionToolContext {
+        SessionToolContext(session: session, screen: tools, tool: tool.id)
+    }
+
+    /// The task's branch, else its folder, at the head of the facts.
+    private var location: String {
+        guard case .branch(let name)? = git.model(for: session.cwd).branch?.head else {
+            return session.cwd.abbreviatedPath
+        }
+        return name
     }
 }

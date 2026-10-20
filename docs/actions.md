@@ -8,14 +8,14 @@ the project, a team can commit them with the repo, and each user keeps their own
 
 | Surface | What it does |
 | --- | --- |
-| The header's **Run** menu (outlined, beside Open In) | Stop what's running, Run Last, the project's actions, the repo's ("From the repo"), up to five suggestions (Add, Add and Run, Dismiss), and Edit Actions… |
 | The menu bar's **Run** menu | Run Last (⇧⌘R), Stop, every action of the visible task's project with the shortcut the user gave it, Edit Project Actions… |
 | The command palette (⌘K) | "Run: Test", "Run: Install"… for the visible task's project, plus Run Last Action, Stop Action, Edit Project Actions… |
-| The project's menu (sidebar "…" and context menu) | **Run ▸** the same as the header's menu |
+| The project's menu (sidebar "…" and context menu) | **Run ▸** stop what's running, Run Last, the project's actions, the repo's ("From the repo"), up to five suggestions (Add, Add and Run, Dismiss), and Edit Actions… |
 | Settings ▸ the project's page ▸ **Actions** | Add, edit, reorder and delete the user's actions; the repo's; every suggestion |
 
-While an action runs, the header's button shows a loader and the action's name; after the last run
-failed, a red dot beside Run. Every action is a command of its own, `projectActions.run.<name>`
+While an action runs, the session's Run fact under the title says so ("Dev :3000" beside a loader),
+and after the last run failed, "Test failed" with a red dot; either opens the run's tab
+(`docs/session-tools.md`). Every action is a command of its own, `projectActions.run.<name>`
 ("Run: Test"), named after the action, so a shortcut given to it in Settings ▸ Keyboard Shortcuts
 runs Test in whichever project is in view (`docs/keyboard.md`, Project actions).
 
@@ -130,7 +130,8 @@ Allow for the project. With the policy off, repo actions aren't read at all, and
 | `TerminalJob` (a tab's command and how it ended) | `Packages/Terminal` |
 | `TerminalPanelModel.run(_:)`, `stopJob(in:)`, `rerunJob(in:)`; the job banner, dot and controls | `native/Terminal` |
 | `ProjectActionStore` (actions, scans, dismissals), `ProjectActionRunner` (runs, toasts, trust) | `native/ProjectActions/Model` |
-| The header button, menus, toast, output sheet, repo-command question | `native/ProjectActions/Views` |
+| Menus, toast, output sheet, repo-command question | `native/ProjectActions/Views` |
+| The Run fact on the session screen | `native/Wiring/SessionTools/SessionRunTool.swift` |
 | The settings section and editor (`ProjectActionsSettingsSection(project:)`, embedded in the project's settings page) | `native/ProjectActions/Settings` |
 | Commands and the menu bar's Run menu | `native/ProjectActions/Commands` |
 | Launch wiring | `ProjectActionsWiring`, called from `NativeApp` and `CommandsWiring` |

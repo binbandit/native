@@ -237,14 +237,14 @@ keyboard.
 | ⌘⇧X | Expeditions | Go | `go.expeditions` |
 | ⇧⌘F | Search every task (`docs/search.md`) | Go | `search.show` |
 | ⌥⌘I | Show or hide the subagent inspector | View | `view.toggleSubagentInspector` |
-| ⌘⇧D | Show or hide the changes inspector (the task's uncommitted git changes) | View | `view.toggleChanges` |
+| ⌘⇧D | Show or hide Changes (the task's uncommitted git changes), wherever it lives | View | `view.toggleChanges` |
 | ⌃⌘M | Show the session's MCP servers (the server chip beside the composer's context ring) | View | `view.mcpServers` |
 | ⌃⌘A | Keep Mac awake: cycle Off → While agents work → On (View ▸ Keep Mac Awake) | View | `keepAwake.nextMode` |
 | | Show or hide the status bar along the window's bottom edge (on by default) | View | `statusBar.toggle` |
 
 ## Session tools
 
-With Session Tools on (Settings ▸ Labs), each tool on the session screen has one key that shows or
+Each tool on the session screen has one key that shows or
 hides it wherever it lives (`docs/session-tools.md`). ⇧⌘D, ⌃` and ⌥⌘I keep showing Changes, the
 terminal and Subagents.
 
@@ -343,7 +343,8 @@ The search panel (⇧⌘F) keeps focus in its field, so typing always refines th
 
 ## Terminal
 
-Each task has a terminal panel under the composer, opening in the task's folder (`docs/terminal.md`).
+Each task has a terminal, in the workbench under the composer unless it's been moved, opening in the
+task's folder (`docs/terminal.md`).
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
@@ -367,8 +368,8 @@ bindings (`docs/terminal.md`); otherwise they're these:
 
 ## Project actions
 
-A project's actions (Test, Install, Dev…) run in the visible task's worktree, from the header's Run
-menu, the Run menu in the menu bar, the palette and the project's menu (`docs/actions.md`).
+A project's actions (Test, Install, Dev…) run in the visible task's worktree, from the Run menu in the
+menu bar, the palette and the project's menu (`docs/actions.md`).
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |

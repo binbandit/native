@@ -1,9 +1,10 @@
 # Terminal
 
-Every task has a terminal panel under its composer: tabs of real shells that start in the task's
-folder (its worktree, when it has one), drawn by libghostty, the library inside
-[Ghostty](https://ghostty.org). ⌃` shows and hides it, ⌃⇧` adds a tab (`docs/keyboard.md`), and
-the task's toolbar has a terminal button for pointer and touch.
+Every task has a terminal: tabs of real shells that start in the task's folder (its worktree, when
+it has one), drawn by libghostty, the library inside [Ghostty](https://ghostty.org). It's a session
+tool (`docs/session-tools.md`), in the workbench under the composer by default, where every shell
+and run is a tab of its own. ⌃` shows and hides it, ⌃⇧` adds a tab, and View ▸ Show Terminal is the
+pointer and touch way in (`docs/keyboard.md`).
 Why libghostty, and the pin, are in `docs/decisions.md`.
 
 ## How it fits together
@@ -12,8 +13,8 @@ Why libghostty, and the pin, are in `docs/decisions.md`.
  native/Terminal (app)                                   Packages/Terminal (UI-free, tested)
  ┌──────────────────────────────────────────────┐        ┌───────────────────────────────────┐
  │ TerminalCommands   ⌃`  ⌃⇧`  (View menu)       │        │ TerminalTabList   tabs, names,    │
- │ .terminalPanel(for:)  → TerminalPanel         │        │                   selection       │
- │   tab bar · resize divider · states           │        │ TerminalStatus    running/exited/ │
+ │ Terminal session tool → SessionTerminalPane   │        │                   selection       │
+ │   tabs in the place's strip · states          │        │ TerminalStatus    running/exited/ │
  │ TerminalStore ── TerminalPanelModel per task  │ uses   │                   failed to start │
  │   └ TerminalEngine (protocol) ─ TerminalSurface├──────▶│ TerminalTheme/Colors/Style        │
  │       └ GhosttyRuntime ─ GhosttySurfaceView   │        │ GhosttyConfiguration  settings →  │

@@ -3,7 +3,7 @@ import SessionTools
 import SwiftUI
 
 extension FocusedValues {
-    /// The focused window's session tools, published by `SessionToolsScreen` for the tool commands.
+    /// The focused window's session tools, published by `SessionView` for the tool commands.
     @Entry var sessionTools: SessionToolsScreenModel?
 }
 

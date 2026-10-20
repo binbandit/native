@@ -190,7 +190,7 @@ $D key cmd+1 ; $D key ctrl+tab ; $D key "cmd+["
 $D press "Run Tests and Fix Failures"           # a sidebar task, by its title
 
 # Review and commit what the turn changed
-$D press "Show Changes"                         # the changes inspector (⌘⇧D)
+$D press "Changes: 2 files"                     # its fact under the title (⇧⌘D, ⌥⌘1)
 $D press Review --role button                   # the turn's "files changed" card
 $D press Commit --role button                   # opens the commit form under the button
 $D set "Commit message" "docs: say where the playtest guide is"

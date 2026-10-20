@@ -8,18 +8,24 @@ struct SessionTerminalPane: View {
     let store: TerminalStore
 
     var body: some View {
-        content
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(.dsSurfaceSunken)
-            .confirmationDialog(
-                "Close this terminal?", isPresented: isConfirmingClose, titleVisibility: .visible,
-                presenting: panel.confirmingClose
-            ) { id in
-                Button("Close Terminal", role: .destructive) { panel.close(id) }
-                Button("Cancel", role: .cancel) {}
-            } message: { _ in
-                Text("A program is still running in it, and closing the terminal ends it.")
+        VStack(spacing: 0) {
+            if case .ghosttyInvalid(_, let diagnostics) = store.configStatus {
+                TerminalConfigNotice(diagnostics: diagnostics, reload: store.reloadGhosttyConfig)
+                    .padding(.top, DS.Space.xs)
             }
+            content
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .background(.dsSurfaceSunken)
+        .confirmationDialog(
+            "Close this terminal?", isPresented: isConfirmingClose, titleVisibility: .visible,
+            presenting: panel.confirmingClose
+        ) { id in
+            Button("Close Terminal", role: .destructive) { panel.close(id) }
+            Button("Cancel", role: .cancel) {}
+        } message: { _ in
+            Text("A program is still running in it, and closing the terminal ends it.")
+        }
     }
 
     @ViewBuilder private var content: some View {
