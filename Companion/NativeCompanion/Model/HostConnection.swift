@@ -122,6 +122,9 @@ final class HostConnection: Identifiable {
         case .activity, .agentChanged, .appUpdateCheckRequested, .appUpdateInstallRequested:
             // The Mac app's business: the phone reads activity through the sessions themselves.
             break
+        case .notificationPosted, .notificationsCleared:
+            // The phone hears these as pushes once it has a developer team (docs/companion.md).
+            break
         }
     }
 

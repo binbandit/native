@@ -24,7 +24,7 @@ public enum AIInstructionProject {
 
     /// The main checkout of the linked worktree `folder` is in, read from the worktree's `.git` file
     /// (`gitdir: <main>/.git/worktrees/<name>`). Nil for a main checkout or anything that isn't git.
-    static func mainCheckout(ofWorktree folder: URL) -> URL? {
+    public static func mainCheckout(ofWorktree folder: URL) -> URL? {
         var directory = folder.standardizedFileURL
         while true {
             let marker = directory.appending(path: ".git", directoryHint: .notDirectory)

@@ -8,7 +8,7 @@ public enum SessionTitlePrompt {
     public static let requestLimit = 2_000
 
     public static let builtIn =
-        "You title tasks in a coding agent app's sidebar so the user can find them later. Title what the user wants done, not what was said about it. A title is 2 to 6 words, on one line, without quotes or trailing punctuation."
+        "You title tasks in a coding agent app's sidebar so the user can find them later. Title what the user wants done, not what was said about it, and name what's specific about it: the file, function, feature, command or goal, not only the kind of work (\"Run the migration script\", not \"Run shell command\"). A title is 2 to 6 words, on one line, without quotes or trailing punctuation."
 
     public static func instructions(adding addition: AIInstructionAddition?) -> String {
         AIInstructionAddition.applying(addition, to: builtIn)
