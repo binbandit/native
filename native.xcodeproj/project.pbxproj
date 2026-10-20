@@ -19,24 +19,26 @@
 		000000000000000000E10320 /* Experiments in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000000E10310 /* Experiments */; };
 		000000000000000005EA2C20 /* Search in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000005EA2C10 /* Search */; };
 		000000000000000007A5C120 /* TaskList in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000007A5C110 /* TaskList */; };
-		00000000000000007A5C5C20 /* TaskScripts in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000007A5C5C10 /* TaskScripts */; };
+		000000000000000007C4E020 /* NativeOrchestration in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000007C4E010 /* NativeOrchestration */; };
 		00000000000000000A070020 /* NativeAutomation in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000000A070010 /* NativeAutomation */; };
 		00000000000000000B5C1020 /* Skills in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000000B5C1010 /* Skills */; };
 		00000000000000000E0ED020 /* NativeExpeditions in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000000E0ED010 /* NativeExpeditions */; };
 		0000000000000000117C0020 /* NativeLink in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000117C0010 /* NativeLink */; };
 		0000000000000000117C0021 /* NativeLink in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000117C0011 /* NativeLink */; };
+		00000000000000004D0DE520 /* Modes in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000004D0DE510 /* Modes */; };
+		00000000000000005171E020 /* SessionTitling in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000005171E010 /* SessionTitling */; };
 		00000000000000005E171003 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000005E171002 /* Sentry */; };
 		00000000000000005E171013 /* NativeDiagnostics in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000005E171012 /* NativeDiagnostics */; };
 		00000000000000005E1EA503 /* Sparkle in Frameworks */ = {isa = PBXBuildFile; platformFilters = (macos, ); productRef = 00000000000000005E1EA502 /* Sparkle */; };
 		00000000000000005E1EA531 /* LICENSE.md in Resources */ = {isa = PBXBuildFile; fileRef = 00000000000000005E1EA530 /* LICENSE.md */; };
 		000000000000000071E10020 /* Terminal in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000071E10010 /* Terminal */; };
+		00000000000000007A5C5C20 /* TaskScripts in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000007A5C5C10 /* TaskScripts */; };
 		00000000000000007E1E0020 /* NativeTelemetry in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000007E1E0010 /* NativeTelemetry */; };
 		0000000000000000901C0020 /* NativePolicy in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000901C0010 /* NativePolicy */; };
-		0000000000000000A1150020 /* AIInstructions in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000A1150010 /* AIInstructions */; };
-		00000000000000004D0DE520 /* Modes in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000004D0DE510 /* Modes */; };
 		00000000000000009C010020 /* ProjectIcons in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000009C010010 /* ProjectIcons */; };
-		0000000000000000AC7A0020 /* ProjectActions in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000AC7A0010 /* ProjectActions */; };
+		0000000000000000A1150020 /* AIInstructions in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000A1150010 /* AIInstructions */; };
 		0000000000000000A99A0020 /* AppAppearance in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000A99A0010 /* AppAppearance */; };
+		0000000000000000AC7A0020 /* ProjectActions in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000AC7A0010 /* ProjectActions */; };
 		0000000000000000C0DC1020 /* NativeCommands in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000C0DC1010 /* NativeCommands */; };
 		0000000000000000C0DE0020 /* CodeThemes in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000C0DE0010 /* CodeThemes */; };
 		54227E023083ADA900D7771F /* MCPClient in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000000AC10010 /* MCPClient */; };
@@ -124,6 +126,8 @@
 				0000000000000000C0DC1020 /* NativeCommands in Frameworks */,
 				0000000000000000901C0020 /* NativePolicy in Frameworks */,
 				0000000000000000A1150020 /* AIInstructions in Frameworks */,
+				00000000000000005171E020 /* SessionTitling in Frameworks */,
+				000000000000000007C4E020 /* NativeOrchestration in Frameworks */,
 				00000000000000004D0DE520 /* Modes in Frameworks */,
 				00000000000000009C010020 /* ProjectIcons in Frameworks */,
 				0000000000000000AC7A0020 /* ProjectActions in Frameworks */,
@@ -251,6 +255,8 @@
 				0000000000000000C0DC1010 /* NativeCommands */,
 				0000000000000000901C0010 /* NativePolicy */,
 				0000000000000000A1150010 /* AIInstructions */,
+				00000000000000005171E010 /* SessionTitling */,
+				000000000000000007C4E010 /* NativeOrchestration */,
 				00000000000000004D0DE510 /* Modes */,
 				00000000000000009C010010 /* ProjectIcons */,
 				0000000000000000AC7A0010 /* ProjectActions */,
@@ -310,6 +316,8 @@
 				0000000000000000C0DC1000 /* XCLocalSwiftPackageReference "Packages/NativeCommands" */,
 				0000000000000000901C0000 /* XCLocalSwiftPackageReference "Packages/NativePolicy" */,
 				0000000000000000A1150000 /* XCLocalSwiftPackageReference "Packages/AIInstructions" */,
+				00000000000000005171E000 /* XCLocalSwiftPackageReference "Packages/SessionTitling" */,
+				000000000000000007C4E000 /* XCLocalSwiftPackageReference "Packages/Orchestration" */,
 				00000000000000004D0DE500 /* XCLocalSwiftPackageReference "Packages/Modes" */,
 				00000000000000009C010000 /* XCLocalSwiftPackageReference "Packages/ProjectIcons" */,
 				0000000000000000AC7A0000 /* XCLocalSwiftPackageReference "Packages/ProjectActions" */,
@@ -827,9 +835,9 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/TaskList;
 		};
-		00000000000000007A5C5C00 /* XCLocalSwiftPackageReference "Packages/TaskScripts" */ = {
+		000000000000000007C4E000 /* XCLocalSwiftPackageReference "Packages/Orchestration" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = Packages/TaskScripts;
+			relativePath = Packages/Orchestration;
 		};
 		00000000000000000A070000 /* XCLocalSwiftPackageReference "Packages/Automation" */ = {
 			isa = XCLocalSwiftPackageReference;
@@ -851,6 +859,14 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/NativeLink;
 		};
+		00000000000000004D0DE500 /* XCLocalSwiftPackageReference "Packages/Modes" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/Modes;
+		};
+		00000000000000005171E000 /* XCLocalSwiftPackageReference "Packages/SessionTitling" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/SessionTitling;
+		};
 		00000000000000005E171011 /* XCLocalSwiftPackageReference "Packages/NativeDiagnostics" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/NativeDiagnostics;
@@ -858,6 +874,10 @@
 		000000000000000071E10000 /* XCLocalSwiftPackageReference "Packages/Terminal" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Terminal;
+		};
+		00000000000000007A5C5C00 /* XCLocalSwiftPackageReference "Packages/TaskScripts" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/TaskScripts;
 		};
 		00000000000000007E1E0000 /* XCLocalSwiftPackageReference "Packages/Telemetry" */ = {
 			isa = XCLocalSwiftPackageReference;
@@ -867,25 +887,21 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/NativePolicy;
 		};
-		0000000000000000A1150000 /* XCLocalSwiftPackageReference "Packages/AIInstructions" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = Packages/AIInstructions;
-		};
-		00000000000000004D0DE500 /* XCLocalSwiftPackageReference "Packages/Modes" */ = {
-			isa = XCLocalSwiftPackageReference;
-			relativePath = Packages/Modes;
-		};
 		00000000000000009C010000 /* XCLocalSwiftPackageReference "Packages/ProjectIcons" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/ProjectIcons;
 		};
-		0000000000000000AC7A0000 /* XCLocalSwiftPackageReference "Packages/ProjectActions" */ = {
+		0000000000000000A1150000 /* XCLocalSwiftPackageReference "Packages/AIInstructions" */ = {
 			isa = XCLocalSwiftPackageReference;
-			relativePath = Packages/ProjectActions;
+			relativePath = Packages/AIInstructions;
 		};
 		0000000000000000A99A0000 /* XCLocalSwiftPackageReference "Packages/AppAppearance" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/AppAppearance;
+		};
+		0000000000000000AC7A0000 /* XCLocalSwiftPackageReference "Packages/ProjectActions" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/ProjectActions;
 		};
 		0000000000000000C0DC1000 /* XCLocalSwiftPackageReference "Packages/NativeCommands" */ = {
 			isa = XCLocalSwiftPackageReference;
@@ -961,9 +977,10 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = TaskList;
 		};
-		00000000000000007A5C5C10 /* TaskScripts */ = {
+		000000000000000007C4E010 /* NativeOrchestration */ = {
 			isa = XCSwiftPackageProductDependency;
-			productName = TaskScripts;
+			package = 000000000000000007C4E000 /* XCLocalSwiftPackageReference "Packages/Orchestration" */;
+			productName = NativeOrchestration;
 		};
 		00000000000000000A070010 /* NativeAutomation */ = {
 			isa = XCSwiftPackageProductDependency;
@@ -990,6 +1007,16 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = NativeLink;
 		};
+		00000000000000004D0DE510 /* Modes */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 00000000000000004D0DE500 /* XCLocalSwiftPackageReference "Packages/Modes" */;
+			productName = Modes;
+		};
+		00000000000000005171E010 /* SessionTitling */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 00000000000000005171E000 /* XCLocalSwiftPackageReference "Packages/SessionTitling" */;
+			productName = SessionTitling;
+		};
 		00000000000000005E171002 /* Sentry */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 00000000000000005E171001 /* XCRemoteSwiftPackageReference "sentry-cocoa" */;
@@ -1009,6 +1036,10 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = Terminal;
 		};
+		00000000000000007A5C5C10 /* TaskScripts */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = TaskScripts;
+		};
 		00000000000000007E1E0010 /* NativeTelemetry */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = NativeTelemetry;
@@ -1017,28 +1048,23 @@
 			isa = XCSwiftPackageProductDependency;
 			productName = NativePolicy;
 		};
+		00000000000000009C010010 /* ProjectIcons */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ProjectIcons;
+		};
 		0000000000000000A1150010 /* AIInstructions */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 0000000000000000A1150000 /* XCLocalSwiftPackageReference "Packages/AIInstructions" */;
 			productName = AIInstructions;
 		};
-		00000000000000004D0DE510 /* Modes */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 00000000000000004D0DE500 /* XCLocalSwiftPackageReference "Packages/Modes" */;
-			productName = Modes;
-		};
-		00000000000000009C010010 /* ProjectIcons */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = ProjectIcons;
-		};
-		0000000000000000AC7A0010 /* ProjectActions */ = {
-			isa = XCSwiftPackageProductDependency;
-			productName = ProjectActions;
-		};
 		0000000000000000A99A0010 /* AppAppearance */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 0000000000000000A99A0000 /* XCLocalSwiftPackageReference "Packages/AppAppearance" */;
 			productName = AppAppearance;
+		};
+		0000000000000000AC7A0010 /* ProjectActions */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = ProjectActions;
 		};
 		0000000000000000C0DC1010 /* NativeCommands */ = {
 			isa = XCSwiftPackageProductDependency;
