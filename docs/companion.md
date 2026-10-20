@@ -46,6 +46,10 @@ installs wait on an Apple developer team.
   cross a link, and anything not listed (future exec and file access) is refused until a grant
   covers it. The device's `initialize` is renamed to the name the Mac confirmed, so anything the
   host records as "from <device>" is true.
+- **Hosts without a screen.** `"Native Host" pair` on the host prints the same link, carrying the
+  grants it gives as well, and its window pairs the device that proves the secret without asking
+  (no typed code). Add Host on a Mac pastes it or runs it over SSH. See `docs/durability.md`,
+  "Pairing a host without a screen".
 - **Off by default.** With nothing paired and no window open, nothing listens on the network.
   Opening the Pair iPhone sheet turns the gateway on (`devices.json` remembers it and the port);
   Settings › Paired Devices can switch it off without forgetting devices.
@@ -66,8 +70,9 @@ installs wait on an Apple developer team.
 ### Host integration
 
 The gateway lives in the host process (so it works with the Mac app closed) and is plugged in by
-`NativeHostHelper/main.swift`: `LinkGateway(configuration:accept:)` with the host's `HostID`, then
-`start(verifyPeer:)`. Admitted streams go to `HostCore.accept(_:grants:)`. The Mac app drives it over
+`NativeHostHelper/main.swift`: `LinkGateway(configuration:accept:paired:)` with the host's `HostID`,
+then `start(verifyPeer:)`. Admitted streams go to `HostCore.accept(_:grants:)`, and each new pairing
+to `HostCore.journalDevicePaired`. The same helper runs `pair` (`HostPairCommand`). The Mac app drives it over
 `<host dir>/Link/link.sock` (`LinkControlClient`: status, open/close/decide pairing, revoke, restore,
 rename, grants, on/off), with the same uid and code-signature checks as the host socket.
 
@@ -80,6 +85,13 @@ unpairing one never touches another. The home screen groups everything by host (
 one), a task always belongs to one host and its actions go there, and notifications thread per
 host. Names default to the machine's own name; the person names hosts however they like. Add Host
 lives in Settings, and a pairing link opens it from anywhere.
+
+A Mac pairs with other hosts the same way (`docs/durability.md`, "Host identity and many hosts"):
+the device side of pairing and connecting is shared in `Packages/NativeLink` (`LinkPairing`,
+`PairedHostTransport`, which also says when a pairing ended so the client stops retrying, and
+`PairedHostPhase`, the connection states every client shows), and only where pairings are kept
+differs: the phone's keychain (`KeychainPairedHostStore`), a Mac's private folder
+(`FilePairedHostStore`).
 
 ## The iPhone app
 
@@ -127,14 +139,40 @@ celebrations).
   is neutral, switches, approvals and Settings follow the app, and a host left on Original has no
   color of its own. "App Icon While Connected" on a host's page switches the app icon when that
   host becomes the active one (picked in the chip, or the only host).
-- **Later, with a developer team:** APNs push (a category per kind of event, threaded per
-  host) and one Live Activity per host; `CompanionNotifications` is the seam. The full
+- **Later, with a developer team:** APNs push of the host's notification events (a category per
+  set of actions, threaded per host; "Notifications and push") and one Live Activity per host;
+  `CompanionNotifications` is the seam. The full
   `TranscriptView` stays Mac-only until it no longer needs `SessionModel`/`AppModel`; the phone's
   rows are its own, built on the same `SessionState` items and `ToolPresentation`.
 - **Organization policy.** `policy.companion.enabled` off: the Mac page explains it and locks its
   rows, the gateway stops listening, opens no window and answers paired devices with an
   authenticated `disabledByPolicy` (pairings kept), and the phone's Add Host says pairing is off.
   The host reads the policy from the app's managed domain (`LinkGateway.setAllowedByPolicy`).
+
+### Notifications and push
+
+The host already posts every notification as an event with a stable id, whether or not anyone is
+connected, and clears it on every client once it's seen or settled (`docs/durability.md`,
+"Notifications"). Push is one more way to deliver those events, not a new engine:
+
+- **Connected,** the phone hears `_native/notifications/posted` and `…/cleared` like the Mac does
+  (`HostConnection` ignores them until push lands) and catches up with `_native/notifications/list`;
+  what it missed folds into a summary with `AwaySummary(notifications:)`, as on the Mac.
+- **Registering.** A paired device sends its APNs token, environment and notification choices
+  (`HostPreferences`) with a new `_native/notifications/register_push`; the host keeps tokens per
+  pairing and forgets them on revoke. The host filters by those choices when it pushes, since a phone
+  can't hold back an alert push it already got.
+- **Posting.** For each posted notification the host (through a push relay, an open question above)
+  sends an alert: the Mac's words (`NativeNotification`'s factories move into a shared package),
+  `thread-id` the host and task so hosts never mix, `apns-collapse-id` the notification's `group` so a
+  newer one for a task replaces the older, a category per set of actions (`allow`/`reject`, `reply`),
+  and `mutable-content` so a service extension can add the host's name and mark.
+- **Clearing.** `cleared` becomes a background push carrying the ids; the phone takes them down
+  (`removeDeliveredNotifications`), as the Mac does on the live event.
+- **Acting.** Allow, Reject or Reply on the lock screen wakes the app, which connects over the link
+  and calls `_native/notifications/act {id, action, text}`: the host answers the agent, acknowledges
+  the notification and clears it on the Mac. Opening one calls `…/acknowledge`. The gateway lets
+  paired devices call all three `notifications` methods.
 
 ### App icons and celebrations
 

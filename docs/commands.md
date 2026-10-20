@@ -13,7 +13,8 @@ bindings. `docs/keyboard.md` lists the default shortcuts.
 | `NativeCommand` | `native/Commands/NativeCommand.swift` | One action: id, title, category, symbol, keywords, availability, perform, optional dynamic menu title, checkmark state, and a query action |
 | `CommandRegistry` | `native/Commands/CommandRegistry.swift` | Every registered command, plus the bindings in effect: defaults, then the user's changes (or the organization's). Observable, so menus, the palette and Settings follow a change at once |
 | `CommandContext` | `native/Commands/CommandContext.swift` | What a command acts on: the frontmost window's task and the window state views publish as focused scene values |
-| `CommandMenuItem` | `native/Commands/CommandMenuItem.swift` | A command as a menu item, with its title, shortcut, availability and action all from the registry |
+| `CommandMenuItem` | `native/Commands/CommandMenuItem.swift` | A command as a menu item, with its title, shortcut, availability and action all from the registry. Equal to the item it replaces while it shows the same, so a focus change rebuilds only the items it changes |
+| `NativeMenuBar` | `native/Commands/MenuBar/NativeMenuBar.swift` | The menu bar: places every menu's items, and reads the frontmost window's context once for all of them (`CommandMenuContext`) rather than once per item |
 | `CommandPalette` | `native/Commands/Palette/` | The ⌘K palette's state, sources, ranking and view |
 | Settings page | `native/Settings/Pages/KeyboardShortcutsSettingsPage.swift`, `native/Commands/Settings/` | Editing: recorder, conflicts, reset, search, import and export |
 | Wiring | `native/Wiring/CommandsWiring.swift` | Registers every built-in feature's commands at launch and gives the palette its sources |
@@ -45,7 +46,9 @@ NativeCommand(.sessionArchive, title: "Archive Task", category: .tasks, systemIm
   command for whatever is typed ("Search Tasks for “…”").
 - Features build their commands in their own folder, as a `NativeCommand` extension (for example
   `NativeCommand.terminal(_:)` in `native/Terminal/Views/TerminalCommands.swift`), and add one line
-  to `CommandsWiring`. The menus place them with `CommandMenuItem(id, in: registry)`.
+  to `CommandsWiring`. The menus place them with `CommandMenuItem(id, in: menu)`, where `menu` is the
+  `CommandMenuContext` `NativeMenuBar` hands every menu; items act on the context the menu bar read
+  last, so one that kept its body after a focus change still acts on the window in front.
 
 **A command with a shortcut needs a menu item.** The menu bar is what delivers key equivalents
 (and what lists them, on the Mac and on iPad), so every command that can have a shortcut appears in

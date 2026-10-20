@@ -101,6 +101,8 @@ of that agent through it.
 | `requires` | no | Commands besides `command` that must be on `PATH` for the agent to count as installed, such as the CLI an adapter drives: `["claude"]`. Native doesn't start an agent that's missing one; it offers it in Add Agent. |
 | `setup` | no | How to get the agent going, shown in Add Agent and never run: `install` (a command to paste in a terminal), `docs` (a URL) and `signIn` (a terminal command that signs in). |
 | `idleSessionTimeout` | no | Seconds one of the user's sessions may sit unused (not shown, not working, no draft) before Native closes it, here and in the agent (`session/close`), loading it back when it's selected again. Set it only for an agent that pays for every open session, such as a process each, and reopens one faithfully: transcript, model and mode. Without it, sessions stay open. |
+| `idleUnloadTimeout` | no | Seconds a session may sit with nothing happening (no turn, approval, question or queued message) before Native's host unloads it from the agent (`session/close`). The session stays where it is, transcript included, and resumes without a replay (`session/resume`) the next time it's used; once none of the agent's sessions is loaded and nothing used the agent for as long, its process ends too, and it starts again when needed. The `idleUnloadTimeout` user default overrides it for every agent. For an agent that holds a lot per loaded session, or keeps things after closing one, and can resume (it advertises `close` and `resume`); others ignore it. Without it, sessions stay loaded. |
+| `authMethods` | no | Ways to sign the agent in that it accepts without advertising them over ACP, in ACP's own shape, for hosts nobody sits at: a key in a variable it reads (`{"id": "anthropic-api-key", "name": "Anthropic API key", "type": "env_var", "vars": [{"name": "ANTHROPIC_API_KEY"}], "link": "https://…"}`), or a page-and-code sign-in it offers only to clients that open links (`"type": "_native/link"`). The host sets only variables declared here or by the agent. See docs/agents.md, "Signing in on a host with no screen". |
 
 Agents that don't speak ACP themselves need an adapter, usually run with `npx`. Pin its version so
 upgrades are deliberate:
@@ -405,6 +407,38 @@ the agent, the agent's `sessionID` once it exists, `cwd`, `title`, and `parentID
 `SessionEvent` is one of `sessionStarted`, `promptSent`, `turnEnded`, `turnFailed`,
 `permissionRequested` and `usageUpdated`. Native's notifications, sounds, session titles and
 orchestration tools are built-in plugins written this way.
+
+### Titles with the app closed
+
+Tasks run in Native's host, which keeps working with every window closed: a laptop that started a
+job and closed its lid, a Mac mini doing it. So the host titles tasks too, and a titler has to say
+how it reaches the host:
+
+```swift
+protocol SessionTitler: Sendable {
+    /// Nil when it can't write one right now (no model here, say).
+    func title(for request: TitleRequest) async throws -> String?
+    /// The host's own titler that writes the same titles; nil (the default) when it runs only in the app.
+    var hostProvider: HostTitleProvider? { get }
+}
+```
+
+The first enabled plugin with a titler decides, and the app tells each host it's connected to
+(docs/durability.md, "Titles"):
+
+- **A titler the host runs too** (`hostProvider: .onDevice`, Native's On-Device Titles, the same
+  `OnDeviceTitleGenerator` in both): the host writes each task's title from its first message,
+  whether or not an app is attached, with the user's title instructions, which the app hands it.
+  Where the host has no model (Apple Intelligence off on that machine), it falls back to the next
+  rule.
+- **A titler that runs only in the app** (`hostProvider` nil): the host keeps each task's first
+  message until an app with this titler is attached; that app writes the title and hands it to the
+  host, which keeps it. So a task started with every app closed gets its title when one next
+  connects. Meanwhile it goes by its agent's title, or else its first message, shortened.
+- **No titler** (the plugin is off): tasks keep the titles their agents give them.
+
+Either way the user's own title wins over all of them and lives in the host, so a rename on one
+device shows on every other. A titler is asked once per task; one that fails isn't asked again.
 
 ## Testing a plugin
 

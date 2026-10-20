@@ -1,0 +1,96 @@
+# Builds the host on Linux and runs the tests that run there, so the host stays portable
+# (docs/durability.md, "Any machine can be a host"). The app and the host's Mac-only parts
+# (NativeHostMac) never build here.
+#
+# What's still Mac-only on a Linux host, the cryptography that waits for swift-crypto included, is in
+# docs/durability.md. Tests of those features are macOS-only, so the rest run here.
+#
+# Not required yet: each job reports without failing the run. Make it required once it's been green
+# on main for a few days: drop `continue-on-error` and add both jobs to the branch's required checks.
+name: Linux
+
+on:
+  push:
+    branches: [main]
+  # The host and every package it builds with. Exec, Git and the others reach it through
+  # Packages/NativeHost/Package.swift.
+  pull_request:
+    paths:
+      - Packages/NativeHost/**
+      - Packages/ACP/**
+      - Packages/Exec/**
+      - Packages/Orchestration/**
+      - Packages/MCPServer/**
+      - Packages/SessionTitling/**
+      - Packages/AIInstructions/**
+      - Packages/Git/**
+      - .github/workflows/linux.yml
+  # Run by hand on any branch: `gh workflow run linux.yml --ref <branch>`.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: linux-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  host:
+    name: Host on Linux (${{ matrix.arch }})
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x86_64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    runs-on: ${{ matrix.runner }}
+    container: swift:6.2
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v5
+      # The host's store is SQLite: Apple's SDKs have it as a module, Linux needs the headers
+      # (Packages/NativeHost/Sources/CSQLite).
+      - name: Install SQLite's headers
+        run: apt-get update && apt-get install -y --no-install-recommends libsqlite3-dev
+      # The image's tag follows 6.2's patch releases, and builds from another compiler can't be reused.
+      - name: Compiler version
+        id: swift
+        run: echo "version=$(swift --version 2>&1 | head -n 1 | sha256sum | cut -c 1-16)" >> "$GITHUB_OUTPUT"
+      - name: Cache package builds
+        uses: actions/cache@v4
+        with:
+          path: |
+            Packages/NativeHost/.build
+            Packages/ACP/.build
+          key: spm-linux-${{ matrix.arch }}-${{ steps.swift.outputs.version }}-${{ hashFiles('Packages/*/Package.swift', 'Packages/*/Package.resolved') }}
+          restore-keys: spm-linux-${{ matrix.arch }}-${{ steps.swift.outputs.version }}-
+
+      # The steps after a failure still run, so one run reports every break.
+      - name: Build native-host
+        id: build
+        run: swift build -c release --package-path Packages/NativeHost --product native-host --static-swift-stdlib
+      - name: Test ACP
+        if: ${{ !cancelled() }}
+        run: swift test --package-path Packages/ACP
+      # Only the test product and what it depends on: `swift test` on its own builds every target,
+      # NativeHostMac included.
+      - name: Test NativeHost
+        if: ${{ !cancelled() }}
+        run: swift test --package-path Packages/NativeHost --test-product NativeHostPackageTests
+
+      - name: Name the binary
+        id: binary
+        if: ${{ !cancelled() && steps.build.outcome == 'success' }}
+        run: |
+          cp "$(swift build -c release --package-path Packages/NativeHost --show-bin-path)/native-host" \
+            "native-host-linux-${{ matrix.arch }}"
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() && steps.binary.outcome == 'success' }}
+        with:
+          name: native-host-linux-${{ matrix.arch }}
+          path: native-host-linux-${{ matrix.arch }}
+          retention-days: 7

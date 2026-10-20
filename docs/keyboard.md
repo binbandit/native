@@ -292,6 +292,19 @@ asks first.
 | ⌥⌘G | Set or edit the session's goal | Session | `goal.edit` |
 | ⌥⌘R | Run a workflow | Session | `workflow.run` |
 
+## Choosing a device
+
+New Session's device picker says where the task runs: This Mac or a paired host (Settings ▸ Hosts),
+each with whether it's online and has the project. It opens with the keyboard in its list; devices
+that can't take the task stay listed, dimmed, with the reason.
+
+| Keys (picker open) | Action |
+| --- | --- |
+| ↑ / ↓ | Move between the devices that can take the task |
+| Return or Space | Choose the highlighted device |
+| 1 – 9 | Choose the Nth device in the list |
+| Escape | Close the picker |
+
 ## Settings
 
 | Keys | Action |

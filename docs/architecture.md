@@ -191,6 +191,7 @@ messages name other sessions.
 | Titles, preferences, disabled plugins | `UserDefaults` (typed keys next to their owner) |
 | Settings chosen per session (model, mode, effort), set back after `session/load` | `UserDefaults`, kept with the titles by `SessionTitles` |
 | The mode each task is in (Build, Plan, Ask…) and the settings it changed | `UserDefaults` (`sessionModes`), by `TaskModes`; the user's own modes in `modes.custom`, a project's in `.native/modes/` |
+| Where each task turn began, for the changes inspector's This Turn | `UserDefaults` (`git.turnBaselines`, the newest 200), by `GitTurnBaselines`; each points at a snapshot of the working tree kept as loose git objects only (no ref or index entry), which `git gc` prunes after a couple of weeks, when This Turn falls back to HEAD as it was when the turn began and says so |
 | User plugins | `~/.native/plugins/<id>/plugin.json` |
 | Scheduled resumes and similar durable app state | Application Support, owned by the feature |
 | A project's settings (Settings ▸ Projects) | With each value's owner: the name on `Project`, the icon in `ProjectIconStore` (Application Support), git overrides in `GitSettings` by project path, the agent and model under `projectDefaults.<project id>`, scripts, AI instructions and actions with their features (each contributes a section), MCP and skill switches in their libraries |

@@ -64,7 +64,7 @@ different rows) and `--launch-only` (stop after the launches).
 | `-nativeAutoScroll <seconds>` (`PlatformAutoScroll`, Mac) | Scrolls the window's tallest scroll view by itself once per refresh at 120 Hz, starting that many seconds after a list asks for it (Files Changed does) | No accessibility client attached, which would make SwiftUI update its accessibility tree every frame; pair it with `-framePacing YES`. `-nativeAutoScrollSpeed` (points a second, 6,000), `-nativeAutoScrollDistance` (30,000; negative goes up), `-nativeAutoScrollWheel YES` (wheel events instead of moving the clip view), `-nativeAutoScrollLog <path>` (written when done). Right for top-anchored lists; a bottom-anchored SwiftUI scroll view (the transcript) slides its rows off the end under it and draws nothing new, so use the next row there |
 | `-nativeTranscriptAutoScroll <seconds>` (`TranscriptAutoScroll`) | Scrolls the opened session's transcript through SwiftUI itself, a prompt or reply at a time (`-nativeTranscriptAutoScrollRate`, a second; `-nativeTranscriptAutoScrollCount`), up and back | Each step shows a screenful of new rows, so it measures rows coming into view more than smooth scrolling |
 | `-nativeOpenSession <agent>/<session id>` (`PerformanceDriver`) | Selects a session at launch once its agent lists it; then `-nativeOpenSessionLog <path>` (written once loaded), `-nativeOpenSessionPrompt <text>` (sent as the user would), `-nativeRevealItemFromEnd <n>` (scrolls there as search does) | `-nativeWindowFrame "x y w h"` moves the window first. Every isolated instance opens in the same place, and a window other windows cover isn't drawn: its frame numbers measure nothing, and screenshots of it show what was drawn before. Check with `CGWindowListCopyWindowInfo` that nothing is above it |
-| Release builds with the drivers | `xcodebuild -configuration Release … NATIVE_BUNDLE_IDENTIFIER_SUFFIX=.dev.<name> 'SWIFT_ACTIVE_COMPILATION_CONDITIONS=$(inherited) NATIVE_PERF'` into your instance's folder | The drivers and `-framePacing` compile into Debug, and into Release only with `NATIVE_PERF` |
+| Optimized builds with the drivers | `xcodebuild -configuration Debug … -derivedDataPath /tmp/native-dd/<name>-release NATIVE_BUNDLE_IDENTIFIER_SUFFIX=.dev.<name> SWIFT_OPTIMIZATION_LEVEL=-O SWIFT_COMPILATION_MODE=wholemodule ENABLE_DEBUG_DYLIB=NO ENABLE_TESTABILITY=NO GCC_OPTIMIZATION_LEVEL=s build` | Never launch a Release build of an instance: its host plist has the standard channel, so it registers a login item and talks to the installed Native's host (`NativeHostHelper/install-launch-agent.sh` gives only Debug a channel of its own). This is the Debug configuration compiled like Release, with a development host per build folder; the drivers and `-framePacing` compile into Debug (and into Release with `NATIVE_PERF`) |
 | `scripts/perf/scroll.swift` | Scrolls the transcript from one pid: at a speed, or the whole length and back | Sets the scroll bar through Accessibility. Keeping SwiftUI's accessibility tree current costs the app 10–20% on top, and like `-nativeAutoScroll` it doesn't move a bottom-anchored transcript the way a trackpad does, so its transcript numbers below are withdrawn |
 | `scripts/perf/long-session-agent.py` | A fake agent with sessions of 20, 100 and 500 turns to reopen, and a long reply streamed on request | `--install <folder>` writes its plugin; launch with `-pluginsDirectory <folder>` |
 
@@ -472,6 +472,43 @@ reads the id of each of the transcript's thousands of lines (`ForEachState.updat
 the main thread, and as much again walking them) and `plan()` puts the cached lines together
 (11%). The rest, in both, is laying out the growing section's text on every chunk (20%).
 
+#### 2026-10-20, evening: streaming into a long session costs what a short one does
+
+Optimized Debug builds (the recipe in "Measuring": the Debug configuration, so an isolated host, with
+Release's compiler settings), the fake agent run from a frozen copy of its corpus (other agents edit
+the files it quotes), one project, agent history search off (`search.includesAgentHistory NO`: its
+backfill reads every agent's history on other threads), no accessibility client. Before is the tree
+at 18:56; after is the same tree with only the transcript changes below. Runs alternated before and
+after, and only runs whose window stayed 620 points tall with nothing in front of it count (see
+"Still to do": the window sometimes grows by itself). The Mac was very busy (load average 90 to
+130), so CPU varies from run to run; instructions a second hardly depend on the load. Each figure is
+15 s of streaming the same long reply, the main thread's share from a 10 s `sample` right after.
+
+| Measurement | Before | After |
+| --- | --- | --- |
+| Streaming into the 500-turn session | 32.8–32.9% CPU, 1,950–2,010 M instructions/s, 84–88% of refreshes drawn, worst stall 34–36 ms; main thread 45% busy | 28.4–29.2% CPU, 1,350–1,420 M instructions/s, 91% drawn, worst 33–40 ms; main thread 35% busy |
+| Streaming into a 20-turn session | 29.4% CPU, 1,440 M instructions/s, 91% drawn | 29.0% CPU, 1,350 M instructions/s, 91% drawn; main thread 31% busy |
+| `ForEachState` in the 500-turn session (main thread) | 14.3% (reading every line's id and editing the list on each chunk, then walking it) | 4.1% (20 turns: 3.9%) |
+| `plan()` in the 500-turn session | 5.6% | 3.3% |
+
+- **Earlier turns are a list of their own.** The standard transcript plans its lines as two lists:
+  every turn before the latest, and the latest (`StandardTranscriptPlan`). The earlier list is kept,
+  with its version, until one of those turns changes, and is drawn by `StandardTranscriptLines`, a
+  view that's equal to the last one while its version (and the permission shortcut's target and the
+  highlighted line) stay the same, so SwiftUI doesn't update it and never looks at its thousands of
+  lines while a reply streams. SwiftUI compares it with its own `==` because it's Equatable and not
+  plain data; `.equatable()` would have been wrong here: `EquatableView` is a single view, so the
+  lazy stack would have built every earlier line at once. In a 500-turn session its body ran twice
+  over a whole streamed reply (opening, and the prompt starting a turn), not once per chunk.
+- **Rows don't read the session's state.** A row that read `session.state` would have updated on
+  every chunk anyway. A thought's clock and a footer's subagents now come with the line, the
+  permission shortcuts' target from the session's mirror (`permissionRequests`), and the transcript's
+  empty state from `isTranscriptEmpty`; `TranscriptView` no longer reads `state` at all once it shows.
+  Session messages still name subagents from `state`, so each one on screen updates with a chunk.
+- **A streaming reply is split into sections incrementally** (after the numbers above). It was
+  split whole on every chunk, 1–1.5% of the main thread in both sessions for this reply and growing
+  with a reply's length; now only its last two sections are split again (`ReplySections.grown`).
+
 ### Pull request diffs
 
 2026-10-20, Files Changed on vercel/next.js#100215 (124 files) opened with `-gitHubOpenPullRequest
@@ -685,5 +722,6 @@ several runs each. Task switches and Settings visits are AX presses on the insta
 | Opening the changes inspector on many files under 100 ms | Still 218–392 ms on 250 files against 69–77 ms on a clean repository: laying out and drawing the rows on screen (text measuring, the diff's selectable text) and the first file's diff, in Debug | Git |
 | Scroll a long transcript at 120 Hz | With the SwiftUI driver a screenful of new rows costs 25–80 ms (Release): their selectable text (TextKit 2) and the lazy stack placing them. Lists no longer use `Grid`; code blocks without a scroll view each didn't pay (`ViewThatFits` laid the text out twice). First check by hand whether fast trackpad scrolling shows the transcript blank: no synthetic driver can tell | Transcript |
 | Come back to a session at the place you left it | Switching back to a session in memory shows its end at once, but not the place you'd scrolled to. Tracking the top row with scroll targets (`.scrollTargetLayout()` with `scrollPosition(anchor:)` or `onScrollTargetVisibilityChange`) twice put the transcript in a 100% CPU layout loop against its bottom anchor; keeping the last session's view alive would keep its place without that | Session view |
-| Streaming into a long session within budget | 48% CPU in the 500-turn session against 38% in a 20-turn one (Release): every chunk has SwiftUI read the id of each of the transcript's thousands of lines. Earlier turns' lines as a list of their own, equatable on the line cache's version, would skip that, once their rows stop reading `session.state` (thinking clocks, permission shortcuts), which would invalidate them on every chunk anyway. Laying out the growing section (20%) is the floor for both | Transcript |
+| Streaming within budget | The 500-turn session now streams at the 20-turn session's cost (Long transcripts, "2026-10-20, evening"), but both keep the main thread 31–35% busy in an optimized build, over the 25% budget: what's left is laying out and drawing the growing section on every chunk (its text 11–12%, committing the frame 14–16%, which includes that layout). Laying out only the section's last paragraph again, or chunks coalesced to the display's rate, are the next things to try | Transcript |
+| An instance's window grows by itself | Launched with `-nativeWindowFrame` 620 points tall, the main window was 1,651–1,747 points tall in about half of the launches (before and after the transcript work alike), reaching past the bottom of the screen, which makes it lay out and draw more rows. Seen from `CGWindowListCopyWindowInfo` during measurements on 2026-10-20; not reproduced on purpose yet. Likely some content's minimum height measured at no width, as in Streaming above | App shell |
 | Code colors arriving after a reopened transcript appears | The code blocks on screen draw plain for 100–200 ms; highlighting them before the transcript appears would make it appear finished | Transcript |

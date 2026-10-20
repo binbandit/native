@@ -18,6 +18,22 @@ platforms, Swift style). This page is the short path to a good pull request.
 
 Verify UI changes in the running app, in light and dark, not just the build.
 
+## Previews
+
+Every view file has a `#Preview` showing its states, so anyone can open it in Xcode's canvas and see
+what they're changing: empty, loading, populated and error, long text and narrow widths. Name them
+for the view and the state, like `#Preview("Composer - Queued follow-up")`.
+
+- Wrap the content in `DSPreviewPair { … }` (`native/DesignSystem/Gallery/GalleryFixtures.swift`)
+  to show it in light and dark side by side. Give flexible views a width with `.frame(width:)`.
+- Sample data goes in fixtures: `<Feature>PreviewFixtures.swift` in the feature's folder, with type
+  names unique in the app. Views that take models use `AppModel.preview()` and
+  `SessionModel.preview(in:)` (`native/Models/AppModel+Preview.swift`), which hold realistic
+  projects and tasks in memory; settings pages use `.settingsPreviewPage()`.
+- Fixtures are inert: no agent processes, network, git, file writes or timers that keep running.
+  Models that remember things take `PreviewUserDefaults` (in-memory) rather than the user's defaults.
+- Previews and fixtures sit under `#if DEBUG`, so they never ship in Release.
+
 ## Before you open a PR
 
 ```sh
@@ -42,6 +58,20 @@ Format only the files you change. A repo-wide lint becomes a required check afte
 
 CI runs package tests, lint on changed Swift files, the app build, and the Release and Nightly
 compile. See [docs/releasing.md](docs/releasing.md) for the release workflows.
+
+### Automated PR review
+
+Pullfrog reviews PRs using the `Pullfrog` workflow. Its model and review triggers are configured in
+the [Native repository console](https://pullfrog.com/console/binbandit/native). Automatic merging
+is disabled; merging is managed separately through GitHub.
+
+After a successful review run, `Tidy Pullfrog reviews` collapses superseded summaries while keeping
+unresolved feedback and the latest substantive review visible. It can also be run manually with a
+PR number. Verify changes to the cleanup workflow with:
+
+```sh
+node --test .github/tests/tidy-pullfrog-reviews.test.cjs
+```
 
 ## Working as an agent
 

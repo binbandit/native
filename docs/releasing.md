@@ -193,8 +193,9 @@ activity journal records which device asked.
 **Host feed.** Each release also publishes the standalone host and a JSON feed beside the appcast
 (`scripts/release/host.sh`): `native-host-<build>-macos-universal` (Developer ID signed, hardened
 runtime, notarized; a bare binary can't be stapled, so Gatekeeper finds the ticket online),
-`native-host-<build>-linux-<arch>` once the host builds on Linux (TODO: the disabled `linux-host`
-jobs in the workflows), and `host-feed.json` (`host-feed-beta.json` for betas, uploaded to the latest
+`native-host-<build>-linux-<arch>` once the host builds on Linux (TODO: `.github/workflows/linux.yml`
+builds them already; release.yml's disabled `linux-host` job, and the same for Nightly, will hand
+them to release.sh as `NATIVE_LINUX_HOST_DIR`), and `host-feed.json` (`host-feed-beta.json` for betas, uploaded to the latest
 stable release like the appcast) with `host-feed.json.sig`, a detached Ed25519 signature made with
 the appcast's key. The feed lists each binary's platform, architecture, URL, size, SHA-256 and its
 own signature (schema in `HostUpdateFeed`). The macOS host carries its version, channel, feed URL

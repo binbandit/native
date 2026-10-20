@@ -135,6 +135,79 @@ Sign In opens a sheet with a terminal running the agent's own sign-in command
 - **Not covered:** agents with no ACP auth methods at all (Claude Code's adapter advertises none)
   don't get the sign-in prompt yet, even though `setup.signIn` names their command.
 
+## Signing in on a host with no screen
+
+A host nobody sits at (a Mac mini in a closet, later a Linux box) runs its agents, so they have to
+be signed in there, and most agents' logins open a browser on their own machine. What can be done
+from another device, per agent, as checked 2026-10-20 against claude-agent-acp 0.93.0 and
+codex-acp 2.2.2 (their `initialize` only, in a clean environment, and their sources):
+
+| Agent | From the device, with nobody at the host | Only at the host (over SSH) |
+| --- | --- | --- |
+| Claude Code | An Anthropic API key (`ANTHROPIC_API_KEY`); a Claude subscription token (`CLAUDE_CODE_OAUTH_TOKEN`), which `claude setup-token` makes on any computer with a browser | `claude /login` |
+| Codex | An OpenAI API key; ChatGPT with a device code: a page to open on any device and a code to enter there | `codex login --device-auth`. "ChatGPT" opens a browser on the host and waits for it on the host's localhost, so it can't be finished elsewhere |
+| Cursor, OpenCode, Pi, Copilot | Not checked yet. Copilot reads `COPILOT_GITHUB_TOKEN`, `GH_TOKEN` or `GITHUB_TOKEN`, and Pi its providers' keys, so their plugins can declare those like Claude Code's | Their terminal sign-ins (above) |
+
+- **Claude Code.** Its adapter lists no methods for Native (terminal ones only for clients that
+  advertise `auth.terminal`), and its `authenticate` does nothing, so its plugin declares two
+  `environment` methods. The host starts it with the variable set, and Claude Code then says
+  "Anthropic API key" in its status. A subscription token only covers using models (Claude Code
+  says so when a feature needs a full login). On a machine without a browser, `claude /login`
+  prints a page to open elsewhere and waits for the code to be pasted back.
+- **Codex.** Its `api-key` method takes the key in `authenticate` (`_meta["api-key"].apiKey`), and
+  Codex keeps it in its own login file, so it lasts across restarts without Native. Its
+  `chat-gpt-device-code` method is only offered to clients that advertise URL elicitations; its
+  plugin declares it as a link method, and the host starts Codex that way just for the sign-in
+  (below). With `NO_BROWSER` set, codex-acp hides "ChatGPT".
+
+How it works (`HostCore+Credentials.swift`, tests in `HostSignInTests`):
+
+- **Methods.** `AuthMethod.Kind` reads every shape ACP has used: `agent` (`authenticate` does it),
+  `apiKey` (an agent method with `_meta["api-key"]`), `environment` (ACP's former `env_var`, by
+  `vars` or `varName`, with `link` as `credentialsPage`), `terminal`, and `link` (Native's
+  `"type": "_native/link"`; ACP leaves `_` types to implementations). Any other type is `unknown`
+  and kept as it came. Plugins declare what an agent accepts without advertising it in their
+  manifest's `authMethods`, in the same shape. `HostAgent.authMethods` (and
+  `AgentRuntime.signInMethods`) is what the agent advertised, then its plugin's.
+- **Keys.** `_native/agents/credentials/set {agentID, methodID, secret}`, for a method that takes
+  one (`AuthMethod.takesSecret`). The host sets only a variable the agent or its plugin declared
+  for that method, never one a client names, and refuses a key that's empty or more than one line.
+  An `environment` key restarts the agent with its variable (the plugin's own `env` wins a clash),
+  then calls `authenticate` if the agent advertised that method itself; an `apiKey` key goes to
+  `authenticate`, and a key the agent refuses isn't kept. `credentials/remove` forgets it and
+  restarts the agent without it, or signs the agent out (ACP `logout`) when it took the key itself
+  and says it's using one.
+- **Where keys live.** A release host on a Mac, in its standard location, uses the login keychain:
+  a generic password per method (service `Native Host`, or `Native Host (<channel>)`; account
+  `<agent>/<method>`), never synced. Development builds (whose new signature the keychain would
+  ask about after every build, with nobody there to answer), hosts in a folder of their own
+  (`native-host serve --home`, the tests) and other systems use `credentials.json` in the host's
+  folder: 0600 in a 0700 folder, replaced whole on every change. That file is as safe as the
+  user's account: anything running as the user can read it, as it can the agents' own login files.
+  Keys are never logged, journaled or sent to a client; clients only see which methods have one
+  (`HostAgent.savedCredentials`).
+- **Links.** During `authenticate`, an agent can send a URL elicitation scoped to that request
+  (`requestId`, no `sessionId`). The host shows it as `HostAgent.signInLink` (`url`, `message`, and
+  `code` when the message has one shaped like a device code, since ACP has no field for it) and
+  answers it when the sign-in ends; `_native/agents/cancel_sign_in` answers `cancel`, so the agent
+  gives up. Only http(s) links are shown. For a `link` method the running agent doesn't offer, the
+  host restarts it advertising URL elicitations, signs in, and restarts it as before: agents also
+  send sessions' URL elicitations once that's advertised (codex-acp's MCP servers' pages, which
+  today arrive as a permission request), and sessions don't show those yet.
+- **Checking again.** `_native/agents/check_sign_in` reads the login shell again, restarts the
+  agent, and waits up to 10 seconds for its `_auth/status_update` (both adapters send one after
+  `initialize`, advertised by `agentCapabilities._meta.authStatus`), which sets `needsSignIn`.
+  The status is kept in `HostAgent.authStatus`; one that arrives on its own only ever clears
+  `needsSignIn`.
+- **Never cutting off work.** Anything that restarts an agent (a link sign-in, checking again,
+  saving or removing a key in a variable) is refused while one of its sessions is working, with
+  `busy` and a sentence to show ("Codex is working on 2 tasks on Mac mini. Check again when they
+  finish, or stop them."), and changes nothing.
+- **Grants.** Saving and removing keys take `manageHost`; signing in, checking again and
+  cancelling are allowed like `authenticateAgent`.
+- **This Mac.** Unchanged: `AgentRuntime.authMethods` is still what the agent advertises, the host
+  advertises URL elicitations only for a link sign-in, and keys are only ever set by a request.
+
 ## What Native still needs for these agents
 
 - **Pi's MCP.** Native's tools reach Pi only once `pi-acp` forwards `mcpServers` (a draft issue

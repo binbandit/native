@@ -42,6 +42,7 @@ these rules exist to keep changes small, isolated and easy to review.
 - **Quality.** `docs/product-quality.md` is the bar for every feature: every state designed (what
   happened, undo, what next, never an empty nothing), one pattern per recurring situation, and
   failures handled so the user feels caught. Break your feature on purpose before calling it done.
+  New or changed views come with a `#Preview` of their states (CONTRIBUTING.md, "Previews").
 - **Platforms.** Native runs on Mac and iPad (`docs/architecture.md`, "Clients and hosts"). Models
   and shared views compile for both: no AppKit in them, and no process spawning outside
   `Packages/Exec` and the host. Platform-specific code goes behind an adapter in `native/Platform/`.
@@ -75,9 +76,19 @@ swift format lint --strict <files you changed>
 scripts/check-ios.sh native/<YourFeature>   # typechecks your folder (plus DesignSystem) for iPadOS
 ```
 
+Builds share this Mac with the person using it. `run-isolated.sh` builds through `scripts/dev/build-slot.sh`
+(at most four app builds at a time, at a lower priority); run any other `xcodebuild` through it too. When
+you're given a build Mac (`NATIVE_REMOTE_BUILD_HOST=user@machine`), run package builds there with
+`scripts/dev/remote-swift.sh <you> <Package> build|test [swift args…]`, and tests too if it has full Xcode
+(Command Line Tools lack Swift Testing's macros). Run tests here at low priority and filtered to yours:
+`nice -n 10 swift test -j 4 --filter <Suite>`.
+
 Keep the shared build green: about a dozen agents build this one tree. Develop unfinished files behind a
 compilation condition or in a scratch package until they compile, and fix a break you caused before
-anything else.
+anything else. Others build the live files, not your saves, so in a change that spans files add new
+types and functions before their uses, and every edit leaves the tree compiling. When a build fails in
+someone else's files, build once more before reporting it: an edit in flight or a file added since the
+build was planned fails once and then passes.
 
 The app builds with zero warnings in Debug, Release and Nightly, and CI fails on any new one from our
 files: fix yours in the same change (`scripts/check-warnings.sh /tmp/native-dd/<you>/build.log`).
@@ -99,6 +110,8 @@ clicks like `click at`: all of those land on whatever app has focus,
 often someone else's. Never open other apps or windows on Brayden's Mac to test (Finder, editors, terminals, browsers): verify against a fake opener instead. Screenshot with `screencapture -x -l <windowid>`. Quit your instance (and any
 render harness) as soon as a check is done; never leave apps running between checks, since many
 agents share one Mac.
+`scripts/dev/drive.sh <name>` does all of that automation scoped to your instance, and
+[docs/playtesting.md](docs/playtesting.md) is the guide to running, driving and playtesting it.
 
 Builds are about 6 GB each and the disk is shared: when your task is done, run
 `scripts/dev/run-isolated.sh <name> --remove` for the one instance you used. Use one build folder
@@ -108,7 +121,11 @@ delete yours as soon as you've read the numbers. Always record with `--time-limi
 itself: if it's killed (a signal or `timeout`), its recording service keeps writing kernel trace with no
 limit, over 100 GB within the hour. `lsof $TMPDIR/instruments*.ktrace` shows one still being written.
 Never `xctrace record --launch` a Native binary: xctrace resolves it by bundle id to Brayden's installed
-app. Launch your instance with run-isolated.sh and `--attach` to its pid.
+app. Launch your instance with run-isolated.sh and `--attach` to its pid. Never launch a Release or
+Nightly build, whatever its bundle id: only Debug builds give the host a channel of their own, so a
+Release build's host takes over Brayden's real host and sessions. For release-like numbers, build Debug
+with `SWIFT_OPTIMIZATION_LEVEL=-O SWIFT_COMPILATION_MODE=wholemodule ENABLE_DEBUG_DYLIB=NO
+ENABLE_TESTABILITY=NO` and say "optimized Debug".
 
 When a check needs a real agent session, use Codex with `gpt-6.1-sol` (it's the cheapest): launch with
 `-agentDefaults.codex.model gpt-6.1-sol`, or pick it in the composer's model picker. Use another

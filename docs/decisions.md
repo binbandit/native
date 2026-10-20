@@ -554,3 +554,14 @@ Native ▸ Quit Native and Stop Agents (⌃⌥⌘Q) stops the agents too. One sw
 launch, since a running session can't move between the app and a host. If macOS won't let Native
 run in the background, or the host doesn't start, Native runs agents itself while it's open and
 says so once, rather than leaving the user without agents. See `docs/durability.md`.
+
+## 2026-10-20: swift-crypto for Linux hosts, deferred
+
+The host builds on Linux (`.github/workflows/linux.yml`) without swift-crypto, Apple's
+cross-platform CryptoKit. Where a host needs CryptoKit it says so instead: plugin assets aren't
+served (no SHA-256 for their content hashes, `ContentHash.Unavailable`), Native's tools for agents
+are off (their tokens are HMACs, besides the server being on Network), npx always runs as npx, and the host can't update itself (Ed25519).
+Adding the package now would change the app's package graph for a platform Native doesn't ship.
+It comes in, as a Linux-only target dependency, when Linux becomes a real target: pairing (Noise)
+needs it then anyway. No hand-rolled cryptography in the meantime. See `docs/durability.md` ("Any
+machine can be a host").
