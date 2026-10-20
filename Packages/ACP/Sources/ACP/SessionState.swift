@@ -18,6 +18,8 @@ public struct SessionState: Sendable {
     private(set) var turnClocks: [Int: TurnClock] = [:]
     /// Where the running live turn starts. Only its items get times; replayed history has none.
     private(set) var openTurn: Int?
+    /// How replayed turns that the agent's history says were stopped ended, keyed like `turnClocks`.
+    private(set) var replayedStops: [Int: StopReason] = [:]
     private var subagentIndices: [SessionID: Int] = [:]
     private var sessionMessageIndices: [String: Int] = [:]
     // Kept as items change, so what a transcript asks for on every update costs the size of the
@@ -39,6 +41,7 @@ public struct SessionState: Sendable {
     public mutating func apply(_ update: SessionUpdate, at date: Date = .now) {
         let date = openTurn == nil ? nil : date
         switch update {
+        case .userMessageChunk(let chunk) where InterruptionMarker.matches(chunk): recordReplayedStop()
         case .userMessageChunk(let chunk): appendChunk(chunk, role: .user, at: date)
         case .agentMessageChunk(let chunk): appendChunk(chunk, role: .agent, at: date)
         case .agentThoughtChunk(let chunk): appendChunk(chunk, role: .thought, at: date)
@@ -173,7 +176,7 @@ public struct SessionState: Sendable {
         }
         switch stopReason {
         case .endTurn: break
-        case .cancelled: appendNotice("Stopped.", isError: false)
+        case .cancelled: appendNotice(Self.stoppedNotice, isError: false)
         case .maxTokens: appendNotice("Stopped: the response hit the token limit.", isError: true)
         case .maxTurnRequests: appendNotice("Stopped: the turn hit its request limit.", isError: true)
         case .refusal: appendNotice("The agent declined to continue.", isError: true)
@@ -181,6 +184,18 @@ public struct SessionState: Sendable {
         case .error: break
         case .other(let reason): appendNotice("Stopped: \(reason).", isError: true)
         }
+    }
+
+    private static let stoppedNotice = "Stopped."
+
+    /// The agent's history says the user stopped the turn being replayed (`InterruptionMarker`): it
+    /// ends the way a live stop does. A live turn reports its own ending, so a marker that arrives
+    /// during one, or after its end, adds nothing.
+    private mutating func recordReplayedStop() {
+        let start = promptIndices.last ?? 0
+        guard openTurn == nil, turnClocks[start]?.stopReason == nil, replayedStops[start] == nil else { return }
+        replayedStops[start] = .cancelled
+        appendNotice(Self.stoppedNotice, isError: false)
     }
 
     // MARK: - Indexing

@@ -1,3 +1,4 @@
+import ACP
 import Foundation
 
 /// Reads a JSONL file one record at a time, a megabyte at a time: history files run to hundreds
@@ -142,8 +143,12 @@ struct HistoryTranscriptBuilder {
 
     /// Whether a user message is context the agent's harness injected rather than something the
     /// user typed: a whole message wrapped in one tag (`<environment_context>…</environment_context>`,
-    /// `<command-name>/clear</command-name>`), or a bundled instructions file.
+    /// `<command-name>/clear</command-name>`), a bundled instructions file, or the agent's record that
+    /// the user stopped a turn (`InterruptionMarker`).
     static func isInjectedContext(_ text: String) -> Bool {
+        if InterruptionMarker.texts.contains(text) {
+            return true
+        }
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.hasPrefix("# AGENTS.md instructions") || trimmed.hasPrefix("Caveat: The messages below") {
             return true

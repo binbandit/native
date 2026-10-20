@@ -13,7 +13,8 @@ public struct TranscriptTurn: Hashable, Sendable, Identifiable {
     /// When a live turn started and ended. Replayed history has no times.
     public var startedAt: Date?
     public var endedAt: Date?
-    /// How a live turn ended, once it has.
+    /// How the turn ended, once it has: a live turn's from the agent's answer, a replayed one's only
+    /// when the agent's history says the user stopped it.
     public var stopReason: StopReason?
     /// A live turn that hasn't ended. The agent may still have died without ending it, so pair this
     /// with the session's own phase before showing a clock.
@@ -51,7 +52,7 @@ extension SessionState {
             return TranscriptTurn(
                 id: items[start].id, items: start..<end, revision: revision(ofTurnAt: start),
                 startedAt: clock?.startedAt, endedAt: clock?.endedAt,
-                stopReason: clock?.stopReason
+                stopReason: clock?.stopReason ?? replayedStops[start]
             )
         }
     }

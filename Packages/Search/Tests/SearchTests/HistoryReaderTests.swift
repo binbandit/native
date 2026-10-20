@@ -94,5 +94,7 @@ struct HistoryReaderTests {
         #expect(HistoryTranscriptBuilder.isInjectedContext("# AGENTS.md instructions for /x\n\nrules"))
         #expect(!HistoryTranscriptBuilder.isInjectedContext("<div> is rendering twice, why?"))
         #expect(!HistoryTranscriptBuilder.isInjectedContext("Fix the bug"))
+        #expect(HistoryTranscriptBuilder.isInjectedContext("[Request interrupted by user for tool use]"))
+        #expect(!HistoryTranscriptBuilder.isInjectedContext("Why did I see [Request interrupted by user]?"))
     }
 }

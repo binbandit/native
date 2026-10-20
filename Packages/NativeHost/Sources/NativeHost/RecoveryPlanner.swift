@@ -27,7 +27,8 @@ enum RecoveryPlanner {
 
     /// How far back from the end of the agent's transcript a prompt still counts as its latest.
     /// Agents can record something after a prompt they were cut off on: Claude Code adds a
-    /// "[Request interrupted by user]" user message when its process is killed (seen in E2E).
+    /// "[Request interrupted by user]" user message when its process is killed (seen in E2E), which
+    /// `SessionState` folds into the turn's stop, but other agents' additions may still count.
     static let recentUserMessages = 3
 
     /// Whether the prompt is among the agent's latest user messages. Agents may add context around a
