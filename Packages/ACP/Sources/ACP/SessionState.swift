@@ -61,6 +61,9 @@ public struct SessionState: Sendable {
         case .userMessageChunk(let chunk):
             if let marker = InterruptionMarker(chunk) {
                 recordReplayedStop(marker)
+            } else if openTurn == nil, case .text(let text) = chunk.content, let prompt = RecoveryPrompt(replayed: text)
+            {
+                recordReplayedRecovery(prompt, text: text)
             } else {
                 appendChunk(chunk, role: .user, at: date)
             }
@@ -442,6 +445,9 @@ public struct TranscriptNotice: Hashable, Sendable {
     public var isError: Bool
     /// For the notice of a message Native is sending again: how far that got.
     public internal(set) var retry: Retry?
+    /// What Native told the agent, for a notice that stands in for Native's own message in the
+    /// agent's history (`RecoveryPrompt`).
+    public internal(set) var sentToAgent: String?
 }
 
 public struct ToolCallState: Hashable, Sendable {

@@ -120,6 +120,24 @@ extension SessionState {
     /// itself goes on if Native resumes it.
     public mutating func interruptTurn(at date: Date) {
         guard let start = openTurn ?? turnStarts.last else { return }
+        settleInterruption(of: start, at: date)
+    }
+
+    /// The agent's history has Native's message telling it its turn was cut off (`RecoveryPrompt`).
+    /// The turn it interrupted ends there the way a live recovery ends it, and the message shows as
+    /// what Native told the agent, not as the user's; the agent's answer carries the turn on, as it
+    /// did live.
+    mutating func recordReplayedRecovery(_ prompt: RecoveryPrompt, text: String) {
+        if let start = turnStarts.last {
+            settleInterruption(of: start, at: nil)
+        }
+        var notice = TranscriptNotice(text: prompt.notice, isError: false)
+        notice.sentToAgent = text
+        appendItem(.notice(notice))
+    }
+
+    /// What the cut-off turn starting at `start` left running, or the cut killed, was interrupted.
+    private mutating func settleInterruption(of start: Int, at date: Date?) {
         let turn = turnRange(containing: start)
         for index in openCallIndices.filter(turn.contains) {
             settleCall(at: index, as: .interrupted, at: date)
