@@ -33,39 +33,23 @@ extension Repository {
         if let checkpoint {
             base = try await resolve("\(checkpoint.commit)^1")
         }
-        let candidates = try await legacyBranchCandidates()
-        var consistent: [LegacyBranchCandidate] = []
+        let candidates = try await removedBranchCandidates()
+        var consistent: [RemovedBranchCandidate] = []
         for candidate in candidates {
             if let base, candidate.tip != base, try await !contains(base, in: candidate.tip) { continue }
             consistent.append(candidate)
         }
 
-        var byName: [LegacyBranchCandidate] = []
-        for candidate in consistent {
-            if Self.isNamed(candidate.name, after: folderName) {
-                byName.append(candidate)
-            } else if !candidate.isArchivedCopy,
-                try await renamedFrom(candidate.name).contains(where: { Self.isNamed($0, after: folderName) })
-            {
-                byName.append(candidate)
-            }
-        }
-        let titleSlug = title.map { Worktree.slug($0) }.flatMap { $0.isEmpty ? nil : $0 }
-        let byTitle = consistent.filter { candidate in
-            guard let titleSlug else { return false }
-            // Made unique with a number when the name was taken: "fix-login-2".
-            let last = Self.lastComponent(of: candidate.name)
-            let suffix = last.hasPrefix(titleSlug + "-") ? last.dropFirst(titleSlug.count + 1) : nil
-            return last == titleSlug || suffix.flatMap { Int($0) } != nil
-        }
+        let tiers = try await branchEvidence(
+            folderName: folderName, title: title, among: consistent)
         // A commit only this branch is at: the task's own work. The checked-out branches count, so
         // a task that never committed (at its base's commit) isn't matched to some other branch.
-        var byCheckpoint: [LegacyBranchCandidate] = []
+        var byCheckpoint: [RemovedBranchCandidate] = []
         if let base, try await branchTips().filter({ $0 == base }).count == 1 {
             byCheckpoint = consistent.filter { $0.tip == base }
         }
 
-        for matches in [byName, byTitle, byCheckpoint] where !matches.isEmpty {
+        for matches in tiers + [byCheckpoint] where !matches.isEmpty {
             guard matches.count == 1, let branch = matches.first else {
                 return .ambiguous(matches.map(\.name).sorted(), checkpoint: checkpoint ?? checkpoints.first?.checkpoint)
             }
@@ -82,6 +66,34 @@ extension Repository {
     }
 
     // MARK: - Helpers
+
+    /// The branches a removed task worktree folder ties to, strongest evidence first: by name (the
+    /// folder is named after the provisional branch's code, which a branch renamed after its title
+    /// keeps in its reflog, or after the branch, for a pull request's worktree), then by the task's
+    /// title, which renamed it. Also used for worktrees removed outside Native.
+    func branchEvidence(
+        folderName: String, title: String?, among candidates: [RemovedBranchCandidate]
+    ) async throws(GitError) -> [[RemovedBranchCandidate]] {
+        var byName: [RemovedBranchCandidate] = []
+        for candidate in candidates {
+            if Self.isNamed(candidate.name, after: folderName) {
+                byName.append(candidate)
+            } else if !candidate.isArchivedCopy,
+                try await renamedFrom(candidate.name).contains(where: { Self.isNamed($0, after: folderName) })
+            {
+                byName.append(candidate)
+            }
+        }
+        let titleSlug = title.map { Worktree.slug($0) }.flatMap { $0.isEmpty ? nil : $0 }
+        let byTitle = candidates.filter { candidate in
+            guard let titleSlug else { return false }
+            // Made unique with a number when the name was taken: "fix-login-2".
+            let last = Self.lastComponent(of: candidate.name)
+            let suffix = last.hasPrefix(titleSlug + "-") ? last.dropFirst(titleSlug.count + 1) : nil
+            return last == titleSlug || suffix.flatMap { Int($0) } != nil
+        }
+        return [byName, byTitle]
+    }
 
     /// The checkpoints archiving made of the folder at `path`, newest first, with when each was made.
     private func folderCheckpoints(
@@ -111,24 +123,24 @@ extension Repository {
 
     /// Branches a removed task worktree could have been on: local ones no worktree has checked out,
     /// and copies of deleted ones whose name no local branch has taken since.
-    private func legacyBranchCandidates() async throws(GitError) -> [LegacyBranchCandidate] {
+    func removedBranchCandidates() async throws(GitError) -> [RemovedBranchCandidate] {
         let checkedOut = Set(try await worktrees().compactMap(\.branch))
         let refs = try await run(
             ["for-each-ref", "--format=%(refname)%00%(objectname)", "refs/heads", "refs/native-archived-branches"],
             readOnly: true)
-        var local: [LegacyBranchCandidate] = []
-        var copies: [LegacyBranchCandidate] = []
+        var local: [RemovedBranchCandidate] = []
+        var copies: [RemovedBranchCandidate] = []
         for line in refs.text.split(separator: "\n") {
             let fields = line.split(separator: "\0").map(String.init)
             guard fields.count == 2 else { continue }
             if fields[0].hasPrefix("refs/heads/") {
                 let name = String(fields[0].dropFirst("refs/heads/".count))
                 if !checkedOut.contains(name) {
-                    local.append(LegacyBranchCandidate(name: name, tip: fields[1], isArchivedCopy: false))
+                    local.append(RemovedBranchCandidate(name: name, tip: fields[1], isArchivedCopy: false))
                 }
             } else {
                 let name = String(fields[0].dropFirst("refs/native-archived-branches/".count))
-                copies.append(LegacyBranchCandidate(name: name, tip: fields[1], isArchivedCopy: true))
+                copies.append(RemovedBranchCandidate(name: name, tip: fields[1], isArchivedCopy: true))
             }
         }
         let taken = Set(local.map(\.name)).union(checkedOut)
@@ -161,7 +173,8 @@ extension Repository {
     }
 }
 
-private struct LegacyBranchCandidate {
+/// A branch a removed task worktree could have been on (`removedBranchCandidates`).
+struct RemovedBranchCandidate {
     let name: String
     let tip: String
     /// A deleted branch's copy under `refs/native-archived-branches/`.

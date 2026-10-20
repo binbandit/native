@@ -6,7 +6,7 @@ import Foundation
 /// the pull request that merged it) doesn't have.
 extension Repository {
     /// What a branch is, as far as cleaning up goes.
-    private enum Verdict {
+    enum Verdict {
         case merged(MergedCleanupPlan.Reason)
         case kept(MergedCleanupPlan.Kept.Why)
     }
@@ -133,7 +133,7 @@ extension Repository {
         return plan
     }
 
-    private func verdict(
+    func verdict(
         for branch: LocalBranchFacts, base: CleanupBase, isMerged: Bool, isPublished: Bool,
         pullRequests: [CleanupPullRequestLookup.PullRequest], comparesContent: Bool
     ) async throws(GitError) -> Verdict {
