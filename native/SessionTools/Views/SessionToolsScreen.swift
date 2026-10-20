@@ -12,8 +12,9 @@ struct SessionToolsScreen: View {
     @State private var tools = SessionToolsScreenModel()
     /// Files dropped on the transcript, for the composer to attach.
     @State private var drops = ComposerDropInbox()
-    /// The room the conversation and the side panel share.
+    /// The room the conversation, the side panel and the workbench share.
     @State private var width: CGFloat = 0
+    @State private var height: CGFloat = 0
     @Environment(GitStore.self) private var git
     @Environment(\.inspectorRoom) private var inspectorRoom
     @Experiment(.transcriptWidth) private var columnWidth: TranscriptWidth
@@ -24,63 +25,79 @@ struct SessionToolsScreen: View {
         let layout = registry.layout(for: session, on: tools)
         let transcript = SessionTranscriptActions.merging(
             registry.tools.filter { registry.place(of: $0.id) != .off }.compactMap { $0.transcript?(context($0)) })
-        TranscriptView(session: session) { id in transcript.openSubagent?(id) }
-            .environment(\.turnChangesActions, transcript.turnChanges)
-            .environment(\.isPrimaryTranscript, true)
-            .dsToolbarBand()
-            .safeAreaBar(edge: .bottom, spacing: 0) { composer }
-            .safeAreaBar(edge: .top, spacing: 0) {
-                TaskScriptBanner(folder: session.cwd)
-            }
-            .composerDropTarget(drops, isEnabled: !session.isEarlierConversation)
-            .overlay(alignment: .top) { shade }
-            .focusedSceneValue(\.activeSession, session)
-            .focusedSceneValue(\.sessionTools, tools)
-            .focusedSceneValue(\.gitChangesInspector, toggling(.changes))
-            .navigationTitle(DSInlineCode.plain(session.displayTitle))
-            .toolbar(removing: .title)
-            .toolbar {
-                ToolbarItem(placement: .navigation) {
-                    SessionToolsTitle(
-                        title: session.displayTitle, location: location,
-                        facts: layout.facts.compactMap { id in
-                            registry.tool(id).flatMap { tool in tool.fact(context(tool)).map { (tool, $0) } }
-                        },
-                        isOpen: { tools.isOpen($0.id) },
-                        action: { tool in
-                            if tool.pane == nil { tool.perform(context(tool)) } else { tools.toggle(tool.id) }
-                        })
+        VStack(spacing: 0) {
+            TranscriptView(session: session) { id in transcript.openSubagent?(id) }
+                .environment(\.turnChangesActions, transcript.turnChanges)
+                .environment(\.isPrimaryTranscript, true)
+                .dsToolbarBand()
+                .safeAreaBar(edge: .bottom, spacing: 0) { composer }
+                .safeAreaBar(edge: .top, spacing: 0) {
+                    TaskScriptBanner(folder: session.cwd)
                 }
-                .sharedBackgroundVisibility(.hidden)
-                ToolbarItem {
-                    EarlierConversationButton(session: session)
-                }
-                .sharedBackgroundVisibility(.hidden)
+                .composerDropTarget(drops, isEnabled: !session.isEarlierConversation)
+                .overlay(alignment: .top) { shade }
+            if !layout.workbench.isEmpty {
+                SessionToolsWorkbench(
+                    tabs: layout.workbench.compactMap(registry.tool),
+                    open: tools.openByPlace[.workbench].flatMap(registry.tool), context: context,
+                    select: { tools.open($0) }, close: { tools.close(.workbench) },
+                    maxHeight: height - SessionToolMetrics.conversationAboveWorkbenchMinHeight)
             }
-            // Measured on its own beside the side panel: never at no width (docs/performance.md).
-            .platformMinimumContentWidth(DS.Window.detailMinWidth)
-            .inspector(isPresented: isSidePanelDocked) { sidePanel(layout) }
-            // Outside the side panel, so the room counts the panel's width while it's docked.
-            .onGeometryChange(for: CGFloat.self, of: \.size.width) { width = $0 }
-            .onChange(of: tools.openByPlace[.side] == nil) { _, isClosed in
-                if isClosed { inspectorRoom.release() }
+        }
+        .onGeometryChange(for: CGFloat.self, of: \.size.height) { height = $0 }
+        .background {
+            // Each tool's own bookkeeping while it's on: the terminal's colors and ⌃`.
+            ForEach(registry.tools.filter { registry.place(of: $0.id) != .off }) { tool in
+                tool.companion?(context(tool))
             }
-            .onDisappear { inspectorRoom.release() }
-            .onAppear {
-                tools.makeRoomForSidePanel = { [inspectorRoom] show in
-                    guard docksSidePanel else { return show() }
-                    inspectorRoom.open(SessionToolMetrics.sidePanelIdealWidth, show)
-                }
+        }
+        .focusedSceneValue(\.activeSession, session)
+        .focusedSceneValue(\.sessionTools, tools)
+        .focusedSceneValue(\.gitChangesInspector, toggling(.changes))
+        .navigationTitle(DSInlineCode.plain(session.displayTitle))
+        .toolbar(removing: .title)
+        .toolbar {
+            ToolbarItem(placement: .navigation) {
+                SessionToolsTitle(
+                    title: session.displayTitle, location: location,
+                    facts: layout.facts.compactMap { id in
+                        registry.tool(id).flatMap { tool in tool.fact(context(tool)).map { (tool, $0) } }
+                    },
+                    isOpen: { tools.isOpen($0.id) },
+                    action: { tool in
+                        if tool.pane == nil { tool.perform(context(tool)) } else { tools.toggle(tool.id) }
+                    })
             }
-            // View ▸ Toggle Subagent Inspector (⌥⌘I) asks the task; the Subagents tool answers.
-            .onChange(of: session.isSubagentInspectorToggleRequested) { _, isRequested in
-                guard isRequested else { return }
-                session.isSubagentInspectorToggleRequested = false
-                tools.toggle(.subagents)
+            .sharedBackgroundVisibility(.hidden)
+            ToolbarItem {
+                EarlierConversationButton(session: session)
             }
-            .mcpServersPresentation()
-            .refreshesGitStatus(of: session, in: git)
-            .environment(\.transcriptColumnMaxWidth, columnWidth.maxWidth)
+            .sharedBackgroundVisibility(.hidden)
+        }
+        // Measured on its own beside the side panel: never at no width (docs/performance.md).
+        .platformMinimumContentWidth(DS.Window.detailMinWidth)
+        .inspector(isPresented: isSidePanelDocked) { sidePanel(layout) }
+        // Outside the side panel, so the room counts the panel's width while it's docked.
+        .onGeometryChange(for: CGFloat.self, of: \.size.width) { width = $0 }
+        .onChange(of: tools.openByPlace[.side] == nil) { _, isClosed in
+            if isClosed { inspectorRoom.release() }
+        }
+        .onDisappear { inspectorRoom.release() }
+        .onAppear {
+            tools.makeRoomForSidePanel = { [inspectorRoom] show in
+                guard docksSidePanel else { return show() }
+                inspectorRoom.open(SessionToolMetrics.sidePanelIdealWidth, show)
+            }
+        }
+        // View ▸ Toggle Subagent Inspector (⌥⌘I) asks the task; the Subagents tool answers.
+        .onChange(of: session.isSubagentInspectorToggleRequested) { _, isRequested in
+            guard isRequested else { return }
+            session.isSubagentInspectorToggleRequested = false
+            tools.toggle(.subagents)
+        }
+        .mcpServersPresentation()
+        .refreshesGitStatus(of: session, in: git)
+        .environment(\.transcriptColumnMaxWidth, columnWidth.maxWidth)
     }
 
     private var composer: some View {

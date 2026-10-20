@@ -245,12 +245,14 @@ keyboard.
 ## Session tools
 
 With Session Tools on (Settings ▸ Labs), each tool on the session screen has one key that shows or
-hides it wherever it lives (`docs/session-tools.md`). ⇧⌘D and ⌥⌘I keep showing Changes and
-Subagents.
+hides it wherever it lives (`docs/session-tools.md`). ⇧⌘D, ⌃` and ⌥⌘I keep showing Changes, the
+terminal and Subagents.
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
 | ⌥⌘1 | Show or hide Changes | View ▸ Tools | `sessionTools.changes` |
+| ⌥⌘2 | Show or hide the terminal, every shell and run a tab in the workbench (⌃` still shows it and focuses it) | View ▸ Tools | `sessionTools.terminal` |
+| ⌥⌘3 | Show the running action's output, else the last run's | View ▸ Tools | `sessionTools.run` |
 | ⌥⌘4 | Show or hide Subagents | View ▸ Tools | `sessionTools.subagents` |
 | ⌥⌘5 | Show or hide the branch's pull request | View ▸ Tools | `sessionTools.pullRequest` |
 | Escape | Close the tool open over the conversation; in the side panel, close the panel | | |

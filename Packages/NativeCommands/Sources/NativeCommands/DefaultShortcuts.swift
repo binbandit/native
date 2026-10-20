@@ -37,6 +37,8 @@ public enum DefaultShortcuts {
         "view.toggleSubagentInspector": "⌥⌘I",
         "view.toggleChanges": "⇧⌘D",
         "sessionTools.changes": "⌥⌘1",
+        "sessionTools.terminal": "⌥⌘2",
+        "sessionTools.run": "⌥⌘3",
         "sessionTools.subagents": "⌥⌘4",
         "sessionTools.pullRequest": "⌥⌘5",
         "view.mcpServers": "⌃⌘M",

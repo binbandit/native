@@ -7,6 +7,8 @@ struct SessionToolTab: View {
     let systemImage: String
     var accessory: SessionToolFact.Accessory?
     let isSelected: Bool
+    /// Closes what the tab stands for (a shell), from its menu and its ✕ while selected.
+    var close: (() -> Void)?
     let action: () -> Void
 
     @State private var isHovered = false
@@ -20,6 +22,13 @@ struct SessionToolTab: View {
                 Text(title)
                     .lineLimit(1)
                 SessionToolFactAccessory(accessory: accessory)
+                if isSelected, let close {
+                    Button("Close \(title)", systemImage: "xmark", action: close)
+                        .labelStyle(.iconOnly)
+                        .buttonStyle(.plain)
+                        .font(.dsMicro)
+                        .foregroundStyle(.dsTextTertiary)
+                }
             }
             .font(.dsBodyMedium)
             .foregroundStyle(isSelected || isHovered ? .dsTextPrimary : .dsTextSecondary)
@@ -35,6 +44,11 @@ struct SessionToolTab: View {
         .buttonStyle(.plain)
         .fixedSize()
         .trackHover($isHovered)
+        .contextMenu {
+            if let close {
+                Button("Close \(title)", action: close)
+            }
+        }
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }

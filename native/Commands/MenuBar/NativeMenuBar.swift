@@ -71,6 +71,8 @@ private struct ViewCommands: Commands {
             CommandMenuItem(.viewToggleChanges, in: menu)
             Menu("Tools") {
                 CommandMenuItem(.sessionToolChanges, in: menu)
+                CommandMenuItem(.sessionToolTerminal, in: menu)
+                CommandMenuItem(.sessionToolRun, in: menu)
                 CommandMenuItem(.sessionToolSubagents, in: menu)
                 CommandMenuItem(.sessionToolPullRequest, in: menu)
             }

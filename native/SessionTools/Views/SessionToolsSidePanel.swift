@@ -12,17 +12,10 @@ struct SessionToolsSidePanel: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            HStack(spacing: DS.Space.xxs) {
-                ForEach(tabs) { tool in
-                    SessionToolTab(
-                        title: tool.title, systemImage: tool.systemImage,
-                        accessory: tool.fact(context(tool))?.accessory,
-                        isSelected: tool.id == open.id
-                    ) {
-                        select(tool.id)
-                    }
-                }
-                Spacer(minLength: DS.Space.sm)
+            HStack(spacing: DS.Space.sm) {
+                SessionToolsStrip(tools: tabs, open: open.id, context: context, select: select)
+                Spacer(minLength: 0)
+                open.stripAccessory?(context(open))
                 IconButton("Close Side Panel", systemImage: "xmark", action: close)
             }
             .padding(.horizontal, DS.Space.md)

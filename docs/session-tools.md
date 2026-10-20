@@ -35,11 +35,22 @@ Below that it drops over the conversation from the header, like a fact's tool, a
 it. The side panel opens without sliding, after `InspectorRoom` makes room, and closes without
 animation, which keeps AppKit's split view out of a constraint loop.
 
+## The workbench
+
+Under the composer, and only while it has a tab: every shell and every run is a tab of its own, beside
+any other workbench tool with something to show (Changes, if the user put it there). Closed, it's
+just the strip, a handle that says what's open and running; open, the selected tab's pane is under
+it, as tall as the user dragged it (`sessionTools.workbenchHeight`), never taking the conversation
+below 240pt. ⌃`, View ▸ Show Terminal and a run's Show still work: they open the terminal wherever
+it lives.
+
 ## Native's tools
 
 | Tool | Fact | Pane | Starts in | Key |
 | --- | --- | --- | --- | --- |
 | Changes | "2 files +12 −3" while there are uncommitted changes | The changes inspector; the files-changed card's Review opens it on the turn | Side | ⌥⌘1, ⇧⌘D |
+| Terminal | None: a shell isn't news | The selected shell or run; the place's strip lists every shell and run as a tab of its own, with + for another shell | Workbench | ⌥⌘2, ⌃` |
+| Run | "Dev :3000" while an action runs, "Test failed" after a failed run | None: the fact shows the run's tab in the terminal | Fact | ⌥⌘3 |
 | Subagents | "2 subagents" while there are any | Their conversations; a subagent's card opens its own | Side | ⌥⌘4, ⌥⌘I |
 | Pull Request | "#128" once the branch has one | The pull request at a glance, or Create Pull Request | Fact | ⌥⌘5 |
 | Open In | The default editor, with its icon | None: the fact opens the folder there | Fact | ⇧⌘O |
