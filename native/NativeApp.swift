@@ -45,6 +45,7 @@ struct NativeApp: App {
 
     init() {
         LaunchMetrics.mark(.appInit)
+        LaunchExperiment.checkpoint("appInit")
         FramePacing.startIfRequested()
         // Before any window exists, so the first one opens in the user's appearance.
         let appearance = AppearanceModeController()
@@ -116,13 +117,18 @@ struct NativeApp: App {
                 celebrations: celebrations, updates: updates, whatsNew: whatsNew, appearance: appearance,
                 pullRequestTasks: pullRequestTasks, shortcutsHelp: shortcutsHelp, gitCleanup: gitCleanup,
                 projectActions: projectActions, durableHost: durableHost, git: git, gitHub: gitHub))
+        LaunchExperiment.checkpoint("init end")
     }
 
     var body: some Scene {
         Window("Native", id: "main") {
             RootView()
                 .commandPalette(palette)
-                .onAppear { LaunchMetrics.markOnScreen(.firstFrame) }
+                .onAppear {
+                    LaunchExperiment.checkpoint("onAppear")
+                    LaunchMetrics.markOnScreen(.firstFrame)
+                }
+                .performanceDriver(model)
                 .environment(CommandRegistry.shared)
                 .environment(model)
                 .environment(git)
@@ -158,6 +164,7 @@ struct NativeApp: App {
                 .appearancePreferences(plugins: model.plugins)
                 .dsAccentPalette(themeID: iconPreferences.theme.rawValue)
                 .task {
+                    LaunchExperiment.checkpoint("task start")
                     OrchestrationPlugin.connect(to: model, updates: updates, durableHost: durableHost)
                     MCPServersPlugin.connect(to: model) { BuiltInPlugins.usage.contextReports.reports }
                     SkillsPlugin.connect(to: model)
@@ -192,6 +199,7 @@ struct NativeApp: App {
                     if let client = await durableHost.launch() {
                         model.connectHost(client: client)
                     }
+                    LaunchExperiment.checkpoint("before model.start")
                     await model.start()
                     LaunchMetrics.mark(.agentsReady)
                 }

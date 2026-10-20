@@ -12,6 +12,10 @@ struct AppTaskRowAccessory: View {
     @Environment(GitStore.self) private var git
 
     var body: some View {
+        if !LaunchExperiment.noAccessory { realBody }
+    }
+
+    @ViewBuilder private var realBody: some View {
         let folder = URL(filePath: summary.info.cwd, directoryHint: .isDirectory)
         HStack(spacing: DS.Space.xs) {
             if hasOwnCheckout(folder) {

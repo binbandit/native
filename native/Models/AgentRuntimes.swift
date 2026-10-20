@@ -9,9 +9,16 @@ import Observation
 final class AgentRuntimes {
     private var runtimes: [AgentDefinition.ID: AgentRuntime] = [:]
     @ObservationIgnored private let plugins: PluginRegistry
-    /// The host agents run in, once the app connects to one (`HostSessions`); runtimes made after
-    /// that run their agents there.
-    @ObservationIgnored var host: NativeHostClient?
+    /// The host agents run in, once the app connects to one (`HostSessions`): runtimes made after
+    /// that run their agents there, and so do those made before it that haven't started.
+    @ObservationIgnored var host: NativeHostClient? {
+        didSet {
+            guard let host else { return }
+            for runtime in runtimes.values {
+                runtime.runInHost(host)
+            }
+        }
+    }
 
     init(plugins: PluginRegistry) {
         self.plugins = plugins

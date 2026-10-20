@@ -69,15 +69,16 @@ struct SessionRow<Accessory: View>: View {
                 date: session?.lastActivity ?? summary.info.updatedDate,
                 badge: badge,
                 indent: indent,
-                leading: AgentIcon(agent: summary.agent),
+                leading: LaunchExperiment.noAgentIcon
+                    ? AnyView(Image(systemName: "circle")) : AnyView(AgentIcon(agent: summary.agent)),
                 accessory: accessory,
                 action: select,
                 onArchive: archiveAction
             )
-            .help(tooltip)
+            .lxUnless(LaunchExperiment.noRowHelp) { $0.help(tooltip) }
             // Double-clicking renames, like a file in the Finder.
-            .simultaneousGesture(TapGesture(count: 2).onEnded(rename))
-            .contextMenu { contextMenu }
+            .lxUnless(LaunchExperiment.noDoubleTap) { $0.simultaneousGesture(TapGesture(count: 2).onEnded(rename)) }
+            .lxUnless(LaunchExperiment.noContextMenu) { $0.contextMenu { contextMenu } }
             .sidebarSwipeActions(
                 leading: [readAction, pinAction],
                 trailing: [
@@ -87,16 +88,18 @@ struct SessionRow<Accessory: View>: View {
             )
             .accessibilityLabel(accessibilityLabel)
             .accessibilityHint("\(summary.agent.displayName) session. Return renames it.")
-            .accessibilityActions {
-                Button("Rename", action: rename)
-                Button(isUnread ? "Mark as Read" : "Mark as Unread", action: toggleUnread)
-                Button(isPinned ? "Unpin" : "Pin", action: togglePinned)
-                Button("Archive", action: archive)
-                Button("Move Up") { model.move(target, .up) }
-                Button("Move Down") { model.move(target, .down) }
-                if let pullRequest = insights.pullRequestMenu(summary) {
-                    ForEach(pullRequest.items) { item in
-                        Button(item.spokenTitle, action: item.perform)
+            .lxUnless(LaunchExperiment.noA11yActions) {
+                $0.accessibilityActions {
+                    Button("Rename", action: rename)
+                    Button(isUnread ? "Mark as Read" : "Mark as Unread", action: toggleUnread)
+                    Button(isPinned ? "Unpin" : "Pin", action: togglePinned)
+                    Button("Archive", action: archive)
+                    Button("Move Up") { model.move(target, .up) }
+                    Button("Move Down") { model.move(target, .down) }
+                    if let pullRequest = insights.pullRequestMenu(summary) {
+                        ForEach(pullRequest.items) { item in
+                            Button(item.spokenTitle, action: item.perform)
+                        }
                     }
                 }
             }

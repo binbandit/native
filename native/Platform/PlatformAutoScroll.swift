@@ -1,14 +1,15 @@
-#if DEBUG && os(macOS)
+#if (DEBUG || NATIVE_PERF) && os(macOS)
 import AppKit
 
 /// Scrolls the key window's tallest scroll view by itself, once per display frame, the way a
 /// trackpad moves it: for measuring frame times with no accessibility client attached (one makes
 /// SwiftUI update its accessibility tree every frame, which people without VoiceOver never pay
-/// for). Debug builds on the Mac only.
+/// for). Debug builds on the Mac only, and Release builds compiled with `NATIVE_PERF`.
 ///
 /// `-nativeAutoScroll <seconds>` waits that long after `start()`, scrolls down
-/// `-nativeAutoScrollDistance` points (30,000) at `-nativeAutoScrollSpeed` points a second (6,000)
-/// and back, then writes "done" to `-nativeAutoScrollLog <path>`.
+/// `-nativeAutoScrollDistance` points (30,000; negative scrolls up, as from the bottom of a
+/// transcript) at `-nativeAutoScrollSpeed` points a second (6,000) and back, then writes "done" to
+/// `-nativeAutoScrollLog <path>`.
 @MainActor
 final class PlatformAutoScroll: NSObject {
     private static var running: PlatformAutoScroll?
@@ -34,7 +35,7 @@ final class PlatformAutoScroll: NSObject {
                 let scrollView = tallest(in: contentView)
             else { return }
             let scroll = PlatformAutoScroll(
-                scrollView: scrollView, distance: distance > 0 ? distance : 30_000, speed: speed > 0 ? speed : 6_000)
+                scrollView: scrollView, distance: distance != 0 ? distance : 30_000, speed: speed > 0 ? speed : 6_000)
             running = scroll
             scroll.begin()
         }
@@ -59,14 +60,14 @@ final class PlatformAutoScroll: NSObject {
         let now = link.targetTimestamp
         let start = started ?? now
         started = start
-        let leg = distance / speed
+        let leg = abs(distance) / speed
         let t = now - start
         guard t < leg * 2 else {
             link.invalidate()
             finish()
             return
         }
-        let offset = (t < leg ? t : 2 * leg - t) * speed
+        let offset = (t < leg ? t : 2 * leg - t) * speed * (distance < 0 ? -1 : 1)
         let flip: CGFloat = scrollView.documentView?.isFlipped == false ? -1 : 1
         scrollView.contentView.scroll(to: NSPoint(x: scrollView.contentView.bounds.origin.x, y: origin + flip * offset))
         scrollView.reflectScrolledClipView(scrollView.contentView)

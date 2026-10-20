@@ -102,7 +102,7 @@ public struct TaskRow<Leading: View, Accessory: View>: View {
                             .font(.system(size: 11, weight: .regular))
                             .foregroundStyle(.dsTextTertiary)
                             .frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
-                            .help(status.label)
+                            .lxUnless(LaunchExperiment.noIconHelp) { $0.help(status.label) }
                     } else {
                         StatusIndicator(status: status)
                     }
@@ -113,7 +113,7 @@ public struct TaskRow<Leading: View, Accessory: View>: View {
                 VStack(alignment: .leading, spacing: DS.Space.xxs) {
                     HStack(spacing: DS.Space.sm) {
                         // Titles often carry inline code ("Add `maxLength` option").
-                        DSInlineCodeText(title)
+                        Group { if LaunchExperiment.noInlineCode { Text(title) } else { DSInlineCodeText(title) } }
                             .font(isUnread ? .dsCalloutSemibold : .dsCalloutBook)
                             .foregroundStyle(isUnread || isSelected ? .dsTextPrimary : .dsTextSecondary)
                             .lineLimit(1)
@@ -167,7 +167,7 @@ public struct TaskRow<Leading: View, Accessory: View>: View {
             RoundedRectangle(cornerRadius: DS.Radius.row, style: .continuous)
                 .fill(isSelected ? .dsSelected : isHovered ? .dsHover : .clear)
         }
-        .trackHover($isHovered)
+        .lxUnless(LaunchExperiment.noHover) { $0.trackHover($isHovered) }
     }
 
     private var trailing: some View {

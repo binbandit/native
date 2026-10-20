@@ -178,6 +178,11 @@ final class AppModel {
         launcher = SessionLauncher(plugins: plugins, services: services, store: sessions)
         lastUsedAgent = UserDefaults.standard.string(forKey: Self.lastUsedAgentKey).map(
             AgentDefinition.ID.init(rawValue:))
+        // Agents with saved sessions were installed last time. Their runtimes come now, so their
+        // rows show from the first frame, not once the host connects and the login shell answers;
+        // they run in the host if one connects before they start, and checking for agents drops
+        // any that went away since.
+        _ = runtimes.sync(including: catalog.hasSessions)
     }
 
     /// Ends every agent's process, for when the app quits.
@@ -233,10 +238,7 @@ final class AppModel {
         }
         Task { await resumeWorkspaceRestores() }
         watchRemovedWorkspaces()
-        // Agents with saved sessions were installed last time. Their runtimes come now, so their rows
-        // show from the first frame instead of after the login shell answers; checking for agents
-        // drops any that went away since.
-        _ = runtimes.sync(including: catalog.hasSessions)
+        // The runtimes made at init for agents with saved sessions, which start with the rest.
         let early = runtimes.all
         observeAgents()
         parkAgentsWhenIdle()

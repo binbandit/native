@@ -54,7 +54,10 @@ enum LaunchMetrics {
         // After every other before-waiting observer, Core Animation's commit included.
         let observer = CFRunLoopObserverCreateWithHandler(nil, CFRunLoopActivity.beforeWaiting.rawValue, false, .max) {
             _, _ in
-            MainActor.assumeIsolated { mark(milestone) }
+            MainActor.assumeIsolated {
+                LaunchExperiment.checkpoint("beforeWaiting")
+                mark(milestone)
+            }
         }
         CFRunLoopAddObserver(CFRunLoopGetMain(), observer, .commonModes)
     }

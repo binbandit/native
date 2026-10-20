@@ -30,7 +30,7 @@ final class AgentRuntime {
 
     private var process: AgentProcess?
     /// The host the agent runs in; nil for an agent Native runs itself.
-    @ObservationIgnored let host: NativeHostClient?
+    @ObservationIgnored private(set) var host: NativeHostClient?
     /// The agent's process in the host, while it runs there.
     private var hostProcessID: Int32?
     /// The launch in flight, so callers that ask for the agent while it starts all wait for it.
@@ -40,6 +40,13 @@ final class AgentRuntime {
 
     init(agent: AgentDefinition, host: NativeHostClient? = nil) {
         self.agent = agent
+        self.host = host
+    }
+
+    /// Runs the agent in `host` from its first start, for a runtime made before the host connected.
+    /// One that has started already keeps running where it is.
+    func runInHost(_ host: NativeHostClient) {
+        guard self.host == nil, status == .idle, process == nil, launching == nil else { return }
         self.host = host
     }
 

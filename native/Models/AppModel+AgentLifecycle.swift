@@ -40,13 +40,12 @@ extension AppModel {
     }
 
     /// Starts `agent` if it isn't running and waits until it's ready, first waiting for the check
-    /// for agents if it hasn't made a runtime yet. Nil when it can't start (it isn't installed, or
-    /// it failed), with `startFailure(of:)` saying why.
+    /// for agents, which comes after the app decides where agents run (the host or the app). Nil
+    /// when it can't start (it isn't installed, or it failed), with `startFailure(of:)` saying why.
     @discardableResult
     func ensureRunning(_ agent: AgentDefinition.ID) async -> AgentRuntime? {
-        if runtimes[agent] == nil {
-            await agentsChecked()
-        }
+        // Runtimes for saved sessions exist from launch, but none may start before then.
+        await agentsChecked()
         guard let runtime = runtimes[agent] else { return nil }
         if runtime.status == .idle {
             let environment = await launchEnvironment()
