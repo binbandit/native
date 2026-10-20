@@ -122,11 +122,7 @@ private struct NewSessionWorkbenchFacts: View {
                 fact("Setup", setup.summary, tone: setup.tone)
             }
             if context.checkoutChanges > 0, context.workspace.isIsolated {
-                fact(
-                    "Checkout",
-                    context.checkoutChanges == 1
-                        ? "1 uncommitted change stays there"
-                        : "\(context.checkoutChanges) uncommitted changes stay there")
+                fact("Checkout", "\(context.checkoutChanges) uncommitted, not in this worktree")
             } else if context.checkoutChanges > 0 {
                 fact("Checkout", "\(context.checkoutChanges) uncommitted to start with")
             }

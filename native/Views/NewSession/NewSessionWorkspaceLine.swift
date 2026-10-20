@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Where a new task works, in one exact line: its branch and the branch it starts from, linked by
-/// Native's interlock mark ("main ⟗ you/k3x9 · own worktree"), the project's checkout it shares,
+/// Native's interlock mark ("main ⟗ you/k3x9 · its own worktree"), the project's checkout it shares,
 /// or the folder that isn't a repository. Branch names are set in mono, like everywhere else they
 /// show. Stacks onto two lines when there's no room for one.
 struct NewSessionWorkspaceLine: View {
@@ -63,8 +63,8 @@ struct NewSessionWorkspaceLine: View {
     /// What kind of place it is, after the names.
     private var place: String? {
         switch workspace {
-        case .worktree: "own worktree"
-        case .checkout: "\(projectName)'s own checkout"
+        case .worktree: "its own worktree"
+        case .checkout: "\(projectName)'s checkout"
         case .folder: "not a git repository"
         case .unknown: nil
         }
@@ -89,7 +89,7 @@ struct NewSessionWorkspaceLine: View {
             } else {
                 "Branch \(branch), in its own worktree"
             }
-        case .checkout(let branch): "On \(branch ?? "a detached head"), in \(projectName)'s own checkout"
+        case .checkout(let branch): "On \(branch ?? "a detached head"), in \(projectName)'s checkout"
         case .folder(let path): "In \(path), not a git repository"
         case .unknown(let path): "In \(path)"
         }
@@ -130,7 +130,7 @@ struct NewSessionChangesNote: View {
     private var text: String? {
         let changes = count == 1 ? "1 uncommitted change" : "\(count) uncommitted changes"
         return switch workspace {
-        case .worktree: "\(changes) in \(projectName) stay in its checkout, not this worktree"
+        case .worktree: "\(changes) in \(projectName) aren't in this worktree"
         case .checkout: "Starts with \(changes) already in the checkout"
         case .folder, .unknown: nil
         }

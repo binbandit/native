@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// A task to go back to: its status where it has one worth seeing, title, agent and age. The whole
-/// row opens it.
+/// A task to go back to. Like a pull request's number, its age leads in mono, or its status glyph
+/// while it's working or waiting on the user; then the title, and the agent or what it waits for.
+/// The whole row opens it.
 struct NewSessionTaskRow: View {
     let task: NewSessionContext.RecentTask
     var showsDetail = true
@@ -9,15 +10,19 @@ struct NewSessionTaskRow: View {
     var body: some View {
         NewSessionListRow(action: task.open) {
             Group {
-                if task.status == .idle {
-                    Image(systemName: "text.bubble")
-                        .font(.dsBody)
-                        .foregroundStyle(.dsTextTertiary)
+                if task.status == .idle || task.status == .done {
+                    if let date = task.date {
+                        TimelineView(.everyMinute) { context in
+                            Text(DSFormat.compactAge(date, now: context.date))
+                                .font(.dsMonoCaption)
+                                .foregroundStyle(.dsTextTertiary)
+                        }
+                    }
                 } else {
                     StatusIndicator(status: task.status, size: DS.Size.statusGlyph)
                 }
             }
-            .frame(width: DS.Size.rowLeading)
+            .frame(width: NewSessionMetrics.numberColumn, alignment: .leading)
             Text(task.title)
                 .font(.dsCallout)
                 .foregroundStyle(.dsTextPrimary)
@@ -29,10 +34,10 @@ struct NewSessionTaskRow: View {
                     .foregroundStyle(task.status.needsAttention ? .dsAttention : .dsTextTertiary)
                     .lineLimit(1)
             }
-            if let date = task.date {
-                CompactAgeText(date: date)
-                    .frame(width: NewSessionMetrics.ageColumn, alignment: .trailing)
-            }
+            Image(systemName: "arrow.right")
+                .font(.dsBody)
+                .foregroundStyle(.dsTextTertiary)
+                .frame(width: DS.Size.rowLeading)
         }
         .accessibilityLabel(task.title)
         .accessibilityValue(
@@ -76,8 +81,8 @@ struct NewSessionPullRequestRow: View {
                 Label("Open as Task", systemImage: "arrow.down.to.line.compact")
                     .labelStyle(.iconOnly)
                     .font(.dsBody)
-                    .foregroundStyle(.dsTextSecondary)
-                    .frame(width: NewSessionMetrics.ageColumn, alignment: .trailing)
+                    .foregroundStyle(.dsTextTertiary)
+                    .frame(width: DS.Size.rowLeading)
                     .help("Open as Task: check out the branch in a worktree, with a task there")
             }
         }

@@ -10,15 +10,15 @@ nonisolated enum NewSessionMetrics {
     static let titleTracking: CGFloat = -1
     /// The name shrinks this far in a narrow window before it truncates.
     static let titleMinimumScale: CGFloat = 0.55
-    /// The project's icon above the name.
+    /// The project's own icon, before the name.
     static let titleIcon: CGFloat = 28
 
     // MARK: Shared
 
     /// Between the empty state and the composer under it, so the two read as one block.
-    static let composerGap: CGFloat = 40
+    static let composerGap: CGFloat = 32
     /// The interlock mark between a task's base branch and its own, at the line's cap height.
-    static let linkMarkHeight: CGFloat = 8
+    static let linkMarkHeight: CGFloat = 9
     /// Below this column width, lines stack and trailing details drop.
     static let compactWidth: CGFloat = 480
 
@@ -28,12 +28,10 @@ nonisolated enum NewSessionMetrics {
     static let headerIcon: CGFloat = 20
     /// Rows in the lists.
     static let listRow: CGFloat = 30
-    /// A pull request's number, so titles line up.
+    /// What leads a row, a pull request's number or a task's age, so titles line up.
     static let numberColumn: CGFloat = 40
     /// The trailing detail (agent, branch) of a row.
     static let detailColumn: CGFloat = 132
-    /// The age column.
-    static let ageColumn: CGFloat = 32
     /// How many of each list show; the sidebar and the Pull Requests page have the rest.
     static let listLimit = 3
 
