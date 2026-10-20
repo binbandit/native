@@ -58,7 +58,9 @@ struct SessionRow<Accessory: View>: View {
     }
 
     var body: some View {
-        if model.renaming == summary.id {
+        if LaunchExperiment.plainRows {
+            Text(title).frame(height: 36)
+        } else if model.renaming == summary.id {
             SessionTitleField(summary: summary, status: TaskStatus(session))
         } else {
             TaskRow(
@@ -75,10 +77,12 @@ struct SessionRow<Accessory: View>: View {
                 action: select,
                 onArchive: archiveAction
             )
-            .lxUnless(LaunchExperiment.noRowHelp) { $0.help(tooltip) }
+            .lxUnless(LaunchExperiment.noRowHelp || LaunchExperiment.noRowExtras) { $0.help(tooltip) }
             // Double-clicking renames, like a file in the Finder.
-            .lxUnless(LaunchExperiment.noDoubleTap) { $0.simultaneousGesture(TapGesture(count: 2).onEnded(rename)) }
-            .lxUnless(LaunchExperiment.noContextMenu) { $0.contextMenu { contextMenu } }
+            .lxUnless(LaunchExperiment.noDoubleTap || LaunchExperiment.noRowExtras) {
+                $0.simultaneousGesture(TapGesture(count: 2).onEnded(rename))
+            }
+            .lxUnless(LaunchExperiment.noContextMenu || LaunchExperiment.noRowExtras) { $0.contextMenu { contextMenu } }
             .sidebarSwipeActions(
                 leading: [readAction, pinAction],
                 trailing: [
@@ -86,9 +90,11 @@ struct SessionRow<Accessory: View>: View {
                     SidebarSwipeAction("Delete", systemImage: "trash", tint: .dsDanger, action: requestDeletion),
                 ]
             )
-            .accessibilityLabel(accessibilityLabel)
-            .accessibilityHint("\(summary.agent.displayName) session. Return renames it.")
-            .lxUnless(LaunchExperiment.noA11yActions) {
+            .lxUnless(LaunchExperiment.noRowExtras) {
+                $0.accessibilityLabel(accessibilityLabel)
+                    .accessibilityHint("\(summary.agent.displayName) session. Return renames it.")
+            }
+            .lxUnless(LaunchExperiment.noA11yActions || LaunchExperiment.noRowExtras) {
                 $0.accessibilityActions {
                     Button("Rename", action: rename)
                     Button(isUnread ? "Mark as Read" : "Mark as Unread", action: toggleUnread)

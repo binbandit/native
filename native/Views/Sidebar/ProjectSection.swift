@@ -72,8 +72,13 @@ struct ProjectSection<TaskAccessory: View>: View {
                 ) {
                     select(summary.id)
                 }
-                .sidebarDraggable(row, title: model.title(for: summary), state: drag)
-                .sidebarDropTarget(row, state: drag, isActive: drag.dragged.isSession, onDrop: model.applySidebarDrop)
+                .lxUnless(LaunchExperiment.noRowDrag) {
+                    $0.sidebarDraggable(row, title: model.title(for: summary), state: drag)
+                }
+                .lxUnless(LaunchExperiment.noRowDrop) {
+                    $0.sidebarDropTarget(
+                        row, state: drag, isActive: drag.dragged.isSession, onDrop: model.applySidebarDrop)
+                }
             }
             // A project whose folder is gone or whose listing failed isn't known to be empty; its
             // problem row says why.
