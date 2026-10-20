@@ -19,15 +19,11 @@ final class DurableHost {
         case failed(String)
     }
 
-    var registration = Registration.off
+    private(set) var registration = Registration.off
     private(set) var placement = HostPlacement.pending
     private(set) var connection: NativeHostClient.ConnectionState?
-    /// The sessions the host runs, kept current from its events, for counts and the preview.
+    /// The sessions the host runs, kept current from its events, for counts.
     private(set) var sessions: [HostSessionSummary] = []
-    /// The preview window's transcripts (`DurableHost+Preview`).
-    var mirrors: [HostSessionID: SessionMirror] = [:]
-    /// Window › Durable Sessions' own switch, for this channel.
-    var isPreviewEnabled = UserDefaults.standard.bool(forKey: DurableHost.previewEnabledKey)
     /// The host process changed under a live connection, for a short while (`DurableHost+Activity`).
     var restart: HostRestart?
     /// The host has been out of reach long enough to say so, rather than a blip while it restarts.
@@ -44,7 +40,6 @@ final class DurableHost {
 
     @ObservationIgnored let registrar = HostRegistration()
     @ObservationIgnored var client: NativeHostClient?
-    @ObservationIgnored var agents: [AgentSpec] = []
     #if os(macOS)
     @ObservationIgnored private var attached: AttachedHost?
     /// When the attached host was last started, so one that keeps dying isn't restarted in a loop.
@@ -79,6 +74,11 @@ final class DurableHost {
         return fallback
     }
 
+    /// Whether the user keeps agents running when Native quits (Settings ▸ Background).
+    var isEnabled: Bool {
+        HostSessions.isEnabled
+    }
+
     /// Tasks running in the host right now.
     var workingTasks: Int {
         sessions.count(where: \.isWorking)
@@ -90,18 +90,11 @@ final class DurableHost {
     /// the user keeps agents running after quit (`HostSessions`), else a host Native starts and
     /// stops with itself, else nothing. Returns the connected client for
     /// `AppModel.connectHost(client:)`, or nil to run agents in the app as before.
-    func launch(agents definitions: [AgentDefinition]) async -> NativeHostClient? {
-        agents = definitions.map(AgentSpec.init)
+    func launch() async -> NativeHostClient? {
         guard HostSessions.isEnabled else {
             placement = .inApp
-            // Neither holds up the app's own agents.
-            Task {
-                if isPreviewEnabled {
-                    await startPreview()
-                } else {
-                    await retireHost()
-                }
-            }
+            // It doesn't hold up the app's own agents.
+            Task { await retireHost() }
             return nil
         }
         let fallback: HostFallback
@@ -184,13 +177,6 @@ final class DurableHost {
         return connected ? client : nil
     }
 
-    /// Connects without waiting; the connection state says how it goes.
-    func connectInBackground() {
-        if client == nil {
-            _ = makeClient()
-        }
-    }
-
     private func makeClient() -> NativeHostClient {
         let info = Bundle.main.infoDictionary ?? [:]
         let client = NativeHostClient(
@@ -213,7 +199,6 @@ final class DurableHost {
         client = nil
         connection = nil
         sessions = []
-        clearPreview()
     }
 
     /// With background agents off, a host left from when they were on stops, with its agents, so
@@ -254,9 +239,6 @@ final class DurableHost {
             refreshVersionStatus()
         case .sessionClosed(let session):
             sessions.removeAll { $0.id == session }
-            closePreview(session)
-        case .sessionEvent(let session, let step):
-            applyPreview(step, to: session)
         case .activity(let entry):
             noteSeen(entry)
         case .appUpdateCheckRequested:
@@ -264,9 +246,9 @@ final class DurableHost {
         case .appUpdateInstallRequested(let when):
             // A device asked; `.now` only after its user chose to interrupt running tasks.
             updates?.installForRemote(when == .now ? .now : .whenTasksFinish)
-        case .pluginsChanged, .updateChanged, .agentChanged:
-            // The app reads plugins from its own registry and agents through `AppModel`, and its
-            // updater is the source of the update status it would hear back.
+        case .sessionEvent, .pluginsChanged, .updateChanged, .agentChanged:
+            // Sessions, plugins and agents reach the app through `AppModel`, and its updater is the
+            // source of the update status it would hear back.
             break
         @unknown default:
             break
@@ -314,12 +296,9 @@ final class DurableHost {
 
     private func connected(_ info: HostInfo, reconnection: Reconnection) async {
         // A host being retired (background agents turned off) has nothing to say to this run.
-        guard let client, placement != .inApp || isPreviewEnabled else { return }
+        guard let client, placement != .inApp else { return }
         do {
-            if !HostSessions.isEnabled {
-                // With host sessions on, `AppModel` syncs the agents it launches with.
-                try await client.syncAgents(agents)
-            }
+            // `AppModel` syncs the agents it launches with; this only keeps count.
             sessions = try await client.sessions().filter { $0.origin != .announced }
             refreshVersionStatus()
         } catch {

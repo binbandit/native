@@ -418,7 +418,7 @@ locally, where building each from nothing took 8.
 **Not yet on iPad.** The app target is one module whose folders use each other freely (models,
 plugins, commands, settings, views), so the smallest set of folders that includes `native/Models`
 is the whole app, and that still imports macOS-only frameworks: ServiceManagement in `native/Host`
-(`HostRegistration`, `HostPreviewWindow`), IOKit in the KeepAwake engine, AppKit in
+(`HostRegistration`, the Background settings and host notices), IOKit in the KeepAwake engine, AppKit in
 `native/Terminal/Settings`, and `NativeApp.swift`, the Mac's entry point. Those move behind
 `native/Platform` adapters with the iPad destination (`docs/architecture.md`, "Getting there"); add
 a folder to the workflow's typecheck once it compiles there.

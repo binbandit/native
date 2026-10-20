@@ -543,3 +543,14 @@ and, for Phase 2, a stdio bridge to a Unix socket (no port to lose and a uid che
 but a helper binary in every agent's launch, for a server that moves into the host in Phase 3
 anyway). The cost is that a token stays valid across launches; the threat model's change is in
 `docs/durability.md` ("Native's MCP server across launches").
+
+## 2026-10-20: Agents keep running when Native quits, by default
+
+Since the host-backed path passed its end-to-end checks (quit and `kill -9` mid-turn, a host
+killed mid-turn, approvals across a restart, updates with a turn running, the fallback), every task
+runs in the background host by default (`HostSessions.defaultValue`). ⌘Q quits only the app;
+Native ▸ Quit Native and Stop Agents (⌃⌥⌘Q) stops the agents too. One switch, Settings ▸ Background
+▸ "Keep agents running when Native quits", turns it off for troubleshooting; it applies at the next
+launch, since a running session can't move between the app and a host. If macOS won't let Native
+run in the background, or the host doesn't start, Native runs agents itself while it's open and
+says so once, rather than leaving the user without agents. See `docs/durability.md`.

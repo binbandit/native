@@ -277,16 +277,19 @@ configuration on each machine.
 ### The durable host
 
 Native's background host runs agents outside the app, so its sessions keep going when the window
-closes, Native quits or it updates, and it resumes interrupted turns after a crash or a restart. The user turns it on in Window ▸ Durable
-Sessions ▸ Turn On. On a release build it registers as a login item named Native; if macOS's
-"Allow in the Background" switch for Native is off, `setup_status` says `needs_approval` and the
-window offers Allow in Login Items… (System Settings ▸ General ▸ Login Items & Extensions).
+closes, Native quits or it updates, and it resumes interrupted turns after a crash or a restart.
+It's on by default: Settings ▸ Background ▸ "Keep agents running when Native quits" turns it off,
+for troubleshooting, from the next launch. On a release build it registers as a login item named
+Native (macOS says "Background Items Added" the first time). If macOS's "Allow in the Background"
+switch for Native is off, `setup_status` says `needs_approval`: Native runs the host itself while
+it's open, so agents stop when it quits, says so once and offers Open Login Items (System Settings ▸
+General ▸ Login Items & Extensions). Native ▸ Quit Native and Stop Agents (⌃⌥⌘Q) quits and stops
+the host too.
 
-What runs there today: sessions started from the Durable Sessions window, and everything paired
-devices do. Tasks in the main window still run inside the app and stop when it quits; moving them
-into the host is designed but not available yet
-([docs/durability.md](https://github.com/binbandit/native/blob/main/docs/durability.md),
-"Migration").
+Every task in the main window runs there, and everything paired devices do
+([docs/durability.md](https://github.com/binbandit/native/blob/main/docs/durability.md)).
+When Native opens after agents worked without it, a "While you were away" card sums up what they
+did.
 
 ### The iPhone companion
 
@@ -398,9 +401,10 @@ Go through `setup_status` in its order, fixing the first problem before the next
 5. **`turned_off` or `not_allowed`.** The switch on its row in Settings ▸ Agents, or the
    organization's policy, which the user can't change.
 6. **The durable host** is `needs_approval` (Allow in the Background is off for Native), `failed`,
-   or `unreachable`: the Durable Sessions window shows the reason, with Turn Off and Stop Host and
-   Agents to start over. After an update, a host running the older build switches over once its
-   tasks finish, or at once with Restart Host Now.
+   or `unreachable`: Settings ▸ Background shows the reason, and Restart Host (there, in the notice
+   above the window's content, or in the status bar's Background Host item) starts it again;
+   turning the setting off and relaunching runs agents inside Native. After an update, a host
+   running the older build switches over once its tasks finish, or at once with Restart Host Now.
 7. **The phone can't pair or connect.** The durable host must be on, Allow paired devices to connect
    on, and the gateway listening; the phone and Mac on the same network (or both on Tailscale); a
    code is single use and lasts five minutes, so open Pair iPhone… again for a fresh one. "Removed on

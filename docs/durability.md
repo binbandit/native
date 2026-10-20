@@ -153,16 +153,15 @@ Development hosts must not pile up, so they differ from release in three ways:
   `SMAppService`. A Debug build that finds a login item left by an earlier build of itself
   unregisters it, from the owning app as `SMAppService` requires.
 - **Idle exit.** A development host stops after 15 minutes with no clients and nothing running.
-- **The same switch.** Settings ▸ Background decides for development builds too. Until background
-  agents are on by default, Window › Durable Sessions keeps its own per-channel opt-in
-  (`NativeHostEnabled.<channel>`) for the Phase 1 preview; Turn Off stops that host and its agents
-  and unloads the job.
+- **The same switch.** Settings ▸ Background decides for development builds too, on by default
+  like everywhere else. Turning it off stops the build's host and its agents and unloads the job at
+  the next launch.
 
 Every isolated instance (`scripts/dev/run-isolated.sh <name>`) builds into its own folder, so it
 has its own channel, launchd label, socket and store: instances never share a host. The script
-prints the instance's channel; `--quit` boots out its job and ends any host the app started itself
-(running turns resume at its next launch, as after a logout); `--reset` and `--remove` do the same
-and delete its channel folder.
+prints the instance's channel; `--quit` boots out its job (its running turns resume at the next
+launch, as after a logout) and ends any host the app started itself (those turns end as stopped);
+`--reset` and `--remove` do the same and delete its channel folder.
 
 `scripts/dev/clean-host-channels.sh` lists every development host job (labels ending in
 `.host.<10 hex digits>`) and channel folder. With `--apply` it stops and disables the ones no running
@@ -585,13 +584,16 @@ Window › Durable Sessions preview, opt-in per channel. Nothing else in the app
    Done.
 6. ⌘Q quits only the client; "Quit Native and Stop Agents" and the attached-host fallback land.
    Done. The attached host is `NativeHostClient.AttachedHost`, which runs the helper with
-   `--exit-with-parent` (`NativeHostMac.ParentWatch`: it stops its agents and exits when the app
-   does, `kill -9` included).
+   `--exit-with-parent` (`NativeHostMac.ParentWatch`: when the app goes, `kill -9` included, or the
+   host gets SIGTERM, SIGINT or SIGHUP, it ends running turns as stopped by the user, stops its
+   agents, writes the clean-shutdown mark and exits 0, so the next host never reads quitting as a
+   crash).
 7. The app shows connection states and the "while you were away" summary. Done.
    Native's MCP server keeps its port and each session's token across launches, so host sessions
    keep Native's tools when the app restarts ("Transport and security"). Done.
-8. Background agents are on by default, once the host-backed path passes its end-to-end checks; the
-   Window › Durable Sessions preview goes then.
+8. Background agents are on by default (`HostSessions.defaultValue`), now that the host-backed path
+   passes its end-to-end checks; the Window › Durable Sessions preview is gone. Done
+   (docs/decisions.md, 2026-10-20).
 
 **Phase 3: engines move into the host**, one PR each, each keeping its client-side API: the
 orchestration MCP server (so delegated tasks survive the app quitting), titles, notifications with

@@ -9,8 +9,9 @@ import Foundation
 /// reached, agents run in the app exactly as before.
 enum HostSessions {
     static let defaultsKey = "NativeHostSessions"
-    /// Off until the host-backed path has proven itself end to end.
-    static let defaultValue = false
+    /// On by default (docs/decisions.md, "Agents keep running when Native quits"); Settings ›
+    /// Background turns it off, for troubleshooting.
+    static let defaultValue = true
 
     static var isEnabled: Bool {
         // `bool(forKey:)` also reads a launch argument (`-NativeHostSessions YES`), which arrives as text.

@@ -37,6 +37,7 @@ struct PairedDevicesSettingsPage: View {
     static let enabledRow = SettingsRowID("pairedDevices.enabled")
 
     @Environment(DurableHost.self) private var durableHost: DurableHost?
+    @Environment(SettingsPresentation.self) private var settings
     @Environment(PolicyCenter.self) private var policyCenter: PolicyCenter?
     @State private var model = PairedDevicesModel()
     @State private var renaming: LinkDevice?
@@ -68,10 +69,11 @@ struct PairedDevicesSettingsPage: View {
                 NoticeBanner(
                     tone: .info, systemImage: "iphone.gen3",
                     title: "Paired devices connect through Native's background host",
-                    detail:
-                        "Turn on Durable Sessions so agents keep running when Native is closed and your iPhone can reach them."
+                    detail: HostSessions.isEnabled
+                        ? "It didn't start this time, so devices can't reach this Mac until it does. Settings ▸ Background says why."
+                        : "It's off. Turn on \"Keep agents running when Native quits\" in Settings ▸ Background, so agents keep working while Native is closed and your iPhone can reach them."
                 ) {
-                    Button("Turn On") { Task { await durableHost?.setEnabled(true) } }
+                    Button("Open Background Settings") { settings.open(.background) }
                         .buttonStyle(.ds(.primary, size: .medium))
                 }
             } else if model.status == nil, let reason = model.unavailableReason {
@@ -109,7 +111,7 @@ struct PairedDevicesSettingsPage: View {
         .undoToast($model.undo)
     }
 
-    private var hostIsOn: Bool { durableHost?.isEnabled ?? false }
+    private var hostIsOn: Bool { durableHost?.placement.usesHost ?? false }
 
     /// The organization's policy, as this app and the host read it.
     private var isAllowed: Bool {

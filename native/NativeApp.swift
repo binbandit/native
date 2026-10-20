@@ -189,7 +189,7 @@ struct NativeApp: App {
                     // a host that stops with the app, or the app itself.
                     quitDelegate.host = durableHost
                     durableHost.connectUpdates(updates)
-                    if let client = await durableHost.launch(agents: model.plugins.agents) {
+                    if let client = await durableHost.launch() {
                         model.connectHost(client: client)
                     }
                     await model.start()
@@ -230,15 +230,6 @@ struct NativeApp: App {
             KeepAwakeCommands(controller: keepAwake, commands: CommandRegistry.shared)
             StatusBarCommands(registry: statusBar, commands: CommandRegistry.shared)
         }
-
-        Window("Durable Sessions", id: HostPreviewWindow.id) {
-            HostPreviewWindow()
-                .environment(model)
-                .environment(durableHost)
-                .appearancePreferences(plugins: model.plugins)
-                .dsAccentPalette(themeID: iconPreferences.theme.rawValue)
-        }
-
     }
 }
 

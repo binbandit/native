@@ -176,7 +176,7 @@ that instruction rather than building blank icons.
 pair, a used or expired secret, wrong codes, a host with the wrong key, an unpaired key, revocation
 (live connection cut, then refused, then restored) and a real TCP pairing through the control
 socket, plus a revoked device being told so over TCP. End to end (2026-10-18): two isolated
-instances (`scripts/dev/run-isolated.sh host-a` and `host-b`, Durable Sessions on, different
+instances (`scripts/dev/run-isolated.sh host-a` and `host-b`, background host on, different
 projects), each paired from the simulator with `CompanionEndToEndTests.testPairWithInvite` (the
 invite read off the Mac's QR code, Pair clicked on the Mac through AX), then
 `testSendPromptAndApprove`: list the host's tasks, open the Codex durable session, pick
