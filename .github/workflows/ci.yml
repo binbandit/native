@@ -47,7 +47,7 @@ jobs:
         uses: actions/cache/restore@v4
         with:
           path: ~/Library/Caches/Native/ScriptRuntime
-          key: script-runtime-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'scripts/build-script-runtime.sh') }}
+          key: script-runtime-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'Runtime/ScriptRuntime/rust-toolchain.toml', 'scripts/build-script-runtime.sh') }}
           restore-keys: script-runtime-${{ runner.os }}-${{ runner.arch }}-
       - name: swift test
         run: scripts/ci/test-packages.sh ${{ matrix.shard }} ${{ strategy.job-total }}
@@ -96,7 +96,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/Library/Caches/Native/ScriptRuntime
-          key: script-runtime-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'scripts/build-script-runtime.sh') }}
+          key: script-runtime-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'Runtime/ScriptRuntime/rust-toolchain.toml', 'scripts/build-script-runtime.sh') }}
           restore-keys: script-runtime-${{ runner.os }}-${{ runner.arch }}-
       # Package checkouts and Xcode's compilation cache, as in check.yml (scripts/release/check.sh
       # explains the compilation cache).
