@@ -12,6 +12,12 @@ struct ComposerTurnActivity {
     init(session: SessionModel) {
         let state = session.state
         startedAt = state.turns.last(where: \.isOpen)?.startedAt
+        // Between items the agent is thinking, as the transcript's own indicator says.
+        if state.quietSince != nil {
+            line = "Thinking"
+            glyph = "brain"
+            return
+        }
         switch state.items.last {
         case .toolCall(let call)?:
             let presentation = ToolPresentation(call)
@@ -31,7 +37,7 @@ struct ComposerTurnActivity {
     }
 }
 
-/// An approval in words: what the agent wants to do ("Run touch notes.txt") and the subject alone.
+/// An approval in words: what the agent wants to do ("Run" "a command"), and the command itself when it is one.
 struct ComposerApprovalSummary {
     let verb: String
     let subject: String
@@ -39,12 +45,14 @@ struct ComposerApprovalSummary {
 
     init(_ call: ToolCallState) {
         let presentation = ToolPresentation(call)
-        verb = presentation.verb ?? "Use"
-        subject = presentation.subject.isEmpty ? call.title : presentation.subject
         if case .command(let command) = presentation.body {
             self.command = command
+            verb = "Run"
+            subject = "a command"
         } else {
             command = nil
+            verb = presentation.verb ?? "Use"
+            subject = presentation.subject.isEmpty ? call.title : presentation.subject
         }
     }
 }

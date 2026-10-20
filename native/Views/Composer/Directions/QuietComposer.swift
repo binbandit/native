@@ -27,7 +27,7 @@ struct QuietComposer<Editor: View, Sections: View, Files: View>: View {
             }
             QuietQueue(parts: parts)
             files()
-            editor(nil)
+            editor(placeholder)
                 .padding(.top, DS.Space.xs)
             footer
         }
@@ -62,8 +62,14 @@ struct QuietComposer<Editor: View, Sections: View, Files: View>: View {
         .font(.dsBody)
         .foregroundStyle(.dsTextTertiary)
         .padding(.horizontal, DS.Space.lg)
+        // One height for every form of the line, so opening a fact never moves the text.
+        .frame(height: DS.Size.composerPill)
         .padding(.bottom, DS.Space.md)
-        .frame(minHeight: DS.Size.composerPill)
+    }
+
+    /// The line under the text says what the agent waits for, so the text doesn't repeat it.
+    private var placeholder: String? {
+        parts.approval == nil ? nil : "Steer \(parts.agentName)’s turn, or answer above"
     }
 
     @ViewBuilder private var leading: some View {
@@ -127,6 +133,7 @@ struct QuietComposer<Editor: View, Sections: View, Files: View>: View {
         if parts.approval != nil {
             Text("⌘Y Allow  ·  ⌘⇧⌫ Reject")
                 .lineLimit(1)
+            DirectionRoundButton(kind: .stop, action: parts.stop)
         } else if parts.session.canCancel {
             if let hint = parts.followUpHint {
                 Text(hint.text)

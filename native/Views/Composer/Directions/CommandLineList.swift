@@ -32,7 +32,7 @@ struct CommandLineList: View {
         .transition(.opacity)
     }
 
-    private static let maxHeight: CGFloat = DS.Size.listRow * 9
+    private static let maxHeight = ComposerMetrics.suggestionListMaxHeight
 
     @ViewBuilder private var rows: some View {
         switch content {
@@ -51,6 +51,7 @@ struct CommandLineList: View {
                     Text(choice.name.directionShortName)
                         .font(.dsMono)
                         .foregroundStyle(.dsTextPrimary)
+                        .frame(minWidth: DS.Size.popoverWidth / 4, alignment: .leading)
                     if let detail = choice.detail {
                         Text(detail)
                             .font(.dsBody)

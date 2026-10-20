@@ -15,9 +15,10 @@ struct MessageCardComposer<Editor: View, Sections: View, Files: View>: View {
 
     var body: some View {
         let shape = RoundedRectangle(cornerRadius: TranscriptMetrics.promptBubbleRadius, style: .continuous)
-        VStack(alignment: .trailing, spacing: DS.Space.md) {
+        VStack(alignment: .trailing, spacing: DS.Space.sm) {
             MessageCardQueue(parts: parts)
             status
+            // The next message, where and how a sent one shows: trailing, in the message's shape.
             VStack(alignment: .leading, spacing: 0) {
                 Group(subviews: sections()) { subviews in
                     ForEach(subviews) { subview in
@@ -26,10 +27,12 @@ struct MessageCardComposer<Editor: View, Sections: View, Files: View>: View {
                     }
                 }
                 files()
-                editor(nil)
-                    .padding(.horizontal, DS.Space.xs)
-                    .padding(.top, DS.Space.xs)
-                chipsRow
+                HStack(alignment: .bottom, spacing: 0) {
+                    editor(nil)
+                        .padding(.leading, DS.Space.xs)
+                    action
+                        .padding(DS.Space.md)
+                }
             }
             .dsGlassEffect(in: shape)
             .clipShape(shape)
@@ -37,10 +40,31 @@ struct MessageCardComposer<Editor: View, Sections: View, Files: View>: View {
                 shape.strokeBorder(parts.isDropTargeted ? Color.dsAccent : .dsBorder, lineWidth: 1)
             }
             .containerShape(shape)
+            .padding(.leading, DS.Size.contentColumn * Self.indent)
+            chipsRow
         }
         .onChange(of: lastUserMessage) { _, text in
             if let text {
                 MessageSettingsLedger.shared.record(text, facts: currentFacts)
+            }
+        }
+    }
+
+    /// How far in the draft starts, as a sent message's bubble does (it takes at most 85%).
+    private static let indent: CGFloat = 0.15
+
+    /// Send, or while the agent works, Stop beside it.
+    @ViewBuilder private var action: some View {
+        HStack(spacing: DS.Space.sm) {
+            if parts.hasContent || !parts.session.canCancel {
+                DirectionRoundButton(
+                    kind: parts.sendKind, isEnabled: parts.hasContent && parts.sendBlockedReason == nil
+                ) {
+                    parts.submit(parts.followUp)
+                }
+            }
+            if parts.session.canCancel {
+                DirectionRoundButton(kind: .stop, action: parts.stop)
             }
         }
     }
@@ -55,7 +79,7 @@ struct MessageCardComposer<Editor: View, Sections: View, Files: View>: View {
             .font(.dsBody)
             .foregroundStyle(.dsTextSecondary)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, DS.Space.lg)
+            .padding(.leading, DS.Size.contentColumn * Self.indent + DS.Space.lg)
         } else if parts.session.canCancel {
             let activity = ComposerTurnActivity(session: parts.session)
             HStack(spacing: DS.Space.sm) {
@@ -73,41 +97,24 @@ struct MessageCardComposer<Editor: View, Sections: View, Files: View>: View {
             .font(.dsBody)
             .foregroundStyle(.dsTextSecondary)
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, DS.Space.lg)
+            .padding(.leading, DS.Size.contentColumn * Self.indent + DS.Space.lg)
         }
     }
 
-    /// The message's settings as chips, then Send (or Stop while the agent works).
+    /// The message's settings as chips under it, where a sent message keeps them.
     private var chipsRow: some View {
         HStack(spacing: DS.Space.xs) {
-            ForEach(Array(chips.enumerated()), id: \.offset) { _, chip in
-                MessageCardChip(parts: parts, command: chip.command, title: chip.title)
-            }
+            ContextIndicator(session: parts.session, style: .ring)
             Button("Attach Files", systemImage: "paperclip") { parts.isPickingFiles = true }
                 .labelStyle(.iconOnly)
                 .buttonStyle(DirectionTextButtonStyle())
-                .padding(.leading, DS.Space.xs)
+                .padding(.horizontal, DS.Space.xs)
                 .help("Attach files… (⌘U)")
-            Spacer(minLength: DS.Space.md)
-            ContextIndicator(session: parts.session, style: .ring)
-            if parts.session.canCancel {
-                if parts.hasContent {
-                    DirectionRoundButton(kind: parts.sendKind, isEnabled: parts.sendBlockedReason == nil) {
-                        parts.submit(parts.followUp)
-                    }
-                }
-                DirectionRoundButton(kind: .stop, action: parts.stop)
-            } else {
-                DirectionRoundButton(
-                    kind: parts.sendKind, isEnabled: parts.hasContent && parts.sendBlockedReason == nil
-                ) {
-                    parts.submit(parts.followUp)
-                }
+            ForEach(Array(chips.enumerated()), id: \.offset) { _, chip in
+                MessageCardChip(parts: parts, command: chip.command, title: chip.title)
             }
         }
-        .padding(.horizontal, DS.Space.md)
-        .padding(.bottom, DS.Space.md)
-        .padding(.top, DS.Space.xxs)
+        .padding(.trailing, DS.Space.xs)
     }
 
     private var chips: [(command: CommandLineSettingQuery.Command, title: String)] {

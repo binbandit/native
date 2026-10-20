@@ -200,14 +200,19 @@ private struct MomentRunning: View {
                 }
                 Spacer(minLength: DS.Space.lg)
                 if parts.session.supportsSteering {
-                    Picker("Return", selection: $followUp) {
-                        Text("Steer").tag(FollowUpBehavior.steer)
-                        Text("Queue").tag(FollowUpBehavior.queue)
+                    // What Return does with the next message, as a choice rather than a hint.
+                    HStack(spacing: DS.Space.xxs) {
+                        Text("↩")
+                            .foregroundStyle(.dsTextTertiary)
+                            .padding(.horizontal, DS.Space.xs)
+                        ForEach([FollowUpBehavior.steer, .queue], id: \.self) { behavior in
+                            Button(behavior.title) { followUp = behavior }
+                                .buttonStyle(DirectionChoiceStyle(isCurrent: followUp == behavior))
+                        }
                     }
-                    .pickerStyle(.segmented)
-                    .labelsHidden()
-                    .fixedSize()
-                    .help("What Return does with your next message while \(parts.agentName) works")
+                    .help(
+                        "What Return does with your next message while \(parts.agentName) works; ⌘Return does the other"
+                    )
                 }
                 Button(action: parts.stop) {
                     HStack(spacing: DS.Space.xs) {
@@ -253,7 +258,7 @@ private struct MomentApproval: View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
             HStack(spacing: DS.Space.sm) {
                 DirectionAttentionDot()
-                Text("\(parts.agentName) wants to \(summary.verb.lowercased())")
+                Text("\(parts.agentName) wants to \(summary.verb.lowercased()) \(summary.subject)")
                     .font(.dsCalloutMedium)
                     .foregroundStyle(.dsTextPrimary)
                 Spacer(minLength: DS.Space.md)

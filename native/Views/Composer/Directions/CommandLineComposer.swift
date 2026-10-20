@@ -66,7 +66,7 @@ struct CommandLineComposer<Editor: View, Sections: View, Files: View>: View {
     private var placeholder: String {
         let agent = parts.agentName
         if parts.approval != nil {
-            return "\(agent) is waiting: answer above, or type to tell it what to do instead"
+            return "\(agent) is waiting on you; anything typed here steers its turn"
         }
         if parts.session.canCancel {
             return parts.followUp == .steer && parts.session.supportsSteering
@@ -100,7 +100,7 @@ private struct CommandLineStatus: View {
                         .frame(width: DS.Space.lg, height: DS.Space.lg)
                     Text(parts.agentName.lowercased())
                         .foregroundStyle(.dsTextSecondary)
-                    Text(activity.line)
+                    Text(activity.line.lowercased())
                         .lineLimit(1)
                         .truncationMode(.middle)
                     if let start = activity.startedAt {
@@ -124,7 +124,7 @@ private struct CommandLineStatus: View {
                     ContextIndicator(session: parts.session, style: .ring)
                 }
                 if parts.hasContent {
-                    keys([("↩", "send")])
+                    keys([("↩", CommandLineSettingQuery(draft: parts.session.draft) == nil ? "send" : "set")])
                 }
             }
         }
@@ -175,9 +175,9 @@ private struct CommandLineApprovalPrompt: View {
         let summary = ComposerApprovalSummary(call)
         HStack(spacing: DS.Space.md) {
             DirectionAttentionDot()
-            Text("\(parts.agentName.lowercased()) wants to")
+            Text("\(parts.agentName.lowercased()) wants to \(summary.verb.lowercased())")
                 .foregroundStyle(.dsTextTertiary)
-            Text(summary.command ?? "\(summary.verb.lowercased()) \(summary.subject)")
+            Text(summary.command ?? summary.subject)
                 .foregroundStyle(.dsTextPrimary)
                 .lineLimit(1)
                 .truncationMode(.middle)
