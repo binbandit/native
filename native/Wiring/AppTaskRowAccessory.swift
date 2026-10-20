@@ -20,8 +20,8 @@ struct AppTaskRowAccessory: View {
                     name: host.name, look: HostLookStore.shared.look(for: device, named: host.name),
                     availability: host.availability)
             }
-            // This Mac's git can't see a paired host's folders.
-            if device == .thisMac, hasOwnCheckout(folder) {
+            // A paired host's folder is read by its own git (`GitStore.hostStore`).
+            if hasOwnCheckout(folder) {
                 let repository = git.model(for: folder)
                 if let branch = repository.branch?.name {
                     TaskPullRequestBadge(directory: folder, branch: branch)

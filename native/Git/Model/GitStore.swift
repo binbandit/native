@@ -59,8 +59,20 @@ final class GitStore {
     }
     #endif
 
+    /// The store that reads `folder` when it's on another machine: its paired host's, whose git runs
+    /// there. Set by the app's wiring; nil, or nil for a folder, reads it here.
+    @ObservationIgnored var hostStore: ((URL) -> GitStore?)?
+
+    /// The store for `folder`: its host's when it's on another machine, else this one.
+    private func owner(of folder: URL) -> GitStore {
+        guard let other = hostStore?(folder), other !== self else { return self }
+        return other
+    }
+
     /// The model for the working tree containing `folder`. It starts loading and watching right away.
     func model(for folder: URL) -> GitRepositoryModel {
+        let owner = owner(of: folder)
+        if owner !== self { return owner.model(for: folder) }
         let key = folder.standardizedFileURL
         if let model = models[key] { return model }
         let model = GitRepositoryModel(folder: key, git: { [weak self] in await self?.resolveGit() })
@@ -72,12 +84,16 @@ final class GitStore {
     /// Re-reads a folder's status, e.g. after an agent finished a turn there. Folders nobody has
     /// asked about yet are skipped.
     func refresh(folder: URL) {
+        let owner = owner(of: folder)
+        if owner !== self { return owner.refresh(folder: folder) }
         models[folder.standardizedFileURL]?.refresh()
     }
 
     /// Re-reads a folder's status once a burst of writes there settles, e.g. an agent's edits;
     /// the folder's own file events coalesce into the same rescan.
     func refreshWhenSettled(folder: URL) {
+        let owner = owner(of: folder)
+        if owner !== self { return owner.refreshWhenSettled(folder: folder) }
         models[folder.standardizedFileURL]?.refreshWhenSettled()
     }
 
@@ -88,6 +104,8 @@ final class GitStore {
     /// Records how `folder` looked as a task's turn began there (`GitTurnBaselines`), in the
     /// background, so sending the prompt never waits on it. Folders outside git are skipped.
     func recordTurnStart(of session: SessionKey, at startedAt: Date, in folder: URL) {
+        let owner = owner(of: folder)
+        if owner !== self { return owner.recordTurnStart(of: session, at: startedAt, in: folder) }
         Task(priority: .utility) {
             guard let repository = try? await resolveGit().repository(at: folder) else { return }
             await turnBaselines.record(session, startedAt: startedAt, in: repository)

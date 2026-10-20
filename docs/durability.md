@@ -443,7 +443,10 @@ method last. The page shows only while remote hosts are on; in development build
 **A host's tasks, like this Mac's.** Each paired host gets its own `GitStore` whose git runs on the
 host (`Git.onHost`: `RemoteCommandRunner`, the host's login-shell environment, and its change feed
 for watching) and keeps worktrees in the host's `worktreesFolder`, wrapped in the same
-`GitTaskWorkspaceProvider` (`RemoteHostsWiring`). `DeviceTaskWorkspaces` is the app's task
+`GitTaskWorkspaceProvider` (`RemoteHostsWiring`). Everything that reads a task's folder (the
+changes inspector, branch and diff badges, turn baselines) reads a host's folder with that host's
+store (`GitStore.hostStore`, by `AppModel.remoteHost(holding:)`), so diffs and Files Changed come
+from the host's own git. `DeviceTaskWorkspaces` is the app's task
 workspaces while remote hosts are on: it sends archiving, restoring, deleting and branch renames to
 the host whose worktrees folder or checkout holds the task's folder, so a task on a host is put away
 with its checkpoint there exactly as one here. Deleting a task's copy in its agent and pinning use
