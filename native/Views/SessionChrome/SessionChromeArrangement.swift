@@ -1,4 +1,4 @@
-#if DEBUG && NATIVE_SESSION_CHROME_WIP
+#if DEBUG
 /// The places on the session screen a tool can live.
 enum SessionChromePlace: String, CaseIterable, Identifiable {
     /// A live fact in the header, under the title; the tool opens over the conversation.

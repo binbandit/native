@@ -1,4 +1,4 @@
-#if DEBUG && NATIVE_SESSION_CHROME_WIP
+#if DEBUG
 import CoreGraphics
 
 /// The session chrome's layout sizes, in one place; everything visual comes from the design system.

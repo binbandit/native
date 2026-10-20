@@ -1,4 +1,4 @@
-#if DEBUG && NATIVE_SESSION_CHROME_WIP
+#if DEBUG
 import SwiftUI
 import Terminal
 
@@ -60,7 +60,14 @@ struct SessionChromeWorkbench: View {
                     chrome.show(.terminal)
                 }
             }
-            if tools.contains(.terminal) {
+            if tools.contains(.terminal), terminalTabs.isEmpty {
+                SessionChromeTab(
+                    title: SessionChromeTool.terminal.title, systemImage: SessionChromeTool.terminal.systemImage,
+                    isSelected: false, help: SessionChromeTool.terminal.help
+                ) {
+                    chrome.show(.terminal)
+                }
+            } else if tools.contains(.terminal) {
                 IconButton("New Terminal Tab", systemImage: "plus") {
                     panel.newTab()
                     chrome.show(.terminal)

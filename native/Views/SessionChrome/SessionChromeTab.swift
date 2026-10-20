@@ -1,4 +1,4 @@
-#if DEBUG && NATIVE_SESSION_CHROME_WIP
+#if DEBUG
 import SwiftUI
 
 /// A tab in a chrome place's strip: a glyph, a name and its live fact, selected while its pane

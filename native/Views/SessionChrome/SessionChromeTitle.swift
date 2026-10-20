@@ -1,4 +1,4 @@
-#if DEBUG && NATIVE_SESSION_CHROME_WIP
+#if DEBUG
 import SwiftUI
 
 /// The header's title, and under it, in place of a subtitle, the task's live facts (direction C,
@@ -44,6 +44,8 @@ struct SessionChromeTitle: View {
             }
             .font(.dsCaption)
         }
+        // Where the window puts its own title.
+        .padding(.leading, DS.Space.xl)
         .fixedSize()
     }
 

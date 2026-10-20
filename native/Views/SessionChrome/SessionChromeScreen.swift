@@ -1,4 +1,4 @@
-#if DEBUG && NATIVE_SESSION_CHROME_WIP
+#if DEBUG
 import ACP
 import Git
 import ProjectActions
@@ -77,6 +77,13 @@ struct SessionChromeScreen: View {
         .mcpServersPresentation()
         .focusedSceneValue(\.gitChangesInspector, showsChanges)
         .refreshesGitStatus(of: session, in: git)
+        // The project's actions are read when a task shows, as the Run menu does, so Run's fact and
+        // pane know them.
+        .task(id: session.cwd) {
+            if let target = ProjectActionsWiring.target(for: session, model: model) {
+                runner.store.refresh(target.project)
+            }
+        }
         .environment(\.transcriptColumnMaxWidth, columnWidth.maxWidth)
         .onChange(of: terminal.isVisible, initial: true) { _, isVisible in
             // ⌃`, View ▸ Show Terminal and a run's Show all set the panel's visibility.
@@ -153,7 +160,7 @@ struct SessionChromeScreen: View {
         }
         .sharedBackgroundVisibility(.hidden)
         if !chrome.arrangement.tools(in: .side).isEmpty {
-            ToolbarItem {
+            ToolbarItem(placement: .primaryAction) {
                 let isOpen = chrome.tool(in: .side) != nil
                 WindowToolbarButton(
                     isOpen ? "Hide Side Panel" : "Show Side Panel", systemImage: "sidebar.right", isActive: isOpen

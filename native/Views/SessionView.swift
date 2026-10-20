@@ -21,7 +21,7 @@ struct SessionView: View {
 
     var body: some View {
         // A prototype of where the session's tools could live, only with `-sessionChrome a|b|c|d`.
-        #if DEBUG && NATIVE_SESSION_CHROME_WIP
+        #if DEBUG
         if let direction = SessionChromeDirection.launchChoice {
             SessionChromeScreen(session: session, direction: direction)
         } else {

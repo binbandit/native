@@ -1,4 +1,4 @@
-#if DEBUG && NATIVE_SESSION_CHROME_WIP
+#if DEBUG
 import Foundation
 
 /// Where the session screen's tools live: a DEBUG-only prototype for choosing a direction, picked

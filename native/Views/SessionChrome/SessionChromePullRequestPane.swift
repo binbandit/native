@@ -1,4 +1,4 @@
-#if DEBUG && NATIVE_SESSION_CHROME_WIP
+#if DEBUG
 import SwiftUI
 
 /// The task's branch and its pull request as a pane, or the way to open one.

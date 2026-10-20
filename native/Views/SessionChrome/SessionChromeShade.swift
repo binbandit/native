@@ -1,4 +1,4 @@
-#if DEBUG && NATIVE_SESSION_CHROME_WIP
+#if DEBUG
 import SwiftUI
 
 /// A header tool, open: its pane dropped over the conversation from under its fact, there while

@@ -1,4 +1,4 @@
-#if DEBUG && NATIVE_SESSION_CHROME_WIP
+#if DEBUG
 import SwiftUI
 
 /// Open In where it's one action among a place's tabs: the default app's icon, which opens the

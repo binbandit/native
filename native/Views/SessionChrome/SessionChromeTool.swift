@@ -1,4 +1,4 @@
-#if DEBUG && NATIVE_SESSION_CHROME_WIP
+#if DEBUG
 /// A feature that puts something in the session screen's chrome. Each is a module the user turns
 /// on and places; with every one off, the screen is the conversation and the composer.
 enum SessionChromeTool: String, CaseIterable, Identifiable {
