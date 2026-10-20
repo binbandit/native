@@ -2,6 +2,7 @@
 # change and is skipped otherwise. Add new source files here.
 $(SRCROOT)/Runtime/ScriptRuntime/Cargo.toml
 $(SRCROOT)/Runtime/ScriptRuntime/Cargo.lock
+$(SRCROOT)/Runtime/ScriptRuntime/rust-toolchain.toml
 $(SRCROOT)/Runtime/ScriptRuntime/build.rs
 $(SRCROOT)/Runtime/ScriptRuntime/Info.plist
 $(SRCROOT)/Runtime/ScriptRuntime/ScriptRuntime.entitlements
