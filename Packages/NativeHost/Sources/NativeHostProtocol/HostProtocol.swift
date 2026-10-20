@@ -29,6 +29,7 @@ public enum HostProtocol {
         public static let respondQuestion = "_native/session/respond_question"
         public static let runHidden = "_native/session/run_hidden"
         public static let closeSession = "_native/session/close"
+        public static let setMCPServers = "_native/session/set_mcp_servers"
         public static let updateQueued = "_native/queue/update"
         public static let removeQueued = "_native/queue/remove"
         public static let restoreQueued = "_native/queue/restore"

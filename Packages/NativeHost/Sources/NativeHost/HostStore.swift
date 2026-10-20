@@ -13,7 +13,7 @@ import NativeHostProtocol
 final class HostStore {
     private let database: SQLiteDatabase
 
-    private static let schemaVersion: Int64 = 3
+    private static let schemaVersion: Int64 = 4
 
     init(url: URL) throws {
         database = try SQLiteDatabase(url: url)
@@ -41,18 +41,23 @@ final class HostStore {
             if version < 2 {
                 try createVersion2()
             }
-            // Version 3: what a prompt carries beyond its text (attachments, content, a preamble),
-            // sessions' `_meta` and chosen config values, and activity tied to agent sessions.
-            try database.execute(
-                """
-                ALTER TABLE turns ADD COLUMN extra TEXT;
-                ALTER TABLE queue ADD COLUMN extra TEXT;
-                ALTER TABLE sessions ADD COLUMN meta TEXT;
-                ALTER TABLE sessions ADD COLUMN config_choices TEXT NOT NULL DEFAULT '{}';
-                ALTER TABLE activity ADD COLUMN agent_id TEXT;
-                ALTER TABLE activity ADD COLUMN agent_session_id TEXT;
-                ALTER TABLE activity ADD COLUMN previous_run TEXT;
-                """)
+            if version < 3 {
+                // Version 3: what a prompt carries beyond its text (attachments, content, a preamble),
+                // sessions' `_meta` and chosen config values, and activity tied to agent sessions.
+                try database.execute(
+                    """
+                    ALTER TABLE turns ADD COLUMN extra TEXT;
+                    ALTER TABLE queue ADD COLUMN extra TEXT;
+                    ALTER TABLE sessions ADD COLUMN meta TEXT;
+                    ALTER TABLE sessions ADD COLUMN config_choices TEXT NOT NULL DEFAULT '{}';
+                    ALTER TABLE activity ADD COLUMN agent_id TEXT;
+                    ALTER TABLE activity ADD COLUMN agent_session_id TEXT;
+                    ALTER TABLE activity ADD COLUMN previous_run TEXT;
+                    """)
+            }
+            // Version 4: whether a session was adopted from the agent's own list (so the agent saved
+            // it) rather than started here.
+            try database.execute("ALTER TABLE sessions ADD COLUMN adopted INTEGER NOT NULL DEFAULT 0")
             try database.execute("PRAGMA user_version = \(Self.schemaVersion)")
         }
     }
@@ -165,8 +170,8 @@ final class HostStore {
     func insertSession(_ session: StoredSession) throws {
         try database.run(
             """
-            INSERT INTO sessions (id, agent_id, agent_session_id, cwd, parent_id, origin, title, created_at, last_activity, last_stop_reason, queue_paused, mcp_servers, meta, config_choices)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO sessions (id, agent_id, agent_session_id, cwd, parent_id, origin, title, created_at, last_activity, last_stop_reason, queue_paused, mcp_servers, meta, config_choices, adopted)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """,
             .text(session.id.description), .text(session.agentID), .text(session.agentSessionID?.rawValue),
             .text(session.cwd),
@@ -174,7 +179,7 @@ final class HostStore {
             .date(session.createdAt),
             .date(session.lastActivity), .text(session.lastStopReason), .bool(session.isQueuePaused),
             try JSONColumn.encode(session.mcpServers), try session.meta.map(JSONColumn.encode) ?? .null,
-            try JSONColumn.encode(session.configChoices)
+            try JSONColumn.encode(session.configChoices), .bool(session.isAdopted)
         )
     }
 
@@ -182,12 +187,13 @@ final class HostStore {
         try database.run(
             """
             UPDATE sessions SET agent_session_id = ?, title = ?, last_activity = ?, last_stop_reason = ?, queue_paused = ?,
-                config_choices = ?
+                config_choices = ?, mcp_servers = ?
             WHERE id = ?
             """,
             .text(session.agentSessionID?.rawValue), .text(session.title), .date(session.lastActivity),
             .text(session.lastStopReason),
-            .bool(session.isQueuePaused), try JSONColumn.encode(session.configChoices), .text(session.id.description)
+            .bool(session.isQueuePaused), try JSONColumn.encode(session.configChoices),
+            try JSONColumn.encode(session.mcpServers), .text(session.id.description)
         )
     }
 
@@ -198,7 +204,7 @@ final class HostStore {
     func sessions() throws -> [StoredSession] {
         try database.query(
             """
-            SELECT id, agent_id, agent_session_id, cwd, parent_id, origin, title, created_at, last_activity, last_stop_reason, queue_paused, mcp_servers, meta, config_choices
+            SELECT id, agent_id, agent_session_id, cwd, parent_id, origin, title, created_at, last_activity, last_stop_reason, queue_paused, mcp_servers, meta, config_choices, adopted
             FROM sessions ORDER BY created_at
             """
         ).compactMap(StoredSession.init(row:))

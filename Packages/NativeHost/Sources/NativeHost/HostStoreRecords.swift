@@ -23,13 +23,16 @@ struct StoredSession: Hashable {
     /// Config values clients chose, by option id, set back after a reload where the agent reports
     /// otherwise (an agent may reopen a session on its default model).
     var configChoices: [String: String]
+    /// Opened from the agent's own list, so the agent saved it; otherwise started here.
+    var isAdopted: Bool
 
     init(
         id: HostSessionID, agentID: String, agentSessionID: SessionID?, cwd: String, parentID: HostSessionID?,
         origin: SessionOrigin,
         title: String? = nil, createdAt: Date = .now, lastActivity: Date? = nil, lastStopReason: String? = nil,
         isQueuePaused: Bool = false,
-        mcpServers: [JSONValue] = [], meta: JSONValue? = nil, configChoices: [String: String] = [:]
+        mcpServers: [JSONValue] = [], meta: JSONValue? = nil, configChoices: [String: String] = [:],
+        isAdopted: Bool = false
     ) {
         self.id = id
         self.agentID = agentID
@@ -45,6 +48,7 @@ struct StoredSession: Hashable {
         self.mcpServers = mcpServers
         self.meta = meta
         self.configChoices = configChoices
+        self.isAdopted = isAdopted
     }
 
     init?(row: [SQLiteDatabase.Value]) {
@@ -59,7 +63,7 @@ struct StoredSession: Hashable {
             lastActivity: row[8].date, lastStopReason: row[9].text, isQueuePaused: row[10].bool,
             mcpServers: JSONColumn.decode([JSONValue].self, row[11]) ?? [],
             meta: JSONColumn.decode(JSONValue.self, row[12]),
-            configChoices: JSONColumn.decode([String: String].self, row[13]) ?? [:]
+            configChoices: JSONColumn.decode([String: String].self, row[13]) ?? [:], isAdopted: row[14].bool
         )
     }
 }

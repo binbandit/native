@@ -178,6 +178,9 @@ extension HostCore {
         case Method.sendQueuedNow:
             try await sendQueuedNow(try message.params(as: QueueItemParams.self))
             try reply(EmptyMessage())
+        case Method.setMCPServers:
+            try setMCPServers(try message.params(as: SetMCPServersParams.self))
+            try reply(EmptyMessage())
         case Method.closeSession:
             let params = try message.params(as: CloseSessionParams.self)
             try await closeSession(params.sessionID, closeInAgent: params.closeInAgent)

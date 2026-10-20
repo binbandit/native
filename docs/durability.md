@@ -54,9 +54,11 @@ notifications with actions and show a menu bar extra under its own bundle id; it
 **One host.** launchd runs one job per label, and the host takes an exclusive `flock` on `host.lock`
 for its lifetime; a second copy exits 0 (so launchd doesn't restart it). Agents are the host's
 children and exit when the host's end of their stdio closes, so they die with the host (checked by
-killing the host mid-turn under launchd: no adapters were left behind); Phase 2 also tracks each
-agent's process group (npm puts itself in its own) and ends it explicitly, so there are no orphaned
-agent trees, ever. (The opposite failures are as bad: daemons from old versions piling up, or an
+killing the host mid-turn under launchd: no adapters were left behind). The host also notes the
+process group of every process an agent starts (npm puts its children in groups of their own) and
+ends them all when the agent stops, crashes, or its launcher exits while the adapter holds on
+(`AgentProcessGroups`: SIGTERM, then SIGKILL after 2 s); Quit Native and Stop Agents does it before
+the host exits, so nothing an agent started outlives it. (The opposite failures are as bad: daemons from old versions piling up, or an
 app that reads "daemon unreachable" as "gone" and starts a second copy of a running conversation.
 The lock and the single launchd label make both impossible.)
 
@@ -285,27 +287,47 @@ ACP), driven from the client.
 ## The protocol
 
 JSON-RPC 2.0, one message per line. Method names follow ACP where they mean the same thing; Native's
-own are `_native/*`. `HostProtocol` in `NativeHostProtocol` defines every method and payload; the
-client library builds for macOS and iOS.
+own are `_native/*`. `HostProtocol` in `NativeHostProtocol` defines every method and payload (one
+file per area: `HostRequests`, `HostAgents`, `HostActivity`, `PromptEcho`); the client library
+builds for macOS and iOS. `HostProtocol.version` is 2 since Phase 2.
 
 **Handshake.** `initialize {protocolVersion, clientInfo}` → `HostInfo {protocolVersion, hostID,
 machineName, hostInfo, epoch, processID, startedAt, channel}`. `epoch` changes with every host
 process; event numbers are comparable only within one.
 
-**Sessions** (built):
+**Agents** (Phase 2). The host runs every agent; clients see and steer them through it.
 
 | Method | Does |
 | --- | --- |
-| `_native/agents/sync {agents}` | the client's agent catalog, until the plugin registry moves into the host (Phase 3) |
+| `_native/agents/sync {agents, refreshEnvironment}` | the client's agent catalog (plugins still supply agents), until the plugin registry moves into the host (Phase 3). `refreshEnvironment` reads the login shell's environment again for agents started from then on (after an install or a sign-in in a terminal). Local clients only |
+| `_native/agents/list` | → `[HostAgent]`: `state` (`stopped`, `starting`, `ready`, `failed`, `notInstalled`), `problem`, the agent's `initialize` result verbatim while it runs (info, capabilities, sign-in methods, steering), `processID`, `launchedSpec` (to tell when a changed spec needs a restart), `needsSignIn`, `isSigningIn`. An agent that exits on its own is `stopped`, not `failed`: it starts again on demand |
+| `_native/agents/start {agentID}` | starts it unless running; answers with how that went (a failure is its state, not an error). Callers share one launch |
+| `_native/agents/stop {agentID}` | → `{stopped, agent}`; refuses while one of its sessions is working (a turn, a recovery, a retry, a hidden command, a queue waiting to go out) |
+| `_native/agents/restart {agentID}` | stops it and starts it on its current spec; turns it was running recover with the cause `agentRestarted` ("You restarted Codex at 2:14 PM. Native asked it to pick up where it left off.") |
+| `_native/agents/authenticate {agentID, methodID}` | ACP `authenticate`; the agent may open a browser and wait. Any request the agent turns away with `auth_required` sets `needsSignIn` |
+| `_native/agents/list_sessions {agentID, cwd?, cursor?}` | ACP `session/list`, verbatim (`ListSessionsResponse`), starting the agent if needed |
+| `_native/agents/delete_session {agentID, agentSessionID}` | ACP `session/delete`; a host session holding it is closed too |
+
+`_native/agents/changed {agent}` follows every change. Agents launch without npm in the middle when
+npx has the exact version installed (`AgentCommand.skippingNpx`), and are told the client answers
+form questions (`elicitation`), as the app's own `InitializeRequest` says.
+
+**Sessions.**
+
+| Method | Does |
+| --- | --- |
 | `session/list` | every session the host has open, as `HostSessionSummary` |
-| `session/new {agentID, cwd, parentID?, origin, mcpServers}` | starts a session on an agent |
-| `_native/session/open {agentID, agentSessionID, cwd, title?, mcpServers}` | adopts a session the agent listed; idempotent |
+| `session/new {sessionID?, agentID, cwd, parentID?, origin, mcpServers, meta?, attach}` | starts a session on an agent. The client may choose the id (it's `SessionContext.clientID`, which plugins key per-session MCP servers by before the session exists); an id the host has returns that session, so a retry never starts two. `meta` is the `_meta` for `session/new` and every `session/load`. With `attach`, the caller follows the session from its first event |
+| `_native/session/open {sessionID?, agentID, agentSessionID, cwd, title?, parentID?, origin, mcpServers, meta?, attach}` | adopts a session the agent listed, replaying it with `session/load`; an agent session already open returns its host session without a reload. With `attach` it answers as soon as the session exists (phase `loading`) and the replay streams in; a load that fails leaves it `disconnected` with its `problem` and a "Couldn't load this session" notice. Without, it answers after the load and a failure throws |
 | `_native/session/attach {sessionID, epoch?, afterSeq?}` | replays the session's events as notifications, then answers; live events follow |
-| `_native/session/detach`, `_native/session/close` | stop following; stop tracking (history stays with the agent) |
-| `session/prompt {sessionID, requestID, text, behavior, echo, origin}` | → `prompted`, `steered` or `queued`, as soon as it's accepted. A repeated `requestID` gets the first answer and is never delivered twice |
-| `session/cancel`, `session/set_config_option` | as in ACP |
+| `_native/session/detach`, `_native/session/close {sessionID, closeInAgent}` | stop following; stop tracking (history stays with the agent), and with `closeInAgent` free it in the agent's process (`session/close`) |
+| `session/prompt {sessionID, requestID, text, content?, attachments, preamble?, behavior, echo, origin}` | → `prompted`, `steered` or `queued`, as soon as it's accepted. A repeated `requestID` gets the first answer and is never delivered twice, also while the first is still being handled; `NativeHostClient.prompt` resends it by itself after a dropped connection. `content` is the ACP blocks to send (attachments, images, linked files); `text` is what the transcript shows and what recovery looks for in a replay. `preamble` (a mode's instructions) goes ahead of the message unless the agent's last delivered preamble has the same id |
+| `session/cancel {sessionID}` | asks the agent to stop (`isStopping` in the summary). If it hasn't confirmed after 10 s, or the user asks again more than a second later, the host ends the turn itself ("Codex didn't confirm it stopped, so Native stopped waiting…") and ignores the late answer. Cancels a pending retry instead, if there is one. On an agent's own subagent it cancels just that subagent's work |
+| `session/set_config_option {sessionID, configID, value}` | as in ACP; the host remembers the value and sets it back after any reload where the agent reports another (codex-acp reopens on its default model) |
 | `_native/session/respond_permission {sessionID, toolCallID, optionID?}` | the first client to answer wins; the rest see it resolved |
-| `_native/queue/update`, `…/remove`, `…/send_now` | edit the queue |
+| `_native/session/respond_question {sessionID, questionID, response}` | answers a form question (`elicitation/create`) with ACP's response verbatim; the first client wins |
+| `_native/session/run_hidden {sessionID, text}` | → `{output}`: runs a command such as `/context` as a turn the transcript doesn't show (the reply is collected, late copies of it dropped). Only while idle; not a durable turn |
+| `_native/queue/update`, `…/remove`, `…/restore {itemID, index}`, `…/move {itemID, before?}`, `…/send_now` | edit the queue. The host keeps the last 20 messages removed from each queue, so undo sends only the id. Send Now steers where the agent can, and otherwise stops the running turn and sends the message next |
 | `_native/activity/list {after?, limit}` | the activity journal, for "while you were away" |
 | `_native/plugins/list` | the host's installed plugins (`~/.native/plugins/<id>/plugin.json`), manifests verbatim, with on/off state; `_native/plugins/changed` follows any change |
 | `_native/plugins/asset {pluginID, path, knownHash?}` | one file from a plugin's folder: its sha-256 and the data, or no data when `knownHash` is current. Paths can't leave the folder (symlinks resolved); 8 MiB cap |
@@ -313,18 +335,39 @@ process; event numbers are comparable only within one.
 | `_native/host/shutdown {stopAgents, immediately}` | stop for good, or restart (once idle, or now) for an update. Frozen |
 
 Notifications from the host: `_native/session/event {sessionID, event}`, `_native/session/changed
-{summary}`, `_native/session/closed`, `_native/activity {entry}`.
+{summary}`, `_native/session/closed`, `_native/agents/changed {agent}`, `_native/activity {entry}`.
+
+The summary carries what clients show without following a session: phase, `needsApproval`
+(permissions or questions open), the queue (attachments without image data), `isQueuePaused`,
+`isStopping`, `isRunningHiddenCommand`, `retryAt`, `lastStopReason` and `problem`.
+
+**Errors.** The host's own errors use codes -33001 and below with `data: {"hostError": <name>}`;
+`HostErrorCode(error)` names them (`agentUnavailable`, `agentNotInstalled`, `busy`, `unknownSession`…).
+-32000 stays ACP's `auth_required`, and errors an agent returned pass through untouched.
 
 **Events.** A session is an ordered log of `HostEvent`s numbered by `seq`. Agents' `session/update`
 payloads travel **verbatim** (`update`), so every client folds them with the same ACP `SessionState`
-reducer; Native's own facts are typed events: `reset(loading)`, `loaded`, `prompt` (agents don't
-echo live prompts), `permissionRequested`/`permissionResolved`, `turnEnded`, `turnFailed`, `notice`
-and `recovered`. `SessionMirror` folds a log into a transcript; the host keeps one per session too
-(that's how it reads an agent's replay). Attach replays only what a client missed (same epoch,
-`afterSeq`) or the whole log from its `reset`, as notifications before the response, like
-`session/load`. So a client never misses or doubles an event, across reconnects and host restarts.
-Unknown event types and enum values decode as `unsupported`/`unknown`, so an older client survives a
-newer host.
+reducer; Native's own facts are typed events: `reset(loading)`, `loaded`, `prompt` (every message
+delivered, shown or not, with its request id, attachments and preamble marker; agents don't echo live
+prompts), `permissionRequested`/`permissionResolved`, `questionAsked`/`questionResolved`,
+`turnEnded`, `turnFailed` (with the agent's JSON-RPC error, so `auth_required` and usage-limit data
+survive), `notice` and `recovered`. `SessionMirror` folds a log into a transcript at each event's own
+time, so a client attaching later times turns the same; the host keeps one per session too (that's
+how it reads an agent's replay), folded only when it reads it. Clients get each event as a
+`SessionMirror.Step`, its agent payload already decoded, from `NativeHostClient.addEventHandler`:
+handlers run in order, and a response returns only after the events before it were handled. Attach
+replays only what a client missed (same epoch, `afterSeq`) or the whole log from its `reset`, as
+notifications before the response, like `session/load`. So a client never misses or doubles an
+event, across reconnects and host restarts. Unknown event types and enum values decode as
+`unsupported`/`unknown`, so an older client survives a newer host.
+
+**Streaming cost.** `HostStreamingTests` measures a fake agent's stamped chunks decoded into
+`SessionUpdate` by a client, straight from the agent and through a host process. At a fast model's
+pace (a chunk a millisecond) the host adds about 0.3 ms (p50 0.5 ms against 0.2 ms; p99 under
+11 ms). Flooded as fast as the agent can write, the host passes 12k to 20k updates a second against
+40k to 60k direct, on a busy machine; agents stream far below either. The hot path parses agent
+updates with `JSONSerialization` and decodes events on clients with `DecodedJSONValue`, because
+`JSONValue`'s own `Decodable` conformance throws at every type it tries (about 28 µs a chunk).
 
 **What the full UI needs on top** (designed; Phases 3 and 4), so the iPad runs the whole app against
 a host:
@@ -336,7 +379,6 @@ a host:
 | Change feed | `_native/fs/watch {root}` → `_native/fs/changed {paths}` | the host side of the Git package's `RepositoryMonitor`; coalesced like FSEvents |
 | Usage and limits | `_native/usage/snapshot`, `_native/limits/changed` | the limits service and scheduled resumes move into the host |
 | Host status | `_native/host/status` → memory, CPU, agent processes, keep-awake state, uptime | for the status bar and the hosts list |
-| Agents | `_native/agents/list`, `_native/agents/restart`, `_native/agents/authenticate` | runtime status (`AgentRuntimeStatus`) as the host sees it |
 | Orchestration, goals, workflows | `_native/tasks/*`, `_native/goals/*`, `_native/workflows/*` | engines run in the host; clients mirror |
 
 ## What the host stores
@@ -352,12 +394,12 @@ needs multi-row transactions; a log would need compaction and replay code for ev
 | --- | --- |
 | `meta` | host id, last heartbeat, boot time of the last run, clean-shutdown mark |
 | `agents` | the agent catalog (`AgentSpec` JSON) the host launches from |
-| `sessions` | open sessions: host id, agent and agent session id, cwd, parent, origin, title, last activity, last stop reason, queue paused, MCP servers to hand over on reload |
-| `turns` | the unfinished turn per session: request id, text, kind (prompt or recovery), echo, start time, recovery attempts |
-| `queue` | queued messages in order, with a steering-in-flight flag |
+| `sessions` | open sessions: host id, agent and agent session id, cwd, parent, origin, title, last activity, last stop reason, queue paused, MCP servers and `_meta` to hand over on reload, config values chosen, whether it was adopted from the agent's list |
+| `turns` | the unfinished turn per session: request id, text, content blocks, attachments, preamble, kind (prompt or recovery), echo, start time, recovery attempts |
+| `queue` | queued messages in order, with what each carries and a steering-in-flight flag |
 | `requests` | prompt request ids and what they became (pruned after 7 days) |
 | `approvals` | permission requests waiting on the user, as facts |
-| `activity` | the journal: turns finished or failed, approvals asked, recoveries |
+| `activity` | the journal: turns finished, failed or stopped, approvals and questions asked, recoveries, host starts with how the previous run ended; each with the agent and its session id |
 
 Phase 3 adds `tasks` (the orchestration graph), `goals`, `workflow_runs`, `resumes` (scheduled limit
 resumes), `unread` and `titles`, all owned by their engines inside the host.
@@ -390,6 +432,10 @@ reloads the session from the agent (`session/load`), then `RecoveryPlanner` deci
 | A steer was in flight | queue item flagged steering | dropped if the replay has it, otherwise it goes out as the next message | the message shows once, where it landed |
 | Permission request pending | it dies with the agent process | withdrawn; the agent asks again after resuming | the approval card disappears, then reappears from the agent |
 | User cancels during recovery | `session/cancel` while recovering | recovery stops; turn ends as cancelled; queue pauses | "Stopped." |
+| User restarts the agent mid-turn | `_native/agents/restart` | like an agent crash, with its own cause | "You restarted Codex at 2:14 PM. Native asked it to pick up where it left off." |
+| A session the agent never saved can't load | `session/load` fails for a session started here that never finished a turn | starts a fresh agent session under the same host id; recovery then resends the message | the message, answered (nothing was lost: the agent had nothing) |
+| The prompt fails for a passing reason (network, overloaded provider) | the agent's error reads like an outage, and the turn got nowhere | puts the message back at the queue's front, unshown, and sends it again after 5, 20, then 60 s (`retryAt`); Stop cancels the retry | "Codex couldn't be reached (…). Native kept your message and will try again in 5 seconds. Use Stop to cancel." |
+| The agent never confirms a stop | no answer 10 s after `session/cancel`, or Stop again after a second | ends the turn as cancelled on the host's side; a late answer is ignored | "Codex didn't confirm it stopped, so Native stopped waiting. It may still be finishing its last step." |
 | Client disconnects mid-turn | socket closes | nothing: the turn runs on; the client re-attaches from its last event | the finished turn, as if it never left |
 
 The interruption time comes from the host's heartbeat (written every 30 s), so "at 2:14" is within
@@ -445,22 +491,28 @@ Window › Durable Sessions preview, opt-in per channel. Nothing else in the app
 
 1. `AgentRuntime` becomes host-backed: status, capabilities and auth methods come from the host
    (`_native/agents/list`); `start`/`restart`/`signIn` become host requests. The app stops spawning
-   agents; `AgentProcess` is used only inside the host.
+   agents; `AgentProcess` is used only inside the host. The host side is done: every method in "The
+   protocol" ▸ Agents, with process groups ended on stop.
 2. `SessionModel` keeps `state`, `phase`, `queuedPrompts`, `needsApproval` and every method. It holds
    a `SessionMirror` fed by the client's events and a `HostSessionSummary`; `send`/`submit` become
    `session/prompt` with a fresh request id (retried with the same id after a reconnect), `cancel`,
    `choose`, `setConfigOption` and the queue edits become their host methods. `clientID` is the
-   `HostSessionID`, now stable across restarts.
+   `HostSessionID`, now stable across restarts. The host side is done and does what
+   `SessionModel+Turns`, `+Stop`, `+Questions` and `+HiddenCommands` and `TurnRetryPolicy` do today
+   (prompt content and preambles, stopping, questions, hidden commands, retries, queue moves and
+   undo), so they work with no client attached; `SessionMirror` reproduces `SessionState` from the
+   events, timings included.
 3. `SessionStore` routes `NativeHostClient.events` instead of `AgentEvent`s; `SessionLauncher`
    calls `session/new` and `_native/session/open`. `SessionCatalog` keeps listing history through
-   the host (`_native/agents/list_sessions`, which wraps the agent's `session/list`).
+   the host (`_native/agents/list_sessions`, which wraps the agent's `session/list`). Host side done.
 4. Plugins still supply agents (sent with `_native/agents/sync`) and per-session MCP servers (sent as
-   JSON with `session/new`), so the plugin API is unchanged.
+   JSON with `session/new`, with their `_meta`), so the plugin API is unchanged. Host side done.
 5. `LoginShell` moves to `UserShell` (already in the package); `native/Models/LoginShell.swift` goes.
    Done.
 6. ⌘Q quits only the client; "Quit Native and Stop Agents" and the attached-host fallback land.
-   Done, except the attached host, which waits on `AttachedHost` and the helper's
-   `--exit-with-parent` (until then a refused registration falls back to agents in the app).
+   Done. The attached host is `NativeHostClient.AttachedHost`, which runs the helper with
+   `--exit-with-parent` (`NativeHostMac.ParentWatch`: it stops its agents and exits when the app
+   does, `kill -9` included).
 7. The app shows connection states and the "while you were away" summary. Done.
 8. Background agents are on by default, once the host-backed path passes its end-to-end checks; the
    Window › Durable Sessions preview goes then.
@@ -486,7 +538,7 @@ remote provisioning; the paired network transport and the iPad app.
 | User disables background activity | detected via `SMAppService.status`; attached-host fallback, with an explanation |
 | A host bug kills every session at once | crashes are recovered like any interruption; recovery is capped per turn; the tests kill the host on purpose |
 | Host and agent die together, so turns are interrupted rather than continuing | accepted: the recovery message is cheap and honest. A per-agent stdio relay that outlives the host could make host crashes invisible later |
-| An agent's launcher (`npx`) dies but the adapter it started lives on, still holding the pipes | seen in E2E: the turn simply finishes, since the host talks to whoever holds stdio. Phase 2 tracks each agent's process group (npm makes its own) and ends the whole group when the top process exits or the agent is stopped |
+| An agent's launcher (`npx`) dies but the adapter it started lives on, still holding the pipes | the host notes every process group in the agent's tree and ends them all when the launcher exits, the agent stops or crashes, or the host stops its agents (`AgentProcessGroups`); the session then recovers like after a crash. Agents launch without npx where npx has the exact version installed |
 | Recovery prompts spend tokens | only turns that were actually running are resumed, at most three times |
 | An agent stores the prompt transformed, or adds markers after it, fooling the replay check | the check accepts containment within the last three user messages; the worst case is a harmless "you were interrupted" for a prompt it never saw |
 | The in-memory event log grows with long sessions | cleared on every reload; a cap that reloads from the agent instead of keeping everything can come later |

@@ -113,6 +113,11 @@ extension NativeHostClient {
         let _: EmptyMessage = try await call(HostProtocol.Method.sendQueuedNow, params)
     }
 
+    /// Replaces the MCP servers the agent gets for a session at its next load.
+    public func setMCPServers(_ params: SetMCPServersParams) async throws {
+        let _: EmptyMessage = try await call(HostProtocol.Method.setMCPServers, params)
+    }
+
     /// Stops tracking a session (its history stays with the agent), and with `closeInAgent` frees it
     /// in the agent's process too.
     public func closeSession(_ session: HostSessionID, closeInAgent: Bool = false) async throws {

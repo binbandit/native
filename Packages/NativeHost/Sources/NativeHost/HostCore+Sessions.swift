@@ -68,7 +68,7 @@ extension HostCore {
             id: params.sessionID.flatMap { sessions[$0] == nil ? $0 : nil } ?? HostSessionID(),
             agentID: params.agentID, agentSessionID: params.agentSessionID, cwd: params.cwd,
             parentID: params.parentID, origin: params.origin, title: params.title, mcpServers: params.mcpServers,
-            meta: params.meta)
+            meta: params.meta, isAdopted: true)
         try store.insertSession(record)
         let session = HostSession(
             record: record, agentName: link.spec.name, phase: .loading, needsLoad: true, mcpServers: params.mcpServers)
@@ -137,6 +137,12 @@ extension HostCore {
                         sessionId: agentSessionID, cwd: session.record.cwd, mcpServers: session.mcpServers,
                         _meta: session.record.meta),
                     as: RawConfigOptionsResponse.self)
+            } catch let error as RPCError
+                where !session.record.isAdopted && session.record.lastStopReason == nil && !error.isAuthRequired
+            {
+                // Agents save a session once a turn ends; one that never got that far has nothing to
+                // load, so it carries on in a fresh agent session under the same host id.
+                response = try await replaceUnsaved(session, on: link, peer: peer)
             } catch {
                 noteAgentError(error, from: link)
                 throw error
@@ -173,6 +179,23 @@ extension HostCore {
         }
     }
 
+    /// Starts a fresh agent session in place of one the agent never saved.
+    private func replaceUnsaved(
+        _ session: HostSession, on link: AgentLink, peer: JSONRPCPeer
+    ) async throws -> RawConfigOptionsResponse {
+        let response = try await peer.request(
+            "session/new",
+            RawNewSessionRequest(cwd: session.record.cwd, mcpServers: session.mcpServers, _meta: session.record.meta),
+            as: RawNewSessionResponse.self)
+        if let old = session.record.agentSessionID {
+            link.routes[old] = nil
+        }
+        session.record.agentSessionID = response.sessionId
+        try store.updateSession(session.record)
+        route(session, on: link)
+        return RawConfigOptionsResponse(configOptions: response.configOptions)
+    }
+
     /// Sets back the config values clients chose where the reloaded session reports others (an agent
     /// may reopen a session on its default model), before anything else goes out.
     private func restoreConfigChoices(of session: HostSession, on link: AgentLink) async {
@@ -203,6 +226,14 @@ extension HostCore {
         for update in link.buffered.removeValue(forKey: agentSessionID) ?? [] {
             apply(update, to: session, on: link)
         }
+    }
+
+    /// Replaces the MCP servers for the session's next load; a loaded session keeps the ones it has.
+    func setMCPServers(_ params: SetMCPServersParams) throws {
+        let session = try session(params.sessionID)
+        session.record.mcpServers = params.mcpServers
+        session.mcpServers = params.mcpServers
+        try store.updateSession(session.record)
     }
 
     /// Stops tracking a session, and with `closeInAgent` frees it in the agent's process too (where

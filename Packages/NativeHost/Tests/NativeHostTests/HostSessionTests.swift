@@ -72,6 +72,28 @@ struct HostSessionTests {
         await recorder.stop()
     }
 
+    @Test("A session the agent never saved carries on in a fresh agent session, under the same id")
+    func unsavedSessionIsReplaced() async throws {
+        let harness = try HostHarness()
+        let (first, session) = try await started(harness)
+        let original = try #require(await first.summaries[session]?.agentSessionID)
+        await first.stop()
+        harness.kill()
+        // As an agent that only saves a session once a turn ends would have it after a crash.
+        try FileManager.default.removeItem(at: harness.agentStore.appending(path: "\(original.rawValue).json"))
+
+        try harness.start()
+        let second = try await harness.connect()
+        try await second.client.attach(session)
+        _ = try await second.client.prompt(PromptParams(sessionID: session, text: "hello"))
+        try await second.wait("the turn") { await $0.turnsEnded(session) == ["end_turn"] }
+        #expect(await second.agentText(session) == "echo: hello")
+        let replaced = try #require(try await second.client.sessions().first { $0.id == session })
+        #expect(replaced.agentSessionID != original)
+        #expect(replaced.agentSessionID != nil)
+        await second.stop()
+    }
+
     @Test("Content, attachments and instructions reach the agent; the same instructions go only once")
     func contentAndPreamble() async throws {
         let harness = try HostHarness()
@@ -235,6 +257,28 @@ struct HostSessionTests {
         try await recorder.wait("the turn") { await $0.turnsEnded(session) == ["end_turn"] }
         #expect(await recorder.agentText(session).contains("mode: plan"))
         #expect(harness.received.filter { $0 == "config\tmode=plan" }.count == 2)
+        await recorder.stop()
+    }
+
+    @Test("MCP servers replaced for a session go to the agent at its next load")
+    func replacedMCPServers() async throws {
+        let harness = try HostHarness()
+        try harness.start()
+        let recorder = try await harness.connect()
+        let server = { (name: String) in
+            JSONValue.object([
+                "name": .string(name), "command": .string("/usr/bin/true"), "args": .array([]), "env": .array([]),
+            ])
+        }
+        let session = try await recorder.client.newSession(
+            NewSessionParams(agentID: "fake", cwd: "/tmp", mcpServers: [server("native-old")], attach: true))
+        try await recorder.client.setMCPServers(
+            SetMCPServersParams(sessionID: session.id, mcpServers: [server("native")]))
+        _ = try await recorder.client.restartAgent("fake")
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "hello"))
+        try await recorder.wait("the turn") { await $0.turnsEnded(session.id) == ["end_turn"] }
+        let loads = try String(contentsOf: harness.agentStore.appending(path: "loads.log"), encoding: .utf8)
+        #expect(loads == "native\n")
         await recorder.stop()
     }
 

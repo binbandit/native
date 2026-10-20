@@ -21,7 +21,7 @@ import NativeHostProtocol
 //   anything else       answers "echo: <text>"; Native's interruption notice gets "resumed"
 //
 // Every prompt and steer it receives is appended to $FAKE_AGENT_STORE/received.log, with non-text
-// blocks shown as "[link <name>]" and the like. With $FAKE_AGENT_GRANDCHILD set to a file, it starts
+// blocks shown as "[link <name>]" and the like; every load's MCP server names go to loads.log. With $FAKE_AGENT_GRANDCHILD set to a file, it starts
 // `sleep` in a process group of its own at launch and writes its pid there, as npm does with the
 // adapters it runs. With $FAKE_AGENT_NO_STEERING=1 it doesn't offer steering. Modes live in memory,
 // so a reloaded session reports the default again.
@@ -93,6 +93,8 @@ actor FakeAgent {
                 with: JSONValue.object(["sessionId": .string(session.rawValue), "configOptions": options(session)]))
         case "session/load":
             let session = try message.params(as: SessionParams.self).sessionId
+            let servers = (try? message.params(as: LoadParams.self))?.mcpServers.map(\.name) ?? []
+            note("loads.log", servers.joined(separator: ","))
             for (index, entry) in try load(session).enumerated() {
                 let kind = entry.role == "user" ? "user_message_chunk" : "agent_message_chunk"
                 try update(
@@ -277,8 +279,12 @@ actor FakeAgent {
     }
 
     private func received(_ kind: String, _ text: String) {
-        let log = store.appending(path: "received.log")
-        let line = Data("\(kind)\t\(text.replacingOccurrences(of: "\n", with: " "))\n".utf8)
+        note("received.log", "\(kind)\t\(text)")
+    }
+
+    private func note(_ file: String, _ text: String) {
+        let log = store.appending(path: file)
+        let line = Data("\(text.replacingOccurrences(of: "\n", with: " "))\n".utf8)
         if let handle = try? FileHandle(forWritingTo: log) {
             _ = try? handle.seekToEnd()
             try? handle.write(contentsOf: line)
@@ -326,6 +332,10 @@ actor FakeAgent {
     }
 
     struct SessionParams: Decodable { var sessionId: SessionID }
+    struct LoadParams: Decodable {
+        struct Server: Decodable { var name: String }
+        var mcpServers: [Server]
+    }
     struct AuthParams: Decodable { var methodId: String }
     struct ConfigParams: Decodable {
         var sessionId: SessionID

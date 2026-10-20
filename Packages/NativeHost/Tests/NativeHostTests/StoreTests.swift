@@ -23,7 +23,7 @@ struct StoreTests {
         let session = StoredSession(
             id: HostSessionID(), agentID: "fake", agentSessionID: SessionID("s1"), cwd: "/tmp", parentID: nil,
             origin: .user, createdAt: Date(timeIntervalSince1970: 1_700_000_000),
-            meta: .object(["plugin": .string("x")]), configChoices: ["model": "large"])
+            meta: .object(["plugin": .string("x")]), configChoices: ["model": "large"], isAdopted: true)
         let turn = UnfinishedTurn(
             sessionID: session.id,
             prompt: OutgoingPrompt(
@@ -143,7 +143,7 @@ struct StoreTests {
                 .text(session.description), .text(UUID().uuidString), .text("waiting"))
         }
         let store = try HostStore(url: url)
-        #expect(try store.pragma("user_version") == "3")
+        #expect(try store.pragma("user_version") == "4")
         let migrated = try #require(try store.sessions().first)
         #expect(migrated.id == session)
         #expect(migrated.configChoices.isEmpty)

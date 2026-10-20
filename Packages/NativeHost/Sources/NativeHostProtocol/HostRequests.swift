@@ -104,6 +104,19 @@ public struct CloseSessionParams: Codable, Sendable {
     }
 }
 
+/// Replaces the MCP servers handed to the agent for a session. A running session keeps the ones it
+/// has; the next `session/load` (after the agent or the host restarted) gets these.
+public struct SetMCPServersParams: Codable, Sendable {
+    public var sessionID: HostSessionID
+    /// ACP `McpServer` objects, verbatim.
+    public var mcpServers: [JSONValue]
+
+    public init(sessionID: HostSessionID, mcpServers: [JSONValue]) {
+        self.sessionID = sessionID
+        self.mcpServers = mcpServers
+    }
+}
+
 /// Starts streaming a session's events to this client. With the `epoch` and last `seq` the client
 /// saw, only what it missed is replayed; otherwise the whole log, from its `reset`.
 public struct AttachParams: Codable, Sendable {
