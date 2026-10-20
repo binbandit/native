@@ -13,7 +13,11 @@ enum HostSessions {
     static let defaultValue = false
 
     static var isEnabled: Bool {
-        get { UserDefaults.standard.object(forKey: defaultsKey) as? Bool ?? defaultValue }
+        // `bool(forKey:)` also reads a launch argument (`-NativeHostSessions YES`), which arrives as text.
+        get {
+            UserDefaults.standard.object(forKey: defaultsKey) == nil
+                ? defaultValue : UserDefaults.standard.bool(forKey: defaultsKey)
+        }
         set { UserDefaults.standard.set(newValue, forKey: defaultsKey) }
     }
 }
