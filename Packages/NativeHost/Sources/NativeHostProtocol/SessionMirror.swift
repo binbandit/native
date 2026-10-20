@@ -124,7 +124,7 @@ public struct SessionMirror: Sendable {
                 prompt.text, attachments: prompt.attachments.map(\.messageAttachment),
                 preamble: prompt.preamble?.marker, at: date)
         } else {
-            state.stopRetrying(at: date)
+            state.noteUnshownPrompt(at: date)
         }
     }
 

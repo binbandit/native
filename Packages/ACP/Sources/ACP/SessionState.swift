@@ -20,8 +20,11 @@ public struct SessionState: Sendable {
     var turnClocks: [Int: TurnClock] = [:]
     /// Where the running live turn starts. Only its items get times; replayed history has none.
     var openTurn: Int?
-    /// The live turn whose message failed for a passing reason and waits for Native to send it again
-    /// (`failTurn(_:retry:at:)`): not running, but not over either.
+    /// A message failed for a passing reason and waits for Native to send it again
+    /// (`failTurn(_:retry:at:)`).
+    var isAwaitingRetry = false
+    /// The live turn that message started, when the transcript shows it: not running, but not over
+    /// either.
     var suspendedTurn: Int?
     /// The notice following the message Native is sending again, until the retry settles.
     var retryNoticeIndex: Int?

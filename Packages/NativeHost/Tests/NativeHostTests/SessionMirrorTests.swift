@@ -246,6 +246,56 @@ struct SessionMirrorTurnEndingTests {
         #expect(call.finishedAt == at(9))
     }
 
+    @Test("A request the transcript doesn't show never rewrites the finished turn before it")
+    func unshownRequestKeepsTheTurnBefore() throws {
+        let mirror = mirror([
+            (0, .reset(loading: false)),
+            (0, .prompt(PromptEcho(text: "hello", requestID: UUID()))),
+            (2, chunk("echo: hello")),
+            (2, .turnEnded(stopReason: "end_turn")),
+            (100, .prompt(PromptEcho(text: "A task's message", origin: .task, requestID: UUID(), shown: false))),
+            (110, chunk("No.")),
+            (110, .turnEnded(stopReason: "refusal")),
+        ])
+        let turn = try #require(mirror.state.turns.first)
+        #expect(turn.stopReason == .endTurn)
+        #expect(turn.duration == 2)
+    }
+
+    @Test("The answer to a request sent after a stop isn't output after the stop")
+    func unshownRequestAfterAStop() {
+        let mirror = mirror([
+            (0, .reset(loading: false)),
+            (0, .prompt(PromptEcho(text: "stubborn 60", requestID: UUID()))),
+            (3, .turnEnded(stopReason: "cancelled")),
+            (5, .prompt(PromptEcho(text: "Status?", origin: .task, requestID: UUID(), shown: false))),
+            (6, chunk("All done.")),
+            (6, .turnEnded(stopReason: "end_turn")),
+        ])
+        #expect(mirror.state.turns.map(\.isLateOutput) == [false])
+        #expect(notices(mirror).map(\.text) == ["Stopped."])
+    }
+
+    @Test("A request the transcript doesn't show is retried without reopening the turn before it")
+    func unshownRequestRetry() throws {
+        let id = UUID()
+        let retry = DeliveryRetry(agentName: agent, reason: "Network error", delay: 5)
+        let mirror = mirror([
+            (0, .reset(loading: false)),
+            (0, .prompt(PromptEcho(text: "hello", requestID: UUID()))),
+            (1, .turnEnded(stopReason: "end_turn")),
+            (10, .prompt(PromptEcho(text: "A task's message", origin: .task, requestID: id, shown: false))),
+            (10.1, .turnFailed(message: retry.waitingText, error: nil, retry: retry)),
+            (15, .prompt(PromptEcho(text: "A task's message", origin: .queued, requestID: id, shown: false))),
+            (16, chunk("Done.")),
+            (16, .turnEnded(stopReason: "end_turn")),
+        ])
+        let turn = try #require(mirror.state.turns.first)
+        #expect(turn.stopReason == .endTurn)
+        #expect(turn.duration == 1)
+        #expect(notices(mirror).map(\.text) == ["Reconnected to Fake Agent, and your message went through on retry."])
+    }
+
     @Test("Output after Native stopped waiting is a turn of its own, after the stopped turn's ending")
     func lateOutputAfterAnAbandonedStop() throws {
         let mirror = mirror([

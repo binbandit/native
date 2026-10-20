@@ -28,6 +28,7 @@ extension SessionState {
         }
         openTurn = nil
         suspendedTurn = nil
+        isAwaitingRetry = false
         isAfterStop = stopReason == .cancelled
         switch stopReason {
         case .endTurn: break
@@ -70,9 +71,12 @@ extension SessionState {
             retryNoticeIndex = items.count
             appendItem(.notice(TranscriptNotice(waiting)))
         }
-        let start = openTurn ?? suspendedTurn ?? turnStarts.last ?? 0
-        turnClocks[start]?.suspendedAt = date
-        suspendedTurn = start
+        // A message the transcript doesn't show has no turn of its own to wait.
+        if let start = openTurn ?? suspendedTurn {
+            turnClocks[start]?.suspendedAt = date
+            suspendedTurn = start
+        }
+        isAwaitingRetry = true
         openTurn = nil
     }
 
@@ -80,9 +84,10 @@ extension SessionState {
     /// when no turn was waiting for one.
     @discardableResult
     public mutating func retryTurn() -> Bool {
-        guard let start = suspendedTurn else { return false }
-        suspendedTurn = nil
-        if turnClocks[start] != nil {
+        guard isAwaitingRetry else { return false }
+        isAwaitingRetry = false
+        if let start = suspendedTurn {
+            suspendedTurn = nil
             turnClocks[start]?.suspendedAt = nil
             openTurn = start
         }
@@ -93,10 +98,21 @@ extension SessionState {
     /// The wait for a retry ended without one (the user stopped it, or another message went first):
     /// the turn ends as failed when it did, and its notice no longer promises another try.
     public mutating func stopRetrying(at date: Date = .now) {
-        guard let start = suspendedTurn else { return }
+        guard isAwaitingRetry else { return }
+        isAwaitingRetry = false
         settleRetry(as: .gaveUp)
-        suspendedTurn = nil
-        stopClock(of: start, as: .error, at: date)
+        if let start = suspendedTurn {
+            suspendedTurn = nil
+            stopClock(of: start, as: .error, at: date)
+        }
+    }
+
+    /// Native sent the agent a message the transcript doesn't show (a task's message, a recovery
+    /// prompt). It's a request of its own, though it has no turn here: a retry still waiting won't
+    /// come first, and what the agent answers comes after it, not after an earlier stop.
+    public mutating func noteUnshownPrompt(at date: Date = .now) {
+        stopRetrying(at: date)
+        isAfterStop = false
     }
 
     /// The latest turn was cut off: the agent or Native's host stopped unexpectedly, at `date` as
@@ -160,10 +176,11 @@ extension SessionState {
 
     // MARK: - Settling
 
-    /// Ends the clock of the live turn starting at `start`. One waiting for a retry ended when its
-    /// message failed: the wait wasn't work.
+    /// Ends the clock of the live turn starting at `start`, unless it already ended: a request the
+    /// transcript doesn't show ends in the turn before it, which it mustn't rewrite. One waiting for a
+    /// retry ended when its message failed: the wait wasn't work.
     private mutating func stopClock(of start: Int, as stopReason: StopReason, at date: Date) {
-        guard var clock = turnClocks[start] else { return }
+        guard var clock = turnClocks[start], clock.endedAt == nil else { return }
         clock.endedAt = clock.suspendedAt ?? date
         clock.suspendedAt = nil
         clock.stopReason = stopReason
