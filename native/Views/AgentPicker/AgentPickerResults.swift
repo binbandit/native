@@ -1,4 +1,4 @@
-#if NATIVE_AGENT_PICKER_WIP
+import Foundation
 import NativeCommands
 
 /// What ↑, ↓ and Return act on in the agent picker.
@@ -47,4 +47,3 @@ struct AgentPickerResults {
             + (missingAgents == nil ? [] : [.addAgent])
     }
 }
-#endif

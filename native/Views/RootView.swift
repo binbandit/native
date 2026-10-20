@@ -115,17 +115,8 @@ struct RootView: View {
                 await model.checkForAgents()
             }
         }
-        .confirmationDialog("New Session With", isPresented: $model.isChoosingAgent) {
-            ForEach(model.agents, id: \.agent.id) { runtime in
-                Button(runtime.agent.displayName) {
-                    Task { await model.newSession(with: runtime.agent.id) }
-                }
-                .disabled(!model.canCreateSession(with: runtime.agent.id))
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Choose the agent for the new session.")
-        }
+        // Every agent with its state; a system dialog shows only three choices.
+        .agentPicker(isPresented: $model.isChoosingAgent)
         .fileImporter(isPresented: $model.isAddingProject, allowedContentTypes: [.folder]) { result in
             if case .success(let url) = result {
                 Task { await model.addProject(url) }

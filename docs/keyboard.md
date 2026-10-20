@@ -292,6 +292,21 @@ asks first.
 | ⌥⌘G | Set or edit the session's goal | Session | `goal.edit` |
 | ⌥⌘R | Run a workflow | Session | `workflow.run` |
 
+## Choosing an agent
+
+New Session With… (⌥⌘N) opens the agent picker over the window: every agent Native runs, each with
+its state (ready, starting, needs sign-in, not installed, stopped) and, when it can't start a
+session, why and what to do, with the fix (Check Again, Restart) beside it. It opens with the
+keyboard in its filter and the default agent (the one ⌘N starts) highlighted. Add Agent… at the
+end lists the agents Native knows but can't find.
+
+| Keys (picker open) | Action |
+| --- | --- |
+| Type | Narrow the list by name; letters in order match too |
+| ↑ / ↓, ⌃N / ⌃P | Move between the agents that can start a session (and Add Agent…) |
+| Return | Start the session with the highlighted agent; one that needs sign-in signs in first, then starts it |
+| Escape | Clear the filter; with it empty, close the picker |
+
 ## Choosing a device
 
 New Session's device picker says where the task runs: This Mac or a paired host (Settings ▸ Hosts),
@@ -386,7 +401,8 @@ them one in Settings ▸ Keyboard Shortcuts.
 Commands live with their features and register in `NativeApp` (`docs/commands.md`); the menus place
 them. Composer keys in `native/Views/Composer*`; permission keys in
 `native/Views/Transcript/ToolPermissionButtons.swift`; sidebar keys in `SidebarView`; Settings keys in
-`SettingsScreen` and `SettingsSearchField`; search panel keys in `TranscriptSearchPanel`; terminal commands in
+`SettingsScreen` and `SettingsSearchField`; search panel keys in `TranscriptSearchPanel`; agent picker keys in
+`native/Views/AgentPicker/AgentPickerPanel.swift`; terminal commands in
 `native/Terminal/Views/TerminalCommands.swift`; project action commands in
 `native/ProjectActions/Commands/ProjectActionCommands.swift`; mode commands in
 `native/Modes/Commands/ModeCommands.swift`; keys inside a terminal in

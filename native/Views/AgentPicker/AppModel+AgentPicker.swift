@@ -1,4 +1,3 @@
-#if NATIVE_AGENT_PICKER_WIP
 import Foundation
 
 // New Session With… (⌥⌘N): the agents it offers and what choosing one does. It lists the agents the
@@ -52,4 +51,3 @@ extension AppModel {
         }
     }
 }
-#endif

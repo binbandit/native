@@ -1,4 +1,3 @@
-#if NATIVE_AGENT_PICKER_WIP
 import NativeCommands
 import SwiftUI
 
@@ -74,4 +73,3 @@ private struct AgentPickerOverlay: View {
         .onChange(of: model.selection) { isPresented = false }
     }
 }
-#endif

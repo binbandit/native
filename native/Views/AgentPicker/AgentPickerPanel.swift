@@ -1,4 +1,3 @@
-#if NATIVE_AGENT_PICKER_WIP
 import NativeCommands
 import SwiftUI
 
@@ -227,4 +226,3 @@ extension AgentPickerPanel where Notice == EmptyView {
         }
     }
 }
-#endif

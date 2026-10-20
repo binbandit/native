@@ -1,4 +1,3 @@
-#if NATIVE_AGENT_PICKER_WIP
 import SwiftUI
 
 /// The agent picker's few sizes beyond the design system's, so its views carry no literals.
@@ -12,4 +11,3 @@ nonisolated enum AgentPickerMetrics {
     /// Past this the list scrolls, so the picker fits a short window.
     static let listMaxHeight: CGFloat = 360
 }
-#endif
