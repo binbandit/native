@@ -1,4 +1,3 @@
-#if NATIVE_HOSTSUI_WIP
 import ACP
 import NativeHostProtocol
 import SwiftUI
@@ -24,9 +23,11 @@ struct HostAgentSignInSheet: View {
     /// Set while the user stops a link sign-in, so its ending isn't shown as a failure.
     @State private var isCancelling = false
 
-    /// What went wrong, and what trying again does.
+    /// What went wrong, and what trying again does. One that came from a method shows under it,
+    /// where the user acted; the rest show at the top.
     private struct Failure {
         let message: String
+        var methodID: String?
         let retry: (() -> Void)?
     }
 
@@ -59,21 +60,17 @@ struct HostAgentSignInSheet: View {
 
     private func content(_ host: HostDisplay, _ agent: HostAgentDisplay) -> some View {
         // A link first: it needs nothing but a browser anywhere. Then keys.
-        let fromHere =
-            agent.methods.filter { $0.kind == .link }
-            + agent.methods.filter(\.worksFromHere).filter {
-                $0.kind != .link
-            }
+        // While a link waits, its block stands in for the link methods.
+        let links = agent.signInLink == nil ? agent.methods.filter { $0.kind == .link } : []
+        let fromHere = links + agent.methods.filter { $0.worksFromHere && $0.kind != .link }
         let browser = agent.methods.filter { $0.kind == .browser }
         return VStack(alignment: .leading, spacing: 0) {
-            header(host, agent, hasMethodsFromHere: !fromHere.isEmpty)
+            header(host, agent, hasMethodsFromHere: agent.methods.contains(where: \.worksFromHere))
             SeparatorLine()
             CappedHeightScrollView(maxHeight: HostsMetrics.signInSheetMaxHeight) {
                 VStack(alignment: .leading, spacing: DS.Space.xl) {
-                    if let failure {
-                        ErrorState(
-                            "Couldn't sign in to \(agent.agent.displayName)", suggestion: failure.message,
-                            primary: failure.retry.map { ErrorState.Action("Try Again", perform: $0) })
+                    if let failure, failure.methodID == nil {
+                        failureView(failure, agent: agent)
                     }
                     if let link = agent.signInLink {
                         linkWaiting(link, agent: agent)
@@ -81,12 +78,14 @@ struct HostAgentSignInSheet: View {
                     }
                     ForEach(fromHere) { method in
                         option(method, agent: agent, host: host)
+                        failureView(for: method, agent: agent)
                         SeparatorLine()
                     }
                     sshSteps(host, agent)
                     ForEach(browser) { method in
                         SeparatorLine()
                         browserOption(method, host: host)
+                        failureView(for: method, agent: agent)
                     }
                 }
                 .padding(DS.Space.xl)
@@ -158,6 +157,12 @@ struct HostAgentSignInSheet: View {
                 ? "\(host.name) keeps your \(label) in its keychain for \(agent.agent.displayName) alone."
                 : "Native sends it to \(host.name) over the encrypted link. \(host.name) keeps it in its keychain for \(agent.agent.displayName) alone and never sends it back."
         ) {
+            if !isSaved, let page = method.method.credentialsPage {
+                Button("Get a Key") { openURL(page) }
+                    .buttonStyle(.ds(.ghost))
+                    .help(page.absoluteString)
+            }
+        } controls: {
             if isSaved {
                 HStack(spacing: DS.Space.md) {
                     Label(
@@ -180,11 +185,6 @@ struct HostAgentSignInSheet: View {
                     Button(running == method.id ? "Signing In…" : "Sign In") { run(method, key: keys[method.id]) }
                         .buttonStyle(.ds(.primary, size: .medium))
                         .disabled(keys[method.id, default: ""].isEmpty || running != nil)
-                }
-                if let page = method.method.credentialsPage {
-                    Button("Get a Key") { openURL(page) }
-                        .buttonStyle(.ds(.ghost))
-                        .help(page.absoluteString)
                 }
             }
         }
@@ -277,12 +277,25 @@ struct HostAgentSignInSheet: View {
     private func optionText<Controls: View>(
         title: String, detail: String, @ViewBuilder controls: () -> Controls
     ) -> some View {
+        optionText(title: title, detail: detail, accessory: { EmptyView() }, controls: controls)
+    }
+
+    /// An option's title and what it does, with `accessory` at the title's trailing edge (a link
+    /// to where a key comes from), then its controls.
+    private func optionText<Accessory: View, Controls: View>(
+        title: String, detail: String, @ViewBuilder accessory: () -> Accessory,
+        @ViewBuilder controls: () -> Controls
+    ) -> some View {
         VStack(alignment: .leading, spacing: DS.Space.md) {
             VStack(alignment: .leading, spacing: DS.Space.xxs) {
-                Text(title)
-                    .font(.dsCalloutMedium)
-                    .foregroundStyle(.dsTextPrimary)
-                    .accessibilityAddTraits(.isHeader)
+                HStack(spacing: DS.Space.md) {
+                    Text(title)
+                        .font(.dsCalloutMedium)
+                        .foregroundStyle(.dsTextPrimary)
+                        .accessibilityAddTraits(.isHeader)
+                    Spacer(minLength: DS.Space.md)
+                    accessory()
+                }
                 Text(detail)
                     .font(.dsBody)
                     .foregroundStyle(.dsTextSecondary)
@@ -290,6 +303,19 @@ struct HostAgentSignInSheet: View {
             }
             controls()
         }
+    }
+
+    @ViewBuilder
+    private func failureView(for method: HostSignInMethod, agent: HostAgentDisplay) -> some View {
+        if let failure, failure.methodID == method.id {
+            failureView(failure, agent: agent)
+        }
+    }
+
+    private func failureView(_ failure: Failure, agent: HostAgentDisplay) -> some View {
+        ErrorState(
+            "Couldn't sign in to \(agent.agent.displayName)", suggestion: failure.message,
+            primary: failure.retry.map { ErrorState.Action("Try Again", perform: $0) })
     }
 
     private func footer(_ agent: HostAgentDisplay) -> some View {
@@ -306,7 +332,7 @@ struct HostAgentSignInSheet: View {
                 .buttonStyle(.ds(.secondary))
                 .keyboardShortcut(.cancelAction)
             Button("Check Again") { checkAgain() }
-                .buttonStyle(.ds(.primary))
+                .buttonStyle(.ds(.secondary))
                 .disabled(isChecking)
                 .help("Signed in over SSH? Native restarts \(agent.agent.displayName) there and asks again.")
         }
@@ -337,7 +363,8 @@ struct HostAgentSignInSheet: View {
                 }
                 // A key isn't kept for a retry, so a refused one is pasted again.
                 failure = Failure(
-                    message: error.localizedDescription, retry: key == nil ? { run(method, key: nil) } : nil)
+                    message: error.localizedDescription, methodID: method.id,
+                    retry: key == nil ? { run(method, key: nil) } : nil)
             }
         }
     }
@@ -350,7 +377,7 @@ struct HostAgentSignInSheet: View {
             do {
                 try await directory.removeAPIKey(agentID, on: device, for: method.method)
             } catch {
-                failure = Failure(message: error.localizedDescription) { removeKey(method) }
+                failure = Failure(message: error.localizedDescription, methodID: method.id) { removeKey(method) }
             }
         }
     }
@@ -441,4 +468,3 @@ struct HostSignInLinkView: View {
         }
     }
 }
-#endif

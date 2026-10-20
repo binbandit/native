@@ -1,4 +1,3 @@
-#if NATIVE_HOSTSUI_WIP
 import ACP
 import Foundation
 import NativeHostClient
@@ -41,4 +40,3 @@ protocol HostsDirectory {
     /// there themselves. Fails while the agent is working, with a message that says so.
     func checkAgain(_ agent: AgentDefinition.ID, on device: SessionDevice) async throws
 }
-#endif

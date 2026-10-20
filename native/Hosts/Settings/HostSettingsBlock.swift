@@ -1,4 +1,3 @@
-#if NATIVE_HOSTSUI_WIP
 import NativeHostProtocol
 import SwiftUI
 
@@ -32,8 +31,7 @@ struct HostSettingsBlock: View {
             HStack(spacing: DS.Space.lg) {
                 SettingsIconTile {
                     HostGlyph(
-                        look: host.look, size: SettingsMetrics.tileGlyph, weight: .thin,
-                        isDimmed: !host.state.availability.isOnline)
+                        look: host.look, size: HostsMetrics.tileGlyph, isDimmed: !host.state.availability.isOnline)
                 }
                 row
             }
@@ -162,6 +160,7 @@ struct HostSettingsBlock: View {
                         Text(Self.title(of: choice)).tag(choice)
                     }
                 }
+                .pickerStyle(.menu)
             }
             Picker(
                 "Symbol",
@@ -172,6 +171,7 @@ struct HostSettingsBlock: View {
                     Label(symbol.title, systemImage: symbol.systemImage).tag(symbol)
                 }
             }
+            .pickerStyle(.menu)
             Picker(
                 "Color",
                 selection: Binding(
@@ -181,6 +181,7 @@ struct HostSettingsBlock: View {
                     Text(tint.title).tag(tint)
                 }
             }
+            .pickerStyle(.menu)
             if !host.isThisMac {
                 Divider()
                 Button("Remove…", role: .destructive, action: actions.remove)
@@ -193,4 +194,3 @@ struct HostSettingsBlock: View {
         .accessibilityLabel("Options for \(host.name)")
     }
 }
-#endif

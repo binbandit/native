@@ -1,4 +1,3 @@
-#if NATIVE_HOSTSUI_WIP
 import ACP
 import SwiftUI
 
@@ -113,4 +112,3 @@ struct HostAgentSettingsRow: View {
         }
     }
 }
-#endif

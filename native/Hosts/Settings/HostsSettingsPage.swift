@@ -1,4 +1,3 @@
-#if NATIVE_HOSTSUI_WIP
 import ACP
 import NativeHostClient
 import NativeHostProtocol
@@ -171,7 +170,7 @@ struct HostsSettingsContent: View {
 
     private var emptyState: some View {
         EmptyStateView(
-            "No other hosts yet", systemImage: HostSymbol.mini.systemImage,
+            "No other hosts yet", systemImage: "desktopcomputer.and.macbook",
             message:
                 "Add an always-on machine, like a Mac mini, to run tasks there. Start a task from this Mac, close the lid, and it keeps working."
         ) {
@@ -319,5 +318,4 @@ struct HostsSettingsContent: View {
         }
     }
 }
-#endif
 #endif

@@ -1,4 +1,3 @@
-#if NATIVE_HOSTSUI_WIP
 import ACP
 import Foundation
 import NativeHostClient
@@ -241,4 +240,3 @@ extension HostAgentDisplay {
             signInLink: runtime.signInLink, usesAPIKey: auth?.kind == .apiKey || !runtime.savedCredentials.isEmpty)
     }
 }
-#endif

@@ -1,4 +1,3 @@
-#if NATIVE_HOSTSUI_WIP
 import NativeLink
 import SwiftUI
 
@@ -34,4 +33,3 @@ extension HostDevicePill {
         }
     }
 }
-#endif

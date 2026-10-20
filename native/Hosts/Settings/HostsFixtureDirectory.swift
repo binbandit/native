@@ -1,4 +1,3 @@
-#if NATIVE_HOSTSUI_WIP
 #if DEBUG
 import ACP
 import Foundation
@@ -107,7 +106,7 @@ final class HostsFixtureDirectory: HostsDirectory {
         updateAgent(agent, on: device) { display in
             display.needsSignIn = false
             display.isSignedIn = true
-            display.signInLabel = apiKey == nil ? "ChatGPT Pro · brayden@example.com" : "OpenAI API key"
+            display.signInLabel = apiKey == nil ? "ChatGPT Pro · you@example.com" : "OpenAI API key"
             if apiKey != nil { display.savedKeys.insert(method.id) }
         }
     }
@@ -132,11 +131,14 @@ final class HostsFixtureDirectory: HostsDirectory {
             throw FixtureFailure.busy
         }
         updateAgent(agent, on: device) { display in
-            display.needsSignIn = false
-            display.isSignedIn = true
-            display.signInLabel = "ChatGPT Pro · brayden@example.com"
-            display.signInLink = nil
-            if case .notInstalled = display.status { display.status = .ready }
+            if case .notInstalled = display.status {
+                display.status = .ready
+            } else if display.wantsSignIn {
+                display.needsSignIn = false
+                display.isSignedIn = true
+                display.signInLabel = "ChatGPT Pro · you@example.com"
+                display.signInLink = nil
+            }
         }
     }
 
@@ -193,7 +195,7 @@ final class HostsFixtureDirectory: HostsDirectory {
 
     private static var thisMac: HostDisplay {
         HostDisplay(
-            device: .thisMac, name: "This Mac", machineName: "Brayden's MacBook Pro",
+            device: .thisMac, name: "This Mac", machineName: "MacBook Pro",
             look: HostLook(symbol: .laptop, tint: .graphite), state: .online,
             machine: HostMachineSummary(
                 system: "macOS 26.1", nativeVersion: "1.4.2 (212)", bootedAt: now.addingTimeInterval(-2 * 86_400),
@@ -209,14 +211,14 @@ final class HostsFixtureDirectory: HostsDirectory {
         let codex = agent("codex")
         let cursor = agent("cursor")
         return HostDisplay(
-            device: .remote(HostDeviceFixtures.mini), name: "Mac mini", machineName: "Brayden's Mac mini",
+            device: .remote(HostDeviceFixtures.mini), name: "Mac mini", machineName: "Home Mac mini",
             look: HostLook(symbol: .mini, tint: .cobalt), state: .online,
             machine: HostMachineSummary(
                 system: "macOS 26.1", nativeVersion: "1.4.2 (212)", bootedAt: now.addingTimeInterval(-9 * 86_400),
                 loadAverage: 0.42, keepAwake: "Awake while agents work"),
             agents: [
                 HostAgentDisplay(
-                    agent: agent("claude-code"), status: .ready, signInLabel: "Claude Max · brayden@example.com",
+                    agent: agent("claude-code"), status: .ready, signInLabel: "Claude Max · you@example.com",
                     isSignedIn: true, terminalSignIn: "claude"),
                 HostAgentDisplay(
                     agent: codex, status: .ready, needsSignIn: true, signInLabel: "Not logged in", isSignedIn: false,
@@ -288,5 +290,4 @@ final class HostsFixtureDirectory: HostsDirectory {
         return AgentDefinition(found.agent, pluginID: found.pluginID)
     }
 }
-#endif
 #endif
