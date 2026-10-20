@@ -15,7 +15,8 @@ struct TranscriptView: View {
     @Environment(AppModel.self) private var model
     @Environment(\.isPrimaryTranscript) private var isPrimary
     @Environment(\.dsDrawsToolbarBand) private var drawsToolbarBand
-    @State private var position = ScrollPosition(edge: .bottom)
+    /// At the latest, unless the user left this session scrolled away from it.
+    @State private var position: ScrollPosition
     /// Whether the newest output is out of view.
     @State private var isAwayFromLatest = false
     /// The scroll container's width, which a legacy scroller doesn't change; nil until the container
@@ -23,6 +24,14 @@ struct TranscriptView: View {
     @State private var containerWidth: CGFloat?
     /// Rows the user opened, kept while they're scrolled away.
     @State private var disclosures = TranscriptDisclosures()
+
+    init(session: SessionModel, openSubagent: @escaping (SessionID) -> Void) {
+        self.session = session
+        self.openSubagent = openSubagent
+        _position = State(
+            initialValue: session.transcriptScrollTarget.map { ScrollPosition(id: $0, anchor: .top) }
+                ?? ScrollPosition(edge: .bottom))
+    }
 
     var body: some View {
         let items = session.state.items
@@ -34,28 +43,10 @@ struct TranscriptView: View {
         // laying out its content at no width, on every update; a transcript laid out that narrow
         // (each line of text wrapped a character at a time) took most of the main thread while a
         // reply streamed. An overlay is laid out only at its base's final size.
-        Color.clear.overlay {
-            ScrollView {
-                if let containerWidth {
-                    column(transcript, in: containerWidth)
-                } else {
-                    // Keeps the scroll view full width while the rows wait for its size; empty, it has none.
-                    Color.clear.frame(maxWidth: .infinity, maxHeight: 0)
-                }
-            }
-            // Start at the latest message and stay there as rows grow. Short transcripts sit at the top:
-            // bottom-aligning them (the `.alignment` role) pads the top by an inset that lags the content
-            // height by one pass, so every new row briefly overflows and flashes a legacy scroller.
-            .defaultScrollAnchor(.bottom, for: .initialOffset)
-            .defaultScrollAnchor(.bottom, for: .sizeChanges)
-            .scrollPosition($position)
-            // Rows scrolled up under the title bar stay legible through the soft edge, right behind the
-            // session's title; the hard edge keeps the title on a plain backing. Under a page's or an
-            // inspector's `dsToolbarBand`, the band in Native's colors takes its place.
-            .scrollEdgeEffectStyle(.hard, for: .top)
-            .scrollEdgeEffectHidden(drawsToolbarBand, for: .top)
-            // The scroll view's own size, reported from the first layout on (scroll geometry only
-            // reports changes, and a session switched to is laid out at its final size from the start).
+        Color.clear
+            // The space the transcript gets, reported from the first layout on (geometry changes
+            // aren't reported for a size a view starts with), so the scroll view lays its rows out at
+            // their width in its first pass.
             .onGeometryChange(for: CGSize.self) { proxy in
                 proxy.size
             } action: { size in
@@ -66,29 +57,66 @@ struct TranscriptView: View {
                 guard size.width > 0, size.height > 0 else { return }
                 containerWidth = size.width
             }
-            .onScrollGeometryChange(for: Bool.self) { [threshold = DS.Space.xxxl] geometry in
-                geometry.visibleRect.maxY < geometry.contentSize.height - threshold
-            } action: { _, isAway in
-                isAwayFromLatest = isAway
+            .overlay {
+                if session.isRestoringHistory {
+                    // A reopened session replays its history thousands of updates at a time. Shown as
+                    // it arrived, rows appeared and the view chased the end, replaying the session;
+                    // instead it appears whole, already at its end, once all of it is in.
+                    LoadingStateView("Loading session…")
+                } else {
+                    scrollView(transcript)
+                }
+            }
+            .transaction(value: session.isRestoringHistory) { $0.animation = nil }
+            .overlay(alignment: .bottom) {
+                if showsJumpToLatest {
+                    JumpToLatestButton(action: jumpToLatest)
+                        .padding(.bottom, DS.Space.md)
+                        .transition(.opacity.combined(with: .scale(scale: 0.9)))
+                }
+            }
+            .animation(.dsStandard, value: showsJumpToLatest)
+            .focusedSceneValue(\.transcriptJumpToLatest, jumpCommand)
+            .overlay {
+                if !session.isRestoringHistory, items.isEmpty {
+                    ContentUnavailableView(
+                        "What should we work on?", systemImage: "sparkles",
+                        description: Text(session.cwd.abbreviatedPath)
+                    )
+                }
+            }
+    }
+
+    /// The rows, scrolling, starting at the latest.
+    private func scrollView(_ transcript: TranscriptStyleConfiguration) -> some View {
+        ScrollView {
+            if let containerWidth {
+                column(transcript, in: containerWidth)
+            } else {
+                // Keeps the scroll view full width while the rows wait for its size; empty, it has none.
+                Color.clear.frame(maxWidth: .infinity, maxHeight: 0)
             }
         }
-        .overlay(alignment: .bottom) {
-            if showsJumpToLatest {
-                JumpToLatestButton(action: jumpToLatest)
-                    .padding(.bottom, DS.Space.md)
-                    .transition(.opacity.combined(with: .scale(scale: 0.9)))
-            }
+        // Start at the latest message and stay there as rows grow. Short transcripts sit at the top:
+        // bottom-aligning them (the `.alignment` role) pads the top by an inset that lags the content
+        // height by one pass, so every new row briefly overflows and flashes a legacy scroller.
+        .defaultScrollAnchor(.bottom, for: .initialOffset)
+        .defaultScrollAnchor(.bottom, for: .sizeChanges)
+        .scrollPosition($position, anchor: .top)
+        // Rows scrolled up under the title bar stay legible through the soft edge, right behind the
+        // session's title; the hard edge keeps the title on a plain backing. Under a page's or an
+        // inspector's `dsToolbarBand`, the band in Native's colors takes its place.
+        .scrollEdgeEffectStyle(.hard, for: .top)
+        .scrollEdgeEffectHidden(drawsToolbarBand, for: .top)
+        .onScrollGeometryChange(for: Bool.self) { [threshold = DS.Space.xxxl] geometry in
+            geometry.visibleRect.maxY < geometry.contentSize.height - threshold
+        } action: { _, isAway in
+            isAwayFromLatest = isAway
         }
-        .animation(.dsStandard, value: showsJumpToLatest)
-        .focusedSceneValue(\.transcriptJumpToLatest, jumpCommand)
-        .overlay {
-            if session.phase == .loading {
-                LoadingStateView("Loading session…")
-            } else if items.isEmpty {
-                ContentUnavailableView(
-                    "What should we work on?", systemImage: "sparkles", description: Text(session.cwd.abbreviatedPath)
-                )
-            }
+        // Coming back to this session shows the same place, or the latest (new rows included) when
+        // that's where the user left it.
+        .onDisappear {
+            session.transcriptScrollTarget = isAwayFromLatest ? position.viewID(type: String.self) : nil
         }
     }
 

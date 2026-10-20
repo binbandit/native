@@ -6,13 +6,15 @@
 ///
 /// Only a message that is exactly one of these is the agent's, so a prompt that quotes one stays
 /// the user's.
-public enum InterruptionMarker {
-    public static let texts: Set<String> = [
-        "[Request interrupted by user]",
-        "[Request interrupted by user for tool use]",
-    ]
+public enum InterruptionMarker: String, CaseIterable, Sendable {
+    case whileResponding = "[Request interrupted by user]"
+    /// The stop cut off the tools that were running.
+    case whileUsingTools = "[Request interrupted by user for tool use]"
 
-    static func matches(_ chunk: ContentChunk) -> Bool {
-        if case .text(let text) = chunk.content { texts.contains(text) } else { false }
+    public static let texts = Set(allCases.map(\.rawValue))
+
+    init?(_ chunk: ContentChunk) {
+        guard case .text(let text) = chunk.content else { return nil }
+        self.init(rawValue: text)
     }
 }

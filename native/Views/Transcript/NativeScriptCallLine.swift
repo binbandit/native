@@ -25,7 +25,8 @@ struct NativeScriptCallLine: View {
                 .lineLimit(1)
             switch phase {
             case .failed: Text("failed").font(.dsCaption).foregroundStyle(.dsDanger)
-            case .cancelled: Text("cancelled").font(.dsCaption).foregroundStyle(.dsTextTertiary)
+            case .cancelled: Text("stopped").font(.dsCaption).foregroundStyle(.dsTextTertiary)
+            case .rejected: Text("rejected").font(.dsCaption).foregroundStyle(.dsTextTertiary)
             case .running: Text("running").font(.dsCaption).foregroundStyle(.dsTextTertiary)
             case .completed, .awaitingApproval: EmptyView()
             }

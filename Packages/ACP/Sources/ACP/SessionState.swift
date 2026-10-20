@@ -41,8 +41,12 @@ public struct SessionState: Sendable {
     public mutating func apply(_ update: SessionUpdate, at date: Date = .now) {
         let date = openTurn == nil ? nil : date
         switch update {
-        case .userMessageChunk(let chunk) where InterruptionMarker.matches(chunk): recordReplayedStop()
-        case .userMessageChunk(let chunk): appendChunk(chunk, role: .user, at: date)
+        case .userMessageChunk(let chunk):
+            if let marker = InterruptionMarker(chunk) {
+                recordReplayedStop(marker)
+            } else {
+                appendChunk(chunk, role: .user, at: date)
+            }
         case .agentMessageChunk(let chunk): appendChunk(chunk, role: .agent, at: date)
         case .agentThoughtChunk(let chunk): appendChunk(chunk, role: .thought, at: date)
         case .toolCall(let update), .toolCallUpdate(let update): upsertToolCall(update, at: date)
@@ -168,6 +172,10 @@ public struct SessionState: Sendable {
                 if call.startedAt != nil { call.finishedAt = date }
                 replaceItem(at: index, with: .toolCall(call))
             }
+            if let openTurn {
+                // Claude Code reports a command the stop killed as refused by the user.
+                markStopped(trailingCallsOf: openTurn) { $0.nonExecutionKind == "user-rejected" }
+            }
         }
         if let openTurn {
             turnClocks[openTurn]?.endedAt = date
@@ -191,11 +199,26 @@ public struct SessionState: Sendable {
     /// The agent's history says the user stopped the turn being replayed (`InterruptionMarker`): it
     /// ends the way a live stop does. A live turn reports its own ending, so a marker that arrives
     /// during one, or after its end, adds nothing.
-    private mutating func recordReplayedStop() {
+    private mutating func recordReplayedStop(_ marker: InterruptionMarker) {
         let start = promptIndices.last ?? 0
         guard openTurn == nil, turnClocks[start]?.stopReason == nil, replayedStops[start] == nil else { return }
         replayedStops[start] = .cancelled
+        if marker == .whileUsingTools {
+            // History doesn't say why those calls failed; the marker says the stop cut them off.
+            markStopped(trailingCallsOf: start) { _ in true }
+        }
         appendNotice(Self.stoppedNotice, isError: false)
+    }
+
+    /// Marks as stopped the failed calls that end the turn starting at `start`, the ones still running
+    /// when the user stopped it, where `wasCutOff` agrees. Earlier calls failed before the stop.
+    private mutating func markStopped(trailingCallsOf start: Int, where wasCutOff: (ToolCallState) -> Bool) {
+        for index in (start..<items.count).reversed() {
+            guard case .toolCall(var call) = items[index] else { break }
+            guard call.status == .failed, wasCutOff(call) else { continue }
+            call.status = .cancelled
+            replaceItem(at: index, with: .toolCall(call))
+        }
     }
 
     // MARK: - Indexing
@@ -479,6 +502,8 @@ public struct ToolCallState: Hashable, Sendable {
             let meta = appendingTerminalOutput(update)
             self.meta = self.meta?.merging(meta) ?? meta
         }
+        // ACP v1 has no status for a run that a stop cut short; Claude Code reports one as failed.
+        if self.status == .failed, wasCutShort { self.status = .cancelled }
     }
 }
 

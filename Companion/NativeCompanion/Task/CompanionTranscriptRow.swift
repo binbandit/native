@@ -81,7 +81,7 @@ struct CompanionTranscriptRow: View {
             VStack(alignment: .leading, spacing: DS.Space.xxs) {
                 HStack(spacing: DS.Space.md) {
                     Image(systemName: presentation.glyph.systemImage)
-                        .foregroundStyle(call.status == .failed ? .dsDanger : .dsTextTertiary)
+                        .foregroundStyle(ToolPhase(call) == .failed ? .dsDanger : .dsTextTertiary)
                         .frame(width: DS.Size.statusGlyph)
                     Text(presentation.line)
                         .foregroundStyle(.dsTextSecondary)
@@ -145,15 +145,25 @@ struct ToolCallDetailSheet: View {
         }
         for content in call.content {
             switch content {
-            case .content(.text(let text)): result.append(("Output", text))
+            case .content(.text(let text)): result.append(("Output", Self.readable(text)))
             case .diff(let diff): result.append((diff.path, diff.newText))
             default: break
             }
         }
         if result.count < 2, let output = call.rawOutput {
-            result.append(("Output", output.prettyText))
+            result.append(("Output", output.stringValue.map(Self.readable) ?? output.prettyText))
         }
         return result
+    }
+
+    /// Output as the Mac shows it: a single code block's body, without the tags an agent wraps errors
+    /// in for its model.
+    private static func readable(_ text: String) -> String {
+        let segments = FencedText.segments(of: text)
+        if segments.count == 1, case .code(let body, _, isClosed: true) = segments[0] {
+            return ToolErrorMarkup.stripped(body)
+        }
+        return ToolErrorMarkup.stripped(text)
     }
 }
 

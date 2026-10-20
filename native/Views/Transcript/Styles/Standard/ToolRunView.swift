@@ -137,7 +137,7 @@ private struct ToolRunHeader: View {
 
     var body: some View {
         let running = calls.count { !$0.status.isFinished }
-        let failed = calls.count { $0.status == .failed }
+        let failed = calls.count { ToolPhase($0) == .failed }
         HStack(spacing: DS.Space.sm) {
             DisclosureChevron(isExpanded: isOpen)
                 .frame(width: DS.Size.rowLeading)

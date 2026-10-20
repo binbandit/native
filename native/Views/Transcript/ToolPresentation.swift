@@ -68,7 +68,7 @@ struct ToolVerb {
         case .running: progressive
         case .completed: past
         // Not done: the row names what was asked, and the trailing label says what happened.
-        case .awaitingApproval, .failed, .cancelled: base
+        case .awaitingApproval, .failed, .cancelled, .rejected: base
         }
     }
 

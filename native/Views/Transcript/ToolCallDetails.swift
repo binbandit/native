@@ -143,6 +143,7 @@ private struct MCPOutput: View {
         case .awaitingApproval: "Output will appear here once you approve"
         case .running: "Running…"
         case .failed: "Tool call failed"
+        case .rejected: "Not run"
         case .completed, .cancelled: "No output"
         }
     }

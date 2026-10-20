@@ -82,6 +82,7 @@ struct ToolRow<Accessory: View>: View {
         case .completed: "checkmark.circle"
         case .failed: "xmark.circle"
         case .cancelled: "stop.circle"
+        case .rejected: "hand.raised"
         }
     }
 
@@ -151,7 +152,8 @@ struct ToolRow<Accessory: View>: View {
             case .awaitingApproval: "Waiting for approval"
             case .completed: "Completed"
             case .failed: presentation.failureText(exitCode: timing.exitCode)
-            case .cancelled: "Interrupted"
+            case .cancelled: "Stopped"
+            case .rejected: "Rejected"
             }
         guard isExpandable else { return status }
         return "\(status), \(isExpanded ? "expanded" : "collapsed")"
@@ -179,8 +181,12 @@ private struct ToolRowStatus: View {
                 Text(presentation.failureText(exitCode: timing.exitCode))
                     .foregroundStyle(.dsDanger)
                 duration
+            // As quiet as the turn's own "Stopped": nothing went wrong that needs attention.
             case .cancelled:
-                Text("Interrupted")
+                Text("Stopped")
+                    .foregroundStyle(.dsTextTertiary)
+            case .rejected:
+                Text("Rejected")
                     .foregroundStyle(.dsTextTertiary)
             case .completed, .failed:
                 duration
