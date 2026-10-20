@@ -80,7 +80,7 @@ struct MessageCardComposer<Editor: View, Sections: View, Files: View>: View {
     /// The message's settings as chips, then Send (or Stop while the agent works).
     private var chipsRow: some View {
         HStack(spacing: DS.Space.xs) {
-            ForEach(chips, id: \.command) { chip in
+            ForEach(Array(chips.enumerated()), id: \.offset) { _, chip in
                 MessageCardChip(parts: parts, command: chip.command, title: chip.title)
             }
             Button("Attach Files", systemImage: "paperclip") { parts.isPickingFiles = true }

@@ -1,5 +1,6 @@
 #if DEBUG
 import ACP
+import Foundation
 import Modes
 
 /// One value a typed setting command can take, as direction B lists it under the draft.

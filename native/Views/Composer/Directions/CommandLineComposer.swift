@@ -154,7 +154,7 @@ private struct CommandLineStatus: View {
 
     private func keys(_ pairs: [(key: String, action: String)]) -> some View {
         HStack(spacing: DS.Space.md) {
-            ForEach(pairs, id: \.key) { pair in
+            ForEach(Array(pairs.enumerated()), id: \.offset) { _, pair in
                 HStack(spacing: DS.Space.xs) {
                     Text(pair.key)
                         .foregroundStyle(.dsTextSecondary)
