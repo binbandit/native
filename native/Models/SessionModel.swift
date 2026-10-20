@@ -71,9 +71,6 @@ final class SessionModel {
     /// Set to scroll the transcript to an item and highlight it (search results); the transcript
     /// clears it.
     var transcriptReveal: TranscriptReveal?
-    /// The transcript row at the top of the view when the user last left this session scrolled away
-    /// from the latest, so coming back shows the same place; nil when they left it at the latest.
-    @ObservationIgnored var transcriptScrollTarget: String?
 
     // Turn state. Internal only so the SessionModel+ extensions in other files can drive turns;
     // everything else changes it through the methods.

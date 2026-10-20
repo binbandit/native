@@ -48,9 +48,6 @@ private struct StandardTranscript: View {
                         .padding(.top, DS.Space.xl)
                 }
             }
-            // Lines are scroll targets, so the transcript knows which one it's showing and can come
-            // back to it (`TranscriptView`).
-            .scrollTargetLayout()
             .task(id: transcript.session.transcriptReveal) {
                 await reveal(transcript.session.transcriptReveal, with: proxy)
             }
