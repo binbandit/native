@@ -1,17 +1,17 @@
 #!/bin/bash
 # Builds every Swift package that declares iOS (`.iOS(` in its Package.swift) for the iOS Simulator,
 # as the iOS workflow does (.github/workflows/ios.yml), so a package can't stop building for the iPad
-# and the iPhone unnoticed. The Mac's own builds and tests never compile them for iOS.
+# and the iPhone unnoticed: the Mac's own builds and tests never compile them for iOS.
 #
 #   scripts/ci/build-packages-ios.sh [--derived-data <dir>] [--source-packages <dir>]
 #                                    [--compilation-cache <dir>] [package...]
 #
-# Packages default to all of them. Each builds its `<Package>-Package` scheme (every target), or its
-# only scheme, into its own DerivedData under --derived-data (default $TMPDIR/native-ios-packages),
-# with its log beside it as <package>.log, and then goes through scripts/check-warnings.sh: our own
-# files build without warnings for iOS too. --source-packages and --compilation-cache are the same
-# CI caches as scripts/release/check.sh's. Each package's output is a log group; a failing package is
-# annotated with its name, the rest still build, and the run fails at the end.
+# Packages default to all of them. Each builds what it offers iOS (scheme() below) into its own
+# DerivedData under --derived-data (default $TMPDIR/native-ios-packages), logs to <package>.log there,
+# and goes through scripts/check-warnings.sh: our files build without warnings for iOS too.
+# --source-packages and --compilation-cache are the CI caches scripts/release/check.sh takes. Each
+# package's output is a log group; a failing package is annotated with its name, the rest still
+# build, and the run fails at the end.
 set -euo pipefail
 
 root=$(git -C "$(dirname "$0")" rev-parse --show-toplevel)
@@ -36,25 +36,43 @@ if [ ${#names[@]} -eq 0 ]; then
 fi
 mkdir -p "$derived"
 
+# The scheme that builds what a package offers iOS: `<Package>-Package` (every target) or its only
+# scheme. NativeHost also holds the Mac's host (NativeHostMac, native-host); a host runs agents, which
+# iPadOS can't, so only its client builds there.
+scheme() {
+    local name=$1 schemes
+    if [ "$name" = NativeHost ]; then
+        echo NativeHostClient
+        return
+    fi
+    schemes=$(cd "$root/Packages/$name" && xcodebuild -list -json ${packages[@]+"${packages[@]}"} 2>/dev/null |
+        jq -r '.workspace.schemes[]' || true)
+    grep -x "$name-Package" <<<"$schemes" || head -1 <<<"$schemes"
+}
+
+build() {
+    local name=$1 scheme log="$derived/$1.log"
+    scheme=$(scheme "$name")
+    [ -n "$scheme" ] || { echo "error: no scheme found for Packages/$name"; return 1; }
+    (cd "$root/Packages/$name" && xcodebuild build -scheme "$scheme" -destination 'generic/platform=iOS Simulator' \
+        -derivedDataPath "$derived/$name" ${packages[@]+"${packages[@]}"} -skipPackagePluginValidation \
+        -skipMacroValidation CODE_SIGNING_ALLOWED=NO ${caching[@]+"${caching[@]}"}) >"$log" 2>&1 || {
+        grep -E '^[^[:space:]|].*error: ' "$log" | sort -u | head -30
+        return 1
+    }
+    "$root/scripts/check-warnings.sh" "$log"
+}
+
 failed=""
 for name in "${names[@]}"; do
     echo "::group::$name"
     started=$SECONDS
-    log="$derived/$name.log"
-    package="$root/Packages/$name"
-    schemes=$(cd "$package" && xcodebuild -list -json ${packages[@]+"${packages[@]}"} 2>/dev/null |
-        jq -r '.workspace.schemes[]' || true)
-    scheme=$(grep -x "$name-Package" <<<"$schemes" || head -1 <<<"$schemes")
-    if [ -n "$scheme" ] && (cd "$package" && xcodebuild build -scheme "$scheme" \
-        -destination 'generic/platform=iOS Simulator' -derivedDataPath "$derived/$name" \
-        ${packages[@]+"${packages[@]}"} -skipPackagePluginValidation -skipMacroValidation \
-        CODE_SIGNING_ALLOWED=NO ${caching[@]+"${caching[@]}"}) >"$log" 2>&1 && "$root/scripts/check-warnings.sh" "$log"; then
+    if build "$name"; then
         echo "::endgroup::"
         echo "$name built for iOS in $((SECONDS - started))s"
     else
-        grep -E '^[^[:space:]|].*error: ' "$log" | sort -u | head -30 || true
         echo "::endgroup::"
-        echo "::error title=$name::Packages/$name doesn't build for the iOS Simulator (log: $log)"
+        echo "::error title=$name::Packages/$name doesn't build for the iOS Simulator (log: $derived/$name.log)"
         failed="$failed $name"
     fi
 done

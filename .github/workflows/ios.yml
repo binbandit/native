@@ -1,0 +1,117 @@
+# Builds what runs on iPad and iPhone, which the Mac's builds never compile for iOS: the iPhone
+# companion for the simulator, every package that declares iOS, and the app folders that already
+# compile for iPad (scripts/check-ios.sh). Our own files build without warnings there too.
+#
+# Daily and on demand (`gh workflow run ios.yml --ref <branch>`), and on pull requests that touch code
+# the iPad or iPhone compiles. Not on pushes: those already take most of the repository's five macOS
+# runners (docs/releasing.md, "How CI stays quick").
+name: iOS
+
+on:
+  schedule:
+    - cron: "0 6 * * *" # 06:00 UTC
+  pull_request:
+    paths:
+      - Companion/**
+      - Packages/**
+      - native/DesignSystem/**
+      - native/Platform/**
+      - native/Views/Transcript/**
+      - native/Celebrations/**
+      - scripts/check-ios.sh
+      - scripts/check-warnings.sh
+      - scripts/ci/build-packages-ios.sh
+      - scripts/companion/**
+      - .github/workflows/ios.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ios:
+    # One runner for all three, so a pull request that runs this takes one more at most.
+    name: Build for iOS
+    runs-on: ${{ vars.MACOS_RUNNER || 'macos-26' }}
+    timeout-minutes: 60
+    env:
+      DEVELOPER_DIR: ${{ vars.XCODE_DEVELOPER_DIR || '/Applications/Xcode_27.1.app/Contents/Developer' }}
+      # The companion's icons are rendered from the icon work's documents, whose images are in Git
+      # LFS (scripts/companion/app-icons.sh). Only these are fetched, about 50 MB, and kept in a cache.
+      ICON_ARTWORK: design/app-icon/channel-themes/*/stable.icon/**,design/app-icon/celebrations/*/stable.icon/**
+    steps:
+      - uses: actions/checkout@v5
+      - name: Cache locations
+        run: |
+          echo "SOURCE_PACKAGES=$HOME/Library/Caches/native-ci/SourcePackages-iOS" >> "$GITHUB_ENV"
+          echo "COMPILATION_CACHE=$HOME/Library/Caches/native-ci/CompilationCache-iOS" >> "$GITHUB_ENV"
+      - name: Cache the icon artwork
+        uses: actions/cache@v4
+        with:
+          path: .git/lfs/objects
+          # The checkout has LFS pointers, so this hash changes only when the artwork does.
+          key: lfs-icon-artwork-${{ hashFiles('design/app-icon/channel-themes/*/stable.icon/**', 'design/app-icon/celebrations/*/stable.icon/**') }}
+          restore-keys: lfs-icon-artwork-
+      - name: Fetch the icon artwork
+        run: git lfs pull --include "$ICON_ARTWORK"
+      # Package checkouts (the companion's tree-sitter grammars, Sentry for NativeDiagnostics), as in
+      # the Mac builds, in a folder of their own.
+      - name: Cache Swift package checkouts
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.SOURCE_PACKAGES }}
+          key: source-packages-ios-${{ runner.os }}-${{ hashFiles('Companion/NativeCompanion.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved', 'Packages/*/Package.resolved') }}
+          restore-keys: source-packages-ios-${{ runner.os }}-
+      # Xcode's compilation cache, as in the Mac builds (scripts/release/check.sh explains it). Saved
+      # only from main, so pull requests read it without crowding the repository's caches.
+      - name: Restore the compilation cache
+        id: compilation-cache
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ env.COMPILATION_CACHE }}
+          key: compilation-cache-${{ runner.os }}-iOS-${{ github.sha }}
+          restore-keys: compilation-cache-${{ runner.os }}-iOS-
+
+      # The three builds run whatever the one before did, so one run reports every break.
+      - name: Build the companion for the iOS Simulator
+        run: |
+          xcodebuild build -project Companion/NativeCompanion.xcodeproj -scheme NativeCompanion -configuration Debug \
+            -destination 'generic/platform=iOS Simulator' -derivedDataPath "$RUNNER_TEMP/Companion" \
+            -clonedSourcePackagesDirPath "$SOURCE_PACKAGES" CODE_SIGNING_ALLOWED=NO \
+            COMPILATION_CACHE_ENABLE_CACHING=YES COMPILATION_CACHE_CAS_PATH="$COMPILATION_CACHE" \
+            COMPILATION_CACHE_LIMIT_SIZE=1G > "$RUNNER_TEMP/companion.log" 2>&1 || {
+              grep -E '^[^[:space:]|].*error: ' "$RUNNER_TEMP/companion.log" | sort -u
+              tail -n 30 "$RUNNER_TEMP/companion.log"
+              exit 1
+            }
+          scripts/check-warnings.sh "$RUNNER_TEMP/companion.log"
+      - name: Build the packages for the iOS Simulator
+        if: ${{ !cancelled() }}
+        run: >-
+          scripts/ci/build-packages-ios.sh --derived-data "$RUNNER_TEMP/Packages"
+          --source-packages "$SOURCE_PACKAGES" --compilation-cache "$COMPILATION_CACHE"
+      # The app has no iPadOS destination yet; these are the folders that already compile for it.
+      # docs/releasing.md ("iOS checks") lists what's missing.
+      - name: Typecheck the app for iPadOS
+        if: ${{ !cancelled() }}
+        run: scripts/check-ios.sh native/Platform native/Views/Transcript
+
+      - name: Save the compilation cache
+        if: success() && github.event_name != 'pull_request' && steps.compilation-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.COMPILATION_CACHE }}
+          key: ${{ steps.compilation-cache.outputs.cache-primary-key }}
+      - name: Upload the build logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-build-logs
+          path: |
+            ${{ runner.temp }}/companion.log
+            ${{ runner.temp }}/Packages/*.log
+          if-no-files-found: ignore

@@ -85,10 +85,12 @@ lives in Settings, and a pairing link opens it from anywhere.
 
 `Companion/NativeCompanion.xcodeproj`, its own project so it can never break the Mac scheme. It
 compiles `native/DesignSystem` (a synchronized folder) and the Mac's transcript pieces by reference
-(`MarkdownView`, `ToolPresentation`, `ToolPhase`, `FileDiff+DiffView`, `TranscriptStyle`,
-`TranscriptMetrics`, `TranscriptFixtures`, plus `CelebrationDates`), so tool rows and approvals use
-the Mac's exact words, and links ACP, NativeHostClient, NativeLink, NativePolicy, CodeThemes and
-AppAppearance. The screens: welcome;
+(`MarkdownView`, `TranscriptCodeBlock`, `ToolPresentation`, `ToolCategory+Glyph`, `ToolPhase`,
+`FileDiff+DiffView`, `TranscriptStyle`, `TranscriptMetrics`, `TranscriptFixtures`, plus
+`CelebrationDates`), so tool rows and approvals use the Mac's exact words and glyphs, and links ACP,
+NativeHostClient, NativeLink, NativePolicy, CodeThemes and AppAppearance. A new file one of those
+pieces needs has to be added to the project too; the iOS workflow (`docs/releasing.md`, "iOS
+checks") builds the app daily and catches one that wasn't. The screens: welcome;
 Add Host (scan with VisionKit's DataScanner, pick a Mac Bonjour found and type its code, or paste
 the link); pairing progress with the verification code and a pairing log; Tasks grouped by host
 (needs you with inline approvals, working, recent); a task's transcript (the shared `SessionState`

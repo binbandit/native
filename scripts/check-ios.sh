@@ -80,7 +80,8 @@ build_package() {
     fi
     rmdir "$lock"
     lock=""
-    flags+=(-I "$derived/Build/Products/Debug-iphonesimulator")
+    # Its Swift modules, and the frameworks it links as binaries (Sentry).
+    flags+=(-I "$derived/Build/Products/Debug-iphonesimulator" -F "$derived/Build/Products/Debug-iphonesimulator")
     for map in "$derived"/Build/Intermediates.noindex/GeneratedModuleMaps-iphonesimulator/*.modulemap; do
         # Packages built this way bring their dependencies (Exec, say) along: each module maps once.
         [ -e "$map" ] && [[ $mapped != *" $(basename "$map") "* ]] || continue
