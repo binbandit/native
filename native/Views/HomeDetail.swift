@@ -67,21 +67,19 @@ struct HomeDetail: View {
     /// Tasks waiting on the user, the longest-waiting first.
     private var waitingTasks: [HomeWaitingTask<SessionKey>] {
         model.sessionList
-            .compactMap { summary -> (SessionSummary, SessionModel, SessionWait)? in
-                guard let session = model.session(summary.id), let wait = session.wait else { return nil }
-                return (summary, session, wait)
+            .compactMap { summary -> (SessionSummary, SessionModel, TaskStatus)? in
+                guard let session = model.session(summary.id) else { return nil }
+                // The status every surface reads, so Home lists exactly what the sidebar and the
+                // status bar call "needs you".
+                let status = session.taskStatus
+                return status.needsAttention ? (summary, session, status) : nil
             }
             .sorted { ($0.1.lastActivity ?? .distantPast) < ($1.1.lastActivity ?? .distantPast) }
-            .map { summary, _, wait in
-                let status: TaskStatus =
-                    switch wait {
-                    case .input: .needsInput
-                    case .permission: .needsPermission
-                    case .planReview: .needsPlanReview
-                    }
-                return HomeWaitingTask(
-                    id: summary.id, title: model.title(for: summary), request: wait.summary, status: status,
-                    agentName: summary.agent.displayName)
+            .map { summary, session, status in
+                // A subagent can say it's blocked before its request arrives; until then, the status.
+                HomeWaitingTask(
+                    id: summary.id, title: model.title(for: summary), request: session.wait?.summary ?? status.label,
+                    status: status, agentName: summary.agent.displayName)
             }
     }
 
