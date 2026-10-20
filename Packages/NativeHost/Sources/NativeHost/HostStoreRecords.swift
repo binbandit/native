@@ -20,8 +20,8 @@ struct StoredSession: Hashable {
     var mcpServers: [JSONValue]
     /// The `_meta` for `session/new` and every `session/load`.
     var meta: JSONValue?
-    /// Config values clients chose, by option id, set back after a reload where the agent reports
-    /// otherwise (an agent may reopen a session on its default model).
+    /// The settings the session runs with, by option id (`HostCore.pinConfig`): set back after a
+    /// reload where the agent reports others (an agent may reopen a session on its default model).
     var configChoices: [String: String]
     /// Opened from the agent's own list, so the agent saved it; otherwise started here.
     var isAdopted: Bool

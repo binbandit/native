@@ -62,9 +62,11 @@ struct ComposerSettings: Equatable {
         return autonomyLevels.firstIndex { $0.value == value } ?? 0
     }
 
+    /// The effort level above the current one; none at the highest (the meter never wraps around to
+    /// the lowest) or while the agent's value isn't a level it lists (a session still reloading).
     var nextEffort: Change? {
-        guard let effort, let next = effort.next(in: effort.choices) else { return nil }
-        return Change(setting: effort, value: next.value)
+        guard let effort, let next = effort.option.valueAfterCurrent else { return nil }
+        return Change(setting: effort, value: next)
     }
 
     var nextAutonomy: Change? {

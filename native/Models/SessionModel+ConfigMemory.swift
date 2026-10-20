@@ -9,11 +9,13 @@ extension SessionModel {
     func pick(_ option: ConfigOption, value: String) async {
         // The agent's own option: while the session loads, the composer shows the choices it's
         // about to get back (`shownConfigOptions`), which the agent isn't on yet.
-        let option = state.configOptions.first { $0.id == option.id } ?? option
-        await setConfigOption(option, to: value)
-        guard NewSessionChoices.remembers(option),
-            case .select(let current, _)? = state.configOptions.first(where: { $0.id == option.id })?.kind,
-            current == value
+        let agentHad = state.configOptions.first { $0.id == option.id }
+        let settled = phase != .loading && !mirror.isLoading && !isSettingBackConfig
+        await setConfigOption(agentHad ?? option, to: value)
+        let agentHas = state.configOptions.first { $0.id == option.id }
+        guard
+            NewSessionChoices.remembersPick(
+                value, from: option, agentHad: agentHad, agentHas: agentHas, settled: settled)
         else { return }
         AgentSessionDefaults.updateLastUsed(for: agent.id) { $0.choose(option, value: value) }
     }

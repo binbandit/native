@@ -34,7 +34,8 @@ extension HostCore {
         let record = StoredSession(
             id: sessionID, agentID: params.agentID, agentSessionID: response.sessionId,
             cwd: params.cwd, parentID: params.parentID, origin: params.origin, mcpServers: params.mcpServers,
-            meta: params.meta)
+            meta: params.meta,
+            configChoices: response.configOptions.map { Self.configValues(Self.configOptions($0)) } ?? [:])
         try store.insertSession(record)
         let session = HostSession(
             record: record, agentName: link.spec.name, phase: .idle, needsLoad: false, mcpServers: params.mcpServers)
@@ -147,12 +148,10 @@ extension HostCore {
                 noteAgentError(error, from: link)
                 throw error
             }
-            if let options = response.configOptions {
-                append(.update(SessionMirror.configOptionsUpdate(options)), to: session)
-            }
+            // Inside the load, so clients get where the settings end up rather than the agent's defaults.
+            await restoreConfigChoices(of: session, on: link, reported: response.configOptions)
             append(.loaded, to: session)
             tasks.sessionLoaded(session)
-            await restoreConfigChoices(of: session, on: link)
             session.needsLoad = false
             session.supportsSteering = link.supportsSteering
             session.problem = nil
@@ -181,7 +180,7 @@ extension HostCore {
     }
 
     /// Starts a fresh agent session in place of one the agent never saved.
-    private func replaceUnsaved(
+    func replaceUnsaved(
         _ session: HostSession, on link: AgentLink, peer: JSONRPCPeer
     ) async throws -> RawConfigOptionsResponse {
         let servers = await tasks.agentServers(for: session.id, base: session.mcpServers)
@@ -202,36 +201,91 @@ extension HostCore {
         return RawConfigOptionsResponse(configOptions: response.configOptions)
     }
 
-    /// Sets back the config values clients chose where the reloaded session reports others (an agent
-    /// may reopen a session on its default model), before anything else goes out. In the order the
-    /// app restores them (`ConfigChoices.restoreOrder`): the model first, since choosing it can put
-    /// the effort back to the model's default, and each against the options as they are by then.
-    private func restoreConfigChoices(of session: HostSession, on link: AgentLink) async {
-        guard let peer = link.peer, let agentSessionID = session.record.agentSessionID else { return }
-        let options = session.mirror.state.configOptions
+    /// Sets back the settings the session ran with (`pinConfig`) where the reloaded session reports
+    /// others (an agent may reopen a session on its default model, or on built-in defaults), before
+    /// anything else goes out. In the order the app restores them (`ConfigChoices.restoreOrder`): the
+    /// model first, since choosing it can put the effort back to the model's default, and each
+    /// against the options as they are by then. It starts from the options the load `reported`, and
+    /// only where they end up goes in the log, so clients never see the agent's defaults on the way.
+    func restoreConfigChoices(of session: HostSession, on link: AgentLink, reported: JSONValue?) async {
+        var latest = reported
+        var options = reported.map(Self.configOptions) ?? session.mirror.state.configOptions
         var choices = ConfigChoices()
         for (configID, value) in session.record.configChoices {
             if let option = options.first(where: { $0.id == configID }) {
                 choices.choose(option, value: value)
             }
         }
-        for configID in choices.restoreOrder(in: options) {
-            guard
-                case .set(_, let value)? = choices.restoration(
-                    of: configID, in: session.mirror.state.configOptions, allows: { _, _ in true })
-            else { continue }
-            do {
-                let response = try await peer.request(
-                    "session/set_config_option",
-                    RawSetConfigOptionRequest(sessionId: agentSessionID, configId: configID, value: value),
-                    as: RawConfigOptionsResponse.self)
-                if let reported = response.configOptions {
-                    append(.update(SessionMirror.configOptionsUpdate(reported)), to: session)
+        if let peer = link.peer, let agentSessionID = session.record.agentSessionID {
+            for configID in choices.restoreOrder(in: options) {
+                guard
+                    case .set(_, let value)? = choices.restoration(
+                        of: configID, in: options, allows: { _, _ in true })
+                else { continue }
+                do {
+                    let response = try await peer.request(
+                        "session/set_config_option",
+                        RawSetConfigOptionRequest(sessionId: agentSessionID, configId: configID, value: value),
+                        as: RawConfigOptionsResponse.self)
+                    if let reported = response.configOptions {
+                        latest = reported
+                        options = Self.configOptions(reported)
+                    }
+                } catch {
+                    logger.error("Couldn't set \(configID) back: \(error.localizedDescription)")
                 }
-            } catch {
-                logger.error("Couldn't set \(configID) back: \(error.localizedDescription)")
             }
         }
+        if let latest, Self.configOptions(latest) != session.mirror.state.configOptions {
+            append(.update(SessionMirror.configOptionsUpdate(latest)), to: session)
+        }
+        noteUntaken(choices, in: session, now: options)
+        // From here it runs with what the agent reports, a value it didn't take back included, so
+        // the next reload sets back these rather than asking for that value again.
+        pinConfig(options, of: session)
+    }
+
+    /// Says which `choices` the agent didn't take back: it offers them, yet reports another value (it
+    /// turned the change down, or answered and kept its own). The user can choose them again.
+    private func noteUntaken(_ choices: ConfigChoices, in session: HostSession, now options: [ConfigOption]) {
+        let untaken = choices.restoreOrder(in: options).compactMap { configID -> String? in
+            guard
+                case .set(let option, _)? = choices.restoration(of: configID, in: options, allows: { _, _ in true }),
+                case .select(let current, let values) = option.kind, let choice = choices.choices[configID]
+            else { return nil }
+            let currentName = values.first { $0.value == current }?.name ?? current
+            return
+                "\(session.agentName) didn't take back \(choice.valueName) for \(option.name), so this session uses \(currentName)."
+        }
+        guard !untaken.isEmpty else { return }
+        let retry = untaken.count == 1 ? "Choose it again to retry." : "Choose them again to retry."
+        append(.notice(text: (untaken + [retry]).joined(separator: " "), isError: false), to: session)
+    }
+
+    /// The options an agent reported, read the way clients read them.
+    static func configOptions(_ reported: JSONValue) -> [ConfigOption] {
+        guard let data = try? JSONEncoder().encode(reported) else { return [] }
+        return (try? JSONDecoder().decode([ConfigOption].self, from: data)) ?? []
+    }
+
+    /// Pins what the session runs with: every setting's value as its agent reports it now, whether a
+    /// client chose it, the agent changed it itself (leaving Plan Mode), or it's what the agent
+    /// started the session on. A reload that comes back on others gets these set back, so resumed
+    /// work runs as it did. New sessions never take them: they start on the agent's defaults.
+    func pinConfig(_ options: [ConfigOption], of session: HostSession) {
+        let values = Self.configValues(options)
+        guard !values.isEmpty, values != session.record.configChoices else { return }
+        session.record.configChoices = values
+        try? store.updateSession(session.record)
+    }
+
+    /// Each select option's value, by option id.
+    static func configValues(_ options: [ConfigOption]) -> [String: String] {
+        Dictionary(
+            options.compactMap { option in
+                guard case .select(let current, _) = option.kind else { return nil }
+                return (option.id, current)
+            }, uniquingKeysWith: { first, _ in first })
     }
 
     /// Points the agent's traffic for the session at it, delivering anything that arrived first.

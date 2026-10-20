@@ -139,6 +139,12 @@ extension HostCore {
         }
         let hadTitle = session.record.title
         append(update, to: session)
+        if update.kind == "config_option_update", session.record.origin != .announced, session.loading == nil,
+            !session.needsLoad, case .configOptions(let options)? = update.decoded
+        {
+            // The agent changed a setting itself; what a load reports is set back instead (`performLoad`).
+            pinConfig(options, of: session)
+        }
         if session.record.title != hadTitle {
             try? store.updateSession(session.record)
             publish(session)
