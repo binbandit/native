@@ -1,3 +1,4 @@
+import ACP
 import SwiftUI
 
 /// The model picker's chip, with the effort meter inside it; clicking the meter steps the effort up.
