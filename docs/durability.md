@@ -765,7 +765,7 @@ above the detail column: tasks that need the user first, each with its status, t
 sidebar's), what happened and when, opening its task on click; four rows, then Show All. Opening a
 task takes it off the card, and the card goes when it's empty or dismissed. Entries that arrive
 while the app is connected are news already and only move the baseline. Recoveries also show inline
-in the transcript, where they happened. With host notifications on (`NativeHostNotifications`), the
+in the transcript, where they happened. With host notifications on (the default; `NativeHostNotifications`), the
 card is folded from the host's notifications instead, so what was seen on another device is left out
 ("Notifications", "Coming back").
 
@@ -815,7 +815,7 @@ a `group`: one per task, and one per provider for limits. Clients show the newes
 answer wins wherever it came from, and a client that follows the session can answer with those
 directly (the notification carries the option ids).
 
-**On the Mac** (`HostNotificationFeed`, one for the app, behind `NativeHostNotifications`). It
+**On the Mac** (`HostNotificationFeed`, one for the app; on unless `NativeHostNotifications` is off). It
 follows this Mac's own host from launch and every paired host through `RemoteHosts`; notifications
 from a paired host say which ("Codex on Mac mini"). Live notifications show as Native's always have
 (the words of `NativeNotification`, Settings › Notifications' choices: needs you, long work and its
@@ -1035,7 +1035,7 @@ Window › Durable Sessions preview, opt-in per channel. Nothing else in the app
 orchestration MCP server (done: "Native's tools in the host", behind the `NativeHostTasks` default;
 `setup_status` and `run_script` are answered by the app), titles (done: "Titles",
 behind the `NativeHostTitles` default), notifications with
-actions (done: "Notifications", behind the `NativeHostNotifications` default), limit resumes, goals and workflows, keep-awake (done: "Sleep"), the menu bar extra, unread state. The
+actions (done: "Notifications", on by default; `NativeHostNotifications` off goes back), limit resumes, goals and workflows, keep-awake (done: "Sleep"), the menu bar extra, unread state. The
 plugin registry's runtime side follows (the plugin API moves into a package both sides import).
 Engines come to the host as packages, never as app-target files: goals, workflows and automations
 link `Packages/Automation` (Foundation-only, Codable, pure state plus a `due(at:)` planner), and the
