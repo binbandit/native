@@ -28,7 +28,9 @@ mkdir -p "$work/sources" "$work/modules"
 
 sdk=$(xcrun --sdk iphonesimulator --show-sdk-path)
 target="arm64-apple-ios27.0-simulator"
-flags=(-swift-version 6 -enable-upcoming-feature MemberImportVisibility -target "$target" -sdk "$sdk" -I "$work/modules")
+# Packages build with their manifests' defaults (Swift 6); the app's own settings come at the end.
+flags=(-swift-version 6 -target "$target" -sdk "$sdk" -I "$work/modules")
+mapped=" "
 
 # Copies Swift files into $2 with #Preview blocks removed.
 strip_previews() {
@@ -80,7 +82,10 @@ build_package() {
     lock=""
     flags+=(-I "$derived/Build/Products/Debug-iphonesimulator")
     for map in "$derived"/Build/Intermediates.noindex/GeneratedModuleMaps-iphonesimulator/*.modulemap; do
-        [ -e "$map" ] && flags+=(-Xcc "-fmodule-map-file=$map")
+        # Packages built this way bring their dependencies (Exec, say) along: each module maps once.
+        [ -e "$map" ] && [[ $mapped != *" $(basename "$map") "* ]] || continue
+        mapped+="$(basename "$map") "
+        flags+=(-Xcc "-fmodule-map-file=$map")
     done
     touch "$work/modules/$name.package"
 }
@@ -108,7 +113,8 @@ for module in $(grep -rhoE "^(@[a-zA-Z_]+ )*import [A-Za-z_]+" "$work/sources" |
     build_module "$module"
 done
 
-output=$(xcrun --sdk iphonesimulator swiftc -typecheck -parse-as-library -default-isolation MainActor "${flags[@]}" \
+output=$(xcrun --sdk iphonesimulator swiftc -typecheck -parse-as-library -default-isolation MainActor \
+    -enable-upcoming-feature MemberImportVisibility "${flags[@]}" \
     $(find "$work/sources" -name "*.swift") 2>&1 || true)
 diagnostics=$(echo "$output" | grep -E "(error|warning):" | sed -e "s|$work/sources/||" | sort -u || true)
 if [ -n "$diagnostics" ]; then
