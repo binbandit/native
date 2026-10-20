@@ -11,6 +11,16 @@ slots=/tmp/native-build-slots
 limit=${NATIVE_BUILD_SLOTS:-4}
 mkdir -p "$slots"
 
+# A build takes several GB. With the disk nearly full, wait for space rather than fill it: a full disk
+# breaks every app on the Mac, not just this build. NATIVE_BUILD_MIN_FREE_GB changes the floor.
+floor=${NATIVE_BUILD_MIN_FREE_GB:-20}
+announced=0
+while [ "$(df -g /tmp | awk 'NR==2 {print $4}')" -lt "$floor" ]; do
+    [ "$announced" = 1 ] || echo "waiting for disk space (under ${floor} GB free)" >&2
+    announced=1
+    sleep 30
+done
+
 slot=""
 waiting=0
 while [ -z "$slot" ]; do

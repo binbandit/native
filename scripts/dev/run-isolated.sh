@@ -122,7 +122,14 @@ if [ "$build" = 1 ]; then
     # Incremental, so an unchanged tree reuses the last build. Package versions come from Package.resolved
     # without asking the remotes, so a build works offline and doesn't wait on the network.
     log="$derived/build.log"
+    # A build folder holds intermediates for one checkout. Built from another (a new worktree, the
+    # same name reused), it would keep both sets and double in size, so it starts over instead.
+    if [ -f "$derived/source-root" ] && [ "$(cat "$derived/source-root")" != "$root" ]; then
+        echo "$derived was built from $(cat "$derived/source-root"); starting it over for $root" >&2
+        rm -rf "${derived:?}/Build" "${derived:?}/Index.noindex" "${derived:?}/CompilationCache.noindex"
+    fi
     mkdir -p "$derived"
+    printf '%s\n' "$root" >"$derived/source-root"
     # Many agents build at once on a Mac someone is using: builds take turns at a lower priority.
     if ! "$root/scripts/dev/build-slot.sh" -project "$root/native.xcodeproj" -scheme native -configuration Debug \
         -skipPackageUpdates -derivedDataPath "$derived" NATIVE_BUNDLE_IDENTIFIER_SUFFIX=".dev.$name" build \
