@@ -59,11 +59,15 @@ public struct AgentSpec: Codable, Hashable, Sendable, Identifiable {
     /// keeping its transcript to resume quietly; once none is loaded, the agent's process ends too
     /// (`HostCore+IdleUnload.swift`). Nil keeps sessions loaded.
     public var idleUnloadTimeout: Int?
+    /// A command that names a session in the agent without asking a model (`/rename`), which the
+    /// host sends ahead of turns to keep the agent's name for it in step with Native's title
+    /// (`HostCore+AgentNames.swift`). Nil leaves names to the agent.
+    public var renameCommand: String?
 
     public init(
         id: String, name: String, command: String, args: [String] = [], env: [String: String] = [:],
         resolveExecutables: [String: String] = [:], requires: [String] = [], install: String? = nil,
-        authMethods: [AuthMethod] = [], idleUnloadTimeout: Int? = nil
+        authMethods: [AuthMethod] = [], idleUnloadTimeout: Int? = nil, renameCommand: String? = nil
     ) {
         self.id = id
         self.name = name
@@ -75,14 +79,16 @@ public struct AgentSpec: Codable, Hashable, Sendable, Identifiable {
         self.install = install
         self.authMethods = authMethods
         self.idleUnloadTimeout = idleUnloadTimeout
+        self.renameCommand = renameCommand
     }
 
     private enum CodingKeys: String, CodingKey {
         case id, name, command, args, env, resolveExecutables, requires, install, authMethods, idleUnloadTimeout
+        case renameCommand
     }
 
-    // `requires`, `install`, `authMethods` and `idleUnloadTimeout` came later: specs stored by older
-    // hosts and sent by older apps lack them.
+    // `requires`, `install`, `authMethods`, `idleUnloadTimeout` and `renameCommand` came later: specs
+    // stored by older hosts and sent by older apps lack them.
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(String.self, forKey: .id)
@@ -95,6 +101,7 @@ public struct AgentSpec: Codable, Hashable, Sendable, Identifiable {
         install = try container.decodeIfPresent(String.self, forKey: .install)
         authMethods = try container.decodeIfPresent([AuthMethod].self, forKey: .authMethods) ?? []
         idleUnloadTimeout = try container.decodeIfPresent(Int.self, forKey: .idleUnloadTimeout)
+        renameCommand = try container.decodeIfPresent(String.self, forKey: .renameCommand)
     }
 }
 

@@ -120,6 +120,7 @@ extension HostCore {
             let peer = link.peer,
             let agentSessionID = session.record.agentSessionID
         else { return }
+        await nameInAgent(session, beforeSending: turn.prompt, on: link, peer: peer)
         let generation = link.generation
         do {
             let response = try await peer.request(

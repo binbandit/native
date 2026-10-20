@@ -159,6 +159,11 @@ struct AgentManifest: Codable, Hashable, Sendable {
     /// For agents that keep a lot per loaded session, or that keep things after closing one, and
     /// can resume. Nil keeps sessions loaded.
     var idleUnloadTimeout: Int?
+    /// A command that names a session in the agent without asking a model, such as `/rename`. Native
+    /// names each session with it ahead of its turns: a new one with its first message (an agent
+    /// that titles sessions with a model of its own doesn't then), and any once Native's title for it
+    /// differs, so the agent's own session list shows Native's titles. Nil leaves names to the agent.
+    var renameCommand: String?
     /// Ways to sign the agent in that it accepts without advertising them, in ACP's shape
     /// (`AuthMethod`): a key in a variable it reads (`"type": "env_var"`), or a device code it
     /// offers only to clients that open links (`"type": "_native/link"`). For hosts nobody sits
@@ -169,7 +174,8 @@ struct AgentManifest: Codable, Hashable, Sendable {
         id: String, name: String, symbol: String? = nil, command: String, args: [String] = [],
         env: [String: String] = [:], resolveExecutables: [String: String] = [:], mcpConfig: String? = nil,
         icon: AgentIconSource? = nil, requires: [String] = [], setup: AgentSetupGuide? = nil,
-        idleSessionTimeout: Int? = nil, idleUnloadTimeout: Int? = nil, authMethods: [AuthMethod] = []
+        idleSessionTimeout: Int? = nil, idleUnloadTimeout: Int? = nil, renameCommand: String? = nil,
+        authMethods: [AuthMethod] = []
     ) {
         self.id = id
         self.name = name
@@ -184,6 +190,7 @@ struct AgentManifest: Codable, Hashable, Sendable {
         self.setup = setup
         self.idleSessionTimeout = idleSessionTimeout
         self.idleUnloadTimeout = idleUnloadTimeout
+        self.renameCommand = renameCommand
         self.authMethods = authMethods
     }
 
@@ -202,6 +209,7 @@ struct AgentManifest: Codable, Hashable, Sendable {
         setup = try container.decodeIfPresent(AgentSetupGuide.self, forKey: .setup)
         idleSessionTimeout = try container.decodeIfPresent(Int.self, forKey: .idleSessionTimeout)
         idleUnloadTimeout = try container.decodeIfPresent(Int.self, forKey: .idleUnloadTimeout)
+        renameCommand = try container.decodeIfPresent(String.self, forKey: .renameCommand)
         authMethods = try container.decodeIfPresent([AuthMethod].self, forKey: .authMethods) ?? []
     }
 }
