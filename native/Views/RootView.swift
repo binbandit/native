@@ -190,46 +190,48 @@ struct RootView: View {
                 } action: {
                     sidebarWidth.value = $0
                 }
-                .platformMinimumContentWidth(DS.Window.sidebarMinWidth)
-                .navigationSplitViewColumnWidth(min: DS.Window.sidebarMinWidth, ideal: sidebarWidth.value, max: 380)
+                .sidebarColumnWidth(ideal: sidebarWidth.value)
                 .toolbar {
-                    ToolbarItem {
-                        SidebarCollapseButton(isExpanded: columnVisibility != .detailOnly) {
-                            withAnimation {
-                                columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
+                    // The rail prototype has no room for the column's toolbar; it carries its own toggle.
+                    if showsSidebarToolbar {
+                        ToolbarItem {
+                            SidebarCollapseButton(isExpanded: columnVisibility != .detailOnly) {
+                                withAnimation {
+                                    columnVisibility = columnVisibility == .detailOnly ? .all : .detailOnly
+                                }
                             }
                         }
-                    }
-                    .sharedBackgroundVisibility(.hidden)
-                    if releaseChannel.isNightly {
-                        ToolbarItem {
-                            NightlyMark()
-                                .foregroundStyle(.dsTextTertiary)
-                        }
                         .sharedBackgroundVisibility(.hidden)
-                    }
-                    // Pushes the toggle to the sidebar's leading edge, next to the window controls, and
-                    // back and forward to its trailing edge, by the content they navigate.
-                    ToolbarSpacer(.flexible)
-                    // The update button: right-aligned before back and forward, and still there when
-                    // the sidebar is hidden. It shows only when an update needs the user.
-                    if let updates, updates.showsToolbarButton {
-                        ToolbarItem {
-                            UpdateToolbarButton(controller: updates)
+                        if releaseChannel.isNightly {
+                            ToolbarItem {
+                                NightlyMark()
+                                    .foregroundStyle(.dsTextTertiary)
+                            }
+                            .sharedBackgroundVisibility(.hidden)
                         }
-                        .sharedBackgroundVisibility(.hidden)
-                    }
-                    // They belong to the sidebar's header, so they go away with it (⌘[ and ⌘] still work).
-                    if columnVisibility != .detailOnly {
-                        ToolbarItem {
-                            HistoryNavigationButtons(
-                                canGoBack: model.canGoBack,
-                                canGoForward: model.canGoForward,
-                                onBack: model.goBack,
-                                onForward: model.goForward
-                            )
+                        // Pushes the toggle to the sidebar's leading edge, next to the window controls, and
+                        // back and forward to its trailing edge, by the content they navigate.
+                        ToolbarSpacer(.flexible)
+                        // The update button: right-aligned before back and forward, and still there when
+                        // the sidebar is hidden. It shows only when an update needs the user.
+                        if let updates, updates.showsToolbarButton {
+                            ToolbarItem {
+                                UpdateToolbarButton(controller: updates)
+                            }
+                            .sharedBackgroundVisibility(.hidden)
                         }
-                        .sharedBackgroundVisibility(.hidden)
+                        // They belong to the sidebar's header, so they go away with it (⌘[ and ⌘] still work).
+                        if columnVisibility != .detailOnly {
+                            ToolbarItem {
+                                HistoryNavigationButtons(
+                                    canGoBack: model.canGoBack,
+                                    canGoForward: model.canGoForward,
+                                    onBack: model.goBack,
+                                    onForward: model.goForward
+                                )
+                            }
+                            .sharedBackgroundVisibility(.hidden)
+                        }
                     }
                 }
         } detail: {
@@ -257,7 +259,46 @@ struct RootView: View {
         }
     }
 
+    @ViewBuilder
     private var sidebar: some View {
+        #if DEBUG
+        // A prototype of other sidebars, only with `-sidebarDesign a|b|c|d`; `-sidebarDesignFixture`
+        // fills any of them, today's included, with tasks in every state.
+        if let design = SidebarDesign.launchChoice {
+            SidebarDesignSidebar(design: design, destinations: sidebarDesignDestinations)
+                .environment(\.sidebarTaskInsights, AppSidebarTaskInsights.make(model: model, git: git, gitHub: gitHub))
+                .sidebarDesignFixture(model)
+        } else {
+            standardSidebar
+                .sidebarDesignFixture(model)
+        }
+        #else
+        standardSidebar
+        #endif
+    }
+
+    private var showsSidebarToolbar: Bool {
+        #if DEBUG
+        !SidebarDesign.isRail
+        #else
+        true
+        #endif
+    }
+
+    #if DEBUG
+    private var sidebarDesignDestinations: SidebarDesignDestinations {
+        let workflowsShown =
+            model.plugins.isEnabled(BuiltInPlugins.automation.manifest.id) || !automation.workflows.runs.isEmpty
+        return SidebarDesignDestinations(
+            isShowingPullRequests: showsPullRequests,
+            showPullRequests: { showsPullRequests = true },
+            workflows: workflowsShown
+                ? (isShown: automationPage == .workflows, show: { automationPage = .workflows }) : nil
+        )
+    }
+    #endif
+
+    private var standardSidebar: some View {
         SidebarView {
             TranscriptSearchNavItem()
             PullRequestsNavItem(isSelected: showsPullRequests) { showsPullRequests = true }

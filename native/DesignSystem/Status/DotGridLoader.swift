@@ -18,9 +18,17 @@ public struct DotGridLoader: View {
         self.pattern = pattern
     }
 
+    #if DEBUG
+    /// `-dsStillLoaders YES` draws the still grid, for screenshots of a window behind others, where
+    /// the animation pauses mid-pulse. Off by default.
+    private static let isStill = UserDefaults.standard.bool(forKey: "dsStillLoaders")
+    #else
+    private static let isStill = false
+    #endif
+
     public var body: some View {
         Group {
-            if reduceMotion {
+            if reduceMotion || Self.isStill {
                 stillGrid
             } else {
                 DotGridPulse(pattern: pattern)
