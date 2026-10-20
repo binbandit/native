@@ -93,7 +93,9 @@ import Testing
 
     @Test func grantsReadAsOneSentence() {
         #expect(LinkGrants.standard.abilities == "follow and drive tasks")
-        #expect(LinkGrants(manageHost: true).abilities == "follow and drive tasks and install updates")
+        #expect(
+            LinkGrants(runCommands: true).abilities
+                == "follow and drive tasks, and run commands and edit files in its projects")
         #expect(
             LinkGrants(managePlugins: true, manageHost: true, runCommands: true).abilities
                 == "follow and drive tasks, run commands and edit files in its projects, install updates, and turn plugins on and off"

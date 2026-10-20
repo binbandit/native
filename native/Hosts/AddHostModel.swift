@@ -50,12 +50,13 @@ final class AddHostModel {
     /// login shell's, which carries the user's ssh-agent.
     init(
         register: @escaping (PairedHost) -> Void, environment: @escaping () async -> [String: String],
-        input: String = "", phase: Phase = .entering
+        input: String = "", phase: Phase = .entering, approvalPage: URL? = nil
     ) {
         self.register = register
         self.environment = environment
         self.input = input
         self.phase = phase
+        self.approvalPage = approvalPage
         if case .confirming(let offer) = phase { requested = Self.defaultRequest.intersection(offer.grants) }
     }
 
@@ -90,10 +91,7 @@ final class AddHostModel {
         progress = nil
         var device = RemoteHosts.deviceInfo
         device.requestedGrants = requested.intersection(offer.grants)
-        var invite = offer.invite
-        if RemoteHostsTesting.isLoopbackOnly {
-            invite.addresses = invite.addresses.filter { $0.kind == .loopback }
-        }
+        let invite = offer.invite
         let tried = invite.addresses.filter { $0.port != nil }.map(\.label).joined(separator: ", ")
         work?.cancel()
         work = Task { [weak self] in
@@ -128,6 +126,23 @@ final class AddHostModel {
         reach(destination)
     }
 
+    /// Whether Try Again can run the same attempt: over SSH, a new link comes with it.
+    var canTryAgain: Bool {
+        guard case .failed(let failure) = phase else { return false }
+        return failure.isWorthRetrying && lastDestination != nil
+    }
+
+    /// Whether the last attempt ran pair over SSH, rather than using a pasted link.
+    var wasOverSSH: Bool {
+        lastDestination != nil
+    }
+
+    /// Back to an empty field, for a new link.
+    func startOver() {
+        input = ""
+        edit()
+    }
+
     /// Back to the field, keeping what was typed.
     func edit() {
         stop()
@@ -154,6 +169,11 @@ final class AddHostModel {
 
     private func offer(_ offer: AddHostOffer) {
         guard !offer.invite.isExpired(at: .now) else { return fail(.expired(host: offer.hostName)) }
+        var offer = offer
+        if RemoteHostsTesting.isLoopbackOnly {
+            // Only what will be tried, so a stand-in host on this Mac shows no real addresses either.
+            offer.invite.addresses = offer.invite.addresses.filter { $0.kind == .loopback }
+        }
         requested = Self.defaultRequest.intersection(offer.grants)
         phase = .confirming(offer)
         // A pasted link has nobody to say it expired; an SSH one hears it from pair.
@@ -253,7 +273,7 @@ final class AddHostModel {
 
 /// A pairing link read and ready to confirm: who it pairs with and what it would give.
 struct AddHostOffer: Equatable {
-    let invite: PairingInvite
+    var invite: PairingInvite
     /// Set when Add Host ran pair over SSH.
     var sshDestination: String?
     /// The Native that printed it, when known (over SSH).

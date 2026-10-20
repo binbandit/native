@@ -88,7 +88,8 @@ public enum LinkSSHPairing {
             [ -n "$found" ] || exit \(ScriptStatus.notInstalled)
             helper="$found/Contents/Library/LoginItems/Native Host.app/Contents/MacOS/Native Host"
             # An older helper ignores its arguments and would start serving a host, so check first.
-            if [ ! -x "$helper" ] || ! /usr/bin/grep -qa \(quoted(LinkPairCommand.marker)) "$helper"; then
+            # The whole folder: a development build keeps its code in a library beside the executable.
+            if [ ! -x "$helper" ] || ! /usr/bin/grep -rqa \(quoted(LinkPairCommand.marker)) "${helper%/*}"; then
                 /usr/bin/defaults read "$found/Contents/Info" CFBundleShortVersionString 2>/dev/null
                 exit \(ScriptStatus.tooOld)
             fi
