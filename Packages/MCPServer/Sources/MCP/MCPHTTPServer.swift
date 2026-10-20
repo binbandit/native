@@ -47,11 +47,13 @@ public final class MCPHTTPServer<Context: Sendable>: Sendable {
         port.flatMap { URL(string: "http://127.0.0.1:\($0)/mcp/\(token)") }
     }
 
-    /// Listens on a port the system picks, returning once connections are accepted.
-    public func start() async throws {
+    /// Listens on `port`, or on one the system picks when it's nil, returning once connections are
+    /// accepted. Throws `MCPPortInUse` when `port` is taken.
+    public func start(on port: UInt16? = nil) async throws {
         let parameters = NWParameters.tcp
         // Loopback only: nothing off this Mac can reach the server.
-        parameters.requiredLocalEndpoint = .hostPort(host: .ipv4(.loopback), port: .any)
+        parameters.requiredLocalEndpoint = .hostPort(
+            host: .ipv4(.loopback), port: port.flatMap(NWEndpoint.Port.init(rawValue:)) ?? .any)
         let listener = try NWListener(using: parameters)
         let (states, continuation) = AsyncStream.makeStream(of: NWListener.State.self)
         listener.stateUpdateHandler = { continuation.yield($0) }
@@ -68,6 +70,9 @@ public final class MCPHTTPServer<Context: Sendable>: Sendable {
                 return
             case .failed(let error), .waiting(let error):
                 listener.cancel()
+                if let port, error == .posix(.EADDRINUSE) {
+                    throw MCPPortInUse(port: port)
+                }
                 throw error
             case .cancelled:
                 throw CancellationError()
@@ -134,4 +139,9 @@ public final class MCPHTTPServer<Context: Sendable>: Sendable {
         }
         await connection.send(response.value)
     }
+}
+
+/// The port a server was asked to listen on is taken.
+public struct MCPPortInUse: Error, Hashable, Sendable {
+    public var port: UInt16
 }
