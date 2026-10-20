@@ -95,7 +95,8 @@ build_package() {
     touch "$work/modules/$name.package"
 }
 
-# The Swift files under a folder, into the array `files`.
+# The Swift files under a folder, into the array `files`. Expand it as ${files[@]+"${files[@]}"}:
+# macOS's bash 3.2 calls an empty array unbound under `set -u`.
 swift_files() {
     files=()
     while IFS= read -r -d '' file; do files+=("$file"); done < <(find "$1" -name "*.swift" -print0)
@@ -117,8 +118,10 @@ build_module() {
         [ "$dependency" != "$name" ] && build_module "$dependency"
     done
     swift_files "$dir"
+    # A target with no Swift in it (a C library) has no Swift module to emit.
+    [ ${#files[@]} -gt 0 ] || return 0
     xcrun --sdk iphonesimulator swiftc -emit-module -parse-as-library -module-name "$name" "${flags[@]}" \
-        -emit-module-path "$work/modules/$name.swiftmodule" "${files[@]}" >/dev/null
+        -emit-module-path "$work/modules/$name.swiftmodule" ${files[@]+"${files[@]}"} >/dev/null
 }
 
 for module in $(grep -rhoE "^(@[a-zA-Z_]+ )*import [A-Za-z_]+" "$work/sources" | awk '{print $NF}' | sort -u || true); do
@@ -127,7 +130,7 @@ done
 
 swift_files "$work/sources"
 output=$(xcrun --sdk iphonesimulator swiftc -typecheck -parse-as-library -default-isolation MainActor \
-    -enable-upcoming-feature MemberImportVisibility "${flags[@]}" "${files[@]}" 2>&1 || true)
+    -enable-upcoming-feature MemberImportVisibility "${flags[@]}" ${files[@]+"${files[@]}"} 2>&1 || true)
 # At their real paths, so scripts/check-warnings.sh can read a log of this the way it reads a build's.
 diagnostics=$(echo "$output" | grep -E "(error|warning):" | sed -e "s|$work/sources/|$root/|" | sort -u || true)
 if [ -n "$diagnostics" ]; then

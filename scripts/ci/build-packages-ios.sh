@@ -64,7 +64,7 @@ build() {
 }
 
 failed=""
-for name in "${names[@]}"; do
+for name in ${names[@]+"${names[@]}"}; do
     echo "::group::$name"
     started=$SECONDS
     if build "$name"; then

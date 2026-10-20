@@ -394,8 +394,8 @@ Releases cache neither: an archive that ships compiles from scratch.
 
 The Mac's builds never compile for iOS, so `ios.yml` does, on one runner: daily at 06:00 UTC, on
 demand (`gh workflow run ios.yml --ref <branch>`), and on pull requests that touch what the iPad or
-iPhone compiles (the companion, `Packages/`, the design system, the platform adapters, the shared
-transcript pieces, these scripts). Not on pushes, which already take most of the five runners. Each
+iPhone compiles (the companion and its icons, `Packages/`, the design system, the platform adapters,
+the shared transcript pieces, these scripts). Not on pushes, which already take most of the five runners. Each
 step runs even when the one before it failed, so one run reports every break:
 
 - **The iPhone companion** for the iOS Simulator. It compiles some of the Mac's transcript files by
@@ -409,8 +409,11 @@ step runs even when the one before it failed, so one run reports every break:
   `scripts/check-ios.sh native/Platform` (the design system always comes along).
 
 Our own files build without warnings for iOS too: every log goes through `scripts/check-warnings.sh`.
-Package checkouts and an iOS compilation cache are cached as in the Mac builds (saved from `main`,
-1 GB at most).
+It restores the Mac builds' package checkouts, which pin the same versions, and saves no caches of its
+own beyond the artwork: the repository's 10 GB is full of the Mac builds' compilation caches, which a
+daily one would push out. Its compilation cache lasts for the run, so dependencies the packages
+share (ACP, Exec) compile once instead of once per package: about 2.5 minutes for all of them
+locally, where building each from nothing took 8.
 
 **Not yet on iPad.** The app target is one module whose folders use each other freely (models,
 plugins, commands, settings, views), so the smallest set of folders that includes `native/Models`

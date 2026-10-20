@@ -22,6 +22,8 @@ on:
       - scripts/check-warnings.sh
       - scripts/ci/build-packages-ios.sh
       - scripts/companion/**
+      - design/app-icon/**
+      - native/AppIcon.icon/**
       - .github/workflows/ios.yml
   workflow_dispatch:
 
@@ -47,8 +49,8 @@ jobs:
       - uses: actions/checkout@v5
       - name: Cache locations
         run: |
-          echo "SOURCE_PACKAGES=$HOME/Library/Caches/native-ci/SourcePackages-iOS" >> "$GITHUB_ENV"
-          echo "COMPILATION_CACHE=$HOME/Library/Caches/native-ci/CompilationCache-iOS" >> "$GITHUB_ENV"
+          echo "SOURCE_PACKAGES=$HOME/Library/Caches/native-ci/SourcePackages" >> "$GITHUB_ENV"
+          echo "COMPILATION_CACHE=$RUNNER_TEMP/CompilationCache" >> "$GITHUB_ENV"
       - name: Cache the icon artwork
         uses: actions/cache@v4
         with:
@@ -58,32 +60,26 @@ jobs:
           restore-keys: lfs-icon-artwork-
       - name: Fetch the icon artwork
         run: git lfs pull --include "$ICON_ARTWORK"
-      # Package checkouts (the companion's tree-sitter grammars, Sentry for NativeDiagnostics), as in
-      # the Mac builds, in a folder of their own.
-      - name: Cache Swift package checkouts
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.SOURCE_PACKAGES }}
-          key: source-packages-ios-${{ runner.os }}-${{ hashFiles('Companion/NativeCompanion.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved', 'Packages/*/Package.resolved') }}
-          restore-keys: source-packages-ios-${{ runner.os }}-
-      # Xcode's compilation cache, as in the Mac builds (scripts/release/check.sh explains it). Saved
-      # only from main, so pull requests read it without crowding the repository's caches.
-      - name: Restore the compilation cache
-        id: compilation-cache
+      # The Mac builds' package checkouts, which pin everything these builds use (tree-sitter and its
+      # grammars, Sentry) at the same versions. Restored only: the repository's caches are full of the
+      # Mac builds' own, and a daily build's would only push theirs out.
+      - name: Restore Swift package checkouts
         uses: actions/cache/restore@v4
         with:
-          path: ${{ env.COMPILATION_CACHE }}
-          key: compilation-cache-${{ runner.os }}-iOS-${{ github.sha }}
-          restore-keys: compilation-cache-${{ runner.os }}-iOS-
+          path: ${{ env.SOURCE_PACKAGES }}
+          key: source-packages-${{ runner.os }}-${{ hashFiles('native.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+          restore-keys: source-packages-${{ runner.os }}-
 
-      # The three builds run whatever the one before did, so one run reports every break.
+      # The three builds run whatever the one before did, so one run reports every break. Xcode's
+      # compilation cache (scripts/release/check.sh explains it) lasts for the run only: the packages
+      # share dependencies (ACP, Exec), and with it each compiles once instead of once per package.
       - name: Build the companion for the iOS Simulator
         run: |
           xcodebuild build -project Companion/NativeCompanion.xcodeproj -scheme NativeCompanion -configuration Debug \
             -destination 'generic/platform=iOS Simulator' -derivedDataPath "$RUNNER_TEMP/Companion" \
             -clonedSourcePackagesDirPath "$SOURCE_PACKAGES" CODE_SIGNING_ALLOWED=NO \
             COMPILATION_CACHE_ENABLE_CACHING=YES COMPILATION_CACHE_CAS_PATH="$COMPILATION_CACHE" \
-            COMPILATION_CACHE_LIMIT_SIZE=1G > "$RUNNER_TEMP/companion.log" 2>&1 || {
+            COMPILATION_CACHE_LIMIT_SIZE=2G > "$RUNNER_TEMP/companion.log" 2>&1 || {
               grep -E '^[^[:space:]|].*error: ' "$RUNNER_TEMP/companion.log" | sort -u
               tail -n 30 "$RUNNER_TEMP/companion.log"
               exit 1
@@ -104,12 +100,6 @@ jobs:
           scripts/check-ios.sh native/Platform 2>&1 | tee "$RUNNER_TEMP/ipad.log"
           scripts/check-warnings.sh "$RUNNER_TEMP/ipad.log"
 
-      - name: Save the compilation cache
-        if: success() && github.event_name != 'pull_request' && steps.compilation-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
-        with:
-          path: ${{ env.COMPILATION_CACHE }}
-          key: ${{ steps.compilation-cache.outputs.cache-primary-key }}
       - name: Upload the build logs
         if: failure()
         uses: actions/upload-artifact@v4
