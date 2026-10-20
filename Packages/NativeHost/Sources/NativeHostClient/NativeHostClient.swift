@@ -40,6 +40,10 @@ public actor NativeHostClient {
         /// Native.app's updater does.
         case appUpdateCheckRequested
         case appUpdateInstallRequested(HostUpdateStatus.When)
+        /// Something the user may want to hear about (docs/durability.md, "Notifications").
+        case notificationPosted(HostNotification)
+        /// Notifications that stopped being news: take them down.
+        case notificationsCleared(NotificationsClearedMessage)
     }
 
     /// Called for every event, in order. A response to a request returns only after every handler
@@ -70,6 +74,9 @@ public actor NativeHostClient {
     /// Sessions this client follows, with the last event seen, to re-attach without gaps.
     var attachments: [HostSessionID: Int?] = [:]
     private(set) var epoch: UUID?
+    /// Notifications that aren't `Event`s (a remote command's output), by method, in order with
+    /// everything else. See `HostNotificationRoute`.
+    var notificationRoutes: [String: any HostNotificationRoute] = [:]
 
     /// How long the host may stay unreachable before the state says so.
     private static let unreachableAfter = 4
@@ -206,9 +213,12 @@ public actor NativeHostClient {
     }
 
     private func receive(_ event: JSONRPCPeer.Event, generation: Int) async {
-        guard generation == self.generation, case .notification(let message) = event,
-            let event = Self.event(from: message)
-        else { return }
+        guard generation == self.generation, case .notification(let message) = event else { return }
+        if let route = notificationRoutes[message.method] {
+            await route.receive(message)
+            return
+        }
+        guard let event = Self.event(from: message) else { return }
         if case .sessionEvent(let session, let step) = event, attachments.keys.contains(session) {
             attachments[session] = step.event.seq
         }
@@ -247,6 +257,12 @@ public actor NativeHostClient {
             return (try? message.params(as: HostUpdateInstallParams.self)).map { .appUpdateInstallRequested($0.when) }
         case Method.pluginsChanged:
             return (try? message.params(as: PluginsChangedNotification.self)).map { .pluginsChanged($0.plugins) }
+        case Method.notificationPosted:
+            return (try? message.params(as: NotificationPostedMessage.self)).map {
+                .notificationPosted($0.notification)
+            }
+        case Method.notificationsCleared:
+            return (try? message.params(as: NotificationsClearedMessage.self)).map(Event.notificationsCleared)
         default:
             return nil
         }

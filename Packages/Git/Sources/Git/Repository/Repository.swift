@@ -88,7 +88,11 @@ public struct Repository: Sendable, Hashable {
         do {
             result = try await body(["GIT_INDEX_FILE": scratch])
         } catch {
-            _ = try? await git.runTool("rm", ["-f", "--", scratch], in: root)
+            // In a task of its own: a cancelled caller (a snapshot past its deadline) starts no
+            // commands, and would leave the scratch index behind.
+            let git = git
+            let root = root
+            await Task { _ = try? await git.runTool("rm", ["-f", "--", scratch], in: root) }.value
             throw error
         }
         _ = try await git.runTool("rm", ["-f", "--", scratch], in: root)

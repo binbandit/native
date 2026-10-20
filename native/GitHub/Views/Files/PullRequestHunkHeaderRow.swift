@@ -17,3 +17,21 @@ struct PullRequestHunkHeaderRow: View {
         .background(.dsHover)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Hunk headers") {
+    DSPreviewPair {
+        PullRequestPagePreview { model, _ in
+            VStack(alignment: .leading, spacing: DS.Space.sm) {
+                ForEach(model.files.map(\.path), id: \.self) { path in
+                    if let hunk = model.hunks[path]?.first {
+                        PullRequestHunkHeaderRow(hunk: hunk)
+                    }
+                }
+            }
+            .codeTextStyle(.compact)
+        }
+        .frame(width: 760)
+    }
+}
+#endif

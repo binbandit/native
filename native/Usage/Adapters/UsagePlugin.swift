@@ -16,13 +16,22 @@ struct UsagePlugin: NativePlugin {
     let contextReports = ContextReports()
     let providerReports = ProviderUsageReports()
     let notifications: UsageNotifications
+    /// Notifications from Native's hosts (docs/durability.md, "Notifications"), through the same
+    /// notification center.
+    let hostNotifications: HostNotificationFeed
     let activity = ActivityLog(store: ActivityFileStore())
     private let clockEvents: SystemClockEvents
 
     init() {
-        let notifications = UsageNotifications(poster: UserNotificationPoster(), activity: PlatformAppActivity())
+        let poster = UserNotificationPoster()
+        let appActivity = PlatformAppActivity()
+        let notifications = UsageNotifications(poster: poster, activity: appActivity)
+        let hostNotifications = HostNotificationFeed(poster: poster, activity: appActivity)
+        notifications.isCoveredByHost = { [weak hostNotifications] in hostNotifications?.covers($0) == true }
+        notifications.onHostResponse = { [weak hostNotifications] in hostNotifications?.respond($0) }
         let limits = UsageLimits(store: UsageLimitsFileStore(), alerts: notifications)
         self.notifications = notifications
+        self.hostNotifications = hostNotifications
         self.limits = limits
         clockEvents = SystemClockEvents { [weak limits] in limits?.processDue() }
     }

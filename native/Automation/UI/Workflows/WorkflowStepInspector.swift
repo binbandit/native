@@ -52,3 +52,31 @@ struct WorkflowStepInspector<Transcript: View>: View {
         .padding(DS.Space.lg)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Step inspector") {
+    DSPreviewPair {
+        HStack(alignment: .top, spacing: DS.Space.xl) {
+            if let step = AutomationPreviewFixtures.runningRun?.steps[1] {
+                WorkflowStepInspector(step: step, send: { _ in }) {
+                    Text("The step's transcript shows here.")
+                        .font(.dsBody)
+                        .foregroundStyle(.dsTextTertiary)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                .frame(width: 380, height: 420)
+            }
+            // Stopped and waiting on the user, with the reply box.
+            if let step = AutomationPreviewFixtures.blockedRun?.steps[1] {
+                WorkflowStepInspector(step: step, send: { _ in }) {
+                    Text("The step's transcript shows here.")
+                        .font(.dsBody)
+                        .foregroundStyle(.dsTextTertiary)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                .frame(width: 380, height: 420)
+            }
+        }
+    }
+}
+#endif

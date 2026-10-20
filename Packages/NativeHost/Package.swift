@@ -3,7 +3,8 @@ import PackageDescription
 
 let package = Package(
     name: "NativeHost",
-    // The protocol and client build for iOS too, for the companion app; the host itself is macOS only.
+    // The protocol and client build for iOS too, for the companion app; the host builds for macOS and
+    // Linux (docs/durability.md, "Any machine can be a host").
     platforms: [.macOS(.v15), .iOS(.v18)],
     products: [
         /// The background host: agent processes, sessions, the store and the IPC server.
@@ -18,30 +19,56 @@ let package = Package(
         .package(path: "../ACP"),
         .package(path: "../Exec"),
         .package(path: "../HostUpdater"),
+        .package(path: "../Orchestration"),
+        .package(path: "../MCPServer"),
+        .package(path: "../SessionTitling"),
+        // Tests only: Git running against a host through `RemoteCommandRunner`.
+        .package(path: "../Git"),
     ],
     targets: [
         .target(name: "NativeHostProtocol", dependencies: ["ACP"]),
         .target(name: "UserShell"),
+        /// The system SQLite on Linux, which Apple's SDKs have as the `SQLite3` module.
+        .systemLibrary(name: "CSQLite"),
         /// The host's core: portable (Foundation only), so other machines can run it.
-        .target(name: "NativeHost", dependencies: ["NativeHostProtocol", "ACP"]),
+        .target(
+            name: "NativeHost",
+            dependencies: [
+                "NativeHostProtocol", "ACP", .product(name: "Exec", package: "Exec"),
+                .product(name: "NativeOrchestration", package: "Orchestration"),
+                .product(name: "MCP", package: "MCPServer"),
+                .product(name: "SessionTitling", package: "SessionTitling"),
+                .target(name: "CSQLite", condition: .when(platforms: [.linux])),
+            ]),
         /// The Mac's side of the host: code-signature checks, boot time, the login-shell environment.
         .target(
             name: "NativeHostMac",
             dependencies: [
                 "NativeHost", "NativeHostProtocol", "UserShell", .product(name: "Exec", package: "Exec"),
                 .product(name: "HostUpdater", package: "HostUpdater"),
+                .product(name: "SessionTitling", package: "SessionTitling"),
+                .product(name: "NativeOrchestration", package: "Orchestration"),
             ]),
         .target(
             name: "NativeHostClient",
             dependencies: ["NativeHostProtocol", "ACP", .product(name: "Exec", package: "Exec")]),
-        .executableTarget(name: "native-host", dependencies: ["NativeHost", "NativeHostMac", "NativeHostProtocol"]),
+        /// Elsewhere than macOS it runs without the Mac's pieces (main.swift says which).
+        .executableTarget(
+            name: "native-host",
+            dependencies: [
+                "NativeHost", .target(name: "NativeHostMac", condition: .when(platforms: [.macOS])),
+                "NativeHostProtocol", "UserShell",
+            ]),
         /// A scriptable ACP agent for the crash-recovery tests.
         .executableTarget(name: "FakeACPAgent", dependencies: ["NativeHostProtocol", "ACP"]),
         .testTarget(
             name: "NativeHostTests",
             dependencies: [
-                "NativeHost", "NativeHostMac", "NativeHostClient", "NativeHostProtocol", "ACP",
-                .product(name: "Exec", package: "Exec"), "native-host", "FakeACPAgent",
+                "NativeHost", .target(name: "NativeHostMac", condition: .when(platforms: [.macOS])),
+                "NativeHostClient", "NativeHostProtocol", "ACP", .product(name: "Exec", package: "Exec"),
+                .product(name: "Git", package: "Git"), "native-host",
+                "FakeACPAgent", .product(name: "SessionTitling", package: "SessionTitling"),
+                .product(name: "NativeOrchestration", package: "Orchestration"),
             ]
         ),
     ]

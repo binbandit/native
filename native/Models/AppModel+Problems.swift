@@ -69,7 +69,7 @@ extension AppModel {
 
     /// Asks the agent to delete its copy of a deleted task, starting the agent if it's stopped.
     private func deleteAgentCopy(of key: SessionKey) async throws {
-        guard let runtime = await ensureRunning(key.agent), let connection = runtime.connection else {
+        guard let runtime = await ensureRunning(for: key), let connection = runtime.connection else {
             throw ProjectProblemRetryFailure(errorDescription: startFailure(of: key.agent))
         }
         // An agent that can't delete sessions anymore has nothing left to do.

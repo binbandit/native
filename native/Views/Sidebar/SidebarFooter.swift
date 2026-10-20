@@ -57,3 +57,13 @@ private struct FooterGlyph: View {
             .trackHover($isHovered)
     }
 }
+
+#if DEBUG
+#Preview("Sidebar footer") {
+    DSPreviewPair {
+        SidebarFooter()
+            .frame(width: DS.Size.sidebarWidth)
+    }
+    .sidebarPreviewEnvironment(AppModel.preview())
+}
+#endif

@@ -8,6 +8,8 @@ struct SessionView: View {
     @State private var openSubagent: SessionID?
     /// Whether the inspector shows the task's git changes (⌘⇧D) instead of a subagent.
     @State private var showsChanges = false
+    /// Which changes the inspector shows; the files-changed card's Review points it at the turn.
+    @State private var changesReview = GitChangesReview()
     @Environment(GitStore.self) private var git
     @Environment(GitHubModel.self) private var gitHub
     @Environment(AppModel.self) private var model
@@ -18,6 +20,19 @@ struct SessionView: View {
     private static let subagentInspectorWidth: CGFloat = 420
 
     var body: some View {
+        // A prototype of where the session's tools could live, only with `-sessionChrome a|b|c|d`.
+        #if DEBUG && NATIVE_SESSION_CHROME_WIP
+        if let direction = SessionChromeDirection.launchChoice {
+            SessionChromeScreen(session: session, direction: direction)
+        } else {
+            standardBody
+        }
+        #else
+        standardBody
+        #endif
+    }
+
+    private var standardBody: some View {
         TranscriptView(session: session) { id in
             openInspector(Self.subagentInspectorWidth) { openSubagent = id }
         }
@@ -59,7 +74,7 @@ struct SessionView: View {
                 SubagentInspector(subagent: subagent, child: session.child(id))
                     .sessionInspectorColumn(min: 340, ideal: Self.subagentInspectorWidth, max: 640)
             } else if showsChanges {
-                GitChangesInspector(model: repository) {
+                GitChangesInspector(model: repository, review: changesReview, session: session) {
                     Task { await GitHubGitWiring.createPullRequest(from: repository, gitHub: gitHub) }
                 }
                 .sessionInspectorColumn(
@@ -118,7 +133,7 @@ struct SessionView: View {
         let gitHub = gitHub
         let canCommit = repository.canCommit
         return TurnChangesActions(
-            review: { showsChangesBinding.wrappedValue = true },
+            review: { reviewTurn(file: nil) },
             commitForm: canCommit
                 ? { isPresented in
                     AnyView(
@@ -127,8 +142,15 @@ struct SessionView: View {
                             onCreatePullRequest: {
                                 Task { await GitHubGitWiring.createPullRequest(from: repository, gitHub: gitHub) }
                             }))
-                } : nil
+                } : nil,
+            reviewFile: GitChangesReview.isEnabled ? { reviewTurn(file: $0) } : nil
         )
+    }
+
+    /// Opens the changes inspector on the latest turn's changes, and with `file`, that file's.
+    private func reviewTurn(file: String?) {
+        changesReview.showTurn(of: session, file: file)
+        showsChangesBinding.wrappedValue = true
     }
 
     /// The changes inspector, making room for it before it opens.

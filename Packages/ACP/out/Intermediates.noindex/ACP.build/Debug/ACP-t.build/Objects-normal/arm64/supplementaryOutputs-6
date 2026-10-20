@@ -1,0 +1,23 @@
+{
+  "/Users/brayden/Developer/native/native/Packages/ACP/Sources/ACP/Prompt/MessageAttachment.swift" : {
+    "const-values" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/MessageAttachment.swiftconstvalues",
+    "dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/MessageAttachment.d",
+    "diagnostics" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/MessageAttachment.dia",
+    "object" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/MessageAttachment.o",
+    "swift-dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/MessageAttachment.swiftdeps"
+  },
+  "/Users/brayden/Developer/native/native/Packages/ACP/Sources/ACP/Prompt/PromptAttachment+Loading.swift" : {
+    "const-values" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/PromptAttachment+Loading.swiftconstvalues",
+    "dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/PromptAttachment+Loading.d",
+    "diagnostics" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/PromptAttachment+Loading.dia",
+    "object" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/PromptAttachment+Loading.o",
+    "swift-dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/PromptAttachment+Loading.swiftdeps"
+  },
+  "/Users/brayden/Developer/native/native/Packages/ACP/Sources/ACP/Prompt/PromptAttachment.swift" : {
+    "const-values" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/PromptAttachment.swiftconstvalues",
+    "dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/PromptAttachment.d",
+    "diagnostics" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/PromptAttachment.dia",
+    "object" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/PromptAttachment.o",
+    "swift-dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/PromptAttachment.swiftdeps"
+  }
+}

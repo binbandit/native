@@ -46,3 +46,18 @@ struct NewSessionItem: View {
         .disabled(model.projects.all.isEmpty || !model.agents.contains { model.canCreateSession(with: $0.agent.id) })
     }
 }
+
+#if DEBUG
+#Preview("New session item") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.lg) {
+            NewSessionItem()
+                .sidebarPreviewEnvironment(AppModel.preview())
+            // Disabled until there's a project to start in.
+            NewSessionItem()
+                .sidebarPreviewEnvironment(AppModel.preview(.empty))
+        }
+        .frame(width: DS.Size.sidebarWidth)
+    }
+}
+#endif

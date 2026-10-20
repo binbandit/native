@@ -23,11 +23,11 @@ extension NativeCommand {
 
 /// "Check for Updates…" in the app menu, under About.
 struct UpdateCommands: Commands {
-    let commands: CommandRegistry
+    let menu: CommandMenuContext
 
     var body: some Commands {
         CommandGroup(after: .appInfo) {
-            CommandMenuItem(.appCheckForUpdates, in: commands)
+            CommandMenuItem(.appCheckForUpdates, in: menu)
         }
     }
 }

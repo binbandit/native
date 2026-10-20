@@ -33,8 +33,11 @@ final class SocketServer: Sendable {
             while true {
                 let client = Self.acceptConnection(descriptor)
                 guard client >= 0 else { return }
+                // Elsewhere, listening already set the process to ignore SIGPIPE (`UnixSocket`).
+                #if canImport(Darwin)
                 var on: Int32 = 1
                 setsockopt(client, SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size))
+                #endif
                 do {
                     try verifier?.verify(socket: client)
                 } catch {

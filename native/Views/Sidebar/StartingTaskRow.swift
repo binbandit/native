@@ -56,3 +56,18 @@ extension String {
         isEmpty ? nil : self
     }
 }
+
+#if DEBUG
+#Preview("Starting task") {
+    let app = SidebarPreviewFixtures.troubledApp()
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.xxs) {
+            ForEach(app.startingTasks) { task in
+                StartingTaskRow(task: task)
+            }
+        }
+        .frame(width: DS.Size.sidebarWidth - DS.Space.lg)
+    }
+    .sidebarPreviewEnvironment(app)
+}
+#endif

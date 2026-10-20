@@ -22,3 +22,16 @@ struct BranchChip: View {
         .help(name)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Branch chip") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.md) {
+            BranchChip(name: "main")
+            BranchChip(name: "native/queue-follow-ups")
+            BranchChip(name: "dependabot/github_actions/actions/setup-node-7.1.0")
+                .frame(width: 200, alignment: .leading)
+        }
+    }
+}
+#endif

@@ -68,3 +68,22 @@ struct TaskPullRequestBadge: View {
         .accessibilityAction(named: "Show Pull Request Details") { card.toggle() }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Task pull request badge") {
+    let pullRequests = Array(PullRequestPreviewFixtures.inbox.all.prefix(5))
+    let folder = URL(filePath: "/Users/preview/Developer/native", directoryHint: .isDirectory)
+    let branches = Dictionary(
+        pullRequests.map { (BranchReference(directory: folder, branch: $0.headRefName ?? "\($0.number)"), $0) },
+        uniquingKeysWith: { first, _ in first })
+    DSPreviewPair {
+        // Open with checks failing, running and passing, then a draft without checks.
+        VStack(alignment: .leading, spacing: DS.Space.lg) {
+            ForEach(pullRequests) { pullRequest in
+                TaskPullRequestBadge(directory: folder, branch: pullRequest.headRefName ?? "\(pullRequest.number)")
+            }
+        }
+    }
+    .environment(GitHubModel.preview(inbox: PullRequestPreviewFixtures.inbox, branches: branches))
+}
+#endif

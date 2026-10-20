@@ -53,15 +53,13 @@ final class LinkControlServer: Sendable {
 
     private func serve(_ stream: any ByteStream, gateway: LinkGateway) {
         let id = UUID()
-        let opened = Mutex(false)
         // The handler needs the peer to answer through, and the peer needs the handler to exist.
         let box = Mutex<JSONRPCPeer?>(nil)
         let peer = JSONRPCPeer(channel: stream, label: "link-control") { [weak self] event in
             switch event {
             case .request(let message):
                 guard let requestID = message.id, let peer = box.withLock({ $0 }) else { return }
-                if message.method == LinkControlMethod.openPairing { opened.withLock { $0 = true } }
-                await Self.answer(message, requestID: requestID, peer: peer, gateway: gateway)
+                await Self.answer(message, requestID: requestID, peer: peer, gateway: gateway, client: id)
             case .notification:
                 break
             case .closed:
@@ -69,7 +67,7 @@ final class LinkControlServer: Sendable {
                 _ = self?.clients.withLock { $0.removeValue(forKey: id) }
                 await gateway.removeObserver(id)
                 // A sheet that went away (the app quit) mustn't leave a window open.
-                if opened.withLock({ $0 }) { await gateway.closePairingWindow() }
+                await gateway.closePairingWindow(ownedBy: id)
             }
         }
         box.withLock { $0 = peer }
@@ -83,13 +81,15 @@ final class LinkControlServer: Sendable {
     }
 
     private static func answer(
-        _ message: JSONRPCPeer.Message, requestID: RequestID, peer: JSONRPCPeer, gateway: LinkGateway
+        _ message: JSONRPCPeer.Message, requestID: RequestID, peer: JSONRPCPeer, gateway: LinkGateway, client: UUID
     ) async {
         typealias Method = LinkControlMethod
         do {
             switch message.method {
             case Method.status: break
-            case Method.openPairing: await gateway.openPairingWindow()
+            case Method.openPairing:
+                let params = try? message.params(as: LinkOpenPairingParams.self)
+                await gateway.openPairingWindow(preapproving: params?.preapprovedGrants, owner: client)
             case Method.closePairing: await gateway.closePairingWindow()
             case Method.decidePairing:
                 let params = try message.params(as: LinkDecisionParams.self)

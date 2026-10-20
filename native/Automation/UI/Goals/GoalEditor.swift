@@ -101,3 +101,18 @@ struct GoalEditor: View {
         return "Leave a limit empty for none. Native checks the budget between turns, never in the middle of one."
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Goal editor") {
+    DSPreviewPair {
+        HStack(alignment: .top, spacing: DS.Space.xl) {
+            GoalEditor(goal: nil, agentName: "Claude Code", onSave: { _, _ in }, onCancel: {})
+                .dsPopoverBackground()
+            GoalEditor(
+                goal: AutomationPreviewFixtures.pausedGoal, agentName: "Codex", onSave: { _, _ in }, onCancel: {}
+            )
+            .dsPopoverBackground()
+        }
+    }
+}
+#endif

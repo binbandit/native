@@ -80,3 +80,24 @@ private struct StepIndicator: View {
             .frame(width: ComposerMetrics.stepDotSize, height: ComposerMetrics.stepDotSize)
     }
 }
+
+#if DEBUG
+#Preview("Plan section") {
+    let plan = PlanProgress(entries: ComposerPreviewFixtures.plan)
+    DSPreviewPair {
+        VStack(spacing: DS.Space.xl) {
+            ComposerSurface {
+                ComposerPlanSection(plan: plan, isWorking: true, isExpanded: .constant(false))
+            }
+            ComposerSurface {
+                ComposerPlanSection(plan: plan, isWorking: true, isExpanded: .constant(true))
+            }
+            // Stopped between steps: the current step shows a dot, not the loader.
+            ComposerSurface {
+                ComposerPlanSection(plan: plan, isWorking: false, isExpanded: .constant(true))
+            }
+        }
+        .frame(width: 560)
+    }
+}
+#endif

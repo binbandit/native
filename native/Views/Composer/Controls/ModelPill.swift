@@ -54,3 +54,22 @@ struct ModelPill: View {
         .accessibilityHint("Switches to the next effort level")
     }
 }
+
+#if DEBUG
+#Preview("Model pill") {
+    let settings = ComposerPreviewFixtures.settings
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.lg) {
+            ModelPill(
+                model: settings.model, effort: settings.effort, switches: settings.modelSwitches,
+                isPickerOpen: .constant(false), onSet: { _, _ in }, onCycleEffort: {})
+            ModelPill(
+                model: settings.model, effort: nil, switches: [], isPickerOpen: .constant(true), onSet: { _, _ in },
+                onCycleEffort: {})
+            ModelPill(
+                model: nil, effort: settings.effort, switches: [], isPickerOpen: .constant(false), onSet: { _, _ in },
+                onCycleEffort: {})
+        }
+    }
+}
+#endif

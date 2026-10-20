@@ -11,10 +11,15 @@ public struct LinkGrants: Codable, Hashable, Sendable {
     /// Install updates and restart the host. Offered on by default when the device scanned the QR
     /// code (the host's key was pinned from it), off when it typed the code.
     public var manageHost: Bool
+    /// Run commands and read files in the host's projects (`ClientGrants.runCommands`): remote code
+    /// execution as the host's user, which a Mac running tasks there needs (git, gh, diffs) and a
+    /// phone doesn't. Pairings from before it existed don't have it.
+    public var runCommands: Bool
 
-    public init(managePlugins: Bool = false, manageHost: Bool = false) {
+    public init(managePlugins: Bool = false, manageHost: Bool = false, runCommands: Bool = false) {
         self.managePlugins = managePlugins
         self.manageHost = manageHost
+        self.runCommands = runCommands
     }
 
     /// Following and driving tasks only.
@@ -25,10 +30,21 @@ public struct LinkGrants: Codable, Hashable, Sendable {
         LinkGrants(managePlugins: false, manageHost: !usedCode)
     }
 
+    /// What the confirmation offers for `request`: running commands only for a Mac that paired with
+    /// the invite (its key pinned from the QR code or link), which is how the owner adds a Mac to run
+    /// tasks on this one. The model is the device's own word, so this is a default the owner sees and
+    /// can change, never a decision.
+    public static func suggested(for request: LinkPairingRequest) -> LinkGrants {
+        var grants = suggested(usedCode: request.usedCode)
+        grants.runCommands = !request.usedCode && request.device.model.hasPrefix("Mac")
+        return grants
+    }
+
     public init(from decoder: any Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         managePlugins = try container.decodeIfPresent(Bool.self, forKey: .managePlugins) ?? false
         manageHost = try container.decodeIfPresent(Bool.self, forKey: .manageHost) ?? false
+        runCommands = try container.decodeIfPresent(Bool.self, forKey: .runCommands) ?? false
     }
 }
 
@@ -51,12 +67,18 @@ public struct LinkDeviceInfo: Codable, Hashable, Sendable {
     /// installation's secret and the host's key), so a re-pairing replaces the old entry instead
     /// of piling up. Two hosts get different tags, so they can't link the phone.
     public var installation: String?
+    /// What the device's user chose to ask for when the link already said what the pairing gives
+    /// (`PairingInvite.grants`): the host gives no more than both allow. Nil asks for the defaults.
+    public var requestedGrants: LinkGrants?
 
-    public init(name: String, model: String, system: String, installation: String? = nil) {
+    public init(
+        name: String, model: String, system: String, installation: String? = nil, requestedGrants: LinkGrants? = nil
+    ) {
         self.name = name
         self.model = model
         self.system = system
         self.installation = installation
+        self.requestedGrants = requestedGrants
     }
 
     /// This device's tag for the host with `hostKey`.

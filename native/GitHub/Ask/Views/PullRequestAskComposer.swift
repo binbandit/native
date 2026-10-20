@@ -63,3 +63,21 @@ struct PullRequestAskComposer: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Ask composer") {
+    let center = PullRequestAskPreviewFixtures.center()
+    let empty = center.conversation(for: PullRequestPreviewRunner.reference)
+    // Another pull request's conversation, so the two don't share a draft.
+    let typed = center.conversation(for: PullRequestAskPreviewFixtures.otherReference)
+    typed.draft = "Which of these files would you read first, and why?"
+    return DSPreviewPair {
+        VStack(spacing: DS.Space.lg) {
+            PullRequestAskComposer(conversation: empty)
+            PullRequestAskComposer(conversation: typed)
+        }
+        .frame(width: PullRequestAskMetrics.panelIdealWidth)
+    }
+    .environment(center)
+}
+#endif

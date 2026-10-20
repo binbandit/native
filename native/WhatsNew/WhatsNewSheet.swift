@@ -203,3 +203,21 @@ private struct WhatsNewSheetModifier: ViewModifier {
             }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("What's New") {
+    DSPreviewPair {
+        WhatsNewSheet(
+            releases: Array(WhatsNewCatalog.releases.prefix(2)),
+            releaseNotesURL: URL(string: "https://github.com/binbandit/native/releases"), onTry: { _ in }, onDone: {})
+    }
+    .environment(SettingsPresentation())
+}
+
+#Preview("What's New - Nothing to showcase") {
+    DSPreviewPair {
+        WhatsNewSheet(releases: [], releaseNotesURL: nil, onTry: { _ in }, onDone: {})
+    }
+    .environment(SettingsPresentation())
+}
+#endif

@@ -154,3 +154,22 @@ struct TaskScriptProjectSheet: View {
         .background(.dsBackground)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Scripts settings") {
+    DSPreviewPair {
+        TaskScriptsSettingsPage()
+            .settingsPreviewPage()
+    }
+    .environment(TaskScriptsPreviewFixtures.settings())
+    .environment(TaskScriptsPreviewFixtures.center())
+    .environment(AppModel.preview())
+}
+
+#Preview("Project scripts sheet") {
+    DSPreviewPair {
+        TaskScriptProjectSheet(project: TaskScriptProjectSheet.Project(url: TaskScriptsPreviewFixtures.project))
+    }
+    .environment(TaskScriptsPreviewFixtures.settings())
+}
+#endif

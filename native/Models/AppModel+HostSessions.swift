@@ -1,5 +1,6 @@
 import ACP
 import Foundation
+import Git
 import NativeHostClient
 import NativeHostProtocol
 import os
@@ -27,6 +28,9 @@ extension AppModel {
         sessions.onAgentSessionReplaced = { [weak self] session, summary in
             self?.followReplacedAgentSession(session, summary)
         }
+        sessions.claimSubagent = { [weak self] parent, id, update in
+            self?.claimHostTask(in: parent, id: id, update: update)
+        }
         _ = await host.addEventHandler { [weak self] event in
             await self?.receiveFromHost(event)
         }
@@ -36,7 +40,8 @@ extension AppModel {
     /// before the first turn), keeping the task: it carries on under the new id, with its title,
     /// settings, place in the sidebar and draft.
     private func followReplacedAgentSession(_ old: SessionModel, _ summary: HostSessionSummary) {
-        guard let host = runtimes.host, let agentSessionID = summary.agentSessionID else { return }
+        // The host that holds it: this Mac's, or a paired one.
+        guard let host = old.host?.client ?? runtimes.host, let agentSessionID = summary.agentSessionID else { return }
         let session = SessionModel(
             agent: old.agent, id: agentSessionID, summary: summary, client: host, services: old.services,
             promptCapabilities: old.promptCapabilities, origin: old.origin, parent: nil)
@@ -86,18 +91,28 @@ extension AppModel {
     /// only for AppModel.swift.
     func syncHostAgents(refreshEnvironment: Bool = false) async {
         guard let host = runtimes.host else { return }
-        let specs = plugins.agents.map { agent in
-            var spec = AgentSpec(agent)
-            spec.env.merge(plugins.launchEnvironment(for: agent.id)) { $1 }
-            return spec
-        }
+        let specs = hostAgentSpecs
         do {
-            try await host.syncAgents(specs, refreshEnvironment: refreshEnvironment)
+            // Where this app makes task worktrees, which the host lets paired clients reach.
+            let worktrees =
+                UserDefaults.standard.string(forKey: "gitWorktreesFolder")
+                ?? Worktree.defaultLocation(home: nil).folderPath
+            try await host.syncAgents(specs, refreshEnvironment: refreshEnvironment, worktreesFolder: worktrees)
             for agent in try await host.agents() {
                 runtimes[AgentDefinition.ID(rawValue: agent.id)]?.apply(agent)
             }
         } catch {
             Self.logger.error("Couldn't sync agents with the host: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    /// The agents plugins provide now, as a host launches them, with the environment plugins'
+    /// launch policy adds. Paired hosts get them too (AppModel+Hosts.swift).
+    var hostAgentSpecs: [AgentSpec] {
+        plugins.agents.map { agent in
+            var spec = AgentSpec(agent)
+            spec.env.merge(plugins.launchEnvironment(for: agent.id)) { $1 }
+            return spec
         }
     }
 

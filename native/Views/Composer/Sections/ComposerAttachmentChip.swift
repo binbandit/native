@@ -188,3 +188,32 @@ private struct AttachmentGlyph: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Attachment chips") {
+    let fixtures = ComposerPreviewFixtures.attachments
+    let longName = PromptAttachment(
+        url: URL(
+            filePath: "/Users/preview/Developer/native/docs/decisions/2026-10-18-queue-follow-ups-while-a-turn-runs.md"),
+        content: .text("# Decision\n"), byteCount: 9_200)
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.md) {
+            ForEach(fixtures) { attachment in
+                ComposerAttachmentChip(
+                    attachment: attachment, pathOnlyReason: nil, isMissing: false, onPreview: {}, onRemove: {})
+            }
+            ComposerAttachmentChip(
+                attachment: fixtures[0], pathOnlyReason: nil, isMissing: false, isSelected: true, onPreview: {},
+                onRemove: {})
+            ComposerAttachmentChip(
+                attachment: fixtures[0], pathOnlyReason: nil, isMissing: true, onPreview: {}, onRemove: {})
+            ComposerAttachmentChip(
+                attachment: fixtures[1], pathOnlyReason: "Codex can’t take images, so it gets its path instead.",
+                isMissing: false, onPreview: {}, onRemove: {})
+            ComposerAttachmentChip(
+                attachment: longName, pathOnlyReason: nil, isMissing: false, onPreview: {}, onRemove: {})
+            ComposerPendingAttachmentChip(pending: ComposerPendingAttachment(name: "Simulator Screenshot.png"))
+        }
+    }
+}
+#endif

@@ -77,3 +77,26 @@ struct AutomationTriggerRow: View {
             .fixedSize()
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Trigger rows") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.md) {
+            AutomationTriggerRowPreview(trigger: .schedule(.daily(hour: 9, minute: 0)))
+            AutomationTriggerRowPreview(trigger: .schedule(.weekly(weekday: 2, hour: 8, minute: 30)))
+            AutomationTriggerRowPreview(trigger: .schedule(.everyHours(4)))
+            AutomationTriggerRowPreview(trigger: .event(.checksFailed))
+        }
+        .frame(width: 560)
+    }
+}
+
+/// Holds the trigger the row edits.
+private struct AutomationTriggerRowPreview: View {
+    @State var trigger: AutomationTrigger
+
+    var body: some View {
+        AutomationTriggerRow(trigger: $trigger, onRemove: {})
+    }
+}
+#endif

@@ -1,3 +1,4 @@
+#if canImport(Network)
 import Foundation
 import Network
 import Synchronization
@@ -24,16 +25,20 @@ public final class MCPHTTPServer<Context: Sendable>: Sendable {
 
     /// - Parameters:
     ///   - instructions: Told to the model alongside the tools: when and how to use them.
+    ///   - moreTools: Tools only some clients get, or that come and go, asked for on every request.
     ///   - resolve: The client a token names, or nil for a token that names none.
     public init(
         name: String,
         version: String,
         instructions: String? = nil,
         tools: [MCPTool<Context>],
+        moreTools: (@Sendable (Context) async -> [MCPTool<Context>])? = nil,
         maxBodyBytes: Int = 4 * 1024 * 1024,
         resolve: @escaping @Sendable (_ token: String) async -> Context?
     ) {
-        endpoint = MCPEndpoint(name: name, version: version, instructions: instructions, tools: tools, resolve: resolve)
+        endpoint = MCPEndpoint(
+            name: name, version: version, instructions: instructions, tools: tools, resolve: resolve,
+            moreTools: moreTools)
         self.maxBodyBytes = maxBodyBytes
     }
 
@@ -145,3 +150,4 @@ public final class MCPHTTPServer<Context: Sendable>: Sendable {
 public struct MCPPortInUse: Error, Hashable, Sendable {
     public var port: UInt16
 }
+#endif

@@ -97,9 +97,20 @@ extension AppModel {
         return agent.manifest.idleSessionTimeout.map { .seconds($0) }
     }
 
+    /// How long a session in Native's host sits with nothing happening before the host unloads it
+    /// from the agent and, once none is loaded, ends the agent's process (`HostCore+IdleUnload.swift`):
+    /// the `idleUnloadTimeout` default (seconds) for every agent when it's set, else the agent's own,
+    /// else never. The session stays in the sidebar and its transcript stays put; it resumes quietly
+    /// when it's next used.
+    static func idleUnloadTimeout(for agent: AgentDefinition) -> Int? {
+        let seconds = UserDefaults.standard.integer(forKey: "idleUnloadTimeout")
+        return seconds > 0 ? seconds : agent.manifest.idleUnloadTimeout
+    }
+
     /// Stops agents that sit unused for `agentIdleTimeout`, and closes sessions that sit unused for
     /// `sessionIdleTimeout(for:)`, for as long as the model lives. The default agent keeps running, so a
-    /// new session never waits for one to start. Internal only for AppModel.swift.
+    /// new session never waits for one to start, and agents the host unloads itself are left to it.
+    /// Internal only for AppModel.swift.
     func parkAgentsWhenIdle() {
         let timeout = Self.agentIdleTimeout
         let interval = min(.seconds(60), timeout / 5)
@@ -112,7 +123,7 @@ extension AppModel {
                 let now = ContinuousClock.now
                 closeIdleSessions(now: now, idleSince: &sessionsIdleSince)
                 let defaultAgent = defaultAgent?.id
-                for runtime in agents where runtime.isReady {
+                for runtime in agents where runtime.isReady && !hostUnloadsIdle(runtime) {
                     let agent = runtime.agent.id
                     if agent == defaultAgent || isInUse(agent) {
                         idleSince[agent] = nil
@@ -167,6 +178,13 @@ extension AppModel {
     /// Whether `session` or one of its subagents is busy, so closing it would lose something.
     private func isInUse(_ session: SessionModel) -> Bool {
         isBusy(session) || session.children.values.contains(where: isInUse)
+    }
+
+    /// Whether the host unloads `runtime`'s idle sessions and ends its process itself, keeping every
+    /// transcript as it is, which parking here wouldn't.
+    private func hostUnloadsIdle(_ runtime: AgentRuntime) -> Bool {
+        runtime.host != nil && Self.idleUnloadTimeout(for: runtime.agent) != nil
+            && runtime.capabilities?.closeSessions == true && runtime.capabilities?.resumeSessions == true
     }
 
     private func park(_ runtime: AgentRuntime) async {

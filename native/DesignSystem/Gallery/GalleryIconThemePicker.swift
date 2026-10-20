@@ -39,3 +39,11 @@ struct GalleryIconThemePicker: View {
         return Image(decorative: image, scale: 2)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Gallery - Icon theme picker") {
+    DSPreviewPair {
+        GalleryIconThemePicker()
+    }
+}
+#endif

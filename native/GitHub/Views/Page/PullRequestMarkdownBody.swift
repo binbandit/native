@@ -67,3 +67,19 @@ private struct PullRequestSuggestionView: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Markdown body") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.xl) {
+            PullRequestMarkdownBody(source: PullRequestPagePreviewFixtures.body)
+            // A suggested change, shown against the line it replaces.
+            PullRequestMarkdownBody(
+                source:
+                    "```suggestion\n        guard let index = items.firstIndex(where: { $0.id == id }) else { return }\n```",
+                original: "        let index = items.firstIndex { $0.id == id }!")
+        }
+        .frame(width: PullRequestsLayout.contentWidth)
+    }
+}
+#endif

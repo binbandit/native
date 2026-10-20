@@ -24,17 +24,17 @@ extension LinkGateway {
             do {
                 hello = try LinkHello(bytes: try await reader.next().body)
             } catch LinkError.refused(let refusal) {
-                return refuse(raw, refusal)
+                return await refuseAfterHello(raw, reader, refusal)
             }
 
             var preSharedKey: Data?
             var windowID: UUID?
             if hello.mode != .connect {
-                guard let window else { return refuse(raw, .noPairingWindow) }
+                guard let window else { return await refuseAfterHello(raw, reader, .noPairingWindow) }
                 do {
                     preSharedKey = try window.preSharedKey(for: hello.mode, now: configuration.now())
                 } catch {
-                    return refuse(raw, error)
+                    return await refuseAfterHello(raw, reader, error)
                 }
                 windowID = window.id
             }
@@ -74,6 +74,14 @@ extension LinkGateway {
         }
     }
 
+    /// Refuses a device that has sent only its hello. Its first handshake message follows right
+    /// behind, so that's read first: closing under the device's write would reset the connection,
+    /// and the device would see it drop instead of reading why.
+    private func refuseAfterHello(_ raw: any ByteStream, _ reader: LinkFrameReader, _ refusal: LinkRefusal) async {
+        _ = try? await reader.next()
+        refuse(raw, refusal)
+    }
+
     private func refuse(_ raw: any ByteStream, _ refusal: LinkRefusal) {
         raw.write(LinkFrame(kind: .refusal, body: Data([refusal.rawValue])).encoded)
         raw.close()
@@ -94,12 +102,21 @@ extension LinkGateway {
             try? channel.send(LinkWelcome(status: .expired))
             return channel.close()
         }
-        let verification = VerificationCode(handshakeHash: channel.handshakeHash)
+        let request = LinkPairingRequest(
+            device: deviceInfo, verification: VerificationCode(handshakeHash: channel.handshakeHash), usedCode: usedCode
+        )
+        current.request = request
+        if let preapproved = current.preapprovedGrants {
+            // Whoever opened the window decided already, and the secret proves the device holds its link.
+            current.phase = .paired
+            window = current
+            let asked = deviceInfo.requestedGrants ?? .suggested(for: request)
+            return complete(channel, request: request, grants: preapproved.intersection(asked))
+        }
         current.phase = .confirming
-        current.request = LinkPairingRequest(device: deviceInfo, verification: verification, usedCode: usedCode)
         window = current
         publish()
-        try? channel.send(LinkWelcome(status: .awaitingConfirmation, verification: verification))
+        try? channel.send(LinkWelcome(status: .awaitingConfirmation, verification: request.verification))
 
         let outcome = await awaitDecision()
         guard var current = window, current.id == windowID else {
@@ -109,15 +126,9 @@ extension LinkGateway {
         }
         switch outcome {
         case .accepted(let grants):
-            let device = LinkDevice(
-                info: deviceInfo, publicKey: channel.remoteKey, pairedAt: configuration.now(), grants: grants)
-            registry.add(device)
-            registry.isEnabled = true
-            save()
             current.phase = .paired
-            current.pairedDeviceID = device.id
             window = current
-            admit(channel, welcome: .paired)
+            complete(channel, request: request, grants: grants)
         case .rejected:
             current.phase = .rejected
             window = current
@@ -130,6 +141,18 @@ extension LinkGateway {
             channel.close()
         }
         publish()
+    }
+
+    /// Keeps the device, tells the host's journal, and lets it in.
+    private func complete(_ channel: SecureChannel, request: LinkPairingRequest, grants: LinkGrants) {
+        let device = LinkDevice(
+            info: request.device, publicKey: channel.remoteKey, pairedAt: configuration.now(), grants: grants)
+        registry.add(device)
+        registry.isEnabled = true
+        save()
+        window?.pairedDeviceID = device.id
+        paired(LinkPairingRecord(device: device, wasPreapproved: window?.preapprovedGrants != nil))
+        admit(channel, welcome: .paired)
     }
 
     private func awaitDecision() async -> PairingDecision {

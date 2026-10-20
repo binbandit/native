@@ -1,3 +1,4 @@
+#if canImport(Network)
 import Foundation
 import Testing
 
@@ -70,3 +71,4 @@ struct TransportTests {
         }
     }
 }
+#endif

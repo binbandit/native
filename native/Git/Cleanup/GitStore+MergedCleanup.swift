@@ -11,7 +11,7 @@ extension GitStore {
         pullRequests: @escaping @Sendable ([CleanupPullRequestLookup.Query]) async -> CleanupPullRequestLookup
     ) async throws -> MergedCleanupPlan {
         let repository = try await requireRepository(at: project)
-        let options = MergedCleanupOptions(taskLocation: Self.taskLocation(of: repository), branchPrefix: branchPrefix)
+        let options = MergedCleanupOptions(taskLocation: taskLocation(of: repository), branchPrefix: branchPrefix)
         return try await repository.mergedCleanupPlan(options, pullRequests: pullRequests)
     }
 

@@ -23,3 +23,23 @@ struct ComposerSuggestionsPanel: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Suggestions panel") {
+    let draft = "Tidy up @Sections/Que"
+    DSPreviewPair {
+        VStack(spacing: DS.Space.xl) {
+            ComposerSuggestionsPanel(
+                suggestions: .commands(ComposerPreviewFixtures.commands), highlighted: .constant(0), changedFiles: [],
+                onChooseCommand: { _ in }, onChooseFile: { _, _ in })
+            if let query = FileMentionQuery(draft: draft, cursor: draft.endIndex) {
+                ComposerSuggestionsPanel(
+                    suggestions: .files(ComposerPreviewFixtures.files, query: query), highlighted: .constant(2),
+                    changedFiles: [ComposerPreviewFixtures.files[2]], onChooseCommand: { _ in },
+                    onChooseFile: { _, _ in })
+            }
+        }
+        .frame(width: 560)
+    }
+}
+#endif

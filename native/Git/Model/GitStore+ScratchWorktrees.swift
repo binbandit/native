@@ -18,7 +18,7 @@ extension GitStore {
         let repository = try await requireRepository(at: project)
         let base = try? await repository.currentBranchName()
         let worktree = try await repository.createWorktree(
-            forTask: "script-test", in: Self.worktreesBase(of: repository), detached: true)
+            forTask: "script-test", in: worktreesBase(of: repository), detached: true)
         _ = try? await repository.copyIgnoredFiles(matching: settings.envFilePatterns, to: worktree.path)
         return (worktree.path, base)
     }

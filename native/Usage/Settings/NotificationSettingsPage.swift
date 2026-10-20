@@ -45,7 +45,7 @@ struct NotificationSettingsPage: View {
                 SettingsRow(
                     id: Self.needsYouRow, "When a task needs you",
                     description: Text(
-                        "Permission requests with Allow and Reject, and questions you can answer from the notification. When off, they wait in the task."
+                        "Permission requests with Allow and Reject, questions you can answer from the notification, and tasks that stopped on an error. When off, they wait in the task."
                     )
                 ) {
                     SettingsSwitch("When a task needs you", isOn: $notifiesNeedsYou)
@@ -71,3 +71,12 @@ struct NotificationSettingsPage: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Notification settings") {
+    DSPreviewPair {
+        NotificationSettingsPage()
+            .settingsPreviewPage()
+    }
+}
+#endif

@@ -70,3 +70,16 @@ struct SidebarSelectionBar: View {
         .accessibilityLabel(keys.isEmpty ? "Selecting tasks" : "\(keys.count) tasks selected")
     }
 }
+
+#if DEBUG
+#Preview("Selection bar") {
+    let app = AppModel.preview()
+    let selection = SidebarSelectionModel()
+    selection.selectAll(SidebarPreviewFixtures.sessions(in: app).prefix(3).map(\.id))
+    return DSPreviewPair {
+        SidebarSelectionBar(selection: selection)
+            .frame(width: DS.Size.sidebarWidth)
+    }
+    .sidebarPreviewEnvironment(app)
+}
+#endif

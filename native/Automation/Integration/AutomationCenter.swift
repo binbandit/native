@@ -8,8 +8,8 @@ import Observation
 @MainActor
 @Observable
 final class AutomationCenter {
-    let workflows = WorkflowRunner(store: .standard)
-    let automations = AutomationEngine(store: .standard)
+    let workflows: WorkflowRunner
+    let automations: AutomationEngine
     private(set) var library = WorkflowLibrary()
     /// Set to ask the window to show the workflow picker; the view clears it.
     var isWorkflowPickerRequested = false
@@ -32,8 +32,15 @@ final class AutomationCenter {
     @ObservationIgnored private var goals: [String: GoalController] = [:]
     @ObservationIgnored private let goalStore: GoalStore
 
-    init(goalStore: GoalStore = .standard) {
+    /// The stores say where goals, runs and automations are kept; previews pass ones that keep
+    /// nothing (AutomationCenter+Preview.swift).
+    init(
+        goalStore: GoalStore = .standard, workflows: WorkflowRunner = WorkflowRunner(store: .standard),
+        automations: AutomationEngine = AutomationEngine(store: .standard)
+    ) {
         self.goalStore = goalStore
+        self.workflows = workflows
+        self.automations = automations
         workflows.onRunChange = { [automations] in automations.workflowRunChanged($0) }
         workflows.onAttention = { [weak self] run, attention in
             let reason = "\(run.title) · \(run.phase.label)"

@@ -1,10 +1,9 @@
-#if os(macOS)
+#if os(macOS) || os(Linux)
 import Foundation
 import Synchronization
 
 /// One command's launch, timeout, stop and exit, serialized. Cancellation can arrive before the
-/// process has launched, and `Process.terminate()` raises an Objective-C exception for a process that
-/// never ran.
+/// process has launched, and `Process.terminate()` raises an exception for a process that never ran.
 ///
 /// Stopping signals the command's process group rather than its pid: `Process` makes each command a
 /// group leader, and a group's id can't be handed to a new process while anything in the group is

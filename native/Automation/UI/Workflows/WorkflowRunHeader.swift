@@ -140,3 +140,16 @@ private struct StepSegments: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Run header") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.xxl) {
+            ForEach(AutomationPreviewFixtures.runs) { run in
+                WorkflowRunHeader(run: run, send: { _ in })
+            }
+        }
+        .frame(width: 720)
+    }
+}
+#endif

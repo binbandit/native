@@ -31,6 +31,8 @@ final class SessionLauncher {
     /// Host sessions being opened, so a second caller (selecting a row opens it from two places)
     /// gets the same model rather than a second one (SessionLauncher+Host.swift).
     var hostOpens: [SessionKey: Task<SessionModel, any Error>] = [:]
+    /// Whether a client reaches a paired host rather than this Mac's own (AppModel+Hosts.swift).
+    var isRemote: (NativeHostClient) -> Bool = { _ in false }
 
     init(plugins: PluginRegistry, services: SessionServices, store: SessionStore) {
         self.plugins = plugins

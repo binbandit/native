@@ -11,6 +11,7 @@ public struct MCPServerLaunch: Hashable, Sendable {
     public var storeFailure: String?
 }
 
+#if canImport(Network) && canImport(CryptoKit)
 extension MCPHTTPServer {
     /// Listens on the port `store` remembers, with tokens signed by its secret, so URLs handed out
     /// in earlier launches keep working; or, when that port stays taken for `patience`, on a port
@@ -72,3 +73,4 @@ extension MCPHTTPServer {
         }
     }
 }
+#endif

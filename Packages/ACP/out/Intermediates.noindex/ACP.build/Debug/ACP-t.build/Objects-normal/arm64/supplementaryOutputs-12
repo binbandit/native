@@ -1,0 +1,23 @@
+{
+  "/Users/brayden/Developer/native/native/Packages/ACP/Sources/ACP/Schema/Subagents.swift" : {
+    "const-values" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/Subagents.swiftconstvalues",
+    "dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/Subagents.d",
+    "diagnostics" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/Subagents.dia",
+    "object" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/Subagents.o",
+    "swift-dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/Subagents.swiftdeps"
+  },
+  "/Users/brayden/Developer/native/native/Packages/ACP/Sources/ACP/Schema/ToolCall.swift" : {
+    "const-values" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ToolCall.swiftconstvalues",
+    "dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ToolCall.d",
+    "diagnostics" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ToolCall.dia",
+    "object" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ToolCall.o",
+    "swift-dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ToolCall.swiftdeps"
+  },
+  "/Users/brayden/Developer/native/native/Packages/ACP/Sources/ACP/SessionState+Replies.swift" : {
+    "const-values" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/SessionState+Replies.swiftconstvalues",
+    "dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/SessionState+Replies.d",
+    "diagnostics" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/SessionState+Replies.dia",
+    "object" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/SessionState+Replies.o",
+    "swift-dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/SessionState+Replies.swiftdeps"
+  }
+}

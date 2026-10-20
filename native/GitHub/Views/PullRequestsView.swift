@@ -149,3 +149,57 @@ enum PullRequestsLayout {
     static let contentWidth: CGFloat = 760
     static let emptyHeight: CGFloat = 320
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Pull requests") {
+    DSPreviewPair {
+        PullRequestsView()
+            .frame(width: 900, height: 720)
+    }
+    .environment(GitHubModel.preview(inbox: PullRequestPreviewFixtures.inbox))
+}
+
+#Preview("Pull requests - Narrow") {
+    DSPreviewPair {
+        PullRequestsView()
+            .frame(width: 420, height: 720)
+    }
+    .environment(GitHubModel.preview(inbox: PullRequestPreviewFixtures.inbox))
+}
+
+#Preview("Pull requests - Offline") {
+    DSPreviewPair {
+        PullRequestsView()
+            .frame(width: 900, height: 480)
+    }
+    .environment(
+        GitHubModel.preview(
+            inbox: PullRequestPreviewFixtures.inbox, error: .offline("error connecting to api.github.com")))
+}
+
+#Preview("Pull requests - Nothing open") {
+    DSPreviewPair {
+        PullRequestsView()
+            .frame(width: 900, height: 480)
+    }
+    .environment(
+        GitHubModel.preview(
+            inbox: PullRequestInbox(authored: [], reviewRequested: [], assigned: [], fetchedAt: .now)))
+}
+
+#Preview("Pull requests - GitHub CLI missing") {
+    DSPreviewPair {
+        PullRequestsView()
+            .frame(width: 900, height: 480)
+    }
+    .environment(GitHubModel.preview(availability: .notInstalled, error: .notInstalled))
+}
+
+#Preview("Pull requests - Not signed in") {
+    DSPreviewPair {
+        PullRequestsView()
+            .frame(width: 900, height: 480)
+    }
+    .environment(GitHubModel.preview(availability: .notAuthenticated, error: .notAuthenticated("")))
+}
+#endif

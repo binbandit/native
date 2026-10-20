@@ -70,3 +70,16 @@ private extension AutomationRunStatus {
         if case .failed = self { true } else { false }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Automation run rows") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.xs) {
+            ForEach(AutomationPreviewFixtures.automationRuns(of: AutomationPreviewFixtures.nightlyTriage)) { run in
+                AutomationRunRow(run: run, onOpen: run.workflowRun == nil ? nil : {}, onStop: {})
+            }
+        }
+        .frame(width: 640)
+    }
+}
+#endif

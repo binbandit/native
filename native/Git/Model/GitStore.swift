@@ -15,6 +15,8 @@ final class GitStore {
     typealias EnvironmentProvider = () async -> [String: String]
 
     let settings: GitSettings
+    /// How each task turn's working tree looked as it began, for reviewing what the turn changed.
+    @ObservationIgnored let turnBaselines: GitTurnBaselines
     /// Told about every push Native makes, with the checkout it ran in and the branch, e.g. for
     /// "branch pushed" automations. Set by the app's wiring so Git doesn't know who listens.
     @ObservationIgnored var onBranchPushed: (@MainActor (_ project: URL, _ branch: String) -> Void)?
@@ -25,6 +27,9 @@ final class GitStore {
     /// removal.
     @ObservationIgnored var beforeRemovingTaskWorktree: (@MainActor (GitTaskWorktree) async -> Void)?
 
+    /// Where task worktrees go for a store whose projects are on a paired host; nil on this Mac,
+    /// where `worktreesBase(of:)` works it out.
+    let worktreesFolder: URL?
     @ObservationIgnored private let environmentProvider: EnvironmentProvider
     /// Builds git for the host the projects are on; a client passes one that runs on its host.
     @ObservationIgnored private let makeGit: ([String: String]) -> Git
@@ -34,10 +39,13 @@ final class GitStore {
 
     init(
         environment: @escaping EnvironmentProvider, settings: GitSettings = GitSettings(),
+        worktreesFolder: URL? = nil, turnBaselines: GitTurnBaselines = .shared,
         makeGit: @escaping ([String: String]) -> Git
     ) {
         environmentProvider = environment
         self.settings = settings
+        self.turnBaselines = turnBaselines
+        self.worktreesFolder = worktreesFolder
         self.makeGit = makeGit
     }
 
@@ -77,6 +85,15 @@ final class GitStore {
         models.values.forEach { $0.refresh() }
     }
 
+    /// Records how `folder` looked as a task's turn began there (`GitTurnBaselines`), in the
+    /// background, so sending the prompt never waits on it. Folders outside git are skipped.
+    func recordTurnStart(of session: SessionKey, at startedAt: Date, in folder: URL) {
+        Task(priority: .utility) {
+            guard let repository = try? await resolveGit().repository(at: folder) else { return }
+            await turnBaselines.record(session, startedAt: startedAt, in: repository)
+        }
+    }
+
     // MARK: - Task worktrees
 
     /// Gives a new task its own worktree of the repository at `folder`, on a new branch from its
@@ -84,7 +101,7 @@ final class GitStore {
     func createTaskWorktree(in folder: URL, title: String, branchPrefix: String = "") async throws -> URL {
         let repository = try await requireRepository(at: folder)
         let worktree = try await repository.createWorktree(
-            forTask: title, branchPrefix: branchPrefix, in: Self.worktreesBase(of: repository))
+            forTask: title, branchPrefix: branchPrefix, in: worktreesBase(of: repository))
         return worktree.path
     }
 

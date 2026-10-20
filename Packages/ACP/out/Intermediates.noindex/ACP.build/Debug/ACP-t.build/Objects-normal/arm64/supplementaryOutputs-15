@@ -1,0 +1,23 @@
+{
+  "/Users/brayden/Developer/native/native/Packages/ACP/Sources/ACP/ToolCallState+NonExecution.swift" : {
+    "const-values" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ToolCallState+NonExecution.swiftconstvalues",
+    "dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ToolCallState+NonExecution.d",
+    "diagnostics" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ToolCallState+NonExecution.dia",
+    "object" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ToolCallState+NonExecution.o",
+    "swift-dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ToolCallState+NonExecution.swiftdeps"
+  },
+  "/Users/brayden/Developer/native/native/Packages/ACP/Sources/ACP/ToolCallState+ShellCommand.swift" : {
+    "const-values" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ToolCallState+ShellCommand.swiftconstvalues",
+    "dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ToolCallState+ShellCommand.d",
+    "diagnostics" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ToolCallState+ShellCommand.dia",
+    "object" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ToolCallState+ShellCommand.o",
+    "swift-dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ToolCallState+ShellCommand.swiftdeps"
+  },
+  "/Users/brayden/Developer/native/native/Packages/ACP/Sources/ACP/ToolCallState+TerminalOutput.swift" : {
+    "const-values" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ToolCallState+TerminalOutput.swiftconstvalues",
+    "dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ToolCallState+TerminalOutput.d",
+    "diagnostics" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ToolCallState+TerminalOutput.dia",
+    "object" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ToolCallState+TerminalOutput.o",
+    "swift-dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ToolCallState+TerminalOutput.swiftdeps"
+  }
+}

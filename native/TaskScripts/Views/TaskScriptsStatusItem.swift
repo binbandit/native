@@ -189,3 +189,24 @@ private struct TaskScriptLogRow: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Scripts log") {
+    DSPreviewPair {
+        TaskScriptLogPanel(
+            runs: [TaskScriptsPreviewFixtures.running, TaskScriptsPreviewFixtures.succeeded],
+            departed: [TaskScriptsPreviewFixtures.turnFailed], onManage: {}
+        )
+        .dsPopoverBackground()
+    }
+    .environment(TaskScriptsPreviewFixtures.center())
+}
+
+#Preview("Scripts log - Failure") {
+    DSPreviewPair {
+        TaskScriptLogPanel(runs: [TaskScriptsPreviewFixtures.failed], departed: [], onManage: {})
+            .dsPopoverBackground()
+    }
+    .environment(TaskScriptsPreviewFixtures.center())
+}
+#endif

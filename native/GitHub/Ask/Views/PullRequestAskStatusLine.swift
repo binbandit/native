@@ -18,3 +18,15 @@ struct PullRequestAskStatusLine: View {
         .accessibilityElement(children: .combine)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Ask status line") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.md) {
+            PullRequestAskStatusLine(text: "Reading the pull request's diff and comments")
+            PullRequestAskStatusLine(text: "Claude Code stopped. Restarting it to finish the answer")
+        }
+        .frame(width: PullRequestAskMetrics.panelIdealWidth)
+    }
+}
+#endif

@@ -60,3 +60,23 @@ struct ProjectActionOutputSheet: View {
         if case .finished(_, let output)? = run.result { output } else { "" }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Action output - Failed") {
+    DSPreviewPair {
+        ProjectActionOutputSheet(run: ProjectActionsPreviewFixtures.failedRun)
+    }
+}
+
+#Preview("Action output - Printed nothing") {
+    DSPreviewPair {
+        ProjectActionOutputSheet(run: ProjectActionsPreviewFixtures.silentRun)
+    }
+}
+
+#Preview("Action output - Couldn't start") {
+    DSPreviewPair {
+        ProjectActionOutputSheet(run: ProjectActionsPreviewFixtures.unstartedRun)
+    }
+}
+#endif

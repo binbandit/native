@@ -1,0 +1,23 @@
+{
+  "/Users/brayden/Developer/native/native/Packages/ACP/Sources/ACP/ProviderUsageReport.swift" : {
+    "const-values" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ProviderUsageReport.swiftconstvalues",
+    "dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ProviderUsageReport.d",
+    "diagnostics" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ProviderUsageReport.dia",
+    "object" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ProviderUsageReport.o",
+    "swift-dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ProviderUsageReport.swiftdeps"
+  },
+  "/Users/brayden/Developer/native/native/Packages/ACP/Sources/ACP/Schema/AuthMethod.swift" : {
+    "const-values" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/AuthMethod.swiftconstvalues",
+    "dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/AuthMethod.d",
+    "diagnostics" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/AuthMethod.dia",
+    "object" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/AuthMethod.o",
+    "swift-dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/AuthMethod.swiftdeps"
+  },
+  "/Users/brayden/Developer/native/native/Packages/ACP/Sources/ACP/Schema/Authenticate.swift" : {
+    "const-values" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/Authenticate.swiftconstvalues",
+    "dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/Authenticate.d",
+    "diagnostics" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/Authenticate.dia",
+    "object" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/Authenticate.o",
+    "swift-dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/Authenticate.swiftdeps"
+  }
+}

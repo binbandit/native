@@ -34,3 +34,16 @@ struct PullRequestAskContextNote: View {
         inclusion.summary.prefix(1).lowercased() + inclusion.summary.dropFirst()
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Ask context note") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.lg) {
+            PullRequestAskContextNote(inclusion: PullRequestAskPreviewFixtures.inclusion, isRefresh: false)
+            PullRequestAskContextNote(inclusion: PullRequestAskPreviewFixtures.inclusion, isRefresh: true)
+            PullRequestAskContextNote(inclusion: PullRequestAskPreviewFixtures.partialInclusion, isRefresh: false)
+        }
+        .frame(width: PullRequestAskMetrics.panelIdealWidth)
+    }
+}
+#endif

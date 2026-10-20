@@ -8,6 +8,8 @@ nonisolated enum GitMetrics {
     static let inspectorMaxWidth: CGFloat = 720
     /// The header row.
     static let headerHeight: CGFloat = 40
+    /// The scope picker's row: This Turn, Uncommitted, Branch.
+    static let scopeBarHeight: CGFloat = DS.Size.chromeBar
     /// The "N files changed" row.
     static let summaryHeight: CGFloat = DS.Size.controlMD
     /// File rows, a little padding around 20pt text.

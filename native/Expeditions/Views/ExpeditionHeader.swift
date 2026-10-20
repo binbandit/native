@@ -129,3 +129,16 @@ struct ExpeditionHeader: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Expedition header") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.xxl) {
+            ForEach(ExpeditionPreviewFixtures.all) { expedition in
+                ExpeditionHeader(expedition: expedition, send: { _ in })
+            }
+        }
+        .frame(width: 720)
+    }
+}
+#endif

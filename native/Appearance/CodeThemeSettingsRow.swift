@@ -111,3 +111,15 @@ private struct CodeThemePreview: View {
     private static let before = "const limit = 10;\nexport default getUser;\n"
     private static let after = "const limit = 25; // per page\nexport default getUser;\n"
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Code theme row") {
+    DSPreviewPair {
+        SettingsRowGroup {
+            CodeThemeSettingsRow()
+        }
+        .settingsPreviewPage()
+    }
+    .environment(SettingsPreviewFixtures.registry())
+}
+#endif

@@ -29,3 +29,16 @@ struct GitHubCheckbox: View {
         .accessibilityAddTraits(isOn ? [.isButton, .isSelected] : .isButton)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Checkbox") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.md) {
+            GitHubCheckbox(title: "Viewed", isOn: .constant(true))
+            GitHubCheckbox(title: "Viewed", isOn: .constant(false))
+            GitHubCheckbox(title: "Delete the branch after merging", isOn: .constant(true))
+                .disabled(true)
+        }
+    }
+}
+#endif

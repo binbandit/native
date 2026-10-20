@@ -1,3 +1,4 @@
+#if canImport(CryptoKit)
 import Foundation
 
 /// What an MCP server keeps between launches so the URLs it handed out keep working: the secret
@@ -92,3 +93,4 @@ public struct MCPServerStore: Sendable {
         POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO)
     }
 }
+#endif

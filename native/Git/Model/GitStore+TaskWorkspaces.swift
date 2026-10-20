@@ -19,7 +19,7 @@ extension GitStore {
         case .worktree:
             // A worktree branches from a commit; `git init` alone leaves nothing to branch from.
             guard try await repository.hasCommits() else { throw TaskWorkspaceError.noCommits }
-            let folder = Self.taskLocation(of: repository).appending(path: code, directoryHint: .isDirectory)
+            let folder = taskLocation(of: repository).appending(path: code, directoryHint: .isDirectory)
             let base = try? await repository.currentBranchName()
             let worktree: Worktree
             do {
@@ -40,7 +40,7 @@ extension GitStore {
     func prepareTaskCheckout(in project: URL, existingBranch branch: String) async throws -> GitTaskCheckout {
         let repository = try await requireRepository(at: project)
         let worktree = try await repository.createWorktree(
-            checkingOut: branch, folderName: branch, in: Self.worktreesBase(of: repository))
+            checkingOut: branch, folderName: branch, in: worktreesBase(of: repository))
         return try await setUp(worktree, of: repository, branch: branch)
     }
 
@@ -90,7 +90,7 @@ extension GitStore {
         guard let repository = try? await resolveGit().repository(at: project),
             let worktrees = try? await repository.worktrees()
         else { return [] }
-        let location = Self.taskLocation(of: repository).standardizedFileURL.path(percentEncoded: false)
+        let location = taskLocation(of: repository).standardizedFileURL.path(percentEncoded: false)
         // A record whose folder was deleted by hand isn't a worktree to list or remove.
         return worktrees.filter {
             !$0.isMain && !$0.isPrunable && $0.path.standardizedFileURL.path(percentEncoded: false).hasPrefix(location)
@@ -107,15 +107,18 @@ extension GitStore {
     // MARK: - Helpers
 
     /// Where a repository's task worktrees go: a folder per repository in `worktreesBase(of:)`.
-    static func taskLocation(of repository: Repository) -> URL {
+    func taskLocation(of repository: Repository) -> URL {
         worktreesBase(of: repository).appending(
             path: Worktree.slug(repository.name, maxLength: 60), directoryHint: .isDirectory)
     }
 
     /// Where task worktrees go, in the home folder of the machine the repository is on. On this Mac
     /// the `gitWorktreesFolder` default can move them, which isolated development instances use so
-    /// their test worktrees never mix with real ones (scripts/dev/run-isolated.sh).
-    static func worktreesBase(of repository: Repository) -> URL {
+    /// their test worktrees never mix with real ones (scripts/dev/run-isolated.sh). A paired host's
+    /// store uses the folder that host says (`HostProjectList.worktreesFolder`): its git runs with
+    /// no `HOME` of this Mac's, which would otherwise read as this Mac.
+    func worktreesBase(of repository: Repository) -> URL {
+        if let worktreesFolder { return worktreesFolder }
         let home = repository.git.environment["HOME"]
         let isThisMac = home == nil || home == NSHomeDirectory()
         let override = isThisMac ? UserDefaults.standard.string(forKey: "gitWorktreesFolder") : nil

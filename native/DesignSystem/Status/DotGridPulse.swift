@@ -75,3 +75,17 @@ nonisolated final class DotGridPulseLayer: CALayer {
         CATransaction.commit()
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Dot grid pulse") {
+    DSPreviewPair {
+        HStack(spacing: DS.Space.xl) {
+            DotGridPulse(pattern: .typing)
+            DotGridPulse(pattern: .waiting)
+            DotGridPulse(pattern: .settingUp)
+        }
+        .frame(height: DS.Size.statusGlyph * 2)
+        .foregroundStyle(.dsTextSecondary)
+    }
+}
+#endif

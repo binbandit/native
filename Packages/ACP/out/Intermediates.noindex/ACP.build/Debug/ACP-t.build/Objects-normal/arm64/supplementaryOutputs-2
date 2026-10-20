@@ -1,0 +1,30 @@
+{
+  "/Users/brayden/Developer/native/native/Packages/ACP/Sources/ACP/ConfigChoices.swift" : {
+    "const-values" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ConfigChoices.swiftconstvalues",
+    "dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ConfigChoices.d",
+    "diagnostics" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ConfigChoices.dia",
+    "object" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ConfigChoices.o",
+    "swift-dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ConfigChoices.swiftdeps"
+  },
+  "/Users/brayden/Developer/native/native/Packages/ACP/Sources/ACP/ContextReport.swift" : {
+    "const-values" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ContextReport.swiftconstvalues",
+    "dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ContextReport.d",
+    "diagnostics" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ContextReport.dia",
+    "object" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ContextReport.o",
+    "swift-dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/ContextReport.swiftdeps"
+  },
+  "/Users/brayden/Developer/native/native/Packages/ACP/Sources/ACP/HiddenCommandCapture.swift" : {
+    "const-values" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/HiddenCommandCapture.swiftconstvalues",
+    "dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/HiddenCommandCapture.d",
+    "diagnostics" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/HiddenCommandCapture.dia",
+    "object" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/HiddenCommandCapture.o",
+    "swift-dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/HiddenCommandCapture.swiftdeps"
+  },
+  "/Users/brayden/Developer/native/native/Packages/ACP/Sources/ACP/InterruptionMarker.swift" : {
+    "const-values" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/InterruptionMarker.swiftconstvalues",
+    "dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/InterruptionMarker.d",
+    "diagnostics" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/InterruptionMarker.dia",
+    "object" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/InterruptionMarker.o",
+    "swift-dependencies" : "/tmp/native-spm/droid-setup/ACP/out/Intermediates.noindex/ACP.build/Debug/ACP-t.build/Objects-normal/arm64/InterruptionMarker.swiftdeps"
+  }
+}

@@ -85,12 +85,20 @@ public struct PluginAsset: Codable, Sendable {
 }
 
 public enum ContentHash {
+    /// Where there's no SHA-256 (no CryptoKit: Linux), assets can't be served or checked by hash yet.
+    /// swift-crypto would bring it, and comes in when Linux is a real target (docs/decisions.md).
+    public struct Unavailable: Error, LocalizedError {
+        public init() {}
+
+        public var errorDescription: String? { "Plugin assets aren't available on this host yet." }
+    }
+
     /// Lowercase hex SHA-256, the key assets are cached under.
-    public static func sha256(_ data: Data) -> String {
+    public static func sha256(_ data: Data) throws -> String {
         #if canImport(CryptoKit)
         SHA256.hash(data: data).map { String(format: "%02x", $0) }.joined()
         #else
-        #error("Hosts on other platforms need swift-crypto for content hashes")
+        throw Unavailable()
         #endif
     }
 }

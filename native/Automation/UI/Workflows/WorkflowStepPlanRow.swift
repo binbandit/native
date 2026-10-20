@@ -85,3 +85,21 @@ struct WorkflowStepPlanRow: View {
         return "after \(titles.formatted(.list(type: .and)))"
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Step plan rows") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.lg) {
+            if let definition = AutomationPreviewFixtures.definition {
+                let assignments = AutomationPreviewFixtures.assignments(for: definition)
+                ForEach(Array(definition.steps.enumerated()), id: \.element.id) { index, step in
+                    WorkflowStepPlanRow(
+                        index: index, step: step, definition: definition, assignment: assignments[step.id],
+                        agents: AutomationPreviewFixtures.agents, onChoose: { _ in })
+                }
+            }
+        }
+        .frame(width: 560)
+    }
+}
+#endif

@@ -67,26 +67,44 @@ public enum UnixSocket {
     /// A pair of connected sockets, for tests and in-process transports.
     public static func pair() throws -> (Int32, Int32) {
         var descriptors: [Int32] = [0, 0]
-        guard socketpair(AF_UNIX, SOCK_STREAM, 0, &descriptors) == 0 else {
+        guard socketpair(AF_UNIX, streamType, 0, &descriptors) == 0 else {
             throw Failure.system("socketpair", errno: errno)
         }
         for descriptor in descriptors {
             _ = fcntl(descriptor, F_SETFD, FD_CLOEXEC)
-            var on: Int32 = 1
-            setsockopt(descriptor, SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size))
+            survivePeerVanishing(descriptor)
         }
         return (descriptors[0], descriptors[1])
     }
 
     private static func makeSocket() throws -> Int32 {
-        let descriptor = socket(AF_UNIX, SOCK_STREAM, 0)
+        let descriptor = socket(AF_UNIX, streamType, 0)
         guard descriptor >= 0 else { throw Failure.system("socket", errno: errno) }
         // No process we start inherits the connection and holds it open.
         _ = fcntl(descriptor, F_SETFD, FD_CLOEXEC)
-        // A peer that vanished must surface as a write error, not kill the process.
+        survivePeerVanishing(descriptor)
+        return descriptor
+    }
+
+    /// A peer that vanished must surface as a write error, not kill the process.
+    private static func survivePeerVanishing(_ descriptor: Int32) {
+        #if canImport(Darwin)
         var on: Int32 = 1
         setsockopt(descriptor, SOL_SOCKET, SO_NOSIGPIPE, &on, socklen_t(MemoryLayout<Int32>.size))
-        return descriptor
+        #else
+        // There's no such socket option here, and DispatchIO's writes can't pass MSG_NOSIGNAL, so
+        // the process ignores SIGPIPE instead (native-host does from its first line).
+        signal(SIGPIPE, SIG_IGN)
+        #endif
+    }
+
+    /// `SOCK_STREAM`, which Glibc declares as an enum rather than a number.
+    private static var streamType: Int32 {
+        #if canImport(Glibc)
+        Int32(SOCK_STREAM.rawValue)
+        #else
+        SOCK_STREAM
+        #endif
     }
 
     private static func makeAddress(_ path: String) throws -> sockaddr_un {

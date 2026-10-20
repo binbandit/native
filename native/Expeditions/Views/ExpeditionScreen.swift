@@ -109,3 +109,20 @@ private struct ExpeditionPlanningView: View {
         .background(.dsBackground)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Expedition - Planning") {
+    DSPreviewPair {
+        ExpeditionPlanningView(expedition: ExpeditionPreviewFixtures.planning, send: { _ in }, onOpenLead: {})
+            .frame(width: 900, height: 480)
+    }
+}
+
+#Preview("Expedition - Gone") {
+    DSPreviewPair {
+        ExpeditionScreen(id: UUID()) { _ in EmptyView() }
+            .frame(width: 720, height: 420)
+    }
+    .environment(ExpeditionCenter.preview())
+}
+#endif

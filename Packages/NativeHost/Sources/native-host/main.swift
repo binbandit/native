@@ -1,8 +1,10 @@
-import Darwin
 import Foundation
 import NativeHost
-import NativeHostMac
 import NativeHostProtocol
+
+#if os(macOS)
+import NativeHostMac
+#endif
 
 // A Native host for development, tests and other machines. The app embeds its own helper; this is
 // the same host without the app bundle around it.
@@ -10,9 +12,13 @@ import NativeHostProtocol
 //   native-host [serve] [--home <dir>] [--channel <name>] [--plugins <dir>] [--inherit-environment]
 //                       [--exit-with-parent]
 //   native-host attach [--home <dir>] [--channel <name>]
+//   native-host doctor [--home <dir>] [--channel <name>]
 //
 // `attach` bridges stdin and stdout to a running host's socket, which is how a client reaches a host
 // on another machine: `ssh <machine> native-host attach`.
+//
+// It builds on macOS and Linux. On Linux there's no `--exit-with-parent` and no updating itself
+// (docs/durability.md, "Any machine can be a host").
 
 signal(SIGPIPE, SIG_IGN)
 
@@ -44,14 +50,29 @@ case "serve":
     let info = PeerInfo(
         name: "native-host", version: bundleInfo["CFBundleShortVersionString"] as? String ?? "0",
         build: bundleInfo["CFBundleVersion"] as? String ?? "dev")
+    let inheritEnvironment = arguments.contains("--inherit-environment")
+    let pluginsDirectory = option("--plugins", in: arguments).map { URL(filePath: $0, directoryHint: .isDirectory) }
+    #if os(macOS)
     var configuration = MacHost.configuration(
-        location: location, info: info, inheritEnvironment: arguments.contains("--inherit-environment"),
-        pluginsDirectory: option("--plugins", in: arguments).map { URL(filePath: $0, directoryHint: .isDirectory) })
+        location: location, info: info, inheritEnvironment: inheritEnvironment, pluginsDirectory: pluginsDirectory)
+    #elseif os(Linux)
+    var configuration = LinuxHost.configuration(
+        location: location, info: info, inheritEnvironment: inheritEnvironment, pluginsDirectory: pluginsDirectory)
+    #else
+    #error("native-host has a configuration for macOS and Linux only")
+    #endif
     // An attached host lives exactly as long as whoever started it, idle or not.
     let isAttached = arguments.contains(HostLocation.exitWithParentArgument)
+    #if !os(macOS)
+    // Watching the parent's exit takes kqueue; an attached host is the Mac app's anyway.
+    if isAttached {
+        fail("\(HostLocation.exitWithParentArgument) is only available on macOS")
+    }
+    #endif
     if isAttached {
         configuration.idleExit = nil
     }
+    #if os(macOS)
     // A standalone host just updated gets two launches to come up; one that crashed is rolled back.
     let standalone = configuration.updates.selfUpdater as? StandaloneHostUpdater
     var onTrial = false
@@ -68,13 +89,20 @@ case "serve":
         }
     }
     let confirmTrial = onTrial
+    #endif
     let serving = configuration
     Task { @HostActor in
         do {
+            #if os(macOS)
             let core = try HostMain.start(serving, verifier: CodeSignatureVerifier())
             if isAttached {
                 ParentWatch.stopWithParent(core)
             }
+            #else
+            // No code signatures to check: as for a Mac development build, the user is the boundary
+            // (the socket's folder is theirs alone).
+            _ = try HostMain.start(serving, verifier: nil)
+            #endif
             FileHandle.standardError.write(Data("native-host: serving at \(location.socketPath)\n".utf8))
         } catch let error as HostMain.Failure {
             if case .alreadyRunning = error { fail(error.localizedDescription, status: 0) }
@@ -82,9 +110,11 @@ case "serve":
         } catch {
             fail(error.localizedDescription)
         }
+        #if os(macOS)
         if confirmTrial, let standalone, await !standalone.confirmWhenServing(at: location) {
             fail("the new build didn't come up within a minute", status: 1)
         }
+        #endif
     }
     dispatchMain()
 
@@ -114,6 +144,19 @@ case "attach":
     }
     dispatchMain()
 
+case "doctor":
+    // The doctor's checks (docs/droids.md), from the running host or, with none, of this machine.
+    #if os(macOS)
+    HostDoctorMac.runCommand(
+        location: location,
+        version: PeerInfo(
+            name: "native-host doctor",
+            version: Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "0",
+            build: Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "dev"))
+    #else
+    fail("doctor is only available on macOS for now")
+    #endif
+
 default:
-    fail("unknown command \(command); use serve or attach")
+    fail("unknown command \(command); use serve, attach or doctor")
 }

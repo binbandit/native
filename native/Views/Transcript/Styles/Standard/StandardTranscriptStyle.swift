@@ -23,25 +23,18 @@ private struct StandardTranscript: View {
     @Environment(TranscriptDisclosures.self) private var disclosures: TranscriptDisclosures?
 
     var body: some View {
-        let lines = StandardTranscriptLine.plan(
+        let plan = StandardTranscriptLine.plan(
             transcript, folding: foldsEarlierTurns, unfolded: unfoldedTurns, cache: lineCache)
+        let context = StandardTranscriptLineContext(
+            transcript: transcript, revealedLine: revealedLine, unfoldedTurns: $unfoldedTurns)
         ScrollViewReader { proxy in
             LazyVStack(alignment: .leading, spacing: 0) {
-                ForEach(lines) { line in
-                    // One view per line, whatever the line holds: a lazy stack walks every line of a
-                    // ForEach whose rows can be zero or several views, on every layout pass.
-                    VStack(alignment: .leading, spacing: 0) {
-                        self.line(line)
-                    }
-                    .background {
-                        if line.id == revealedLine {
-                            RoundedRectangle(cornerRadius: DS.Radius.card)
-                                .fill(Color.dsAccentSubtle)
-                                .padding(-DS.Space.sm)
-                                .transition(.opacity)
-                        }
-                    }
-                    .padding(.top, line.spacing)
+                // Earlier turns as a list of their own, which a chunk streaming into the latest
+                // turn leaves alone. Equatable by its own conformance, not `.equatable()`: that view
+                // is a single view, so the lazy stack would build every earlier line at once.
+                StandardTranscriptLines(list: plan.earlier, context: context)
+                ForEach(plan.latest) { line in
+                    StandardTranscriptLineView(line: line, context: context)
                 }
                 if transcript.isWorking {
                     WorkingIndicator(quietSince: transcript.session.state.quietSince)
@@ -74,15 +67,19 @@ private struct StandardTranscript: View {
         // Let the unfolded rows lay out before scrolling to one of them.
         try? await Task.sleep(for: .milliseconds(80))
         let lines = StandardTranscriptLine.plan(
-            transcript, folding: foldsEarlierTurns, unfolded: unfoldedTurns, cache: lineCache)
+            transcript, folding: foldsEarlierTurns, unfolded: unfoldedTurns, cache: lineCache
+        ).lines
         let line = lines.first { line in
             switch line.kind {
-            case .row(let row, let start): (start..<start + row.itemCount).contains(index)
+            case .row(let row, let start, _): (start..<start + row.itemCount).contains(index)
             case .replySection(_, _, let start): start == index
             case .activityRun(let run): run.transcriptIndices.contains(index)
             default: false
             }
         }
+        #if DEBUG || NATIVE_PERF
+        TranscriptPerfProbe.revealed(line?.id, index: index)
+        #endif
         guard let line else { return }
         if case .activityRun(let run) = line.kind {
             disclosures?.openRun(run.id)
@@ -94,63 +91,6 @@ private struct StandardTranscript: View {
         try? await Task.sleep(for: .seconds(2.5))
         withAnimation(.dsStandard) {
             revealedLine = nil
-        }
-    }
-
-    @ViewBuilder private func line(_ line: StandardTranscriptLine) -> some View {
-        switch line.kind {
-        case .row(let row, let itemIndex):
-            self.row(row, itemIndex: itemIndex)
-        case .replySection(let source, let isFirst, _):
-            MarkdownSectionView(source: source, isFirst: isFirst)
-                .equatable()
-                .frame(maxWidth: .infinity, alignment: .leading)
-        case .activityRun(let run):
-            ToolRunView(run: run, session: transcript.session)
-                .equatable()
-        case .fold(let turn, let summary, let isUnfolded):
-            TurnActivityFold(summary: summary, isUnfolded: isUnfolded) {
-                withAnimation(.reveal) {
-                    if isUnfolded {
-                        unfoldedTurns.remove(turn.id)
-                    } else {
-                        unfoldedTurns.insert(turn.id)
-                    }
-                }
-            }
-        case .footer(let turn, let summary, let ending, let showsChanges):
-            TurnFooter(
-                turn: turn, summary: summary, ending: ending, showsChanges: showsChanges,
-                subagents: subagents(in: turn), openSubagent: transcript.openSubagent)
-        case .changes(let summary):
-            TurnChangesCard(summary: summary)
-        case .usageLimit(let stop, let isLatestTurn):
-            UsageLimitTranscriptCard(session: transcript.session, stop: stop, isLatestTurn: isLatestTurn)
-        }
-    }
-
-    @ViewBuilder private func row(_ row: TranscriptRow, itemIndex: Int) -> some View {
-        switch row {
-        case .exploration(let calls):
-            transcript.exploration(calls)
-        case .item(.message(let message)):
-            let thinking = transcript.session.state.thinkingInterval(at: itemIndex)
-            MessageView(message: message, thinking: thinking.map { ThinkingClock(start: $0.start, end: $0.end) })
-                .equatable()
-        case .item(.toolCall(let call)):
-            transcript.toolCall(call)
-        case .item(.notice(let notice)):
-            NoticeView(notice: notice)
-        case .item(.subagent(let subagent)):
-            transcript.subagent(subagent)
-        case .item(.sessionMessage(let message)):
-            transcript.sessionMessage(message)
-        }
-    }
-
-    private func subagents(in turn: TranscriptTurn) -> [SubagentState] {
-        transcript.session.state.items[turn.items].compactMap { item in
-            if case .subagent(let subagent) = item { subagent } else { nil }
         }
     }
 }

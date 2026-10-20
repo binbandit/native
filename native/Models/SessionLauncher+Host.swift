@@ -20,7 +20,8 @@ extension SessionLauncher {
         let summary = try await client.newSession(
             NewSessionParams(
                 sessionID: id, agentID: runtime.agent.id.rawValue, cwd: cwd.folderPath, parentID: parent?.host?.id,
-                origin: origin.host, mcpServers: try mcpServers(for: context), meta: meta(for: context), attach: true))
+                origin: origin.host, mcpServers: try mcpServers(for: context, on: client), meta: meta(for: context),
+                attach: true))
         guard let agentSessionID = summary.agentSessionID else {
             throw LaunchError.failed(
                 agent: runtime.agent.displayName, underlying: HostTurnFailure(message: "No session"))
@@ -64,7 +65,7 @@ extension SessionLauncher {
             OpenSessionParams(
                 sessionID: id, agentID: runtime.agent.id.rawValue, agentSessionID: key.id, cwd: cwd.folderPath,
                 title: title, parentID: parent?.host?.id, origin: origin.host,
-                mcpServers: try mcpServers(for: context), meta: meta(for: context), attach: true))
+                mcpServers: try mcpServers(for: context, on: client), meta: meta(for: context), attach: true))
         let session = SessionModel(
             agent: runtime.agent, id: key.id, summary: summary, client: client, services: services,
             promptCapabilities: runtime.capabilities?.prompt ?? PromptCapabilities(), origin: origin, parent: parent)
@@ -87,9 +88,12 @@ extension SessionLauncher {
         return (try? await client.sessions())?.first(where: holding)?.id
     }
 
-    /// Plugins' MCP servers for the session, as the JSON the host hands the agent.
-    private func mcpServers(for context: SessionContext) throws -> [JSONValue] {
-        try JSONDecoder().decode([JSONValue].self, from: JSONEncoder().encode(plugins.mcpServers(for: context)))
+    /// Plugins' MCP servers for the session, as the JSON the host hands the agent. A paired host
+    /// gets only the ones it can reach itself (`PairedHostServers`).
+    private func mcpServers(for context: SessionContext, on client: NativeHostClient) throws -> [JSONValue] {
+        let servers = try JSONDecoder().decode(
+            [JSONValue].self, from: JSONEncoder().encode(plugins.mcpServers(for: context)))
+        return isRemote(client) ? PairedHostServers.reachable(servers) : servers
     }
 
     private func meta(for context: SessionContext) -> JSONValue? {

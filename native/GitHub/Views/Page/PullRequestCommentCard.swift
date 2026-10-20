@@ -101,3 +101,22 @@ extension PullRequestCommentCard where Accessory == EmptyView {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Comment cards") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.lg) {
+            PullRequestCommentCard(
+                author: "preview-reviewer", date: .now.addingTimeInterval(-3 * 3600),
+                body: "Reads well. Two questions inline, mostly about what happens when the agent **can't steer**.",
+                url: URL(string: "https://github.com/binbandit/native/pull/212"), edited: true,
+                badge: (label: "Commented", tone: .neutral))
+            // A pull request opened without a description.
+            PullRequestCommentCard(
+                author: "binbandit", date: .now.addingTimeInterval(-26 * 3600), body: "", url: nil, edited: false)
+        }
+        .frame(width: PullRequestsLayout.contentWidth)
+    }
+    .environment(GitHubModel.preview())
+}
+#endif

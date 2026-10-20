@@ -64,7 +64,7 @@ Mac) to see everything in light and dark side by side.
 | --- | --- |
 | `Tokens/TokensColor.swift` | Layers, translucent fills, borders, text, semantic and chart colors. Dark is the Instrument palette: content #0D0D0E, sidebar, chrome and code wells #070708, hairlines #1F1F22, control outlines #2E2E32, text #E9E9E6 / #A5A5A8 / #85858A |
 | `Tokens/AccentPalette.swift` | `DSAccentPalette` per icon theme (original, cobalt, fern, ember, prism, arcade, glass, nightly), contrast-checked |
-| `Tokens/TokensTypography.swift` | Geist and Geist Mono (bundled, SIL OFL, `Fonts/OFL.txt`), UI text at 12pt, sidebar and composer at 13pt |
+| `Tokens/TokensTypography.swift` | Geist and Geist Mono (bundled, SIL OFL, `Fonts/OFL.txt`), UI text at 12pt, sidebar and composer at 13pt, one display line at 40pt (`dsDisplay`, lined up with `DSTypography.displayIndent`) |
 | `Tokens/TokensLayout.swift` | Spacing, radii, sizes (including `contentColumn` 760, `listRow` 26), shadows |
 | `Tokens/TokensMotion.swift` | Animations and `.trackHover` (instant in, 100ms out) |
 | `Tokens/Platform.swift` | macOS/iPadOS adapters and touch metrics |
@@ -91,7 +91,7 @@ Mac) to see everything in light and dark side by side.
 | `SearchField` | The one search and filter field: a magnifier, a clear button once something's typed, Escape to clear, an optional trailing accessory (a shortcut hint, a record-keys button), no fill of its own |
 | `.ds(_:size:iconOnly:)` buttons, `IconButton`, `Badge`, `Kbd`, `Card`, `SeparatorLine`, `SectionHeader`, `StatusDot` | Buttons, shortcut caps, badges and cards |
 | `DiffView`, `DiffStats`, `DiffStatsText` | Line diffs with a colored bar, line numbers and tinted lines; shared by the transcript and Git |
-| `StatusBarSurface`, `.statusBarSegment(_:isActive:)`, `StatusBarGlyph`, `StatusBarDivider`, `StatusBarSeparator` | The window's bottom strip: the sidebar column's look under a hairline, `DS.Size.chromeBar` tall, tertiary caption text, footer-sized glyphs, hairlines between items, color-only hover. Narrow windows drop whole items |
+| `StatusBarSurface`, `.statusBarSegment(_:isActive:)`, `.statusBarCompactForm { }`, `StatusBarGlyph`, `StatusBarDivider`, `StatusBarSeparator` | The window's bottom strip: the sidebar column's look under a hairline, `DS.Size.chromeBar` tall, tertiary caption text, footer-sized glyphs, hairlines between items, color-only hover. Narrow windows shorten before they drop: items with a compact form (the same glyphs, fewer words) take it, innermost first, and only then do whole items drop. Nothing is cut mid-word |
 | `IconThemePicker`, `IconThemeOption` | The settings select showing the current app icon; a popover lists each option's thumbnail, name, badge and note, with a checkmark. Options are data, so plugins can add their own |
 | `PopoverPanel`, `PopoverPanelFootnote`, `.dsPopover(isPresented:)` | A popover that explains something: glyph and title header, hairline, content, on the overlay backdrop |
 | `.dsHoverCard(_:)`, `DSHoverCardState` | A popover that opens when the pointer rests on its anchor (500ms, or 100ms while another shows), stays while the pointer is on the anchor or the card, and closes 200ms after it leaves both; one at a time. On touch the anchor's tap toggles it |
@@ -115,6 +115,7 @@ Mac) to see everything in light and dark side by side.
 | Details on hover (a task's pull request) | `.dsHoverCard` with a `PopoverPanel` at `DS.Size.hoverCardWidth`; the anchor's click still does its own thing, and everything in the card is also in a context menu or a command |
 | An icon-only button | `Button("Title", systemImage:)` with `.ds(_, iconOnly: true)` or `.pill(isSquare: true)`, or `IconButton`: the title stays VoiceOver's label. Never a bare `Image` label |
 | Elapsed time | `ElapsedTimeText(since:until:)`: ticks while running, a total once done. Anything else that counts seconds reads `DSSecondClock.shared.now` and holds it from `.task { await DSSecondClock.shared.hold() }`: one 1 Hz clock for the app, never a `TimelineView` per label |
+| Ages ("5m", "3h") | `CompactAgeText(date:)`. Anything else that shows an age to the minute reads `DSMinuteClock.shared.now` in its own small view: one clock that ticks each minute while the app can be seen and stops while it's hidden, never a `TimelineView(.everyMinute)` per row |
 | A tool call's kind | `DSToolGlyph` (read, search, edit, command, web, MCP, think, subagent): one glyph per kind wherever tool work shows |
 | Searching or filtering a list | `SearchField`, never a hand-built `TextField` with a magnifier |
 | Counts, sizes, times | `DSFormat`: `compactAge`, `time`, `countdown`, `timeAndCountdown`, `duration`, `thoughtFor`, `tokens`, `percent`, `share`, `lineCount`, `diffStat`, `cost`, `memory`, `cpu` |

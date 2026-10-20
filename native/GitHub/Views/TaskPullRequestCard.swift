@@ -334,3 +334,23 @@ private struct TaskPullRequestFacts {
     var head: String? { page?.headRefName ?? pullRequest.headRefName }
     var base: String? { page?.baseRefName ?? pullRequest.baseRefName }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Task pull request card") {
+    let pullRequests = PullRequestPreviewFixtures.inbox.authored
+    let folder = URL(filePath: "/Users/preview/Developer/native", directoryHint: .isDirectory)
+    let branches = pullRequests.map { BranchReference(directory: folder, branch: $0.headRefName ?? "") }
+    DSPreviewPair {
+        HStack(alignment: .top, spacing: DS.Space.xl) {
+            // Failing checks, then a draft with none.
+            ForEach([branches[0], branches[4]], id: \.self) { branch in
+                TaskPullRequestCard(branch: branch) {}
+                    .dsOverlayBackground(in: .rect(cornerRadius: DS.Radius.panel))
+            }
+        }
+    }
+    .environment(
+        GitHubModel.preview(
+            branches: Dictionary(zip(branches, pullRequests), uniquingKeysWith: { first, _ in first })))
+}
+#endif

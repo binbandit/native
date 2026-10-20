@@ -144,3 +144,37 @@ private struct BudgetBar: View {
         .accessibilityValue("\(Int((fraction * 100).rounded())) percent")
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Goal section") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.lg) {
+            ComposerSurface {
+                GoalSection(goal: AutomationPreviewFixtures.activeGoal, isWorking: true, agentName: "Claude Code")
+            }
+            ComposerSurface {
+                GoalSection(goal: AutomationPreviewFixtures.pausedGoal, isWorking: false, agentName: "Claude Code")
+            }
+            ComposerSurface {
+                GoalSection(goal: AutomationPreviewFixtures.blockedGoal, isWorking: false, agentName: "Codex")
+            }
+            ComposerSurface {
+                GoalSection(goal: AutomationPreviewFixtures.limitedGoal, isWorking: false, agentName: "Codex")
+            }
+            ComposerSurface {
+                GoalSection(goal: AutomationPreviewFixtures.completeGoal, isWorking: false, agentName: "Claude Code")
+            }
+        }
+        .frame(width: 640)
+    }
+}
+
+#Preview("Goal section - Narrow") {
+    DSPreviewPair {
+        ComposerSurface {
+            GoalSection(goal: AutomationPreviewFixtures.blockedGoal, isWorking: false, agentName: "Codex")
+        }
+        .frame(width: 340)
+    }
+}
+#endif

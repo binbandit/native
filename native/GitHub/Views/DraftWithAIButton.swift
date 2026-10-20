@@ -15,3 +15,14 @@ struct DraftWithAIButton: View {
         .help(unavailable ?? "Write the title and description from this branch's commits and changes, on this Mac")
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Draft with AI") {
+    DSPreviewPair {
+        HStack(spacing: DS.Space.lg) {
+            DraftWithAIButton(isDrafting: false, action: {})
+            DraftWithAIButton(isDrafting: true, action: {})
+        }
+    }
+}
+#endif

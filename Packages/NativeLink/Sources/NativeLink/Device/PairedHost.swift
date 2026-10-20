@@ -18,6 +18,10 @@ public struct PairedHost: Codable, Hashable, Sendable, Identifiable {
     public var pairedAt: Date
     /// This device's private key for this host alone.
     public var deviceKey: Data
+    /// What the user typed in Add Host to pair over SSH (`me@mac-mini.local`), for showing the
+    /// exact `ssh` commands that reach the host. Nil for a pasted link, and in pairings saved before
+    /// it existed (an optional, so synthesized decoding reads it with `decodeIfPresent`).
+    public var sshDestination: String?
 
     public var id: HostID { hostID }
 

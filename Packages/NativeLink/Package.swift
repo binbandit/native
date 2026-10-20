@@ -12,6 +12,7 @@ let package = Package(
     ],
     dependencies: [
         .package(path: "../ACP"),
+        .package(path: "../Exec"),
         .package(path: "../NativeHost"),
     ],
     targets: [
@@ -19,6 +20,8 @@ let package = Package(
             name: "NativeLink",
             dependencies: [
                 .product(name: "ACP", package: "ACP"),
+                // Add Host runs the host's pair command over the user's ssh (`LinkSSHPairing`).
+                .product(name: "Exec", package: "Exec"),
                 .product(name: "NativeHostClient", package: "NativeHost"),
             ]
         ),

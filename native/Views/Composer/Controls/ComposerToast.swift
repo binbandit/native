@@ -49,3 +49,20 @@ struct ComposerToast: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Toasts") {
+    DSPreviewPair {
+        VStack(alignment: .trailing, spacing: DS.Space.lg) {
+            ComposerToast(message: "Queued: it goes when this turn ends", tone: .done)
+            ComposerToast(message: "Removed “Also cover the empty queue in the tests”", tone: .done, onUndo: {})
+            ComposerToast(message: "Queued: the turn ended before it could join, so it goes next", tone: .notice)
+            ComposerToast(
+                message:
+                    "Claude Code · 5-hour limit reached · resets 3:05 PM, in 42 min. Your message waits in the queue until then.",
+                tone: .problem)
+        }
+        .frame(width: 420, alignment: .trailing)
+    }
+}
+#endif

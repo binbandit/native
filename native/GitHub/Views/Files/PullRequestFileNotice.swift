@@ -57,3 +57,20 @@ struct PullRequestFileNotice: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("File notices") {
+    DSPreviewPair {
+        PullRequestPagePreview { model, _ in
+            VStack(spacing: DS.Space.md) {
+                PullRequestFileNotice(model: model, path: "native/Views/Composer/ComposerView.swift", kind: .loading)
+                PullRequestFileNotice(model: model, path: "design/composer/queued.png", kind: .missing(.binary))
+                PullRequestFileNotice(model: model, path: "Packages/ACP/schema.json", kind: .missing(.tooLarge))
+                PullRequestFileNotice(model: model, path: "docs/old-notes.md", kind: .missing(.renamedOnly))
+                PullRequestFileNotice(model: model, path: "native/Resources/Grammars.json", kind: .large(lines: 18_204))
+            }
+        }
+        .frame(width: 760)
+    }
+}
+#endif

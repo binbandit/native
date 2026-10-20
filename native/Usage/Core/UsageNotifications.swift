@@ -8,6 +8,11 @@ final class UsageNotifications: LimitAlerting {
     /// Limit actions go back to `UsageLimits`, which sets this.
     var onAction: ((LimitAlertAction) -> Void)?
     weak var host: (any UsageNotificationsHost)?
+    /// Whether a host notifies about the task itself (`HostNotificationFeed`), so this path stays
+    /// quiet about it and nothing shows twice.
+    var isCoveredByHost: ((UsageSessionRef) -> Bool)?
+    /// What the user did with a host's notification goes back to that host.
+    var onHostResponse: ((NativeNotificationResponse) -> Void)?
 
     private let poster: any NativeNotificationPosting
     private let activity: any AppActivity
@@ -38,19 +43,21 @@ final class UsageNotifications: LimitAlerting {
     func turnEnded(_ context: SessionContext, reason: StopReason) async {
         // A subagent's turn is part of its parent's, which notifies when it finishes.
         guard reason == .endTurn, preferences.notifiesLongWork, let ref = UsageSessionRef(context), ref.parent == nil,
-            isUsersTask(ref), let summary = host?.lastTurnSummary(of: ref), let duration = summary.duration,
-            duration >= preferences.longWorkThreshold
+            isUsersTask(ref), !isCovered(ref), let summary = host?.lastTurnSummary(of: ref),
+            let duration = summary.duration, duration >= preferences.longWorkThreshold
         else { return }
         await deliver(.turnFinished(ref, summary: summary), unlessShowing: ref)
     }
 
     func permissionRequested(_ context: SessionContext, toolCall: String) async {
-        guard preferences.notifiesNeedsYou, let ref = UsageSessionRef(context), isUsersTask(ref) else { return }
+        guard preferences.notifiesNeedsYou, let ref = UsageSessionRef(context), isUsersTask(ref), !isCovered(ref)
+        else { return }
         await deliver(.permission(ref, toolCall: toolCall), unlessShowing: ref)
     }
 
     func questionAsked(_ context: SessionContext, message: String) async {
-        guard preferences.notifiesNeedsYou, let ref = UsageSessionRef(context), isUsersTask(ref) else { return }
+        guard preferences.notifiesNeedsYou, let ref = UsageSessionRef(context), isUsersTask(ref), !isCovered(ref)
+        else { return }
         let canReply = host?.canReplyInText(ref) ?? false
         await deliver(.question(ref, message: message, canReply: canReply), unlessShowing: ref)
     }
@@ -68,6 +75,10 @@ final class UsageNotifications: LimitAlerting {
         host?.isNativeTask(ref) != true
     }
 
+    private func isCovered(_ ref: UsageSessionRef) -> Bool {
+        isCoveredByHost?(ref) == true
+    }
+
     /// Skips the notification while the user is in Native looking at the task, or at Native at all
     /// when it isn't about one task.
     private func deliver(_ notification: NativeNotification, unlessShowing ref: UsageSessionRef?) async {
@@ -79,6 +90,12 @@ final class UsageNotifications: LimitAlerting {
 
     private func receive(_ response: NativeNotificationResponse) {
         let notification = response.notification
+        if notification.hostNotificationID != nil {
+            onHostResponse?(response)
+            return
+        }
+        // Clearing one of these from the notification center means nothing to anyone else.
+        guard !response.isDismissed else { return }
         let agent = AgentDefinition.ID(rawValue: notification.agent)
         let ref = notification.ref
         switch response.action {

@@ -28,3 +28,17 @@ struct ChecksButton: View {
             ChecksIndicator.summary(checks) + (checks.state == .failing ? "\nOpen the failing check" : "\nOpen checks"))
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Checks button") {
+    let pullRequest = PullRequestPreviewFixtures.inbox.authored[0]
+    DSPreviewPair {
+        HStack(spacing: DS.Space.lg) {
+            ChecksButton(pullRequest: pullRequest, checks: CheckSummary(state: .passing, passed: 9, skipped: 1))
+            ChecksButton(pullRequest: pullRequest, checks: CheckSummary(state: .failing, passed: 9, failed: 1))
+            ChecksButton(pullRequest: pullRequest, checks: CheckSummary(state: .pending, passed: 6, pending: 4))
+        }
+    }
+    .environment(GitHubModel.preview())
+}
+#endif

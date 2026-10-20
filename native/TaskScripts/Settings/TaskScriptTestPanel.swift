@@ -123,3 +123,17 @@ struct TaskScriptTestPanel: View {
         .foregroundStyle(.dsTextPrimary)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Script test panel") {
+    DSPreviewPair {
+        TaskScriptTestPanel(
+            text: TaskScriptsPreviewFixtures.setupScript.text,
+            target: TaskScriptEditorSheet.Target(event: .setup, scope: .project(TaskScriptsPreviewFixtures.project))
+        )
+        .frame(width: 560)
+    }
+    .environment(TaskScriptsPreviewFixtures.center())
+    .environment(AppModel.preview())
+}
+#endif

@@ -171,7 +171,7 @@ extension AppModel {
         problems.resolve(.workspaceArchive(key), in: projectID)
         problems.resolve(.workspaceRestore(key), in: projectID)
         // The agent's copy goes too when it's running; a stopped agent isn't started just for this.
-        if let runtime = runtimes[key.agent], let connection = runtime.connection,
+        if let runtime = agentRuntime(for: key), let connection = runtime.connection,
             runtime.capabilities?.deleteSessions == true
         {
             do {

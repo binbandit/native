@@ -31,6 +31,10 @@ extension AppModel {
             isAddingProject = true
             return
         }
+        // On the paired host this project's tasks last started on, while it can take one.
+        if case .remote = preferredDevice(for: project.id) {
+            return await newSession(in: project.id, with: agent, on: preferredDevice(for: project.id))
+        }
         // A task can't start in a folder that's gone. The project already says so, with Retry, so show
         // it rather than an alert about git; looking again first lets a folder that's back through.
         checkFolder(of: project)
@@ -88,6 +92,8 @@ extension AppModel {
     }
 
     private func start(_ task: StartingTask) async {
+        // A task on a paired host is made there (AppModel+HostsStarting.swift).
+        if case .remote(let host) = task.device { return await start(task, on: host) }
         guard let project = projects.project(task.project) else { return remove(task) }
         task.failure = nil
         let agent = task.agent.id
@@ -121,6 +127,7 @@ extension AppModel {
             }
             catalog.add(
                 SessionInfo(sessionId: session.id, cwd: folder.folderPath, updatedAt: .now), for: agent, in: project.id)
+            unsentSessions.started(session.key)
             finish(task, with: session)
         } catch {
             if ready.noteSignInRequired(by: error), !ready.authMethods.isEmpty {
@@ -160,7 +167,8 @@ extension AppModel {
     }
 
     /// The session takes the task's place: in the sidebar, the selection and history, with the draft.
-    private func finish(_ task: StartingTask, with session: SessionModel) {
+    /// Internal only for AppModel+HostsStarting.swift, as are `fail` and `remove`.
+    func finish(_ task: StartingTask, with session: SessionModel) {
         session.draft = task.draft
         let wasSelected = selection == task.id
         startingTasks.removeAll { $0 === task }
@@ -178,11 +186,11 @@ extension AppModel {
         }
     }
 
-    private func fail(_ task: StartingTask, _ title: String, _ message: String, needsSignIn: Bool = false) {
+    func fail(_ task: StartingTask, _ title: String, _ message: String, needsSignIn: Bool = false) {
         task.failure = StartingTask.Failure(title: title, message: message, needsSignIn: needsSignIn)
     }
 
-    private func remove(_ task: StartingTask) {
+    func remove(_ task: StartingTask) {
         startingTasks.removeAll { $0 === task }
         if selection == task.id {
             focusProject(task.project)
@@ -191,6 +199,7 @@ extension AppModel {
 
     /// Removes the workspace made for a discarded task, unless it's the project's own folder.
     private func removeWorkspace(of task: StartingTask) {
+        // A paired host's worktree is removed there (`DeviceTaskWorkspaces` goes by the folder).
         guard let folder = task.folder, let project = projects.project(task.project),
             !SessionFolder.isSame(folder.folderPath, project.path)
         else { return }

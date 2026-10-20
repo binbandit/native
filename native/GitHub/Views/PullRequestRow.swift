@@ -180,3 +180,52 @@ struct PullRequestRow: View {
         return parts.joined(separator: ", ")
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Pull request rows") {
+    let inbox = PullRequestPreviewFixtures.inbox
+    DSPreviewPair {
+        // Failing, running and passing checks, approved, review required, a draft, and changes requested.
+        VStack(spacing: 0) {
+            ForEach(inbox.all) { pullRequest in
+                PullRequestRow(pullRequest: pullRequest)
+            }
+        }
+        .frame(width: PullRequestsLayout.contentWidth)
+    }
+    .environment(GitHubModel.preview(inbox: inbox))
+}
+
+#Preview("Pull request row - Commenting, working and failed") {
+    let inbox = PullRequestPreviewFixtures.inbox
+    let commenting = GitHubModel.preview(inbox: inbox)
+    commenting.commentingOn = inbox.reviewRequested[0].url
+    let working = GitHubModel.preview(inbox: inbox)
+    working.rowActivity[inbox.authored[2].url] = .working("Merging…")
+    let failed = GitHubModel.preview(inbox: inbox)
+    failed.rowActivity[inbox.authored[3].url] = .failed("Couldn’t close #2584: you don’t have permission.")
+    return DSPreviewPair {
+        VStack(spacing: 0) {
+            PullRequestRow(pullRequest: inbox.reviewRequested[0])
+                .environment(commenting)
+            PullRequestRow(pullRequest: inbox.authored[2])
+                .environment(working)
+            PullRequestRow(pullRequest: inbox.authored[3])
+                .environment(failed)
+        }
+        .frame(width: PullRequestsLayout.contentWidth)
+    }
+}
+
+#Preview("Pull request row - Narrow") {
+    let inbox = PullRequestPreviewFixtures.inbox
+    DSPreviewPair {
+        VStack(spacing: 0) {
+            PullRequestRow(pullRequest: inbox.authored[0])
+            PullRequestRow(pullRequest: inbox.reviewRequested[1])
+        }
+        .frame(width: 360)
+    }
+    .environment(GitHubModel.preview(inbox: inbox))
+}
+#endif

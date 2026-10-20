@@ -1,3 +1,4 @@
+import ACP
 import NativeAutomation
 import NativeExpeditions
 import SwiftUI
@@ -145,3 +146,22 @@ struct ExpeditionCrewPanel: View {
         message = ""
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Crew panel") {
+    DSPreviewPair {
+        HStack(alignment: .top, spacing: DS.Space.xl) {
+            ExpeditionCrewPanel(
+                expedition: ExpeditionPreviewFixtures.underway, selected: .constant(nil), send: { _ in }
+            )
+            .frame(width: 320)
+            ExpeditionCrewPanel(
+                expedition: ExpeditionPreviewFixtures.needsYou, selected: .constant(.assignment("steer")),
+                send: { _ in }
+            )
+            .frame(width: 320)
+        }
+    }
+    .environment(ExpeditionCenter.preview())
+}
+#endif

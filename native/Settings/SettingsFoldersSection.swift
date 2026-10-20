@@ -171,3 +171,16 @@ private struct SettingsFolderRow: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Folders section") {
+    let app = AppModel.preview()
+    DSPreviewPair {
+        SettingsFoldersSection(
+            title: "Where agents look", folders: SettingsPreviewFixtures.folders(readers: app.agents.map(\.agent)),
+            place: SettingsFolderNoun("folder"), item: SettingsFolderNoun("skill")
+        )
+        .settingsPreviewPage()
+    }
+}
+#endif

@@ -269,3 +269,22 @@ struct SessionContextUsage: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Session rows") {
+    let app = AppModel.preview()
+    DSPreviewPair {
+        // Working, waiting for permission, done and unread, then two idle ones (one long).
+        VStack(alignment: .leading, spacing: DS.Space.xxs) {
+            ForEach(SidebarPreviewFixtures.sessions(in: app)) { summary in
+                SessionRow(summary: summary, canMoveUp: true, canMoveDown: true, accessory: EmptyView()) {}
+            }
+            ForEach(SidebarPreviewFixtures.sessions(in: app, project: 1)) { summary in
+                SessionRow(summary: summary, canMoveUp: true, canMoveDown: true, accessory: EmptyView()) {}
+            }
+        }
+        .frame(width: DS.Size.sidebarWidth - DS.Space.lg)
+    }
+    .sidebarPreviewEnvironment(app)
+}
+#endif

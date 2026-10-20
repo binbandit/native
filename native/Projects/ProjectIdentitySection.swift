@@ -112,3 +112,16 @@ private struct ProjectNameField: View {
         draft = model.projects.project(project.id)?.name ?? draft
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Project identity") {
+    let app = AppModel.preview()
+    DSPreviewPair {
+        if let project = app.previewProject() {
+            ProjectIdentitySection(project: project)
+                .settingsPreviewPage()
+        }
+    }
+    .sidebarPreviewEnvironment(app)
+}
+#endif

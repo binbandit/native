@@ -28,3 +28,18 @@ struct PullRequestAskQuestionBubble: View {
         .accessibilityLabel(isQueued ? "Queued question: \(text)" : "You asked: \(text)")
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Ask question bubbles") {
+    DSPreviewPair {
+        VStack(alignment: .trailing, spacing: DS.Space.md) {
+            PullRequestAskQuestionBubble(text: "What does this change, and what's risky?")
+            PullRequestAskQuestionBubble(
+                text:
+                    "And what should I test before approving this? I mostly care about the non-steering agents, since that's where Send Now stops the turn first.",
+                isQueued: true)
+        }
+        .frame(width: PullRequestAskMetrics.panelIdealWidth)
+    }
+}
+#endif

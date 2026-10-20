@@ -78,3 +78,31 @@ struct GitHubCommentComposer<Actions: View>: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Comment composer") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.lg) {
+            GitHubCommentComposerPreview(text: "")
+            GitHubCommentComposerPreview(
+                text: "Pushed a fix for the non-steering case.\n\n- Send Now stops the turn first\n- Then sends",
+                isBusy: true)
+        }
+        .frame(width: PullRequestsLayout.contentWidth)
+    }
+}
+
+/// Holds the composer's text, which it takes as a binding.
+private struct GitHubCommentComposerPreview: View {
+    @State var text: String
+    var isBusy = false
+
+    var body: some View {
+        GitHubCommentComposer(text: $text, placeholder: "Leave a comment. Markdown works.", isBusy: isBusy) {
+            Button(isBusy ? "Commenting…" : "Comment") {}
+                .buttonStyle(.ds(.primary))
+                .disabled(text.isEmpty)
+        }
+    }
+}
+#endif

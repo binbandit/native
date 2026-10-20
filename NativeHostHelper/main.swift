@@ -18,6 +18,14 @@ let info = PeerInfo(
     version: bundle.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "0",
     build: bundle.object(forInfoDictionaryKey: "CFBundleVersion") as? String ?? "0"
 )
+// `Native Host pair`, from a shell on this Mac: pairs a device with its host (docs/durability.md).
+if CommandLine.arguments.dropFirst().first == LinkPairCommand.name {
+    HostPairCommand.run(Array(CommandLine.arguments.dropFirst(2)), build: info)
+}
+// `Native Host doctor`, over SSH: the running host's checks, or this Mac's without it (docs/droids.md).
+if CommandLine.arguments.dropFirst().first == "doctor" {
+    HostDoctorMac.runCommand(location: HostDoctorMac.Launch.current.location, version: info)
+}
 let location = MacHost.location()
 var configuration = MacHost.configuration(location: location, info: info)
 // Started by the app itself (background activity is off): it lives exactly as long as the app.
@@ -45,10 +53,26 @@ Task { @HostActor in
                     core.accept(
                         stream,
                         grants: ClientGrants(
-                            managePlugins: grants.managePlugins, manageHost: grants.manageHost, isLocal: false))
+                            managePlugins: grants.managePlugins, manageHost: grants.manageHost, isLocal: false,
+                            runCommands: grants.runCommands))
                 }
+            },
+            paired: { record in
+                Task { @HostActor in core.journalDevicePaired(record.device.name, detail: record.summary) }
             })
         try await gateway.start(verifyPeer: { try CodeSignatureVerifier().verify(socket: $0) })
+        core.doctorGateway = {
+            let status = await gateway.status
+            return HostDoctorGateway(
+                isEnabled: status.isEnabled, isListening: status.listener.state == .listening,
+                port: status.listener.port, problem: status.listener.problem, pairedDevices: status.activeDevices.count)
+        }
+        // Paired devices reach the host only while it runs, so a development host keeps running
+        // for them rather than stopping when idle.
+        await gateway.observe { status in
+            Task { @HostActor in core.hasPairedDevices = !status.activeDevices.isEmpty }
+        }
+        core.hasPairedDevices = await !gateway.status.activeDevices.isEmpty
     } catch HostMain.Failure.alreadyRunning {
         // Another host owns this location; exiting cleanly keeps launchd from restarting this one.
         logger.info("Another host is running at \(location.socketPath, privacy: .public)")

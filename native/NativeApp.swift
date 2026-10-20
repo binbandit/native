@@ -65,13 +65,20 @@ struct NativeApp: App {
         let taskWorkspaces = GitTaskWorkspaceProvider(git: git, gitHub: gitHub, scripts: taskScripts)
         _taskWorkspaces = State(initialValue: taskWorkspaces)
         model.taskWorkspaces = taskWorkspaces
-        // Agents are child processes; ending them with the app keeps them from outliving it.
+        // A paired host's tasks get theirs there; this Mac's are unchanged.
+        RemoteHostsWiring.connect(model: model, local: taskWorkspaces, git: git, gitHub: gitHub)
+        // Agents are child processes; ending them with the app keeps them from outliving it. New
+        // sessions still without a message keep their drafts for the next launch.
         NotificationCenter.default.addObserver(
             forName: NSApplication.willTerminateNotification, object: nil, queue: .main
         ) { _ in
-            MainActor.assumeIsolated { model.stopAgents() }
+            MainActor.assumeIsolated {
+                model.keepUnsentDrafts()
+                model.stopAgents()
+            }
         }
         GitAutomationWiring.connect(git, to: BuiltInPlugins.automation.center.automations)
+        GitTurnWiring.connect(git, to: model)
         let settings = SettingsPresentation()
         _settings = State(initialValue: settings)
         let keepAwake = KeepAwakeController()
@@ -167,6 +174,14 @@ struct NativeApp: App {
                     SkillsPlugin.connect(to: model)
                     BuiltInPlugins.search.center.connect(to: model)
                     BuiltInPlugins.usage.connect(to: model)
+                    BuiltInPlugins.usage.hostNotifications.connect(to: model)
+                    BuiltInPlugins.usage.hostNotifications.onHostAway = { [durableHost, model] summary, host, isLocal in
+                        if isLocal {
+                            durableHost.away = summary
+                        } else {
+                            model.hosts.host(host)?.away = summary
+                        }
+                    }
                     BuiltInPlugins.automation.center.connect(to: model) { [git, gitHub] draft in
                         try await AutomationGitHubWiring.openPullRequest(draft, git: git, gitHub: gitHub)
                     }
@@ -195,6 +210,9 @@ struct NativeApp: App {
                     durableHost.connectUpdates(updates)
                     if let client = await durableHost.launch() {
                         model.connectHost(client: client)
+                        keepAwake.useHost(client)
+                        await BuiltInPlugins.usage.hostNotifications.follow(client)
+                        await HostTitlesWiring.connect(model, to: client)
                     }
                     await model.start()
                     LaunchMetrics.mark(.agentsReady)
@@ -217,175 +235,9 @@ struct NativeApp: App {
         }
         .defaultSize(width: 1120, height: 780)
         .commands {
-            UpdateCommands(commands: CommandRegistry.shared)
-            HostQuitCommands(host: durableHost, commands: CommandRegistry.shared)
-            WhatsNewCommands(commands: CommandRegistry.shared)
-            HelpCommands(commands: CommandRegistry.shared, model: model)
-            FileCommands(commands: CommandRegistry.shared)
-            ViewCommands(commands: CommandRegistry.shared)
-            AppearanceCommands(commands: CommandRegistry.shared)
-            SettingsCommands(settings: settings)
-            GoCommands(commands: CommandRegistry.shared)
-            SessionCommands(model: model, commands: CommandRegistry.shared)
-            ProjectActionCommands(
-                runner: projectActions, commands: CommandRegistry.shared,
-                target: { [model] in ProjectActionsWiring.target(for: $0, model: model) })
-            TerminalCommands(commands: CommandRegistry.shared)
-            KeepAwakeCommands(controller: keepAwake, commands: CommandRegistry.shared)
-            StatusBarCommands(registry: statusBar, commands: CommandRegistry.shared)
-        }
-    }
-}
-
-// The menus place commands; what each does, when it's available and its shortcut come from the
-// registry (docs/commands.md). Default shortcuts are in docs/keyboard.md; change them there first.
-
-private struct FileCommands: Commands {
-    let commands: CommandRegistry
-
-    var body: some Commands {
-        CommandGroup(replacing: .newItem) {
-            CommandMenuItem(.sessionNew, in: commands)
-            CommandMenuItem(.sessionNewWithAgent, in: commands)
-            CommandMenuItem(.expeditionNew, in: commands)
-            CommandMenuItem(.projectOpen, in: commands)
-            CommandMenuItem(.projectSettings, in: commands)
-            CommandMenuItem(.pullRequestOpenAsTask, in: commands)
-            CommandMenuItem(.gitCleanUpMerged, in: commands)
-            Divider()
-            CommandMenuItem(.composerAttachFiles, in: commands)
-        }
-    }
-}
-
-private struct ViewCommands: Commands {
-    let commands: CommandRegistry
-
-    var body: some Commands {
-        CommandGroup(replacing: .sidebar) {
-            CommandMenuItem(.paletteShow, in: commands)
-            Divider()
-            CommandMenuItem(.viewToggleSidebar, in: commands)
-            CommandMenuItem(.viewToggleSubagentInspector, in: commands)
-            CommandMenuItem(.viewToggleChanges, in: commands)
-            CommandMenuItem(.viewMCPServers, in: commands)
-            CommandMenuItem(.viewNeedsYouFilter, in: commands)
-
-            Divider()
-            // Its own toggle, so the checkmark follows the preference; the shortcut is the registry's.
-            FoldEarlierTurnsToggle()
-                .keyboardShortcut(commands.keyboardShortcut(for: .transcriptFoldEarlierTurns))
-            CommandMenuItem(.transcriptJumpToLatest, in: commands)
-
-            Divider()
-            CommandMenuItem(.celebrationRestore, in: commands)
-            CommandMenuItem(.celebrationChoose, in: commands)
-        }
-    }
-}
-
-private struct SettingsCommands: Commands {
-    let settings: SettingsPresentation
-    @Environment(\.openWindow) private var openWindow
-
-    var body: some Commands {
-        // ⌘, is macOS's standard Settings key, so it stays outside the registry.
-        CommandGroup(replacing: .appSettings) {
-            Button("Settings…") {
-                // Settings lives in the main window, so bring the window back if it was closed.
-                openWindow(id: "main")
-                settings.toggle()
-            }
-            .keyboardShortcut(",")
-        }
-    }
-}
-
-private struct GoCommands: Commands {
-    let commands: CommandRegistry
-
-    var body: some Commands {
-        CommandMenu("Go") {
-            CommandMenuItem(.goBack, in: commands)
-            CommandMenuItem(.goForward, in: commands)
-            Divider()
-            CommandMenuItem(.goPullRequests, in: commands)
-            CommandMenuItem(.goExpeditions, in: commands)
-            TranscriptSearchMenuItem(commands: commands)
-        }
-    }
-}
-
-private struct SessionCommands: Commands {
-    let model: AppModel
-    let commands: CommandRegistry
-    @FocusedValue(\.activeSession) private var session
-
-    var body: some Commands {
-        CommandMenu("Session") {
-            CommandMenuItem(.composerFocus, in: commands)
-            CommandMenuItem(.sessionStop, in: commands)
-            CommandMenuItem(.sessionClearConversation, in: commands)
-            CommandMenuItem(.sessionOpenEarlierConversation, in: commands)
-            CommandMenuItem(.sessionOpenCurrentConversation, in: commands)
-
-            Divider()
-
-            CommandMenuItem(.sessionNextPermissionMode, in: commands)
-            ModeMenuItems(commands: commands)
-            CommandMenuItem(.sessionChooseModel, in: commands)
-
-            Divider()
-
-            // The visible task's folder (its worktree when it has one); disabled while no task is in
-            // view (Home, Settings, Pull Requests).
-            OpenInCommands(
-                location: session.map {
-                    OpenInLocation(folder: $0.cwd, host: model.currentProject?.host ?? .local)
-                },
-                commands: commands)
-            CommandMenuItem(.pullRequestOpenForTask, in: commands)
-
-            Divider()
-
-            CommandMenuItem(.goalEdit, in: commands)
-            CommandMenuItem(.goalPauseOrResume, in: commands)
-            CommandMenuItem(.goalClear, in: commands)
-            CommandMenuItem(.workflowRun, in: commands)
-
-            Divider()
-
-            CommandMenuItem(.sessionRename, in: commands)
-            CommandMenuItem(.sessionArchive, in: commands)
-            CommandMenuItem(.sessionTogglePin, in: commands)
-            CommandMenuItem(.sessionToggleUnread, in: commands)
-            Menu("Selected Tasks") {
-                CommandMenuItem(.sidebarSelectMode, in: commands)
-                CommandMenuItem(.sidebarSelectAll, in: commands)
-                CommandMenuItem(.selectionClear, in: commands)
-                Divider()
-                CommandMenuItem(.selectionMarkRead, in: commands)
-                CommandMenuItem(.selectionMarkUnread, in: commands)
-                CommandMenuItem(.selectionPin, in: commands)
-                CommandMenuItem(.selectionUnpin, in: commands)
-                CommandMenuItem(.selectionStop, in: commands)
-                Divider()
-                CommandMenuItem(.selectionArchive, in: commands)
-                CommandMenuItem(.selectionUnarchive, in: commands)
-                CommandMenuItem(.selectionDelete, in: commands)
-            }
-            CommandMenuItem(.sidebarMoveUp, in: commands)
-            CommandMenuItem(.sidebarMoveDown, in: commands)
-            CommandMenuItem(.sessionNext, in: commands)
-            CommandMenuItem(.sessionPrevious, in: commands)
-
-            let listed = min(model.sessionList.count, CommandID.sessionSelectPositions.upperBound)
-            if listed > 0 {
-                Divider()
-                ForEach(1...listed, id: \.self) { position in
-                    CommandMenuItem(.sessionSelect(position), in: commands)
-                }
-            }
+            NativeMenuBar(
+                model: model, settings: settings, host: durableHost, projectActions: projectActions,
+                keepAwake: keepAwake, statusBar: statusBar)
         }
     }
 }

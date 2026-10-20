@@ -63,3 +63,18 @@ private struct SettingsSwitchButtonStyle: ButtonStyle {
         configuration.label
     }
 }
+
+#if DEBUG
+#Preview("Switch") {
+    DSPreviewPair {
+        HStack(spacing: DS.Space.lg) {
+            SettingsSwitch("On", isOn: .constant(true))
+            SettingsSwitch("Off", isOn: .constant(false))
+            SettingsSwitch("On, disabled", isOn: .constant(true))
+                .disabled(true)
+            SettingsSwitch("Off, disabled", isOn: .constant(false))
+                .disabled(true)
+        }
+    }
+}
+#endif

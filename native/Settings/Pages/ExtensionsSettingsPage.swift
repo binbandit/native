@@ -124,3 +124,12 @@ struct ExtensionsSettingsPage: View {
     }
     #endif
 }
+
+#if DEBUG
+#Preview("Extensions settings") {
+    DSPreviewPair {
+        ExtensionsSettingsPage(registry: SettingsPreviewFixtures.registry())
+            .settingsPreviewPage()
+    }
+}
+#endif

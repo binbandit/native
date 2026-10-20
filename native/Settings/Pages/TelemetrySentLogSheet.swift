@@ -62,3 +62,19 @@ private struct EntryView: View {
         ([record.name.rawValue] + record.attributes.map { "\($0.key.rawValue)=\($0.value)" }).joined(separator: "  ")
     }
 }
+
+#if DEBUG
+#Preview("What Native sends") {
+    DSPreviewPair {
+        TelemetrySentLogSheet(entries: SettingsPreviewFixtures.sentLog)
+            .frame(width: 600, height: 420)
+    }
+}
+
+#Preview("What Native sends - Nothing sent") {
+    DSPreviewPair {
+        TelemetrySentLogSheet(entries: [])
+            .frame(width: 600, height: 420)
+    }
+}
+#endif

@@ -21,3 +21,15 @@ struct ExistingPullRequestNotice: View {
         .overlay { shape.strokeBorder(.dsSeparator, lineWidth: 1) }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Existing pull request") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.md) {
+            ExistingPullRequestNotice(pullRequest: PullRequestPreviewFixtures.inbox.authored[0])
+            ExistingPullRequestNotice(pullRequest: PullRequestPreviewFixtures.inbox.authored[4])
+        }
+        .frame(width: 520)
+    }
+}
+#endif

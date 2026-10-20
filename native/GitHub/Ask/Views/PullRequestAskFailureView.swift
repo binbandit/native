@@ -84,3 +84,29 @@ struct PullRequestAskFailureView: View {
         Task { await conversation.retry() }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Ask failures") {
+    let center = PullRequestAskPreviewFixtures.center()
+    let conversation = center.conversation(for: PullRequestPreviewRunner.reference)
+    let claude = AgentDefinition.ID(rawValue: "claude-code")
+    let failures: [PullRequestAskFailure] = [
+        .noAgent,
+        .agentUnavailable(agent: claude, name: "Claude Code", guidance: nil),
+        .signInRequired(agent: claude, name: "Claude Code"),
+        .gitHub(.offline("error connecting to api.github.com")),
+        .workspace("Native couldn't make a folder for the conversation: the disk is full."),
+        .startFailed(name: "Claude Code", message: "The agent exited before it answered (code 1)."),
+        .reopenFailed(name: "Codex", message: "Session not found"),
+    ]
+    return DSPreviewPair {
+        VStack(spacing: DS.Space.lg) {
+            ForEach(failures.indices, id: \.self) { index in
+                PullRequestAskFailureView(conversation: conversation, failure: failures[index])
+            }
+        }
+        .frame(width: PullRequestAskMetrics.panelIdealWidth)
+    }
+    .environment(center)
+}
+#endif

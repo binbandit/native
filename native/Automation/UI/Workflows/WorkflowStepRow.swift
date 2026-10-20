@@ -255,3 +255,27 @@ struct WorkflowStepRow: View {
         .help(action.help)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Step rows") {
+    let runs = [
+        AutomationPreviewFixtures.runningRun, AutomationPreviewFixtures.blockedRun,
+        AutomationPreviewFixtures.limitedRun, AutomationPreviewFixtures.failedRun,
+    ].compactMap { $0 }
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: 0) {
+            ForEach(runs) { run in
+                if run.steps.count > 1 {
+                    WorkflowStepRow(
+                        step: run.steps[1], run: run, report: AutomationPreviewFixtures.report, send: { _ in },
+                        onOpen: {})
+                }
+            }
+            if let run = AutomationPreviewFixtures.finishedRun, let step = run.steps.first {
+                WorkflowStepRow(step: step, run: run, report: nil, isSelected: true, send: { _ in }, onOpen: {})
+            }
+        }
+        .frame(width: 720)
+    }
+}
+#endif

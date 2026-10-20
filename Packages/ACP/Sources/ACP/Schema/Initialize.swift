@@ -61,52 +61,6 @@ public struct InitializeResponse: Decodable, Sendable {
     }
 }
 
-public struct AuthMethod: Decodable, Hashable, Sendable {
-    /// A sign-in that only works in a terminal, so `authenticate` can't do it: the client runs a
-    /// command in a terminal for the user instead.
-    public enum Terminal: Hashable, Sendable {
-        /// ACP's `"type": "terminal"`: run the agent's own command with these arguments.
-        case agent(arguments: [String])
-        /// Zed's `_meta["terminal-auth"]`: run this command.
-        case command(String, arguments: [String])
-    }
-
-    public var id: String
-    public var name: String
-    public var description: String?
-    /// Set when the method only works in a terminal.
-    public var terminal: Terminal?
-
-    public init(id: String, name: String, description: String? = nil, terminal: Terminal? = nil) {
-        self.id = id
-        self.name = name
-        self.description = description
-        self.terminal = terminal
-    }
-
-    private enum CodingKeys: String, CodingKey {
-        case id, name, description, type, args, _meta
-    }
-
-    public init(from decoder: any Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        id = try container.decode(String.self, forKey: .id)
-        name = try container.decode(String.self, forKey: .name)
-        description = try container.decodeIfPresent(String.self, forKey: .description)
-        let terminalAuth = try container.decodeIfPresent(JSONValue.self, forKey: ._meta)?["terminal-auth"]
-        if let command = terminalAuth?["command"]?.stringValue {
-            terminal = .command(command, arguments: Self.strings(terminalAuth?["args"]))
-        } else if try container.decodeIfPresent(String.self, forKey: .type) == "terminal" {
-            terminal = .agent(arguments: try container.decodeIfPresent([String].self, forKey: .args) ?? [])
-        }
-    }
-
-    private static func strings(_ value: JSONValue?) -> [String] {
-        guard case .array(let values) = value else { return [] }
-        return values.compactMap(\.stringValue)
-    }
-}
-
 /// What an agent takes in a prompt besides text and `resource_link` blocks, which every agent
 /// takes (`promptCapabilities`).
 public struct PromptCapabilities: Decodable, Hashable, Sendable {
@@ -139,6 +93,8 @@ public struct AgentCapabilities: Decodable, Hashable, Sendable {
     public var deleteSessions = false
     /// Whether `CloseSessionRequest` frees a session in the agent's process.
     public var closeSessions = false
+    /// Whether `session/resume` reopens a session without replaying its history.
+    public var resumeSessions = false
     /// Whether `SteerRequest` works (the `_session/steering` extension).
     public var steering = false
     /// Which remote MCP transports the agent can connect to; every agent supports stdio servers.
@@ -160,6 +116,7 @@ public struct AgentCapabilities: Decodable, Hashable, Sendable {
         var list: JSONValue?
         var delete: JSONValue?
         var close: JSONValue?
+        var resume: JSONValue?
     }
 
     public init(from decoder: any Decoder) throws {
@@ -171,6 +128,7 @@ public struct AgentCapabilities: Decodable, Hashable, Sendable {
         listSessions = session?.list.map { $0 != .null } ?? false
         deleteSessions = session?.delete.map { $0 != .null } ?? false
         closeSessions = session?.close.map { $0 != .null } ?? false
+        resumeSessions = session?.resume.map { $0 != .null } ?? false
         let mcp = try container.decodeIfPresent(MCPCapabilities.self, forKey: .mcpCapabilities)
         mcpHTTP = mcp?.http ?? false
         mcpSSE = mcp?.sse ?? false

@@ -13,8 +13,15 @@ struct AppTaskRowAccessory: View {
 
     var body: some View {
         let folder = URL(filePath: summary.info.cwd, directoryHint: .isDirectory)
+        let device = model.device(of: summary.id)
         HStack(spacing: DS.Space.xs) {
-            if hasOwnCheckout(folder) {
+            if case .remote(let id) = device, let host = model.hosts.host(id) {
+                HostDeviceBadge(
+                    name: host.name, look: HostLookStore.shared.look(for: device, named: host.name),
+                    availability: host.availability)
+            }
+            // This Mac's git can't see a paired host's folders.
+            if device == .thisMac, hasOwnCheckout(folder) {
                 let repository = git.model(for: folder)
                 if let branch = repository.branch?.name {
                     TaskPullRequestBadge(directory: folder, branch: branch)

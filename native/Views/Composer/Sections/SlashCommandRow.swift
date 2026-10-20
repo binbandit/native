@@ -27,3 +27,16 @@ struct SlashCommandRow: View {
         .accessibilityLabel("/\(command.name): \(command.description)")
     }
 }
+
+#if DEBUG
+#Preview("Slash command rows") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.sm) {
+            ForEach(Array(ComposerPreviewFixtures.commands.enumerated()), id: \.offset) { index, command in
+                SlashCommandRow(command: command, isHighlighted: index == 0)
+            }
+        }
+        .frame(width: 420)
+    }
+}
+#endif

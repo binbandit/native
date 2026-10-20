@@ -48,3 +48,21 @@ struct PullRequestFilesRowView: View {
         return max(Int(code / characterWidth), 20)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Files rows") {
+    DSPreviewPair {
+        PullRequestPagePreview { model, _ in
+            // The first file as the list draws it: its header, hunk header, lines and conversation.
+            VStack(alignment: .leading, spacing: 0) {
+                ForEach(model.rows.prefix(6)) { row in
+                    PullRequestFilesRowView(model: model, row: row, width: 760, characterWidth: 7, isShiftDown: false)
+                        .fileCardSlice(row.slice)
+                }
+            }
+            .codeTextStyle(.compact)
+        }
+        .frame(width: 760)
+    }
+}
+#endif

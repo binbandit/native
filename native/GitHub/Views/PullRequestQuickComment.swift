@@ -29,3 +29,21 @@ struct PullRequestQuickComment: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Quick comment") {
+    let pullRequest = PullRequestPreviewFixtures.inbox.reviewRequested[0]
+    let empty = GitHubModel.preview()
+    let drafted = GitHubModel.preview()
+    drafted.quickComments[pullRequest.url] = "Looks good once the 60-a-minute limit is per client, not per process."
+    return DSPreviewPair {
+        VStack(spacing: DS.Space.lg) {
+            PullRequestQuickComment(pullRequest: pullRequest)
+                .environment(empty)
+            PullRequestQuickComment(pullRequest: pullRequest)
+                .environment(drafted)
+        }
+        .frame(width: PullRequestsLayout.contentWidth)
+    }
+}
+#endif

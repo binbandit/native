@@ -54,3 +54,16 @@ struct ChecksIndicator: View {
         return "Checks: " + parts.joined(separator: ", ")
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Checks indicator") {
+    DSPreviewPair {
+        HStack(spacing: DS.Space.lg) {
+            ChecksIndicator(checks: CheckSummary(state: .passing, passed: 9, skipped: 1))
+            ChecksIndicator(checks: CheckSummary(state: .failing, passed: 9, failed: 1))
+            ChecksIndicator(checks: CheckSummary(state: .pending, passed: 6, pending: 4))
+            ChecksIndicator(checks: CheckSummary(state: .pending))
+        }
+    }
+}
+#endif

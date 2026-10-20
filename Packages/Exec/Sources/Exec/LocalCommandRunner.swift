@@ -1,8 +1,8 @@
-#if os(macOS)
+#if os(macOS) || os(Linux)
 import Foundation
 import Synchronization
 
-/// Runs commands on this Mac.
+/// Runs commands on this machine: a Mac, or a Linux host running tasks for one.
 public struct LocalCommandRunner: CommandRunner {
     /// How long a command that ignores being asked to stop gets before it's killed.
     static let stopGracePeriod = Duration.seconds(3)
@@ -205,9 +205,19 @@ private struct PipeEnd: ~Copyable {
         guard descriptor >= 0 else { throw POSIXError(POSIXErrorCode(rawValue: error) ?? .EMFILE) }
         // Writing to a command that exited without reading its input fails, rather than raising
         // SIGPIPE, which ends the whole process unless it ignores the signal.
+        #if canImport(Darwin)
         _ = fcntl(descriptor, F_SETNOSIGPIPE, 1)
+        #else
+        // Linux has no such flag per descriptor, so the process ignores the signal (as `native-host`
+        // does anyway); writes then fail with EPIPE.
+        _ = Self.ignoresBrokenPipes
+        #endif
         self.descriptor = descriptor
     }
+
+    #if !canImport(Darwin)
+    private static let ignoresBrokenPipes: Void = { _ = signal(SIGPIPE, SIG_IGN) }()
+    #endif
 
     /// For an end that never got a channel: setup failed, or there was no input to write.
     deinit {

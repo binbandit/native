@@ -18,7 +18,13 @@ final class HostHarness: @unchecked Sendable {
     var agentEnvironment: [String: String] = [:]
     private var process: Process?
 
-    static let products = URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+    /// The package's own build folder, or `NATIVE_HOST_TEST_PRODUCTS` for a build made with
+    /// `--scratch-path` (`<scratch>/debug`), so parallel builds each test their own binaries.
+    static let products =
+        ProcessInfo.processInfo.environment["NATIVE_HOST_TEST_PRODUCTS"].map {
+            URL(filePath: $0, directoryHint: .isDirectory)
+        }
+        ?? URL(filePath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
         .deletingLastPathComponent()
         .appending(path: ".build/debug", directoryHint: .isDirectory)
 
@@ -47,7 +53,7 @@ final class HostHarness: @unchecked Sendable {
         // Killing the host leaves what agents started in groups of their own (the case the host
         // handles when it stops agents itself); tests mustn't leave those behind.
         if let grandchild {
-            Darwin.kill(grandchild, SIGKILL)
+            sendSignal(SIGKILL, to: grandchild)
         }
         try? FileManager.default.removeItem(at: root)
     }
@@ -67,7 +73,7 @@ final class HostHarness: @unchecked Sendable {
     /// SIGKILL, as a crash or `kill -9` would: no chance to clean up.
     func kill() {
         guard let process, process.isRunning else { return }
-        Darwin.kill(process.processIdentifier, SIGKILL)
+        sendSignal(SIGKILL, to: process.processIdentifier)
         // Polled: `waitUntilExit` waits on the run loop for a wakeup that sometimes never came while
         // other harnesses stopped their hosts at once (`swift test --parallel`), hanging the run.
         while process.isRunning { usleep(10_000) }
@@ -237,4 +243,9 @@ struct InProcessTransport: HostTransport {
         await accept(ByteChannel.socket(hostEnd, label: "host"))
         return ByteChannel.socket(clientEnd, label: "client")
     }
+}
+
+/// `kill(2)`, under a name `HostHarness.kill()` doesn't hide, on any platform's C library.
+private func sendSignal(_ signal: Int32, to pid: pid_t) {
+    _ = kill(pid, signal)
 }

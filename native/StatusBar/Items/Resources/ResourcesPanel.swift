@@ -76,3 +76,25 @@ struct ResourcesPanel: View {
         .accessibilityElement(children: .combine)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Memory and CPU panel") {
+    ResourcesPanelPreview()
+}
+
+/// The panel with every group closed, and with Claude Code's open to its processes.
+private struct ResourcesPanelPreview: View {
+    private let monitor = StatusBarPreviewFixtures.monitor()
+
+    var body: some View {
+        DSPreviewPair {
+            HStack(alignment: .top, spacing: DS.Space.xl) {
+                ResourcesPanel(monitor: monitor)
+                ResourcesPanel(monitor: monitor, expanded: [.agent("claude-code")])
+            }
+            .dsPopoverBackground()
+        }
+        .task { await StatusBarPreviewFixtures.fill(monitor) }
+    }
+}
+#endif

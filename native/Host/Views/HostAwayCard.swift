@@ -6,6 +6,8 @@ import SwiftUI
 /// dismissed or every task in it has been opened.
 struct HostAwayCard: View {
     let summary: AwaySummary
+    /// The paired host the tasks ran on; nil for this Mac's own host.
+    var hostName: String?
     /// The task's title as the sidebar shows it, or nil to use the host's.
     var title: (AwaySummary.Item) -> String?
     /// Opens the task; nil when it isn't in the sidebar anymore (archived, deleted).
@@ -60,7 +62,7 @@ struct HostAwayCard: View {
                     Text("While you were away")
                         .font(.dsBodyMedium)
                         .foregroundStyle(.dsTextPrimary)
-                    Text("since \(DSFormat.time(summary.since, now: .now))")
+                    Text(since)
                         .font(.dsCaption)
                         .foregroundStyle(.dsTextTertiary)
                 }
@@ -75,6 +77,12 @@ struct HostAwayCard: View {
                 .buttonStyle(.ds(.ghost, iconOnly: true))
                 .help("Dismiss")
         }
+    }
+
+    /// "since 2:14 PM", or "on mini since 2:14 PM" for a paired host.
+    private var since: String {
+        let time = DSFormat.time(summary.since, now: .now)
+        return hostName.map { "on \($0) since \(time)" } ?? "since \(time)"
     }
 
     private var visibleItems: ArraySlice<AwaySummary.Item> {

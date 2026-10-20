@@ -51,14 +51,14 @@ extension NativeCommand {
 
 /// View ▸ Show Terminal, New Terminal Tab and Close Terminal Tab.
 struct TerminalCommands: Commands {
-    let commands: CommandRegistry
+    let menu: CommandMenuContext
 
     var body: some Commands {
         CommandGroup(after: .sidebar) {
             Divider()
-            CommandMenuItem(.terminalToggle, in: commands)
-            CommandMenuItem(.terminalNewTab, in: commands)
-            CommandMenuItem(.terminalCloseTab, in: commands)
+            CommandMenuItem(.terminalToggle, in: menu)
+            CommandMenuItem(.terminalNewTab, in: menu)
+            CommandMenuItem(.terminalCloseTab, in: menu)
         }
     }
 }

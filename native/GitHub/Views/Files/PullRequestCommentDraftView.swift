@@ -69,3 +69,22 @@ struct PullRequestCommentDraftView: View {
         (model.draft?.body ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Comment draft") {
+    DSPreviewPair {
+        PullRequestPagePreview { model, _ in
+            PullRequestCommentDraftView(model: model)
+                .onAppear {
+                    model.draft = ReviewCommentDraft(
+                        anchor: ReviewAnchor(
+                            path: "native/Views/Composer/Sections/QueuedPromptsSection.swift", side: .right, line: 36,
+                            startLine: 32),
+                        body: "Could **Clear all** keep the message open in the editor?",
+                        lines: "if prompts.count > 1 {\n    Button(\"Clear all\") {")
+                }
+        }
+        .frame(width: PullRequestsLayout.contentWidth)
+    }
+}
+#endif

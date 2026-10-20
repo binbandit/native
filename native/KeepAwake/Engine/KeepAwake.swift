@@ -1,11 +1,11 @@
 import Foundation
+import NativeHostProtocol
 
-/// Keeps the Mac awake as a policy says, given what the app is doing: takes and releases the power
-/// assertions, follows the power source for the battery rules, and ends timers on time.
-///
-/// UI-free with one entry point, `apply(_:activity:)`, so it can move unchanged into the background
-/// host that keeps agents running after the app quits. Assertions belong to the process that holds
-/// them, so whichever process runs the agents should own this.
+/// Keeps the Mac awake from inside the app, for runs where agents work in it rather than in a host
+/// (Settings ▸ Background off, or no host answered): takes and releases the power assertions,
+/// follows the power source for the battery rules, and ends timers on time. With a host,
+/// `KeepAwakeHostEngine` hands the policy to it instead, since assertions belong to the process the
+/// agents keep busy. Both decide with `KeepAwakeStatus.evaluate`.
 final class KeepAwake {
     private(set) var status = KeepAwakeStatus.off
     /// Called when the status changes on its own: a timer ran out, or the power source changed.
@@ -35,7 +35,7 @@ final class KeepAwake {
         return evaluate()
     }
 
-    /// Releases everything, for quitting.
+    /// Releases everything, for quitting or handing over to a host.
     func stop() {
         timerTask?.cancel()
         policy = KeepAwakePolicy()
@@ -52,7 +52,8 @@ final class KeepAwake {
 
     @discardableResult
     private func evaluate() -> KeepAwakeStatus {
-        status = KeepAwakeStatus.evaluate(policy, activity: activity, power: .current(), now: .now)
+        status = KeepAwakeStatus.evaluate(
+            policy, workingAgents: activity.workingAgents, power: .current(), now: .now)
         assertions.set(status.assertions, name: Self.assertionName(for: status.reason))
         return status
     }

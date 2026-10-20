@@ -27,6 +27,13 @@ struct ChangeClassifier: Sendable {
         return paths
     }
 
+    /// The path exactly as git spelled it, without a trailing slash: for a repository on another
+    /// machine, where this one's file system has nothing to say about it.
+    static func plainPath(_ url: URL) -> String {
+        let path = url.path(percentEncoded: false)
+        return path.hasSuffix("/") && path.count > 1 ? String(path.dropLast()) : path
+    }
+
     /// The path with symlinks resolved, e.g. `/tmp` to `/private/tmp`, as FSEvents reports it.
     static func canonicalPath(_ url: URL) -> String {
         let path = url.standardizedFileURL.path(percentEncoded: false)

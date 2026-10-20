@@ -2,6 +2,7 @@ import Darwin
 import Foundation
 import NativeHost
 import NativeHostProtocol
+import SessionTitling
 import UserShell
 
 /// The host as it runs on a Mac: launched by launchd from the app bundle (or by hand from
@@ -31,7 +32,14 @@ public enum MacHost {
             idleExit: location.isDevelopment ? .seconds(15 * 60) : nil,
             pluginsDirectory: pluginsDirectory,
             updates: MacHostUpdates.environment(location: location),
-            exit: { status in Darwin.exit(status) }
+            exit: { status in Darwin.exit(status) },
+            fileWatching: FSEventsFileWatching(),
+            nativeSkills: bundledSkills(),
+            // Writes nothing where Apple Intelligence is off; clients then write titles instead.
+            titleGenerator: OnDeviceTitleGenerator(),
+            keepAwake: MacPowerBackend(), systemInfo: systemInfo(),
+            doctor: HostDoctor(machine: HostDoctorMacMachine(), platform: HostDoctorMac()),
+            credentials: credentialStore(for: location)
         )
     }
 

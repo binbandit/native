@@ -70,3 +70,14 @@ struct PullRequestConversationTab: View {
         .buttonStyle(.ds(.ghost))
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Conversation tab") {
+    DSPreviewPair {
+        PullRequestPagePreview(loadsEverything: false) { model, page in
+            PullRequestConversationTab(model: model, page: page)
+        }
+        .frame(width: 900, height: 900)
+    }
+}
+#endif

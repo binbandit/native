@@ -7,6 +7,8 @@ nonisolated struct NativeNotification: Codable, Hashable, Sendable {
     nonisolated enum Kind: String, Codable, Sendable {
         case turnFinished, permission, question, needsUser, failed
         case limitReached, limitWarning, limitReset, limitRescheduled, resumeFailed
+        /// What a host's tasks did while this client was away, in one notification.
+        case awaySummary
     }
 
     nonisolated enum Action: String, Codable, Sendable {
@@ -40,6 +42,10 @@ nonisolated struct NativeNotification: Codable, Hashable, Sendable {
     var sound: Sound = .none
     /// Shown even while the user is looking at the task: they asked for it, or can't see it there.
     var isAlwaysShown = false
+    /// The host notification this shows (docs/durability.md, "Notifications"), so what the user does
+    /// with it goes back to that host, even from a notification an earlier run of Native posted.
+    var hostID: String?
+    var hostNotificationID: Int64?
 }
 
 /// What the user did with a notification.
@@ -48,12 +54,18 @@ nonisolated struct NativeNotificationResponse: Sendable {
     /// Nil when they clicked the notification itself.
     let action: NativeNotification.Action?
     var replyText: String?
+    /// They cleared it from the notification center without opening it.
+    var isDismissed = false
 }
 
 /// Shows notifications and reports what the user does with them.
 protocol NativeNotificationPosting: AnyObject {
     var onResponse: ((NativeNotificationResponse) -> Void)? { get set }
     func post(_ notification: NativeNotification) async
+    /// Takes down notifications that are showing, by id.
+    func remove(_ ids: [String])
+    /// What's showing now, posted by this run of Native or an earlier one.
+    func delivered() async -> [NativeNotification]
 }
 
 /// Whether the user is in Native right now. A platform adapter answers it.

@@ -66,3 +66,20 @@ struct AddAgentList: View {
             : "Added \(found.map(\.displayName).formatted(.list(type: .and)))."
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Add agent list") {
+    DSPreviewPair {
+        AddAgentList(agents: Array(AgentIconPreviewFixtures.agents.suffix(3)), checkAgain: { [] })
+            .frame(width: 560)
+    }
+    .agentIconPreviewStore()
+}
+
+#Preview("Add agent list - Everything installed") {
+    DSPreviewPair {
+        AddAgentList(agents: [], checkAgain: { [] })
+            .frame(width: 560, height: 280)
+    }
+}
+#endif

@@ -11,15 +11,20 @@ public struct PairedHostTransport: HostTransport {
     public let device: LinkDeviceInfo
     private let discovered: @Sendable () -> [DiscoveredHost]
     private let log: @Sendable (LinkLogEntry) -> Void
+    private let pairingEnded: @Sendable (LinkError) -> Void
 
+    /// `pairingEnded` hears when the host says this device isn't paired anymore, or can't prove its
+    /// key: trying again can't change that, so the owner should stop the client.
     public init(
         host: PairedHost, device: LinkDeviceInfo, discovered: @escaping @Sendable () -> [DiscoveredHost] = { [] },
-        log: @escaping @Sendable (LinkLogEntry) -> Void = { _ in }
+        log: @escaping @Sendable (LinkLogEntry) -> Void = { _ in },
+        pairingEnded: @escaping @Sendable (LinkError) -> Void = { _ in }
     ) {
         self.host = host
         self.device = device
         self.discovered = discovered
         self.log = log
+        self.pairingEnded = pairingEnded
     }
 
     public var displayName: String { host.displayName }
@@ -72,6 +77,7 @@ public struct PairedHostTransport: HostTransport {
             {
                 // Another address won't change the host's answer.
                 log(LinkLogEntry(.failure, error.localizedDescription))
+                if error.endsPairing || error == .hostKeyMismatch { pairingEnded(error) }
                 throw error
             } catch {
                 log(LinkLogEntry(.failure, "\(label): \(error.localizedDescription)"))

@@ -10,7 +10,7 @@ extension AppModel {
         }
         return titles.title(
             for: SessionTitles.Key(agent: summary.agent.id, session: summary.info.sessionId),
-            agentTitle: summary.info.title) ?? "New Session"
+            agentTitle: summary.info.title) ?? unsentDraftTitle(for: summary.id) ?? "New Session"
     }
 
     /// Lets the workspace provider name a task's workspace (its branch) after the task's first real

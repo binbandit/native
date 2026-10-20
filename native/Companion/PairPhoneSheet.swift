@@ -121,6 +121,10 @@ struct PairPhoneSheet: View {
                 }
             }
             VStack(alignment: .leading, spacing: DS.Space.md) {
+                // Another Mac running tasks here needs commands; a phone never asks for them.
+                if request.device.model.hasPrefix("Mac") {
+                    Toggle("Allow running commands and editing files in this Mac's projects", isOn: $grants.runCommands)
+                }
                 Toggle("Allow installing updates for this Mac's Native", isOn: $grants.manageHost)
                 Toggle("Allow turning plugins on and off", isOn: $grants.managePlugins)
             }
@@ -200,6 +204,6 @@ struct PairPhoneSheet: View {
     private func resetGrants(for request: LinkPairingRequest) {
         guard grantsFor != request.verification else { return }
         grantsFor = request.verification
-        grants = .suggested(usedCode: request.usedCode)
+        grants = .suggested(for: request)
     }
 }

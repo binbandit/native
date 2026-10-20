@@ -236,3 +236,23 @@ struct ModeRowMenu: View {
         .accessibilityLabel("More for \(mode.name)")
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Modes settings") {
+    let app = AppModel.preview()
+    DSPreviewPair {
+        ModesSettingsPage(projects: app.projects.all)
+            .settingsPreviewPage()
+    }
+}
+
+#Preview("Mode instructions") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.lg) {
+            ModeInstructionsText(mode: .plan)
+            ModeInstructionsText(mode: .review)
+        }
+        .frame(width: 560)
+    }
+}
+#endif

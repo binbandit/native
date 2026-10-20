@@ -80,3 +80,14 @@ struct TerminalShellRow: View {
             .filter { $0.hasPrefix("/") }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Shell row") {
+    DSPreviewPair {
+        SettingsRowGroup {
+            TerminalShellRow(store: TerminalPreviewFixtures.store())
+        }
+        .settingsPreviewPage()
+    }
+}
+#endif

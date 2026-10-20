@@ -1,5 +1,6 @@
 import Foundation
 import IOKit.pwr_mgt
+import NativeHostProtocol
 import Synchronization
 import os
 
@@ -31,13 +32,14 @@ nonisolated final class PowerAssertions: Sendable {
                 IOPMAssertionSetProperty(id, kIOPMAssertionNameKey as CFString, name as CFString)
             }
             for kind in kinds where held[kind] == nil {
+                guard let type = kind.ioKitType else { continue }
                 var id = IOPMAssertionID(0)
                 let result = IOPMAssertionCreateWithName(
-                    kind.type as CFString, IOPMAssertionLevel(kIOPMAssertionLevelOn), name as CFString, &id)
+                    type as CFString, IOPMAssertionLevel(kIOPMAssertionLevelOn), name as CFString, &id)
                 if result == kIOReturnSuccess {
                     held[kind] = id
                 } else {
-                    logger.error("Couldn't take power assertion \(kind.type, privacy: .public): \(result)")
+                    logger.error("Couldn't take power assertion \(type, privacy: .public): \(result)")
                 }
             }
             return Set(held.keys)

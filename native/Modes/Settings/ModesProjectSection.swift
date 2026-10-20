@@ -40,3 +40,12 @@ struct ModesProjectSection: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Project modes - None shared") {
+    DSPreviewPair {
+        ModesProjectSection(project: Project(url: URL(filePath: "/Users/preview/Developer/native")))
+            .settingsPreviewPage()
+    }
+}
+#endif

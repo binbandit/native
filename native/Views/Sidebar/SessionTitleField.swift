@@ -71,3 +71,16 @@ struct SessionTitleField: View {
         undoManager?.setActionName("Rename Session")
     }
 }
+
+#if DEBUG
+#Preview("Renaming a session") {
+    let app = AppModel.preview()
+    DSPreviewPair {
+        if let summary = SidebarPreviewFixtures.sessions(in: app).first {
+            SessionTitleField(summary: summary, status: .working)
+                .frame(width: DS.Size.sidebarWidth - DS.Space.lg)
+        }
+    }
+    .sidebarPreviewEnvironment(app)
+}
+#endif

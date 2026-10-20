@@ -69,3 +69,20 @@ struct PullRequestTaskCloneView: View {
             .fixedSize(horizontal: false, vertical: true)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Clone to open") {
+    let folder = URL(filePath: "/Users/preview/Developer/native", directoryHint: .isDirectory)
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.xl) {
+            PullRequestTaskCloneView(
+                missing: PullRequestTaskPreviewFixtures.noProject, folder: folder, state: .free, chooseFolder: {})
+            PullRequestTaskCloneView(
+                missing: PullRequestTaskPreviewFixtures.noProject, folder: folder, state: .checkout, chooseFolder: {})
+            PullRequestTaskCloneView(
+                missing: PullRequestTaskPreviewFixtures.noProject, folder: folder, state: .taken, chooseFolder: {})
+        }
+        .frame(width: PullRequestTaskSheetLayout.width - DS.Space.xxl)
+    }
+}
+#endif

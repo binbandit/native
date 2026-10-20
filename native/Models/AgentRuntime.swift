@@ -27,6 +27,15 @@ final class AgentRuntime {
     /// The agent turned a request away until the user signs in.
     private(set) var needsSignIn = false
     private(set) var isSigningIn = false
+    /// Every way to sign it in on its host: `authMethods`, then what its plugin declares that the
+    /// agent doesn't advertise (a key in a variable, a device code). For hosts nobody sits at.
+    private(set) var signInMethods: [AuthMethod] = []
+    /// While a sign-in waits on the user somewhere else: the page to open and the code to enter.
+    private(set) var signInLink: HostSignInLink?
+    /// Who the agent says it's signed in as, when it reports that.
+    private(set) var authStatus: AgentAuthStatus?
+    /// The methods the host keeps a key for, by id.
+    private(set) var savedCredentials: Set<String> = []
 
     private var process: AgentProcess?
     /// The host the agent runs in; nil for an agent Native runs itself.
@@ -200,6 +209,11 @@ final class AgentRuntime {
         if let policy, launchPolicyEnvironment != policy { launchPolicyEnvironment = policy }
         if needsSignIn != hostAgent.needsSignIn { needsSignIn = hostAgent.needsSignIn }
         if isSigningIn != hostAgent.isSigningIn { isSigningIn = hostAgent.isSigningIn }
+        if let methods = hostAgent.authMethods, signInMethods != methods { signInMethods = methods }
+        if signInLink != hostAgent.signInLink { signInLink = hostAgent.signInLink }
+        if authStatus != hostAgent.authStatus { authStatus = hostAgent.authStatus }
+        let saved = Set(hostAgent.savedCredentials ?? [])
+        if savedCredentials != saved { savedCredentials = saved }
         if self.status != status { self.status = status }
     }
 

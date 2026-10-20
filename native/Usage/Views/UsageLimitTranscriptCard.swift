@@ -34,3 +34,27 @@ struct UsageLimitTranscriptCard: View {
             window: UsageLimitHit(text: stop.message)?.window?.label, message: stop.message)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Limit transcript card") {
+    let limits = UsagePreviewFixtures.limits()
+    let scheduled = UsagePreviewFixtures.limits(resumeScheduled: true)
+    DSPreviewPair {
+        if let stop = UsagePreviewFixtures.limitStop {
+            VStack(spacing: DS.Space.lg) {
+                UsageLimitTranscriptCard(
+                    stop: stop, agent: UsagePreviewFixtures.claude, agentName: "Claude Code",
+                    session: UsagePreviewFixtures.limitedSession, isLatestTurn: true, limits: limits)
+                UsageLimitTranscriptCard(
+                    stop: stop, agent: UsagePreviewFixtures.claude, agentName: "Claude Code",
+                    session: UsagePreviewFixtures.limitedSession, isLatestTurn: true, limits: scheduled)
+                // An earlier turn's card, or one whose limit has passed: a record of what happened.
+                UsageLimitTranscriptCard(
+                    stop: stop, agent: UsagePreviewFixtures.claude, agentName: "Claude Code",
+                    session: UsagePreviewFixtures.limitedSession, isLatestTurn: false, limits: limits)
+            }
+            .frame(width: 640)
+        }
+    }
+}
+#endif

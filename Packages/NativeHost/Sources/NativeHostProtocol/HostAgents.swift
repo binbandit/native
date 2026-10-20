@@ -48,10 +48,21 @@ public struct HostAgent: Codable, Hashable, Sendable, Identifiable {
     /// The agent turned a request away until the user signs in (ACP `auth_required`).
     public var needsSignIn: Bool
     public var isSigningIn: Bool
+    /// The ways to sign it in: what it advertised in `initialize`, plus what its plugin declares
+    /// for it (`AgentSpec.authMethods`). Nil from hosts older than these (HostCredentials.swift).
+    public var authMethods: [AuthMethod]?
+    /// While a sign-in waits on the user: the page to open and the code to enter there.
+    public var signInLink: HostSignInLink?
+    /// Who the agent last said it's signed in as, when it reports that.
+    public var authStatus: AgentAuthStatus?
+    /// The methods the host keeps a key for, by id. Never the keys.
+    public var savedCredentials: [String]?
 
     public init(
         id: String, name: String, state: HostAgentState, problem: String? = nil, initialize: JSONValue? = nil,
-        processID: Int32? = nil, launchedSpec: AgentSpec? = nil, needsSignIn: Bool = false, isSigningIn: Bool = false
+        processID: Int32? = nil, launchedSpec: AgentSpec? = nil, needsSignIn: Bool = false, isSigningIn: Bool = false,
+        authMethods: [AuthMethod]? = nil, signInLink: HostSignInLink? = nil, authStatus: AgentAuthStatus? = nil,
+        savedCredentials: [String]? = nil
     ) {
         self.id = id
         self.name = name
@@ -62,6 +73,10 @@ public struct HostAgent: Codable, Hashable, Sendable, Identifiable {
         self.launchedSpec = launchedSpec
         self.needsSignIn = needsSignIn
         self.isSigningIn = isSigningIn
+        self.authMethods = authMethods
+        self.signInLink = signInLink
+        self.authStatus = authStatus
+        self.savedCredentials = savedCredentials
     }
 }
 

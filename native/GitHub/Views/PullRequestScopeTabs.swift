@@ -71,3 +71,16 @@ private struct ScopeTab: View {
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Scope tabs") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.lg) {
+            PullRequestScopeTabs(scope: .constant(.all), inbox: PullRequestPreviewFixtures.inbox)
+            PullRequestScopeTabs(scope: .constant(.reviewRequested), inbox: PullRequestPreviewFixtures.inbox)
+            // Before the first load: no counts.
+            PullRequestScopeTabs(scope: .constant(.all), inbox: nil)
+        }
+    }
+}
+#endif

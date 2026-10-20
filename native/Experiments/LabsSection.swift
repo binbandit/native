@@ -55,3 +55,14 @@ struct LabsProblemRow: View {
         )
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Labs problem") {
+    DSPreviewPair {
+        SettingsRowGroup {
+            LabsProblemRow(problem: LabsPreviewFixtures.problem)
+        }
+        .settingsPreviewPage()
+    }
+}
+#endif

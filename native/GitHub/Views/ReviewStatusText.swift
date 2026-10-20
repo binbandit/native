@@ -28,3 +28,20 @@ struct ReviewStatusText: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Review status") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.sm) {
+            ForEach(PullRequestPreviewFixtures.inbox.all) { pullRequest in
+                HStack {
+                    Text(pullRequest.reference)
+                        .foregroundStyle(.dsTextTertiary)
+                    ReviewStatusText(pullRequest: pullRequest)
+                }
+                .font(.dsBody)
+            }
+        }
+    }
+}
+#endif

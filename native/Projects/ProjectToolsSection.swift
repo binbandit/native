@@ -88,3 +88,17 @@ struct ProjectToolsSection: View {
         return "\(count) \(state) here, \(here)."
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Project tools") {
+    let app = AppModel.preview()
+    DSPreviewPair {
+        if let project = app.previewProject() {
+            ProjectToolsSection(project: project)
+                .settingsPreviewPage()
+        }
+    }
+    .sidebarPreviewEnvironment(app)
+    .environment(SettingsPreviewFixtures.registry())
+}
+#endif

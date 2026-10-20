@@ -51,3 +51,13 @@ extension PluginRegistry {
         Dictionary(plugins.compactMap { loaded in loaded.plugin.manifest.description.map { (loaded.id, $0) } }) { $1 }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Add agent sheet") {
+    DSPreviewPair {
+        AddAgentSheet(agents: Array(AgentIconPreviewFixtures.agents.suffix(2)), checkAgain: { [] })
+            .frame(width: 560)
+    }
+    .agentIconPreviewStore()
+}
+#endif

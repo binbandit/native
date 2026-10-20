@@ -1,3 +1,4 @@
+import NativeHostProtocol
 import SwiftUI
 
 /// Settings › Keep Awake, opening with what it's doing right now.
@@ -20,13 +21,16 @@ struct KeepAwakeSettingsPage: View {
                 SettingsRow(
                     id: Self.modeRow,
                     "Keep Mac awake",
-                    description: Text("Prevents idle sleep. Closing the lid still puts your Mac to sleep."),
+                    description: Text(
+                        controller.isHostBacked
+                            ? "Prevents idle sleep, while Native is closed too. Closing the lid still puts your Mac to sleep."
+                            : "Prevents idle sleep. Closing the lid still puts your Mac to sleep."),
                     detail: Text(controller.status.description(keepsDisplayOn: controller.keepsDisplayOn))
                 ) {
                     SettingsSelect(
                         label: "Keep Mac awake",
                         selection: $controller.mode,
-                        options: KeepAwakeMode.allCases.map { .init(value: $0, title: $0.title) },
+                        options: KeepAwakeMode.choices.map { .init(value: $0, title: $0.title) },
                         width: Self.selectWidth
                     )
                 }
@@ -55,7 +59,7 @@ struct KeepAwakeSettingsPage: View {
                     SettingsSelect(
                         label: "On battery",
                         selection: $controller.battery,
-                        options: KeepAwakeBatteryRule.allCases.map { .init(value: $0, title: $0.title) },
+                        options: KeepAwakeBatteryRule.choices.map { .init(value: $0, title: $0.title) },
                         width: Self.selectWidth
                     )
                 }
@@ -82,3 +86,19 @@ struct KeepAwakeSettingsPage: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Keep awake settings") {
+    DSPreviewPair {
+        KeepAwakeSettingsPage(controller: KeepAwakePreviewFixtures.working())
+            .settingsPreviewPage()
+    }
+}
+
+#Preview("Keep awake settings - Paused on battery") {
+    DSPreviewPair {
+        KeepAwakeSettingsPage(controller: KeepAwakePreviewFixtures.paused())
+            .settingsPreviewPage()
+    }
+}
+#endif

@@ -30,12 +30,12 @@ extension NativeCommand {
 /// app.
 struct HostQuitCommands: Commands {
     let host: DurableHost
-    let commands: CommandRegistry
+    let menu: CommandMenuContext
 
     var body: some Commands {
         CommandGroup(after: .appTermination) {
             if host.placement.outlivesApp {
-                CommandMenuItem(.appQuitAndStopAgents, in: commands)
+                CommandMenuItem(.appQuitAndStopAgents, in: menu)
             }
         }
     }

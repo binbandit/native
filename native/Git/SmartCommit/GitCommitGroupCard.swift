@@ -82,3 +82,17 @@ struct GitCommitGroupCard: View {
         .frame(minHeight: DS.Size.controlXS)
     }
 }
+
+#if DEBUG
+#Preview("Commit group card") {
+    let model = GitSmartCommitModel(repository: GitPreviewFixtures.model)
+    DSPreviewPair {
+        VStack(spacing: DS.Space.md) {
+            ForEach(Array(GitPreviewFixtures.commitGroups.enumerated()), id: \.element.id) { index, group in
+                GitCommitGroupCard(model: model, group: group, number: index + 1)
+            }
+        }
+        .frame(width: 560)
+    }
+}
+#endif

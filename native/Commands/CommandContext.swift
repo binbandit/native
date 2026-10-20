@@ -1,7 +1,8 @@
 import SwiftUI
 
 /// What a command acts on: the frontmost window's task and the window state its views publish as
-/// focused scene values. The menu bar reads it live; the palette reads it when it opens.
+/// focused scene values. The menu bar reads it live, once for all of its items (`NativeMenuBar`);
+/// the palette reads it when it opens.
 @MainActor
 struct CommandContext {
     /// The task in the window's detail column, if one is showing.
@@ -50,6 +51,14 @@ struct FocusedCommandContext: DynamicProperty {
             openMainWindow: { [openWindow] in openWindow(id: NativeWindowID.main) }
         )
     }
+}
+
+/// What the menu bar's items are built from: the registry, and the frontmost window's context as
+/// the menu bar read it, once for all of them (`CommandRegistry.menuBar(actingOn:)`).
+@MainActor
+struct CommandMenuContext {
+    let registry: CommandRegistry
+    let context: CommandContext
 }
 
 /// The scenes' ids, for commands that bring a window back.

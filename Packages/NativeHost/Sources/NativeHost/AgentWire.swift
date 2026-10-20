@@ -46,10 +46,6 @@ struct RawListSessionsRequest: Encodable, Sendable {
     var cursor: String?
 }
 
-struct RawAuthenticateRequest: Encodable, Sendable {
-    var methodId: String
-}
-
 struct RawConfigOptionsResponse: Decodable, Sendable {
     var configOptions: JSONValue?
 }
@@ -79,6 +75,18 @@ struct HostInitializeRequest: Encodable, Sendable {
         "_meta": .object(["subagents": .object([:])]),
     ])
     var clientInfo: Implementation
+}
+
+extension HostInitializeRequest {
+    /// For an agent started to sign in with a `link` method: URL elicitations too, which agents
+    /// offer device codes to. Only then, since agents also send sessions' URL elicitations (an MCP
+    /// server's sign-in page) once they're advertised, and sessions don't show those yet.
+    init(clientInfo: Implementation, advertisesLinks: Bool) {
+        self.init(clientInfo: clientInfo)
+        if advertisesLinks {
+            clientCapabilities = clientCapabilities.merging(.object(["elicitation": .object(["url": .object([:])])]))
+        }
+    }
 }
 
 extension SessionMirror {

@@ -1,10 +1,11 @@
 import SwiftUI
 
-/// The status bar at three widths: everything, then the innermost items dropping out.
+/// The status bar narrowing in stages: everything at full length; the innermost item with a compact
+/// form shortened; every such item shortened; and only then whole items dropping out.
 struct GalleryStatusBar: View {
     var body: some View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
-            ForEach([CGFloat(560), 380, 220], id: \.self) { width in
+            ForEach([CGFloat(560), 380, 300, 220], id: \.self) { width in
                 bar.frame(width: width)
             }
         }
@@ -21,6 +22,16 @@ struct GalleryStatusBar: View {
                 }
             }
             .buttonStyle(.statusBarSegment())
+            .statusBarCompactForm {
+                Button {
+                } label: {
+                    HStack(spacing: DS.Space.sm) {
+                        StatusIndicator(status: .working, size: DS.Size.statusGlyph)
+                        Text("2")
+                    }
+                }
+                .buttonStyle(.statusBarSegment())
+            }
             Button {
             } label: {
                 HStack(spacing: DS.Space.sm) {
@@ -29,6 +40,16 @@ struct GalleryStatusBar: View {
                 }
             }
             .buttonStyle(.statusBarSegment(.attention))
+            .statusBarCompactForm {
+                Button {
+                } label: {
+                    HStack(spacing: DS.Space.sm) {
+                        StatusIndicator(status: .needsPermission, size: DS.Size.statusGlyph)
+                        Text("1")
+                    }
+                }
+                .buttonStyle(.statusBarSegment(.attention))
+            }
         } trailing: {
             Button {
             } label: {
@@ -52,3 +73,12 @@ struct GalleryStatusBar: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Gallery - Status bar") {
+    DSPreviewPair {
+        GalleryStatusBar()
+            .frame(width: 640)
+    }
+}
+#endif

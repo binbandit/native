@@ -72,3 +72,22 @@ struct AutomationRow: View {
         return "Next " + DSFormat.time(nextRun, now: .now)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Automation rows") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.sm) {
+            ForEach(AutomationPreviewFixtures.automations) { automation in
+                let runs = AutomationPreviewFixtures.automationRuns(of: automation)
+                AutomationRow(
+                    automation: automation,
+                    latest: automation.isPaused
+                        ? nil : runs[automation.id == AutomationPreviewFixtures.reviewBot.id ? 1 : 0],
+                    nextRun: automation.isPaused ? nil : AutomationPreviewFixtures.now.addingTimeInterval(5 * 3_600),
+                    onOpen: {}, onRunNow: {}, onTogglePause: {}, onEdit: {}, onDelete: {})
+            }
+        }
+        .frame(width: 640)
+    }
+}
+#endif

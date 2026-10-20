@@ -58,13 +58,7 @@ struct HomeTaskRow<ID: Hashable>: View {
 
     @ViewBuilder private var age: some View {
         if let date = task.date {
-            // Re-rendered each minute so "now" doesn't linger while the page stays open.
-            TimelineView(.everyMinute) { context in
-                Text(DSFormat.compactAge(date, now: context.date))
-                    .font(.dsBody)
-                    .monospacedDigit()
-                    .foregroundStyle(.dsTextTertiary)
-            }
+            HomeTaskAge(date: date)
         } else {
             Color.clear.frame(height: 0)
         }
@@ -74,5 +68,18 @@ struct HomeTaskRow<ID: Hashable>: View {
         let parts =
             [task.agentName, task.projectName, task.date?.formatted(.relative(presentation: .named))] as [String?]
         return parts.compactMap(\.self).joined(separator: ", ")
+    }
+}
+
+/// A row's age, kept current by the shared minute clock. Its own view, so a tick redraws the age
+/// and not the row.
+private struct HomeTaskAge: View {
+    let date: Date
+
+    var body: some View {
+        Text(DSFormat.compactAge(date, now: DSMinuteClock.shared.now))
+            .font(.dsBody)
+            .monospacedDigit()
+            .foregroundStyle(.dsTextTertiary)
     }
 }

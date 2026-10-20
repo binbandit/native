@@ -29,3 +29,14 @@ struct PullRequestAskIntro: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Ask intro") {
+    let center = PullRequestAskPreviewFixtures.center()
+    DSPreviewPair {
+        PullRequestAskIntro(conversation: center.conversation(for: PullRequestPreviewRunner.reference))
+            .frame(width: PullRequestAskMetrics.panelIdealWidth, height: 420)
+    }
+    .environment(center)
+}
+#endif

@@ -48,3 +48,25 @@ struct HostVersionNotice: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Host version notices") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.lg) {
+            HostVersionNotice(
+                status: .hostRestartPending(hostVersion: "1.4.0 (212)", workingTasks: 1), appVersion: "1.4.1 (215)",
+                onRestartHost: {}, onCheckForUpdates: {})
+            HostVersionNotice(
+                status: .hostRestartPending(hostVersion: "1.4.0 (212)", workingTasks: 3), appVersion: "1.4.1 (215)",
+                onRestartHost: {}, onCheckForUpdates: {})
+            HostVersionNotice(
+                status: .hostRestartPending(hostVersion: "1.4.0 (212)", workingTasks: 0), appVersion: "1.4.1 (215)",
+                onRestartHost: {}, onCheckForUpdates: {})
+            HostVersionNotice(
+                status: .appOutdated(hostVersion: "1.5.0 (230)"), appVersion: "1.4.1 (215)", onRestartHost: {},
+                onCheckForUpdates: {})
+        }
+        .frame(width: 640)
+    }
+}
+#endif

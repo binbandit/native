@@ -16,6 +16,8 @@ extension HostCore {
             } else {
                 link.buffer(update, for: sessionID)
             }
+        case .notification(let message) where Self.signInNotifications.contains(message.method):
+            receiveSignInNotification(message, from: link)
         case .notification:
             break
         case .request(let message):
@@ -30,6 +32,8 @@ extension HostCore {
         switch message.method {
         case "session/request_permission":
             requestPermission(message, id: id, from: link)
+        case "elicitation/create" where Self.isSignInLink(message):
+            receiveSignInLink(message, id: id, from: link)
         case "elicitation/create":
             askQuestion(message, id: id, from: link)
         default:

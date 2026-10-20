@@ -68,3 +68,32 @@ struct AutonomyPicker: View {
         .padding(.vertical, DS.Space.sm)
     }
 }
+
+#if DEBUG
+#Preview("Autonomy picker") {
+    let settings = ComposerPreviewFixtures.settings
+    DSPreviewPair {
+        if let autonomy = settings.autonomy {
+            AutonomyPicker(
+                setting: autonomy, levels: settings.autonomyLevels, level: settings.shownAutonomyLevel(resumed: nil),
+                isSuspended: false, agentName: "Claude Code", onSet: { _, _ in }, dismiss: {}
+            )
+            .dsPopoverBackground()
+        }
+    }
+}
+
+#Preview("Autonomy picker - Suspended by Plan Mode") {
+    let settings = ComposerPreviewFixtures.planModeSettings
+    DSPreviewPair {
+        if let autonomy = settings.autonomy {
+            AutonomyPicker(
+                setting: autonomy, levels: settings.autonomyLevels,
+                level: settings.shownAutonomyLevel(resumed: "acceptEdits"), isSuspended: true,
+                agentName: "Claude Code", onSet: { _, _ in }, dismiss: {}
+            )
+            .dsPopoverBackground()
+        }
+    }
+}
+#endif

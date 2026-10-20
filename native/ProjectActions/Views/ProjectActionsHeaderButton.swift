@@ -95,3 +95,16 @@ struct ProjectActionsHeaderButton: View {
         return "\(base). \(shortcut.displayString) runs \(last.name) again."
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Run button") {
+    let app = AppModel.preview()
+    let project = app.previewProject() ?? Project(url: URL(filePath: "/Users/preview/Developer/native"))
+    DSPreviewPair {
+        ProjectActionsHeaderButton(target: ProjectActionTarget(project: project, session: nil))
+    }
+    .environment(app)
+    .environment(SettingsPresentation())
+    .environment(ProjectActionsPreviewFixtures.runner(for: project))
+}
+#endif

@@ -3,10 +3,10 @@ import SwiftUI
 
 /// Go ▸ Search Tasks… (`search.show`, ⇧⌘F unless remapped; docs/keyboard.md).
 struct TranscriptSearchMenuItem: View {
-    let commands: CommandRegistry
+    let menu: CommandMenuContext
 
     var body: some View {
-        CommandMenuItem(.searchShow, in: commands)
+        CommandMenuItem(.searchShow, in: menu)
     }
 }
 

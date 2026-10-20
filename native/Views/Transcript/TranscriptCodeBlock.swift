@@ -9,13 +9,23 @@ struct TranscriptCodeBlock: View {
 
     @State private var isHovering = false
 
+    /// The code as a block shows it, without the newline a fence leaves at its end.
+    static func shownCode(_ code: String) -> String {
+        code.hasSuffix("\n") ? String(code.dropLast()) : code
+    }
+
     var body: some View {
-        let code = code.hasSuffix("\n") ? String(code.dropLast()) : code
+        let code = Self.shownCode(code)
+        #if DEBUG || NATIVE_PERF
+        let _ = TranscriptPerfProbe.codeRendered(code, language: language)
+        #endif
         VStack(alignment: .leading, spacing: DS.Space.sm) {
             if let language, !language.isEmpty {
                 Text(language)
                     .font(.dsMicro)
                     .foregroundStyle(.dsTextSecondary)
+                    // A label, not code to copy; selectable text costs a text view's layout.
+                    .textSelection(.disabled)
             }
             ScrollView(.horizontal) {
                 HighlightedCode(code, language: language)

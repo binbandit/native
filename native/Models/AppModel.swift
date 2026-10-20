@@ -12,14 +12,18 @@ final class AppModel {
     let plugins: PluginRegistry
     let titles: SessionTitles
     let runtimes: AgentRuntimes
+    /// Paired hosts sessions can run on besides this Mac (AppModel+Hosts.swift).
+    let hosts = RemoteHosts()
     let projects: Projects
     let catalog: SessionCatalog
     let ordering: SessionOrdering
     let sessions: SessionStore
     let unread: UnreadSessions
-    let archivedSessions = ArchivedSessions()
+    /// New sessions that haven't had a message yet, so an empty one doesn't outlive the run.
+    let unsentSessions: UnsentSessions
+    let archivedSessions: ArchivedSessions
     /// Conversations `/clear` set aside (AppModel+ClearConversation.swift).
-    let earlierConversations = EarlierConversations()
+    let earlierConversations: EarlierConversations
     /// Makes and removes the folders tasks run in (worktrees). Set by the app from the Git feature;
     /// without it tasks run in the project folder.
     weak var taskWorkspaces: (any TaskWorkspaceProvider)?
@@ -48,7 +52,7 @@ final class AppModel {
     /// Whether Add Agent (agents that aren't installed, and how to install them) is showing.
     var isAddingAgent = false
     /// Which agents are installed. Ones that aren't are offered in Add Agent and never started.
-    let installations = AgentInstallations()
+    let installations: AgentInstallations
     /// An agent that wants the user to sign in before it starts a session.
     var signInPrompt: AgentDefinition.ID?
     /// A sign-in under way in a terminal, for agents that can only sign in there.
@@ -94,11 +98,13 @@ final class AppModel {
     var restoringRemovedWorkspaces: Set<SessionKey> = []
     @ObservationIgnored var removedWorkspaceCheck: Task<Void, Never>?
     @ObservationIgnored var isRemovedWorkspaceCheckDue = false
-    @ObservationIgnored let deletedSessions = DeletedSessions()
+    @ObservationIgnored let deletedSessions: DeletedSessions
     var history = NavigationHistory<SessionKey>()
     @ObservationIgnored var isNavigatingHistory = false
 
     private var lastUsedAgent: AgentDefinition.ID?
+    /// Where the app's state is remembered: the user's defaults, or for previews an in-memory store.
+    @ObservationIgnored private let defaults: UserDefaults
     /// Internal only for AppModel+Recovery.swift.
     @ObservationIgnored var restartPolicies: [AgentDefinition.ID: AgentRestartPolicy] = [:]
     @ObservationIgnored private let services: SessionServices
@@ -107,7 +113,7 @@ final class AppModel {
     /// Internal only for AppModel+TaskSessions.swift.
     @ObservationIgnored let launcher: SessionLauncher
     /// Internal only for AppModel+Listing.swift.
-    @ObservationIgnored let taskRecords = TaskSessionRecords()
+    @ObservationIgnored let taskRecords: TaskSessionRecords
     /// Task sessions being started, by agent, whose ids aren't known yet. Internal only for
     /// AppModel+TaskSessions.swift and AppModel+Listing.swift.
     @ObservationIgnored var taskStartsInFlight: [AgentDefinition.ID: Int] = [:]
@@ -150,11 +156,23 @@ final class AppModel {
     private static let lastUsedAgentKey = "defaultAgent"
     static let logger = Logger(subsystem: "Native", category: "Sessions")
 
-    init(plugins: PluginRegistry = PluginRegistry(), titles: SessionTitles = SessionTitles()) {
+    /// `defaults` and `catalogURL` say where state is kept; previews pass in-memory ones
+    /// (AppModel+Preview.swift), so they never read or change the user's.
+    init(
+        plugins: PluginRegistry = PluginRegistry(), titles: SessionTitles = SessionTitles(),
+        defaults: UserDefaults = .standard, catalogURL: URL? = SessionCatalog.defaultURL
+    ) {
         // Writing to an agent that just exited must surface as an error, not kill the app.
         signal(SIGPIPE, SIG_IGN)
         self.plugins = plugins
         self.titles = titles
+        self.defaults = defaults
+        installations = AgentInstallations(defaults: defaults)
+        unsentSessions = UnsentSessions(defaults: defaults)
+        archivedSessions = ArchivedSessions(defaults: defaults)
+        earlierConversations = EarlierConversations(defaults: defaults)
+        deletedSessions = DeletedSessions(defaults: defaults)
+        taskRecords = TaskSessionRecords(defaults: defaults)
         let (pluginEvents, continuation) = AsyncStream.makeStream(of: SessionEvent.self)
         self.pluginEvents = pluginEvents
         let (titleEvents, titleContinuation) = AsyncStream.makeStream(of: TitleEvent.self)
@@ -170,19 +188,22 @@ final class AppModel {
         }
         runtimes = AgentRuntimes(plugins: plugins)
         sendGate.runtimes = runtimes
-        projects = Projects()
-        catalog = SessionCatalog()
-        ordering = SessionOrdering()
+        projects = Projects(defaults: defaults)
+        catalog = SessionCatalog(url: catalogURL)
+        ordering = SessionOrdering(defaults: defaults)
         sessions = SessionStore(services: services)
-        unread = UnreadSessions()
+        unread = UnreadSessions(defaults: defaults)
         launcher = SessionLauncher(plugins: plugins, services: services, store: sessions)
-        lastUsedAgent = UserDefaults.standard.string(forKey: Self.lastUsedAgentKey).map(
+        lastUsedAgent = defaults.string(forKey: Self.lastUsedAgentKey).map(
             AgentDefinition.ID.init(rawValue:))
-        // Agents with saved sessions were installed last time. Their runtimes come now, so their
-        // rows show from the first frame, not once the host connects and the login shell answers;
-        // they run in the host if one connects before they start, and checking for agents drops
-        // any that went away since.
-        _ = runtimes.sync(including: catalog.hasSessions)
+        dropUnsentSessions()
+        // Agents with saved sessions, and the ones the last launch found installed, are most likely
+        // installed still. Their runtimes come now, so their rows and Home's cards show from the
+        // first frame, not once the host connects and the login shell answers; they run in the host
+        // if one connects before they start, and checking for agents drops any that went away since.
+        _ = runtimes.sync { [catalog, installations] in
+            catalog.hasSessions(of: $0) || installations.wasInstalledLastLaunch($0)
+        }
     }
 
     /// Ends every agent's process, for when the app quits.
@@ -214,7 +235,7 @@ final class AppModel {
     /// Makes `agent` the one new sessions start with. Internal only for AppModel+StartingTasks.swift.
     func rememberLastUsed(_ agent: AgentDefinition.ID) {
         lastUsedAgent = agent
-        UserDefaults.standard.set(agent.rawValue, forKey: Self.lastUsedAgentKey)
+        defaults.set(agent.rawValue, forKey: Self.lastUsedAgentKey)
     }
 
     /// Starts the agents worth having running (`agentsWorthStarting`), and keeps up as plugins come
@@ -224,9 +245,11 @@ final class AppModel {
         isStarted = true
         // Before anything asks the host for work, so none of its events go unheard.
         await followHost()
+        startRemoteHosts()
         Task { [plugins, pluginEvents] in
             for await event in pluginEvents {
                 markUnread(after: event)
+                noteSent(after: event)
                 keepClearedConversation(after: event)
                 await plugins.broadcast(event)
             }
@@ -415,6 +438,7 @@ final class AppModel {
     /// the agent if it isn't running. When it fails before the session has a model, `openFailures`
     /// says why; an agent that won't start says so through its status instead.
     func loadSession(_ key: SessionKey) async {
+        if await loadRemoteSession(key) { return }
         guard sessions.session(key) == nil, let info = catalog.lookup(key)?.info else { return }
         openFailures[key] = nil
         guard let runtime = await ensureRunning(key.agent) else {
@@ -425,6 +449,7 @@ final class AppModel {
         }
         // Selecting a row loads it from two places; the first one to get here opens it.
         guard sessions.session(key) == nil else { return }
+        if await reopenUnsent(key, info: info, on: runtime) { return }
         do {
             _ = try await launcher.load(
                 key, cwd: URL(filePath: info.cwd, directoryHint: .isDirectory), title: info.title, on: runtime)

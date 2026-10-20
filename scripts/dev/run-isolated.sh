@@ -102,7 +102,7 @@ reset | remove)
     quit
     if id=$(bundle_id); then
         defaults delete "$id" 2>/dev/null || true
-        rm -rf "$support/$id"
+        rm -rf "${support:?}/${id:?}"
         channel=$(host_channel)
         [ -n "$channel" ] && rm -rf "$support/Native/Channels/$channel"
         rm -rf "$worktrees"
@@ -123,8 +123,10 @@ if [ "$build" = 1 ]; then
     # without asking the remotes, so a build works offline and doesn't wait on the network.
     log="$derived/build.log"
     mkdir -p "$derived"
-    if ! xcodebuild -project "$root/native.xcodeproj" -scheme native -configuration Debug -skipPackageUpdates \
-        -derivedDataPath "$derived" NATIVE_BUNDLE_IDENTIFIER_SUFFIX=".dev.$name" build >"$log" 2>&1; then
+    # Many agents build at once on a Mac someone is using: builds take turns at a lower priority.
+    if ! "$root/scripts/dev/build-slot.sh" -project "$root/native.xcodeproj" -scheme native -configuration Debug \
+        -skipPackageUpdates -derivedDataPath "$derived" NATIVE_BUNDLE_IDENTIFIER_SUFFIX=".dev.$name" build \
+        >"$log" 2>&1; then
         grep -E "^/.*error:" "$log" | sort -u | head -20 >&2
         echo "build failed; full log: $log" >&2
         exit 1
@@ -147,7 +149,8 @@ defaults read "$(bundle_id)" sounds.enabled >/dev/null 2>&1 || defaults write "$
 defaults_args=()
 [[ " ${app_args[*]-} " == *" -agentDefaults.codex.model "* ]] || defaults_args=(-agentDefaults.codex.model gpt-6.1-sol)
 [[ " ${app_args[*]-} " == *" -gitWorktreesFolder "* ]] || defaults_args+=(-gitWorktreesFolder "$worktrees")
-open -n "$app" --args ${defaults_args[@]+"${defaults_args[@]}"} ${app_args[@]+"${app_args[@]}"}
+# In the background (-g): the instance never takes focus from whoever is using this Mac.
+open -g -n "$app" --args ${defaults_args[@]+"${defaults_args[@]}"} ${app_args[@]+"${app_args[@]}"}
 
 pid=""
 for _ in $(seq 1 50); do
@@ -157,7 +160,8 @@ for _ in $(seq 1 50); do
 done
 [ -n "$pid" ] || { echo "Native didn't start" >&2; exit 1; }
 
-# The first normal-level window the instance shows.
+# The first normal-level window the instance shows. The Swift source is single-quoted on purpose.
+# shellcheck disable=SC2016
 window=$(swift -e '
 import CoreGraphics
 import Foundation

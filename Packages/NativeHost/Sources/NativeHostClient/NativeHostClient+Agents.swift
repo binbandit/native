@@ -6,10 +6,14 @@ import NativeHostProtocol
 extension NativeHostClient {
     /// The agents clients offer, until the plugin registry moves into the host. With
     /// `refreshEnvironment`, the host reads the login shell's environment again for agents it
-    /// starts from now on.
-    public func syncAgents(_ agents: [AgentSpec], refreshEnvironment: Bool = false) async throws {
+    /// starts from now on. `worktreesFolder` is where the Mac app on the host's machine makes task
+    /// worktrees, which the host then lets clients reach.
+    public func syncAgents(
+        _ agents: [AgentSpec], refreshEnvironment: Bool = false, worktreesFolder: String? = nil
+    ) async throws {
         let _: EmptyMessage = try await call(
-            HostProtocol.Method.syncAgents, SyncAgentsParams(agents: agents, refreshEnvironment: refreshEnvironment))
+            HostProtocol.Method.syncAgents,
+            SyncAgentsParams(agents: agents, refreshEnvironment: refreshEnvironment, worktreesFolder: worktreesFolder))
     }
 
     public func agents() async throws -> [HostAgent] {

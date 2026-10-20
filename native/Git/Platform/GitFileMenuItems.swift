@@ -34,3 +34,21 @@ struct GitFileMenuItems: View {
         #endif
     }
 }
+
+#if DEBUG
+#Preview("File menu items") {
+    DSPreviewPair {
+        HStack(spacing: DS.Space.lg) {
+            Menu("On this Mac") {
+                GitFileMenuItems(
+                    path: "native/Git/Model/GitStore.swift", root: URL(filePath: "/Users/preview/Developer/native"))
+            }
+            // Files on another host can only have their path copied.
+            Menu("On another host") {
+                GitFileMenuItems(path: "native/Git/Model/GitStore.swift", root: nil)
+            }
+        }
+        .fixedSize()
+    }
+}
+#endif

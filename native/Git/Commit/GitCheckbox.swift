@@ -33,3 +33,17 @@ struct GitCheckbox: View {
         .accessibilityAddTraits(.isToggle)
     }
 }
+
+#if DEBUG
+#Preview("Checkbox") {
+    DSPreviewPair {
+        HStack(spacing: DS.Space.lg) {
+            GitCheckbox(value: .off, label: "Include", action: {})
+            GitCheckbox(value: .on, label: "Include", action: {})
+            GitCheckbox(value: .mixed, label: "Include", action: {})
+            GitCheckbox(value: .on, label: "Include", action: {})
+                .disabled(true)
+        }
+    }
+}
+#endif

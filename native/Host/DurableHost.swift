@@ -246,11 +246,10 @@ final class DurableHost {
         case .appUpdateInstallRequested(let when):
             // A device asked; `.now` only after its user chose to interrupt running tasks.
             updates?.installForRemote(when == .now ? .now : .whenTasksFinish)
-        case .sessionEvent, .pluginsChanged, .updateChanged, .agentChanged:
-            // Sessions, plugins and agents reach the app through `AppModel`, and its updater is the
-            // source of the update status it would hear back.
-            break
-        @unknown default:
+        case .sessionEvent, .pluginsChanged, .updateChanged, .agentChanged, .notificationPosted,
+            .notificationsCleared:
+            // Sessions, plugins, agents and notifications reach the app through `AppModel` and its
+            // features, and its updater is the source of the update status it would hear back.
             break
         }
     }

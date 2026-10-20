@@ -34,6 +34,10 @@ extension Font {
     public nonisolated static let dsTitle2 = DSTypography.font(size: 20, weight: .medium)
     /// 24pt medium.
     public nonisolated static let dsTitle = DSTypography.font(size: 24, weight: .medium)
+    /// 40pt semibold: display type, at most once on a screen (a new session's project name). Set it
+    /// with `DS.Tracking.display`, and line its ink up with the text under it with `DSTypography.displayIndent`.
+    public nonisolated static let dsDisplay = DSTypography.font(
+        size: DSTypography.displaySize, weight: DSTypography.displayWeight)
 
     /// 10pt Geist Mono: keyboard hints.
     public nonisolated static let dsMonoMicro = DSTypography.font(size: 10, design: .mono)
@@ -61,6 +65,8 @@ extension DS {
         public static let snug: CGFloat = -0.26
         /// Uppercase mono badges.
         public static let wide: CGFloat = 0.6
+        /// Display type (-0.025em at 40pt).
+        public static let display: CGFloat = -1
     }
 }
 
@@ -114,6 +120,28 @@ public nonisolated enum DSTypography {
         platformFont(size: size, weight: weight, design: design)
     }
     #endif
+
+    /// `Font.dsDisplay`'s size and weight.
+    static let displaySize: CGFloat = 40
+    static let displayWeight = Weight.semibold
+
+    /// How much further in `dsDisplay` sets the ink of `text`'s first letter than 13pt text does.
+    /// Display type set flush with the smaller text under it looks indented by that much, so it moves
+    /// out by it to line up optically. Zero when the font has no glyph for the letter.
+    public static func displayIndent(of text: String) -> CGFloat {
+        max(leadingBearing(of: text, size: displaySize, weight: displayWeight) - leadingBearing(of: text, size: 13), 0)
+    }
+
+    /// Where the ink of `text`'s first letter starts, in from the text's origin.
+    private static func leadingBearing(of text: String, size: CGFloat, weight: Weight = .regular) -> CGFloat {
+        guard let first = text.first else { return 0 }
+        let font = platformFont(size: size, weight: weight) as CTFont
+        var characters = Array(String(first).utf16)
+        var glyphs = [CGGlyph](repeating: 0, count: characters.count)
+        guard CTFontGetGlyphsForCharacters(font, &characters, &glyphs, characters.count), var glyph = glyphs.first
+        else { return 0 }
+        return max(CTFontGetBoundingRectsForGlyphs(font, .horizontal, &glyph, nil, 1).minX, 0)
+    }
 
     static func font(size: CGFloat, weight: Weight = .regular, design: Design = .sans) -> Font {
         let key = Key(size: size, weight: weight, design: design)

@@ -10,8 +10,9 @@ nonisolated struct StatusBarSlot: LayoutValueKey {
     static let defaultValue = StatusBarSlotRole.item(.leading)
 }
 
-/// Lays the status bar's items out from both ends at their ideal widths. While they don't fit,
-/// it drops the innermost leading item, then the innermost trailing one, so the outer items
+/// Lays the status bar's items out from both ends at their ideal widths. While they don't fit, it
+/// first shortens the items that have a compact form (`.statusBarCompactForm`), then drops whole
+/// items, each time the innermost leading item, then the innermost trailing one, so the outer items
 /// (the ones people look for at the window's corners) stay longest. A separator shows only
 /// between two shown items. Dropped views are placed past the trailing edge for the surface to
 /// clip, since a layout can't hide a subview.
@@ -26,13 +27,21 @@ struct StatusBarItemsLayout: Layout {
     }
 
     func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let sizes = subviews.map { $0.sizeThatFits(.unspecified) }
-        let leading = items(at: .leading, in: subviews)
-        let trailing = items(at: .trailing, in: subviews)
+        var sizes: [CGSize] = subviews.map { $0.sizeThatFits(.unspecified) }
+        let leading: [Int] = items(at: .leading, in: subviews)
+        let trailing: [Int] = items(at: .trailing, in: subviews)
+        let innermostFirst: [Int] = leading.reversed() + trailing
 
-        var shown = nonEmptyItems(in: subviews, sizes: sizes)
-        for index in leading.reversed() + trailing
-        where width(of: shown, subviews: subviews, sizes: sizes) > bounds.width {
+        var shown: Set<Int> = nonEmptyItems(in: subviews, sizes: sizes)
+        // Shorter before gone: every item that can shorten does, before any item drops.
+        for index in innermostFirst {
+            let isTooWide: Bool = width(of: shown, subviews: subviews, sizes: sizes) > bounds.width
+            guard isTooWide else { break }
+            guard subviews[index][StatusBarCompactable.self] else { continue }
+            // No form fits no width, so the item answers with its compact form's own width.
+            sizes[index] = subviews[index].sizeThatFits(ProposedViewSize(width: 0, height: nil))
+        }
+        for index in innermostFirst where width(of: shown, subviews: subviews, sizes: sizes) > bounds.width {
             shown.remove(index)
         }
         let placed = shown.union(separators(between: shown, in: subviews))

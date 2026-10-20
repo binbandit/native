@@ -54,3 +54,14 @@ struct WorkflowRunScreen<Transcript: View>: View {
         openStep.flatMap(run.stepRun)?.task.flatMap { center.host?.session(for: $0) }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Workflow run screen - Run gone") {
+    DSPreviewPair {
+        // Runs last until Native quits; a link to one from an earlier launch lands here.
+        WorkflowRunScreen(runID: UUID()) { _ in EmptyView() }
+            .frame(width: 720, height: 420)
+    }
+    .environment(AutomationCenter.preview())
+}
+#endif

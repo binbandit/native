@@ -110,3 +110,17 @@ struct GitChangeRow: View {
         pendingDiscard = [change]
     }
 }
+
+#if DEBUG
+#Preview("Change rows") {
+    let model = GitPreviewFixtures.model
+    DSPreviewPair {
+        VStack(spacing: 0) {
+            ForEach(Array(GitPreviewFixtures.status.changes.enumerated()), id: \.element.id) { index, change in
+                GitChangeRow(change: change, isSelected: index == 0, model: model, pendingDiscard: .constant([]))
+            }
+        }
+        .frame(width: GitMetrics.inspectorIdealWidth)
+    }
+}
+#endif

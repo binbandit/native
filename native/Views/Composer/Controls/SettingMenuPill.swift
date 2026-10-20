@@ -19,3 +19,15 @@ struct SettingMenuPill: View {
         .help(setting.option.description ?? setting.option.name)
     }
 }
+
+#if DEBUG
+#Preview("Setting menu pill") {
+    DSPreviewPair {
+        HStack {
+            ForEach(ComposerPreviewFixtures.settings.others, id: \.option.id) { setting in
+                SettingMenuPill(setting: setting, onSet: { _, _ in })
+            }
+        }
+    }
+}
+#endif

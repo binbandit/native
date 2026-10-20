@@ -32,3 +32,21 @@ struct ContextBar: View {
         "\(piece.names.joined(separator: ", ")) · \(DSFormat.tokens(piece.tokens)) · \(DSFormat.share(piece.tokens, of: composition.windowTokens))"
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Context bar") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.lg) {
+            if let report = PreviewContextSource.claude(used: 240_000).report {
+                ContextBar(composition: ContextComposition(report: report))
+            }
+            if let report = PreviewContextSource.claude(used: 925_000).report {
+                ContextBar(composition: ContextComposition(report: report))
+            }
+            // An agent that reports only totals.
+            ContextBar(composition: ContextComposition(used: 61_200, window: 258_400))
+        }
+        .frame(width: 360)
+    }
+}
+#endif

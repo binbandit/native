@@ -9,10 +9,15 @@ public struct SyncAgentsParams: Codable, Sendable {
     /// Read the user's login-shell environment again (after they installed an agent's CLI or signed
     /// in from a terminal). Agents started from then on get the new one.
     public var refreshEnvironment: Bool
+    /// Where the Mac app on this machine makes task worktrees, when it moved them from
+    /// `~/.native/worktrees` (its Git setting; isolated development instances use their own). The
+    /// host lets clients reach what's inside, and tells them (`HostProjectList.worktreesFolder`).
+    public var worktreesFolder: String?
 
-    public init(agents: [AgentSpec], refreshEnvironment: Bool = false) {
+    public init(agents: [AgentSpec], refreshEnvironment: Bool = false, worktreesFolder: String? = nil) {
         self.agents = agents
         self.refreshEnvironment = refreshEnvironment
+        self.worktreesFolder = worktreesFolder
     }
 }
 
@@ -301,9 +306,13 @@ public struct ListActivityParams: Codable, Sendable {
     /// Only entries after this one.
     public var after: Int64?
     public var limit: Int
+    /// Include `commandRun` entries, the record of every command clients ran. Left out unless
+    /// asked, so a day of remote `git status` calls never buries what happened to tasks.
+    public var includeCommands: Bool?
 
-    public init(after: Int64? = nil, limit: Int = 200) {
+    public init(after: Int64? = nil, limit: Int = 200, includeCommands: Bool? = nil) {
         self.after = after
         self.limit = limit
+        self.includeCommands = includeCommands
     }
 }

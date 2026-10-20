@@ -87,3 +87,20 @@ struct ShowAllButton: View {
         .trackHover($isHovered)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Contributor rows") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: 0) {
+            ContributorSectionHeader(title: "Memory files", tokens: "2k")
+            ContributorRow(title: "AGENTS.md", detail: "Project", tokens: "2k")
+            ContributorRow(
+                title: "/Users/preview/Developer/native/native/Views/Composer/AGENTS.md", detail: "Project",
+                tokens: "640", isMono: true)
+            ContributorRow(title: "review", detail: "User", tokens: nil)
+            ShowAllButton(title: "Show all 14 skills") {}
+        }
+        .frame(width: 360)
+    }
+}
+#endif

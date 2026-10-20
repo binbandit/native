@@ -37,6 +37,7 @@ private struct BubbleTranscript: View {
             ForEach(Array(rows.enumerated()), id: \.element.id) { index, row in
                 BubbleRowView(row: row, transcript: transcript, limitStops: limitStops)
                     .padding(.top, index == 0 ? 0 : BubbleRow.spacing(between: rows[index - 1], and: row))
+                    .sessionTranscriptLine(row.id)
                     .transition(transition(for: row))
             }
             if isTyping {

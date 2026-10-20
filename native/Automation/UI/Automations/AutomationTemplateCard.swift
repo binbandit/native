@@ -48,3 +48,16 @@ struct AutomationTemplateCard: View {
         .trackHover($isHovered)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Template cards") {
+    DSPreviewPair {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 220), spacing: DS.Space.md)], spacing: DS.Space.md) {
+            ForEach(AutomationTemplate.all) { template in
+                AutomationTemplateCard(template: template) {}
+            }
+        }
+        .frame(width: 700)
+    }
+}
+#endif

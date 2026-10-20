@@ -77,3 +77,30 @@ struct RouteAssignmentEditor: View {
         .opacity(isRemoved ? 0.6 : 1)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Route assignment editor") {
+    let assignments = ExpeditionPreviewFixtures.reviewing.route?.assignments ?? []
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.lg) {
+            ForEach(Array(assignments.enumerated()), id: \.element.id) { index, assignment in
+                RouteAssignmentEditorPreview(assignment: assignment, isRemoved: index == 2, isChanged: index == 1)
+            }
+        }
+        .frame(width: 640)
+    }
+}
+
+/// Holds the assignment the editor edits.
+private struct RouteAssignmentEditorPreview: View {
+    @State var assignment: Route.Assignment
+    let isRemoved: Bool
+    let isChanged: Bool
+
+    var body: some View {
+        RouteAssignmentEditor(
+            assignment: $assignment, agents: ExpeditionPreviewFixtures.agents, isRemoved: isRemoved,
+            isChanged: isChanged, toggleRemoved: {})
+    }
+}
+#endif

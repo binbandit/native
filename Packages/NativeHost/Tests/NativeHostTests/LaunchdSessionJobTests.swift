@@ -1,3 +1,4 @@
+#if os(macOS)
 import Exec
 import Foundation
 import NativeHostProtocol
@@ -77,3 +78,4 @@ private final class RecordingRunner: CommandRunner {
         return CommandResult(exitCode: 0, standardOutput: Data(), standardError: Data())
     }
 }
+#endif

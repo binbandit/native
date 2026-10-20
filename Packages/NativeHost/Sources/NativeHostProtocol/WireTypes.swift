@@ -47,10 +47,23 @@ public struct AgentSpec: Codable, Hashable, Sendable, Identifiable {
     /// Variables to set to the absolute path of a command on the user's PATH, such as
     /// `{"CLAUDE_CODE_EXECUTABLE": "claude"}`.
     public var resolveExecutables: [String: String]
+    /// Commands besides `command` that must be on the PATH, such as the CLI an adapter drives
+    /// (`claude` for an `npx` adapter). The host doctor checks them.
+    public var requires: [String]
+    /// The command that installs the agent's CLI, from its plugin: the doctor's fix when it's missing.
+    public var install: String?
+    /// Sign-in methods the agent accepts without advertising them, from its plugin (an API key in
+    /// a variable it reads). The host sets only the variables these and the agent's own name.
+    public var authMethods: [AuthMethod]
+    /// Seconds a session may sit with nothing happening before the host unloads it from the agent,
+    /// keeping its transcript to resume quietly; once none is loaded, the agent's process ends too
+    /// (`HostCore+IdleUnload.swift`). Nil keeps sessions loaded.
+    public var idleUnloadTimeout: Int?
 
     public init(
         id: String, name: String, command: String, args: [String] = [], env: [String: String] = [:],
-        resolveExecutables: [String: String] = [:]
+        resolveExecutables: [String: String] = [:], requires: [String] = [], install: String? = nil,
+        authMethods: [AuthMethod] = [], idleUnloadTimeout: Int? = nil
     ) {
         self.id = id
         self.name = name
@@ -58,6 +71,30 @@ public struct AgentSpec: Codable, Hashable, Sendable, Identifiable {
         self.args = args
         self.env = env
         self.resolveExecutables = resolveExecutables
+        self.requires = requires
+        self.install = install
+        self.authMethods = authMethods
+        self.idleUnloadTimeout = idleUnloadTimeout
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case id, name, command, args, env, resolveExecutables, requires, install, authMethods, idleUnloadTimeout
+    }
+
+    // `requires`, `install`, `authMethods` and `idleUnloadTimeout` came later: specs stored by older
+    // hosts and sent by older apps lack them.
+    public init(from decoder: any Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        name = try container.decode(String.self, forKey: .name)
+        command = try container.decode(String.self, forKey: .command)
+        args = try container.decode([String].self, forKey: .args)
+        env = try container.decode([String: String].self, forKey: .env)
+        resolveExecutables = try container.decode([String: String].self, forKey: .resolveExecutables)
+        requires = try container.decodeIfPresent([String].self, forKey: .requires) ?? []
+        install = try container.decodeIfPresent(String.self, forKey: .install)
+        authMethods = try container.decodeIfPresent([AuthMethod].self, forKey: .authMethods) ?? []
+        idleUnloadTimeout = try container.decodeIfPresent(Int.self, forKey: .idleUnloadTimeout)
     }
 }
 
@@ -152,6 +189,8 @@ public struct HostSessionSummary: Codable, Hashable, Sendable, Identifiable {
     /// When a prompt that failed for a passing reason (the network, an overloaded provider) goes out
     /// again. Cancelling stops the retry and leaves the message queued.
     public var retryAt: Date?
+    /// Native's titles for the session (the user's, the generated one), from hosts that keep them.
+    public var titles: HostSessionTitles?
 
     public init(
         id: HostSessionID, agentID: String, agentName: String, agentSessionID: SessionID?, cwd: String,
@@ -160,7 +199,7 @@ public struct HostSessionSummary: Codable, Hashable, Sendable, Identifiable {
         queue: [QueuedPrompt] = [],
         isQueuePaused: Bool = false, supportsSteering: Bool = false, lastActivity: Date? = nil,
         lastStopReason: String? = nil, problem: String? = nil, isStopping: Bool = false,
-        isRunningHiddenCommand: Bool = false, retryAt: Date? = nil
+        isRunningHiddenCommand: Bool = false, retryAt: Date? = nil, titles: HostSessionTitles? = nil
     ) {
         self.id = id
         self.agentID = agentID
@@ -181,6 +220,7 @@ public struct HostSessionSummary: Codable, Hashable, Sendable, Identifiable {
         self.isStopping = isStopping
         self.isRunningHiddenCommand = isRunningHiddenCommand
         self.retryAt = retryAt
+        self.titles = titles
     }
 
     /// Whether a turn is running or about to (recovery resumes one, a retry sends one).

@@ -96,3 +96,58 @@ extension GitHubError {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Pull request page - Conversation") {
+    PullRequestPageViewPreview(scenario: .reviewing, tab: .conversation)
+}
+
+#Preview("Pull request page - Files changed") {
+    PullRequestPageViewPreview(scenario: .reviewing, tab: .files)
+}
+
+#Preview("Pull request page - Checks") {
+    PullRequestPageViewPreview(scenario: .reviewing, tab: .checks)
+}
+
+#Preview("Pull request page - Own, ready to merge") {
+    PullRequestPageViewPreview(scenario: .own, tab: .conversation)
+}
+
+#Preview("Pull request page - Merged") {
+    PullRequestPageViewPreview(scenario: .merged, tab: .conversation)
+}
+
+#Preview("Pull request page - Offline") {
+    PullRequestPageViewPreview(scenario: .offline, tab: .conversation)
+}
+
+#Preview("Pull request page - Narrow") {
+    PullRequestPageViewPreview(scenario: .reviewing, tab: .conversation, width: 440)
+}
+
+/// The page as the Pull Requests pane shows it, loading binbandit/native#212 from fixture gh
+/// answers on the tab given.
+private struct PullRequestPageViewPreview: View {
+    @State private var gitHub: GitHubModel
+    @State private var model: PullRequestPageModel
+    private let width: CGFloat
+
+    init(scenario: PullRequestPreviewRunner.Scenario, tab: PullRequestPageModel.Tab, width: CGFloat = 900) {
+        let gitHub = GitHubModel.pagePreview(scenario)
+        let model = PullRequestPageModel(reference: PullRequestPreviewRunner.reference, gitHub: gitHub)
+        model.tab = tab
+        _gitHub = State(initialValue: gitHub)
+        _model = State(initialValue: model)
+        self.width = width
+    }
+
+    var body: some View {
+        DSPreviewPair {
+            PullRequestPageView(model: model)
+                .frame(width: width, height: 760)
+        }
+        .environment(gitHub)
+    }
+}
+#endif

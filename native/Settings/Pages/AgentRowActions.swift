@@ -52,3 +52,17 @@ struct AgentRowActions: View {
         Task { await model.signIn(to: runtime.agent.id, with: method) }
     }
 }
+
+#if DEBUG
+#Preview("Agent row actions") {
+    let app = AppModel.preview()
+    DSPreviewPair {
+        HStack(spacing: DS.Space.lg) {
+            ForEach(app.agents, id: \.agent.id) { runtime in
+                AgentRowActions(runtime: runtime)
+            }
+        }
+    }
+    .environment(app)
+}
+#endif

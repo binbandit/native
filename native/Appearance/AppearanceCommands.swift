@@ -35,13 +35,13 @@ extension NativeCommand {
 
 /// View ▸ Appearance.
 struct AppearanceCommands: Commands {
-    let commands: CommandRegistry
+    let menu: CommandMenuContext
 
     var body: some Commands {
         CommandGroup(after: .sidebar) {
             Menu("Appearance") {
                 ForEach(AppearanceMode.allCases) { mode in
-                    CommandMenuItem(mode.commandID, in: commands, title: mode.title)
+                    CommandMenuItem(mode.commandID, in: menu, title: mode.title)
                 }
             }
         }

@@ -79,3 +79,21 @@ struct PullRequestGroupSection: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Pull request group") {
+    let inbox = PullRequestPreviewFixtures.inbox
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.xl) {
+            PullRequestGroupSection(
+                group: PullRequestGroup(.involvement(.author), inbox.authored), isCollapsed: .constant(false))
+            // Collapsed, and grouped by repository so rows leave the repository out.
+            PullRequestGroupSection(
+                group: PullRequestGroup(.repository("binbandit/native"), inbox.reviewRequested),
+                isCollapsed: .constant(true), showsRepository: false)
+        }
+        .frame(width: PullRequestsLayout.contentWidth)
+    }
+    .environment(GitHubModel.preview(inbox: inbox))
+}
+#endif

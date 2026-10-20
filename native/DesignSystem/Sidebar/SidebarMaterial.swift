@@ -154,3 +154,20 @@ struct DSBehindWindowMaterial: NSViewRepresentable {
     }
 }
 #endif
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Sidebar material") {
+    DSPreviewPair {
+        HStack(spacing: DS.Space.lg) {
+            // The sidebar's own backdrop, and the column's look that chrome below it continues.
+            Text("Sidebar")
+                .font(.dsCallout)
+                .foregroundStyle(.dsTextSecondary)
+                .frame(width: 180, height: 120)
+                .dsSidebarBackground()
+            SidebarColumnBackdrop()
+                .frame(width: 180, height: 120)
+        }
+    }
+}
+#endif

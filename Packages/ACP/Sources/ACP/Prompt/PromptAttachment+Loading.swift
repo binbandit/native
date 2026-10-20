@@ -1,9 +1,13 @@
 import Foundation
+
+#if canImport(UniformTypeIdentifiers)
 import ImageIO
 import UniformTypeIdentifiers
+#endif
 
 // Reading a file into an attachment: images scaled to what agents take, small text files read for
-// embedding, everything else sent by path.
+// embedding, everything else sent by path. Without Apple's type and image frameworks (Linux), types
+// come from extensions and images are never scaled, only sent as they are when they already fit.
 extension PromptAttachment {
     public enum Limits {
         /// The largest image file Native will read and scale down.
@@ -64,19 +68,25 @@ extension PromptAttachment {
         return existing + [attachment]
     }
 
-    /// The image types agents take as they are; anything else is converted.
-    static let sendableImageTypes: [UTType] = [.png, .jpeg, .gif, .webP]
-
     /// Reads `url` into an attachment. Blocks while it reads and scales, so call it off the main
     /// actor.
     public static func load(_ url: URL, origin: Origin = .attached) throws -> PromptAttachment {
+        #if canImport(UniformTypeIdentifiers)
         let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .fileSizeKey, .contentTypeKey])
+        #else
+        let values = try? url.resourceValues(forKeys: [.isDirectoryKey, .fileSizeKey])
+        #endif
         guard let values else { throw LoadError.missing(name: url.lastPathComponent) }
         if values.isDirectory == true || origin == .mentioned {
             return PromptAttachment(url: url, content: .reference, byteCount: values.fileSize, origin: origin)
         }
         let byteCount = values.fileSize ?? 0
-        if values.contentType?.conforms(to: .image) == true, let image = image(at: url, byteCount: byteCount) {
+        #if canImport(UniformTypeIdentifiers)
+        let isPicture = values.contentType?.conforms(to: .image) == true
+        #else
+        let isPicture = Self.isPicture(extension: url.pathExtension)
+        #endif
+        if isPicture, let image = image(at: url, byteCount: byteCount) {
             return PromptAttachment(url: url, content: image, byteCount: byteCount, origin: origin)
         }
         if byteCount <= Limits.embeddedTextBytes {
@@ -88,6 +98,7 @@ extension PromptAttachment {
         return PromptAttachment(url: url, content: .reference, byteCount: byteCount, origin: origin)
     }
 
+    #if canImport(UniformTypeIdentifiers)
     /// Saves pasted image data to a file of its own, so it has a path like any attachment, then
     /// loads it.
     public static func pasted(_ data: Data, type: UTType) throws -> PromptAttachment {
@@ -102,6 +113,9 @@ extension PromptAttachment {
         }
         return try load(url)
     }
+
+    /// The image types agents take as they are; anything else is converted.
+    static let sendableImageTypes: [UTType] = [.png, .jpeg, .gif, .webP]
 
     /// The image's content: as it is when agents take it as is, otherwise scaled and re-encoded.
     /// Nil when it's past `Limits.imageFileBytes` or ImageIO can't draw it, so it goes as a file.
@@ -172,4 +186,23 @@ extension PromptAttachment {
         context.draw(image, in: bounds)
         return context.makeImage()
     }
+    #else
+    /// Picture extensions, for telling a picture from other files where there's no `UTType`.
+    private static let pictureExtensions: Set = [
+        "avif", "bmp", "gif", "heic", "heif", "ico", "jpeg", "jpg", "png", "svg", "tif", "tiff", "webp",
+    ]
+
+    static func isPicture(extension pathExtension: String) -> Bool {
+        pictureExtensions.contains(pathExtension.lowercased())
+    }
+
+    /// The image as it is, when its header shows it's a type agents take and already within
+    /// `Limits`; nil otherwise, so it goes as a file. Nothing here can scale or re-encode it.
+    private static func image(at url: URL, byteCount: Int) -> Content? {
+        guard byteCount <= Limits.imageBytes, let data = try? Data(contentsOf: url), let header = ImageHeader(data),
+            max(header.width, header.height) <= Limits.imagePixels
+        else { return nil }
+        return .image(data, mimeType: header.mimeType)
+    }
+    #endif
 }

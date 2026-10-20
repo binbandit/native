@@ -21,11 +21,24 @@ struct TranscriptView: View {
     /// The scroll container's width, which a legacy scroller doesn't change; nil until the container
     /// has a real size.
     @State private var containerWidth: CGFloat?
+    @State private var containerHeight: CGFloat?
     /// Rows the user opened, kept while they're scrolled away.
     @State private var disclosures = TranscriptDisclosures()
+    /// The code the transcript shows first has its colors (`TranscriptOpeningCode`), or it stopped
+    /// waiting for them. Until then the rows wait, so the transcript appears finished.
+    @State private var isOpeningCodeColored = false
+    /// Whether the loading state stays while the code colors: after history was restored here, so
+    /// "Loading session…" stays until the transcript appears. A session already in memory shows
+    /// nothing for those few milliseconds instead of flashing a loader.
+    @State private var loadsWhileColoring: Bool
+
+    init(session: SessionModel, openSubagent: @escaping (SessionID) -> Void) {
+        self.session = session
+        self.openSubagent = openSubagent
+        _loadsWhileColoring = State(initialValue: session.isRestoringHistory)
+    }
 
     var body: some View {
-        let items = session.state.items
         let transcript = TranscriptStyleConfiguration(
             session: session, unfoldsExploration: unfoldsExploration, openSubagent: openSubagent,
             sessionTitle: { model.session(id: $0)?.displayTitle }
@@ -47,18 +60,30 @@ struct TranscriptView: View {
                 // transcript opened mid-way or past its end, blank. The rows wait for a real size.
                 guard size.width > 0, size.height > 0 else { return }
                 containerWidth = size.width
+                containerHeight = size.height
             }
             .overlay {
-                if session.isRestoringHistory {
+                let showsRows = !session.isRestoringHistory && (isOpeningCodeColored || openingCode.isEmpty)
+                if !showsRows, session.isRestoringHistory || loadsWhileColoring {
                     // A reopened session replays its history thousands of updates at a time. Shown as
                     // it arrived, rows appeared and the view chased the end, replaying the session;
                     // instead it appears whole, already at its end, once all of it is in.
                     LoadingStateView("Loading session…")
-                } else {
+                } else if showsRows {
                     scrollView(transcript)
                 }
             }
             .transaction(value: session.isRestoringHistory) { $0.animation = nil }
+            .onChange(of: session.isRestoringHistory) { _, isRestoring in
+                guard isRestoring else { return }
+                isOpeningCodeColored = false
+                loadsWhileColoring = true
+            }
+            .task(id: session.isRestoringHistory) {
+                guard !session.isRestoringHistory, !isOpeningCodeColored else { return }
+                await TranscriptOpeningCode.color(openingCode)
+                isOpeningCodeColored = true
+            }
             .overlay(alignment: .bottom) {
                 if showsJumpToLatest {
                     JumpToLatestButton(action: jumpToLatest)
@@ -69,10 +94,21 @@ struct TranscriptView: View {
             .animation(.dsStandard, value: showsJumpToLatest)
             .focusedSceneValue(\.transcriptJumpToLatest, jumpCommand)
             .overlay {
-                if !session.isRestoringHistory, items.isEmpty {
+                if !session.isRestoringHistory, session.isTranscriptEmpty {
                     NewSessionEmptyState(session: session)
                 }
             }
+    }
+
+    /// The code on the transcript's first screen that has no colors yet. Only looked at until the
+    /// transcript appears: it reads the session's state, which changes with every chunk.
+    private var openingCode: [TranscriptOpeningCode.Block] {
+        guard !isOpeningCodeColored else { return [] }
+        #if DEBUG || NATIVE_PERF
+        if TranscriptPerfProbe.skipsOpeningColors { return [] }
+        #endif
+        // Before the container's first layout, a tall window's worth.
+        return TranscriptOpeningCode.uncolored(in: session.state.items, height: containerHeight ?? 1200)
     }
 
     /// The rows, scrolling, starting at the latest.
@@ -91,6 +127,14 @@ struct TranscriptView: View {
         .defaultScrollAnchor(.bottom, for: .initialOffset)
         .defaultScrollAnchor(.bottom, for: .sizeChanges)
         .scrollPosition($position)
+        #if DEBUG || NATIVE_PERF
+        .onAppear { TranscriptPerfProbe.transcriptAppeared() }
+        .onScrollGeometryChange(for: ScrollGeometry.self) {
+            $0
+        } action: { _, geometry in
+            TranscriptPerfProbe.scrolled(geometry)
+        }
+        #endif
         // Rows scrolled up under the title bar stay legible through the soft edge, right behind the
         // session's title; the hard edge keeps the title on a plain backing. Under a page's or an
         // inspector's `dsToolbarBand`, the band in Native's colors takes its place.
@@ -101,8 +145,6 @@ struct TranscriptView: View {
         } action: { _, isAway in
             isAwayFromLatest = isAway
         }
-        // Coming back to this session shows the same place, or the latest (new rows included) when
-        // that's where the user left it.
     }
 
     /// The rows in a centered column, as wide as the width setting allows with a margin each side.
@@ -113,6 +155,9 @@ struct TranscriptView: View {
             .padding(.top, DS.Space.xl)
             .padding(.bottom, DS.Space.lg)
             .frame(maxWidth: .infinity)
+            // Coming back to this session shows the same place, or the latest (new rows included)
+            // when that's where the user left it.
+            .sessionTranscriptPlace(for: transcript.session)
     }
 
     /// Invariant: the rows' height must never depend on whether the vertical scroller is showing.

@@ -59,3 +59,35 @@ private struct TimelineRail: View {
             .accessibilityHidden(true)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Workflow run - Running") {
+    DSPreviewPair {
+        if let run = AutomationPreviewFixtures.runningRun {
+            WorkflowRunView(
+                run: run, report: { _ in AutomationPreviewFixtures.report }, send: { _ in },
+                openStep: .constant(nil)
+            )
+            .frame(width: 760, height: 620)
+        }
+    }
+}
+
+#Preview("Workflow run - Waiting for approval") {
+    DSPreviewPair {
+        if let run = AutomationPreviewFixtures.approvalRun {
+            WorkflowRunView(run: run, report: { _ in nil }, send: { _ in }, openStep: .constant(nil))
+                .frame(width: 760, height: 720)
+        }
+    }
+}
+
+#Preview("Workflow run - Failed step") {
+    DSPreviewPair {
+        if let run = AutomationPreviewFixtures.failedRun {
+            WorkflowRunView(run: run, report: { _ in nil }, send: { _ in }, openStep: .constant(nil))
+                .frame(width: 760, height: 620)
+        }
+    }
+}
+#endif

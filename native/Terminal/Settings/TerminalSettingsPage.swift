@@ -179,3 +179,13 @@ extension TerminalCursorStyle {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Terminal settings") {
+    DSPreviewPair {
+        TerminalSettingsPage(store: TerminalPreviewFixtures.store())
+            .settingsPreviewPage()
+    }
+    .environment(SettingsPresentation())
+}
+#endif

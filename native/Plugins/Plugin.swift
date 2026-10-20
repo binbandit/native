@@ -5,6 +5,7 @@ import CodeThemes
 import Experiments
 import Foundation
 import NativeAutomation
+import NativeHostProtocol
 import Search
 
 /// Extends Native. Native's own agents and features are plugins too, so every extension point is
@@ -152,12 +153,23 @@ struct AgentManifest: Codable, Hashable, Sendable {
     /// agent (`session/close`), and loads it back when it's selected again. For agents that pay for
     /// every open session (a process each) and reopen one faithfully. Nil keeps sessions open.
     var idleSessionTimeout: Int?
+    /// Seconds a session may sit with nothing happening before Native's host unloads it from the
+    /// agent (`session/close`), keeping its transcript, and resumes it without a replay
+    /// (`session/resume`) when it's next used. Once none is loaded, the agent's process ends too.
+    /// For agents that keep a lot per loaded session, or that keep things after closing one, and
+    /// can resume. Nil keeps sessions loaded.
+    var idleUnloadTimeout: Int?
+    /// Ways to sign the agent in that it accepts without advertising them, in ACP's shape
+    /// (`AuthMethod`): a key in a variable it reads (`"type": "env_var"`), or a device code it
+    /// offers only to clients that open links (`"type": "_native/link"`). For hosts nobody sits
+    /// at; see docs/agents.md, "Signing in on a host with no screen".
+    var authMethods: [AuthMethod] = []
 
     init(
         id: String, name: String, symbol: String? = nil, command: String, args: [String] = [],
         env: [String: String] = [:], resolveExecutables: [String: String] = [:], mcpConfig: String? = nil,
         icon: AgentIconSource? = nil, requires: [String] = [], setup: AgentSetupGuide? = nil,
-        idleSessionTimeout: Int? = nil
+        idleSessionTimeout: Int? = nil, idleUnloadTimeout: Int? = nil, authMethods: [AuthMethod] = []
     ) {
         self.id = id
         self.name = name
@@ -171,6 +183,8 @@ struct AgentManifest: Codable, Hashable, Sendable {
         self.requires = requires
         self.setup = setup
         self.idleSessionTimeout = idleSessionTimeout
+        self.idleUnloadTimeout = idleUnloadTimeout
+        self.authMethods = authMethods
     }
 
     init(from decoder: any Decoder) throws {
@@ -187,6 +201,8 @@ struct AgentManifest: Codable, Hashable, Sendable {
         requires = try container.decodeIfPresent([String].self, forKey: .requires) ?? []
         setup = try container.decodeIfPresent(AgentSetupGuide.self, forKey: .setup)
         idleSessionTimeout = try container.decodeIfPresent(Int.self, forKey: .idleSessionTimeout)
+        idleUnloadTimeout = try container.decodeIfPresent(Int.self, forKey: .idleUnloadTimeout)
+        authMethods = try container.decodeIfPresent([AuthMethod].self, forKey: .authMethods) ?? []
     }
 }
 
@@ -338,9 +354,20 @@ enum SessionEvent: Sendable {
 // MARK: - Titles
 
 /// Writes a short title for a session from what the user asked for.
+///
+/// Tasks in Native's host get their titles there, with no app attached (docs/plugins.md, "Titles
+/// with the app closed"). A titler the host runs too names it in `hostProvider`; one that runs
+/// only in the app leaves it nil, and the host keeps each task's first message until an app with
+/// this titler is attached to write it.
 protocol SessionTitler: Sendable {
     /// Returns nil when it can't produce a title right now (for example, no model is available).
     func title(for request: TitleRequest) async throws -> String?
+    /// The host's own titler that writes the same titles, if there is one.
+    var hostProvider: HostTitleProvider? { get }
+}
+
+extension SessionTitler {
+    var hostProvider: HostTitleProvider? { nil }
 }
 
 struct TitleRequest: Hashable, Sendable {

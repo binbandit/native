@@ -14,3 +14,14 @@ struct FieldLabel: View {
             .foregroundStyle(.dsTextSecondary)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Field label") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.sm) {
+            FieldLabel("Title")
+            FieldLabel("Description")
+        }
+    }
+}
+#endif

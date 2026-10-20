@@ -34,6 +34,21 @@ public struct NewSessionChoices: Sendable {
         option.category.map(rememberedCategories.contains) ?? false
     }
 
+    /// Whether the user picking `value` from `shown` (the option as the composer showed it) is one
+    /// to start new sessions on: the model or one of its variants, picked while the session was
+    /// `settled` from what the agent said then (`agentHad`), and taken by the agent (`agentHas`). A
+    /// pick from anything else says nothing about where new sessions should start: a session still
+    /// getting its settings back shows those it's about to get, and an empty or outdated list
+    /// isn't the agent's.
+    public static func remembersPick(
+        _ value: String, from shown: ConfigOption, agentHad: ConfigOption?, agentHas: ConfigOption?, settled: Bool
+    ) -> Bool {
+        guard settled, remembers(shown), agentHad == shown, case .select(let current, _)? = agentHas?.kind else {
+            return false
+        }
+        return current == value
+    }
+
     /// The options to set, in order: the model first, since changing it can change what the others
     /// offer (a model's efforts), then the rest as the agent lists them.
     public func order(in options: [ConfigOption]) -> [String] {

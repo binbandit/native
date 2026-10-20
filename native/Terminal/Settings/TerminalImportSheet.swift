@@ -146,3 +146,19 @@ extension TerminalCursor {
         "\(style.title)\(blinks ? ", blinking" : "")"
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Import from Ghostty") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.xl) {
+            TerminalImportSheet(
+                ghosttyImport: TerminalPreviewFixtures.ghosttyImport, current: TerminalSettings(), apply: {},
+                cancel: {})
+            // A config that sets nothing Native imports.
+            TerminalImportSheet(
+                ghosttyImport: TerminalImport(files: [URL(filePath: "/Users/preview/.config/ghostty/config")]),
+                current: TerminalSettings(), apply: {}, cancel: {})
+        }
+    }
+}
+#endif

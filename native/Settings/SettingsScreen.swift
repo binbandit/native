@@ -143,3 +143,13 @@ struct SettingsScreen: View {
         pane = nil
     }
 }
+
+#if DEBUG
+#Preview("Settings") {
+    DSPreviewPair {
+        SettingsScreen(pane: .constant(.general))
+            .frame(width: 1000, height: 640)
+    }
+    .environment(SettingsPreviewFixtures.registry())
+}
+#endif

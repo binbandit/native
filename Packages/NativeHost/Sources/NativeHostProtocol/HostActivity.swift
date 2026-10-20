@@ -41,6 +41,14 @@ public struct ActivityEntry: Codable, Hashable, Sendable, Identifiable {
         case updateRequested
         /// A new standalone build didn't come up, so the host went back to the one before.
         case updateRolledBack
+        /// A client ran a command on the host (`_native/exec/run`): `subject` names the client,
+        /// `detail` the command line and its folder. Recorded before it runs; never sent as
+        /// `_native/activity`, and listed only when asked (`ListActivityParams.includeCommands`).
+        case commandRun
+        /// A device paired with this host through its gateway: `subject` names it, `detail` says how
+        /// and what it may do. Every pairing is written down, since `pair` on the host pairs without
+        /// anyone confirming on a screen.
+        case devicePaired
         case unknown
     }
 
@@ -65,7 +73,7 @@ public struct ActivityEntry: Codable, Hashable, Sendable, Identifiable {
     public var agentID: String?
     public var agentSessionID: SessionID?
     public var kind: Kind
-    /// The session's title or agent, at the time.
+    /// The session's title or agent, at the time; for `commandRun`, the client.
     public var subject: String?
     public var detail: String?
     public var recovery: RecoveryNote?

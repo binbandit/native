@@ -104,3 +104,23 @@ struct AgentIconGlyphView: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Agent icons") {
+    DSPreviewPair {
+        Grid(alignment: .leading, horizontalSpacing: DS.Space.xl, verticalSpacing: DS.Space.md) {
+            ForEach(AgentIconPreviewFixtures.agents, id: \.id) { agent in
+                GridRow {
+                    AgentIcon(agent: agent)
+                    AgentIcon(agent: agent, size: DS.Size.controlXS)
+                    AgentIcon(agent: agent, style: .tile, size: DS.Size.controlMD)
+                    Text(agent.displayName)
+                        .font(.dsBody)
+                        .foregroundStyle(.dsTextPrimary)
+                }
+            }
+        }
+    }
+    .agentIconPreviewStore()
+}
+#endif

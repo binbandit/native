@@ -1,3 +1,4 @@
+import NativeHostProtocol
 import SwiftUI
 
 /// The keep-awake choices as menu items, shared by the status bar's menu and View ▸ Keep Mac Awake:
@@ -10,7 +11,7 @@ struct KeepAwakeMenuItems: View {
         Section(controller.status.description(keepsDisplayOn: controller.keepsDisplayOn)) {
             // Toggles rather than a picker: their two-text labels become a title and the
             // description as a subtitle, which a picker's options drop.
-            ForEach(KeepAwakeMode.allCases.reversed()) { mode in
+            ForEach(KeepAwakeMode.choices.reversed()) { mode in
                 Toggle(
                     isOn: Binding {
                         controller.mode == mode
@@ -40,3 +41,20 @@ struct KeepAwakeMenuItems: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Keep awake menu") {
+    DSPreviewPair {
+        HStack(spacing: DS.Space.lg) {
+            Menu("While agents work") {
+                KeepAwakeMenuItems(controller: KeepAwakePreviewFixtures.working())
+            }
+            // With a timer running, Cancel Timer joins the menu.
+            Menu("Timer") {
+                KeepAwakeMenuItems(controller: KeepAwakePreviewFixtures.timer())
+            }
+        }
+        .fixedSize()
+    }
+}
+#endif

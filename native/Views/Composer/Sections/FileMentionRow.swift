@@ -52,3 +52,19 @@ struct FileMentionRow: View {
         .accessibilityLabel(accessibilityLabel)
     }
 }
+
+#if DEBUG
+#Preview("File mention rows") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.sm) {
+            FileMentionRow(path: "native/Views/Composer/ComposerView.swift", isChanged: false, isHighlighted: true)
+            FileMentionRow(path: "native/Views/Composer/Sections/", isChanged: false, isHighlighted: false)
+            FileMentionRow(
+                path: "native/Views/Composer/Sections/QueuedPromptsSection.swift", isChanged: true, isHighlighted: false
+            )
+            FileMentionRow(path: "README.md", isChanged: false, isHighlighted: false)
+        }
+        .frame(width: 320)
+    }
+}
+#endif

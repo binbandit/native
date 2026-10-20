@@ -68,3 +68,23 @@ struct GoalPromptRow: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Goal prompt rows") {
+    let goal = AutomationPreviewFixtures.activeGoal
+    let usage = goal.usage(at: AutomationPreviewFixtures.now)
+    let kickoff = GoalPrompt.kickoffText(objective: goal.objective, usage: usage)
+    let next = GoalPrompt.continuationText(objective: goal.objective, usage: usage, reminder: false, resumed: false)
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.lg) {
+            if let prompt = GoalPrompt(parsing: kickoff) {
+                GoalPromptRow(prompt: prompt, text: kickoff)
+            }
+            if let prompt = GoalPrompt(parsing: next) {
+                GoalPromptRow(prompt: prompt, text: next)
+            }
+        }
+        .frame(width: 560)
+    }
+}
+#endif

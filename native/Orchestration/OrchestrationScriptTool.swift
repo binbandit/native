@@ -1,5 +1,6 @@
 import Foundation
 import MCP
+import NativeOrchestration
 import ScriptRuntime
 
 /// Code mode for Native's MCP server: `run_script` runs an agent's JavaScript in the sandboxed

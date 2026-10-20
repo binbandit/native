@@ -22,12 +22,16 @@ struct SessionFolderTests {
         #expect(paths.first == folders.link)
         #expect(paths.count == 2)
         #expect(paths.last.map { SessionFolder.isSame($0, folders.real) } == true)
+        #if os(macOS)
         #expect(paths.last?.hasPrefix("/private/") == true)
+        #endif
     }
 
+    #if os(macOS)
     @Test func tmpIsListedUnderPrivateTmp() {
         #expect(SessionFolder.listingPaths(for: "/tmp") == ["/tmp", "/private/tmp"])
     }
+    #endif
 
     @Test func aResolvedPathIsListedOnce() throws {
         let folders = try linkedFolders()
@@ -46,7 +50,9 @@ struct SessionFolderTests {
     @Test func aMissingFolderComparesThroughItsExistingParent() throws {
         let folders = try linkedFolders()
         #expect(SessionFolder.isSame(folders.link + "/gone/deeper", folders.real + "/gone/deeper"))
+        #if os(macOS)
         #expect(SessionFolder.isSame("/tmp/missing-\(#line)", "/private/tmp/missing-\(#line)"))
+        #endif
     }
 
     @Test func containsAFolderInside() throws {

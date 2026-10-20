@@ -262,9 +262,11 @@ extension SessionModel {
         // A mode's instructions, say, which the transcript shows as a marker (`SessionHooks`).
         let preamble = services.hooks.preamble(for: self, prompt: text)
         if echo {
+            let startedAt = Date.now
             state.appendUserMessage(
                 text, attachments: MessageAttachment.shown(attachments, capabilities: promptCapabilities),
-                preamble: preamble?.marker)
+                preamble: preamble?.marker, at: startedAt)
+            services.hooks.turnStarted(self, startedAt)
         }
         phase = .prompting
         lastActivity = .now

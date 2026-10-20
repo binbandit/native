@@ -77,8 +77,36 @@ struct AgentProcessGroups: Sendable {
             frontier += listed
         }
         return found
+        #elseif os(Linux)
+        let children = Dictionary(grouping: parents()) { $0.parent }.mapValues { $0.map { $0.pid } }
+        var found: [pid_t] = []
+        var frontier = [root]
+        while let pid = frontier.popLast(), found.count < 1_000 {
+            let listed = children[pid] ?? []
+            found += listed
+            frontier += listed
+        }
+        return found
         #else
         return []
         #endif
     }
+
+    #if os(Linux)
+    /// Every process and its parent, from `/proc/<pid>/stat`. Read from every process rather than
+    /// from `/proc/<pid>/task/*/children`, which only kernels built with it have.
+    private static func parents() -> [(pid: pid_t, parent: pid_t)] {
+        let entries = (try? FileManager.default.contentsOfDirectory(atPath: "/proc")) ?? []
+        return entries.compactMap { entry in
+            guard let pid = pid_t(entry),
+                let stat = try? String(contentsOfFile: "/proc/\(entry)/stat", encoding: .utf8),
+                let command = stat.lastIndex(of: ")")
+            else { return nil }
+            // After the command, which ends at its last ")", come the state and the parent's pid.
+            let fields = stat[stat.index(after: command)...].split(separator: " ")
+            guard fields.count > 1, let parent = pid_t(fields[1]) else { return nil }
+            return (pid, parent)
+        }
+    }
+    #endif
 }

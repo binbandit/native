@@ -5,7 +5,8 @@ import NativeHostProtocol
 /// What the Mac's QR code carries: the host's public key (so the phone knows exactly whom it's
 /// pairing with before it says anything), a one-time secret that expires in minutes, the host's name
 /// and how to reach it. Encoded as a `nativecompanion://pair#…` link, so the iPhone's own Camera can
-/// open the companion with it too.
+/// open the companion with it too. `pair` on a host without a screen prints the same link, with the
+/// grants it will give, for Add Host on a Mac.
 public struct PairingInvite: Codable, Hashable, Sendable {
     public static let scheme = "nativecompanion"
     public static let currentVersion = 1
@@ -19,10 +20,13 @@ public struct PairingInvite: Codable, Hashable, Sendable {
     public var hostName: String
     public var expiresAt: Date
     public var addresses: [LinkAddress]
+    /// The most the pairing gives, decided when the link was made (`pair` on the host); the device
+    /// may ask for less. Nil for the Mac's QR code, where its user decides once the device shows up.
+    public var grants: LinkGrants?
 
     public init(
         hostID: HostID, hostKey: LinkPublicKey, secret: Data, hostName: String, expiresAt: Date,
-        addresses: [LinkAddress], version: Int = PairingInvite.currentVersion
+        addresses: [LinkAddress], grants: LinkGrants? = nil, version: Int = PairingInvite.currentVersion
     ) {
         self.version = version
         self.hostID = hostID
@@ -31,6 +35,7 @@ public struct PairingInvite: Codable, Hashable, Sendable {
         self.hostName = hostName
         self.expiresAt = expiresAt
         self.addresses = addresses
+        self.grants = grants
     }
 
     public func isExpired(at now: Date) -> Bool {
@@ -97,6 +102,7 @@ public struct PairingInvite: Codable, Hashable, Sendable {
         case hostName = "n"
         case expiresAt = "x"
         case addresses = "a"
+        case grants = "g"
     }
 
     private static var encoder: JSONEncoder {

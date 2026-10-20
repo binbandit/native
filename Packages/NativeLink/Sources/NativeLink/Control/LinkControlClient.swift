@@ -47,8 +47,14 @@ public actor LinkControlClient {
         try await call(LinkControlMethod.status, EmptyMessage())
     }
 
-    @discardableResult public func openPairingWindow() async throws -> LinkStatus {
-        try await call(LinkControlMethod.openPairing, EmptyMessage())
+    /// `preapprovedGrants` pairs the device that proves the invite without asking (see
+    /// `LinkGateway.openPairingWindow(preapproving:)`).
+    @discardableResult public func openPairingWindow(
+        preapproving preapprovedGrants: LinkGrants? = nil
+    ) async throws
+        -> LinkStatus
+    {
+        try await call(LinkControlMethod.openPairing, LinkOpenPairingParams(preapprovedGrants: preapprovedGrants))
     }
 
     @discardableResult public func closePairingWindow() async throws -> LinkStatus {

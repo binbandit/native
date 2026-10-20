@@ -1,3 +1,4 @@
+#if canImport(CryptoKit)
 import Foundation
 import Testing
 
@@ -49,3 +50,4 @@ struct TokenTests {
         #expect(secret != MCPTokenSigner.newSecret())
     }
 }
+#endif

@@ -30,3 +30,15 @@ struct ResourceTableHeader: View {
         .accessibilityAddTraits(sort == column ? .isSelected : [])
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Resource table header") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.lg) {
+            ResourceTableHeader(sort: .constant(.memory))
+            ResourceTableHeader(sort: .constant(.cpu))
+        }
+        .frame(width: 420)
+    }
+}
+#endif

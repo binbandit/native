@@ -58,3 +58,20 @@ struct AutomationTextField: View {
         return field
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Automation text fields") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.lg) {
+            AutomationTextField(label: "Name", text: .constant(""), placeholder: "Triage failing CI every morning")
+            AutomationTextField(label: "Name", text: .constant("Keep the dependency lockfiles fresh"))
+            AutomationTextField(
+                label: "Prompt",
+                text: .constant(
+                    "Look at the CI failures on main since yesterday and fix the ones caused by our code. Leave flaky network tests alone and list them at the end."
+                ), axis: .vertical, lines: 3...6)
+        }
+        .frame(width: 480)
+    }
+}
+#endif

@@ -4,7 +4,7 @@ import Testing
 @testable import MCP
 
 struct ProtocolTests {
-    let endpoint = makeServer().endpoint
+    let endpoint = makeEndpoint()
 
     // MARK: - Endpoint
 

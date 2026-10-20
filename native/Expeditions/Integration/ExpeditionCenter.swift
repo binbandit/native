@@ -10,7 +10,7 @@ import Observation
 @MainActor
 @Observable
 final class ExpeditionCenter {
-    let runner = ExpeditionRunner(store: .standard, documents: .standard)
+    let runner: ExpeditionRunner
     /// Set to ask the window to show the New Expedition sheet; the view clears it.
     var isNewExpeditionRequested = false
     /// Whether the Expeditions page has the window's detail column. The window clears it when
@@ -25,6 +25,12 @@ final class ExpeditionCenter {
     @ObservationIgnored var probe: ((URL) async -> ExpeditionProjectProbe)?
     /// Describes a provider limit an error reports, the Usage feature's way; nil when it isn't one.
     @ObservationIgnored var describeLimit: ((any Error) -> String?)?
+
+    /// `runner` says where expeditions are kept; previews pass one that keeps nothing
+    /// (ExpeditionCenter+Preview.swift).
+    init(runner: ExpeditionRunner = ExpeditionRunner(store: .standard, documents: .standard)) {
+        self.runner = runner
+    }
 
     func connect(
         to model: AppModel,

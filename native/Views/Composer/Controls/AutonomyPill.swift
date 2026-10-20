@@ -94,3 +94,28 @@ struct AutonomyLevelPicker: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Autonomy pill") {
+    let settings = ComposerPreviewFixtures.settings
+    let plan = ComposerPreviewFixtures.planModeSettings
+    DSPreviewPair {
+        if let autonomy = settings.autonomy, let suspended = plan.autonomy {
+            VStack(alignment: .leading, spacing: DS.Space.lg) {
+                // Every level, least to most autonomous; the last skips every check.
+                ForEach(settings.autonomyLevels.indices, id: \.self) { level in
+                    AutonomyPill(
+                        setting: autonomy, levels: settings.autonomyLevels, level: level, isSuspended: false,
+                        agentName: "Claude Code", onSet: { _, _ in })
+                }
+                AutonomyPill(
+                    setting: autonomy, levels: settings.autonomyLevels, level: 1, isSuspended: false,
+                    agentName: "Claude Code", showsIcon: true, onSet: { _, _ in })
+                AutonomyPill(
+                    setting: suspended, levels: plan.autonomyLevels, level: plan.shownAutonomyLevel(resumed: "auto"),
+                    isSuspended: true, agentName: "Claude Code", onSet: { _, _ in })
+            }
+        }
+    }
+}
+#endif

@@ -1,5 +1,6 @@
 import ACP
 import NativeAutomation
+import NativeOrchestration
 import SwiftUI
 
 /// A user prompt, an agent reply, or the agent's reasoning.

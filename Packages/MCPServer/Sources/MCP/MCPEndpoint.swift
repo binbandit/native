@@ -11,6 +11,13 @@ struct MCPEndpoint<Context: Sendable>: Sendable {
     let instructions: String?
     let tools: [MCPTool<Context>]
     let resolve: @Sendable (_ token: String) async -> Context?
+    /// Tools offered to some clients only, or that come and go (another process answers them).
+    var moreTools: (@Sendable (Context) async -> [MCPTool<Context>])? = nil
+
+    /// Every tool `context` gets.
+    private func tools(for context: Context) async -> [MCPTool<Context>] {
+        tools + (await moreTools?(context) ?? [])
+    }
 
     func respond(to request: HTTPRequest) async -> HTTPResponse {
         // DNS rebinding: a web page can reach loopback through a hostname it controls, but its
@@ -95,7 +102,7 @@ struct MCPEndpoint<Context: Sendable>: Sendable {
 
     private func definitions(for context: Context) async -> [JSON] {
         var definitions: [JSON] = []
-        for tool in tools { definitions.append(await tool.definition(for: context)) }
+        for tool in await tools(for: context) { definitions.append(await tool.definition(for: context)) }
         return definitions
     }
 
@@ -117,7 +124,8 @@ struct MCPEndpoint<Context: Sendable>: Sendable {
         // The tools never change while the server runs. Unless some vary by client, every client
         // gets the same ones, and may share them.
         let cacheHints: [String: JSON] =
-            tools.contains { $0.listing != nil } ? ["ttlMs": 3_600_000] : ["ttlMs": 3_600_000, "cacheScope": "public"]
+            tools.contains { $0.listing != nil } || moreTools != nil
+            ? ["ttlMs": 3_600_000] : ["ttlMs": 3_600_000, "cacheScope": "public"]
         switch (method, era) {
         case ("initialize", .legacy):
             let requested = params["protocolVersion"]?.stringValue
@@ -143,7 +151,7 @@ struct MCPEndpoint<Context: Sendable>: Sendable {
             guard let name = params["name"]?.stringValue else {
                 throw RPCFailure(code: -32602, message: "tools/call needs the name of a tool.")
             }
-            guard let tool = tools.first(where: { $0.name == name }) else {
+            guard let tool = await tools(for: context).first(where: { $0.name == name }) else {
                 throw RPCFailure(code: -32602, message: "Unknown tool: \(name)")
             }
             let arguments = params["arguments"] ?? [:]

@@ -50,3 +50,14 @@ struct LightToneSettingsRow: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Light tone row") {
+    DSPreviewPair {
+        SettingsRowGroup {
+            LightToneSettingsRow()
+        }
+        .settingsPreviewPage()
+    }
+}
+#endif

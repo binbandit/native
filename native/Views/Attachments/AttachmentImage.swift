@@ -49,3 +49,19 @@ struct AttachmentImage: View {
         return CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary)
     }
 }
+
+#if DEBUG
+#Preview("Attachment image") {
+    DSPreviewPair {
+        HStack(alignment: .top, spacing: DS.Space.lg) {
+            // Filling a chip's square, fitted to a message's box, and still decoding (no bytes).
+            AttachmentImage(data: ComposerPreviewFixtures.screenshot, maxSide: 32)
+                .frame(width: 32, height: 32)
+                .clipShape(.rect(cornerRadius: DS.Radius.small))
+            AttachmentImage(
+                data: ComposerPreviewFixtures.screenshot, maxSide: 240, fitting: CGSize(width: 240, height: 160))
+            AttachmentImage(data: Data(), maxSide: 120, fitting: CGSize(width: 120, height: 90))
+        }
+    }
+}
+#endif

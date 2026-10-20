@@ -170,3 +170,20 @@ extension CrewSlot {
         return nil
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Attention cards") {
+    let expeditions = [ExpeditionPreviewFixtures.reviewing, ExpeditionPreviewFixtures.needsYou]
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.lg) {
+            ForEach(expeditions) { expedition in
+                ForEach(expedition.attention) { item in
+                    ExpeditionAttentionCard(expedition: expedition, item: item, send: { _ in }, onOpen: { _ in })
+                }
+            }
+        }
+        .frame(width: 640)
+    }
+    .environment(ExpeditionCenter.preview())
+}
+#endif

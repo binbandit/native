@@ -23,6 +23,10 @@ final class SessionStore {
     /// Told when the host gave one of the user's sessions a fresh agent session in place of one the
     /// agent never saved, so the app can follow it under its new key (AppModel+HostSessions.swift).
     @ObservationIgnored var onAgentSessionReplaced: ((SessionModel, HostSessionSummary) -> Void)?
+    /// Claims a subagent the host announced on a parent's stream as a session of Native's own, such
+    /// as a task Native's tools started (`AppModel.claimHostTask`), given the update that shows it.
+    /// Nil leaves it an agent's own subagent.
+    @ObservationIgnored var claimSubagent: ((SessionModel, SessionID, JSONValue) -> SessionModel?)?
     @ObservationIgnored let services: SessionServices
 
     init(services: SessionServices) {

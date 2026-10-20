@@ -30,6 +30,9 @@ extension SettingsPane {
                 SettingsSearchEntry(
                     id: BackgroundSettingsPage.hostRow, title: "Background host",
                     keywords: ["restart", "status", "login items"]),
+                SettingsSearchEntry(
+                    id: BackgroundSettingsPage.checkRow, title: "Check this Mac",
+                    keywords: ["doctor", "droid", "mac mini", "health", "diagnose"]),
             ]
         },
         content: { BackgroundSettingsPage() }
@@ -41,10 +44,12 @@ extension SettingsPane {
 struct BackgroundSettingsPage: View {
     static let keepRunningRow = SettingsRowID("background.keepRunning")
     static let hostRow = SettingsRowID("background.host")
+    static let checkRow = SettingsRowID("background.check")
 
     @Environment(DurableHost.self) private var host: DurableHost?
     @Environment(CommandRegistry.self) private var commands
     @AppStorage(HostSessions.defaultsKey) private var keepsRunning = HostSessions.defaultValue
+    @State private var isCheckingMac = false
 
     var body: some View {
         SettingsPage {
@@ -71,6 +76,9 @@ struct BackgroundSettingsPage: View {
                 }
                 if let host {
                     hostRow(host)
+                }
+                if let client = host?.client, HostDoctorSheet.isAvailable {
+                    checkRow(client)
                 }
             }
         }
@@ -130,6 +138,22 @@ struct BackgroundSettingsPage: View {
                 "Native's background host didn't start",
                 recovery: "Agents stop when Native quits this time. Native tries again the next time it opens.",
                 details: reason)
+        }
+    }
+
+    /// The host doctor (native/HostDoctor), for this Mac.
+    private func checkRow(_ client: NativeHostClient) -> some View {
+        SettingsRow(
+            id: Self.checkRow, "Check this Mac",
+            description: Text(
+                "What agents need here, and whether this Mac logs in and stays awake on its own, as a Mac mini running agents should. Checking changes nothing."
+            )
+        ) {
+            Button("Check This Mac…") { isCheckingMac = true }
+                .buttonStyle(.settings)
+        }
+        .sheet(isPresented: $isCheckingMac) {
+            HostDoctorSheet(hostName: "This Mac", client: client)
         }
     }
 

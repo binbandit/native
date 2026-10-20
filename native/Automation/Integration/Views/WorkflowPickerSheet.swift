@@ -43,3 +43,20 @@ struct WorkflowPickerSheet: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Workflow picker sheet") {
+    DSPreviewPair {
+        // No host is connected, so it lists the library with no agents to run it on.
+        WorkflowPickerSheet(cwd: AutomationPreviewFixtures.project, onAddProject: {}, onStarted: { _ in })
+    }
+    .environment(AutomationCenter.preview())
+}
+
+#Preview("Workflow picker sheet - No project") {
+    DSPreviewPair {
+        WorkflowPickerSheet(cwd: nil, onAddProject: {}, onStarted: { _ in })
+    }
+    .environment(AutomationCenter.preview())
+}
+#endif

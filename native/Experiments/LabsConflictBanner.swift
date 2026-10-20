@@ -42,3 +42,14 @@ struct LabsConflictBanner: View {
         .accessibilityElement(children: .contain)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Labs conflict") {
+    DSPreviewPair {
+        if let conflict = LabsPreviewFixtures.conflict {
+            LabsConflictBanner(conflict: conflict, catalog: .native, turnOff: { _ in })
+                .settingsPreviewPage()
+        }
+    }
+}
+#endif

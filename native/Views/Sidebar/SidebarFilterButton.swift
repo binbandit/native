@@ -231,3 +231,29 @@ private struct SidebarFilterPanel: View {
         .accessibilityAddTraits(isOn ? .isSelected : [])
     }
 }
+
+#if DEBUG
+#Preview("Filter button") {
+    let app = AppModel.preview()
+    DSPreviewPair {
+        HStack(spacing: DS.Space.lg) {
+            SidebarFilterButton(filter: .constant(TaskFilter()), isSelecting: .constant(false))
+            SidebarFilterButton(filter: .constant(SidebarPreviewFixtures.filtered), isSelecting: .constant(false))
+        }
+    }
+    .sidebarPreviewEnvironment(app)
+}
+
+#Preview("Filter panel (touch)") {
+    let app = AppModel.preview()
+    DSPreviewPair {
+        SidebarFilterPanel(
+            filter: .constant(SidebarPreviewFixtures.filtered), isSelecting: .constant(false),
+            options: SidebarFilterOption.all(
+                filter: .constant(SidebarPreviewFixtures.filtered), agents: app.agents.map(\.agent))
+        )
+        .dsPopoverBackground()
+    }
+    .sidebarPreviewEnvironment(app)
+}
+#endif

@@ -81,3 +81,24 @@ struct AutomationStatusGlyph: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Automation glyphs") {
+    let statuses: [WorkflowStepStatus] = [
+        .waiting, .awaitingApproval, .starting, .running, .paused, .blocked("Needs you"), .limited("Limit"),
+        .failed("Failed"), .cancelled, .interrupted, .succeeded, .skipped,
+    ]
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.sm) {
+            ForEach(Array(statuses.enumerated()), id: \.offset) { _, status in
+                HStack(spacing: DS.Space.md) {
+                    AutomationStatusGlyph(glyph: AutomationGlyph(step: status))
+                    Text(String(describing: status))
+                        .font(.dsBody)
+                        .foregroundStyle(.dsTextSecondary)
+                }
+            }
+        }
+    }
+}
+#endif

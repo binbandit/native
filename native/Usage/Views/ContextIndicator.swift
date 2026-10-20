@@ -83,3 +83,22 @@ struct ContextIndicator<Source: ContextSource>: View {
             """
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Context indicator") {
+    DSPreviewPair {
+        VStack(alignment: .trailing, spacing: DS.Space.md) {
+            ForEach([240_000, 820_000, 960_000], id: \.self) { used in
+                HStack {
+                    ContextIndicator(source: PreviewContextSource.claude(used: used))
+                    ContextIndicator(source: PreviewContextSource.claude(used: used), style: .labeled)
+                }
+            }
+            HStack {
+                ContextIndicator(source: PreviewContextSource.codex)
+                ContextIndicator(source: PreviewContextSource.codex, style: .labeled)
+            }
+        }
+    }
+}
+#endif

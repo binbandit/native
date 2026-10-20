@@ -57,7 +57,7 @@ struct TurnChangesCard: View {
             if let actions {
                 Button("Review", action: actions.review)
                     .buttonStyle(.ds(.ghost))
-                    .help("Review the changes (⌘⇧D)")
+                    .help("Review this turn's changes")
                 if let commitForm = actions.commitForm {
                     Button("Commit") { isCommitting = true }
                         .buttonStyle(.ds(.ghost))
@@ -73,8 +73,8 @@ struct TurnChangesCard: View {
         .frame(minHeight: DS.Size.controlMD)
     }
 
-    private func fileRow(_ file: TurnSummary.ChangedFile) -> some View {
-        HStack(spacing: DS.Space.sm) {
+    @ViewBuilder private func fileRow(_ file: TurnSummary.ChangedFile) -> some View {
+        let row = HStack(spacing: DS.Space.sm) {
             Text(URL(filePath: file.path).lastPathComponent)
                 .foregroundStyle(.dsTextSecondary)
             Text(URL(filePath: file.path).deletingLastPathComponent().abbreviatedPath)
@@ -88,7 +88,19 @@ struct TurnChangesCard: View {
         .padding(.leading, DS.Space.md + DS.Size.rowLeading + DS.Space.sm)
         .padding(.trailing, DS.Space.md)
         .frame(minHeight: DS.Size.listRow)
-        .textSelection(.enabled)
+        if let reviewFile = actions?.reviewFile {
+            // Each file opens its own changes in this turn; selecting text would swallow the click.
+            Button {
+                reviewFile(file.path)
+            } label: {
+                row.contentShape(.rect)
+            }
+            .buttonStyle(TurnChangesFileRowStyle())
+            .help("Show this file's changes in this turn")
+            .accessibilityHint("Shows this file's changes in this turn")
+        } else {
+            row.textSelection(.enabled)
+        }
     }
 
     /// "1 file changed", "7 files changed".
@@ -104,6 +116,26 @@ struct TurnChangesActions {
     var review: () -> Void
     /// The commit form, shown from the card's Commit button; nil when there's nothing to commit.
     var commitForm: ((Binding<Bool>) -> AnyView)?
+    /// Opens the changes inspector on one file's changes in this turn, by the path the card lists.
+    var reviewFile: ((String) -> Void)?
+}
+
+/// A file row that opens its changes: a list row's hover fill, a shade darker while pressed.
+private struct TurnChangesFileRowStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        Row(configuration: configuration)
+    }
+
+    private struct Row: View {
+        let configuration: Configuration
+        @State private var isHovered = false
+
+        var body: some View {
+            configuration.label
+                .background(configuration.isPressed ? .dsPressed : isHovered ? .dsHover : .clear)
+                .trackHover($isHovered)
+        }
+    }
 }
 
 extension EnvironmentValues {

@@ -84,3 +84,20 @@ extension GitBranchBadge {
         }
     }
 }
+
+#if DEBUG
+#Preview("Branch badge") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.md) {
+            GitBranchBadge(branch: GitPreviewFixtures.branch, isDirty: true)
+            GitBranchBadge(branch: BranchStatus(head: .branch("main"), commit: "abc", upstream: "origin/main"))
+            GitBranchBadge(branch: BranchStatus(head: .detached, commit: "9e8d7c6b5a"), isDirty: true)
+            GitBranchBadge(
+                branch: BranchStatus(
+                    head: .branch("native/diff-view-word-wrapping-in-narrow-windows-without-breaking-the-gutter"),
+                    commit: "1a2b3c4"))
+        }
+        .frame(width: 280, alignment: .leading)
+    }
+}
+#endif

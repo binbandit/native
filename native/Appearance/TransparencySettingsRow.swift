@@ -46,3 +46,14 @@ struct TransparencySettingsRow: View {
         #endif
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Transparency row") {
+    DSPreviewPair {
+        SettingsRowGroup {
+            TransparencySettingsRow()
+        }
+        .settingsPreviewPage()
+    }
+}
+#endif

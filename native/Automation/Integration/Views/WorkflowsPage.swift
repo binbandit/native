@@ -111,3 +111,13 @@ struct WorkflowsPage<Transcript: View>: View {
         .overlay { RoundedRectangle(cornerRadius: DS.Radius.card).strokeBorder(.dsSeparator, lineWidth: 1) }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Workflows - Library") {
+    DSPreviewPair {
+        WorkflowsPage(path: .constant([]), onSetUpAutomations: {}) { _ in EmptyView() }
+            .frame(width: 900, height: 760)
+    }
+    .environment(AutomationCenter.preview())
+}
+#endif

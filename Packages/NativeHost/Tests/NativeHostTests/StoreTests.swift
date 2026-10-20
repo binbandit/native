@@ -143,7 +143,7 @@ struct StoreTests {
                 .text(session.description), .text(UUID().uuidString), .text("waiting"))
         }
         let store = try HostStore(url: url)
-        #expect(try store.pragma("user_version") == "4")
+        #expect(try store.pragma("user_version") == String(HostStore.schemaVersion))
         let migrated = try #require(try store.sessions().first)
         #expect(migrated.id == session)
         #expect(migrated.configChoices.isEmpty)

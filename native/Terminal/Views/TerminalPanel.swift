@@ -149,3 +149,35 @@ private struct TerminalConfigNotice: View {
         .padding(.bottom, DS.Space.xs)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Terminal panel - Couldn't start") {
+    let store = TerminalPreviewFixtures.store()
+    DSPreviewPair {
+        TerminalPanel(panel: TerminalPreviewFixtures.panel(), store: store, maxHeight: 320)
+            .frame(width: 720)
+    }
+    .environment(SettingsPresentation())
+}
+
+#Preview("Terminal panel - Not in this build") {
+    TerminalUnavailablePanelPreview()
+}
+
+/// A store that found the terminal wasn't built, as it learns the first time a tab asks for it.
+private struct TerminalUnavailablePanelPreview: View {
+    private let store = TerminalPreviewFixtures.store(engine: .notBuilt)
+    private let app = AppModel.preview()
+
+    var body: some View {
+        let session = SessionModel.preview(in: app)
+        let panel = session.map { store.panel(for: $0) } ?? TerminalPreviewFixtures.panel()
+        panel.newTab()
+        return DSPreviewPair {
+            TerminalPanel(panel: panel, store: store, maxHeight: 240)
+                .frame(width: 720)
+        }
+        .environment(SettingsPresentation())
+    }
+}
+#endif

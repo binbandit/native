@@ -2,6 +2,7 @@ import ACP
 import Foundation
 import MCP
 import MCPClient
+import NativeOrchestration
 import ScriptRuntime
 
 /// Binds the servers set to run through scripts into `run_script` as `tools.<server>.<tool>`, so

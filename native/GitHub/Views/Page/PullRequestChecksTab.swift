@@ -109,3 +109,14 @@ private struct PullRequestCheckRow: View {
         return ([state] + parts).joined(separator: " · ")
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Checks tab") {
+    DSPreviewPair {
+        PullRequestPagePreview { model, page in
+            PullRequestChecksTab(model: model, page: page)
+        }
+        .frame(width: 900, height: 520)
+    }
+}
+#endif

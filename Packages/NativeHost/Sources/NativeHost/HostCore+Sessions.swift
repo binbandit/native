@@ -15,10 +15,12 @@ extension HostCore {
         }
         let link = try await readyAgent(params.agentID)
         guard let peer = link.peer else { throw HostError.agentUnavailable(link.spec.name) }
+        let sessionID = params.sessionID ?? HostSessionID()
+        let servers = await tasks.agentServers(for: sessionID, base: params.mcpServers)
         let response: RawNewSessionResponse
         do {
             response = try await peer.request(
-                "session/new", RawNewSessionRequest(cwd: params.cwd, mcpServers: params.mcpServers, _meta: params.meta),
+                "session/new", RawNewSessionRequest(cwd: params.cwd, mcpServers: servers, _meta: params.meta),
                 as: RawNewSessionResponse.self)
         } catch {
             noteAgentError(error, from: link)
@@ -30,7 +32,7 @@ extension HostCore {
             return existing.summary
         }
         let record = StoredSession(
-            id: params.sessionID ?? HostSessionID(), agentID: params.agentID, agentSessionID: response.sessionId,
+            id: sessionID, agentID: params.agentID, agentSessionID: response.sessionId,
             cwd: params.cwd, parentID: params.parentID, origin: params.origin, mcpServers: params.mcpServers,
             meta: params.meta)
         try store.insertSession(record)
@@ -123,6 +125,7 @@ extension HostCore {
                 throw HostError.agentUnavailable(link.spec.name)
             }
             guard link.canLoadSessions else { throw HostError.cannotLoad(link.spec.name) }
+            let servers = await tasks.agentServers(for: session.id, base: session.mcpServers)
             append(.reset(loading: true), to: session)
             replaying = true
             route(session, on: link)
@@ -131,7 +134,7 @@ extension HostCore {
                 response = try await peer.request(
                     "session/load",
                     RawLoadSessionRequest(
-                        sessionId: agentSessionID, cwd: session.record.cwd, mcpServers: session.mcpServers,
+                        sessionId: agentSessionID, cwd: session.record.cwd, mcpServers: servers,
                         _meta: session.record.meta),
                     as: RawConfigOptionsResponse.self)
             } catch let error as RPCError
@@ -148,6 +151,7 @@ extension HostCore {
                 append(.update(SessionMirror.configOptionsUpdate(options)), to: session)
             }
             append(.loaded, to: session)
+            tasks.sessionLoaded(session)
             await restoreConfigChoices(of: session, on: link)
             session.needsLoad = false
             session.supportsSteering = link.supportsSteering
@@ -180,15 +184,20 @@ extension HostCore {
     private func replaceUnsaved(
         _ session: HostSession, on link: AgentLink, peer: JSONRPCPeer
     ) async throws -> RawConfigOptionsResponse {
+        let servers = await tasks.agentServers(for: session.id, base: session.mcpServers)
         let response = try await peer.request(
             "session/new",
-            RawNewSessionRequest(cwd: session.record.cwd, mcpServers: session.mcpServers, _meta: session.record.meta),
+            RawNewSessionRequest(cwd: session.record.cwd, mcpServers: servers, _meta: session.record.meta),
             as: RawNewSessionResponse.self)
-        if let old = session.record.agentSessionID {
+        let old = session.record.agentSessionID
+        if let old {
             link.routes[old] = nil
         }
         session.record.agentSessionID = response.sessionId
         try store.updateSession(session.record)
+        if let old {
+            tasks.agentSessionReplaced(agent: session.record.agentID, old: old, new: response.sessionId)
+        }
         route(session, on: link)
         return RawConfigOptionsResponse(configOptions: response.configOptions)
     }
@@ -278,6 +287,7 @@ extension HostCore {
         session.stopTimeout?.cancel()
         try? store.deleteSession(session.id)
         sessions[session.id] = nil
+        tasks.sessionClosed(session)
         if let agentSessionID = session.record.agentSessionID {
             agents[session.record.agentID]?.routes[agentSessionID] = nil
         }

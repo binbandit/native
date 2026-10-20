@@ -43,3 +43,27 @@ struct RemovedWorkspaceNotice: View {
             + "Changes that weren't committed went with the folder."
     }
 }
+
+#if DEBUG
+#Preview("Removed worktree") {
+    let app = AppModel.preview()
+    let session = SessionModel.preview(in: app, title: "Queue follow-ups while a turn runs")
+    let unknown = SessionModel.preview(in: app, title: "Diff view word wrapping")
+    if let session, let unknown {
+        app.removedWorkspaces[session.key] = RemovedWorkspace(
+            branch: "native/queue-follow-ups", detail: "native/queue-follow-ups has 2 commits that aren't merged.")
+        app.removedWorkspaces[unknown.key] = RemovedWorkspace(
+            branch: nil, detail: "Native can't tell which branch it was on, and it had changes that weren't merged.")
+    }
+    return DSPreviewPair {
+        VStack(spacing: DS.Space.lg) {
+            if let session, let unknown {
+                RemovedWorkspaceNotice(session: session)
+                RemovedWorkspaceNotice(session: unknown)
+            }
+        }
+        .frame(width: 760)
+    }
+    .environment(app)
+}
+#endif

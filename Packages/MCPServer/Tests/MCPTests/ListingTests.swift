@@ -17,9 +17,9 @@ import Testing
             MCPTool<String>.Listing(
                 description: "Runs things for \(owner).", annotations: MCPToolAnnotations(readOnly: owner == "alice"))
         }
-        return MCPHTTPServer(name: "test", version: "1.0", tools: [tool]) { token in
+        return MCPEndpoint(name: "test", version: "1.0", instructions: nil, tools: [tool]) { token in
             ["alice", "bob"].contains(token) ? token : nil
-        }.endpoint
+        }
     }()
 
     @Test func eachClientSeesItsOwnListing() async throws {

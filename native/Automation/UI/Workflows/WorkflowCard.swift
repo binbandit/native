@@ -89,3 +89,17 @@ private extension Int {
         self == 0 ? nil : self
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Workflow cards") {
+    let entries = AutomationPreviewFixtures.libraryWithPlugin.entries
+    DSPreviewPair {
+        VStack(spacing: DS.Space.md) {
+            ForEach(Array(entries.enumerated()), id: \.offset) { index, entry in
+                WorkflowCard(entry: entry, isSelected: index == 0) {}
+            }
+        }
+        .frame(width: 420)
+    }
+}
+#endif

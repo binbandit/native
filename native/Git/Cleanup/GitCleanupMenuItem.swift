@@ -14,3 +14,19 @@ struct GitCleanupMenuItem: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Clean Up Merged menu item") {
+    let app = AppModel.preview()
+    DSPreviewPair {
+        Menu("native") {
+            if let project = app.previewProject() {
+                GitCleanupMenuItem(project: project)
+            }
+            Button("Show in Finder") {}
+        }
+        .fixedSize()
+    }
+    .environment(GitCleanupCenter(services: GitPreviewFixtures.cleanupServices(app)))
+}
+#endif

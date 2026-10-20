@@ -41,3 +41,16 @@ struct AgentSetupCommand: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Setup command") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.md) {
+            AgentSetupCommand(command: "npm install -g @openai/codex")
+            AgentSetupCommand(
+                command: "curl -fsSL https://example.com/install.sh | bash -s -- --channel stable --prefix ~/.local")
+        }
+        .frame(width: 420)
+    }
+}
+#endif

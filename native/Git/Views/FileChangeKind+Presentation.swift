@@ -61,3 +61,20 @@ struct GitStatusGlyph: View {
             .accessibilityLabel(kind.label)
     }
 }
+
+#if DEBUG
+#Preview("Status glyphs") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.sm) {
+            ForEach(GitPreviewFixtures.status.changes, id: \.id) { change in
+                HStack(spacing: DS.Space.md) {
+                    GitStatusGlyph(kind: change.kind)
+                    Text(change.kind.label)
+                        .font(.dsBody)
+                        .foregroundStyle(.dsTextSecondary)
+                }
+            }
+        }
+    }
+}
+#endif

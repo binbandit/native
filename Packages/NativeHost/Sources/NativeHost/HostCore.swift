@@ -1,6 +1,9 @@
 import ACP
+import Exec
 import Foundation
 import NativeHostProtocol
+import NativeOrchestration
+import SessionTitling
 
 /// The host: owns the agents, the sessions and the store, and serves clients. Sessions live in
 /// `HostCore+Sessions.swift`, turns in `HostCore+Turns.swift`, recovery in
@@ -27,12 +30,37 @@ public final class HostCore {
         /// Development hosts stop after this long with no clients and nothing running, so hosts of
         /// builds nobody uses don't linger. Nil for release hosts, which stay up.
         public var idleExit: Duration?
+        /// Runs clients' commands (`_native/exec/run`). Nil means this machine's own runner where
+        /// there is one (`LocalCommandRunner` on macOS and Linux); elsewhere the host can't run them.
+        public var commands: (any CommandRunner)?
+        /// Watches folders for `_native/fs/watch`: FSEvents on a Mac (`MacHost`). Nil polls
+        /// (`PollingFileWatching`), which works anywhere.
+        public var fileWatching: (any FileWatching)?
+        /// The guides Native's tools serve agents (`list_skills`, `get_skill`): the app's copies of
+        /// docs/setup.md and docs/plugins.md. Empty leaves those tools out.
+        public var nativeSkills: [NativeSkill]
+        /// Writes titles on this machine for `HostTitleProvider.onDevice`: the on-device model on a
+        /// Mac (`MacHost`). Nil leaves titles to clients.
+        public var titleGenerator: (any SessionTitleGenerator)?
+        /// Holds power assertions for keeping awake: IOKit on a Mac (`MacHost`). Nil can't keep the
+        /// machine awake, and says so.
+        public var keepAwake: (any HostPowerBackend)?
+        /// What `HostStatus` says about the machine; nil says what Foundation knows.
+        public var systemInfo: HostSystemInfo?
+        /// `_native/host/doctor`'s reads and platform checks; nil checks only keeping awake.
+        public var doctor: HostDoctor?
+        /// Keys the host keeps for agents' sign-in methods (`HostCredentials`): the keychain on a Mac
+        /// (`MacHost`), else `credentials.json` in the host's directory.
+        public var credentials: HostCredentials
 
         public init(
             location: HostLocation, hostInfo: PeerInfo, machineName: String, bootTime: Date?,
             environment: @escaping @Sendable () async -> [String: String], heartbeatInterval: Duration = .seconds(30),
             idleExit: Duration? = nil, pluginsDirectory: URL? = nil, updates: HostUpdateEnvironment? = nil,
-            exit: @escaping @Sendable (Int32) -> Void
+            exit: @escaping @Sendable (Int32) -> Void, commands: (any CommandRunner)? = nil,
+            fileWatching: (any FileWatching)? = nil, nativeSkills: [NativeSkill] = [],
+            titleGenerator: (any SessionTitleGenerator)? = nil, keepAwake: (any HostPowerBackend)? = nil,
+            systemInfo: HostSystemInfo? = nil, doctor: HostDoctor? = nil, credentials: (any HostCredentialStore)? = nil
         ) {
             self.updates =
                 updates
@@ -52,6 +80,14 @@ public final class HostCore {
             self.heartbeatInterval = heartbeatInterval
             self.idleExit = idleExit
             self.exit = exit
+            self.commands = commands
+            self.fileWatching = fileWatching
+            self.nativeSkills = nativeSkills
+            self.titleGenerator = titleGenerator
+            self.keepAwake = keepAwake
+            self.systemInfo = systemInfo
+            self.doctor = doctor
+            self.credentials = HostCredentials(store: credentials ?? HostCredentialFile(directory: location.directory))
         }
     }
 
@@ -72,6 +108,8 @@ public final class HostCore {
     /// The order clients listed the agents in.
     var agentOrder: [String] = []
     var sessions: [HostSessionID: HostSession] = [:]
+    /// Native's tools for agents and the tasks sessions hand each other (`HostTasks.swift`).
+    lazy var tasks = HostTasks(core: self)
     var clients: [ClientLink.ID: ClientLink] = [:]
     /// Prompt requests being handled, so a repeat of one waits for its answer instead of sending again.
     var promptsInFlight: [UUID: Task<PromptDelivery, any Error>] = [:]
@@ -87,6 +125,15 @@ public final class HostCore {
     var updateChecks: Task<Void, Never>?
     /// Set once a restart was asked for, to exit when nothing is running.
     var isRestartingWhenIdle = false
+    /// Who writes titles, and which are being written (`HostCore+Titles.swift`).
+    var titling = HostTitling()
+    /// Keeps the machine awake while sessions work, as the policy says (`HostCore+Status.swift`).
+    lazy var keepAwake = makeKeepAwake()
+    /// The paired-device gateway's state for the doctor, set by the process that runs it.
+    public var doctorGateway: (@Sendable () async -> HostDoctorGateway?)?
+    /// Whether the gateway has paired devices, set by the process that runs it. They reach the host
+    /// only while it runs, so a development host with any never stops for being idle.
+    public var hasPairedDevices = false
     let logger = HostLogger(category: "Host")
     /// The login-shell environment agents start with, read once (again after a sync asks).
     private var environment: Task<[String: String], Never>?
@@ -121,16 +168,22 @@ public final class HostCore {
             _ = session.append(.reset(loading: false))
         }
         try store.pruneRequests(olderThan: .now.addingTimeInterval(-7 * 24 * 3600))
+        try store.pruneActivity(.commandRun, olderThan: .now.addingTimeInterval(-30 * 24 * 3600))
     }
 
     /// Picks up what the previous run left unfinished, then keeps a heartbeat.
     public func start() {
+        // Before recovery: the sessions it reloads get the tools' address.
+        tasks.start()
+        resolveNotificationsOfPreviousRun()
+        resumeTitles()
         do {
             try resumeInterruptedWork()
         } catch {
             logger.error("Couldn't read what to recover: \(error.localizedDescription)")
         }
         startUpdates()
+        startHostStatus()
         let interval = configuration.heartbeatInterval
         heartbeat = Task { [weak self] in
             while !Task.isCancelled {
@@ -159,7 +212,7 @@ public final class HostCore {
         restartIfReplacedOnDisk()
         guard let idleExit = configuration.idleExit else { return }
         let isBusy =
-            !clients.isEmpty
+            !clients.isEmpty || hasPairedDevices
             || sessions.values.contains { $0.isWorking || $0.phase == .loading }
         if isBusy {
             lastBusy = .now
@@ -216,13 +269,15 @@ public final class HostCore {
             guard let self, let link else { return }
             publishAgent(link)
         }
+        refreshSavedCredentials(of: link)
         return link
     }
 
     /// The running agent for `agentID`, started if needed.
     func readyAgent(_ agentID: String) async throws -> AgentLink {
         guard let link = agents[agentID] else { throw HostError.unknownAgent(agentID) }
-        let environment: @Sendable () async -> [String: String] = { [weak self] in await self?.agentEnvironment() ?? [:]
+        let environment: @Sendable () async -> [String: String] = { [weak self] in
+            await self?.launchEnvironment(of: agentID) ?? [:]
         }
         let clientInfo = Implementation(name: "native-host", title: "Native", version: configuration.hostInfo.version)
         try await link.ensureStarted(environment: environment, clientInfo: clientInfo) {
@@ -244,6 +299,7 @@ public final class HostCore {
     /// Logs one of Native's own events for a session and sends it to the clients following it.
     func append(_ payload: HostEvent.Payload, to session: HostSession) {
         send(session.append(payload), of: session)
+        noteForNotifications(payload, in: session)
     }
 
     /// Logs an agent's update for a session and sends it to the clients following it.
@@ -265,6 +321,8 @@ public final class HostCore {
         for client in clients.values {
             client.notify(HostProtocol.Method.sessionChanged, notification)
         }
+        tasks.sessionChanged(session)
+        keepAwakeActivityChanged()
     }
 
     /// Tells every client an agent's status changed.
@@ -283,7 +341,7 @@ public final class HostCore {
         let entry = ActivityEntry(
             id: 0, at: .now, sessionID: session?.id, agentID: session?.record.agentID,
             agentSessionID: session?.record.agentSessionID, kind: kind,
-            subject: session.map { $0.record.title ?? $0.agentName }, detail: detail, recovery: recovery,
+            subject: session.map { $0.displayTitle ?? $0.agentName }, detail: detail, recovery: recovery,
             previousRun: previousRun)
         guard let stored = try? store.appendActivity(entry) else { return }
         for client in clients.values {

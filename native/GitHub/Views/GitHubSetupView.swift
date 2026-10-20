@@ -107,3 +107,17 @@ struct GitHubSetupView: View {
         return "at \(DSFormat.timeAndCountdown(date, now: .now))"
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("GitHub setup") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.xxl) {
+            GitHubSetupView(problem: .notInstalled)
+            GitHubSetupView(problem: .notAuthenticated)
+            GitHubSetupView(problem: .failed(.offline("error connecting to api.github.com")))
+        }
+        .frame(width: 560)
+    }
+    .environment(GitHubModel.preview(availability: .notInstalled, error: .notInstalled))
+}
+#endif

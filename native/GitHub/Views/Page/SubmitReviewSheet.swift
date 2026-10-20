@@ -143,3 +143,21 @@ struct SubmitReviewSheet: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Submit review") {
+    DSPreviewPair {
+        PullRequestPagePreview(loadsEverything: false) { model, _ in
+            SubmitReviewSheet(model: model)
+        }
+    }
+}
+
+#Preview("Submit review - Own pull request") {
+    DSPreviewPair {
+        PullRequestPagePreview(scenario: .own, loadsEverything: false) { model, _ in
+            SubmitReviewSheet(model: model)
+        }
+    }
+}
+#endif

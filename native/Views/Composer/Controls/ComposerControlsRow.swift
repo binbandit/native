@@ -97,3 +97,48 @@ struct ComposerControlsRow<Extras: View, Context: View>: View {
         .animation(.dsQuick, value: followUpHint)
     }
 }
+
+#if DEBUG
+#Preview("Controls row - Widths") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.xl) {
+            // Regular with the follow-up hint, then each density as room runs out.
+            ForEach([680, 560, 420, 300, 220], id: \.self) { width in
+                ComposerSurface {
+                    ComposerControlsRowPreview(
+                        settings: ComposerPreviewFixtures.settings,
+                        hint: width == 680
+                            ? FollowUpHint(preferred: .steer, supportsSteering: true, agentName: "Claude Code") : nil)
+                }
+                .frame(width: CGFloat(width))
+            }
+        }
+    }
+    .environment(CommandRegistry.shared)
+}
+
+#Preview("Controls row - Plan Mode") {
+    DSPreviewPair {
+        ComposerSurface {
+            ComposerControlsRowPreview(settings: ComposerPreviewFixtures.planModeSettings, hint: nil)
+        }
+        .frame(width: 560)
+    }
+    .environment(CommandRegistry.shared)
+}
+
+/// The row with inert actions and the context ring the Usage feature puts there.
+private struct ComposerControlsRowPreview: View {
+    let settings: ComposerSettings
+    let hint: FollowUpHint?
+
+    var body: some View {
+        ComposerControlsRow(
+            settings: settings, agentName: "Claude Code", resumedAutonomy: "auto", followUpHint: hint,
+            isModelPickerOpen: .constant(false), isPickingFiles: .constant(false), onAttach: { _ in },
+            onSet: { _, _ in }, onCycleEffort: {}, mode: nil, extras: { _ in EmptyView() },
+            context: { _ in ContextUsageRing(fraction: 0.42) }
+        )
+    }
+}
+#endif

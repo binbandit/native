@@ -52,3 +52,21 @@ private enum TileMetrics {
     static let ring: CGFloat = 3
     static let ringWidth: CGFloat = 2
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Appearance choice tiles") {
+    DSPreviewPair {
+        HStack(alignment: .top, spacing: DS.Space.lg) {
+            AppearanceChoiceTile(title: "Light", isSelected: true, accessibilityLabel: "Light", select: {}) {
+                AppearancePreviewWindow()
+                    .environment(\.colorScheme, .light)
+            }
+            AppearanceChoiceTile(title: "Dark", isSelected: false, accessibilityLabel: "Dark", select: {}) {
+                AppearancePreviewWindow()
+                    .environment(\.colorScheme, .dark)
+            }
+        }
+        .frame(width: 520)
+    }
+}
+#endif

@@ -68,3 +68,14 @@ private struct PullRequestPageTab: View {
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Page tab bar") {
+    DSPreviewPair {
+        PullRequestPagePreview { model, page in
+            PullRequestPageTabBar(model: model, page: page)
+        }
+        .frame(width: 900)
+    }
+}
+#endif

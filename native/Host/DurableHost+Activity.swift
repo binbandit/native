@@ -53,30 +53,26 @@ extension DurableHost {
         case newHost
     }
 
-    private static let seenKey = "NativeHostSeenActivity"
-
     /// Reads the journal since the last entry this app saw on `host` and, depending on how the app
     /// got here, sums it up as "while you were away", explains a host restart, or just catches up.
     func readActivity(from client: NativeHostClient, host: HostInfo, reconnection: Reconnection) async {
-        let seen = lastSeen(on: host.hostID)
+        let seen = HostSeenActivity.lastSeen(on: host.hostID)
         let entries: [ActivityEntry]
         do {
-            entries = try await Self.activity(after: seen, from: client)
+            entries = try await HostSeenActivity.entries(after: seen, from: client)
         } catch {
             Self.logger.error("Couldn't read the host's activity: \(error.localizedDescription, privacy: .public)")
             return
         }
         Self.logger.debug("Activity after \(seen ?? -1): \(entries.count) entries, \(String(describing: reconnection))")
-        if let last = entries.last {
-            remember(last.id, on: host.hostID)
-        } else if seen == nil {
-            // A host's first connection only sets the baseline: there's no "away" before it.
-            remember(0, on: host.hostID)
-        }
+        HostSeenActivity.remember(entries, after: seen, on: host.hostID)
         guard seen != nil else { return }
         switch reconnection {
         case .launch:
-            away = AwaySummary(entries: entries, sessions: sessions)
+            // With host notifications on, their feed sums up the absence (HostNotificationFeed).
+            if !HostNotificationsSwitch.isEnabled {
+                away = AwaySummary(entries: entries, sessions: sessions)
+            }
         case .newHost:
             showRestart(HostRestart(at: .now, entries: entries))
         case .sameHost:
@@ -87,7 +83,7 @@ extension DurableHost {
     /// An entry that arrived live: the user saw it happen, so it's not news next launch.
     func noteSeen(_ entry: ActivityEntry) {
         guard case .connected(let info) = connection else { return }
-        remember(entry.id, on: info.hostID)
+        HostSeenActivity.remember(entry.id, on: info.hostID)
     }
 
     func dismissAway() {
@@ -114,21 +110,37 @@ extension DurableHost {
             if self?.restart == note { self?.restart = nil }
         }
     }
+}
 
-    private func lastSeen(on host: NativeHostProtocol.HostID) -> Int64? {
-        let seen = UserDefaults.standard.dictionary(forKey: Self.seenKey) as? [String: Int64]
+/// The last journal entry this app showed for each host (`NativeHostSeenActivity`, by host id), so
+/// "while you were away" covers exactly what happened since: this Mac's host and every paired one.
+enum HostSeenActivity {
+    private static let key = "NativeHostSeenActivity"
+
+    static func lastSeen(on host: NativeHostProtocol.HostID) -> Int64? {
+        let seen = UserDefaults.standard.dictionary(forKey: key) as? [String: Int64]
         return seen?[host.description]
     }
 
-    private func remember(_ id: Int64, on host: NativeHostProtocol.HostID) {
-        var seen = UserDefaults.standard.dictionary(forKey: Self.seenKey) as? [String: Int64] ?? [:]
+    static func remember(_ id: Int64, on host: NativeHostProtocol.HostID) {
+        var seen = UserDefaults.standard.dictionary(forKey: key) as? [String: Int64] ?? [:]
         guard id > seen[host.description] ?? -1 else { return }
         seen[host.description] = id
-        UserDefaults.standard.set(seen, forKey: Self.seenKey)
+        UserDefaults.standard.set(seen, forKey: key)
+    }
+
+    /// Moves the baseline past `entries`, read after `seen`. A host's first connection only sets
+    /// the baseline: there's no "away" before it.
+    static func remember(_ entries: [ActivityEntry], after seen: Int64?, on host: NativeHostProtocol.HostID) {
+        if let last = entries.last {
+            remember(last.id, on: host)
+        } else if seen == nil {
+            remember(0, on: host)
+        }
     }
 
     /// Every entry after `id`, a page at a time; a long absence can leave more than one page.
-    private static func activity(after id: Int64?, from client: NativeHostClient) async throws -> [ActivityEntry] {
+    static func entries(after id: Int64?, from client: NativeHostClient) async throws -> [ActivityEntry] {
         var entries: [ActivityEntry] = []
         let page = 500
         while entries.count < 5 * page {

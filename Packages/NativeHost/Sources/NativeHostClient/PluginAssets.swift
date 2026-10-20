@@ -27,7 +27,7 @@ public actor PluginAssets {
             let asset = try await client.pluginAsset(
                 PluginAssetParams(pluginID: pluginID, path: path, knownHash: known))
             if let data = asset.data {
-                guard ContentHash.sha256(data) == asset.hash else { throw CacheError.corrupt(path) }
+                guard try ContentHash.sha256(data) == asset.hash else { throw CacheError.corrupt(path) }
                 try store(data, hash: asset.hash, for: key)
                 return data
             }

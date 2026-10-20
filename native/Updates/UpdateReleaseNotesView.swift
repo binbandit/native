@@ -59,3 +59,25 @@ struct UpdateReleaseNotesView: View {
         return Text((try? AttributedString(markdown: text, options: options)) ?? AttributedString(text))
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Release notes") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.lg) {
+            UpdateReleaseNotesView(
+                markdown: """
+                    ## Features
+                    - **Composer:** queue follow-ups while a turn runs, and steer with ⌘↩
+                    - Settings ▸ Usage shows your year with agents
+                    ## Fixes
+                    - The sidebar keeps its scroll position when a task is archived
+                    - `swift test` output no longer wraps in the terminal panel
+                    ## Performance
+                    - Long transcripts open twice as fast; see [the notes](https://example.com/notes)
+                    """)
+            UpdateReleaseNotesView(markdown: "Fixes a crash when a project folder was renamed while Native ran.")
+        }
+        .frame(width: 420)
+    }
+}
+#endif

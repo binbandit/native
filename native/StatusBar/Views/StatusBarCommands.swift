@@ -20,11 +20,11 @@ extension NativeCommand {
 /// View ▸ Show Status Bar, and which items it shows.
 struct StatusBarCommands: Commands {
     let registry: StatusBarRegistry
-    let commands: CommandRegistry
+    let menu: CommandMenuContext
 
     var body: some Commands {
         CommandGroup(after: .sidebar) {
-            CommandMenuItem(.statusBarToggle, in: commands)
+            CommandMenuItem(.statusBarToggle, in: menu)
             Menu("Status Bar Items") {
                 ForEach(registry.orderedItems) { item in
                     Toggle(

@@ -203,3 +203,16 @@ struct GalleryControls: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Gallery - Components") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.xxl) {
+            GalleryStatus()
+            GalleryComposer()
+                .frame(width: 640)
+            GalleryControls()
+        }
+    }
+}
+#endif

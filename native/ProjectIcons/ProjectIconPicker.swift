@@ -255,3 +255,14 @@ struct ProjectIconPicker: View {
         dismiss()
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Project icon picker") {
+    let app = AppModel.preview()
+    DSPreviewPair {
+        if let project = app.previewProject() {
+            ProjectIconPicker(project: project, store: SidebarPreviewFixtures.iconStore)
+        }
+    }
+}
+#endif

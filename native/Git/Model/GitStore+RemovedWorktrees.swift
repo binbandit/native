@@ -14,7 +14,7 @@ extension GitStore {
         else { return [] }
         let paths = folders.map(\.folderPath)
         let removed = await Self.removed(
-            paths, location: Self.taskLocation(of: repository).folderPath,
+            paths, location: taskLocation(of: repository).folderPath,
             live: worktrees.filter { !$0.isPrunable }.map(\.path.folderPath))
         return folders.indices.filter { removed.contains($0) }.map { folders[$0] }
     }
@@ -48,7 +48,7 @@ extension GitStore {
         pullRequests: @escaping @Sendable ([CleanupPullRequestLookup.Query]) async -> CleanupPullRequestLookup
     ) async throws -> [RemovedWorktreeVerdict] {
         let repository = try await requireRepository(at: project)
-        let options = MergedCleanupOptions(taskLocation: Self.taskLocation(of: repository), branchPrefix: branchPrefix)
+        let options = MergedCleanupOptions(taskLocation: taskLocation(of: repository), branchPrefix: branchPrefix)
         return try await repository.removedWorktreeVerdicts(for: tasks, options: options, pullRequests: pullRequests)
     }
 

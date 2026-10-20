@@ -20,14 +20,14 @@ extension NativeCommand {
 /// View ▸ Keep Mac Awake.
 struct KeepAwakeCommands: Commands {
     let controller: KeepAwakeController
-    let commands: CommandRegistry
+    let menu: CommandMenuContext
 
     var body: some Commands {
         CommandGroup(after: .sidebar) {
             Menu("Keep Mac Awake") {
                 KeepAwakeMenuItems(controller: controller)
                 Divider()
-                CommandMenuItem(.keepAwakeNextMode, in: commands, title: "Next Mode")
+                CommandMenuItem(.keepAwakeNextMode, in: menu, title: "Next Mode")
             }
         }
     }

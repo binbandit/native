@@ -1,5 +1,6 @@
 #if canImport(Skills)
 import Foundation
+import NativeOrchestration
 import Skills
 
 /// What the Skills feature needs from the app, so it depends on this rather than on the app

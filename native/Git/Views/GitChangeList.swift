@@ -52,3 +52,12 @@ struct GitChangeList: View {
         return sections * GitChangeSectionHeader.height + rows * GitMetrics.rowHeight + DS.Space.md
     }
 }
+
+#if DEBUG
+#Preview("Change list") {
+    DSPreviewPair {
+        GitChangeList(model: GitPreviewFixtures.model, pendingDiscard: .constant([]))
+            .frame(width: GitMetrics.inspectorIdealWidth, height: 360)
+    }
+}
+#endif

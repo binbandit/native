@@ -72,3 +72,21 @@ struct ProjectActionRowMenu: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Action settings rows") {
+    let actions = ProjectActionsPreviewFixtures.actions
+    DSPreviewPair {
+        SettingsRowGroup {
+            ForEach(Array(actions.enumerated()), id: \.element.id) { index, action in
+                ProjectActionSettingsRow(action: action) {
+                    ProjectActionRowMenu(
+                        name: action.name, canMoveUp: index > 0, canMoveDown: index < actions.count - 1,
+                        move: { _ in }, delete: {})
+                }
+            }
+        }
+        .settingsPreviewPage()
+    }
+}
+#endif

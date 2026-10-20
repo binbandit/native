@@ -64,6 +64,8 @@ public actor LinkGateway {
     let identity: LinkIdentity
     var registry: LinkDeviceRegistry
     var window: PairingWindow?
+    /// The control connection that opened `window`: it closes with that connection, and only with it.
+    private var windowOwner: UUID?
     var decision: CheckedContinuation<PairingDecision, Never>?
     /// Live connections per device, closed when it's revoked.
     var connections: [UUID: [ObjectIdentifier: SecureChannel]] = [:]
@@ -72,16 +74,20 @@ public actor LinkGateway {
     /// The organization's `policy.companion.enabled`. Off: nothing listens, no window opens, and
     /// paired devices are turned away (told why), but their pairings stay for when it's back on.
     var isAllowedByPolicy = true
+    /// MagicDNS names of the host's Tailscale addresses, looked up when a window opens.
+    private var tailnetNames: [String: String] = [:]
     private var observers: [UUID: @Sendable (LinkStatus) -> Void] = [:]
     private var control: LinkControlServer?
     let accept: @Sendable (any ByteStream, LinkGrants) -> Void
+    let paired: @Sendable (LinkPairingRecord) -> Void
     let logger = HostLogger(category: "LinkGateway")
 
     /// `accept` gets each admitted device's stream and grants; the host serves it like a local
-    /// client with those grants.
+    /// client with those grants. `paired` hears every new pairing, for the host's activity journal.
     public init(
         configuration: Configuration, keyStore: (any LinkKeyStore)? = nil,
-        accept: @escaping @Sendable (any ByteStream, LinkGrants) -> Void
+        accept: @escaping @Sendable (any ByteStream, LinkGrants) -> Void,
+        paired: @escaping @Sendable (LinkPairingRecord) -> Void = { _ in }
     ) throws {
         try FileManager.default.createDirectory(
             at: configuration.directory, withIntermediateDirectories: true, attributes: [.posixPermissions: 0o700])
@@ -89,6 +95,7 @@ public actor LinkGateway {
         identity = try (keyStore ?? FileKeyStore(url: configuration.keyURL)).identity()
         registry = LinkDeviceRegistry.load(from: configuration.registryURL)
         self.accept = accept
+        self.paired = paired
     }
 
     /// Opens the control socket for the Mac app (`verifyPeer` adds a check beyond same-user, such
@@ -112,7 +119,8 @@ public actor LinkGateway {
         let port = listenerStatus.port ?? registry.port ?? configuration.preferredPort
         var addresses = [LinkAddress(kind: .bonjour, host: configuration.machineName)]
         if configuration.usesNetwork {
-            addresses += LinkInterfaces.addresses(port: port, includingLoopback: configuration.includesLoopback)
+            addresses += LinkInterfaces.addresses(
+                port: port, includingLoopback: configuration.includesLoopback, tailnetNames: tailnetNames)
         }
         return LinkStatus(
             isEnabled: registry.isEnabled,
@@ -152,12 +160,21 @@ public actor LinkGateway {
 
     // MARK: - What the Mac's user does
 
-    /// Opens a fresh pairing window (or replaces the current one), turning the gateway on.
+    /// Opens a fresh pairing window (or replaces the current one), turning the gateway on. With
+    /// `preapprovedGrants` (`pair` on a host without a screen), the device that proves the invite
+    /// pairs right away with at most those grants, and the typed code is refused.
     @discardableResult
-    public func openPairingWindow() -> LinkStatus {
+    public func openPairingWindow(
+        preapproving preapprovedGrants: LinkGrants? = nil, owner: UUID? = nil
+    ) async
+        -> LinkStatus
+    {
         guard isAllowedByPolicy else { return status }
+        await lookUpTailnetNames()
         resolveDecision(.rejected)
-        window = PairingWindow(lifetime: configuration.pairingLifetime, now: configuration.now())
+        window = PairingWindow(
+            lifetime: configuration.pairingLifetime, now: configuration.now(), preapprovedGrants: preapprovedGrants)
+        windowOwner = owner
         if !registry.isEnabled {
             registry.isEnabled = true
             save()
@@ -171,8 +188,15 @@ public actor LinkGateway {
     public func closePairingWindow() {
         resolveDecision(.rejected)
         window = nil
+        windowOwner = nil
         updateListener()
         publish()
+    }
+
+    /// `owner`'s connection closed: its window goes with it, but never one somebody else opened since.
+    func closePairingWindow(ownedBy owner: UUID) {
+        guard window != nil, windowOwner == owner else { return }
+        closePairingWindow()
     }
 
     /// The Mac's user trusted the waiting device (with `grants`), or not.
@@ -244,6 +268,16 @@ public actor LinkGateway {
         }
         updateListener()
         publish()
+    }
+
+    /// Names for Tailscale addresses not looked up yet, so the invite carries them. A second at most:
+    /// the window shouldn't wait on a resolver that doesn't answer.
+    private func lookUpTailnetNames() async {
+        guard configuration.usesNetwork else { return }
+        let unnamed = LinkInterfaces.addresses(port: 0, includingLoopback: false)
+            .filter { $0.kind == .tailnet && tailnetNames[$0.host] == nil }.map(\.host)
+        guard !unnamed.isEmpty else { return }
+        tailnetNames.merge(await LinkInterfaces.resolveTailnetNames(unnamed, timeout: .seconds(1))) { $1 }
     }
 
     func resolveDecision(_ value: PairingDecision) {

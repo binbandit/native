@@ -63,3 +63,13 @@ struct AppearanceSettingsView: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("App icon settings") {
+    DSPreviewPair {
+        AppearanceSettingsView()
+            .settingsPreviewPage()
+    }
+    .environment(AppIconPreferences(defaults: PreviewUserDefaults()))
+}
+#endif

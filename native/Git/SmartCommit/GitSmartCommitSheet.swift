@@ -138,3 +138,11 @@ struct GitSmartCommitSheet: View {
         return "\(commits) from \(files). Nothing is committed until you confirm, and you can undo it after."
     }
 }
+
+#if DEBUG
+#Preview("Smart commit - Drafting") {
+    DSPreviewPair {
+        GitSmartCommitSheet(repository: GitPreviewFixtures.model)
+    }
+}
+#endif

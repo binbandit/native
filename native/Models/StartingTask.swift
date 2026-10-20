@@ -42,6 +42,8 @@ final class StartingTask: Identifiable {
     let startedAt = Date.now
     /// What the provider makes for the task ("Creating a worktree"), for the first step's label.
     let workspaceLabel: String
+    /// Where the task runs: this Mac, or a paired host (AppModel+HostsStarting.swift).
+    var device = SessionDevice.thisMac
     /// The task's folder, once made; a retry reuses it.
     var folder: URL?
     var isAgentReady = false

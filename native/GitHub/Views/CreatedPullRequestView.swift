@@ -40,3 +40,15 @@ struct CreatedPullRequestView: View {
         Int(url.lastPathComponent).map { "#\($0)" } ?? ""
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Pull request created") {
+    DSPreviewPair {
+        CreatedPullRequestView(
+            url: URL(filePath: "/binbandit/native/pull/212"), onCopy: {}, onDone: {}
+        )
+        .frame(width: CreatePullRequestLayout.width)
+    }
+    .environment(GitHubModel.preview())
+}
+#endif

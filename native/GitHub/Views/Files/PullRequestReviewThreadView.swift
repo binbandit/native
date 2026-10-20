@@ -209,3 +209,19 @@ extension String {
         prefix(1).uppercased() + dropFirst()
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Review threads") {
+    DSPreviewPair {
+        PullRequestPagePreview { model, page in
+            // An open conversation with a reply, and a resolved suggestion.
+            VStack(spacing: DS.Space.lg) {
+                ForEach(page.threads, id: \.id) { thread in
+                    PullRequestReviewThreadView(model: model, thread: thread, showsAnchor: true)
+                }
+            }
+        }
+        .frame(width: PullRequestsLayout.contentWidth)
+    }
+}
+#endif

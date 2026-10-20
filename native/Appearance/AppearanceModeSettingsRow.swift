@@ -78,3 +78,15 @@ private nonisolated struct LowerTrailingHalf: Shape {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Appearance mode row") {
+    DSPreviewPair {
+        SettingsRowGroup {
+            AppearanceModeSettingsRow()
+        }
+        .settingsPreviewPage()
+    }
+    .environment(AppearanceModeController(defaults: PreviewUserDefaults()))
+}
+#endif

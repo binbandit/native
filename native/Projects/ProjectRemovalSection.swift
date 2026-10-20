@@ -74,3 +74,17 @@ struct ProjectRemovalSection: View {
         deletes ? "Delete its branch" : "Keep its branch"
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Project removal") {
+    let app = AppModel.preview()
+    DSPreviewPair {
+        if let project = app.previewProject() {
+            ProjectRemovalSection(project: project)
+                .settingsPreviewPage()
+        }
+    }
+    .sidebarPreviewEnvironment(app)
+    .environment(GitSettings(defaults: PreviewUserDefaults()))
+}
+#endif

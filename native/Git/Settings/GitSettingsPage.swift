@@ -111,3 +111,14 @@ struct GitSettingsPage: View {
         )
     }
 }
+
+#if DEBUG
+#Preview("Git settings") {
+    DSPreviewPair {
+        GitSettingsPage()
+            .settingsPreviewPage()
+    }
+    .environment(GitSettings(defaults: PreviewUserDefaults()))
+    .environment(SettingsPresentation())
+}
+#endif

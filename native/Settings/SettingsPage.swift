@@ -75,3 +75,24 @@ struct SettingsSubheading: View {
         .padding(.top, SettingsMetrics.sectionTopInset)
     }
 }
+
+#if DEBUG
+#Preview("Settings page") {
+    DSPreviewPair {
+        SettingsPage {
+            SettingsHeader(
+                "Git", description: Text("How tasks get their own branch and folder, and what happens when they end."))
+            SettingsRowGroup {
+                SettingsRow("Rename branches from the task", description: Text("Until it's pushed.")) {
+                    SettingsSwitch("Rename branches from the task", isOn: .constant(true))
+                }
+            }
+            SettingsSubheading("Worktrees", note: "Each task works in a folder of its own, so tasks never collide.")
+            SettingsRowGroup {
+                SettingsRow("Worktree folder") { SettingsValue("~/.native/worktrees") }
+            }
+        }
+        .settingsPreviewPage()
+    }
+}
+#endif

@@ -27,12 +27,19 @@ final class AgentLink {
     private(set) var capabilities: AgentCapabilities?
     /// The spec the running process was started from.
     private(set) var launchedSpec: AgentSpec?
+    /// When the running process became ready, for unloading an agent nothing used since.
+    private(set) var readyAt = Date.distantPast
     /// The agent turned a request away until the user signs in.
     var needsSignIn = false {
         didSet { if needsSignIn != oldValue { onChange?() } }
     }
     var isSigningIn = false {
         didSet { if isSigningIn != oldValue { onChange?() } }
+    }
+    /// Its sign-in methods, status, saved keys and a sign-in waiting on the user
+    /// (HostCore+Credentials.swift).
+    var signIn = AgentSignInState() {
+        didSet { if signIn != oldValue { onChange?() } }
     }
     /// Told whenever what `HostAgent` shows changes.
     var onChange: (() -> Void)?
@@ -83,7 +90,9 @@ final class AgentLink {
         return HostAgent(
             id: spec.id, name: spec.name, state: state, problem: problem,
             initialize: status == .ready ? initializeResult : nil, processID: processIdentifier,
-            launchedSpec: status == .ready ? launchedSpec : nil, needsSignIn: needsSignIn, isSigningIn: isSigningIn)
+            launchedSpec: status == .ready ? launchedSpec : nil, needsSignIn: needsSignIn, isSigningIn: isSigningIn,
+            authMethods: signIn.authMethods(declared: spec.authMethods), signInLink: signIn.link?.shown,
+            authStatus: signIn.status, savedCredentials: signIn.savedCredentials)
     }
 
     /// Launches the agent if it isn't running and waits until it's initialized. Concurrent callers
@@ -100,6 +109,7 @@ final class AgentLink {
         generation += 1
         let generation = generation
         let spec = spec
+        let advertisesLinks = signIn.advertisesLinks
         status = .starting
         needsSignIn = false
         let onExit: @Sendable () -> Void = { [weak self] in
@@ -119,12 +129,14 @@ final class AgentLink {
             self.peer = peer
             peer.start()
             let result = try await peer.request(
-                "initialize", HostInitializeRequest(clientInfo: clientInfo), as: JSONValue.self)
+                "initialize", HostInitializeRequest(clientInfo: clientInfo, advertisesLinks: advertisesLinks),
+                as: JSONValue.self)
             let response = try JSONDecoder().decode(InitializeResponse.self, from: JSONEncoder().encode(result))
             guard response.protocolVersion == ACP.protocolVersion else {
                 throw AgentLaunch.Failure.incompatible(name: spec.name, version: response.protocolVersion)
             }
             initializeResult = result
+            signIn.advertised = response.authMethods
             capabilities = response.agentCapabilities
             launchedSpec = spec
             // By now a launcher has started the agent proper, in whatever group it chose.
@@ -135,6 +147,7 @@ final class AgentLink {
         do {
             try await task.value
             guard generation == self.generation else { throw PeerError.closed }
+            readyAt = .now
             status = .ready
         } catch {
             guard generation == self.generation else { throw error }

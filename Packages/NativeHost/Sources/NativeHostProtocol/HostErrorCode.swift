@@ -25,6 +25,22 @@ public enum HostErrorCode: String, WireEnum {
     /// The client isn't trusted with this (a paired device without the grant).
     case notAuthorized
     case updateUnavailable
+    /// A path outside the host's projects, sessions' folders and task worktrees, once resolved.
+    case outsideProjects
+    /// `exec/run`: the executable isn't on the host's PATH, or doesn't exist there.
+    case commandNotFound
+    /// `exec/run`: the command ran past its timeout and was stopped.
+    case timedOut
+    /// `exec/run`: the client cancelled the command (`exec/cancel`).
+    case cancelled
+    /// `fs/*`: nothing is at the path (`HostFileError`).
+    case fileNotFound
+    /// `fs/read`: more than one answer carries; read it in ranges.
+    case fileTooLarge
+    /// `fs/read` on a folder, a pipe or a device.
+    case notAFile
+    /// `fs/list` or `fs/watch` on something that isn't a folder.
+    case notADirectory
     case unknown
 
     /// The JSON-RPC error code.
@@ -32,7 +48,8 @@ public enum HostErrorCode: String, WireEnum {
         let order: [HostErrorCode] = [
             .unknownAgent, .unknownSession, .agentUnavailable, .agentNotInstalled, .cannotLoad, .notAcceptingPrompts,
             .emptyMessage, .permissionNotPending, .questionNotPending, .busy, .notInQueue, .notAuthorized,
-            .updateUnavailable,
+            .updateUnavailable, .outsideProjects, .commandNotFound, .timedOut, .cancelled, .fileNotFound, .fileTooLarge,
+            .notAFile, .notADirectory,
         ]
         return -33001 - (order.firstIndex(of: self) ?? 98)
     }

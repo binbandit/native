@@ -27,6 +27,9 @@ final class SessionCatalog {
     private var listed: Listing {
         didSet { isRefreshing ? scheduleSave() : save() }
     }
+    /// Sessions on paired hosts and the project each belongs to, so a lookup finds them like any
+    /// other; the sidebar lists them from the hosts (AppModel+HostsSessions.swift). Not saved.
+    @ObservationIgnored var remote: [SessionKey: (project: Project.ID, info: SessionInfo)] = [:]
     @ObservationIgnored private let url: URL?
     @ObservationIgnored private var isSaveScheduled = false
     @ObservationIgnored private var isRefreshing = false
@@ -57,7 +60,7 @@ final class SessionCatalog {
                 return (project, info)
             }
         }
-        return nil
+        return remote[key]
     }
 
     func contains(_ key: SessionKey) -> Bool {

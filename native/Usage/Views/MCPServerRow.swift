@@ -50,3 +50,18 @@ struct MCPServerRow: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("MCP server rows") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: 0) {
+            if let report = UsagePreviewFixtures.report {
+                ForEach(report.mcpServers) { server in
+                    MCPServerRow(server: server, tokens: report.tokens(of: server))
+                }
+            }
+        }
+        .frame(width: 360)
+    }
+}
+#endif

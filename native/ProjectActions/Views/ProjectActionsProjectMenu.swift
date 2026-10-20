@@ -27,3 +27,19 @@ struct ProjectActionsProjectMenu: View {
         return ProjectActionTarget(project: project, session: session)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Project menu actions") {
+    let app = AppModel.preview()
+    let project = app.previewProject() ?? Project(url: URL(filePath: "/Users/preview/Developer/native"))
+    DSPreviewPair {
+        Menu("native") {
+            ProjectActionsProjectMenu(project: project)
+        }
+        .fixedSize()
+    }
+    .environment(app)
+    .environment(SettingsPresentation())
+    .environment(ProjectActionsPreviewFixtures.runner(for: project))
+}
+#endif

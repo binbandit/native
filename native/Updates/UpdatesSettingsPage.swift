@@ -154,3 +154,19 @@ struct UpdatesSettingsPage: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Updates settings") {
+    DSPreviewPair {
+        UpdatesSettingsPage(controller: .preview("available"))
+            .settingsPreviewPage()
+    }
+}
+
+#Preview("Updates settings - Development build") {
+    DSPreviewPair {
+        UpdatesSettingsPage(controller: .preview("developmentBuild"))
+            .settingsPreviewPage()
+    }
+}
+#endif

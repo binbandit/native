@@ -120,3 +120,29 @@ enum AIInstructionPreviewState: Equatable {
 
     var isRunning: Bool { self == .running }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Instruction editor") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.xl) {
+            AIInstructionEditorPreview(purpose: .commitMessage, text: "")
+            AIInstructionEditorPreview(
+                purpose: .branchName,
+                text:
+                    "Use the ticket number first when the task mentions one, then two or three words: SHOP-482-double-charge."
+            )
+        }
+        .settingsPreviewPage()
+    }
+}
+
+/// Holds the editor's text, which it takes as a binding.
+private struct AIInstructionEditorPreview: View {
+    let purpose: AIInstructionPurpose
+    @State var text: String
+
+    var body: some View {
+        AIInstructionEditor(purpose: purpose, text: $text, branchPrefix: "native/")
+    }
+}
+#endif

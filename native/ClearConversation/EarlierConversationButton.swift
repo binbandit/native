@@ -26,3 +26,20 @@ struct EarlierConversationButton: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Earlier conversation button") {
+    let app = AppModel.preview()
+    let earlier = SessionModel.preview(in: app, title: "Queue follow-ups while a turn runs")
+    let later = SessionModel.preview(in: app, title: "Queue follow-ups while a turn runs")
+    if let earlier, let later {
+        app.earlierConversations.record(later.key, after: earlier.key)
+    }
+    return DSPreviewPair {
+        if let later {
+            EarlierConversationButton(session: later)
+        }
+    }
+    .environment(app)
+}
+#endif

@@ -1,7 +1,11 @@
-#if os(macOS)
+// Wherever Foundation can start a process: everywhere but iOS.
+#if os(macOS) || os(Linux)
 import Foundation
-import os
 import Synchronization
+
+#if canImport(os)
+import os
+#endif
 
 /// How to start an agent that speaks ACP over stdio.
 public struct AgentCommand: Hashable, Sendable {

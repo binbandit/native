@@ -62,3 +62,17 @@ struct PullRequestBadge: View {
         return parts.joined(separator: "\n")
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Pull request badges") {
+    let pullRequests = Array(PullRequestPreviewFixtures.inbox.all.prefix(5))
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.lg) {
+            ForEach(pullRequests) { pullRequest in
+                PullRequestBadge(pullRequest: pullRequest)
+            }
+        }
+    }
+    .environment(GitHubModel.preview(inbox: PullRequestPreviewFixtures.inbox))
+}
+#endif

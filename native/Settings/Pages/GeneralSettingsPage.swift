@@ -52,3 +52,19 @@ struct GeneralSettingsPage: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("General settings") {
+    DSPreviewPair {
+        GeneralSettingsPage()
+            .settingsPreviewPage()
+    }
+}
+
+#Preview("General settings - Narrow") {
+    DSPreviewPair {
+        GeneralSettingsPage()
+            .settingsPreviewPage(width: 420)
+    }
+}
+#endif

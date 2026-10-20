@@ -35,3 +35,17 @@ struct PinnedSection<TaskAccessory: View>: View {
         .accessibilityLabel("Pinned")
     }
 }
+
+#if DEBUG
+#Preview("Pinned section") {
+    let app = AppModel.preview()
+    DSPreviewPair {
+        PinnedSection(
+            sessions: app.pinnedSessions, order: [:], drag: SidebarDragState(), taskAccessory: { _ in EmptyView() },
+            select: { _ in }
+        )
+        .frame(width: DS.Size.sidebarWidth)
+    }
+    .sidebarPreviewEnvironment(app)
+}
+#endif

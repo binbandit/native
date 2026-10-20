@@ -12,7 +12,7 @@ extension AppModel {
     var pinnedSessions: [SessionSummary] {
         ordering.pinned.compactMap { key in
             guard !archivedSessions.contains(key), !pendingDeletionKeys.contains(key),
-                let listed = catalog.lookup(key), let runtime = runtimes[key.agent]
+                let listed = catalog.lookup(key), let runtime = agentRuntime(for: key)
             else { return nil }
             return SessionSummary(project: listed.project, agent: runtime.agent, info: listed.info)
         }

@@ -46,3 +46,16 @@ struct AttachButton: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Attach button") {
+    DSPreviewPair {
+        ComposerControlsBar {
+            AttachButton(isPickingFiles: .constant(false), onPick: { _ in })
+        } trailing: {
+            EmptyView()
+        }
+        .frame(width: 200)
+    }
+}
+#endif

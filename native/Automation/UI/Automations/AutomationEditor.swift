@@ -233,3 +233,39 @@ struct AutomationEditor: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Automation editor - New") {
+    DSPreviewPair {
+        AutomationEditorPreview(automation: AutomationPreviewFixtures.nightlyTriage, isNew: true)
+    }
+}
+
+#Preview("Automation editor - Workflow") {
+    DSPreviewPair {
+        AutomationEditorPreview(automation: AutomationPreviewFixtures.reviewBot, isNew: false)
+    }
+}
+
+#Preview("Automation editor - Goal") {
+    DSPreviewPair {
+        AutomationEditorPreview(automation: AutomationPreviewFixtures.paused, isNew: false)
+    }
+}
+
+/// The editor for the preview projects and agents, with every built-in workflow.
+private struct AutomationEditorPreview: View {
+    let automation: Automation
+    let isNew: Bool
+
+    var body: some View {
+        AutomationEditor(
+            automation: automation, isNew: isNew,
+            projects: [
+                AutomationEditor.Project(url: AutomationPreviewFixtures.project, name: "native"),
+                AutomationEditor.Project(url: URL(filePath: "/Users/preview/Developer/pier"), name: "pier"),
+            ],
+            agents: AutomationPreviewFixtures.agents, workflows: BuiltInWorkflows.all, onSave: { _ in }, onCancel: {})
+    }
+}
+#endif

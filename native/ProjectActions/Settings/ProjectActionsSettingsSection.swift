@@ -108,7 +108,8 @@ struct ProjectActionsSettingsSection: View {
             case .actions(let actions, let skipped):
                 SettingsSubheading(
                     "From the repo",
-                    note: "From \(ProjectActionFile.path), shared with everyone who works on the repo. Edit the file to "
+                    note:
+                        "From \(ProjectActionFile.path), shared with everyone who works on the repo. Edit the file to "
                         + "change them."
                 )
                 SettingsRowGroup {
@@ -137,7 +138,8 @@ struct ProjectActionsSettingsSection: View {
                 note: "Found in \(sources(of: list.suggestions)). Nothing runs until you add it and run it."
             )
             SettingsRowGroup {
-                let shown = showsAllSuggestions ? list.suggestions : Array(list.suggestions.prefix(Self.suggestionPreview))
+                let shown =
+                    showsAllSuggestions ? list.suggestions : Array(list.suggestions.prefix(Self.suggestionPreview))
                 ForEach(shown) { suggestion in
                     SettingsRow(
                         suggestion.name,
@@ -239,3 +241,27 @@ struct ProjectActionsSettingsSection: View {
         model.lastUndoable = UndoableAction(message: "Dismissed “\(suggestion.name)”", undo: undo)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Project actions settings") {
+    let app = AppModel.preview()
+    let project = app.previewProject() ?? Project(url: URL(filePath: "/Users/preview/Developer/native"))
+    DSPreviewPair {
+        ProjectActionsSettingsSection(project: project)
+            .settingsPreviewPage()
+    }
+    .environment(app)
+    .environment(ProjectActionsPreviewFixtures.runner(for: project))
+}
+
+#Preview("Project actions settings - None yet") {
+    let app = AppModel.preview()
+    let project = app.previewProject() ?? Project(url: URL(filePath: "/Users/preview/Developer/native"))
+    DSPreviewPair {
+        ProjectActionsSettingsSection(project: project)
+            .settingsPreviewPage()
+    }
+    .environment(app)
+    .environment(ProjectActionsPreviewFixtures.runner(for: project, actions: []))
+}
+#endif

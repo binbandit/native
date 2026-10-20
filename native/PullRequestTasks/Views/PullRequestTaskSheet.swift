@@ -192,3 +192,39 @@ enum PullRequestTaskSheetLayout {
     /// The label column of the sheet's facts.
     static let labelWidth: CGFloat = 64
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Open as task - Phases") {
+    let app = AppModel.preview()
+    let opener = PullRequestTaskPreviewFixtures.opener(app)
+    let reference = PullRequestTaskPreviewFixtures.reference
+    let title = PullRequestTaskPreviewFixtures.details.title
+    let phases: [PullRequestTaskOpener.Phase] = [
+        .resolving, .working(.creatingWorktree), .failed(PullRequestTaskPreviewFixtures.offline),
+    ]
+    return DSPreviewPair {
+        VStack(spacing: DS.Space.xl) {
+            ForEach(phases.indices, id: \.self) { index in
+                PullRequestTaskSheet(
+                    opener: opener,
+                    request: PullRequestTaskOpener.Request(reference: reference, title: title, phase: phases[index]))
+            }
+        }
+    }
+    .environment(app)
+}
+
+#Preview("Open as task - Ready") {
+    let app = AppModel.preview()
+    DSPreviewPair {
+        if let checkout = PullRequestTaskPreviewFixtures.checkout(in: app) {
+            PullRequestTaskSheet(
+                opener: PullRequestTaskPreviewFixtures.opener(app),
+                request: PullRequestTaskOpener.Request(
+                    reference: PullRequestTaskPreviewFixtures.reference,
+                    title: PullRequestTaskPreviewFixtures.details.title, phase: .ready(checkout)))
+        }
+    }
+    .environment(app)
+}
+#endif

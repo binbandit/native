@@ -47,3 +47,23 @@ struct PullRequestFilesTab: View {
 enum PullRequestFilesLayout {
     static let treeWidth: CGFloat = 248
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Files changed") {
+    DSPreviewPair {
+        PullRequestPagePreview { model, page in
+            PullRequestFilesTab(model: model, page: page)
+        }
+        .frame(width: 1000, height: 760)
+    }
+}
+
+#Preview("Files changed - Narrow, no tree") {
+    DSPreviewPair {
+        PullRequestPagePreview { model, page in
+            PullRequestFilesTab(model: model, page: page)
+        }
+        .frame(width: 560, height: 640)
+    }
+}
+#endif

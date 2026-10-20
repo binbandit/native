@@ -87,3 +87,29 @@ private struct Tint: ViewModifier {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Memory and CPU item") {
+    ResourcesItemPreview()
+}
+
+/// The item before its first sample ("measuring"), and with a few minutes of samples.
+private struct ResourcesItemPreview: View {
+    private let app = AppModel.preview()
+    private let measuring = StatusBarPreviewFixtures.monitor()
+    private let sampled = StatusBarPreviewFixtures.monitor()
+
+    var body: some View {
+        DSPreviewPair {
+            StatusBarSurface {
+                EmptyView()
+            } trailing: {
+                ResourcesStatusItem(source: app, monitor: measuring).content
+                ResourcesStatusItem(source: app, monitor: sampled).content
+            }
+            .frame(width: 520)
+        }
+        .task { await StatusBarPreviewFixtures.fill(sampled) }
+    }
+}
+#endif

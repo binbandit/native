@@ -37,3 +37,18 @@ struct ModePill: View {
         return "\(mode.label): \(mode.summary).\(next ?? "")"
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Mode pill") {
+    DSPreviewPair {
+        HStack(spacing: DS.Space.lg) {
+            if let build = ModesPreviewFixtures.control(), let plan = ModesPreviewFixtures.control(planning: true) {
+                ModePill(control: build)
+                ModePill(control: plan)
+                ModePill(control: plan, showsIcon: true)
+            }
+        }
+    }
+    .environment(SettingsPresentation())
+}
+#endif

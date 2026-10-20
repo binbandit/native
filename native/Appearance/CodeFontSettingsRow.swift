@@ -59,3 +59,14 @@ struct CodeFontSettingsRow: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Code font row") {
+    DSPreviewPair {
+        SettingsRowGroup {
+            CodeFontSettingsRow()
+        }
+        .settingsPreviewPage()
+    }
+}
+#endif

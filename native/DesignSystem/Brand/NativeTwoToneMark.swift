@@ -38,3 +38,12 @@ public struct NativeTwoToneMark: View {
         .accessibilityAddTraits(.isImage)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Two-tone mark") {
+    DSPreviewPair {
+        NativeTwoToneMark(palette: NativeTwoTonePalette(light: (.dsAccent, .dsWarning), dark: (.dsAccent, .dsWarning)))
+            .frame(width: 96, height: 96)
+    }
+}
+#endif

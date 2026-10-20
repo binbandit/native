@@ -155,3 +155,15 @@ struct AgentsSettingsPage: View {
         return Text(lines.joined(separator: "\n"))
     }
 }
+
+#if DEBUG
+#Preview("Agents settings") {
+    let app = AppModel.preview()
+    DSPreviewPair {
+        AgentsSettingsPage(registry: app.plugins)
+            .settingsPreviewPage()
+    }
+    .environment(app)
+    .environment(PolicyCenter.shared)
+}
+#endif

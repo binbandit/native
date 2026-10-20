@@ -6,8 +6,9 @@ import SwiftUI
 /// the latest turn.
 struct StandardTranscriptLine: Identifiable {
     enum Kind {
-        /// A transcript row and the index of its first item, which times reasoning.
-        case row(TranscriptRow, itemIndex: Int)
+        /// A transcript row and the index of its first item; for reasoning, when it started and
+        /// ended (`SessionState.thinkingInterval`), worked out here so the row never reads the session.
+        case row(TranscriptRow, itemIndex: Int, thinking: ThinkingClock?)
         /// A section of an agent's reply (`String.markdownSections`), the reply being the item at
         /// `itemIndex`. A long reply is a line per section, so the lazy stack lays out and draws only
         /// the sections on screen, and while it streams only the last one changes.
@@ -17,7 +18,8 @@ struct StandardTranscriptLine: Identifiable {
         /// An earlier turn's tool work as one line ("Explored 6 files, edited 3 files").
         case fold(TranscriptTurn, TurnSummary, isUnfolded: Bool)
         /// How a finished turn went: how it ended, how long it took, what it changed, its agents.
-        case footer(TranscriptTurn, TurnSummary, ending: TranscriptNotice?, showsChanges: Bool)
+        case footer(
+            TranscriptTurn, TurnSummary, ending: TranscriptNotice?, showsChanges: Bool, subagents: [SubagentState])
         /// What the latest turn changed, with the next steps for it.
         case changes(TurnSummary)
         /// A usage limit stopped the turn here (`UsageLimitTranscriptCard`).
@@ -31,7 +33,7 @@ struct StandardTranscriptLine: Identifiable {
     /// Tool work reads as one dense block; everything else gets room to breathe.
     private var isDense: Bool {
         switch kind {
-        case .row(let row, _): row.isToolActivity
+        case .row(let row, _, _): row.isToolActivity
         case .fold, .activityRun: true
         case .replySection, .footer, .changes, .usageLimit: false
         }
@@ -43,25 +45,40 @@ struct StandardTranscriptLine: Identifiable {
     ///
     /// This runs on every update, and a long session has hundreds of turns, so each turn's lines are
     /// kept until the turn changes (`TranscriptTurn.revision`) and only the turn that changed is laid
-    /// out again.
+    /// out again. The earlier turns' lines come back as one list that stays the same (and keeps its
+    /// version) until one of those turns changes.
     static func plan(
         _ transcript: TranscriptStyleConfiguration, folding: Bool, unfolded: Set<TranscriptTurn.ID>,
         cache: StandardTranscriptLineCache
-    ) -> [StandardTranscriptLine] {
+    ) -> StandardTranscriptPlan {
         let state = transcript.session.state
         let turns = state.turns
-        var lines: [StandardTranscriptLine] = []
-        for (position, turn) in turns.enumerated() {
+        let keys = turns.indices.map { position in
+            let turn = turns[position]
             let isLatest = position == turns.count - 1
-            let key = TurnLinesKey(
+            return TurnLinesKey(
                 turn: turn, folding: folding, isUnfolded: unfolded.contains(turn.id), isLatest: isLatest,
                 isRunning: isLatest && transcript.isWorking, unfoldsExploration: transcript.unfoldsExploration)
-            lines += cache.lines(for: key) { Self.lines(for: key, in: state) }
         }
-        for index in lines.indices.dropFirst() {
-            lines[index].spacing = spacing(between: lines[index - 1], and: lines[index])
+        func lines(for key: TurnLinesKey) -> [Self] {
+            cache.lines(for: key) { Self.lines(for: key, in: state) }
         }
-        return lines
+        let earlier = cache.earlierLines(for: keys.dropLast()) { keys in
+            var earlier = keys.flatMap(lines(for:))
+            space(&earlier, after: nil)
+            return earlier
+        }
+        var latest = keys.last.map(lines(for:)) ?? []
+        space(&latest, after: earlier.lines.last)
+        return StandardTranscriptPlan(earlier: earlier, latest: latest)
+    }
+
+    /// Spaces each line from the one above it, the first from `previous`.
+    private static func space(_ lines: inout [Self], after previous: Self?) {
+        for index in lines.indices {
+            let above = index > lines.startIndex ? lines[index - 1] : previous
+            lines[index].spacing = above.map { spacing(between: $0, and: lines[index]) } ?? 0
+        }
     }
 
     /// One turn's lines, before spacing.
@@ -113,7 +130,7 @@ struct StandardTranscriptLine: Identifiable {
                 position += run.rowCount
                 continue
             }
-            lines += Self.lines(for: row, itemIndex: index)
+            lines += Self.lines(for: row, itemIndex: index, in: state)
             position += 1
         }
         if let limitStop {
@@ -125,10 +142,14 @@ struct StandardTranscriptLine: Identifiable {
         if turn.duration != nil || ending != nil || summary.subagents > 0
             || (!showsChangesCard && !summary.changedFiles.isEmpty)
         {
+            let subagents = state.items[turn.items].compactMap { item in
+                if case .subagent(let subagent) = item { subagent } else { nil }
+            }
             lines.append(
                 Self(
                     id: "footer-\(turn.id)",
-                    kind: .footer(turn, summary, ending: ending, showsChanges: !showsChangesCard)))
+                    kind: .footer(
+                        turn, summary, ending: ending, showsChanges: !showsChangesCard, subagents: subagents)))
         }
         if showsChangesCard {
             lines.append(Self(id: "changes-\(turn.id)", kind: .changes(summary)))
@@ -137,9 +158,10 @@ struct StandardTranscriptLine: Identifiable {
     }
 
     /// A row's lines: a line per section of an agent's reply, otherwise the row itself.
-    private static func lines(for row: TranscriptRow, itemIndex: Int) -> [Self] {
+    private static func lines(for row: TranscriptRow, itemIndex: Int, in state: SessionState) -> [Self] {
         guard case .item(.message(let message)) = row, message.role == .agent else {
-            return [Self(id: row.id, kind: .row(row, itemIndex: itemIndex))]
+            let thinking = state.thinkingInterval(at: itemIndex).map { ThinkingClock(start: $0.start, end: $0.end) }
+            return [Self(id: row.id, kind: .row(row, itemIndex: itemIndex, thinking: thinking))]
         }
         return ReplySections.sections(of: message).enumerated().map { index, section in
             Self(
@@ -159,38 +181,6 @@ struct StandardTranscriptLine: Identifiable {
     }
 }
 
-/// Everything a turn's lines depend on. The turn carries its revision, which goes up whenever one
-/// of its items changes, and its clock, which changes as it ends.
-struct TurnLinesKey: Hashable {
-    let turn: TranscriptTurn
-    let folding: Bool
-    let isUnfolded: Bool
-    let isLatest: Bool
-    let isRunning: Bool
-    let unfoldsExploration: Bool
-}
-
-/// Each turn's lines as last laid out, by turn, held by the transcript that shows them so they go
-/// with it. Only the latest version of a turn is kept, so a streaming turn replaces its own entry
-/// rather than piling up versions.
-final class StandardTranscriptLineCache {
-    private var entries: [TranscriptTurn.ID: (key: TurnLinesKey, lines: [StandardTranscriptLine])] = [:]
-    /// Past this many turns the cache starts over rather than tracking age.
-    private let capacity = 4096
-
-    func lines(for key: TurnLinesKey, make: () -> [StandardTranscriptLine]) -> [StandardTranscriptLine] {
-        if let entry = entries[key.turn.id], entry.key == key {
-            return entry.lines
-        }
-        let lines = make()
-        if entries.count >= capacity {
-            entries.removeAll(keepingCapacity: true)
-        }
-        entries[key.turn.id] = (key, lines)
-        return lines
-    }
-}
-
 /// Agents' replies in Markdown sections, kept per message so laying out a turn again splits only
 /// the reply that changed. Replies only grow, so a reply's length says whether its sections are
 /// still current.
@@ -205,10 +195,12 @@ private enum ReplySections {
 
     static func sections(of message: TranscriptMessage) -> [String] {
         let length = message.text.utf8.count
-        if let cached = sections[message.id], cached.length == length {
+        let cached = sections[message.id]
+        if let cached, cached.length == length {
             return cached.sections
         }
-        let split = message.text.markdownSections.map(String.init)
+        let split =
+            cached.flatMap { grown(message.text, from: $0.sections) } ?? message.text.markdownSections.map(String.init)
         if sections.count >= capacity || bytes >= byteCapacity {
             sections.removeAll(keepingCapacity: true)
             bytes = 0
@@ -216,5 +208,23 @@ private enum ReplySections {
         bytes += length - (sections[message.id]?.length ?? 0)
         sections[message.id] = (length, split)
         return split
+    }
+
+    /// The sections of `text`, a reply that grew from the one split into `earlier`: new text only
+    /// changes the last sections, so the ones before them stay and only the rest is split again. A
+    /// streaming reply was split whole on every chunk. The last two are split again because the
+    /// boundary between them depends on the last one's first line, which may still be arriving ("2"
+    /// starts a block, "2. b" continues a list). Nil when `text` doesn't start with the kept ones.
+    private static func grown(_ text: String, from earlier: [String]) -> [String]? {
+        let settled = earlier.dropLast(2)
+        let utf8 = text.utf8
+        var position = utf8.startIndex
+        for section in settled {
+            guard let end = utf8.index(position, offsetBy: section.utf8.count, limitedBy: utf8.endIndex),
+                utf8[position..<end].elementsEqual(section.utf8)
+            else { return nil }
+            position = end
+        }
+        return settled + String(text[position...]).markdownSections.map(String.init)
     }
 }

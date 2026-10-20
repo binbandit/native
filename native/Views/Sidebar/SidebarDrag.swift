@@ -231,3 +231,16 @@ extension AppModel {
         }
     }
 }
+
+#if DEBUG
+#Preview("Drag preview and drop indicator") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.lg) {
+            SidebarDragPreview(title: "Queue follow-ups while a turn runs")
+            SidebarDragPreview(title: "Diff view word wrapping in narrow windows, without breaking the gutter")
+            SidebarDropIndicator()
+                .frame(width: DS.Size.sidebarWidth)
+        }
+    }
+}
+#endif

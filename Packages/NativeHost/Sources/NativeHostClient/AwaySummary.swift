@@ -80,10 +80,7 @@ public struct AwaySummary: Hashable, Sendable {
         }
 
         guard let since else { return nil }
-        self.items = items.values.sorted { lhs, rhs in
-            let ranks = (Self.rank(lhs.outcome), Self.rank(rhs.outcome))
-            return ranks.0 != ranks.1 ? ranks.0 < ranks.1 : lhs.at > rhs.at
-        }
+        self.items = Self.ordered(items.values)
         self.recoveries = recoveries
         lastEntryID = last.id
         self.since = since
@@ -112,6 +109,14 @@ public struct AwaySummary: Hashable, Sendable {
             }
         default:
             return nil
+        }
+    }
+
+    /// Tasks that need the user first, then failures, then the rest; newest first within each.
+    static func ordered(_ items: some Sequence<Item>) -> [Item] {
+        items.sorted { lhs, rhs in
+            let ranks = (rank(lhs.outcome), rank(rhs.outcome))
+            return ranks.0 != ranks.1 ? ranks.0 < ranks.1 : lhs.at > rhs.at
         }
     }
 

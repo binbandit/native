@@ -36,3 +36,16 @@ struct WorkflowRunRow: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Run rows") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.xxs) {
+            ForEach(Array(AutomationPreviewFixtures.runs.enumerated()), id: \.element.id) { index, run in
+                WorkflowRunRow(run: run, isSelected: index == 0) {}
+            }
+        }
+        .frame(width: 300)
+    }
+}
+#endif

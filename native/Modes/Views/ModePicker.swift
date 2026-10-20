@@ -108,3 +108,22 @@ extension String {
         isEmpty ? nil : self
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Mode picker") {
+    DSPreviewPair {
+        HStack(alignment: .top, spacing: DS.Space.xl) {
+            if let build = ModesPreviewFixtures.control() {
+                ModePicker(control: build, dismiss: {})
+                    .dsPopoverBackground()
+            }
+            // Mid-turn, a new mode's instructions wait for the next message.
+            if let plan = ModesPreviewFixtures.control(planning: true, working: true) {
+                ModePicker(control: plan, dismiss: {})
+                    .dsPopoverBackground()
+            }
+        }
+    }
+    .environment(SettingsPresentation())
+}
+#endif

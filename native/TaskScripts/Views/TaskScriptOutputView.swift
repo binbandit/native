@@ -37,3 +37,15 @@ struct TaskScriptOutputView: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Script output") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.lg) {
+            TaskScriptOutputView(output: TaskScriptsPreviewFixtures.succeeded.output)
+            TaskScriptOutputView(output: TaskScriptsPreviewFixtures.failed.output, lines: 2)
+        }
+        .frame(width: 560)
+    }
+}
+#endif

@@ -94,3 +94,12 @@ private struct GalleryFormats: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Gallery - Patterns") {
+    DSPreviewPair {
+        GalleryPatterns()
+            .frame(width: 640)
+    }
+}
+#endif

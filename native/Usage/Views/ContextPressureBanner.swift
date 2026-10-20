@@ -44,3 +44,23 @@ struct ContextPressureBanner<Source: ContextSource>: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Context pressure") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.lg) {
+            ContextPressureBanner(source: PreviewContextSource.claude(used: 925_000))
+            ContextPressureBanner(source: PreviewContextSource.claude(used: 985_000))
+            // A section inside the composer, on an agent that can't compact on request.
+            ComposerSurface {
+                ContextPressureBanner(
+                    source: PreviewContextSource(
+                        agentName: "Codex", usage: PreviewContextSource.usage(used: 240_000, size: 258_400),
+                        reportStatus: .unsupported, canCompact: false),
+                    chrome: .section)
+            }
+        }
+        .frame(width: 640)
+    }
+}
+#endif

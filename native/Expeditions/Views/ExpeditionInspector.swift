@@ -149,3 +149,22 @@ struct ExpeditionInspector<Transcript: View>: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Expedition inspector") {
+    DSPreviewPair {
+        HStack(alignment: .top, spacing: DS.Space.xl) {
+            // A seat whose session hasn't started, and one that can't be opened without a host.
+            ExpeditionInspector(
+                expedition: ExpeditionPreviewFixtures.underway, slot: .assignment("section"), send: { _ in }
+            ) { _ in EmptyView() }
+            .frame(width: 360, height: 420)
+            ExpeditionInspector(
+                expedition: ExpeditionPreviewFixtures.needsYou, slot: .assignment("steer"), send: { _ in }
+            ) { _ in EmptyView() }
+            .frame(width: 360, height: 420)
+        }
+    }
+    .environment(ExpeditionCenter.preview())
+}
+#endif

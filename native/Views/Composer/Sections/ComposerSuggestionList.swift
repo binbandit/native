@@ -49,3 +49,15 @@ struct ComposerSuggestionList<Item, Row: View>: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Suggestion list") {
+    DSPreviewPair {
+        ComposerSuggestionList(items: ComposerPreviewFixtures.commands, highlighted: .constant(1), onChoose: { _ in }) {
+            command, isHighlighted in
+            SlashCommandRow(command: command, isHighlighted: isHighlighted)
+        }
+        .frame(width: 560)
+    }
+}
+#endif

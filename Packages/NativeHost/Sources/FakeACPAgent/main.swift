@@ -1,11 +1,11 @@
 import ACP
-import Darwin
 import Foundation
 import NativeHostProtocol
 
 // A scriptable ACP agent for the host's tests. Like a real agent it keeps its own session store
 // (in $FAKE_AGENT_STORE) and writes the user's message to it as soon as a prompt arrives, so
-// `session/load` replays exactly what it received. Prompts script its behavior:
+// `session/load` replays exactly what it received (`session/resume` reopens a session without the
+// replay). Prompts script its behavior:
 //
 //   slow <n> …          streams n ticks, 300 ms apart, then ends the turn (cancellable)
 //   stubborn <n> …      like slow, but ignores session/cancel
@@ -19,15 +19,30 @@ import NativeHostProtocol
 //   mode?               answers with the session's current mode
 //   config?             answers with its mode, model and effort, as "config: mode=… model=… effort=…"
 //   /context            answers "context: 42% used", and sends that again just after the turn ends
+//   tool <name> <json>  calls one of Native's tools (the `native` MCP server it was given) and answers
+//                       "tool: <its text>"
+//   (a prompt in Native's task or message header runs the script after the header)
+//   delegate …          starts a task on the fake agent with the rest as its prompt (start_task), notes
+//                       it in its store, waits for it (wait_for_task) and answers "delegated: <reply>";
+//                       told its turn was interrupted, it goes back to waiting for a task it noted
 //   anything else       answers "echo: <text>"; Native's interruption notice gets "resumed"
 //
 // Every prompt and steer it receives is appended to $FAKE_AGENT_STORE/received.log, with non-text
-// blocks shown as "[link <name>]" and the like; every load's MCP servers (name and command) go to loads.log. With $FAKE_AGENT_GRANDCHILD set to a file, it starts
+// blocks shown as "[link <name>]" and the like; every load's MCP servers (name and command) go to loads.log,
+// every new session's to news.log, and every call of Native's tools to tools.log. With $FAKE_AGENT_GRANDCHILD set to a file, it starts
 // `sleep` in a process group of its own at launch and writes its pid there, as npm does with the
 // adapters it runs. With $FAKE_AGENT_NO_STEERING=1 it doesn't offer steering. Settings (mode, model,
 // effort) live in memory, so a reloaded session reports the defaults again; like codex-acp, choosing
 // a model puts the effort back to that model's default. It lists the effort (id "effort") before the
-// model.
+// model. On a session it loaded (not one it started), it won't change the options named in
+// $FAKE_AGENT_LOCKED_ON_RELOAD (comma-separated ids): it turns set_config_option away with an error,
+// or for `<id>=keep` answers as if it had changed it. Either way the attempt goes to received.log as
+// "locked". With $FAKE_AGENT_RELOAD_DEFAULTS (`effort=low,model=beta`), a session it loaded reports
+// those values instead of its usual defaults, as an agent that reopens sessions on other defaults
+// (codex-acp on its built-in ones); new sessions keep the usual defaults.
+//
+// With $FAKE_AGENT_SIGN_IN=1 it also offers sign-in methods and reports its status
+// (FakeAgent+SignIn.swift).
 
 signal(SIGPIPE, SIG_IGN)
 
@@ -44,6 +59,10 @@ actor FakeAgent {
     var modes: [SessionID: String] = [:]
     var models: [SessionID: String] = [:]
     var efforts: [SessionID: String] = [:]
+    /// Sessions this process loaded rather than started, for `$FAKE_AGENT_LOCKED_ON_RELOAD`.
+    var loaded: Set<SessionID> = []
+    /// Native's tools for each session, as `session/new` and `session/load` last gave them.
+    var nativeTools: [SessionID: URL] = [:]
 
     init(store: URL) {
         self.store = store
@@ -81,18 +100,25 @@ actor FakeAgent {
                         "loadSession": .bool(true),
                         "sessionCapabilities": .object([
                             "list": .object([:]), "close": .object([:]), "delete": .object([:]),
+                            "resume": .object([:]),
                         ]),
                     ]),
                     "agentInfo": .object(["name": .string("fake-agent"), "version": .string("1")]),
                     "authMethods": .array([.object(["id": .string("token"), "name": .string("Token")])]),
                     "_meta": .object(["steering": .object(["supported": .bool(!Self.cantSteer)])]),
-                ]))
+                ]).addingFakeSignIn(for: message))
+            if Self.signsIn { try reportSignInStatus(on: peer) }
         case "authenticate":
+            if try await signIn(message, id: id, on: peer) { return }
             received("authenticate", (try? message.params(as: AuthParams.self))?.methodId ?? "")
             try peer.respond(to: id, with: JSONValue.object([:]))
         case "session/new":
             let session = SessionID(UUID().uuidString)
             try save([], for: session)
+            nativeTools[session] = Self.nativeTools(in: message)
+            let servers =
+                (try? message.params(as: LoadParams.self))?.mcpServers.map { "\($0.name) \($0.command ?? "")" } ?? []
+            note("news.log", servers.joined(separator: ","))
             try peer.respond(
                 to: id,
                 with: JSONValue.object(["sessionId": .string(session.rawValue), "configOptions": options(session)]))
@@ -101,6 +127,15 @@ actor FakeAgent {
             let servers =
                 (try? message.params(as: LoadParams.self))?.mcpServers.map { "\($0.name) \($0.command ?? "")" } ?? []
             note("loads.log", servers.joined(separator: ","))
+            nativeTools[session] = Self.nativeTools(in: message)
+            loaded.insert(session)
+            for (configID, value) in Self.reloadDefaults {
+                switch configID {
+                case "model": models[session] = models[session] ?? value
+                case "effort": efforts[session] = efforts[session] ?? value
+                default: modes[session] = modes[session] ?? value
+                }
+            }
             for (index, entry) in try load(session).enumerated() {
                 let kind = entry.role == "user" ? "user_message_chunk" : "agent_message_chunk"
                 try update(
@@ -110,6 +145,15 @@ actor FakeAgent {
                         "content": Self.text(entry.text),
                     ])
             }
+            try peer.respond(to: id, with: JSONValue.object(["configOptions": options(session)]))
+        case "session/resume":
+            // Like a load without the replay.
+            let session = try message.params(as: SessionParams.self).sessionId
+            guard FileManager.default.fileExists(atPath: file(session).path(percentEncoded: false)) else {
+                throw RPCError(code: -32602, message: "No session \(session.rawValue)")
+            }
+            received("resume", session.rawValue)
+            nativeTools[session] = Self.nativeTools(in: message)
             try peer.respond(to: id, with: JSONValue.object(["configOptions": options(session)]))
         case "session/list":
             let sessions = try FileManager.default.contentsOfDirectory(atPath: store.path(percentEncoded: false))
@@ -122,7 +166,10 @@ actor FakeAgent {
             received("delete", session.rawValue)
             try peer.respond(to: id, with: JSONValue.object([:]))
         case "session/close":
-            received("close", try message.params(as: SessionParams.self).sessionId.rawValue)
+            let session = try message.params(as: SessionParams.self).sessionId
+            received("close", session.rawValue)
+            // Freed, as a real agent does: a resume reports the defaults again.
+            (modes[session], models[session], efforts[session]) = (nil, nil, nil)
             try peer.respond(to: id, with: JSONValue.object([:]))
         case "session/prompt":
             let params = try message.params(as: PromptParams.self)
@@ -140,6 +187,15 @@ actor FakeAgent {
             try peer.respond(to: id, with: JSONValue.object(["outcome": .string("injected")]))
         case "session/set_config_option":
             let params = try message.params(as: ConfigParams.self)
+            if loaded.contains(params.sessionId), let lock = Self.reloadLocks[params.configId] {
+                received("locked", "\(params.configId)=\(params.value)")
+                guard lock == .keep else {
+                    throw RPCError(
+                        code: -32603, message: "\(params.configId.capitalized) can't change in a resumed session")
+                }
+                try peer.respond(to: id, with: JSONValue.object(["configOptions": options(params.sessionId)]))
+                return
+            }
             switch params.configId {
             case "model":
                 models[params.sessionId] = params.value
@@ -151,13 +207,19 @@ actor FakeAgent {
             }
             received("config", "\(params.configId)=\(params.value)")
             try peer.respond(to: id, with: JSONValue.object(["configOptions": options(params.sessionId)]))
+        case "logout" where Self.signsIn:
+            try logOut(id: id, on: peer)
         default:
             try peer.respond(to: id, error: .methodNotFound(message.method))
         }
     }
 
-    private func prompt(_ session: SessionID, text: String) async throws -> String {
-        received("prompt", text)
+    private func prompt(_ session: SessionID, text framed: String) async throws -> String {
+        received("prompt", framed)
+        // A task's prompt or a message from another session opens with Native's header; the script is
+        // what follows it.
+        let isFramed = framed.hasPrefix("[A task from your parent session (") || framed.hasPrefix("[Message from ")
+        let text = isFramed ? framed.components(separatedBy: "]\n\n").dropFirst().joined(separator: "]\n\n") : framed
         if text.hasPrefix("lose-once"), firstTime(text) {
             // Never recorded, never answered: as if the prompt was lost on the way in.
             try await Task.sleep(for: .seconds(3_600))
@@ -165,7 +227,8 @@ actor FakeAgent {
         if text.hasPrefix("flaky-once"), firstTime(text) {
             throw RPCError(code: -32603, message: "Network error: connection reset by peer")
         }
-        try append(Message(role: "user", text: text), to: session)
+        // As received, header and all, as an agent records it.
+        try append(Message(role: "user", text: framed), to: session)
         running.insert(session)
         cancelled.remove(session)
         defer { running.remove(session) }
@@ -206,14 +269,91 @@ actor FakeAgent {
                 try? self.update(
                     session, ["sessionUpdate": .string("agent_message_chunk"), "content": Self.text("\n\(reply)\n")])
             }
+        } else if text.hasPrefix("tool ") {
+            let words = text.split(separator: " ", maxSplits: 2).map(String.init)
+            let arguments = words.count > 2 ? try JSONDecoder().decode(JSONValue.self, from: Data(words[2].utf8)) : nil
+            reply =
+                "tool: \(try await callTool(session, words[1], arguments ?? .object([:]))["text"]?.stringValue ?? "")"
+        } else if text.hasPrefix("delegate ") {
+            let started = try await callTool(
+                session, "start_task",
+                .object([
+                    "agent": .string("fake"), "prompt": .string(String(text.dropFirst("delegate ".count))),
+                    "title": .string("Delegated"),
+                ]))
+            guard let taskID = started["structured"]?["task_id"]?.stringValue else {
+                throw RPCError(code: -32603, message: "start_task failed: \(started["text"]?.stringValue ?? "")")
+            }
+            try Data(taskID.utf8).write(to: delegation(session))
+            reply = try await awaitDelegation(session)
         } else if text.contains("[Native] Your previous turn was interrupted") {
-            reply = "resumed"
+            reply =
+                FileManager.default.fileExists(atPath: delegation(session).path(percentEncoded: false))
+                ? try await awaitDelegation(session) : "resumed"
         } else {
             reply = "echo: \(text)"
         }
         try update(session, ["sessionUpdate": .string("agent_message_chunk"), "content": Self.text(reply)])
         try append(Message(role: "agent", text: reply), to: session)
         return "end_turn"
+    }
+
+    // MARK: - Native's tools
+
+    /// Calls one of Native's tools over MCP, as an agent would: `{"text", "structured", "isError"}`.
+    private func callTool(_ session: SessionID, _ name: String, _ arguments: JSONValue) async throws -> JSONValue {
+        guard let url = nativeTools[session] else {
+            throw RPCError(code: -32603, message: "No native MCP server for this session")
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("2025-11-25", forHTTPHeaderField: "MCP-Protocol-Version")
+        request.httpBody = try JSONEncoder().encode(
+            JSONValue.object([
+                "jsonrpc": .string("2.0"), "id": .number(1), "method": .string("tools/call"),
+                "params": .object(["name": .string(name), "arguments": arguments]),
+            ]))
+        request.timeoutInterval = 300
+        let (data, response) = try await URLSession.shared.data(for: request)
+        guard (response as? HTTPURLResponse)?.statusCode == 200 else {
+            throw RPCError(
+                code: -32603, message: "native MCP answered \((response as? HTTPURLResponse)?.statusCode ?? 0)")
+        }
+        let result = try JSONDecoder().decode(JSONValue.self, from: data)["result"]
+        var text = ""
+        if case .array(let content)? = result?["content"], let first = content.first?["text"]?.stringValue {
+            text = first
+        }
+        note("tools.log", "\(name)\t\(text)")
+        return .object([
+            "text": .string(text), "structured": result?["structuredContent"] ?? .null,
+            "isError": result?["isError"] ?? .bool(false),
+        ])
+    }
+
+    /// Waits for the task this session delegated until it isn't running, then forgets it.
+    private func awaitDelegation(_ session: SessionID) async throws -> String {
+        let taskID = try String(contentsOf: delegation(session), encoding: .utf8)
+        while true {
+            if cancelled.contains(session) { return "stopped waiting" }
+            let result = try await callTool(
+                session, "wait_for_task", .object(["task_id": .string(taskID), "timeout_seconds": .number(2)]))
+            let status = result["structured"]?["status"]?.stringValue
+            if status != "running" && status != "needs_approval" {
+                try? FileManager.default.removeItem(at: delegation(session))
+                return "delegated: \(result["structured"]?["reply"]?.stringValue ?? status ?? "")"
+            }
+        }
+    }
+
+    private func delegation(_ session: SessionID) -> URL {
+        store.appending(path: "\(session.rawValue).delegation")
+    }
+
+    private static func nativeTools(in message: JSONRPCPeer.Message) -> URL? {
+        (try? message.params(as: LoadParams.self))?.mcpServers.first { $0.name == "native" }?.url.flatMap(
+            URL.init(string:))
     }
 
     private func tick(_ session: SessionID, count: Int, stoppable: Bool) async throws -> String {
@@ -339,6 +479,25 @@ actor FakeAgent {
     /// `FAKE_AGENT_NO_STEERING=1` makes it an agent that can't take messages mid-turn.
     private static let cantSteer = ProcessInfo.processInfo.environment["FAKE_AGENT_NO_STEERING"] == "1"
 
+    /// What it does about a change to an option `$FAKE_AGENT_LOCKED_ON_RELOAD` names, on a loaded session.
+    enum ReloadLock {
+        case refuse, keep
+    }
+
+    /// `FAKE_AGENT_LOCKED_ON_RELOAD`, by option id: `effort` refuses, `effort=keep` keeps quietly.
+    private static let reloadLocks: [String: ReloadLock] = Dictionary(
+        (ProcessInfo.processInfo.environment["FAKE_AGENT_LOCKED_ON_RELOAD"] ?? "").split(separator: ",").map { entry in
+            let parts = entry.split(separator: "=", maxSplits: 1)
+            return (String(parts[0]), parts.count > 1 && parts[1] == "keep" ? ReloadLock.keep : .refuse)
+        }, uniquingKeysWith: { _, last in last })
+
+    /// `FAKE_AGENT_RELOAD_DEFAULTS`, by option id: what a loaded session is on until someone sets it.
+    private static let reloadDefaults: [String: String] = Dictionary(
+        (ProcessInfo.processInfo.environment["FAKE_AGENT_RELOAD_DEFAULTS"] ?? "").split(separator: ",")
+            .map { $0.split(separator: "=", maxSplits: 1).map(String.init) }
+            .filter { $0.count == 2 }.map { ($0[0], $0[1]) },
+        uniquingKeysWith: { _, last in last })
+
     private static func count(in text: String, default value: Int) -> Int {
         max(Int(text.split(separator: " ").dropFirst().first ?? "") ?? value, 1)
     }
@@ -365,6 +524,7 @@ actor FakeAgent {
         struct Server: Decodable {
             var name: String
             var command: String?
+            var url: String?
         }
         var mcpServers: [Server]
     }
@@ -382,7 +542,12 @@ actor FakeAgent {
 
 /// `sleep` in a process group of its own, as npm puts the adapters it runs; its pid goes to `file`.
 func startGrandchild(recordingIn file: String) {
+    // An opaque pointer on Darwin, a struct in Glibc.
+    #if canImport(Darwin)
     var attributes: posix_spawnattr_t?
+    #else
+    var attributes = posix_spawnattr_t()
+    #endif
     posix_spawnattr_init(&attributes)
     posix_spawnattr_setflags(&attributes, Int16(POSIX_SPAWN_SETPGROUP))
     posix_spawnattr_setpgroup(&attributes, 0)

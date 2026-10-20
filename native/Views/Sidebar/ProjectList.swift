@@ -132,3 +132,53 @@ private struct NothingMatches: View {
         .padding(.vertical, DS.Space.md)
     }
 }
+
+#if DEBUG
+#Preview("Project list") {
+    let app = AppModel.preview()
+    DSPreviewPair {
+        ProjectListPreview(app: app, filter: TaskFilter())
+    }
+    .sidebarPreviewEnvironment(app)
+}
+
+#Preview("Project list - Filtered") {
+    let app = AppModel.preview()
+    DSPreviewPair {
+        ProjectListPreview(app: app, filter: TaskFilter(statuses: [.needsYou]))
+    }
+    .sidebarPreviewEnvironment(app)
+}
+
+#Preview("Project list - Nothing matches") {
+    let app = AppModel.preview()
+    DSPreviewPair {
+        ProjectListPreview(app: app, filter: TaskFilter(statuses: [.failed], agents: ["claude-code"]))
+    }
+    .sidebarPreviewEnvironment(app)
+}
+
+#Preview("Project list - No projects") {
+    let app = AppModel.preview(.empty)
+    DSPreviewPair {
+        ProjectListPreview(app: app, filter: TaskFilter())
+    }
+    .sidebarPreviewEnvironment(app)
+}
+
+/// The list as the sidebar builds it, with the filter in state so its chips and menu work.
+private struct ProjectListPreview: View {
+    let app: AppModel
+    @State var filter: TaskFilter
+    @State private var selection = SidebarSelectionModel()
+
+    var body: some View {
+        ProjectList(
+            listing: SidebarListing(model: app, filter: filter, insights: SidebarTaskInsights()),
+            taskAccessory: { SessionContextUsage(summary: $0) }, filter: $filter, selection: selection,
+            select: { _ in }
+        )
+        .frame(width: DS.Size.sidebarWidth - DS.Space.lg, alignment: .top)
+    }
+}
+#endif

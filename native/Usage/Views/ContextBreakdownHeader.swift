@@ -107,3 +107,18 @@ struct ContextBreakdownHeader<Source: ContextSource>: View {
         .font(.dsCaption)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Breakdown header") {
+    var refreshing = PreviewContextSource.claude(used: 925_000)
+    refreshing.reportStatus = .refreshing
+    return DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.xl) {
+            ContextBreakdownHeader(source: PreviewContextSource.claude(used: 240_000))
+            ContextBreakdownHeader(source: refreshing)
+            ContextBreakdownHeader(source: PreviewContextSource.codex)
+        }
+        .frame(width: 360)
+    }
+}
+#endif

@@ -93,3 +93,16 @@ private struct AIInstructionProjectRow: View {
         )
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Project instructions") {
+    DSPreviewPair {
+        AIInstructionsProjectSection(
+            projectRoot: URL(filePath: AppPreviewFixtures.nativeFolder, directoryHint: .isDirectory)
+        )
+        .settingsPreviewPage()
+    }
+    .environment(GitSettings(defaults: PreviewUserDefaults()))
+    .environment(GitHubModel.preview())
+}
+#endif

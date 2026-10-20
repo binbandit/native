@@ -64,3 +64,16 @@ struct GitChangesHeader: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Changes header") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.lg) {
+            GitChangesHeader(model: GitPreviewFixtures.model, isCommitting: .constant(false), onCreatePullRequest: {})
+            GitChangesHeader(
+                model: GitPreviewFixtures.cleanModel, isCommitting: .constant(false), onCreatePullRequest: nil)
+        }
+        .frame(width: GitMetrics.inspectorIdealWidth)
+    }
+}
+#endif

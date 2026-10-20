@@ -54,3 +54,15 @@ struct PullRequestAskPanel: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Ask panel") {
+    let center = PullRequestAskPreviewFixtures.center()
+    DSPreviewPair {
+        PullRequestAskPanel(conversation: center.conversation(for: PullRequestPreviewRunner.reference))
+            .frame(width: PullRequestAskMetrics.panelIdealWidth, height: 640)
+    }
+    .environment(center)
+    .environment(GitHubModel.preview())
+}
+#endif

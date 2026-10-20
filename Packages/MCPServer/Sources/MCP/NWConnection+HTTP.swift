@@ -1,3 +1,4 @@
+#if canImport(Network)
 import Foundation
 import Network
 
@@ -19,3 +20,4 @@ extension NWConnection {
         }
     }
 }
+#endif

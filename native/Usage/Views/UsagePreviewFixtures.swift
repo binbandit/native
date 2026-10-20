@@ -64,7 +64,7 @@ struct PreviewContextSource: ContextSource {
 
             | Type | Path | Tokens |
             |------|------|--------|
-            | Project | /Users/me/app/AGENTS.md | 2k |
+            | Project | /Users/preview/Developer/native/AGENTS.md | 2k |
 
             ### Skills
 
@@ -75,34 +75,137 @@ struct PreviewContextSource: ContextSource {
             """
     }
 }
+#endif
 
-#Preview("Context breakdown") {
-    DSPreviewPair {
-        HStack(alignment: .top, spacing: DS.Space.xl) {
-            ContextBreakdownView(source: PreviewContextSource.claude(used: 240_000))
-            ContextBreakdownView(source: PreviewContextSource.claude(used: 925_000))
-            ContextBreakdownView(source: PreviewContextSource.codex)
-        }
+#if NATIVE_PREVIEWS_WIP
+/// Limits, provider readings and a year of activity for Usage's previews, all kept in memory.
+enum UsagePreviewFixtures {
+    static let claude = AgentDefinition.ID(rawValue: "claude-code")
+    static let codex = AgentDefinition.ID(rawValue: "codex")
+    static let limitedSession = SessionID("0199f3a2-queue")
+
+    /// Claude Code at its 5-hour limit (stopping one task, which can resume at the reset), and Codex
+    /// close to its weekly one.
+    static func limits(resumeScheduled: Bool = false) -> UsageLimits {
+        let now = Date.now
+        let target = UsageSessionRef(
+            agent: claude, agentName: "Claude Code", session: limitedSession,
+            title: "Queue follow-ups while a turn runs")
+        let snapshot = UsageLimitsSnapshot(
+            providers: [
+                ProviderLimit(
+                    agent: claude, agentName: "Claude Code", status: .reached, window: .fiveHour,
+                    resetsAt: now.addingTimeInterval(42 * 60), utilization: 1, updatedAt: now),
+                ProviderLimit(
+                    agent: codex, agentName: "Codex", status: .warning, window: .sevenDay,
+                    resetsAt: now.addingTimeInterval(3 * 86_400), utilization: 0.9, updatedAt: now),
+            ],
+            sessions: [
+                LimitedSession(
+                    target: target, work: .interruptedTurn,
+                    resumeAt: resumeScheduled ? now.addingTimeInterval(42 * 60 + UsageLimits.resetMargin) : nil)
+            ])
+        return UsageLimits(store: PreviewLimitsStore(snapshot: snapshot), alerts: PreviewLimitAlerts())
     }
-}
 
-#Preview("Context indicator") {
-    DSPreviewPair {
-        VStack(alignment: .trailing, spacing: DS.Space.md) {
-            ForEach([240_000, 820_000, 960_000], id: \.self) { used in
-                HStack {
-                    ContextIndicator(source: PreviewContextSource.claude(used: used))
-                    ContextIndicator(source: PreviewContextSource.claude(used: used), style: .labeled)
-                }
+    /// No limit in sight.
+    static func clearLimits() -> UsageLimits {
+        UsageLimits(store: PreviewLimitsStore(snapshot: UsageLimitsSnapshot()), alerts: PreviewLimitAlerts())
+    }
+
+    /// The windows each agent's own status command reported.
+    static let reports = ProviderUsageReports(reports: [
+        claude: ProviderUsageReport(
+            windows: [
+                .init(name: "Current session", utilization: 0.62, resetsAt: .now.addingTimeInterval(3 * 3600)),
+                .init(
+                    name: "Current week (all models)", utilization: 0.41, resetsAt: .now.addingTimeInterval(3 * 86_400)),
+                .init(name: "Current week (Opus)", utilization: 0.88, resetsAt: .now.addingTimeInterval(3 * 86_400)),
+            ], capturedAt: .now.addingTimeInterval(-4 * 60)),
+        codex: ProviderUsageReport(
+            windows: [
+                .init(name: "5h limit", utilization: 0.3, resetsAt: .now.addingTimeInterval(2 * 3600)),
+                .init(name: "Weekly limit", utilization: 0.55, resetsAt: .now.addingTimeInterval(5 * 86_400)),
+            ], capturedAt: .now.addingTimeInterval(-50 * 60)),
+    ])
+
+    /// A year of work: busier on weekdays, a quiet stretch in the summer, a few estimated days early on.
+    static func activity(empty: Bool = false) -> ActivityLog {
+        ActivityLog(store: PreviewActivityStore(days: empty ? [] : year))
+    }
+
+    private static let year: [ActivityDay] = {
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: .now)
+        let projects = ["/Users/preview/Developer/native", "/Users/preview/Developer/pier"]
+        return (0..<365).compactMap { offset -> ActivityDay? in
+            guard let date = calendar.date(byAdding: .day, value: -offset, to: today) else { return nil }
+            let weekday = calendar.component(.weekday, from: date)
+            // A repeatable spread rather than randomness, so the preview looks the same every time.
+            let seed = (offset * 37 + 11) % 23
+            let isWeekend = weekday == 1 || weekday == 7
+            let prompts = isWeekend ? seed % 4 : (seed > 2 ? seed + 3 : 0)
+            guard prompts > 0, !(150...170).contains(offset) else { return nil }
+            var day = ActivityDay(day: date.formatted(Date.ISO8601FormatStyle(timeZone: .current).year().month().day()))
+            let counts =
+                offset > 330
+                ? ActivityCounts(listedSessions: max(prompts / 4, 1))
+                : ActivityCounts(
+                    prompts: prompts, turns: prompts + 2, tokens: prompts * 41_000, cost: Double(prompts) * 0.37,
+                    activeSeconds: Double(prompts) * 140)
+            day.add(
+                counts, agent: offset % 3 == 0 ? "codex" : "claude-code",
+                agentName: offset % 3 == 0 ? "Codex" : "Claude Code", project: projects[offset % 2])
+            if offset < 3 {
+                day.touch(
+                    ActivityDay.Task(
+                        agent: "claude-code", agentName: "Claude Code", session: "0199f3a2-queue",
+                        title: "Queue follow-ups while a turn runs", project: projects[0]))
+                day.touch(
+                    ActivityDay.Task(
+                        agent: "codex", agentName: "Codex", session: "0199f3a2-flaky",
+                        title: "Fix flaky permission request test", project: projects[0]))
             }
+            return day
         }
-    }
+    }()
+
+    /// Where Claude Code's turn stopped on its limit, as the transcript shows it.
+    static let limitStop: UsageLimitStop? = {
+        var state = SessionState()
+        state.appendUserMessage("Queue follow-ups while a turn runs")
+        state.appendNotice("You've hit your session limit · resets 3:05pm (Australia/Sydney)", isError: true)
+        return UsageLimitStop(turnItems: state.items, stopReason: .error)
+    }()
+
+    /// A Claude Code breakdown, as `ContextBreakdownView` reads it.
+    static let report = PreviewContextSource.claude(used: 480_000).report
 }
 
-#Preview("Context pressure") {
-    DSPreviewPair {
-        ContextPressureBanner(source: PreviewContextSource.claude(used: 925_000))
-            .frame(width: 640)
+/// Keeps the limits snapshot in memory; nothing is saved.
+final class PreviewLimitsStore: UsageLimitsStore {
+    private let snapshot: UsageLimitsSnapshot
+
+    init(snapshot: UsageLimitsSnapshot) {
+        self.snapshot = snapshot
     }
+
+    func load() -> UsageLimitsSnapshot { snapshot }
+    func save(_ snapshot: UsageLimitsSnapshot) {}
+}
+
+/// Posts nothing: previews never notify.
+final class PreviewLimitAlerts: LimitAlerting {
+    var onAction: ((LimitAlertAction) -> Void)?
+
+    func post(_ alert: LimitAlert) async {}
+}
+
+/// Keeps activity days in memory; nothing is saved.
+struct PreviewActivityStore: ActivityStore {
+    let days: [ActivityDay]
+
+    func load() -> [ActivityDay] { days }
+    func save(_ days: [ActivityDay]) {}
 }
 #endif

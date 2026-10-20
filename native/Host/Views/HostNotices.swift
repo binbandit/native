@@ -42,6 +42,13 @@ struct HostNotices: View {
                 if let away = host.away {
                     HostAwayCard(summary: away, title: title, open: open, onDismiss: host.dismissAway)
                 }
+                ForEach(awayHosts) { remote in
+                    if let away = remote.away {
+                        HostAwayCard(
+                            summary: away, hostName: remote.name, title: title, open: { open($0, on: remote) },
+                            onDismiss: remote.dismissAway)
+                    }
+                }
             }
             .padding(DS.Space.md)
             .animation(.dsStandard, value: host.away?.items.count)
@@ -50,7 +57,12 @@ struct HostNotices: View {
 
     private var hasNotices: Bool {
         host.versionStatus != .matched || host.isUnavailable || orchestration?.move != nil
-            || host.fallbackNotice != nil || host.away != nil
+            || host.fallbackNotice != nil || host.away != nil || !awayHosts.isEmpty
+    }
+
+    /// Paired hosts with news from while this Mac was away from them.
+    private var awayHosts: [RemoteHost] {
+        model.hosts.all.filter { $0.away != nil }
     }
 
     /// Native's MCP server, which says when it had to move and host sessions still have its old address.
@@ -87,6 +99,15 @@ struct HostNotices: View {
     private func title(_ item: AwaySummary.Item) -> String? {
         guard let key = key(for: item) else { return nil }
         return model.sessionList.first { $0.id == key }.map(model.title(for:))
+    }
+
+    /// Opens a task on a paired host, while the sidebar lists it.
+    private func open(_ item: AwaySummary.Item, on remote: RemoteHost) -> (() -> Void)? {
+        guard let key = key(for: item), model.sessionList.contains(where: { $0.id == key }) else { return nil }
+        return {
+            model.selection = key
+            remote.removeAwayItem(item.id)
+        }
     }
 
     private func open(_ item: AwaySummary.Item) -> (() -> Void)? {

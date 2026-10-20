@@ -35,6 +35,9 @@ enum LaunchMetrics {
         switch milestone {
         case .appInit:
             interval = signposter.beginInterval("Launch")
+            #if DEBUG || NATIVE_PERF
+            MenuBench.installLaunchObservers()
+            #endif
         case .sidebarInteractive:
             interval.map { signposter.endInterval("Launch", $0) }
         case .firstFrame, .agentsReady:

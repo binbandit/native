@@ -248,3 +248,38 @@ extension ActivityHeatmap {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Activity heatmap") {
+    @Previewable @State var selection: Date?
+    @Previewable @State var hovered: Date?
+    let calendar = Calendar.current
+    let today = calendar.startOfDay(for: .now)
+    // A believable year: busy weekdays, quiet weekends, a two-week break in the summer.
+    let values = Dictionary(
+        uniqueKeysWithValues: (0..<371).compactMap { offset -> (Date, Double)? in
+            guard let day = calendar.date(byAdding: .day, value: -offset, to: today) else { return nil }
+            let weekday = calendar.component(.weekday, from: day)
+            let isWeekend = weekday == 1 || weekday == 7
+            let isBreak = (150..<164).contains(offset)
+            let amount = isBreak ? 0 : Double((offset * 7 + weekday * 3) % (isWeekend ? 4 : 18))
+            return (day, amount)
+        })
+    DSPreviewPair {
+        ActivityHeatmap(
+            values: values, endingOn: today, selection: $selection, hovered: $hovered,
+            describe: { "\(Int(values[$0] ?? 0)) prompts on \($0.formatted(date: .complete, time: .omitted))" }
+        )
+        .frame(width: 760)
+    }
+}
+
+#Preview("Activity heatmap - Empty") {
+    DSPreviewPair {
+        ActivityHeatmap(
+            values: [:], selection: .constant(nil), hovered: .constant(nil), describe: { _ in "No prompts" }
+        )
+        .frame(width: 520)
+    }
+}
+#endif

@@ -59,3 +59,14 @@ struct GalleryAccentPalettes: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Gallery - Brand") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.xxl) {
+            GalleryBrand()
+            GalleryAccentPalettes()
+        }
+    }
+}
+#endif

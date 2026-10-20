@@ -28,3 +28,16 @@ struct WorkflowsNavItem: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Workflows nav item") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.xxs) {
+            WorkflowsNavItem(isSelected: false) {}
+            WorkflowsNavItem(isSelected: true) {}
+        }
+        .frame(width: DS.Size.sidebarWidth)
+    }
+    .environment(AutomationCenter.preview())
+}
+#endif

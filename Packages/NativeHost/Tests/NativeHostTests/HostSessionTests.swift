@@ -290,20 +290,26 @@ struct HostSessionTests {
             ])
         }
         let session = try await recorder.client.newSession(
-            NewSessionParams(agentID: "fake", cwd: "/tmp", mcpServers: [server("native-old")], attach: true))
+            NewSessionParams(agentID: "fake", cwd: "/tmp", mcpServers: [server("tracker-old")], attach: true))
         try await recorder.client.setMCPServers(
-            SetMCPServersParams(sessionID: session.id, mcpServers: [server("native"), server("docs")]))
+            SetMCPServersParams(sessionID: session.id, mcpServers: [server("tracker"), server("docs")]))
         let renamed = JSONValue.object([
             "name": .string("docs"), "command": .string("/usr/bin/false"), "args": .array([]), "env": .array([]),
         ])
-        // By name: "docs" is replaced, "native" kept, and "extra" (which the session lacked) added.
+        // By name: "docs" is replaced, "tracker" kept, and "extra" (which the session lacked) added. The
+        // host adds Native's own tools last (HostTasksTests).
         try await recorder.client.setMCPServers(
             SetMCPServersParams(sessionID: session.id, mcpServers: [renamed, server("extra")], replacingNamed: true))
         _ = try await recorder.client.restartAgent("fake")
         _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "hello"))
         try await recorder.wait("the turn") { await $0.turnsEnded(session.id) == ["end_turn"] }
         let loads = try String(contentsOf: harness.agentStore.appending(path: "loads.log"), encoding: .utf8)
-        #expect(loads == "native /usr/bin/true,docs /usr/bin/false,extra /usr/bin/true\n")
+        #if canImport(Network) && canImport(CryptoKit)
+        let hostTools = ",native "
+        #else
+        let hostTools = ""  // No host tools off Apple's platforms yet (`HostTasks.canServe`).
+        #endif
+        #expect(loads == "tracker /usr/bin/true,docs /usr/bin/false,extra /usr/bin/true\(hostTools)\n")
         await recorder.stop()
     }
 

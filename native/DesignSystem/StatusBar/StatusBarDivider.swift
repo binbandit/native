@@ -10,3 +10,15 @@ public struct StatusBarDivider: View {
             .accessibilityHidden(true)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Status bar divider") {
+    DSPreviewPair {
+        VStack(spacing: 0) {
+            Color.dsBackground.frame(width: 320, height: 40)
+            StatusBarDivider()
+                .frame(width: 320)
+        }
+    }
+}
+#endif

@@ -87,3 +87,23 @@ struct PullRequestWrappedDiffBlock: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Wrapped diff block - Narrow") {
+    DSPreviewPair {
+        PullRequestPagePreview { model, _ in
+            VStack(alignment: .leading, spacing: DS.Space.lg) {
+                ForEach(model.rows.filter(\.isPreviewBlock).prefix(1)) { row in
+                    PullRequestFilesRowView(model: model, row: row, width: 420, characterWidth: 7, isShiftDown: false)
+                        .onAppear {
+                            // How the model keys a wrapped file (PullRequestPageModel+Rows.swift).
+                            model.wrappedFiles.insert("github.com/binbandit/native:\(row.path)")
+                        }
+                }
+            }
+            .codeTextStyle(.compact)
+        }
+        .frame(width: 420)
+    }
+}
+#endif

@@ -43,3 +43,16 @@ extension TerminalJob.Outcome {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Job outcomes") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.md) {
+            ForEach(TerminalPreviewFixtures.outcomes, id: \.self) { outcome in
+                TerminalJobOutcomeBanner(job: TerminalPreviewFixtures.runningJob, outcome: outcome, runAgain: {})
+            }
+        }
+        .frame(width: 560)
+    }
+}
+#endif

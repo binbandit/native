@@ -1,3 +1,4 @@
+import NativeHostProtocol
 import SwiftUI
 
 /// The keep-awake segment: a cup, the mode (or the time left on a timer) and a dot that's lit
@@ -58,3 +59,20 @@ private struct KeepAwakeSegment: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Keep awake item") {
+    DSPreviewPair {
+        StatusBarSurface {
+            EmptyView()
+        } trailing: {
+            KeepAwakeStatusItem(controller: KeepAwakePreviewFixtures.off()).content
+            KeepAwakeStatusItem(controller: KeepAwakePreviewFixtures.working()).content
+            KeepAwakeStatusItem(controller: KeepAwakePreviewFixtures.timer()).content
+            KeepAwakeStatusItem(controller: KeepAwakePreviewFixtures.paused()).content
+        }
+        .frame(width: 640)
+    }
+    .environment(SettingsPresentation())
+}
+#endif

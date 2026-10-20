@@ -80,3 +80,13 @@ private struct SidebarFilterChip: View {
         .accessibilityHint("Removes it")
     }
 }
+
+#if DEBUG
+#Preview("Filter chips") {
+    DSPreviewPair {
+        SidebarFilterChips(filter: .constant(SidebarPreviewFixtures.filtered))
+            .frame(width: DS.Size.sidebarWidth - DS.Space.lg)
+    }
+    .sidebarPreviewEnvironment(AppModel.preview())
+}
+#endif

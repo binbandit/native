@@ -67,3 +67,22 @@ private struct SettingsSelectButtonStyle: ButtonStyle {
         configuration.label
     }
 }
+
+#if DEBUG
+#Preview("Select") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.lg) {
+            SettingsSelect(
+                label: "Follow-up behavior", selection: .constant(FollowUpBehavior.steer),
+                options: FollowUpBehavior.allCases.map { .init(value: $0, title: $0.title) })
+            SettingsSelect(
+                label: "Default model", selection: .constant("opus"),
+                options: [.init(value: "opus", title: "Last used (Opus 5.5, with a long name that truncates)")])
+            SettingsSelect(
+                label: "Default effort", selection: .constant("high"), options: [.init(value: "high", title: "High")]
+            )
+            .disabled(true)
+        }
+    }
+}
+#endif

@@ -32,3 +32,15 @@ struct GitMoveFileMenu: View {
         .accessibilityLabel("Move \(path) to another commit")
     }
 }
+
+#if DEBUG
+#Preview("Move file menu") {
+    let model = GitSmartCommitModel(repository: GitPreviewFixtures.model)
+    DSPreviewPair {
+        GitMoveFileMenu(
+            model: model, path: "native/Views/SessionView.swift", current: GitPreviewFixtures.commitGroups.first?.id
+        )
+        .fixedSize()
+    }
+}
+#endif

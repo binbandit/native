@@ -19,3 +19,16 @@ struct AgentIconTile: View {
             .overlay { shape.strokeBorder(.dsSeparator, lineWidth: 1) }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Agent icon tiles") {
+    DSPreviewPair {
+        HStack(spacing: DS.Space.lg) {
+            ForEach(AgentIconPreviewFixtures.agents, id: \.id) { agent in
+                AgentIconTile(agent: agent)
+            }
+        }
+    }
+    .agentIconPreviewStore()
+}
+#endif

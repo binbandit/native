@@ -42,6 +42,9 @@ final class GitRepositoryModel {
     private(set) var notice: GitNotice?
     /// The commit form's message, kept while the form is closed so a draft isn't lost.
     var commitMessage = ""
+    /// Goes up after every rescan, whether or not the status changed: an edit can keep its line
+    /// counts, so what's compared beyond the status (a turn's changes) checks again on it.
+    private(set) var scanCount = 0
 
     @ObservationIgnored let resolveGit: () async -> Git?
     /// Called after each successful push with the checkout it ran in and the branch.
@@ -183,6 +186,7 @@ final class GitRepositoryModel {
             await load()
             isScanning = false
             lastScan = .now
+            scanCount += 1
         }
         refreshTask = nil
     }

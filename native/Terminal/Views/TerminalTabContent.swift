@@ -105,3 +105,17 @@ struct TerminalTabContent: View {
         #endif
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Terminal tab - Couldn't start") {
+    let panel = TerminalPreviewFixtures.panel()
+    DSPreviewPair {
+        if let tab = panel.tabs.selected {
+            TerminalTabContent(panel: panel, tab: tab, backgroundOpacity: 1)
+                .frame(width: 640, height: 260)
+                .background(.dsSurfaceSunken)
+        }
+    }
+    .environment(SettingsPresentation())
+}
+#endif

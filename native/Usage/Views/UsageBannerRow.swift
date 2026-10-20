@@ -54,3 +54,26 @@ enum UsageBannerChrome {
     /// No frame: a section inside the composer's stack, which draws the rules around it.
     case section
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Usage banner rows") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.lg) {
+            UsageBannerRow(
+                systemImage: "exclamationmark.circle", tint: .dsWarning, title: "Context window 92% full",
+                detail: "Claude Code compacts on its own when it runs out of room."
+            ) {
+                Button("Compact Now") {}
+                    .buttonStyle(.ds(.secondary))
+            }
+            UsageBannerRow(
+                systemImage: "exclamationmark.circle", tint: .dsWarning, title: "Context window 92% full", detail: nil,
+                chrome: .section
+            ) {
+                EmptyView()
+            }
+        }
+        .frame(width: 640)
+    }
+}
+#endif

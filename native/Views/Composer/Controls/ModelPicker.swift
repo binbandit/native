@@ -217,3 +217,21 @@ struct ModelPicker: View {
         dismiss()
     }
 }
+
+#if DEBUG
+#Preview("Model picker") {
+    let settings = ComposerPreviewFixtures.settings
+    DSPreviewPair {
+        HStack(alignment: .top, spacing: DS.Space.xl) {
+            ModelPicker(
+                model: settings.model, effort: settings.effort, switches: settings.modelSwitches, onSet: { _, _ in },
+                dismiss: {}
+            )
+            .dsPopoverBackground()
+            // An agent that only offers an effort setting.
+            ModelPicker(model: nil, effort: settings.effort, switches: [], onSet: { _, _ in }, dismiss: {})
+                .dsPopoverBackground()
+        }
+    }
+}
+#endif

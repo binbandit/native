@@ -107,3 +107,14 @@ private struct PullRequestFileTreeRow: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("File tree") {
+    DSPreviewPair {
+        PullRequestPagePreview { model, _ in
+            PullRequestFileTree(model: model)
+        }
+        .frame(width: PullRequestFilesLayout.treeWidth, height: 360)
+    }
+}
+#endif

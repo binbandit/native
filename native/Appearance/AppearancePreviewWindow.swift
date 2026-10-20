@@ -64,3 +64,12 @@ struct AppearancePreviewWindow: View {
         static let rowHeight: CGFloat = 20
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Appearance preview window") {
+    DSPreviewPair {
+        AppearancePreviewWindow()
+            .frame(width: 240, height: 150)
+    }
+}
+#endif

@@ -158,3 +158,14 @@ struct PrivacySettingsPage: View {
             byJoining: telemetry.organizationEndpoints.map { $0.url.host() ?? $0.url.absoluteString })
     }
 }
+
+#if DEBUG
+#Preview("Privacy settings") {
+    DSPreviewPair {
+        PrivacySettingsPage()
+            .settingsPreviewPage()
+    }
+    .environment(TelemetryCenter.shared)
+    .environment(PolicyCenter.shared)
+}
+#endif

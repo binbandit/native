@@ -114,3 +114,15 @@ enum PullRequestTaskPaths {
         return path == home || path.hasPrefix(home + "/") ? "~" + path.dropFirst(home.count) : path
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Ready to open") {
+    let app = AppModel.preview()
+    DSPreviewPair {
+        if let checkout = PullRequestTaskPreviewFixtures.checkout(in: app) {
+            PullRequestTaskReadyView(checkout: checkout, agent: "Claude Code", includesReviewComments: .constant(true))
+                .frame(width: PullRequestTaskSheetLayout.width - DS.Space.xxl)
+        }
+    }
+}
+#endif

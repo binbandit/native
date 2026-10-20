@@ -53,3 +53,19 @@ struct ProjectModelDefaultRow: View {
             "For new \(agent.displayName) tasks in \(project.name). Otherwise they start on the model set in Settings ▸ Agents, or the one you picked last."
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Project model row") {
+    let app = AppModel.preview()
+    DSPreviewPair {
+        if let project = app.previewProject(), let agent = app.agents.first?.agent {
+            SettingsRowGroup {
+                ProjectModelDefaultRow(
+                    project: project, agent: agent, rowID: ProjectSettingsRows(project: project.id).model,
+                    width: SettingsMetrics.selectWidth)
+            }
+            .settingsPreviewPage()
+        }
+    }
+}
+#endif

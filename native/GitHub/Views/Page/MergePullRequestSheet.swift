@@ -194,3 +194,13 @@ struct MergePullRequestSheet: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Merge sheet") {
+    DSPreviewPair {
+        PullRequestPagePreview(scenario: .own, loadsEverything: false) { model, _ in
+            MergePullRequestSheet(model: model)
+        }
+    }
+}
+#endif

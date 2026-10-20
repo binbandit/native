@@ -22,6 +22,8 @@ public struct HomeView<AgentID: Hashable, ProjectID: Hashable, TaskID: Hashable>
     let onAddProject: () -> Void
     let onSelectTask: (TaskID) -> Void
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     public init(
         agents: [HomeAgent<AgentID>],
         projects: [HomeProject<ProjectID>],
@@ -73,6 +75,9 @@ public struct HomeView<AgentID: Hashable, ProjectID: Hashable, TaskID: Hashable>
                 .padding(.top, HomeLayout.sectionSpacing)
             }
         }
+        // The cards are there from the first frame for the agents installed last time; one the
+        // check finds gone since fades out while the rest move over, rather than jumping.
+        .animation(reduceMotion ? nil : .dsDisclosure, value: agents.map(\.id))
     }
 
     private var isCreatingTask: Bool {

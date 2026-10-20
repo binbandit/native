@@ -80,3 +80,15 @@ private struct TaskActivityRow: View {
         .accessibilityValue("\(task.status.label), \(detail)")
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Tasks panel") {
+    DSPreviewPair {
+        HStack(alignment: .top, spacing: DS.Space.xl) {
+            TasksPanel(source: AppModel.preview())
+            TasksPanel(source: AppModel.preview(.empty))
+        }
+        .dsPopoverBackground()
+    }
+}
+#endif

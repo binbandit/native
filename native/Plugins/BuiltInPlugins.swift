@@ -1,8 +1,8 @@
 import ACP
-import AIInstructions
 import Foundation
-import FoundationModels
+import NativeHostProtocol
 import Search
+import SessionTitling
 
 enum BuiltInPlugins {
     static let all: [any NativePlugin] = [
@@ -36,7 +36,21 @@ enum BuiltInPlugins {
                     ),
                     // Each session is its own Claude Code process with its own MCP servers (about
                     // 650 MB and 0.5% CPU idle here), and one loads back faithfully in seconds.
-                    idleSessionTimeout: 600
+                    idleSessionTimeout: 600,
+                    // Claude Code reads these from its environment, and its adapter lists no sign-in
+                    // methods, so they're how a host nobody sits at signs it in.
+                    authMethods: [
+                        AuthMethod(
+                            id: "anthropic-api-key", name: "Anthropic API key",
+                            description: "Pay as you go with a key from the Anthropic Console.",
+                            kind: .environment([AuthMethod.Variable(name: "ANTHROPIC_API_KEY", label: "API key")]),
+                            credentialsPage: URL(string: "https://console.anthropic.com/settings/keys")),
+                        AuthMethod(
+                            id: "claude-oauth-token", name: "Claude subscription token",
+                            description:
+                                "Run `claude setup-token` on a computer with a browser, then paste the token it prints.",
+                            kind: .environment([AuthMethod.Variable(name: "CLAUDE_CODE_OAUTH_TOKEN", label: "Token")])),
+                    ]
                 )
             ]
         ), policyTranslator: ClaudeCodePolicyTranslator(), historyReader: ClaudeCodeHistoryReader.standard())
@@ -61,7 +75,16 @@ enum BuiltInPlugins {
                     setup: AgentSetupGuide(
                         install: "npm install -g @openai/codex",
                         docs: URL(string: "https://developers.openai.com/codex/cli")
-                    )
+                    ),
+                    // The adapter offers its device code only to clients that open links, so the
+                    // host starts it that way for this sign-in (`AuthMethod.Kind.link`).
+                    authMethods: [
+                        AuthMethod(
+                            id: "chat-gpt-device-code", name: "ChatGPT (device code)",
+                            description:
+                                "Sign in to ChatGPT by opening a verification page and entering a one-time code",
+                            kind: .link)
+                    ]
                 )
             ]
         ), policyTranslator: CodexPolicyTranslator(), historyReader: CodexHistoryReader.standard())
@@ -81,26 +104,14 @@ struct OnDeviceTitlesPlugin: NativePlugin {
     var titler: (any SessionTitler)? { OnDeviceTitler() }
 }
 
+/// The same model the host titles tasks with (`OnDeviceTitleGenerator`), so a title reads the same
+/// whether the host or the app wrote it.
 struct OnDeviceTitler: SessionTitler {
-    @Generable
-    struct Title {
-        @Guide(
-            description:
-                "A 2 to 6 word title naming the task the user asked for, in sentence case, like a short commit subject. Imperative when the user asked for a change (\"Add docstring to greet\"), a noun phrase for questions (\"Auth middleware overview\"). No quotes, no trailing punctuation, no filler like \"task\" or \"request\"."
-        )
-        var title: String
-    }
+    var hostProvider: HostTitleProvider? { .onDevice }
 
     func title(for request: TitleRequest) async throws -> String? {
-        guard SystemLanguageModel.default.isAvailable else { return nil }
-        let session = LanguageModelSession(instructions: SessionTitlePrompt.instructions(adding: request.instructions))
-        let response = try await session.respond(
-            to: SessionTitlePrompt.prompt(projectName: request.projectName, request: request.prompt),
-            generating: Title.self
-        )
-        let title = response.content.title
-            .trimmingCharacters(in: .whitespacesAndNewlines.union(.punctuationCharacters))
-        guard let first = title.first else { return nil }
-        return first.uppercased() + title.dropFirst()
+        try await OnDeviceTitleGenerator().title(
+            for: SessionTitleRequest(
+                projectName: request.projectName, prompt: request.prompt, instructions: request.instructions))
     }
 }

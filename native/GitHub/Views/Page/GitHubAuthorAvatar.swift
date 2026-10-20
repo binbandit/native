@@ -14,3 +14,16 @@ struct GitHubAuthorAvatar: View {
             .accessibilityHidden(true)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Author avatars") {
+    DSPreviewPair {
+        HStack(spacing: DS.Space.md) {
+            GitHubAuthorAvatar(login: "binbandit")
+            GitHubAuthorAvatar(login: "preview-reviewer")
+            GitHubAuthorAvatar(login: "dependabot[bot]")
+            GitHubAuthorAvatar(login: nil)
+        }
+    }
+}
+#endif

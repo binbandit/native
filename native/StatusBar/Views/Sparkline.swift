@@ -27,3 +27,16 @@ struct Sparkline: View {
         .accessibilityHidden(true)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Sparklines") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.md) {
+            Sparkline(values: [212, 215, 230, 228, 241, 260, 252, 249, 270, 281, 276, 290])
+            // A flat history draws through the middle; one value draws nothing.
+            Sparkline(values: [200, 200, 200, 200])
+            Sparkline(values: [200])
+        }
+    }
+}
+#endif

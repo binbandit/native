@@ -177,3 +177,15 @@ struct GalleryMetrics: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Gallery - Tokens") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.xxl) {
+            GalleryColors()
+            GalleryTypography()
+        }
+        .frame(width: 640)
+    }
+}
+#endif

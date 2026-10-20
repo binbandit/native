@@ -77,3 +77,17 @@ private struct Swatch: View {
             .accessibilityHidden(true)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Category table") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.xl) {
+            if let report = UsagePreviewFixtures.report {
+                ContextCategoryTable(composition: ContextComposition(report: report))
+            }
+            ContextCategoryTable(composition: ContextComposition(used: 61_200, window: 258_400))
+        }
+        .frame(width: 360)
+    }
+}
+#endif

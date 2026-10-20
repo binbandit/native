@@ -167,3 +167,16 @@ struct UsageActivityCard: View {
         count == 1 ? "1 day" : "\(count) days"
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Activity") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.lg) {
+            UsageActivityCard(activity: UsagePreviewFixtures.activity(), opener: { _ in {} })
+            UsageActivityCard(activity: UsagePreviewFixtures.activity(empty: true), opener: { _ in nil })
+        }
+        .frame(width: 720)
+    }
+    .environment(SettingsPresentation())
+}
+#endif

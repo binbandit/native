@@ -117,3 +117,18 @@ struct PullRequestTimelineRow: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Timeline rows") {
+    DSPreviewPair {
+        PullRequestPagePreview(scenario: .merged, loadsEverything: false) { model, page in
+            VStack(alignment: .leading, spacing: DS.Space.md) {
+                ForEach(page.timeline, id: \.id) { item in
+                    PullRequestTimelineRow(item: item, model: model)
+                }
+            }
+        }
+        .frame(width: PullRequestsLayout.contentWidth)
+    }
+}
+#endif

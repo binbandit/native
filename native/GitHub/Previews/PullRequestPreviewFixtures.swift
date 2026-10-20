@@ -1,3 +1,4 @@
+#if DEBUG
 import Foundation
 import GitHub
 
@@ -52,7 +53,7 @@ enum PullRequestPreviewFixtures {
                 "binbandit/yip", 52, "Detect configured model gateways in the runner environment",
                 branch: "detect-gateways", minutesAgo: 60 * 30, review: .approved, size: (214, 31)),
             summary(
-                "maximhq/bifrost", 2584, "fix(ui): restore pointer cursor on alert dialog buttons",
+                "binbandit/kite", 2584, "fix(ui): restore pointer cursor on alert dialog buttons",
                 branch: "fix-button-cursors", minutesAgo: 60 * 24 * 9, review: .reviewRequired, size: (2, 2)),
             summary(
                 "binbandit/elara", 1, "Add home presence detection via network scanning", branch: "presence",
@@ -60,8 +61,9 @@ enum PullRequestPreviewFixtures {
         ],
         reviewRequested: [
             summary(
-                "WastedHippie/pier-sandbox-api", 6, "Rate limit /users to 60 requests a minute per client",
-                branch: "rate-limit", minutesAgo: 60 * 5, author: "sage-smudge", review: .reviewRequired, size: (88, 4)),
+                "binbandit/pier-sandbox-api", 6, "Rate limit /users to 60 requests a minute per client",
+                branch: "rate-limit", minutesAgo: 60 * 5, author: "preview-reviewer", review: .reviewRequired,
+                size: (88, 4)),
             summary(
                 "binbandit/handbook", 7, "build(deps): bump actions/setup-node from 7.0.0 to 7.1.0",
                 branch: "dependabot/github_actions/actions/setup-node-7.1.0", minutesAgo: 60 * 26,
@@ -80,3 +82,4 @@ enum PullRequestPreviewFixtures {
             """
     )
 }
+#endif

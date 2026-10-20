@@ -35,3 +35,14 @@ struct CommandSnippet: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Command snippet") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.md) {
+            CommandSnippet(command: "brew install gh", onCopy: {})
+            CommandSnippet(command: "gh auth login --hostname github.com --git-protocol https", onCopy: {})
+        }
+    }
+}
+#endif

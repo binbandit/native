@@ -316,3 +316,42 @@ extension ProjectProblem {
         }
     }
 }
+
+#if DEBUG
+#Preview("Project section") {
+    let app = AppModel.preview()
+    let sessions = SidebarPreviewFixtures.sessions(in: app)
+    DSPreviewPair {
+        if let project = app.previewProject(0) {
+            VStack(alignment: .leading, spacing: DS.Space.xxs) {
+                ProjectSection(
+                    project: project, sessions: sessions, order: [:], position: (0, 3), isFiltered: false,
+                    isExpanded: .constant(true), drag: SidebarDragState(), taskAccessory: { _ in EmptyView() },
+                    select: { _ in })
+                // Collapsed, the header says what its tasks are doing.
+                ProjectSection(
+                    project: project, sessions: sessions, order: [:], position: (0, 3), isFiltered: false,
+                    isExpanded: .constant(false), drag: SidebarDragState(), taskAccessory: { _ in EmptyView() },
+                    select: { _ in })
+            }
+            .frame(width: DS.Size.sidebarWidth - DS.Space.lg)
+        }
+    }
+    .sidebarPreviewEnvironment(app)
+}
+
+#Preview("Project section - No matches") {
+    let app = AppModel.preview()
+    DSPreviewPair {
+        if let project = app.previewProject(1) {
+            ProjectSection(
+                project: project, sessions: [], order: [:], position: (1, 3), isFiltered: true, hasNoMatches: true,
+                isExpanded: .constant(false), drag: SidebarDragState(), taskAccessory: { _ in EmptyView() },
+                select: { _ in }
+            )
+            .frame(width: DS.Size.sidebarWidth - DS.Space.lg)
+        }
+    }
+    .sidebarPreviewEnvironment(app)
+}
+#endif

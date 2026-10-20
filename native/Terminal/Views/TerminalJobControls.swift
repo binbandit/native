@@ -50,3 +50,21 @@ struct TerminalJobStatusDot: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Job controls") {
+    DSPreviewPair {
+        VStack(alignment: .trailing, spacing: DS.Space.lg) {
+            TerminalJobControls(job: TerminalPreviewFixtures.runningJob, stop: {})
+            // Stopping again ends a job that ignored ⌃C.
+            TerminalJobControls(job: TerminalPreviewFixtures.stoppingJob, stop: {})
+            HStack(spacing: DS.Space.md) {
+                TerminalJobStatusDot(job: TerminalPreviewFixtures.runningJob)
+                ForEach(TerminalPreviewFixtures.outcomes, id: \.self) { outcome in
+                    TerminalJobStatusDot(job: TerminalPreviewFixtures.job(ended: outcome))
+                }
+            }
+        }
+    }
+}
+#endif

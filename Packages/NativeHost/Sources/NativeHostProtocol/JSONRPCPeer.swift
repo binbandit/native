@@ -67,6 +67,11 @@ public final class JSONRPCPeer: Sendable {
         state.withLock(\.isClosed)
     }
 
+    /// Whether a request is still waiting for the other end's answer.
+    public var hasPendingRequests: Bool {
+        state.withLock { !$0.pending.isEmpty }
+    }
+
     /// Returns once the connection has closed and the handler has seen `.closed`.
     public func closed() async {
         await state.withLock(\.reading)?.value
@@ -149,13 +154,17 @@ public final class JSONRPCPeer: Sendable {
         // those can appear unescaped inside JSON strings.
         var buffer = Data()
         for await chunk in channel.incoming() {
+            // Only the new bytes are searched: what's left of the buffer holds no newline, and a long
+            // line (a command's output, a big tool result) arrives in many small reads.
+            var searchStart = buffer.endIndex
             buffer.append(chunk)
             var lineStart = buffer.startIndex
-            while let newline = buffer[lineStart...].firstIndex(of: UInt8(ascii: "\n")) {
+            while let newline = buffer[searchStart...].firstIndex(of: UInt8(ascii: "\n")) {
                 if newline > lineStart {
                     await receive(Data(buffer[lineStart..<newline]))
                 }
                 lineStart = buffer.index(after: newline)
+                searchStart = lineStart
             }
             buffer.removeSubrange(buffer.startIndex..<lineStart)
         }

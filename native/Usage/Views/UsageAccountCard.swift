@@ -145,3 +145,28 @@ struct UsageAccountCard: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Account cards") {
+    let app = AppModel.preview()
+    let limits = UsagePreviewFixtures.limits()
+    let activity = UsagePreviewFixtures.activity()
+    DSPreviewPair {
+        VStack(spacing: DS.Space.lg) {
+            ForEach(app.agents.prefix(2), id: \.agent.id) { runtime in
+                UsageAccountCard(
+                    agent: runtime.agent.id, name: runtime.agent.displayName, definition: runtime.agent, limits: limits,
+                    reports: UsagePreviewFixtures.reports, activity: activity)
+            }
+            // An agent with nothing read yet.
+            if let cursor = app.agents.last {
+                UsageAccountCard(
+                    agent: cursor.agent.id, name: cursor.agent.displayName, definition: cursor.agent,
+                    limits: UsagePreviewFixtures.clearLimits(), reports: ProviderUsageReports(),
+                    activity: UsagePreviewFixtures.activity(empty: true))
+            }
+        }
+        .frame(width: 640)
+    }
+}
+#endif

@@ -99,12 +99,15 @@ public enum CommandError: Error, Hashable, Sendable, LocalizedError {
     case timedOut(String, after: Duration)
     /// The runner couldn't reach its machine (a remote host that's offline, for example).
     case unavailable(String)
+    /// The machine wouldn't run it for this caller: a paired device without the grant to run
+    /// commands, or a folder outside the host's projects. Retrying won't help; the reason says what would.
+    case refused(String)
 
     public var errorDescription: String? {
         switch self {
         case .notFound(let executable): "\(executable) isn't installed or isn't on the PATH."
         case .timedOut(let executable, let duration): "\(executable) didn't finish within \(duration)."
-        case .unavailable(let reason): reason
+        case .unavailable(let reason), .refused(let reason): reason
         }
     }
 }

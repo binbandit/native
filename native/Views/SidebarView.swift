@@ -223,3 +223,29 @@ extension SidebarView where TaskAccessory == SessionContextUsage {
         )
     }
 }
+
+#if DEBUG
+#Preview("Sidebar") {
+    DSPreviewPair {
+        SidebarView()
+            .frame(width: DS.Size.sidebarWidth, height: 720)
+    }
+    .sidebarPreviewEnvironment(AppModel.preview())
+}
+
+#Preview("Sidebar - Starting task and a problem") {
+    DSPreviewPair {
+        SidebarView()
+            .frame(width: DS.Size.sidebarWidth, height: 720)
+    }
+    .sidebarPreviewEnvironment(SidebarPreviewFixtures.troubledApp())
+}
+
+#Preview("Sidebar - No projects") {
+    DSPreviewPair {
+        SidebarView()
+            .frame(width: DS.Size.sidebarWidth, height: 480)
+    }
+    .sidebarPreviewEnvironment(AppModel.preview(.empty))
+}
+#endif

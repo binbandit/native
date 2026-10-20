@@ -119,3 +119,11 @@ struct IconThemeThumbnail: View {
             .accessibilityHidden(true)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Icon theme picker") {
+    DSPreviewPair {
+        GalleryIconThemePicker()
+    }
+}
+#endif

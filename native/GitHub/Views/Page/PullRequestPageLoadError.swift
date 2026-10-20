@@ -35,3 +35,25 @@ struct PullRequestPageLoadError: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Page load errors") {
+    let gitHub = GitHubModel.preview()
+    let model = PullRequestPageModel(reference: PullRequestPreviewRunner.reference, gitHub: gitHub)
+    let errors: [GitHubError] = [
+        .notFound("Could not resolve to a PullRequest with the number of 212."),
+        .offline("error connecting to api.github.com"),
+        .notAuthenticated("You are not logged into any GitHub hosts."),
+        .failed(exitCode: 1, "GraphQL: Something went wrong while executing your query. (pullRequest)"),
+    ]
+    return DSPreviewPair {
+        VStack(spacing: DS.Space.xl) {
+            ForEach(errors.indices, id: \.self) { index in
+                PullRequestPageLoadError(model: model, error: errors[index])
+                    .frame(width: 640, height: 300)
+            }
+        }
+    }
+    .environment(gitHub)
+}
+#endif

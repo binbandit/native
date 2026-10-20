@@ -2,38 +2,35 @@ import Git
 import GitHub
 import SwiftUI
 
-/// What an empty transcript shows. For a new session's own transcript, the design under review
-/// (`NewSessionDesign`); everywhere else, and for users until one is picked, the centered prompt.
+/// What an empty transcript shows. A session's own transcript is a new session waiting for its
+/// first message: `NewSessionView`, with the project's real ways to begin. Anywhere else (a
+/// subagent, a workflow's run that hasn't started), that nothing's been said yet.
 struct NewSessionEmptyState: View {
     let session: SessionModel
 
     @Environment(\.isPrimaryTranscript) private var isPrimary
 
     var body: some View {
-        if isPrimary, NewSessionDesign.current != .today {
-            NewSessionDesignedState(session: session, design: NewSessionDesign.current)
+        if isPrimary {
+            NewSessionScreen(session: session)
         } else {
-            NewSessionTodayState(session: session)
+            NewSessionNothingYet()
         }
     }
 }
 
-/// Today's empty state: a prompt over the task's folder.
-private struct NewSessionTodayState: View {
-    let session: SessionModel
-
+/// An empty conversation that isn't a new session of the user's.
+private struct NewSessionNothingYet: View {
     var body: some View {
-        ContentUnavailableView(
-            "What should we work on?", systemImage: "sparkles", description: Text(session.cwd.abbreviatedPath))
+        EmptyStateView(
+            "No messages yet", systemImage: "text.bubble", message: "The conversation shows here once it starts.")
     }
 }
 
-/// A design under review, laid out in the transcript's column: the workbench from the top, the
-/// others resting on the composer. It scrolls when the window is too short for it, showing the
-/// end nearest the composer first.
-private struct NewSessionDesignedState: View {
+/// A new session's starting points in the transcript's column, resting on the composer. It
+/// scrolls when the window is too short for it, showing the end nearest the composer first.
+private struct NewSessionScreen: View {
     let session: SessionModel
-    let design: NewSessionDesign
 
     @Environment(AppModel.self) private var model
     @Environment(GitStore.self) private var git
@@ -53,16 +50,15 @@ private struct NewSessionDesignedState: View {
                 session: session, project: project, model: model, git: git, gitHub: gitHub, runner: runner,
                 scripts: scripts, settings: settings, repositories: repositories
             ).context()
-            let anchor: Alignment = design == .workbench ? .top : .bottom
             ScrollView {
-                content(context)
+                NewSessionView(context: context)
                     .frame(maxWidth: columnWidth, alignment: .leading)
                     .padding(.horizontal, DS.Space.xxl)
                     .padding(.top, DS.Space.xxl)
-                    .padding(.bottom, NewSessionMetrics.composerGap)
-                    .frame(maxWidth: .infinity, minHeight: height, alignment: anchor)
+                    .padding(.bottom, DS.Space.xxxl)
+                    .frame(maxWidth: .infinity, minHeight: height, alignment: .bottom)
             }
-            .defaultScrollAnchor(design == .workbench ? .top : .bottom)
+            .defaultScrollAnchor(.bottom)
             .scrollBounceBehavior(.basedOnSize)
             .scrollEdgeEffectHidden(drawsToolbarBand, for: .top)
             .onGeometryChange(for: CGFloat.self) { proxy in
@@ -74,16 +70,7 @@ private struct NewSessionDesignedState: View {
                 repositories = await Self.repositories(of: git.model(for: project.url))
             }
         } else {
-            NewSessionTodayState(session: session)
-        }
-    }
-
-    @ViewBuilder private func content(_ context: NewSessionContext) -> some View {
-        switch design {
-        case .today: EmptyView()
-        case .focus: NewSessionFocusView(context: context)
-        case .workbench: NewSessionWorkbenchView(context: context)
-        case .startingPoints: NewSessionStartingPointsView(context: context)
+            NewSessionNothingYet()
         }
     }
 

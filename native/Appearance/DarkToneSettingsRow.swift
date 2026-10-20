@@ -50,3 +50,14 @@ struct DarkToneSettingsRow: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Dark tone row") {
+    DSPreviewPair {
+        SettingsRowGroup {
+            DarkToneSettingsRow()
+        }
+        .settingsPreviewPage()
+    }
+}
+#endif

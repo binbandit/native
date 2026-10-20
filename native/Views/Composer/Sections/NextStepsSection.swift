@@ -20,3 +20,14 @@ struct NextStepsSection: View {
         .padding(DS.Composer.controlsInset)
     }
 }
+
+#if DEBUG
+#Preview("Next steps") {
+    DSPreviewPair {
+        ComposerSurface {
+            NextStepsSection(steps: ComposerPreviewFixtures.nextSteps)
+        }
+        .frame(width: 560)
+    }
+}
+#endif

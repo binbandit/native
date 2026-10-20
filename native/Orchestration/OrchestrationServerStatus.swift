@@ -15,6 +15,8 @@ final class OrchestrationServerStatus {
     private(set) var launch: MCPServerLaunch?
     /// A move that left sessions behind, until the user dismisses it.
     private(set) var move: Move?
+    /// Native's host serves the tools to its sessions, so the app's server is stopped.
+    private(set) var isServedByHost = false
 
     func started(_ launch: MCPServerLaunch) {
         self.launch = launch
@@ -29,4 +31,21 @@ final class OrchestrationServerStatus {
     func dismiss() {
         move = nil
     }
+
+    func servedByHost() {
+        isServedByHost = true
+        move = nil
+    }
 }
+
+#if NATIVE_PREVIEWS_WIP
+extension OrchestrationServerStatus {
+    /// A server that had to move ports and left sessions behind, for previews. Here rather than in a
+    /// file of its own because `move` can only be set from this file.
+    static func preview(movedFrom from: UInt16, to: UInt16) -> OrchestrationServerStatus {
+        let status = OrchestrationServerStatus()
+        status.move = Move(from: from, to: to)
+        return status
+    }
+}
+#endif

@@ -23,3 +23,28 @@ struct PullRequestAskAgentButtons: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Ask an agent") {
+    DSPreviewPair {
+        PullRequestPagePreview { model, page in
+            HStack(spacing: DS.Space.lg) {
+                Menu("Lines") {
+                    PullRequestAskAgentButtons(
+                        model: model,
+                        anchor: ReviewAnchor(
+                            path: "Packages/ACP/Sources/ACP/Prompt/PromptQueue.swift", side: .right, line: 18,
+                            startLine: 16),
+                        thread: nil)
+                }
+                Menu("A conversation") {
+                    if let thread = page.threads.first, let anchor = thread.anchor {
+                        PullRequestAskAgentButtons(model: model, anchor: anchor, thread: thread)
+                    }
+                }
+            }
+            .fixedSize()
+        }
+    }
+}
+#endif

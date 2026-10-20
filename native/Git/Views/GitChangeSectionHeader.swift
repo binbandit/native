@@ -43,3 +43,20 @@ struct GitChangeSectionHeader: View {
         .accessibilityLabel("\(area.title), \(changes.count) files")
     }
 }
+
+#if DEBUG
+#Preview("Section headers") {
+    let model = GitPreviewFixtures.model
+    let changes = GitPreviewFixtures.status.changes
+    DSPreviewPair {
+        VStack(spacing: 0) {
+            ForEach([FileChange.Area.staged, .unstaged, .untracked], id: \.self) { area in
+                GitChangeSectionHeader(
+                    area: area, changes: changes.filter { $0.area == area }, isFirst: area == .staged, model: model,
+                    pendingDiscard: .constant([]))
+            }
+        }
+        .frame(width: GitMetrics.inspectorIdealWidth)
+    }
+}
+#endif

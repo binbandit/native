@@ -35,3 +35,21 @@ private struct HelpSegment: View {
         .accessibilityLabel("Keyboard Shortcuts and Help")
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Help item") {
+    let shown = KeyboardShortcutsHelp()
+    shown.isShown = true
+    return DSPreviewPair {
+        StatusBarSurface {
+            EmptyView()
+        } trailing: {
+            HelpStatusItem(help: KeyboardShortcutsHelp()).content
+            // Lit while the shortcuts sheet is open.
+            HelpStatusItem(help: shown).content
+        }
+        .frame(width: 320)
+    }
+    .environment(CommandRegistry.shared)
+}
+#endif

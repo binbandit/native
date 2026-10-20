@@ -23,7 +23,7 @@ extension AppModel {
             catalog.sessions(in: project, of: runtime.agent.id).map {
                 SessionSummary(project: project, agent: runtime.agent, info: $0)
             }
-        }
+        } + remoteSessionSummaries(in: project)
     }
 
     /// Every session in the sidebar, in its order: pinned first, then each project's.

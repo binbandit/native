@@ -94,3 +94,28 @@ struct ResourceGroupRows: View {
         .foregroundStyle(isPrimary ? .dsTextPrimary : .dsTextSecondary)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Resource group rows") {
+    ResourceGroupRowsPreview()
+}
+
+/// Each sampled group, Claude Code's open to its processes.
+private struct ResourceGroupRowsPreview: View {
+    private let monitor = StatusBarPreviewFixtures.monitor()
+
+    var body: some View {
+        DSPreviewPair {
+            VStack(spacing: 0) {
+                ForEach(monitor.snapshot.groups) { group in
+                    ResourceGroupRows(
+                        group: group, history: monitor.history[group.kind] ?? [],
+                        isExpanded: .constant(group.kind == .agent("claude-code")))
+                }
+            }
+            .frame(width: 420)
+        }
+        .task { await StatusBarPreviewFixtures.fill(monitor) }
+    }
+}
+#endif

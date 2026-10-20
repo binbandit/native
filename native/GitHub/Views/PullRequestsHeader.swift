@@ -84,3 +84,18 @@ struct PullRequestsHeader: View {
         .accessibilityLabel("Group and Filter")
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Pull requests header") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.xxl) {
+            PullRequestsHeader(sideInset: DS.Space.xl)
+                .environment(GitHubModel.preview(inbox: PullRequestPreviewFixtures.inbox))
+            // No list yet: just the title and refresh.
+            PullRequestsHeader(sideInset: DS.Space.xl)
+                .environment(GitHubModel.preview())
+        }
+        .frame(width: 900)
+    }
+}
+#endif

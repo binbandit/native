@@ -5,8 +5,13 @@ import Foundation
 extension NativeNotification {
     /// "Done in 4m · 7 files changed", the turn's checkpoint summary.
     static func turnFinished(_ ref: UsageSessionRef, summary: TurnSummary) -> NativeNotification {
-        var parts = summary.duration.map { ["Done in \(DSFormat.duration($0))"] } ?? ["Done"]
-        let files = summary.changedFiles.count
+        turnFinished(ref, duration: summary.duration, changedFiles: summary.changedFiles.count)
+    }
+
+    static func turnFinished(
+        _ ref: UsageSessionRef, duration: TimeInterval?, changedFiles files: Int
+    ) -> NativeNotification {
+        var parts = duration.map { ["Done in \(DSFormat.duration($0))"] } ?? ["Done"]
         if files > 0 {
             parts.append(files == 1 ? "1 file changed" : "\(files) files changed")
         }

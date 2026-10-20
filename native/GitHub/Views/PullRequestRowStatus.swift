@@ -36,3 +36,17 @@ struct PullRequestRowStatus: View {
         .accessibilityElement(children: .combine)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Row status") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.md) {
+            PullRequestRowStatus(activity: .working("Merging…"), dismiss: {})
+            PullRequestRowStatus(activity: .done("Merged into main"), dismiss: {})
+            PullRequestRowStatus(
+                activity: .failed("Couldn’t merge #974: required status check “test” is failing."), dismiss: {})
+        }
+        .frame(width: PullRequestsLayout.contentWidth)
+    }
+}
+#endif

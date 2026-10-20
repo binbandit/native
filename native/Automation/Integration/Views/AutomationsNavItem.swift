@@ -26,3 +26,16 @@ struct AutomationsNavItem: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Automations nav item") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.xxs) {
+            AutomationsNavItem(isSelected: false) {}
+            AutomationsNavItem(isSelected: true) {}
+        }
+        .frame(width: DS.Size.sidebarWidth)
+    }
+    .environment(AutomationCenter.preview())
+}
+#endif

@@ -1,3 +1,4 @@
+#if canImport(CryptoKit)
 import Foundation
 import Synchronization
 
@@ -23,3 +24,4 @@ public final class MCPTokens: Sendable {
         self.signer.withLock { $0 = signer }
     }
 }
+#endif

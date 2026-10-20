@@ -90,3 +90,27 @@ struct PullRequestPageHeader: View {
         return pending > 0 ? "Finish Review (\(pending))" : "Review"
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Page header") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.xl) {
+            ForEach([PullRequestPreviewRunner.Scenario.reviewing, .own, .merged], id: \.self) { scenario in
+                PullRequestPagePreview(scenario: scenario, loadsEverything: false) { model, page in
+                    PullRequestPageHeader(model: model, page: page)
+                }
+            }
+        }
+        .frame(width: 900)
+    }
+}
+
+#Preview("Page header - Narrow") {
+    DSPreviewPair {
+        PullRequestPagePreview(loadsEverything: false) { model, page in
+            PullRequestPageHeader(model: model, page: page)
+        }
+        .frame(width: 420)
+    }
+}
+#endif

@@ -52,3 +52,21 @@ struct PullRequestFilesBar: View {
         return count > 0 ? "\(count) pending comment\(count == 1 ? "" : "s") in your review" : nil
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Files bar") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.lg) {
+            PullRequestPagePreview { model, _ in
+                PullRequestFilesBar(model: model, showsTree: .constant(true), canShowTree: true)
+            }
+            // Too narrow for the tree, so its toggle goes.
+            PullRequestPagePreview { model, _ in
+                PullRequestFilesBar(model: model, showsTree: .constant(false), canShowTree: false)
+            }
+            .frame(width: 420)
+        }
+        .frame(width: 900)
+    }
+}
+#endif

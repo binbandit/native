@@ -65,6 +65,16 @@ final class Projects {
         }
     }
 
+    /// Changes a project, open or archived: its repository and checkouts on other devices
+    /// (AppModel+Hosts.swift).
+    func update(_ id: Project.ID, _ change: (inout Project) -> Void) {
+        if let index = all.firstIndex(where: { $0.id == id }) {
+            change(&all[index])
+        } else if let index = archived.firstIndex(where: { $0.id == id }) {
+            change(&archived[index])
+        }
+    }
+
     func remove(_ id: Project.ID) {
         all.removeAll { $0.id == id }
     }

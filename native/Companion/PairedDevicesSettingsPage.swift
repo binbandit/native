@@ -166,7 +166,7 @@ struct PairedDevicesSettingsPage: View {
         let device = entry.device
         return SettingsRow(
             title: Text(device.name),
-            icon: device.model.localizedCaseInsensitiveContains("ipad") ? "ipad" : "iphone",
+            icon: icon(for: device),
             description: Text(seenLine(entry)),
             detail: Text(grantsLine(device.grants))
         ) {
@@ -179,22 +179,9 @@ struct PairedDevicesSettingsPage: View {
                     newName = device.name
                     renaming = device
                 }
-                Toggle(
-                    "Can Install Updates",
-                    isOn: Binding(
-                        get: { device.grants.manageHost },
-                        set: {
-                            model.setGrants(
-                                LinkGrants(managePlugins: device.grants.managePlugins, manageHost: $0), for: device)
-                        }))
-                Toggle(
-                    "Can Turn Plugins On and Off",
-                    isOn: Binding(
-                        get: { device.grants.managePlugins },
-                        set: {
-                            model.setGrants(
-                                LinkGrants(managePlugins: $0, manageHost: device.grants.manageHost), for: device)
-                        }))
+                Toggle("Can Run Commands and Edit Files", isOn: grant(\.runCommands, of: device))
+                Toggle("Can Install Updates", isOn: grant(\.manageHost, of: device))
+                Toggle("Can Turn Plugins On and Off", isOn: grant(\.managePlugins, of: device))
                 Divider()
                 Button("Remove", role: .destructive) { model.revoke(device) }
             } label: {
@@ -204,6 +191,22 @@ struct PairedDevicesSettingsPage: View {
             .buttonStyle(.ds(.ghost, size: .medium))
             .accessibilityLabel("Options for \(device.name)")
         }
+    }
+
+    /// One of the device's grants, changed on its own so the others stay as they are.
+    private func grant(_ keyPath: WritableKeyPath<LinkGrants, Bool>, of device: LinkDevice) -> Binding<Bool> {
+        Binding(
+            get: { device.grants[keyPath: keyPath] },
+            set: { isOn in
+                var grants = device.grants
+                grants[keyPath: keyPath] = isOn
+                model.setGrants(grants, for: device)
+            })
+    }
+
+    private func icon(for device: LinkDevice) -> String {
+        if device.model.hasPrefix("Mac") { return "laptopcomputer" }
+        return device.model.localizedCaseInsensitiveContains("ipad") ? "ipad" : "iphone"
     }
 
     private func seenLine(_ entry: LinkDeviceStatus) -> String {
@@ -218,6 +221,7 @@ struct PairedDevicesSettingsPage: View {
 
     private func grantsLine(_ grants: LinkGrants) -> String {
         var abilities = ["Follows and drives tasks"]
+        if grants.runCommands { abilities.append("runs commands and edits files") }
         if grants.manageHost { abilities.append("installs updates") }
         if grants.managePlugins { abilities.append("turns plugins on and off") }
         return abilities.joined(separator: ", ")

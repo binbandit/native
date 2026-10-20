@@ -59,3 +59,24 @@ nonisolated struct PullRequestGlyph: Shape {
         return path
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Pull request glyphs") {
+    DSPreviewPair {
+        HStack(spacing: DS.Space.xl) {
+            ForEach([PullRequestGlyph.Kind.open, .draft, .merged, .closed], id: \.self) { kind in
+                VStack(spacing: DS.Space.md) {
+                    // The sizes the app draws them at, and a large one to check the geometry.
+                    ForEach([12, 14, 48], id: \.self) { size in
+                        PullRequestGlyph(kind: kind)
+                            .stroke(
+                                .dsTextPrimary, style: StrokeStyle(lineWidth: 2 * CGFloat(size) / 24, lineCap: .round)
+                            )
+                            .frame(width: CGFloat(size), height: CGFloat(size))
+                    }
+                }
+            }
+        }
+    }
+}
+#endif

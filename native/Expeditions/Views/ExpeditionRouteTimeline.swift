@@ -110,3 +110,18 @@ struct ExpeditionSeatRow: View {
         .accessibilityValue(status.label)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Route timeline") {
+    DSPreviewPair {
+        HStack(alignment: .top, spacing: DS.Space.xl) {
+            ExpeditionRouteTimeline(expedition: ExpeditionPreviewFixtures.underway, selected: .constant(nil))
+                .frame(width: 420)
+            ExpeditionRouteTimeline(
+                expedition: ExpeditionPreviewFixtures.complete, selected: .constant(.assignment("queue"))
+            )
+            .frame(width: 420)
+        }
+    }
+}
+#endif

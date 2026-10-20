@@ -34,3 +34,36 @@ struct StatusBarSegment<Label: View, Details: View>: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Status bar segments") {
+    DSPreviewPair {
+        StatusBarSurface {
+            StatusBarSegment(help: "2 tasks working. Click to see them.", accessibilityLabel: "Working tasks") {
+                HStack(spacing: DS.Space.sm) {
+                    StatusIndicator(status: .working, size: StatusBarMetrics.statusGlyph)
+                    Text("2 working")
+                }
+            } details: {
+                EmptyView()
+            }
+            StatusBarSegment(help: "Nothing is running.", accessibilityLabel: "Working tasks") {
+                HStack(spacing: DS.Space.sm) {
+                    StatusIndicator(status: .idle, size: StatusBarMetrics.statusGlyph)
+                    Text("No tasks running")
+                        .foregroundStyle(.dsTextTertiary)
+                }
+            } details: {
+                EmptyView()
+            }
+        } trailing: {
+            StatusBarSegment(help: "Memory and CPU", accessibilityLabel: "Memory and CPU") {
+                StatusBarGlyph("memorychip")
+            } details: {
+                EmptyView()
+            }
+        }
+        .frame(width: 560)
+    }
+}
+#endif

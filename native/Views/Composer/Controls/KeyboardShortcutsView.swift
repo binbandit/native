@@ -113,3 +113,11 @@ struct KeyboardShortcutsView: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Keyboard shortcuts") {
+    DSPreviewPair {
+        KeyboardShortcutsView()
+    }
+}
+#endif

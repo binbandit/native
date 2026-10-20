@@ -69,3 +69,22 @@ struct PullRequestActionsMenu: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Pull request actions") {
+    let inbox = PullRequestPreviewFixtures.inbox
+    DSPreviewPair {
+        HStack(spacing: DS.Space.lg) {
+            // From the list, on someone's open pull request, then from a badge on a draft.
+            Menu("From the list") {
+                PullRequestActionsMenu(pullRequest: inbox.reviewRequested[0], offersListActions: true)
+            }
+            Menu("From a badge") {
+                PullRequestActionsMenu(pullRequest: inbox.authored[4])
+            }
+        }
+        .fixedSize()
+    }
+    .environment(GitHubModel.preview(inbox: inbox))
+}
+#endif

@@ -79,3 +79,19 @@ private struct PullRequestDiffBlockRowMetrics {
     let font: DSPlatformFont
     let lineHeight: CGFloat
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Diff block rows") {
+    DSPreviewPair {
+        PullRequestPagePreview { model, _ in
+            VStack(alignment: .leading, spacing: DS.Space.lg) {
+                ForEach(model.rows.filter(\.isPreviewBlock).prefix(2)) { row in
+                    PullRequestFilesRowView(model: model, row: row, width: 760, characterWidth: 7, isShiftDown: false)
+                }
+            }
+            .codeTextStyle(.compact)
+        }
+        .frame(width: 760)
+    }
+}
+#endif

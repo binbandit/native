@@ -49,3 +49,25 @@ struct GoalBudgetFields: View {
         return Double(trimmed).flatMap { $0 > 0 ? $0 : nil }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Goal budget fields") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.xl) {
+            GoalBudgetFieldsPreview(budget: GoalBudget(maxIterations: 10))
+            GoalBudgetFieldsPreview(budget: GoalBudget(maxIterations: 25, maxDuration: 2 * 3_600, maxCost: 5))
+            GoalBudgetFieldsPreview(budget: .unlimited)
+        }
+        .frame(width: 420)
+    }
+}
+
+/// Holds the budget the fields edit.
+private struct GoalBudgetFieldsPreview: View {
+    @State var budget: GoalBudget
+
+    var body: some View {
+        GoalBudgetFields(budget: $budget)
+    }
+}
+#endif

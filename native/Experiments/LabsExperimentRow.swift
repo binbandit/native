@@ -95,3 +95,20 @@ private struct LabsTextField: View {
             .overlay { shape.strokeBorder(.dsBorder, lineWidth: 1) }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Labs experiment rows") {
+    let experiments = ExperimentCatalog.native.experiments
+    DSPreviewPair {
+        SettingsRowGroup {
+            ForEach(Array(experiments.enumerated()), id: \.element.id) { index, experiment in
+                LabsExperimentRow(
+                    id: LabsSettingsPage.rowID(experiment.id), experiment: experiment, value: experiment.defaultValue,
+                    needsRelaunch: index == 0, conflict: index == 1 ? LabsPreviewFixtures.conflict : nil,
+                    onChange: { _ in })
+            }
+        }
+        .settingsPreviewPage()
+    }
+}
+#endif

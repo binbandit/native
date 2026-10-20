@@ -65,3 +65,17 @@ private struct AgentSetupTrailingIconLabelStyle: LabelStyle {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Agent setup card") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.xl) {
+            ForEach(AgentIconPreviewFixtures.agents.prefix(3), id: \.id) { agent in
+                AgentSetupCard(agent: agent, summary: "A coding agent, through its ACP adapter.")
+            }
+        }
+        .frame(width: 520)
+    }
+    .agentIconPreviewStore()
+}
+#endif

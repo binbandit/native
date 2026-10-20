@@ -191,3 +191,27 @@ struct PullRequestDiffBlock: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Diff block - Lines picked for a comment") {
+    DSPreviewPair {
+        PullRequestPagePreview { model, _ in
+            VStack(alignment: .leading, spacing: DS.Space.lg) {
+                ForEach(model.rows.filter(\.isPreviewBlock).prefix(1)) { row in
+                    PullRequestFilesRowView(model: model, row: row, width: 760, characterWidth: 7, isShiftDown: false)
+                        .onAppear {
+                            // A drag in the gutter over three added lines.
+                            guard let hunk = model.hunks[row.path]?.first,
+                                var selection = ReviewLineSelection(path: row.path, hunk: hunk, line: 7)
+                            else { return }
+                            selection.extend(to: 9)
+                            model.lineSelection = selection
+                        }
+                }
+            }
+            .codeTextStyle(.compact)
+        }
+        .frame(width: 760)
+    }
+}
+#endif

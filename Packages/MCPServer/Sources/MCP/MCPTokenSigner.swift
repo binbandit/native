@@ -1,3 +1,4 @@
+#if canImport(CryptoKit)
 import CryptoKit
 import Foundation
 
@@ -66,3 +67,4 @@ public struct MCPTokenSigner: Sendable {
         }
     }
 }
+#endif

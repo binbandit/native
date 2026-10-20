@@ -149,3 +149,28 @@ private struct NavItem: View {
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
+
+#if DEBUG
+#Preview("Settings navigation") {
+    DSPreviewPair {
+        SettingsNavigationPreview()
+            .frame(width: SettingsMetrics.navWidth, height: 640)
+    }
+}
+
+/// Holds the selection and focus the navigation takes as bindings.
+private struct SettingsNavigationPreview: View {
+    @State private var selection = SettingsPane.ID.general
+    @FocusState private var focus: SettingsScreen.Focus?
+    private let registry = SettingsPreviewFixtures.registry()
+
+    var body: some View {
+        SettingsNavigation(
+            panes: SettingsPane.builtIn(registry: registry).sorted { ($0.group, $0.order) < ($1.group, $1.order) },
+            selection: $selection, focus: $focus
+        ) {
+            EmptyView()
+        }
+    }
+}
+#endif

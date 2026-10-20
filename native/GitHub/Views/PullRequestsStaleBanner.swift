@@ -51,3 +51,18 @@ struct PullRequestsStaleBanner: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Stale list") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.lg) {
+            PullRequestsStaleBanner(
+                error: .offline("error connecting to api.github.com"), fetchedAt: .now.addingTimeInterval(-25 * 60))
+            PullRequestsStaleBanner(
+                error: .rateLimited("API rate limit exceeded for user"), fetchedAt: .now.addingTimeInterval(-3 * 3600))
+        }
+        .frame(width: PullRequestsLayout.contentWidth)
+    }
+    .environment(GitHubModel.preview(inbox: PullRequestPreviewFixtures.inbox))
+}
+#endif

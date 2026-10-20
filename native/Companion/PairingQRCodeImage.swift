@@ -34,3 +34,11 @@ struct PairingQRCodeImage: View {
         return context.createCGImage(output, from: output.extent)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Pairing code") {
+    DSPreviewPair {
+        PairingQRCodeImage(text: "native://pair?host=preview-mac&code=4F2C-9E1A-77B3", size: 180)
+    }
+}
+#endif

@@ -1,5 +1,6 @@
 import Foundation
 import MCP
+import NativeOrchestration
 import NativeSetup
 
 /// `setup_status`: how Native is set up on the caller's Mac (its build, agents, durable host,
@@ -84,14 +85,6 @@ enum SetupTools {
         ],
         "required": ["native", "agents", "durable_host", "paired_devices", "organization", "updates"],
     ]
-}
-
-extension Orchestrator {
-    /// The report for `caller`'s Mac, marking the agent it runs on.
-    func setupReport(for caller: OrchestrationCaller) async throws -> SetupReport {
-        guard let host else { throw MCPToolError("Native isn't ready yet. Try again shortly.") }
-        return await host.setupReport(callerAgent: caller.agent)
-    }
 }
 
 private nonisolated struct NoSetupArguments: Decodable, Sendable {}

@@ -39,3 +39,15 @@ struct AccentSettingsRow: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Accent row") {
+    DSPreviewPair {
+        SettingsRowGroup {
+            AccentSettingsRow()
+        }
+        .settingsPreviewPage()
+    }
+    .environment(SettingsPreviewFixtures.registry())
+}
+#endif

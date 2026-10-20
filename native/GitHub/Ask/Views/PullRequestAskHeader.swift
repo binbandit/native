@@ -42,3 +42,14 @@ struct PullRequestAskHeader: View {
             : base + " \(conversation.agentName) has no read-only mode here, so it asks before running anything."
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Ask header") {
+    let center = PullRequestAskPreviewFixtures.center()
+    DSPreviewPair {
+        PullRequestAskHeader(conversation: center.conversation(for: PullRequestPreviewRunner.reference))
+            .frame(width: PullRequestAskMetrics.panelIdealWidth)
+    }
+    .environment(center)
+}
+#endif

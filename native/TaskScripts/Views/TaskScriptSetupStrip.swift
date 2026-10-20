@@ -134,3 +134,18 @@ extension String {
         prefix(1).lowercased() + dropFirst()
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Setup strip") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.lg) {
+            TaskScriptSetupStrip(run: TaskScriptsPreviewFixtures.running, edit: { _ in })
+            TaskScriptSetupStrip(run: TaskScriptsPreviewFixtures.awaitingApproval, edit: { _ in })
+            TaskScriptSetupStrip(run: TaskScriptsPreviewFixtures.succeeded, edit: { _ in })
+            TaskScriptSetupStrip(run: TaskScriptsPreviewFixtures.failed, edit: { _ in })
+        }
+        .frame(width: 720)
+    }
+    .environment(TaskScriptsPreviewFixtures.center())
+}
+#endif

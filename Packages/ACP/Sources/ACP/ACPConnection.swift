@@ -1,5 +1,8 @@
 import Foundation
+
+#if canImport(os)
 import os
+#endif
 
 /// Something the agent sent that the client has to act on.
 public enum AgentEvent: Sendable {

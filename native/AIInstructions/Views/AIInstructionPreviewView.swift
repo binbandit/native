@@ -72,3 +72,24 @@ struct AIInstructionPreviewView: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Instruction preview") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.xl) {
+            AIInstructionPreviewView(purpose: .title, state: .running, retry: {}, dismiss: {})
+            AIInstructionPreviewView(
+                purpose: .commitMessage,
+                state: .done(
+                    .generated("fix(checkout): charge once when the pay button is pressed twice"),
+                    instructions: "Conventional commits, under 72 characters."),
+                retry: {}, dismiss: {})
+            AIInstructionPreviewView(
+                purpose: .pullRequest,
+                state: .failed("Apple Intelligence is turned off in System Settings, so nothing can be written here."),
+                retry: {}, dismiss: {})
+        }
+        .settingsPreviewPage()
+    }
+}
+#endif

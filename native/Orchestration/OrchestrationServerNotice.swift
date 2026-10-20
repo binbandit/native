@@ -36,3 +36,12 @@ struct OrchestrationServerNotice: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Tools moved to a new port") {
+    DSPreviewPair {
+        OrchestrationServerNotice(status: .preview(movedFrom: 47_821, to: 47_822), onRestartHost: {})
+            .frame(width: 720)
+    }
+}
+#endif

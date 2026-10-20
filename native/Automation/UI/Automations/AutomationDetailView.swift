@@ -130,3 +130,27 @@ struct AutomationDetailView: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Automation detail") {
+    let automation = AutomationPreviewFixtures.nightlyTriage
+    DSPreviewPair {
+        AutomationDetailView(
+            automation: automation, runs: AutomationPreviewFixtures.automationRuns(of: automation),
+            nextRun: AutomationPreviewFixtures.now.addingTimeInterval(14 * 3_600), agentName: "Codex", onRunNow: {},
+            onTogglePause: {}, onEdit: {}, onDelete: {}, onOpenRun: { _ in }, onStopRun: { _ in }
+        )
+        .frame(width: 720, height: 640)
+    }
+}
+
+#Preview("Automation detail - Paused, never run") {
+    DSPreviewPair {
+        AutomationDetailView(
+            automation: AutomationPreviewFixtures.paused, runs: [], nextRun: nil, agentName: nil, onRunNow: {},
+            onTogglePause: {}, onEdit: {}, onDelete: {}, onOpenRun: { _ in }, onStopRun: { _ in }
+        )
+        .frame(width: 720, height: 480)
+    }
+}
+#endif

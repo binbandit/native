@@ -221,3 +221,41 @@ struct SettingsBadge: View {
         .fixedSize()
     }
 }
+
+#if DEBUG
+#Preview("Settings rows") {
+    DSPreviewPair {
+        SettingsRowGroup {
+            SettingsRow("Play sounds", description: Text("When a task finishes or needs you.")) {
+                SettingsSwitch("Play sounds", isOn: .constant(true))
+            }
+            SettingsRow(
+                "Follow-up behavior",
+                description: Text("Queue messages to send after the agent finishes, or steer the agent mid-turn."),
+                detail: Text("Agents that can't steer queue instead.")
+            ) {
+                SettingsSelect(
+                    label: "Follow-up behavior", selection: .constant(FollowUpBehavior.queue),
+                    options: FollowUpBehavior.allCases.map { .init(value: $0, title: $0.title) })
+            }
+            SettingsRow(
+                title: Text("Codex"), icon: "terminal",
+                description: Text("npx --yes @agentclientprotocol/codex-acp@2.2.2")
+            ) {
+                SettingsBadge("Needs sign-in", systemImage: "person.crop.circle.badge.exclamationmark")
+            } control: {
+                SettingsSwitch("Codex", isOn: .constant(true))
+            }
+            SettingsRow("Send crash reports", description: Text("Your organization decides this.")) {
+                SettingsSwitch("Send crash reports", isOn: .constant(false))
+            }
+            .settingsLocked("Managed by your organization")
+            SettingsRow("Clear the task cache") {
+                Button("Clear…") {}
+                    .buttonStyle(.settings)
+            }
+        }
+        .settingsPreviewPage()
+    }
+}
+#endif

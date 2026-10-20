@@ -30,3 +30,22 @@ struct WorkflowRunList: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Run list") {
+    DSPreviewPair {
+        WorkflowRunList(
+            runs: AutomationPreviewFixtures.runs, selection: .constant(AutomationPreviewFixtures.runs.first?.id),
+            onNewRun: {}
+        )
+        .frame(width: 300, height: 420)
+    }
+}
+
+#Preview("Run list - Empty") {
+    DSPreviewPair {
+        WorkflowRunList(runs: [], selection: .constant(nil), onNewRun: {})
+            .frame(width: 300, height: 320)
+    }
+}
+#endif

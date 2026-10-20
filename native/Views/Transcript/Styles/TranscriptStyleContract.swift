@@ -27,10 +27,19 @@ struct TranscriptStyleConfiguration {
     let openSubagent: (SessionID) -> Void
     /// Another session's title, for naming the tasks this one exchanges messages with.
     let sessionTitle: (SessionID) -> String?
+    /// The tool call whose request answers the permission shortcuts: only the oldest pending one, so
+    /// they're never ambiguous. From the session's mirror, which doesn't change with every chunk.
+    let shortcutTarget: String?
 
-    /// Only the oldest pending request answers the permission shortcuts, so they're never ambiguous.
-    var shortcutTarget: String? {
-        session.state.pendingPermissions.first?.toolCallID
+    init(
+        session: SessionModel, unfoldsExploration: Bool, openSubagent: @escaping (SessionID) -> Void,
+        sessionTitle: @escaping (SessionID) -> String?
+    ) {
+        self.session = session
+        self.unfoldsExploration = unfoldsExploration
+        self.openSubagent = openSubagent
+        self.sessionTitle = sessionTitle
+        shortcutTarget = session.permissionRequests.first?.id
     }
 
     var isWorking: Bool {

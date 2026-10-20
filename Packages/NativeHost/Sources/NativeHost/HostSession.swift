@@ -1,6 +1,7 @@
 import ACP
 import Foundation
 import NativeHostProtocol
+import SessionTitling
 
 /// A session the host has open: its durable record, its live state, and the ordered event log that
 /// attached clients replay and follow.
@@ -26,6 +27,12 @@ final class HostSession {
     var problem: String?
     /// The agent process doesn't have this session loaded (the host or the agent restarted since).
     var needsLoad: Bool
+    /// The host unloaded the session while idle and its log still holds the conversation, so the
+    /// next load resumes it without a replay (`HostCore+IdleUnload.swift`).
+    var reloadsQuietly = false
+    /// When the session last logged an event (a turn, an update, a setting), to tell how long it
+    /// has sat idle.
+    private(set) var lastEventAt = Date.now
     /// The load in flight, shared by everyone who needs it.
     var loading: Task<Void, any Error>?
     /// Set when the user cancels while recovery is under way, so it stops.
@@ -66,6 +73,8 @@ final class HostSession {
     private var nextSeq = 1
     /// Clients following this session's events.
     var subscribers: Set<ClientLink.ID> = []
+    /// Native's titles for it (`HostCore+Titles.swift`), as the store keeps them.
+    var titleState = SessionTitleState()
 
     init(
         record: StoredSession, agentName: String, phase: HostSessionPhase, needsLoad: Bool, mcpServers: [JSONValue] = []
@@ -112,6 +121,7 @@ final class HostSession {
     }
 
     private func log(_ json: Data) -> LoggedEvent {
+        lastEventAt = .now
         let event = LoggedEvent(seq: nextSeq, json: json)
         nextSeq += 1
         log.append(event)
@@ -154,7 +164,8 @@ final class HostSession {
             needsApproval: !pendingPermissions.isEmpty || !pendingQuestions.isEmpty,
             queue: queue.map(\.prompt.queued), isQueuePaused: record.isQueuePaused, supportsSteering: supportsSteering,
             lastActivity: record.lastActivity, lastStopReason: record.lastStopReason, problem: problem,
-            isStopping: isStopping, isRunningHiddenCommand: hiddenCommand != nil, retryAt: retryAt
+            isStopping: isStopping, isRunningHiddenCommand: hiddenCommand != nil, retryAt: retryAt,
+            titles: titleState.hostTitles
         )
     }
 

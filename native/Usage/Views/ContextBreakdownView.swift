@@ -103,3 +103,33 @@ private struct ContextBreakdownPlaceholder<Source: ContextSource>: View {
         .foregroundStyle(.dsTextSecondary)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Context breakdown") {
+    DSPreviewPair {
+        HStack(alignment: .top, spacing: DS.Space.xl) {
+            ContextBreakdownView(source: PreviewContextSource.claude(used: 240_000))
+            ContextBreakdownView(source: PreviewContextSource.claude(used: 925_000))
+            ContextBreakdownView(source: PreviewContextSource.codex)
+        }
+    }
+}
+
+#Preview("Context breakdown - Reading, stale and failed") {
+    var refreshing = PreviewContextSource.claude(used: 240_000)
+    refreshing.report = nil
+    refreshing.reportStatus = .refreshing
+    var stale = PreviewContextSource.claude(used: 610_000)
+    stale.reportStatus = .ready(isStale: true)
+    var empty = PreviewContextSource.claude(used: 0)
+    empty.usage = nil
+    empty.report = nil
+    return DSPreviewPair {
+        HStack(alignment: .top, spacing: DS.Space.xl) {
+            ContextBreakdownView(source: refreshing)
+            ContextBreakdownView(source: stale)
+            ContextBreakdownView(source: empty)
+        }
+    }
+}
+#endif

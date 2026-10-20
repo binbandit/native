@@ -114,3 +114,16 @@ struct ProjectProblemRow: View {
         Task { await model.retry(problem) }
     }
 }
+
+#if DEBUG
+#Preview("Project problem") {
+    let app = AppModel.preview()
+    DSPreviewPair {
+        if let project = app.previewProject(1) {
+            ProjectProblemRow(problem: SidebarPreviewFixtures.listingProblem(in: project))
+                .frame(width: DS.Size.sidebarWidth)
+        }
+    }
+    .sidebarPreviewEnvironment(app)
+}
+#endif

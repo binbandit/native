@@ -203,3 +203,17 @@ struct ModeEditor: View {
         dismiss()
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Mode editor - New") {
+    DSPreviewPair {
+        ModeEditor(subject: .new)
+    }
+}
+
+#Preview("Mode editor - Copy of Plan") {
+    DSPreviewPair {
+        ModeEditor(subject: .copy(.plan))
+    }
+}
+#endif

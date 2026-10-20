@@ -61,9 +61,16 @@ final class LinkPolicyStream: ByteStream {
             // Responses, and anything unparseable: the host answers malformed input itself.
             return line
         }
-        guard LinkMethodPolicy.allows(method, with: grants) else {
+        guard LinkMethodPolicy.allows(method, params: message["params"], with: grants) else {
             if let id = message["id"] {
-                refuse(id: id, method: method)
+                // A method the device may call, asked for with what only running commands allows,
+                // is refused the way the host would.
+                refuse(
+                    id: id,
+                    with: LinkMethodPolicy.allows(method, with: grants)
+                        ? HostErrorCode.notAuthorized.rpcError(
+                            "This device isn't allowed to run commands on this host, which \(method) as sent would.")
+                        : RPCError(code: -32601, message: "\(method) isn't available to this paired device."))
             }
             return nil
         }
@@ -77,12 +84,10 @@ final class LinkPolicyStream: ByteStream {
         return (try? JSONEncoder().encode(JSONValue.object(message))) ?? line
     }
 
-    private func refuse(id: JSONValue, method: String) {
-        let error = RPCError(code: -32601, message: "\(method) isn't available to this paired device.")
-        let response: JSONValue = .object([
-            "jsonrpc": .string("2.0"), "id": id,
-            "error": .object(["code": .number(Double(error.code)), "message": .string(error.message)]),
-        ])
+    private func refuse(id: JSONValue, with error: RPCError) {
+        var fields: [String: JSONValue] = ["code": .number(Double(error.code)), "message": .string(error.message)]
+        fields["data"] = error.data
+        let response: JSONValue = .object(["jsonrpc": .string("2.0"), "id": id, "error": .object(fields)])
         guard var data = try? JSONEncoder().encode(response) else { return }
         data.append(UInt8(ascii: "\n"))
         channel.write(data)

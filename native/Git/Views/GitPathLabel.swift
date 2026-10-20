@@ -26,3 +26,16 @@ struct GitPathLabel: View {
         .help(path)
     }
 }
+
+#if DEBUG
+#Preview("Path labels") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.sm) {
+            GitPathLabel(path: "native/Git/Model/GitStore.swift")
+            GitPathLabel(path: "README.md")
+            GitPathLabel(path: "native/Views/Transcript/Styles/Bubbles/BubbleTypingIndicator.swift")
+        }
+        .frame(width: 240, alignment: .leading)
+    }
+}
+#endif

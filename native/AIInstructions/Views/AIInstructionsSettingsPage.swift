@@ -81,3 +81,14 @@ struct AIInstructionsSettingsPage: View {
         return Text("\(list) \(names.count == 1 ? "uses its" : "use their") own instructions instead.")
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("AI instructions settings") {
+    DSPreviewPair {
+        AIInstructionsSettingsPage()
+            .settingsPreviewPage()
+    }
+    .environment(GitSettings(defaults: PreviewUserDefaults()))
+    .environment(GitHubModel.preview())
+}
+#endif

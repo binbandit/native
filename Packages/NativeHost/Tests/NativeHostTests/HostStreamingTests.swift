@@ -172,12 +172,18 @@ struct HostStreamingTests {
 enum CPUTime {
     static func ofThisProcess() -> Duration {
         var usage = rusage()
+        #if canImport(Darwin)
         getrusage(RUSAGE_SELF, &usage)
+        #else
+        // Glibc declares it as an enum case, and getrusage takes the number.
+        getrusage(RUSAGE_SELF.rawValue, &usage)
+        #endif
         return .seconds(usage.ru_utime.tv_sec + usage.ru_stime.tv_sec)
             + .microseconds(usage.ru_utime.tv_usec + usage.ru_stime.tv_usec)
     }
 
     static func of(_ pid: Int32) -> Duration {
+        #if os(macOS)
         var info = rusage_info_v2()
         let status = withUnsafeMutablePointer(to: &info) { pointer in
             pointer.withMemoryRebound(to: rusage_info_t?.self, capacity: 1) { proc_pid_rusage(pid, RUSAGE_INFO_V2, $0) }
@@ -187,5 +193,15 @@ enum CPUTime {
         mach_timebase_info(&timebase)
         let nanoseconds = (info.ri_user_time + info.ri_system_time) * UInt64(timebase.numer) / UInt64(timebase.denom)
         return .nanoseconds(Int64(nanoseconds))
+        #else
+        // utime and stime, fields 14 and 15 of /proc/<pid>/stat: the 12th and 13th after the command,
+        // which ends at the last ")". In clock ticks.
+        guard let stat = try? String(contentsOfFile: "/proc/\(pid)/stat", encoding: .utf8),
+            let command = stat.lastIndex(of: ")")
+        else { return .zero }
+        let fields = stat[stat.index(after: command)...].split(separator: " ")
+        guard fields.count > 12, let user = Int64(fields[11]), let system = Int64(fields[12]) else { return .zero }
+        return .nanoseconds((user + system) * 1_000_000_000 / max(Int64(sysconf(Int32(_SC_CLK_TCK))), 1))
+        #endif
     }
 }

@@ -236,3 +236,16 @@ private struct BulletLabelStyle: LabelStyle {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Route review") {
+    let expedition = ExpeditionPreviewFixtures.reviewing
+    DSPreviewPair {
+        if let route = expedition.route {
+            RouteReviewView(expedition: expedition, route: route, send: { _ in }, onOpenLead: {})
+                .frame(width: 900, height: 820)
+        }
+    }
+    .environment(ExpeditionCenter.preview())
+}
+#endif

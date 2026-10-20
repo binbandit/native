@@ -46,3 +46,17 @@ struct PullRequestStateIcon: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("State icons") {
+    DSPreviewPair {
+        HStack(spacing: DS.Space.lg) {
+            PullRequestStateIcon(state: .open, isDraft: false)
+            PullRequestStateIcon(state: .open, isDraft: true)
+            PullRequestStateIcon(state: .merged, isDraft: false)
+            PullRequestStateIcon(state: .closed, isDraft: false)
+            PullRequestStateIcon(state: .open, isDraft: false, size: DS.Size.navIcon)
+        }
+    }
+}
+#endif

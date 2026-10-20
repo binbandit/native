@@ -314,3 +314,14 @@ private struct ShortcutsDocument: FileDocument {
         FileWrapper(regularFileWithContents: data)
     }
 }
+
+#if DEBUG
+#Preview("Keyboard shortcuts settings") {
+    DSPreviewPair {
+        KeyboardShortcutsSettingsPage()
+            .settingsPreviewPage()
+            .frame(height: 900, alignment: .top)
+    }
+    .environment(CommandRegistry.shared)
+}
+#endif

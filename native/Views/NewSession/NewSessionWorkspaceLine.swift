@@ -7,24 +7,13 @@ import SwiftUI
 struct NewSessionWorkspaceLine: View {
     let workspace: NewSessionContext.Workspace
     let projectName: String
-    var size = Size.regular
-
-    enum Size {
-        /// Under the large title.
-        case regular
-        /// Under a header's name.
-        case compact
-
-        var text: Font { self == .regular ? .dsCallout : .dsBody }
-        var code: Font { self == .regular ? .dsMono : .dsMonoCaption }
-    }
 
     var body: some View {
         ViewThatFits(in: .horizontal) {
             HStack(spacing: DS.Space.sm) {
                 names
                 if let place {
-                    separator
+                    Text("·").foregroundStyle(.dsTextQuaternary)
                     Text(place)
                 }
             }
@@ -35,7 +24,7 @@ struct NewSessionWorkspaceLine: View {
                 }
             }
         }
-        .font(size.text)
+        .font(.dsCallout)
         .foregroundStyle(.dsTextTertiary)
         .lineLimit(1)
         .accessibilityElement(children: .ignore)
@@ -70,13 +59,9 @@ struct NewSessionWorkspaceLine: View {
         }
     }
 
-    private var separator: some View {
-        Text("·").foregroundStyle(.dsTextQuaternary)
-    }
-
     private func code(_ text: String, style: Color) -> some View {
         Text(text)
-            .font(size.code)
+            .font(.dsMono)
             .foregroundStyle(style)
             .truncationMode(.middle)
     }
@@ -115,12 +100,11 @@ struct NewSessionChangesNote: View {
     let count: Int
     let workspace: NewSessionContext.Workspace
     let projectName: String
-    var font = Font.dsBody
 
     var body: some View {
         if count > 0, let text {
             Text(text)
-                .font(font)
+                .font(.dsCallout)
                 .foregroundStyle(.dsTextTertiary)
                 .monospacedDigit()
                 .fixedSize(horizontal: false, vertical: true)
@@ -130,7 +114,7 @@ struct NewSessionChangesNote: View {
     private var text: String? {
         let changes = count == 1 ? "1 uncommitted change" : "\(count) uncommitted changes"
         return switch workspace {
-        case .worktree: "\(changes) in \(projectName) aren't in this worktree"
+        case .worktree: "\(changes) in \(projectName) \(count == 1 ? "isn't" : "aren't") in this worktree"
         case .checkout: "Starts with \(changes) already in the checkout"
         case .folder, .unknown: nil
         }

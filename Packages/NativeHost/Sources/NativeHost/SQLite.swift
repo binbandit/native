@@ -1,5 +1,10 @@
 import Foundation
+
+#if canImport(SQLite3)
 import SQLite3
+#else
+import CSQLite
+#endif
 
 /// A thin wrapper over the system SQLite: one connection, prepared statements, typed binding. Owned
 /// by one isolation domain (the host actor), so it does no locking of its own.

@@ -20,3 +20,22 @@ struct AgentConfirmationRow: View {
         .padding(DS.Space.md)
     }
 }
+
+#if DEBUG
+#Preview("Agent confirmation") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.xl) {
+            ComposerSurface {
+                AgentConfirmationRow(message: "Ready to apply the migration?", onContinue: {}, onSkip: {})
+            }
+            ComposerSurface {
+                AgentConfirmationRow(
+                    message:
+                        "I'm about to rewrite the history of fix/composer-focus to drop the two debugging commits. Continue only if nobody else has pulled this branch.",
+                    onContinue: {}, onSkip: {})
+            }
+        }
+        .frame(width: 560)
+    }
+}
+#endif

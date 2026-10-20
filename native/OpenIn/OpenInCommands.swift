@@ -30,7 +30,7 @@ extension NativeCommand {
 /// app is reachable from the keyboard; disabled while no task is in view:
 ///
 ///     CommandMenu("Session") {
-///         OpenInCommands(location: session.map { OpenInLocation(folder: $0.cwd, host: project.host) }, commands: registry)
+///         OpenInCommands(location: session.map { OpenInLocation(folder: $0.cwd, host: project.host) }, menu: menu)
 ///     }
 ///
 /// "Open in <default app>" (`session.openInDefaultApp`) comes from the registry; the "Open In"
@@ -42,17 +42,17 @@ struct OpenInCommands: View {
     }
 
     let location: OpenInLocation?
-    let commands: CommandRegistry
+    let menu: CommandMenuContext
     private let model: OpenInModel
 
-    init(location: OpenInLocation?, commands: CommandRegistry, model: OpenInModel = .shared) {
+    init(location: OpenInLocation?, menu: CommandMenuContext, model: OpenInModel = .shared) {
         self.location = location
-        self.commands = commands
+        self.menu = menu
         self.model = model
     }
 
     var body: some View {
-        CommandMenuItem(.sessionOpenInDefaultApp, in: commands)
+        CommandMenuItem(.sessionOpenInDefaultApp, in: menu)
 
         Menu("Open In") {
             if let location {

@@ -137,3 +137,14 @@ struct LabsSettingsPage: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Labs settings") {
+    DSPreviewPair {
+        LabsSettingsPage()
+            .settingsPreviewPage()
+    }
+    .environment(\.experimentStore, LabsPreviewFixtures.store())
+    .environment(SettingsPreviewFixtures.registry())
+}
+#endif

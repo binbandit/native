@@ -36,7 +36,7 @@ extension GitStore {
         at folder: URL, of project: URL, title: String?, archivedAt: Date?
     ) async throws -> RebuiltArchivedWorktree? {
         guard let repository = try await resolveGit().repository(at: project) else { return nil }
-        let location = Self.taskLocation(of: repository).folderPath
+        let location = taskLocation(of: repository).folderPath
         guard SessionFolder.contains(location, folder.folderPath), !SessionFolder.isSame(location, folder.folderPath),
             await !isTaskWorktree(folder, of: project)
         else { return nil }

@@ -80,3 +80,19 @@ struct PullRequestFileHeader: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("File headers") {
+    DSPreviewPair {
+        PullRequestPagePreview { model, _ in
+            // Modified, viewed, added, and a picture with no diff.
+            VStack(spacing: DS.Space.md) {
+                ForEach(model.files, id: \.path) { file in
+                    PullRequestFileHeader(model: model, file: file)
+                }
+            }
+        }
+        .frame(width: 760)
+    }
+}
+#endif

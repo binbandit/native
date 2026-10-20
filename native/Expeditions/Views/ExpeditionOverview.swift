@@ -111,3 +111,29 @@ private struct ExpeditionDebriefCard: View {
         .overlay { RoundedRectangle(cornerRadius: DS.Radius.card).strokeBorder(.dsSeparator, lineWidth: 1) }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Overview - Underway") {
+    DSPreviewPair {
+        ExpeditionOverview(expedition: ExpeditionPreviewFixtures.underway, selected: .constant(nil), send: { _ in })
+            .frame(width: 900, height: 720)
+    }
+    .environment(ExpeditionCenter.preview())
+}
+
+#Preview("Overview - Needs you") {
+    DSPreviewPair {
+        ExpeditionOverview(expedition: ExpeditionPreviewFixtures.needsYou, selected: .constant(nil), send: { _ in })
+            .frame(width: 900, height: 720)
+    }
+    .environment(ExpeditionCenter.preview())
+}
+
+#Preview("Overview - Complete") {
+    DSPreviewPair {
+        ExpeditionOverview(expedition: ExpeditionPreviewFixtures.complete, selected: .constant(nil), send: { _ in })
+            .frame(width: 900, height: 820)
+    }
+    .environment(ExpeditionCenter.preview())
+}
+#endif

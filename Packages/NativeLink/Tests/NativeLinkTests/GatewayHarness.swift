@@ -12,7 +12,9 @@ final class GatewayHarness: Sendable {
     let admitted = LinkLocked<[(any ByteStream, LinkGrants)]>([])
     let device = LinkDeviceInfo(name: "Test iPhone", model: "iPhone", system: "iOS 27.1")
 
-    init(confirmationTimeout: Duration = .seconds(5)) throws {
+    init(
+        confirmationTimeout: Duration = .seconds(5), paired: @escaping @Sendable (LinkPairingRecord) -> Void = { _ in }
+    ) throws {
         // Short: the control socket's path has to fit in sockaddr_un.
         directory = URL(filePath: "/tmp/nl-\(UUID().uuidString.prefix(8))")
         let clock = LinkLocked(Date(timeIntervalSince1970: 1_800_000_000))
@@ -24,7 +26,8 @@ final class GatewayHarness: Sendable {
                 confirmationTimeout: confirmationTimeout,
                 usesNetwork: false, now: { clock.value }),
             keyStore: MemoryKeyStore(),
-            accept: { stream, grants in admitted.withLock { $0.append((stream, grants)) } }
+            accept: { stream, grants in admitted.withLock { $0.append((stream, grants)) } },
+            paired: paired
         )
     }
 

@@ -142,3 +142,19 @@ struct PullRequestMergeBox: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Merge box") {
+    DSPreviewPair {
+        // Blocked by a failing check, ready for its author to merge, and merged.
+        VStack(spacing: DS.Space.xl) {
+            ForEach([PullRequestPreviewRunner.Scenario.reviewing, .own, .merged], id: \.self) { scenario in
+                PullRequestPagePreview(scenario: scenario, loadsEverything: false) { model, page in
+                    PullRequestMergeBox(model: model, page: page)
+                }
+            }
+        }
+        .frame(width: PullRequestsLayout.contentWidth)
+    }
+}
+#endif

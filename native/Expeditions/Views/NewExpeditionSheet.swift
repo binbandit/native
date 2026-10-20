@@ -263,3 +263,22 @@ struct NewExpeditionSheet: View {
         onStart(id)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("New expedition") {
+    DSPreviewPair {
+        // No host is connected, so there are no agents to crew it with yet.
+        NewExpeditionSheet(onStart: { _ in })
+    }
+    .environment(AppModel.preview())
+    .environment(ExpeditionCenter.preview())
+}
+
+#Preview("New expedition - No projects") {
+    DSPreviewPair {
+        NewExpeditionSheet(onStart: { _ in })
+    }
+    .environment(AppModel.preview(.empty))
+    .environment(ExpeditionCenter.preview())
+}
+#endif

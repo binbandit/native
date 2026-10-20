@@ -38,3 +38,14 @@ struct PullRequestConversationComposer: View {
         .help(page.isOpen ? "Close without merging. You can reopen it." : "Reopen this pull request")
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Conversation composer") {
+    DSPreviewPair {
+        PullRequestPagePreview(loadsEverything: false) { model, page in
+            PullRequestConversationComposer(model: model, page: page)
+        }
+        .frame(width: PullRequestsLayout.contentWidth)
+    }
+}
+#endif

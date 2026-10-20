@@ -143,3 +143,32 @@ private struct ResultRow: View {
         return title
     }
 }
+
+#if DEBUG
+#Preview("Settings search") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.xl) {
+            SettingsSearchFieldPreview(query: "")
+            SettingsSearchFieldPreview(query: "steer")
+            SettingsSearchFieldPreview(query: "zzz")
+        }
+        .frame(width: SettingsMetrics.navWidth)
+        .frame(height: 420, alignment: .top)
+    }
+}
+
+/// The field with results for `query`, from the built-in pages.
+private struct SettingsSearchFieldPreview: View {
+    @State var query: String
+    @State private var highlighted = 0
+    @FocusState private var focus: SettingsScreen.Focus?
+    private let panes = SettingsPane.builtIn(registry: SettingsPreviewFixtures.registry())
+
+    var body: some View {
+        SettingsSearchField(
+            query: $query,
+            results: SettingsSearchIndex(panes: panes).results(for: query, limit: SettingsMetrics.resultsLimit),
+            highlighted: $highlighted, focus: $focus, onPick: { _ in })
+    }
+}
+#endif

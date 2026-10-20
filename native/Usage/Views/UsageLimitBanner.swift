@@ -24,3 +24,17 @@ struct UsageLimitBanner: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Limit banner") {
+    let limits = UsagePreviewFixtures.limits()
+    DSPreviewPair {
+        VStack(spacing: DS.Space.lg) {
+            // Claude Code's limit stopping its other tasks, and Codex close to its weekly limit.
+            UsageLimitBanner(agent: UsagePreviewFixtures.claude, session: SessionID("0199f3a2-titles"), limits: limits)
+            UsageLimitBanner(agent: UsagePreviewFixtures.codex, session: SessionID("0199f3a2-flaky"), limits: limits)
+        }
+        .frame(width: 640)
+    }
+}
+#endif

@@ -36,3 +36,19 @@ struct SessionGoalControl: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Goal control - No goal yet") {
+    let app = AppModel.preview()
+    let session = SessionModel.preview(in: app, title: "Queue follow-ups while a turn runs")
+    DSPreviewPair {
+        if let session {
+            HStack(spacing: DS.Space.lg) {
+                SessionGoalControl(session: session)
+                SessionGoalControl(session: session, showsIcon: true)
+            }
+        }
+    }
+    .environment(AutomationCenter.preview())
+}
+#endif

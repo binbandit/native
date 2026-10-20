@@ -85,3 +85,32 @@ struct ComposerPickerRow: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Picker rows") {
+    DSPreviewPair {
+        VStack(spacing: 0) {
+            ComposerPickerRow(
+                title: "Manual", detail: "Always ask before making changes", trailing: .none, isEnabled: true,
+                action: {})
+            ComposerPickerRow(
+                title: "Accept edits", detail: "Automatically accept all file edits", trailing: .checked(dimmed: false),
+                isEnabled: true, action: {})
+            ComposerPickerRow(
+                title: "Auto", detail: "Claude handles permission decisions", trailing: .checked(dimmed: true),
+                isEnabled: true, action: {})
+            ComposerPickerRow(
+                title: "Bypass permissions", detail: "Not allowed by your organization", trailing: .locked,
+                isEnabled: false, action: {})
+            ComposerPickerRow(
+                symbol: "list.bullet.clipboard", title: "Plan",
+                detail: "Researches and writes a plan for your approval before changing anything",
+                note: "Codex can’t plan in this session, so this starts a new one", trailing: .none, isEnabled: true,
+                action: {})
+        }
+        .padding(.vertical, DS.Space.xs)
+        .frame(width: ComposerMetrics.modelPickerWidth)
+        .dsPopoverBackground()
+    }
+}
+#endif

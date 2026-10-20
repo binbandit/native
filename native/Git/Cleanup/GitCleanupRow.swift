@@ -124,3 +124,33 @@ struct GitCleanupRow: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Cleanup rows") {
+    let app = AppModel.preview()
+    let model = GitCleanupModel(
+        project: app.previewProject() ?? Project(url: URL(filePath: "/")),
+        services: GitPreviewFixtures.cleanupServices(app))
+    model.phase = .review
+    let running = GitCleanupModel(
+        project: app.previewProject() ?? Project(url: URL(filePath: "/")),
+        services: GitPreviewFixtures.cleanupServices(app))
+    running.phase = .running
+    let items = GitPreviewFixtures.cleanupItems
+    running.states = [
+        items[0].id: .done, items[1].id: .working, items[2].id: .failed("branch is checked out in another worktree"),
+    ]
+    return DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.lg) {
+            ForEach(items) { item in
+                GitCleanupRow(model: model, item: item)
+            }
+            SeparatorLine()
+            ForEach(items.prefix(3)) { item in
+                GitCleanupRow(model: running, item: item)
+            }
+        }
+        .frame(width: GitCleanupMetrics.sheetWidth - DS.Space.xxl)
+    }
+}
+#endif

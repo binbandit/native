@@ -81,3 +81,25 @@ struct PullRequestPageStatusLine: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Page status line") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.lg) {
+            ForEach([PullRequestPreviewRunner.Scenario.reviewing, .own, .merged], id: \.self) { scenario in
+                PullRequestPagePreview(scenario: scenario, loadsEverything: false) { _, page in
+                    PullRequestPageStatusLine(page: page, compact: false)
+                }
+            }
+            // Compact for narrow panes, and wrapping at a sheet's fixed width.
+            PullRequestPagePreview(loadsEverything: false) { _, page in
+                PullRequestPageStatusLine(page: page, compact: true)
+            }
+            PullRequestPagePreview(loadsEverything: false) { _, page in
+                PullRequestPageStatusLine(page: page, compact: false, wraps: true)
+                    .frame(width: 320, alignment: .leading)
+            }
+        }
+    }
+}
+#endif

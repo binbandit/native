@@ -27,3 +27,26 @@ struct BranchFlowRow<Field: Hashable>: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Branch flow row") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.lg) {
+            BranchFlowRowPreview(base: "main")
+            BranchFlowRowPreview(base: "")
+        }
+        .frame(width: 520)
+    }
+}
+
+/// Holds the base branch and focus the row takes as bindings.
+private struct BranchFlowRowPreview: View {
+    @State var base: String
+    @FocusState private var focus: Int?
+
+    var body: some View {
+        BranchFlowRow(
+            head: "native/queue-follow-ups", base: $base, placeholder: "main", focus: $focus, field: 0)
+    }
+}
+#endif

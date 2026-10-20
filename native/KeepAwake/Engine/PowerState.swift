@@ -1,13 +1,9 @@
 import Foundation
 import IOKit.ps
+import NativeHostProtocol
 
-/// Whether the Mac runs on battery, and how charged it is.
-nonisolated struct PowerState: Hashable, Sendable {
-    var isOnBattery = false
-    /// 0...1, or nil for Macs without a battery.
-    var batteryLevel: Double?
-
-    /// Reads the power sources now.
+extension PowerState {
+    /// Reads this Mac's power sources now.
     static func current() -> PowerState {
         guard let info = IOPSCopyPowerSourcesInfo()?.takeRetainedValue() else { return PowerState() }
         let providing = IOPSGetProvidingPowerSourceType(info)?.takeUnretainedValue() as String?

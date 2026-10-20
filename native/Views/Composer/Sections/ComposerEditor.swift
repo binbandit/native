@@ -237,3 +237,41 @@ struct ComposerEditor: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Editor") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.xl) {
+            ComposerSurface {
+                ComposerEditorPreview(text: "", placeholder: "What should Claude Code work on?")
+            }
+            ComposerSurface {
+                ComposerEditorPreview(
+                    text: """
+                        The queue test still flakes. Look at `PromptQueueTests` and fix the ordering:
+
+                        ```swift
+                        queue.move(id, .up)
+                        ```
+                        """,
+                    placeholder: "")
+            }
+        }
+        .frame(width: 560)
+    }
+}
+
+/// Holds the editor's text, selection and focus, which a preview can't pass as plain values.
+private struct ComposerEditorPreview: View {
+    @State var text: String
+    let placeholder: String
+    @State private var selection: TextSelection?
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        ComposerEditor(text: $text, selection: $selection, placeholder: placeholder, isFocused: $isFocused) { _ in
+            .ignored
+        }
+    }
+}
+#endif

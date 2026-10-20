@@ -42,3 +42,18 @@ struct PullRequestAskAnswer: View {
         Button("Copy Answer", systemImage: "doc.on.doc") { DSPasteboard.copy(text) }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Ask answer") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.xl) {
+            PullRequestAskAnswer(text: PullRequestAskPreviewFixtures.answer, isFinished: true, draftComment: { _ in })
+            // Still streaming: no actions yet.
+            PullRequestAskAnswer(
+                text: "It queues follow-ups typed while the agent works, instead of", isFinished: false,
+                draftComment: { _ in })
+        }
+        .frame(width: PullRequestAskMetrics.panelIdealWidth)
+    }
+}
+#endif

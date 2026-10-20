@@ -47,7 +47,19 @@ struct MarkdownSectionView: View, Equatable {
                 Text(verbatim: source)
             }
         }
+        #if DEBUG || NATIVE_PERF
+        .transcriptPerfTextSelection()
+        #else
         .textSelection(.enabled)
+        #endif
+    }
+}
+
+extension MarkdownSectionView {
+    /// The code blocks a section shows, in order, with their fence's language: the code as parsed
+    /// for the section's own view, which finds the parse cached.
+    static func codeBlocks(in source: String) -> [(code: String, language: String?)] {
+        MarkdownParseCache.blocks(for: source)?.flatMap(\.codeBlocks) ?? []
     }
 }
 
@@ -197,6 +209,14 @@ private struct MarkdownNode: Identifiable {
     var spacingAbove: CGFloat {
         if case .header = kind { DS.Space.xl } else { DS.Space.md }
     }
+
+    /// The code blocks in this block and the blocks inside it, as `MarkdownBlockView` shows them.
+    var codeBlocks: [(code: String, language: String?)] {
+        if case .codeBlock(let language) = kind {
+            return [(String(text.characters), language)]
+        }
+        return children.flatMap(\.codeBlocks)
+    }
 }
 
 // MARK: - Rendering
@@ -264,6 +284,9 @@ private struct MarkdownBlockView: View {
                                 .monospacedDigit()
                                 .foregroundStyle(.dsTextSecondary)
                         }
+                        // Markers aren't text anyone copies, and each selectable text lays itself
+                        // out again in a text view of its own: two per item.
+                        .textSelection(.disabled)
                     MarkdownBlockView(node: item, listDepth: listDepth + 1)
                 }
             }

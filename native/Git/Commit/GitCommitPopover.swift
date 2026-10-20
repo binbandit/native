@@ -197,3 +197,12 @@ struct GitCommitPopover: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Commit popover") {
+    @Previewable @State var isPresented = true
+    DSPreviewPair {
+        GitCommitPopover(model: GitPreviewFixtures.model, isPresented: $isPresented, onCreatePullRequest: {})
+    }
+}
+#endif

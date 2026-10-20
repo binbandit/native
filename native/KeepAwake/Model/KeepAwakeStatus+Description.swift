@@ -1,4 +1,5 @@
 import Foundation
+import NativeHostProtocol
 
 extension KeepAwakeStatus {
     /// One plain sentence saying what keeping awake is doing right now, for every place that shows
@@ -6,18 +7,19 @@ extension KeepAwakeStatus {
     func description(keepsDisplayOn: Bool) -> String {
         let sentence =
             switch reason {
-            case .off:
+            case .off, .unknown:
                 "Your Mac sleeps as usual."
             case .waitingForAgents:
                 "Your Mac sleeps as usual until an agent starts working."
-            case .agentsWorking(let count):
-                count == 1
+            case .agentsWorking:
+                workingAgents == 1
                     ? "Keeping your Mac awake while an agent works."
-                    : "Keeping your Mac awake while \(count) agents work."
+                    : "Keeping your Mac awake while \(workingAgents) agents work."
             case .alwaysOn:
                 "Keeping your Mac awake until you turn this off."
-            case .timer(let until):
-                "Keeping your Mac awake until \(DSFormat.time(until, now: .now))."
+            case .timer:
+                until.map { "Keeping your Mac awake until \(DSFormat.time($0, now: .now))." }
+                    ?? "Keeping your Mac awake for a while."
             case .pausedOnBattery:
                 "Paused on battery. Your Mac stays awake again once it's plugged in."
             case .pausedLowBattery:

@@ -163,3 +163,23 @@ struct ProjectActionEditor: View {
         dismiss()
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Action editor - New") {
+    let app = AppModel.preview()
+    let project = app.previewProject() ?? Project(url: URL(filePath: "/Users/preview/Developer/native"))
+    DSPreviewPair {
+        ProjectActionEditor(project: project, subject: .new)
+    }
+    .environment(ProjectActionsPreviewFixtures.runner(for: project))
+}
+
+#Preview("Action editor - Existing") {
+    let app = AppModel.preview()
+    let project = app.previewProject() ?? Project(url: URL(filePath: "/Users/preview/Developer/native"))
+    DSPreviewPair {
+        ProjectActionEditor(project: project, subject: .existing(ProjectActionsPreviewFixtures.actions[2]))
+    }
+    .environment(ProjectActionsPreviewFixtures.runner(for: project))
+}
+#endif

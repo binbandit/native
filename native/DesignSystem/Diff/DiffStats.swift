@@ -42,3 +42,17 @@ public struct DiffStatsText: View {
         .accessibilityLabel("\(stats.added) lines added, \(stats.removed) removed")
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Diff stats text") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.sm) {
+            DiffStatsText(stats: DiffStats(added: 128, removed: 14))
+            DiffStatsText(stats: DiffStats(added: 3, removed: 0))
+            DiffStatsText(stats: DiffStats(added: 0, removed: 42))
+            DiffStatsText(stats: DiffStats(added: 12_408, removed: 9_913))
+        }
+        .font(.dsBody)
+    }
+}
+#endif

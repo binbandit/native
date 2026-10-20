@@ -45,3 +45,26 @@ struct ComposerAttachmentsSection: View {
         .animation(.dsQuick, value: pending)
     }
 }
+
+#if DEBUG
+#Preview("Attachments section") {
+    let attachments = ComposerPreviewFixtures.attachments
+    DSPreviewPair {
+        VStack(spacing: DS.Space.xl) {
+            ComposerSurface {
+                ComposerAttachmentsSection(
+                    attachments: attachments, pending: [ComposerPendingAttachment(name: "Recording.mov")], missing: [],
+                    selected: nil, capabilities: PromptCapabilities(image: true, embeddedContext: true),
+                    agentName: "Claude Code", onRemove: { _ in })
+            }
+            // An agent that takes neither images nor embedded files, with one file gone from disk.
+            ComposerSurface {
+                ComposerAttachmentsSection(
+                    attachments: attachments, pending: [], missing: [attachments[0].id], selected: attachments[2].id,
+                    capabilities: PromptCapabilities(), agentName: "Codex", onRemove: { _ in })
+            }
+        }
+        .frame(width: 560)
+    }
+}
+#endif

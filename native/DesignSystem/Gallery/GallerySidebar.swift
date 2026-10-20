@@ -119,3 +119,11 @@ private struct GalleryBackdrop: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Gallery - Sidebar") {
+    DSPreviewPair {
+        GallerySidebar()
+    }
+}
+#endif

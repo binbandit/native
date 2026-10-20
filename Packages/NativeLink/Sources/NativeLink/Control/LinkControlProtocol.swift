@@ -19,6 +19,11 @@ enum LinkControlMethod {
     static let changed = "link/status/changed"
 }
 
+/// `link/pairing/open`. Absent from older apps, which always open a window their user confirms.
+struct LinkOpenPairingParams: Codable, Sendable {
+    var preapprovedGrants: LinkGrants?
+}
+
 struct LinkDecisionParams: Codable, Sendable {
     var accept: Bool
     var grants: LinkGrants?

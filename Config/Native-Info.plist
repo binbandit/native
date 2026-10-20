@@ -18,5 +18,13 @@
 	<true/>
 	<key>NativeGitHubRepository</key>
 	<string>$(NATIVE_GITHUB_REPOSITORY)</string>
+	<!-- Paired hosts (docs/durability.md): only asked for once a host is paired and remote hosts
+	     are on, when Native looks for it on the network. -->
+	<key>NSLocalNetworkUsageDescription</key>
+	<string>Native finds and connects to your own Macs running Native, so you can run tasks on them.</string>
+	<key>NSBonjourServices</key>
+	<array>
+		<string>_native-link._tcp</string>
+	</array>
 </dict>
 </plist>

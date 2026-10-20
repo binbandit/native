@@ -130,3 +130,12 @@ extension Sequence where Element: Hashable {
         return filter { seen.insert($0).inserted }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Ghostty section") {
+    DSPreviewPair {
+        TerminalGhosttySection(store: TerminalPreviewFixtures.store())
+            .settingsPreviewPage()
+    }
+}
+#endif

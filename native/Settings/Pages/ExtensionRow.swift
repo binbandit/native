@@ -89,3 +89,17 @@ struct ExtensionRow: View {
         (url.path(percentEncoded: false) as NSString).abbreviatingWithTildeInPath
     }
 }
+
+#if DEBUG
+#Preview("Extension rows") {
+    let registry = SettingsPreviewFixtures.registry()
+    DSPreviewPair {
+        SettingsRowGroup {
+            ForEach(registry.plugins.prefix(4), id: \.id) { loaded in
+                ExtensionRow(loaded: loaded, isEnabled: .constant(loaded.id != "cursor"))
+            }
+        }
+        .settingsPreviewPage()
+    }
+}
+#endif

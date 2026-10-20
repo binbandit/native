@@ -51,6 +51,9 @@ import Testing
         #expect(!LinkMethodPolicy.allows(HostProtocol.Method.updateInstall, with: .standard))
         #expect(LinkMethodPolicy.allows(HostProtocol.Method.updateInstall, with: LinkGrants(manageHost: true)))
         #expect(LinkMethodPolicy.allows(HostProtocol.Method.updateStatus, with: .standard))
+        #expect(LinkMethodPolicy.allows(HostProtocol.Method.setSessionTitle, with: .standard))
+        #expect(!LinkMethodPolicy.allows(HostProtocol.Method.configureTitles, with: .standard))
+        #expect(LinkMethodPolicy.allows(HostProtocol.Method.configureTitles, with: LinkGrants(manageHost: true)))
         #expect(
             !LinkMethodPolicy.allows(
                 HostProtocol.Method.updateReport, with: LinkGrants(managePlugins: true, manageHost: true)))

@@ -30,3 +30,16 @@ private struct LimitsSegment: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Limits item") {
+    DSPreviewPair {
+        StatusBarSurface {
+            LimitsStatusItem(statuses: { StatusBarPreviewFixtures.limits }, onOpen: { _ in }).content
+        } trailing: {
+            EmptyView()
+        }
+        .frame(width: 720)
+    }
+}
+#endif

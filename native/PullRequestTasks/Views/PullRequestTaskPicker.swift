@@ -168,3 +168,24 @@ private struct PullRequestTaskPickerRowStyle: ButtonStyle {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Pick a pull request") {
+    let app = AppModel.preview()
+    DSPreviewPair {
+        PullRequestTaskPicker(opener: PullRequestTaskPreviewFixtures.opener(app))
+            .frame(width: PullRequestTaskSheetLayout.width, height: 420)
+    }
+    .environment(GitHubModel.preview(inbox: PullRequestPreviewFixtures.inbox))
+}
+
+#Preview("Pick a pull request - None open") {
+    let app = AppModel.preview()
+    DSPreviewPair {
+        PullRequestTaskPicker(opener: PullRequestTaskPreviewFixtures.opener(app))
+            .frame(width: PullRequestTaskSheetLayout.width, height: 320)
+    }
+    .environment(
+        GitHubModel.preview(inbox: PullRequestInbox(authored: [], reviewRequested: [], assigned: [], fetchedAt: .now)))
+}
+#endif

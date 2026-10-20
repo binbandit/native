@@ -55,3 +55,21 @@ struct GitNoticeBanner: View {
         .accessibilityElement(children: .contain)
     }
 }
+
+#if DEBUG
+#Preview("Notices") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.lg) {
+            GitNoticeBanner(notice: GitPreviewFixtures.pushRejected, onAction: { _ in }, onDismiss: {})
+            GitNoticeBanner(notice: GitPreviewFixtures.committed, onAction: { _ in }, onDismiss: {})
+            // Lasts as long as its cause, so it can't be dismissed.
+            GitNoticeBanner(
+                notice: GitNotice(
+                    tone: .failure, title: "2 files have conflicts",
+                    message: "Resolve them, then stage the files to finish the merge.", action: .showConflicts),
+                onAction: { _ in })
+        }
+        .frame(width: GitMetrics.inspectorIdealWidth)
+    }
+}
+#endif

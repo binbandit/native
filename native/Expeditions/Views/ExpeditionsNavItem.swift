@@ -37,3 +37,16 @@ enum ExpeditionsMetrics {
     /// The crew and logbook column beside the route on wide windows.
     static let sideColumn: CGFloat = 280
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Expeditions nav item") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.xxs) {
+            ExpeditionsNavItem(isSelected: false) {}
+            ExpeditionsNavItem(isSelected: true) {}
+        }
+        .frame(width: DS.Size.sidebarWidth)
+    }
+    .environment(ExpeditionCenter.preview())
+}
+#endif

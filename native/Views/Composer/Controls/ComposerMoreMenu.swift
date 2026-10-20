@@ -61,3 +61,19 @@ struct ComposerMoreMenu: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("More menu") {
+    DSPreviewPair {
+        HStack(spacing: DS.Space.lg) {
+            ComposerMoreMenu(
+                settings: ComposerPreviewFixtures.settings, includesModel: false, isModelPickerOpen: .constant(false),
+                onSet: { _, _ in }, mode: nil)
+            ComposerMoreMenu(
+                settings: ComposerPreviewFixtures.settings, includesModel: true, isModelPickerOpen: .constant(false),
+                onSet: { _, _ in }, mode: nil)
+        }
+    }
+    .environment(CommandRegistry.shared)
+}
+#endif

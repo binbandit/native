@@ -109,3 +109,16 @@ struct WorkflowApprovalCard: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Approval card") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.lg) {
+            if let run = AutomationPreviewFixtures.approvalRun, let step = run.oldestRequest {
+                WorkflowApprovalCard(step: step, onApprove: { _ in }, onSkip: {}, onReject: {})
+            }
+        }
+        .frame(width: 640)
+    }
+}
+#endif

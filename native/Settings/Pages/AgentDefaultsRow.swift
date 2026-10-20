@@ -96,3 +96,15 @@ private struct AgentDefaultPicker: View {
         .disabled(options.count == 1)
     }
 }
+
+#if DEBUG
+#Preview("Agent defaults row") {
+    DSPreviewPair {
+        SettingsRowGroup {
+            AgentDefaultsRow(agentName: "Claude Code", agentID: AgentDefinition.ID(rawValue: "claude-code"))
+            AgentDefaultsRow(agentName: "Codex", agentID: AgentDefinition.ID(rawValue: "codex"))
+        }
+        .settingsPreviewPage()
+    }
+}
+#endif

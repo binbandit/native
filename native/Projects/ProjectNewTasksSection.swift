@@ -128,3 +128,17 @@ struct ProjectNewTasksSection: View {
             set: { override(\.customBranchPrefix).wrappedValue = $0 })
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Project new tasks") {
+    let app = AppModel.preview()
+    DSPreviewPair {
+        if let project = app.previewProject() {
+            ProjectNewTasksSection(project: project)
+                .settingsPreviewPage()
+        }
+    }
+    .sidebarPreviewEnvironment(app)
+    .environment(GitSettings(defaults: PreviewUserDefaults()))
+}
+#endif

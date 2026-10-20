@@ -145,3 +145,13 @@ private struct ArchivedTaskRow: View {
         Task { await model.unarchiveSession(summary.id) }
     }
 }
+
+#if DEBUG
+#Preview("Archived section") {
+    DSPreviewPair {
+        ArchivedSection(select: { _ in })
+            .frame(width: DS.Size.sidebarWidth)
+    }
+    .sidebarPreviewEnvironment(AppModel.preview())
+}
+#endif

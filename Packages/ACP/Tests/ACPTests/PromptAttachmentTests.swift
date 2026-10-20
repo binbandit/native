@@ -1,9 +1,12 @@
 import Foundation
-import ImageIO
 import Testing
-import UniformTypeIdentifiers
 
 @testable import ACP
+
+#if canImport(UniformTypeIdentifiers)
+import ImageIO
+import UniformTypeIdentifiers
+#endif
 
 struct PromptAttachmentTests {
     private let readme = PromptAttachment(
@@ -83,6 +86,14 @@ struct PromptAttachmentLoadingTests {
         #expect(try PromptAttachment.load(folder).content == .reference)
     }
 
+    /// A picture agents take as it is goes as it is.
+    @Test func smallImagesGoAsTheyAre() throws {
+        let url = folder.appending(path: "small.png")
+        try writeImage(width: 10, height: 10, to: url)
+        #expect(try PromptAttachment.load(url).content == .image(try Data(contentsOf: url), mimeType: "image/png"))
+    }
+
+    #if canImport(UniformTypeIdentifiers)
     @Test func largeImagesAreScaledToFit() throws {
         let url = folder.appending(path: "wide.png")
         try writeImage(width: 4096, height: 1024, to: url)
@@ -105,6 +116,16 @@ struct PromptAttachmentLoadingTests {
         #expect(FileManager.default.fileExists(atPath: attachment.url.path(percentEncoded: false)))
         #expect(attachment.isImage)
     }
+    #else
+    /// Nothing here can scale a picture, so one past `Limits.imagePixels` goes by its path.
+    @Test func largeImagesGoByPath() throws {
+        let url = folder.appending(path: "wide.png")
+        try writeImage(width: 4096, height: 1024, to: url)
+        let attachment = try PromptAttachment.load(url)
+        #expect(attachment.content == .reference)
+        #expect(attachment.isImageFile)
+    }
+    #endif
 
     /// Files that only look like images (an SVG, a broken PNG) go as text or by path, never fail.
     @Test func filesImageIOCantDrawStillAttach() throws {
@@ -149,6 +170,7 @@ struct PromptAttachmentLoadingTests {
     }
 
     private func writeImage(width: Int, height: Int, to url: URL) throws {
+        #if canImport(UniformTypeIdentifiers)
         let context = try #require(
             CGContext(
                 data: nil, width: width, height: height, bitsPerComponent: 8, bytesPerRow: 0,
@@ -160,5 +182,9 @@ struct PromptAttachmentLoadingTests {
             CGImageDestinationCreateWithURL(url as CFURL, UTType.png.identifier as CFString, 1, nil))
         CGImageDestinationAddImage(destination, image, nil)
         #expect(CGImageDestinationFinalize(destination))
+        #else
+        // No encoder here, and nothing reads past a PNG's header and end either.
+        try ImageHeaderTests.png(width: width, height: height).write(to: url)
+        #endif
     }
 }

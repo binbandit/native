@@ -70,3 +70,17 @@ struct ExpeditionLogbook: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Logbook") {
+    DSPreviewPair {
+        HStack(alignment: .top, spacing: DS.Space.xl) {
+            ExpeditionLogbook(expedition: ExpeditionPreviewFixtures.complete, selected: .constant(nil))
+                .frame(width: 420)
+            ExpeditionLogbook(expedition: ExpeditionPreviewFixtures.planning, selected: .constant(nil))
+                .frame(width: 420)
+        }
+    }
+    .environment(ExpeditionCenter.preview())
+}
+#endif

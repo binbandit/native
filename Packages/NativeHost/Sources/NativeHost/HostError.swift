@@ -9,6 +9,8 @@ enum MetaKey {
     static let cleanShutdown = "clean_shutdown"
     static let restartReason = "restart_reason"
     static let journaledRollback = "journaled_rollback"
+    /// Where the local app makes task worktrees, when it moved them (`SyncAgentsParams`).
+    static let worktreesFolder = "worktrees_folder"
 }
 
 enum HostError: Error, LocalizedError {
@@ -26,6 +28,11 @@ enum HostError: Error, LocalizedError {
     /// The client isn't trusted with this (a paired device without the grant).
     case notAuthorized(String)
     case updateUnavailable(String)
+    /// A path that resolves outside everywhere clients may reach (`ProjectPaths`).
+    case outsideProjects(String)
+    case commandNotFound(String)
+    case timedOut(String, seconds: Double)
+    case cancelled
 
     var errorDescription: String? {
         switch self {
@@ -41,6 +48,12 @@ enum HostError: Error, LocalizedError {
         case .notInQueue: "That message isn't waiting to be put back any more."
         case .notAuthorized(let action): "This device isn't allowed to \(action) on this host."
         case .updateUnavailable(let reason): reason
+        case .outsideProjects(let path):
+            "\(path) isn't inside one of this host's projects, sessions' folders or task worktrees."
+        case .commandNotFound(let executable): "\(executable) isn't installed on this host, or isn't on its PATH."
+        case .timedOut(let executable, let seconds):
+            "\(executable) didn't finish within \(Duration.seconds(seconds)), so the host stopped it."
+        case .cancelled: "The command was stopped."
         }
     }
 
@@ -58,6 +71,10 @@ enum HostError: Error, LocalizedError {
         case .notInQueue: .notInQueue
         case .notAuthorized: .notAuthorized
         case .updateUnavailable: .updateUnavailable
+        case .outsideProjects: .outsideProjects
+        case .commandNotFound: .commandNotFound
+        case .timedOut: .timedOut
+        case .cancelled: .cancelled
         }
     }
 

@@ -27,3 +27,25 @@ struct PullRequestAskButton: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Ask button") {
+    let app = AppModel.preview()
+    let gitHub = GitHubModel.preview()
+    let closed = PullRequestAskPreviewFixtures.center()
+    closed.connect(app: app, gitHub: gitHub)
+    let open = PullRequestAskPreviewFixtures.center()
+    open.connect(app: app, gitHub: gitHub)
+    open.togglePanel(for: PullRequestPreviewRunner.reference)
+    return DSPreviewPair {
+        HStack(spacing: DS.Space.lg) {
+            PullRequestAskButton(reference: PullRequestPreviewRunner.reference)
+                .environment(closed)
+            PullRequestAskButton(reference: PullRequestPreviewRunner.reference)
+                .environment(open)
+        }
+    }
+    .environment(app)
+    .environment(gitHub)
+}
+#endif

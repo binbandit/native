@@ -237,3 +237,33 @@ private final class PlatformCodeTextLinks: NSObject, UITextViewDelegate {
     }
 }
 #endif
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Code text") {
+    DSPreviewPair {
+        PlatformCodeTextPreview()
+            .frame(width: 480, alignment: .leading)
+    }
+}
+
+/// Lays the code out with the environment it shows in, as the transcript does.
+private struct PlatformCodeTextPreview: View {
+    @Environment(\.self) private var environment
+    private let lines = [
+        "let blocks = MarkdownNode.blocks(from: source)",
+        "for block in blocks ?? [] {",
+        "    print(block.kind)",
+        "}",
+    ]
+
+    var body: some View {
+        let lineHeight = DS.Size.listRow
+        PlatformCodeText(
+            text: PlatformCodeText.attributed(
+                AttributedString(lines.joined(separator: "\n")),
+                font: DSTypography.platformFont(size: 12, design: .mono),
+                lineHeight: lineHeight, foreground: .dsTextPrimary, in: environment),
+            key: "preview", lineCount: lines.count, lineHeight: lineHeight)
+    }
+}
+#endif

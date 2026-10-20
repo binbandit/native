@@ -61,3 +61,14 @@ struct SubagentCountChip: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Subagent count chip") {
+    DSPreviewPair {
+        HStack(spacing: DS.Space.lg) {
+            SubagentCountChip(subagents: Array(SubagentPreviewFixtures.subagents.prefix(1)), open: { _ in })
+            SubagentCountChip(subagents: SubagentPreviewFixtures.subagents, open: { _ in })
+        }
+    }
+}
+#endif

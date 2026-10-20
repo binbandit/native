@@ -168,3 +168,35 @@ struct AutomationsPage: View {
         Task { await engine.save(automation) }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Automations - Populated") {
+    DSPreviewPair {
+        AutomationsPagePreview(automations: AutomationPreviewFixtures.automations)
+    }
+}
+
+#Preview("Automations - None yet") {
+    DSPreviewPair {
+        AutomationsPagePreview(automations: [])
+    }
+}
+
+/// The page over an in-memory center holding `automations`, saved as the editor saves them.
+private struct AutomationsPagePreview: View {
+    let automations: [Automation]
+    @State private var center = AutomationCenter.preview()
+
+    var body: some View {
+        AutomationsPage(onOpenRun: { _ in })
+            .frame(width: 900, height: 760)
+            .environment(center)
+            .environment(AppModel.preview())
+            .task {
+                for automation in automations {
+                    await center.automations.save(automation)
+                }
+            }
+    }
+}
+#endif

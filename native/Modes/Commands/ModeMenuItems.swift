@@ -4,27 +4,36 @@ import SwiftUI
 /// Session ▸ Mode: Next Mode, every mode the task in view can be in (checked while it's in it),
 /// and Edit Modes….
 struct ModeMenuItems: View {
-    let commands: CommandRegistry
-
-    @FocusedValue(\.activeSession) private var session
+    let menu: CommandMenuContext
 
     var body: some View {
         let modes = TaskModes.shared
-        let catalog = session.map(modes.catalog(for:)) ?? modes.library.catalog(forProjectAt: nil)
+        let catalog = menu.context.session.map(modes.catalog(for:)) ?? modes.library.catalog(forProjectAt: nil)
         Menu("Mode") {
-            CommandMenuItem(.sessionNextMode, in: commands)
+            CommandMenuItem(.sessionNextMode, in: menu)
             Divider()
             ForEach(catalog.builtIn + catalog.custom) { mode in
-                CommandMenuItem(.modeUse(mode.id), in: commands, title: mode.name)
+                CommandMenuItem(.modeUse(mode.id), in: menu, title: mode.name)
             }
             if !catalog.project.isEmpty {
                 Divider()
                 ForEach(catalog.project) { mode in
-                    CommandMenuItem(.modeUse(mode.id), in: commands, title: mode.name)
+                    CommandMenuItem(.modeUse(mode.id), in: menu, title: mode.name)
                 }
             }
             Divider()
-            CommandMenuItem(.modesEdit, in: commands)
+            CommandMenuItem(.modesEdit, in: menu)
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Session ▸ Mode") {
+    DSPreviewPair {
+        Menu("Session") {
+            ModeMenuItems(menu: CommandMenuContext(registry: .shared, context: CommandContext()))
+        }
+        .fixedSize()
+    }
+}
+#endif

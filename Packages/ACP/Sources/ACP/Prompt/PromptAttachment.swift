@@ -1,5 +1,8 @@
 import Foundation
+
+#if canImport(UniformTypeIdentifiers)
 import UniformTypeIdentifiers
+#endif
 
 /// A file or image sent along with a prompt's text: one the user attached, or one an `@` mention in
 /// the text names. Every attachment is a file on disk (a pasted image is saved to one first), so an
@@ -54,7 +57,11 @@ public struct PromptAttachment: Identifiable, Hashable, Sendable {
     /// Whether the file is a picture, whether or not it goes as one: one too large to send, or one
     /// ImageIO can't draw, goes by its path.
     public var isImageFile: Bool {
+        #if canImport(UniformTypeIdentifiers)
         isImage || UTType(filenameExtension: url.pathExtension)?.conforms(to: .image) == true
+        #else
+        isImage || Self.isPicture(extension: url.pathExtension)
+        #endif
     }
 
     /// The bytes that travel inside the prompt rather than as a path.

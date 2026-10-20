@@ -105,3 +105,15 @@ struct IconThemeList<ID: Hashable>: View {
         onClose()
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Icon theme list") {
+    DSPreviewPair {
+        IconThemeList(
+            title: "App icon", selection: .constant("cobalt"), options: GalleryIconThemePicker.options, isDark: false,
+            onClose: {}
+        )
+        .frame(width: 320)
+    }
+}
+#endif

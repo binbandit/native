@@ -31,6 +31,20 @@ final class UserNotificationPoster: NSObject, NativeNotificationPosting {
         try? await center.add(UNNotificationRequest(identifier: notification.id, content: content, trigger: nil))
     }
 
+    func remove(_ ids: [String]) {
+        guard !ids.isEmpty else { return }
+        center.removeDeliveredNotifications(withIdentifiers: ids)
+    }
+
+    func delivered() async -> [NativeNotification] {
+        await center.deliveredNotifications().compactMap { Self.notification(in: $0.request.content) }
+    }
+
+    private nonisolated static func notification(in content: UNNotificationContent) -> NativeNotification? {
+        guard let text = content.userInfo[payloadKey] as? String else { return nil }
+        return try? JSONDecoder().decode(NativeNotification.self, from: Data(text.utf8))
+    }
+
     // MARK: - Categories
 
     /// Every set of actions a notification can carry; the center wants them registered up front.
@@ -42,9 +56,12 @@ final class UserNotificationPoster: NSObject, NativeNotificationPosting {
         (["native"] + actions.map(\.rawValue)).joined(separator: ".")
     }
 
+    /// Dismissals are reported too, so clearing a host's notification here clears it on its other
+    /// clients.
     private static func category(for actions: [NativeNotification.Action]) -> UNNotificationCategory {
         UNNotificationCategory(
-            identifier: categoryID(for: actions), actions: actions.map(action(for:)), intentIdentifiers: [])
+            identifier: categoryID(for: actions), actions: actions.map(action(for:)), intentIdentifiers: [],
+            options: .customDismissAction)
     }
 
     private static func action(for action: NativeNotification.Action) -> UNNotificationAction {
@@ -76,12 +93,12 @@ extension UserNotificationPoster: UNUserNotificationCenterDelegate {
     nonisolated func userNotificationCenter(
         _ center: UNUserNotificationCenter, didReceive response: UNNotificationResponse
     ) async {
-        guard let text = response.notification.request.content.userInfo[Self.payloadKey] as? String,
-            let notification = try? JSONDecoder().decode(NativeNotification.self, from: Data(text.utf8))
-        else { return }
+        guard let notification = Self.notification(in: response.notification.request.content) else { return }
         let reply = (response as? UNTextInputNotificationResponse)?.userText
         let action = NativeNotification.Action(rawValue: response.actionIdentifier)
-        let answer = NativeNotificationResponse(notification: notification, action: action, replyText: reply)
+        let answer = NativeNotificationResponse(
+            notification: notification, action: action, replyText: reply,
+            isDismissed: response.actionIdentifier == UNNotificationDismissActionIdentifier)
         await MainActor.run { onResponse?(answer) }
     }
 }

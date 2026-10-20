@@ -11,9 +11,10 @@ import NativeHostProtocol
 /// change survives the host being killed and the Mac losing power. Writes happen per user action
 /// and turn boundary, never per streamed token, so the cost of a full sync doesn't show.
 final class HostStore {
-    private let database: SQLiteDatabase
+    /// Extensions that keep an engine's tables use it directly (HostStore+Notifications.swift).
+    let database: SQLiteDatabase
 
-    private static let schemaVersion: Int64 = 4
+    static let schemaVersion: Int64 = 8
 
     init(url: URL) throws {
         database = try SQLiteDatabase(url: url)
@@ -55,9 +56,28 @@ final class HostStore {
                     ALTER TABLE activity ADD COLUMN previous_run TEXT;
                     """)
             }
-            // Version 4: whether a session was adopted from the agent's own list (so the agent saved
-            // it) rather than started here.
-            try database.execute("ALTER TABLE sessions ADD COLUMN adopted INTEGER NOT NULL DEFAULT 0")
+            if version < 4 {
+                // Version 4: whether a session was adopted from the agent's own list (so the agent
+                // saved it) rather than started here.
+                try database.execute("ALTER TABLE sessions ADD COLUMN adopted INTEGER NOT NULL DEFAULT 0")
+            }
+            if version < 5 {
+                // Version 5: the folders clients may run commands and read files in.
+                try database.execute(
+                    "CREATE TABLE IF NOT EXISTS projects (path TEXT PRIMARY KEY, added_at REAL NOT NULL)")
+            }
+            if version < 6 {
+                // Version 6: the notification backlog (HostStore+Notifications.swift).
+                try database.execute(Self.notificationsTable)
+            }
+            if version < 7 {
+                // Version 7: each session's titles (HostStore+Titles.swift).
+                try database.execute(Self.titlesTable)
+            }
+            if version < 8 {
+                // Version 8: the tasks sessions handed each other (HostStore+Tasks.swift).
+                try database.execute(Self.tasksTable)
+            }
             try database.execute("PRAGMA user_version = \(Self.schemaVersion)")
         }
     }
@@ -340,13 +360,15 @@ final class HostStore {
         return stored
     }
 
-    func activity(after id: Int64?, limit: Int) throws -> [ActivityEntry] {
+    /// Entries after `id`; the record of commands clients ran only with `includeCommands`.
+    func activity(after id: Int64?, limit: Int, includeCommands: Bool = false) throws -> [ActivityEntry] {
         try database.query(
             """
             SELECT id, at, session_id, kind, subject, detail, recovery, agent_id, agent_session_id, previous_run
-            FROM activity WHERE id > ? ORDER BY id LIMIT ?
+            FROM activity WHERE id > ? AND (? OR kind != ?) ORDER BY id LIMIT ?
             """,
-            .integer(id ?? 0), .integer(Int64(limit))
+            .integer(id ?? 0), .bool(includeCommands), .text(ActivityEntry.Kind.commandRun.rawValue),
+            .integer(Int64(limit))
         ).compactMap { row in
             guard let id = row[0].integer, let at = row[1].date, let kind = row[3].text else { return nil }
             return ActivityEntry(
@@ -357,6 +379,32 @@ final class HostStore {
                 previousRun: row[9].text.map { ActivityEntry.RunEnding(rawValue: $0) ?? .unknown }
             )
         }
+    }
+
+    /// Forgets entries of one kind older than `date`: the record of commands, which would otherwise
+    /// grow with every `git status` a client runs.
+    func pruneActivity(_ kind: ActivityEntry.Kind, olderThan date: Date) throws {
+        try database.run("DELETE FROM activity WHERE kind = ? AND at < ?", .text(kind.rawValue), .date(date))
+    }
+
+    // MARK: - Projects
+
+    func projects() throws -> [HostProject] {
+        try database.query("SELECT path, added_at FROM projects ORDER BY path").compactMap { row in
+            guard let path = row[0].text, let addedAt = row[1].date else { return nil }
+            return HostProject(path: path, addedAt: addedAt)
+        }
+    }
+
+    /// Adding a project that's listed already keeps it as it was.
+    func addProject(_ project: HostProject) throws {
+        try database.run(
+            "INSERT OR IGNORE INTO projects (path, added_at) VALUES (?, ?)", .text(project.path),
+            .date(project.addedAt))
+    }
+
+    func removeProject(_ path: String) throws {
+        try database.run("DELETE FROM projects WHERE path = ?", .text(path))
     }
 
     // MARK: - Plugins

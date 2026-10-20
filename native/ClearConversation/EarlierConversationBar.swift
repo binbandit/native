@@ -39,3 +39,16 @@ struct EarlierConversationBar: View {
         .accessibilityElement(children: .contain)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Earlier conversation bar") {
+    let app = AppModel.preview()
+    DSPreviewPair {
+        if let session = SessionModel.preview(in: app, title: "Queue follow-ups while a turn runs") {
+            EarlierConversationBar(session: session)
+                .frame(width: 720)
+        }
+    }
+    .environment(app)
+}
+#endif

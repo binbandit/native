@@ -52,3 +52,31 @@ struct UsageSettingsPage: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Usage settings") {
+    let app = AppModel.preview()
+    DSPreviewPair {
+        UsageSettingsPage(
+            accounts: app.agents.prefix(2).map {
+                UsageSettingsPage.Account(id: $0.agent.id, name: $0.agent.displayName, definition: $0.agent)
+            },
+            limits: UsagePreviewFixtures.limits(), reports: UsagePreviewFixtures.reports,
+            activity: UsagePreviewFixtures.activity(), opener: { _ in nil }
+        )
+        .settingsPreviewPage()
+    }
+    .environment(SettingsPresentation())
+}
+
+#Preview("Usage settings - No agents") {
+    DSPreviewPair {
+        UsageSettingsPage(
+            accounts: [], limits: UsagePreviewFixtures.clearLimits(), reports: ProviderUsageReports(),
+            activity: UsagePreviewFixtures.activity(empty: true), opener: { _ in nil }
+        )
+        .settingsPreviewPage()
+    }
+    .environment(SettingsPresentation())
+}
+#endif

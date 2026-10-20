@@ -62,3 +62,21 @@ struct SearchShortcutHint: View {
         .accessibilityHidden(true)
     }
 }
+
+#if DEBUG
+#Preview("Keys") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.lg) {
+            HStack(spacing: DS.Space.md) {
+                SettingsKeycap(keys: "⌘N")
+                SettingsKeycap(keys: "⇧⌘M")
+                SettingsKeycap(keys: "⌘↵")
+                SettingsKeycap(keys: "⌃⇧Tab")
+            }
+            KeyGlyphs(keys: "⌥⌘↵")
+                .settingsText(.body)
+            SearchShortcutHint(parts: ["⌘", "F"])
+        }
+    }
+}
+#endif

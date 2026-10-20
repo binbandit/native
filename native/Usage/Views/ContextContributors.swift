@@ -105,3 +105,14 @@ struct ContextContributors: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Contributors") {
+    DSPreviewPair {
+        if let report = UsagePreviewFixtures.report {
+            ContextContributors(report: report)
+                .frame(width: 360)
+        }
+    }
+}
+#endif

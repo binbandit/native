@@ -2,8 +2,8 @@ import Foundation
 
 @testable import MCP
 
-/// A server whose tokens name their owners: "alice" and "bob" exist, anything else doesn't.
-func makeServer(events: AsyncStream<String>.Continuation? = nil) -> MCPHTTPServer<String> {
+/// Tools that echo, fail, and run until cancelled (reporting both to `events`).
+func makeTools(events: AsyncStream<String>.Continuation? = nil) -> [MCPTool<String>] {
     struct Echo: Decodable, Sendable {
         var text: String
     }
@@ -37,10 +37,24 @@ func makeServer(events: AsyncStream<String>.Continuation? = nil) -> MCPHTTPServe
         }
         return MCPToolResult(text: "done")
     }
-    return MCPHTTPServer(name: "test", version: "1.0", instructions: "Use echo.", tools: [echo, fail, slow]) { token in
+    return [echo, fail, slow]
+}
+
+/// An endpoint whose tokens name their owners: "alice" and "bob" exist, anything else doesn't.
+func makeEndpoint(events: AsyncStream<String>.Continuation? = nil) -> MCPEndpoint<String> {
+    MCPEndpoint(name: "test", version: "1.0", instructions: "Use echo.", tools: makeTools(events: events)) { token in
         ["alice", "bob"].contains(token) ? token : nil
     }
 }
+
+#if canImport(Network)
+/// `makeEndpoint`'s tools and tokens, served over HTTP.
+func makeServer(events: AsyncStream<String>.Continuation? = nil) -> MCPHTTPServer<String> {
+    MCPHTTPServer(name: "test", version: "1.0", instructions: "Use echo.", tools: makeTools(events: events)) { token in
+        ["alice", "bob"].contains(token) ? token : nil
+    }
+}
+#endif
 
 func post(_ body: JSON, token: String = "alice", headers: [String: String] = [:]) -> HTTPRequest {
     let base = [

@@ -101,25 +101,24 @@ extension NativeCommand {
 /// gave it), and Edit Project Actions….
 struct ProjectActionCommands: Commands {
     let runner: ProjectActionRunner
-    let commands: CommandRegistry
+    let menu: CommandMenuContext
     let target: @MainActor (SessionModel) -> ProjectActionTarget?
-    @FocusedValue(\.activeSession) private var session
 
     var body: some Commands {
         CommandMenu("Run") {
-            CommandMenuItem(.projectActionsRunLast, in: commands)
-            CommandMenuItem(.projectActionsStop, in: commands)
-            if let target = session.flatMap(target) {
+            CommandMenuItem(.projectActionsRunLast, in: menu)
+            CommandMenuItem(.projectActionsStop, in: menu)
+            if let target = menu.context.session.flatMap(target) {
                 let actions = runner.store.list(for: target.project).all
                 if !actions.isEmpty {
                     Divider()
                     ForEach(Self.keyed(actions), id: \.self) { key in
-                        CommandMenuItem(.projectActionsRun(key), in: commands)
+                        CommandMenuItem(.projectActionsRun(key), in: menu)
                     }
                 }
             }
             Divider()
-            CommandMenuItem(.projectActionsEdit, in: commands)
+            CommandMenuItem(.projectActionsEdit, in: menu)
         }
     }
 

@@ -51,3 +51,13 @@ struct GitHubSettingsPage: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("GitHub settings") {
+    DSPreviewPair {
+        GitHubSettingsPage()
+            .settingsPreviewPage()
+    }
+    .environment(GitHubModel.preview())
+}
+#endif

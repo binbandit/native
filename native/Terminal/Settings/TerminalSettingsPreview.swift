@@ -44,3 +44,32 @@ extension Color {
         self.init(.sRGB, red: Double(rgb.red) / 255, green: Double(rgb.green) / 255, blue: Double(rgb.blue) / 255)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Terminal sample") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.lg) {
+            TerminalSamplePreview(settings: TerminalSettings())
+            TerminalSamplePreview(settings: TerminalSettings(fontSize: 16))
+        }
+        .frame(width: 420)
+    }
+}
+
+/// The sample in Native's terminal colors for the appearance it's shown in.
+private struct TerminalSamplePreview: View {
+    let settings: TerminalSettings
+    @Environment(\.colorScheme) private var colorScheme
+    @Environment(\.dsAccentPalette) private var palette
+    @Environment(\.dsLightTone) private var lightTone
+    @Environment(\.dsDarkTone) private var darkTone
+
+    var body: some View {
+        let appearance = TerminalAppearance(colorScheme)
+        let chrome = TerminalChrome.designSystem(
+            appearance: appearance, palette: palette, lightTone: lightTone, darkTone: darkTone)
+        TerminalSettingsPreview(
+            settings: settings, colors: TerminalTheme.native.colors(for: appearance, appChrome: chrome))
+    }
+}
+#endif

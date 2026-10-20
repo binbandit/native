@@ -3,8 +3,13 @@ import Foundation
 
 extension AppModel: StatusBarSource {
     var statusBarTasks: [TaskActivity] {
+        let usesTaskStates = StatusBarTaskStates.isEnabled
         let tasks = sessionList.compactMap { summary -> TaskActivity? in
-            guard let session = session(summary.id), let status = Self.activeStatus(of: session) else { return nil }
+            guard let session = session(summary.id) else { return nil }
+            let shared: TaskStatus? =
+                usesTaskStates ? session.taskStatus : StatusBarTaskStates.legacyStatus(of: session)
+            // Only what's on a turn or blocked on the user. Loading a task's history isn't work.
+            guard let status = shared, status == .working || status.needsAttention else { return nil }
             return TaskActivity(
                 id: summary.id,
                 title: session.displayTitle,
@@ -28,16 +33,5 @@ extension AppModel: StatusBarSource {
 
     func showTask(_ id: SessionKey) {
         selection = id
-    }
-
-    /// A task's status while it's busy or needs the user; nil when it's neither. What it waits for
-    /// comes first: a task can be both working and waiting on an approval.
-    private static func activeStatus(of session: SessionModel) -> TaskStatus? {
-        switch session.wait {
-        case .input: .needsInput
-        case .permission: .needsPermission
-        case .planReview: .needsPlanReview
-        case nil: session.phase == .prompting ? .working : nil
-        }
     }
 }

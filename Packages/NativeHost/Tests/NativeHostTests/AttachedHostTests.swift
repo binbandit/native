@@ -1,3 +1,4 @@
+#if os(macOS)
 import Darwin
 import Foundation
 import NativeHostProtocol
@@ -98,3 +99,4 @@ struct AttachedHostTests {
         return parent
     }
 }
+#endif

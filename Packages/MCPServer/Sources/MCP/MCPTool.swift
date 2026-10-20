@@ -66,7 +66,33 @@ public struct MCPTool<Context: Sendable>: Sendable {
         await call(context, arguments)
     }
 
-    func definition(for context: Context) async -> JSON {
+    /// The same tool, as declared, answered by `answer` instead: for a tool another process runs.
+    public func forwarding(
+        to answer: @escaping @Sendable (Context, JSON) async -> MCPToolResult
+    ) -> MCPTool<Context> {
+        var tool = MCPTool(
+            name: name, title: title, description: description, inputSchema: inputSchema, outputSchema: outputSchema,
+            annotations: annotations, arguments: JSON.self
+        ) { context, arguments in
+            await answer(context, arguments)
+        }
+        tool.listing = listing
+        return tool
+    }
+
+    /// The tool as declared, as `tools/list` shows a client its listing doesn't change.
+    public var declaration: JSON {
+        var object: [String: JSON] = [
+            "name": .string(name), "description": .string(description), "inputSchema": inputSchema,
+        ]
+        object["title"] = title.map(JSON.string)
+        object["outputSchema"] = outputSchema
+        object["annotations"] = annotations.json
+        return .object(object)
+    }
+
+    /// The tool as `tools/list` shows it to `context`.
+    public func definition(for context: Context) async -> JSON {
         let listed = await listing?(context) ?? Listing(description: description, annotations: annotations)
         var object: [String: JSON] = [
             "name": .string(name), "description": .string(listed.description), "inputSchema": inputSchema,

@@ -94,3 +94,22 @@ struct PullRequestAskTurnView: View {
         Task { await session.choose(option, forToolCall: call.id) }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Ask turn") {
+    let app = AppModel.preview()
+    let center = PullRequestAskPreviewFixtures.center()
+    let conversation = center.conversation(for: PullRequestPreviewRunner.reference)
+    let turns = PullRequestAskPreviewFixtures.turns(in: app)
+    return DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.xl) {
+            ForEach(turns) { turn in
+                PullRequestAskTurnView(conversation: conversation, turn: turn, isLatest: true)
+            }
+        }
+        .frame(width: PullRequestAskMetrics.panelIdealWidth)
+    }
+    .environment(center)
+    .environment(app)
+}
+#endif

@@ -107,3 +107,13 @@ struct ProjectScriptsSection: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Project scripts") {
+    DSPreviewPair {
+        ProjectScriptsSection(projectRoot: TaskScriptsPreviewFixtures.project)
+            .settingsPreviewPage()
+    }
+    .environment(TaskScriptsPreviewFixtures.settings())
+}
+#endif

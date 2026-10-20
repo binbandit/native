@@ -54,3 +54,24 @@ extension String {
         prefix(1).uppercased() + dropFirst()
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Diff line menu") {
+    DSPreviewPair {
+        PullRequestPagePreview { model, _ in
+            let path = "native/Views/Composer/Sections/QueuedPromptsSection.swift"
+            if let hunk = model.hunks[path]?.first {
+                HStack(spacing: DS.Space.lg) {
+                    Menu("An added line") {
+                        PullRequestDiffLineMenu(model: model, path: path, hunk: hunk, line: 4)
+                    }
+                    Menu("A cut-off line") {
+                        PullRequestDiffLineMenu(model: model, path: path, hunk: hunk, line: 7, isCutOff: true)
+                    }
+                }
+                .fixedSize()
+            }
+        }
+    }
+}
+#endif

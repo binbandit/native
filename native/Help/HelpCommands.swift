@@ -5,12 +5,12 @@ import SwiftUI
 /// line. The status bar's "?" opens the same shortcuts sheet; signing in to and restarting agents
 /// live in Settings ▸ Agents and on Home.
 struct HelpCommands: Commands {
-    let commands: CommandRegistry
+    let menu: CommandMenuContext
     let model: AppModel
 
     var body: some Commands {
         CommandGroup(after: .help) {
-            CommandMenuItem(.helpKeyboardShortcuts, in: commands)
+            CommandMenuItem(.helpKeyboardShortcuts, in: menu)
             Link("Agent Client Protocol Docs", destination: Self.protocolDocs)
             Divider()
             Text(versions)

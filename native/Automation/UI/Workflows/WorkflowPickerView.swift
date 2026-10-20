@@ -157,3 +157,32 @@ struct WorkflowPickerView: View {
             ? "1 workflow can't run; its card says why." : "\(broken.count) workflows can't run; their cards say why."
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Workflow picker") {
+    DSPreviewPair {
+        WorkflowPickerViewPreview(agents: AutomationPreviewFixtures.agents)
+    }
+}
+
+#Preview("Workflow picker - No agents") {
+    DSPreviewPair {
+        WorkflowPickerViewPreview(agents: [])
+    }
+}
+
+/// The picker over the built-in library, planning with the preview agents.
+private struct WorkflowPickerViewPreview: View {
+    let agents: [WorkflowAgent]
+
+    var body: some View {
+        WorkflowPickerView(
+            entries: AutomationPreviewFixtures.libraryWithPlugin.entries, agents: agents, projectName: "native",
+            plan: { definition, overrides in
+                WorkflowAssignment.resolve(
+                    definition, agents: agents, defaultAgent: agents.first?.id, overrides: overrides)
+            },
+            onRun: { _, _, _ in }, onCancel: {})
+    }
+}
+#endif

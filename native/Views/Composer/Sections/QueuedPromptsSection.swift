@@ -224,3 +224,42 @@ private struct ActionIcon: View {
             .help(help)
     }
 }
+
+#if DEBUG
+#Preview("Queued messages") {
+    let prompts = ComposerPreviewFixtures.queued
+    DSPreviewPair {
+        VStack(spacing: DS.Space.xl) {
+            ComposerSurface {
+                QueuedPromptsSection(
+                    prompts: prompts, editing: nil, sendNow: .steer, agentName: "Claude Code", onSendNow: { _ in },
+                    onMove: { _, _ in }, onDrop: { _, _ in }, onEdit: { _ in }, onRemove: { _ in })
+            }
+            // One open in the editor, on an agent that can't steer.
+            ComposerSurface {
+                QueuedPromptsSection(
+                    prompts: Array(prompts.prefix(2)), editing: prompts[1].id, sendNow: .interrupt, agentName: "Codex",
+                    onSendNow: { _ in }, onMove: { _, _ in }, onDrop: { _, _ in }, onEdit: { _ in },
+                    onRemove: { _ in })
+            }
+            ComposerSurface {
+                QueuedPromptsSection(
+                    prompts: [prompts[0]], editing: nil, sendNow: nil, agentName: "Cursor", onSendNow: { _ in },
+                    onMove: { _, _ in }, onDrop: { _, _ in }, onEdit: { _ in }, onRemove: { _ in })
+            }
+        }
+        .frame(width: 560)
+    }
+}
+
+#Preview("Queued messages - Narrow") {
+    DSPreviewPair {
+        ComposerSurface {
+            QueuedPromptsSection(
+                prompts: ComposerPreviewFixtures.queued, editing: nil, sendNow: .steer, agentName: "Claude Code",
+                onSendNow: { _ in }, onMove: { _, _ in }, onDrop: { _, _ in }, onEdit: { _ in }, onRemove: { _ in })
+        }
+        .frame(width: 320)
+    }
+}
+#endif

@@ -47,6 +47,7 @@ struct PluginTests {
         await again.stop()
     }
 
+    #if canImport(CryptoKit)
     @Test("Assets come with their hash, and a current copy isn't sent again")
     func assets() async throws {
         let harness = try HostHarness()
@@ -55,12 +56,26 @@ struct PluginTests {
         let recorder = try await harness.connect()
         let asset = try await recorder.client.pluginAsset(PluginAssetParams(pluginID: "aurora", path: "art/mark.png"))
         #expect(asset.data == Data("pixels".utf8))
-        #expect(asset.hash == ContentHash.sha256(Data("pixels".utf8)))
+        #expect(try asset.hash == ContentHash.sha256(Data("pixels".utf8)))
         let again = try await recorder.client.pluginAsset(
             PluginAssetParams(pluginID: "aurora", path: "art/mark.png", knownHash: asset.hash))
         #expect(again.data == nil)
         await recorder.stop()
     }
+    #else
+    @Test("Without SHA-256 for their hashes, asking for an asset says assets aren't available here")
+    func assetsUnavailable() async throws {
+        let harness = try HostHarness()
+        try install("aurora", in: harness, asset: Data("pixels".utf8))
+        try harness.start()
+        let recorder = try await harness.connect()
+        let error = await #expect(throws: RPCError.self) {
+            try await recorder.client.pluginAsset(PluginAssetParams(pluginID: "aurora", path: "art/mark.png"))
+        }
+        #expect(error?.message == ContentHash.Unavailable().errorDescription)
+        await recorder.stop()
+    }
+    #endif
 
     @Test(
         "Asset paths can't leave the plugin's folder",
@@ -93,6 +108,8 @@ struct PluginTests {
         try FileManager.default.removeItem(at: root)
     }
 
+    // Cached by content hash, which needs SHA-256 (`ContentHash`).
+    #if canImport(CryptoKit)
     @Test("Cached assets are there when the host isn't")
     func offlineCache() async throws {
         let harness = try HostHarness()
@@ -106,6 +123,7 @@ struct PluginTests {
         #expect(try await assets.data(pluginID: "aurora", path: "art/mark.png") == Data("cached".utf8))
         await recorder.stop()
     }
+    #endif
 
     @Test("A paired device without the grant can't turn plugins on or off")
     @HostActor

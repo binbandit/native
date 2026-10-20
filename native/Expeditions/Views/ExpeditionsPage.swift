@@ -117,3 +117,24 @@ private struct ExpeditionRow: View {
         .accessibilityHint("Opens the expedition")
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Expeditions - None yet") {
+    DSPreviewPair {
+        ExpeditionsPage { _ in EmptyView() }
+            .frame(width: 900, height: 620)
+    }
+    .environment(ExpeditionCenter.preview())
+}
+
+#Preview("Expedition rows") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.xs) {
+            ForEach(ExpeditionPreviewFixtures.all) { expedition in
+                ExpeditionRow(expedition: expedition) {}
+            }
+        }
+        .frame(width: 720)
+    }
+}
+#endif

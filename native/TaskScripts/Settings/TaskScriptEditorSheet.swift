@@ -224,3 +224,32 @@ struct TaskScriptVariablesList: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Script editor - Global setup") {
+    DSPreviewPair {
+        TaskScriptEditorSheet(target: TaskScriptEditorSheet.Target(event: .setup, scope: .global))
+    }
+    .environment(TaskScriptsPreviewFixtures.settings())
+    .environment(TaskScriptsPreviewFixtures.center())
+    .environment(AppModel.preview())
+}
+
+#Preview("Script editor - Project's turn finished") {
+    DSPreviewPair {
+        TaskScriptEditorSheet(
+            target: TaskScriptEditorSheet.Target(
+                event: .turnFinished, scope: .project(TaskScriptsPreviewFixtures.project)))
+    }
+    .environment(TaskScriptsPreviewFixtures.settings())
+    .environment(TaskScriptsPreviewFixtures.center())
+    .environment(AppModel.preview())
+}
+
+#Preview("Script variables") {
+    DSPreviewPair {
+        TaskScriptVariablesList()
+            .frame(width: 520)
+    }
+}
+#endif

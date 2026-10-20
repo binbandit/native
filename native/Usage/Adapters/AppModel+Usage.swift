@@ -1,5 +1,6 @@
 import ACP
 import Foundation
+import NativeHostProtocol
 
 extension AppModel: UsageLimitsHost {
     func resumableSession(_ target: UsageSessionRef) async -> (any LimitResumable)? {
@@ -41,7 +42,7 @@ extension AppModel: UsageNotificationsHost {
     }
 
     func canReplyInText(_ ref: UsageSessionRef) -> Bool {
-        model(for: ref)?.pendingQuestion.flatMap { Self.textField(of: $0.request) } != nil
+        model(for: ref)?.pendingQuestion?.request.singleTextField != nil
     }
 
     func answerPermission(of ref: UsageSessionRef, allow: Bool) async {
@@ -55,7 +56,7 @@ extension AppModel: UsageNotificationsHost {
     func reply(to ref: UsageSessionRef, text: String) async -> Bool {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty, let session = model(for: ref), let question = session.pendingQuestion,
-            let field = Self.textField(of: question.request)
+            let field = question.request.singleTextField
         else { return false }
         await session.answerQuestion([field: .string(text)])
         return true
@@ -63,14 +64,6 @@ extension AppModel: UsageNotificationsHost {
 
     private func model(for ref: UsageSessionRef) -> SessionModel? {
         session(SessionKey(agent: ref.agent, id: ref.session))
-    }
-
-    /// The question's one field, when it has exactly one and that takes free text.
-    private static func textField(of request: CreateElicitationRequest) -> String? {
-        guard case .object(let properties)? = request.requestedSchema?["properties"], properties.count == 1,
-            let (name, field) = properties.first, field["type"]?.stringValue == "string", field["enum"] == nil
-        else { return nil }
-        return name
     }
 }
 

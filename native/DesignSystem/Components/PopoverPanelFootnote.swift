@@ -21,3 +21,12 @@ public struct PopoverPanelFootnote: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Popover footnote") {
+    DSPreviewPair {
+        PopoverPanelFootnote("Counts come from the agents' own usage reports and reset on their schedule.")
+            .frame(width: DS.Size.hoverCardWidth)
+    }
+}
+#endif

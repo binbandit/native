@@ -46,8 +46,10 @@ import Testing
         #expect(host.addresses.contains { $0.kind == .loopback })
 
         let log = LinkLocked<[LinkLogEntry]>([])
+        let ended = LinkLocked<[LinkError]>([])
         let transport = PairedHostTransport(
-            host: host, device: device, log: { entry in log.withLock { $0.append(entry) } })
+            host: host, device: device, log: { entry in log.withLock { $0.append(entry) } },
+            pairingEnded: { error in ended.withLock { $0.append(error) } })
         let stream = try await transport.connect()
         #expect(log.withLock { $0.last?.kind } == .success)
         stream.close()
@@ -57,6 +59,7 @@ import Testing
         let deviceID = try #require(try await control.refresh().activeDevices.first?.id)
         try await control.revoke(deviceID)
         await #expect(throws: LinkError.revoked) { _ = try await transport.connect() }
+        #expect(ended.value == [.revoked], "the client's owner hears the pairing is over, to stop retrying")
         await control.stop()
     }
 

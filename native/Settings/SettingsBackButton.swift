@@ -24,3 +24,11 @@ struct SettingsBackButton: View {
         .help("Back (Esc)")
     }
 }
+
+#if DEBUG
+#Preview("Back button") {
+    DSPreviewPair {
+        SettingsBackButton {}
+    }
+}
+#endif

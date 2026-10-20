@@ -151,3 +151,18 @@ private struct TerminalTabCloseButton: View {
         .accessibilityLabel("Close Tab")
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Terminal tab bar") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.lg) {
+            TerminalTabBar(panel: TerminalPreviewFixtures.panel(), showsTabs: true)
+                .background(.dsSurfaceSunken)
+            // The terminal isn't available: just its name and Hide.
+            TerminalTabBar(panel: TerminalPreviewFixtures.panel(), showsTabs: false)
+                .background(.dsSurfaceSunken)
+        }
+        .frame(width: 640)
+    }
+}
+#endif

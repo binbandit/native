@@ -27,3 +27,19 @@ struct GoalPillButton: View {
         return status == .active ? "Goal" : "Goal · \(status.label)"
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Goal pill") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.md) {
+            GoalPillButton(status: nil) {}
+            ForEach(GoalStatus.allCases, id: \.self) { status in
+                HStack(spacing: DS.Space.md) {
+                    GoalPillButton(status: status) {}
+                    GoalPillButton(status: status, showsIcon: true) {}
+                }
+            }
+        }
+    }
+}
+#endif

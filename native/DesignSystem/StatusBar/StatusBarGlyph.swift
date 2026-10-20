@@ -17,3 +17,16 @@ public struct StatusBarGlyph: View {
             .accessibilityHidden(true)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Status bar glyphs") {
+    DSPreviewPair {
+        HStack(spacing: DS.Space.lg) {
+            StatusBarGlyph("questionmark.circle")
+            StatusBarGlyph("cup.and.saucer")
+            StatusBarGlyph("terminal")
+            StatusBarGlyph("bolt.horizontal.circle")
+        }
+    }
+}
+#endif

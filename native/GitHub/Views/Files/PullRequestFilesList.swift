@@ -87,3 +87,15 @@ extension View {
         #endif
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Files list") {
+    DSPreviewPair {
+        PullRequestPagePreview { model, _ in
+            PullRequestFilesList(model: model)
+                .codeTextStyle(.compact)
+        }
+        .frame(width: 760, height: 760)
+    }
+}
+#endif

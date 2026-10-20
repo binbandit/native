@@ -30,3 +30,12 @@ struct WorkflowReplyField: View {
         text = ""
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Reply field") {
+    DSPreviewPair {
+        WorkflowReplyField(agentName: "Codex", onSend: { _ in })
+            .frame(width: 480)
+    }
+}
+#endif

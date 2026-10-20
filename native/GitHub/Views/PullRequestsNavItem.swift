@@ -34,3 +34,20 @@ struct PullRequestsNavItem: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Pull requests nav item") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.xxs) {
+            PullRequestsNavItem(isSelected: false) {}
+                .environment(GitHubModel.preview(inbox: PullRequestPreviewFixtures.inbox))
+            PullRequestsNavItem(isSelected: true) {}
+                .environment(GitHubModel.preview(inbox: PullRequestPreviewFixtures.inbox))
+            // Nothing waiting on the user's review: no count.
+            PullRequestsNavItem(isSelected: false) {}
+                .environment(GitHubModel.preview())
+        }
+        .frame(width: DS.Size.sidebarWidth)
+    }
+}
+#endif

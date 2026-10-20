@@ -1,3 +1,4 @@
+#if canImport(Network) && canImport(CryptoKit)
 import Foundation
 import Testing
 
@@ -127,3 +128,4 @@ struct RememberedServerTests {
         }
     }
 }
+#endif

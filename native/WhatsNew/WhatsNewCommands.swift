@@ -20,11 +20,11 @@ extension NativeCommand {
 
 /// Help ▸ What's New.
 struct WhatsNewCommands: Commands {
-    let commands: CommandRegistry
+    let menu: CommandMenuContext
 
     var body: some Commands {
         CommandGroup(after: .help) {
-            CommandMenuItem(.appWhatsNew, in: commands)
+            CommandMenuItem(.appWhatsNew, in: menu)
         }
     }
 }

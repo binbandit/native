@@ -37,3 +37,18 @@ struct ModeMenu: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Mode menu") {
+    DSPreviewPair {
+        HStack(spacing: DS.Space.lg) {
+            if let build = ModesPreviewFixtures.control(), let plan = ModesPreviewFixtures.control(planning: true) {
+                Menu("More") { ModeMenu(control: build) }
+                Menu("More") { ModeMenu(control: plan) }
+            }
+        }
+        .fixedSize()
+    }
+    .environment(SettingsPresentation())
+}
+#endif

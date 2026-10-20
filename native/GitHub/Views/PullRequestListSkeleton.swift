@@ -36,3 +36,12 @@ struct PullRequestListSkeleton: View {
             .frame(width: width, height: DS.Space.md + DS.Space.xxs)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Pull request list loading") {
+    DSPreviewPair {
+        PullRequestListSkeleton()
+            .frame(width: PullRequestsLayout.contentWidth)
+    }
+}
+#endif

@@ -1,15 +1,22 @@
-#if os(macOS)
+// Not on iOS, which can't start processes.
+#if os(macOS) || os(Linux)
 import Foundation
+
+#if canImport(os)
 import os
+#endif
 
 /// Processes started by launchd (the Finder, the Dock, a login item) get a bare environment, while
 /// agents expect what a terminal has: the user's PATH (node, claude, git), API keys, and so on. So
 /// ask the user's login shell for its environment, the same way a new terminal tab would build it.
+/// A host started by systemd on Linux is in the same position.
 ///
 /// The one copy for Native: the host launches agents with it, and the app runs the user's own tools
 /// (git, gh) with it.
 public enum LoginShell {
+    #if canImport(os)
     private static let logger = Logger(subsystem: "Native", category: "LoginShell")
+    #endif
 
     /// Variables describing the shell process itself, which would be wrong for anything we launch.
     private static let shellOnlyVariables: Set = ["PWD", "OLDPWD", "SHLVL", "_"]
@@ -25,7 +32,13 @@ public enum LoginShell {
         do {
             return try await capture(shell: shell)
         } catch {
+            #if canImport(os)
             logger.error("Couldn't read the environment of \(shell, privacy: .public): \(error)")
+            #else
+            // No unified log: stderr, which the host's supervisor keeps.
+            FileHandle.standardError.write(
+                Data("[LoginShell] error: couldn't read the environment of \(shell): \(error)\n".utf8))
+            #endif
             return ProcessInfo.processInfo.environment.filter { !$0.key.hasPrefix("DYLD_") }
         }
     }
@@ -34,7 +47,11 @@ public enum LoginShell {
         if let entry = getpwuid(getuid()), let shell = entry.pointee.pw_shell {
             return String(cString: shell)
         }
+        #if os(macOS)
         return ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/zsh"
+        #else
+        return ProcessInfo.processInfo.environment["SHELL"] ?? "/bin/sh"
+        #endif
     }
 
     @concurrent

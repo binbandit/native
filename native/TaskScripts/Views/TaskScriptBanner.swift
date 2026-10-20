@@ -129,3 +129,22 @@ enum TaskScriptFailureText {
         return parts.joined(separator: " ")
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Script banner strips") {
+    DSPreviewPair {
+        // What the banner stacks: a setup in each state, then a later event's failure.
+        VStack(spacing: 0) {
+            TaskScriptSetupStrip(run: TaskScriptsPreviewFixtures.running, edit: { _ in })
+            SeparatorLine()
+            TaskScriptSetupStrip(run: TaskScriptsPreviewFixtures.awaitingApproval, edit: { _ in })
+            SeparatorLine()
+            TaskScriptSetupStrip(run: TaskScriptsPreviewFixtures.failed, edit: { _ in })
+            SeparatorLine()
+            TaskScriptFailureStrip(run: TaskScriptsPreviewFixtures.turnFailed, edit: { _ in })
+        }
+        .frame(width: 720)
+    }
+    .environment(TaskScriptsPreviewFixtures.center())
+}
+#endif

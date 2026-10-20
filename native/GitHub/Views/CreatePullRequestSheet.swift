@@ -248,3 +248,12 @@ enum CreatePullRequestLayout {
     /// `NSTextView`'s line fragment padding, where the description's placeholder has to start.
     static let editorTextInset: CGFloat = 5
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Create pull request") {
+    DSPreviewPair {
+        CreatePullRequestSheet(request: PullRequestPreviewFixtures.createRequest)
+    }
+    .environment(GitHubModel.preview())
+}
+#endif

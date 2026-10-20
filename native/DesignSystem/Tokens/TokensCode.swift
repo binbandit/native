@@ -196,3 +196,25 @@ extension CodeColor {
             alpha: channel(resolved.opacity))
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Highlighted code") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.lg) {
+            HighlightedCode(
+                """
+                let blocks = MarkdownNode.blocks(from: source)
+                for block in blocks ?? [] {
+                    print(block.kind) // the innermost block
+                }
+                """, language: "swift")
+            HighlightedCode("swift test --filter PromptQueueTests && echo \"done\"", language: "bash")
+            HighlightedCode("{\"sessionId\": \"59be18cd\", \"title\": null}", path: "session.json")
+        }
+        .codeTextStyle()
+        .padding(DS.Space.md)
+        .background(.dsCodeBlockBackground, in: .rect(cornerRadius: DS.Radius.card))
+        .frame(width: 480, alignment: .leading)
+    }
+}
+#endif

@@ -6,9 +6,9 @@ import ProjectActions
 import TaskScripts
 
 /// Builds a new session's `NewSessionContext` from what the app already holds: the project and its
-/// tasks, git's status of the task's folder and the project's checkout, the GitHub inbox, the
-/// project's actions and the worktree's setup. Nothing here runs git or gh; the views ask for this
-/// on every update, so it only reads.
+/// tasks, git's status of the task's folder and the project's checkout, the GitHub inbox and the
+/// project's actions. Nothing here runs git or gh; the view asks for this on every update, so it
+/// only reads.
 @MainActor
 struct NewSessionContextBuilder {
     let session: SessionModel
@@ -19,12 +19,11 @@ struct NewSessionContextBuilder {
     let runner: ProjectActionRunner
     let scripts: TaskScriptCenter
     let settings: SettingsPresentation
-    /// The project's repositories on GitHub, lowercased `owner/name`, origin first, once read.
+    /// The project's repositories on GitHub, lowercased `owner/name`, once its remotes are read.
     let repositories: [String]
 
     func context() -> NewSessionContext {
         let checkout = git.model(for: project.url)
-        let registry = CommandRegistry.shared
         return NewSessionContext(
             projectName: project.name,
             projectIcon: ProjectIconStore.shared.icon(for: project, size: NewSessionMetrics.titleIcon),
@@ -32,16 +31,7 @@ struct NewSessionContextBuilder {
             checkoutChanges: checkout.status?.changedFileCount ?? 0,
             tasks: tasks,
             pullRequests: pullRequests,
-            repository: repositories.first.flatMap { name in
-                // As GitHub spells it, from a pull request, rather than lowercased.
-                gitHub.inbox?.all.first { $0.repository.lowercased() == name }?.repository ?? name
-            },
             actions: actions,
-            setup: setup,
-            keys: NewSessionContext.Keys(
-                palette: registry.keyboardShortcut(for: .paletteShow)?.displayString,
-                runLast: registry.keyboardShortcut(for: .projectActionsRunLast)?.displayString,
-                terminal: registry.keyboardShortcut(for: .terminalToggle)?.displayString),
             draft: { [session] text in
                 session.draft = text
                 session.wantsComposerFocus = true
@@ -51,8 +41,21 @@ struct NewSessionContextBuilder {
                     runner.store.requestNewAction(in: project)
                 }
                 settings.open(.project(project.id))
-            }
+            },
+            device: device
         )
+    }
+
+    /// Where the task runs, once a host is paired: choosing another device moves the task there,
+    /// with its draft, while it has had no message.
+    private var device: NewSessionContext.Device? {
+        guard model.offersRemoteHosts, !model.hosts.all.isEmpty else { return nil }
+        let key = session.key
+        return NewSessionContext.Device(
+            options: model.deviceOptions(for: project.id), selection: model.device(of: key)
+        ) { [model] device in
+            Task { await model.moveNewTask(key, to: device) }
+        }
     }
 
     private func workspace(checkout: GitRepositoryModel) -> NewSessionContext.Workspace {
@@ -91,9 +94,10 @@ struct NewSessionContextBuilder {
 
     /// Whether a task has anything to go back to: a conversation, for one open in this run, or a
     /// title, which the agent or the user only gives a task once it's under way. Another new session
-    /// left empty has neither.
+    /// left empty has neither, and one left with a draft is the user's to find in the sidebar.
     private func hasWork(_ summary: SessionSummary) -> Bool {
         if let live = model.session(summary.id) { return !live.isTranscriptEmpty }
+        guard !model.unsentSessions.contains(summary.id) else { return false }
         return summary.info.title?.isEmpty == false || model.userTitle(for: summary.id) != nil
     }
 
@@ -112,20 +116,21 @@ struct NewSessionContextBuilder {
         let canOpen = gitHub.canOpenAsTask
         return inbox.all
             .filter { $0.state == .open && repositories.contains($0.repository.lowercased()) }
+            // Reviews asked of the user first: they're waiting on someone. Then the latest.
+            .sorted {
+                (reviewRequested.contains($0.id) ? 1 : 0, $0.updatedAt)
+                    > (reviewRequested.contains($1.id) ? 1 : 0, $1.updatedAt)
+            }
             .map { pullRequest in
                 NewSessionContext.PullRequest(
                     id: pullRequest.id,
                     number: pullRequest.number,
                     title: pullRequest.title,
-                    isDraft: pullRequest.isDraft,
                     isReviewRequested: reviewRequested.contains(pullRequest.id),
                     branch: pullRequest.headRefName,
-                    updatedAt: pullRequest.updatedAt,
                     openAsTask: canOpen ? { [gitHub] in gitHub.requestOpenAsTask(pullRequest) } : nil
                 )
             }
-            // Reviews asked of the user first: they're waiting on someone.
-            .sorted { ($0.isReviewRequested ? 1 : 0, $0.updatedAt) > ($1.isReviewRequested ? 1 : 0, $1.updatedAt) }
     }
 
     private var actions: [NewSessionContext.Action] {
@@ -137,24 +142,12 @@ struct NewSessionContextBuilder {
                 id: action.id.rawValue,
                 name: action.name,
                 command: action.command,
-                icon: action.icon ?? ProjectActionGlyph.fallback,
                 isRunning: isRunning,
                 isLast: action.id == last,
                 run: { [runner] in
                     if isRunning { runner.stop(action, in: target) } else { runner.run(action, in: target) }
                 }
             )
-        }
-    }
-
-    private var setup: NewSessionContext.Setup? {
-        guard let run = scripts.setupRun(in: session.cwd) else { return nil }
-        switch run.state {
-        case .awaitingApproval: return .waiting
-        case .running: return .running(since: run.startedAt)
-        case .succeeded: return .done(seconds: run.duration)
-        case .failed(let report): return .failed(report.result.outcome.phrase)
-        case .skipped: return nil
         }
     }
 }

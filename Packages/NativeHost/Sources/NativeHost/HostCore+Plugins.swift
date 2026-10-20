@@ -17,7 +17,7 @@ extension HostCore {
 
     func pluginAsset(_ params: PluginAssetParams) throws -> PluginAsset {
         let data = try pluginCatalog.asset(pluginID: params.pluginID, path: params.path)
-        let hash = ContentHash.sha256(data)
+        let hash = try ContentHash.sha256(data)
         return PluginAsset(hash: hash, size: data.count, data: params.knownHash == hash ? nil : data)
     }
 

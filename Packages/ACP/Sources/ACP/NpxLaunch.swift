@@ -1,6 +1,9 @@
-#if os(macOS)
-import CryptoKit
+#if os(macOS) || os(Linux)
 import Foundation
+
+#if canImport(CryptoKit)
+import CryptoKit
+#endif
 
 extension AgentCommand {
     /// This command without npm in the middle, when it's `npx` running an exact package version
@@ -9,7 +12,11 @@ extension AgentCommand {
     /// milliseconds of starting up at every launch. This runs the binary npx would have run, from
     /// npx's own install, with the `PATH` npx gives it. Anything else (a range or tag, other npx
     /// options, a version npx hasn't installed yet) stays as it is, and npx installs it as usual.
+    ///
+    /// Without CryptoKit (Linux) the command always stays as it is: npm names its install folders
+    /// by a SHA-512, and finding one isn't worth a cryptography dependency for ACP.
     public func skippingNpx(fileManager: FileManager = .default) -> AgentCommand {
+        #if canImport(CryptoKit)
         guard let launch = NpxLaunch(self), let binary = launch.installedBinary(fileManager: fileManager) else {
             return self
         }
@@ -23,9 +30,13 @@ extension AgentCommand {
             environment: environment,
             workingDirectory: workingDirectory
         )
+        #else
+        self
+        #endif
     }
 }
 
+#if canImport(CryptoKit)
 /// `npx [--yes] <name>@<exact version> [arguments…]`, and where npx installs it: npm keeps each
 /// npx package set in `<cache>/_npx/<first 16 hex digits of the SHA-512 of the spec>`.
 struct NpxLaunch: Equatable {
@@ -100,4 +111,5 @@ struct NpxLaunch: Equatable {
         }
     }
 }
+#endif
 #endif

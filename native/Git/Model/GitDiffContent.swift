@@ -35,26 +35,57 @@ nonisolated enum GitDiffContent: Equatable, Sendable {
     static func load(
         _ change: FileChange, from repository: Repository, expanded: Bool, unlessStill unchanged: Int? = nil
     ) async -> Loaded? {
+        await load(
+            path: change.path, stats: change.stats, isSubmodule: change.isSubmodule, expanded: expanded,
+            unlessStill: unchanged
+        ) { () async throws(GitError) in
+            try await repository.versions(of: change)
+        }
+    }
+
+    /// `load(_:from:expanded:unlessStill:)` for a change between two trees or commits, like a
+    /// turn's or a branch's: `base` is nil for the empty tree.
+    @concurrent
+    static func load(
+        _ change: TreeChange, between base: String?, and target: String, in repository: Repository, expanded: Bool,
+        unlessStill unchanged: Int? = nil
+    ) async -> Loaded? {
+        await load(
+            path: change.path, stats: change.stats, isSubmodule: change.isSubmodule, expanded: expanded,
+            unlessStill: unchanged
+        ) { () async throws(GitError) in
+            try await repository.versions(of: change, from: base, to: target)
+        }
+    }
+
+    private static func load(
+        path: String, stats: LineStats?, isSubmodule: Bool, expanded: Bool, unlessStill unchanged: Int?,
+        versions read: () async throws(GitError) -> FileVersions
+    ) async -> Loaded? {
         // A submodule's entry is all there is to show.
-        if change.isSubmodule { return unchanged == 0 ? nil : Loaded(content: .submodule, fingerprint: 0) }
+        if isSubmodule { return unchanged == 0 ? nil : Loaded(content: .submodule, fingerprint: 0) }
         let versions: FileVersions
         do {
-            versions = try await repository.versions(of: change)
+            versions = try await read()
         } catch {
             return Loaded(content: .unavailable(error.localizedDescription), fingerprint: nil)
         }
         let fingerprint = versions.fingerprint
         guard fingerprint != unchanged else { return nil }
-        return Loaded(content: await content(of: change, versions, expanded: expanded), fingerprint: fingerprint)
+        let changedLines = stats.map { $0.additions + $0.deletions }
+        return Loaded(
+            content: await content(of: path, versions, changedLines: changedLines, expanded: expanded),
+            fingerprint: fingerprint)
     }
 
-    private static func content(of change: FileChange, _ versions: FileVersions, expanded: Bool) async -> Self {
-        let changedLines = change.stats.map { $0.additions + $0.deletions }
+    private static func content(
+        of path: String, _ versions: FileVersions, changedLines: Int?, expanded: Bool
+    ) async -> Self {
         if versions.isBinary { return .binary }
         if versions.size > sizeLimit { return .tooLarge(versions.size) }
         let isBig = versions.size > collapseSize || (changedLines ?? 0) > collapseLines
         if isBig, !expanded { return .collapsed(changedLines: changedLines, size: versions.size) }
-        let (path, oldText, newText) = (change.path, versions.oldText, versions.newText ?? "")
+        let (oldText, newText) = (versions.oldText, versions.newText ?? "")
         let layout =
             isBig
             ? DiffLayout(oldText: oldText, newText: newText)

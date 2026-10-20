@@ -74,3 +74,19 @@ struct PullRequestAskPageUnavailable: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Ask - Pull request unavailable") {
+    let gitHub = GitHubModel.preview()
+    let page = PullRequestPageModel(reference: PullRequestPreviewRunner.reference, gitHub: gitHub)
+    DSPreviewPair {
+        VStack(spacing: DS.Space.xl) {
+            PullRequestAskPageUnavailable(page: page, error: .offline("error connecting to api.github.com"))
+            PullRequestAskPageUnavailable(page: page, error: .notAuthenticated(""))
+            PullRequestAskPageUnavailable(page: page, error: .notFound("Could not resolve to a PullRequest"))
+        }
+        .frame(width: PullRequestAskMetrics.panelIdealWidth)
+    }
+    .environment(gitHub)
+}
+#endif

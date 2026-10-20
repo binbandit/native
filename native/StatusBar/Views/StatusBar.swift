@@ -50,3 +50,39 @@ struct StatusBar: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Status bar") {
+    StatusBarPreview(app: AppModel.preview(), limits: StatusBarPreviewFixtures.limits, width: 980)
+}
+
+#Preview("Status bar - Nothing running, no limits") {
+    StatusBarPreview(app: AppModel.preview(.empty), limits: [], width: 980)
+}
+
+#Preview("Status bar - Narrow") {
+    // Narrow windows drop the innermost items whole.
+    StatusBarPreview(app: AppModel.preview(), limits: StatusBarPreviewFixtures.limits, width: 420)
+}
+
+/// The bar over its window's content, with the built-in items and sampled figures.
+private struct StatusBarPreview: View {
+    let app: AppModel
+    let limits: [LimitStatus]
+    let width: CGFloat
+    private let monitor = StatusBarPreviewFixtures.monitor()
+
+    var body: some View {
+        DSPreviewPair {
+            StatusBar(registry: StatusBarPreviewFixtures.registry(app, limits: limits, monitor: monitor))
+                .frame(width: width)
+        }
+        .environment(CommandRegistry.shared)
+        .task {
+            // The bar fills in its items from the window's second frame.
+            FirstFrame.shared.watch()
+            await StatusBarPreviewFixtures.fill(monitor)
+        }
+    }
+}
+#endif

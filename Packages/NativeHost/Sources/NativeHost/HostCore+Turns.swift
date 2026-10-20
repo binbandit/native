@@ -103,6 +103,7 @@ extension HostCore {
                     shown: prompt.isEchoed, attachments: prompt.attachments, preamble: preamble?.marker)),
             to: session)
         session.turnItemsStart = session.mirror.state.items.count
+        titleAfterPrompt(session, prompt: prompt, kind: kind)
         publish(session)
         let blocks = (preamble.map { [$0.preamble.block] } ?? []) + (prompt.content ?? [.text(prompt.text)])
         Task { await run(turn, blocks: blocks, in: session) }

@@ -257,3 +257,34 @@ struct GitCleanupSheet: View {
         model.work = Task { await model.scan() }
     }
 }
+
+#if DEBUG
+#Preview("Clean Up Merged - Looking") {
+    GitCleanupSheetPreview(phase: .scanning("Asking GitHub about 6 branches…"))
+}
+
+#Preview("Clean Up Merged - Not a repository") {
+    GitCleanupSheetPreview(
+        phase: .unavailable("“native” isn't a git repository, so it has no branches or worktrees to clean up."))
+}
+
+#Preview("Clean Up Merged - Failed") {
+    GitCleanupSheetPreview(phase: .failed(details: "fatal: bad object refs/remotes/origin/HEAD"))
+}
+
+/// The sheet for the first preview project, in `phase`.
+private struct GitCleanupSheetPreview: View {
+    let phase: GitCleanupModel.Phase
+    private let app = AppModel.preview()
+
+    var body: some View {
+        let services = GitPreviewFixtures.cleanupServices(app)
+        let model = GitCleanupModel(
+            project: app.previewProject() ?? Project(url: URL(filePath: "/")), services: services)
+        model.phase = phase
+        return DSPreviewPair {
+            GitCleanupSheet(center: GitCleanupCenter(services: services), model: model)
+        }
+    }
+}
+#endif

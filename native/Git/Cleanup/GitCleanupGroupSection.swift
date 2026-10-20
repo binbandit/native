@@ -70,3 +70,18 @@ struct GitCleanupGroupSection: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Cleanup group") {
+    let app = AppModel.preview()
+    let model = GitCleanupModel(
+        project: app.previewProject() ?? Project(url: URL(filePath: "/")),
+        services: GitPreviewFixtures.cleanupServices(app))
+    model.phase = .review
+    return DSPreviewPair {
+        // Before the scan has found anything for the group: its header and what it would do.
+        GitCleanupGroupSection(model: model, group: .worktrees)
+            .frame(width: GitCleanupMetrics.sheetWidth - DS.Space.xxl)
+    }
+}
+#endif

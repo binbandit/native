@@ -20,3 +20,13 @@ struct PullRequestPageBackBar: View {
         .frame(height: DS.Window.headerHeight + DS.Space.md)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Back bar") {
+    DSPreviewPair {
+        PullRequestPageBackBar(reference: PullRequestPreviewRunner.reference)
+            .frame(width: 900)
+    }
+    .environment(GitHubModel.preview())
+}
+#endif

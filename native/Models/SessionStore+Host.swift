@@ -70,10 +70,17 @@ extension SessionStore {
         // An agent announces a subagent on its parent first; the host has made the subagent a
         // session of its own just before, so it's followed from here on.
         if case .subagent(let subagent)? = step.update, session.child(subagent.sessionId) == nil {
-            let summary = hostSummaries.values.first {
-                $0.parentID == session.host?.id && $0.agentSessionID == subagent.sessionId
+            let child: SessionModel
+            if case .update(let update) = step.event.payload,
+                let claimed = claimSubagent?(session, subagent.sessionId, update)
+            {
+                child = claimed
+            } else {
+                let summary = hostSummaries.values.first {
+                    $0.parentID == session.host?.id && $0.agentSessionID == subagent.sessionId
+                }
+                child = session.addSubagent(subagent.sessionId, host: summary)
             }
-            let child = session.addSubagent(subagent.sessionId, host: summary)
             register(child)
             if let link = child.host {
                 follow(child, link)

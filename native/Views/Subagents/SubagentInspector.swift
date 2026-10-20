@@ -49,3 +49,25 @@ struct SubagentInspector: View {
         .padding(16)
     }
 }
+
+#if DEBUG
+#Preview("Subagent inspector") {
+    let app = AppModel.preview()
+    let subagents = SubagentPreviewFixtures.subagents
+    let child = SessionModel.preview(in: app, id: subagents[0].id.rawValue, title: subagents[0].title)
+    child?.previewExchange(
+        "Find where the composer queues follow-ups and how Send Now reorders them",
+        reply:
+            "Follow-ups queue in `SessionModel+Turns.swift` (`enqueue`). Send Now steers when the agent can, otherwise it stops the turn and sends next."
+    )
+    return DSPreviewPair {
+        HStack(alignment: .top, spacing: DS.Space.xl) {
+            SubagentInspector(subagent: subagents[0], child: child)
+                .frame(width: 380, height: 420)
+            // Before the agent has sent any of the subagent's traffic.
+            SubagentInspector(subagent: subagents[1], child: nil)
+                .frame(width: 380, height: 420)
+        }
+    }
+}
+#endif

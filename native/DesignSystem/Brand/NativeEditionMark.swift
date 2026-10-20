@@ -57,3 +57,19 @@ private struct NativeArtworkMark: View {
             .accessibilityAddTraits(.isImage)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Edition marks") {
+    DSPreviewPair {
+        HStack(spacing: DS.Space.xl) {
+            NativeEditionMark(style: .standard)
+            NativeEditionMark(style: .beta)
+            ForEach(NativeHalloweenEdition.allCases, id: \.self) { edition in
+                NativeEditionMark(style: .halloween(edition))
+            }
+        }
+        .frame(height: 64)
+        .foregroundStyle(.dsTextPrimary)
+    }
+}
+#endif

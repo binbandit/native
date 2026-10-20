@@ -77,3 +77,27 @@ struct ProjectActionsMenuContent: View {
 enum ProjectActionGlyph {
     static let fallback = "terminal"
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Run menu") {
+    let app = AppModel.preview()
+    let project = app.previewProject() ?? Project(url: URL(filePath: "/Users/preview/Developer/native"))
+    DSPreviewPair {
+        HStack(spacing: DS.Space.lg) {
+            Menu("Run") {
+                ProjectActionsMenuContent(target: ProjectActionTarget(project: project, session: nil))
+                    .labelStyle(.titleAndIcon)
+            }
+            .environment(ProjectActionsPreviewFixtures.runner(for: project))
+            // A project with no actions yet.
+            Menu("Run (none yet)") {
+                ProjectActionsMenuContent(target: ProjectActionTarget(project: project, session: nil))
+                    .labelStyle(.titleAndIcon)
+            }
+            .environment(ProjectActionsPreviewFixtures.runner(for: project, actions: []))
+        }
+        .fixedSize()
+    }
+    .environment(SettingsPresentation())
+}
+#endif

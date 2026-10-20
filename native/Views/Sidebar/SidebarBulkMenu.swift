@@ -47,3 +47,19 @@ struct SidebarBulkMenu: View {
         Button("Deselect All", systemImage: "xmark.circle") { selection.clear() }
     }
 }
+
+#if DEBUG
+#Preview("Bulk menu") {
+    let app = AppModel.preview()
+    let selection = SidebarSelectionModel()
+    selection.selectAll(SidebarPreviewFixtures.sessions(in: app).map(\.id))
+    return DSPreviewPair {
+        // The menu a row's context menu shows while several tasks are picked.
+        Menu("4 Tasks") {
+            SidebarBulkMenu(selection: selection)
+        }
+        .fixedSize()
+    }
+    .sidebarPreviewEnvironment(app)
+}
+#endif

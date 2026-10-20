@@ -21,3 +21,23 @@ struct PullRequestSelectionLimitNote: View {
         }
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Selection limit") {
+    DSPreviewPair {
+        PullRequestPagePreview { model, _ in
+            PullRequestSelectionLimitNote(model: model)
+                .onAppear {
+                    // A drag in the gutter pulled past the end of its hunk.
+                    let path = "native/Views/Composer/Sections/QueuedPromptsSection.swift"
+                    guard let hunk = model.hunks[path]?.first,
+                        var selection = ReviewLineSelection(path: path, hunk: hunk, line: 4)
+                    else { return }
+                    selection.extend(to: hunk.lines.count + 3)
+                    model.lineSelection = selection
+                }
+        }
+        .frame(width: 560, height: 80)
+    }
+}
+#endif

@@ -36,3 +36,16 @@ struct OpenInMenuContent: View {
         .labelStyle(.titleAndIcon)
     }
 }
+
+#if NATIVE_PREVIEWS_WIP
+#Preview("Open In menu") {
+    let model = OpenInModel(defaults: PreviewUserDefaults())
+    DSPreviewPair {
+        // The apps on this Mac that can open a folder, with Copy Path; the default is checked.
+        Menu("Open In") {
+            OpenInMenuContent(location: .local(URL(filePath: NSTemporaryDirectory())), model: model)
+        }
+        .fixedSize()
+    }
+}
+#endif

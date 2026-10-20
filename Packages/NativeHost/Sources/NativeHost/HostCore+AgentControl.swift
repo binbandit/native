@@ -41,24 +41,6 @@ extension HostCore {
         return link.hostAgent
     }
 
-    /// Signs the agent in with one of its methods. The agent may open a browser and wait for the
-    /// user, so this can take a while.
-    func authenticateAgent(_ params: AuthenticateAgentParams) async throws -> HostAgent {
-        let link = try await readyAgent(params.agentID)
-        guard let peer = link.peer else { throw HostError.agentUnavailable(link.spec.name) }
-        link.isSigningIn = true
-        do {
-            _ = try await peer.request(
-                "authenticate", RawAuthenticateRequest(methodId: params.methodID), as: JSONValue.self)
-        } catch {
-            link.isSigningIn = false
-            throw error
-        }
-        link.isSigningIn = false
-        link.needsSignIn = false
-        return link.hostAgent
-    }
-
     /// One page of the agent's saved sessions, as the agent answered `session/list`.
     func listAgentSessions(_ params: ListAgentSessionsParams) async throws -> JSONValue {
         let link = try await readyAgent(params.agentID)

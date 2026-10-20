@@ -1,4 +1,5 @@
 import ACP
+import NativeOrchestration
 import SwiftUI
 
 /// A subagent's entry in its parent's transcript: who it is, what it's doing, and a way into its
@@ -162,3 +163,30 @@ extension SessionMessageView {
         self.init(title: "From \(sender)", isOutgoing: false, text: frame.body)
     }
 }
+
+#if DEBUG
+#Preview("Subagent cards") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.md) {
+            ForEach(SubagentPreviewFixtures.subagents) { subagent in
+                SubagentCard(subagent: subagent, onOpen: {})
+            }
+        }
+        .frame(width: 560)
+    }
+}
+
+#Preview("Session messages") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.lg) {
+            SessionMessageView(
+                title: "To Explore", isOutgoing: true,
+                text: "Find where the composer queues follow-ups and how Send Now reorders them.")
+            SessionMessageView(
+                title: "From Explore", isOutgoing: false,
+                text: "Follow-ups queue in SessionModel+Turns.swift. Send Now steers when the agent can.")
+        }
+        .frame(width: 560)
+    }
+}
+#endif
