@@ -68,6 +68,8 @@ final class HostSession {
     private var folded = SessionMirror()
     private var foldedThrough = 0
     private(set) var log: [LoggedEvent] = []
+    /// How many times the log started over (a load replaying the agent's history).
+    private(set) var resets = 0
     private let encoder = HostSession.makeEncoder()
     private let decoder = HostSession.makeDecoder()
     private var nextSeq = 1
@@ -93,6 +95,7 @@ final class HostSession {
     /// Adds one of Native's own events to the log and returns it, numbered and encoded.
     func append(_ payload: HostEvent.Payload, at date: Date = .now) -> LoggedEvent {
         if case .reset = payload {
+            resets += 1
             log = []
             folded = SessionMirror()
             foldedThrough = 0

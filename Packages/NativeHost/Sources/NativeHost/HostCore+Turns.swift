@@ -96,20 +96,22 @@ extension HostCore {
         let preamble = prompt.preamble.flatMap {
             session.mirror.state.deliveredPreamble?.id == $0.marker.id ? nil : $0
         }
-        append(
-            .prompt(
-                PromptEcho(
-                    text: prompt.text, origin: prompt.origin, requestID: prompt.origin == .recovery ? nil : prompt.id,
-                    shown: prompt.isEchoed, attachments: prompt.attachments, preamble: preamble?.marker)),
-            to: session)
+        let echo = PromptEcho(
+            text: prompt.text, origin: prompt.origin, requestID: prompt.origin == .recovery ? nil : prompt.id,
+            shown: prompt.isEchoed, attachments: prompt.attachments, preamble: preamble?.marker)
+        let sentAt = Date.now
+        append(.prompt(echo), to: session, at: sentAt)
         session.turnItemsStart = session.mirror.state.items.count
         titleAfterPrompt(session, prompt: prompt, kind: kind)
         publish(session)
         let blocks = (preamble.map { [$0.preamble.block] } ?? []) + (prompt.content ?? [.text(prompt.text)])
-        Task { await run(turn, blocks: blocks, in: session) }
+        Task { await run(turn, blocks: blocks, echo: echo, sentAt: sentAt, in: session) }
     }
 
-    private func run(_ turn: UnfinishedTurn, blocks: [ContentBlock], in session: HostSession) async {
+    private func run(
+        _ turn: UnfinishedTurn, blocks: [ContentBlock], echo: PromptEcho, sentAt: Date, in session: HostSession
+    ) async {
+        let resets = session.resets
         do {
             try await load(session)
         } catch {
@@ -120,6 +122,12 @@ extension HostCore {
             let peer = link.peer,
             let agentSessionID = session.record.agentSessionID
         else { return }
+        if session.resets != resets {
+            // The load started the transcript over from the agent's history, which doesn't have
+            // this message yet. Shown again as sent, so clients take it for the same turn.
+            append(.prompt(echo), to: session, at: sentAt)
+            session.turnItemsStart = session.mirror.state.items.count
+        }
         let generation = link.generation
         do {
             let response = try await peer.request(
