@@ -113,17 +113,19 @@ jobs:
           path: ${{ env.COMPILATION_CACHE }}
           key: compilation-cache-${{ runner.os }}-Debug-${{ github.sha }}
           restore-keys: compilation-cache-${{ runner.os }}-Debug-
+      # Only the versions Package.resolved records: a resolved file that no longer matches the project
+      # fails here instead of being re-resolved to whatever the remotes have now.
       - name: Resolve Swift packages
         run: >-
           xcodebuild -resolvePackageDependencies -project native.xcodeproj -scheme native
-          -clonedSourcePackagesDirPath "$SOURCE_PACKAGES" -quiet
+          -clonedSourcePackagesDirPath "$SOURCE_PACKAGES" -disableAutomaticPackageResolution -quiet
       # The full log goes to a file rather than through -quiet, which prints a misleading "failed with
       # exit code 0" error for every step that only warned. On a failure, its errors and summary show.
       - name: Build (unsigned)
         run: |
           xcodebuild build -project native.xcodeproj -scheme native -configuration Debug \
             -derivedDataPath "$RUNNER_TEMP/DerivedData" -clonedSourcePackagesDirPath "$SOURCE_PACKAGES" \
-            -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO \
+            -disableAutomaticPackageResolution -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO \
             COMPILATION_CACHE_ENABLE_CACHING=YES COMPILATION_CACHE_CAS_PATH="$COMPILATION_CACHE" \
             COMPILATION_CACHE_LIMIT_SIZE=2G > "$RUNNER_TEMP/build.log" 2>&1 || {
               grep -E '^[^[:space:]|].*error: ' "$RUNNER_TEMP/build.log" | sort -u

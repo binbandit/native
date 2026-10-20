@@ -391,6 +391,12 @@ an x86_64 slice nothing links). The Debug, Release and Nightly builds also cache
 
 Releases cache neither: an archive that ships compiles from scratch.
 
+Every app build in CI, `check.sh` and `release.sh` passes `-disableAutomaticPackageResolution`, so
+packages come only at the versions and revisions `Package.resolved` records. When the project's
+requirements and that file disagree, the build fails ("an out-of-date resolved file was detected")
+instead of resolving again against whatever the remotes have now; resolve in Xcode and commit the
+file with the change that needed it.
+
 ### iOS checks
 
 The Mac's builds never compile for iOS, so `ios.yml` does, on one runner: daily at 06:00 UTC, on
