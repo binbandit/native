@@ -7,9 +7,10 @@ import ServiceManagement
 #endif
 
 /// Durable sessions' notices, above whatever the detail column shows: the host runs another version
-/// than the app, the host is out of reach, why agents stop with the app this time (said once), and
-/// what agents did while Native was closed. Nothing blocks the window; each says what Native is
-/// doing about it and offers the one action that helps.
+/// than the app, the host is out of reach, host sessions still have Native's MCP server's old
+/// address, why agents stop with the app this time (said once), and what agents did while Native
+/// was closed. Nothing blocks the window; each says what Native is doing about it and offers the one
+/// action that helps.
 struct HostNotices: View {
     let host: DurableHost
     var updates: UpdateController?
@@ -30,6 +31,9 @@ struct HostNotices: View {
                 if host.isUnavailable {
                     unavailable
                 }
+                if let orchestration, orchestration.move != nil {
+                    OrchestrationServerNotice(status: orchestration) { Task { await host.restartHost() } }
+                }
                 if let fallback = host.fallbackNotice {
                     HostFallbackNotice(fallback: fallback, isAttached: host.placement.usesHost) {
                         host.dismissFallbackNotice()
@@ -45,7 +49,13 @@ struct HostNotices: View {
     }
 
     private var hasNotices: Bool {
-        host.versionStatus != .matched || host.isUnavailable || host.fallbackNotice != nil || host.away != nil
+        host.versionStatus != .matched || host.isUnavailable || orchestration?.move != nil
+            || host.fallbackNotice != nil || host.away != nil
+    }
+
+    /// Native's MCP server, which says when it had to move and host sessions still have its old address.
+    private var orchestration: OrchestrationServerStatus? {
+        OrchestrationServerNotice.status(in: model)
     }
 
     private var unavailable: some View {

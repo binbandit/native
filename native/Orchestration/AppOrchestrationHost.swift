@@ -1,14 +1,23 @@
 import ACP
 import Foundation
+import NativeHostClient
+import NativeHostProtocol
 import NativeSetup
 import Observation
 
 extension OrchestrationPlugin {
-    /// Lets the tools run tasks as `model`'s sessions, and report how Native is set up.
+    /// Lets the tools run tasks as `model`'s sessions, and report how Native is set up. With a host,
+    /// its sessions get this launch's URLs for their next load.
     static func connect(to model: AppModel, updates: UpdateController?, durableHost: DurableHost?) {
-        let plugin = model.plugins.plugins.lazy.compactMap { $0.plugin as? OrchestrationPlugin }.first
-        plugin?.orchestrator.host = AppOrchestrationHost(
-            model: model, setup: AppSetupReporter(model: model, updates: updates, durableHost: durableHost))
+        guard let plugin = model.plugins.plugins.lazy.compactMap({ $0.plugin as? OrchestrationPlugin }).first else {
+            return
+        }
+        plugin.orchestrator.host = AppOrchestrationHost(
+            model: model, durableHost: durableHost,
+            setup: AppSetupReporter(model: model, updates: updates, durableHost: durableHost))
+        if let durableHost {
+            Task { await plugin.refreshURLs(in: durableHost, plugins: model.plugins) }
+        }
     }
 }
 
@@ -18,12 +27,14 @@ extension OrchestrationPlugin {
 final class AppOrchestrationHost: OrchestrationHost {
     /// Weak because the model owns the plugins, which own this.
     private weak var model: AppModel?
+    private weak var durableHost: DurableHost?
     /// Tasks whose card already follows them, so reopening one twice doesn't double up.
     private var mirrored: Set<SessionKey> = []
     private let setup: AppSetupReporter
 
-    init(model: AppModel, setup: AppSetupReporter) {
+    init(model: AppModel, durableHost: DurableHost?, setup: AppSetupReporter) {
         self.model = model
+        self.durableHost = durableHost
         self.setup = setup
     }
 
@@ -33,6 +44,23 @@ final class AppOrchestrationHost: OrchestrationHost {
 
     func sessionKey(of clientID: UUID) -> SessionKey? {
         model?.session(clientID: clientID)?.key
+    }
+
+    func caller(of clientID: UUID) async -> OrchestrationCaller? {
+        if let session = model?.session(clientID: clientID) {
+            return OrchestrationCaller(clientID: clientID, agent: session.agent.id, cwd: session.cwd)
+        }
+        // A host session the app hasn't opened, such as a task working while its parent is closed.
+        // Right after launch the host's list may not be in yet, so ask it then.
+        var summary = durableHost?.sessions.first { $0.id.rawValue == clientID }
+        if summary == nil, let client = durableHost?.client {
+            summary = try? await client.sessions().first { $0.id.rawValue == clientID }
+        }
+        return summary.map {
+            OrchestrationCaller(
+                clientID: clientID, agent: AgentDefinition.ID(rawValue: $0.agentID),
+                cwd: URL(filePath: $0.cwd, directoryHint: .isDirectory))
+        }
     }
 
     func disabledSkills(of clientID: UUID) -> Set<String> {

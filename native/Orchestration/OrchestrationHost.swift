@@ -12,6 +12,10 @@ protocol OrchestrationHost: AnyObject, Sendable {
     /// The open session with this client id, once the agent has given it an id.
     func sessionKey(of clientID: UUID) -> SessionKey?
 
+    /// The session with this client id that the host runs, for a caller whose URL was handed out
+    /// in an earlier launch. Nil when there's none.
+    func caller(of clientID: UUID) async -> OrchestrationCaller?
+
     /// Starts a session on the request's agent in its parent's working directory, shows it as a
     /// subagent of the parent, and sends it the request's prompt. Returns once the prompt is on its
     /// way: from then on `taskSnapshot` must report the turn (running or later), never the idle

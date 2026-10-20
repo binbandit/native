@@ -529,3 +529,17 @@ else the most careful level, and the picker says plainly what it can't enforce. 
 wins: a forbidden level gives way to the nearest allowed one and the transcript says so once. A
 project's mode can only make the agent more careful (read-only or ask), never give it more freedom,
 since anyone who can commit to the repo writes it.
+
+## 2026-10-20: Native's MCP URLs outlast a launch
+
+Sessions in the host outlive the app and keep the MCP servers they were first handed, so the URL of
+Native's own MCP server has to outlast the app too. The server reuses the port it had last launch
+(per channel) and signs each session's token from its stable id with an HMAC under a per-install,
+per-channel secret kept `0600` in the app's Application Support, rather than handing out random
+tokens held in memory. When the port is taken it moves, retires the secret, and gives every host
+session its new URL for its next load. Rejected: fresh URLs every launch (a loaded session can't
+take new MCP servers without reloading, so every app restart would cost running tasks their tools),
+and, for Phase 2, a stdio bridge to a Unix socket (no port to lose and a uid check on every caller,
+but a helper binary in every agent's launch, for a server that moves into the host in Phase 3
+anyway). The cost is that a token stays valid across launches; the threat model's change is in
+`docs/durability.md` ("Native's MCP server across launches").

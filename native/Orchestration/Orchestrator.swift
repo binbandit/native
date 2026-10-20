@@ -40,9 +40,9 @@ final class Orchestrator {
     private var tasks: [OrchestrationTask] {
         didSet { save() }
     }
-    /// Per-session URL tokens, both ways round. They're the only credential a caller presents.
-    private var tokens: [UUID: String] = [:]
-    private var callers: [String: OrchestrationCaller] = [:]
+    /// The sessions handed a URL this launch, by Native's id for them (`SessionContext.clientID`),
+    /// which is what their tokens name.
+    private var callers: [UUID: OrchestrationCaller] = [:]
     private let defaults: UserDefaults
     private static let tasksKey = "orchestrationTasks"
 
@@ -61,24 +61,23 @@ final class Orchestrator {
         defaults.data(forKey: tasksKey).flatMap { try? JSONDecoder().decode([OrchestrationTask].self, from: $0) } ?? []
     }
 
-    /// The token in the MCP URL `session` is given; the same one every time it's asked for. A session
-    /// being reopened gets its tasks reopened too, so its transcript shows them again.
-    func token(for session: SessionContext) -> String {
-        if let token = tokens[session.clientID] {
-            return token
-        }
-        var generator = SystemRandomNumberGenerator()
-        let token = (0..<4).map { _ in String(generator.next(), radix: 16).leftPadded(to: 16) }.joined()
-        tokens[session.clientID] = token
-        callers[token] = OrchestrationCaller(clientID: session.clientID, agent: session.agent, cwd: session.cwd)
-        if let id = session.sessionID {
-            reopenTasks(of: SessionKey(agent: session.agent, id: id))
-        }
-        return token
+    /// Notes that `session` is being handed its URL, so its token resolves to it. The first time in
+    /// a launch for a session the agent already has (one being reopened), its tasks reopen too, so
+    /// its transcript shows them again.
+    func handedURL(to session: SessionContext) {
+        let caller = OrchestrationCaller(clientID: session.clientID, agent: session.agent, cwd: session.cwd)
+        guard callers.updateValue(caller, forKey: session.clientID) == nil, let id = session.sessionID else { return }
+        reopenTasks(of: SessionKey(agent: session.agent, id: id))
     }
 
-    func caller(for token: String) -> OrchestrationCaller? {
-        callers[token]
+    /// The session a token the server checked names: one handed its URL this launch, else one the
+    /// host still runs from an earlier launch. Nil for a session Native no longer has, so closing
+    /// a session retires its token.
+    func caller(of clientID: UUID) async -> OrchestrationCaller? {
+        if let caller = callers[clientID] {
+            return caller
+        }
+        return await host?.caller(of: clientID)
     }
 
     /// Native's skills the caller's session may read: all but those switched off for it.
@@ -425,10 +424,6 @@ final class Orchestrator {
 }
 
 extension String {
-    fileprivate func leftPadded(to length: Int) -> String {
-        String(repeating: "0", count: max(0, length - count)) + self
-    }
-
     fileprivate var nilIfEmpty: String? {
         isEmpty ? nil : self
     }

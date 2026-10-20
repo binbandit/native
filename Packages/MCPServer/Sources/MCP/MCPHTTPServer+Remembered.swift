@@ -13,13 +13,15 @@ public struct MCPServerLaunch: Hashable, Sendable {
 
 extension MCPHTTPServer {
     /// Listens on the port `store` remembers, with tokens signed by its secret, so URLs handed out
-    /// in earlier launches keep working; or, when that port is taken, on a port the system picks.
+    /// in earlier launches keep working; or, when that port stays taken for `patience`, on a port
+    /// the system picks. The wait covers the copy of the app this one replaces, which may still be
+    /// quitting (a relaunch opens the new copy first).
     ///
     /// Moving retires the secret. Clients still holding the old URLs send their tokens to whoever
     /// holds the old port now, so those tokens must never work again, wherever this server listens
     /// later. The new signer is in `tokens` before the server listens anywhere.
     public func start(
-        remembering store: MCPServerStore, scope: String, tokens: MCPTokens
+        remembering store: MCPServerStore, scope: String, tokens: MCPTokens, patience: Duration = .seconds(5)
     ) async throws -> MCPServerLaunch {
         var failure: String?
         let secret: Data
@@ -34,7 +36,7 @@ extension MCPHTTPServer {
 
         var movedFrom: UInt16?
         do {
-            try await start(on: remembered)
+            try await listen(on: remembered, patience: patience)
         } catch let taken as MCPPortInUse {
             movedFrom = taken.port
             do {
@@ -57,5 +59,16 @@ extension MCPHTTPServer {
             }
         }
         return MCPServerLaunch(port: port, movedFrom: movedFrom, storeFailure: failure)
+    }
+
+    private func listen(on port: UInt16?, patience: Duration) async throws {
+        let deadline = ContinuousClock.now.advanced(by: patience)
+        while true {
+            do {
+                return try await start(on: port)
+            } catch is MCPPortInUse where ContinuousClock.now < deadline {
+                try await Task.sleep(for: .milliseconds(250))
+            }
+        }
     }
 }

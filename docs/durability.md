@@ -251,6 +251,47 @@ Native.app it relays installs to the app (`_native/app/update/install`, or `open
 `~/.native/host/versions/` it updates itself with `Packages/HostUpdater` (startup check and rollback,
 a self-handshake before `confirm`, a feed check every 24 hours).
 
+**Native's MCP server across launches** (Phase 2, until the server moves into the host in Phase 3).
+The app serves the orchestration MCP server, and a host session keeps the URL it was first handed:
+the host stores each session's MCP servers and gives them to the agent at every `session/load`. So
+the URL outlasts the app:
+
+- **The port** is remembered per channel and reused when it's free. The server waits up to five
+  seconds for it (a relaunch opens the new copy before the old one quits), then takes any free port.
+- **The token** in `/mcp/<token>` is `<HostSessionID>.<HMAC-SHA256>`: a MAC over a versioned string
+  holding the channel and the session's id (`SessionContext.clientID`, stable for host sessions),
+  keyed by a 256-bit secret from the system's CSPRNG. The secret lives in
+  `~/Library/Application Support/<bundle id>/Orchestration/<channel>/token-secret` (folder `0700`,
+  file `0600`, created exclusively and then renamed into place; one with looser permissions or
+  another owner is replaced). The server checks the MAC in constant time (CryptoKit), then resolves
+  the id to a session the app has open or the host runs; anything else gets 404. Neither the secret
+  nor any token is logged. `MCPTokenSigner`, `MCPServerStore` and
+  `MCPHTTPServer.start(remembering:scope:tokens:)` in Packages/MCPServer, with tests there.
+- **When the port is taken**, the server moves and replaces the secret before it listens anywhere.
+  Every launch, once the host is connected, the app hands each host session its current URL
+  (`_native/session/set_mcp_servers` with `replacingNamed`, which upserts the `native` entry and
+  writes nothing when it's unchanged), so the next load brings the tools back, also for sessions
+  from before URLs lasted. A session loaded right now keeps the old address until it reloads; after
+  a move, `OrchestrationServerNotice` says so once and offers Restart Host.
+
+What this changes in the threat model. Before, tokens were 256 random bits per session per launch,
+held only in memory, and worthless once the app quit. Now a token lasts as long as the install's
+secret and the session. Unchanged: the server listens on loopback only and refuses requests with an
+`Origin` or a non-loopback `Host` (DNS rebinding); every request is authenticated by its token;
+tokens can't be guessed. Secrets are per install and per channel, and the channel is signed too, so
+no token works for another install or channel. New, and how far it goes:
+
+- **A secret on disk.** The user's own processes can read it, as they can already read
+  `host.sqlite`, which stores every session's MCP URL, and as they can run agents themselves: the
+  user account is the boundary, as for the host socket in development builds. Other users can't.
+- **A captured token stays useful.** Agents send their tokens to whatever listens on the remembered
+  port. Another user's process that takes that port while Native is closed, and is called by an
+  agent in the host meanwhile, learns those tokens. If it still holds the port when Native starts,
+  the server moves and retires the secret, so they never work again. If it lets go first, they work
+  until the secret changes: accepted for Phase 2, and closed in Phase 3, when the host serves the
+  tools and holds the port whenever agents run. A token stops working when the host closes its
+  session, and deleting `token-secret` retires every token (sessions get new URLs at the next launch).
+
 ## Host identity and many hosts
 
 Each host has a `HostID` (a UUID kept in its store) and a machine name, returned by `initialize`.
@@ -321,6 +362,7 @@ form questions (`elicitation`), as the app's own `InitializeRequest` says.
 | `_native/session/open {sessionID?, agentID, agentSessionID, cwd, title?, parentID?, origin, mcpServers, meta?, attach}` | adopts a session the agent listed, replaying it with `session/load`; an agent session already open returns its host session without a reload. With `attach` it answers as soon as the session exists (phase `loading`) and the replay streams in; a load that fails leaves it `disconnected` with its `problem` and a "Couldn't load this session" notice. Without, it answers after the load and a failure throws |
 | `_native/session/attach {sessionID, epoch?, afterSeq?}` | replays the session's events as notifications, then answers; live events follow |
 | `_native/session/detach`, `_native/session/close {sessionID, closeInAgent}` | stop following; stop tracking (history stays with the agent), and with `closeInAgent` free it in the agent's process (`session/close`) |
+| `_native/session/set_mcp_servers {sessionID, mcpServers, replacingNamed}` | the MCP servers the agent gets at the session's next load (a loaded session keeps its own): the whole list, or with `replacingNamed` an upsert by name that leaves other servers alone. Nothing is written when nothing changed. For servers whose address changed since the session opened (Native's orchestration server after a port fallback) |
 | `session/prompt {sessionID, requestID, text, content?, attachments, preamble?, behavior, echo, origin}` | → `prompted`, `steered` or `queued`, as soon as it's accepted. A repeated `requestID` gets the first answer and is never delivered twice, also while the first is still being handled; `NativeHostClient.prompt` resends it by itself after a dropped connection. `content` is the ACP blocks to send (attachments, images, linked files); `text` is what the transcript shows and what recovery looks for in a replay. `preamble` (a mode's instructions) goes ahead of the message unless the agent's last delivered preamble has the same id |
 | `session/cancel {sessionID}` | asks the agent to stop (`isStopping` in the summary). If it hasn't confirmed after 10 s, or the user asks again more than a second later, the host ends the turn itself ("Codex didn't confirm it stopped, so Native stopped waiting…") and ignores the late answer. Cancels a pending retry instead, if there is one. On an agent's own subagent it cancels just that subagent's work |
 | `session/set_config_option {sessionID, configID, value}` | as in ACP; the host remembers the value and sets it back after any reload where the agent reports another (codex-acp reopens on its default model) |
@@ -361,13 +403,27 @@ notifications before the response, like `session/load`. So a client never misses
 event, across reconnects and host restarts. Unknown event types and enum values decode as
 `unsupported`/`unknown`, so an older client survives a newer host.
 
-**Streaming cost.** `HostStreamingTests` measures a fake agent's stamped chunks decoded into
-`SessionUpdate` by a client, straight from the agent and through a host process. At a fast model's
-pace (a chunk a millisecond) the host adds about 0.3 ms (p50 0.5 ms against 0.2 ms; p99 under
-11 ms). Flooded as fast as the agent can write, the host passes 12k to 20k updates a second against
-40k to 60k direct, on a busy machine; agents stream far below either. The hot path parses agent
-updates with `JSONSerialization` and decodes events on clients with `DecodedJSONValue`, because
+**Streaming cost.** The host keeps each session's log as encoded events. An agent's update is
+parsed once (`JSONSerialization`, `AgentUpdate`), the host reads the few fields it needs from it, and
+its JSON is spliced into the event as the agent sent it; live notifications and attach replays write
+those bytes without encoding again, and a channel's writes go out together per burst. The host's
+own mirror decodes the log only when the host reads it. Clients decode each event once, its agent
+payload straight into a `SessionUpdate` (`SessionMirror.Step`), with `DecodedJSONValue`, because
 `JSONValue`'s own `Decodable` conformance throws at every type it tries (about 28 µs a chunk).
+
+`HostStreamingTests` measures a fake agent's stamped chunks decoded into `SessionUpdate`, straight
+from the agent and through a host process, on a Mac shared with a dozen busy agents (load 20 to 50,
+so the spread is wide):
+
+| Stream | Direct to the agent | Through the host |
+| --- | --- | --- |
+| A chunk a millisecond (a fast model), latency p50 / p99 | 0.1 to 0.27 ms / 0.2 to 9 ms | 0.22 to 0.47 ms / 0.4 to 8 ms |
+| 20,000 chunks as fast as the agent writes | 13,000 to 61,000 a second | 7,000 to 24,000 a second |
+| CPU per chunk in that flood | client 31 to 40 µs | client 64 to 70 µs, host 57 to 66 µs |
+
+So at the rates agents stream the host adds about a tenth to a quarter of a millisecond; only a
+flood far beyond any agent shows the extra hop, and the remaining cost is per-message actor hops and
+thread wake-ups rather than JSON.
 
 **What the full UI needs on top** (designed; Phases 3 and 4), so the iPad runs the whole app against
 a host:
@@ -437,6 +493,7 @@ reloads the session from the agent (`session/load`), then `RecoveryPlanner` deci
 | The prompt fails for a passing reason (network, overloaded provider) | the agent's error reads like an outage, and the turn got nowhere | puts the message back at the queue's front, unshown, and sends it again after 5, 20, then 60 s (`retryAt`); Stop cancels the retry | "Codex couldn't be reached (…). Native kept your message and will try again in 5 seconds. Use Stop to cancel." |
 | The agent never confirms a stop | no answer 10 s after `session/cancel`, or Stop again after a second | ends the turn as cancelled on the host's side; a late answer is ignored | "Codex didn't confirm it stopped, so Native stopped waiting. It may still be finishing its last step." |
 | Client disconnects mid-turn | socket closes | nothing: the turn runs on; the client re-attaches from its last event | the finished turn, as if it never left |
+| Client quits while an approval or question waits | socket closes | nothing: the agent keeps waiting, and the request stays in the session's log | the next client to attach (the app relaunched, an iPad) shows it and can answer it |
 
 The interruption time comes from the host's heartbeat (written every 30 s), so "at 2:14" is within
 half a minute; for agent crashes it's exact.
@@ -491,8 +548,13 @@ Window › Durable Sessions preview, opt-in per channel. Nothing else in the app
 
 1. `AgentRuntime` becomes host-backed: status, capabilities and auth methods come from the host
    (`_native/agents/list`); `start`/`restart`/`signIn` become host requests. The app stops spawning
-   agents; `AgentProcess` is used only inside the host. The host side is done: every method in "The
-   protocol" ▸ Agents, with process groups ended on stop.
+   agents; `AgentProcess` is used only inside the host. Done: with `HostSessions` on (the
+   `NativeHostSessions` default), `AppModel.connectHost(client:)` makes every `AgentRuntime` take its
+   status from `_native/agents/changed` (`AgentRuntime.apply`, decoding the agent's `initialize`
+   result) and start, stop, restart and sign in through the host (`AgentRuntime+Host.swift`). Idle
+   parking asks `_native/agents/stop`, which the host refuses while the agent works. Requests outside
+   turns go through `AgentConnection`: `ACPConnection` for agents in the app, `HostAgentConnection`
+   (list and delete sessions) for agents in the host, so listing and archiving code didn't change.
 2. `SessionModel` keeps `state`, `phase`, `queuedPrompts`, `needsApproval` and every method. It holds
    a `SessionMirror` fed by the client's events and a `HostSessionSummary`; `send`/`submit` become
    `session/prompt` with a fresh request id (retried with the same id after a reconnect), `cancel`,
@@ -501,12 +563,24 @@ Window › Durable Sessions preview, opt-in per channel. Nothing else in the app
    `SessionModel+Turns`, `+Stop`, `+Questions` and `+HiddenCommands` and `TurnRetryPolicy` do today
    (prompt content and preambles, stopping, questions, hidden commands, retries, queue moves and
    undo), so they work with no client attached; `SessionMirror` reproduces `SessionState` from the
-   events, timings included.
+   events, timings included. Client side done (`SessionModel+Host.swift`): the transcript is the
+   mirror's state, events that happened before the model followed the session rebuild it without
+   reaching plugins again, and each action dispatches to its host request. Messages sent while a
+   session loads and gets its chosen settings back (`ConfigChoices`), or while a workspace hold lasts,
+   wait in the model and go out in order afterwards. Native's own approval cards (script calls) stay
+   local. A session the host gives a fresh agent session (it was never saved) carries on under its
+   new key with its title, settings and place.
 3. `SessionStore` routes `NativeHostClient.events` instead of `AgentEvent`s; `SessionLauncher`
    calls `session/new` and `_native/session/open`. `SessionCatalog` keeps listing history through
-   the host (`_native/agents/list_sessions`, which wraps the agent's `session/list`). Host side done.
+   the host (`_native/agents/list_sessions`, which wraps the agent's `session/list`). Done: sessions
+   are opened with `attach` so their replay streams into the model as it loads, one open per session
+   at a time, under the session's existing `HostSessionID` when the host already has it. On connect
+   and reconnect the app syncs agents and opens the user's sessions the host is working on, so the
+   sidebar shows work that went on while it was closed.
 4. Plugins still supply agents (sent with `_native/agents/sync`) and per-session MCP servers (sent as
-   JSON with `session/new`, with their `_meta`), so the plugin API is unchanged. Host side done.
+   JSON with `session/new`, with their `_meta`), so the plugin API is unchanged. Done: each spec
+   carries the plugins' launch-policy environment, and a changed policy restarts the agent through
+   the host.
 5. `LoginShell` moves to `UserShell` (already in the package); `native/Models/LoginShell.swift` goes.
    Done.
 6. ⌘Q quits only the client; "Quit Native and Stop Agents" and the attached-host fallback land.
@@ -514,6 +588,8 @@ Window › Durable Sessions preview, opt-in per channel. Nothing else in the app
    `--exit-with-parent` (`NativeHostMac.ParentWatch`: it stops its agents and exits when the app
    does, `kill -9` included).
 7. The app shows connection states and the "while you were away" summary. Done.
+   Native's MCP server keeps its port and each session's token across launches, so host sessions
+   keep Native's tools when the app restarts ("Transport and security"). Done.
 8. Background agents are on by default, once the host-backed path passes its end-to-end checks; the
    Window › Durable Sessions preview goes then.
 
