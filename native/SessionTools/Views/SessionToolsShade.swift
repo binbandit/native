@@ -32,7 +32,7 @@ struct SessionToolsShade: View {
         }
         .background(.dsBackground)
         .clipShape(shape)
-        .overlay { shape.strokeBorder(.dsBorder, lineWidth: 1) }
+        .overlay { shape.strokeBorder(.dsBorder) }
         .dsShadow(DS.Shadow.floating)
         .background {
             // Escape puts it away wherever focus is, for as long as it's open.
