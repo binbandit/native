@@ -100,7 +100,7 @@ jobs:
         run: scripts/check-warnings.sh "$RUNNER_TEMP/build.log"
       - name: Save the compilation cache
         if: success() && runner.environment == 'github-hosted' && github.event_name != 'pull_request' && steps.compilation-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.COMPILATION_CACHE }}
           key: ${{ steps.compilation-cache.outputs.cache-primary-key }}
