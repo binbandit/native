@@ -45,7 +45,7 @@ extension GitHubCLI {
     private func accountHost(for request: GitHubCommand, environment: [String: String]) async throws -> String {
         // URL selectors override the checkout, including `pr checkout <url>`.
         if let urlHost = request.arguments.compactMap({ argument -> String? in
-            guard argument.hasPrefix("https://") else { return nil }
+            guard argument.hasPrefix("https://") || argument.hasPrefix("http://") else { return nil }
             return URL(string: argument)?.host()
         }).first {
             return urlHost.lowercased()
@@ -66,7 +66,7 @@ extension GitHubCLI {
                 config: result.output,
                 fallback: host ?? environment["GH_HOST"])
         }
-        return host ?? environment["GH_HOST"] ?? "github.com"
+        return (host ?? environment["GH_HOST"] ?? "github.com").lowercased()
     }
 }
 

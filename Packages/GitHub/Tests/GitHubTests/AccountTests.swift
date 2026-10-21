@@ -110,7 +110,7 @@ struct AccountTests {
         }
         #expect(
             try GitHubAccountHost.resolve(
-                config: config + "remote.upstream.gh-resolved\nbase\0", knownHosts: ["github.com", "work.example.com"],
+                config: config + "remote.upstream.gh-resolved\nbase\0",
                 fallback: nil
             ) == "work.example.com")
     }

@@ -117,7 +117,7 @@ public struct GitHubCLI: Sendable {
         return String(decoding: output, as: UTF8.self).split(separator: "\n").first.map(String.init) ?? ""
     }
 
-    /// The account gh uses for each host, with whether its token works.
+    /// Every account gh holds for each host, with whether its token works.
     public func authStatus() async throws(GitHubError) -> AuthStatus {
         try await decode(AuthStatus.self, from: .authStatus(host: host))
     }
