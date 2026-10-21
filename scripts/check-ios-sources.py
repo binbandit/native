@@ -17,7 +17,8 @@ DECLARATION = re.compile(
 )
 EXTENSION = re.compile(r"^(?:(?:public|internal|private|fileprivate|nonisolated) +)*extension +(\w+)", re.MULTILINE)
 MEMBER = re.compile(
-    r"^    (?:(?:public|internal|private|fileprivate|static|class|nonisolated|mutating) +)*"
+    r"^    (?:@\w+(?:\([^\n]*?\))? +)*"
+    r"(?:(?:public|internal|private|fileprivate|static|class|nonisolated|mutating) +)*"
     r"(?:func|var|let|typealias) +(`?\w+`?)",
     re.MULTILINE,
 )

@@ -79,6 +79,19 @@ class CheckIOSSourcesTests(unittest.TestCase):
             sources.prepare(self.root, self.destination, diagnostics="error: value of type 'View' has no member 'missing'"), []
         )
 
+    def test_inline_attributes_on_direct_extension_members(self):
+        self.write(
+            "native/Settings/FocusedValues.swift",
+            "extension FocusedValues {\n    @Entry var activeSession: Model?\n}\n",
+        )
+        self.assertEqual(
+            sources.prepare(
+                self.root, self.destination,
+                diagnostics="error: value of type 'FocusedValues' has no member 'activeSession'",
+            ),
+            [Path("native/Settings/FocusedValues.swift")],
+        )
+
     def test_real_platform_error_does_not_add_unrelated_sources(self):
         self.write("native/Models/Model.swift", "class Model {}\n")
         self.assertEqual(
