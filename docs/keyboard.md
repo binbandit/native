@@ -346,7 +346,9 @@ that can't take the task stay listed, dimmed, with the reason.
 
 ## Search
 
-The search panel (⇧⌘F) keeps focus in its field, so typing always refines the search.
+The search panel (⇧⌘F, Go ▸ Search Tasks…, or the magnifying glass in the window toolbar between
+the sidebar toggle and the history arrows) keeps focus in its field, so typing always refines the
+search. The toolbar button stays available with the sidebar collapsed.
 
 | Keys (panel open) | Action |
 | --- | --- |

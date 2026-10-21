@@ -17,19 +17,15 @@ struct SessionView: View {
     /// Files dropped on the transcript, for the composer to attach.
     @State private var drops = ComposerDropInbox()
     @Environment(\.inspectorRoom) private var inspectorRoom
+    @Experiment(.sessionTools) private var usesSessionTools
     private static let subagentInspectorWidth: CGFloat = 420
 
     var body: some View {
-        // A prototype of where the session's tools could live, only with `-sessionChrome a|b|c|d`.
-        #if DEBUG
-        if let direction = SessionChromeDirection.launchChoice {
-            SessionChromeScreen(session: session, direction: direction)
+        if usesSessionTools {
+            SessionToolsScreen(session: session)
         } else {
             standardBody
         }
-        #else
-        standardBody
-        #endif
     }
 
     private var standardBody: some View {
@@ -114,6 +110,7 @@ struct SessionView: View {
         .mcpServersPresentation()
         .focusedSceneValue(\.gitChangesInspector, showsChangesBinding)
         .refreshesGitStatus(of: session, in: git)
+        .detectsTurnChanges(of: session, into: changesReview, in: git)
         .environment(\.transcriptColumnMaxWidth, columnWidth.maxWidth)
     }
 
@@ -143,7 +140,8 @@ struct SessionView: View {
                                 Task { await GitHubGitWiring.createPullRequest(from: repository, gitHub: gitHub) }
                             }))
                 } : nil,
-            reviewFile: { reviewTurn(file: $0) }
+            reviewFile: { reviewTurn(file: $0) },
+            latestTurnChanges: changesReview.latestTurnChanges
         )
     }
 

@@ -29,14 +29,14 @@ struct GitRangeComparison: Equatable {
     /// The working tree now, as a snapshot's tree.
     let target: String
     let changes: [TreeChange]
-    /// For a turn, the files its agent edited, relative to the repository's root.
+    /// For a turn, the files its card lists, relative to the repository's root.
     let editedPaths: Set<String>
 
     var totals: LineStats {
         changes.compactMap(\.stats).reduce(.zero, +)
     }
 
-    /// The changes to files the turn's agent edited.
+    /// The changes to files listed by the turn's card.
     var edited: [TreeChange] {
         changes.filter(isEdited)
     }
@@ -46,7 +46,7 @@ struct GitRangeComparison: Equatable {
         changes.filter { !isEdited($0) }
     }
 
-    /// Files the agent edited that are back to how they were at the base: the edit was undone.
+    /// Files from the turn's card that are back to how they were at the base.
     var undone: [String] {
         let changed = Set(changes.flatMap(\.paths))
         return editedPaths.subtracting(changed).sorted { $0.localizedStandardCompare($1) == .orderedAscending }

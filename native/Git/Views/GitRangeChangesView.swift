@@ -157,14 +157,13 @@ struct GitRangeChangesView: View {
             if let only = edited.first, edited.count == 1 {
                 return (
                     "This turn's changes were undone", "arrow.uturn.backward.circle",
-                    "The agent edited \(URL(filePath: only).lastPathComponent), and it's back to how it was when "
-                        + "the turn began."
+                    "\(URL(filePath: only).lastPathComponent) is back to how it was when the turn began."
                 )
             }
             if !edited.isEmpty {
                 return (
                     "This turn's changes were undone", "arrow.uturn.backward.circle",
-                    "The agent edited \(edited.count) files, and they're back to how they were when the turn began."
+                    "\(edited.count) files are back to how they were when the turn began."
                 )
             }
             return ("No changes in this turn", "checkmark.circle", "This turn didn't change any files.")
