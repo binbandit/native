@@ -25,11 +25,6 @@ final class CommandRegistry {
     private(set) var commands: [NativeCommand] = []
     private(set) var userBindings: ShortcutBindings
 
-    /// The frontmost window's context as the menu bar last read it. Its items act on this one rather
-    /// than the one they were built with: an item that shows the same after a focus change keeps its
-    /// body, and with it the older context.
-    @ObservationIgnored private(set) var menuBarContext = CommandContext()
-
     @ObservationIgnored private var positions: [NativeCommand.ID: Int] = [:]
     @ObservationIgnored private let defaults: UserDefaults
     @ObservationIgnored private let policy: PolicyCenter
@@ -100,13 +95,6 @@ final class CommandRegistry {
         guard let command = command(id), command.isAvailable(context) else { return false }
         command.perform(context)
         return true
-    }
-
-    /// What the menu bar's items are built from, with `context` as the one they act on from now on.
-    /// The menu bar calls it each time it reads the frontmost window's context.
-    func menuBar(actingOn context: CommandContext) -> CommandMenuContext {
-        menuBarContext = context
-        return CommandMenuContext(registry: self, context: context)
     }
 
     /// Logs default shortcuts no feature registered a command for, which is usually a typo in an

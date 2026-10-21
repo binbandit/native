@@ -29,7 +29,8 @@ public nonisolated enum TaskStatus: Hashable, Sendable, CaseIterable {
     /// Stopped by a usage limit until it resets.
     case limited
 
-    /// The tooltip and accessibility text for the status.
+    /// The tooltip and accessibility text for the status, in the words every surface uses for a
+    /// task: working, needs you (a question, an approval, a plan), finished, failed, stopped.
     public var label: String {
         switch self {
         case .idle: "Idle"
@@ -39,9 +40,10 @@ public nonisolated enum TaskStatus: Hashable, Sendable, CaseIterable {
         case .needsInput: "Has a question for you"
         case .needsPermission: "Waiting for your approval"
         case .needsPlanReview: "Plan ready for your review"
-        case .done: "Done"
+        // The user's own words for these: a turn finishes, and they press Stop.
+        case .done: "Finished"
         case .failed: "Failed"
-        case .cancelled: "Cancelled"
+        case .cancelled: "Stopped"
         case .paused: "Paused"
         case .limited: "Usage limit reached"
         }

@@ -175,13 +175,21 @@ scripts/build-script-runtime.sh --test     # the crate's tests (cargo test --rel
 scripts/build-script-runtime.sh --sandbox  # with V8's memory sandbox
 ```
 
-- Requires Rust (rustup or Homebrew). arm64 only, which is every Mac macOS 27 runs on.
-- The first build downloads V8's prebuilt static library (37 MiB) and compiles about 100 crates:
-  about 30 seconds on an M-series Mac with a fast connection. After that a build takes a few
-  seconds, and an unchanged one about one. The cargo target directory is shared at
-  `~/Library/Caches/Native/ScriptRuntime` (about 1 GiB; override with `NATIVE_SCRIPT_RUNTIME_CACHE`):
-  Xcode's script sandbox forbids writing into the source tree, and every checkout and DerivedData
-  folder can share one V8 download. Cargo's lock serializes concurrent builds.
+- Requires Rust (rustup or Homebrew). arm64 only, which is every Mac macOS 27 runs on. The build
+  uses the version in `Runtime/ScriptRuntime/rust-toolchain.toml`: the cargo on the PATH when it's
+  that version, otherwise that version through rustup (installed once). Without rustup it builds
+  with what's there and says so. Keep the pin at the Rust CI's macOS image comes with, so CI uses
+  the preinstalled one instead of downloading it every run.
+- The first build downloads V8's prebuilt static library (38 MiB) and compiles about 100 crates:
+  about 30 seconds on an M-series Mac with a fast connection. rusty_v8 would download the library
+  itself without checking it, so the build script fetches it, checks it against the SHA-256 pinned
+  there (and the unpacked library again after cargo links it), and hands it over with
+  `RUSTY_V8_ARCHIVE`. Bumping the `v8` crate means updating those pins in the same change. After
+  that a build takes a few seconds, and an unchanged one about one. The cargo target directory is
+  shared at `~/Library/Caches/Native/ScriptRuntime` (about 1 GiB; override with
+  `NATIVE_SCRIPT_RUNTIME_CACHE`): Xcode's script sandbox forbids writing into the source tree, and
+  every checkout and DerivedData folder can share one V8 download. Cargo's lock serializes
+  concurrent builds.
 - In Xcode, "Embed Script Runtime" runs only when a file in `Runtime/ScriptRuntime/Sources.xcfilelist`
   or the build script changes (add new source files to that list), copies the runtime to
   `Contents/Helpers/native-script-runtime` and signs it with the app's identity and its own
