@@ -11,7 +11,7 @@ import Testing
                 ($0.element, Date(timeIntervalSince1970: Double($0.offset)))
             })
         let visible = TaskListFold.visibleIDs(
-            ordered: ordered, keeping: ["working", "unread", "selected"], dates: dates)
+            ordered: ordered, keeping: ["working", "unread"], dates: dates, revealing: ["selected"])
         #expect(ordered.filter(visible.contains) == ["working", "unread", "selected", "new", "middle", "older"])
     }
 
@@ -25,8 +25,13 @@ import Testing
         #expect(TaskListFold.visibleIDs(ordered: [1, 2], keeping: [], dates: [:]) == [1, 2])
     }
 
+    @Test func selectedRecentTaskStillCountsTowardTheRestingLimit() {
+        let visible = TaskListFold.visibleIDs(ordered: [1, 2, 3, 4, 5], keeping: [], dates: [:], revealing: [1])
+        #expect(visible == [1, 2, 3])
+    }
+
     @Test func selectedOldTaskDoesNotDisplaceRecentRestingTasks() {
-        let visible = TaskListFold.visibleIDs(ordered: [1, 2, 3, 4, 5], keeping: [5], dates: [:])
+        let visible = TaskListFold.visibleIDs(ordered: [1, 2, 3, 4, 5], keeping: [], dates: [:], revealing: [5])
         #expect(visible == [1, 2, 3, 5])
     }
 }

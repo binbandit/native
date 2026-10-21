@@ -4,7 +4,7 @@ import Foundation
 /// are supplied by the client, so folding never hides the task someone is working with.
 public enum TaskListFold {
     public static func visibleIDs<ID: Hashable>(
-        ordered: [ID], keeping: Set<ID>, dates: [ID: Date], restingLimit: Int = 3
+        ordered: [ID], keeping: Set<ID>, dates: [ID: Date], revealing: Set<ID> = [], restingLimit: Int = 3
     ) -> Set<ID> {
         let resting = ordered.enumerated().filter { !keeping.contains($0.element) }
         let recent = resting.sorted {
@@ -12,6 +12,6 @@ public enum TaskListFold {
             let rhs = dates[$1.element] ?? .distantPast
             return lhs == rhs ? $0.offset < $1.offset : lhs > rhs
         }
-        return keeping.union(recent.prefix(max(0, restingLimit)).map(\.element))
+        return keeping.union(recent.prefix(max(0, restingLimit)).map(\.element)).union(revealing)
     }
 }

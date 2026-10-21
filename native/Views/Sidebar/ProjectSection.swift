@@ -120,14 +120,16 @@ struct ProjectSection<TaskAccessory: View>: View {
             let session = model.session(summary.id)
             let status = TaskStatus(session)
             if status.isActive || status.needsAttention || status == .failed || status == .paused || status == .limited
-                || model.isUnread(summary.id) || model.selection == summary.id || model.renaming == summary.id
+                || model.isUnread(summary.id)
                 || model.removedWorkspaces[summary.id] != nil
             {
                 keeping.insert(summary.id)
             }
             dates[summary.id] = session?.lastActivity ?? summary.info.updatedDate
         }
-        let visible = TaskListFold.visibleIDs(ordered: sessions.map(\.id), keeping: keeping, dates: dates)
+        let visible = TaskListFold.visibleIDs(
+            ordered: sessions.map(\.id), keeping: keeping, dates: dates,
+            revealing: Set([model.selection, model.renaming].compactMap { $0 }))
         return sessions.filter { visible.contains($0.id) }
     }
 
