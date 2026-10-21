@@ -40,7 +40,8 @@ def https(value):
 
 
 def read_json(path):
-    return json.loads(path.read_text(encoding="utf-8"))
+    return json.loads(path.read_text(encoding="utf-8"),
+                      parse_constant=lambda _: require(False, "Non-finite JSON number"))
 
 
 def present(packages, path, name):

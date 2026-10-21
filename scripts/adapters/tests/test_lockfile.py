@@ -115,7 +115,7 @@ sys.exit(int(os.environ.get('FAIL', '0')))
                 (self.output / "package-lock.json").write_text(json.dumps(lock))
                 with self.assertRaises(ValueError):
                     tool.audit(self.output, PACKAGE, VERSION)
-        for text in ("{", "[]", "null"):
+        for text in ("{", "[]", "null", json.dumps(dict(LOCK, invalid=float("nan")))):
             (self.output / "package-lock.json").write_text(text)
             self.assertNotEqual(self.cli("check").returncode, 0)
         (self.output / "package-lock.json").write_text(json.dumps(LOCK))
