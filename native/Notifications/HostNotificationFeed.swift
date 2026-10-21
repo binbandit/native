@@ -12,11 +12,12 @@ import os
 final class HostNotificationFeed {
     /// A host whose notifications this Mac follows.
     private struct Host {
-        let id: NativeHostProtocol.HostID
+        let info: HostInfo
         /// What the user calls it; nil for this Mac's own host.
         let name: String?
         let client: NativeHostClient
 
+        var id: NativeHostProtocol.HostID { info.hostID }
         var isLocal: Bool { name == nil }
     }
 
@@ -42,7 +43,6 @@ final class HostNotificationFeed {
     /// What the user did on a notification before its host connected (a click that launched Native).
     private var waitingResponses: [NativeHostProtocol.HostID: [NativeNotificationResponse]] = [:]
 
-    private static let seenKey = "NativeHostSeenNotifications"
     private static let logger = Logger(subsystem: "Native", category: "HostNotifications")
 
     init(
@@ -75,7 +75,10 @@ final class HostNotificationFeed {
     /// quiet about it.
     func covers(_ ref: UsageSessionRef) -> Bool {
         guard isEnabled, let client = app?.hostClient(of: ref) else { return false }
-        return hosts.values.contains { $0.client === client }
+        return hosts.values.contains {
+            $0.client === client
+                && HostNotificationsSwitch.history.usesHostNotifications(on: $0.info, enabled: isEnabled)
+        }
     }
 
     // MARK: - Hosts
@@ -87,7 +90,7 @@ final class HostNotificationFeed {
             await self?.receive(event, from: client, name: nil)
         }
         if let info = await client.hostInfo {
-            connected(Host(id: info.hostID, name: nil, client: client))
+            connected(Host(info: info, name: nil, client: client))
         }
     }
 
@@ -96,9 +99,11 @@ final class HostNotificationFeed {
         guard isEnabled else { return }
         switch event {
         case .connection(.connected(let info)):
-            connected(Host(id: info.hostID, name: name, client: client))
+            connected(Host(info: info, name: name, client: client))
         case .notificationPosted(let notification):
-            guard let host = host(of: client) else { return }
+            guard let host = host(of: client),
+                HostNotificationsSwitch.history.usesHostNotifications(on: host.info, enabled: isEnabled)
+            else { return }
             remember(notification.id, on: host.id)
             catchingUp[host.id]?.insert(notification.id)
             active[host.id, default: [:]][notification.id] = notification
@@ -119,6 +124,14 @@ final class HostNotificationFeed {
 
     private func connected(_ host: Host) {
         hosts[host.id] = host
+        guard HostNotificationsSwitch.history.usesHostNotifications(on: host.info, enabled: isEnabled) else {
+            // A notification from an earlier run can launch this app against an older host.
+            // Unsupported actions open the task through the same response fallback.
+            for response in waitingResponses.removeValue(forKey: host.id) ?? [] {
+                perform(response, on: host)
+            }
+            return
+        }
         Task { await catchUp(host) }
     }
 
@@ -318,14 +331,11 @@ final class HostNotificationFeed {
     // MARK: - Where news starts
 
     private func lastSeen(on host: NativeHostProtocol.HostID) -> Int64? {
-        (UserDefaults.standard.dictionary(forKey: Self.seenKey) as? [String: Int64])?[host.description]
+        HostNotificationsSwitch.history.lastSeen(on: host)
     }
 
     /// The newest notification this Mac heard of from `host`: what comes after it is news next time.
     private func remember(_ id: Int64, on host: NativeHostProtocol.HostID) {
-        var seen = UserDefaults.standard.dictionary(forKey: Self.seenKey) as? [String: Int64] ?? [:]
-        guard id > seen[host.description] ?? -1 else { return }
-        seen[host.description] = id
-        UserDefaults.standard.set(seen, forKey: Self.seenKey)
+        HostNotificationsSwitch.history.remember(id, on: host)
     }
 }
