@@ -1,0 +1,28 @@
+name: Beta schedule tests
+
+on:
+  pull_request:
+    paths:
+      - .github/workflows/beta.yml
+      - .github/workflows/release.yml
+      - .github/workflows/test-beta-schedule.yml
+      - scripts/release/beta-schedule.py
+      - scripts/release/release.sh
+      - scripts/release/release-notes.sh
+      - scripts/release/tests/test_beta_schedule.py
+
+permissions:
+  contents: read
+
+concurrency:
+  group: beta-schedule-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - run: python3 -m unittest discover -s scripts/release/tests -v
+      - run: bash -n scripts/release/release.sh scripts/release/release-notes.sh

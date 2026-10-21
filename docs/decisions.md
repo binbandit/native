@@ -587,3 +587,13 @@ shows the Steer/Queue key hint. This supersedes the hint described in "Steer by 
 People can discover those actions through the send button's tooltip and VoiceOver label. Keep the
 code-block and queued-message editing hints, and the placeholders that explain a pending question,
 approval, stopping or why sending is unavailable.
+
+## 2026-10-21: Mac betas every six hours when main changes
+
+Beta checks main at minute 17 every six hours and skips unchanged commits or an active Mac release.
+It continues the highest beta version numerically; a stable release starts the next minor at beta.1.
+The scheduler tags the selected main commit and calls the existing Release workflow with inherited
+secrets, so signing, notarization, publication and the Mac runner stay in one pipeline. A tag made
+with GITHUB_TOKEN cannot trigger Release on its own. Direct Release dispatch remains a rehearsal;
+Beta's dry run only prints its decision. Automatic notes start at the previous beta, including when
+a stable tag intervenes. Daily Nightly, manual version tags and TestFlight keep their own triggers.
