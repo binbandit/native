@@ -19,6 +19,8 @@ on:
       - native/Views/Transcript/**
       - native/Celebrations/**
       - scripts/check-ios.sh
+      - scripts/check-ios-sources.py
+      - scripts/tests/test_check_ios_sources.py
       - scripts/check-warnings.sh
       - scripts/ci/build-packages-ios.sh
       - scripts/companion/**
@@ -47,6 +49,10 @@ jobs:
       ICON_ARTWORK: design/app-icon/channel-themes/*/stable.icon/**,design/app-icon/celebrations/*/stable.icon/**
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Test the iPad typecheck tooling
+        run: >-
+          NATIVE_IOS_CHECK_INTEGRATION=1 PYTHONDONTWRITEBYTECODE=1
+          python3 -m unittest discover -s scripts/tests -p 'test_check_ios_sources.py'
       - name: Cache locations
         run: |
           echo "SOURCE_PACKAGES=$RUNNER_TEMP/SourcePackages" >> "$GITHUB_ENV"
