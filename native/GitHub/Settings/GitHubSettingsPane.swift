@@ -39,7 +39,7 @@ struct GitHubSettingsPage: View {
             SettingsHeader(
                 "GitHub",
                 description: Text(
-                    "Pull requests through your own GitHub CLI (gh): with an account choice just for Native."))
+                    "Choose the GitHub account Native uses and where pull requests open."))
             #if os(macOS)
             SettingsRowGroup {
                 SettingsRow(
