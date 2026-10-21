@@ -69,7 +69,7 @@ struct GitHubSetupView: View {
         case .notInstalled:
             "Pull requests come from gh, GitHub's command-line tool, so your login, hosts and GitHub Enterprise just work. Native couldn't find it on your PATH. Install it in a terminal, then check again."
         case .notAuthenticated:
-            "gh is installed but isn't signed in. Run this in a terminal and follow the prompts; Native uses whichever account gh is signed in to."
+            "gh is installed but isn't signed in. Run this in a terminal and follow the prompts; Choose the account Native uses from the sidebar footer."
         case .failed(.offline):
             "Native couldn't connect to GitHub. It tries again on its own as soon as you're back online."
         case .failed(.rateLimited):

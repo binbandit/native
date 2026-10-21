@@ -1,16 +1,17 @@
 import SwiftUI
 
-/// The sidebar's footer: a hairline, then Settings at the trailing edge. Help is the status bar's
-/// "?" and the Help menu; agents' health lives on Home and in Settings ▸ Agents. While the status
-/// bar shows, the footer shrinks to the bar's height, so the two stack as one quiet band with their
-/// glyphs at the same size.
+/// The GitHub identity and Settings share the sidebar's bottom row.
 struct SidebarFooter: View {
     @Environment(StatusBarRegistry.self) private var statusBar: StatusBarRegistry?
 
     var body: some View {
         let isAboveStatusBar = statusBar?.isVisible == true
         HStack {
+            #if os(macOS)
+            GitHubAccountButton()
+            #else
             Spacer(minLength: 0)
+            #endif
             SettingsButton()
         }
         .padding(.horizontal, DS.Space.xl)
@@ -65,5 +66,6 @@ private struct FooterGlyph: View {
             .frame(width: DS.Size.sidebarWidth)
     }
     .sidebarPreviewEnvironment(AppModel.preview())
+    .environment(GitHubAccountPreviewFixtures.model(.multiple))
 }
 #endif

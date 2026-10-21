@@ -1,7 +1,7 @@
 import Foundation
 
 /// The signed-in user, from `gh api user`.
-public struct GitHubUser: Sendable, Hashable, Decodable {
+public struct GitHubUser: Sendable, Hashable, Codable {
     public var login: String
     public var name: String?
     public var avatarURL: URL?

@@ -9,6 +9,9 @@ import Observation
 /// lifetime; `keepFresh()` keeps it current while the app runs.
 @Observable
 final class GitHubModel {
+    let accounts: GitHubAccountsModel
+    @ObservationIgnored private(set) var accountRevision = 0
+
     /// `nil` until the first check; then whether gh is installed and signed in.
     private(set) var availability: GitHubAvailability?
     /// The last inbox that loaded. Kept through later failures, so the list stays useful offline.
@@ -25,7 +28,7 @@ final class GitHubModel {
     }
 
     /// Pull requests behind task branches, for badges.
-    private(set) var branchPullRequests: [BranchReference: BranchPullRequest] = [:]
+    var branchPullRequests: [BranchReference: BranchPullRequest] = [:]
     @ObservationIgnored var branchLookupsInFlight: Set<BranchReference> = []
 
     /// Opens a pull request as a task: the app's Open as Task sheet takes it from there (which
@@ -91,8 +94,10 @@ final class GitHubModel {
     ///   - runner: Runs gh on the machine that hosts the projects.
     init(
         environment: @escaping @MainActor (_ refresh: Bool) async -> [String: String],
-        runner: any CommandRunner
+        runner: any CommandRunner,
+        defaults: UserDefaults = .standard
     ) {
+        accounts = GitHubAccountsModel(defaults: defaults)
         self.environment = environment
         self.runner = runner
         // `-gitHubOpenPullRequest <url>` opens a pull request's page at launch, for checks and links.
@@ -113,6 +118,12 @@ final class GitHubModel {
         if UserDefaults.standard.bool(forKey: GitHubDryRunRunner.enabledKey) {
             runner = GitHubDryRunRunner(base: runner)
         }
+        if let value = UserDefaults.standard.string(forKey: "gitHubAccountFixture"),
+            let state = GitHubAccountPreviewFixtures.State(rawValue: value)
+        {
+            runner = GitHubAccountFixtureRunner(state: state)
+        }
+
         #endif
         self.init(environment: environment, runner: runner)
     }
@@ -213,13 +224,14 @@ final class GitHubModel {
     /// Re-checks gh and reloads the inbox. `rereadEnvironment` picks up a gh installed or a PATH
     /// changed since launch.
     func refresh(rereadEnvironment: Bool = false) async {
-        guard !isRefreshing else { return }
+        guard !isRefreshing, accounts.switchingTo == nil else { return }
         isRefreshing = true
         defer { isRefreshing = false }
 
         let cli = await cli(rereadEnvironment: rereadEnvironment || availability == .notInstalled)
+        await accounts.load(using: cli)
         do {
-            let accounts = try await readyAccounts(cli)
+            let accounts = try readyAccounts()
             var inboxes: [PullRequestInbox] = []
             for account in accounts {
                 inboxes.append(try await cli.targeting(host: account.host).inbox())
@@ -232,13 +244,10 @@ final class GitHubModel {
         }
     }
 
-    /// The signed-in accounts, checking with gh only until it has worked once: after that, a failed
-    /// search reports a lost login just as well, and skips a network round trip per refresh.
-    private func readyAccounts(_ cli: GitHubCLI) async throws(GitHubError) -> [AuthStatus.Account] {
-        if case .ready(let accounts) = availability {
-            return accounts
-        }
-        let availability = try await cli.availability()
+    /// Account discovery also refreshes the footer, including logins added outside Native.
+    private func readyAccounts() throws(GitHubError) -> [AuthStatus.Account] {
+        if let error = accounts.error { throw error }
+        let availability = accounts.selection.availability(in: accounts.status ?? AuthStatus(hosts: [:]))
         self.availability = availability
         switch availability {
         case .ready(let accounts): return accounts
@@ -250,6 +259,7 @@ final class GitHubModel {
 
     private func recordFailure(_ error: GitHubError, cli: GitHubCLI) async {
         lastError = error
+        accounts.recordFailure(error)
         switch error {
         case .notInstalled:
             availability = .notInstalled
@@ -269,83 +279,49 @@ final class GitHubModel {
 
     func cli(rereadEnvironment: Bool = false) async -> GitHubCLI {
         if let cachedCLI, !rereadEnvironment {
-            return cachedCLI
+            return cachedCLI.selecting(accounts.selection)
         }
         let cli = GitHubCLI(environment: await environment(rereadEnvironment), runner: runner)
         cachedCLI = cli
-        return cli
+        return cli.selecting(accounts.selection)
     }
 
-    // MARK: - Branches
-
-    /// How long a branch's pull request is trusted. Each lookup is one `gh pr list --head` call, so
-    /// results are cached and shared by every badge showing the same branch.
-    static let branchMaxAge: TimeInterval = 120
-
-    func pullRequest(for branch: BranchReference) -> PullRequestSummary? {
-        branchPullRequests[branch]?.pullRequest
+    var canSwitchAccount: Bool {
+        !isRefreshing && accounts.switchingTo == nil && !pages.values.contains { !$0.busy.isEmpty }
+            && !rowActivity.values.contains { if case .working = $0 { true } else { false } }
     }
 
-    /// Loads the branch's pull request unless a result younger than `maxAge` is cached.
-    func loadPullRequest(for branch: BranchReference, maxAge: TimeInterval = branchMaxAge) async {
-        if let cached = branchPullRequests[branch], Date.now.timeIntervalSince(cached.fetchedAt) < maxAge {
-            return
-        }
-        guard !branchLookupsInFlight.contains(branch) else { return }
-        // Without gh or a login there's nothing to show, and the list explains why.
-        if availability == .notInstalled || availability == .notAuthenticated { return }
-
-        branchLookupsInFlight.insert(branch)
-        defer { branchLookupsInFlight.remove(branch) }
+    func selectAccount(_ account: AuthStatus.Account) async {
+        guard canSwitchAccount else { return }
         let cli = await cli()
-        do {
-            let found: BranchPullRequests?
-            if let link = await linkedPullRequest?(branch) {
-                found = BranchPullRequests([try await cli.pullRequest(.url(link), in: .directory(branch.directory))])
-            } else {
-                found = try await cli.pullRequests(forBranch: branch.branch, in: .directory(branch.directory))
-            }
-            branchPullRequests[branch] = BranchPullRequest(found, fetchedAt: .now)
-        } catch .notARepository, .notFound {
-            branchPullRequests[branch] = BranchPullRequest(pullRequest: nil, fetchedAt: .now)
-        } catch {
-            // A lost login anywhere means gh is signed out, which the list and every card then say.
-            if case .notAuthenticated = error { availability = .notAuthenticated }
-            // Keep showing what was there, saying why it may be old; the next refresh tries again.
-            if var cached = branchPullRequests[branch] {
-                cached.fetchedAt = .now
-                cached.failure = error
-                branchPullRequests[branch] = cached
-            }
-        }
+        guard canSwitchAccount, await accounts.select(account, using: cli) else { return }
+        let branches = Array(branchPullRequests.keys)
+        accountRevision += 1
+        availability = nil
+        inbox = nil
+        branchPullRequests = [:]
+        branchLookupsInFlight = []
+        pages = [:]
+        presentedPullRequest = nil
+        mergeRequest = nil
+        undo = nil
+        rowActivity = [:]
+        accounts.isMenuPresented = false
+        await refresh()
+        for branch in branches { Task { await loadPullRequest(for: branch, maxAge: 0) } }
     }
 
-    /// What the last lookup found for a branch, with how fresh it is.
-    func branchPullRequest(for branch: BranchReference) -> BranchPullRequest? {
-        branchPullRequests[branch]
+    func reportAuthenticationFailure() {
+        availability = .notAuthenticated
+        accounts.recordFailure(.notAuthenticated("Sign in again, or choose another GitHub account."))
     }
 
-    /// Reloads every badge showing this pull request, after a change made from Native (a merge, a
-    /// close) so the sidebar says so at once rather than at the next refresh.
-    func reloadBranches(showing url: URL) {
-        for (branch, found) in branchPullRequests where found.pullRequest?.url == url {
-            Task { await loadPullRequest(for: branch, maxAge: 0) }
-        }
+    func checkAccounts() async {
+        guard canSwitchAccount else { return }
+        availability = nil
+        await refresh(rereadEnvironment: true)
     }
 
-    /// Forgets a branch's result so its badge reloads, e.g. after a push or a new pull request.
-    func invalidate(_ branch: BranchReference) {
-        branchPullRequests[branch] = nil
-        Task { await loadPullRequest(for: branch) }
-    }
-
-    /// Reloads every badge whose result is older than `age`.
-    func refreshBranches(olderThan age: TimeInterval) {
-        let stale = branchPullRequests.filter { Date.now.timeIntervalSince($0.value.fetchedAt) >= age }.keys
-        for branch in stale {
-            Task { await loadPullRequest(for: branch, maxAge: age) }
-        }
-    }
 }
 
 #if DEBUG
@@ -359,7 +335,7 @@ extension GitHubModel {
         error: GitHubError? = nil,
         branches: [BranchReference: PullRequestSummary] = [:]
     ) -> GitHubModel {
-        let model = GitHubModel(environment: { _ in [:] }, runner: NoCommandRunner())
+        let model = GitHubModel(environment: { _ in [:] }, runner: NoCommandRunner(), defaults: PreviewUserDefaults())
         model.cachedCLI = GitHubCLI(environment: [:], runner: NoCommandRunner())
         model.inbox = inbox
         model.availability = availability
