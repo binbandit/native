@@ -35,6 +35,8 @@ final class HostSession {
     private(set) var lastEventAt = Date.now
     /// The load in flight, shared by everyone who needs it.
     var loading: Task<Void, any Error>?
+    /// Config notifications during a load stay private until restoration has settled.
+    var loadingConfigOptions: JSONValue?
     /// Set when the user cancels while recovery is under way, so it stops.
     var isRecoveryCancelled = false
     /// When stop was first asked for in the running turn; the agent has until the grace period
