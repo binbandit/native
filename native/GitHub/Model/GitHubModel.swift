@@ -298,6 +298,10 @@ final class GitHubModel {
     }
 
     func selectAccount(_ account: AuthStatus.Account) async {
+        if let current = accounts.current, accounts.key(current) == accounts.key(account) {
+            accounts.isMenuPresented = false
+            return
+        }
         guard canSwitchAccount else { return }
         let cli = await cli()
         guard canSwitchAccount, await accounts.select(account, using: cli) else { return }
