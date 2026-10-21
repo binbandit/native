@@ -138,6 +138,11 @@ if [ "$sandbox" = 1 ]; then
     cargo_args+=(--features sandbox)
 fi
 
+# Some minimal rustup installations put libLLVM beside rustc's libraries, while rust-objcopy's
+# rpath looks in rustlib/<target>/lib. Let the stripping tool find the pinned toolchain's library.
+rust_sysroot=$("${RUSTC:-rustc}" --print sysroot)
+export DYLD_FALLBACK_LIBRARY_PATH="$rust_sysroot/lib${DYLD_FALLBACK_LIBRARY_PATH:+:$DYLD_FALLBACK_LIBRARY_PATH}"
+
 if [ "$test" = 1 ]; then
     exec "${cargo[@]}" test "${cargo_args[@]}"
 fi

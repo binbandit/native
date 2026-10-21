@@ -67,6 +67,7 @@ extension HostCore {
         do {
             _ = try await peer.request(
                 "session/delete", RawSessionIDRequest(sessionId: params.agentSessionID), as: JSONValue.self)
+            try store.forgetClosedSessionConfig(agentID: params.agentID, agentSessionID: params.agentSessionID)
         } catch {
             noteAgentError(error, from: link)
             throw error

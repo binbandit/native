@@ -1,5 +1,5 @@
 /// Every managed setting Native reads, by the preference key an organization's configuration profile
-/// sets. `docs/enterprise.md` documents each one, and `docs/enterprise/` ships a sample profile.
+/// sets. See `docs/enterprise.md` and the package-only catalog inputs in `docs/catalog-policy.md`.
 public enum PolicyKey: String, CaseIterable, Hashable, Sendable {
     case agentsAllowed = "policy.agents.allowed"
     case agentsEnvironment = "policy.agents.environment"
@@ -7,6 +7,8 @@ public enum PolicyKey: String, CaseIterable, Hashable, Sendable {
     case mcpBlocked = "policy.mcp.blocked"
     case mcpRequired = "policy.mcp.required"
     case pluginsAllowed = "policy.plugins.allowed"
+    case catalogEnabled = "policy.catalog.enabled"
+    case catalogIndexURL = "policy.catalog.indexURL"
     case skillsBlocked = "policy.skills.blocked"
     case forbiddenPermissionModes = "policy.permissions.forbiddenModes"
     case scriptsEnabled = "policy.scripts.enabled"
