@@ -123,7 +123,7 @@ struct SessionView: View {
     }
 
     private var repository: GitRepositoryModel {
-        git.model(for: session.cwd)
+        git.model(for: session.cwd, session: session.key)
     }
 
     /// Review and Commit on the transcript's files-changed card. Commit only shows while there's

@@ -20,10 +20,10 @@ struct AppTaskRowAccessory: View {
                     name: host.name, look: HostLookStore.shared.look(for: device, named: host.name),
                     availability: host.availability)
             }
-            // This Mac's git can't see a paired host's folders.
-            if device == .thisMac, hasOwnCheckout(folder) {
-                let repository = git.model(for: folder)
-                if let branch = repository.branch?.name {
+            // The session identifies the machine even when checkout paths are identical.
+            if hasOwnCheckout(folder) {
+                let repository = git.model(for: folder, session: summary.id)
+                if !device.isRemote, let branch = repository.branch?.name {
                     TaskPullRequestBadge(directory: folder, branch: branch)
                 }
                 GitBranchBadge.Live(model: repository, font: .dsMicro, style: .compact)

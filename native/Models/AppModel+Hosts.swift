@@ -60,7 +60,8 @@ extension AppModel {
     /// it; else this Mac.
     func device(of session: SessionKey) -> SessionDevice {
         if let task = startingTask(session) { return task.device }
-        return remoteSession(session).map { .remote($0.host) } ?? .thisMac
+        if let remote = remoteSession(session) { return .remote(remote.host) }
+        return remotePlace(of: session).map { .remote($0.host.id) } ?? .thisMac
     }
 
     /// Where a remote session lives: `(HostID, HostSessionID)`. Nil for this Mac's sessions.
