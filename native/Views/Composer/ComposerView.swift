@@ -307,7 +307,10 @@ struct ComposerView: View {
     /// Disabled in place when something blocks sending, saying why.
     var sendButton: some View {
         let behavior = session.supportsSteering ? followUp : .queue
-        let isEditingQueued = session.editingQueuedPrompt != nil
+        // An item can leave the queue while its editor stays open; submission then sends a new message.
+        let isEditingQueued =
+            session.queuedPrompts.contains { $0.id == session.editingQueuedPrompt }
+            && !session.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         return ComposerSendButton(disabledReason: session.sendBlockedReason ?? attachmentsBlockedReason) {
             submit(followUp)
         }
