@@ -9,7 +9,9 @@ enum HostNotificationsSwitch {
     static let defaultsKey = "NativeHostNotifications"
     static let defaultValue = false
 
+    /// `bool(forKey:)`, since a launch argument (`-NativeHostNotifications YES`) arrives as a string.
     static var isEnabled: Bool {
-        UserDefaults.standard.object(forKey: defaultsKey) as? Bool ?? defaultValue
+        UserDefaults.standard.object(forKey: defaultsKey) == nil
+            ? defaultValue : UserDefaults.standard.bool(forKey: defaultsKey)
     }
 }
