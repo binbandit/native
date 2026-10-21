@@ -22,8 +22,9 @@ struct TranscriptView: View {
     /// has a real size.
     @State private var containerWidth: CGFloat?
     @State private var containerHeight: CGFloat?
-    /// Rows the user opened, kept while they're scrolled away.
-    @State private var disclosures = TranscriptDisclosures()
+    /// Used outside a window that remembers transcript state, such as a standalone preview.
+    @State private var ownDisclosures = TranscriptDisclosures()
+    @Environment(\.sessionTranscriptMemory) private var transcriptMemory
     /// The code the transcript shows first has its colors (`TranscriptOpeningCode`), or it stopped
     /// waiting for them. Until then the rows wait, so the transcript appears finished.
     @State private var isOpeningCodeColored = false
@@ -98,6 +99,10 @@ struct TranscriptView: View {
                     NewSessionEmptyState(session: session)
                 }
             }
+    }
+
+    private var disclosures: TranscriptDisclosures {
+        transcriptMemory?.disclosures(for: session) ?? ownDisclosures
     }
 
     /// The code on the transcript's first screen that has no colors yet. Only looked at until the
@@ -175,3 +180,14 @@ struct TranscriptView: View {
         withAnimation(.dsStandard) { position.scrollTo(edge: .bottom) }
     }
 }
+
+#if DEBUG
+#Preview("Transcript - Switch away and return") {
+    let app = AppModel.preview(.empty)
+    let sessions = SessionTranscriptPreviewFixtures.sessions(in: app)
+    return DSPreviewPair {
+        SessionTranscriptPreview(sessions: sessions)
+            .environment(app)
+    }
+}
+#endif
