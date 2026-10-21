@@ -40,8 +40,8 @@ build_embedded
 for configuration in "${configurations[@]}"; do
     log "Building $configuration"
     run xcodebuild build -project native.xcodeproj -scheme native -configuration "$configuration" \
-        -derivedDataPath "$derived" ${packages[@]+"${packages[@]}"} -destination 'platform=macOS' \
-        CODE_SIGNING_ALLOWED=NO ARCHS=arm64 ${caching[@]+"${caching[@]}"} -quiet
+        -derivedDataPath "$derived" ${packages[@]+"${packages[@]}"} -disableAutomaticPackageResolution \
+        -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO ARCHS=arm64 ${caching[@]+"${caching[@]}"} -quiet
 done
 log "$(printf '%s and ' "${configurations[@]}" | sed 's/ and $//') compiled"
 run "$ROOT/scripts/release/size-check.sh" --built "$derived" "${configurations[@]}"

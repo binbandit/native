@@ -460,22 +460,23 @@ for a typical one, `docs/app-size.md`) and an unchanged module adds nothing to a
 | Terminal as an on-demand dylib | about 95 MB | about 38.7 MB | one, in-process code | `ghostty.h` is a C API, so it's possible, but it's in-process code from a second source |
 | Terminal trimmed (no embedded fonts or shader compilers) | 101 MB | 40.2 MB | none | needs a patch on the pinned Ghostty |
 
-**Recommendation: ship everything in-process in the bundle, off until chosen, and take the script
-runtime out of the bundle.** The terminal stays in: its download cost is small, most people use it,
-and loading it at runtime would mean in-process code from a second source. Trim it instead (fonts
-and shader compilers). The script runtime is the exception because it's the largest single cost and
-already a separate, sandboxed executable. Two ways out, in order of preference:
+**Decided (2026-10-20): ship everything in-process in the bundle, off until chosen, and take the
+script runtime out of the default bundle as an on-demand component. V8 stays.** The terminal stays
+in: its download cost is small, most people use it, and loading it at runtime would mean in-process
+code from a second source. Trim it instead (fonts and shader compilers). The script runtime is the
+exception because it's the largest single cost and already a separate, sandboxed executable:
 
-1. **JavaScriptCore** (reopens the 2026-10-19 decision, which kept V8): nothing to download or pin,
-   security fixes with macOS, Rust and the unverified V8 prebuilt leave the build. Costs a Swift
-   rewrite of 1,200 lines of Rust behind the same protocol and tests, a footprint watchdog instead of
-   V8's exact heap limit, and about 2x slower CPU-bound scripts (`docs/app-size.md`).
-2. **An on-demand component**, if V8 stays: fetched when Code mode is first turned on, from the same
-   release, checked against a SHA-256 compiled into the app (so it can't be swapped even with the
-   release or the update key compromised), an Ed25519 signature and a same-team code signature
-   before its first run, using `HostUpdater`'s installer and `CodeSignatureVerifier`, which already
-   do each of these. Cached per hash, so app updates that don't bump V8 don't fetch it again.
-   `policy.scripts.enabled = false` means it's never fetched; `policy.components.baseURL` mirrors it.
+- **Fetched only when scripting is turned on**, from the same release as the app.
+- **Pinned by a SHA-256 compiled into the app**, so it can't be swapped even with the release or the
+  update key compromised, and **signed and notarized like the app**; Native checks the hash, its
+  Ed25519 signature and a same-team code signature before its first run, with `HostUpdater`'s
+  installer and `CodeSignatureVerifier`, which already do each of these.
+- **Cached per hash**, so app updates that don't bump V8 don't fetch it again.
+- **Enterprise:** `policy.scripts.enabled = false` means it's never fetched;
+  `policy.components.baseURL` mirrors it; MDM can pre-stage it.
+
+JavaScriptCore would remove the download and the V8 pin entirely, but V8 was chosen on 2026-10-19
+for its exact heap limit and speed, and that stands.
 
 ### Target size
 
@@ -509,24 +510,31 @@ app binary's own target is under 50 MB; the stretch, with fewer grammars, is a 2
 
 ### Phases
 
-Each phase ships on its own; smallest first.
+Each phase ships on its own, in this order (decided 2026-10-20).
 
 | Phase | What | Touches | Size |
 | --- | --- | --- | --- |
-| 0. Supply-chain fixes | Pin the V8 prebuilt's SHA-256 and pass it with `RUSTY_V8_ARCHIVE`; `-disableAutomaticPackageResolution` in `release.sh` and `check.sh`; actions pinned by commit; Dependabot for `swift` and `cargo`; `rust-toolchain.toml`; record this plan in `docs/decisions.md` | `scripts/build-script-runtime.sh`, `scripts/release/`, `.github/`, `Runtime/ScriptRuntime` | small |
-| 1. Plugin catalog | The official plugins repository, signed index, pinned commits and hashes, the install screen, update offers, catalog policy keys; move non-default themes, icon sets, celebrations, workflows, experiments and extra agents into it; built-in code features listed beside them | new `native/PluginCatalog`, a UI-free `Packages/PluginCatalog` (index, verification), `native/Plugins`, `Packages/NativePolicy`, `scripts/release/` | medium |
-| 1b. Honest defaults | New installs start with Orchestration, Sounds and the status bar off, as the decision says; existing users' state recorded as choices so nothing changes for them | `native/Plugins`, `native/Sounds`, `native/Orchestration`, `native/StatusBar`, `native/Wiring/AmbientWiring.swift` | small |
-| 2. Modules contribute UI | `FeatureModule` and `ModuleContributions`; Settings, commands, status bar, sidebar, inspector and task rows read from the registry; move the existing plugins' pages, items and sidebar entries over and delete the `isEnabled` checks in `RootView` | `native/Plugins`, `native/Settings`, `native/Commands`, `native/StatusBar`, `native/Views/RootView.swift`, `native/Wiring` | medium |
-| 3. Hard-wired features become modules | One pull request each, lazily activated: Terminal, GitHub (with PR tasks and clean up), Project actions, Task scripts, Modes, Keep awake, Open in, Companion and hosts, What's New, Labs, Agent icons, Status bar | each feature's folder (`Integration/`), `native/NativeApp.swift`, `native/Wiring` | medium, parallel |
-| 4. Adapters pinned | Lockfiles, `npm ci --ignore-scripts` into Native's folder, `node <bin>` launch, `--omit=optional` if it holds | `Packages/ACP` (`NpxLaunch`), `native/Plugins`, `native/AgentCatalog`, `Packages/NativeHost` (the host launches agents), `docs/agents.md` | medium |
-| 5. Onboarding and Extensions | The first-launch question, presets, cost badges, in-context offers | `native/Views/Home`, `native/Settings/Pages/ExtensionsSettingsPage.swift` | medium |
-| 6. Enterprise module policy | The keys above, the sample profile, audit export of module and policy changes, a bill of materials published with each release | `Packages/NativePolicy`, `native/Plugins/PluginRegistry.swift`, `docs/enterprise.md`, `docs/enterprise/`, `scripts/release/` | medium |
-| 7. Size | Script runtime out of the bundle; libghostty without embedded fonts and shader compilers; icon catalogs per channel; lower the budgets in `size-check.sh` | `Runtime/ScriptRuntime`, `Packages/ScriptRuntime`, `scripts/build-libghostty.sh`, `native/Assets.xcassets`, `docs/app-size.md` | medium to large |
-| 8. Later | Sandboxed code plugins contributing to the seven places; a signed organization plugin catalog | `Packages/ScriptRuntime`, `native/Plugins` | large |
+| 0. Supply-chain fixes | Pin the V8 prebuilt's SHA-256 and pass it with `RUSTY_V8_ARCHIVE`; `-disableAutomaticPackageResolution` in CI; actions pinned by commit; Dependabot for Swift and Cargo; `rust-toolchain.toml` | `scripts/build-script-runtime.sh`, `scripts/release/`, `.github/`, `Runtime/ScriptRuntime` | small |
+| 1. Plugin catalog and honest defaults | The official plugins repository, signed index, pinned commits and hashes, the install screen, update offers, catalog policy keys; non-default themes, icon sets, celebrations, workflows, experiments and extra agents move into it; built-in code features listed beside them. New installs start with Orchestration, Sounds and the status bar off; existing users' state is recorded as choices, so nothing changes for them | new `native/PluginCatalog`, a UI-free `Packages/PluginCatalog` (index, verification), `native/Plugins`, `native/Sounds`, `native/Orchestration`, `native/StatusBar`, `Packages/NativePolicy`, `scripts/release/` | medium |
+| 2. Native-managed adapter installs | Each adapter installed into its own folder from a lockfile shipped in the app: exact versions with integrity hashes, `--ignore-scripts`, `--omit=optional` where the adapter doesn't need them; launched with `node <bin>`, no fresh `npx` resolution; an organization can mirror the registry | `Packages/ACP` (`NpxLaunch`), `native/Plugins`, `native/AgentCatalog`, `Packages/NativeHost` (the host launches agents), `docs/agents.md` | medium |
+| 3. V8 on demand | The script runtime leaves the default bundle: fetched when scripting is turned on, SHA-256 pinned in the app, signed and notarized; budgets in `size-check.sh` come down | `Runtime/ScriptRuntime`, `Packages/ScriptRuntime`, `Packages/HostUpdater`, `scripts/release/`, `docs/app-size.md` | medium |
+| 4. Modules contribute UI | `FeatureModule` and `ModuleContributions`; Settings, commands, status bar, sidebar, inspector and task rows read from the registry; the existing plugins' pages, items and sidebar entries move over and the `isEnabled` checks in `RootView` go | `native/Plugins`, `native/Settings`, `native/Commands`, `native/StatusBar`, `native/Views/RootView.swift`, `native/Wiring` | medium |
+| 5. Hard-wired features become modules | One pull request each, lazily activated: Terminal, GitHub (with PR tasks and clean up), Project actions, Task scripts, Modes, Keep awake, Open in, Companion and hosts, What's New, Labs, Agent icons, Status bar | each feature's folder (`Integration/`), `native/NativeApp.swift`, `native/Wiring` | medium, parallel |
+| 6. Onboarding and Extensions | The first-launch presets (Just agents, Essentials, Everything), cost badges, in-context offers | `native/Views/Home`, `native/Settings/Pages/ExtensionsSettingsPage.swift` | medium |
+| 7. Enterprise module policy | The keys above, the sample profile, audit export of module and policy changes, a bill of materials published with each release | `Packages/NativePolicy`, `native/Plugins/PluginRegistry.swift`, `docs/enterprise.md`, `docs/enterprise/`, `scripts/release/` | medium |
+| 8. The rest of the size | libghostty without embedded fonts and shader compilers; icon catalogs per channel | `scripts/build-libghostty.sh`, `native/Assets.xcassets`, `docs/app-size.md` | medium |
+| 9. Later | Sandboxed code plugins contributing to the seven places; a signed organization plugin catalog | `Packages/ScriptRuntime`, `native/Plugins` | large |
 
-### Decisions for Brayden
+### Decided (2026-10-20)
 
-1. The core, and the modules' starting states (the table above), including which preset is the
-   default.
-2. Whether to reopen V8 versus JavaScriptCore, or keep V8 as an on-demand component.
-3. Whether adapters move to Native-managed installs from shipped lockfiles (Phase 4), with catalog agents first (Phase 1).
+1. **Modules.** Modules are `NativePlugin`s that add UI to the seven existing seams, and off means
+   absent. First launch offers three presets: Just agents, Essentials (the recommended default) and
+   Everything. Existing users keep their current state. Policy keys cover built-in modules too.
+2. **V8 stays**, and leaves the default bundle as an on-demand component: fetched only when
+   scripting is turned on, pinned by a SHA-256 compiled into the app, signed and notarized like the
+   app. Target: under 60 MB installed and under 25 MB to download.
+3. **Native-managed adapter installs.** Native installs each agent adapter into its own folder from
+   a lockfile: exact versions with integrity hashes, `--ignore-scripts`, and `--omit=optional` where
+   the adapter doesn't need what it leaves out. No fresh `npx` resolution. Organizations can mirror.
+4. **Order.** Phase 0, then the plugin catalog and honest defaults, then adapter installs, then V8
+   on demand.

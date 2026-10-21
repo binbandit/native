@@ -93,6 +93,13 @@ final class SessionTitles {
         generatedTitles[key.storageKey]
     }
 
+    /// The title the user or Native gave the task: what its workspace is named after, and what it
+    /// keeps when it moves to a new agent session. Never the agent's title or the first-message
+    /// fallback a host shows while no model can title the task.
+    func namedTitle(for key: Key) -> String? {
+        userTitles[key.storageKey] ?? generatedTitles[key.storageKey]
+    }
+
     /// Sets the user's own title; an empty one goes back to the automatic title. A task in a host
     /// gets it there too.
     func rename(_ key: Key, to title: String) {
