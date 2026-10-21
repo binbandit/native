@@ -158,15 +158,16 @@ extension SessionModel {
         return (message.text, Array(items[start...]))
     }
 
-    /// Sets back the settings chosen for the session after the host (re)loaded it, which agents may
-    /// reopen on their defaults. The host sets back what was chosen through it; this covers what
-    /// was chosen before the session ran there. Messages sent meanwhile wait until it's done.
+    /// After the host (re)loaded the session: the host set back the settings it ran with before it
+    /// said so (`HostCore.pinConfig`), and it's the one record of them, so the choices remembered here
+    /// follow what it reports rather than going back on top. Only the organization's policy still
+    /// wins over them. Messages sent meanwhile wait until it's done.
     private func setBackConfigAfterLoad() {
         guard !isSettingBackConfig else { return }
         isSettingBackConfig = true
         if let hostSummary { apply(hostSummary) }
         Task {
-            await restoreConfigChoices()
+            await PolicyPermissionModes.enforce(on: self)
             isSettingBackConfig = false
             services.titles.updateConfigChoices(for: titleKey) { $0.follow(state.configOptions) }
             if let hostSummary { apply(hostSummary) }
