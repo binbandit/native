@@ -15,7 +15,7 @@ struct HostStatusTests {
     static let manager = ClientGrants(managePlugins: false, manageHost: true, isLocal: false)
 
     /// The fake agent, built beside these tests.
-    nonisolated static let fakeAgent = Bundle(for: FakePowerBackend.self).bundleURL.deletingLastPathComponent()
+    nonisolated static let fakeAgent = HostHarness.products
         .appending(path: "FakeACPAgent").path(percentEncoded: false)
 
     final class Rig: Sendable {
@@ -137,6 +137,7 @@ struct HostStatusTests {
         #expect(report.checks.first { $0.id == "agents.fake" }?.status == .ok)
         #expect(report.checks.first { $0.id == "agents.codex" }?.status == .failed)
         #expect(report.checks.first { $0.id == "host.keepAwake" }?.status == .info)
+        #expect(report.checks.first { $0.id == "host.updates" }?.status == .info)
         await client.stop()
     }
 }
