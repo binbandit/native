@@ -42,6 +42,15 @@ def read_json(path):
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def present(packages, path, name):
+    while True:
+        if (path + "/" if path else "") + "node_modules/" + name in packages:
+            return True
+        if not path:
+            return False
+        path = path.rpartition("/node_modules/")[0]
+
+
 def audit(directory, package, version):
     require(matches(NAME, package) and matches(VERSION, version), "Expected a package name and exact SemVer")
     pin = {package: version}
@@ -64,6 +73,17 @@ def audit(directory, package, version):
             require(all(matches(NAME, name) and matches(rf"(?:npm:{NAME}@)?[^/:\x00-\x1f\\]*", spec)
                         and not spec.strip().startswith(".") for name, spec in dependencies.items()),
                     "Only registry dependency specifications are supported")
+        peer_meta = record.get("peerDependenciesMeta", {})
+        require(isinstance(peer_meta, dict) and all(isinstance(v, dict) for v in peer_meta.values()),
+                "Invalid peer metadata")
+        required = record.get("dependencies", {}).keys() - record.get("optionalDependencies", {}).keys()
+        # npm installs peers beside their consumer; explicit dependencies take precedence.
+        peers = {name for name in record.get("peerDependencies", {})
+                 if peer_meta.get(name, {}).get("optional") is not True}
+        peers -= record.get("dependencies", {}).keys() | record.get("optionalDependencies", {}).keys()
+        require(all(present(packages, path, name) for name in required)
+                and all(present(packages, path.rpartition("/node_modules/")[0], name) for name in peers),
+                "Missing required dependency record")
         if not path:
             continue
         require(matches(rf"node_modules/{NAME}(?:/node_modules/{NAME})*", path), "Unsupported package path")

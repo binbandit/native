@@ -30,6 +30,8 @@ the adapter resolution and every package record's exact SemVer, HTTPS URL and
 canonical 64-byte sha512 digest. Dependency declarations must use registry specs;
 ranges and npm aliases within records are normal metadata, while file and Git
 sources are refused. This checks digest syntax; it does not download or verify bytes.
+Required dependencies and peers must have nested or hoisted package records;
+missing optional dependencies and optional peers are allowed.
 
 The future consumer contract is `npm ci --ignore-scripts` from the reviewed pair
 of files into a dedicated adapter folder, followed by direct `node <bin>` launch.

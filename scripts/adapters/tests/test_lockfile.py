@@ -21,7 +21,7 @@ PIN = {PACKAGE: VERSION}
 RECORD = {"version": VERSION, "resolved": "https://registry.example/adapter.tgz",
           "integrity": "sha512-" + base64.b64encode(bytes(64)).decode(),
           "dependencies": {"child": "^2.0.0"}, "peerDependencies": {"peer": "npm:@example/peer@^1.0.0"},
-          "futureField": {"preserve": True}}
+          "peerDependenciesMeta": {"peer": {"optional": True}}, "futureField": {"preserve": True}}
 LOCK = {"lockfileVersion": 3, "packages": {"": {"dependencies": PIN},
         "node_modules/" + PACKAGE: RECORD, "node_modules/child": dict(RECORD, version="2.1.0", dependencies={})}}
 
@@ -100,7 +100,7 @@ sys.exit(int(os.environ.get('FAIL', '0')))
         cases += [("root", "devDependencies", {"extra": "1.0.0"}), ("root", "link", True)]
         cases += [("record", key, {"child": x}) for key in ("dependencies", "optionalDependencies", "peerDependencies")
                   for x in ("file:../x", "git+https://example/x", "owner/repo", ".")]
-        cases += [("record", "dependencies", [])]
+        cases += [("record", "dependencies", []), ("record", "peerDependenciesMeta", [])]
         cases += [("record", "version", x) for x in (None, "latest", "^1.2.3", "file:../x", "git+https://example/x", "01.2.3", "1.2.3-01")]
         cases += [("record", "resolved", x) for x in (None, "http://example/a.tgz", "file:../x", "git+https://example/x", "https:///a", "https://example", "https://user:token@example/a", "https://example:bad/a")]
         cases += [("record", "integrity", x) for x in (None, "sha1-abc", "sha512-!", "sha512-YQ==", RECORD["integrity"][:-3] + "B==")]
@@ -129,3 +129,30 @@ sys.exit(int(os.environ.get('FAIL', '0')))
             with self.assertRaises(ValueError):
                 tool.generate(self.output, package, version, registry)
             self.assertFalse(self.output.exists())
+
+    def test_dependency_records(self):
+        self.output.mkdir()
+        (self.output / "package.json").write_text(json.dumps({"dependencies": PIN}))
+        for scenario in ("missing", "nested", "optional", "peer-missing", "peer-nested", "peer-hoisted", "peer-optional"):
+            with self.subTest(scenario=scenario):
+                lock = copy.deepcopy(LOCK)
+                packages = lock["packages"]
+                adapter = packages["node_modules/" + PACKAGE]
+                child = packages.pop("node_modules/child")
+                if scenario.startswith("peer"):
+                    adapter["dependencies"] = {}
+                    adapter["peerDependenciesMeta"] = {}
+                    child["version"] = "1.1.0"
+                if scenario in ("nested", "peer-nested", "peer-hoisted"):
+                    prefix = "node_modules/" + PACKAGE + "/" if scenario != "peer-hoisted" else ""
+                    packages[prefix + "node_modules/" + ("peer" if scenario.startswith("peer") else "child")] = child
+                if scenario == "optional":
+                    adapter["optionalDependencies"] = {"child": "^2.0.0"}
+                if scenario == "peer-optional":
+                    adapter["optionalDependencies"] = {"peer": "^1.0.0"}
+                (self.output / "package-lock.json").write_text(json.dumps(lock))
+                if scenario in ("missing", "peer-missing", "peer-nested"):
+                    with self.assertRaises(ValueError):
+                        tool.audit(self.output, PACKAGE, VERSION)
+                else:
+                    tool.audit(self.output, PACKAGE, VERSION)
