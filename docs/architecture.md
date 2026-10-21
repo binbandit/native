@@ -174,6 +174,17 @@ Adding a **variant**:
 5. To promote it, make it the point's default and delete the variant; to drop it, delete its folder
    and declaration.
 
+### Quiet composer
+
+`NativeComposerNext` is an off-by-default Labs gate at the composer's resting controls. Enable it
+with Settings > Labs > Quiet composer, or set `experiment.NativeComposerNext` as a boolean in
+the app's user defaults before launch.
+The editor keeps its identity as the session starts and finishes work; only its footer changes.
+At rest, plain words open the agent, model, effort, autonomy and task-mode pickers. The agent entry
+opens New Session With, since an existing conversation belongs to its original agent. Other
+agent settings, attachments, goals and context remain reachable. Running turns and approval
+requests keep today's composer until their own slices land.
+
 ### Transcript styles
 
 `TranscriptView` keeps scrolling and the loading and empty states; the rows come from the

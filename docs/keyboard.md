@@ -285,6 +285,11 @@ asks first.
 
 ## Session settings
 
+With the Quiet composer experiment enabled, each setting is a plain-word button under the draft.
+The same keys below still apply. The agent name opens New Session With (⌥⌘N); it does not move the
+current conversation to another agent. Tab reaches the buttons, Space opens their pickers, and
+Escape closes a picker.
+
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
 | ⌘⇧M | Next permission mode | Session | `session.nextPermissionMode` |
