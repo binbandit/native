@@ -8,13 +8,21 @@ struct GoalPillButton: View {
     /// Only the target, when the composer is short of room; the status stays in the tooltip and the
     /// accessibility label.
     var showsIcon = false
+    var isQuiet = false
     let action: () -> Void
 
     var body: some View {
-        Button(action: action) {
-            Label(title, systemImage: "target")
+        Group {
+            if isQuiet {
+                Button(title, action: action)
+                    .buttonStyle(ComposerFactButtonStyle())
+            } else {
+                Button(action: action) {
+                    Label(title, systemImage: "target")
+                }
+                .buttonStyle(.pill(isOn: status == .active, isSquare: showsIcon))
+            }
         }
-        .buttonStyle(.pill(isOn: status == .active, isSquare: showsIcon))
         .help(
             CommandRegistry.shared.help(
                 status == nil ? "Set a goal for the agent to work toward" : "Edit the goal", for: .goalEdit)
@@ -27,6 +35,19 @@ struct GoalPillButton: View {
         return status == .active ? "Goal" : "Goal · \(status.label)"
     }
 }
+
+#if DEBUG
+#Preview("Goal - Quiet composer states") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.md) {
+            GoalPillButton(status: nil, isQuiet: true) {}
+            ForEach(GoalStatus.allCases, id: \.self) { status in
+                GoalPillButton(status: status, isQuiet: true) {}
+            }
+        }
+    }
+}
+#endif
 
 #if NATIVE_PREVIEWS_WIP
 #Preview("Goal pill") {
