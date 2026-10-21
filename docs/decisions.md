@@ -578,3 +578,12 @@ index and content hashes, agent adapters installed from lockfiles shipped in the
 fresh `npx` resolution, and the V8 script runtime (kept, not JavaScriptCore) moved out of the default
 bundle as an on-demand component pinned by a SHA-256 compiled into the app. It builds on
 "Minimal by default, shaped by the user", whose defaults had drifted from it.
+
+## 2026-10-21: A quiet composer while agents work
+
+The working composer uses the same plain message prompt as an existing idle session and no longer
+shows the Steer/Queue key hint. This supersedes the hint described in "Steer by default"
+(2026-10-19); the Return and ⌘Return behavior, Settings preference and queue fallback are unchanged.
+People can discover those actions through the send button's tooltip and VoiceOver label. Keep the
+code-block and queued-message editing hints, and the placeholders that explain a pending question,
+approval, stopping or why sending is unavailable.
