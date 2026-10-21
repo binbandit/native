@@ -297,8 +297,8 @@ public final class HostCore {
     // MARK: - Events out
 
     /// Logs one of Native's own events for a session and sends it to the clients following it.
-    func append(_ payload: HostEvent.Payload, to session: HostSession) {
-        send(session.append(payload), of: session)
+    func append(_ payload: HostEvent.Payload, to session: HostSession, at date: Date = .now) {
+        send(session.append(payload, at: date), of: session)
         noteForNotifications(payload, in: session)
     }
 

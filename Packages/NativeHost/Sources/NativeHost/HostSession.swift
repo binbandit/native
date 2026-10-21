@@ -14,6 +14,9 @@ final class HostSession {
     var mcpServers: [JSONValue]
     /// The turn running (or being recovered), as the store has it.
     var turn: UnfinishedTurn?
+    /// The running turn's message as it was shown, and when, to show again if a load starts the log
+    /// over before the message reaches the agent.
+    var turnEcho: (echo: PromptEcho, sentAt: Date)?
     /// Where the running turn's own items start in `mirror`, to tell whether it got anywhere.
     var turnItemsStart = 0
     var queue: [StoredQueueItem] = []

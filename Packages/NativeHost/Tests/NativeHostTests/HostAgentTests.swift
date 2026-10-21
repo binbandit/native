@@ -61,6 +61,32 @@ struct HostAgentTests {
         await recorder.stop()
     }
 
+    @Test("A message sent after the agent stopped while idle still shows once its session reloads")
+    func messageSurvivesReload() async throws {
+        let harness = try HostHarness()
+        try harness.start()
+        let recorder = try await harness.connect()
+        let session = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: "/tmp", attach: true))
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "hello"))
+        try await recorder.wait("the turn") { await $0.turnsEnded(session.id) == ["end_turn"] }
+        #expect(try await recorder.client.stopAgent("fake").stopped)
+
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "again"))
+        try await recorder.wait("the turn after the reload") { await $0.turnsEnded(session.id).count == 2 }
+        #expect(await recorder.agentText(session.id).contains("echo: again"))
+        let shown = await recorder.mirror(session.id).state.items.compactMap { item in
+            if case .message(let message) = item, message.role == .user { message.text } else { nil }
+        }
+        #expect(shown == ["hello", "again"])
+        // Inside the reload, so clients take it for history, not for the turn starting again.
+        let payloads = await recorder.payloads(session.id)
+        let reload = payloads[(payloads.lastIndex { if case .reset = $0 { true } else { false } } ?? 0)...]
+        let echoed = try #require(reload.firstIndex { if case .prompt = $0 { true } else { false } })
+        let loaded = try #require(reload.firstIndex { if case .loaded = $0 { true } else { false } })
+        #expect(echoed < loaded)
+        await recorder.stop()
+    }
+
     @Test("Restarting an agent mid-turn resumes the turn and says the user restarted it")
     func restartMidTurn() async throws {
         let harness = try HostHarness()
