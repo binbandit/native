@@ -399,7 +399,8 @@ same account never mutate the same Swift package checkout. Self-hosted jobs skip
 downloads and start with fresh package build state and a job-local script runtime cache; hosted
 jobs still restore their caches. The shared libghostty build already takes a lock on the machine.
 The iOS job downloads a checksum-pinned Git LFS executable into `RUNNER_TEMP` if it is missing,
-without changing the machine's installation or Git configuration.
+then configures its filters in the checkout's local Git configuration, without changing the
+machine's installation or global Git configuration.
 
 Every app build in CI, `check.sh` and `release.sh` passes `-disableAutomaticPackageResolution`, so
 packages come only at the versions and revisions `Package.resolved` records. When the project's

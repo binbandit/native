@@ -62,7 +62,9 @@ jobs:
       - name: Ensure Git LFS is available
         run: scripts/ci/setup-git-lfs.sh
       - name: Fetch the icon artwork
-        run: git lfs pull --include "$ICON_ARTWORK"
+        run: |
+          git lfs install --local --skip-repo
+          git lfs pull --include "$ICON_ARTWORK"
       # The Mac builds' package checkouts, which pin everything these builds use (tree-sitter and its
       # grammars, Sentry) at the same versions. Restored only: the repository's caches are full of the
       # Mac builds' own, and a daily build's would only push theirs out.
