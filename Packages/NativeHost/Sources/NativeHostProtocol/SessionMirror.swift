@@ -128,10 +128,15 @@ public struct SessionMirror: Sendable {
         }
     }
 
-    /// The user's messages in order, as the agent recorded them (after a replay) or Native sent them.
+    /// The user's messages in order, as the agent recorded them (after a replay) or Native sent them,
+    /// along with what Native told the agent in a recovery, which the transcript shows as a notice.
     public var userMessages: [String] {
         state.items.compactMap { item in
-            if case .message(let message) = item, message.role == .user { message.text } else { nil }
+            switch item {
+            case .message(let message) where message.role == .user: message.text
+            case .notice(let notice): notice.sentToAgent
+            default: nil
+            }
         }
     }
 
