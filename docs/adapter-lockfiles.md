@@ -27,8 +27,9 @@ Review all resolved URLs, transitive version changes and sha512 integrity change
 before accepting an update, including optional platform packages. Unknown npm
 fields are preserved byte-for-byte. Check is offline: it validates both root pins,
 the adapter resolution and every package record's exact SemVer, HTTPS URL and
-canonical 64-byte sha512 digest. Dependency ranges within records are normal npm
-metadata. This audit checks digest syntax; it does not download or verify bytes.
+canonical 64-byte sha512 digest. Dependency declarations must use registry specs;
+ranges and npm aliases within records are normal metadata, while file and Git
+sources are refused. This checks digest syntax; it does not download or verify bytes.
 
 The future consumer contract is `npm ci --ignore-scripts` from the reviewed pair
 of files into a dedicated adapter folder, followed by direct `node <bin>` launch.

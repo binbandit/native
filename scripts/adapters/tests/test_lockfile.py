@@ -20,7 +20,8 @@ PACKAGE, VERSION = "@example/adapter", "1.2.3-beta.1+build.9"
 PIN = {PACKAGE: VERSION}
 RECORD = {"version": VERSION, "resolved": "https://registry.example/adapter.tgz",
           "integrity": "sha512-" + base64.b64encode(bytes(64)).decode(),
-          "dependencies": {"child": "^2.0.0"}, "futureField": {"preserve": True}}
+          "dependencies": {"child": "^2.0.0"}, "peerDependencies": {"peer": "npm:@example/peer@^1.0.0"},
+          "futureField": {"preserve": True}}
 LOCK = {"lockfileVersion": 3, "packages": {"": {"dependencies": PIN},
         "node_modules/" + PACKAGE: RECORD, "node_modules/child": dict(RECORD, version="2.1.0", dependencies={})}}
 
@@ -97,6 +98,9 @@ sys.exit(int(os.environ.get('FAIL', '0')))
         cases += [("lock", "packages", x) for x in (None, [], {})]
         cases += [("root", "dependencies", x) for x in ({}, {PACKAGE: "^1.2.3"}, {"wrong": VERSION})]
         cases += [("root", "devDependencies", {"extra": "1.0.0"}), ("root", "link", True)]
+        cases += [("record", key, {"child": x}) for key in ("dependencies", "optionalDependencies", "peerDependencies")
+                  for x in ("file:../x", "git+https://example/x", "owner/repo", ".")]
+        cases += [("record", "dependencies", [])]
         cases += [("record", "version", x) for x in (None, "latest", "^1.2.3", "file:../x", "git+https://example/x", "01.2.3", "1.2.3-01")]
         cases += [("record", "resolved", x) for x in (None, "http://example/a.tgz", "file:../x", "git+https://example/x", "https:///a", "https://example", "https://user:token@example/a", "https://example:bad/a")]
         cases += [("record", "integrity", x) for x in (None, "sha1-abc", "sha512-!", "sha512-YQ==", RECORD["integrity"][:-3] + "B==")]

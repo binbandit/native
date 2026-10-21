@@ -58,6 +58,12 @@ def audit(directory, package, version):
     require(isinstance(adapter, dict) and adapter.get("version") == version, "Adapter resolution mismatch")
     for path, record in packages.items():
         require(isinstance(record, dict) and "link" not in record, "Links or invalid package records")
+        for key in ("dependencies", "optionalDependencies", "peerDependencies"):
+            dependencies = record.get(key, {})
+            require(isinstance(dependencies, dict), "Invalid dependency metadata")
+            require(all(matches(NAME, name) and matches(rf"(?:npm:{NAME}@)?[^/:\x00-\x1f\\]*", spec)
+                        and not spec.strip().startswith(".") for name, spec in dependencies.items()),
+                    "Only registry dependency specifications are supported")
         if not path:
             continue
         require(matches(rf"node_modules/{NAME}(?:/node_modules/{NAME})*", path), "Unsupported package path")
