@@ -22,7 +22,7 @@ final class ExecHost: Sendable {
     static let environment: [String: String] = {
         var environment = ProcessInfo.processInfo.environment
         let emptyConfig = FileManager.default.temporaryDirectory.appending(path: "native-host-tests-empty.gitconfig")
-        FileManager.default.createFile(atPath: emptyConfig.path(percentEncoded: false), contents: Data())
+        _ = FileManager.default.createFile(atPath: emptyConfig.path(percentEncoded: false), contents: Data())
         environment["GIT_CONFIG_GLOBAL"] = emptyConfig.path(percentEncoded: false)
         environment["GIT_CONFIG_NOSYSTEM"] = "1"
         environment["GIT_AUTHOR_NAME"] = "Test"
