@@ -12,7 +12,8 @@ struct HostSettingsBlock: View {
         var rename: () -> Void
         var setLook: (HostLook) -> Void
         var remove: () -> Void
-        var reconnect: () -> Void
+        /// Starts This Mac's background host again; nil for paired hosts, which retry by themselves.
+        var restartHost: (() -> Void)?
         /// Sets the host's Keep Awake; returns why that failed, if it did.
         var setKeepAwake: (KeepAwakeMode) async -> String?
         /// Opens the check of the host's setup, while it can be checked.
@@ -83,11 +84,15 @@ struct HostSettingsBlock: View {
         case .offline(let reason, let lastConnected):
             NoticeBanner(
                 tone: .warning, systemImage: "bolt.horizontal.circle", title: "\(host.name) isn't reachable",
-                detail: "Its tasks keep running there while it's on. Native keeps trying to connect.",
+                detail: host.isThisMac
+                    ? "Native's background host isn't answering. Your tasks keep their place, and Native keeps trying."
+                    : "Its tasks keep running there while it's on. Native keeps trying to connect.",
                 footnote: [reason, lastConnected.map(Self.lastConnected)].compactMap(\.self).joined(separator: " ")
             ) {
-                Button("Try Now", action: actions.reconnect)
-                    .buttonStyle(.ds(.secondary))
+                if let restartHost = actions.restartHost {
+                    Button("Restart Host", action: restartHost)
+                        .buttonStyle(.ds(.secondary))
+                }
             }
         case .needsUpdate(let message):
             NoticeBanner(

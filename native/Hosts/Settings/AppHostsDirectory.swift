@@ -43,11 +43,8 @@ struct AppHostsDirectory: HostsDirectory {
         return { [model] in model.hosts.restore(removed.paired, at: removed.index) }
     }
 
-    func reconnect(_ host: RemoteHostID) {
-        // A fresh client tries at once, where the old one waits out its retry interval.
-        guard let host = model.hosts.host(host) else { return }
-        host.stop()
-        host.start()
+    func restartLocalHost() async {
+        await durableHost?.startHostAgain()
     }
 
     func setKeepAwake(_ mode: KeepAwakeMode, on device: SessionDevice) async throws {

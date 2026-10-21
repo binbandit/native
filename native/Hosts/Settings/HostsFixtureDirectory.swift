@@ -7,7 +7,8 @@ import Observation
 
 /// Made-up hosts in every state, for previews and for checking Settings ▸ Hosts in a running app
 /// without paired machines: `-NativeHostsFixtures all` (every state), `empty` (This Mac alone),
-/// `signin` (one host whose agents want signing in) or `components` (the device picker and badges).
+/// `signin` (one host whose agents want signing in), `components` (the device picker and badges) or
+/// `local-offline` (This Mac's background host not answering).
 /// Development builds only; off by default.
 /// Actions change the fixtures the way the real hosts would, after a moment.
 @Observable
@@ -16,6 +17,8 @@ final class HostsFixtureDirectory: HostsDirectory {
         case all, empty, signin
         /// The picker and badges instead of the page (`HostsComponentsFixturePage`).
         case components
+        /// This Mac alone, its background host not answering.
+        case localOffline = "local-offline"
     }
 
     private(set) var hosts: [HostDisplay]
@@ -54,9 +57,9 @@ final class HostsFixtureDirectory: HostsDirectory {
         return { [weak self] in self?.hosts.insert(removed, at: min(index, self?.hosts.count ?? 0)) }
     }
 
-    func reconnect(_ host: RemoteHostID) {
-        update(.remote(host)) { $0.state = .connecting }
-        after(.seconds(2)) { $0.update(.remote(host)) { $0.state = .online } }
+    func restartLocalHost() async {
+        update(.thisMac) { $0.state = .connecting }
+        after(.seconds(2)) { $0.update(.thisMac) { $0.state = .online } }
     }
 
     func setKeepAwake(_ mode: KeepAwakeMode, on device: SessionDevice) async throws {
@@ -186,6 +189,7 @@ final class HostsFixtureDirectory: HostsDirectory {
     private static func hosts(for scenario: Scenario) -> [HostDisplay] {
         switch scenario {
         case .empty, .components: [thisMac]
+        case .localOffline: [unreachableThisMac]
         case .signin: [thisMac, mini]
         case .all: [thisMac, mini, studio, buildBox, linux, oldMini]
         }
@@ -205,6 +209,12 @@ final class HostsFixtureDirectory: HostsDirectory {
                 HostAgentDisplay(agent: agent("codex"), status: .ready),
                 HostAgentDisplay(agent: agent("cursor"), status: .idle),
             ])
+    }
+
+    private static var unreachableThisMac: HostDisplay {
+        var host = thisMac
+        host.state = .offline(reason: "The host didn't answer 4 times in a row.", lastConnected: nil)
+        return host
     }
 
     private static var mini: HostDisplay {

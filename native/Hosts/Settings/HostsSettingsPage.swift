@@ -198,7 +198,7 @@ struct HostsSettingsContent: View {
             },
             setLook: { directory.setLook($0, for: host.device) },
             remove: { removing = host },
-            reconnect: { if let id = host.device.remoteHostID { directory.reconnect(id) } },
+            restartHost: host.isThisMac ? { Task { await directory.restartLocalHost() } } : nil,
             setKeepAwake: { mode in
                 do {
                     try await directory.setKeepAwake(mode, on: host.device)
@@ -301,6 +301,14 @@ struct HostsSettingsContent: View {
 #Preview("Hosts page, no hosts yet") {
     DSPreviewPair {
         HostsSettingsContent(directory: HostsFixtureDirectory(.empty)) {}
+            .padding(DS.Space.xxl)
+            .frame(width: SettingsMetrics.pageMaxWidth)
+    }
+}
+
+#Preview("Hosts page, This Mac is unreachable") {
+    DSPreviewPair {
+        HostsSettingsContent(directory: HostsFixtureDirectory(.localOffline)) {}
             .padding(DS.Space.xxl)
             .frame(width: SettingsMetrics.pageMaxWidth)
     }
