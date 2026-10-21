@@ -25,7 +25,7 @@ final class RemoteHosts {
     @ObservationIgnored var onRefreshed: ((RemoteHost) -> Void)?
     /// Makes a host's task workspaces: the Git feature's, on a store whose git runs on the host
     /// (`client`) and puts worktrees in the host's folder for them. Set by the app's wiring.
-    @ObservationIgnored var makeTaskWorkspaces: ((NativeHostClient, URL) -> any TaskWorkspaceProvider)?
+    @ObservationIgnored var makeTaskWorkspaces: ((RemoteHostID, NativeHostClient, URL) -> any TaskWorkspaceProvider)?
     /// Every device's task workspaces, which `AppModel.taskWorkspaces` points at (it doesn't keep them).
     @ObservationIgnored var deviceWorkspaces: DeviceTaskWorkspaces?
     /// The hosts' clients the app has hooked its features to (titles), once each.

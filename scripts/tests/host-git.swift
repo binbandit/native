@@ -11,9 +11,13 @@ import NativeHostProtocol
 // Run against an isolated Debug build with scripts/tests/host-git.sh pr26.
 private actor RecordingRunner: CommandRunner {
     let name: String
+    let dirty: Bool
     private var commands: [[String]] = []
 
-    init(_ name: String) { self.name = name }
+    init(_ name: String, dirty: Bool = false) {
+        self.name = name
+        self.dirty = dirty
+    }
 
     func run(_ command: Command) async throws -> CommandResult {
         commands.append(command.arguments)
@@ -22,7 +26,7 @@ private actor RecordingRunner: CommandRunner {
         case "rev-parse" where command.arguments.contains("--show-toplevel"):
             output = "/same/repo\n/same/repo/.git\n/same/repo/.git\n"
         case "rev-parse": output = "abc123\n"
-        case "status": output = "# branch.oid abc123\0# branch.head \(name)\0"
+        case "status": output = "# branch.oid abc123\0# branch.head \(name)\0" + (dirty ? "? remote.txt\0" : "")
         case "write-tree": output = "\(name)-snapshot\n"
         default: output = ""
         }
@@ -139,15 +143,45 @@ private struct HostGitRegression {
                 baselines.baseline(of: key, startedAt: date)?.snapshot.tree == "\(name)-snapshot",
                 "turn baseline used the wrong machine for \(name)")
         }
-        try wiringPreservesClientIdentity(local: local, runner: localRunner, path: path)
+        try await sidebarPreservesSessionIdentity()
+        try await wiringPreservesClientIdentity(local: local, runner: localRunner, path: path)
         #endif
         print(
-            "PASS: colliding paths preserve machine identity for models, stage, refresh and turn baselines; remote file roots are withheld"
+            "PASS: colliding paths preserve machine identity for models, stage, refresh and turn baselines; remote file roots are withheld; sidebar and re-pairing routing pass"
         )
     }
 
     #if !BEFORE
-    private static func wiringPreservesClientIdentity(local: GitStore, runner: RecordingRunner, path: URL) throws {
+    private static func sidebarPreservesSessionIdentity() async throws {
+        let app = AppModel.preview(.empty)
+        guard let agent = app.plugins.agents.first else { throw Failure("missing fixture agent") }
+        let project = app.projects.add(URL(filePath: "/pr26-project"))
+        let cleanRunner = RecordingRunner("local-branch")
+        let dirtyRunner = RecordingRunner("remote-branch", dirty: true)
+        let local = GitStore(environment: { [:] }) { _ in
+            Git(environment: [:], runner: cleanRunner, monitor: NoMonitor())
+        }
+        let remote = GitStore(environment: { [:] }, isLocal: false) { _ in
+            Git(environment: [:], runner: dirtyRunner, monitor: NoMonitor())
+        }
+        local.sessionStore = { _ in remote }
+        let gitHub = GitHubModel(environment: { _ in [:] }, runner: cleanRunner)
+        let insights = AppSidebarTaskInsights.make(model: app, git: local, gitHub: gitHub)
+        let tasks = AppTaskPullRequests(model: app, git: local, gitHub: gitHub)
+        for path in ["/same/repo", "/pr26-remote-only/checkout"] {
+            let summary = SessionSummary(
+                project: project.id, agent: agent,
+                info: SessionInfo(sessionId: SessionID(path), cwd: path, title: "Remote task"))
+            await local.model(for: URL(filePath: path)).refreshNow()
+            await insights.prepare([summary])
+            try require(insights.hasUncommittedChanges(summary), "sidebar lost remote changes at \(path)")
+            try require(tasks.branch(of: summary) == nil, "remote task inherited a local PR branch at \(path)")
+            try require(tasks.menu(of: summary) == nil, "remote task inherited local PR actions")
+        }
+    }
+
+    private static func wiringPreservesClientIdentity(local: GitStore, runner: RecordingRunner, path: URL) async throws
+    {
         let app = AppModel.preview(.empty)
         guard let agent = app.plugins.agents.first else { throw Failure("missing fixture agent") }
         func client() -> NativeHostClient {
@@ -162,8 +196,10 @@ private struct HostGitRegression {
         let provider = GitTaskWorkspaceProvider(git: local, gitHub: gitHub, scripts: scripts)
         RemoteHostsWiring.connect(model: app, local: provider, git: local, gitHub: gitHub)
         guard let makeWorkspaces = app.hosts.makeTaskWorkspaces else { throw Failure("remote wiring is disabled") }
-        _ = makeWorkspaces(firstClient, path)
-        _ = makeWorkspaces(secondClient, path)
+        let firstHost = RemoteHostID()
+        let secondHost = RemoteHostID()
+        _ = makeWorkspaces(firstHost, firstClient, path)
+        _ = makeWorkspaces(secondHost, secondClient, path)
         func session(_ id: String, on client: NativeHostClient) -> SessionModel {
             let key = SessionID(id)
             let summary = HostSessionSummary(
@@ -184,6 +220,15 @@ private struct HostGitRegression {
         try require(hereModel === local.model(for: path), "wiring redirected a local session")
         try require(thereModel !== hereModel && thereModel !== elsewhereModel, "wiring merged different clients")
         try require(!thereModel.isLocal && !elsewhereModel.isLocal, "wiring lost remote locality")
+        let replacementClient = client()
+        _ = makeWorkspaces(firstHost, replacementClient, path)
+        let replacementModel = local.model(for: path, session: there.key)
+        try require(replacementModel !== thereModel, "re-pairing left Git on the retired client")
+        let replacementGit = await replacementModel.resolveGit()
+        let replacementRunner = replacementGit?.runner as? RemoteCommandRunner
+        try require(replacementRunner?.client === replacementClient, "Git operations still target the retired client")
+        try require(
+            local.model(for: path, session: elsewhere.key) === elsewhereModel, "re-pairing changed another host")
         // These clients have no pairing entries: open tasks must still never fall back to local Git.
         let unavailable = session("unpaired-without-store", on: client())
         guard case .failed = local.model(for: path, session: unavailable.key).state else {

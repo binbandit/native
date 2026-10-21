@@ -21,11 +21,11 @@ enum RemoteHostsWiring {
         model.taskWorkspaces = devices
         let settings = git.settings
         let stores = RemoteHostGitStores()
-        model.hosts.makeTaskWorkspaces = { client, worktreesFolder in
+        model.hosts.makeTaskWorkspaces = { host, client, worktreesFolder in
             let store = GitStore(
                 environment: { [:] }, settings: settings, worktreesFolder: worktreesFolder, isLocal: false,
                 makeGit: { _ in Git.onHost(client) })
-            stores.byClient[ObjectIdentifier(client)] = store
+            stores.install(store, on: host, client: client)
             let scripts = TaskScriptCenter(settings: TaskScriptSettings(), runner: RemoteCommandRunner(client: client))
             return GitTaskWorkspaceProvider(git: store, gitHub: gitHub, scripts: scripts)
         }
@@ -34,17 +34,29 @@ enum RemoteHostsWiring {
             // A loaded session retains its client even after its pairing is removed.
             if let client = model.sessions.session(session)?.host?.client {
                 if client === model.runtimes.host { return git }
-                return stores.byClient[ObjectIdentifier(client)]
+                return stores.store(for: client)
             }
             guard case .remote(let id) = model.device(of: session) else { return git }
             guard let client = model.hosts.host(id)?.client else { return nil }
-            return stores.byClient[ObjectIdentifier(client)]
+            return stores.store(for: client)
         }
     }
 }
 
-/// Each paired host's git store, by its client, once the host has said where its worktrees go.
+/// Session clients retain their host identity across re-pairing. Once a replacement is ready,
+/// even a session still holding the old client uses that host's current Git store.
 @Observable
 private final class RemoteHostGitStores {
-    var byClient: [ObjectIdentifier: GitStore] = [:]
+    // Retain retired clients so their object identifiers cannot be reused for another host.
+    private var hostsByClient: [ObjectIdentifier: (client: NativeHostClient, host: RemoteHostID)] = [:]
+    private var storesByHost: [RemoteHostID: GitStore] = [:]
+
+    func install(_ store: GitStore, on host: RemoteHostID, client: NativeHostClient) {
+        hostsByClient[ObjectIdentifier(client)] = (client, host)
+        storesByHost[host] = store
+    }
+
+    func store(for client: NativeHostClient) -> GitStore? {
+        hostsByClient[ObjectIdentifier(client)].flatMap { storesByHost[$0.host] }
+    }
 }
