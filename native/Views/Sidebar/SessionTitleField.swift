@@ -63,12 +63,7 @@ struct SessionTitleField: View {
         model.renaming = nil
         let previous = model.title(for: summary)
         guard draft != previous else { return }
-        model.rename(summary.id, to: draft)
-        let key = summary.id
-        undoManager?.registerUndo(withTarget: model) { model in
-            model.rename(key, to: previous)
-        }
-        undoManager?.setActionName("Rename Session")
+        model.rename(summary.id, to: draft, undoManager: undoManager)
     }
 }
 

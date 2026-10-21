@@ -97,6 +97,11 @@ Rules:
 - Shared, app-wide behavior (shortcuts, plugins, design tokens) is defined once: `docs/keyboard.md`,
   `PluginRegistry`, `DesignSystem`.
 
+`Packages/Undo` keeps undo toasts and the window's undo stack in agreement. `RootView` supplies the
+main window's undo manager to `AppModel.undoHistory`; the Edit menu uses it even when Home has no
+text responder. Archiving registers undo before workspace work starts, and the same action handles
+the toast, Cmd-Z and Redo. Expired deletions withdraw their actions from the stack.
+
 ### Migration
 
 The move is mechanical and happens in small PRs once the current feature work lands:

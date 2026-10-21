@@ -231,7 +231,8 @@ keyboard.
 | Return on a selected sidebar session | Rename it (Escape cancels, Return commits) | Session | |
 | ⌃⌘S | Show or hide the sidebar | View | `view.toggleSidebar` |
 | ⌥⌘↑ / ⌥⌘↓ | Move the selected project or session up / down (a queued message instead, while one is open in the composer) | Session | `sidebar.moveUp` / `sidebar.moveDown` |
-| ⇧⌘A | Archive the selected task (Undo brings it back), or unarchive an archived one; with several tasks picked, archive them all | Session | `session.archive` |
+| ⌘Z / ⇧⌘Z | Undo / redo the window's latest change, newest first: typing, or archiving, renaming, pinning or deleting a task or project (a deletion until it's carried out). The undo toast's Undo takes back the same change, once | Edit | |
+| ⇧⌘A | Archive the selected task and open the next available task (or the previous task at the end). ⌘Z or the toast's Undo restores and reopens it. Unarchive an archived task; with several tasks picked, archive them all | Session | `session.archive` |
 | ⌥⌘J | Turn the sidebar's Needs you filter on or off (its filter menu has the rest) | View | `view.needsYouFilter` |
 | ⌘⇧P | Pull requests | Go | `go.pullRequests` |
 | ⌘⇧X | Expeditions | Go | `go.expeditions` |
