@@ -62,7 +62,7 @@ extension AppModel {
             hasPullRequest: insights.hasPullRequest(summary),
             isArchived: isArchived(summary.id),
             title: title(for: summary),
-            lastActivity: session?.lastActivity ?? summary.info.updatedDate
+            lastActivity: lastActivity(for: summary)
         )
     }
 }
