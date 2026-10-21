@@ -26,6 +26,12 @@
   A host agent that exits during initialization stays failed, with its diagnostic output and a
   Restart action. Only intentionally stopped or previously initialized agents return to idle;
   a failed launch must never be presented as ready to start a task.
+- **Stop verifies process exit.** ACP's cancel acknowledgement alone cannot prove a shell stopped.
+  The host records the agent's descendants before sending cancel, gives it a short grace period,
+  then freezes and terminates the owned tree before publishing Stopped. Process start times guard
+  against reused pids, and remembered children remain owned if their parent exits. A shared agent
+  is not terminated while another task is using it: the stopped task remains Stopping with a
+  warning until the other tasks finish or are stopped. Its next message reloads the agent.
 - **State is a reducer.** `SessionState` folds `session/update`s and the user's actions into a
   transcript (messages, tool calls, subagents, inter-session messages, plan, usage). It's pure and
   tested against captured traffic, and it's shared with the future companion app.

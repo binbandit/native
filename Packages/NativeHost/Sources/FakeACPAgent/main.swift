@@ -84,6 +84,7 @@ actor FakeAgent {
         guard let id = message.id, let peer else {
             if message.method == "session/cancel", let params = try? message.params(as: SessionParams.self) {
                 cancelled.insert(params.sessionId)
+                if ProcessInfo.processInfo.environment["FAKE_AGENT_EXIT_ON_CANCEL"] == "1" { exit(0) }
             }
             return
         }
@@ -283,6 +284,8 @@ actor FakeAgent {
             try update(session, ["sessionUpdate": .string("agent_message_chunk"), "content": Self.text("working…")])
             try await Task.sleep(for: .milliseconds(200))
             exit(3)
+        } else if text == "cancel-leaves-command" {
+            return try await cancelLeavingCommand(session)
         } else if text.hasPrefix("slow") || text.hasPrefix("stubborn") {
             return try await tick(session, count: Self.count(in: text, default: 5), stoppable: text.hasPrefix("slow"))
         } else if text.hasPrefix("flood") || text.hasPrefix("trickle") {

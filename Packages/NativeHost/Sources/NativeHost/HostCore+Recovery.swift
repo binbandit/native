@@ -73,7 +73,7 @@ extension HostCore {
             session.needsLoad = true
             withdrawPermissions(of: session)
             withdrawQuestions(of: session)
-            guard session.turn != nil, !wasStopped else {
+            guard session.turn != nil, !wasStopped, !session.isStopping else {
                 publish(session)
                 continue
             }
@@ -85,7 +85,7 @@ extension HostCore {
 
     /// Brings one interrupted turn back: reloads the session, then resends or resumes.
     func recover(_ session: HostSession, cause: RecoveryNote.Cause, interruptedAt: Date) async {
-        guard let turn = session.turn else { return }
+        guard let turn = session.turn, !session.isStopping else { return }
         session.isRecoveryCancelled = false
         if turn.attempts >= RecoveryPlanner.maximumAttempts {
             conclude(

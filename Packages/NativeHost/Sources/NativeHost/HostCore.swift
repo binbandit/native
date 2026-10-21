@@ -127,6 +127,8 @@ public final class HostCore {
     var idleUnloadChecks: Task<Void, Never>?
     /// Set once a restart was asked for, to exit when nothing is running.
     var isRestartingWhenIdle = false
+    /// Quit and Stop Agents authorizes ending shared trees, including hidden commands.
+    var isStoppingAllAgents = false
     /// Who writes titles, and which are being written (`HostCore+Titles.swift`).
     var titling = HostTitling()
     /// Keeps the machine awake while sessions work, as the policy says (`HostCore+Status.swift`).

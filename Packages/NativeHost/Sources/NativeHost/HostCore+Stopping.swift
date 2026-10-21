@@ -2,16 +2,13 @@ import ACP
 import Foundation
 import NativeHostProtocol
 
-// Stopping a turn, and sending again a prompt that failed for a passing reason. An agent that never
-// confirms a stop would leave the user with no way out, so asking again, or the agent staying
-// silent for `stopGracePeriod`, ends the turn on the host's side.
+// Stopping a turn, and sending again a prompt that failed for a passing reason. ACP cancellation
+// can return while shell commands still run, so only verified process exit ends a stopped turn.
 extension HostCore {
-    /// How long the agent gets to confirm a stop before the host stops waiting for it.
-    static let stopGracePeriod: Duration = .seconds(10)
+    static let stopGracePeriod: TimeInterval = 2
 
     /// Stops what the session is doing: a retry waiting to go out, the running turn, or the recovery
-    /// of one. The agent is asked to cancel; if it doesn't confirm within the grace period, or the
-    /// user asks again more than a second later, the turn ends on the host's side.
+    /// of one. Cancellation gets a short grace period before Native ends the owned process tree.
     func cancel(_ session: HostSession) async {
         if session.retryAt != nil {
             cancelRetry(of: session)
@@ -28,32 +25,39 @@ extension HostCore {
             // An agent's own subagent has no turn of its own; stopping it stops only its work.
             answerCancelled(session, on: peer)
             try? peer.notify("session/cancel", CancelNotification(sessionId: agentSessionID))
+            append(
+                .notice(
+                    text:
+                        "Commands may still be running. Stop the parent task to verify that its subagent's commands have ended.",
+                    isError: true),
+                to: session)
             publish(session)
             return
         }
         guard let turn = session.turn else { return }
-        guard session.phase == .prompting, let peer = link?.peer, let agentSessionID = session.record.agentSessionID
-        else {
-            // Nothing is running to cancel (the agent is being restarted); just let the turn go.
-            session.isRecoveryCancelled = true
-            finish(turn, in: session, stopReason: "cancelled")
-            return
-        }
+        session.isRecoveryCancelled = true
         if let first = session.stopRequestedAt {
-            // A second press, not a double click, means the user is done waiting for the agent.
+            // A second press skips the grace period, never the process-exit check.
             if Date.now.timeIntervalSince(first) > 1 {
-                abandon(turn, in: session)
+                session.stopRequestedAt = .distantPast
             }
             return
         }
-        session.stopRequestedAt = .now
-        session.stopTimeout = Task { [weak self, weak session] in
-            try? await Task.sleep(for: Self.stopGracePeriod)
-            guard !Task.isCancelled, let self, let session else { return }
-            abandon(turn, in: session)
+        guard let link, let processes = link.processesForStop() else {
+            // No launched generation remains to cancel while the agent is being restarted.
+            finish(turn, in: session, stopReason: "cancelled")
+            return
         }
-        answerCancelled(session, on: peer)
-        try? peer.notify("session/cancel", CancelNotification(sessionId: agentSessionID))
+        session.stopRequestedAt = .now
+        link.commandStopOwnsTree = true
+        let generation = link.generation
+        session.stopTimeout = Task { [weak self] in
+            await self?.endStoppedCommands(turn, in: session, on: link, generation: generation, processes: processes)
+        }
+        if let peer = link.peer, let agentSessionID = session.record.agentSessionID {
+            answerCancelled(session, on: peer)
+            try? peer.notify("session/cancel", CancelNotification(sessionId: agentSessionID))
+        }
         publish(session)
     }
 
@@ -65,20 +69,6 @@ extension HostCore {
         }
         withdrawPermissions(of: session)
         withdrawQuestions(of: session)
-    }
-
-    /// Ends a turn being stopped without the agent's word; its late answer is ignored.
-    private func abandon(_ turn: UnfinishedTurn, in session: HostSession) {
-        guard session.turn?.requestID == turn.requestID else { return }
-        endTurn(in: session, stopReason: "cancelled", pauseQueue: true)
-        append(.turnEnded(stopReason: "cancelled"), to: session)
-        append(
-            .notice(
-                text:
-                    "\(session.agentName) didn't confirm it stopped, so Native stopped waiting. It may still be finishing its last step.",
-                isError: false), to: session)
-        publish(session)
-        continueAfterTurn(session)
     }
 
     // MARK: - Retrying

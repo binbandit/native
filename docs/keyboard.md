@@ -23,8 +23,8 @@ cancels, so those keys don't get rows of their own.
 | Return | Send | The preferred follow-up behavior (Settings: Steer, the default, or Queue) | |
 | ⌘Return | Send | The other follow-up behavior | |
 | Shift-Return, Option-Return | New line | New line | |
-| Escape | Close the slash-command list if open | Stop the turn (with the slash-command list closed); again, stop waiting for the agent | |
-| ⌘. | | Stop the turn; again, stop waiting for the agent | `session.stop` |
+| Escape | Close the slash-command list if open | Stop the turn (with the slash-command list closed); again, end the cancel grace period | |
+| ⌘. | | Stop the turn; again, end the cancel grace period | `session.stop` |
 | ↑ in an empty composer | Edit the last queued message, if any; else recall the last prompt | Edit the last queued message | |
 
 **Steer** adds the message to the running turn (`_session/steering`); agents that don't support
@@ -38,9 +38,14 @@ steering. Pending questions, approvals, stopping and unavailable tasks still exp
 needed in the placeholder. Code-block and queued-message editing hints remain visible when the
 controls row has room.
 
-**Stop** asks the agent to end the turn, answers its open permission requests as rejected, and the
-transcript marks the turn Stopped. If the agent hasn't ended it after 10 seconds, or Stop is pressed
-again, Native stops waiting and says so.
+**Stop** asks the agent to end the turn and answers its open permission requests as rejected. The
+host gives the agent two seconds to cancel, then ends its owned process tree, including shell
+commands in separate process groups. The task stays Stopping until those processes have exited,
+even if the agent already acknowledged cancellation. Pressing Stop again ends the grace period.
+An agent process can serve several tasks: Native waits for its other tasks to finish or be stopped
+before ending that shared process, and explains that commands may still be running meanwhile.
+If Native cannot verify command termination, including in-app mode with background running off,
+it says so and does not label the turn Stopped.
 
 ### Code
 

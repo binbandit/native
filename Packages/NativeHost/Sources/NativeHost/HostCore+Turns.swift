@@ -48,7 +48,7 @@ extension HostCore {
             }
             try startTurn(in: session, prompt: item)
             return .prompted
-        case .prompting where params.behavior == .steer && session.supportsSteering:
+        case .prompting where params.behavior == .steer && session.supportsSteering && !session.isStopping:
             return try await steer(item, into: session)
         default:
             try enqueue(item, in: session)
@@ -163,6 +163,7 @@ extension HostCore {
 
     func finish(_ turn: UnfinishedTurn, in session: HostSession, stopReason: String) {
         guard session.turn?.requestID == turn.requestID else { return }
+        guard !session.isStopping else { return }
         // Queued messages wait out a stopped turn until the user sends again.
         let pause = stopReason == "cancelled"
         endTurn(in: session, stopReason: stopReason, pauseQueue: pause)
@@ -179,6 +180,7 @@ extension HostCore {
     /// agent got anywhere sends the message again a little later; anything else waits for the user.
     private func fail(_ turn: UnfinishedTurn, in session: HostSession, error: any Error) {
         guard session.turn?.requestID == turn.requestID else { return }
+        guard !session.isStopping else { return }
         let madeProgress = session.turnMadeProgress
         // An error isn't a stop reason; draining the queue after one could burn through all of it.
         endTurn(in: session, stopReason: "error", pauseQueue: true)
@@ -226,6 +228,7 @@ extension HostCore {
     /// What follows a turn's end: the message the user sent while stopping goes first (even though
     /// stopping pauses the queue), otherwise the queue, unless it's paused.
     func continueAfterTurn(_ session: HostSession) {
+        guard !isStoppingAllAgents else { return }
         if let id = session.sendAfterStop {
             session.sendAfterStop = nil
             if let index = session.queue.firstIndex(where: { $0.prompt.id == id }) {

@@ -178,7 +178,7 @@ struct HostSessionTests {
         await recorder.stop()
     }
 
-    @Test("Stopping a turn whose agent won't confirm: asking again ends it on the host's side")
+    @Test("Stopping a turn whose agent won't confirm ends its owned process")
     func stopTwice() async throws {
         let harness = try HostHarness()
         let (recorder, session) = try await started(harness)
@@ -189,7 +189,7 @@ struct HostSessionTests {
         try await Task.sleep(for: .milliseconds(1_100))
         try await recorder.client.cancel(session)
         try await recorder.wait("the turn to end") { await $0.turnsEnded(session) == ["cancelled"] }
-        #expect(await recorder.notices(session).contains { $0.hasPrefix("Fake Agent didn't confirm it stopped") })
+        #expect(await recorder.notices(session).contains("Native ended Fake Agent and its running commands."))
         #expect(await recorder.summaries[session]?.isStopping == false)
         await recorder.stop()
     }
