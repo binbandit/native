@@ -39,7 +39,10 @@ import Testing
             case .ended(let ending): updates.append("ended \(ending)")
             }
         }
-        #expect(updates == ["approve https://login.tailscale.com/a/l1b2c3", "event invite", "ended ran(exitCode: 0)"])
+        // stdout and stderr are independent pipes; neither promises to arrive before the other.
+        // Both messages must arrive exactly once, before the command's ending.
+        #expect(updates.dropLast().sorted() == ["approve https://login.tailscale.com/a/l1b2c3", "event invite"])
+        #expect(updates.last == "ended ran(exitCode: 0)")
     }
 
     @Test func readsApprovalPages() {
