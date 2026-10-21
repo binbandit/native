@@ -28,7 +28,7 @@ permissions:
 # Merge bursts publish the newest revision. Compare with the last upload, not just the last
 # commit, so a Mac-only merge cannot cancel and lose an earlier mobile change.
 concurrency:
-  group: testflight-${{ github.ref }}
+  group: testflight-${{ github.ref }}-${{ inputs.dry_run && 'rehearsal' || 'publish' }}
   cancel-in-progress: true
 jobs:
   checks:
