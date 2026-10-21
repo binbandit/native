@@ -1,7 +1,8 @@
 import SwiftUI
 
-/// The memory and CPU Native and its agents use: Native's own and its agents' figures in the bar,
-/// each process tree and process on click. Samples only while the bar is on screen.
+/// The memory and CPU Native and its agents use: Native's own and its agents' figures in the bar
+/// (just the glyph in a narrow window), each process tree and process on click. Samples only while
+/// the bar is on screen.
 struct ResourcesStatusItem: StatusBarItem {
     let source: any StatusBarSource
     let monitor: ResourceMonitor
@@ -31,6 +32,21 @@ private struct ResourcesSegment: View {
     }
 
     var body: some View {
+        segment(isCompact: false)
+            // In a narrow window the glyph alone, still tinted as memory gets tight, so the items
+            // that need the user keep their room. The figures stay in its tooltip and panel.
+            .statusBarCompactForm {
+                segment(isCompact: true)
+            }
+            // Outside the forms, so sampling runs once whichever one shows.
+            .task {
+                await monitor.run(
+                    roots: { source.statusBarAgentProcesses },
+                    isWorking: { source.statusBarTasks.contains { $0.status == .working } })
+            }
+    }
+
+    private func segment(isCompact: Bool) -> some View {
         StatusBarSegment(
             help: "\(reading.summary) Click for each process.",
             accessibilityLabel: "Memory and CPU",
@@ -39,19 +55,16 @@ private struct ResourcesSegment: View {
             HStack(spacing: DS.Space.sm) {
                 StatusBarGlyph("memorychip")
                     .modifier(Tint(color: pressureTint))
-                figures("Native", reading.app)
-                if let agents = reading.agents {
-                    StatusBarDivider()
-                    figures("Agents", agents)
+                if !isCompact {
+                    figures("Native", reading.app)
+                    if let agents = reading.agents {
+                        StatusBarDivider()
+                        figures("Agents", agents)
+                    }
                 }
             }
         } details: {
             ResourcesPanel(monitor: monitor)
-        }
-        .task {
-            await monitor.run(
-                roots: { source.statusBarAgentProcesses },
-                isWorking: { source.statusBarTasks.contains { $0.status == .working } })
         }
     }
 

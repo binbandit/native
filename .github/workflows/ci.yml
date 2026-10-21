@@ -35,19 +35,19 @@ jobs:
       matrix:
         shard: [1, 2]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       - name: Cache package builds
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: Packages/*/.build
           key: spm-${{ runner.os }}-shard${{ matrix.shard }}of${{ strategy.job-total }}-${{ hashFiles('Packages/*/Package.swift', 'Packages/*/Package.resolved', 'scripts/ci/package-test-times.txt') }}
           restore-keys: spm-${{ runner.os }}-shard${{ matrix.shard }}of${{ strategy.job-total }}-
       # The Cargo cache Check and the release workflows save, for the ScriptRuntime package's helper.
       - name: Restore the script runtime
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/Library/Caches/Native/ScriptRuntime
-          key: script-runtime-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'scripts/build-script-runtime.sh') }}
+          key: script-runtime-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'Runtime/ScriptRuntime/rust-toolchain.toml', 'scripts/build-script-runtime.sh') }}
           restore-keys: script-runtime-${{ runner.os }}-${{ runner.arch }}-
       - name: swift test
         run: scripts/ci/test-packages.sh ${{ matrix.shard }} ${{ strategy.job-total }}
@@ -57,7 +57,7 @@ jobs:
     runs-on: ${{ vars.MACOS_RUNNER || 'macos-26' }}
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
         with:
           fetch-depth: 0
       - name: swift format lint --strict
@@ -77,7 +77,7 @@ jobs:
     runs-on: ${{ vars.MACOS_RUNNER || 'macos-26' }}
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       - name: Cache locations
         run: |
           echo "SOURCE_PACKAGES=$HOME/Library/Caches/native-ci/SourcePackages" >> "$GITHUB_ENV"
@@ -87,43 +87,45 @@ jobs:
       # the caches Check and the releases use, so the Debug build has the terminal too (libghostty as
       # Check last built it; this job doesn't build it itself).
       - name: Cache libghostty
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/Library/Caches/native-build/libghostty
           key: libghostty-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/build-libghostty.sh') }}
           restore-keys: libghostty-${{ runner.os }}-${{ runner.arch }}-
       - name: Cache the script runtime
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/Library/Caches/Native/ScriptRuntime
-          key: script-runtime-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'scripts/build-script-runtime.sh') }}
+          key: script-runtime-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'Runtime/ScriptRuntime/rust-toolchain.toml', 'scripts/build-script-runtime.sh') }}
           restore-keys: script-runtime-${{ runner.os }}-${{ runner.arch }}-
       # Package checkouts and Xcode's compilation cache, as in check.yml (scripts/release/check.sh
       # explains the compilation cache).
       - name: Cache Swift package checkouts
-        uses: actions/cache@v4
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ env.SOURCE_PACKAGES }}
           key: source-packages-${{ runner.os }}-${{ hashFiles('native.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
           restore-keys: source-packages-${{ runner.os }}-
       - name: Restore the compilation cache
         id: compilation-cache
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ env.COMPILATION_CACHE }}
           key: compilation-cache-${{ runner.os }}-Debug-${{ github.sha }}
           restore-keys: compilation-cache-${{ runner.os }}-Debug-
+      # Only the versions Package.resolved records: a resolved file that no longer matches the project
+      # fails here instead of being re-resolved to whatever the remotes have now.
       - name: Resolve Swift packages
         run: >-
           xcodebuild -resolvePackageDependencies -project native.xcodeproj -scheme native
-          -clonedSourcePackagesDirPath "$SOURCE_PACKAGES" -quiet
+          -clonedSourcePackagesDirPath "$SOURCE_PACKAGES" -disableAutomaticPackageResolution -quiet
       # The full log goes to a file rather than through -quiet, which prints a misleading "failed with
       # exit code 0" error for every step that only warned. On a failure, its errors and summary show.
       - name: Build (unsigned)
         run: |
           xcodebuild build -project native.xcodeproj -scheme native -configuration Debug \
             -derivedDataPath "$RUNNER_TEMP/DerivedData" -clonedSourcePackagesDirPath "$SOURCE_PACKAGES" \
-            -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO \
+            -disableAutomaticPackageResolution -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO \
             COMPILATION_CACHE_ENABLE_CACHING=YES COMPILATION_CACHE_CAS_PATH="$COMPILATION_CACHE" \
             COMPILATION_CACHE_LIMIT_SIZE=2G > "$RUNNER_TEMP/build.log" 2>&1 || {
               grep -E '^[^[:space:]|].*error: ' "$RUNNER_TEMP/build.log" | sort -u
@@ -135,13 +137,13 @@ jobs:
         run: scripts/check-warnings.sh "$RUNNER_TEMP/build.log"
       - name: Save the compilation cache
         if: success() && github.event_name != 'pull_request' && steps.compilation-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ env.COMPILATION_CACHE }}
           key: ${{ steps.compilation-cache.outputs.cache-primary-key }}
       - name: Upload the build log
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
           name: build-log
           path: ${{ runner.temp }}/build.log

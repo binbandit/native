@@ -8,10 +8,10 @@
 #   scripts/build-script-runtime.sh --sandbox            build against V8 with its memory sandbox
 #   scripts/build-script-runtime.sh --output <path> [--identity <id>] [--optional]
 #
-# The first build downloads V8's prebuilt static library (about 37 MiB, a minute or two) into the
-# cargo target directory; later builds take seconds. --sandbox needs V8 built from source, which
-# takes about an hour and 5 GiB once (Runtime/ScriptRuntime/scripts/build-v8-sandbox.py), or set
-# NATIVE_V8_SANDBOX_DIR to the gn_out directory of an earlier sandbox build.
+# The first build downloads V8's prebuilt static library (about 38 MiB, a minute or two), checked
+# against the SHA-256 pinned below; later builds take seconds. --sandbox needs V8 built from
+# source, which takes about an hour and 5 GiB once (Runtime/ScriptRuntime/scripts/build-v8-sandbox.py),
+# or set NATIVE_V8_SANDBOX_DIR to the gn_out directory of an earlier sandbox build.
 #
 # Builds share one cargo target directory outside the repo, ~/Library/Caches/Native/ScriptRuntime
 # (override with NATIVE_SCRIPT_RUNTIME_CACHE): Xcode's script sandbox doesn't allow writing into
@@ -63,6 +63,26 @@ if ! command -v cargo >/dev/null 2>&1 && [ -n "${SHELL:-}" ]; then
 fi
 command -v cargo >/dev/null 2>&1 || give_up "cargo isn't installed. Install Rust from https://rustup.rs and build again."
 
+# The Rust the runtime ships from (Runtime/ScriptRuntime/rust-toolchain.toml): the cargo on the PATH
+# when it's that version, as on CI's image, otherwise that version through rustup.
+rust="$(sed -n 's/^channel = "\(.*\)"$/\1/p' "$crate/rust-toolchain.toml")"
+cargo=(cargo)
+if [ "$(rustc --version 2>/dev/null | cut -d' ' -f2)" != "$rust" ]; then
+    if command -v rustup >/dev/null 2>&1; then
+        # Installed once and then used offline (--no-update), one install at a time since several
+        # builds can get here at once.
+        lockf -k "${TMPDIR:-/tmp}/native-rustup-install.lock" \
+            rustup toolchain install "$rust" --profile minimal --no-self-update --no-update >/dev/null 2>&1 \
+            || give_up "couldn't install Rust $rust with rustup."
+        # By path: a rustc earlier on the PATH (Homebrew's) would ignore rustup's choice.
+        cargo=("$(rustup which --toolchain "$rust" cargo)")
+        RUSTC="$(rustup which --toolchain "$rust" rustc)"
+        export RUSTC
+    else
+        echo "note: building with $(rustc --version 2>/dev/null) rather than Rust $rust; releases use $rust (install rustup to match)."
+    fi
+fi
+
 # A rustc wrapper from the user's cargo config (sccache, kache) may not be on this PATH, and this
 # small crate doesn't need one: build without it so Xcode and a terminal behave the same.
 export RUSTC_WRAPPER=""
@@ -70,6 +90,40 @@ export RUSTC_WRAPPER=""
 export CARGO_TARGET_DIR="$cache/target"
 mkdir -p "$cache"
 cargo_args=(--release --locked --manifest-path "$crate/Cargo.toml")
+
+# V8's prebuilt static library for the v8 crate in Cargo.lock (pointer compression, release, arm64).
+# rusty_v8's build script would download it itself and check nothing but its URL, so it's fetched
+# here, checked against these pins and handed over with RUSTY_V8_ARCHIVE. To bump the crate, update
+# all three: the archive's SHA-256 is its release asset's digest, the library's is the archive's
+# gunzipped content.
+V8_VERSION="150.4.0"
+V8_ARCHIVE_SHA256="90f2c957db016e0d1027dcc29aed62e993284cc9475240a08991ae43746f98d6"
+V8_LIBRARY_SHA256="fee5f16403745c962e0d86446a75f35df608aadfa27b7c81c6e3f857acbaf5d6"
+
+has_sha256() {
+    [ -f "$1" ] && [ "$(shasum -a 256 "$1" | cut -d' ' -f1)" = "$2" ]
+}
+
+if [ "$sandbox" = 0 ]; then
+    [ "$(uname -m)" = arm64 ] || give_up "V8's prebuilt library is pinned for arm64 only."
+    locked="$(awk '$0 == "name = \"v8\"" { getline; gsub(/version = |"/, ""); print }' "$crate/Cargo.lock")"
+    [ "$locked" = "$V8_VERSION" ] \
+        || give_up "Cargo.lock has v8 $locked but this script pins $V8_VERSION; update the V8 pins in $0."
+    archive="$cache/v8/librusty_v8_ptrcomp_release_aarch64-apple-darwin-$V8_VERSION.a.gz"
+    if ! has_sha256 "$archive" "$V8_ARCHIVE_SHA256"; then
+        # Each build downloads to its own file and renames it into place once checked, so builds
+        # sharing the cache never see each other's half-written or vanished downloads.
+        partial="$archive.$$.partial"
+        mkdir -p "$(dirname "$archive")"
+        curl -fsSL -o "$partial" \
+            "https://github.com/denoland/rusty_v8/releases/download/v$V8_VERSION/librusty_v8_ptrcomp_release_aarch64-apple-darwin.a.gz" \
+            || { rm -f "$partial"; give_up "couldn't download V8 $V8_VERSION."; }
+        has_sha256 "$partial" "$V8_ARCHIVE_SHA256" \
+            || { rm -f "$partial"; give_up "the V8 $V8_VERSION download doesn't match its pinned SHA-256."; }
+        mv -f "$partial" "$archive"
+    fi
+    export RUSTY_V8_ARCHIVE="$archive"
+fi
 
 if [ "$sandbox" = 1 ]; then
     v8_dir="${NATIVE_V8_SANDBOX_DIR:-$cache/v8-sandbox/target/release/gn_out}"
@@ -85,12 +139,16 @@ if [ "$sandbox" = 1 ]; then
 fi
 
 if [ "$test" = 1 ]; then
-    exec cargo test "${cargo_args[@]}"
+    exec "${cargo[@]}" test "${cargo_args[@]}"
 fi
 
 started=$SECONDS
-cargo build "${cargo_args[@]}" || give_up "native-script-runtime didn't build; see the cargo output above."
+"${cargo[@]}" build "${cargo_args[@]}" || give_up "native-script-runtime didn't build; see the cargo output above."
 built="$CARGO_TARGET_DIR/release/native-script-runtime"
+# The copy cargo linked, which a restored CI cache could have brought along unchecked.
+if [ "$sandbox" = 0 ] && ! has_sha256 "$CARGO_TARGET_DIR/release/gn_out/obj/librusty_v8.a" "$V8_LIBRARY_SHA256"; then
+    give_up "the V8 library in $CARGO_TARGET_DIR doesn't match its pinned SHA-256; delete that folder and build again."
+fi
 
 # Its own signature and entitlements are the second boundary: the App Sandbox with no network and
 # no files outside its container, whatever happens inside V8. From Xcode it also takes the flags

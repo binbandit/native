@@ -54,7 +54,7 @@ struct FocusedCommandContext: DynamicProperty {
 }
 
 /// What the menu bar's items are built from: the registry, and the frontmost window's context as
-/// the menu bar read it, once for all of them (`CommandRegistry.menuBar(actingOn:)`).
+/// the menu bar read it, once for all of them (`NativeMenuBar`).
 @MainActor
 struct CommandMenuContext {
     let registry: CommandRegistry

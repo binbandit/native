@@ -37,8 +37,10 @@ private struct StandardTranscript: View {
                     StandardTranscriptLineView(line: line, context: context)
                 }
                 if transcript.isWorking {
-                    WorkingIndicator(quietSince: transcript.session.state.quietSince)
-                        .padding(.top, DS.Space.xl)
+                    WorkingIndicator(
+                        status: transcript.session.taskStatus, quietSince: transcript.session.state.quietSince
+                    )
+                    .padding(.top, DS.Space.xl)
                 }
             }
             #if DEBUG || NATIVE_PERF
@@ -103,17 +105,26 @@ extension TranscriptRow {
 }
 
 private struct WorkingIndicator: View {
+    /// The task's status as every surface reads it (`SessionModel.taskStatus`).
+    let status: TaskStatus
     /// Since when the agent has shown nothing new (`SessionState.quietSince`).
     let quietSince: Date?
 
     var body: some View {
         HStack(spacing: DS.Space.md) {
-            DotGridLoader(pattern: .typing)
-                .frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
-            if let quietSince {
-                QuietThinkingLabel(since: quietSince)
+            if status.needsAttention {
+                // The turn is the user's move, not the agent's: say what it waits for, in the words
+                // the sidebar and the status bar use, rather than count thinking that isn't happening.
+                StatusIndicator(status: status, size: DS.Size.statusGlyph)
+                Text(status.label)
             } else {
-                Text("Working…")
+                DotGridLoader(pattern: .typing)
+                    .frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
+                if let quietSince {
+                    QuietThinkingLabel(since: quietSince)
+                } else {
+                    Text("Working…")
+                }
             }
         }
         .font(.dsCallout)
