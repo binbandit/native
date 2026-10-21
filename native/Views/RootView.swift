@@ -236,13 +236,12 @@ struct RootView: View {
             // The background host's notices sit above the page, not over it: the page starts under
             // them, so a short transcript isn't hidden behind them, and a page's toolbar band
             // (`dsToolbarBand`) only reaches the notices' bottom edge.
-            VStack(spacing: 0) {
+            RootDetailColumn {
                 if let durableHost {
                     HostNotices(host: durableHost, updates: updates)
                 }
+            } content: {
                 detail
-                    // Never measured at no width for the window's minimum size (docs/performance.md).
-                    .platformMinimumContentWidth(DS.Window.detailMinWidth)
             }
             // Under every page, so the transcript and anything else without a background of its
             // own sits on the design system's background in the user's light tone, not the system's.
