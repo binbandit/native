@@ -33,11 +33,11 @@ struct SessionTitleStateTests {
         #expect(state.request == nil && state.progress == nil && !state.wantsTitle)
     }
 
-    @Test("A task waiting for a title is named from its first message, but not while it's generated")
+    @Test("A task waiting for a title is named from its first message, including while it's generated")
     func fallback() {
         var state = SessionTitleState()
         state.begin(request)
-        #expect(state.displayTitle(agentTitle: nil) == nil)
+        #expect(state.displayTitle(agentTitle: nil) == "Fix the flaky login test in CI please")
         state.waitForClient()
         #expect(state.displayTitle(agentTitle: nil) == "Fix the flaky login test in CI please")
         // The agent's own title comes first.
@@ -74,6 +74,35 @@ struct SessionTitleStateTests {
             firstMessage: "", attachmentNames: ["crash.log", "screen.png"], in: URL(filePath: "/tmp/native"))
         #expect(request.prompt == "crash.log, screen.png")
         #expect(request.projectName == "native")
+    }
+
+    @Test("An unusable first message leaves the next one eligible; an attempt is retried only once")
+    func retryDecision() {
+        var state = SessionTitleState()
+        #expect(!state.beginIfNeeded(SessionTitleRequest(projectName: "native", prompt: "   ")))
+        #expect(state.beginIfNeeded(request))
+        #expect(!state.beginIfNeeded(request))
+        state.fail()
+        #expect(state.beginIfNeeded(SessionTitleRequest(projectName: "native", prompt: "another message")))
+        #expect(state.request?.prompt == request.prompt)
+        #expect(state.retryCount == 1)
+        state.fail()
+        #expect(!state.beginIfNeeded(request))
+        #expect(state.fallback != nil)
+    }
+
+    @Test("A manual rename blocks a retry and undo restores eligibility")
+    func renamedRetry() {
+        var state = SessionTitleState()
+        state.begin(request)
+        state.waitForClient()
+        state.rename(to: "My title")
+        #expect(!state.beginIfNeeded(request))
+        #expect(state.displayTitle(agentTitle: nil) == "My title")
+        state.rename(to: nil)
+        #expect(state.beginIfNeeded(request))
+        state.accept(generated: "Login fix")
+        #expect(!state.beginIfNeeded(request))
     }
 }
 

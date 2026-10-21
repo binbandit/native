@@ -20,7 +20,8 @@ extension SessionTitleState {
         return HostSessionTitles(
             user: user, generated: generated, fallback: fallback,
             request: progress == .waitingForClient
-                ? request.map { HostTitleRequest(projectName: $0.projectName, prompt: $0.prompt) } : nil)
+                ? request.map { HostTitleRequest(projectName: $0.projectName, prompt: $0.prompt, retry: retryCount) }
+                : nil)
     }
 }
 
@@ -56,7 +57,7 @@ extension HostCore {
             logger.error("Couldn't read titles: \(error.localizedDescription)")
         }
         for session in sessions.values {
-            writeTitle(for: session)
+            if session.titleState.progress == .generating { writeTitle(for: session) }
         }
     }
 
@@ -78,18 +79,27 @@ extension HostCore {
     /// Starts the task's title when its first message goes out. Called as every turn starts, once
     /// the prompt is in the session's log.
     func titleAfterPrompt(_ session: HostSession, prompt: OutgoingPrompt, kind: UnfinishedTurn.Kind) {
-        guard kind == .prompt, titling.configuration.provider != .off, session.titleState.wantsTitle,
-            session.record.origin != .announced, !session.record.isAdopted, session.record.lastStopReason == nil
+        guard kind == .prompt, titling.configuration.provider != .off,
+            session.record.origin != .announced, !session.record.isAdopted
         else { return }
-        // A message of the user's before this one: the task started before titles were kept here.
-        let userMessages = session.mirror.state.items.count { item in
-            if case .message(let message) = item { message.role == .user } else { false }
-        }
-        guard userMessages <= (prompt.isEchoed ? 1 : 0) else { return }
+        // API clients can supply ACP content without duplicating it in the transcript fields.
+        let content = prompt.content ?? []
+        let contentText = content.compactMap { block -> String? in
+            if case .text(let text) = block { text } else { nil }
+        }.joined(separator: "\n")
+        let names =
+            prompt.attachments.isEmpty
+            ? content.compactMap { block -> String? in
+                switch block {
+                case .resourceLink(_, let name): name
+                case .resource(let uri, _): URL(string: uri)?.lastPathComponent
+                case .image: "Image attachment"
+                default: nil
+                }
+            } : prompt.attachments.map(\.name)
         let request = SessionTitleRequest(
-            firstMessage: prompt.text, attachmentNames: prompt.attachments.map(\.name), in: session.folder)
-        guard !request.prompt.isEmpty else { return }
-        session.titleState.begin(request)
+            firstMessage: prompt.text.isEmpty ? contentText : prompt.text, attachmentNames: names, in: session.folder)
+        guard session.titleState.beginIfNeeded(request) else { return }
         saveTitles(of: session)
         writeTitle(for: session)
     }
@@ -114,7 +124,7 @@ extension HostCore {
     /// when the host has none for the configured provider.
     private func writeTitle(for session: HostSession) {
         let state = session.titleState
-        guard var request = state.request, state.generated == nil,
+        guard titling.configuration.provider != .off, var request = state.request, state.generated == nil,
             state.progress == .generating || state.progress == .waitingForClient,
             !titling.generating.contains(session.id)
         else { return }

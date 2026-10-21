@@ -14,7 +14,7 @@ final class HostStore {
     /// Extensions that keep an engine's tables use it directly (HostStore+Notifications.swift).
     let database: SQLiteDatabase
 
-    static let schemaVersion: Int64 = 9
+    static let schemaVersion: Int64 = 10
 
     init(url: URL) throws {
         database = try SQLiteDatabase(url: url)
@@ -80,6 +80,9 @@ final class HostStore {
             }
             if version < 9 {
                 try database.execute(Self.closedSessionConfigTable)
+            }
+            if version < 10 {
+                try database.execute("ALTER TABLE titles ADD COLUMN retry_count INTEGER NOT NULL DEFAULT 0")
             }
             try database.execute("PRAGMA user_version = \(Self.schemaVersion)")
         }

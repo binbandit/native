@@ -1,5 +1,6 @@
 import ACP
 import Foundation
+import NativeHostProtocol
 import Observation
 import SessionTitling
 import os
@@ -28,6 +29,7 @@ final class SessionTitles {
     /// Tasks a host couldn't title yet, named from their first message meanwhile.
     private var fallbackTitles: [String: String]
     private var generating: Set<Key> = []
+    @ObservationIgnored private var attempts: [Key: SessionTitleState] = [:]
     @ObservationIgnored private var configChoices: [String: ConfigChoices]
     private let logger = Logger(subsystem: "Native", category: "Titles")
 
@@ -38,8 +40,10 @@ final class SessionTitles {
     @ObservationIgnored var renamesInFlight: [Key: Int] = [:]
     /// Renames a host hasn't confirmed, sent again when it's back.
     @ObservationIgnored var unsyncedRenames: Set<Key> = []
-    /// Generated titles this app wrote for a host, or handed one it lacked: once a run each.
+    /// Existing generated titles handed to a host that lacked them, once a run each.
     @ObservationIgnored var writtenForHosts: Set<Key> = []
+    /// The host's attempt number allows one retry without treating every summary as new work.
+    @ObservationIgnored var requestsForHosts: [Key: HostTitleRequest] = [:]
     /// Tasks whose title the workspace has heard this run.
     @ObservationIgnored var landedTitles: Set<Key> = []
     /// The titler plugins provide now, and who hears that a task's title landed.
@@ -108,20 +112,37 @@ final class SessionTitles {
     }
 
     /// Names the session from its first prompt, unless it already has a title of Native's or the
-    /// user's. Call it when the first prompt is sent. A task in a host is titled there.
-    func generateIfNeeded(for key: Key, request: TitleRequest, using titler: (any SessionTitler)?) async {
+    /// user's. Call it for each prompt so a failed attempt can retry once. A task in a host is titled there.
+    func generateIfNeeded(
+        for key: Key, request: TitleRequest, using titler: (any SessionTitler)?, isFirstPrompt: Bool = true
+    ) async {
         guard let titler, !isTitledByHost(key),
             userTitles[key.storageKey] == nil,
             generatedTitles[key.storageKey] == nil,
+            isFirstPrompt || attempts[key] != nil,
             generating.insert(key).inserted
         else { return }
         defer { generating.remove(key) }
+        var state = attempts[key] ?? SessionTitleState()
+        let shouldGenerate = state.beginIfNeeded(
+            SessionTitleRequest(projectName: request.projectName, prompt: request.prompt))
+        attempts[key] = state
+        guard shouldGenerate, let pending = state.request else { return }
+        let titleRequest = TitleRequest(
+            projectName: pending.projectName, prompt: pending.prompt, instructions: request.instructions)
+        setFallbackTitle(state.fallback, for: key)
         do {
-            guard let title = try await titler.title(for: request) else { return }
-            setGeneratedTitle(title, for: key)
+            if let title = try await titler.title(for: titleRequest), state.accept(generated: title) {
+                setGeneratedTitle(state.generated, for: key)
+                setFallbackTitle(nil, for: key)
+            } else {
+                state.fail()
+            }
         } catch {
+            state.fail()
             logger.error("Couldn't title session \(key.storageKey, privacy: .public): \(error)")
         }
+        attempts[key] = state
     }
 
     // MARK: - Storing

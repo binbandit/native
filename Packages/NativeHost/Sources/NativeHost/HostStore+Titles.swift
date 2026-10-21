@@ -25,27 +25,29 @@ extension HostStore {
         }
         try database.run(
             """
-            INSERT INTO titles (session_id, user_title, generated_title, project_name, prompt, progress)
-            VALUES (?, ?, ?, ?, ?, ?)
+            INSERT INTO titles (session_id, user_title, generated_title, project_name, prompt, progress, retry_count)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(session_id) DO UPDATE SET user_title = excluded.user_title,
                 generated_title = excluded.generated_title, project_name = excluded.project_name,
-                prompt = excluded.prompt, progress = excluded.progress
+                prompt = excluded.prompt, progress = excluded.progress, retry_count = excluded.retry_count
             """,
             .text(sessionID.description), .text(state.user), .text(state.generated),
-            .text(state.request?.projectName), .text(state.request?.prompt), .text(state.progress?.rawValue))
+            .text(state.request?.projectName), .text(state.request?.prompt), .text(state.progress?.rawValue),
+            .integer(Int64(state.retryCount)))
     }
 
     /// Every session's titles.
     func titles() throws -> [HostSessionID: SessionTitleState] {
         var titles: [HostSessionID: SessionTitleState] = [:]
         let rows = try database.query(
-            "SELECT session_id, user_title, generated_title, project_name, prompt, progress FROM titles")
+            "SELECT session_id, user_title, generated_title, project_name, prompt, progress, retry_count FROM titles")
         for row in rows {
             guard let id = row[0].text.flatMap(UUID.init(uuidString:)) else { continue }
             let request = row[4].text.map { SessionTitleRequest(projectName: row[3].text ?? "", prompt: $0) }
             titles[HostSessionID(id)] = SessionTitleState(
                 user: row[1].text, generated: row[2].text, request: request,
-                progress: row[5].text.flatMap(SessionTitleState.Progress.init(rawValue:)))
+                progress: row[5].text.flatMap(SessionTitleState.Progress.init(rawValue:)),
+                retryCount: Int(row[6].integer ?? 0))
         }
         return titles
     }
