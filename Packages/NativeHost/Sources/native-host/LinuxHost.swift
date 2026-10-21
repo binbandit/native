@@ -27,7 +27,7 @@ enum LinuxHost {
                 current: HostUpdateStatus.Build(
                     version: info.version, build: info.build,
                     channel: location.channel.isEmpty ? "stable" : location.channel),
-                reason: "Hosts on Linux can't update themselves yet."),
+                reason: "Updates aren't available on this host yet."),
             exit: { status in exit(status) }
         )
     }
