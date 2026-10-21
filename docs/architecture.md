@@ -177,6 +177,19 @@ Adding a **variant**:
 5. To promote it, make it the point's default and delete the variant; to drop it, delete its folder
    and declaration.
 
+### Quiet projects sidebar
+
+The `NativeSidebarNext` gate (Settings ▸ Labs ▸ Quiet projects) defaults to off. Its single
+read in `SidebarView` selects the quiet project presentation: monospace project headers and task
+marks only for activity, attention and unread results. The existing section, menus, selection,
+ordering, pins, archive and shortcuts are shared with today's sidebar.
+
+Each project shows its live, unread, failed, paused and limited tasks plus its three most recent
+resting tasks, in the user's order. An open or renamed task stays visible. “n more” unfolds the
+rest; filters and bulk selection expose their full scope. `TaskListFold` in `Packages/TaskList`
+chooses the resting tasks without depending on the UI. Enable it before an isolated launch with
+`defaults write dev.binbandit.native.dev.<name> experiment.NativeSidebarNext -bool YES`.
+
 ### Quiet composer
 
 `NativeComposerNext` is an off-by-default Labs gate at the composer's resting controls. Enable it

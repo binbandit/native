@@ -1,3 +1,4 @@
+import ACP
 import SwiftUI
 import TaskList
 
@@ -9,6 +10,8 @@ import TaskList
 /// tasks are doing.
 struct ProjectSection<TaskAccessory: View>: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.sidebarQuietProjects) private var isQuiet
+    @Environment(\.sidebarSelection) private var picking
     @Environment(\.undoManager) private var undoManager
     @Environment(\.projectIconStore) private var injectedIconStore
     let project: Project
@@ -19,6 +22,7 @@ struct ProjectSection<TaskAccessory: View>: View {
     /// The project's place among the projects, and how many there are.
     let position: (index: Int, count: Int)
     let isFiltered: Bool
+    var allowsFolding = true
     /// The filters leave none of its tasks.
     var hasNoMatches = false
     let isExpanded: Binding<Bool>
@@ -27,6 +31,7 @@ struct ProjectSection<TaskAccessory: View>: View {
     /// A session row was clicked.
     let select: (SessionKey) -> Void
 
+    @State private var showsAll = false
     @State private var isPickingIcon = false
     @State private var isConfirmingDelete = false
 
@@ -38,22 +43,8 @@ struct ProjectSection<TaskAccessory: View>: View {
         let item = SidebarDragState.Item.project(project.id)
         let problems = model.problems.list(for: project.id)
         let starting = model.startingTasks(in: project.id)
-        ProjectGroup(
-            name: project.name,
-            icon: iconStore.icon(for: project),
-            isExpanded: isExpanded,
-            taskCount: sessions.count,
-            // Only while collapsed, so an expanded project doesn't watch every task for it.
-            activity: isExpanded.wrappedValue ? ProjectActivity() : activity(starting: starting.count),
-            note: hasNoMatches ? "No matching tasks" : nil,
-            // Not while its folder is gone; the problem under it says so, with Retry.
-            onNewTask: model.missingFolder(of: project.id) == nil
-                ? { Task { await model.newSession(in: project.id) } } : nil
-        ) {
-            ProjectMenu(
-                project: project, position: position, isPickingIcon: $isPickingIcon,
-                isConfirmingDelete: $isConfirmingDelete)
-        } content: {
+        let visible = visibleSessions
+        projectGroup(starting: starting.count) {
             // Work Native did on its own for the project that failed, above the list it may have left stale.
             if !isFiltered {
                 ForEach(problems) { problem in
@@ -63,7 +54,7 @@ struct ProjectSection<TaskAccessory: View>: View {
             ForEach(starting) { task in
                 StartingTaskRow(task: task)
             }
-            ForEach(sessions) { summary in
+            ForEach(visible) { summary in
                 let row = SidebarDragState.Item.session(summary.id, in: project.id)
                 let index = order[summary.id] ?? 0
                 SessionRow(
@@ -75,6 +66,14 @@ struct ProjectSection<TaskAccessory: View>: View {
                 .equatable()
                 .sidebarDraggable(row, title: model.title(for: summary), state: drag)
                 .sidebarDropTarget(row, state: drag, isActive: drag.dragged.isSession, onDrop: model.applySidebarDrop)
+            }
+            if isQuiet, allowsFolding, !isFiltered, picking?.isActive != true,
+                sessions.count > visible.count || showsAll
+            {
+                SidebarNextDisclosureRow(
+                    title: showsAll ? "Show less" : "\(sessions.count - visible.count) more",
+                    isExpanded: showsAll
+                ) { withAnimation(.dsDisclosure) { showsAll.toggle() } }
             }
             // A project whose folder is gone or whose listing failed isn't known to be empty; its
             // problem row says why.
@@ -111,6 +110,55 @@ struct ProjectSection<TaskAccessory: View>: View {
         }
     }
 
+    /// Filters and bulk selection expose their full scope. A keyboard or search selection must
+    /// remain visible even when it points into the folded tail.
+    private var visibleSessions: [SessionSummary] {
+        guard isQuiet, allowsFolding, !showsAll, !isFiltered, picking?.isActive != true else { return sessions }
+        var keeping = Set<SessionKey>()
+        var dates: [SessionKey: Date] = [:]
+        for summary in sessions {
+            let session = model.session(summary.id)
+            let status = TaskStatus(session)
+            if status.isActive || status.needsAttention || status == .failed || status == .paused || status == .limited
+                || model.isUnread(summary.id)
+                || model.removedWorkspaces[summary.id] != nil
+            {
+                keeping.insert(summary.id)
+            }
+            dates[summary.id] = session?.lastActivity ?? summary.info.updatedDate
+        }
+        let visible = TaskListFold.visibleIDs(
+            ordered: sessions.map(\.id), keeping: keeping, dates: dates,
+            revealing: Set([model.selection, model.renaming].compactMap { $0 }))
+        return sessions.filter { visible.contains($0.id) }
+    }
+
+    @ViewBuilder private func projectGroup<Content: View>(
+        starting: Int, @ViewBuilder content: @escaping () -> Content
+    ) -> some View {
+        let onNewTask: (() -> Void)? =
+            model.missingFolder(of: project.id) == nil
+            ? { Task { await model.newSession(in: project.id) } } : nil
+        let activity = isExpanded.wrappedValue ? ProjectActivity() : activity(starting: starting)
+        if isQuiet {
+            SidebarNextProjectGroup(
+                name: project.name, isExpanded: isExpanded, taskCount: sessions.count, activity: activity,
+                note: hasNoMatches ? "No matching tasks" : nil, onNewTask: onNewTask,
+                menu: { projectMenu }, content: content)
+        } else {
+            ProjectGroup(
+                name: project.name, icon: iconStore.icon(for: project), isExpanded: isExpanded,
+                taskCount: sessions.count, activity: activity, note: hasNoMatches ? "No matching tasks" : nil,
+                onNewTask: onNewTask, menu: { projectMenu }, content: content)
+        }
+    }
+
+    private var projectMenu: some View {
+        ProjectMenu(
+            project: project, position: position, isPickingIcon: $isPickingIcon,
+            isConfirmingDelete: $isConfirmingDelete)
+    }
+
     /// How many of the project's tasks need the user and how many are working, every task counted
     /// whatever the filter shows; sessions being started count as working.
     private func activity(starting: Int) -> ProjectActivity {
@@ -126,86 +174,10 @@ struct ProjectSection<TaskAccessory: View>: View {
     }
 }
 
-/// A project's actions, from its "…" button and its context menu.
-private struct ProjectMenu: View {
-    @Environment(AppModel.self) private var model
-    @Environment(SettingsPresentation.self) private var settings
-    @Environment(\.undoManager) private var undoManager
-    @Environment(\.displayScale) private var displayScale
-    @Environment(\.colorScheme) private var colorScheme
-    let project: Project
-    let position: (index: Int, count: Int)
-    @Binding var isPickingIcon: Bool
-    @Binding var isConfirmingDelete: Bool
-
-    var body: some View {
-        Button("New Session") {
-            Task { await model.newSession(in: project.id) }
-        }
-        .disabled(!model.canCreateSession(in: project.id))
-        Menu("New Session With") {
-            ForEach(model.agents, id: \.agent.id) { runtime in
-                Button {
-                    Task { await model.newSession(in: project.id, with: runtime.agent.id) }
-                } label: {
-                    Label {
-                        Text(runtime.agent.displayName)
-                    } icon: {
-                        AgentIconStore.shared.image(
-                            for: runtime.agent, size: DS.Size.rowLeading, scale: displayScale, colorScheme: colorScheme)
-                    }
-                }
-                .disabled(!model.canCreateSession(in: project.id, with: runtime.agent.id))
-            }
-
-            if !model.agentsToAdd.isEmpty {
-                Divider()
-                Button("Add Agent…", systemImage: "plus") { model.isAddingAgent = true }
-            }
-        }
-        // Menus only show item icons when the content asks for them.
-        .labelStyle(.titleAndIcon)
-        Button("Show Project Home") {
-            model.focusProject(project.id)
-        }
-        ProjectActionsProjectMenu(project: project)
-        Divider()
-        Button("Project Settings…") {
-            settings.open(.project(project.id))
-        }
-        Button("Change Icon…") {
-            isPickingIcon = true
-        }
-        Menu("Open In") {
-            OpenInMenuContent(location: OpenInLocation(folder: project.url, host: project.host), model: .shared)
-        }
-        if PlatformFileBrowser.canReveal {
-            Button("Show in Finder") {
-                PlatformFileBrowser.reveal(project.url)
-            }
-        }
-        Button("Copy Path") {
-            DSPasteboard.copy(project.path)
-        }
-        GitCleanupMenuItem(project: project)
-        Divider()
-        Button("Move Up") { model.move(.project(project.id), .up) }
-            .disabled(position.index == 0)
-        Button("Move Down") { model.move(.project(project.id), .down) }
-            .disabled(position.index >= position.count - 1)
-        Divider()
-        Button("Archive Project") {
-            model.archiveProject(project.id, undoManager: undoManager)
-        }
-        Button("Delete Project…", role: .destructive) {
-            isConfirmingDelete = true
-        }
-    }
-}
-
 /// What an expanded project with no sessions shows: the one action that fills it, or why it can't
 /// happen yet.
 private struct ProjectEmptyRow: View {
+    @Environment(\.sidebarQuietProjects) private var isQuiet
     @Environment(AppModel.self) private var model
     let project: Project
 
@@ -216,7 +188,7 @@ private struct ProjectEmptyRow: View {
             Button {
                 Task { await model.newSession(in: project.id) }
             } label: {
-                Label("Start a session", systemImage: "plus")
+                Label(isQuiet ? "Start the first task" : "Start a session", systemImage: "plus")
                     .labelStyle(EmptyRowLabelStyle())
                     .foregroundStyle(isHovered ? .dsTextSecondary : .dsTextTertiary)
                     .contentShape(.rect)
@@ -259,6 +231,8 @@ private struct FindingSessionsRow: View {
 
 /// Lines the empty row's glyph up with the status glyphs of task rows.
 private struct EmptyRowLabelStyle: LabelStyle {
+    @Environment(\.sidebarQuietProjects) private var isQuiet
+
     func makeBody(configuration: Configuration) -> some View {
         HStack(spacing: DS.Space.sm) {
             configuration.icon
@@ -269,7 +243,7 @@ private struct EmptyRowLabelStyle: LabelStyle {
             Spacer(minLength: 0)
         }
         .padding(.vertical, DS.Space.md)
-        .padding(.leading, TaskRowIndent.grouped.leading)
+        .padding(.leading, isQuiet ? TaskRowIndent.flat.leading : TaskRowIndent.grouped.leading)
         .padding(.trailing, DS.Space.sm)
         .frame(minHeight: DS.Size.rowMinHeight)
     }
