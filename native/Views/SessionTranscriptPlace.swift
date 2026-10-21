@@ -246,10 +246,11 @@ private final class SessionTranscriptPlaceTracker {
         return .remember(place)
     }
 
-    /// Where the transcript is now; nil at (or near) its latest output.
+    /// Where the transcript is now; nil at its latest output.
     private var place: SessionTranscriptPlace? {
         guard let viewport, let bounds = viewport.bounds, bounds.height > 0 else { return nil }
-        guard bounds.maxY < viewport.contentHeight - DS.Space.xxxl else { return nil }
+        // The jump button's generous near-end threshold would lose a small but deliberate scroll.
+        guard bounds.maxY < viewport.contentHeight - 0.5 else { return nil }
         let visible = lineFrames.filter { $0.value.intersects(bounds) }.sorted { $0.value.minY < $1.value.minY }
         // Prefer a complete line, then one filling the viewport. Two partially visible lines can
         // also fill the screen: an anchor outside the unit square preserves that offset too.

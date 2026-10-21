@@ -521,7 +521,8 @@ after, and only runs whose window stayed 620 points tall with nothing in front o
 The window remembers a transcript line and its anchor, plus expanded rows and turns. It restores
 that line without animation before showing the transcript, with bounded retries while the lazy
 stack lays out. Search reveals take precedence, and leaving during restoration cancels it without
-replacing the previous position. A session left at the latest output still opens at the latest.
+replacing the previous position. A session left at the latest output still opens at the latest;
+even a small scroll above it is remembered, with only a half-point rounding tolerance.
 Only this small state survives a switch: no hidden session view graphs, observation or layout.
 Entries hold sessions weakly and discard dead entries when another session is first visited.
 
