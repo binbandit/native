@@ -20,9 +20,10 @@ private struct BubbleTranscript: View {
         transcript.session.phase == .loading
     }
 
-    /// The agent is typing, not waiting on the user to answer a request.
+    /// The agent is typing, not waiting on the user for an approval, an answer or a plan review
+    /// (`SessionModel.taskStatus`, which the sidebar and status bar read too).
     private var isTyping: Bool {
-        transcript.isWorking && transcript.shortcutTarget == nil
+        transcript.isWorking && !transcript.session.taskStatus.needsAttention
     }
 
     var body: some View {

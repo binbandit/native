@@ -221,23 +221,10 @@ extension SessionRow: @MainActor Equatable {
 }
 
 extension TaskStatus {
-    /// How the sidebar shows a session. One that hasn't been opened in this run is idle.
+    /// How the sidebar shows a session: its status as every surface reads it
+    /// (`SessionModel.taskStatus`). One that hasn't been opened in this run is idle.
     init(_ session: SessionModel?) {
-        guard let session else {
-            self = .idle
-            return
-        }
-        if session.needsApproval {
-            self = .needsPermission
-            return
-        }
-        self =
-            switch session.phase {
-            case .loading: .starting
-            case .prompting: .working
-            case .disconnected: .failed
-            case .idle: .idle
-            }
+        self = session?.taskStatus ?? .idle
     }
 }
 
