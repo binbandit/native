@@ -13,9 +13,9 @@ extension SessionModel {
     /// once, in one quiet notice.
     func restoreConfigChoices() async {
         // Read again each time: the user may change a setting while the session loads. A host
-        // session may already be working on a recovered turn while its settings come back.
+        // session's settings come back in the host instead (`setBackConfigAfterLoad`).
         await setBackConfigChoices(from: { $0.services.titles.configChoices(for: $0.titleKey) }) {
-            $0.phase == .loading || $0.isSettingBackConfig
+            $0.phase == .loading
         }
     }
 
