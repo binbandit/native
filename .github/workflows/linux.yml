@@ -84,7 +84,11 @@ jobs:
       # NativeHostMac included.
       - name: Test NativeHost
         if: ${{ !cancelled() }}
-        run: swift test --package-path Packages/NativeHost --test-product NativeHostPackageTests
+        # A real host runs as a user. Root bypasses the directory-permission checks in the tests.
+        run: |
+          useradd --create-home native-test
+          chown -R native-test:native-test "$GITHUB_WORKSPACE"
+          runuser -u native-test -- swift test --package-path Packages/NativeHost --test-product NativeHostPackageTests
 
       - name: Name the binary
         id: binary

@@ -94,11 +94,12 @@ struct ProjectPaths: Sendable {
         guard path.hasPrefix("/"), let name = components.last,
             !components.contains(where: { $0 == "." || $0 == ".." })
         else { throw POSIXError(.EINVAL) }
-        var directory = open("/", O_RDONLY | O_CLOEXEC | O_DIRECTORY)
+        // Traversal needs search permission, not permission to list a directory's contents.
+        var directory = open("/", O_PATH | O_CLOEXEC | O_DIRECTORY)
         guard directory >= 0 else { throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO) }
         defer { close(directory) }
         for component in components.dropLast() {
-            let next = openat(directory, String(component), O_RDONLY | O_CLOEXEC | O_DIRECTORY | O_NOFOLLOW)
+            let next = openat(directory, String(component), O_PATH | O_CLOEXEC | O_DIRECTORY | O_NOFOLLOW)
             guard next >= 0 else { throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO) }
             close(directory)
             directory = next
