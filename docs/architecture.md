@@ -220,7 +220,7 @@ with Settings > Labs > Quiet composer, or set `experiment.NativeComposerNext` as
 the app's user defaults before launch.
 The editor keeps its identity as the session starts and finishes work; only its footer changes.
 At rest, plain words open the agent, model, effort, autonomy and task-mode pickers. The agent entry
-opens New Session With, since an existing conversation belongs to its original agent. Other
+opens New Task With, since an existing conversation belongs to its original agent. Other
 agent settings, attachments, goals and context remain reachable. Running turns and approval
 requests keep today's composer until their own slices land.
 

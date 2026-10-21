@@ -306,7 +306,7 @@ extension AppModel {
         sessions.session(key)?.displayTitle
             ?? titles.title(
                 for: SessionTitles.Key(agent: key.agent, session: key.id), agentTitle: catalog.lookup(key)?.info.title)
-            ?? "New Session"
+            ?? "New Task"
     }
 
     /// Moves off a task that's leaving the sidebar, to its project's home.

@@ -117,7 +117,7 @@ struct ExpeditionHeader: View {
                 ? "Paused. The running turn finishes; nothing new starts until you resume."
                 : "Paused. Nothing new starts until you resume."
         case .stopped:
-            return "Stopped. Sessions, reports and the worktree stay; nothing more runs."
+            return "Stopped. Tasks, reports and the worktree stay; nothing more runs."
         case .complete:
             return expedition.endedAt.map {
                 "Finished in \(DSFormat.duration($0.timeIntervalSince(expedition.createdAt))), \(DSFormat.duration(expedition.activeTime(at: now))) of it working."

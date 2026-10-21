@@ -33,7 +33,7 @@ symlink to the doc it is, so the skill and the doc can't drift:
 | `build-a-native-plugin` | `docs/plugins.md` | Writing a `plugin.json` that adds agents, MCP servers, workflows or themes |
 
 The Orchestration plugin's `native` MCP server serves them with `list_skills` and `get_skill`, minus
-the ones switched off for the calling session. Beside them, `setup_status` (`SetupTools`) reports how
+the ones switched off for the calling task. Beside them, `setup_status` (`SetupTools`) reports how
 Native is set up on the caller's Mac, read-only: Native's version and channel, each agent (state,
 sign-in, reported version, launch and install commands), the durable host, paired devices, the
 `policy.*` keys the organization manages, and updates. `AppSetupReporter` builds the report from the
@@ -49,16 +49,16 @@ One switch per skill name, globally and per project (a project's beats the globa
 settings files. `SkillsPlugin` turns them into `SessionPolicy.disabledSkills`, and each agent's
 plugin applies them its own way:
 
-- **Claude Code, per session:** `skillOverrides` set to `off` in the session's settings, by name.
+- **Claude Code, per task:** `skillOverrides` set to `off` in the task's settings, by name.
   Skills from Claude's plugins can't be reached; the row says so.
 - **Codex, at launch:** `skills.config` entries in `CODEX_CONFIG`, by SKILL.md path, for skills off
   in every project (and project copies off in their own project). A switch for one project only
   can't reach Codex's user skills; the row says so. Codex restarts to apply it once none of its
-  sessions is working, or right away with Apply to Running Sessions.
+  tasks is working, or right away with Apply to Running Tasks.
 - **Cursor, OpenCode, Pi, Copilot:** no way found that leaves files alone; the rows and the
   folders footer say switches don't reach them.
 
-Switches apply to sessions as they start. Running Claude sessions keep their skills until reopened.
+Switches apply to tasks as they start. Running Claude tasks keep their skills until reopened.
 Every switch can be undone with ⌘Z.
 
 ## Installing, updating, removing

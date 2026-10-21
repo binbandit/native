@@ -119,7 +119,7 @@ public struct RecoveryNote: Codable, Hashable, Sendable {
             case .resent: "Your message hadn't reached \(agentName) yet, so Native sent it again."
             case .paused: "It kept stopping, so Native paused this task. Send a message to continue."
             case .failed: "Native couldn't restart \(agentName)\(problem.map { ": \($0)" } ?? ".")"
-            case .unknown: "Native recovered the session."
+            case .unknown: "Native recovered the task."
             }
         return "\(what) \(did)"
     }

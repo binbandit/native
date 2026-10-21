@@ -98,7 +98,7 @@ struct WorkflowStepRow: View {
                 .foregroundStyle(.dsTextTertiary)
         } else if let agent = step.assignment.agent {
             Label(
-                step.step.continues.flatMap(run.stepRun).map { "\(agent.name) · in \($0.step.title)'s session" }
+                step.step.continues.flatMap(run.stepRun).map { "\(agent.name) · in \($0.step.title)'s task" }
                     ?? agent.name, systemImage: agent.symbol
             )
             .font(.dsCaption)
@@ -136,7 +136,7 @@ struct WorkflowStepRow: View {
             switch step.step.kind {
             case .pullRequest: return "Opening the pull request…"
             case .script: return "Running the script…"
-            case .agent: return "Starting a \(agent) session…"
+            case .agent: return "Starting a \(agent) task…"
             }
         case .running:
             if report?.needsApproval == true {
@@ -159,9 +159,9 @@ struct WorkflowStepRow: View {
             return reason
         case .interrupted:
             return
-                "Native quit while this step was working. Resume picks it up in the same session; nothing resumes on its own."
+                "Native quit while this step was working. Resume picks it up in the same task; nothing resumes on its own."
         case .cancelled:
-            return "Stopped." + (step.task == nil ? "" : " Resume to continue in its session, or retry from the start.")
+            return "Stopped." + (step.task == nil ? "" : " Resume to continue in its task, or retry from the start.")
         case .skipped:
             return "Skipped. The steps after it ran without its result."
         }
@@ -212,7 +212,7 @@ struct WorkflowStepRow: View {
         }
         if step.task != nil {
             Divider()
-            Button("Open Session", systemImage: "sidebar.right", action: onOpen)
+            Button("Open Task", systemImage: "sidebar.right", action: onOpen)
         }
     }
 
@@ -222,7 +222,7 @@ struct WorkflowStepRow: View {
                 IconButton(action.title, systemImage: action.systemImage) { send(action.event(for: step.id)) }
             }
             if step.task != nil {
-                IconButton("Open Session", systemImage: "sidebar.right", action: onOpen)
+                IconButton("Open Task", systemImage: "sidebar.right", action: onOpen)
             }
         }
     }
@@ -239,7 +239,7 @@ struct WorkflowStepRow: View {
                 }
                 Spacer(minLength: 0)
                 if step.task != nil {
-                    Button("Open Session", systemImage: "sidebar.right", action: onOpen)
+                    Button("Open Task", systemImage: "sidebar.right", action: onOpen)
                         .buttonStyle(.ds(.ghost))
                         .help("Show this step's conversation")
                 }

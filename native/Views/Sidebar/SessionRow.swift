@@ -88,7 +88,7 @@ struct SessionRow<Accessory: View>: View {
                 ]
             )
             .accessibilityLabel(accessibilityLabel)
-            .accessibilityHint("\(summary.agent.displayName) session. Return renames it.")
+            .accessibilityHint("\(summary.agent.displayName) task. Return renames it.")
             .accessibilityActions {
                 Button("Rename", action: rename)
                 Button(isUnread ? "Mark as Read" : "Mark as Unread", action: toggleUnread)
@@ -132,7 +132,7 @@ struct SessionRow<Accessory: View>: View {
         Button("Move Down") { model.move(target, .down) }
             .disabled(!canMoveDown)
         Divider()
-        Button("Copy Session ID") {
+        Button("Copy Task ID") {
             DSPasteboard.copy(summary.info.sessionId.rawValue)
         }
         Divider()
@@ -260,7 +260,7 @@ struct SessionContextUsage: View {
 }
 
 #if DEBUG
-#Preview("Session rows") {
+#Preview("Task rows") {
     let app = AppModel.preview()
     DSPreviewPair {
         // Working, waiting for permission, done and unread, then two idle ones (one long).

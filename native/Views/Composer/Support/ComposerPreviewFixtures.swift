@@ -99,7 +99,7 @@ enum ComposerPreviewFixtures {
     private static func configJSON(mode: String) -> String {
         """
         [
-          {"id":"mode","name":"Mode","description":"Session permission mode","category":"mode","type":"select","currentValue":"\(mode)","options":[
+          {"id":"mode","name":"Mode","description":"Task permission mode","category":"mode","type":"select","currentValue":"\(mode)","options":[
             {"value":"default","name":"Manual","description":"Always ask before making changes"},
             {"value":"acceptEdits","name":"Accept edits","description":"Automatically accept all file edits"},
             {"value":"plan","name":"Plan","description":"Create a plan before making changes"},

@@ -138,7 +138,7 @@ enum TranscriptFixtures {
 
     private static let editOptions = """
         {"optionId": "allow-once", "name": "Yes", "kind": "allow_once"},
-        {"optionId": "allow-always", "name": "Yes, allow all edits in sandbox/ during this session", "kind": "allow_always"},
+        {"optionId": "allow-always", "name": "Yes, allow all edits in sandbox/ during this task", "kind": "allow_always"},
         {"optionId": "reject-once", "name": "No", "kind": "reject_once"}
         """
 

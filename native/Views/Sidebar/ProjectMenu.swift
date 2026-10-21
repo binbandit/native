@@ -13,11 +13,11 @@ struct ProjectMenu: View {
     @Binding var isConfirmingDelete: Bool
 
     var body: some View {
-        Button("New Session") {
+        Button("New Task") {
             Task { await model.newSession(in: project.id) }
         }
         .disabled(!model.canCreateSession(in: project.id))
-        Menu("New Session With") {
+        Menu("New Task With") {
             ForEach(model.agents, id: \.agent.id) { runtime in
                 Button {
                     Task { await model.newSession(in: project.id, with: runtime.agent.id) }

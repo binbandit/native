@@ -47,7 +47,7 @@ struct StartingTaskView: View {
                 .padding(.bottom, DS.Space.xl)
                 .frame(maxWidth: .infinity)
         }
-        .navigationTitle("New Session")
+        .navigationTitle("New Task")
         .navigationSubtitle(model.projects.project(task.project)?.url.abbreviatedPath ?? "")
     }
 }
@@ -59,7 +59,7 @@ private struct StartingTaskProgress: View {
     var body: some View {
         VStack(spacing: DS.Space.lg) {
             VStack(spacing: DS.Space.xs) {
-                Text("Starting a \(task.agent.displayName) session")
+                Text("Starting a \(task.agent.displayName) task")
                     .font(.dsTitle3)
                     .foregroundStyle(.dsTextPrimary)
                 HStack(spacing: DS.Space.xs) {
@@ -75,9 +75,9 @@ private struct StartingTaskProgress: View {
                 row(
                     "Starting \(task.agent.displayName)", done: task.isAgentReady,
                     isCurrent: task.step == .startingAgent)
-                row("Opening the session", done: false, isCurrent: task.step == .openingSession)
+                row("Opening the task", done: false, isCurrent: task.step == .openingSession)
             }
-            Text("Write your first message below. It goes out as soon as the session is ready.")
+            Text("Write your first message below. It goes out as soon as the task is ready.")
                 .font(.dsCaption)
                 .foregroundStyle(.dsTextTertiary)
                 .multilineTextAlignment(.center)
@@ -110,7 +110,7 @@ private struct StartingTaskComposer: View {
                 HStack(spacing: DS.Space.sm) {
                     Image(systemName: "clock")
                         .foregroundStyle(.dsTextTertiary)
-                    Text("Sends when the session is ready")
+                    Text("Sends when the task is ready")
                         .foregroundStyle(.dsTextSecondary)
                     Spacer(minLength: 0)
                     Button("Don't Send") { task.isSendRequested = false }
@@ -145,7 +145,7 @@ private struct StartingTaskComposer: View {
                     .font(.dsBody)
                     .foregroundStyle(.dsTextSecondary)
                 Spacer(minLength: DS.Space.sm)
-                Text("Model and settings once the session is ready")
+                Text("Model and settings once the task is ready")
                     .font(.dsCaption)
                     .foregroundStyle(.dsTextTertiary)
                     .lineLimit(1)

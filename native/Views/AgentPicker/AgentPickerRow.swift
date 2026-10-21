@@ -32,7 +32,7 @@ struct AgentPickerRow: View {
                 .accessibilityLabel(option.name)
                 .accessibilityValue(accessibilityValue)
                 .accessibilityHint(
-                    option.choice == .signInThenStart ? "Signs in, then starts a session" : "Starts a session"
+                    option.choice == .signInThenStart ? "Signs in, then starts a task" : "Starts a task"
                 )
                 .accessibilityAddTraits(isHighlighted ? .isSelected : [])
             } else {

@@ -57,13 +57,13 @@ struct WorkflowStepPlanRow: View {
                 .pillChrome()
         } else if let continued = step.continues.flatMap(definition.step) {
             Label(
-                "\(assignment?.agent?.name ?? "Same agent") · \(continued.title)'s session",
+                "\(assignment?.agent?.name ?? "Same agent") · \(continued.title)'s task",
                 systemImage: "arrow.turn.down.right"
             )
             .font(.dsBody)
             .foregroundStyle(.dsTextSecondary)
             .pillChrome()
-            .help("Continues in \(continued.title)'s session, so the agent keeps its context")
+            .help("Continues in \(continued.title)'s task, so the agent keeps its context")
         } else {
             PillMenu(assignment?.agent?.name ?? "No agent", systemImage: assignment?.agent?.symbol) {
                 ForEach(agents) { agent in

@@ -71,7 +71,7 @@ extension GitStore {
         at folder: URL, title: String, suggestion: ((_ title: String, _ prefix: String) async -> String?)? = nil
     ) async {
         let title = title.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard settings.renamesBranches, !title.isEmpty, title != "New Session" else { return }
+        guard settings.renamesBranches, !title.isEmpty, title != "New Task" else { return }
         let model = model(for: folder)
         if model.repository == nil { await model.refreshNow() }
         guard let repository = model.repository, let branch = model.branch?.name,

@@ -217,10 +217,10 @@ extension AppModel {
         return ProjectProblem(
             project: project.id,
             work: .listing(agent.id),
-            title: "Couldn't list \(agent.displayName) sessions",
+            title: "Couldn't list \(agent.displayName) tasks",
             recovery: hasListed
-                ? "The sidebar shows the sessions \(agent.displayName) listed before."
-                : "\(agent.displayName)'s sessions in \(project.name) show once it can list them.",
+                ? "The sidebar shows the tasks \(agent.displayName) listed before."
+                : "\(agent.displayName)'s tasks in \(project.name) show once it can list them.",
             details: details.withoutTerminalEscapes
         )
     }

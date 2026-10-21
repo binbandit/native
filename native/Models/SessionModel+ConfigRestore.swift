@@ -68,7 +68,7 @@ extension SessionModel {
                 await setConfigOption(option, to: value)
             case .unavailable(let choice, let kept)?:
                 notes.append(
-                    kept.map { "\(agentName) doesn't offer \(choice.valueName) anymore, so this session uses \($0)." }
+                    kept.map { "\(agentName) doesn't offer \(choice.valueName) anymore, so this task uses \($0)." }
                         ?? "\(agentName) no longer has a \(choice.optionName) setting, so it couldn't be set back to \(choice.valueName)."
                 )
                 // The session goes on with the agent's value, and the notice isn't repeated.
@@ -83,7 +83,7 @@ extension SessionModel {
         await PolicyPermissionModes.enforce(on: self)
         for (id, choice) in forbidden {
             notes.append(
-                "Your organization doesn't allow \(choice.valueName), so this session uses \(currentValueName(of: id))."
+                "Your organization doesn't allow \(choice.valueName), so this task uses \(currentValueName(of: id))."
             )
         }
         if !notes.isEmpty {
