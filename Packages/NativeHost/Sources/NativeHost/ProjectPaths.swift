@@ -3,6 +3,7 @@ import Foundation
 #if canImport(Darwin)
 import Darwin
 #elseif canImport(Glibc)
+import CHostPOSIX
 import Glibc
 #endif
 
@@ -95,11 +96,11 @@ struct ProjectPaths: Sendable {
             !components.contains(where: { $0 == "." || $0 == ".." })
         else { throw POSIXError(.EINVAL) }
         // Traversal needs search permission, not permission to list a directory's contents.
-        var directory = open("/", O_PATH | O_CLOEXEC | O_DIRECTORY)
+        var directory = native_host_open_directory("/")
         guard directory >= 0 else { throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO) }
         defer { close(directory) }
         for component in components.dropLast() {
-            let next = openat(directory, String(component), O_PATH | O_CLOEXEC | O_DIRECTORY | O_NOFOLLOW)
+            let next = native_host_open_directory_at(directory, String(component))
             guard next >= 0 else { throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO) }
             close(directory)
             directory = next
