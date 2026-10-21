@@ -7,16 +7,25 @@ import Testing
 /// The real thing over loopback TCP: the Mac app opening a window through the control socket, a
 /// device pairing with the invite's addresses, then reconnecting through `PairedHostTransport`.
 @Suite struct NetworkTests {
-    @Test func pairsAndReconnectsOverTCP() async throws {
+    @Test(.timeLimit(.minutes(1))) func pairsAndReconnectsOverTCP() async throws {
         let directory = URL(filePath: "/tmp/nl-\(UUID().uuidString.prefix(8))")
         defer { try? FileManager.default.removeItem(at: directory) }
         let admitted = LinkLocked(0)
+        let (admissions, admission) = AsyncStream.makeStream(of: Int.self)
+        defer { admission.finish() }
+        var accepted = admissions.makeAsyncIterator()
         let gateway = try LinkGateway(
             configuration: .init(
                 directory: LinkGateway.Configuration.directory(inHostDirectory: directory), hostID: HostID(),
                 machineName: "Loopback Mac", includesLoopback: true, preferredPort: 0, advertisesOverBonjour: false),
             keyStore: MemoryKeyStore(),
-            accept: { _, _ in admitted.withLock { $0 += 1 } }
+            accept: { _, _ in
+                let count = admitted.withLock {
+                    $0 += 1
+                    return $0
+                }
+                admission.yield(count)
+            }
         )
         try await gateway.start()
         defer { Task { await gateway.stop() } }
@@ -41,6 +50,7 @@ import Testing
             credential: .invite(invite), endpoints: LinkPairing.endpoints(for: invite, discovered: []), device: device,
             log: { _ in }, awaitingConfirmation: { _ in })
         try await decide.value
+        #expect(await accepted.next() == 1)
         channel.close()
         #expect(host.machineName == "Loopback Mac")
         #expect(host.addresses.contains { $0.kind == .loopback })
@@ -52,8 +62,9 @@ import Testing
             pairingEnded: { error in ended.withLock { $0.append(error) } })
         let stream = try await transport.connect()
         #expect(log.withLock { $0.last?.kind } == .success)
+        // Receiving the welcome doesn't mean the server's accept callback has run yet.
+        #expect(await accepted.next() == 2)
         stream.close()
-        #expect(admitted.withLock { $0 } == 2)
 
         // A revoked device is told so over TCP, not just hung up on.
         let deviceID = try #require(try await control.refresh().activeDevices.first?.id)

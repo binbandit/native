@@ -232,5 +232,7 @@ import Testing
         let policy = PolicyLoader.load(from: StaticPolicySource(managed: managed))
         #expect(policy.diagnostics.isEmpty, "\(policy.diagnostics)")
         #expect(policy.managedKeys == Set(PolicyKey.allCases))
+        #expect(!policy.catalog.isEnabled)
+        #expect(policy.catalog.indexURL == URL(string: "https://catalog.example.com/index.json"))
     }
 }
