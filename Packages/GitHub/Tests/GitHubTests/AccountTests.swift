@@ -17,6 +17,19 @@ struct AccountTests {
         #expect(GitHubAccountSelection(logins: ["github.com": "removed"]).accounts(in: status).first?.state == .error)
     }
 
+    @Test func defaultsArePinnedWithoutPersistingOrReplacingEnvironmentCredentials() throws {
+        let status = try JSONDecoder().decode(AuthStatus.self, from: Fixtures.data("auth-status-all-accounts"))
+        let choices = GitHubAccountSelection()
+        #expect(choices.includingDefaults(from: status).logins == ["github.com": "binbandit"])
+        #expect(choices.logins.isEmpty)
+        let environmentAccount = AuthStatus(hosts: [
+            "github.com": [
+                .init(host: "github.com", login: "environment", active: true, state: .success, tokenSource: "GH_TOKEN")
+            ]
+        ])
+        #expect(choices.includingDefaults(from: environmentAccount).logins.isEmpty)
+    }
+
     @Test func selectedTokenOnlyEntersNativeCommands() async throws {
         let environment = ["GH_TOKEN": "terminal-token", "GITHUB_TOKEN": "terminal-fallback", "PATH": "/usr/bin"]
         let runner = FakeRunner { command in

@@ -22,6 +22,22 @@ public struct GitHubAccountSelection: Sendable, Equatable {
         }
     }
 
+    /// Pin gh's discovered defaults for a request too, so the identity on screen and the request
+    /// agree even if the terminal switches accounts in between refreshes. Environment-only
+    /// credentials already belong to the captured environment and have no stored user token.
+    public func includingDefaults(from status: AuthStatus) -> Self {
+        var result = self
+        for account in accounts(in: status) where result.logins[account.host] == nil {
+            if ["GH_TOKEN", "GITHUB_TOKEN", "GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN"].contains(
+                account.tokenSource ?? "")
+            {
+                continue
+            }
+            result.logins[account.host] = account.login
+        }
+        return result
+    }
+
     public func availability(in status: AuthStatus) -> GitHubAvailability {
         let accounts = accounts(in: status)
         let working = accounts.filter { $0.state == .success }

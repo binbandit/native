@@ -228,8 +228,13 @@ final class GitHubModel {
         isRefreshing = true
         defer { isRefreshing = false }
 
-        let cli = await cli(rereadEnvironment: rereadEnvironment || availability == .notInstalled)
-        await accounts.load(using: cli)
+        let discoveryCLI = await cli(rereadEnvironment: rereadEnvironment || availability == .notInstalled)
+        let previous = accounts.selectedAccounts.map(accounts.key)
+        await accounts.load(using: discoveryCLI)
+        if !previous.isEmpty, previous != accounts.selectedAccounts.map(accounts.key) {
+            clearAccountCaches()
+        }
+        let cli = await cli()
         do {
             let accounts = try readyAccounts()
             var inboxes: [PullRequestInbox] = []
@@ -239,6 +244,7 @@ final class GitHubModel {
             inbox = .merging(inboxes)
             lastError = nil
             schedule.recordSuccess(at: .now)
+            refreshBranches(olderThan: Self.branchMaxAge)
         } catch {
             await recordFailure(error, cli: cli)
         }
@@ -279,11 +285,11 @@ final class GitHubModel {
 
     func cli(rereadEnvironment: Bool = false) async -> GitHubCLI {
         if let cachedCLI, !rereadEnvironment {
-            return cachedCLI.selecting(accounts.selection)
+            return cachedCLI.selecting(accounts.processSelection)
         }
         let cli = GitHubCLI(environment: await environment(rereadEnvironment), runner: runner)
         cachedCLI = cli
-        return cli.selecting(accounts.selection)
+        return cli.selecting(accounts.processSelection)
     }
 
     var canSwitchAccount: Bool {
@@ -295,20 +301,24 @@ final class GitHubModel {
         guard canSwitchAccount else { return }
         let cli = await cli()
         guard canSwitchAccount, await accounts.select(account, using: cli) else { return }
-        let branches = Array(branchPullRequests.keys)
+        clearAccountCaches()
+        accounts.isMenuPresented = false
+        await refresh()
+    }
+
+    private func clearAccountCaches() {
         accountRevision += 1
         availability = nil
         inbox = nil
-        branchPullRequests = [:]
+        for branch in branchPullRequests.keys {
+            branchPullRequests[branch] = BranchPullRequest(pullRequest: nil, fetchedAt: .distantPast)
+        }
         branchLookupsInFlight = []
         pages = [:]
         presentedPullRequest = nil
         mergeRequest = nil
         undo = nil
         rowActivity = [:]
-        accounts.isMenuPresented = false
-        await refresh()
-        for branch in branches { Task { await loadPullRequest(for: branch, maxAge: 0) } }
     }
 
     func reportAuthenticationFailure() {

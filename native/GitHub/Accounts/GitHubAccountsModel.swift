@@ -46,6 +46,10 @@ final class GitHubAccountsModel {
         }
     }
 
+    var processSelection: GitHubAccountSelection {
+        status.map { selection.includingDefaults(from: $0) } ?? selection
+    }
+
     var current: AuthStatus.Account? {
         selectedAccounts.first { $0.host == preferredHost } ?? selectedAccounts.first
     }

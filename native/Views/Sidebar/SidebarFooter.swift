@@ -2,13 +2,18 @@ import SwiftUI
 
 /// The GitHub identity and Settings share the sidebar's bottom row.
 struct SidebarFooter: View {
+    @Environment(GitHubModel.self) private var gitHub: GitHubModel?
     @Environment(StatusBarRegistry.self) private var statusBar: StatusBarRegistry?
 
     var body: some View {
         let isAboveStatusBar = statusBar?.isVisible == true
         HStack {
             #if os(macOS)
-            GitHubAccountButton()
+            if let gitHub {
+                GitHubAccountButton().environment(gitHub)
+            } else {
+                Spacer(minLength: 0)
+            }
             #else
             Spacer(minLength: 0)
             #endif
