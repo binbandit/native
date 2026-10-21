@@ -1,10 +1,21 @@
-# Compiles the Release and Nightly configurations on every pull request and push to main, so a
-# break that only shows up outside Debug is caught before a release needs it. Like a release, it
-# builds the terminal and the script runtime for real and fails without them (check.sh).
+# Compiles the Release and Nightly configurations, so a break that only shows up outside Debug is
+# caught before a release needs it. Like a release, it builds the terminal and the script runtime for
+# real and fails without them (check.sh). Every push to main runs it. A pull request runs it only when
+# it changes what Release and Nightly build differently (settings, the project, the embedded helpers,
+# the release scripts): the two jobs are a third of a PR's macOS time, and CI's macOS runners are
+# shared by every open PR.
 name: Check
 
 on:
   pull_request:
+    paths:
+      - "Config/**"
+      - "native.xcodeproj/**"
+      - "NativeHostHelper/**"
+      - "Runtime/**"
+      - "scripts/build-*.sh"
+      - "scripts/release/**"
+      - ".github/workflows/check.yml"
   push:
     branches: [main]
   # Run by hand on any branch: `gh workflow run <file> --ref <branch>`.
@@ -46,7 +57,7 @@ jobs:
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/Library/Caches/Native/ScriptRuntime
-          key: script-runtime-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'scripts/build-script-runtime.sh') }}
+          key: script-runtime-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'Runtime/ScriptRuntime/rust-toolchain.toml', 'scripts/build-script-runtime.sh') }}
           restore-keys: script-runtime-${{ runner.os }}-${{ runner.arch }}-
       # Package checkouts and binary artifacts, keyed by what the project pins: about 25 s to restore
       # where resolving from nothing took 3.5 minutes.
@@ -65,10 +76,12 @@ jobs:
           path: ${{ env.COMPILATION_CACHE }}
           key: compilation-cache-${{ runner.os }}-${{ matrix.configuration }}-${{ github.sha }}
           restore-keys: compilation-cache-${{ runner.os }}-${{ matrix.configuration }}-
+      # Only the versions Package.resolved records: a resolved file that no longer matches the project
+      # fails here instead of being re-resolved to whatever the remotes have now.
       - name: Resolve Swift packages
         run: >-
           xcodebuild -resolvePackageDependencies -project native.xcodeproj -scheme native
-          -clonedSourcePackagesDirPath "$SOURCE_PACKAGES" -quiet
+          -clonedSourcePackagesDirPath "$SOURCE_PACKAGES" -disableAutomaticPackageResolution -quiet
       - name: Build ${{ matrix.configuration }}
         run: |
           set -o pipefail

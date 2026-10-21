@@ -643,6 +643,59 @@ per-change rows compare the same build with the change switched off, five or six
   left it, and a bigger window lays out more rows: the same build measured 3.6 G at one size and 4.2
   G at another. `just perf --fixture` now opens the window at its default size every time.
 
+#### Round three: the menu bar, Home's cards and age labels
+
+2026-10-20, evening. Optimized Debug builds (the Debug configuration compiled like Release, which
+keeps the development host), launched in the background (`open -g`) into `just perf --fixture`'s
+workspace while the Mac was in use, so the window stayed covered by other apps. Before and after
+are one snapshot of `main` with only this work's files different, six launches of each, alternated.
+In the before build each menu item reads eight focused values of its own; in the after build the
+menu bar reads them once and its items keep their bodies while they show the same (the first bullet
+says what shipped). The menu rows compare each build with and without the menu bar's items, through
+a temporary launch argument; they count main-thread instructions from `willFinishLaunching` to
+`didFinishLaunching`, where SwiftUI builds the main menu and the window first lays out.
+
+| Measurement | Before | After |
+| --- | --- | --- |
+| The menu bar's items at launch (with them minus without, per pair of launches) | 0.23-0.33 G, median 0.29 G | 0.22-0.36 G, median 0.31 G |
+| Menu item bodies run at launch | 84 | 84 |
+| Menu item bodies run per task switch, the app in the background | 10 | 1 |
+| Main thread per task switch (between two fixture tasks) | 671-688 M | 675-692 M |
+| Menu item bodies run per shortcut change, which reaches every item | 170 | 1 |
+| Main-thread CPU to the first frame, menu items included | 330-423 ms | 354-379 ms (with Home's four cards) |
+| Home's first frame | one card, and the grid reflows to four about 350 ms later | the four cards, in their final layout |
+| Home's cards in the window's first layout | | 0.06 G more (three more cards) |
+| Idle with the window covered, 150 s | 0.94 M instructions/s, 0.03% CPU, 0.4 wakeups/s | 0.53 M/s, 0.04%, 0.5/s |
+
+- **The menu bar's cost isn't reading focus.** Each of its items read eight focused values of its
+  own. The after build read the window's context once for the whole menu bar (`NativeMenuBar`), and
+  its items kept their bodies while they showed the same, acting on the context the menu bar read
+  last. Launch didn't move: the items cost 0.29 G before and 0.31 G after, within the launches'
+  spread. Their cost is SwiftUI building about 85 items' view lists and platform items. Item bodies
+  per update fell from 10 to 1 per task switch and from 170 to 1 per shortcut change. The
+  main-thread instructions per change didn't fall measurably, though, with the app in the
+  background. A real focus change needs the window key, which these measurements can't do without
+  bringing the app forward, so its cost is unmeasured. What shipped is the simpler half: the menu
+  bar reads the context once and passes it down, and the items build and update as they did before
+  (10 bodies per task switch, all of them per focus change). It wasn't measured on its own;
+  neither half moved launch.
+- **Home's cards are there from the first frame.** Agents that the last launch's check found
+  installed get runtimes with the model, like agents with saved sessions (`AgentInstallations`
+  keeps the set). The first frame shows every card in its final layout, and nothing moves once
+  agents are checked. A click before the check opens the new task's starting screen, which waits for
+  the agent; one that turns out to be uninstalled fails there with how to add it. A card whose agent
+  went away since the last launch fades out while the rest move over.
+- **Ages share one minute clock.** `CompactAgeText` and Home's recent tasks each ran a
+  `TimelineView(.everyMinute)`, about 17 with the fixture on screen. They now read `DSMinuteClock`,
+  which ticks on the minute while the app can be seen and stops while it's hidden, minimized or
+  covered, catching up as it shows again. In a harness it ticked at 21:25:00 and 21:26:00 exactly.
+  In 20 s windows a minute tick doesn't stand out from the noise in either build (13-31 M
+  instructions per window across a minute or within one), so its saving is below what these idle
+  samples resolve.
+- **Shortcut changes get slower each time.** In both builds the first change of a shortcut cost
+  0.3 M main-thread instructions and the twelfth 3.4-4.5 M, about 1.5 times the one before (Still
+  to do).
+
 ### Idle, memory and leaks
 
 2026-10-19, evening, Debug build in an isolated instance: 30 tasks from a fake agent in three small
@@ -728,11 +781,11 @@ several runs each. Task switches and Settings visits are AX presses on the insta
 | Turn idle closing on for Codex | Claude Code closes sessions unused for 10 minutes now (`idleSessionTimeout` in its manifest). Once the row above lands, give Codex's manifest the same | App model |
 | "Couldn't run git: The file “project” doesn't exist" alert | New Session in a project whose folder is gone shows a modal; the sidebar already says "Can't find this project's folder" with Retry | Failures |
 | Launch within 150 ms of main-thread CPU | 481-518 ms in Release with 30 tasks (3.45-3.68 G instructions): mostly AppKit and SwiftUI restoring, laying out and drawing the window (Launch, above). It takes fewer views before the first frame, not faster code; the sidebar outside its rows (0.57 G: the navigation items, the project headers, the scroll view and its key handling) is the largest part Native controls | App shell, sidebar |
-| A cheaper main menu | 0.19 G of launch, and every item is built again on each focus change: 74 `CommandMenuItem`s, each reading eight focused values through `FocusedCommandContext`. Building them after the first frame loses the File menu (Launch, round two); reading the context once per menu instead of once per item is the next thing to try | Commands |
-| Home's agent cards arrive after the first frame | The first frame shows a card only for agents with saved sessions; the others come when agents are checked, and the grid reflows from one card to four | App model, Home |
+| A cheaper main menu | 0.29-0.31 G of launch in optimized Debug (Launch, round three): SwiftUI building about 85 items' view lists and platform items. Reading the window's context once instead of eight focused values per item didn't change it. Building the items after the first frame loses the File menu (round two). Fewer items at launch might: submenus whose items come when they open (Selected Tasks, Mode, Status Bar Items, Keep Mac Awake, Appearance), if SwiftUI keeps a submenu that starts empty, or fewer than the nine Go to Session items | Commands |
 | Native under 150 MB with a transcript open | 175–195 MB with one short transcript open (Home 130–140 MB): the first session view's SwiftUI graph is about 26 MB live, the rest pages the allocator kept after its transient allocations | Session view, transcript |
 | About 257 MB of graphics memory on whole-window redraws | For about a second at every launch and on some redraws when other windows uncover Native's (peak 390–405 MB); find what draws in-process with Metal then | App shell |
-| Age labels redraw while nothing is visible | `CompactAgeText` and Home's rows tick with `TimelineView(.everyMinute)`, every row once a minute, hidden or not; a shared minute clock that stops while hidden, like `DSSecondClock` | Sidebar, design system |
+| Other minute labels each run a timeline | The pull request list's row ages, its header and stale banner, the usage card and the context breakdown's header, and the limit chip and banner each run a `TimelineView(.everyMinute)` while they show, visible or not. Move them to `DSMinuteClock`, as `CompactAgeText` and Home's rows did (Launch, round three) | GitHub, Usage, design system |
+| Changing a shortcut gets slower each time | Each change in a session costs about 1.5 times the one before: 0.3 M main-thread instructions for the first and 3.4-4.5 M for the twelfth, with the menu items rebuilt for each change or not (Launch, round three). Something that follows the bindings compounds; find what | Commands |
 | The composer's rich editor still leaks once it showed code | SwiftUI's rich `TextEditor` leaves about 14 KB behind each editor that goes away; only drafts with code use it now. Keeping one editor across task switches would end it | Composer |
 | Park the default agent when it has no open sessions for a long while, or start it on the first New Session | It's kept running so New Session never waits; with direct adapter launch that wait is now about 0.3 s for Codex | App model |
 | Opening the changes inspector on many files under 100 ms | Still 218–392 ms on 250 files against 69–77 ms on a clean repository: laying out and drawing the rows on screen (text measuring, the diff's selectable text) and the first file's diff, in Debug | Git |

@@ -47,7 +47,7 @@ jobs:
         uses: actions/cache/restore@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/Library/Caches/Native/ScriptRuntime
-          key: script-runtime-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'scripts/build-script-runtime.sh') }}
+          key: script-runtime-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'Runtime/ScriptRuntime/rust-toolchain.toml', 'scripts/build-script-runtime.sh') }}
           restore-keys: script-runtime-${{ runner.os }}-${{ runner.arch }}-
       - name: swift test
         run: scripts/ci/test-packages.sh ${{ matrix.shard }} ${{ strategy.job-total }}
@@ -96,7 +96,7 @@ jobs:
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/Library/Caches/Native/ScriptRuntime
-          key: script-runtime-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'scripts/build-script-runtime.sh') }}
+          key: script-runtime-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'Runtime/ScriptRuntime/rust-toolchain.toml', 'scripts/build-script-runtime.sh') }}
           restore-keys: script-runtime-${{ runner.os }}-${{ runner.arch }}-
       # Package checkouts and Xcode's compilation cache, as in check.yml (scripts/release/check.sh
       # explains the compilation cache).
@@ -113,17 +113,19 @@ jobs:
           path: ${{ env.COMPILATION_CACHE }}
           key: compilation-cache-${{ runner.os }}-Debug-${{ github.sha }}
           restore-keys: compilation-cache-${{ runner.os }}-Debug-
+      # Only the versions Package.resolved records: a resolved file that no longer matches the project
+      # fails here instead of being re-resolved to whatever the remotes have now.
       - name: Resolve Swift packages
         run: >-
           xcodebuild -resolvePackageDependencies -project native.xcodeproj -scheme native
-          -clonedSourcePackagesDirPath "$SOURCE_PACKAGES" -quiet
+          -clonedSourcePackagesDirPath "$SOURCE_PACKAGES" -disableAutomaticPackageResolution -quiet
       # The full log goes to a file rather than through -quiet, which prints a misleading "failed with
       # exit code 0" error for every step that only warned. On a failure, its errors and summary show.
       - name: Build (unsigned)
         run: |
           xcodebuild build -project native.xcodeproj -scheme native -configuration Debug \
             -derivedDataPath "$RUNNER_TEMP/DerivedData" -clonedSourcePackagesDirPath "$SOURCE_PACKAGES" \
-            -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO \
+            -disableAutomaticPackageResolution -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO \
             COMPILATION_CACHE_ENABLE_CACHING=YES COMPILATION_CACHE_CAS_PATH="$COMPILATION_CACHE" \
             COMPILATION_CACHE_LIMIT_SIZE=2G > "$RUNNER_TEMP/build.log" 2>&1 || {
               grep -E '^[^[:space:]|].*error: ' "$RUNNER_TEMP/build.log" | sort -u
