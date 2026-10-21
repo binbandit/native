@@ -31,7 +31,9 @@ enum GitCleanupWiring {
         var cli = cli
         #if DEBUG
         cli = GitHubCLI(
-            environment: cli.environment, host: cli.host, runner: GitCleanupFakeGitHubRunner.wrapping(cli.runner))
+            environment: cli.environment, host: cli.host, runner: GitCleanupFakeGitHubRunner.wrapping(cli.runner)
+        )
+        .selecting(cli.accountSelection)
         #endif
         do {
             let found = try await cli.mergedPullRequests(
