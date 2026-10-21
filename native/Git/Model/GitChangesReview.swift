@@ -5,12 +5,6 @@ import Observation
 /// view keeps one, so the files-changed card's Review can point the inspector at its turn.
 @Observable
 final class GitChangesReview {
-    /// This Turn and Branch, and recording where each turn begins, while they're being verified:
-    /// off unless Native is launched with `-gitTurnReview YES`, which leaves today's inspector.
-    static var isEnabled: Bool {
-        UserDefaults.standard.bool(forKey: "gitTurnReview")
-    }
-
     /// The inspector opens on the uncommitted changes (⌘⇧D, docs/keyboard.md); Review switches it.
     var scope = GitChangesScope.uncommitted
     /// The turn This Turn shows, as of the last time it was asked for.

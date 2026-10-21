@@ -7,6 +7,9 @@ import SwiftUI
 /// `@` file mentions floating above it. Its keys follow docs/keyboard.md.
 struct ComposerView: View {
     @Bindable var session: SessionModel
+    /// Previews supply an in-memory mode library.
+    var taskModes: TaskModes = .shared
+    @Experiment(.composerNext) private var composerNext
 
     @AppStorage(FollowUpBehavior.storageKey) var followUp = FollowUpBehavior.defaultValue
     @Environment(\.undoManager) var undoManager
@@ -230,30 +233,18 @@ struct ComposerView: View {
                     onRemove: removeAttachment
                 )
             }
-            inputSection(suggestions: suggestions)
-            ComposerControlsRow(
-                settings: settings,
-                agentName: session.agentName,
-                resumedAutonomy: autonomyBeforePlan,
-                followUpHint: followUpHint,
-                isModelPickerOpen: $isModelPickerOpen,
-                isPickingFiles: $isPickingFiles,
-                onAttach: attach,
-                onSet: set,
-                onCycleEffort: { apply(settings.nextEffort) },
-                mode: TaskModeControl(session: session),
-                extras: { density in SessionGoalControl(session: session, showsIcon: density.showsIcons) },
-                context: { density in
-                    // The session's MCP servers sit beside the context ring, quiet like it.
-                    HStack(spacing: DS.Space.xxs) {
-                        MCPComposerChip(session: session, showsCount: !density.showsIcons)
-                        ContextIndicator(session: session, style: density.showsIcons ? .ring : .labeled)
-                    }
+            VStack(spacing: 0) {
+                // Keep the editor mounted when a turn changes the footer, preserving focus and selection.
+                inputSection(suggestions: suggestions)
+                if composerNext && (session.phase == .idle || session.phase == .disconnected)
+                    && !session.needsApproval && session.pendingQuestion == nil
+                {
+                    nextControls(settings)
+                } else {
+                    Rectangle().fill(.dsBorder).frame(height: DS.Composer.separatorWidth)
+                    currentControls(settings)
                 }
-            )
-            // The file picker opens on the task's own folder.
-            .fileDialogDefaultDirectory(session.cwd)
-            .disabled(!canEdit)
+            }
         }
         .dropDestination(for: ComposerDropItem.self) { items, _ in
             attach(items)
@@ -315,16 +306,25 @@ struct ComposerView: View {
 
     /// Disabled in place when something blocks sending, saying why.
     var sendButton: some View {
-        ComposerSendButton(disabledReason: session.sendBlockedReason ?? attachmentsBlockedReason) { submit(followUp) }
-            .help(
-                isWorking
-                    ? FollowUpHint(
-                        preferred: followUp, supportsSteering: session.supportsSteering, agentName: session.agentName
-                    ).help : "Send (↩)")
+        let behavior = session.supportsSteering ? followUp : .queue
+        // An item can leave the queue while its editor stays open; submission then sends a new message.
+        let isEditingQueued =
+            session.queuedPrompts.contains { $0.id == session.editingQueuedPrompt }
+            && !session.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        return ComposerSendButton(disabledReason: session.sendBlockedReason ?? attachmentsBlockedReason) {
+            submit(followUp)
+        }
+        .accessibilityLabel(
+            isEditingQueued ? "Save Queued Message" : isWorking ? "\(behavior.title) Message" : "Send Message"
+        )
+        .help(
+            isEditingQueued
+                ? "Save the edit, keeping its place in the queue."
+                : isWorking ? "\(behavior.title): \(behavior.explanation)" : "Send (↩)")
     }
 
     /// What the controls row's hint says: the keys in a code block, the keys for the queued message
-    /// open in the editor, or while the agent works, what Return and ⌘Return do with a follow-up.
+    /// open in the editor, or nothing during ordinary messaging.
     var followUpHint: FollowUpHint? {
         if isCaretInCodeBlock {
             return codeBlockHint
@@ -333,9 +333,7 @@ struct ComposerView: View {
             return .editingQueued(
                 sendNow: session.sendNowRoute.map { QueuedSendNow(route: $0, agentName: session.agentName) })
         }
-        guard isWorking else { return nil }
-        return FollowUpHint(
-            preferred: followUp, supportsSteering: session.supportsSteering, agentName: session.agentName)
+        return nil
     }
 
     func actionSlot(@ViewBuilder _ content: () -> some View) -> some View {
@@ -358,15 +356,13 @@ struct ComposerView: View {
         }
     }
 
-    /// Says what typing here will do: start work, queue or steer a follow-up, or nothing yet and why.
+    /// Invites a message, or explains what the session is waiting for.
     var placeholder: String {
         ComposerPlaceholder(
             phase: session.phase,
             agentName: session.agentName,
             hasQuestion: session.pendingQuestion != nil,
             needsApproval: session.needsApproval,
-            followUp: followUp,
-            supportsSteering: session.supportsSteering,
             isStopping: session.isStopping,
             isNewSession: session.isTranscriptEmpty,
             showsFocusHint: canEdit && !isFocused && ComposerPlatform.showsKeyboardHints
@@ -380,3 +376,35 @@ struct ComposerView: View {
         session.wantsComposerFocus = false
     }
 }
+
+#if DEBUG
+#Preview("Composer - Quiet at rest") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.lg) {
+            ComposerNextPreviewFixtures.composer()
+            ComposerNextPreviewFixtures.composer(draft: "Review @native/Views/Composer and the attached notes.")
+        }
+        .frame(width: 860)
+    }
+}
+
+#Preview("Composer - Quiet loading and disconnected") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.lg) {
+            ComposerNextPreviewFixtures.composer(phase: .loading)
+            ComposerNextPreviewFixtures.composer(draft: "Keep my draft", phase: .disconnected)
+        }
+        .frame(width: 860)
+    }
+}
+
+#Preview("Composer - Experiment off and running") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.lg) {
+            ComposerNextPreviewFixtures.composer(enabled: false)
+            ComposerNextPreviewFixtures.composer(phase: .prompting)
+        }
+        .frame(width: 860)
+    }
+}
+#endif

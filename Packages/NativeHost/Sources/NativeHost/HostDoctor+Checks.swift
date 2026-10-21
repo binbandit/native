@@ -60,7 +60,7 @@ extension HostDoctor {
         let path = locate(cli, in: context.environment) ?? cli
         let version = await version(at: path, context.environment)
         return HostDoctorCheck(
-            id: id, group: .agents, title: agent.name, status: .ok, detail: "\(version ?? cli) at \(path)")
+            id: id, group: .agents, title: agent.name, status: .ok, detail: Self.found(path, version: version))
     }
 
     /// The command, then what it requires and the CLIs it resolves, once each.
@@ -109,7 +109,7 @@ extension HostDoctor {
         }
         let version = await version(at: path, context.environment)
         return HostDoctorCheck(
-            id: id, group: group, title: title, status: .ok, detail: "\(version ?? command) at \(path)")
+            id: id, group: group, title: title, status: .ok, detail: Self.found(path, version: version))
     }
 
     /// Whether `gh` is signed in, from `gh auth status` (which masks the token). Nil without `gh`.
@@ -263,6 +263,24 @@ extension HostDoctor {
         }
     }
 
+    // MARK: - Updates
+
+    /// How the host gets its updates: with Native.app, by itself, or not on this host yet.
+    static func updatesCheck(_ status: HostUpdateStatus) -> HostDoctorCheck {
+        func check(_ result: HostDoctorCheck.Status, _ detail: String) -> HostDoctorCheck {
+            HostDoctorCheck(id: "host.updates", group: .host, title: "Updates", status: result, detail: detail)
+        }
+        let current = "\(status.current.version) (\(status.current.channel))"
+        if let rollback = status.lastRollback {
+            return check(.warning, "Native Host \(rollback.from) didn't start, so the host went back to \(rollback.to)")
+        }
+        switch status.provider {
+        case .app: return check(.ok, "Updates with Native, now \(current)")
+        case .standalone: return check(.ok, "Updates itself, now \(current)")
+        case .none, .unknown: return check(.info, status.message ?? "Updates aren't available on this host yet")
+        }
+    }
+
     // MARK: - Reading the machine
 
     /// Finds `command` as a login shell would: an absolute path as is, a name on the PATH.
@@ -282,6 +300,11 @@ extension HostDoctor {
             return nil
         }
         return result.firstLine
+    }
+
+    /// "2.1.3 (Claude Code) at /opt/homebrew/bin/claude", or where it is when it didn't say its version.
+    static func found(_ path: String, version: String?) -> String {
+        version.map { "\($0) at \(path)" } ?? "Found at \(path)"
     }
 
     /// "claude", "npx and claude", "a, b and c".

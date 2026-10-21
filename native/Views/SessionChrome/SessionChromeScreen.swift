@@ -195,7 +195,7 @@ struct SessionChromeScreen: View {
     }
 
     private var repository: GitRepositoryModel {
-        git.model(for: session.cwd)
+        git.model(for: session.cwd, session: session.key)
     }
 
     private var terminal: TerminalPanelModel {

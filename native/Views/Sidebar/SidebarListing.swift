@@ -62,31 +62,23 @@ extension AppModel {
             hasPullRequest: insights.hasPullRequest(summary),
             isArchived: isArchived(summary.id),
             title: title(for: summary),
-            lastActivity: session?.lastActivity ?? summary.info.updatedDate
+            lastActivity: lastActivity(for: summary)
         )
     }
 }
 
 extension TaskFacts.Activity {
-    /// Where an open session stands; one that isn't open in this run is idle.
+    /// Where an open session stands, for the filters and sorts, from the status every surface reads
+    /// (`SessionModel.taskStatus`); one that isn't open in this run is idle.
     init(_ session: SessionModel?) {
-        guard let session else {
-            self = .idle
-            return
-        }
-        if session.wait != nil || session.needsApproval {
-            self = .needsYou
-            return
-        }
-        switch session.phase {
-        case .loading, .prompting: self = .running
-        case .disconnected: self = .failed
-        case .idle:
-            switch session.lastStopReason {
-            case .endTurn, .maxTokens, .maxTurnRequests: self = .done
-            case .refusal, .error: self = .failed
-            case .cancelled, .other, nil: self = .idle
+        self =
+            switch session?.taskStatus ?? .idle {
+            case .needsInput, .needsPermission, .needsPlanReview: .needsYou
+            case .starting, .working, .waiting: .running
+            case .failed: .failed
+            case .done: .done
+            // A stopped turn is at rest, as the user left it.
+            case .idle, .cancelled, .paused, .limited: .idle
             }
-        }
     }
 }

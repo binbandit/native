@@ -8,6 +8,7 @@ import TaskList
 /// and the rest collapse with a note saying so.
 struct ProjectList<TaskAccessory: View>: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.sidebarQuietProjects) private var isQuiet
     let listing: SidebarListing
     let taskAccessory: (SessionSummary) -> TaskAccessory
     @Binding var filter: TaskFilter
@@ -27,7 +28,7 @@ struct ProjectList<TaskAccessory: View>: View {
                     sessions: listing.pinned, order: Self.positions(listing.allPinned), drag: drag,
                     taskAccessory: taskAccessory, select: select)
             }
-            SectionHeader("Projects") {
+            SectionHeader(isQuiet ? "" : "Projects") {
                 SidebarFilterButton(filter: $filter, isSelecting: $selection.isSelecting)
                 IconButton("Add Project", systemImage: "folder.badge.plus") {
                     model.isAddingProject = true
@@ -54,6 +55,7 @@ struct ProjectList<TaskAccessory: View>: View {
                     order: Self.positions(group.all),
                     position: (index, listing.groups.count),
                     isFiltered: isNarrowing,
+                    allowsFolding: !filter.isActive,
                     hasNoMatches: hasNoMatches,
                     isExpanded: Binding(
                         get: { isNarrowing ? !hasNoMatches : !collapsed.contains(project.id) },

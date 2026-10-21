@@ -28,7 +28,7 @@ extension HostCore {
             }
         case .turnEnded(let stopReason) where stopReason == "end_turn":
             postTurnFinished(in: session)
-        case .turnFailed(let message, let error):
+        case .turnFailed(let message, let error, _):
             postTurnFailed(message: message, error: error, in: session)
         case .recovered(let note):
             guard var notification = notification(.recovered, about: session) else { return }
@@ -172,7 +172,8 @@ extension HostCore {
         post(notification)
     }
 
-    /// A notification about `session`, filled in with its task. Nil for tasks Native's tools started
+    /// A notification about `session`, filled in with its task and what clients name it (the user's
+    /// title, the generated one, the agent's, then its first message). Nil for tasks Native's tools started
     /// (workflow steps, orchestration), which report through their run instead.
     private func notification(_ kind: HostNotification.Kind, about session: HostSession) -> HostNotification? {
         let task = session.record.parentID.flatMap { sessions[$0] } ?? session
@@ -181,7 +182,7 @@ extension HostCore {
         return HostNotification(
             kind: kind, sessionID: session.id, parentID: isSubagent ? task.id : nil, agentID: session.record.agentID,
             agentName: session.agentName, agentSessionID: session.record.agentSessionID,
-            parentAgentSessionID: isSubagent ? task.record.agentSessionID : nil, title: task.record.title)
+            parentAgentSessionID: isSubagent ? task.record.agentSessionID : nil, title: task.displayTitle)
     }
 
     private func post(_ notification: HostNotification) {

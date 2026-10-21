@@ -2,6 +2,7 @@ import ACP
 import Foundation
 import NativeHostClient
 import NativeHostProtocol
+import TaskList
 
 // Routing Native's host's events to the models of the sessions running there (`HostSessions`).
 // The host client hands events over one at a time, in order, before the answers to requests made
@@ -26,6 +27,7 @@ extension SessionStore {
                 hostBuffered[id, default: []].append(step)
             }
         case .sessionChanged(let summary):
+            recordActivity(summary)
             hostSummaries[summary.id] = summary
             guard let session = session(host: summary.id) else { return }
             if let agentSessionID = summary.agentSessionID, agentSessionID != session.id, session.origin != .announced {
@@ -45,6 +47,12 @@ extension SessionStore {
         default:
             break
         }
+    }
+
+    /// The host knows about completed turns before their transcripts are opened in this client.
+    func recordActivity(_ summary: HostSessionSummary) {
+        guard let id = summary.agentSessionID else { return }
+        activityDates.record(summary.lastActivity, for: SessionKey(agent: .init(rawValue: summary.agentID), id: id))
     }
 
     /// What arrived for a session before its model was registered: what happened before this

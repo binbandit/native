@@ -209,11 +209,15 @@ green on main. On Linux today:
   process group and ending every group their children moved into (from `/proc`), running clients'
   commands (`_native/exec/*`, so Git on an iPad works against the box), polling file watches.
 - **Different:** no code-signature check of peers, so, as for a Mac development build, the user is the
-  boundary (the socket's folder is theirs alone). Prompt images go as they are only when they're PNG
+  boundary (the socket's folder is theirs alone). The host directory is `Native` under Foundation's
+  user application support directory (`$XDG_DATA_HOME`, or `~/.local/share`); named channels use its
+  `Channels/<channel>` subdirectory. Prompt images go as they are only when they're PNG
   or GIF already within the limits, since nothing scales them; anything else goes by path. npx always
   runs as npx (finding its install folder takes SHA-512). Logs go to stderr.
 - **Mac only for now:** plugin assets (their content hashes are SHA-256: a client asking gets "Plugin
-  assets aren't available on this host yet"), updating itself (Ed25519), Native's tools for agents
+  assets aren't available on this host yet"), updating itself (Ed25519: `native-host` is built without
+  `HostUpdater` there, and `_native/host/update/status` and the doctor say "Updates aren't available on
+  this host yet"), Native's tools for agents
   (the MCP server is on Network, its tokens are HMACs), attached hosts (`--exit-with-parent` watches
   the parent with kqueue), on-device titles and `native-host doctor`. The cryptography comes with
   swift-crypto, deferred until Linux is a real target (docs/decisions.md, "swift-crypto for Linux
@@ -409,7 +413,8 @@ project without a hosted remote is the same project on another device only where
 folder there. Sessions are keyed as on this Mac (`SessionKey`: agent and agent session id), and
 `AppModel.remoteSession(_:)` says which host holds one; the sidebar keeps grouping by project and
 lists each project's sessions on paired hosts beside this Mac's (`remoteSessionSummaries`: what the
-host has open in its checkout, then what its agents saved there), with a device badge.
+host has open in its checkout or the checkout's task worktrees there, then what its agents saved in
+them), with a device badge.
 
 **New session on a device.** The device picker (`AppModel.deviceOptions(for:)`) lists This Mac and
 each paired host with its availability (online, connecting, or offline with the reason) and the
@@ -427,8 +432,9 @@ a symbol and one of the app-icon palettes as its color (`HostLook`), kept on thi
 `HostDevicePicker` behind a `HostDevicePill` (↑ ↓ Return, digits, Escape; docs/keyboard.md), and a
 session on another device carries a `HostDeviceBadge`: the device's glyph on a sidebar row, glyph and
 name in the session header, with the state only while it isn't online. Settings ▸ Hosts lists This
-Mac and every paired host: its connection state (with the reason and Try Now while it's offline,
-what to update when versions differ, Pair Again when the host ended the pairing), what it runs on
+Mac and every paired host: its connection state (the reason while it's offline, with Restart Host
+for This Mac's own host, since a paired host's client retries by itself; what to update when
+versions differ; Pair Again when the host ended the pairing), what it runs on
 (system, Native version, uptime, load and whether it stays awake, from `_native/host/status`), its
 tasks, and its agents with whom each is signed in as. A host can be renamed, given another look,
 or removed: the confirmation says its tasks keep running there but leave this Mac's sidebar, and
@@ -437,12 +443,17 @@ would open it on the host's screen: the sign-in sheet leads with a key (kept in 
 keychain, with Remove) or a link and code to open on any device, then the exact SSH steps
 (`ssh <destination>`, then the agent's own terminal sign-in) and Check Again, and offers the browser
 method last. The page shows only while remote hosts are on; in development builds
-`-NativeHostsFixtures all|empty|signin|components` shows it with made-up hosts.
+`-NativeHostsFixtures all|empty|signin|components|local-offline` shows it with made-up hosts.
 
 **A host's tasks, like this Mac's.** Each paired host gets its own `GitStore` whose git runs on the
 host (`Git.onHost`: `RemoteCommandRunner`, the host's login-shell environment, and its change feed
 for watching) and keeps worktrees in the host's `worktreesFolder`, wrapped in the same
-`GitTaskWorkspaceProvider` (`RemoteHostsWiring`). `DeviceTaskWorkspaces` is the app's task
+`GitTaskWorkspaceProvider` (`RemoteHostsWiring`). Everything that reads a task's folder (the
+changes inspector, branch and diff badges, turn baselines) reads a host's folder with that host's
+store (`GitStore.sessionStore`, by session/client identity), so diffs and Files Changed come
+from the host's own git. Stores retain the stable host ID, so re-pairing the same host moves open
+tasks' Git reads and actions to its replacement client once that store is ready. Folder-only lookups stay local; unavailable hosts never fall back to this
+Mac. Remote inspector file menus offer Copy Path, withholding local Open and Reveal actions. `DeviceTaskWorkspaces` is the app's task
 workspaces while remote hosts are on: it sends archiving, restoring, deleting and branch renames to
 the host whose worktrees folder or checkout holds the task's folder, so a task on a host is put away
 with its checkpoint there exactly as one here. Deleting a task's copy in its agent and pinning use
@@ -532,7 +543,7 @@ form questions (`elicitation`), as the app's own `InitializeRequest` says.
 | `_native/titles/configure {provider, instructions}` | who writes titles (`on-device`, `client`, `off`) and the user's title instructions, kept in the store so they hold with no client attached. The owner, or a device allowed to manage the host |
 | `session/prompt {sessionID, requestID, text, content?, attachments, preamble?, behavior, echo, origin}` | → `prompted`, `steered` or `queued`, as soon as it's accepted. A repeated `requestID` gets the first answer and is never delivered twice, also while the first is still being handled; `NativeHostClient.prompt` resends it by itself after a dropped connection. `content` is the ACP blocks to send (attachments, images, linked files); `text` is what the transcript shows and what recovery looks for in a replay. `preamble` (a mode's instructions) goes ahead of the message unless the agent's last delivered preamble has the same id |
 | `session/cancel {sessionID}` | asks the agent to stop (`isStopping` in the summary). If it hasn't confirmed after 10 s, or the user asks again more than a second later, the host ends the turn itself ("Codex didn't confirm it stopped, so Native stopped waiting…") and ignores the late answer. Cancels a pending retry instead, if there is one. On an agent's own subagent it cancels just that subagent's work |
-| `session/set_config_option {sessionID, configID, value}` | as in ACP. The host pins every setting a session runs with (what a client chose, what the agent changed itself, what the session started on) and sets back any that a reload or a restart brings back otherwise (codex-acp reopens on its default model), model first, inside the load, so clients only see where the settings end up. A value the agent doesn't take back is said in the transcript ("Codex didn't take back High for Reasoning effort, so this session uses Low. Choose it again to retry."), and the session carries on with the agent's. New sessions never start on pinned values: they start on the agent's defaults or the user's |
+| `session/set_config_option {sessionID, configID, value}` | as in ACP. The host pins every setting a session runs with (what a client chose, what the agent changed itself, what the session started on) and sets back any that a reload or a restart brings back otherwise (codex-acp reopens on its default model), model first, inside the load, so clients only see where the settings end up. A value the agent doesn't take back is said in the transcript ("Codex didn't take back High for Reasoning effort, so this session uses Low. Choose it again to retry."), and the session carries on with the agent's. A disconnected restore fails the load and keeps the saved choices for a later retry. Closing a host session keeps its settings by agent/session id; reopening uses those before any client-supplied choices from before host adoption. New sessions never start on pinned values: they start on the agent's defaults or the user's |
 | `_native/session/respond_permission {sessionID, toolCallID, optionID?}` | the first client to answer wins; the rest see it resolved |
 | `_native/session/respond_question {sessionID, questionID, response}` | answers a form question (`elicitation/create`) with ACP's response verbatim; the first client wins |
 | `_native/session/run_hidden {sessionID, text}` | → `{output}`: runs a command such as `/context` as a turn the transcript doesn't show (the reply is collected, late copies of it dropped). Only while idle; not a durable turn |
@@ -627,7 +638,7 @@ reducer; Native's own facts are typed events: `reset(loading)`, `loaded`, `promp
 delivered, shown or not, with its request id, attachments and preamble marker; agents don't echo live
 prompts), `permissionRequested`/`permissionResolved`, `questionAsked`/`questionResolved`,
 `turnEnded`, `turnFailed` (with the agent's JSON-RPC error, so `auth_required` and usage-limit data
-survive), `notice` and `recovered`. `SessionMirror` folds a log into a transcript at each event's own
+survive, and `retry` when Native sends the message again by itself), `notice` and `recovered`. `SessionMirror` folds a log into a transcript at each event's own
 time, so a client attaching later times turns the same; the host keeps one per session too (that's
 how it reads an agent's replay), folded only when it reads it. Clients get each event as a
 `SessionMirror.Step`, its agent payload already decoded, from `NativeHostClient.addEventHandler`:
@@ -682,6 +693,7 @@ needs multi-row transactions; a log would need compaction and replay code for ev
 | `meta` | host id, last heartbeat, boot time of the last run, clean-shutdown mark |
 | `agents` | the agent catalog (`AgentSpec` JSON) the host launches from |
 | `sessions` | open sessions: host id, agent and agent session id, cwd, parent, origin, title, last activity, last stop reason, queue paused, MCP servers and `_meta` to hand over on reload, the settings it runs with (pinned, see `session/set_config_option`), whether it was adopted from the agent's list |
+| `closed_session_config` | settings kept when a host session closes, keyed by agent and agent session id; removed when the agent session is deleted |
 | `turns` | the unfinished turn per session: request id, text, content blocks, attachments, preamble, kind (prompt or recovery), echo, start time, recovery attempts |
 | `queue` | queued messages in order, with what each carries and a steering-in-flight flag |
 | `requests` | prompt request ids and what they became (pruned after 7 days) |
@@ -724,13 +736,21 @@ reloads the session from the agent (`session/load`), then `RecoveryPlanner` deci
 | User cancels during recovery | `session/cancel` while recovering | recovery stops; turn ends as cancelled; queue pauses | "Stopped." |
 | User restarts the agent mid-turn | `_native/agents/restart` | like an agent crash, with its own cause | "You restarted Codex at 2:14 PM. Native asked it to pick up where it left off." |
 | A session the agent never saved can't load | `session/load` fails for a session started here that never finished a turn | starts a fresh agent session under the same host id; recovery then resends the message | the message, answered (nothing was lost: the agent had nothing) |
-| The prompt fails for a passing reason (network, overloaded provider) | the agent's error reads like an outage, and the turn got nowhere | puts the message back at the queue's front, unshown, and sends it again after 5, 20, then 60 s (`retryAt`); Stop cancels the retry | "Codex couldn't be reached (…). Native kept your message and will try again in 5 seconds. Use Stop to cancel." |
-| The agent never confirms a stop | no answer 10 s after `session/cancel`, or Stop again after a second | ends the turn as cancelled on the host's side; a late answer is ignored | "Codex didn't confirm it stopped, so Native stopped waiting. It may still be finishing its last step." |
+| The prompt fails for a passing reason (network, overloaded provider) | the agent's error reads like an outage, and the turn got nowhere | puts the message back at the queue's front, unshown, and sends it again after 5, 20, then 60 s (`retryAt`); Stop cancels the retry | "Codex couldn't be reached (…). Native kept your message and will try again in 5 seconds. Use Stop to cancel." The same notice then says how it went: "Reconnected to Codex, and your message went through on retry." |
+| The agent never confirms a stop | no answer 10 s after `session/cancel`, or Stop again after a second | ends the turn as cancelled on the host's side; a late answer is ignored | "Codex didn't confirm it stopped, so Native stopped waiting. It may still be finishing its last step." Whatever it sends after that shows below the stopped turn, under "The agent kept going after the stop." |
 | Client disconnects mid-turn | socket closes | nothing: the turn runs on; the client re-attaches from its last event | the finished turn, as if it never left |
 | Client quits while an approval or question waits | socket closes | nothing: the agent keeps waiting, and the request stays in the session's log | the next client to attach (the app relaunched, an iPad) shows it and can answer it |
 
 The interruption time comes from the host's heartbeat (written every 30 s), so "at 2:14" is within
 half a minute; for agent crashes it's exact.
+
+**What a turn leaves behind.** ACP has no status for a tool call that didn't run to its end, and agents
+drop final updates, so whenever a turn ends, `SessionState` settles every call still open with only
+what Native knows, and stops its clock: "Stopped" when the user stopped the turn, "Interrupted" when
+the agent or the host went away (recovery, and a command codex-acp replays as failed with exit code -1
+at the end of its turn), and otherwise "No result": the agent never said, so neither success nor
+failure is claimed. A later report from the agent still lands; nothing runs again. The same rules run
+on a replay's end (`loaded`), so a reload tells the same story as the live turn did.
 
 **While you were away.** The activity journal records finished and failed turns, approvals asked,
 and every recovery with its cause and action; each entry carries the agent and its session id, so

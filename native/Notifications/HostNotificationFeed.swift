@@ -147,6 +147,9 @@ final class HostNotificationFeed {
         }
         if let latest = list.latestID {
             remember(latest, on: host.id)
+        } else if seen == nil {
+            // A host that hasn't posted anything yet: its very first notification is news.
+            remember(0, on: host.id)
         }
         // A host's first connection only sets where news starts.
         guard seen != nil else { return }
@@ -182,9 +185,14 @@ final class HostNotificationFeed {
     // MARK: - Showing
 
     private func present(_ notification: HostNotification, on host: Host) {
-        guard isWanted(notification),
-            let content = NativeNotification(notification, hostID: host.id, hostName: host.name)
-        else { return }
+        // Named as the sidebar names the task now: its title may have come after the host's notice.
+        var named = notification
+        if let ref = notification.ref, let title = app?.taskTitle(ref) {
+            named.title = title
+        }
+        guard isWanted(named), let content = NativeNotification(named, hostID: host.id, hostName: host.name) else {
+            return
+        }
         if activity.isActive, let ref = notification.ref, app?.isShowing(ref) == true {
             // The user is looking at the task: seen, here and on their other devices.
             acknowledge([notification.id], on: host)

@@ -56,7 +56,7 @@ extension NativeCommand {
             }
             .available { _ in model.selection != nil },
 
-            // An archived task stays open where it was; the same command brings it back.
+            // The same command brings back an archived task opened from the archive.
             NativeCommand(
                 .sessionArchive, title: "Archive or Unarchive Task", category: .tasks, systemImage: "archivebox"
             ) { context in

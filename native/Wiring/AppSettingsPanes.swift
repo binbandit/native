@@ -12,10 +12,12 @@ enum AppSettingsPanes {
             .labs, .git, .gitHub, .scripts, .aiInstructions, .modes(projects: projects), .mcpServers(registry: plugins),
             .skills(registry: plugins), .terminal(terminals), .sounds(), .keepAwake(keepAwake), .updates,
             .usage(registry: plugins), .notifications, .pairedDevices, .celebrations(registry: plugins), .background,
-            .search(BuiltInPlugins.search.center),
+            .search(BuiltInPlugins.search.center), .hosts,
         ]
-        // Labs goes away when the organization turns experiments off.
+        // Labs goes away when the organization turns experiments off; Hosts stays hidden until
+        // paired hosts are on.
         .filter { $0.id != .labs || PolicyCenter.shared.policy.labsEnabled }
+        .filter { $0.id != .hosts || SettingsPane.showsHosts }
             + SettingsPane.projects(projects)
     }
 }

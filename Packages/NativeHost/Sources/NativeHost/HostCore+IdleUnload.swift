@@ -113,6 +113,9 @@ extension HostCore {
         guard let peer = link.peer, let agentSessionID = session.record.agentSessionID else {
             throw HostError.agentUnavailable(link.spec.name)
         }
+        let generation = link.generation
+        session.loadingConfigOptions = nil
+        defer { session.loadingConfigOptions = nil }
         let response: RawConfigOptionsResponse
         do {
             if session.record.lastStopReason == nil && !session.record.isAdopted {
@@ -131,7 +134,8 @@ extension HostCore {
             noteAgentError(error, from: link)
             throw error
         }
-        await restoreConfigChoices(of: session, on: link, reported: response.configOptions)
+        guard generation == link.generation else { throw PeerError.closed }
+        try await restoreConfigChoices(of: session, on: link, reported: response.configOptions)
         tasks.sessionLoaded(session)
         session.needsLoad = false
         session.reloadsQuietly = false

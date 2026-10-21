@@ -1,4 +1,3 @@
-#if NATIVE_AGENT_PICKER_WIP
 import SwiftUI
 
 /// The agent picker's last row: Add Agent…, naming the agents Native knows but can't find on this
@@ -50,4 +49,3 @@ struct AgentPickerAddRow: View {
             "\(ListFormatter.localizedString(byJoining: shown)) \(missingAgents.count == 1 ? "isn't" : "aren't") installed"
     }
 }
-#endif

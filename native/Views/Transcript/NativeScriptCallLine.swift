@@ -27,6 +27,8 @@ struct NativeScriptCallLine: View {
             case .failed: Text("failed").font(.dsCaption).foregroundStyle(.dsDanger)
             case .cancelled: Text("stopped").font(.dsCaption).foregroundStyle(.dsTextTertiary)
             case .rejected: Text("rejected").font(.dsCaption).foregroundStyle(.dsTextTertiary)
+            case .interrupted: Text("interrupted").font(.dsCaption).foregroundStyle(.dsTextTertiary)
+            case .unreported: Text("no result").font(.dsCaption).foregroundStyle(.dsTextTertiary)
             case .running: Text("running").font(.dsCaption).foregroundStyle(.dsTextTertiary)
             case .completed, .awaitingApproval: EmptyView()
             }

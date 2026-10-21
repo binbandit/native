@@ -3,10 +3,12 @@ import NativeAutomation
 import NativeHostClient
 import NativeHostProtocol
 import SwiftUI
+import Undo
 import UniformTypeIdentifiers
 
 struct RootView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.undoManager) private var undoManager
     @Environment(\.releaseChannel) private var releaseChannel
     @State private var columnVisibility = NavigationSplitViewVisibility.all
     /// The sidebar's width as the user left it. Settings replaces the split view, and a new one opens
@@ -14,8 +16,9 @@ struct RootView: View {
     @State private var sidebarWidth = RootSidebarWidth()
     /// Room for a session's inspector, which the sidebar makes rather than the window growing.
     @State private var inspectorRoom = SidebarInspectorRoom()
-    /// Where each session's transcript was left, so switching back to a session shows the same place.
-    @State private var transcriptPlaces = SessionTranscriptPlaces()
+    /// Where each session's transcript was left and what was opened in it, so switching back to a
+    /// session shows the same place.
+    @State private var transcriptMemory = SessionTranscriptMemory()
     @State private var undoToast: UndoToastItem?
     @State private var showsPullRequests = false
     @Environment(GitHubModel.self) private var gitHub
@@ -61,8 +64,13 @@ struct RootView: View {
         // Asked once, after real use, and never while an agent works (docs/enterprise.md).
         .telemetryConsentPrompt(isTurnRunning: isAnyTurnRunning)
         .focusedSceneValue(\.sidebarVisibility, $columnVisibility)
-        .onChange(of: model.lastUndoable?.id) {
-            undoToast = model.lastUndoable.map { action in UndoToastItem(action.message, undo: action.undo) }
+        .onChange(of: undoManager, initial: true) { model.undoHistory.track(undoManager) }
+        // Undone by ⌘Z or redone by ⇧⌘Z, it leaves the toast or comes back to it.
+        .onChange(of: model.offeredUndo?.id) {
+            undoToast = model.offeredUndo.map { action in UndoToastItem(action.message) { action.undo() } }
+        }
+        .onChange(of: model.offeredUndo?.message) {
+            undoToast = model.offeredUndo.map { action in UndoToastItem(action.message) { action.undo() } }
         }
         .focusedSceneValue(\.showsPullRequests, $showsPullRequests)
         // The pull requests page and a session take turns in the detail column.
@@ -115,17 +123,8 @@ struct RootView: View {
                 await model.checkForAgents()
             }
         }
-        .confirmationDialog("New Session With", isPresented: $model.isChoosingAgent) {
-            ForEach(model.agents, id: \.agent.id) { runtime in
-                Button(runtime.agent.displayName) {
-                    Task { await model.newSession(with: runtime.agent.id) }
-                }
-                .disabled(!model.canCreateSession(with: runtime.agent.id))
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Choose the agent for the new session.")
-        }
+        // Every agent with its state; a system dialog shows only three choices.
+        .agentPicker(isPresented: $model.isChoosingAgent)
         .fileImporter(isPresented: $model.isAddingProject, allowedContentTypes: [.folder]) { result in
             if case .success(let url) = result {
                 Task { await model.addProject(url) }
@@ -236,19 +235,18 @@ struct RootView: View {
             // The background host's notices sit above the page, not over it: the page starts under
             // them, so a short transcript isn't hidden behind them, and a page's toolbar band
             // (`dsToolbarBand`) only reaches the notices' bottom edge.
-            VStack(spacing: 0) {
+            RootDetailColumn {
                 if let durableHost {
                     HostNotices(host: durableHost, updates: updates)
                 }
+            } content: {
                 detail
-                    // Never measured at no width for the window's minimum size (docs/performance.md).
-                    .platformMinimumContentWidth(DS.Window.detailMinWidth)
             }
             // Under every page, so the transcript and anything else without a background of its
             // own sits on the design system's background in the user's light tone, not the system's.
             .background(.dsBackground)
             .environment(\.inspectorRoom, inspectorRoom.room(sidebar: $columnVisibility))
-            .environment(\.sessionTranscriptPlaces, transcriptPlaces)
+            .environment(\.sessionTranscriptMemory, transcriptMemory)
         }
         .toolbar(removing: .sidebarToggle)
         .tracksWindowRoom(inspectorRoom.window)

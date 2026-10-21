@@ -1,13 +1,13 @@
 import NativeCommands
 import SwiftUI
+import Undo
 
 /// The menu bar. Its menus place commands; what each does, when it's available and its shortcut
 /// come from the registry (docs/commands.md). Default shortcuts are in docs/keyboard.md; change them
 /// there first.
 ///
-/// It reads the frontmost window's context once for every item rather than once per item, so a
-/// focus change costs one read, and only the items whose title or state it changes are rebuilt
-/// (`CommandMenuItem`).
+/// It reads the frontmost window's context once and hands it to every menu, rather than each of its
+/// items reading eight focused values of its own.
 struct NativeMenuBar: Commands {
     let model: AppModel
     let settings: SettingsPresentation
@@ -19,7 +19,8 @@ struct NativeMenuBar: Commands {
     @FocusedCommandContext private var context
 
     var body: some Commands {
-        let menu = registry.menuBar(actingOn: context)
+        let menu = CommandMenuContext(registry: registry, context: windowContext)
+        WindowUndoCommands(history: model.undoHistory)
         #if os(macOS)
         UpdateCommands(menu: menu)
         HostQuitCommands(host: host, menu: menu)
@@ -38,6 +39,12 @@ struct NativeMenuBar: Commands {
         TerminalCommands(menu: menu)
         KeepAwakeCommands(controller: keepAwake, menu: menu)
         StatusBarCommands(registry: statusBar, menu: menu)
+    }
+
+    private var windowContext: CommandContext {
+        var context = context
+        context.windowUndoManager = model.undoHistory.manager
+        return context
     }
 }
 

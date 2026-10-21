@@ -2,6 +2,10 @@ import ACP
 import Foundation
 import NativeHostProtocol
 
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
+
 // A scriptable ACP agent for the host's tests. Like a real agent it keeps its own session store
 // (in $FAKE_AGENT_STORE) and writes the user's message to it as soon as a prompt arrives, so
 // `session/load` replays exactly what it received (`session/resume` reopens a session without the
@@ -33,7 +37,9 @@ import NativeHostProtocol
 // blocks shown as "[link <name>]" and the like; every load's MCP servers (name and command) go to loads.log,
 // every new session's to news.log, and every call of Native's tools to tools.log. With $FAKE_AGENT_GRANDCHILD set to a file, it starts
 // `sleep` in a process group of its own at launch and writes its pid there, as npm does with the
-// adapters it runs. With $FAKE_AGENT_NO_STEERING=1 it doesn't offer steering. Settings (mode, model,
+// adapters it runs. With $FAKE_AGENT_NO_STEERING=1 it doesn't offer steering. `/rename <name>` renames
+// the session without a model, as codex-acp does (to received.log as "rename"), unless
+// $FAKE_AGENT_RENAME_ASKS_MODEL=1, which answers it like any other prompt. Settings (mode, model,
 // effort) live in memory, so a reloaded session reports the defaults again; like codex-acp, choosing
 // a model puts the effort back to that model's default. It lists the effort (id "effort") before the
 // model. On a session it loaded (not one it started), it won't change the options named in
@@ -147,6 +153,7 @@ actor FakeAgent {
                         "content": Self.text(entry.text),
                     ])
             }
+            try reportReloadConfig(session)
             try peer.respond(to: id, with: JSONValue.object(["configOptions": options(session)]))
         case "session/resume":
             // Like a load without the replay.
@@ -175,7 +182,12 @@ actor FakeAgent {
             try peer.respond(to: id, with: JSONValue.object([:]))
         case "session/prompt":
             let params = try message.params(as: PromptParams.self)
-            let stopReason = try await prompt(params.sessionId, text: Self.describe(params.prompt))
+            let text = Self.describe(params.prompt)
+            if text.hasPrefix("/rename "), !Self.renameAsksModel {
+                try await rename(params.sessionId, to: String(text.dropFirst("/rename ".count)), id: id, on: peer)
+                return
+            }
+            let stopReason = try await prompt(params.sessionId, text: text)
             try peer.respond(to: id, with: JSONValue.object(["stopReason": .string(stopReason)]))
         case "_session/steering":
             let params = try message.params(as: PromptParams.self)
@@ -189,6 +201,13 @@ actor FakeAgent {
             try peer.respond(to: id, with: JSONValue.object(["outcome": .string("injected")]))
         case "session/set_config_option":
             let params = try message.params(as: ConfigParams.self)
+            if loaded.contains(params.sessionId),
+                ProcessInfo.processInfo.environment["FAKE_AGENT_CRASH_ON_RESTORE"] == "1",
+                firstTime("restore-\(params.sessionId.rawValue)")
+            {
+                received("restore-crash", params.configId)
+                exit(3)
+            }
             if loaded.contains(params.sessionId), let lock = Self.reloadLocks[params.configId] {
                 received("locked", "\(params.configId)=\(params.value)")
                 guard lock == .keep else {
@@ -208,11 +227,36 @@ actor FakeAgent {
                 modes[params.sessionId] = params.value
             }
             received("config", "\(params.configId)=\(params.value)")
+            try reportReloadConfig(params.sessionId)
             try peer.respond(to: id, with: JSONValue.object(["configOptions": options(params.sessionId)]))
         case "logout" where Self.signsIn:
             try logOut(id: id, on: peer)
         default:
             try peer.respond(to: id, error: .methodNotFound(message.method))
+        }
+    }
+
+    /// `/rename` as codex-acp 2.2.2 answers it (captured from it): handled without a model, so the
+    /// usage is null, and the new title follows the answer.
+    private func rename(_ session: SessionID, to name: String, id: RequestID, on peer: JSONRPCPeer) async throws {
+        cancelled.remove(session)
+        received("rename", name)
+        // A file gate lets tests stop or restart the agent while naming is still in flight.
+        let environment = ProcessInfo.processInfo.environment
+        if let gate = environment["FAKE_AGENT_RENAME_GATE"] {
+            while !FileManager.default.fileExists(atPath: gate) {
+                try await Task.sleep(for: .milliseconds(10))
+            }
+        }
+        let stopped = cancelled.contains(session) && environment["FAKE_AGENT_RENAME_IGNORES_CANCEL"] != "1"
+        try peer.respond(
+            to: id,
+            with: JSONValue.object([
+                "stopReason": .string(stopped ? "cancelled" : "end_turn"), "usage": .null,
+                "_meta": .object(["quota": .object(["token_count": .null, "model_usage": .array([])])]),
+            ]))
+        if !stopped {
+            try update(session, ["sessionUpdate": .string("session_info_update"), "title": .string(name)])
         }
     }
 
@@ -437,7 +481,7 @@ actor FakeAgent {
         let hash = text.utf8.reduce(UInt64(5381)) { ($0 << 5) &+ $0 &+ UInt64($1) }
         let marker = store.appending(path: "seen-\(hash)")
         guard !FileManager.default.fileExists(atPath: marker.path(percentEncoded: false)) else { return false }
-        FileManager.default.createFile(atPath: marker.path(percentEncoded: false), contents: Data())
+        _ = FileManager.default.createFile(atPath: marker.path(percentEncoded: false), contents: Data())
         return true
     }
 
@@ -458,7 +502,7 @@ actor FakeAgent {
     }
 
     private func options(_ session: SessionID) -> JSONValue {
-        .array([
+        let options: [JSONValue] = [
             .object([
                 "id": .string("mode"), "name": .string("Mode"), "category": .string("mode"), "type": .string("select"),
                 "currentValue": .string(modes[session] ?? "default"),
@@ -471,7 +515,26 @@ actor FakeAgent {
                 "effort", category: "thought_level", current: efforts[session] ?? "medium",
                 values: ["low", "medium", "high"]),
             Self.select("model", category: "model", current: models[session] ?? "alpha", values: ["alpha", "beta"]),
-        ])
+        ]
+        guard loaded.contains(session) else { return .array(options) }
+        let missing = ProcessInfo.processInfo.environment["FAKE_AGENT_RELOAD_MISSING"]
+        return .array(
+            options.compactMap { option in
+                guard case .object(var fields) = option, let id = fields["id"]?.stringValue else { return option }
+                if missing == id { return nil }
+                if let missing, missing.hasPrefix(id + "="), case .array(let values)? = fields["options"] {
+                    let value = String(missing.dropFirst(id.count + 1))
+                    fields["options"] = .array(values.filter { $0["value"]?.stringValue != value })
+                }
+                return .object(fields)
+            })
+    }
+
+    /// Opt-in notifications and missing settings exercise adapters whose reload differs from new.
+    private func reportReloadConfig(_ session: SessionID) throws {
+        guard loaded.contains(session), ProcessInfo.processInfo.environment["FAKE_AGENT_RELOAD_UPDATES"] == "1"
+        else { return }
+        try update(session, ["sessionUpdate": .string("config_option_update"), "configOptions": options(session)])
     }
 
     private static func select(_ id: String, category: String, current: String, values: [String]) -> JSONValue {
@@ -484,6 +547,8 @@ actor FakeAgent {
 
     /// `FAKE_AGENT_NO_STEERING=1` makes it an agent that can't take messages mid-turn.
     private static let cantSteer = ProcessInfo.processInfo.environment["FAKE_AGENT_NO_STEERING"] == "1"
+    /// Answers `/rename` like any other prompt, as an agent whose model handles it would.
+    private static let renameAsksModel = ProcessInfo.processInfo.environment["FAKE_AGENT_RENAME_ASKS_MODEL"] == "1"
 
     /// What it does about a change to an option `$FAKE_AGENT_LOCKED_ON_RELOAD` names, on a loaded session.
     enum ReloadLock {
@@ -561,7 +626,22 @@ func startGrandchild(recordingIn file: String) {
     let words: [String] = ["/bin/sleep", "600"]
     let arguments = words.map { strdup($0) }
     defer { arguments.forEach { free($0) } }
-    if posix_spawn(&pid, "/bin/sleep", nil, &attributes, arguments + [nil], [nil]) == 0 {
+    #if os(Linux)
+    // Foundation watches its child's exit through an inherited socket. Passing that socket to
+    // sleep would hide the fake agent's crash until sleep exits, preventing recovery from running.
+    var actions = posix_spawn_file_actions_t()
+    posix_spawn_file_actions_init(&actions)
+    defer { posix_spawn_file_actions_destroy(&actions) }
+    for entry in (try? FileManager.default.contentsOfDirectory(atPath: "/proc/self/fd")) ?? [] {
+        if let descriptor = Int32(entry), descriptor > STDERR_FILENO {
+            posix_spawn_file_actions_addclose(&actions, descriptor)
+        }
+    }
+    let result = posix_spawn(&pid, "/bin/sleep", &actions, &attributes, arguments + [nil], [nil])
+    #else
+    let result = posix_spawn(&pid, "/bin/sleep", nil, &attributes, arguments + [nil], [nil])
+    #endif
+    if result == 0 {
         try? String(pid).write(toFile: file, atomically: true, encoding: .utf8)
     }
     posix_spawnattr_destroy(&attributes)

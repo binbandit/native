@@ -21,6 +21,38 @@ env:
   DEVELOPER_DIR: ${{ vars.XCODE_DEVELOPER_DIR || '/Applications/Xcode_27.1.app/Contents/Developer' }}
 
 jobs:
+  app-changes:
+    name: Check app build paths
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      app: ${{ steps.paths.outputs.app }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+      - name: Check app build inputs
+        id: paths
+        env:
+          EVENT: ${{ github.event_name }}
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          # Main and manual runs still build everything. Keep PR checks present even when skipped.
+          if [ "$EVENT" != pull_request ]; then
+            echo "app=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # Include both sides of renames and deletions, and scripts the build actually executes.
+          files=$(git diff --name-only --no-renames "$BASE" HEAD -- \
+            'native/**' 'Packages/**' 'Config/**' 'native.xcodeproj/**' \
+            'NativeHostHelper/**' 'Runtime/**' 'LICENSE.md' \
+            'scripts/build-*.sh' 'scripts/check-warnings.sh' '.github/workflows/ci.yml')
+          if [ -n "$files" ]; then
+            echo "app=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "app=false" >> "$GITHUB_OUTPUT"
+          fi
+
   # Every package with a Tests folder, found by scripts/ci/test-packages.sh, which deals them into
   # these shards by measured time (scripts/ci/package-test-times.txt). GitHub runs at most five macOS
   # jobs at once, and this push also runs the Debug build and Check's two, so two shards finish
@@ -28,38 +60,53 @@ jobs:
   # group, and a failure is annotated with the package's name.
   packages:
     name: Test packages (${{ matrix.shard }}/${{ strategy.job-total }})
-    runs-on: ${{ vars.MACOS_RUNNER || 'macos-26' }}
+    runs-on: ${{ vars.CI_MACOS_RUNNER || vars.MACOS_RUNNER || 'macos-26' }}
     timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
         shard: [1, 2]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - name: Script runtime location
+        if: runner.environment == 'self-hosted'
+        run: |
+          echo "NATIVE_SCRIPT_RUNTIME_CACHE=$RUNNER_TEMP/ScriptRuntime" >> "$GITHUB_ENV"
+          echo "NATIVE_SCRIPT_RUNTIME=$RUNNER_TEMP/ScriptRuntime/native-script-runtime" >> "$GITHUB_ENV"
+      - name: Clean package build state
+        if: runner.environment == 'self-hosted'
+        run: rm -rf Packages/*/.build
       - name: Cache package builds
-        uses: actions/cache@v4
+        if: runner.environment == 'github-hosted'
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: Packages/*/.build
-          key: spm-${{ runner.os }}-shard${{ matrix.shard }}of${{ strategy.job-total }}-${{ hashFiles('Packages/*/Package.swift', 'Packages/*/Package.resolved', 'scripts/ci/package-test-times.txt') }}
-          restore-keys: spm-${{ runner.os }}-shard${{ matrix.shard }}of${{ strategy.job-total }}-
+          key: spm-v2-${{ runner.environment }}-${{ runner.os }}-${{ runner.arch }}-shard${{ matrix.shard }}of${{ strategy.job-total }}-${{ hashFiles('Packages/*/Package.swift', 'Packages/*/Package.resolved', 'scripts/ci/package-test-times.txt') }}
+          restore-keys: spm-v2-${{ runner.environment }}-${{ runner.os }}-${{ runner.arch }}-shard${{ matrix.shard }}of${{ strategy.job-total }}-
       # The Cargo cache Check and the release workflows save, for the ScriptRuntime package's helper.
       - name: Restore the script runtime
-        uses: actions/cache/restore@v4
+        if: runner.environment == 'github-hosted'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/Library/Caches/Native/ScriptRuntime
-          key: script-runtime-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'scripts/build-script-runtime.sh') }}
+          key: script-runtime-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'Runtime/ScriptRuntime/rust-toolchain.toml', 'scripts/build-script-runtime.sh') }}
           restore-keys: script-runtime-${{ runner.os }}-${{ runner.arch }}-
       - name: swift test
         run: scripts/ci/test-packages.sh ${{ matrix.shard }} ${{ strategy.job-total }}
 
   lint:
     name: Lint changed Swift files
-    runs-on: ${{ vars.MACOS_RUNNER || 'macos-26' }}
+    runs-on: ubuntu-latest
+    # Same Swift 6.4 toolchain as linux.yml and Xcode 27.1, including swift-format.
+    container: swift:6.4
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+      # Checkout's temporary Git config does not persist into the container's shell steps.
+      - name: Trust the mounted workspace
+        run: git config --global --add safe.directory "$GITHUB_WORKSPACE"
       - name: swift format lint --strict
         env:
           BASE: ${{ github.event.pull_request.base.sha || github.event.before }}
@@ -74,56 +121,66 @@ jobs:
 
   app:
     name: Build app
-    runs-on: ${{ vars.MACOS_RUNNER || 'macos-26' }}
+    needs: app-changes
+    if: needs.app-changes.outputs.app == 'true'
+    runs-on: ${{ vars.CI_MACOS_RUNNER || vars.MACOS_RUNNER || 'macos-26' }}
     timeout-minutes: 60
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Cache locations
         run: |
-          echo "SOURCE_PACKAGES=$HOME/Library/Caches/native-ci/SourcePackages" >> "$GITHUB_ENV"
-          echo "COMPILATION_CACHE=$HOME/Library/Caches/native-ci/CompilationCache" >> "$GITHUB_ENV"
-      # The build scripts keep Cargo and Zig outputs (V8, Ghostty) in their default caches, outside the
-      # checkout: Xcode's script sandbox doesn't let a build phase write into the source tree. These are
-      # the caches Check and the releases use, so the Debug build has the terminal too (libghostty as
-      # Check last built it; this job doesn't build it itself).
+          echo "SOURCE_PACKAGES=$RUNNER_TEMP/SourcePackages" >> "$GITHUB_ENV"
+          echo "COMPILATION_CACHE=$RUNNER_TEMP/CompilationCache" >> "$GITHUB_ENV"
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            echo "NATIVE_SCRIPT_RUNTIME_CACHE=$RUNNER_TEMP/ScriptRuntime" >> "$GITHUB_ENV"
+          fi
+      # Hosted jobs restore the caches Check and releases use. Persistent runners keep libghostty's
+      # locked local cache and build the script runtime in job-local storage, outside the checkout
+      # because Xcode's script sandbox doesn't let a build phase write into the source tree.
       - name: Cache libghostty
-        uses: actions/cache/restore@v4
+        if: runner.environment == 'github-hosted'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ~/Library/Caches/native-build/libghostty
           key: libghostty-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/build-libghostty.sh') }}
           restore-keys: libghostty-${{ runner.os }}-${{ runner.arch }}-
       - name: Cache the script runtime
-        uses: actions/cache@v4
+        if: runner.environment == 'github-hosted'
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/Library/Caches/Native/ScriptRuntime
-          key: script-runtime-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'scripts/build-script-runtime.sh') }}
+          key: script-runtime-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'Runtime/ScriptRuntime/rust-toolchain.toml', 'scripts/build-script-runtime.sh') }}
           restore-keys: script-runtime-${{ runner.os }}-${{ runner.arch }}-
       # Package checkouts and Xcode's compilation cache, as in check.yml (scripts/release/check.sh
       # explains the compilation cache).
       - name: Cache Swift package checkouts
-        uses: actions/cache@v4
+        if: runner.environment == 'github-hosted'
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ env.SOURCE_PACKAGES }}
-          key: source-packages-${{ runner.os }}-${{ hashFiles('native.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
-          restore-keys: source-packages-${{ runner.os }}-
+          key: source-packages-v2-${{ runner.environment }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('native.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+          restore-keys: source-packages-v2-${{ runner.environment }}-${{ runner.os }}-${{ runner.arch }}-
       - name: Restore the compilation cache
         id: compilation-cache
-        uses: actions/cache/restore@v4
+        if: runner.environment == 'github-hosted'
+        uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.COMPILATION_CACHE }}
-          key: compilation-cache-${{ runner.os }}-Debug-${{ github.sha }}
-          restore-keys: compilation-cache-${{ runner.os }}-Debug-
+          key: compilation-cache-v2-${{ runner.environment }}-${{ runner.os }}-${{ runner.arch }}-Debug-${{ github.sha }}
+          restore-keys: compilation-cache-v2-${{ runner.environment }}-${{ runner.os }}-${{ runner.arch }}-Debug-
+      # Only the versions Package.resolved records: a resolved file that no longer matches the project
+      # fails here instead of being re-resolved to whatever the remotes have now.
       - name: Resolve Swift packages
         run: >-
           xcodebuild -resolvePackageDependencies -project native.xcodeproj -scheme native
-          -clonedSourcePackagesDirPath "$SOURCE_PACKAGES" -quiet
+          -clonedSourcePackagesDirPath "$SOURCE_PACKAGES" -disableAutomaticPackageResolution -quiet
       # The full log goes to a file rather than through -quiet, which prints a misleading "failed with
       # exit code 0" error for every step that only warned. On a failure, its errors and summary show.
       - name: Build (unsigned)
         run: |
           xcodebuild build -project native.xcodeproj -scheme native -configuration Debug \
             -derivedDataPath "$RUNNER_TEMP/DerivedData" -clonedSourcePackagesDirPath "$SOURCE_PACKAGES" \
-            -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO \
+            -disableAutomaticPackageResolution -destination 'platform=macOS' CODE_SIGNING_ALLOWED=NO \
             COMPILATION_CACHE_ENABLE_CACHING=YES COMPILATION_CACHE_CAS_PATH="$COMPILATION_CACHE" \
             COMPILATION_CACHE_LIMIT_SIZE=2G > "$RUNNER_TEMP/build.log" 2>&1 || {
               grep -E '^[^[:space:]|].*error: ' "$RUNNER_TEMP/build.log" | sort -u
@@ -134,14 +191,14 @@ jobs:
       - name: No warnings
         run: scripts/check-warnings.sh "$RUNNER_TEMP/build.log"
       - name: Save the compilation cache
-        if: success() && github.event_name != 'pull_request' && steps.compilation-cache.outputs.cache-hit != 'true'
-        uses: actions/cache/save@v4
+        if: success() && runner.environment == 'github-hosted' && github.event_name != 'pull_request' && steps.compilation-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.COMPILATION_CACHE }}
           key: ${{ steps.compilation-cache.outputs.cache-primary-key }}
       - name: Upload the build log
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: build-log
           path: ${{ runner.temp }}/build.log

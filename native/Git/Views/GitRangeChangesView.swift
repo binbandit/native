@@ -67,7 +67,7 @@ struct GitRangeChangesView: View {
             // The list takes what it needs, up to a share of the column, and the diff the rest.
             GeometryReader { proxy in
                 VStack(spacing: 0) {
-                    GitRangeChangeList(model: model, comparison: comparison, root: repository.repository?.root)
+                    GitRangeChangeList(model: model, comparison: comparison, root: repository.localRoot)
                         .frame(
                             height: min(
                                 GitRangeChangeList.contentHeight(for: comparison),
@@ -211,7 +211,7 @@ private struct GitRangeDiffPane: View {
     }
 }
 
-#if NATIVE_PREVIEWS_WIP
+#if DEBUG
 #Preview("This Turn") {
     DSPreviewPair {
         GitRangeChangesView(

@@ -10,12 +10,15 @@ import Glibc
 public enum UnixSocket {
     public enum Failure: Error, LocalizedError {
         case pathTooLong(String)
+        case nonSocketPath(String)
         case system(String, errno: Int32)
 
         public var errorDescription: String? {
             switch self {
             case .pathTooLong(let path):
                 "The socket path is too long for the system (\(path.utf8.count) bytes): \(path)"
+            case .nonSocketPath(let path):
+                "Refusing to replace a non-socket entry at \(path). Inspect it and move it aside before starting the host."
             case .system(let call, let code): "\(call) failed: \(String(cString: strerror(code)))"
             }
         }
@@ -43,12 +46,12 @@ public enum UnixSocket {
         return descriptor
     }
 
-    /// Listens at `path`, replacing whatever stale socket file is there. Only the owner can connect:
-    /// the socket file is made readable and writable by the user alone.
+    /// Listens at `path`, replacing an existing socket but refusing other filesystem entries.
+    /// Only the owner can connect: the socket file is made readable and writable by the user alone.
     public static func listen(at path: String, backlog: Int32 = 16) throws -> Int32 {
         var address = try makeAddress(path)
+        try removeExistingSocket(at: path)
         let descriptor = try makeSocket()
-        unlink(path)
         let bound = withUnsafePointer(to: &address) { pointer in
             pointer.withMemoryRebound(to: sockaddr.self, capacity: 1) {
                 bind(descriptor, $0, socklen_t(MemoryLayout<sockaddr_un>.size))
@@ -62,6 +65,22 @@ public enum UnixSocket {
         // Accepting happens from a dispatch source, which must never block.
         _ = fcntl(descriptor, F_SETFL, fcntl(descriptor, F_GETFL) | O_NONBLOCK)
         return descriptor
+    }
+
+    private static func removeExistingSocket(at path: String) throws {
+        var entry = stat()
+        // Inspect the entry itself so even a symlink to a socket is preserved.
+        guard lstat(path, &entry) == 0 else {
+            let code = errno
+            if code == ENOENT { return }
+            throw Failure.system("lstat \(path)", errno: code)
+        }
+        guard entry.st_mode & mode_t(S_IFMT) == mode_t(S_IFSOCK) else {
+            throw Failure.nonSocketPath(path)
+        }
+        guard unlink(path) == 0 else {
+            throw Failure.system("unlink \(path)", errno: errno)
+        }
     }
 
     /// A pair of connected sockets, for tests and in-process transports.

@@ -565,3 +565,25 @@ Adding the package now would change the app's package graph for a platform Nativ
 It comes in, as a Linux-only target dependency, when Linux becomes a real target: pairing (Noise)
 needs it then anyway. No hand-rolled cryptography in the meantime. See `docs/durability.md` ("Any
 machine can be a host").
+
+## 2026-10-20: A calm core, features you choose
+
+Native stays small and quiet by default and lets each user choose the rest, without giving up its
+prebuilt features (`docs/plans/lean-core.md`). Every feature beyond talking to agents is a module: a
+`NativePlugin` that adds UI through a few fixed places and, when off, is absent rather than hidden.
+First launch offers Just agents, Essentials (the default) or Everything; existing users keep what
+they have, and organization policy covers built-in modules like installed plugins. Everything
+Native runs that it didn't build is pinned and verified: an official plugin catalog with a signed
+index and content hashes, agent adapters installed from lockfiles shipped in the app instead of
+fresh `npx` resolution, and the V8 script runtime (kept, not JavaScriptCore) moved out of the default
+bundle as an on-demand component pinned by a SHA-256 compiled into the app. It builds on
+"Minimal by default, shaped by the user", whose defaults had drifted from it.
+
+## 2026-10-21: A quiet composer while agents work
+
+The working composer uses the same plain message prompt as an existing idle session and no longer
+shows the Steer/Queue key hint. This supersedes the hint described in "Steer by default"
+(2026-10-19); the Return and ⌘Return behavior, Settings preference and queue fallback are unchanged.
+People can discover those actions through the send button's tooltip and VoiceOver label. Keep the
+code-block and queued-message editing hints, and the placeholders that explain a pending question,
+approval, stopping or why sending is unavailable.

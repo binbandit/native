@@ -1,5 +1,6 @@
 import ACP
 import Foundation
+import TaskList
 import os
 
 // The sidebar's sessions: each project's, in order, and listing them from each agent with `session/list`.
@@ -36,7 +37,13 @@ extension AppModel {
     }
 
     private func lastActive(_ summary: SessionSummary) -> Date {
-        sessions.session(summary.id)?.lastActivity ?? summary.info.updatedDate ?? .distantPast
+        lastActivity(for: summary) ?? .distantPast
+    }
+
+    /// One activity date for task ages and ordering, whether or not its transcript is open.
+    func lastActivity(for summary: SessionSummary) -> Date? {
+        sessions.activityDates.date(
+            for: summary.id, listed: summary.info.updatedDate, live: sessions.session(summary.id)?.lastActivity)
     }
 
     func refreshSessions() async {

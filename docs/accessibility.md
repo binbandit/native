@@ -31,6 +31,11 @@ The composer reacts to every way text arrives, not only to typing:
   follow-up, exactly as typing Return would (keyboard.md, Sending). While the `/` or `@` list is
   open, Return picks the highlighted entry instead.
 
+While a turn runs, the send button's VoiceOver label names the effective action: "Steer Message"
+or "Queue Message", respecting the Settings preference and the queue fallback when steering is
+unavailable. Editing a queued message labels it "Save Queued Message". The plain working placeholder
+does not explain the shortcuts.
+
 Known gaps, both from AppKit's text view:
 
 - `AXBoundsForRange` with an empty range (the bare cursor) reports a rectangle one line above the

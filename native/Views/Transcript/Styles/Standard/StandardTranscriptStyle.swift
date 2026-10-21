@@ -14,19 +14,26 @@ private struct StandardTranscript: View {
     let transcript: TranscriptStyleConfiguration
 
     @AppStorage(TranscriptPreferences.foldsEarlierTurnsKey) private var foldsEarlierTurns = true
-    /// Earlier turns the user opened back up.
-    @State private var unfoldedTurns: Set<TranscriptTurn.ID> = []
+    /// Earlier turns the user opened back up, when there are no disclosures to keep them in.
+    @State private var ownUnfoldedTurns: Set<TranscriptTurn.ID> = []
     /// The line a search result opened at, highlighted for a moment.
     @State private var revealedLine: StandardTranscriptLine.ID?
     /// Each turn's lines, kept until the turn changes.
     @State private var lineCache = StandardTranscriptLineCache()
     @Environment(TranscriptDisclosures.self) private var disclosures: TranscriptDisclosures?
 
+    /// Earlier turns the user opened back up: kept with the transcript's disclosures, so they last
+    /// as long as those do.
+    private var unfoldedTurns: Binding<Set<TranscriptTurn.ID>> {
+        guard let disclosures else { return $ownUnfoldedTurns }
+        return Binding(get: { disclosures.unfoldedTurns }, set: { disclosures.unfoldedTurns = $0 })
+    }
+
     var body: some View {
         let plan = StandardTranscriptLine.plan(
-            transcript, folding: foldsEarlierTurns, unfolded: unfoldedTurns, cache: lineCache)
+            transcript, folding: foldsEarlierTurns, unfolded: unfoldedTurns.wrappedValue, cache: lineCache)
         let context = StandardTranscriptLineContext(
-            transcript: transcript, revealedLine: revealedLine, unfoldedTurns: $unfoldedTurns)
+            transcript: transcript, revealedLine: revealedLine, unfoldedTurns: unfoldedTurns)
         ScrollViewReader { proxy in
             LazyVStack(alignment: .leading, spacing: 0) {
                 // Earlier turns as a list of their own, which a chunk streaming into the latest
@@ -37,8 +44,10 @@ private struct StandardTranscript: View {
                     StandardTranscriptLineView(line: line, context: context)
                 }
                 if transcript.isWorking {
-                    WorkingIndicator(quietSince: transcript.session.state.quietSince)
-                        .padding(.top, DS.Space.xl)
+                    WorkingIndicator(
+                        status: transcript.session.taskStatus, quietSince: transcript.session.state.quietSince
+                    )
+                    .padding(.top, DS.Space.xl)
                 }
             }
             #if DEBUG || NATIVE_PERF
@@ -62,12 +71,12 @@ private struct StandardTranscript: View {
         let state = transcript.session.state
         guard let index = state.items.firstIndex(where: { $0.id == request.itemID }) else { return }
         if let turn = state.turns.first(where: { $0.items.contains(index) }) {
-            unfoldedTurns.insert(turn.id)
+            unfoldedTurns.wrappedValue.insert(turn.id)
         }
         // Let the unfolded rows lay out before scrolling to one of them.
         try? await Task.sleep(for: .milliseconds(80))
         let lines = StandardTranscriptLine.plan(
-            transcript, folding: foldsEarlierTurns, unfolded: unfoldedTurns, cache: lineCache
+            transcript, folding: foldsEarlierTurns, unfolded: unfoldedTurns.wrappedValue, cache: lineCache
         ).lines
         let line = lines.first { line in
             switch line.kind {
@@ -103,17 +112,26 @@ extension TranscriptRow {
 }
 
 private struct WorkingIndicator: View {
+    /// The task's status as every surface reads it (`SessionModel.taskStatus`).
+    let status: TaskStatus
     /// Since when the agent has shown nothing new (`SessionState.quietSince`).
     let quietSince: Date?
 
     var body: some View {
         HStack(spacing: DS.Space.md) {
-            DotGridLoader(pattern: .typing)
-                .frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
-            if let quietSince {
-                QuietThinkingLabel(since: quietSince)
+            if status.needsAttention {
+                // The turn is the user's move, not the agent's: say what it waits for, in the words
+                // the sidebar and the status bar use, rather than count thinking that isn't happening.
+                StatusIndicator(status: status, size: DS.Size.statusGlyph)
+                Text(status.label)
             } else {
-                Text("Working…")
+                DotGridLoader(pattern: .typing)
+                    .frame(width: DS.Size.statusGlyph, height: DS.Size.statusGlyph)
+                if let quietSince {
+                    QuietThinkingLabel(since: quietSince)
+                } else {
+                    Text("Working…")
+                }
             }
         }
         .font(.dsCallout)

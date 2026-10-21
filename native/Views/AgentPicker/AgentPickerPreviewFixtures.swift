@@ -1,4 +1,3 @@
-#if NATIVE_AGENT_PICKER_WIP
 #if DEBUG
 import SwiftUI
 
@@ -68,5 +67,4 @@ enum AgentPickerPreviewFixtures {
         }
     }
 }
-#endif
 #endif

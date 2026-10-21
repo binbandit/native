@@ -29,17 +29,17 @@ public struct LimitBanner: View {
     }
 
     public var body: some View {
-        TimelineView(.everyMinute) { context in
+        DSMinuteTimeline { now in
             NoticeBanner(
                 tone: status.level == .reached ? .danger : .warning,
                 systemImage: status.level == .reached ? "exclamationmark.octagon" : "gauge.with.dots.needle.67percent",
                 title: status.headline,
-                detail: detail(now: context.date),
+                detail: detail(now: now),
                 footnote: status.message
             ) {
                 actions
             }
-            .accessibilityLabel(status.line(now: context.date))
+            .accessibilityLabel(status.line(now: now))
         }
     }
 

@@ -53,7 +53,7 @@ extension AppModel {
         sessions.replace(old, with: session)
         catalog.swap(old.key, for: SessionInfo(sessionId: agentSessionID, cwd: old.cwd.folderPath, updatedAt: .now))
         ordering.replace(old.key, with: session.key)
-        if let title = titles.title(for: old.titleKey, agentTitle: nil) {
+        if let title = titles.namedTitle(for: old.titleKey) {
             titles.rename(session.titleKey, to: title)
         }
         let chosen = titles.configChoices(for: old.titleKey)
@@ -121,6 +121,7 @@ extension AppModel {
     /// closed. The rest open when the user selects them.
     func openWorkingHostSessions() async {
         guard let host = runtimes.host, let summaries = try? await host.sessions() else { return }
+        for summary in summaries { sessions.recordActivity(summary) }
         for summary in summaries
         where summary.origin == .user && summary.parentID == nil
             && (summary.isWorking || summary.needsApproval || !summary.queue.isEmpty)

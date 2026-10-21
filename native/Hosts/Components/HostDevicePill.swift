@@ -66,10 +66,10 @@ enum HostDeviceFixtures {
     static let options: [SessionDeviceOption] = [
         SessionDeviceOption(
             device: .thisMac, name: "This Mac", availability: .online,
-            checkout: .present(path: "/Users/brayden/Developer/native")),
+            checkout: .present(path: "/Users/you/Developer/native")),
         SessionDeviceOption(
             device: .remote(mini), name: "Mac mini", availability: .online,
-            checkout: .present(path: "/Users/brayden/code/native")),
+            checkout: .present(path: "/Users/you/code/native")),
         SessionDeviceOption(device: .remote(studio), name: "Studio", availability: .online, checkout: .willClone),
         SessionDeviceOption(
             device: .remote(buildBox), name: "build-box", availability: .connecting,
@@ -77,7 +77,7 @@ enum HostDeviceFixtures {
         SessionDeviceOption(
             device: .remote(linux), name: "linux-01",
             availability: .offline(reason: "Not reachable. Nothing answered at 192.168.1.40 for 2 minutes."),
-            checkout: .present(path: "/home/brayden/native")),
+            checkout: .present(path: "/home/you/native")),
     ]
 }
 

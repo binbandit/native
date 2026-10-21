@@ -62,7 +62,7 @@ extension AppModel {
             host.worktreesFolder = try? await client.projects().worktreesFolder
         }
         guard let folder = host.worktreesFolder else { return nil }
-        let provider = make(client, URL(filePath: folder, directoryHint: .isDirectory))
+        let provider = make(host.id, client, URL(filePath: folder, directoryHint: .isDirectory))
         host.taskWorkspaces = provider
         return provider
     }

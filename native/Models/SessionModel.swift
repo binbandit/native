@@ -71,6 +71,8 @@ final class SessionModel {
     /// Set to scroll the transcript to an item and highlight it (search results); the transcript
     /// clears it.
     var transcriptReveal: TranscriptReveal?
+    /// Shared by every view of this session, including return visits and subagent transcripts.
+    let transcriptDisclosures = TranscriptDisclosures()
 
     // Turn state. Internal only so the SessionModel+ extensions in other files can drive turns;
     // everything else changes it through the methods.

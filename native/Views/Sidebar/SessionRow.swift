@@ -12,6 +12,7 @@ struct SessionRow<Accessory: View>: View {
     @Environment(\.undoManager) private var undoManager
     @Environment(\.sidebarSelection) private var picking
     @Environment(\.sidebarTaskInsights) private var insights
+    @Environment(\.sidebarQuietProjects) private var isQuiet
     let summary: SessionSummary
     /// Grouped under a project header, or flush in the Pinned section.
     var indent: TaskRowIndent = .grouped
@@ -66,9 +67,10 @@ struct SessionRow<Accessory: View>: View {
                 status: TaskStatus(session),
                 isSelected: isSelected,
                 isUnread: isUnread,
-                date: session?.lastActivity ?? summary.info.updatedDate,
+                date: model.lastActivity(for: summary),
                 badge: badge,
-                indent: indent,
+                indent: isQuiet ? .flat : indent,
+                style: isQuiet ? .quiet : .standard,
                 leading: AgentIcon(agent: summary.agent),
                 accessory: accessory,
                 action: select,
@@ -221,23 +223,10 @@ extension SessionRow: @MainActor Equatable {
 }
 
 extension TaskStatus {
-    /// How the sidebar shows a session. One that hasn't been opened in this run is idle.
+    /// How the sidebar shows a session: its status as every surface reads it
+    /// (`SessionModel.taskStatus`). One that hasn't been opened in this run is idle.
     init(_ session: SessionModel?) {
-        guard let session else {
-            self = .idle
-            return
-        }
-        if session.needsApproval {
-            self = .needsPermission
-            return
-        }
-        self =
-            switch session.phase {
-            case .loading: .starting
-            case .prompting: .working
-            case .disconnected: .failed
-            case .idle: .idle
-            }
+        self = session?.taskStatus ?? .idle
     }
 }
 
