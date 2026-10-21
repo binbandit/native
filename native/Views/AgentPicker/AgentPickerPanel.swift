@@ -55,12 +55,19 @@ struct AgentPickerPanel<Notice: View>: View {
         .clipShape(shape)
         .overlay { shape.strokeBorder(.dsSeparator, lineWidth: 1) }
         .dsShadow(.modal)
-        // After the field's own Escape, which clears what's typed first.
+        // Both steps here, since this can hear Escape before the field's own clearing does.
         .onKeyPress(.escape) {
-            onDismiss()
+            if query.isEmpty {
+                onDismiss()
+            } else {
+                query = ""
+            }
             return .handled
         }
         .onAppear { focus = .filter }
+        // Opened by ⌥⌘N from the composer, the key's own handling ends with the composer's text view
+        // taking the keyboard back; asking again once it's done keeps it here.
+        .task { focus = .filter }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("New Session With")
         .accessibilityAddTraits(.isModal)
