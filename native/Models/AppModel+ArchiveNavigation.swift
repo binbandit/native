@@ -2,12 +2,17 @@ import ACP
 import TaskList
 
 extension AppModel {
+    func setArchiveNavigationOrder(_ order: any ArchiveNavigationOrdering) {
+        archiveNavigationOrder = order
+    }
+
     /// Keep a task open when the selected one leaves, using the sidebar's order before it changes.
     /// The return value lets Undo reopen the task the user was looking at.
     @discardableResult
     func moveAfterArchiving(_ keys: [SessionKey]) -> SessionKey? {
         guard let selected = selection, keys.contains(selected) else { return nil }
-        if let next = TaskListNavigation.successor(to: selected, removing: Set(keys), in: sessionList.map(\.id)) {
+        let order = archiveNavigationOrder?.archiveSessionOrder() ?? sessionList.map(\.id)
+        if let next = TaskListNavigation.successor(to: selected, removing: Set(keys), in: order) {
             selection = next
         } else if let project = catalog.lookup(selected)?.project {
             focusProject(project)

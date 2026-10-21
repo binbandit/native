@@ -32,6 +32,8 @@ final class AppModel {
     /// back too.
     var lastUndoable: UndoableAction?
     let undoHistory = UndoHistory()
+    /// The window supplies its filter and sort as a live query, so Redo uses the current sidebar too.
+    @ObservationIgnored weak var archiveNavigationOrder: (any ArchiveNavigationOrdering)?
     /// Features that keep sessions out of the sidebar claim them here (a pull request's private
     /// questions), so a session search found opens their way instead of as a task under a project.
     /// Each gets the session and its folder, and returns whether it opened the session.

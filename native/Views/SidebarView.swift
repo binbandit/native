@@ -125,6 +125,8 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
         .onChange(of: listing.order, initial: true) { _, order in
             selection.update(order: order)
         }
+        .onChange(of: filter, initial: true) { trackArchiveOrder() }
+        .onChange(of: insights) { trackArchiveOrder() }
         // Rows a filter hides never load their checkout, so look up what the checkout filters ask
         // about when they're turned on.
         .task(id: filter.requiresUncommittedChanges || filter.requiresPullRequest) {
@@ -147,6 +149,18 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
         .focusedSceneValue(\.sidebarReorder, reorder)
         .focusedSceneValue(\.sidebarNeedsYouFilter, needsYouBinding)
         .focusedSceneValue(\.sidebarSelection, selection)
+    }
+
+    private func trackArchiveOrder() {
+        let model = model
+        let filter = filter
+        let insights = insights
+        // Query live state: a rapid Undo/Redo can run before the sidebar redraws restored tasks.
+        selection.setArchiveOrder { [weak model] in
+            guard let model else { return [] }
+            return SidebarListing(model: model, filter: filter, insights: insights).order
+        }
+        model.setArchiveNavigationOrder(selection)
     }
 
     /// The window's filters, kept in its scene storage so each window restores its own.
