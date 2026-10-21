@@ -5,6 +5,7 @@ import SwiftUI
 /// empty title goes back to the automatic one.
 struct SessionTitleField: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.sidebarQuietProjects) private var isQuiet
     @Environment(\.undoManager) private var undoManager
     let summary: SessionSummary
     let status: TaskStatus
@@ -15,12 +16,20 @@ struct SessionTitleField: View {
     var body: some View {
         // Mirrors `TaskRow`'s layout so the title doesn't jump when editing starts.
         HStack(alignment: .top, spacing: DS.Space.sm) {
-            AgentIcon(agent: summary.agent)
-                .foregroundStyle(.dsTextTertiary)
-                .padding(.top, DS.Space.xxs)
-            StatusIndicator(status: status)
-                .padding(.top, DS.Space.xxs)
-                .padding(.trailing, DS.Space.xxs)
+            if !isQuiet {
+                AgentIcon(agent: summary.agent)
+                    .foregroundStyle(.dsTextTertiary)
+                    .padding(.top, DS.Space.xxs)
+            }
+            Group {
+                if isQuiet, status == .idle || status == .done || status == .cancelled {
+                    Color.clear.frame(width: DS.Size.rowLeading, height: DS.Size.rowLeading)
+                } else {
+                    StatusIndicator(status: status)
+                }
+            }
+            .padding(.top, DS.Space.xxs)
+            .padding(.trailing, DS.Space.xxs)
             TextField("Title", text: $draft)
                 .textFieldStyle(.plain)
                 .font(.dsCalloutBook)
@@ -29,10 +38,10 @@ struct SessionTitleField: View {
                 .frame(height: 20)
                 .accessibilityLabel("Session title")
         }
-        .padding(.vertical, DS.Space.md)
-        .padding(.leading, TaskRowIndent.grouped.leading)
+        .padding(.vertical, isQuiet ? DS.Space.sm : DS.Space.md)
+        .padding(.leading, isQuiet ? TaskRowIndent.flat.leading : TaskRowIndent.grouped.leading)
         .padding(.trailing, DS.Space.sm)
-        .frame(minHeight: DS.Size.rowMinHeight)
+        .frame(minHeight: isQuiet ? max(DS.Size.controlMD, DS.Size.minimumHitTarget) : DS.Size.rowMinHeight)
         .background(.dsSelected, in: .rect(cornerRadius: DS.Radius.row, style: .continuous))
         // Outlined so editing reads differently from plain selection.
         .overlay {
@@ -63,12 +72,7 @@ struct SessionTitleField: View {
         model.renaming = nil
         let previous = model.title(for: summary)
         guard draft != previous else { return }
-        model.rename(summary.id, to: draft)
-        let key = summary.id
-        undoManager?.registerUndo(withTarget: model) { model in
-            model.rename(key, to: previous)
-        }
-        undoManager?.setActionName("Rename Session")
+        model.rename(summary.id, to: draft, undoManager: undoManager)
     }
 }
 
@@ -79,6 +83,17 @@ struct SessionTitleField: View {
         if let summary = SidebarPreviewFixtures.sessions(in: app).first {
             SessionTitleField(summary: summary, status: .working)
                 .frame(width: DS.Size.sidebarWidth - DS.Space.lg)
+        }
+    }
+    .sidebarPreviewEnvironment(app)
+}
+#Preview("Quiet projects - Renaming") {
+    let app = AppModel.preview()
+    DSPreviewPair {
+        if let summary = SidebarPreviewFixtures.sessions(in: app).last {
+            SessionTitleField(summary: summary, status: .idle)
+                .environment(\.sidebarQuietProjects, true)
+                .frame(width: DS.Window.sidebarMinWidth)
         }
     }
     .sidebarPreviewEnvironment(app)

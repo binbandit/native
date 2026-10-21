@@ -164,7 +164,7 @@ actor Recorder {
     }
 
     func failures(_ session: HostSessionID) -> [String] {
-        payloads(session).compactMap { if case .turnFailed(let message, _) = $0 { message } else { nil } }
+        payloads(session).compactMap { if case .turnFailed(let message, _, _) = $0 { message } else { nil } }
     }
 
     func mirror(_ session: HostSessionID) -> SessionMirror {

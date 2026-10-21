@@ -144,7 +144,7 @@ private struct MCPOutput: View {
         case .running: "Running…"
         case .failed: "Tool call failed"
         case .rejected: "Not run"
-        case .completed, .cancelled: "No output"
+        case .completed, .cancelled, .interrupted, .unreported: "No output"
         }
     }
 }

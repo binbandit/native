@@ -3,6 +3,7 @@ import Foundation
 import NativeHostClient
 import NativeHostProtocol
 import Observation
+import TaskList
 
 /// The session models open in this run, subagents included, and the routing of each agent's
 /// events to them: an in-app agent's `AgentEvent`s, or the host's events for sessions running there
@@ -10,6 +11,8 @@ import Observation
 @Observable
 final class SessionStore {
     private var sessions: [SessionKey: SessionModel] = [:]
+    /// Host activity outlives the model used to view a task's transcript.
+    let activityDates = TaskActivityDates<SessionKey>()
     /// Updates for sessions whose model doesn't exist yet. An agent can send these before it answers
     /// `session/new`.
     private var buffered: [SessionKey: [SessionUpdate]] = [:]
@@ -61,6 +64,7 @@ final class SessionStore {
 
     /// Adds a session and delivers whatever arrived for it before it existed.
     func register(_ session: SessionModel) {
+        if let summary = session.hostSummary { recordActivity(summary) }
         sessions[session.key] = session
         for update in buffered.removeValue(forKey: session.key) ?? [] {
             deliver(update, to: session)

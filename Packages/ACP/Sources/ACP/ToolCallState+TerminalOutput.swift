@@ -27,3 +27,12 @@ extension ToolCallState {
         return Int(exactly: number)
     }
 }
+
+extension ToolCallState {
+    /// A command that failed with a negative exit code never exited on its own: codex-acp 2.2.2 reports
+    /// -1 for a process a signal ended, which is what happens to a command still running when the
+    /// agent goes away (a reload replays it as failed, exit code -1; captured 2026-10-20).
+    var wasKilled: Bool {
+        status == .failed && (exitCode ?? 0) < 0
+    }
+}

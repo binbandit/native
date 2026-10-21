@@ -59,7 +59,7 @@ struct NewSessionContextBuilder {
     }
 
     private func workspace(checkout: GitRepositoryModel) -> NewSessionContext.Workspace {
-        let folder = git.model(for: session.cwd)
+        let folder = git.model(for: session.cwd, session: session.key)
         switch folder.state {
         case .loading, .failed:
             return .unknown(path: session.cwd.abbreviatedPath)
@@ -85,7 +85,7 @@ struct NewSessionContextBuilder {
                     title: model.title(for: summary),
                     agentName: summary.agent.displayName,
                     status: status(of: live),
-                    date: live?.lastActivity ?? summary.info.updatedDate,
+                    date: model.lastActivity(for: summary),
                     open: { [model] in model.selection = summary.id }
                 )
             }

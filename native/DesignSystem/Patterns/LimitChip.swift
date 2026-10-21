@@ -17,7 +17,7 @@ public struct LimitChip: View {
     }
 
     public var body: some View {
-        TimelineView(.everyMinute) { context in
+        DSMinuteTimeline { now in
             let label = HStack(spacing: DS.Space.xs) {
                 Image(
                     systemName: status.level == .reached
@@ -25,7 +25,7 @@ public struct LimitChip: View {
                 )
                 .font(.system(size: 10))
                 .foregroundStyle(tone)
-                Text(status.compactText(now: context.date))
+                Text(status.compactText(now: now))
                     .font(.dsCaption)
                     .monospacedDigit()
                     .foregroundStyle(.dsTextSecondary)
@@ -34,9 +34,9 @@ public struct LimitChip: View {
             .padding(.horizontal, DS.Space.sm)
             .frame(height: 20)
             .background(tone.opacity(0.1), in: .rect(cornerRadius: DS.Radius.control, style: .continuous))
-            .help(status.line(now: context.date))
+            .help(status.line(now: now))
             .accessibilityElement(children: .ignore)
-            .accessibilityLabel(status.line(now: context.date))
+            .accessibilityLabel(status.line(now: now))
 
             if let action {
                 Button(action: action) { label }

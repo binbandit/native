@@ -96,17 +96,25 @@ extension HostCore {
         let preamble = prompt.preamble.flatMap {
             session.mirror.state.deliveredPreamble?.id == $0.marker.id ? nil : $0
         }
-        append(
-            .prompt(
-                PromptEcho(
-                    text: prompt.text, origin: prompt.origin, requestID: prompt.origin == .recovery ? nil : prompt.id,
-                    shown: prompt.isEchoed, attachments: prompt.attachments, preamble: preamble?.marker)),
-            to: session)
+        let echo = PromptEcho(
+            text: prompt.text, origin: prompt.origin, requestID: prompt.origin == .recovery ? nil : prompt.id,
+            shown: prompt.isEchoed, attachments: prompt.attachments, preamble: preamble?.marker)
+        session.turnEcho = (echo, .now)
+        append(.prompt(echo), to: session)
         session.turnItemsStart = session.mirror.state.items.count
         titleAfterPrompt(session, prompt: prompt, kind: kind)
         publish(session)
         let blocks = (preamble.map { [$0.preamble.block] } ?? []) + (prompt.content ?? [.text(prompt.text)])
         Task { await run(turn, blocks: blocks, in: session) }
+    }
+
+    /// Shows the running turn's message again at the end of a load's replay, which started the
+    /// transcript over from the agent's history: the turn waits for the load, so the agent hasn't
+    /// seen the message yet. Inside the load, as it was sent, so clients take it for the same turn.
+    func showPendingMessage(of session: HostSession) {
+        guard session.turn != nil, let (echo, sentAt) = session.turnEcho else { return }
+        append(.prompt(echo), to: session, at: sentAt)
+        session.turnItemsStart = session.mirror.state.items.count
     }
 
     private func run(_ turn: UnfinishedTurn, blocks: [ContentBlock], in session: HostSession) async {
@@ -121,14 +129,33 @@ extension HostCore {
             let agentSessionID = session.record.agentSessionID
         else { return }
         let generation = link.generation
+        // Naming suspends this run just like the prompt does. Neither continuation owns work on
+        // a replacement connection, even when recovery reuses the same durable request id.
+        func ownsTurn() -> Bool {
+            sessions[session.id] === session && session.turn?.requestID == turn.requestID
+                && agents[session.record.agentID] === link && link.generation == generation && link.peer === peer
+        }
         do {
+            if session.stopRequestedAt != nil {
+                finish(turn, in: session, stopReason: "cancelled")
+                return
+            }
+            let namingStopReason = try await nameInAgent(session, beforeSending: turn.prompt, on: link, peer: peer)
+            guard ownsTurn() else { return }
+            if namingStopReason == "cancelled" || session.stopRequestedAt != nil {
+                finish(turn, in: session, stopReason: "cancelled")
+                return
+            }
             let response = try await peer.request(
                 "session/prompt", PromptRequest(sessionId: agentSessionID, prompt: blocks), as: RawPromptResponse.self)
+            guard ownsTurn() else { return }
             finish(turn, in: session, stopReason: response.stopReason)
         } catch PeerError.closed {
             // The agent died mid-turn; recovery takes it from here.
+            guard ownsTurn() else { return }
             agentExited(session.record.agentID, generation: generation)
         } catch {
+            guard ownsTurn() else { return }
             noteAgentError(error, from: link)
             fail(turn, in: session, error: error)
         }
@@ -156,6 +183,7 @@ extension HostCore {
         // An error isn't a stop reason; draining the queue after one could burn through all of it.
         endTurn(in: session, stopReason: "error", pauseQueue: true)
         let message: String
+        var retry: DeliveryRetry?
         if !madeProgress, turn.kind == .prompt,
             let delay = TurnRetry.delay(after: error, attempts: session.retryAttempts)
         {
@@ -165,15 +193,17 @@ extension HostCore {
             again.isEchoed = false
             try? enqueue(again, in: session, atFront: true)
             scheduleRetry(of: session, after: delay)
-            message =
-                "\(session.agentName) couldn't be reached (\(error.localizedDescription)). Native kept your message and will try again in \(delay.components.seconds) seconds. Use Stop to cancel."
+            let details = DeliveryRetry(
+                agentName: session.agentName, reason: error.localizedDescription, delay: Int(delay.components.seconds))
+            retry = details
+            message = details.waitingText
         } else {
             message = UsageLimitHit(error: error).map(\.message) ?? error.localizedDescription
             journal(.turnFailed, session: session, detail: message)
         }
         // The summary first: whoever hears of the failure can tell whether a retry is coming.
         publish(session)
-        append(.turnFailed(message: message, error: error as? RPCError), to: session)
+        append(.turnFailed(message: message, error: error as? RPCError, retry: retry), to: session)
         exitIfIdleForRestart()
     }
 

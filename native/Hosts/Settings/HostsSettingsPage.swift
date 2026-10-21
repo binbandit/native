@@ -1,4 +1,3 @@
-#if NATIVE_HOSTSUI_WIP
 import ACP
 import NativeHostClient
 import NativeHostProtocol
@@ -171,7 +170,7 @@ struct HostsSettingsContent: View {
 
     private var emptyState: some View {
         EmptyStateView(
-            "No other hosts yet", systemImage: HostSymbol.mini.systemImage,
+            "No other hosts yet", systemImage: "desktopcomputer.and.macbook",
             message:
                 "Add an always-on machine, like a Mac mini, to run tasks there. Start a task from this Mac, close the lid, and it keeps working."
         ) {
@@ -199,7 +198,7 @@ struct HostsSettingsContent: View {
             },
             setLook: { directory.setLook($0, for: host.device) },
             remove: { removing = host },
-            reconnect: { if let id = host.device.remoteHostID { directory.reconnect(id) } },
+            restartHost: host.isThisMac ? { Task { await directory.restartLocalHost() } } : nil,
             setKeepAwake: { mode in
                 do {
                     try await directory.setKeepAwake(mode, on: host.device)
@@ -307,6 +306,14 @@ struct HostsSettingsContent: View {
     }
 }
 
+#Preview("Hosts page, This Mac is unreachable") {
+    DSPreviewPair {
+        HostsSettingsContent(directory: HostsFixtureDirectory(.localOffline)) {}
+            .padding(DS.Space.xxl)
+            .frame(width: SettingsMetrics.pageMaxWidth)
+    }
+}
+
 #Preview("Sign in on a host") {
     DSPreviewPair {
         VStack(spacing: DS.Space.xl) {
@@ -319,5 +326,4 @@ struct HostsSettingsContent: View {
         }
     }
 }
-#endif
 #endif

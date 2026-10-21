@@ -23,11 +23,17 @@
 - **One process per agent, many sessions.** `AgentProcess` launches the agent with the user's
   login-shell environment. `ACPConnection` (an actor) speaks JSON-RPC and delivers events in wire
   order: when a request returns, every update sent before its response has been applied.
+  A host agent that exits during initialization stays failed, with its diagnostic output and a
+  Restart action. Only intentionally stopped or previously initialized agents return to idle;
+  a failed launch must never be presented as ready to start a task.
 - **State is a reducer.** `SessionState` folds `session/update`s and the user's actions into a
   transcript (messages, tool calls, subagents, inter-session messages, plan, usage). It's pure and
   tested against captured traffic, and it's shared with the future companion app.
 - **History lives with the agent.** Sessions are listed with `session/list` and reopened with
   `session/load`, which replays them. Native stores only its own additions (titles, order, goals).
+- **Task recency follows activity.** The host's startup snapshot and live summaries supply prompt
+  dates even for completed tasks whose transcripts aren't open. Task lists use the latest known
+  host, live-session or agent-listing date for both ages and order; opening history doesn't change it.
 - **Subagents** are child sessions: announced by agents (the ACP subagents RFD) or started by
   Native's orchestration tools on any agent. Both look and behave the same in the UI.
 
@@ -96,6 +102,11 @@ Rules:
 - Each target has tests for its logic; views get previews with fixtures.
 - Shared, app-wide behavior (shortcuts, plugins, design tokens) is defined once: `docs/keyboard.md`,
   `PluginRegistry`, `DesignSystem`.
+
+`Packages/Undo` keeps undo toasts and the window's undo stack in agreement. `RootView` supplies the
+main window's undo manager to `AppModel.undoHistory`; the Edit menu uses it even when Home has no
+text responder. Archiving registers undo before workspace work starts, and the same action handles
+the toast, Cmd-Z and Redo. Expired deletions withdraw their actions from the stack.
 
 ### Migration
 
@@ -174,6 +185,19 @@ Adding a **variant**:
 5. To promote it, make it the point's default and delete the variant; to drop it, delete its folder
    and declaration.
 
+### Quiet projects sidebar
+
+The `NativeSidebarNext` gate (Settings ▸ Labs ▸ Quiet projects) defaults to off. Its single
+read in `SidebarView` selects the quiet project presentation: monospace project headers and task
+marks only for activity, attention and unread results. The existing section, menus, selection,
+ordering, pins, archive and shortcuts are shared with today's sidebar.
+
+Each project shows its live, unread, failed, paused and limited tasks plus its three most recent
+resting tasks, in the user's order. An open or renamed task stays visible. “n more” unfolds the
+rest; filters and bulk selection expose their full scope. `TaskListFold` in `Packages/TaskList`
+chooses the resting tasks without depending on the UI. Enable it before an isolated launch with
+`defaults write dev.binbandit.native.dev.<name> experiment.NativeSidebarNext -bool YES`.
+
 ### Quiet composer
 
 `NativeComposerNext` is an off-by-default Labs gate at the composer's resting controls. Enable it
@@ -194,13 +218,19 @@ reusing the transcript's leaf views. Both get a `TranscriptStyleConfiguration`, 
 rules: which rows there are, which pending request answers the permission shortcuts, and how session
 messages name other sessions.
 
+`SessionModel` owns one `TranscriptDisclosures` (the UI-free ACP state) for its lifetime. Both styles
+receive it through the transcript environment, so switching sessions, recreating a transcript or
+opening a subagent does not discard disclosure choices. Tool rows, exploration groups and long runs
+start closed; pending approvals override the visible state without changing the saved choice.
+Scroll positions remain per window in `SessionTranscriptMemory`.
+
 ## Persistence
 
 | What | Where |
 | --- | --- |
 | Conversations | The agent's own store, via `session/list` and `session/load` |
 | Titles, preferences, disabled plugins | `UserDefaults` (typed keys next to their owner) |
-| Settings chosen per session (model, mode, effort), set back after `session/load` | `UserDefaults`, kept with the titles by `SessionTitles` |
+| Settings chosen per session (model, mode, effort), set back after `session/load` | The host's session record and closed-session choices; `SessionTitles` keeps the local fallback in `UserDefaults`. On load, saved choices win, then explicit per-agent Settings defaults, then the agent's reported values |
 | The mode each task is in (Build, Plan, Ask…) and the settings it changed | `UserDefaults` (`sessionModes`), by `TaskModes`; the user's own modes in `modes.custom`, a project's in `.native/modes/` |
 | Where each task turn began, for the changes inspector's This Turn | `UserDefaults` (`git.turnBaselines`, the newest 200), by `GitTurnBaselines`; each points at a snapshot of the working tree kept as loose git objects only (no ref or index entry), which `git gc` prunes after a couple of weeks, when This Turn falls back to HEAD as it was when the turn began and says so |
 | User plugins | `~/.native/plugins/<id>/plugin.json` |

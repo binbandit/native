@@ -17,7 +17,10 @@ struct AppTaskPullRequests {
     }
 
     func branch(of summary: SessionSummary) -> BranchReference? {
-        guard let folder = checkout(of: summary), let branch = git.model(for: folder).branch?.name else { return nil }
+        guard let folder = checkout(of: summary) else { return nil }
+        let repository = git.model(for: folder, session: summary.id)
+        // GitHub's branch references still address this Mac's checkouts only.
+        guard repository.isLocal, let branch = repository.branch?.name else { return nil }
         return BranchReference(directory: folder, branch: branch)
     }
 
@@ -28,9 +31,10 @@ struct AppTaskPullRequests {
     /// The pull request of a task by its key: the visible one, for a command.
     func pullRequest(for key: SessionKey) -> PullRequestSummary? {
         guard let found = model.catalog.lookup(key),
-            let folder = checkout(project: found.project, cwd: found.info.cwd),
-            let branch = git.model(for: folder).branch?.name
+            let folder = checkout(project: found.project, cwd: found.info.cwd)
         else { return nil }
+        let repository = git.model(for: folder, session: key)
+        guard repository.isLocal, let branch = repository.branch?.name else { return nil }
         return gitHub.pullRequest(for: BranchReference(directory: folder, branch: branch))
     }
 

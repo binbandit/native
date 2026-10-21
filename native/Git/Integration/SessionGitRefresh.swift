@@ -17,12 +17,12 @@ private struct SessionGitRefresh: ViewModifier {
     func body(content: Content) -> some View {
         content
             .onChange(of: session.phase) { old, _ in
-                if old == .prompting { store.refresh(folder: session.cwd) }
+                if old == .prompting { store.refresh(folder: session.cwd, session: session.key) }
             }
             // A mirror, not `state`: this updated with every streamed chunk and counted the whole
             // transcript each time.
             .onChange(of: session.completedWriteCount) {
-                store.refreshWhenSettled(folder: session.cwd)
+                store.refreshWhenSettled(folder: session.cwd, session: session.key)
             }
     }
 }

@@ -84,11 +84,12 @@ extension HostDoctorMac {
             return check(.unknown, "`pmset -g` didn't say when it sleeps")
         }
         let keepsAwakeForAgents = keepAwake.map { $0.isSupported && $0.policy.mode != .off } ?? false
+        let idle = minutes == 1 ? "1 minute" : "\(minutes) minutes"
         return check(
             .warning,
             keepsAwakeForAgents
-                ? "Sleeps after \(minutes) minutes idle. Native keeps it awake while agents work, but asleep it can't take new work"
-                : "Sleeps after \(minutes) minutes idle, even while agents work",
+                ? "Sleeps after \(idle) idle. Native keeps it awake while agents work, but asleep it can't take new work"
+                : "Sleeps after \(idle) idle, even while agents work",
             fix: HostDoctorFix(
                 setting: "System Settings ▸ Energy ▸ Prevent automatic sleeping when the display is off",
                 command: "sudo pmset -a sleep 0"))

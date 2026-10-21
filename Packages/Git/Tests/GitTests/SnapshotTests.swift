@@ -46,6 +46,9 @@ struct SnapshotTests {
         let refs = try await test.git("for-each-ref")
         let gitFiles = try FileManager.default.contentsOfDirectory(atPath: repository.gitDirectory.path())
 
+        // What a snapshot would store beyond the tracked changes: not the ignored file.
+        #expect(try await repository.untrackedFileCount() == 2)
+
         let snapshot = try await repository.snapshot()
 
         #expect(try await test.git("status", "--porcelain=v2", "--untracked-files=all") == status)

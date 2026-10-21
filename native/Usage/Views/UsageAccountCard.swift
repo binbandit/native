@@ -20,8 +20,8 @@ struct UsageAccountCard: View {
         Card {
             VStack(alignment: .leading, spacing: DS.Space.lg) {
                 header(status)
-                TimelineView(.everyMinute) { context in
-                    windows(status, now: context.date)
+                DSMinuteTimeline { now in
+                    windows(status, now: now)
                 }
                 recentProjects
                 tasks

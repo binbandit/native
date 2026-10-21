@@ -121,6 +121,7 @@ extension AppModel {
     /// closed. The rest open when the user selects them.
     func openWorkingHostSessions() async {
         guard let host = runtimes.host, let summaries = try? await host.sessions() else { return }
+        for summary in summaries { sessions.recordActivity(summary) }
         for summary in summaries
         where summary.origin == .user && summary.parentID == nil
             && (summary.isWorking || summary.needsApproval || !summary.queue.isEmpty)

@@ -14,6 +14,9 @@ final class HostSession {
     var mcpServers: [JSONValue]
     /// The turn running (or being recovered), as the store has it.
     var turn: UnfinishedTurn?
+    /// The running turn's message as it was shown, and when, to show again if a load starts the log
+    /// over before the message reaches the agent.
+    var turnEcho: (echo: PromptEcho, sentAt: Date)?
     /// Where the running turn's own items start in `mirror`, to tell whether it got anywhere.
     var turnItemsStart = 0
     var queue: [StoredQueueItem] = []
@@ -37,6 +40,9 @@ final class HostSession {
     var loading: Task<Void, any Error>?
     /// Config notifications during a load stay private until restoration has settled.
     var loadingConfigOptions: JSONValue?
+    /// Settings supplied by the client opening this session. Saved choices always win; after a
+    /// successful load the resolved values are durable and these fallbacks are no longer needed.
+    var loadConfigDefaults: [String: String] = [:]
     /// Set when the user cancels while recovery is under way, so it stops.
     var isRecoveryCancelled = false
     /// When stop was first asked for in the running turn; the agent has until the grace period
@@ -53,6 +59,8 @@ final class HostSession {
     var retryAttempts = 0
     /// Collecting a hidden command's reply, while one runs.
     var hiddenCommand: HiddenCommandCapture?
+    /// Identifies the automatic naming request, so its late cleanup cannot clear a newer capture.
+    var namingCommandID: UUID?
     /// The last hidden command's reply, until the next turn starts: copies of it that arrive late
     /// are dropped.
     var hiddenCommandEcho: HiddenCommandCapture?

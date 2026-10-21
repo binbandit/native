@@ -28,9 +28,8 @@ public struct FileWatchBatch: Hashable, Sendable {
 /// its own `FileWatching`.
 public struct PollingFileWatching: FileWatching {
     public var interval: Duration
-    /// A walk stops after this many entries, so a huge tree can't keep the host busy. Then any change
-    /// it sees, a folder's timestamp included, is an overflow, and changes deeper than where it
-    /// stopped go unseen.
+    /// A walk stops after this many entries, so a huge tree can't keep the host busy. Incomplete
+    /// coverage reports an overflow every poll, since changes beyond the scanned prefix are unknown.
     public var entryLimit: Int
 
     public init(interval: Duration = .seconds(2), entryLimit: Int = 200_000) {
@@ -88,11 +87,11 @@ struct FolderSnapshot {
         }
     }
 
-    /// What changed between this walk and `newer`, or nil when nothing did. A folder counts only when
-    /// it appears or goes, since its timestamp moves with every change inside it and those are listed,
-    /// unless a walk stopped short of them.
+    /// What changed between complete walks, or nil when nothing did. Incomplete coverage always
+    /// overflows. A folder's timestamp is ignored since changes to its entries are listed separately.
     func changes(to newer: FolderSnapshot) -> FileWatchBatch? {
-        let isTruncated = isTruncated || newer.isTruncated
+        // An unchanged prefix says nothing about edits to existing files beyond the scan cap.
+        if isTruncated || newer.isTruncated { return FileWatchBatch(paths: [], isOverflow: true) }
         var paths: [String] = []
         for (path, status) in newer.entries {
             guard let old = entries[path] else {
@@ -100,7 +99,7 @@ struct FolderSnapshot {
                 continue
             }
             let isSameFolder =
-                !isTruncated && old.kind == .directory && status.kind == .directory && old.inode == status.inode
+                old.kind == .directory && status.kind == .directory && old.inode == status.inode
             if !isSameFolder, old != status {
                 paths.append(path)
             }
@@ -109,8 +108,6 @@ struct FolderSnapshot {
             paths.append(path)
         }
         guard !paths.isEmpty else { return nil }
-        // Where a walk stops moves as entries come and go, so a truncated one can't say what changed.
-        if isTruncated { return FileWatchBatch(paths: [], isOverflow: true) }
         return FileWatchBatch(paths: paths.sorted())
     }
 }

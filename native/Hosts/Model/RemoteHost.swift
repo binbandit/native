@@ -117,13 +117,24 @@ final class RemoteHost: Identifiable {
     }
 
     /// Whether a session in `cwd` works in the checkout at `checkout`: in it, or in one of its task
-    /// worktrees.
+    /// worktrees. Compared as the host spells paths, never resolved on this Mac's disk (`plain`).
     func isTaskFolder(_ cwd: String, ofCheckoutAt checkout: String) -> Bool {
-        if SessionFolder.isSame(cwd, checkout) { return true }
-        return taskLocation(ofCheckoutAt: checkout).map {
-            SessionFolder.contains($0, cwd) && !SessionFolder.isSame($0, cwd)
+        let cwd = Self.plain(cwd)
+        if cwd == Self.plain(checkout) { return true }
+        guard let location = taskLocation(ofCheckoutAt: checkout).map(Self.plain) else { return false }
+        return cwd.hasPrefix(location + "/")
+    }
+
+    /// A path on the host as this Mac compares it: without a trailing slash, and without the
+    /// `/private` macOS puts before `/tmp`, `/var` and `/etc`, since a host reports either spelling.
+    nonisolated static func plain(_ path: String) -> String {
+        var path = path
+        while path.count > 1, path.hasSuffix("/") { path.removeLast() }
+        for linked in ["/tmp", "/var", "/etc"]
+        where path == "/private" + linked || path.hasPrefix("/private" + linked + "/") {
+            path.removeFirst("/private".count)
         }
-            ?? false
+        return path
     }
 
     // MARK: - Connection

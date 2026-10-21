@@ -27,7 +27,7 @@ public struct DiffStatLabel: View {
         }
         .font(.ds(10, weight: .medium, design: .mono))
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(added) lines added, \(removed) removed")
+        .accessibilityLabel(DSFormat.spokenDiffStat(added: added, removed: removed))
     }
 }
 

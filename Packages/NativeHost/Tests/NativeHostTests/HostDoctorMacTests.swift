@@ -76,6 +76,10 @@ struct HostDoctorMacTests {
         #expect(laptop["unattended.wakeForNetwork"]?.fix?.command == "sudo pmset -a womp 1")
         #expect(laptop["unattended.powerFailure"]?.fix?.command == "sudo pmset -a autorestart 1")
 
+        machine.outputs["/usr/bin/pmset -g"] = pmset(" sleep                1\n")
+        let oneMinute = await checks(machine, launch: bundle.launch())
+        #expect(oneMinute["unattended.sleep"]?.detail == "Sleeps after 1 minute idle, even while agents work")
+
         // `pmset disablesleep 1` keeps it up whatever `sleep` says, so waking for the network is moot.
         machine.outputs["/usr/bin/pmset -g"] = HostDoctorOutput(
             status: 0,

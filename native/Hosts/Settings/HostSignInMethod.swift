@@ -1,4 +1,3 @@
-#if NATIVE_HOSTSUI_WIP
 import ACP
 import Foundation
 
@@ -55,4 +54,3 @@ extension HostSignInMethod {
         }
     }
 }
-#endif

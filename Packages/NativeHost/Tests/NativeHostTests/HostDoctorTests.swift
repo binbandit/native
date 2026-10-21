@@ -123,7 +123,7 @@ struct HostDoctorTests {
         #expect(try check("agents.node", in: report).detail == "v22.11.0 at /opt/bin/node")
         let codex = try check("agents.codex", in: report)
         #expect(codex.status == .ok)
-        #expect(codex.detail == "codex at /opt/bin/codex")
+        #expect(codex.detail == "Found at /opt/bin/codex")
     }
 
     @Test("Node is required only when an agent runs through npx")

@@ -22,9 +22,6 @@ struct TranscriptView: View {
     /// has a real size.
     @State private var containerWidth: CGFloat?
     @State private var containerHeight: CGFloat?
-    /// Used outside a window that remembers transcript state, such as a standalone preview.
-    @State private var ownDisclosures = TranscriptDisclosures()
-    @Environment(\.sessionTranscriptMemory) private var transcriptMemory
     /// The code the transcript shows first has its colors (`TranscriptOpeningCode`), or it stopped
     /// waiting for them. Until then the rows wait, so the transcript appears finished.
     @State private var isOpeningCodeColored = false
@@ -102,7 +99,7 @@ struct TranscriptView: View {
     }
 
     private var disclosures: TranscriptDisclosures {
-        transcriptMemory?.disclosures(for: session) ?? ownDisclosures
+        session.transcriptDisclosures
     }
 
     /// The code on the transcript's first screen that has no colors yet. Only looked at until the

@@ -2,14 +2,14 @@ import ACP
 import SwiftUI
 
 /// The composer's bottom row: attach, model with its effort meter, autonomy and the task's mode
-/// leading; the follow-up hint (while it fits) and context usage trailing. As room runs
+/// leading; contextual editing keys (while they fit) and context usage trailing. As room runs
 /// out, labels give way to icons and controls move into a More menu (`ComposerControlDensity`).
 struct ComposerControlsRow<Extras: View, Context: View>: View {
     let settings: ComposerSettings
     let agentName: String
     /// The autonomy level shown while Plan Mode suspends it, and restored when Plan Mode ends.
     let resumedAutonomy: String?
-    /// What Return and ⌘Return do with a follow-up, shown while the agent works.
+    /// Keys for a code block or queued-message edit.
     let followUpHint: FollowUpHint?
     @Binding var isModelPickerOpen: Bool
     /// The "+" chip's file picker, which File ▸ Attach Files… opens too.
@@ -26,7 +26,7 @@ struct ComposerControlsRow<Extras: View, Context: View>: View {
 
     var body: some View {
         // The roomiest arrangement that fits. The hint goes first when room runs out, so the pills
-        // never crowd it; the placeholder still says what Return does.
+        // never crowd it.
         ViewThatFits(in: .horizontal) {
             if followUpHint != nil {
                 bar(.regular, showsHint: true)
@@ -102,13 +102,13 @@ struct ComposerControlsRow<Extras: View, Context: View>: View {
 #Preview("Controls row - Widths") {
     DSPreviewPair {
         VStack(alignment: .leading, spacing: DS.Space.xl) {
-            // Regular with the follow-up hint, then each density as room runs out.
+            // Regular with code-block keys, then each density as room runs out.
             ForEach([680, 560, 420, 300, 220], id: \.self) { width in
                 ComposerSurface {
                     ComposerControlsRowPreview(
                         settings: ComposerPreviewFixtures.settings,
                         hint: width == 680
-                            ? FollowUpHint(preferred: .steer, supportsSteering: true, agentName: "Claude Code") : nil)
+                            ? .inCodeBlock(primary: "Send", explanation: "Send the message.") : nil)
                 }
                 .frame(width: CGFloat(width))
             }

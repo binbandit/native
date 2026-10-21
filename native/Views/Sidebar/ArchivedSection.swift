@@ -98,6 +98,7 @@ private struct ArchivedProjectRow: View {
 /// An archived task: opens to read on click, with Unarchive at its trailing edge and Delete in its
 /// menus.
 private struct ArchivedTaskRow: View {
+    @Environment(\.sidebarQuietProjects) private var isQuiet
     @Environment(AppModel.self) private var model
     @Environment(\.undoManager) private var undoManager
     let summary: SessionSummary
@@ -111,8 +112,9 @@ private struct ArchivedTaskRow: View {
             title: title,
             status: .idle,
             isSelected: model.selection == summary.id,
-            date: summary.info.updatedDate,
+            date: model.lastActivity(for: summary),
             indent: .flat,
+            style: isQuiet ? .quiet : .standard,
             leading: AgentIcon(agent: summary.agent),
             accessory: IconButton("Unarchive “\(title)”", systemImage: "arrow.uturn.backward", action: unarchive),
             action: select

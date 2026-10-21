@@ -69,7 +69,7 @@ nonisolated enum HostSymbol: String, Codable, CaseIterable, Identifiable, Sendab
         }
     }
 
-    /// A symbol for a machine called `name` ("Brayden's Mac mini" draws as a Mac mini), or nil when
+    /// A symbol for a machine called `name` ("Office Mac mini" draws as a Mac mini), or nil when
     /// the name doesn't say.
     static func guess(fromMachineName name: String) -> HostSymbol? {
         let name = name.lowercased()

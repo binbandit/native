@@ -76,6 +76,10 @@ enum BuiltInPlugins {
                         install: "npm install -g @openai/codex",
                         docs: URL(string: "https://developers.openai.com/codex/cli")
                     ),
+                    // codex-acp names a new session itself after its first turn, with a model, on a
+                    // thread of its own that keeps a second set of the user's MCP servers running for
+                    // as long as the adapter does. Named first, it doesn't; `/rename` asks no model.
+                    renameCommand: "/rename",
                     // The adapter offers its device code only to clients that open links, so the
                     // host starts it that way for this sign-in (`AuthMethod.Kind.link`).
                     authMethods: [
