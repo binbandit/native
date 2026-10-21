@@ -16,7 +16,11 @@ DECLARATION = re.compile(
     re.MULTILINE,
 )
 EXTENSION = re.compile(r"^(?:(?:public|internal|private|fileprivate|nonisolated) +)*extension +(\w+)", re.MULTILINE)
-MEMBER = re.compile(r"\b(?:func|var|let|typealias) +(`?\w+`?)")
+MEMBER = re.compile(
+    r"^    (?:(?:public|internal|private|fileprivate|static|class|nonisolated|mutating) +)*"
+    r"(?:func|var|let|typealias) +(`?\w+`?)",
+    re.MULTILINE,
+)
 MISSING_NAME = re.compile(r"error: cannot find (?:type )?'([^']+)' in scope")
 MISSING_MEMBER = re.compile(r"error: .*has no (?:dynamic )?member '([^']+)'")
 
@@ -57,9 +61,13 @@ def prepare(root, destination, paths=(), diagnostics=""):
     for path, text in sources.items():
         for name in DECLARATION.findall(text):
             declarations[name.strip("`")].add(path)
-        for name in EXTENSION.findall(text):
-            extensions[name].add(path)
-            for member in MEMBER.findall(text):
+        for extension in EXTENSION.finditer(text):
+            extensions[extension[1]].add(path)
+            # The repository's formatter closes a top-level extension at column zero. Limit
+            # candidates to its direct members, not locals or other types in the same file.
+            closing = re.search(r"^}", text[extension.end():], re.MULTILINE)
+            body = text[extension.end():extension.end() + closing.end()] if closing else text[extension.end():]
+            for member in MEMBER.findall(body):
                 members[member.strip("`")].add(path)
 
     existing = {path.relative_to(destination) for path in destination.rglob("*.swift")}

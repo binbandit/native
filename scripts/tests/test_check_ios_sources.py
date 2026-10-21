@@ -61,13 +61,23 @@ class CheckIOSSourcesTests(unittest.TestCase):
 
     def test_missing_global_function_and_sdk_extension(self):
         self.write("native/Feature/Helper.swift", "func helper() {}\n")
-        self.write("native/Platform/View+Action.swift", "extension View { func actionModifier() -> some View { self } }\n")
+        self.write("native/Platform/View+Action.swift", "extension View {\n    func actionModifier() -> some View { self }\n}\n")
         added = sources.prepare(
             self.root,
             self.destination,
             diagnostics="error: cannot find 'helper' in scope\nerror: value of type 'some View' has no member 'actionModifier'",
         )
         self.assertEqual(set(added), {Path("native/Feature/Helper.swift"), Path("native/Platform/View+Action.swift")})
+
+    def test_local_variables_do_not_supply_missing_members(self):
+        self.write(
+            "native/Unrelated/Extension.swift",
+            "import AppKit\nextension String {\n    func helper() {\n        let missing = 1\n    }\n}\n"
+            "struct Unrelated {\n    var missing: Int\n}\n",
+        )
+        self.assertEqual(
+            sources.prepare(self.root, self.destination, diagnostics="error: value of type 'View' has no member 'missing'"), []
+        )
 
     def test_real_platform_error_does_not_add_unrelated_sources(self):
         self.write("native/Models/Model.swift", "class Model {}\n")
