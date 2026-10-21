@@ -10,6 +10,7 @@ extension ExperimentCatalog {
         Variant.bubbles,
         Parameter<TranscriptWidth>.transcriptWidth,
         Gate.unfoldExploration,
+        Gate.sessionTools,
         Gate.sidebarNext,
         Gate.composerNext,
     ])
@@ -85,6 +86,17 @@ extension Gate {
         site: "Transcript ▸ tool activity",
         stage: .labs,
         owner: "transcript",
+        reviewBy: ReviewDate(year: 2026, month: 12, day: 15)
+    )
+
+    static let sessionTools = Gate(
+        id: "session-tools",
+        title: "Session tools",
+        summary: "A calmer session screen: no tool buttons in the header. Changes, terminals, runs and the rest "
+            + "show as facts under the title and open beside or under the conversation when they have something.",
+        site: "Session ▸ header and tools",
+        stage: .labs,
+        owner: "session",
         reviewBy: ReviewDate(year: 2026, month: 12, day: 15)
     )
 }
