@@ -94,7 +94,7 @@ enum ShortcutReference {
                     Shortcut(
                         id: "smart-commit", title: "Commit the planned groups", note: "In Smart Commit", keys: ["⌘↵"]),
                     Shortcut(
-                        id: "setup-script", title: "Save the setup script", note: "In Settings ▸ Git", keys: ["⌘↵"]),
+                        id: "setup-script", title: "Save the setup script", note: "In Settings ▸ Scripts", keys: ["⌘↵"]),
                 ]),
             Group(
                 title: "Sidebar and palette",

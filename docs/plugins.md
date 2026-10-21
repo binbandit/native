@@ -313,8 +313,9 @@ plugin off puts the usual look back at once.
 
 A plugin can try things out before they're finished, the way Native does: it declares experiments,
 and the user turns them on in Settings ▸ Labs, where they're listed under the plugin's name with
-their stage, owner and review date. Turning the plugin off removes its experiments and everything
-they change at once; the user's choices are kept, so they come back with the plugin and survive
+their stage and what they change. Owner and review dates remain maintainer metadata.
+Turning the plugin off removes its experiments and everything they change at once; the user's choices
+are kept, so they come back with the plugin and survive
 updates. Ids are namespaced by the plugin, so `fast-review` in the `acme` plugin is
 `acme.fast-review` and never collides with Native's or another plugin's.
 

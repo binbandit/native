@@ -18,6 +18,8 @@ struct SoundsSettingsPage: View {
 
     let sounds: NotificationSounds
 
+    @Environment(PluginRegistry.self) private var plugins
+
     /// The trigger a picked file goes to, while the file picker is open.
     @State private var addingSoundFor: SoundTrigger?
 
@@ -37,7 +39,13 @@ struct SoundsSettingsPage: View {
                     id: Self.enabledRow, "Play sounds",
                     description: Text("Turn off to silence every sound Native plays.")
                 ) {
-                    SettingsSwitch("Play sounds", isOn: $preferences.isEnabled)
+                    SettingsSwitch(
+                        "Play sounds",
+                        isOn: Binding(
+                            get: { plugins.isEnabled(SoundsPlugin.id) },
+                            set: { plugins.setEnabled($0, for: SoundsPlugin.id) }
+                        )
+                    )
                 }
                 SettingsRow(id: Self.volumeRow, "Volume", description: Text("How loud Native's sounds play.")) {
                     VolumeSlider(volume: $preferences.volume) {
@@ -45,7 +53,7 @@ struct SoundsSettingsPage: View {
                     }
                     .frame(width: Self.selectWidth)
                 }
-                .disabled(!preferences.isEnabled)
+                .disabled(!plugins.isEnabled(SoundsPlugin.id))
                 SettingsRow(
                     id: Self.focusRow,
                     "Stay quiet during Focus",
@@ -61,7 +69,7 @@ struct SoundsSettingsPage: View {
                             sounds.setStaysQuietDuringFocus($0)
                         })
                 }
-                .disabled(!preferences.isEnabled)
+                .disabled(!plugins.isEnabled(SoundsPlugin.id))
                 SettingsRow(
                     id: Self.timingRow, "When to play",
                     description: Text("Stay quiet for the task you're looking at, or whenever Native is in front.")
@@ -73,9 +81,9 @@ struct SoundsSettingsPage: View {
                         width: Self.selectWidth
                     )
                 }
-                .disabled(!preferences.isEnabled)
+                .disabled(!plugins.isEnabled(SoundsPlugin.id))
                 SoundsFolderRow(sounds: sounds)
-                    .disabled(!preferences.isEnabled)
+                    .disabled(!plugins.isEnabled(SoundsPlugin.id))
             }
 
             SettingsSubheading("Play a sound when")
@@ -86,7 +94,7 @@ struct SoundsSettingsPage: View {
                     }
                 }
             }
-            .disabled(!preferences.isEnabled)
+            .disabled(!plugins.isEnabled(SoundsPlugin.id))
         }
         .fileImporter(
             isPresented: Binding {
@@ -140,3 +148,27 @@ struct SoundsSettingsPage: View {
         }
     }
 }
+
+#if DEBUG
+#Preview("Sounds settings - On") {
+    let defaults = PreviewUserDefaults()
+    let sounds = NotificationSounds(preferences: SoundPreferences(defaults: defaults))
+    DSPreviewPair {
+        SoundsSettingsPage(sounds: sounds)
+            .settingsPreviewPage()
+            .environment(PluginRegistry(builtIns: [SoundsPlugin(sounds: sounds)], defaults: defaults))
+    }
+}
+
+#Preview("Sounds settings - Off") {
+    let defaults = PreviewUserDefaults()
+    let sounds = NotificationSounds(preferences: SoundPreferences(defaults: defaults))
+    let registry = PluginRegistry(builtIns: [SoundsPlugin(sounds: sounds)], defaults: defaults)
+    let _ = registry.setEnabled(false, for: SoundsPlugin.id)
+    DSPreviewPair {
+        SoundsSettingsPage(sounds: sounds)
+            .settingsPreviewPage()
+            .environment(registry)
+    }
+}
+#endif

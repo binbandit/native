@@ -112,7 +112,7 @@ struct HostUpdateSection: View {
             .accessibilityIdentifier("updateNow")
         } else {
             Text(
-                "This iPhone can't install updates on \(host.name). Allow it on the Mac in Settings › Paired Devices, or update there."
+                "This iPhone can't install updates on \(host.name). Allow it on the Mac in Settings ▸ Paired Devices, or update there."
             )
             .font(CompanionType.caption).foregroundStyle(.dsTextSecondary)
         }

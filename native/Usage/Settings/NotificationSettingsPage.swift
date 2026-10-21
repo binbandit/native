@@ -21,7 +21,7 @@ struct NotificationSettingsPage: View {
             SettingsHeader(
                 "Notifications",
                 description: Text(
-                    "Native notifies you only when it’s worth looking: when you’re in another app or another task. Sounds follow Settings › Sounds."
+                    "Native notifies you only when it’s worth looking: when you’re in another app or another task. Sounds follow Settings ▸ Sounds."
                 ))
             SettingsRowGroup {
                 SettingsRow(

@@ -12,7 +12,7 @@ extension SettingsPane {
         title: "Labs",
         systemImage: "flask",
         group: .extensions,
-        order: 0,
+        order: 10,
         keywords: ["experiments", "experimental", "beta", "flags", "preview"],
         searchEntries: {
             ExperimentStore.shared.catalog.experiments.map { experiment in

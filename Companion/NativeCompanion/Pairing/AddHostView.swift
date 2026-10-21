@@ -56,7 +56,7 @@ struct AddHostView: View {
         List {
             Section {
                 VStack(alignment: .leading, spacing: DS.Space.md) {
-                    Text("On your Mac, open Native › Settings › Paired Devices and click Pair iPhone.")
+                    Text("On your Mac, open Native ▸ Settings ▸ Paired Devices and click Pair iPhone.")
                         .font(CompanionType.body)
                         .foregroundStyle(.dsTextPrimary)
                     if isScanning {

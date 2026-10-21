@@ -12,7 +12,7 @@ extension SettingsPane {
             title: "Sounds",
             systemImage: "speaker.wave.2",
             group: .personal,
-            order: 15,
+            order: 14,
             keywords: ["chime", "sound", "audio", "notification", "volume"],
             searchEntries: {
                 [
