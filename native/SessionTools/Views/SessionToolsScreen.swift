@@ -98,7 +98,7 @@ struct SessionToolsScreen: View {
             tools.makeRoomForSidePanel = { $0() }
             inspectorRoom.release()
         }
-        .onAppear {
+        .onAppear { [tools] in
             let availableWidth = $width
             let subagent = $openSubagent
             tools.makeRoomForSidePanel = { [inspectorRoom, weak tools] show in
