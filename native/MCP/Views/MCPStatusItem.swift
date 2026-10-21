@@ -45,7 +45,7 @@ private struct MCPStatusSegment: View {
             let count = library.servers.count { library.mode(of: $0.transport.endpoint.key, in: nil) == .on }
             StatusBarSegment(
                 help:
-                    "\(count) MCP \(count == 1 ? "server" : "servers") set up in Native. Open a session to see what it loads.",
+                    "\(count) MCP \(count == 1 ? "server" : "servers") set up in Native. Open a task to see what it loads.",
                 accessibilityLabel: "MCP servers",
                 accessibilityValue: "\(count) set up in Native"
             ) {
@@ -59,7 +59,7 @@ private struct MCPStatusSegment: View {
                         count == 0 ? "No servers set up in Native" : "\(count) set up in Native",
                         systemImage: "server.rack",
                         message:
-                            "Open a session to see every server it has, including the ones its agent loads on its own."
+                            "Open a task to see every server it has, including the ones its agent loads on its own."
                     ) {
                         if let onManage {
                             Button("Manage MCP Servers…", action: onManage)

@@ -46,7 +46,7 @@ struct WorkflowRunScreen<Transcript: View>: View {
         } else {
             EmptyStateView(
                 "This Run Is Gone", systemImage: "point.3.connected.trianglepath.dotted",
-                message: "Workflow runs last until Native quits. Their steps' sessions stay with their agents.")
+                message: "Workflow runs last until Native quits. Their steps' tasks stay with their agents.")
         }
     }
 

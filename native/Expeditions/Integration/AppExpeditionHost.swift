@@ -133,7 +133,7 @@ enum ExpeditionHostError: LocalizedError {
         switch self {
         case .appUnavailable: "Native isn't ready to run expeditions yet."
         case .sessionClosed:
-            "The crew member's session is gone, and Native has no record of it to reopen. Retry starts a fresh one."
+            "The crew member's task is gone, and Native has no record of it to reopen. Retry starts a fresh one."
         case .gitUnavailable:
             "Native couldn't reach the Git feature to make the crew's worktree. Run in the project folder instead."
         case .pullRequestsUnavailable:

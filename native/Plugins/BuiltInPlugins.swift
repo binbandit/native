@@ -102,7 +102,7 @@ struct OnDeviceTitlesPlugin: NativePlugin {
     let manifest = PluginManifest(
         id: "on-device-titles",
         name: "On-Device Titles",
-        description: "Names sessions from your first prompt using Apple Intelligence on this Mac."
+        description: "Names tasks from your first prompt using Apple Intelligence on this Mac."
     )
 
     var titler: (any SessionTitler)? { OnDeviceTitler() }

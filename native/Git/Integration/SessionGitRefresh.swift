@@ -1,4 +1,5 @@
 import ACP
+import Git
 import SwiftUI
 
 extension View {
@@ -8,6 +9,26 @@ extension View {
     func refreshesGitStatus(of session: SessionModel, in store: GitStore) -> some View {
         modifier(SessionGitRefresh(session: session, store: store))
     }
+
+    /// Works out what the latest turn changed as git sees it whenever a turn ends and when the task
+    /// opens (`GitChangesReview.detectLatestTurnChanges`), for the files-changed card.
+    func detectsTurnChanges(of session: SessionModel, into review: GitChangesReview, in store: GitStore) -> some View {
+        // Resolve through the session's host, as the inspector does, never by the local path alone.
+        let repository = store.model(for: session.cwd, session: session.key).repository
+        let request = GitTurnDetectionRequest(
+            phase: session.phase, isRestoringHistory: session.isRestoringHistory, repository: repository,
+            baseline: store.turnBaselines.latestBaseline(of: session.key))
+        return task(id: request) {
+            await review.detectLatestTurnChanges(of: session, in: repository, baselines: store.turnBaselines)
+        }
+    }
+}
+
+private struct GitTurnDetectionRequest: Equatable {
+    let phase: SessionModel.Phase
+    let isRestoringHistory: Bool
+    let repository: Repository?
+    let baseline: GitTurnBaseline?
 }
 
 private struct SessionGitRefresh: ViewModifier {

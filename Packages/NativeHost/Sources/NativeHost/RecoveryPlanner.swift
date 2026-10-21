@@ -1,3 +1,4 @@
+import ACP
 import Foundation
 import NativeHostProtocol
 
@@ -62,22 +63,17 @@ enum RecoveryPlanner {
         }
     }
 
-    /// The message that tells an agent its turn was cut off. It reads as Native's, not the user's,
-    /// and asks the agent to verify state rather than assume its last step completed.
+    /// The message that tells an agent its turn was cut off (`RecoveryPrompt`, which the transcript
+    /// recognizes when the agent replays it).
     static func interruptionPrompt(cause: RecoveryNote.Cause) -> String {
-        let reason =
+        let reason: RecoveryPrompt.Reason =
             switch cause {
-            case .agentStopped, .unknown: "your process stopped unexpectedly"
-            case .agentRestarted: "the user restarted you"
-            case .hostStopped: "Native's background process stopped unexpectedly"
-            case .hostUpdated: "Native's background process restarted to update"
-            case .systemRestarted: "the computer restarted"
+            case .agentStopped, .unknown: .agentStopped
+            case .agentRestarted: .agentRestarted
+            case .hostStopped: .hostStopped
+            case .hostUpdated: .hostUpdated
+            case .systemRestarted: .systemRestarted
             }
-        return """
-            [Native] Your previous turn was interrupted because \(reason). Whatever you were in the middle of \
-            may not have finished, and the result of your last tool call may be missing. Check the current \
-            state before you continue (for example, re-read files you were changing), then carry on with \
-            the task. If it was already done, say so briefly.
-            """
+        return RecoveryPrompt(reason: reason).text
     }
 }

@@ -25,15 +25,15 @@ import Testing
     }
 
     @Test func lettersInOrderStillMatch() throws {
-        let match = try #require(FuzzyMatch("nwse", title: "New Session"))
+        let match = try #require(FuzzyMatch("nwta", title: "New Task"))
         #expect(match.score > 0 && match.score < 35)
         #expect(match.highlights == [0..<1, 2..<3, 4..<6])
-        #expect(FuzzyMatch("xyz", title: "New Session") == nil)
+        #expect(FuzzyMatch("xyz", title: "New Task") == nil)
     }
 
     @Test func highlightsTheMatchedLetters() {
-        #expect(FuzzyMatch("sess", title: "New Session")?.highlights == [4..<8])
-        #expect(FuzzyMatch("ns", title: "New Session")?.highlights == [0..<1, 4..<5])
+        #expect(FuzzyMatch("task", title: "New Task")?.highlights == [4..<8])
+        #expect(FuzzyMatch("nt", title: "New Task")?.highlights == [0..<1, 4..<5])
     }
 
     @Test func emptyQueryMatchesEverything() {
@@ -42,6 +42,6 @@ import Testing
     }
 
     @Test func caseDoesNotMatter() {
-        #expect(score("NEW", "new session") == score("new", "New Session"))
+        #expect(score("NEW", "new task") == score("new", "New Task"))
     }
 }

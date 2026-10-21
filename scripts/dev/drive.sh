@@ -3,7 +3,7 @@
 # checking changes in the running app. The guide is docs/playtesting.md; `drive.sh <name> help` lists
 # the commands.
 #
-#   scripts/dev/drive.sh <name> <command> [arguments…]     e.g. drive.sh playtest press "New Session"
+#   scripts/dev/drive.sh <name> <command> [arguments…]     e.g. drive.sh playtest press "New Task"
 #   scripts/dev/drive.sh <name> seed [<folder>…]          set up projects to play with (instance quit)
 #   scripts/dev/drive.sh <name> seed --remove             delete them
 #

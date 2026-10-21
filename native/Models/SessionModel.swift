@@ -278,7 +278,7 @@ final class SessionModel {
         if origin == .announced {
             return parent?.state.subagents.first { $0.id == id }?.title ?? state.title ?? "Subagent"
         }
-        return services.titles.title(for: titleKey, agentTitle: title) ?? (origin == .task ? "Task" : "New Session")
+        return services.titles.title(for: titleKey, agentTitle: title) ?? (origin == .task ? "Task" : "New Task")
     }
 
     /// This session as plugins see it.
@@ -477,7 +477,7 @@ final class SessionModel {
     func failLoading(_ error: any Error) {
         hasLoadedHistory = true
         state.appendNotice(
-            "Couldn't load this session: \(error.localizedDescription.withoutTerminalEscapes)", isError: true)
+            "Couldn't load this task: \(error.localizedDescription.withoutTerminalEscapes)", isError: true)
         phase = .idle
     }
 

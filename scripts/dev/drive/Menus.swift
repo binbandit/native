@@ -5,7 +5,7 @@ import Foundation
 struct Menus {
     let app: AXUIElement
 
-    /// The item at `path` (`["File", "New Session"]`, or deeper for submenus), matched ignoring case
+    /// The item at `path` (`["File", "New Task"]`, or deeper for submenus), matched ignoring case
     /// and a trailing ellipsis.
     func item(_ path: [String]) throws(DriveError) -> AXUIElement {
         var menu = try bar()

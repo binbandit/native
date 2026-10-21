@@ -10,15 +10,15 @@ struct NewSessionItem: View {
 
     var body: some View {
         SidebarNavItem(
-            "New Session", systemImage: "plus",
+            "New Task", systemImage: "plus",
             shortcut: CommandRegistry.shared.shortcut(for: .sessionNew)?.displayString
         ) {
             Task { await model.newSession() }
         } accessory: {
-            SidebarRowMenu(label: "New Session With") {
+            SidebarRowMenu(label: "New Task With") {
                 // Menus only show item icons when the content asks for them.
                 Group {
-                    Section("New Session With") {
+                    Section("New Task With") {
                         ForEach(model.agents, id: \.agent.id) { runtime in
                             Button {
                                 Task { await model.newSession(with: runtime.agent.id) }
@@ -48,7 +48,7 @@ struct NewSessionItem: View {
 }
 
 #if DEBUG
-#Preview("New session item") {
+#Preview("New task item") {
     DSPreviewPair {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
             NewSessionItem()

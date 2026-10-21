@@ -510,8 +510,11 @@ so a burst of merges publishes the newest revision. Comparing against the last s
 keeps pending mobile changes even if a Mac-only commit replaces their original run.
 The job archives Release for a real iOS device, exports a signed IPA, checks warnings, and uploads
 through Apple's pinned TestFlight action. Build logs and dSYMs are retained for seven days.
-Signing uses a temporary keychain and removes its credentials and installed profile even after
-failure. It restores any pre-existing keychain search list and provisioning profile.
+Manual signing is scoped to the companion app target through `NATIVE_COMPANION_CODE_SIGN_STYLE`,
+`NATIVE_COMPANION_CODE_SIGN_IDENTITY` and `NATIVE_COMPANION_PROVISIONING_PROFILE`. Passing a profile
+as a global build setting would incorrectly provision Swift package resource bundles. Local Release
+builds keep automatic signing. Signing uses a temporary keychain and removes its credentials and
+installed profile even after failure. It restores any pre-existing keychain search list and provisioning profile.
 
 Rehearse on any branch without uploading:
 

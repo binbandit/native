@@ -32,7 +32,7 @@ Each manifest plugin is a folder holding a `plugin.json`:
 Name the folder after the plugin's `id`. Native reads the folder at launch, and again when the user
 clicks **Reload** in Settings ▸ Extensions. Folders are read in alphabetical order, after the
 built-in plugins, so a plugin can't take over a built-in plugin's id. The user can turn any plugin
-off in Settings ▸ Extensions. Changes apply to sessions started afterwards; agents start or stop right
+off in Settings ▸ Extensions. Changes apply to tasks started afterwards; agents start or stop right
 away.
 
 A plugin that fails to load is skipped and listed in Settings ▸ Extensions with the reason, such as

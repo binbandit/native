@@ -43,7 +43,7 @@ struct SubagentInspector: View {
                     Task { await child.cancel() }
                 }
                 .dsGlassButtonStyle()
-                .help("Stop this subagent without stopping the main session")
+                .help("Stop this subagent without stopping the main task")
             }
         }
         .padding(16)

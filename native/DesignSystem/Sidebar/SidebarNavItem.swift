@@ -138,7 +138,7 @@ public struct SidebarRowMenu<Content: View>: View {
 #Preview("Sidebar navigation") {
     DSPreviewPair {
         VStack(spacing: 0) {
-            SidebarNavItem("New Session", systemImage: "plus", shortcut: "⌘N") {
+            SidebarNavItem("New Task", systemImage: "plus", shortcut: "⌘N") {
             } accessory: {
                 SidebarRowMenu(label: "Choose an Agent") {
                     Button("Claude Code") {}

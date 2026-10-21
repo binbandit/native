@@ -185,7 +185,7 @@ extension HostCore {
             if !wasRecovering {
                 session.phase = .disconnected
                 append(
-                    .notice(text: "Couldn't load this session: \(error.localizedDescription)", isError: true),
+                    .notice(text: "Couldn't load this task: \(error.localizedDescription)", isError: true),
                     to: session)
             }
             session.problem = error.localizedDescription
@@ -285,13 +285,13 @@ extension HostCore {
                 else { continue }
                 let currentName = values.first { $0.value == current }?.name ?? current
                 notes.append(
-                    "\(session.agentName) didn't take back \(choice.valueName) for \(option.name), so this session uses \(currentName)."
+                    "\(session.agentName) didn't take back \(choice.valueName) for \(option.name), so this task uses \(currentName)."
                 )
                 retryCount += 1
             case .unavailable(let choice, let kept)?:
                 notes.append(
                     "\(session.agentName) no longer offers \(choice.valueName) for \(choice.optionName)."
-                        + (kept.map { " This session uses \($0)." } ?? ""))
+                        + (kept.map { " This task uses \($0)." } ?? ""))
             default: break
             }
         }
@@ -305,7 +305,7 @@ extension HostCore {
         if retryCount > 0 {
             notes.append(retryCount == 1 ? "Choose it again to retry." : "Choose them again to retry.")
         } else {
-            notes.append("Review this session's settings to choose another value.")
+            notes.append("Review this task's settings to choose another value.")
         }
         append(.notice(text: notes.joined(separator: " "), isError: false), to: session)
     }

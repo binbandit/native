@@ -1,9 +1,8 @@
 import Git
 import SwiftUI
 
-/// The files a turn or a branch changed. For a turn, the files its agent edited come first, then
-/// anything else that changed meanwhile (commands, other work in the same folder), each under a
-/// header once there are both; edits since undone are noted at the end.
+/// The files a turn or a branch changed. A turn's card lists its files first, then anything else
+/// that changed meanwhile, each under a header once there are both; undone changes are noted below.
 struct GitRangeChangeList: View {
     let model: GitRangeModel
     let comparison: GitRangeComparison
@@ -65,7 +64,7 @@ struct GitRangeChangeList: View {
         if undone.count == 1 {
             return "\(URL(filePath: first).lastPathComponent) is back to how it was when the turn began."
         }
-        return "\(undone.count) files the agent edited are back to how they were when the turn began."
+        return "\(undone.count) files are back to how they were when the turn began."
     }
 }
 
@@ -96,3 +95,13 @@ private struct GitRangeSectionHeader: View {
         .accessibilityAddTraits(.isHeader)
     }
 }
+
+#if DEBUG
+#Preview("Turn changes - File list") {
+    let comparison = GitPreviewFixtures.turnComparison(.turnSnapshot)
+    return DSPreviewPair {
+        GitRangeChangeList(model: GitRangeModel(fixed: comparison), comparison: comparison, root: nil)
+            .frame(width: GitMetrics.inspectorIdealWidth, height: 240)
+    }
+}
+#endif
