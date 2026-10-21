@@ -88,7 +88,7 @@ nonisolated enum AddHostFailure: Hashable, Sendable {
     /// from running pair again when the user pasted the link.
     func suggestion(overSSH: Bool) -> String {
         let newLink = overSSH ? "Try again for a new one." : "Run pair on that Mac again and paste its new link."
-        switch self {
+        return switch self {
         case .notALinkOrDestination:
             "Enter an SSH destination like me@mac-mini.local, or paste the link that “Native Host” pair printed."
         case .newerLink: "Update Native on this Mac, then paste the link again."
