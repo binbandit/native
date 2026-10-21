@@ -1,6 +1,7 @@
 import ACP
 import Foundation
 import Observation
+import Undo
 import os
 
 /// The app's state, composed of focused parts: the agents plugins provide (`AgentRuntimes`), the
@@ -27,8 +28,12 @@ final class AppModel {
     /// Makes and removes the folders tasks run in (worktrees). Set by the app from the Git feature;
     /// without it tasks run in the project folder.
     weak var taskWorkspaces: (any TaskWorkspaceProvider)?
-    /// The latest action the user can take back, for the window's undo toast.
+    /// The latest action offered on the window's undo toast (`offeredUndo`), which ⌘Z can take
+    /// back too.
     var lastUndoable: UndoableAction?
+    let undoHistory = UndoHistory()
+    /// The window supplies its filter and sort as a live query, so Redo uses the current sidebar too.
+    @ObservationIgnored weak var archiveNavigationOrder: (any ArchiveNavigationOrdering)?
     /// Features that keep sessions out of the sidebar claim them here (a pull request's private
     /// questions), so a session search found opens their way instead of as a task under a project.
     /// Each gets the session and its folder, and returns whether it opened the session.

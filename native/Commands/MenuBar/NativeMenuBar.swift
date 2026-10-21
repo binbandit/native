@@ -1,5 +1,6 @@
 import NativeCommands
 import SwiftUI
+import Undo
 
 /// The menu bar. Its menus place commands; what each does, when it's available and its shortcut
 /// come from the registry (docs/commands.md). Default shortcuts are in docs/keyboard.md; change them
@@ -18,7 +19,8 @@ struct NativeMenuBar: Commands {
     @FocusedCommandContext private var context
 
     var body: some Commands {
-        let menu = CommandMenuContext(registry: registry, context: context)
+        let menu = CommandMenuContext(registry: registry, context: windowContext)
+        WindowUndoCommands(history: model.undoHistory)
         #if os(macOS)
         UpdateCommands(menu: menu)
         HostQuitCommands(host: host, menu: menu)
@@ -37,6 +39,12 @@ struct NativeMenuBar: Commands {
         TerminalCommands(menu: menu)
         KeepAwakeCommands(controller: keepAwake, menu: menu)
         StatusBarCommands(registry: statusBar, menu: menu)
+    }
+
+    private var windowContext: CommandContext {
+        var context = context
+        context.windowUndoManager = model.undoHistory.manager
+        return context
     }
 }
 
