@@ -76,8 +76,13 @@ struct ToolActivityGroupView: View {
         TranscriptRow.exploration(calls).id
     }
 
+    private var hasPendingApproval: Bool {
+        calls.contains { $0.permission != nil }
+    }
+
     private var isExpanded: Bool {
-        disclosures?.isOpen(id) ?? isOpenHere
+        disclosures?.isOpen(id, hasPendingApproval: hasPendingApproval)
+            ?? (hasPendingApproval || isOpenHere)
     }
 
     private var isRunning: Bool {
@@ -98,6 +103,7 @@ struct ToolActivityGroupView: View {
                 summary
             }
             .buttonStyle(.plain)
+            .disabled(hasPendingApproval)
             .trackHover($isHovering)
 
             if isExpanded {
@@ -148,12 +154,33 @@ private extension ToolCallState {
 }
 
 #if DEBUG
-#Preview("Exploration group") {
+#Preview("Exploration group - Closed") {
     let calls = TranscriptFixtures.toolCalls.filter { ["Read", "Grep", "Glob"].contains($0.name) }
-    VStack(alignment: .leading) {
+    DSPreviewPair {
         ToolActivityGroupView(calls: calls) { _ in }
+            .padding(DS.Space.lg)
+            .frame(width: 560)
     }
-    .padding(20)
-    .frame(width: 640, alignment: .leading)
+}
+
+#Preview("Exploration group - Opened") {
+    let calls = TranscriptFixtures.toolCalls.filter { ["Read", "Grep", "Glob"].contains($0.name) }
+    let disclosures = TranscriptDisclosures()
+    disclosures.toggle(TranscriptRow.exploration(calls).id)
+    return DSPreviewPair {
+        ToolActivityGroupView(calls: calls) { _ in }
+            .environment(disclosures)
+            .padding(DS.Space.lg)
+            .frame(width: 560)
+    }
+}
+
+#Preview("Exploration group - Closed with pending approval") {
+    let calls = TranscriptFixtures.toolCalls.filter { $0.permission != nil }
+    DSPreviewPair {
+        ToolActivityGroupView(calls: calls) { _ in }
+            .padding(DS.Space.lg)
+            .frame(width: 560)
+    }
 }
 #endif

@@ -159,6 +159,9 @@ extension HostCore {
             guard generation == link.generation else { throw PeerError.closed }
             // Inside the load, so clients get where the settings end up rather than the agent's defaults.
             try await restoreConfigChoices(of: session, on: link, reported: response.configOptions)
+            if !wasRecovering {
+                showPendingMessage(of: session)
+            }
             append(.loaded, to: session)
             tasks.sessionLoaded(session)
             session.needsLoad = false
@@ -174,6 +177,9 @@ extension HostCore {
             }
         } catch {
             if replaying {
+                if !wasRecovering {
+                    showPendingMessage(of: session)
+                }
                 append(.loaded, to: session)
             }
             if !wasRecovering {

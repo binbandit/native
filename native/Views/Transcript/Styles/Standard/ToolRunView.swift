@@ -5,12 +5,14 @@ import SwiftUI
 /// header that counts it ("37 tool calls · 2 running · 1 failed") with a glyph per kind, over a
 /// short list that scrolls. While the run grows the list follows the newest call, unless the user
 /// scrolled it back, as a terminal does. Its rows are the usual closed tool rows and open one by
-/// one inside it; the header closes the whole list.
+/// one inside it; the header opens or closes the list, which starts closed.
 struct ToolRunView: View, Equatable {
     let run: TranscriptActivityRun
     let session: SessionModel
 
     @Environment(TranscriptDisclosures.self) private var disclosures: TranscriptDisclosures?
+    /// Standalone rows have the same default and toggling behavior as a session transcript.
+    @State private var isOpenHere = false
     @State private var isHovering = false
     /// Whether the list shows its end, so new calls should scroll into view.
     @State private var isFollowing = true
@@ -23,19 +25,31 @@ struct ToolRunView: View, Equatable {
         lhs.run == rhs.run
     }
 
+    private var hasPendingApproval: Bool {
+        run.calls.contains { $0.permission != nil }
+    }
+
     private var isOpen: Bool {
-        disclosures?.isRunOpen(run.id) ?? true
+        disclosures?.isRunOpen(run.id, hasPendingApproval: hasPendingApproval)
+            ?? (hasPendingApproval || isOpenHere)
     }
 
     var body: some View {
         let calls = run.calls
         VStack(alignment: .leading, spacing: DS.Space.xs) {
             Button {
-                withAnimation(.reveal) { disclosures?.toggleRun(run.id) }
+                withAnimation(.reveal) {
+                    if let disclosures {
+                        disclosures.toggleRun(run.id)
+                    } else {
+                        isOpenHere.toggle()
+                    }
+                }
             } label: {
                 ToolRunHeader(calls: calls, isOpen: isOpen, isHovering: isHovering)
             }
             .buttonStyle(.plain)
+            .disabled(hasPendingApproval)
             .trackHover($isHovering)
             .accessibilityValue(isOpen ? "expanded" : "collapsed")
             .accessibilityHint(isOpen ? "Hides the tool calls" : "Shows the tool calls")
@@ -182,3 +196,38 @@ private struct ToolRunHeader: View {
         .foregroundStyle(.dsTextTertiary)
     }
 }
+
+#if DEBUG
+private struct ToolRunPreview: View {
+    private let app: AppModel
+    private let fixture: (session: SessionModel, run: TranscriptActivityRun)?
+
+    init(state: ToolRunPreviewFixtures.State) {
+        let app = AppModel.preview(.empty)
+        self.app = app
+        fixture = ToolRunPreviewFixtures.make(in: app, state: state)
+    }
+
+    var body: some View {
+        if let fixture {
+            ToolRunView(run: fixture.run, session: fixture.session)
+                .environment(fixture.session.transcriptDisclosures)
+                .environment(app)
+                .padding(DS.Space.lg)
+                .frame(width: 560)
+        }
+    }
+}
+
+#Preview("Tool run - Closed") {
+    DSPreviewPair { ToolRunPreview(state: .closed) }
+}
+
+#Preview("Tool run - Closed with pending approval") {
+    DSPreviewPair { ToolRunPreview(state: .awaitingApproval) }
+}
+
+#Preview("Tool run - Opened") {
+    DSPreviewPair { ToolRunPreview(state: .opened) }
+}
+#endif

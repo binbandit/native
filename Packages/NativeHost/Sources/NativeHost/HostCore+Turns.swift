@@ -96,17 +96,25 @@ extension HostCore {
         let preamble = prompt.preamble.flatMap {
             session.mirror.state.deliveredPreamble?.id == $0.marker.id ? nil : $0
         }
-        append(
-            .prompt(
-                PromptEcho(
-                    text: prompt.text, origin: prompt.origin, requestID: prompt.origin == .recovery ? nil : prompt.id,
-                    shown: prompt.isEchoed, attachments: prompt.attachments, preamble: preamble?.marker)),
-            to: session)
+        let echo = PromptEcho(
+            text: prompt.text, origin: prompt.origin, requestID: prompt.origin == .recovery ? nil : prompt.id,
+            shown: prompt.isEchoed, attachments: prompt.attachments, preamble: preamble?.marker)
+        session.turnEcho = (echo, .now)
+        append(.prompt(echo), to: session)
         session.turnItemsStart = session.mirror.state.items.count
         titleAfterPrompt(session, prompt: prompt, kind: kind)
         publish(session)
         let blocks = (preamble.map { [$0.preamble.block] } ?? []) + (prompt.content ?? [.text(prompt.text)])
         Task { await run(turn, blocks: blocks, in: session) }
+    }
+
+    /// Shows the running turn's message again at the end of a load's replay, which started the
+    /// transcript over from the agent's history: the turn waits for the load, so the agent hasn't
+    /// seen the message yet. Inside the load, as it was sent, so clients take it for the same turn.
+    func showPendingMessage(of session: HostSession) {
+        guard session.turn != nil, let (echo, sentAt) = session.turnEcho else { return }
+        append(.prompt(echo), to: session, at: sentAt)
+        session.turnItemsStart = session.mirror.state.items.count
     }
 
     private func run(_ turn: UnfinishedTurn, blocks: [ContentBlock], in session: HostSession) async {

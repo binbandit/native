@@ -218,6 +218,12 @@ reusing the transcript's leaf views. Both get a `TranscriptStyleConfiguration`, 
 rules: which rows there are, which pending request answers the permission shortcuts, and how session
 messages name other sessions.
 
+`SessionModel` owns one `TranscriptDisclosures` (the UI-free ACP state) for its lifetime. Both styles
+receive it through the transcript environment, so switching sessions, recreating a transcript or
+opening a subagent does not discard disclosure choices. Tool rows, exploration groups and long runs
+start closed; pending approvals override the visible state without changing the saved choice.
+Scroll positions remain per window in `SessionTranscriptMemory`.
+
 ## Persistence
 
 | What | Where |

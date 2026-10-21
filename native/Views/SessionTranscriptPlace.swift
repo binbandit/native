@@ -15,15 +15,14 @@ nonisolated struct SessionTranscriptPlace: Equatable {
     let anchor: UnitPoint
 }
 
-/// What the user left in each session's transcript, for the window: where it was scrolled, and the
-/// rows and turns they opened. Entries do not retain sessions or view graphs. Dead entries are
+/// Where the user left each session's transcript scrolled, for the window.
+/// Entries do not retain sessions or view graphs. Dead entries are
 /// pruned when another session is visited; a replacement model starts with a fresh entry.
 @MainActor
 final class SessionTranscriptMemory {
     private final class Entry {
         weak var session: SessionModel?
         var place: SessionTranscriptPlace?
-        let disclosures = TranscriptDisclosures()
 
         init(session: SessionModel) {
             self.session = session
@@ -40,11 +39,6 @@ final class SessionTranscriptMemory {
     /// opens anyway, new output included.
     func remember(_ place: SessionTranscriptPlace?, for session: SessionModel) {
         makeEntry(for: session).place = place
-    }
-
-    /// The rows and turns the user opened in `session`'s transcript, kept across visits.
-    func disclosures(for session: SessionModel) -> TranscriptDisclosures {
-        makeEntry(for: session).disclosures
     }
 
     private func entry(for session: SessionModel) -> Entry? {
