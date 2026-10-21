@@ -22,6 +22,9 @@ public enum PolicyLoader {
                 PolicyParse.requiredServers) ?? []
         policy.allowedPlugins = resolver.resolve(
             .pluginsAllowed, expecting: "an array of plugin ids", PolicyParse.stringSet)
+        policy.catalog.isEnabled = resolver.resolve(.catalogEnabled, expecting: "a Boolean", PolicyParse.bool) ?? true
+        policy.catalog.indexURL = resolver.resolve(
+            .catalogIndexURL, expecting: "an http or https URL", PolicyParse.webURL)
         policy.blockedSkills =
             resolver.resolve(.skillsBlocked, expecting: "an array of skill names", PolicyParse.strings) ?? []
         policy.forbiddenPermissionModes =
