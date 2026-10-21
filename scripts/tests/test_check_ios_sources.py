@@ -109,7 +109,7 @@ class CheckIOSIntegrationTests(unittest.TestCase):
         scripts.mkdir()
         for name in ["check-ios.sh", "check-ios-sources.py"]:
             shutil.copy2(Path(__file__).parents[1] / name, scripts / name)
-        self.write("native/DesignSystem/Token.swift", "enum Token {}\n")
+        self.write("native/DesignSystem/Token+Values.swift", "enum Token {}\n")
         self.write("native/Views/Screen.swift", "struct Screen { let model: Model; func read() -> Int { model.value() } }\n")
         self.write("native/Models/Model.swift", "#if os(macOS)\nimport HostOnly\n#else\nimport LocalSupport\n#endif\nstruct Model { let data: Payload }\n")
         self.write("native/Feature/Model+Value.swift", "import LocalSupport\nextension Model { func value() -> Int { data.number } }\n")
@@ -121,7 +121,11 @@ class CheckIOSIntegrationTests(unittest.TestCase):
         )
         self.write("Packages/LocalSupport/Tests/LocalSupportTests/Fixtures/data.json", "{}\n")
         self.write("Packages/LocalSupport/Sources/LocalSupport/Payload.swift", "public struct Payload { public let number: Int }\n")
-        self.write("Packages/HostOnly/Package.swift", "// swift-tools-version: 6.2\n")
+        self.write(
+            "Packages/HostOnly/Package.swift",
+            '// swift-tools-version: 6.2\nimport PackageDescription\n'
+            'let package = Package(name: "HostOnly", platforms: [.macOS(.v15)], targets: [.target(name: "HostOnly")])\n',
+        )
         self.write("Packages/HostOnly/Sources/HostOnly/Host.swift", "import AppKit\n")
         self.write("native/Unrelated/MacOnly.swift", "import AppKit\nstruct MacOnly {}\n")
         command = ["bash", "check-ios.sh", "native/Views", "native/Views/Screen.swift"]
@@ -130,6 +134,17 @@ class CheckIOSIntegrationTests(unittest.TestCase):
         self.assertIn("iOS check passed", result.stdout)
         self.assertIn("Including", result.stderr)
 
+        self.write(
+            "native/Views/Screen.swift",
+            "#if canImport(LocalSupport)\nimport LocalSupport\nstruct Screen { let broken: NotARealType }\n#endif\n"
+            '#if canImport(AppKit) || canImport(HostOnly)\n#error("macOS branch must remain inactive")\n#endif\n',
+        )
+        result = subprocess.run(command, cwd=scripts, text=True, capture_output=True)
+        self.assertNotEqual(result.returncode, 0, "local package availability must not skip the consumer")
+        self.assertIn("cannot find type 'NotARealType' in scope", result.stdout)
+        self.assertNotIn("macOS branch must remain inactive", result.stdout)
+
+        self.write("native/Views/Screen.swift", "struct Screen { let model: Model }\n")
         self.write("native/Models/Model.swift", "import AppKit\nstruct Model {}\n")
         result = subprocess.run(command, cwd=scripts, text=True, capture_output=True)
         self.assertNotEqual(result.returncode, 0)

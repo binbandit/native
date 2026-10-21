@@ -69,12 +69,50 @@ swift_files() {
     while IFS= read -r -d '' file; do files+=("$file"); done < <(find "$1" -name "*.swift" -print0)
 }
 
+package_manifest() {
+    local manifest="$work/$(basename "$1").json"
+    if [ ! -e "$manifest" ]; then
+        swift package --package-path "$1" dump-package >"$manifest" || return
+    fi
+    echo "$manifest"
+}
+
 imported_modules() {
+    local module dir manifest candidates availability=()
     swift_files "$1"
     [ ${#files[@]} -gt 0 ] || return 0
-    # Let Swift evaluate platform guards and import modifiers before choosing package targets.
-    xcrun --sdk iphonesimulator swiftc -frontend -emit-imported-modules "${flags[@]}" \
-        ${files[@]+"${files[@]}"} | sort -u
+    # A fresh module directory must not turn an intended local dependency's canImport guard off.
+    # Bootstrap iOS library targets named by those guards; SDK and Mac-only modules stay real.
+    candidates=$(python3 - ${files[@]+"${files[@]}"} <<'PY'
+import re, sys
+names = set()
+for path in sys.argv[1:]:
+    for line in open(path):
+        if line.lstrip().startswith(("#if ", "#elseif ")):
+            names.update(re.findall(r"\bcanImport\s*\(\s*(\w+)", line))
+print("\n".join(sorted(names)))
+PY
+    )
+    for module in $candidates; do
+        dir=$(ls -d Packages/*/Sources/"$module" 2>/dev/null | head -1 || true)
+        [ -n "$dir" ] || continue
+        manifest=$(package_manifest "${dir%/Sources/*}")
+        if python3 - "$manifest" "$module" <<'PY'
+import json, sys
+package = json.load(open(sys.argv[1]))
+platforms = package["platforms"]
+target = next((t for t in package["targets"] if t["name"] == sys.argv[2]), {})
+available = (not platforms or any(p["platformName"] == "ios" for p in platforms)) and target.get("type") == "regular"
+sys.exit(0 if available else 1)
+PY
+        then
+            echo "$module"
+            availability+=(-module-can-import "$module")
+        fi
+    done
+    # Availability overrides apply only to discovery. The final check uses actual built modules.
+    xcrun --sdk iphonesimulator swiftc -frontend -emit-imported-modules -module-name NativeIOSImports "${flags[@]}" \
+        ${availability[@]+"${availability[@]}"} ${files[@]+"${files[@]}"} | sort -u
 }
 
 # Builds a package module (and the package modules it imports) for iOS, once.
@@ -85,10 +123,7 @@ build_module() {
     dir=$(ls -d Packages/*/Sources/"$name" 2>/dev/null | head -1 || true)
     [ -n "$dir" ] || return 0
     local package=${dir%/Sources/*}
-    manifest="$work/$(basename "$package").json"
-    if [ ! -e "$manifest" ]; then
-        swift package --package-path "$package" dump-package >"$manifest"
-    fi
+    manifest=$(package_manifest "$package")
     # Test fixtures do not make a library target need a resource bundle. Only build the package
     # when the imported target needs resources, or SwiftPM must resolve remote dependencies.
     if python3 - "$manifest" "$name" <<'PY'
@@ -122,7 +157,7 @@ while :; do
     swift_files "$work/sources"
     status=0
     # One frontend checks every file, so all missing declarations can be resolved in one pass.
-    xcrun --sdk iphonesimulator swiftc -frontend -typecheck -parse-as-library -default-isolation MainActor \
+    xcrun --sdk iphonesimulator swiftc -frontend -typecheck -module-name native -parse-as-library -default-isolation MainActor \
         -enable-upcoming-feature MemberImportVisibility "${flags[@]}" ${files[@]+"${files[@]}"} \
         >"$work/diagnostics" 2>&1 || status=$?
     python3 scripts/check-ios-sources.py "$work/sources" --diagnostics "$work/diagnostics" >"$work/added"

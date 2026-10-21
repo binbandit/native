@@ -431,7 +431,9 @@ step runs even when the one before it failed, so one run reports every break:
   the checker adds app declarations the compiler reports missing, including their cross-folder
   extensions, and recursively builds imported local package modules. It repeats until no more
   dependencies can be added, then reports the compiler's remaining diagnostics at original paths
-  and line numbers. Package builds use the shared build queue; `NATIVE_IOS_CHECK_CACHE` can select
+  and line numbers. Local iOS libraries referenced by `canImport` guards are built before the final
+  check so an empty module cache cannot silently exclude their consumers. Package builds use the
+  shared build queue; `NATIVE_IOS_CHECK_CACHE` can select
   a private incremental cache.
 
 Our own files build without warnings for iOS too: every log goes through `scripts/check-warnings.sh`.
