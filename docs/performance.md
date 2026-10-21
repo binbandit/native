@@ -824,23 +824,23 @@ not the app's own memory. Elara's MCP configuration differs from the earlier Mac
 
 | State | Processes, including host | Physical footprint |
 | --- | --- | --- |
-| Five completed tasks, still loaded | 18 | 367.4 MiB |
-| After idle unloading | 1 | 11.3 MiB |
-| One task resumed and answered again | 7 | 211.7 MiB |
-| That task closed with `session/close`, sampled 5 s later | 6 | 210.4 MiB |
+| Five completed tasks, still loaded | 19 | 406.5 MiB |
+| After idle unloading | 1 | 11.2 MiB |
+| One task resumed and answered again | 7 | 200.5 MiB |
+| That task closed with `session/close`, sampled 5 s later | 6 | 197.9 MiB |
 
-The host released 356.2 MiB (97%) and every Codex descendant exited. Closing one thread alone
+The host released 395.3 MiB (97%) and every Codex descendant exited. Closing one thread alone
 retained its MCP processes; stopping the adapter freed them. Codex's manifest now enables
 `idleUnloadTimeout: 600`: the host checks at most every 30 seconds, closes eligible idle sessions,
 and stops the adapter once nothing still needs it. Working turns, approvals, questions, hidden
 commands, retries and active queues keep their agent alive.
 
 Attaching to read the parked transcript left Codex stopped. Sending a follow-up restarted it and
-completed a reply in 4.5 s. The host protocol emitted no history reset or loading phase, and the
+completed a reply in 5.6 s. The host protocol emitted no history reset or loading phase, and the
 conversation and settings remained intact. The regression tests additionally restore a non-default
 model and effort and exercise waiting approvals and questions. The live check used production code
-at `2c2c632a`; later changes before publication only added tests, documentation and unrelated main
-updates. Elara cannot drive or capture the UI, so the visual check of quiet return remains for the
+at `31c1bd74`, including the child-history fix. Completed direct and nested children also have
+failing-before and passing-after host-protocol regression coverage. Elara cannot drive or capture the UI, so the visual check of quiet return remains for the
 main Mac.
 
 ## Still to do
