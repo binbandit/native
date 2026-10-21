@@ -49,7 +49,10 @@ jobs:
             runner: ubuntu-24.04-arm
     runs-on: ${{ matrix.runner }}
     # The Swift the app builds with (Xcode 27.1 ships 6.4), so Linux checks the same language.
-    container: swift:6.4
+    container:
+      image: swift:6.4
+      # Crash-recovery tests orphan grandchildren; reap them as a normal host's init would.
+      options: --init
     timeout-minutes: 45
     steps:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
@@ -70,24 +73,31 @@ jobs:
           key: spm-linux-${{ matrix.arch }}-${{ steps.swift.outputs.version }}-${{ hashFiles('Packages/*/Package.swift', 'Packages/*/Package.resolved') }}
           restore-keys: spm-linux-${{ matrix.arch }}-${{ steps.swift.outputs.version }}-
 
+      # A real host runs as a user. Root bypasses the directory-permission checks in the tests.
+      # Use one user for every SwiftPM command so its build locks belong to that user too.
+      - name: Prepare build user
+        run: |
+          useradd --create-home native-test
+          chown -R native-test:native-test "$GITHUB_WORKSPACE"
+
       # The steps after a failure still run, so one run reports every break.
       - name: Build native-host
         id: build
-        run: swift build -c release --package-path Packages/NativeHost --product native-host --static-swift-stdlib
+        run: runuser -u native-test -- swift build -c release --package-path Packages/NativeHost --product native-host --static-swift-stdlib
       - name: Test ACP
         if: ${{ !cancelled() }}
-        run: swift test --package-path Packages/ACP
+        run: runuser -u native-test -- swift test --package-path Packages/ACP
       # Only the test product and what it depends on: `swift test` on its own builds every target,
       # NativeHostMac included.
       - name: Test NativeHost
         if: ${{ !cancelled() }}
-        run: swift test --package-path Packages/NativeHost --test-product NativeHostPackageTests
+        run: runuser -u native-test -- swift test --package-path Packages/NativeHost --test-product NativeHostPackageTests
 
       - name: Name the binary
         id: binary
         if: ${{ !cancelled() && steps.build.outcome == 'success' }}
         run: |
-          cp "$(swift build -c release --package-path Packages/NativeHost --show-bin-path)/native-host" \
+          cp "$(runuser -u native-test -- swift build -c release --package-path Packages/NativeHost --show-bin-path)/native-host" \
             "native-host-linux-${{ matrix.arch }}"
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         if: ${{ !cancelled() && steps.binary.outcome == 'success' }}

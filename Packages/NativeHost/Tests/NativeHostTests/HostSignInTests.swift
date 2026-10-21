@@ -126,7 +126,7 @@ struct HostSignInTests {
         #expect(link.url.absoluteString == "https://example.com/device")
         #expect(link.code == "ABCD-1234")
         #expect(link.message == "Sign in to Fake and enter this code: ABCD-1234")
-        FileManager.default.createFile(
+        _ = FileManager.default.createFile(
             atPath: host.harness.agentStore.appending(path: "signin-device-approved").path(percentEncoded: false),
             contents: Data())
         let signedIn = try await signingIn.value
@@ -159,7 +159,7 @@ struct HostSignInTests {
     func checkAgain() async throws {
         let host = try await SignInHost.make()
         let before = try await host.owner.startAgent("fake")
-        FileManager.default.createFile(
+        _ = FileManager.default.createFile(
             atPath: host.harness.agentStore.appending(path: "signin-account").path(percentEncoded: false),
             contents: Data())
 
