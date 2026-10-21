@@ -30,9 +30,15 @@ target/
 build/
 .ci-cache/
 *.xcarchive
+__pycache__/
 
 # The companion's app icons, built from design/app-icon by scripts/companion/app-icons.sh
 Companion/AppIcons/
 
 # Per-machine build settings, such as your signing team.
 Config/Local.xcconfig
+
+# Apple signing and upload credentials belong in GitHub Secrets, never in source.
+AuthKey_*.p8
+*.p12
+*.mobileprovision
