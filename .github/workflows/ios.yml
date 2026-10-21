@@ -21,6 +21,7 @@ on:
       - scripts/check-ios.sh
       - scripts/check-warnings.sh
       - scripts/ci/build-packages-ios.sh
+      - scripts/ci/setup-git-lfs.sh
       - scripts/companion/**
       - design/app-icon/**
       - native/AppIcon.icon/**
@@ -49,7 +50,7 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       - name: Cache locations
         run: |
-          echo "SOURCE_PACKAGES=$HOME/Library/Caches/native-ci/SourcePackages" >> "$GITHUB_ENV"
+          echo "SOURCE_PACKAGES=$RUNNER_TEMP/SourcePackages" >> "$GITHUB_ENV"
           echo "COMPILATION_CACHE=$RUNNER_TEMP/CompilationCache" >> "$GITHUB_ENV"
       - name: Cache the icon artwork
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
@@ -58,17 +59,20 @@ jobs:
           # The checkout has LFS pointers, so this hash changes only when the artwork does.
           key: lfs-icon-artwork-${{ hashFiles('design/app-icon/channel-themes/*/stable.icon/**', 'design/app-icon/celebrations/*/stable.icon/**') }}
           restore-keys: lfs-icon-artwork-
+      - name: Ensure Git LFS is available
+        run: scripts/ci/setup-git-lfs.sh
       - name: Fetch the icon artwork
         run: git lfs pull --include "$ICON_ARTWORK"
       # The Mac builds' package checkouts, which pin everything these builds use (tree-sitter and its
       # grammars, Sentry) at the same versions. Restored only: the repository's caches are full of the
       # Mac builds' own, and a daily build's would only push theirs out.
       - name: Restore Swift package checkouts
+        if: runner.environment == 'github-hosted'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.SOURCE_PACKAGES }}
-          key: source-packages-${{ runner.os }}-${{ hashFiles('native.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
-          restore-keys: source-packages-${{ runner.os }}-
+          key: source-packages-v2-${{ runner.environment }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('native.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+          restore-keys: source-packages-v2-${{ runner.environment }}-${{ runner.os }}-${{ runner.arch }}-
 
       # The three builds run whatever the one before did, so one run reports every break. Xcode's
       # compilation cache (scripts/release/check.sh explains it) lasts for the run only: the packages

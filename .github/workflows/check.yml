@@ -44,16 +44,22 @@ jobs:
       - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
       - name: Cache locations
         run: |
-          echo "SOURCE_PACKAGES=$HOME/Library/Caches/native-ci/SourcePackages" >> "$GITHUB_ENV"
-          echo "COMPILATION_CACHE=$HOME/Library/Caches/native-ci/CompilationCache" >> "$GITHUB_ENV"
-      # The same caches as the release workflows, so a release finds what main's checks built.
+          echo "SOURCE_PACKAGES=$RUNNER_TEMP/SourcePackages" >> "$GITHUB_ENV"
+          echo "COMPILATION_CACHE=$RUNNER_TEMP/CompilationCache" >> "$GITHUB_ENV"
+          if [ "$RUNNER_ENVIRONMENT" = self-hosted ]; then
+            echo "NATIVE_SCRIPT_RUNTIME_CACHE=$RUNNER_TEMP/ScriptRuntime" >> "$GITHUB_ENV"
+          fi
+      # Hosted jobs share these caches with the release workflows. Persistent runners keep the
+      # locked local libghostty build and build a fresh script runtime in job-local storage.
       - name: Cache libghostty
+        if: runner.environment == 'github-hosted'
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/Library/Caches/native-build/libghostty
           key: libghostty-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('scripts/build-libghostty.sh') }}
           restore-keys: libghostty-${{ runner.os }}-${{ runner.arch }}-
       - name: Cache the script runtime
+        if: runner.environment == 'github-hosted'
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/Library/Caches/Native/ScriptRuntime
@@ -62,20 +68,22 @@ jobs:
       # Package checkouts and binary artifacts, keyed by what the project pins: about 25 s to restore
       # where resolving from nothing took 3.5 minutes.
       - name: Cache Swift package checkouts
+        if: runner.environment == 'github-hosted'
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ env.SOURCE_PACKAGES }}
-          key: source-packages-${{ runner.os }}-${{ hashFiles('native.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
-          restore-keys: source-packages-${{ runner.os }}-
+          key: source-packages-v2-${{ runner.environment }}-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('native.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved') }}
+          restore-keys: source-packages-v2-${{ runner.environment }}-${{ runner.os }}-${{ runner.arch }}-
       # Xcode's compilation cache (check.sh --compilation-cache). Restored from the newest run; saved
       # again only from main, so pull requests read it without crowding the repository's caches.
       - name: Restore the compilation cache
         id: compilation-cache
+        if: runner.environment == 'github-hosted'
         uses: actions/cache/restore@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ env.COMPILATION_CACHE }}
-          key: compilation-cache-${{ runner.os }}-${{ matrix.configuration }}-${{ github.sha }}
-          restore-keys: compilation-cache-${{ runner.os }}-${{ matrix.configuration }}-
+          key: compilation-cache-v2-${{ runner.environment }}-${{ runner.os }}-${{ runner.arch }}-${{ matrix.configuration }}-${{ github.sha }}
+          restore-keys: compilation-cache-v2-${{ runner.environment }}-${{ runner.os }}-${{ runner.arch }}-${{ matrix.configuration }}-
       # Only the versions Package.resolved records: a resolved file that no longer matches the project
       # fails here instead of being re-resolved to whatever the remotes have now.
       - name: Resolve Swift packages
@@ -91,7 +99,7 @@ jobs:
       - name: No warnings
         run: scripts/check-warnings.sh "$RUNNER_TEMP/build.log"
       - name: Save the compilation cache
-        if: success() && github.event_name != 'pull_request' && steps.compilation-cache.outputs.cache-hit != 'true'
+        if: success() && runner.environment == 'github-hosted' && github.event_name != 'pull_request' && steps.compilation-cache.outputs.cache-hit != 'true'
         uses: actions/cache/save@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ${{ env.COMPILATION_CACHE }}
