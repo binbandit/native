@@ -25,6 +25,7 @@ public struct SessionTitleRequest: Hashable, Sendable {
     /// about what it attaches. A task in its own worktree is named for the project it's a
     /// worktree of, not for the worktree's folder.
     public init(firstMessage text: String, attachmentNames: [String], in folder: URL) {
+        let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         self.init(
             projectName: SessionTitleRules.projectFolder(of: folder).lastPathComponent,
             prompt: text.isEmpty ? attachmentNames.joined(separator: ", ") : text)
