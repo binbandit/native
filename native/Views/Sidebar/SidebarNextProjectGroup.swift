@@ -18,9 +18,13 @@ struct SidebarNextProjectGroup<MenuContent: View, Content: View>: View {
     @ViewBuilder let content: () -> Content
 
     @State private var isHovered = false
-    @FocusState private var isFocused: Bool
+    @FocusState private var focusedControl: Control?
 
-    private var showsControls: Bool { isHovered || isFocused || DS.isTouchPlatform }
+    private enum Control: Hashable {
+        case disclosure, menu, newTask
+    }
+
+    private var showsControls: Bool { isHovered || focusedControl != nil || DS.isTouchPlatform }
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
@@ -58,7 +62,7 @@ struct SidebarNextProjectGroup<MenuContent: View, Content: View>: View {
                     .contentShape(.rect)
                 }
                 .buttonStyle(SidebarRowButtonStyle())
-                .focused($isFocused)
+                .focused($focusedControl, equals: .disclosure)
                 .accessibilityLabel(name)
                 .accessibilityValue(
                     isExpanded ? "Expanded" : "Collapsed, \(note ?? activity.label ?? "\(taskCount) tasks")"
@@ -68,6 +72,7 @@ struct SidebarNextProjectGroup<MenuContent: View, Content: View>: View {
                 Menu(content: menu) {
                     Label("\(name) Options", systemImage: "ellipsis")
                 }
+                .focused($focusedControl, equals: .menu)
                 .labelStyle(.iconOnly)
                 .menuStyle(.button)
                 .buttonStyle(.plain)
@@ -81,6 +86,7 @@ struct SidebarNextProjectGroup<MenuContent: View, Content: View>: View {
 
                 if let onNewTask {
                     IconButton("New Task in \(name)", systemImage: "plus", size: .small, action: onNewTask)
+                        .focused($focusedControl, equals: .newTask)
                         .opacity(showsControls ? 1 : 0)
                 }
             }

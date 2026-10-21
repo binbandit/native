@@ -2,6 +2,8 @@ import Foundation
 
 /// Keeps recent resting tasks without changing the user's order. Attention, selection and editing
 /// are supplied by the client, so folding never hides the task someone is working with.
+/// `keeping` is activity outside the resting budget; `revealing` exposes selection or editing
+/// without taking a recent resting task out of that budget.
 public enum TaskListFold {
     public static func visibleIDs<ID: Hashable>(
         ordered: [ID], keeping: Set<ID>, dates: [ID: Date], revealing: Set<ID> = [], restingLimit: Int = 3
