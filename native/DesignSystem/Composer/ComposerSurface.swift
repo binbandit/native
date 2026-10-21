@@ -18,6 +18,8 @@ extension DS {
         public static let lineHeight: CGFloat = 1.5
         /// How far the controls row fades out at an edge that has more controls past it.
         public static let edgeFade: CGFloat = 24
+        /// The rule between composer sections.
+        public static let separatorWidth: CGFloat = 1
     }
 }
 
@@ -49,7 +51,7 @@ public struct ComposerSurface<Content: View>: View {
                     if section.id != sections.first?.id {
                         Rectangle()
                             .fill(.dsBorder)
-                            .frame(height: 1)
+                            .frame(height: DS.Composer.separatorWidth)
                     }
                     section
                 }
