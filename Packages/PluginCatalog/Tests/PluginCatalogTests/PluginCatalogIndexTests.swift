@@ -25,7 +25,7 @@ struct PluginCatalogIndexTests {
         var second = entry
         second["id"] = "other-2"
         second["version"] = "Preview build 7"
-        second["future"] = ["ignored": true]
+        second["future"] = ["ignored": "\0"]
         let index = try verify(data([entry, second]))
         #expect(index.schema == 1)
         #expect(index.plugins.map(\.id) == ["example", "other-2"])
@@ -38,7 +38,7 @@ struct PluginCatalogIndexTests {
     @Test func signatureRejectionPrecedesDecoding() throws {
         let original = try data([entry])
         let signature = try key.signature(for: original).base64EncodedString()
-        for changed in [original + Data(" ".utf8), Data("not JSON".utf8)] {
+        for changed in [original + Data(" ".utf8), Data("not JSON".utf8), original + Data([0])] {
             #expect(throws: PluginCatalogError.signatureMismatch) {
                 try PluginCatalogIndex.verified(
                     changed, signature: signature, publicKey: key.publicKey.rawRepresentation)
@@ -68,8 +68,13 @@ struct PluginCatalogIndexTests {
         var missing = entry
         missing.removeValue(forKey: "version")
         #expect(throws: PluginCatalogError.malformedJSON) { try verify(data([missing])) }
-        let utf16 = try #require(String(data: data([]), encoding: .utf8)?.data(using: .utf16))
-        #expect(throws: PluginCatalogError.malformedJSON) { try verify(utf16) }
+        let json = try #require(String(data: data([]), encoding: .utf8))
+        for encoding: String.Encoding in [
+            .utf16, .utf16LittleEndian, .utf16BigEndian, .utf32LittleEndian, .utf32BigEndian,
+        ] {
+            let alternate = try #require(json.data(using: encoding))
+            #expect(throws: PluginCatalogError.malformedJSON) { try verify(alternate) }
+        }
     }
 
     @Test func signedMalformedEntries() throws {

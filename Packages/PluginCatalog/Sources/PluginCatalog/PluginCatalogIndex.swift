@@ -20,8 +20,10 @@ public struct PluginCatalogIndex: Sendable {
             signature.count == 64
         else { throw PluginCatalogError.malformedSignature }
         guard key.isValidSignature(signature, for: data) else { throw PluginCatalogError.signatureMismatch }
-        // JSONDecoder also accepts UTF-16; the signed catalog contract requires UTF-8.
-        guard String(data: data, encoding: .utf8) != nil else { throw PluginCatalogError.malformedJSON }
+        // Raw NULs are invalid JSON and would let JSONDecoder auto-detect BOM-less UTF-16/32.
+        guard !data.contains(0), String(data: data, encoding: .utf8) != nil else {
+            throw PluginCatalogError.malformedJSON
+        }
         do {
             let payload = try JSONDecoder().decode(Payload.self, from: data)
             var ids = Set<String>()
