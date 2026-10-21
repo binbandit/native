@@ -26,11 +26,16 @@ struct SessionToolsScreen: View {
         let turnChanges = registry.tools.filter { registry.place(of: $0.id) != .off }
             .compactMap { $0.turnChanges?(context($0)) }.first
         TranscriptView(session: session) { id in
-            inspectorRoom.open(DS.SessionTools.sidePanelIdealWidth) {
+            let show: @MainActor () -> Void = {
                 withTransaction(\.disablesAnimations, true) {
                     tools.close(.side)
                     openSubagent = id
                 }
+            }
+            if isSidePanelDocked.wrappedValue {
+                show()
+            } else {
+                inspectorRoom.open(DS.SessionTools.sidePanelIdealWidth, show)
             }
         }
         .environment(\.turnChangesActions, turnChanges)
@@ -102,6 +107,7 @@ struct SessionToolsScreen: View {
             let availableWidth = $width
             let subagent = $openSubagent
             tools.makeRoomForSidePanel = { [inspectorRoom, weak tools] show in
+                guard subagent.wrappedValue == nil else { return show() }
                 let layout = SessionToolPanelLayout(
                     open: [:], availableWidth: availableWidth.wrappedValue,
                     minimumConversationWidth: DS.SessionTools.conversationBesidePanelMinWidth,
