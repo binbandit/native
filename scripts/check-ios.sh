@@ -81,11 +81,24 @@ imported_modules() {
 build_module() {
     local name=$1
     [ -e "$work/modules/$name.swiftmodule" ] || [ -e "$work/modules/$name.package" ] && return
-    local dir dependencies
+    local dir dependencies manifest
     dir=$(ls -d Packages/*/Sources/"$name" 2>/dev/null | head -1 || true)
     [ -n "$dir" ] || return 0
     local package=${dir%/Sources/*}
-    if grep -qE "\.package\(url:|resources:" "$package/Package.swift"; then
+    manifest="$work/$(basename "$package").json"
+    if [ ! -e "$manifest" ]; then
+        swift package --package-path "$package" dump-package >"$manifest"
+    fi
+    # Test fixtures do not make a library target need a resource bundle. Only build the package
+    # when the imported target needs resources, or SwiftPM must resolve remote dependencies.
+    if python3 - "$manifest" "$name" <<'PY'
+import json, sys
+package = json.load(open(sys.argv[1]))
+target = next(t for t in package["targets"] if t["name"] == sys.argv[2])
+needs_build = target.get("resources") or any("sourceControl" in d for d in package["dependencies"])
+sys.exit(0 if needs_build else 1)
+PY
+    then
         build_package "$package" "$name"
         return
     fi
