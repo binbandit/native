@@ -25,9 +25,18 @@ public struct HostLocation: Hashable, Sendable {
         self.isDevelopment = isDevelopment
     }
 
-    /// `~/Library/Application Support/Native`, or `…/Native/Channels/<channel>` for a named channel.
+    /// `Native` in the user's application support directory, or `Native/Channels/<channel>`.
     public static func standard(channel: String = "", isDevelopment: Bool = false) -> HostLocation {
+        #if os(Linux)
+        // Corelibs Foundation has no URL.applicationSupportDirectory shorthand.
+        let base =
+            FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
+            ?? FileManager.default.homeDirectoryForCurrentUser.appending(
+                path: ".local/share", directoryHint: .isDirectory)
+        let support = base.appending(path: "Native", directoryHint: .isDirectory)
+        #else
         let support = URL.applicationSupportDirectory.appending(path: "Native", directoryHint: .isDirectory)
+        #endif
         let directory =
             channel.isEmpty ? support : support.appending(path: "Channels/\(channel)", directoryHint: .isDirectory)
         return HostLocation(directory: directory, channel: channel, isDevelopment: isDevelopment)
