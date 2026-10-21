@@ -201,9 +201,12 @@ expedition's lead (the composer key, on a page without a composer).
 
 ## Transcript
 
-Tool rows start closed: one line with the tool, its subject and how it went. Each row, exploration
-group and condensed run of tool calls is a button, so it opens with a click, a tap, or from the
-keyboard.
+Tool rows, exploration groups and condensed runs of tool calls start closed. Each is a button, so
+it opens with a click, a tap, or from the keyboard. The session remembers opened and closed rows,
+groups, runs and earlier turns while the app runs, including after switching sessions or transcript
+styles. A run's header still counts running and failed calls while closed. Pending approvals stay
+visible outside the groups; a container that holds one stays open until it is answered, then returns
+to the user's choice.
 
 | Keys | Action |
 | --- | --- |
