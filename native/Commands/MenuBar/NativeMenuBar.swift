@@ -118,6 +118,9 @@ private struct GoCommands: Commands {
             CommandMenuItem(.goForward, in: menu)
             Divider()
             CommandMenuItem(.goPullRequests, in: menu)
+            #if os(macOS)
+            CommandMenuItem(.gitHubAccounts, in: menu)
+            #endif
             CommandMenuItem(.goExpeditions, in: menu)
             TranscriptSearchMenuItem(menu: menu)
         }

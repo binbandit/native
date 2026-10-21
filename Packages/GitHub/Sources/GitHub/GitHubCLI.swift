@@ -2,7 +2,7 @@ import Exec
 import Foundation
 
 /// The user's own `gh`: their logins, hosts (GitHub Enterprise included), aliases and config all
-/// apply, and Native never handles a token. Every read uses `--json` and decodes it; nothing parses
+/// apply. Account overrides only enter child-process environments. Every read uses `--json`; nothing parses
 /// gh's human-readable output.
 ///
 /// gh runs through a `CommandRunner`, so it can run on whichever machine hosts the project. Pass
@@ -13,6 +13,7 @@ public struct GitHubCLI: Sendable {
     /// The host commands target, as `GH_HOST`; `nil` for gh's default.
     public let host: String?
     public let runner: any CommandRunner
+    public var accountSelection = GitHubAccountSelection()
 
     public init(environment: [String: String], host: String? = nil, runner: any CommandRunner) {
         self.environment = environment
@@ -29,7 +30,9 @@ public struct GitHubCLI: Sendable {
 
     /// The same gh, aimed at another host.
     public func targeting(host: String?) -> GitHubCLI {
-        GitHubCLI(environment: environment, host: host, runner: runner)
+        var cli = GitHubCLI(environment: environment, host: host, runner: runner)
+        cli.accountSelection = accountSelection
+        return cli
     }
 
     /// Where package managers put gh, appended to the PATH: an app's fallback environment (when the
@@ -79,7 +82,9 @@ public struct GitHubCLI: Sendable {
     ) async throws(GitHubError) -> Data {
         let result: CommandResult
         do {
-            result = try await runner.run(self.command(for: command))
+            result = try await runner.run(authenticatedCommand(for: command))
+        } catch let error as GitHubError {
+            throw error
         } catch CommandError.notFound {
             throw .notInstalled
         } catch CommandError.timedOut {
@@ -112,7 +117,7 @@ public struct GitHubCLI: Sendable {
         return String(decoding: output, as: UTF8.self).split(separator: "\n").first.map(String.init) ?? ""
     }
 
-    /// The account gh uses for each host, with whether its token works.
+    /// Every account gh holds for each host, with whether its token works.
     public func authStatus() async throws(GitHubError) -> AuthStatus {
         try await decode(AuthStatus.self, from: .authStatus(host: host))
     }
@@ -129,16 +134,7 @@ public struct GitHubCLI: Sendable {
         } catch .offline {
             return .offline
         }
-        let accounts = status.activeAccounts
-        let working = accounts.filter { $0.state == .success }
-            .sorted { ($0.host == "github.com" ? 0 : 1, $0.host) < ($1.host == "github.com" ? 0 : 1, $1.host) }
-        if !working.isEmpty {
-            return .ready(accounts: working)
-        }
-        if !accounts.isEmpty, accounts.allSatisfy({ $0.state == .timeout }) {
-            return .offline
-        }
-        return .notAuthenticated
+        return accountSelection.availability(in: status)
     }
 
     public func currentUser() async throws(GitHubError) -> GitHubUser {
