@@ -79,15 +79,18 @@ struct SessionTitleStateTests {
     @Test("An unusable first message leaves the next one eligible; an attempt is retried only once")
     func retryDecision() {
         var state = SessionTitleState()
-        #expect(!state.beginIfNeeded(SessionTitleRequest(projectName: "native", prompt: "   ")))
-        #expect(state.beginIfNeeded(request))
-        #expect(!state.beginIfNeeded(request))
+        let empty = state.beginIfNeeded(SessionTitleRequest(projectName: "native", prompt: "   "))
+        let first = state.beginIfNeeded(request)
+        let inFlight = state.beginIfNeeded(request)
+        #expect(!empty && first && !inFlight)
         state.fail()
-        #expect(state.beginIfNeeded(SessionTitleRequest(projectName: "native", prompt: "another message")))
+        let retry = state.beginIfNeeded(SessionTitleRequest(projectName: "native", prompt: "another message"))
+        #expect(retry)
         #expect(state.request?.prompt == request.prompt)
         #expect(state.retryCount == 1)
         state.fail()
-        #expect(!state.beginIfNeeded(request))
+        let exhausted = state.beginIfNeeded(request)
+        #expect(!exhausted)
         #expect(state.fallback != nil)
     }
 
@@ -97,12 +100,15 @@ struct SessionTitleStateTests {
         state.begin(request)
         state.waitForClient()
         state.rename(to: "My title")
-        #expect(!state.beginIfNeeded(request))
+        let renamed = state.beginIfNeeded(request)
+        #expect(!renamed)
         #expect(state.displayTitle(agentTitle: nil) == "My title")
         state.rename(to: nil)
-        #expect(state.beginIfNeeded(request))
+        let undone = state.beginIfNeeded(request)
+        #expect(undone)
         state.accept(generated: "Login fix")
-        #expect(!state.beginIfNeeded(request))
+        let titled = state.beginIfNeeded(request)
+        #expect(!titled)
     }
 }
 
