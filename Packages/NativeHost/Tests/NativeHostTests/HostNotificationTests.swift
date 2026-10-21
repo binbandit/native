@@ -87,7 +87,12 @@ struct HostNotificationTests {
         #expect(finished.kind == .turnFinished)
         try await first.client.acknowledgeNotifications([finished.id])
         _ = try await first.client.prompt(PromptParams(sessionID: session, text: "permission please"))
-        try await first.wait("the approval") { await !$0.mirror(session).state.pendingPermissions.isEmpty }
+        // The session event is sent before the notification is stored. Crash only after that write.
+        try #require(
+            await first.client.events.contains { event in
+                guard case .notificationPosted(let notification) = event else { return false }
+                return notification.kind == .permission && notification.sessionID == session
+            })
         await first.stop()
 
         harness.kill()

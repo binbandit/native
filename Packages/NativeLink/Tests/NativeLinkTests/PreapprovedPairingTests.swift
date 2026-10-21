@@ -23,9 +23,10 @@ import Testing
             awaitingConfirmation: { _ in Issue.record("nobody is asked") })
 
         let given = LinkGrants(runCommands: true)
+        // The welcome can arrive before admission finishes on the gateway actor.
+        let status = await harness.gateway.status
         #expect(result.grants == given)
         #expect(harness.admitted.withLock { $0.first?.1 } == given)
-        let status = await harness.gateway.status
         #expect(status.pairing?.phase == .paired)
         #expect(status.pairing?.request?.device.name == "Laptop")
         #expect(records.value.map(\.wasPreapproved) == [true])
