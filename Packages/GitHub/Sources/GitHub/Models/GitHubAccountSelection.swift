@@ -27,13 +27,14 @@ public struct GitHubAccountSelection: Sendable, Equatable {
     /// credentials already belong to the captured environment and have no stored user token.
     public func includingDefaults(from status: AuthStatus) -> Self {
         var result = self
-        for account in accounts(in: status) where result.logins[account.host] == nil {
+        for account in accounts(in: status) {
             if ["GH_TOKEN", "GITHUB_TOKEN", "GH_ENTERPRISE_TOKEN", "GITHUB_ENTERPRISE_TOKEN"].contains(
                 account.tokenSource ?? "")
             {
+                result.logins[account.host] = nil
                 continue
             }
-            result.logins[account.host] = account.login
+            if result.logins[account.host] == nil { result.logins[account.host] = account.login }
         }
         return result
     }

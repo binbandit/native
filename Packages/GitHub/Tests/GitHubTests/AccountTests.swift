@@ -28,6 +28,9 @@ struct AccountTests {
             ]
         ])
         #expect(choices.includingDefaults(from: environmentAccount).logins.isEmpty)
+        let chosenEnvironment = GitHubAccountSelection(logins: ["github.com": "environment"])
+        #expect(chosenEnvironment.includingDefaults(from: environmentAccount).logins.isEmpty)
+        #expect(chosenEnvironment.logins["github.com"] == "environment")
     }
 
     @Test func selectedTokenOnlyEntersNativeCommands() async throws {

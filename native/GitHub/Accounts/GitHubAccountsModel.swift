@@ -114,7 +114,8 @@ final class GitHubAccountsModel {
         var next = selection
         next.logins[account.host] = account.login
         do {
-            let user = try await cli.selecting(next).targeting(host: account.host).currentUser()
+            let credentials = status.map { next.includingDefaults(from: $0) } ?? next
+            let user = try await cli.selecting(credentials).targeting(host: account.host).currentUser()
             guard user.login.caseInsensitiveCompare(account.login) == .orderedSame else {
                 error = .notAuthenticated("GitHub returned a different account. Sign in again, then check accounts.")
                 return false
