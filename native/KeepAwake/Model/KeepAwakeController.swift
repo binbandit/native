@@ -38,8 +38,12 @@ final class KeepAwakeController {
     private static let policyKey = "keepAwake.policy"
     /// Off until it's verified in the running app: `-NativeHostKeepAwake YES` hands keeping awake to
     /// the host. Off, the app keeps holding the assertions itself, as before.
+    static let handsOverToHostByDefault = false
+
     static var handsOverToHost: Bool {
-        UserDefaults.standard.object(forKey: "NativeHostKeepAwake") as? Bool ?? false
+        // `bool(forKey:)` also reads a launch argument, which arrives as text ("YES").
+        UserDefaults.standard.object(forKey: "NativeHostKeepAwake") == nil
+            ? handsOverToHostByDefault : UserDefaults.standard.bool(forKey: "NativeHostKeepAwake")
     }
 
     /// Quitting needs nothing: the system drops a process's power assertions when it exits.
