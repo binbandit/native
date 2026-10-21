@@ -403,9 +403,7 @@ Package resolution and compilation caches live in `RUNNER_TEMP`, so multiple run
 same account never mutate the same Swift package checkout. Self-hosted jobs skip build-cache
 downloads and start with fresh package build state and a job-local script runtime cache; hosted
 jobs still restore their caches. The shared libghostty build already takes a lock on the machine.
-The iOS job downloads a checksum-pinned Git LFS executable into `RUNNER_TEMP` if it is missing,
-then fetches artwork with command-scoped filters and temporary hooks, without changing the
-machine's installation or leaving Git configuration or hooks in the persistent checkout.
+Self-hosted runners need the same build tools as the hosted image, including Git LFS for artwork.
 
 Every app build in CI, `check.sh` and `release.sh` passes `-disableAutomaticPackageResolution`, so
 packages come only at the versions and revisions `Package.resolved` records. When the project's

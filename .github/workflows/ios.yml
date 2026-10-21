@@ -21,7 +21,6 @@ on:
       - scripts/check-ios.sh
       - scripts/check-warnings.sh
       - scripts/ci/build-packages-ios.sh
-      - scripts/ci/setup-git-lfs.sh
       - scripts/companion/**
       - design/app-icon/**
       - native/AppIcon.icon/**
@@ -59,16 +58,8 @@ jobs:
           # The checkout has LFS pointers, so this hash changes only when the artwork does.
           key: lfs-icon-artwork-${{ hashFiles('design/app-icon/channel-themes/*/stable.icon/**', 'design/app-icon/celebrations/*/stable.icon/**') }}
           restore-keys: lfs-icon-artwork-
-      - name: Ensure Git LFS is available
-        run: scripts/ci/setup-git-lfs.sh
       - name: Fetch the icon artwork
-        run: |
-          # LFS also installs hooks during pull. Keep those and its filters scoped to this command,
-          # so the next checkout never depends on an executable from this job's temporary directory.
-          git -c core.hooksPath="$RUNNER_TEMP/git-lfs-hooks" \
-            -c filter.lfs.process='git-lfs filter-process' -c filter.lfs.required=true \
-            -c filter.lfs.clean='git-lfs clean -- %f' -c filter.lfs.smudge='git-lfs smudge -- %f' \
-            lfs pull --include "$ICON_ARTWORK"
+        run: git lfs pull --include "$ICON_ARTWORK"
       # The Mac builds' package checkouts, which pin everything these builds use (tree-sitter and its
       # grammars, Sentry) at the same versions. Restored only: the repository's caches are full of the
       # Mac builds' own, and a daily build's would only push theirs out.
