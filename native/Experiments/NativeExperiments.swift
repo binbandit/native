@@ -11,6 +11,7 @@ extension ExperimentCatalog {
         Parameter<TranscriptWidth>.transcriptWidth,
         Gate.unfoldExploration,
         Gate.sidebarNext,
+        Gate.composerNext,
     ])
 }
 
@@ -62,6 +63,17 @@ extension Gate {
         site: "Sidebar ▸ projects and tasks",
         stage: .labs,
         owner: "sidebar",
+        reviewBy: ReviewDate(year: 2026, month: 12, day: 15),
+        default: false
+    )
+
+    static let composerNext = Gate(
+        id: "NativeComposerNext",
+        title: "Quiet composer",
+        summary: "Show the resting composer's settings as a line of words, each opening its picker.",
+        site: "Composer ▸ resting settings",
+        stage: .labs,
+        owner: "composer",
         reviewBy: ReviewDate(year: 2026, month: 12, day: 15),
         default: false
     )
