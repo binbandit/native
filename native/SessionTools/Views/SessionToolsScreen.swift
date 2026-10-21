@@ -122,6 +122,7 @@ struct SessionToolsScreen: View {
         }
         .mcpServersPresentation()
         .refreshesGitStatus(of: session, in: git)
+        .detectsTurnChanges(of: session, into: tools.state(for: .changes, GitChangesReview.init), in: git)
         .environment(\.transcriptColumnMaxWidth, columnWidth.maxWidth)
     }
 

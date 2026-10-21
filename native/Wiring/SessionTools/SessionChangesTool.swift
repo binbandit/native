@@ -66,7 +66,8 @@ enum SessionChangesTool {
                                 Task { await GitHubGitWiring.createPullRequest(from: repository, gitHub: gitHub) }
                             }))
                 } : nil,
-            reviewFile: { show($0) }
+            reviewFile: { show($0) },
+            latestTurnChanges: review.latestTurnChanges
         )
     }
 }
