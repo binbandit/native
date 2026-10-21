@@ -505,9 +505,11 @@ actionlint .github/workflows/testflight.yml
    independent of the existing notarization key.
 4. Add the secrets below. Never commit keys, certificates or profiles. Before the first upload,
    fill in TestFlight Test Information (Beta App Description, Feedback Email, primary locale)
-   so the action can attach notes. Complete Apple's export-compliance questionnaire accurately:
-   the companion uses the Noise protocol implemented with CryptoKit; the workflow deliberately
-   does not assert an encryption exemption on the owner's behalf.
+   so the action can attach notes. The companion declares `ITSAppUsesNonExemptEncryption = NO`:
+   its Noise transport uses Apple's CryptoKit implementations of Curve25519, ChaChaPoly, SHA-256
+   and HKDF, and bundles no separate encryption implementation. This follows Apple's
+   [operating-system encryption exemption](https://developer.apple.com/help/app-store-connect/manage-app-information/overview-of-export-compliance/).
+   Reassess that declaration if adding another cryptographic implementation or protocol.
 5. Create an **internal** TestFlight group and enable **automatic distribution**, then add the
    App Store Connect team members who should receive every build. Apple processing and compliance
    clearance must finish before testers see a build. External testers require Apple's beta review;
