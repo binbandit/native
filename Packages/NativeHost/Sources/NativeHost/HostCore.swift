@@ -203,7 +203,7 @@ public final class HostCore {
             protocolVersion: HostProtocol.version, hostID: hostID, machineName: configuration.machineName,
             hostInfo: configuration.hostInfo,
             epoch: epoch, processID: ProcessInfo.processInfo.processIdentifier, startedAt: startedAt,
-            channel: configuration.location.channel
+            channel: configuration.location.channel, notificationEvents: true
         )
     }
 
