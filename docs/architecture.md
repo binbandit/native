@@ -66,7 +66,9 @@ The Mac sidebar footer shows the GitHub account used by Native. `GitHubAccountsM
 accounts from `gh auth status --json hosts`, loads names and cached avatars asynchronously, and
 remembers one chosen login per host in Native's defaults. Without a choice it follows gh's active
 account. `GitHubCLI` retrieves a chosen account's token with `gh auth token --hostname --user` and
-passes it only in its child process environment. It never runs `gh auth switch` or saves tokens.
+passes it only in its child process environment. It resolves Git URL rewrites before selecting
+credentials and pins the request host to that credential's host. API and search requests do not
+inherit the repository override from `GH_REPO`. It never runs `gh auth switch` or saves tokens.
 Switching clears account-specific inbox, branch and review-page caches. An unavailable selected
 account fails with sign-in guidance instead of silently using another account. Cross-host checkouts
 need a default remote set in gh when their target is ambiguous; unresolved SSH aliases need a remote

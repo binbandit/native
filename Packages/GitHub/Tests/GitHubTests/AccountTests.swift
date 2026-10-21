@@ -101,7 +101,7 @@ struct AccountTests {
     @Test func checkoutHostAndExplicitRemoteUseTheirOwnAccount() async throws {
         let runner = FakeRunner { command in
             if command.executable == "git" {
-                return FakeRunner.success(Data("remote.origin.url\nhttps://work.example.com/team/repo.git\0".utf8))
+                return FakeRunner.success(Data("origin\thttps://work.example.com/team/repo.git (fetch)\n".utf8))
             }
             if command.arguments.starts(with: ["auth", "token"]) {
                 #expect(command.arguments.contains("--hostname=work.example.com"))
@@ -114,13 +114,13 @@ struct AccountTests {
             .selecting(.init(logins: ["github.com": "personal", "work.example.com": "work"]))
         _ = try await cli.pullRequests(in: .directory(URL(filePath: "/fixture")))
         _ = try await cli.pullRequests(in: .remote("work.example.com/team/repo"))
-        #expect(runner.commands.filter { $0.executable == "git" }.count == 1)
+        #expect(runner.commands.filter { $0.executable == "git" }.count == 2)
     }
 
     @Test func unresolvedSSHAliasCannotBypassTheSelectedAccount() async {
         let runner = FakeRunner { command in
             if command.executable == "git" {
-                return FakeRunner.success(Data("remote.origin.url\ngit@github-work:team/repo.git\0".utf8))
+                return FakeRunner.success(Data("origin\tgit@github-work:team/repo.git (fetch)\n".utf8))
             }
             if command.arguments.starts(with: ["auth", "status"]) {
                 return FakeRunner.success(try Fixtures.data("auth-status-all-accounts"))
@@ -133,20 +133,97 @@ struct AccountTests {
         await #expect(throws: GitHubError.self) {
             try await cli.pullRequests(in: .directory(URL(filePath: "/fixture")))
         }
-        #expect(runner.commands.count == 2)
+        #expect(runner.commands.count == 3)
+    }
+
+    @Test func effectiveRemoteURLSelectsTheRewrittenEnterpriseCredential() async throws {
+        let runner = FakeRunner { command in
+            if command.executable == "git" {
+                if command.arguments == ["remote", "-v"] {
+                    return FakeRunner.success(
+                        Data(
+                            "origin\thttps://new.example.com/team/repo.git (fetch)\norigin\thttps://new.example.com/team/repo.git (push)\n"
+                                .utf8))
+                }
+                return FakeRunner.success(Data("remote.origin.url\nhttps://old.example.com/team/repo.git\0".utf8))
+            }
+            if command.arguments.starts(with: ["auth", "token"]) {
+                #expect(command.arguments.contains("--hostname=new.example.com"))
+                return FakeRunner.success(Data(command.arguments.last?.utf8 ?? "".utf8))
+            }
+            #expect(command.environment["GH_ENTERPRISE_TOKEN"] == "--user=new-account")
+            #expect(command.environment["GH_HOST"] == "new.example.com")
+            return FakeRunner.success(Data("[]".utf8))
+        }
+        let cli = GitHubCLI(environment: [:], runner: runner)
+            .selecting(.init(logins: ["old.example.com": "old-account", "new.example.com": "new-account"]))
+        _ = try await cli.pullRequests(in: .directory(URL(filePath: "/fixture")))
+    }
+
+    @Test func repositoryEnvironmentDoesNotOverrideAPIOrExplicitRepositoryHosts() async throws {
+        let runner = FakeRunner { command in
+            if command.arguments.starts(with: ["auth", "token"]) {
+                #expect(command.arguments.contains("--hostname=github.com"))
+                return FakeRunner.success(Data("public-token".utf8))
+            }
+            #expect(command.environment["GH_TOKEN"] == "public-token")
+            #expect(command.environment["GH_ENTERPRISE_TOKEN"] == nil)
+            return FakeRunner.success(Data("{}".utf8))
+        }
+        let cli = GitHubCLI(environment: ["GH_REPO": "work.example.com/team/repo"], runner: runner)
+            .selecting(.init(logins: ["github.com": "personal", "work.example.com": "work"]))
+            .targeting(host: "github.com")
+        for command: GitHubCommand in [
+            .currentUser, .search(PullRequestSearch(.author)),
+            .listPullRequests(.init(), in: .remote("owner/repo")), .repository(.remote("owner/repo")),
+        ] {
+            _ = try await cli.run(command)
+        }
     }
 
     @Test func ambiguousCheckoutFailsClosedUntilGhHasADefault() throws {
-        let config =
-            "remote.origin.url\nhttps://github.com/me/repo.git\0remote.upstream.url\nhttps://work.example.com/team/repo.git\0"
+        let remotes =
+            "origin\thttps://github.com/me/repo.git (fetch)\nupstream\thttps://work.example.com/team/repo.git (fetch)\n"
         #expect(throws: GitHubError.self) {
             try GitHubAccountHost.resolve(
-                config: config, fallback: nil)
+                remotes: remotes, config: "", fallback: nil)
         }
         #expect(
             try GitHubAccountHost.resolve(
-                config: config + "remote.upstream.gh-resolved\nbase\0",
+                remotes: remotes, config: "remote.upstream.gh-resolved\nbase\0",
                 fallback: nil
             ) == "work.example.com")
+    }
+
+    @Test func repositoryEnvironmentStillAppliesToCheckoutCommands() async throws {
+        let runner = FakeRunner { command in
+            #expect(command.executable == "gh")
+            if command.arguments.starts(with: ["auth", "token"]) {
+                #expect(command.arguments.contains("--hostname=work.example.com"))
+                return FakeRunner.success(Data("work-token".utf8))
+            }
+            #expect(command.environment["GH_HOST"] == "work.example.com")
+            #expect(command.environment["GH_ENTERPRISE_TOKEN"] == "work-token")
+            return FakeRunner.success(Data("[]".utf8))
+        }
+        let cli = GitHubCLI(environment: ["GH_REPO": "work.example.com/team/repo"], runner: runner)
+            .selecting(.init(logins: ["github.com": "personal", "work.example.com": "work"]))
+        _ = try await cli.pullRequests(in: .directory(URL(filePath: "/fixture")))
+    }
+
+    @Test func searchURLIsAKeywordNotACredentialHost() async throws {
+        let runner = FakeRunner { command in
+            if command.arguments.starts(with: ["auth", "token"]) {
+                #expect(command.arguments.contains("--hostname=github.com"))
+                return FakeRunner.success(Data("public-token".utf8))
+            }
+            #expect(command.environment["GH_TOKEN"] == "public-token")
+            return FakeRunner.success(Data("[]".utf8))
+        }
+        let cli = GitHubCLI(environment: [:], runner: runner)
+            .selecting(.init(logins: ["github.com": "personal", "work.example.com": "work"]))
+        var search = PullRequestSearch(.author)
+        search.keywords = "https://work.example.com/team/repo/pull/1"
+        _ = try await cli.search(search)
     }
 }

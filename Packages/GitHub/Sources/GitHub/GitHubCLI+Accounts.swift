@@ -33,6 +33,9 @@ extension GitHubCLI {
         let token = try await accountToken(login: login, host: target)
         let key = target == "github.com" || target.hasSuffix(".ghe.com") ? "GH_TOKEN" : "GH_ENTERPRISE_TOKEN"
         command.environment[key] = token
+        // gh filters translated remotes by GH_HOST. Pin it to the credential's host so a further
+        // SSH alias translation cannot redirect an enterprise credential to another server.
+        command.environment["GH_HOST"] = target
         command.environment["GH_DEBUG"] = nil
         return command
     }
@@ -55,30 +58,34 @@ extension GitHubCLI {
     }
 
     private func accountHost(for request: GitHubCommand, environment: [String: String]) async throws -> String {
+        let defaultHost = (host ?? environment["GH_HOST"] ?? "github.com").lowercased()
+        // These commands do not infer a repository from GH_REPO. Search keywords can also be URLs.
+        if ["api", "search"].contains(request.arguments.first ?? "") { return defaultHost }
         // URL selectors override the checkout, including `pr checkout <url>`.
-        if let urlHost = request.arguments.compactMap({ argument -> String? in
-            guard argument.hasPrefix("https://") || argument.hasPrefix("http://") else { return nil }
-            return URL(string: argument)?.host()
-        }).first {
+        if request.arguments.first == "pr", request.arguments.count > 2,
+            let urlHost = URL(string: request.arguments[2])?.host()
+        {
             return urlHost.lowercased()
         }
-        if let host = request.repositoryHost { return host }
-        if let repo = environment["GH_REPO"] { return GitHubCommand.host(of: repo) }
+        if let repo = request.repository { return GitHubCommand.host(of: repo, defaultHost: defaultHost) }
         if let directory = request.directory {
-            // Read git's config locally, including gh's chosen base remote. No GitHub request may
-            // run with another account merely to discover which host a private checkout uses.
+            if let repo = environment["GH_REPO"] { return GitHubCommand.host(of: repo, defaultHost: defaultHost) }
+            // Match gh's effective URLs, including insteadOf rewrites, before choosing a token.
+            let remotes = try await runner.run(
+                Command(
+                    "git", ["remote", "-v"], in: directory.path(percentEncoded: false),
+                    environment: environment, timeout: .seconds(10)))
             let result = try await runner.run(
                 Command(
-                    "git", ["config", "--null", "--get-regexp", "^remote\\..*\\.(url|gh-resolved)$"],
+                    "git", ["config", "--null", "--get-regexp", "^remote\\..*\\.gh-resolved$"],
                     in: directory.path(percentEncoded: false), environment: environment, timeout: .seconds(10)))
-            guard result.succeeded || result.exitCode == 1 else {
+            guard remotes.succeeded, result.succeeded || result.exitCode == 1 else {
                 throw GitHubError.notARepository("Couldn't read this checkout's GitHub remotes.")
             }
             return try GitHubAccountHost.resolve(
-                config: result.output,
-                fallback: host ?? environment["GH_HOST"])
+                remotes: remotes.output, config: result.output, fallback: defaultHost)
         }
-        return (host ?? environment["GH_HOST"] ?? "github.com").lowercased()
+        return defaultHost
     }
 }
 
@@ -92,13 +99,13 @@ extension GitHubCommand {
 
     func targetingRepository(_ repository: String) -> GitHubCommand {
         var command = self
-        command.repositoryHost = repository.split(separator: "/").count >= 3 ? Self.host(of: repository) : nil
+        command.repository = repository
         return command
     }
 
-    static func host(of repository: String) -> String {
+    static func host(of repository: String, defaultHost: String = "github.com") -> String {
         if let host = URL(string: repository)?.host() { return host.lowercased() }
         let parts = repository.split(separator: "/")
-        return parts.count >= 3 ? String(parts[0]).lowercased() : "github.com"
+        return parts.count >= 3 ? String(parts[0]).lowercased() : defaultHost
     }
 }

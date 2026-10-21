@@ -8,8 +8,8 @@ public struct GitHubCommand: Sendable, Hashable {
     public var arguments: [String]
     /// Where gh runs; it finds the repository from this folder's git remotes.
     public var directory: URL?
-    /// Explicit repository host, before gh resolves a local checkout.
-    var repositoryHost: String?
+    /// An explicit repository selector takes precedence over GH_REPO, even without a host.
+    var repository: String?
     /// Written to gh's stdin: request bodies and pull request bodies, which can be long.
     public var input: Data?
     /// Whether it changes anything on GitHub, in a remote or in a working tree.
@@ -30,7 +30,7 @@ public struct GitHubCommand: Sendable, Hashable {
         case .remote(let repository):
             directory = nil
             self.arguments.append("--repo=\(repository)")
-            repositoryHost = repository.split(separator: "/").count >= 3 ? Self.host(of: repository) : nil
+            self.repository = repository
         case nil:
             directory = nil
         }
