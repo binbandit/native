@@ -11,6 +11,8 @@ struct GitChangesInspector: View {
     var review: GitChangesReview?
     /// The task, whose latest turn This Turn shows.
     var session: SessionModel?
+    /// Adaptive hosts move the pane between containers without ending the review.
+    var resetsReviewOnDisappear = true
     /// Opens the GitHub feature's pull request flow; the button is hidden without it.
     var onCreatePullRequest: (() -> Void)?
 
@@ -53,7 +55,7 @@ struct GitChangesInspector: View {
         .onChange(of: session?.phase) { followLatestTurn() }
         .onChange(of: session?.completedWriteCount) { followLatestTurn() }
         // It opens again on the uncommitted changes (⌘⇧D, docs/keyboard.md).
-        .onDisappear { review?.reset() }
+        .onDisappear { if resetsReviewOnDisappear { review?.reset() } }
         .alert(discardTitle, isPresented: isConfirmingDiscard) {
             Button("Discard", role: .destructive) {
                 let changes = pendingDiscard

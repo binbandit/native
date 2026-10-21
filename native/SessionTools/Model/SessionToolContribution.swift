@@ -17,6 +17,12 @@ struct SessionToolContribution: Identifiable {
     var pane: (@MainActor (SessionToolContext) -> AnyView)?
     /// What clicking its fact does when it has no pane.
     var perform: @MainActor (SessionToolContext) -> Void = { _ in }
+    /// The current command shortcut, resolved when the fact is rendered so remapping stays current.
+    var help: (@MainActor (_ isOpen: Bool) -> String)?
+    /// Review and Commit actions for the transcript's files-changed card.
+    var turnChanges: (@MainActor (SessionToolContext) -> TurnChangesActions)?
+    /// Called when the user closes the tool, not when resizing moves its pane to another container.
+    var didClose: @MainActor (SessionToolContext) -> Void = { _ in }
 
     var id: SessionToolID { spec.id }
 }
