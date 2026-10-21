@@ -2,6 +2,10 @@ import ACP
 import Foundation
 import NativeHostProtocol
 
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
+
 // A scriptable ACP agent for the host's tests. Like a real agent it keeps its own session store
 // (in $FAKE_AGENT_STORE) and writes the user's message to it as soon as a prompt arrives, so
 // `session/load` replays exactly what it received (`session/resume` reopens a session without the
@@ -446,7 +450,7 @@ actor FakeAgent {
         let hash = text.utf8.reduce(UInt64(5381)) { ($0 << 5) &+ $0 &+ UInt64($1) }
         let marker = store.appending(path: "seen-\(hash)")
         guard !FileManager.default.fileExists(atPath: marker.path(percentEncoded: false)) else { return false }
-        FileManager.default.createFile(atPath: marker.path(percentEncoded: false), contents: Data())
+        _ = FileManager.default.createFile(atPath: marker.path(percentEncoded: false), contents: Data())
         return true
     }
 
@@ -589,7 +593,22 @@ func startGrandchild(recordingIn file: String) {
     let words: [String] = ["/bin/sleep", "600"]
     let arguments = words.map { strdup($0) }
     defer { arguments.forEach { free($0) } }
-    if posix_spawn(&pid, "/bin/sleep", nil, &attributes, arguments + [nil], [nil]) == 0 {
+    #if os(Linux)
+    // Foundation watches its child's exit through an inherited socket. Passing that socket to
+    // sleep would hide the fake agent's crash until sleep exits, preventing recovery from running.
+    var actions = posix_spawn_file_actions_t()
+    posix_spawn_file_actions_init(&actions)
+    defer { posix_spawn_file_actions_destroy(&actions) }
+    for entry in (try? FileManager.default.contentsOfDirectory(atPath: "/proc/self/fd")) ?? [] {
+        if let descriptor = Int32(entry), descriptor > STDERR_FILENO {
+            posix_spawn_file_actions_addclose(&actions, descriptor)
+        }
+    }
+    let result = posix_spawn(&pid, "/bin/sleep", &actions, &attributes, arguments + [nil], [nil])
+    #else
+    let result = posix_spawn(&pid, "/bin/sleep", nil, &attributes, arguments + [nil], [nil])
+    #endif
+    if result == 0 {
         try? String(pid).write(toFile: file, atomically: true, encoding: .utf8)
     }
     posix_spawnattr_destroy(&attributes)

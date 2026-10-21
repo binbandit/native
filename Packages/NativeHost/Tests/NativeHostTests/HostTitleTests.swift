@@ -52,15 +52,10 @@ struct HostTitleTests {
             path: "host-titles-\(UUID().uuidString.prefix(8))", directoryHint: .isDirectory)
         var project: URL { root.appending(path: "project-alpha", directoryHint: .isDirectory) }
 
-        private final class BundleMarker {}
-
-        /// Where this test bundle's own build put the fake agent, whatever the scratch path.
-        private static let products = Bundle(for: BundleMarker.self).bundleURL.deletingLastPathComponent()
-
         var agent: AgentSpec {
             AgentSpec(
                 id: "fake", name: "Fake Agent",
-                command: Self.products.appending(path: "FakeACPAgent").path(percentEncoded: false),
+                command: HostHarness.products.appending(path: "FakeACPAgent").path(percentEncoded: false),
                 env: ["FAKE_AGENT_STORE": root.appending(path: "agent").path(percentEncoded: false)])
         }
 
