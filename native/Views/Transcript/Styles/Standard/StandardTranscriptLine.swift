@@ -49,7 +49,7 @@ struct StandardTranscriptLine: Identifiable {
     /// version) until one of those turns changes.
     static func plan(
         _ transcript: TranscriptStyleConfiguration, folding: Bool, unfolded: Set<TranscriptTurn.ID>,
-        cache: StandardTranscriptLineCache
+        cache: StandardTranscriptLineCache, detected: TurnDetectedChanges? = nil
     ) -> StandardTranscriptPlan {
         let state = transcript.session.state
         let turns = state.turns
@@ -58,7 +58,8 @@ struct StandardTranscriptLine: Identifiable {
             let isLatest = position == turns.count - 1
             return TurnLinesKey(
                 turn: turn, folding: folding, isUnfolded: unfolded.contains(turn.id), isLatest: isLatest,
-                isRunning: isLatest && transcript.isWorking, unfoldsExploration: transcript.unfoldsExploration)
+                isRunning: isLatest && transcript.isWorking, unfoldsExploration: transcript.unfoldsExploration,
+                detectedFiles: isLatest && detected?.startedAt == turn.startedAt ? detected?.files : nil)
         }
         func lines(for key: TurnLinesKey) -> [Self] {
             cache.lines(for: key) { Self.lines(for: key, in: state) }
@@ -94,7 +95,9 @@ struct StandardTranscriptLine: Identifiable {
         }
 
         var lines: [StandardTranscriptLine] = []
-        let summary = state.summary(of: turn)
+        var summary = state.summary(of: turn)
+        // What git saw change, which includes edits made through the shell that no tool reported.
+        if let detected = key.detectedFiles { summary.changedFiles = detected }
         // A usage limit shows once, as a card where the work stopped: the agent relaying the
         // provider's message and Native's notice of the failure say the same thing.
         let limitStop = UsageLimitStop(turnItems: state.items[turn.items], stopReason: turn.stopReason)
