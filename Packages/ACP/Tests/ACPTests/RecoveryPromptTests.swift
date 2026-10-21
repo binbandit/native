@@ -81,14 +81,16 @@ struct RecoveryPromptTests {
         #expect(state.items.count == 2)
     }
 
-    @Test("A stop after recovery settles the resumed work even if the earlier process recorded a stop")
-    func stopAfterRecovery() throws {
+    @Test(
+        "A stop after recovery settles only the resumed work even if the earlier process recorded a stop",
+        arguments: [true, false])
+    func stopAfterRecovery(withAnswer: Bool) throws {
         var state = SessionState()
         for line in InterruptionMarkerTests.replay.prefix(4) {
             state.apply(try Wire.update(line))
         }
         state.apply(userChunk(RecoveryPrompt(reason: .agentStopped).text))
-        state.apply(answer)
+        if withAnswer { state.apply(answer) }
         for line in InterruptionMarkerTests.toolUseReplay.dropFirst() {
             state.apply(try Wire.update(line))
         }
@@ -103,6 +105,7 @@ struct RecoveryPromptTests {
             if case .toolCall(let call) = item { call } else { nil }
         }
         #expect(stops.count == 2)
+        #expect(calls.first?.status == .failed)
         #expect(calls.last?.status == .cancelled)
         #expect(state.turns.count == 1)
         #expect(state.turns.first?.stopReason == .cancelled)

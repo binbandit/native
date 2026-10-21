@@ -223,6 +223,9 @@ extension SessionState {
     ) {
         for index in turnRange(containing: start).reversed() {
             switch items[index] {
+            // A recovery's notice replaces a prompt boundary: calls before it belong to an earlier
+            // attempt, even though the recovered work stays in the same visible turn.
+            case .notice(let notice) where notice.sentToAgent != nil: return
             case .notice: continue
             case .toolCall(let call) where wasCutOff(call): settleCall(at: index, as: status, at: nil)
             case .toolCall: continue
