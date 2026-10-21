@@ -115,10 +115,12 @@ public struct HostInfo: Codable, Hashable, Sendable {
     public var processID: Int32
     public var startedAt: Date
     public var channel: String
+    /// Absent on older protocol-v2 hosts, which still need the client's session notification path.
+    public var notificationEvents: Bool?
 
     public init(
         protocolVersion: Int, hostID: HostID, machineName: String, hostInfo: PeerInfo, epoch: UUID, processID: Int32,
-        startedAt: Date, channel: String
+        startedAt: Date, channel: String, notificationEvents: Bool? = nil
     ) {
         self.protocolVersion = protocolVersion
         self.hostID = hostID
@@ -128,6 +130,7 @@ public struct HostInfo: Codable, Hashable, Sendable {
         self.processID = processID
         self.startedAt = startedAt
         self.channel = channel
+        self.notificationEvents = notificationEvents
     }
 }
 

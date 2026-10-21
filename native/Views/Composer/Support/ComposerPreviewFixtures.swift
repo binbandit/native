@@ -7,12 +7,13 @@ import ImageIO
 /// Sample composer data for previews. Session settings are the configuration options Claude Code's
 /// adapter (claude-agent-acp) sends with `session/new`, decoded the way the app receives them.
 enum ComposerPreviewFixtures {
-    /// Model, effort, Fast mode and permission mode, with Auto as the permission mode.
+    /// Model, effort, Fast mode, Agent and output style, with Auto as the permission mode.
     static let configOptions: [ConfigOption] = decode(configJSON(mode: "auto")) ?? []
     /// The same, while Plan Mode stands in for the permission mode.
     static let planModeOptions: [ConfigOption] = decode(configJSON(mode: "plan")) ?? []
 
     static let settings = ComposerSettings(configOptions)
+    static let settingsWithoutExtras = ComposerSettings(configOptions.filter { $0.category != "other" })
     static let planModeSettings = ComposerSettings(planModeOptions)
 
     static let plan: [PlanEntry] =
@@ -116,6 +117,9 @@ enum ComposerPreviewFixtures {
           ]},
           {"id":"fast","name":"Fast mode","description":"Faster responses on supported models","category":"model_config","type":"select","currentValue":"off","options":[
             {"value":"on","name":"On"},{"value":"off","name":"Off"}
+          ]},
+          {"id":"agent","name":"Agent","description":"Agent to use for this session","category":"other","type":"select","currentValue":"default","options":[
+            {"value":"default","name":"Default"},{"value":"reviewer","name":"Reviewer"}
           ]},
           {"id":"output","name":"Output style","description":"How responses are written","category":"other","type":"select","currentValue":"default","options":[
             {"value":"default","name":"Default"},{"value":"explanatory","name":"Explanatory"},{"value":"learning","name":"Learning"}

@@ -32,10 +32,27 @@ struct GitHubSettingsPage: View {
 
     var body: some View {
         @Bindable var gitHub = gitHub
+        #if os(macOS)
+        @Bindable var accounts = gitHub.accounts
+        #endif
         SettingsPage {
             SettingsHeader(
                 "GitHub",
-                description: Text("Pull requests through your own GitHub CLI (gh): its login, hosts and settings."))
+                description: Text(
+                    "Choose the GitHub account Native uses and where pull requests open."))
+            #if os(macOS)
+            SettingsRowGroup {
+                SettingsRow(
+                    "Account",
+                    description: Text(
+                        "Choose from accounts signed in with gh. Your terminal keeps its own active account.")
+                ) {
+                    Button("Manage Accounts…") { gitHub.accounts.showMenu() }
+                        .buttonStyle(.settings)
+                        .dsPopover(isPresented: $accounts.isMenuPresented) { GitHubAccountMenu() }
+                }
+            }
+            #endif
             SettingsRowGroup {
                 SettingsRow(
                     id: Self.openingRow, "Open pull requests",
@@ -52,12 +69,12 @@ struct GitHubSettingsPage: View {
     }
 }
 
-#if NATIVE_PREVIEWS_WIP
+#if DEBUG
 #Preview("GitHub settings") {
     DSPreviewPair {
         GitHubSettingsPage()
             .settingsPreviewPage()
     }
-    .environment(GitHubModel.preview())
+    .environment(GitHubAccountPreviewFixtures.model(.multiple))
 }
 #endif

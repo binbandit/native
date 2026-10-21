@@ -8,6 +8,6 @@ public enum GitHubAvailability: Sendable, Hashable {
     case notAuthenticated
     /// gh couldn't reach any host to check its logins.
     case offline
-    /// Signed in. The active account per host with a working token, github.com first.
+    /// Signed in. The selected (otherwise gh-active) account per host with a working token, github.com first.
     case ready(accounts: [AuthStatus.Account])
 }

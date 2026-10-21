@@ -240,6 +240,8 @@ to the user's choice.
 | ⇧⌘A | Archive the selected task and open the next task in the sidebar's current filter and sort order (or the previous task at the end). ⌘Z or the toast's Undo restores and reopens it. Unarchive an archived task; with several tasks picked, archive them all | Task | `session.archive` |
 | ⌥⌘J | Turn the sidebar's Needs you filter on or off (its filter menu has the rest) | View | `view.needsYouFilter` |
 | ⌘⇧P | Pull requests | Go | `go.pullRequests` |
+| | GitHub Account: open the sidebar account menu (Mac only) | Go | `github.accounts` |
+| Tab, then Space on the sidebar account | Open the account menu; arrow keys select, Return chooses, Escape closes | | |
 | ⌘⇧X | Expeditions | Go | `go.expeditions` |
 | ⇧⌘F | Search every task (`docs/search.md`) | Go | `search.show` |
 | ⌥⌘I | Show or hide the subagent inspector | View | `view.toggleSubagentInspector` |
@@ -287,6 +289,11 @@ asks first.
 | | Stop the turns running in the picked tasks | Task ▸ Selected Tasks | `selection.stop` |
 
 ## Task settings
+
+Extra agent settings, such as Claude Code's Agent selector, always live in the composer's More
+Controls ("…") menu. Each setting lists its choices with the current value checked; use the arrow
+keys and Return to choose from the menu. Model, effort, autonomy and mode keep their dedicated
+controls, moving into More only as the row runs out of room.
 
 With the Quiet composer experiment enabled, each setting is a plain-word button under the draft.
 The same keys below still apply. The agent name opens New Task With (⌥⌘N); it does not move the

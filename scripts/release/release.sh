@@ -29,7 +29,8 @@
 # NATIVE_KEYCHAIN (keychain holding the identity and profile, for CI), NATIVE_TEAM_ID,
 # NATIVE_GITHUB_REPOSITORY and NATIVE_SPARKLE_PUBLIC_KEY (override Config/Shared.xcconfig),
 # NATIVE_SENTRY_DSN and SENTRY_AUTH_TOKEN (official builds), GH_TOKEN in CI,
-# NATIVE_LINUX_HOST_DIR (native-host-linux-<arch> binaries to add to the host feed).
+# NATIVE_LINUX_HOST_DIR (native-host-linux-<arch> binaries to add to the host feed),
+# NATIVE_RELEASE_NOTES_FROM (automatic beta's previous tag; empty keeps the channel's default).
 set -euo pipefail
 source "$(dirname "$0")/lib.sh"
 
@@ -215,6 +216,9 @@ case $channel in
     nightly) git fetch --quiet --force origin tag nightly 2>/dev/null || true
         previous_tag=$(git rev-parse --verify --quiet nightly 2>/dev/null || true) ;;
 esac
+if [ "$channel" = beta ] && [ -n "${NATIVE_RELEASE_NOTES_FROM:-}" ]; then
+    previous_tag=$NATIVE_RELEASE_NOTES_FROM
+fi
 notes="$output/appcast/${zip_name%.zip}.md"
 if [ "$MODE" = plan ]; then
     printf '  [plan] release notes since %s > %s\n' "${previous_tag:-the first commit}" "$notes" >&2

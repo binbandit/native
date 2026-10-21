@@ -69,8 +69,8 @@ extension DurableHost {
         guard seen != nil else { return }
         switch reconnection {
         case .launch:
-            // With host notifications on, their feed sums up the absence (HostNotificationFeed).
-            if !HostNotificationsSwitch.isEnabled {
+            if HostNotificationsSwitch.history.usesActivitySummary(on: host, enabled: HostNotificationsSwitch.isEnabled)
+            {
                 away = AwaySummary(entries: entries, sessions: sessions)
             }
         case .newHost:

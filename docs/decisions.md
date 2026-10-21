@@ -605,3 +605,13 @@ secrets move to Keychain references, audit decisions become durable and attribut
 must cover every owned copy. Signing, an SBOM, crypto validation evidence and accessibility evidence
 belong to the release/deployment assessment, not a blanket compliance claim. The source inventory,
 gaps and independent implementation steps are in [Regulated environments](plans/regulated-environments.md).
+
+## 2026-10-21: Mac betas every six hours when main changes
+
+Beta checks main at minute 17 every six hours and skips unchanged commits or an active Mac release.
+It continues the highest beta version numerically; a stable release starts the next minor at beta.1.
+The scheduler tags the selected main commit and calls the existing Release workflow with inherited
+secrets, so signing, notarization, publication and the Mac runner stay in one pipeline. A tag made
+with GITHUB_TOKEN cannot trigger Release on its own. Direct Release dispatch remains a rehearsal;
+Beta's dry run only prints its decision. Automatic notes start at the previous beta, including when
+a stable tag intervenes. Daily Nightly, manual version tags and TestFlight keep their own triggers.
