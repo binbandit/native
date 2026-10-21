@@ -57,6 +57,28 @@ struct StoreTests {
         #expect(try reopened.delivery(for: UUID()) == nil)
     }
 
+    @Test("Version 8 stores gain durable settings for closed sessions")
+    func migratesClosedSessionConfig() throws {
+        do {
+            let store = try HostStore(url: url)
+            try store.database.execute("DROP TABLE closed_session_config; PRAGMA user_version = 8;")
+        }
+        let session = StoredSession(
+            id: HostSessionID(), agentID: "fake", agentSessionID: SessionID("saved"), cwd: "/tmp",
+            parentID: nil, origin: .user, configChoices: ["model": "beta", "effort": "high"])
+        do {
+            let migrated = try HostStore(url: url)
+            try migrated.keepClosedSessionConfig(session)
+        }
+        let reopened = try HostStore(url: url)
+        #expect(
+            try reopened.closedSessionConfig(agentID: "fake", agentSessionID: SessionID("saved"))
+                == session.configChoices)
+        #expect(try reopened.closedSessionConfig(agentID: "other", agentSessionID: SessionID("saved")) == nil)
+        try reopened.forgetClosedSessionConfig(agentID: "fake", agentSessionID: SessionID("saved"))
+        #expect(try reopened.closedSessionConfig(agentID: "fake", agentSessionID: SessionID("saved")) == nil)
+    }
+
     @Test("A failed transaction leaves nothing behind")
     func atomicTransactions() throws {
         let store = try HostStore(url: url)

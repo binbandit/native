@@ -66,6 +66,9 @@ public struct OpenSessionParams: Codable, Sendable {
     public var origin: SessionOrigin
     public var mcpServers: [JSONValue]
     public var meta: JSONValue?
+    /// Choices remembered before the host first adopted this session. An existing host record,
+    /// including one kept when the session closed, always wins over these client values.
+    public var configChoices: [String: String]?
     /// Follow the session's events. The answer then comes as soon as the session exists, with the
     /// replay streaming in after it; a load that fails leaves the session `disconnected` with its
     /// `problem` and a notice. Without it, the answer waits for the load and a failure throws.
@@ -74,7 +77,8 @@ public struct OpenSessionParams: Codable, Sendable {
     public init(
         sessionID: HostSessionID? = nil, agentID: String, agentSessionID: SessionID, cwd: String,
         title: String? = nil, parentID: HostSessionID? = nil, origin: SessionOrigin = .user,
-        mcpServers: [JSONValue] = [], meta: JSONValue? = nil, attach: Bool = false
+        mcpServers: [JSONValue] = [], meta: JSONValue? = nil, attach: Bool = false,
+        configChoices: [String: String]? = nil
     ) {
         self.sessionID = sessionID
         self.agentID = agentID
@@ -86,6 +90,7 @@ public struct OpenSessionParams: Codable, Sendable {
         self.mcpServers = mcpServers
         self.meta = meta
         self.attach = attach
+        self.configChoices = configChoices
     }
 }
 
