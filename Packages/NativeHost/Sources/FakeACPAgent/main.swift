@@ -179,7 +179,7 @@ actor FakeAgent {
             let params = try message.params(as: PromptParams.self)
             let text = Self.describe(params.prompt)
             if text.hasPrefix("/rename "), !Self.renameAsksModel {
-                try rename(params.sessionId, to: String(text.dropFirst("/rename ".count)), id: id, on: peer)
+                try await rename(params.sessionId, to: String(text.dropFirst("/rename ".count)), id: id, on: peer)
                 return
             }
             let stopReason = try await prompt(params.sessionId, text: text)
@@ -225,15 +225,26 @@ actor FakeAgent {
 
     /// `/rename` as codex-acp 2.2.2 answers it (captured from it): handled without a model, so the
     /// usage is null, and the new title follows the answer.
-    private func rename(_ session: SessionID, to name: String, id: RequestID, on peer: JSONRPCPeer) throws {
+    private func rename(_ session: SessionID, to name: String, id: RequestID, on peer: JSONRPCPeer) async throws {
+        cancelled.remove(session)
         received("rename", name)
+        // A file gate lets tests stop or restart the agent while naming is still in flight.
+        let environment = ProcessInfo.processInfo.environment
+        if let gate = environment["FAKE_AGENT_RENAME_GATE"] {
+            while !FileManager.default.fileExists(atPath: gate) {
+                try await Task.sleep(for: .milliseconds(10))
+            }
+        }
+        let stopped = cancelled.contains(session) && environment["FAKE_AGENT_RENAME_IGNORES_CANCEL"] != "1"
         try peer.respond(
             to: id,
             with: JSONValue.object([
-                "stopReason": .string("end_turn"), "usage": .null,
+                "stopReason": .string(stopped ? "cancelled" : "end_turn"), "usage": .null,
                 "_meta": .object(["quota": .object(["token_count": .null, "model_usage": .array([])])]),
             ]))
-        try update(session, ["sessionUpdate": .string("session_info_update"), "title": .string(name)])
+        if !stopped {
+            try update(session, ["sessionUpdate": .string("session_info_update"), "title": .string(name)])
+        }
     }
 
     private func prompt(_ session: SessionID, text framed: String) async throws -> String {

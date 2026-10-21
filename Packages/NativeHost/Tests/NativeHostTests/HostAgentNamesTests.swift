@@ -73,4 +73,75 @@ struct HostAgentNamesTests {
         #expect(harness.received == ["prompt\t/rename Hello there", "prompt\thello there", "prompt\tgood morning"])
         await recorder.stop()
     }
+
+    @Test(
+        "Stop during naming never sends the pending prompt, even if the agent ignores cancellation",
+        arguments: [false, true])
+    func stopDuringNaming(ignoresCancel: Bool) async throws {
+        let harness = try HostHarness()
+        let gate = harness.root.appending(path: "release-rename")
+        harness.agentEnvironment["FAKE_AGENT_RENAME_GATE"] = gate.path(percentEncoded: false)
+        harness.agentEnvironment["FAKE_AGENT_RENAME_IGNORES_CANCEL"] = ignoresCancel ? "1" : "0"
+        let recorder = try await connect(harness)
+        let session = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: "/tmp", attach: true))
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "do not send this"))
+        try await recorder.wait("the pending rename") { _ in harness.received == ["rename\tDo not send this"] }
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "queued", behavior: .queue))
+        try await recorder.client.cancel(session.id)
+        try Data().write(to: gate)
+        try await recorder.wait("the stopped turn") { await $0.turnsEnded(session.id).count == 1 }
+        #expect(await recorder.turnsEnded(session.id) == ["cancelled"])
+        #expect(harness.received == ["rename\tDo not send this"])
+        #expect(await recorder.summaries[session.id]?.isQueuePaused == true)
+        // Sending again releases the paused queue without reviving the cancelled prompt.
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "next"))
+        try await recorder.wait("the queued and next turns") { await $0.turnsEnded(session.id).count == 3 }
+        #expect(harness.received.filter { $0.hasPrefix("prompt\t") } == ["prompt\tqueued", "prompt\tnext"])
+        await recorder.stop()
+    }
+
+    @Test("Restart during naming recovers once and leaves the replacement connection alive")
+    func restartDuringNaming() async throws {
+        let harness = try HostHarness()
+        let gate = harness.root.appending(path: "release-rename")
+        harness.agentEnvironment["FAKE_AGENT_RENAME_GATE"] = gate.path(percentEncoded: false)
+        let recorder = try await connect(harness)
+        let session = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: "/tmp", attach: true))
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "hello"))
+        try await recorder.wait("the pending rename") { _ in harness.received == ["rename\tHello"] }
+        let replacement = try await recorder.client.restartAgent("fake")
+        #expect(replacement.state == .ready)
+        try Data().write(to: gate)
+        try await recorder.wait("the recovered turn") { await $0.turnsEnded(session.id) == ["end_turn"] }
+        #expect(await recorder.recoveries(session.id).count == 1)
+        #expect(await recorder.recoveries(session.id).first?.cause == .agentRestarted)
+        #expect(harness.received.filter { $0.hasPrefix("prompt\t") } == ["prompt\thello"])
+        #expect(try await recorder.client.agents().first?.processID == replacement.processID)
+        #expect(await shownMessages(session.id, in: recorder) == ["hello", "echo: hello"])
+        try await send("still connected", to: session.id, in: recorder)
+        #expect(try await recorder.client.agents().first?.processID == replacement.processID)
+        await recorder.stop()
+    }
+
+    @Test("A naming reply after the host abandons a stopped turn cannot revive it")
+    func abandonedDuringNaming() async throws {
+        let harness = try HostHarness()
+        let gate = harness.root.appending(path: "release-rename")
+        harness.agentEnvironment["FAKE_AGENT_RENAME_GATE"] = gate.path(percentEncoded: false)
+        harness.agentEnvironment["FAKE_AGENT_RENAME_IGNORES_CANCEL"] = "1"
+        let recorder = try await connect(harness)
+        let session = try await recorder.client.newSession(NewSessionParams(agentID: "fake", cwd: "/tmp", attach: true))
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "old task"))
+        try await recorder.wait("the pending rename") { _ in harness.received == ["rename\tOld task"] }
+        try await recorder.client.cancel(session.id)
+        try await Task.sleep(for: .milliseconds(1_100))
+        try await recorder.client.cancel(session.id)
+        #expect(await recorder.turnsEnded(session.id) == ["cancelled"])
+        try Data().write(to: gate)
+        try await recorder.wait("the late rename reply") { await $0.mirror(session.id).state.title == "Old task" }
+        try await send("next", to: session.id, in: recorder)
+        #expect(harness.received.filter { $0.hasPrefix("prompt\t") } == ["prompt\tnext"])
+        #expect(await recorder.turnsEnded(session.id) == ["cancelled", "end_turn"])
+        await recorder.stop()
+    }
 }

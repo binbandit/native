@@ -120,16 +120,34 @@ extension HostCore {
             let peer = link.peer,
             let agentSessionID = session.record.agentSessionID
         else { return }
-        await nameInAgent(session, beforeSending: turn.prompt, on: link, peer: peer)
         let generation = link.generation
+        // Naming suspends this run just like the prompt does. Neither continuation owns work on
+        // a replacement connection, even when recovery reuses the same durable request id.
+        func ownsTurn() -> Bool {
+            sessions[session.id] === session && session.turn?.requestID == turn.requestID
+                && agents[session.record.agentID] === link && link.generation == generation && link.peer === peer
+        }
         do {
+            if session.stopRequestedAt != nil {
+                finish(turn, in: session, stopReason: "cancelled")
+                return
+            }
+            let namingStopReason = try await nameInAgent(session, beforeSending: turn.prompt, on: link, peer: peer)
+            guard ownsTurn() else { return }
+            if namingStopReason == "cancelled" || session.stopRequestedAt != nil {
+                finish(turn, in: session, stopReason: "cancelled")
+                return
+            }
             let response = try await peer.request(
                 "session/prompt", PromptRequest(sessionId: agentSessionID, prompt: blocks), as: RawPromptResponse.self)
+            guard ownsTurn() else { return }
             finish(turn, in: session, stopReason: response.stopReason)
         } catch PeerError.closed {
             // The agent died mid-turn; recovery takes it from here.
+            guard ownsTurn() else { return }
             agentExited(session.record.agentID, generation: generation)
         } catch {
+            guard ownsTurn() else { return }
             noteAgentError(error, from: link)
             fail(turn, in: session, error: error)
         }

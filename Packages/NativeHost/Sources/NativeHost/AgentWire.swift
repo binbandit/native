@@ -63,6 +63,7 @@ struct RawPromptResponse: Decodable, Sendable {
 /// A prompt's answer, for telling whether a model took part: ACP's `usage` is null for a command
 /// the agent handled itself.
 struct RawPromptUsageResponse: Decodable, Sendable {
+    var stopReason: String
     var usage: JSONValue?
 }
 
