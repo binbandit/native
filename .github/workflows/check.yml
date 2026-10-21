@@ -76,10 +76,12 @@ jobs:
           path: ${{ env.COMPILATION_CACHE }}
           key: compilation-cache-${{ runner.os }}-${{ matrix.configuration }}-${{ github.sha }}
           restore-keys: compilation-cache-${{ runner.os }}-${{ matrix.configuration }}-
+      # Only the versions Package.resolved records: a resolved file that no longer matches the project
+      # fails here instead of being re-resolved to whatever the remotes have now.
       - name: Resolve Swift packages
         run: >-
           xcodebuild -resolvePackageDependencies -project native.xcodeproj -scheme native
-          -clonedSourcePackagesDirPath "$SOURCE_PACKAGES" -quiet
+          -clonedSourcePackagesDirPath "$SOURCE_PACKAGES" -disableAutomaticPackageResolution -quiet
       - name: Build ${{ matrix.configuration }}
         run: |
           set -o pipefail
