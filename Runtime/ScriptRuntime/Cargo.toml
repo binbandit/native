@@ -20,5 +20,7 @@ serde_json = { version = "1.0", features = ["preserve_order"] }
 
 [profile.release]
 lto = "thin"
-strip = true
+# Strip the staged helper with Xcode's tool in scripts/build-script-runtime.sh. Rust 1.99.0's
+# bundled rust-objcopy cannot find libLLVM.dylib on macOS and only warns when stripping fails.
+strip = false
 panic = "abort"
