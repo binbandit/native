@@ -14,7 +14,7 @@ final class HostStore {
     /// Extensions that keep an engine's tables use it directly (HostStore+Notifications.swift).
     let database: SQLiteDatabase
 
-    static let schemaVersion: Int64 = 8
+    static let schemaVersion: Int64 = 9
 
     init(url: URL) throws {
         database = try SQLiteDatabase(url: url)
@@ -77,6 +77,9 @@ final class HostStore {
             if version < 8 {
                 // Version 8: the tasks sessions handed each other (HostStore+Tasks.swift).
                 try database.execute(Self.tasksTable)
+            }
+            if version < 9 {
+                try database.execute(Self.closedSessionConfigTable)
             }
             try database.execute("PRAGMA user_version = \(Self.schemaVersion)")
         }
