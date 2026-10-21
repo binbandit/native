@@ -431,8 +431,9 @@ step runs even when the one before it failed, so one run reports every break:
   the checker adds app declarations the compiler reports missing, including their cross-folder
   extensions, and recursively builds imported local package modules. It repeats until no more
   dependencies can be added, then reports the compiler's remaining diagnostics at original paths
-  and line numbers. Local iOS libraries referenced by `canImport` guards are built before the final
-  check so an empty module cache cannot silently exclude their consumers. Package builds use the
+  and line numbers. Imports guarded by local iOS libraries' `canImport` checks are discovered before
+  those libraries are built, so an empty module cache cannot silently exclude their consumers.
+  Swift still excludes imports in inactive platform branches. Package builds use the
   shared build queue; `NATIVE_IOS_CHECK_CACHE` can select
   a private incremental cache.
 

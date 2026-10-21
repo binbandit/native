@@ -157,6 +157,15 @@ class CheckIOSIntegrationTests(unittest.TestCase):
         self.assertIn("cannot find type 'NotARealType' in scope", result.stdout)
         self.assertNotIn("macOS branch must remain inactive", result.stdout)
 
+        self.write(
+            "native/Views/Screen.swift",
+            "#if os(macOS) && canImport(LocalSupport)\nimport LocalSupport\n#endif\nstruct Screen {}\n",
+        )
+        self.write("Packages/LocalSupport/Sources/LocalSupport/Payload.swift", '#error("inactive dependency was built")\n')
+        result = subprocess.run(command, cwd=scripts, text=True, capture_output=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.write("Packages/LocalSupport/Sources/LocalSupport/Payload.swift", "public struct Payload { public let number: Int }\n")
+
         self.write("native/Views/Screen.swift", "struct Screen { let model: Model }\n")
         self.write("native/Models/Model.swift", "import AppKit\nstruct Model {}\n")
         result = subprocess.run(command, cwd=scripts, text=True, capture_output=True)

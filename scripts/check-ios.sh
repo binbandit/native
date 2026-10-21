@@ -106,7 +106,6 @@ available = (not platforms or any(p["platformName"] == "ios" for p in platforms)
 sys.exit(0 if available else 1)
 PY
         then
-            echo "$module"
             availability+=(-module-can-import "$module")
         fi
     done
