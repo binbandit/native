@@ -24,6 +24,7 @@ on:
       - scripts/companion/**
       - design/app-icon/**
       - native/AppIcon.icon/**
+      - .github/workflows/testflight.yml
       - .github/workflows/ios.yml
   workflow_dispatch:
 
