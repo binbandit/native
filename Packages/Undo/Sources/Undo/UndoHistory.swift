@@ -47,7 +47,13 @@ public final class UndoHistory {
                 observers.append(
                     NotificationCenter.default.addObserver(forName: name, object: manager, queue: .main) {
                         [weak self] _ in
-                        MainActor.assumeIsolated { self?.refresh() }
+                        if name == .NSUndoManagerCheckpoint {
+                            // A checkpoint precedes registration and naming. Let both finish before
+                            // SwiftUI samples the next action for the menu title.
+                            Task { @MainActor [weak self] in self?.refresh() }
+                        } else {
+                            MainActor.assumeIsolated { self?.refresh() }
+                        }
                     })
             }
         }
