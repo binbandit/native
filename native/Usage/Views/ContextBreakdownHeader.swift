@@ -13,8 +13,8 @@ struct ContextBreakdownHeader<Source: ContextSource>: View {
                     Text("Context")
                         .font(.dsHeadline)
                         .foregroundStyle(.dsTextPrimary)
-                    TimelineView(.everyMinute) { context in
-                        Text(subtitle(now: context.date))
+                    DSMinuteTimeline { now in
+                        Text(subtitle(now: now))
                             .font(.dsCaption)
                             .foregroundStyle(.dsTextTertiary)
                             .lineLimit(1)

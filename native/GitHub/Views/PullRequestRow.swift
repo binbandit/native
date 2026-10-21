@@ -113,8 +113,8 @@ struct PullRequestRow: View {
                     .lineLimit(1)
                     .layoutPriority(-1)
             }
-            TimelineView(.everyMinute) { context in
-                Text(DSFormat.compactAge(pullRequest.updatedAt, now: context.date))
+            DSMinuteTimeline { now in
+                Text(DSFormat.compactAge(pullRequest.updatedAt, now: now))
                     .monospacedDigit()
                     .foregroundStyle(.dsTextTertiary)
                     .fixedSize()

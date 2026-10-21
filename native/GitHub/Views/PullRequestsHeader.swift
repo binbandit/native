@@ -18,8 +18,8 @@ struct PullRequestsHeader: View {
                     .foregroundStyle(.dsTextPrimary)
                 Spacer(minLength: DS.Space.md)
                 if let inbox = model.inbox {
-                    TimelineView(.everyMinute) { _ in
-                        Text("Updated \(inbox.fetchedAt, format: .relative(presentation: .named))")
+                    DSMinuteTimeline { _ in
+                        Text("Updated \(inbox.fetchedAt.formatted(.relative(presentation: .named)))")
                             .font(.dsCaption)
                             .foregroundStyle(.dsTextTertiary)
                     }

@@ -696,6 +696,23 @@ a temporary launch argument; they count main-thread instructions from `willFinis
   0.3 M main-thread instructions and the twelfth 3.4-4.5 M, about 1.5 times the one before (Still
   to do).
 
+#### Remaining minute labels
+
+2026-10-21. The seven remaining `TimelineView(.everyMinute)` call sites now use `DSMinuteTimeline`:
+pull request row ages, the list's updated label and stale banner, the usage account's limit windows,
+the context breakdown's subtitle, and the limit chip and banner. The wrapper reads `DSMinuteClock`
+in its own body, so minute ticks update only the time-dependent content. The pull request header
+and stale banner format strings inside it instead of giving `Text` a relative-date format that
+can schedule updates of its own. Limit resets and scheduled resumes still use their existing
+model timers; only display updates share the minute clock.
+
+Normal Debug, isolated `menu-perf`, comparing `a20fd415` with this change on the same base. The
+pull request list was open in a covered window, with no Accessibility reads during each 65-second
+`scripts/perf/rusage.swift` sample. Before: 0.60% CPU, 0.0 idle wakeups/s, 1.2 interrupt wakeups/s,
+31.58 M instructions/s. After: 0.56%, 0.0/s, 0.7/s, 25.20 M/s. These single samples on a busy Mac
+do not establish a measurable CPU saving; the concrete change is removal of every per-view minute
+timeline. The menu and launch measurements above are unchanged.
+
 ### Idle, memory and leaks
 
 2026-10-19, evening, Debug build in an isolated instance: 30 tasks from a fake agent in three small
@@ -775,7 +792,6 @@ several runs each. Task switches and Settings visits are AX presses on the insta
 | A cheaper main menu | 0.29-0.31 G of launch in optimized Debug (Launch, round three): SwiftUI building about 85 items' view lists and platform items. Reading the window's context once instead of eight focused values per item didn't change it. Building the items after the first frame loses the File menu (round two). Fewer items at launch might: submenus whose items come when they open (Selected Tasks, Mode, Status Bar Items, Keep Mac Awake, Appearance), if SwiftUI keeps a submenu that starts empty, or fewer than the nine Go to Session items | Commands |
 | Native under 150 MB with a transcript open | 175–195 MB with one short transcript open (Home 130–140 MB): the first session view's SwiftUI graph is about 26 MB live, the rest pages the allocator kept after its transient allocations | Session view, transcript |
 | About 257 MB of graphics memory on whole-window redraws | For about a second at every launch and on some redraws when other windows uncover Native's (peak 390–405 MB); find what draws in-process with Metal then | App shell |
-| Other minute labels each run a timeline | The pull request list's row ages, its header and stale banner, the usage card and the context breakdown's header, and the limit chip and banner each run a `TimelineView(.everyMinute)` while they show, visible or not. Move them to `DSMinuteClock`, as `CompactAgeText` and Home's rows did (Launch, round three) | GitHub, Usage, design system |
 | Changing a shortcut gets slower each time | Each change in a session costs about 1.5 times the one before: 0.3 M main-thread instructions for the first and 3.4-4.5 M for the twelfth, with the menu items rebuilt for each change or not (Launch, round three). Something that follows the bindings compounds; find what | Commands |
 | The composer's rich editor still leaks once it showed code | SwiftUI's rich `TextEditor` leaves about 14 KB behind each editor that goes away; only drafts with code use it now. Keeping one editor across task switches would end it | Composer |
 | Park the default agent when it has no open sessions for a long while, or start it on the first New Session | It's kept running so New Session never waits; with direct adapter launch that wait is now about 0.3 s for Codex | App model |
