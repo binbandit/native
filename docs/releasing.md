@@ -396,6 +396,15 @@ an x86_64 slice nothing links). The Debug, Release and Nightly builds also cache
 
 Releases cache neither: an archive that ships compiles from scratch.
 
+`CI_MACOS_RUNNER` overrides the runner for `ci.yml`, `check.yml` and `ios.yml`, falling back to
+`MACOS_RUNNER` and then `macos-26`. Publishing in Nightly and Release keeps `MACOS_RUNNER`.
+Swift package and compilation caches use keys containing the runner environment and architecture.
+Package resolution and compilation caches live in `RUNNER_TEMP`, so multiple runners under the
+same account never mutate the same Swift package checkout. Self-hosted jobs skip build-cache
+downloads and start with fresh package build state and a job-local script runtime cache; hosted
+jobs still restore their caches. The shared libghostty build already takes a lock on the machine.
+Self-hosted runners need the same build tools as the hosted image, including Git LFS for artwork.
+
 Every app build in CI, `check.sh` and `release.sh` passes `-disableAutomaticPackageResolution`, so
 packages come only at the versions and revisions `Package.resolved` records. When the project's
 requirements and that file disagree, the build fails ("an out-of-date resolved file was detected")
