@@ -113,7 +113,7 @@ extension SessionTitles {
             client: client, session: summary.id, folder: URL(filePath: summary.cwd, directoryHint: .isDirectory))
         hostLinks[key] = link
         let titles = summary.titles ?? HostSessionTitles()
-        let before = title(for: key, agentTitle: nil)
+        let before = namedTitle(for: key)
         if renamesInFlight[key] == nil {
             if unsyncedRenames.contains(key) || (titles.user == nil && userTitle(for: key) != nil) {
                 sendRename(key)
@@ -130,7 +130,7 @@ extension SessionTitles {
         if let request = titles.request {
             writeTitle(request, for: key, on: link)
         }
-        guard let after = title(for: key, agentTitle: nil) else { return }
+        guard let after = namedTitle(for: key) else { return }
         if after != before || landedTitles.insert(key).inserted {
             titleLanded(key, link.folder, after)
         }
