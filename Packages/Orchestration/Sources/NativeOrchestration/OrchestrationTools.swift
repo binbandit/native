@@ -6,20 +6,20 @@ import MCP
 public enum OrchestrationTools {
     /// Told to the model with the tools: when and how to use them.
     public static let instructions = """
-        Native runs several coding agents side by side. These tools let you hand work to another agent \
-        session, such as Codex for a second opinion or another session of your own agent for a parallel \
+        Native runs several coding agents side by side. These tools let you hand work to another coding agent, \
+        such as Codex for a second opinion or another task of your own agent for a parallel \
         subtask, and work with it: start_task, then wait_for_task for its reply; send_message to follow \
         up or to talk to related tasks; cancel_task to stop one. Tasks work in the same project \
-        directory as you, and the user sees each one as a subagent of the session that started it. If \
+        directory as you, and the user sees each one as a subagent of the task that started it. If \
         you are a task yourself, list_tasks shows your parent and sibling tasks, which you can message. \
-        Delegate work that benefits from an independent session or a different model; do quick lookups \
+        Delegate work that benefits from an independent task or a different model; do quick lookups \
         yourself. To extend Native itself, such as writing a Native plugin for the user, read the guide \
         first: list_skills, then get_skill.
         """
 
     private static let taskID: JSON = [
         "type": "string",
-        "description": "A task id from start_task or list_tasks, or \"parent\" for the session that started you.",
+        "description": "A task id from start_task or list_tasks, or \"parent\" for the task that started you.",
     ]
 
     public static func all(_ orchestrator: TaskOrchestrator) -> [MCPTool<OrchestrationCaller>] {
@@ -28,7 +28,7 @@ public enum OrchestrationTools {
                 name: "list_agents",
                 title: "List agents",
                 description:
-                    "List the coding agents you can hand tasks to with start_task, such as Claude Code and Codex. Each task runs as its own session of that agent, which the user can watch in Native.",
+                    "List the coding agents you can hand tasks to with start_task, such as Claude Code and Codex. Each task runs with that agent, and the user can watch it in Native.",
                 inputSchema: ["type": "object", "properties": [:], "additionalProperties": false],
                 outputSchema: [
                     "type": "object",
@@ -55,17 +55,17 @@ public enum OrchestrationTools {
                 name: "start_task",
                 title: "Start task",
                 description: """
-                    Hand a task to a new session of a coding agent and return right away with a task_id; \
+                    Start a new task with a coding agent and return right away with a task_id; \
                     the task runs in the background while you continue.
 
-                    The new session works in the same project directory as you, with the tools it would \
+                    The new task works in the same project directory as you, with the tools it would \
                     have if the user had started it, but it hasn't seen your conversation: make the prompt \
                     self-contained, with the goal, the relevant files and context, constraints, and what to \
                     report back. Get agent ids from list_agents. You can pick a different agent (for \
-                    example Codex, for an independent review) or another session of your own agent.
+                    example Codex, for an independent review) or another task of your own agent.
 
                     Then call wait_for_task for its reply, send_message to follow up or redirect it, or \
-                    cancel_task to stop it. The user sees the task as a subagent of your session and \
+                    cancel_task to stop it. The user sees the task as a subagent of your task and \
                     approves its tool calls. Tasks you start can message each other, so parallel tasks can \
                     coordinate; they share the working directory, so don't give them overlapping files to \
                     edit.
@@ -103,8 +103,8 @@ public enum OrchestrationTools {
                 name: "list_tasks",
                 title: "List tasks",
                 description: """
-                    List the sessions you can reach, with their status: the tasks you started and, if you \
-                    are a task yourself, the session that started you ("parent") and its other tasks (your \
+                    List the tasks you can reach, with their status: the tasks you started and, if you \
+                    are a task yourself, the task that started you ("parent") and its other tasks (your \
                     siblings). Use it to find who to message, for example a sibling working on a related \
                     part of the same job.
                     """,
@@ -143,7 +143,7 @@ public enum OrchestrationTools {
                 title: "Wait for task",
                 description: """
                     Wait for a task's current turn to finish, then return its status and its reply: what \
-                    the agent said at the end of its latest turn. Works on any session list_tasks shows.
+                    the agent said at the end of its latest turn. Works on any task list_tasks shows.
 
                     Returns early with status needs_approval when the task is blocked on the user \
                     approving one of its tool calls in Native; let the user know if they might not have \
@@ -177,7 +177,7 @@ public enum OrchestrationTools {
                 name: "get_task",
                 title: "Get task",
                 description:
-                    "Check a task's status and its latest reply without waiting. Works on any session list_tasks shows.",
+                    "Check a task's status and its latest reply without waiting. Works on any task list_tasks shows.",
                 inputSchema: [
                     "type": "object",
                     "properties": ["task_id": taskID],
@@ -235,7 +235,7 @@ public enum OrchestrationTools {
                 name: "cancel_task",
                 title: "Cancel task",
                 description:
-                    "Stop the current turn of a task you started. Its session stays open, so you can give it new instructions with send_message afterwards.",
+                    "Stop the current turn of a task you started. The task stays open, so you can give it new instructions with send_message afterwards.",
                 inputSchema: [
                     "type": "object",
                     "properties": ["task_id": ["type": "string", "description": "The task_id start_task returned."]],

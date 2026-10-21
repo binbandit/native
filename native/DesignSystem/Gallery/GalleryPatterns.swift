@@ -11,7 +11,7 @@ struct GalleryPatterns: View {
                 detail: "Your message is queued and sends when the network returns.")
             ErrorState(
                 "The GitHub MCP server didn't start",
-                recovery: "Native kept the session running without it.",
+                recovery: "Native kept the task running without it.",
                 suggestion: "Check the server's command, then retry.",
                 details:
                     "Error: spawn npx ENOENT\n    at ChildProcess._handle.onexit (node:internal/child_process:286:19)",

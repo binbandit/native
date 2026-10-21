@@ -67,7 +67,7 @@ struct HostSessionTests {
             OpenSessionParams(agentID: "fake", agentSessionID: SessionID("missing"), cwd: "/tmp", attach: true))
         try await recorder.wait("the failure") { await $0.summaries[summary.id]?.phase == .disconnected }
         #expect(await recorder.summaries[summary.id]?.problem != nil)
-        #expect(await recorder.notices(summary.id).contains { $0.hasPrefix("Couldn't load this session") })
+        #expect(await recorder.notices(summary.id).contains { $0.hasPrefix("Couldn't load this task") })
         #expect(await !recorder.mirror(summary.id).isLoading)
         await recorder.stop()
     }

@@ -16,7 +16,7 @@ project, and their rows in Settings and the session popover are locked and show 
 | Agent | Mechanism | Scope | Status |
 | --- | --- | --- | --- |
 | Claude Code (claude-agent-acp 0.93.0) | `session/new` and `session/load` `_meta.claudeCode.options.settings.deniedMcpServers: [{serverName}]`. The Agent SDK merges `deniedMcpServers` from every settings source, its programmatic tier included, and doesn't start a denied server. | Per session, so per project | Verified |
-| Codex (codex-acp 2.2.2) | `CODEX_CONFIG={"mcp_servers.<name>.enabled": false}` in the adapter's launch environment; the adapter merges it into every session's config. | All projects; applies when Codex restarts (Native restarts it once idle, or on "Apply to running sessions") | Verified, with the limit below |
+| Codex (codex-acp 2.2.2) | `CODEX_CONFIG={"mcp_servers.<name>.enabled": false}` in the adapter's launch environment; the adapter merges it into every session's config. | All projects; applies when Codex restarts (Native restarts it once idle, or on "Apply to running tasks") | Verified, with the limit below |
 | Cursor | None known. `cursor-agent acp` takes no session config for MCP. | — | Shown as "can't" per server |
 
 ## How it was verified

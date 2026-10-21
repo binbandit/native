@@ -29,7 +29,7 @@ extension AppModel {
             }
             return
         }
-        let title = "Couldn't Start a Session"
+        let title = "Couldn't Start a Task"
         guard let host = hosts.host(hostID) else {
             actionFailure = ActionFailure(title, "That host isn't paired with this Mac anymore.")
             return
@@ -37,12 +37,12 @@ extension AppModel {
         guard let option = deviceOptions(for: project.id).first(where: { $0.device == device }), option.canStart
         else {
             let reason = deviceOptions(for: project.id).first { $0.device == device }?.unavailableReason
-            actionFailure = ActionFailure(title, reason ?? "\(host.name) can't take a session right now.")
+            actionFailure = ActionFailure(title, reason ?? "\(host.name) can't take a task right now.")
             return
         }
         let agentID = agent ?? defaultAgent(in: project)?.id
         guard let runtime = agentID.flatMap(host.runtime) ?? host.runtimes.first(where: \.isAvailable) else {
-            actionFailure = ActionFailure(title, "\(host.name) has no agent that can start a session.")
+            actionFailure = ActionFailure(title, "\(host.name) has no agent that can start a task.")
             return
         }
         ProjectDevicePreference.remember(device, for: project.id)
@@ -139,7 +139,7 @@ extension AppModel {
                     "Sign in from Settings ▸ Hosts, and retry: the task keeps what you've written.", needsSignIn: true)
             } else {
                 fail(
-                    task, "Couldn't start a \(task.agent.displayName) session on \(host.name)",
+                    task, "Couldn't start a \(task.agent.displayName) task on \(host.name)",
                     error.localizedDescription.withoutTerminalEscapes)
             }
         }

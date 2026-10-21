@@ -63,7 +63,7 @@ import ScriptRuntime
         if allowsEverything || library?.isAlwaysAllowedInScripts(tool.name, of: server.key) == true {
             return .allowed
         }
-        guard let link else { return .declined("It needs the user's approval, but its session is gone.") }
+        guard let link else { return .declined("It needs the user's approval, but its task is gone.") }
         if link.approvesToolCallsUnasked { return .allowed }
 
         isAsking = true

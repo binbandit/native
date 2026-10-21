@@ -102,7 +102,7 @@ struct HostConfigRestoreTests {
         #expect(harness.received.contains("locked\teffort=high"))
         #expect(
             await second.notices(session).contains(
-                "Fake Agent didn't take back High for Effort, so this session uses Medium. Choose it again to retry."))
+                "Fake Agent didn't take back High for Effort, so this task uses Medium. Choose it again to retry."))
         #expect(current("effort", in: await second.mirror(session)) == "medium")
         // Said once: the next reload doesn't try again.
         _ = try await second.client.restartAgent("fake")
@@ -122,7 +122,7 @@ struct HostConfigRestoreTests {
         let second = try await killedMidTurn(harness, first, session)
         #expect(
             await second.notices(session).contains(
-                "Fake Agent didn't take back Beta for Model, so this session uses Alpha. Choose it again to retry."))
+                "Fake Agent didn't take back Beta for Model, so this task uses Alpha. Choose it again to retry."))
         // A client setting it back itself (as the app does after a load) gets the same answer; what
         // the host remembers is what the agent took, so the next reload doesn't say it again.
         try await second.client.setConfigOption(

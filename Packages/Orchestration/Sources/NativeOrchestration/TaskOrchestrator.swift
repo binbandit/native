@@ -33,7 +33,7 @@ public struct TaskOrchestrator: Sendable {
         let task: OrchestrationTask?
 
         var label: String {
-            relation == .parent ? "your parent session (\(agentName))" : task?.label ?? id
+            relation == .parent ? "your parent task (\(agentName))" : task?.label ?? id
         }
 
         init(parentOf own: OrchestrationTask) {
@@ -140,13 +140,13 @@ public struct TaskOrchestrator: Sendable {
 
         var lines: [String] = []
         if let own = place.own {
-            lines.append("You are \(own.label), a task your parent session started.")
+            lines.append("You are \(own.label), started by your parent task.")
         }
         if peers.isEmpty {
             lines.append("You haven't started any tasks.")
         } else {
             lines.append(
-                "Sessions you can reach (pass the id to send_message, wait_for_task or get_task; a closed one reopens):"
+                "Tasks you can reach (pass the id to send_message, wait_for_task or get_task; a closed one reopens):"
             )
             for peer in peers {
                 let role =
@@ -200,7 +200,7 @@ public struct TaskOrchestrator: Sendable {
         let text = text.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !text.isEmpty else { throw MCPToolError("The message is empty.") }
         guard await runtime.snapshot(of: recipient.session) != nil else {
-            throw MCPToolError("The session of \(recipient.label) is no longer open in Native.")
+            throw MCPToolError("This task is no longer open in Native: \(recipient.label).")
         }
         guard let sender = place.session else { throw Self.notOpen }
         let message = TaskMessage(
@@ -273,12 +273,12 @@ public struct TaskOrchestrator: Sendable {
             "relation": .string(peer.relation.rawValue),
         ]
         structured["title"] = peer.title.map(JSON.string)
-        let name = peer.relation == .parent ? "Your parent session (\(peer.agentName))" : peer.label
+        let name = peer.relation == .parent ? "Your parent task (\(peer.agentName))" : peer.label
         guard let snapshot else {
             structured["status"] = "failed"
-            structured["detail"] = "The session is no longer open in Native."
+            structured["detail"] = "The task is no longer open in Native."
             return MCPToolResult(
-                text: "The session of \(name) is no longer open in Native.", structuredContent: .object(structured))
+                text: "\(name) is no longer open in Native.", structuredContent: .object(structured))
         }
         structured["status"] = .string(snapshot.status.rawValue)
         structured["reply"] = snapshot.reply.map(JSON.string)
@@ -306,7 +306,7 @@ public struct TaskOrchestrator: Sendable {
 
     // MARK: - Lookups
 
-    private static let notOpen = MCPToolError("Native doesn't have your session open, so it can't act for it.")
+    private static let notOpen = MCPToolError("Native doesn't have your task open, so it can't act for it.")
 
     private func requireReady() async throws {
         guard await runtime.isReady else {
@@ -333,7 +333,7 @@ public struct TaskOrchestrator: Sendable {
                 peers.isEmpty
                 ? "It hasn't started any tasks and isn't one itself."
                 : "It can reach: \(peers.map(\.id).joined(separator: ", "))."
-            throw MCPToolError("This session can't reach a task \"\(id)\". \(reachable)")
+            throw MCPToolError("This task can't reach a task \"\(id)\". \(reachable)")
         }
         return peer
     }

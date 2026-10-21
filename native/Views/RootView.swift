@@ -147,7 +147,7 @@ struct RootView: View {
             }
             Button("Cancel", role: .cancel) {}
         } message: { runtime in
-            Text("\(runtime.agent.displayName) needs you to sign in before it can start a session.")
+            Text("\(runtime.agent.displayName) needs you to sign in before it can start a task.")
         }
     }
 

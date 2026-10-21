@@ -26,6 +26,6 @@ public struct LoadingStateView: View {
 
 #Preview("Loading state") {
     DSPreviewPair {
-        LoadingStateView("Loading session…")
+        LoadingStateView("Loading task…")
     }
 }

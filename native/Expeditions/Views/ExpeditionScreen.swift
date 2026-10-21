@@ -32,7 +32,7 @@ struct ExpeditionScreen<Transcript: View>: View {
             EmptyStateView(
                 "This Expedition Is Gone", systemImage: ExpeditionsMetrics.symbol,
                 message:
-                    "It was removed from the list. Its sessions stay with their agents, and its worktree with the project."
+                    "It was removed from the list. Its tasks stay with their agents, and its worktree with the project."
             ) {
                 EmptyView()
             }
@@ -94,7 +94,7 @@ private struct ExpeditionPlanningView: View {
                         if expedition.lead.task != nil {
                             Button("Watch", systemImage: "sidebar.right", action: onOpenLead)
                                 .buttonStyle(.ds(.secondary))
-                                .help("Show the lead's session beside the expedition")
+                                .help("Show the lead's task beside the expedition")
                         }
                     }
                     .padding(DS.Space.lg)

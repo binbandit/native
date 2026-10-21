@@ -31,7 +31,7 @@ struct MCPContextCostLabel: View {
             .font(.dsCaption)
             .foregroundStyle(cost.fraction >= 0.1 ? .dsWarning : .dsTextSecondary)
             .help(
-                "What this server's tool definitions take in every Claude Code session, from its latest /context report (\(DSFormat.compactAge(cost.capturedAt, now: .now)) ago)."
+                "What this server's tool definitions take in every Claude Code task, from its latest /context report (\(DSFormat.compactAge(cost.capturedAt, now: .now)) ago)."
             )
     }
 }

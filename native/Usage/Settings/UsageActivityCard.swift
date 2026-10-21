@@ -89,10 +89,10 @@ struct UsageActivityCard: View {
         let text: String =
             if let day {
                 describe(day, values[day])
-                    + (values[day]?.isEstimate == true ? ", estimated from the agents’ session lists" : "")
+                    + (values[day]?.isEstimate == true ? ", estimated from the agents’ task lists" : "")
             } else if values.isEmpty {
                 filter == .all
-                    ? "Each day you work with agents fills in a square. Days before Native counted are estimated from the agents’ session lists."
+                    ? "Each day you work with agents fills in a square. Days before Native counted are estimated from the agents’ task lists."
                     : "Nothing here in the past year. Show Everything to see all of your work."
             } else {
                 "Hover over or tap a day to see it."

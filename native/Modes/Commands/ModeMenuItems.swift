@@ -28,9 +28,9 @@ struct ModeMenuItems: View {
 }
 
 #if NATIVE_PREVIEWS_WIP
-#Preview("Session ▸ Mode") {
+#Preview("Task ▸ Mode") {
     DSPreviewPair {
-        Menu("Session") {
+        Menu("Task") {
             ModeMenuItems(menu: CommandMenuContext(registry: .shared, context: CommandContext()))
         }
         .fixedSize()

@@ -16,11 +16,11 @@ final class SessionLauncher {
 
         var errorDescription: String? {
             switch self {
-            case .parentClosed: "The session that asked for this is no longer open."
-            case .agentUnavailable(let agent): "\(agent) isn't running, so it can't start a session."
-            case .cannotLoad(let agent): "\(agent) can't reopen its past sessions."
+            case .parentClosed: "The task that asked for this is no longer open."
+            case .agentUnavailable(let agent): "\(agent) isn't running, so it can't start a task."
+            case .cannotLoad(let agent): "\(agent) can't reopen its past tasks."
             case .failed(let agent, let underlying):
-                "Couldn't start a \(agent) session: \(underlying.localizedDescription)"
+                "Couldn't start a \(agent) task: \(underlying.localizedDescription)"
             }
         }
     }
