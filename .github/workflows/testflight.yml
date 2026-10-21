@@ -1,0 +1,216 @@
+# The iPhone companion only. The full iPad app does not have an archiveable target yet.
+# Every mobile change on main uploads; the daily run uses the same version/build sequence.
+name: TestFlight
+run-name: ${{ inputs.dry_run && 'TestFlight rehearsal' || 'TestFlight publish' }}
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    paths:
+      - .github/workflows/testflight.yml
+      - scripts/companion/**
+  schedule:
+    - cron: "0 7 * * *" # The daily release, alongside the Mac Nightly.
+  workflow_dispatch:
+    inputs:
+      nightly:
+        description: Publish the daily version if mobile sources changed since the last nightly
+        type: boolean
+        default: false
+      dry_run:
+        description: Archive and export a signed IPA without uploading to Apple
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+# Merge bursts publish the newest revision. Compare with the last upload, not just the last
+# commit, so a Mac-only merge cannot cancel and lose an earlier mobile change.
+concurrency:
+  group: testflight-${{ github.ref }}-${{ inputs.dry_run && 'rehearsal' || 'publish' }}
+  cancel-in-progress: true
+jobs:
+  checks:
+    name: Check TestFlight automation
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - run: python3 -m unittest discover -s scripts/companion/tests -v
+      - run: shellcheck scripts/companion/testflight-signing.sh
+
+  changes:
+    name: Check mobile changes
+    needs: checks
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      changed: ${{ steps.metadata.outputs.changed }}
+      sha: ${{ steps.metadata.outputs.sha }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        with:
+          fetch-depth: 0
+      - name: Select changes and version
+        id: metadata
+        env:
+          NIGHTLY: ${{ github.event_name == 'schedule' || inputs.nightly || false }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          if [ "$NIGHTLY" = true ]; then
+            base=$(git rev-parse --verify refs/tags/testflight-nightly 2>/dev/null || true)
+          elif [ "$EVENT" = push ]; then
+            base=$(git rev-parse --verify refs/tags/testflight-latest 2>/dev/null || true)
+          else
+            base="" # A manual run always builds, including a rehearsal on a branch.
+          fi
+          python3 scripts/companion/testflight-metadata.py --select-only --base "$base" \
+            --output "$RUNNER_TEMP/metadata.json"
+          python3 - "$RUNNER_TEMP/metadata.json" <<'PY'
+          import json, os, sys, uuid
+          metadata = json.load(open(sys.argv[1]))
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              for key, value in metadata.items():
+                  delimiter = str(uuid.uuid4())
+                  if isinstance(value, bool):
+                      value = str(value).lower()
+                  output.write(f'{key}<<{delimiter}\n{value}\n{delimiter}\n')
+          PY
+
+  upload:
+    name: Build and upload iPhone app
+    needs: changes
+    if: >-
+      needs.changes.outputs.changed == 'true' &&
+      (github.ref == 'refs/heads/main' || inputs.dry_run == true)
+    runs-on: ${{ vars.MACOS_RUNNER || 'macos-26' }}
+    timeout-minutes: 90
+    permissions:
+      contents: write # Upload checkpoints move only after Apple accepts the build.
+      actions: read # Refuse older-run retries after a newer publishing run exists.
+    env:
+      DEVELOPER_DIR: ${{ vars.XCODE_DEVELOPER_DIR || '/Applications/Xcode_27.1.app/Contents/Developer' }}
+      NATIVE_TEAM_ID: ${{ secrets.NATIVE_TEAM_ID }}
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+        id: checkout
+        with:
+          ref: ${{ needs.changes.outputs.sha }}
+      # This job can be rerun without rerunning the successful changes job. Allocate here so
+      # GITHUB_RUN_ATTEMPT and the notes always describe the actual archive/upload attempt.
+      - name: Allocate fresh upload metadata
+        id: upload-metadata
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NIGHTLY: ${{ github.event_name == 'schedule' || inputs.nightly || false }}
+          DRY_RUN: ${{ inputs.dry_run || false }}
+        run: |
+          args=()
+          [ "$NIGHTLY" != true ] || args+=(--nightly)
+          [ "$DRY_RUN" = true ] || args+=(--repository "$GITHUB_REPOSITORY")
+          python3 scripts/companion/testflight-metadata.py "${args[@]}" \
+            --run-number "$GITHUB_RUN_NUMBER" --attempt "$GITHUB_RUN_ATTEMPT" --output "$RUNNER_TEMP/upload-metadata.json"
+          python3 - "$RUNNER_TEMP/upload-metadata.json" <<'PYTHON'
+          import json, os, sys, uuid
+          metadata = json.load(open(sys.argv[1]))
+          with open(os.environ['GITHUB_ENV'], 'a') as output:
+              output.write(f"VERSION={metadata['version']}\nBUILD_NUMBER={metadata['build']}\n")
+          delimiter = str(uuid.uuid4())
+          with open(os.environ['GITHUB_OUTPUT'], 'a') as output:
+              output.write(f"notes<<{delimiter}\n{metadata['notes']}\n{delimiter}\n")
+          PYTHON
+      - name: Check upload credentials
+        if: ${{ !inputs.dry_run }}
+        env:
+          API_KEY: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          API_ISSUER: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+        run: |
+          for name in API_KEY API_KEY_ID API_ISSUER; do
+            [ -n "${!name}" ] || { echo "error: missing $name (docs/releasing.md, TestFlight)"; exit 1; }
+          done
+      - name: Cache the icon artwork
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: .git/lfs/objects
+          key: lfs-icon-artwork-${{ hashFiles('design/app-icon/channel-themes/*/stable.icon/**', 'design/app-icon/celebrations/*/stable.icon/**') }}
+          restore-keys: lfs-icon-artwork-
+      - name: Fetch the icon artwork
+        run: git lfs pull --include 'design/app-icon/channel-themes/*/stable.icon/**,design/app-icon/celebrations/*/stable.icon/**'
+      - name: Set up App Store signing
+        env:
+          IOS_DISTRIBUTION_P12: ${{ secrets.IOS_DISTRIBUTION_P12 }}
+          IOS_DISTRIBUTION_PASSWORD: ${{ secrets.IOS_DISTRIBUTION_PASSWORD }}
+          IOS_PROVISIONING_PROFILE: ${{ secrets.IOS_PROVISIONING_PROFILE }}
+        run: scripts/companion/testflight-signing.sh setup
+      - name: Archive for iPhone
+        run: |
+          mkdir -p "$RUNNER_TEMP/TestFlight"
+          xcodebuild archive -project Companion/NativeCompanion.xcodeproj -scheme NativeCompanion \
+            -configuration Release -destination 'generic/platform=iOS' \
+            -archivePath "$RUNNER_TEMP/TestFlight/NativeCompanion.xcarchive" \
+            -derivedDataPath "$RUNNER_TEMP/TestFlight/DerivedData" -disableAutomaticPackageResolution \
+            MARKETING_VERSION="$VERSION" CURRENT_PROJECT_VERSION="$BUILD_NUMBER" \
+            CODE_SIGN_STYLE=Manual CODE_SIGN_IDENTITY='Apple Distribution' DEVELOPMENT_TEAM="$NATIVE_TEAM_ID" \
+            PROVISIONING_PROFILE_SPECIFIER="$IOS_PROFILE_UUID" \
+            OTHER_CODE_SIGN_FLAGS="--keychain $IOS_SIGNING_KEYCHAIN" \
+            > "$RUNNER_TEMP/TestFlight/archive.log" 2>&1 || {
+              tail -n 80 "$RUNNER_TEMP/TestFlight/archive.log"
+              exit 1
+            }
+          scripts/check-warnings.sh "$RUNNER_TEMP/TestFlight/archive.log"
+      - name: Export App Store IPA
+        run: |
+          xcodebuild -exportArchive -archivePath "$RUNNER_TEMP/TestFlight/NativeCompanion.xcarchive" \
+            -exportPath "$RUNNER_TEMP/TestFlight/export" -exportOptionsPlist "$IOS_EXPORT_OPTIONS" \
+            > "$RUNNER_TEMP/TestFlight/export.log" 2>&1 || {
+              tail -n 80 "$RUNNER_TEMP/TestFlight/export.log"
+              exit 1
+            }
+      - name: Upload and attach commit notes
+        if: ${{ !inputs.dry_run }}
+        uses: Apple-Actions/upload-testflight-build@155ea93be9ee6d5186c71f660a612f5eddb14510 # v5.6.0
+        with:
+          app-path: ${{ runner.temp }}/TestFlight/export/NativeCompanion.ipa
+          issuer-id: ${{ secrets.APP_STORE_CONNECT_ISSUER_ID }}
+          api-key-id: ${{ secrets.APP_STORE_CONNECT_KEY_ID }}
+          api-private-key: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
+          release-notes: ${{ steps.upload-metadata.outputs.notes }}
+          wait-for-processing: 'true'
+      - name: Record the successful upload
+        if: ${{ !inputs.dry_run }}
+        env:
+          SHA: ${{ needs.changes.outputs.sha }}
+          NIGHTLY: ${{ github.event_name == 'schedule' || inputs.nightly || false }}
+        run: |
+          git tag -f testflight-latest "$SHA"
+          git push origin refs/tags/testflight-latest --force
+          if [ "$NIGHTLY" = true ]; then
+            git tag -f testflight-nightly "$SHA"
+            git push origin refs/tags/testflight-nightly --force
+          fi
+      - name: Save the signed rehearsal
+        if: inputs.dry_run
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: testflight-rehearsal-${{ github.run_number }}
+          retention-days: 3
+          path: ${{ runner.temp }}/TestFlight/export/*.ipa
+          if-no-files-found: error
+      - name: Save build evidence
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: testflight-build-${{ github.run_number }}-${{ github.run_attempt }}
+          retention-days: 7
+          if-no-files-found: ignore
+          path: |
+            ${{ runner.temp }}/TestFlight/*.log
+            ${{ runner.temp }}/TestFlight/export/DistributionSummary.plist
+            ${{ runner.temp }}/TestFlight/NativeCompanion.xcarchive/dSYMs/
+      - name: Remove signing credentials
+        if: always() && steps.checkout.outcome == 'success'
+        run: scripts/companion/testflight-signing.sh teardown

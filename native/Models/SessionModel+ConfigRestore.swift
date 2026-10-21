@@ -4,9 +4,9 @@ import Foundation
 // Setting a reopened session's settings back. Agents replay a loaded session's transcript, but some
 // reopen it on their defaults (codex-acp comes back on its default model and mode, claude-agent-acp
 // on its default effort), so Native sets back what was chosen for the session (`ConfigChoices`,
-// kept by `SessionTitles`). Only options someone changed are touched, once per load, so whatever
-// the user or the agent changes afterwards stands. While it loads, the session shows the choices
-// already, so the agent's defaults never flash up first.
+// kept by `SessionTitles`), filling missing model and effort choices from Settings. Choices are
+// applied once per load, so whatever the user or the agent changes afterwards stands. While it
+// loads, the session shows the choices already, so the agent's defaults never flash up first.
 extension SessionModel {
     /// Sets the chosen settings back where the agent reopened the session on others, then holds it
     /// to the organization's policy, which wins over any choice. What couldn't come back is said
@@ -14,8 +14,16 @@ extension SessionModel {
     func restoreConfigChoices() async {
         // Read again each time: the user may change a setting while the session loads. A host
         // session's settings come back in the host instead (`setBackConfigAfterLoad`).
-        await setBackConfigChoices(from: { $0.services.titles.configChoices(for: $0.titleKey) }) {
+        let defaults = AgentSessionDefaults.configuredValues(for: agent.id)
+        await setBackConfigChoices(from: {
+            $0.services.titles.configChoices(for: $0.titleKey).fillingDefaults(defaults, in: $0.state.configOptions)
+        }) {
             $0.phase == .loading
+        }
+        guard phase == .loading else { return }
+        // A default already matching the agent needs no request, but is still this task's choice.
+        services.titles.updateConfigChoices(for: titleKey) {
+            $0 = $0.fillingDefaults(defaults, in: state.configOptions)
         }
     }
 
@@ -33,8 +41,11 @@ extension SessionModel {
     /// leave them; otherwise as they are.
     func shownConfigOptions(_ reported: [ConfigOption]) -> [ConfigOption] {
         guard phase == .loading else { return reported }
-        return services.titles.configChoices(for: titleKey)
-            .preview(reported) { !PolicyPermissionModes.forbids($0, value: $1) }
+        var choices = services.titles.configChoices(for: titleKey)
+        if host == nil {
+            choices = choices.fillingDefaults(AgentSessionDefaults.configuredValues(for: agent.id), in: reported)
+        }
+        return choices.preview(reported) { !PolicyPermissionModes.forbids($0, value: $1) }
     }
 
     /// Sets each of the `chosen` settings back, for as long as `isOpen` holds (the agent may go
@@ -44,7 +55,9 @@ extension SessionModel {
     ) async {
         var notes: [String] = []
         var forbidden: [(id: String, choice: ConfigChoices.Choice)] = []
-        for id in chosen(self).restoreOrder(in: state.configOptions) {
+        var attempted: Set<String> = []
+        while let id = chosen(self).restoreOrder(in: state.configOptions).first(where: { !attempted.contains($0) }) {
+            attempted.insert(id)
             guard isOpen(self) else { return }
             // Against the options as they are now: an earlier change (the model) can change what
             // this one offers.
