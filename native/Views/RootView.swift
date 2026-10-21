@@ -14,8 +14,9 @@ struct RootView: View {
     @State private var sidebarWidth = RootSidebarWidth()
     /// Room for a session's inspector, which the sidebar makes rather than the window growing.
     @State private var inspectorRoom = SidebarInspectorRoom()
-    /// Where each session's transcript was left, so switching back to a session shows the same place.
-    @State private var transcriptPlaces = SessionTranscriptPlaces()
+    /// Where each session's transcript was left and what was opened in it, so switching back to a
+    /// session shows the same place.
+    @State private var transcriptMemory = SessionTranscriptMemory()
     @State private var undoToast: UndoToastItem?
     @State private var showsPullRequests = false
     @Environment(GitHubModel.self) private var gitHub
@@ -248,7 +249,7 @@ struct RootView: View {
             // own sits on the design system's background in the user's light tone, not the system's.
             .background(.dsBackground)
             .environment(\.inspectorRoom, inspectorRoom.room(sidebar: $columnVisibility))
-            .environment(\.sessionTranscriptPlaces, transcriptPlaces)
+            .environment(\.sessionTranscriptMemory, transcriptMemory)
         }
         .toolbar(removing: .sidebarToggle)
         .tracksWindowRoom(inspectorRoom.window)
