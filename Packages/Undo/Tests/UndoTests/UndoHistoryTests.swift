@@ -1,4 +1,6 @@
 import Foundation
+import Observation
+import Synchronization
 import Testing
 
 @testable import Undo
@@ -58,7 +60,14 @@ import Testing
         manager.endUndoGrouping()
         #expect(history.canUndo)
 
+        let changed = Mutex(false)
+        withObservationTracking {
+            _ = history.canUndo
+        } onChange: {
+            changed.withLock { $0 = true }
+        }
         action.withdraw()
         #expect(!history.canUndo)
+        #expect(changed.withLock { $0 })
     }
 }

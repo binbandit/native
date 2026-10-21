@@ -47,7 +47,7 @@ public final class UndoableAction: Identifiable {
         if let undoManager, isNextUndo(on: undoManager) {
             undoManager.undo()
         } else {
-            undoManager?.removeAllActions(withTarget: self)
+            removeFromStack()
             takeBack()
         }
     }
@@ -56,7 +56,14 @@ public final class UndoableAction: Identifiable {
     /// carried out after its grace period).
     public func withdraw() {
         canUndo = false
-        undoManager?.removeAllActions(withTarget: self)
+        removeFromStack()
+    }
+
+    private func removeFromStack() {
+        guard let undoManager else { return }
+        undoManager.removeAllActions(withTarget: self)
+        // Removing a target sends no UndoManager notification, so menus need an explicit invalidation.
+        NotificationCenter.default.post(name: .undoableActionDidRemove, object: undoManager)
     }
 
     private static let identity = UndoManager.UserInfoKey("dev.binbandit.native.undoable-action")
@@ -94,4 +101,8 @@ public final class UndoableAction: Identifiable {
         canUndo = false
         undoChange(self)
     }
+}
+
+extension Notification.Name {
+    static let undoableActionDidRemove = Notification.Name("dev.binbandit.native.undoable-action-removed")
 }

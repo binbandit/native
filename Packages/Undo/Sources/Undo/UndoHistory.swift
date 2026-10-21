@@ -42,6 +42,7 @@ public final class UndoHistory {
             for name in [
                 Notification.Name.NSUndoManagerCheckpoint, .NSUndoManagerDidCloseUndoGroup,
                 .NSUndoManagerDidUndoChange, .NSUndoManagerDidRedoChange,
+                .undoableActionDidRemove,
             ] {
                 observers.append(
                     NotificationCenter.default.addObserver(forName: name, object: manager, queue: .main) {
