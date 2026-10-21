@@ -802,8 +802,7 @@ several runs each. Task switches and Settings visits are AX presses on the insta
   (Accept edits), Native's mode and title. Only the turn's duration and the context gauge wait for
   the next turn. Claude Code's plugin now closes sessions unused for 10 minutes
   (`idleSessionTimeout` in the agent manifest, docs/plugins.md); the `sessionIdleTimeout` default
-  still overrides it for every agent. Codex stays open until codex-acp releases a closed session's
-  MCP servers (below).
+  still overrides it for every agent. Codex uses host idle unloading instead (below).
 - **Every Codex task ran the user's MCP servers twice.** codex-acp 2.2.2 titles a new session
   itself after its first turn, with a model, on a thread of its own that it never releases
   (codex-acp#628), and Codex starts the user's MCP servers for every thread. With a `~/.codex`
@@ -819,8 +818,7 @@ several runs each. Task switches and Settings visits are AX presses on the insta
 | What | Why | Owner |
 | --- | --- | --- |
 | Stop hover hit-testing while the transcript scrolls | 12–19% of a fast scroll, measured with an accessibility client and the cursor over the transcript. Can't be verified by a script: the cost needs the real cursor over the rows, and the proof (clicks and hover come back the moment a scroll ends) needs a real mouse wheel and trackpad, whose scroll phases no synthetic driver reproduces for this scroll view | Transcript performance, by hand |
-| Let Codex unload closed threads | A closed session's thread, and its MCP servers, stay loaded for 30 minutes (`thread_unload_delay_secs`, a Codex server setting codex-acp can't pass), so closing one session frees nothing for that long; the thread codex-acp titled a session with never unloads, but Native no longer lets it start (`renameCommand`, above) | Upstream Codex and codex-acp#628 / #629 |
-| Turn idle closing on for Codex | Claude Code closes sessions unused for 10 minutes now (`idleSessionTimeout` in its manifest). Once the row above lands, give Codex's manifest the same | App model |
+| Release individual closed Codex threads while another task runs | The host now stops the adapter once every task is idle for 10 minutes. While another task keeps it running, a closed thread's MCP servers still wait for Codex's 30-minute `thread_unload_delay_secs`, which codex-acp cannot pass | Upstream Codex and codex-acp#629 |
 | "Couldn't run git: The file “project” doesn't exist" alert | New Session in a project whose folder is gone shows a modal; the sidebar already says "Can't find this project's folder" with Retry | Failures |
 | Launch within 150 ms of main-thread CPU | 481-518 ms in Release with 30 tasks (3.45-3.68 G instructions): mostly AppKit and SwiftUI restoring, laying out and drawing the window (Launch, above). It takes fewer views before the first frame, not faster code; the sidebar outside its rows (0.57 G: the navigation items, the project headers, the scroll view and its key handling) is the largest part Native controls | App shell, sidebar |
 | A cheaper main menu | 0.29-0.31 G of launch in optimized Debug (Launch, round three): SwiftUI building about 85 items' view lists and platform items. Reading the window's context once instead of eight focused values per item didn't change it. Building the items after the first frame loses the File menu (round two). Fewer items at launch might: submenus whose items come when they open (Selected Tasks, Mode, Status Bar Items, Keep Mac Awake, Appearance), if SwiftUI keeps a submenu that starts empty, or fewer than the nine Go to Session items | Commands |
