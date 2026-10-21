@@ -66,18 +66,15 @@ struct ComposerControlsRow<Extras: View, Context: View>: View {
                 if let mode {
                     ModePill(control: mode, showsIcon: density.showsIcons)
                 }
-                ForEach(settings.others, id: \.option.id) { setting in
-                    SettingMenuPill(setting: setting, onSet: onSet)
-                }
             }
             extras(density)
-            if density == .overflow || density == .minimal {
+            if !settings.others.isEmpty || density == .overflow || density == .minimal {
                 ComposerMoreMenu(
                     settings: settings,
                     includesModel: density == .minimal,
                     isModelPickerOpen: $isModelPickerOpen,
                     onSet: onSet,
-                    mode: mode
+                    mode: density == .overflow || density == .minimal ? mode : nil
                 )
             }
         } trailing: {
@@ -99,7 +96,7 @@ struct ComposerControlsRow<Extras: View, Context: View>: View {
 }
 
 #if DEBUG
-#Preview("Controls row - Widths") {
+#Preview("Controls row - Extra settings") {
     DSPreviewPair {
         VStack(alignment: .leading, spacing: DS.Space.xl) {
             // Regular with code-block keys, then each density as room runs out.
@@ -109,6 +106,20 @@ struct ComposerControlsRow<Extras: View, Context: View>: View {
                         settings: ComposerPreviewFixtures.settings,
                         hint: width == 680
                             ? .inCodeBlock(primary: "Send", explanation: "Send the message.") : nil)
+                }
+                .frame(width: CGFloat(width))
+            }
+        }
+    }
+    .environment(CommandRegistry.shared)
+}
+
+#Preview("Controls row - No extra settings") {
+    DSPreviewPair {
+        VStack(alignment: .leading, spacing: DS.Space.xl) {
+            ForEach([680, 560, 420, 300, 220], id: \.self) { width in
+                ComposerSurface {
+                    ComposerControlsRowPreview(settings: ComposerPreviewFixtures.settingsWithoutExtras, hint: nil)
                 }
                 .frame(width: CGFloat(width))
             }

@@ -204,6 +204,9 @@ $D press Xhigh --role menubutton --item High
 $D press "Mode:" && $D press Plan               # Build, Plan, Ask, Debug, Review
 $D press "Autonomy:"
 
+# Extra agent settings are in More at every width, with the selected choice checked
+$D press "More Controls"                        # lists settings such as Claude Code's Agent selector
+
 # Archive, undo, unarchive
 $D key shift+cmd+a && $D press Undo             # archives the open task; its Undo toast lasts about 5 s
 $D press Archived                               # expands the sidebar's Archived section
