@@ -29,11 +29,11 @@ extension SessionModel {
         var errorDescription: String? {
             switch self {
             case .emptyMessage: "There's nothing to send."
-            case .notAcceptingPrompts: "This subagent only takes work from the session that started it."
+            case .notAcceptingPrompts: "This subagent only takes work from the task that started it."
             case .earlierConversation: SessionSendBlock.earlierConversation.message
-            case .loading: "The session is still loading."
-            case .disconnected: "The session's agent stopped running."
-            case .busy: "The session is busy."
+            case .loading: "The task is still loading."
+            case .disconnected: "The task's agent stopped running."
+            case .busy: "The task is busy."
             }
         }
     }

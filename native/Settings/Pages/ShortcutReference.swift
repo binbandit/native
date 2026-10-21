@@ -78,7 +78,7 @@ enum ShortcutReference {
             Group(
                 title: "Permission requests",
                 note:
-                    "The oldest pending request in the visible session answers these: a tool's permission request or a workflow step waiting for approval.",
+                    "The oldest pending request in the visible task answers these: a tool's permission request or a workflow step waiting for approval.",
                 shortcuts: [
                     Shortcut(
                         id: "allow-once", title: "Allow once", note: "Also approves a workflow step", keys: ["⌘Y"]),
@@ -100,7 +100,7 @@ enum ShortcutReference {
                 title: "Sidebar and palette",
                 shortcuts: [
                     Shortcut(
-                        id: "rename-session", title: "Rename the selected session",
+                        id: "rename-session", title: "Rename the selected task",
                         note: "In the sidebar. Return commits, Escape cancels.", keys: ["↵"]),
                     Shortcut(
                         id: "palette-move", title: "Move through the palette", note: "Return runs", keys: ["↑", "↓"]),

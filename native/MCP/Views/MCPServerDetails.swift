@@ -70,7 +70,7 @@ struct MCPServerDetails: View {
             MCPContextCostLabel(cost: cost)
         } else if report.toolDefinitionBytes > 0 {
             message(
-                "Its tool definitions are \(ByteCountFormatter.string(fromByteCount: Int64(report.toolDefinitionBytes), countStyle: .file)), which agents load into every session's context. Run /context in a Claude Code session to see exactly how many tokens."
+                "Its tool definitions are \(ByteCountFormatter.string(fromByteCount: Int64(report.toolDefinitionBytes), countStyle: .file)), which agents load into every task's context. Run /context in a Claude Code task to see exactly how many tokens."
             )
         }
         if report.tools.isEmpty {

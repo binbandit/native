@@ -37,7 +37,7 @@ struct ContextBreakdownHeader<Source: ContextSource>: View {
                         Text("\(cost.amount, format: .currency(code: cost.currency)) spent")
                             .font(.dsBody)
                             .foregroundStyle(.dsTextSecondary)
-                            .help("What this session has cost so far, as \(source.agentName) estimates it")
+                            .help("What this task has cost so far, as \(source.agentName) estimates it")
                     }
                 }
                 .monospacedDigit()

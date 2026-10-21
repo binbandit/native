@@ -129,7 +129,7 @@ private struct SessionCommands: Commands {
     let menu: CommandMenuContext
 
     var body: some Commands {
-        CommandMenu("Session") {
+        CommandMenu("Task") {
             CommandMenuItem(.composerFocus, in: menu)
             CommandMenuItem(.sessionStop, in: menu)
             CommandMenuItem(.sessionClearConversation, in: menu)

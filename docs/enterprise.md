@@ -31,10 +31,10 @@ shipped as a sample `.mobileconfig` in `docs/enterprise/`.
 | --- | --- |
 | `policy.agents.allowed` | Agent ids that may be listed or started; others are hidden with "Not allowed by your organization". |
 | `policy.agents.environment` | Extra environment per agent, e.g. to route Claude Code through Bedrock or Vertex. |
-| `policy.mcp.allowed` / `policy.mcp.blocked` | MCP servers by name or command pattern; blocked ones are denied for every session through the same session policy as the user's own switches. |
-| `policy.mcp.required` | Servers every session gets, defined in the policy. |
+| `policy.mcp.allowed` / `policy.mcp.blocked` | MCP servers by name or command pattern; blocked ones are denied for every task through the same task policy as the user's own switches. |
+| `policy.mcp.required` | Servers every task gets, defined in the policy. |
 | `policy.plugins.allowed` | Plugin ids that may load; **later:** required signer team ids for manifest plugins. |
-| `policy.skills.blocked` | Skills by name, denied per session like MCP. |
+| `policy.skills.blocked` | Skills by name, denied per task like MCP. |
 | `policy.permissions.forbiddenModes` | Permission modes users can't pick (for example, modes that skip approvals). |
 | `policy.scripts.enabled` | The V8 script runtime and `run_script`. |
 | `policy.taskScripts.userScripts` | Task scripts written in Native, global and per project (`docs/scripts.md`): `false` stops them running and locks their settings. |
@@ -42,7 +42,7 @@ shipped as a sample `.mobileconfig` in `docs/enterprise/`.
 | `policy.labs.enabled` | Labs and experiments, including plugin experiments. |
 | `policy.companion.enabled` / `policy.remoteHosts.enabled` | Pairing devices; connecting to hosts other than this Mac. |
 | `policy.updates.feedURL` / `policy.updates.enabled` / `policy.updates.channels` | An internal update feed, or updates off; which channels are allowed. |
-| `policy.search.retentionDays` | How long the search index keeps sessions. |
+| `policy.search.retentionDays` | How long the search index keeps tasks. |
 | `policy.shortcuts.bindings` | Keyboard shortcuts by command id, as Settings ▸ Keyboard Shortcuts exports them (`docs/commands.md`); they replace the user's changes and lock the page. |
 | `policy.ai.instructions` | Instructions added to what Native writes with AI (titles, branch names, commit messages, pull request drafts, the prompts behind "Ask an Agent"), by purpose id: `title`, `branchName`, `commitMessage`, `commitGrouping`, `pullRequest`, `reviewRequest`, `pullRequestQuestions`. Native's format rules still come first. They replace the user's own instructions and lock Settings ▸ AI Instructions; a purpose it doesn't name gets none. |
 | `policy.telemetry.native` | `on`, `off`, or `user` (the user chooses; the default). |
@@ -86,7 +86,7 @@ off, no screenshots, view hierarchy or session replay, and a `beforeSend` allowl
 
 ## Audit
 
-The durable host already keeps an activity journal: sessions started, prompts sent, approvals and who
+The durable host already keeps an activity journal: tasks started, prompts sent, approvals and who
 gave them (including from which paired device), recoveries, update installs. It becomes exportable as
 structured events through the organization's telemetry destination, with optional prompt and command
 text **only** when the organization's policy explicitly turns that on for its own collector. Native

@@ -274,16 +274,16 @@ ones. An expedition opens on its own page:
   ⌘Y and ⌘⇧⌫ answer the oldest approval (route, route change), like every other approval card.
 - **Route**: legs and their assignments as a timeline, each with status glyph, assignee, elapsed
   time and cost, and the checkpoint row with its verdict and rounds. Selecting one opens its
-  session beside the page.
-- **Crew**: each member with its agent, role, what it's doing right now (the session's activity
-  line, never just "Working…"), and its cost. Selecting one opens its current session.
+  task beside the page.
+- **Crew**: each member with its agent, role, what it's doing right now (the task's activity
+  line, never just "Working…"), and its cost. Selecting one opens its current task.
 - **Logbook**: the latest entries; the whole thing opens as a list.
 - **Artifacts**: reports and verdicts open from their rows; "Show Files" reveals the folder (Mac).
 
 Narrow widths stack the crew and logbook under the route. Every hover affordance has a visible or
 context-menu equivalent.
 
-**Per-member view.** The inspector shows the selected assignment's or member's session transcript
+**Per-member view.** The inspector shows the selected assignment's or member's task transcript
 (the same transcript view the rest of Native uses), its status and reason, and a message field.
 
 ## Steering and intervening
@@ -295,16 +295,16 @@ context-menu equivalent.
 | Talk to the lead | the lead's field (⌘L focuses it on the expedition page); answers that change the route come back as a route change |
 | Hold everything | Pause: running turns finish, nothing new goes out; Resume picks up where it was |
 | Stop one assignment's turn | Stop on its row |
-| Redo, skip or accept an assignment | Retry (fresh session), Skip (later work goes on without it), Accept (its latest reply becomes the report) |
+| Redo, skip or accept an assignment | Retry (fresh task), Skip (later work goes on without it), Accept (its latest reply becomes the report) |
 | Change the crew | reassign a stopped or waiting assignment to another agent; add or remove a builder; swap the reviewer for checkpoints ahead. Pending work of a removed builder moves to the remaining ones |
-| Stop the expedition | Stop: every turn is cancelled; sessions, reports and the worktree stay |
+| Stop the expedition | Stop: every turn is cancelled; tasks, reports and the worktree stay |
 
 Every action is a model method (`ExpeditionRunner.send(_:to:)`), so the iPad and future clients
 drive the same ones.
 
 ## Budgets and limits
 
-- **Expedition budget**: total cost (summed across members' sessions, where agents report cost)
+- **Expedition budget**: total cost (summed across members' tasks, where agents report cost)
   and active time. Checked between turns, never mid-turn (a half-finished edit is worse than a late
   stop). When it's reached, nothing new goes out and a card offers **Add the same again**, **Wrap Up**
   (skip what's left and go straight to the debrief) or **Stop**.
@@ -355,9 +355,9 @@ Proposed rows for `docs/keyboard.md` (checked against every row there and the st
 | ⌘⇧X | Expeditions | Go |
 | ⌘Y / ⌘⇧⌫ | Approve / discard the route waiting for review, or a route change (the existing approval keys) | |
 | ⌘Return | Approve the route, on the review page | |
-| ⌘L | Focus the lead's message field, on an expedition's page (the existing focus-composer key) | Session |
+| ⌘L | Focus the lead's message field, on an expedition's page (the existing focus-composer key) | Task |
 
-Pause, Resume and Stop Expedition are menu commands without keys (Session menu).
+Pause, Resume and Stop Expedition are menu commands without keys (Task menu).
 
 ## iPad
 

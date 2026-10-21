@@ -21,7 +21,7 @@ struct ProjectToolsSection: View {
             SettingsSubheading(
                 "MCP servers and skills",
                 note:
-                    "A switch set for \(project.name) wins over the one for every project. Agents pick changes up in their next session."
+                    "A switch set for \(project.name) wins over the one for every project. Agents pick changes up in their next task."
             )
             SettingsRowGroup {
                 SettingsRow(id: rows.mcp, "MCP servers", description: Text(mcpSummary)) {

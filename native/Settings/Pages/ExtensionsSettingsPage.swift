@@ -52,7 +52,7 @@ struct ExtensionsSettingsPage: View {
             SettingsHeader(
                 title: "Extensions",
                 description: Text(
-                    "Turn on what you use. Changes apply to sessions started afterwards; agents start or stop right away."
+                    "Turn on what you use. Changes apply to tasks started afterwards; agents start or stop right away."
                 )
             ) {
                 Button("Reload", systemImage: "arrow.clockwise") { registry.reload() }
@@ -104,7 +104,7 @@ struct ExtensionsSettingsPage: View {
     private var installedEmptyState: some View {
         SettingsNote("No plugins yet", systemImage: "shippingbox") {
             Text(
-                "Add a folder with a plugin.json to ~/.native/plugins, then Reload. A plugin can add agents that speak ACP, MCP servers for every session, and workflows."
+                "Add a folder with a plugin.json to ~/.native/plugins, then Reload. A plugin can add agents that speak ACP, MCP servers for every task, and workflows."
             )
         }
     }

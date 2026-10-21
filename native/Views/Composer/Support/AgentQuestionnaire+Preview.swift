@@ -11,7 +11,7 @@ extension AgentQuestionnaire {
             {"type": "object", "properties": {
               "question_0": {"type": "string", "title": "Storage", "description": "Where should drafts be saved?",
                 "oneOf": [{"const": "UserDefaults", "title": "UserDefaults", "description": "Simple and synchronous; fine for a few KB"},
-                          {"const": "Application Support", "title": "Application Support", "description": "A JSON file per session; survives larger drafts"},
+                          {"const": "Application Support", "title": "Application Support", "description": "A JSON file per task; survives larger drafts"},
                           {"const": "SwiftData", "title": "SwiftData", "description": "Queryable, but a new dependency for one feature"}]},
               "question_0_custom": {"type": "string", "title": "Other", "description": "Type your own answer, or add a note to the option you chose above (optional)."},
               "question_1": {"type": "array", "title": "Platforms", "description": "Which platforms need it first?",

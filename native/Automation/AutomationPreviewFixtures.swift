@@ -63,7 +63,7 @@ enum AutomationPreviewFixtures {
         "Add a --json flag to the export command", statuses: [.succeeded, .awaitingApproval], minutesAgo: 40)
     static let failedRun = run(
         "Retry uploads when the network drops",
-        statuses: [.succeeded, .failed("Codex stopped: the session's sandbox denied `swift test`.")], minutesAgo: 95)
+        statuses: [.succeeded, .failed("Codex stopped: the task's sandbox denied `swift test`.")], minutesAgo: 95)
     static let blockedRun = run(
         "Regenerate the schema types",
         statuses: [.succeeded, .blocked("Which schema version should the generated types follow, 0.9 or 1.0?")],
@@ -72,7 +72,7 @@ enum AutomationPreviewFixtures {
         "Steering support in the Codex adapter",
         statuses: [.succeeded, .limited("Claude Code · 5-hour limit reached · resets 3:05 PM")], minutesAgo: 70)
     static let finishedRun = run(
-        "Session titles from the first prompt", statuses: [.succeeded, .succeeded, .succeeded],
+        "Task titles from the first prompt", statuses: [.succeeded, .succeeded, .succeeded],
         minutesAgo: 60 * 26)
 
     static let runs: [WorkflowRun] = [runningRun, approvalRun, failedRun, blockedRun, finishedRun].compactMap {

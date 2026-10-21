@@ -65,13 +65,13 @@ struct AgentPickerPanel<Notice: View>: View {
         }
         .onAppear { focus = .filter }
         .accessibilityElement(children: .contain)
-        .accessibilityLabel("New Session With")
+        .accessibilityLabel("New Task With")
         .accessibilityAddTraits(.isModal)
     }
 
     private func filter(_ results: AgentPickerResults, current: AgentPickerItem?) -> some View {
         SearchField(
-            "Filter agents", text: $query, prompt: Text("New session with…"), size: .large, font: .dsCallout,
+            "Filter agents", text: $query, prompt: Text("New task with…"), size: .large, font: .dsCallout,
             focus: $focus, equals: .filter
         )
         .onKeyPress(.downArrow) { move(by: 1, in: results, from: current) }

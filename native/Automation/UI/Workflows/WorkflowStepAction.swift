@@ -38,8 +38,8 @@ enum WorkflowStepAction: Hashable, Identifiable {
     var help: String {
         switch self {
         case .stop: "Stop this step's turn. The rest of the workflow waits."
-        case .retry: "Run this step again from the start, in a new session"
-        case .resume: "Continue this step in its session"
+        case .retry: "Run this step again from the start, in a new task"
+        case .resume: "Continue this step in its task"
         case .accept: "Take the step's latest reply as its result and move on"
         case .skip: "Leave this step out; the steps after it run without its result"
         case .stopWorkflow: "Stop the whole workflow"
@@ -80,7 +80,7 @@ enum WorkflowStepAction: Hashable, Identifiable {
                 } == true ? "Extend Budget" : "Resume")
             return (hasTask ? resume : .retry, (hasReply ? [.accept] : []) + [.skip])
         case .failed:
-            return (.retry, (hasTask ? [.resume(title: "Continue in Session")] : []) + [.skip, .stopWorkflow])
+            return (.retry, (hasTask ? [.resume(title: "Continue in Task")] : []) + [.skip, .stopWorkflow])
         case .interrupted:
             return (hasTask ? .resume(title: "Resume") : .retry, [.skip, .stopWorkflow])
         case .cancelled:

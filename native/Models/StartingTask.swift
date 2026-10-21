@@ -75,7 +75,7 @@ final class StartingTask: Identifiable {
         switch step {
         case .preparingWorkspace: workspaceLabel
         case .startingAgent: "Starting \(agent.displayName)"
-        case .openingSession: "Opening the session"
+        case .openingSession: "Opening the task"
         }
     }
 }

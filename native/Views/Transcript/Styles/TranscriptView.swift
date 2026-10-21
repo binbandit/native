@@ -66,7 +66,7 @@ struct TranscriptView: View {
                     // A reopened session replays its history thousands of updates at a time. Shown as
                     // it arrived, rows appeared and the view chased the end, replaying the session;
                     // instead it appears whole, already at its end, once all of it is in.
-                    LoadingStateView("Loading session…")
+                    LoadingStateView("Loading task…")
                 } else if showsRows {
                     scrollView(transcript)
                 }

@@ -129,7 +129,7 @@ struct MCPSessionSummary {
         attention = activeEntries.count { library.health(of: $0.key).needsAttention }
         help =
             active == 0
-            ? "This session has no MCP servers."
+            ? "This task has no MCP servers."
             : "\(active) MCP \(active == 1 ? "server" : "servers")"
                 + (attention > 0 ? ", \(attention) need attention" : "") + ". Click to see them."
     }
@@ -183,7 +183,7 @@ struct MCPSessionPanel: View {
                 }
                 SeparatorLine()
                 HStack {
-                    Text("Switches apply to the next session in this folder.")
+                    Text("Switches apply to the next task in this folder.")
                         .font(.dsCaption)
                         .foregroundStyle(.dsTextTertiary)
                     Spacer(minLength: DS.Space.md)
@@ -225,7 +225,7 @@ struct MCPSessionPanel: View {
                             set: { library.setMode($0 ? .on : .off, of: key, in: session.cwd) })
                     )
                     .disabled(lock != nil)
-                    .help(lock ?? "Switch \(entry.name) for new sessions in \(session.cwd.lastPathComponent)")
+                    .help(lock ?? "Switch \(entry.name) for new tasks in \(session.cwd.lastPathComponent)")
                 }
             }
             if let lock = library.organizationLock(for: entry) {
@@ -236,7 +236,7 @@ struct MCPSessionPanel: View {
             if let cost = library.contextCost(of: entry.name, in: session.key) {
                 MCPContextCostLabel(cost: cost)
             } else if entry.isActive, library.isLoaded(entry.name, in: session.key) == false {
-                Text("Not in this session's context: \(session.agentName) didn't load it.")
+                Text("Not in this task's context: \(session.agentName) didn't load it.")
                     .font(.dsCaption)
                     .foregroundStyle(.dsWarning)
             }
@@ -281,7 +281,7 @@ struct MCPSessionPanel: View {
                     }
                     .buttonStyle(.ds(.ghost, size: .small))
                     .help(
-                        "Runs /mcp disable \(configured.name) in this session; Claude Code remembers it for the project."
+                        "Runs /mcp disable \(configured.name) in this task; Claude Code remembers it for the project."
                     )
                 }
             case .plugin:

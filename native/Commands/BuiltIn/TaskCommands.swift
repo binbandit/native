@@ -26,12 +26,12 @@ extension NativeCommand {
     /// Starting tasks and opening projects.
     static func newTasks(model: AppModel) -> [NativeCommand] {
         [
-            NativeCommand(.sessionNew, title: "New Session", category: .tasks, systemImage: "square.and.pencil") { _ in
+            NativeCommand(.sessionNew, title: "New Task", category: .tasks, systemImage: "square.and.pencil") { _ in
                 Task { await model.newSession() }
             },
 
             NativeCommand(
-                .sessionNewWithAgent, title: "New Session With…", category: .tasks,
+                .sessionNewWithAgent, title: "New Task With…", category: .tasks,
                 systemImage: "plus.square.on.square",
                 keywords: ["agent"]
             ) { _ in
@@ -51,7 +51,7 @@ extension NativeCommand {
     /// What to do with the selected task, and moving between tasks.
     static func taskActions(model: AppModel) -> [NativeCommand] {
         [
-            NativeCommand(.sessionRename, title: "Rename Session…", category: .tasks, systemImage: "pencil") { _ in
+            NativeCommand(.sessionRename, title: "Rename Task…", category: .tasks, systemImage: "pencil") { _ in
                 model.renaming = model.selection
             }
             .available { _ in model.selection != nil },
@@ -130,21 +130,21 @@ extension NativeCommand {
                 return model.sidebarMoveTarget.map { model.canMove($0, .down) } == true
             },
 
-            NativeCommand(.sessionNext, title: "Next Session", category: .navigation, systemImage: "chevron.down") {
+            NativeCommand(.sessionNext, title: "Next Task", category: .navigation, systemImage: "chevron.down") {
                 _ in
                 model.selectSession(offset: 1)
             }
             .available { _ in !model.sessionList.isEmpty },
 
             NativeCommand(
-                .sessionPrevious, title: "Previous Session", category: .navigation, systemImage: "chevron.up"
+                .sessionPrevious, title: "Previous Task", category: .navigation, systemImage: "chevron.up"
             ) { _ in
                 model.selectSession(offset: -1)
             }
             .available { _ in !model.sessionList.isEmpty },
         ]
             + CommandID.sessionSelectPositions.map { position in
-                NativeCommand(.sessionSelect(position), title: "Go to Session \(position)", category: .navigation) {
+                NativeCommand(.sessionSelect(position), title: "Go to Task \(position)", category: .navigation) {
                     _ in
                     guard let listed = model.sessionList.dropFirst(position - 1).first else { return }
                     model.selection = listed.id
