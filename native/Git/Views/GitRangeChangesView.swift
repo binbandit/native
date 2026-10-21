@@ -11,7 +11,7 @@ struct GitRangeChangesView: View {
 
     @State private var model: GitRangeModel
 
-    /// `model` is for previews, which pass one frozen at a comparison.
+    /// The review retains `model` across container changes; previews pass one frozen at a comparison.
     init(
         repository: GitRepositoryModel, review: GitChangesReview, request: GitRangeRequest,
         model: GitRangeModel = GitRangeModel()

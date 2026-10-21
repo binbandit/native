@@ -39,7 +39,6 @@ struct SessionToolsScreen: View {
             }
         }
         .environment(\.turnChangesActions, turnChanges)
-        .environment(\.composerOverlayDismissal, overlayDismissal)
         .environment(\.isPrimaryTranscript, true)
         .dsToolbarBand()
         .safeAreaBar(edge: .bottom, spacing: 0) { composer }
@@ -135,6 +134,7 @@ struct SessionToolsScreen: View {
                 RemovedWorkspaceNotice(session: session)
                 UsageComposerNotices(session: session)
                 ComposerView(session: session)
+                    .environment(\.composerOverlayDismissal, overlayDismissal)
             }
         }
     }
