@@ -38,7 +38,7 @@ jobs:
   ios:
     # One runner for all three, so a pull request that runs this takes one more at most.
     name: Build for iOS
-    runs-on: ${{ vars.MACOS_RUNNER || 'macos-26' }}
+    runs-on: ${{ vars.CI_MACOS_RUNNER || vars.MACOS_RUNNER || 'macos-26' }}
     timeout-minutes: 60
     env:
       DEVELOPER_DIR: ${{ vars.XCODE_DEVELOPER_DIR || '/Applications/Xcode_27.1.app/Contents/Developer' }}

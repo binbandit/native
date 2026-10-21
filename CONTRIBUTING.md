@@ -85,3 +85,5 @@ to the coordinator. Outside this repo's shared working tree, normal git and PRs 
 install Rust: they use the `cargo` already on the runner. `check.yml` builds libghostty and the script
 runtime for real and fails without them; the Debug build in `ci.yml` uses the copies Check cached.
 How the jobs are split and what they cache is in `docs/releasing.md` ("How CI stays quick").
+When set to a self-hosted runner label, `CI_MACOS_RUNNER` sends PR and main CI to those runners while
+Nightly and Release keep using `MACOS_RUNNER`.

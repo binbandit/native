@@ -32,7 +32,7 @@ jobs:
   release-configurations:
     # Release and Nightly build side by side, each on its own runner.
     name: Check ${{ matrix.configuration }}
-    runs-on: ${{ vars.MACOS_RUNNER || 'macos-26' }}
+    runs-on: ${{ vars.CI_MACOS_RUNNER || vars.MACOS_RUNNER || 'macos-26' }}
     timeout-minutes: 60
     strategy:
       fail-fast: false
