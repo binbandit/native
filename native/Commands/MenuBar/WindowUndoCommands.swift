@@ -7,10 +7,10 @@ struct WindowUndoCommands: Commands {
 
     var body: some Commands {
         CommandGroup(replacing: .undoRedo) {
-            Button(history.undoTitle) { history.undo() }
+            Button(history.undoTitle) { PlatformWindow.undo(using: history.manager) }
                 .keyboardShortcut("z", modifiers: .command)
                 .disabled(!history.canUndo)
-            Button(history.redoTitle) { history.redo() }
+            Button(history.redoTitle) { PlatformWindow.redo(using: history.manager) }
                 .keyboardShortcut("z", modifiers: [.command, .shift])
                 .disabled(!history.canRedo)
         }
