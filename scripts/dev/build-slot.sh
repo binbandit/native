@@ -20,21 +20,16 @@ ticket="$queue/$(date +%s)-$$"
 touch "$ticket"
 slot=""
 # Counting the free slots and the tickets ahead, then claiming a slot, happens under one lock, so no
-# build can claim a slot between another's count and its claim.
-lock="$slots/admit.lock"
-trap 'rm -f "$ticket"; [ -z "$slot" ] || rm -rf "$slot"; [ "$(cat "$lock/pid" 2>/dev/null)" != $$ ] || rm -rf "$lock"' EXIT
+# build can claim a slot between another's count and its claim. Keep the lock file in place: deleting
+# it could give waiters different inodes to lock. The kernel releases the lock when fd 9 closes,
+# including when a holder dies, so recovery never removes another build's live lock.
+lock="$slots/admit.flock"
+trap 'rm -f "$ticket"; [ -z "$slot" ] || rm -rf "$slot"' EXIT
 
 position=""
 while [ -z "$slot" ]; do
-    until mkdir "$lock" 2>/dev/null; do
-        # A lock whose holder died, or that's older than a minute, is free again.
-        holder=$(cat "$lock/pid" 2>/dev/null || true)
-        if { [ -n "$holder" ] && ! kill -0 "$holder" 2>/dev/null; } || [ -n "$(find "$lock" -maxdepth 0 -mmin +1 2>/dev/null)" ]; then
-            rm -rf "${lock:?}"
-        fi
-        sleep 0.2
-    done
-    echo $$ >"$lock/pid"
+    exec 9>"$lock"
+    lockf 9
     busy=0
     for i in $(seq 1 "$limit"); do
         # A slot whose build ended without freeing it is free again.
@@ -58,7 +53,7 @@ while [ -z "$slot" ]; do
             fi
         done
     fi
-    rm -rf "${lock:?}"
+    exec 9>&-
     if [ -z "$slot" ]; then
         if [ "$ahead" != "$position" ]; then
             echo "waiting for a build slot: $limit builds running, $ahead ahead of this one" >&2
