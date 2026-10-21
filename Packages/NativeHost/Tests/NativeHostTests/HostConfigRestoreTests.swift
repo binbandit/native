@@ -74,9 +74,12 @@ struct HostConfigRestoreTests {
         await second.stop()
     }
 
-    @Test("Clients never see the agent's defaults while a reloaded session gets its settings back")
-    func noDefaultsOnReload() async throws {
+    @Test(
+        "Clients never see the agent's defaults while a reloaded session gets its settings back",
+        arguments: [false, true])
+    func noDefaultsOnReload(notifications: Bool) async throws {
         let harness = try HostHarness()
+        if notifications { harness.agentEnvironment["FAKE_AGENT_RELOAD_UPDATES"] = "1" }
         let (first, session) = try await started(harness)
         try await first.client.setConfigOption(
             SetConfigOptionParams(sessionID: session, configID: "model", value: "beta"))
@@ -145,6 +148,19 @@ struct HostConfigRestoreTests {
         _ = try await second.client.prompt(PromptParams(sessionID: session, text: "config?"))
         try await second.wait("the check") { await $0.turnsEnded(session).count == 2 }
         #expect(await second.agentText(session).contains("effort=medium"))
+        await second.stop()
+    }
+
+    @Test("Settings or values removed on reload are explained", arguments: ["effort", "effort=high"])
+    func unavailableAfterRestart(missing: String) async throws {
+        let harness = try HostHarness()
+        harness.agentEnvironment["FAKE_AGENT_RELOAD_MISSING"] = missing
+        let (first, session) = try await started(harness)
+        try await first.client.setConfigOption(
+            SetConfigOptionParams(sessionID: session, configID: "effort", value: "high"))
+        let second = try await killedMidTurn(harness, first, session)
+        #expect(await second.notices(session).contains { $0.contains("no longer offers") && $0.contains("high") })
+        #expect(!harness.received.contains("locked\teffort=high"))
         await second.stop()
     }
 

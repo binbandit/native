@@ -147,6 +147,7 @@ actor FakeAgent {
                         "content": Self.text(entry.text),
                     ])
             }
+            try reportReloadConfig(session)
             try peer.respond(to: id, with: JSONValue.object(["configOptions": options(session)]))
         case "session/resume":
             // Like a load without the replay.
@@ -208,6 +209,7 @@ actor FakeAgent {
                 modes[params.sessionId] = params.value
             }
             received("config", "\(params.configId)=\(params.value)")
+            try reportReloadConfig(params.sessionId)
             try peer.respond(to: id, with: JSONValue.object(["configOptions": options(params.sessionId)]))
         case "logout" where Self.signsIn:
             try logOut(id: id, on: peer)
@@ -458,7 +460,7 @@ actor FakeAgent {
     }
 
     private func options(_ session: SessionID) -> JSONValue {
-        .array([
+        let options: [JSONValue] = [
             .object([
                 "id": .string("mode"), "name": .string("Mode"), "category": .string("mode"), "type": .string("select"),
                 "currentValue": .string(modes[session] ?? "default"),
@@ -471,7 +473,26 @@ actor FakeAgent {
                 "effort", category: "thought_level", current: efforts[session] ?? "medium",
                 values: ["low", "medium", "high"]),
             Self.select("model", category: "model", current: models[session] ?? "alpha", values: ["alpha", "beta"]),
-        ])
+        ]
+        guard loaded.contains(session) else { return .array(options) }
+        let missing = ProcessInfo.processInfo.environment["FAKE_AGENT_RELOAD_MISSING"]
+        return .array(
+            options.compactMap { option in
+                guard case .object(var fields) = option, let id = fields["id"]?.stringValue else { return option }
+                if missing == id { return nil }
+                if let missing, missing.hasPrefix(id + "="), case .array(let values)? = fields["options"] {
+                    let value = String(missing.dropFirst(id.count + 1))
+                    fields["options"] = .array(values.filter { $0["value"]?.stringValue != value })
+                }
+                return .object(fields)
+            })
+    }
+
+    /// Opt-in notifications and missing settings exercise adapters whose reload differs from new.
+    private func reportReloadConfig(_ session: SessionID) throws {
+        guard loaded.contains(session), ProcessInfo.processInfo.environment["FAKE_AGENT_RELOAD_UPDATES"] == "1"
+        else { return }
+        try update(session, ["sessionUpdate": .string("config_option_update"), "configOptions": options(session)])
     }
 
     private static func select(_ id: String, category: String, current: String, values: [String]) -> JSONValue {

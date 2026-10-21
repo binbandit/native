@@ -1,4 +1,3 @@
-import ACP
 import SwiftUI
 
 /// The model picker's chip, with the effort meter inside it; clicking the meter steps the effort up.
@@ -44,25 +43,15 @@ struct ModelPill: View {
     }
 
     private func effortMeter(_ effort: SelectSetting) -> some View {
-        // It only steps up (`ComposerSettings.nextEffort`): at the highest level, or on a value it can't
-        // place, a click does nothing, and a lower effort is chosen in the picker.
-        let canStepUp = effort.option.valueAfterCurrent != nil
-        let isHighest = !canStepUp && effort.current != nil
-        return Button(action: onCycleEffort) {
+        Button(action: onCycleEffort) {
             EffortBars(total: effort.levels.count, level: effort.litLevel ?? 0, isMuted: effort.litLevel == nil)
                 // Small bars, so the click target reaches past them.
                 .contentShape(.rect.inset(by: -DS.Space.sm))
         }
         .buttonStyle(.plain)
-        .help(
-            canStepUp
-                ? "Effort: \(effort.currentName). Click for the next level."
-                : isHighest
-                    ? "Effort: \(effort.currentName), the highest. Choose a lower one in the model picker."
-                    : "Effort: \(effort.currentName)."
-        )
+        .help("Effort: \(effort.currentName). Click for the next level.")
         .accessibilityLabel("Effort: \(effort.currentName)")
-        .accessibilityHint(canStepUp ? "Switches to the next effort level" : "")
+        .accessibilityHint("Switches to the next effort level")
     }
 }
 

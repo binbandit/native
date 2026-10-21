@@ -137,6 +137,11 @@ extension HostCore {
         {
             adoptSubagent(child, of: session, on: link)
         }
+        if update.kind == "config_option_update", session.loading != nil, session.record.origin != .announced {
+            session.loadingConfigOptions =
+                (try? JSONDecoder().decode(JSONValue.self, from: update.json))?["configOptions"]
+            return
+        }
         let hadTitle = session.record.title
         append(update, to: session)
         if update.kind == "config_option_update", session.record.origin != .announced, session.loading == nil,
