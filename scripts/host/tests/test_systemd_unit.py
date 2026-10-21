@@ -17,7 +17,20 @@ renderer = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(renderer)
 
 
+def decode_command_line(value):
+    # systemd's shell_maybe_quote escapes dollars and backticks inside double quotes;
+    # shlex leaves those escapes intact. Consume pairs so literal backslashes survive.
+    value = re.sub(r'\\.', lambda match: match[0][1:] if match[0][1] in "$`" else match[0], value)
+    return shlex.split(value)
+
+
 class SystemdUnitTests(unittest.TestCase):
+    def test_diagnostic_shell_escapes(self):
+        command = (r'''"/tmp/host %n \$HOME" serve --home "state \"quote\" \\ %n \${HOME} \$USER \$\$'''
+                   r''' ; # 'single' 雪 \`literal\` \\\$HOME \\\`literal\\\`"''')
+        state = r'''state "quote" \ %n ${HOME} $USER $$ ; # 'single' 雪 `literal` \$HOME \`literal\`'''
+        self.assertEqual(decode_command_line(command), ['/tmp/host %n $HOME', 'serve', '--home', state])
+
     def test_exact_fields_and_restart_on_exit_75(self):
         unit = configparser.ConfigParser(interpolation=None)
         unit.optionxform = str
@@ -73,7 +86,7 @@ class SystemdUnitTests(unittest.TestCase):
             root = Path(scratch)
             executable = root / "host %n $HOME"
             executable.symlink_to(harmless)
-            state = root / 'state "quote" \\ %n ${HOME} $USER $$ ; # \'single\' 雪'
+            state = root / 'state "quote" \\ %n ${HOME} $USER $$ ; # \'single\' 雪 `literal` \\$HOME \\`literal\\`'
             unit = root / "native-host.service"
             unit.write_text(renderer.render(str(executable), str(state)), encoding="utf-8")
             # A standalone parser with scratch units, never a connection to a user manager.
@@ -87,7 +100,7 @@ class SystemdUnitTests(unittest.TestCase):
             self.assertEqual(result.returncode, 0, output)
             commands = re.findall(r"Command Line: (.+)", output)
             self.assertEqual(len(commands), 1, output)
-            self.assertEqual(shlex.split(commands[0]), [str(executable), "serve", "--home", str(state)])
+            self.assertEqual(decode_command_line(commands[0]), [str(executable), "serve", "--home", str(state)])
             self.assertFalse(state.exists(), "verification must not execute the unit")
             print("Linux parser accepted native-host.service and preserved its literal arguments")
 

@@ -5,8 +5,9 @@
 # What's still Mac-only on a Linux host, the cryptography that waits for swift-crypto included, is in
 # docs/durability.md. Tests of those features are macOS-only, so the rest run here.
 #
-# Not required yet: each job reports without failing the run. Make it required once it's been green
-# on main for a few days: drop `continue-on-error` and add both jobs to the branch's required checks.
+# Host builds are not required yet: each reports without failing the run. Make them required once
+# green on main for a few days: drop `continue-on-error` and add both to the branch's required checks.
+# The systemd user-unit parser check fails the run immediately on a regression.
 name: Linux
 
 on:
@@ -24,6 +25,8 @@ on:
       - Packages/SessionTitling/**
       - Packages/AIInstructions/**
       - Packages/Git/**
+      - scripts/host/**
+      - docs/linux-user-service.md
       - .github/workflows/linux.yml
   # Run by hand on any branch: `gh workflow run linux.yml --ref <branch>`.
   workflow_dispatch:
@@ -36,6 +39,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  systemd-unit:
+    name: Verify systemd user unit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - run: systemd-analyze --version
+      - run: python3 -m unittest discover -s scripts/host/tests -p "test_systemd_unit.py" -v
+
   host:
     name: Host on Linux (${{ matrix.arch }})
     continue-on-error: true
