@@ -67,11 +67,12 @@ extension HostCore {
             return existing.summary
         }
         guard let link = agents[params.agentID] else { throw HostError.unknownAgent(params.agentID) }
+        let config = try store.closedSessionConfig(agentID: params.agentID, agentSessionID: params.agentSessionID)
         let record = StoredSession(
             id: params.sessionID.flatMap { sessions[$0] == nil ? $0 : nil } ?? HostSessionID(),
             agentID: params.agentID, agentSessionID: params.agentSessionID, cwd: params.cwd,
             parentID: params.parentID, origin: params.origin, title: params.title, mcpServers: params.mcpServers,
-            meta: params.meta, isAdopted: true)
+            meta: params.meta, configChoices: config ?? params.configChoices ?? [:], isAdopted: true)
         try store.insertSession(record)
         let session = HostSession(
             record: record, agentName: link.spec.name, phase: .loading, needsLoad: true, mcpServers: params.mcpServers)
@@ -127,6 +128,7 @@ extension HostCore {
             guard let peer = link.peer, let agentSessionID = session.record.agentSessionID else {
                 throw HostError.agentUnavailable(link.spec.name)
             }
+            let generation = link.generation
             guard link.canLoadSessions else { throw HostError.cannotLoad(link.spec.name) }
             let servers = await tasks.agentServers(for: session.id, base: session.mcpServers)
             append(.reset(loading: true), to: session)
@@ -150,8 +152,9 @@ extension HostCore {
                 noteAgentError(error, from: link)
                 throw error
             }
+            guard generation == link.generation else { throw PeerError.closed }
             // Inside the load, so clients get where the settings end up rather than the agent's defaults.
-            await restoreConfigChoices(of: session, on: link, reported: response.configOptions)
+            try await restoreConfigChoices(of: session, on: link, reported: response.configOptions)
             append(.loaded, to: session)
             tasks.sessionLoaded(session)
             session.needsLoad = false
@@ -209,7 +212,9 @@ extension HostCore {
     /// model first, since choosing it can put the effort back to the model's default, and each
     /// against the options as they are by then. It starts from the options the load `reported`, and
     /// only where they end up goes in the log, so clients never see the agent's defaults on the way.
-    func restoreConfigChoices(of session: HostSession, on link: AgentLink, reported: JSONValue?) async {
+    func restoreConfigChoices(of session: HostSession, on link: AgentLink, reported: JSONValue?) async throws {
+        guard let peer = link.peer, let agentSessionID = session.record.agentSessionID else { throw PeerError.closed }
+        let generation = link.generation
         var latest = reported ?? session.loadingConfigOptions
         var options = latest.map(Self.configOptions) ?? session.mirror.state.configOptions
         let saved = session.record.configChoices
@@ -219,33 +224,32 @@ extension HostCore {
                 choices.choose(option, value: value)
             }
         }
-        if let peer = link.peer, let agentSessionID = session.record.agentSessionID {
-            let missing = saved.keys.filter { choices.choices[$0] == nil }.sorted()
-            for configID in choices.restoreOrder(in: options) + missing {
-                // A model change can introduce an option absent from the load's initial response.
-                if choices.choices[configID] == nil, let value = saved[configID],
-                    let option = options.first(where: { $0.id == configID })
-                {
-                    choices.choose(option, value: value)
-                }
-                guard
-                    case .set(_, let value)? = choices.restoration(
-                        of: configID, in: options, allows: { _, _ in true })
-                else { continue }
-                session.loadingConfigOptions = nil
-                do {
-                    let response = try await peer.request(
-                        "session/set_config_option",
-                        RawSetConfigOptionRequest(sessionId: agentSessionID, configId: configID, value: value),
-                        as: RawConfigOptionsResponse.self)
-                    if let reported = response.configOptions ?? session.loadingConfigOptions {
-                        latest = reported
-                        options = Self.configOptions(reported)
-                    }
-                } catch {
-                    logger.error("Couldn't set \(configID) back: \(error.localizedDescription)")
-                }
+        let missing = saved.keys.filter { choices.choices[$0] == nil }.sorted()
+        for configID in choices.restoreOrder(in: options) + missing {
+            // A model change can introduce an option absent from the load's initial response.
+            if choices.choices[configID] == nil, let value = saved[configID],
+                let option = options.first(where: { $0.id == configID })
+            {
+                choices.choose(option, value: value)
             }
+            guard
+                case .set(_, let value)? = choices.restoration(
+                    of: configID, in: options, allows: { _, _ in true })
+            else { continue }
+            session.loadingConfigOptions = nil
+            do {
+                let response = try await peer.request(
+                    "session/set_config_option",
+                    RawSetConfigOptionRequest(sessionId: agentSessionID, configId: configID, value: value),
+                    as: RawConfigOptionsResponse.self)
+                if let reported = response.configOptions ?? session.loadingConfigOptions {
+                    latest = reported
+                    options = Self.configOptions(reported)
+                }
+            } catch let error as RPCError {
+                logger.error("Couldn't set \(configID) back: \(error.localizedDescription)")
+            }
+            guard generation == link.generation else { throw PeerError.closed }
         }
         if let latest, Self.configOptions(latest) != session.mirror.state.configOptions {
             append(.update(SessionMirror.configOptionsUpdate(latest)), to: session)
@@ -358,6 +362,7 @@ extension HostCore {
     func closeSession(_ id: HostSessionID, closeInAgent: Bool = false) async throws {
         let session = try session(id)
         await cancel(session)
+        try store.keepClosedSessionConfig(session.record)
         forget(session)
         let link = agents[session.record.agentID]
         if closeInAgent, let agentSessionID = session.record.agentSessionID, !session.needsLoad,

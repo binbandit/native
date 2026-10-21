@@ -190,6 +190,13 @@ actor FakeAgent {
             try peer.respond(to: id, with: JSONValue.object(["outcome": .string("injected")]))
         case "session/set_config_option":
             let params = try message.params(as: ConfigParams.self)
+            if loaded.contains(params.sessionId),
+                ProcessInfo.processInfo.environment["FAKE_AGENT_CRASH_ON_RESTORE"] == "1",
+                firstTime("restore-\(params.sessionId.rawValue)")
+            {
+                received("restore-crash", params.configId)
+                exit(3)
+            }
             if loaded.contains(params.sessionId), let lock = Self.reloadLocks[params.configId] {
                 received("locked", "\(params.configId)=\(params.value)")
                 guard lock == .keep else {
