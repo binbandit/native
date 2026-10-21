@@ -827,6 +827,9 @@ host connects (a click that launched Native) wait for it.
 
 With the switch on, the app's own path stays quiet about sessions a followed host runs, so nothing
 shows twice; sessions that run in the app (no host), workflows, goals and limits notify as before.
+The host advertises `notificationEvents: true` in its handshake before the client suppresses that
+fallback. Older protocol-v2 hosts omit this optional field and keep the app's session notifications
+and journal-based away summary, including hosts from before the notification methods existed.
 
 **Coming back.** The Mac remembers, per host, the newest notification it heard of
 (`NativeHostSeenNotifications`). After connecting it lists what came after: a host's first connection
@@ -840,6 +843,12 @@ any host while Native is in the background, also gets one notification with the 
 Only what's still `active` counts: an approval answered on the phone, or a finished task seen there,
 isn't news on the Mac. On every connection the Mac also takes down what it shows (from this run or
 an earlier one, read back from the notification center) that was cleared while it wasn't listening.
+
+When an existing user first enables host notifications, the app has an activity cursor but no
+notification cursor. That launch keeps the journal's away summary while establishing the new cursor;
+the next launch uses notifications. `HostNotificationHistory` captures which cursors existed at
+launch, so notification catch-up cannot erase the migration summary by saving its cursor first.
+A genuinely new host still only establishes its baseline, since it has no activity cursor either.
 
 What durability doesn't fix: a context window that's full, a provider outage, or side effects a tool
 call made outside the project (a deploy, an email). Those are surfaced, not hidden; the interruption

@@ -1,4 +1,5 @@
 import Foundation
+import NativeHostClient
 
 /// Where task notifications come from: the hosts' notification events (docs/durability.md,
 /// "Notifications"), so a task on any host reaches every client and one seen anywhere clears
@@ -8,6 +9,7 @@ import Foundation
 enum HostNotificationsSwitch {
     static let defaultsKey = "NativeHostNotifications"
     static let defaultValue = true
+    static let history = HostNotificationHistory()
 
     /// `bool(forKey:)`, since a launch argument (`-NativeHostNotifications YES`) arrives as a string.
     static var isEnabled: Bool {
