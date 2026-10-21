@@ -68,8 +68,8 @@ struct AddHostSheet: View {
                 .settingsField()
                 .onSubmit(model.submit)
                 .accessibilityLabel("SSH destination or pairing link")
-                // Back from a failure to change what was typed: ready to type.
-                .onAppear { isFieldFocused = true }
+                // The returning field can take focus once it is in the window.
+                .task { isFieldFocused = true }
                 .onDisappear { isFieldFocused = false }
                 Text(
                     "Native signs in with your SSH keys, starts a pairing link on that Mac and pairs with it. It never asks for a password."
