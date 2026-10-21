@@ -80,7 +80,7 @@ struct GitChangesInspector: View {
             uncommitted
         case .turn:
             if let review, let turn = review.turn {
-                GitRangeChangesView(repository: model, review: review, request: .turn(turn))
+                GitRangeChangesView(repository: model, review: review, request: .turn(turn), model: review.turnRange)
             } else {
                 EmptyStateView(
                     "No turn yet", systemImage: "text.bubble",
@@ -88,7 +88,7 @@ struct GitChangesInspector: View {
             }
         case .branch:
             if let review {
-                GitRangeChangesView(repository: model, review: review, request: .branch)
+                GitRangeChangesView(repository: model, review: review, request: .branch, model: review.branchRange)
             }
         }
     }

@@ -257,7 +257,7 @@ opens the changes panel. It docks beside a wide conversation and overlays a narr
 | --- | --- | --- | --- |
 | ⌥⌘1 | Show or hide Changes | View ▸ Tools | `sessionTools.changes` |
 | ⇧⌘D | Show or hide Changes, as on the standard session screen | View | |
-| Escape | Close the Changes overlay; while focus is in the docked panel, close that panel | | |
+| Escape | Close the Changes overlay before composer Stop, suggestions or attachment actions; while focus is in the docked panel, close that panel | | |
 
 ## Quitting
 

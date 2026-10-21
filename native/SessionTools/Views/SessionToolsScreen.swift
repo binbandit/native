@@ -39,6 +39,7 @@ struct SessionToolsScreen: View {
             }
         }
         .environment(\.turnChangesActions, turnChanges)
+        .environment(\.composerOverlayDismissal, overlayDismissal)
         .environment(\.isPrimaryTranscript, true)
         .dsToolbarBand()
         .safeAreaBar(edge: .bottom, spacing: 0) { composer }
@@ -160,9 +161,8 @@ struct SessionToolsScreen: View {
             )
             .frame(minWidth: DS.SessionTools.sidePanelMinWidth)
             .dsToolbarBand()
-            .inspectorColumnWidth(
-                min: DS.SessionTools.sidePanelMinWidth, ideal: DS.SessionTools.sidePanelIdealWidth,
-                max: DS.SessionTools.sidePanelMaxWidth)
+            // Keep the reserved width exact, including when AppKit restores an older inspector width.
+            .inspectorColumnWidth(DS.SessionTools.sidePanelIdealWidth)
         }
     }
 
@@ -172,6 +172,11 @@ struct SessionToolsScreen: View {
             open: tools.openByPlace, availableWidth: width,
             minimumConversationWidth: DS.SessionTools.conversationBesidePanelMinWidth,
             panelWidth: DS.SessionTools.sidePanelIdealWidth)
+    }
+
+    private var overlayDismissal: ComposerOverlayDismissal? {
+        guard let id = panelLayout.overlay else { return nil }
+        return ComposerOverlayDismissal { tools.close(id) }
     }
 
     private var isSidePanelDocked: Binding<Bool> {

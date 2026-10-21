@@ -19,6 +19,8 @@ enum ComposerKeyMap {
     struct Context {
         /// The slash-command or file-mention list.
         var isSuggestionListOpen: Bool
+        /// A screen overlay owns Escape ahead of the editor's local actions.
+        var hasOverlay = false
         var isDraftEmpty: Bool
         var isWorking: Bool
         var hasQueuedPrompts: Bool
@@ -38,6 +40,7 @@ enum ComposerKeyMap {
         case moveHighlight(by: Int)
         case insertHighlightedSuggestion
         case closeSuggestionList
+        case dismissOverlay
         case recallLastPrompt
         case editLastQueuedPrompt
         case submit(FollowUpBehavior)
@@ -59,6 +62,9 @@ enum ComposerKeyMap {
     /// The action for a key, or nil to let the text view handle it. `isRepeat` is a held key.
     static func action(for key: Key, modifiers: Modifiers, isRepeat: Bool, in context: Context) -> Action? {
         guard !context.isComposing else { return nil }
+        if key == .escape, context.hasOverlay {
+            return isRepeat ? .swallow : .dismissOverlay
+        }
         if context.isSuggestionListOpen, modifiers.isEmpty || key == .escape {
             switch key {
             case .up: return .moveHighlight(by: -1)

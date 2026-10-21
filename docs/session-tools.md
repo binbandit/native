@@ -42,9 +42,11 @@ and file rows open the same panel on the latest turn; Commit retains the existin
 The panel retains the inspector's loading, failure, non-repository and clean states.
 
 Changes docks when the session's available width can hold a 520pt conversation and a 420pt
-panel. Below 940pt it opens over the conversation. Resizing preserves the selected tool;
-Escape closes the overlay, or the docked panel while focus is in it. Opening and closing the
-inspector disables animation to avoid the prototype's split-view constraint loop. The threshold
+panel. The docked panel stays at 420pt, including after state restoration, so dragging or restoring
+a wider inspector cannot consume the conversation's reserve. Below 940pt it opens over the
+conversation. Resizing preserves the selected tool, review scope, selected file and loaded range
+diff. Escape closes the overlay ahead of composer actions, or the docked panel while focus is in
+it. Opening and closing the inspector disables animation to avoid the prototype's split-view constraint loop. The threshold
 still needs a visual check on the main Mac in both appearances.
 
 This step registers only Changes, with Side, Fact and Off placements. The existing subagent
