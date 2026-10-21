@@ -27,6 +27,7 @@
 		0000000000000000117C0020 /* NativeLink in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000117C0010 /* NativeLink */; };
 		0000000000000000117C0021 /* NativeLink in Frameworks */ = {isa = PBXBuildFile; productRef = 0000000000000000117C0011 /* NativeLink */; };
 		00000000000000004D0DE520 /* Modes in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000004D0DE510 /* Modes */; };
+		000000000000000053ED7520 /* SessionTools in Frameworks */ = {isa = PBXBuildFile; productRef = 000000000000000053ED7510 /* SessionTools */; };
 		00000000000000005171E020 /* SessionTitling in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000005171E010 /* SessionTitling */; };
 		00000000000000005E171003 /* Sentry in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000005E171002 /* Sentry */; };
 		00000000000000005E171013 /* NativeDiagnostics in Frameworks */ = {isa = PBXBuildFile; productRef = 00000000000000005E171012 /* NativeDiagnostics */; };
@@ -130,6 +131,7 @@
 				00000000000000005171E020 /* SessionTitling in Frameworks */,
 				000000000000000007C4E020 /* NativeOrchestration in Frameworks */,
 				00000000000000004D0DE520 /* Modes in Frameworks */,
+				000000000000000053ED7520 /* SessionTools in Frameworks */,
 				00000000000000009C010020 /* ProjectIcons in Frameworks */,
 				0000000000000000AC7A0020 /* ProjectActions in Frameworks */,
 				00000000000000007E1E0020 /* NativeTelemetry in Frameworks */,
@@ -260,6 +262,7 @@
 				00000000000000005171E010 /* SessionTitling */,
 				000000000000000007C4E010 /* NativeOrchestration */,
 				00000000000000004D0DE510 /* Modes */,
+				000000000000000053ED7510 /* SessionTools */,
 				00000000000000009C010010 /* ProjectIcons */,
 				0000000000000000AC7A0010 /* ProjectActions */,
 				00000000000000007E1E0010 /* NativeTelemetry */,
@@ -322,6 +325,7 @@
 				00000000000000005171E000 /* XCLocalSwiftPackageReference "Packages/SessionTitling" */,
 				000000000000000007C4E000 /* XCLocalSwiftPackageReference "Packages/Orchestration" */,
 				00000000000000004D0DE500 /* XCLocalSwiftPackageReference "Packages/Modes" */,
+				000000000000000053ED7500 /* XCLocalSwiftPackageReference "Packages/SessionTools" */,
 				00000000000000009C010000 /* XCLocalSwiftPackageReference "Packages/ProjectIcons" */,
 				0000000000000000AC7A0000 /* XCLocalSwiftPackageReference "Packages/ProjectActions" */,
 				00000000000000007E1E0000 /* XCLocalSwiftPackageReference "Packages/Telemetry" */,
@@ -871,6 +875,10 @@
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/Modes;
 		};
+		000000000000000053ED7500 /* XCLocalSwiftPackageReference "Packages/SessionTools" */ = {
+			isa = XCLocalSwiftPackageReference;
+			relativePath = Packages/SessionTools;
+		};
 		00000000000000005171E000 /* XCLocalSwiftPackageReference "Packages/SessionTitling" */ = {
 			isa = XCLocalSwiftPackageReference;
 			relativePath = Packages/SessionTitling;
@@ -1024,6 +1032,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 00000000000000004D0DE500 /* XCLocalSwiftPackageReference "Packages/Modes" */;
 			productName = Modes;
+		};
+		000000000000000053ED7510 /* SessionTools */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 000000000000000053ED7500 /* XCLocalSwiftPackageReference "Packages/SessionTools" */;
+			productName = SessionTools;
 		};
 		00000000000000005171E010 /* SessionTitling */ = {
 			isa = XCSwiftPackageProductDependency;
