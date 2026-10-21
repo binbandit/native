@@ -1,5 +1,6 @@
 import ACP
 import Modes
+import NativeCommands
 import SwiftUI
 
 /// Direction A at rest: settings read as a sentence; each word opens the existing picker.
@@ -29,7 +30,9 @@ struct ComposerNextControlsRow<Extras: View, Context: View>: View {
                 Button(agentName, action: onChooseAgent)
                     .buttonStyle(ComposerFactButtonStyle())
                     .accessibilityLabel("Agent: \(agentName). New session with another agent")
-                    .help("New session with another agent (⌥⌘N). This conversation stays with \(agentName).")
+                    .help(
+                        CommandRegistry.shared.help("New session with another agent", for: .sessionNewWithAgent)
+                            + ". This conversation stays with \(agentName).")
                 if settings.model != nil || !settings.modelSwitches.isEmpty {
                     separator
                     model
@@ -89,7 +92,7 @@ struct ComposerNextControlsRow<Extras: View, Context: View>: View {
         }
         .buttonStyle(ComposerFactButtonStyle())
         .accessibilityLabel("Model: \(settings.model?.currentName ?? "Default")")
-        .help("Change model (⇧⌘E)")
+        .help(CommandRegistry.shared.help("Change model", for: .sessionChooseModel))
         .popover(isPresented: $isModelPickerOpen, arrowEdge: .top) {
             ModelPicker(
                 model: settings.model, effort: settings.effort, switches: settings.modelSwitches, onSet: onSet
@@ -126,7 +129,7 @@ struct ComposerNextControlsRow<Extras: View, Context: View>: View {
         return Button(settings.isAutonomySuspended ? "\(name) after Plan" : name) { isAutonomyOpen.toggle() }
             .buttonStyle(ComposerFactButtonStyle())
             .accessibilityLabel("Autonomy: \(name)\(settings.isAutonomySuspended ? ", resumes after Plan" : "")")
-            .help("Change autonomy (⇧⌘M cycles levels)")
+            .help(cycleHelp("Change autonomy", command: .sessionNextPermissionMode, next: "level"))
             .popover(isPresented: $isAutonomyOpen, arrowEdge: .top) {
                 AutonomyPicker(
                     setting: setting, levels: levels, level: level, isSuspended: settings.isAutonomySuspended,
@@ -140,11 +143,16 @@ struct ComposerNextControlsRow<Extras: View, Context: View>: View {
         Button(control.current.name) { isModeOpen.toggle() }
             .buttonStyle(ComposerFactButtonStyle())
             .accessibilityLabel("Mode: \(control.current.name)")
-            .help("Change mode (⌃⇧M cycles modes)")
+            .help(cycleHelp("Change mode", command: .sessionNextMode, next: "mode"))
             .popover(isPresented: $isModeOpen, arrowEdge: .top) {
                 ModePicker(control: control) { isModeOpen = false }
                     .dsPopoverBackground()
             }
+    }
+
+    private func cycleHelp(_ text: String, command: NativeCommand.ID, next: String) -> String {
+        guard let shortcut = CommandRegistry.shared.shortcut(for: command) else { return text }
+        return "\(text). Press \(shortcut.displayString) for the next \(next)."
     }
 }
 

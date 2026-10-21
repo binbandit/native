@@ -19,7 +19,9 @@ struct ComposerNextSettingPicker: View {
                     ForEach(setting.choices) { choice in
                         ComposerPickerRow(
                             title: choice.name,
-                            detail: setting.effortNote(for: choice) ?? choice.descriptionWithoutName,
+                            detail: setting.option.category == "thought_level"
+                                ? setting.effortNote(for: choice) ?? choice.descriptionWithoutName
+                                : choice.descriptionWithoutName,
                             trailing: choice.value == setting.value ? .checked(dimmed: false) : .none,
                             isEnabled: true
                         ) {
@@ -40,6 +42,15 @@ struct ComposerNextSettingPicker: View {
     DSPreviewPair {
         if let effort = ComposerPreviewFixtures.settings.effort {
             ComposerNextSettingPicker(setting: effort, onSet: { _, _ in }, dismiss: {})
+                .dsPopoverBackground()
+        }
+    }
+}
+
+#Preview("Quiet setting picker - Additional agent option") {
+    DSPreviewPair {
+        if let setting = ComposerPreviewFixtures.settings.others.first {
+            ComposerNextSettingPicker(setting: setting, onSet: { _, _ in }, dismiss: {})
                 .dsPopoverBackground()
         }
     }
