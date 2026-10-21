@@ -69,15 +69,14 @@ struct ProjectPaths: Sendable {
     }
 
     /// Opens a file that `resolve` let through, for reading. No symbolic link is followed anywhere in
-    /// the path (only in the last component off Darwin), so one swapped in after the check can't lead
+    /// the path, so one swapped in after the check can't lead
     /// out of the project. Anything but a regular file is refused: a FIFO would block the read forever.
     static func openForReading(_ resolvedPath: String) throws -> FileHandle {
         #if canImport(Darwin)
-        let noLinks = O_NOFOLLOW_ANY
+        let descriptor = open(resolvedPath, O_RDONLY | O_CLOEXEC | O_NONBLOCK | O_NOFOLLOW_ANY)
         #else
-        let noLinks = O_NOFOLLOW
+        let descriptor = try openWithoutLinks(resolvedPath)
         #endif
-        let descriptor = open(resolvedPath, O_RDONLY | O_CLOEXEC | O_NONBLOCK | noLinks)
         guard descriptor >= 0 else { throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO) }
         var info = stat()
         guard fstat(descriptor, &info) == 0, info.st_mode & S_IFMT == S_IFREG else {
@@ -86,6 +85,27 @@ struct ProjectPaths: Sendable {
         }
         return FileHandle(fileDescriptor: descriptor, closeOnDealloc: true)
     }
+
+    #if !canImport(Darwin)
+    /// O_NOFOLLOW checks only the last component on Linux. Walk from an open root directory so
+    /// each parent is checked too, and a rename cannot redirect the next lookup through a link.
+    private static func openWithoutLinks(_ path: String) throws -> Int32 {
+        let components = path.split(separator: "/")
+        guard path.hasPrefix("/"), let name = components.last,
+            !components.contains(where: { $0 == "." || $0 == ".." })
+        else { throw POSIXError(.EINVAL) }
+        var directory = open("/", O_RDONLY | O_CLOEXEC | O_DIRECTORY)
+        guard directory >= 0 else { throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO) }
+        defer { close(directory) }
+        for component in components.dropLast() {
+            let next = openat(directory, String(component), O_RDONLY | O_CLOEXEC | O_DIRECTORY | O_NOFOLLOW)
+            guard next >= 0 else { throw POSIXError(POSIXErrorCode(rawValue: errno) ?? .EIO) }
+            close(directory)
+            directory = next
+        }
+        return openat(directory, String(name), O_RDONLY | O_CLOEXEC | O_NONBLOCK | O_NOFOLLOW)
+    }
+    #endif
 
     private static func realPath(_ path: String) -> (path: String?, error: Int32) {
         guard let resolved = realpath(path, nil) else { return (nil, errno) }

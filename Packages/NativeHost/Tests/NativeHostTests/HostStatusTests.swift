@@ -15,7 +15,7 @@ struct HostStatusTests {
     static let manager = ClientGrants(managePlugins: false, manageHost: true, isLocal: false)
 
     /// The fake agent, built beside these tests.
-    nonisolated static let fakeAgent = Bundle(for: FakePowerBackend.self).bundleURL.deletingLastPathComponent()
+    nonisolated static let fakeAgent = HostHarness.products
         .appending(path: "FakeACPAgent").path(percentEncoded: false)
 
     final class Rig: Sendable {
