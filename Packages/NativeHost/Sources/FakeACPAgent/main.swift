@@ -37,7 +37,9 @@ import FoundationNetworking
 // blocks shown as "[link <name>]" and the like; every load's MCP servers (name and command) go to loads.log,
 // every new session's to news.log, and every call of Native's tools to tools.log. With $FAKE_AGENT_GRANDCHILD set to a file, it starts
 // `sleep` in a process group of its own at launch and writes its pid there, as npm does with the
-// adapters it runs. With $FAKE_AGENT_NO_STEERING=1 it doesn't offer steering. Settings (mode, model,
+// adapters it runs. With $FAKE_AGENT_NO_STEERING=1 it doesn't offer steering. `/rename <name>` renames
+// the session without a model, as codex-acp does (to received.log as "rename"), unless
+// $FAKE_AGENT_RENAME_ASKS_MODEL=1, which answers it like any other prompt. Settings (mode, model,
 // effort) live in memory, so a reloaded session reports the defaults again; like codex-acp, choosing
 // a model puts the effort back to that model's default. It lists the effort (id "effort") before the
 // model. On a session it loaded (not one it started), it won't change the options named in
@@ -180,7 +182,12 @@ actor FakeAgent {
             try peer.respond(to: id, with: JSONValue.object([:]))
         case "session/prompt":
             let params = try message.params(as: PromptParams.self)
-            let stopReason = try await prompt(params.sessionId, text: Self.describe(params.prompt))
+            let text = Self.describe(params.prompt)
+            if text.hasPrefix("/rename "), !Self.renameAsksModel {
+                try await rename(params.sessionId, to: String(text.dropFirst("/rename ".count)), id: id, on: peer)
+                return
+            }
+            let stopReason = try await prompt(params.sessionId, text: text)
             try peer.respond(to: id, with: JSONValue.object(["stopReason": .string(stopReason)]))
         case "_session/steering":
             let params = try message.params(as: PromptParams.self)
@@ -226,6 +233,30 @@ actor FakeAgent {
             try logOut(id: id, on: peer)
         default:
             try peer.respond(to: id, error: .methodNotFound(message.method))
+        }
+    }
+
+    /// `/rename` as codex-acp 2.2.2 answers it (captured from it): handled without a model, so the
+    /// usage is null, and the new title follows the answer.
+    private func rename(_ session: SessionID, to name: String, id: RequestID, on peer: JSONRPCPeer) async throws {
+        cancelled.remove(session)
+        received("rename", name)
+        // A file gate lets tests stop or restart the agent while naming is still in flight.
+        let environment = ProcessInfo.processInfo.environment
+        if let gate = environment["FAKE_AGENT_RENAME_GATE"] {
+            while !FileManager.default.fileExists(atPath: gate) {
+                try await Task.sleep(for: .milliseconds(10))
+            }
+        }
+        let stopped = cancelled.contains(session) && environment["FAKE_AGENT_RENAME_IGNORES_CANCEL"] != "1"
+        try peer.respond(
+            to: id,
+            with: JSONValue.object([
+                "stopReason": .string(stopped ? "cancelled" : "end_turn"), "usage": .null,
+                "_meta": .object(["quota": .object(["token_count": .null, "model_usage": .array([])])]),
+            ]))
+        if !stopped {
+            try update(session, ["sessionUpdate": .string("session_info_update"), "title": .string(name)])
         }
     }
 
@@ -516,6 +547,8 @@ actor FakeAgent {
 
     /// `FAKE_AGENT_NO_STEERING=1` makes it an agent that can't take messages mid-turn.
     private static let cantSteer = ProcessInfo.processInfo.environment["FAKE_AGENT_NO_STEERING"] == "1"
+    /// Answers `/rename` like any other prompt, as an agent whose model handles it would.
+    private static let renameAsksModel = ProcessInfo.processInfo.environment["FAKE_AGENT_RENAME_ASKS_MODEL"] == "1"
 
     /// What it does about a change to an option `$FAKE_AGENT_LOCKED_ON_RELOAD` names, on a loaded session.
     enum ReloadLock {

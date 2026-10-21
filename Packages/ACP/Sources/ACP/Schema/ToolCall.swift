@@ -15,8 +15,15 @@ public enum ToolCallStatus: Hashable, Sendable, Decodable {
     case inProgress
     case completed
     case failed
-    /// Never sent by ACP v1 agents: clients mark calls that were still open when a turn was cancelled.
+    // ACP v1 agents never send these: they have no status for a call that didn't run to its end, so
+    // Native settles each call still open when its turn ends with what it knows (`SessionState.endTurn`).
+    /// A stop the user asked for cut the call short.
     case cancelled
+    /// The agent or Native's host stopped unexpectedly while the call ran.
+    case interrupted
+    /// The turn ended without the agent reporting how the call went, so neither success nor failure
+    /// is claimed.
+    case unreported
 
     public init(from decoder: any Decoder) throws {
         self =
@@ -31,7 +38,22 @@ public enum ToolCallStatus: Hashable, Sendable, Decodable {
     public var isFinished: Bool {
         switch self {
         case .pending, .inProgress: false
-        case .completed, .failed, .cancelled: true
+        case .completed, .failed, .cancelled, .interrupted, .unreported: true
+        }
+    }
+
+    /// The status once the agent reports `reported`. Native's own statuses close a call for good, since
+    /// its turn is over: the agent can still say it finished (an unreported call may also turn out to
+    /// have failed), but never that it's running again, and a failure after a stop or a crash is the
+    /// stop's or the crash's doing.
+    func reporting(_ reported: ToolCallStatus) -> ToolCallStatus {
+        switch (self, reported) {
+        case (.unreported, .completed), (.unreported, .failed), (.cancelled, .completed), (.interrupted, .completed):
+            reported
+        case (.cancelled, _), (.interrupted, _), (.unreported, _):
+            self
+        default:
+            reported
         }
     }
 }

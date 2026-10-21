@@ -1,4 +1,3 @@
-#if NATIVE_HOSTSUI_WIP
 #if DEBUG
 import ACP
 import Foundation
@@ -8,7 +7,8 @@ import Observation
 
 /// Made-up hosts in every state, for previews and for checking Settings ▸ Hosts in a running app
 /// without paired machines: `-NativeHostsFixtures all` (every state), `empty` (This Mac alone),
-/// `signin` (one host whose agents want signing in) or `components` (the device picker and badges).
+/// `signin` (one host whose agents want signing in), `components` (the device picker and badges) or
+/// `local-offline` (This Mac's background host not answering).
 /// Development builds only; off by default.
 /// Actions change the fixtures the way the real hosts would, after a moment.
 @Observable
@@ -17,6 +17,8 @@ final class HostsFixtureDirectory: HostsDirectory {
         case all, empty, signin
         /// The picker and badges instead of the page (`HostsComponentsFixturePage`).
         case components
+        /// This Mac alone, its background host not answering.
+        case localOffline = "local-offline"
     }
 
     private(set) var hosts: [HostDisplay]
@@ -55,9 +57,9 @@ final class HostsFixtureDirectory: HostsDirectory {
         return { [weak self] in self?.hosts.insert(removed, at: min(index, self?.hosts.count ?? 0)) }
     }
 
-    func reconnect(_ host: RemoteHostID) {
-        update(.remote(host)) { $0.state = .connecting }
-        after(.seconds(2)) { $0.update(.remote(host)) { $0.state = .online } }
+    func restartLocalHost() async {
+        update(.thisMac) { $0.state = .connecting }
+        after(.seconds(2)) { $0.update(.thisMac) { $0.state = .online } }
     }
 
     func setKeepAwake(_ mode: KeepAwakeMode, on device: SessionDevice) async throws {
@@ -107,7 +109,7 @@ final class HostsFixtureDirectory: HostsDirectory {
         updateAgent(agent, on: device) { display in
             display.needsSignIn = false
             display.isSignedIn = true
-            display.signInLabel = apiKey == nil ? "ChatGPT Pro · brayden@example.com" : "OpenAI API key"
+            display.signInLabel = apiKey == nil ? "ChatGPT Pro · you@example.com" : "OpenAI API key"
             if apiKey != nil { display.savedKeys.insert(method.id) }
         }
     }
@@ -132,11 +134,14 @@ final class HostsFixtureDirectory: HostsDirectory {
             throw FixtureFailure.busy
         }
         updateAgent(agent, on: device) { display in
-            display.needsSignIn = false
-            display.isSignedIn = true
-            display.signInLabel = "ChatGPT Pro · brayden@example.com"
-            display.signInLink = nil
-            if case .notInstalled = display.status { display.status = .ready }
+            if case .notInstalled = display.status {
+                display.status = .ready
+            } else if display.wantsSignIn {
+                display.needsSignIn = false
+                display.isSignedIn = true
+                display.signInLabel = "ChatGPT Pro · you@example.com"
+                display.signInLink = nil
+            }
         }
     }
 
@@ -184,6 +189,7 @@ final class HostsFixtureDirectory: HostsDirectory {
     private static func hosts(for scenario: Scenario) -> [HostDisplay] {
         switch scenario {
         case .empty, .components: [thisMac]
+        case .localOffline: [unreachableThisMac]
         case .signin: [thisMac, mini]
         case .all: [thisMac, mini, studio, buildBox, linux, oldMini]
         }
@@ -193,7 +199,7 @@ final class HostsFixtureDirectory: HostsDirectory {
 
     private static var thisMac: HostDisplay {
         HostDisplay(
-            device: .thisMac, name: "This Mac", machineName: "Brayden's MacBook Pro",
+            device: .thisMac, name: "This Mac", machineName: "MacBook Pro",
             look: HostLook(symbol: .laptop, tint: .graphite), state: .online,
             machine: HostMachineSummary(
                 system: "macOS 26.1", nativeVersion: "1.4.2 (212)", bootedAt: now.addingTimeInterval(-2 * 86_400),
@@ -205,18 +211,24 @@ final class HostsFixtureDirectory: HostsDirectory {
             ])
     }
 
+    private static var unreachableThisMac: HostDisplay {
+        var host = thisMac
+        host.state = .offline(reason: "The host didn't answer 4 times in a row.", lastConnected: nil)
+        return host
+    }
+
     private static var mini: HostDisplay {
         let codex = agent("codex")
         let cursor = agent("cursor")
         return HostDisplay(
-            device: .remote(HostDeviceFixtures.mini), name: "Mac mini", machineName: "Brayden's Mac mini",
+            device: .remote(HostDeviceFixtures.mini), name: "Mac mini", machineName: "Home Mac mini",
             look: HostLook(symbol: .mini, tint: .cobalt), state: .online,
             machine: HostMachineSummary(
                 system: "macOS 26.1", nativeVersion: "1.4.2 (212)", bootedAt: now.addingTimeInterval(-9 * 86_400),
                 loadAverage: 0.42, keepAwake: "Awake while agents work"),
             agents: [
                 HostAgentDisplay(
-                    agent: agent("claude-code"), status: .ready, signInLabel: "Claude Max · brayden@example.com",
+                    agent: agent("claude-code"), status: .ready, signInLabel: "Claude Max · you@example.com",
                     isSignedIn: true, terminalSignIn: "claude"),
                 HostAgentDisplay(
                     agent: codex, status: .ready, needsSignIn: true, signInLabel: "Not logged in", isSignedIn: false,
@@ -288,5 +300,4 @@ final class HostsFixtureDirectory: HostsDirectory {
         return AgentDefinition(found.agent, pluginID: found.pluginID)
     }
 }
-#endif
 #endif

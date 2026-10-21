@@ -6,7 +6,7 @@ import TaskList
 /// ⌘A picks a project's, and on touch a select mode makes taps pick. The task open in the detail
 /// column is the model's `selection`, apart from this.
 @Observable
-final class SidebarSelectionModel {
+final class SidebarSelectionModel: ArchiveNavigationOrdering {
     private(set) var picked = TaskListSelection<SessionKey>()
     /// Taps pick tasks instead of opening them (Select, on touch or from the menu).
     var isSelecting = false {
@@ -18,6 +18,7 @@ final class SidebarSelectionModel {
     @ObservationIgnored var modifiers: EventModifiers = []
     /// The tasks on screen, top to bottom, kept up to date by the sidebar.
     @ObservationIgnored var order: [SessionKey] = []
+    @ObservationIgnored private var archiveOrder: (() -> [SessionKey])?
     /// Asks the sidebar to confirm deleting the picked tasks.
     var isConfirmingDelete = false
     /// Asks the sidebar to confirm deleting one task. One dialog for the whole list, rather than
@@ -59,6 +60,14 @@ final class SidebarSelectionModel {
     func clear() {
         isSelecting = false
         picked.clear()
+    }
+
+    func setArchiveOrder(_ query: @escaping () -> [SessionKey]) {
+        archiveOrder = query
+    }
+
+    func archiveSessionOrder() -> [SessionKey] {
+        archiveOrder?() ?? order
     }
 
     /// Follows the list on screen, letting go of tasks no longer on it.

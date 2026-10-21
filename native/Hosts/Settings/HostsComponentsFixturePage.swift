@@ -1,4 +1,3 @@
-#if NATIVE_HOSTSUI_WIP
 #if DEBUG
 import SwiftUI
 
@@ -82,5 +81,4 @@ struct HostsComponentsFixturePage: View {
         HostDeviceBadge(name: option.name, look: look(option), availability: option.availability, style: style)
     }
 }
-#endif
 #endif

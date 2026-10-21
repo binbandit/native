@@ -98,7 +98,7 @@ extension AppModel {
     }
 
     /// The host a listed remote session lives on, and its folder and title there.
-    private func remotePlace(of key: SessionKey) -> (host: RemoteHost, cwd: String, title: String?)? {
+    func remotePlace(of key: SessionKey) -> (host: RemoteHost, cwd: String, title: String?)? {
         for host in hosts.all {
             if let summary = host.sessions.first(where: {
                 $0.agentID == key.agent.rawValue && $0.agentSessionID == key.id

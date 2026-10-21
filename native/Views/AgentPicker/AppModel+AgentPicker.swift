@@ -1,4 +1,3 @@
-#if NATIVE_AGENT_PICKER_WIP
 import Foundation
 
 // New Session With… (⌥⌘N): the agents it offers and what choosing one does. It lists the agents the
@@ -41,10 +40,9 @@ extension AppModel {
         currentProject.flatMap { missingFolder(of: $0.id) }
     }
 
-    /// Starts a session with the agent chosen in the picker, and closes it. An agent that wants a
+    /// Starts a session with the agent chosen in the picker. An agent that wants a
     /// sign-in asks for it first; the sign-in prompt starts the session once it's done.
     func chooseAgentForNewSession(_ agent: AgentDefinition.ID) async {
-        isChoosingAgent = false
         if let runtime = runtime(agent), runtime.needsSignIn, !runtime.authMethods.isEmpty {
             signInPrompt = agent
         } else {
@@ -52,4 +50,3 @@ extension AppModel {
         }
     }
 }
-#endif

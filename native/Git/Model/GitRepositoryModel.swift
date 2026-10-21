@@ -14,6 +14,10 @@ final class GitRepositoryModel {
     }
 
     let folder: URL
+    let isLocal: Bool
+    /// File menus must never pass a paired host's path to local Open or Reveal actions.
+    var localRoot: URL? { isLocal ? repository?.root : nil }
+    private let unavailableReason: String?
     private(set) var state = State.loading
     private(set) var repository: Repository?
     private(set) var status: RepositoryStatus? {
@@ -84,8 +88,10 @@ final class GitRepositoryModel {
     /// How long a plain confirmation stays up.
     static let confirmationDuration = Duration.seconds(4)
 
-    init(folder: URL, git: @escaping () async -> Git?) {
+    init(folder: URL, isLocal: Bool = true, git: @escaping () async -> Git?) {
         self.folder = folder
+        self.isLocal = isLocal
+        unavailableReason = nil
         resolveGit = git
         refresh()
     }
@@ -93,12 +99,24 @@ final class GitRepositoryModel {
     /// A model frozen at `status`, for previews and fixtures: it never runs git.
     init(folder: URL, fixedStatus: RepositoryStatus, diff: GitDiffContent? = nil) {
         self.folder = folder
+        isLocal = true
+        unavailableReason = nil
         resolveGit = { nil }
         status = fixedStatus
         state = .ready
         selection = fixedStatus.changes.first?.id
         shownDiff = fixedStatus.changes.first.map { ShownDiff(change: $0, content: diff) }
         mirrorStatus()
+    }
+
+    /// No command runs on this Mac while a paired host's store is still unavailable.
+    init(unavailableFolder folder: URL) {
+        self.folder = folder
+        isLocal = false
+        let reason = "The task's host is unavailable. Reconnect it in Settings > Hosts to read its changes."
+        unavailableReason = reason
+        resolveGit = { nil }
+        state = .failed(reason)
     }
 
     deinit {
@@ -199,6 +217,10 @@ final class GitRepositoryModel {
     }
 
     private func load() async {
+        if let unavailableReason {
+            state = .failed(unavailableReason)
+            return
+        }
         do {
             guard let repository = try await currentRepository() else {
                 state = .notRepository

@@ -47,6 +47,9 @@ final class AgentLink {
     private(set) var generation = 0
     /// Set while the host stops the agent on purpose, so its exit isn't treated as a crash.
     var isStopping = false
+    /// The agent answered its rename command with a model's turn, so the host stops naming sessions
+    /// with it (`HostCore+AgentNames.swift`).
+    var renameAsksModel = false
     /// Why the host is ending the process, when it's one (a restart): recovery says so.
     var exitCause: RecoveryNote.Cause?
     /// Host sessions by the agent's id for them, for routing what the agent sends.
@@ -157,9 +160,7 @@ final class AgentLink {
                 status = .notInstalled(command: command)
                 throw error
             }
-            let detail = stderr.text.trimmingCharacters(in: .whitespacesAndNewlines)
-            let message =
-                detail.isEmpty ? error.localizedDescription : "\(error.localizedDescription)\n\n\(detail.suffix(2_000))"
+            let message = startupFailure(error.localizedDescription)
             status = .failed(message)
             throw AgentLaunch.Failure.startFailed(message)
         }
@@ -169,16 +170,27 @@ final class AgentLink {
     /// a process already replaced.
     func noteExit(generation: Int) -> Bool {
         guard generation == self.generation, status == .ready || status == .starting else { return false }
+        // Exiting during initialize is a failed launch, not an idle agent. Advancing the
+        // generation makes ensureStarted discard its result, so preserve the failure here.
+        let nextStatus: Status =
+            status == .starting && !isStopping
+            ? .failed(startupFailure("The process exited before initialization finished.")) : .stopped
         self.generation += 1
         isStopping = false
-        status = .stopped
         peer?.close()
         peer = nil
         initializeResult = nil
         terminateProcess()
         routes = [:]
         buffered = [:]
+        status = nextStatus
         return true
+    }
+
+    private func startupFailure(_ reason: String) -> String {
+        let detail = recentStderr
+        let message = "\(spec.name) couldn't start. Choose Restart to try again.\n\n\(reason)"
+        return detail.isEmpty ? message : "\(message)\n\n\(detail.suffix(2_000))"
     }
 
     /// The end of what the agent logged, for saying why it stopped.

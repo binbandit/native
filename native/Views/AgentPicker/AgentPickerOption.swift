@@ -1,4 +1,3 @@
-#if NATIVE_AGENT_PICKER_WIP
 import SwiftUI
 
 /// One agent as the agent picker offers it: who it is, where it stands, why it can't start a session
@@ -59,4 +58,3 @@ struct AgentPickerOption: Identifiable {
     var id: AgentDefinition.ID { agent.id }
     var name: String { agent.displayName }
 }
-#endif

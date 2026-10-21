@@ -17,11 +17,6 @@ struct GitChangesInspector: View {
     @State private var isCommitting = false
     @State private var pendingDiscard: [FileChange] = []
 
-    /// `review` while This Turn and Branch are switched on (`GitChangesReview.isEnabled`).
-    private var scopes: GitChangesReview? {
-        GitChangesReview.isEnabled ? review : nil
-    }
-
     var body: some View {
         VStack(spacing: 0) {
             switch model.state {
@@ -58,7 +53,7 @@ struct GitChangesInspector: View {
         .onChange(of: session?.phase) { followLatestTurn() }
         .onChange(of: session?.completedWriteCount) { followLatestTurn() }
         // It opens again on the uncommitted changes (⌘⇧D, docs/keyboard.md).
-        .onDisappear { scopes?.reset() }
+        .onDisappear { review?.reset() }
         .alert(discardTitle, isPresented: isConfirmingDiscard) {
             Button("Discard", role: .destructive) {
                 let changes = pendingDiscard
@@ -73,16 +68,16 @@ struct GitChangesInspector: View {
     @ViewBuilder private var ready: some View {
         GitChangesHeader(model: model, isCommitting: $isCommitting, onCreatePullRequest: onCreatePullRequest)
         SeparatorLine()
-        if let review = scopes {
+        if let review {
             GitChangesScopePicker(scope: scopeBinding(review))
             SeparatorLine()
         }
         noticeBanner
-        switch scopes?.scope ?? .uncommitted {
+        switch review?.scope ?? .uncommitted {
         case .uncommitted:
             uncommitted
         case .turn:
-            if let review = scopes, let turn = review.turn {
+            if let review, let turn = review.turn {
                 GitRangeChangesView(repository: model, review: review, request: .turn(turn))
             } else {
                 EmptyStateView(
@@ -90,7 +85,7 @@ struct GitChangesInspector: View {
                     message: "When the agent finishes a turn, the files it changed show here, committed or not.")
             }
         case .branch:
-            if let review = scopes {
+            if let review {
                 GitRangeChangesView(repository: model, review: review, request: .branch)
             }
         }
@@ -125,7 +120,7 @@ struct GitChangesInspector: View {
                     .buttonStyle(.ds(.secondary))
                 }
                 // Committed work isn't gone: the turn's and the branch's changes still show it.
-                if let review = scopes, let session {
+                if let review, let session {
                     Button("Show This Turn") { review.showTurn(of: session) }
                         .buttonStyle(.ds(.secondary))
                 }
@@ -147,7 +142,7 @@ struct GitChangesInspector: View {
     }
 
     private func followLatestTurn() {
-        if let review = scopes, let session { review.followLatestTurn(of: session) }
+        if let review, let session { review.followLatestTurn(of: session) }
     }
 
     @ViewBuilder private var noticeBanner: some View {

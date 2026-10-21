@@ -39,7 +39,7 @@ public struct DiffStatsText: View {
         }
         .monospacedDigit()
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("\(stats.added) lines added, \(stats.removed) removed")
+        .accessibilityLabel(DSFormat.spokenDiffStat(added: stats.added, removed: stats.removed))
     }
 }
 

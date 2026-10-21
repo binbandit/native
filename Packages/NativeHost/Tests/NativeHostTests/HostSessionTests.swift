@@ -130,7 +130,8 @@ struct HostSessionTests {
         try await recorder.wait("the question") { await !$0.mirror(session).questions.isEmpty }
         let question = try #require(await recorder.mirror(session).questions.first)
         #expect(question.request.message == "Which color?")
-        #expect(await recorder.summaries[session]?.needsApproval == true)
+        // The summary is its own notification and can land after the session's update.
+        try await recorder.wait("the summary to need approval") { await $0.summaries[session]?.needsApproval == true }
         try await recorder.client.respondQuestion(
             RespondQuestionParams(
                 sessionID: session, questionID: question.id,

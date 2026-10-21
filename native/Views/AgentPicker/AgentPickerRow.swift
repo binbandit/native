@@ -1,4 +1,3 @@
-#if NATIVE_AGENT_PICKER_WIP
 import SwiftUI
 
 /// One agent in the picker: its icon and name, its state on the right, and under the name why it
@@ -149,4 +148,3 @@ struct AgentPickerRow: View {
         [option.name, option.status.label, option.reason].compactMap(\.self).joined(separator: " · ")
     }
 }
-#endif

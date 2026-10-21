@@ -5,8 +5,9 @@
 # What's still Mac-only on a Linux host, the cryptography that waits for swift-crypto included, is in
 # docs/durability.md. Tests of those features are macOS-only, so the rest run here.
 #
-# Not required yet: each job reports without failing the run. Make it required once it's been green
-# on main for a few days: drop `continue-on-error` and add both jobs to the branch's required checks.
+# Host builds are not required yet: each reports without failing the run. Make them required once
+# green on main for a few days: drop `continue-on-error` and add both to the branch's required checks.
+# The systemd user-unit parser check fails the run immediately on a regression.
 name: Linux
 
 on:
@@ -24,6 +25,8 @@ on:
       - Packages/SessionTitling/**
       - Packages/AIInstructions/**
       - Packages/Git/**
+      - scripts/host/**
+      - docs/linux-user-service.md
       - .github/workflows/linux.yml
   # Run by hand on any branch: `gh workflow run linux.yml --ref <branch>`.
   workflow_dispatch:
@@ -36,6 +39,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  systemd-unit:
+    name: Verify systemd user unit
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - run: systemd-analyze --version
+      - run: python3 -m unittest discover -s scripts/host/tests -p "test_systemd_unit.py" -v
+
   host:
     name: Host on Linux (${{ matrix.arch }})
     continue-on-error: true
@@ -55,7 +67,7 @@ jobs:
       options: --init
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # The host's store is SQLite: Apple's SDKs have it as a module, Linux needs the headers
       # (Packages/NativeHost/Sources/CSQLite).
       - name: Install SQLite's headers
@@ -99,7 +111,7 @@ jobs:
         run: |
           cp "$(runuser -u native-test -- swift build -c release --package-path Packages/NativeHost --show-bin-path)/native-host" \
             "native-host-linux-${{ matrix.arch }}"
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: ${{ !cancelled() && steps.binary.outcome == 'success' }}
         with:
           name: native-host-linux-${{ matrix.arch }}

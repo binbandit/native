@@ -3,10 +3,12 @@ import NativeAutomation
 import NativeHostClient
 import NativeHostProtocol
 import SwiftUI
+import Undo
 import UniformTypeIdentifiers
 
 struct RootView: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.undoManager) private var undoManager
     @Environment(\.releaseChannel) private var releaseChannel
     @State private var columnVisibility = NavigationSplitViewVisibility.all
     /// The sidebar's width as the user left it. Settings replaces the split view, and a new one opens
@@ -62,8 +64,13 @@ struct RootView: View {
         // Asked once, after real use, and never while an agent works (docs/enterprise.md).
         .telemetryConsentPrompt(isTurnRunning: isAnyTurnRunning)
         .focusedSceneValue(\.sidebarVisibility, $columnVisibility)
-        .onChange(of: model.lastUndoable?.id) {
-            undoToast = model.lastUndoable.map { action in UndoToastItem(action.message, undo: action.undo) }
+        .onChange(of: undoManager, initial: true) { model.undoHistory.track(undoManager) }
+        // Undone by ⌘Z or redone by ⇧⌘Z, it leaves the toast or comes back to it.
+        .onChange(of: model.offeredUndo?.id) {
+            undoToast = model.offeredUndo.map { action in UndoToastItem(action.message) { action.undo() } }
+        }
+        .onChange(of: model.offeredUndo?.message) {
+            undoToast = model.offeredUndo.map { action in UndoToastItem(action.message) { action.undo() } }
         }
         .focusedSceneValue(\.showsPullRequests, $showsPullRequests)
         // The pull requests page and a session take turns in the detail column.
@@ -116,17 +123,8 @@ struct RootView: View {
                 await model.checkForAgents()
             }
         }
-        .confirmationDialog("New Session With", isPresented: $model.isChoosingAgent) {
-            ForEach(model.agents, id: \.agent.id) { runtime in
-                Button(runtime.agent.displayName) {
-                    Task { await model.newSession(with: runtime.agent.id) }
-                }
-                .disabled(!model.canCreateSession(with: runtime.agent.id))
-            }
-            Button("Cancel", role: .cancel) {}
-        } message: {
-            Text("Choose the agent for the new session.")
-        }
+        // Every agent with its state; a system dialog shows only three choices.
+        .agentPicker(isPresented: $model.isChoosingAgent)
         .fileImporter(isPresented: $model.isAddingProject, allowedContentTypes: [.folder]) { result in
             if case .success(let url) = result {
                 Task { await model.addProject(url) }

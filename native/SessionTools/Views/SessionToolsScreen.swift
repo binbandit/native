@@ -39,7 +39,7 @@ struct SessionToolsScreen: View {
         .focusedSceneValue(\.activeSession, session)
         .navigationTitle(DSInlineCode.plain(session.displayTitle))
         .navigationSubtitle(
-            [session.cwd.abbreviatedPath, git.model(for: session.cwd).summary].compactMap(\.self)
+            [session.cwd.abbreviatedPath, git.model(for: session.cwd, session: session.key).summary].compactMap(\.self)
                 .joined(separator: " · ")
         )
         // Measured on its own beside the side panel: never at no width (docs/performance.md).

@@ -1,5 +1,6 @@
 import ACP
 import Foundation
+import Undo
 
 // Archiving and deleting tasks and projects. Archive hides and can always come back; delete acts at
 // once on screen but waits out the undo window before removing anything for good.
@@ -21,16 +22,22 @@ extension AppModel {
     }
 
     /// Hides a task from the sidebar, keeping its history, and puts away the workspace Native made
-    /// for it. Undo (the toast or ⌘Z) brings both back.
+    /// for it. Undo (the toast or ⌘Z) brings both back, and Redo archives it again.
     func archiveSession(_ key: SessionKey, undoManager: UndoManager? = nil) async {
         guard let listed = catalog.lookup(key), !archivedSessions.contains(key) else { return }
         let title = titleOfSession(key)
+        let selected = moveAfterArchiving([key])
         archivedSessions.set(key, archived: true)
-        leave(key, in: listed.project)
-        let detail = await putAwayWorkspace(of: key, titled: title, in: listed.project)
-        offerUndo("Archived “\(title)”.\(detail)", name: "Archive Task", undoManager: undoManager) { model in
-            Task { await model.unarchiveSession(key) }
+        // On the undo stack at once, in the order things were done, so ⌘Z brings the task back while
+        // its workspace is still being put away. The toast adds the workspace result when it finishes.
+        let action = offerUndo("Archived “\(title)”.", name: "Archive Task", undoManager: undoManager) { model in
+            model.undoArchive([key], selecting: selected)
+        } redo: { model in
+            model.archiveAgain([key])
         }
+        let detail = await putAwayWorkspace(of: key, titled: title, in: listed.project)
+        guard action.canUndo else { return }
+        action.message += detail
     }
 
     /// Puts away the workspace of a task just archived, returning what was done as a sentence to
@@ -55,13 +62,23 @@ extension AppModel {
 
     /// Brings an archived task back to the sidebar, with its workspace if Native put one away.
     func unarchiveSession(_ key: SessionKey) async {
-        guard archivedSessions.contains(key) else { return }
+        guard beginUnarchiving(key) else { return }
+        await finishUnarchiving(key)
+    }
+
+    /// The visible state changes before any suspension, so an immediate Redo sees all restored tasks.
+    func beginUnarchiving(_ key: SessionKey) -> Bool {
+        guard archivedSessions.contains(key), catalog.contains(key) else { return false }
         archiveDatesAwaitingRestore[key] = archivedSessions.date(key)
         archivedSessions.set(key, archived: false)
         if let project = catalog.lookup(key)?.project {
             // A workspace that couldn't be put away is where it should be now.
             problems.resolve(.workspaceArchive(key), in: project)
         }
+        return true
+    }
+
+    func finishUnarchiving(_ key: SessionKey) async {
         do {
             try await restoreWorkspace(of: key)
         } catch {
@@ -133,27 +150,40 @@ extension AppModel {
 
     /// Removes a task from Native: the agent's own copy too when it can delete sessions, and the
     /// workspace Native made for it (after a checkpoint). Nothing is removed until the undo window
-    /// passes; undoing in time brings the task back untouched.
+    /// passes; undoing in time brings the task back untouched, and Redo deletes it again.
     func deleteSession(_ key: SessionKey, undoManager: UndoManager? = nil) {
-        let title = titleOfSession(key)
-        guard scheduleDeletion(of: key) else { return }
-        offerUndo("Deleted “\(title)”.", name: "Delete Task", undoManager: undoManager) { model in
-            model.pendingDeletions.removeValue(forKey: key)?.cancel()
+        guard canDelete(key) else { return }
+        let message = "Deleted “\(titleOfSession(key))”."
+        let action = UndoableAction(message, name: "Delete Task", undoManager: undoManager) { [weak self] _ in
+            self?.cancelDeletion(of: key)
+        } redo: { [weak self] action in
+            self?.scheduleDeletion(of: key, undo: action)
         }
+        scheduleDeletion(of: key, undo: action)
+        lastUndoable = action
+    }
+
+    /// Whether a task can be deleted: it's listed, and not already waiting out a deletion. Internal
+    /// only for AppModel+BulkActions.swift, as are `scheduleDeletion` and `cancelDeletion`.
+    func canDelete(_ key: SessionKey) -> Bool {
+        catalog.lookup(key) != nil && pendingDeletions[key] == nil
     }
 
     /// Takes a task off the sidebar and deletes it once the undo window passes, unless the deletion
-    /// is cancelled (`pendingDeletions`). Returns whether it was scheduled. Internal only for
-    /// AppModel+BulkActions.swift.
-    func scheduleDeletion(of key: SessionKey) -> Bool {
-        guard let listed = catalog.lookup(key), pendingDeletions[key] == nil else { return false }
+    /// is cancelled first. From then on `undo` can't bring it back, so it leaves the undo stack.
+    func scheduleDeletion(of key: SessionKey, undo: UndoableAction) {
+        guard let listed = catalog.lookup(key), pendingDeletions[key] == nil else { return }
         leave(key, in: listed.project)
         pendingDeletions[key] = Task { [weak self] in
             try? await Task.sleep(for: Self.deletionGracePeriod)
             guard !Task.isCancelled else { return }
+            undo.withdraw()
             await self?.carryOutDeletion(of: key, in: listed.project)
         }
-        return true
+    }
+
+    func cancelDeletion(of key: SessionKey) {
+        pendingDeletions.removeValue(forKey: key)?.cancel()
     }
 
     private func carryOutDeletion(of key: SessionKey, in projectID: Project.ID) async {
@@ -205,13 +235,17 @@ extension AppModel {
 
     // MARK: - Projects
 
-    /// Hides a project, with its tasks, from the sidebar. Undo puts it back where it was.
+    /// Hides a project, with its tasks, from the sidebar. Undo puts it back where it was, and Redo
+    /// hides it again.
     func archiveProject(_ id: Project.ID, undoManager: UndoManager? = nil) {
         guard let project = projects.project(id) else { return }
         leaveProject(id)
         let index = projects.archive(id)
         offerUndo("Archived “\(project.name)”.", name: "Archive Project", undoManager: undoManager) { model in
             model.unarchiveProject(id, at: index)
+        } redo: { model in
+            model.leaveProject(id)
+            _ = model.projects.archive(id)
         }
     }
 
@@ -229,28 +263,45 @@ extension AppModel {
         let wasArchived = projects.project(id) == nil
         let index = wasArchived ? nil : projects.archive(id)
         leaveProject(id)
+        let action = UndoableAction(
+            "Deleted “\(project.name)”. Its folder wasn't touched.", name: "Delete Project", undoManager: undoManager
+        ) { [weak self] _ in
+            guard let self else { return }
+            pendingProjectDeletions.removeValue(forKey: id)?.cancel()
+            if !wasArchived {
+                unarchiveProject(id, at: index)
+            }
+        } redo: { [weak self] action in
+            guard let self else { return }
+            if !wasArchived {
+                leaveProject(id)
+                _ = projects.archive(id)
+            }
+            scheduleDeletion(of: project, undo: action)
+        }
+        scheduleDeletion(of: project, undo: action)
+        lastUndoable = action
+    }
+
+    /// Removes an archived project once the undo window passes, unless the deletion is cancelled
+    /// first. From then on `undo` can't bring it back, so it leaves the undo stack.
+    private func scheduleDeletion(of project: Project, undo: UndoableAction) {
+        let id = project.id
         pendingProjectDeletions[id] = Task { [weak self] in
             try? await Task.sleep(for: Self.deletionGracePeriod)
             guard !Task.isCancelled, let self, pendingProjectDeletions.removeValue(forKey: id) != nil else { return }
+            undo.withdraw()
             projects.removeArchived(id)
             catalog.remove(project: id)
             problems.resolveAll { $0.project == id }
             ordering.forget(id)
             try? await taskWorkspaces?.deleteWorkspaces(of: project)
         }
-        offerUndo(
-            "Deleted “\(project.name)”. Its folder wasn't touched.", name: "Delete Project", undoManager: undoManager
-        ) { model in
-            model.pendingProjectDeletions.removeValue(forKey: id)?.cancel()
-            if !wasArchived {
-                model.unarchiveProject(id, at: index)
-            }
-        }
     }
 
     // MARK: - Helpers
 
-    /// Internal only for AppModel+BulkActions.swift, as are `leave` and `offerUndo`.
+    /// Internal only for AppModel+BulkActions.swift, as is `leave`.
     func titleOfSession(_ key: SessionKey) -> String {
         sessions.session(key)?.displayTitle
             ?? titles.title(
@@ -317,17 +368,4 @@ extension AppModel {
         return try await task.value
     }
 
-    /// Shows the undo toast and registers the same undo with the window's undo manager.
-    func offerUndo(
-        _ message: String, name: String, undoManager: UndoManager?, undo: @escaping (AppModel) -> Void
-    ) {
-        undoManager?.registerUndo(withTarget: self) { model in
-            MainActor.assumeIsolated { undo(model) }
-        }
-        undoManager?.setActionName(name)
-        lastUndoable = UndoableAction(message: message) { [weak self] in
-            guard let self else { return }
-            undo(self)
-        }
-    }
 }

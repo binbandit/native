@@ -157,6 +157,10 @@ cd ../worktrees/<you>
 - Conventional commit titles: `feat(composer): queue follow-ups while a turn runs`.
 - The description says what was wrong or missing and how the change addresses it, with screenshots
   for UI changes and the commands you ran to verify.
+- Screenshots go on the orphan branch `pr-assets` (never merged), in a folder named for your branch
+  (`feat-hosts-settings/`), embedded with `raw.githubusercontent.com` links. Fixture content only: no
+  real names, tokens, personal data or paths outside the repo. Fetch and rebase before pushing to
+  it, and delete your folder once the PR merges.
 - Update the docs a change touches (`docs/keyboard.md`, `docs/architecture.md`, decisions) in the
   same PR. Builds, tests and `swift format lint --strict` on the changed files pass before review.
 - No co-author lines, and nothing in titles, descriptions or commits about how the work was produced.

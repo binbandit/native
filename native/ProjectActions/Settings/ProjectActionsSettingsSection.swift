@@ -225,20 +225,22 @@ struct ProjectActionsSettingsSection: View {
         guard let removed = store.remove(action.id, from: project) else { return }
         let project = project
         let store = store
-        let undo = { store.restore(removed.action, at: removed.index, in: project) }
-        undoManager?.registerUndo(withTarget: store) { _ in MainActor.assumeIsolated { undo() } }
-        undoManager?.setActionName("Delete Action")
-        model.lastUndoable = UndoableAction(message: "Deleted “\(action.name)”", undo: undo)
+        model.offerUndo("Deleted “\(action.name)”", name: "Delete Action", undoManager: undoManager) { _ in
+            store.restore(removed.action, at: removed.index, in: project)
+        } redo: { _ in
+            _ = store.remove(removed.action.id, from: project)
+        }
     }
 
     private func dismiss(_ suggestion: ProjectSuggestion) {
         store.dismiss(suggestion, in: project)
         let project = project
         let store = store
-        let undo = { store.undismiss(suggestion, in: project) }
-        undoManager?.registerUndo(withTarget: store) { _ in MainActor.assumeIsolated { undo() } }
-        undoManager?.setActionName("Dismiss Suggestion")
-        model.lastUndoable = UndoableAction(message: "Dismissed “\(suggestion.name)”", undo: undo)
+        model.offerUndo("Dismissed “\(suggestion.name)”", name: "Dismiss Suggestion", undoManager: undoManager) { _ in
+            store.undismiss(suggestion, in: project)
+        } redo: { _ in
+            store.dismiss(suggestion, in: project)
+        }
     }
 }
 

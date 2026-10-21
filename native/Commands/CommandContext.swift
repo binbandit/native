@@ -17,10 +17,11 @@ struct CommandContext {
     var jumpToLatest: TranscriptJumpCommand?
     /// Brings the main window back (it may be closed while the menu bar still works).
     var openMainWindow: @MainActor () -> Void = {}
+    var windowUndoManager: UndoManager?
 
     /// The window's undo manager, so ⌘Z takes back what a command did.
     var undoManager: UndoManager? {
-        PlatformWindow.keyUndoManager
+        windowUndoManager ?? PlatformWindow.keyUndoManager
     }
 }
 

@@ -233,7 +233,8 @@ keyboard.
 | Return on a selected sidebar session | Rename it (Escape cancels, Return commits) | Session | |
 | ⌃⌘S | Show or hide the sidebar | View | `view.toggleSidebar` |
 | ⌥⌘↑ / ⌥⌘↓ | Move the selected project or session up / down (a queued message instead, while one is open in the composer) | Session | `sidebar.moveUp` / `sidebar.moveDown` |
-| ⇧⌘A | Archive the selected task (Undo brings it back), or unarchive an archived one; with several tasks picked, archive them all | Session | `session.archive` |
+| ⌘Z / ⇧⌘Z | Undo / redo the window's latest change, newest first: typing, or archiving, renaming, pinning or deleting a task or project (a deletion until it's carried out). The undo toast's Undo takes back the same change, once | Edit | |
+| ⇧⌘A | Archive the selected task and open the next task in the sidebar's current filter and sort order (or the previous task at the end). ⌘Z or the toast's Undo restores and reopens it. Unarchive an archived task; with several tasks picked, archive them all | Session | `session.archive` |
 | ⌥⌘J | Turn the sidebar's Needs you filter on or off (its filter menu has the rest) | View | `view.needsYouFilter` |
 | ⌘⇧P | Pull requests | Go | `go.pullRequests` |
 | ⌘⇧X | Expeditions | Go | `go.expeditions` |
@@ -298,6 +299,21 @@ Escape closes a picker.
 | ⌘⇧E | Model picker | Session | `session.chooseModel` |
 | ⌥⌘G | Set or edit the session's goal | Session | `goal.edit` |
 | ⌥⌘R | Run a workflow | Session | `workflow.run` |
+
+## Choosing an agent
+
+New Session With… (⌥⌘N) opens the agent picker in a sheet: every agent Native runs, each with
+its state (ready, starting, needs sign-in, not installed, stopped) and, when it can't start a
+session, why and what to do, with the fix (Check Again, Restart) beside it. It opens with the
+keyboard in its filter and the default agent (the one ⌘N starts) highlighted. Add Agent… at the
+end lists the agents Native knows but can't find. Close dismisses the picker with pointer or touch.
+
+| Keys (picker open) | Action |
+| --- | --- |
+| Type | Narrow the list by name; letters in order match too |
+| ↑ / ↓, ⌃N / ⌃P | Move between the agents that can start a session (and Add Agent…) |
+| Return | Start the session with the highlighted agent; one that needs sign-in signs in first, then starts it |
+| Escape | Clear the filter; with it empty, close the picker |
 
 ## Choosing a device
 
@@ -393,7 +409,8 @@ them one in Settings ▸ Keyboard Shortcuts.
 Commands live with their features and register in `NativeApp` (`docs/commands.md`); the menus place
 them. Composer keys in `native/Views/Composer*`; permission keys in
 `native/Views/Transcript/ToolPermissionButtons.swift`; sidebar keys in `SidebarView`; Settings keys in
-`SettingsScreen` and `SettingsSearchField`; search panel keys in `TranscriptSearchPanel`; terminal commands in
+`SettingsScreen` and `SettingsSearchField`; search panel keys in `TranscriptSearchPanel`; agent picker keys in
+`native/Views/AgentPicker/AgentPickerPanel.swift`; terminal commands in
 `native/Terminal/Views/TerminalCommands.swift`; project action commands in
 `native/ProjectActions/Commands/ProjectActionCommands.swift`; mode commands in
 `native/Modes/Commands/ModeCommands.swift`; keys inside a terminal in

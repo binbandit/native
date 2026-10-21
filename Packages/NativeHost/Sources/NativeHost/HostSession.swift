@@ -53,6 +53,8 @@ final class HostSession {
     var retryAttempts = 0
     /// Collecting a hidden command's reply, while one runs.
     var hiddenCommand: HiddenCommandCapture?
+    /// Identifies the automatic naming request, so its late cleanup cannot clear a newer capture.
+    var namingCommandID: UUID?
     /// The last hidden command's reply, until the next turn starts: copies of it that arrive late
     /// are dropped.
     var hiddenCommandEcho: HiddenCommandCapture?

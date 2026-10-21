@@ -119,7 +119,7 @@ struct SessionView: View {
     }
 
     private var repository: GitRepositoryModel {
-        git.model(for: session.cwd)
+        git.model(for: session.cwd, session: session.key)
     }
 
     /// Review and Commit on the transcript's files-changed card. Commit only shows while there's
@@ -139,7 +139,7 @@ struct SessionView: View {
                                 Task { await GitHubGitWiring.createPullRequest(from: repository, gitHub: gitHub) }
                             }))
                 } : nil,
-            reviewFile: GitChangesReview.isEnabled ? { reviewTurn(file: $0) } : nil
+            reviewFile: { reviewTurn(file: $0) }
         )
     }
 

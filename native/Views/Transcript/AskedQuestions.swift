@@ -39,7 +39,7 @@ struct AskedQuestions {
                 if response != nil {
                     // Answered: an empty map means the user skipped every question.
                     answers?[text]?.stringValue.map(Answer.chosen) ?? .skipped
-                } else if call.status == .failed || call.status == .cancelled {
+                } else if [.failed, .cancelled, .interrupted, .unreported].contains(call.status) {
                     .unanswered
                 } else {
                     .waiting

@@ -11,6 +11,7 @@ extension ExperimentCatalog {
         Parameter<TranscriptWidth>.transcriptWidth,
         Gate.unfoldExploration,
         Gate.sessionTools,
+        Gate.sidebarNext,
         Gate.composerNext,
     ])
 }
@@ -56,6 +57,17 @@ extension Parameter where Value == TranscriptWidth {
 // MARK: - Gates
 
 extension Gate {
+    static let sidebarNext = Gate(
+        id: "NativeSidebarNext",
+        title: "Quiet projects",
+        summary: "A calmer sidebar with monospace project names, marks for active tasks and folded older tasks.",
+        site: "Sidebar ▸ projects and tasks",
+        stage: .labs,
+        owner: "sidebar",
+        reviewBy: ReviewDate(year: 2026, month: 12, day: 15),
+        default: false
+    )
+
     static let composerNext = Gate(
         id: "NativeComposerNext",
         title: "Quiet composer",
