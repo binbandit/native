@@ -30,6 +30,7 @@ target/
 build/
 .ci-cache/
 *.xcarchive
+__pycache__/
 
 # The companion's app icons, built from design/app-icon by scripts/companion/app-icons.sh
 Companion/AppIcons/

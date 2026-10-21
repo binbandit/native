@@ -444,6 +444,86 @@ is the whole app, and that still imports macOS-only frameworks: ServiceManagemen
 `native/Platform` adapters with the iPad destination (`docs/architecture.md`, "Getting there"); add
 a folder to the workflow's typecheck once it compiles there.
 
+### iPhone TestFlight
+
+`testflight.yml` publishes the iPhone companion (`dev.binbandit.native.companion`) after a push to
+`main` changes its shipped sources or resources. It does a cheap Git diff on Linux first, so
+Mac-only, documentation and test-only changes do not allocate a Mac runner or upload a build.
+`scripts/companion/testflight-paths.txt` lists the companion's own sources, shared transcript and
+design-system files, icon artwork and local package products. Update that list when adding a
+shared file or package dependency to the companion. In particular, the NativeHost server's
+implementation is excluded; its client and protocol count. The full iPad app has no archiveable
+target yet and is not distributed by this workflow.
+
+The daily TestFlight run is at 07:00 UTC, alongside the Mac Nightly but independent of its success.
+It compares against the last successful mobile nightly (`testflight-nightly`, a rolling tag) and
+skips when those mobile sources are unchanged. It moves the checkpoint only after Apple accepts
+and processes the upload and the commit notes are attached. An upload failure therefore retries
+on the next nightly. A source revert counts as a change. Daily releases use calendar versions
+(`2026.10.21`, then `2026.10.22`); main builds use their commit's UTC date. All runs share the same
+workflow run counter for unique, increasing Apple build numbers, including reruns: run 101,
+attempt 1 is `2.0.1`. The SHA and commit subject appear in TestFlight's **What to Test** notes.
+Apple's version fields remain numeric. No source-version commits are generated.
+
+Uploads run only from `main`, never pull requests. There is deliberately no concurrency group:
+GitHub replaces pending runs in a group, which would discard commits while another build uploads.
+The job archives Release for a real iOS device, exports a signed IPA, checks warnings, and uploads
+through Apple's pinned TestFlight action. Build logs and dSYMs are retained for seven days.
+Signing uses a temporary keychain and removes its credentials and installed profile even after
+failure. It restores any pre-existing keychain search list and provisioning profile.
+
+Rehearse on any branch without uploading:
+
+```sh
+gh workflow run testflight.yml --ref <branch> -f dry_run=true
+```
+
+Download the signed IPA from that run's `testflight-rehearsal-*` artifact (retained for three days).
+To publish immediately from `main`, dispatch with `-f dry_run=false`; add `-f nightly=true` to use
+the nightly comparison and update its checkpoint. A manual main upload always builds without
+`nightly=true`. Tests for change selection and versioning run on Linux on every TestFlight run,
+and on pull requests changing its workflow or scripts:
+
+```sh
+python3 -m unittest discover -s scripts/companion/tests -v
+shellcheck scripts/companion/testflight-signing.sh
+actionlint .github/workflows/testflight.yml
+```
+
+**One-time Apple setup:**
+
+1. Register the explicit iOS App ID `dev.binbandit.native.companion` on Native's developer team.
+   Create an iOS app record for it in App Store Connect, with primary language English (U.S.).
+2. Create an Apple Distribution certificate with its private key and an **App Store Connect**
+   provisioning profile for that ID. Export the identity as a password-protected `.p12`. The Mac's
+   Developer ID certificate cannot sign an iOS app. Renew the certificate/profile before expiry.
+3. Generate a dedicated App Store Connect **team API key**, Developer role, and store its raw `.p8`
+   contents in `APP_STORE_CONNECT_API_KEY`. Store the key ID and issuer separately. This key is
+   independent of the existing notarization key.
+4. Add the secrets below. Never commit keys, certificates or profiles. Before the first upload,
+   fill in TestFlight Test Information (Beta App Description, Feedback Email, primary locale)
+   so the action can attach notes. Complete Apple's export-compliance questionnaire accurately:
+   the companion uses the Noise protocol implemented with CryptoKit; the workflow deliberately
+   does not assert an encryption exemption on the owner's behalf.
+5. Create an **internal** TestFlight group and enable **automatic distribution**, then add the
+   App Store Connect team members who should receive every build. Apple processing and compliance
+   clearance must finish before testers see a build. External testers require Apple's beta review;
+   they are not an immediate per-commit distribution channel.
+
+| Additional secret | Value |
+| --- | --- |
+| `IOS_DISTRIBUTION_P12` | Apple Distribution identity and private key, base64 encoded |
+| `IOS_DISTRIBUTION_PASSWORD` | Password protecting that `.p12` |
+| `IOS_PROVISIONING_PROFILE` | App Store Connect `.mobileprovision`, base64 encoded |
+| `APP_STORE_CONNECT_API_KEY` | Raw `.p8` private-key contents (not base64) |
+| `APP_STORE_CONNECT_KEY_ID` | That API key's ID |
+| `APP_STORE_CONNECT_ISSUER_ID` | Team API issuer ID |
+
+`NATIVE_TEAM_ID` is shared with the Mac release workflow. The workflow fails with a named missing
+credential rather than silently skipping an upload. Apple setup also requires an active Developer
+Program membership and accepted agreements. See Apple's [build upload guide](https://developer.apple.com/help/app-store-connect/manage-builds/upload-builds/)
+and [internal tester setup](https://developer.apple.com/help/app-store-connect/test-a-beta-version/add-internal-testers/).
+
 ### Repository secrets
 
 | Secret | What it holds | How to make it |

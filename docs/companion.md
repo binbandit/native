@@ -8,7 +8,9 @@ keeps agents, worktrees, credentials and plugins.
 **Status (2026-10-18):** pairing, the encrypted transport and the host's gateway are built
 (`Packages/NativeLink`); the Mac pairs devices in Settings › Paired Devices (`native/Companion/`);
 the iPhone app is `Companion/NativeCompanion.xcodeproj`. Push, Live Activities and real-device
-installs wait on an Apple developer team.
+installs need an Apple developer team. The automated iPhone TestFlight pipeline and its signing
+setup are documented in `docs/releasing.md` ("iPhone TestFlight"); iPad distribution waits on the full
+app target.
 
 ## Pairing and transport (built)
 
