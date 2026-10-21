@@ -45,7 +45,7 @@ build_package() {
     lock="$derived.lock"
     if ! (cd "$package" && "$root/scripts/dev/build-slot.sh" -scheme "$name" -destination "generic/platform=iOS Simulator" \
         -derivedDataPath "$derived" build -quiet) >"$derived.log" 2>&1; then
-        grep -E "error:" "$derived.log" | sort -u | head -20 >&2
+        grep -E "error:" "$derived.log" | sort -u | head -20 >&2 || true
         echo "building $package for iOS failed; full log: $derived.log" >&2
         exit 1
     fi
