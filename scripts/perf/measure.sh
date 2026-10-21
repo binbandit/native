@@ -140,14 +140,14 @@ done
 
 [ "$launch_only" = 1 ] && exit 0
 
-# Sessions, each answering one prompt; `Session › Stop` is enabled while a turn runs.
+# Tasks, each answering one prompt; `Task › Stop` is enabled while a turn runs.
 for ((i = 1; i <= sessions; i++)); do
     "$tools/drive" "$pid" menu File "New Task"
     sleep 3
     "$tools/drive" "$pid" prompt "Reply with the single word OK. Don't run any tools."
     sleep 2
     for _ in $(seq 1 120); do
-        [ "$("$tools/drive" "$pid" enabled Session Stop)" = false ] && break
+        [ "$("$tools/drive" "$pid" enabled Task Stop)" = false ] && break
         sleep 1
     done
 done

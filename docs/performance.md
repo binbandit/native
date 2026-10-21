@@ -91,11 +91,11 @@ there to catch regressions in agent startup.
 
 ### By hand
 
-- **Sessions.** `drive <pid> menu File "New Task"`, then `drive <pid> prompt "…"`; `drive <pid>
-  enabled Session Stop` says whether a turn is still running.
+- **Tasks.** `drive <pid> menu File "New Task"`, then `drive <pid> prompt "…"`; `drive <pid>
+  enabled Task Stop` says whether a turn is still running.
 - **Streaming.** Start a long Codex turn (`gpt-6.1-sol`, which the instance uses), then
   `sample <pid> 20` for the main thread and `rusage` for CPU and footprint growth.
-- **Growth and leaks.** Note `footprint`, run the workload (open and archive 20 sessions, switch
+- **Growth and leaks.** Note `footprint`, run the workload (open and archive 20 tasks, switch
   tasks, toggle Settings, the terminal and the inspectors), note it again and run `leaks <pid>`.
 
 ## Results
@@ -823,7 +823,7 @@ several runs each. Task switches and Settings visits are AX presses on the insta
 | Turn idle closing on for Codex | Claude Code closes sessions unused for 10 minutes now (`idleSessionTimeout` in its manifest). Once the row above lands, give Codex's manifest the same | App model |
 | "Couldn't run git: The file “project” doesn't exist" alert | New Task in a project whose folder is gone shows a modal; the sidebar already says "Can't find this project's folder" with Retry | Failures |
 | Launch within 150 ms of main-thread CPU | 481-518 ms in Release with 30 tasks (3.45-3.68 G instructions): mostly AppKit and SwiftUI restoring, laying out and drawing the window (Launch, above). It takes fewer views before the first frame, not faster code; the sidebar outside its rows (0.57 G: the navigation items, the project headers, the scroll view and its key handling) is the largest part Native controls | App shell, sidebar |
-| A cheaper main menu | 0.29-0.31 G of launch in optimized Debug (Launch, round three): SwiftUI building about 85 items' view lists and platform items. Reading the window's context once instead of eight focused values per item didn't change it. Building the items after the first frame loses the File menu (round two). Fewer items at launch might: submenus whose items come when they open (Selected Tasks, Mode, Status Bar Items, Keep Mac Awake, Appearance), if SwiftUI keeps a submenu that starts empty, or fewer than the nine Go to Session items | Commands |
+| A cheaper main menu | 0.29-0.31 G of launch in optimized Debug (Launch, round three): SwiftUI building about 85 items' view lists and platform items. Reading the window's context once instead of eight focused values per item didn't change it. Building the items after the first frame loses the File menu (round two). Fewer items at launch might: submenus whose items come when they open (Selected Tasks, Mode, Status Bar Items, Keep Mac Awake, Appearance), if SwiftUI keeps a submenu that starts empty, or fewer than the nine Go to Task items | Commands |
 | Native under 150 MB with a transcript open | 175–195 MB with one short transcript open (Home 130–140 MB): the first session view's SwiftUI graph is about 26 MB live, the rest pages the allocator kept after its transient allocations | Session view, transcript |
 | About 257 MB of graphics memory on whole-window redraws | For about a second at every launch and on some redraws when other windows uncover Native's (peak 390–405 MB); find what draws in-process with Metal then | App shell |
 | Changing a shortcut gets slower each time | Each change in a session costs about 1.5 times the one before: 0.3 M main-thread instructions for the first and 3.4-4.5 M for the twelfth, with the menu items rebuilt for each change or not (Launch, round three). Something that follows the bindings compounds; find what | Commands |
