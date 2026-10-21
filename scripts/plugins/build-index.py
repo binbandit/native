@@ -11,6 +11,7 @@ import re
 import shutil
 import subprocess
 import tarfile
+import unicodedata
 from urllib.parse import urlsplit
 
 
@@ -39,8 +40,9 @@ def unique_object(pairs):
 def build(args):
     require(re.fullmatch(r"[0-9a-f]{40}", args.commit), "commit must be 40 lowercase hex characters")
     https_url(args.repository_url)
-    base = https_url(args.asset_base_url)
-    require(not base.query and not base.fragment, "asset base URL cannot contain a query or fragment")
+    https_url(args.asset_base_url)
+    require("?" not in args.asset_base_url and "#" not in args.asset_base_url,
+            "asset base URL cannot contain a query or fragment")
     # Disable replacement objects and lazy fetching, including on older Git versions.
     env = {k: v for k, v in os.environ.items() if not k.startswith("GIT_")}
     env.update(GIT_NO_LAZY_FETCH="1", GIT_TERMINAL_PROMPT="0", GIT_ALLOW_PROTOCOL="")
@@ -52,6 +54,7 @@ def build(args):
 
     require(git("cat-file", "-t", args.commit).strip() == b"commit", "object is not a commit")
     plugins = {}
+    seen_paths = set()
     for record in git("ls-tree", "--full-tree", "-r", "-t", "-z", args.commit, "--", "plugins").split(b"\0"):
         if not record:
             continue
@@ -61,13 +64,16 @@ def build(args):
         parts = path.split("/")
         require(all(p not in ("", ".", "..") for p in parts) and "\\" not in path
                 and not any(ord(c) < 32 or ord(c) == 127 for c in path), f"unsafe path: {path!r}")
+        # Include directories so a file cannot alias another member's parent on macOS.
+        canonical = unicodedata.normalize("NFD", path).casefold()
+        require(canonical not in seen_paths, f"duplicate or aliased path: {path!r}")
+        seen_paths.add(canonical)
         require((mode, kind) in (("040000", "tree"), ("100644", "blob"), ("100755", "blob")),
                 f"not a regular file or directory: {path}")
         if len(parts) == 1:
             require(kind == "tree", "plugins must be a directory")
         elif len(parts) == 2 and kind == "tree":
             require(re.fullmatch(r"[a-z0-9]+(?:-[a-z0-9]+)*", parts[1]), f"invalid plugin ID: {parts[1]}")
-            require(parts[1] not in plugins, f"duplicate plugin directory: {path}")
             plugins[parts[1]] = []
         elif len(parts) > 2 and kind == "blob":
             plugins[parts[1]].append(("/".join(parts[2:]), mode, oid))
@@ -78,7 +84,6 @@ def build(args):
         folder.mkdir()
         entries = []
         for plugin_id, files in sorted(plugins.items()):
-            require(len({path for path, _, _ in files}) == len(files), f"{plugin_id}: duplicate file paths")
             manifests = [oid for path, _, oid in files if path == "plugin.json"]
             require(len(manifests) == 1, f"{plugin_id}: expected one plugin.json")
             manifest = json.loads(git("cat-file", "blob", manifests[0]).decode("utf-8"),

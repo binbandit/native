@@ -31,6 +31,7 @@ class BuildIndexTests(unittest.TestCase):
     def git(self, *args):
         return subprocess.check_output(["git", "-C", str(self.repo), "-c", "user.name=Test",
                                         "-c", "user.email=test@example.org", "-c", "commit.gpgsign=false",
+                                        "-c", "core.precomposeUnicode=false",
                                         "-c", "core.hooksPath=/dev/null", *args], stderr=subprocess.PIPE).decode().strip()
 
     def write(self, path, text):
@@ -105,10 +106,12 @@ class BuildIndexTests(unittest.TestCase):
         self.run_builder(commit=self.commit_tree(), success=False)
 
     def test_rejected_inputs(self):
-        for extra in (("--commit", "0" * 40), ("--commit", "HEAD"),
+        for number, extra in enumerate((("--commit", "0" * 40), ("--commit", "HEAD"),
                       ("--repository-url", "http://example.org"),
-                      ("--asset-base-url", "https://user@example.org/assets")):
-            self.run_builder(extra=extra, success=False)
+                      ("--asset-base-url", BASE + "?"), ("--asset-base-url", BASE + "#"),
+                      ("--asset-base-url", "https://user@example.org/assets"))):
+            with self.subTest(extra=extra):
+                self.run_builder(name=f"input-{number}", extra=extra, success=False)
         for mode, oid, path in (("120000", self.git("rev-parse", "HEAD:plugins/example/plugin.json"), "link"),
                                 ("160000", self.commit, "submodule"),
                                 ("100644", self.git("rev-parse", "HEAD:plugins/example/plugin.json"), "bad\\path")):
@@ -123,3 +126,14 @@ class BuildIndexTests(unittest.TestCase):
         sentinel.write_bytes(b"untouched")
         self.run_builder(success=False)
         self.assertEqual(sentinel.read_bytes(), b"untouched")
+
+    def test_aliased_paths_leave_no_index(self):
+        oid = self.git("rev-parse", "HEAD:plugins/example/plugin.json")
+        for number, paths in enumerate((("assets/Icon.png", "assets/icon.png"),
+                                        ("Assets", "assets/nested"), ("assets/é", "assets/e\u0301"))):
+            with self.subTest(paths=paths):
+                self.git("reset", "--hard", self.commit)
+                for path in paths:
+                    self.git("update-index", "--add", "--cacheinfo", f"100644,{oid},plugins/example/{path}")
+                self.git("commit", "--quiet", "-m", "aliased paths")
+                self.run_builder(name=f"alias-{number}", commit=self.git("rev-parse", "HEAD"), success=False)

@@ -19,7 +19,8 @@ a JSON object in `plugin.json` with nonempty string `id`, `name`, and `version`.
 the directory and use lowercase alphanumeric words separated by single hyphens. Unlike local
 plugins, catalog plugins require a version; it is a display string, not necessarily SemVer.
 Unknown manifest fields are ignored. Duplicate JSON fields, malformed manifests, unsafe paths,
-symlinks and submodules fail the build. At least one plugin directory is required.
+symlinks and submodules fail the build. Paths that alias after Unicode normalization and case
+folding are rejected, including file/directory conflicts. At least one plugin directory is required.
 
 Artifacts are `<output>/<commit>/<id>.tar`, with `plugin.json` and assets at each archive's root.
 The uncompressed PAX tar stores sorted regular files, Git executable modes (0644 or 0755), zero
