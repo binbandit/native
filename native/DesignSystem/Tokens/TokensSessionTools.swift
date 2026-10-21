@@ -7,12 +7,11 @@ extension DS {
         public static let sidePanelMinWidth: CGFloat = 340
         public static let sidePanelIdealWidth: CGFloat = 420
         public static let sidePanelMaxWidth: CGFloat = 720
-        /// The narrowest the conversation gets beside the side panel. Narrower, and a side tool opens over
-        /// the conversation instead: at 440pt the conversation wrapped most lines of a reply and the
-        /// composer's pills.
+        /// Reserve readable conversation space beside the diff. Narrower layouts use an overlay.
         public static let conversationBesidePanelMinWidth: CGFloat = 520
         /// A place's tab strip, and a shade's header.
-        public static let stripHeight: CGFloat = max(DS.Size.controlMD + DS.Space.xs, DS.minimumHitTarget)
+        @MainActor public static let stripHeight: CGFloat = max(
+            DS.Size.controlMD + DS.Space.xs, DS.Size.minimumHitTarget)
         /// How much of the conversation a shade covers.
         public static let shadeHeightShare: CGFloat = 0.62
     }
