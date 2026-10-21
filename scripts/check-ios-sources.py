@@ -73,12 +73,20 @@ def prepare(root, destination, paths=(), diagnostics=""):
 
     existing = {path.relative_to(destination) for path in destination.rglob("*.swift")}
     selected = existing | source_files(root, paths)
-    for name in MISSING_NAME.findall(diagnostics):
+    missing_names = MISSING_NAME.findall(diagnostics)
+    for name in missing_names:
         selected.update(declarations[name])
+    # Missing type context can also make its properties look like unresolved bare names. Resolve
+    # declarations first; only a later pass should look for unqualified extension members.
+    if selected == existing:
+        for name in missing_names:
+            selected.update(members[name])
     for member in MISSING_MEMBER.findall(diagnostics):
         selected.update(members[member])
 
-    # An app type's extensions are part of its API, even when kept in another feature folder.
+    # Keep a type's local implementation together. Extensions in other features are consumers too:
+    # including them eagerly drags the whole app into independent DesignSystem/Platform checks.
+    # Cross-folder members are added only when diagnostics request them above.
     pending = list(selected)
     while pending:
         path = pending.pop()
@@ -87,6 +95,8 @@ def prepare(root, destination, paths=(), diagnostics=""):
             text = (root / path).read_text()
         for name in DECLARATION.findall(text):
             for extension in extensions[name.strip("`")] - selected:
+                if extension.parent != path.parent:
+                    continue
                 selected.add(extension)
                 pending.append(extension)
 

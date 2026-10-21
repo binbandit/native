@@ -24,24 +24,26 @@ class CheckIOSSourcesTests(unittest.TestCase):
         file.parent.mkdir(parents=True, exist_ok=True)
         file.write_text(text)
 
-    def test_missing_model_brings_extensions_and_transitive_declarations(self):
+    def test_missing_model_brings_only_needed_extensions_and_transitive_declarations(self):
         self.write("native/Views/Screen.swift", "struct Screen { let model: Model }\n")
         self.write("native/Models/Model.swift", "final class Model { let key: Key }\n")
-        self.write("native/Feature/Model+Action.swift", "extension Model { func act() {} }\n")
+        self.write("native/Feature/Model+Action.swift", "extension Model {\n    func act() {}\n}\n")
         self.write("native/Models/Key.swift", "nonisolated struct Key {}\n")
         self.write("native/Unrelated/MacOnly.swift", "import AppKit\nstruct MacOnly {}\n")
         sources.prepare(self.root, self.destination, ["native/Views"])
         added = sources.prepare(self.root, self.destination, diagnostics="error: cannot find type 'Model' in scope")
-        self.assertEqual(set(added), {Path("native/Models/Model.swift"), Path("native/Feature/Model+Action.swift")})
+        self.assertEqual(added, [Path("native/Models/Model.swift")])
         added = sources.prepare(self.root, self.destination, diagnostics="error: cannot find type 'Key' in scope")
         self.assertEqual(added, [Path("native/Models/Key.swift")])
+        added = sources.prepare(self.root, self.destination, diagnostics="error: cannot find 'act' in scope")
+        self.assertEqual(added, [Path("native/Feature/Model+Action.swift")])
         self.assertFalse((self.destination / "native/Unrelated/MacOnly.swift").exists())
 
-    def test_explicit_model_includes_extensions_without_diagnostics(self):
+    def test_explicit_model_does_not_include_unrelated_feature_extensions(self):
         self.write("native/Models/Model.swift", "final class Model {}\n")
         self.write("native/Feature/Model+Action.swift", "extension Model { func act() {} }\n")
         added = sources.prepare(self.root, self.destination, ["native/Models", "native/Models/Model.swift"])
-        self.assertEqual(len(added), 2)
+        self.assertEqual(added, [Path("native/Models/Model.swift")])
         self.assertEqual(sources.prepare(self.root, self.destination, ["native/Models"]), [])
 
     def test_nested_declaration_cannot_supply_missing_top_level_type(self):
@@ -125,7 +127,7 @@ class CheckIOSIntegrationTests(unittest.TestCase):
         self.write("native/DesignSystem/Token+Values.swift", "enum Token {}\n")
         self.write("native/Views/Screen.swift", "struct Screen { let model: Model; func read() -> Int { model.value() } }\n")
         self.write("native/Models/Model.swift", "#if os(macOS)\nimport HostOnly\n#else\nimport LocalSupport\n#endif\nstruct Model { let data: Payload }\n")
-        self.write("native/Feature/Model+Value.swift", "import LocalSupport\nextension Model { func value() -> Int { data.number } }\n")
+        self.write("native/Feature/Model+Value.swift", "import LocalSupport\nextension Model {\n    func value() -> Int { data.number }\n}\n")
         self.write(
             "Packages/LocalSupport/Package.swift",
             '// swift-tools-version: 6.2\nimport PackageDescription\n'
@@ -140,7 +142,7 @@ class CheckIOSIntegrationTests(unittest.TestCase):
             'let package = Package(name: "HostOnly", platforms: [.macOS(.v15)], targets: [.target(name: "HostOnly")])\n',
         )
         self.write("Packages/HostOnly/Sources/HostOnly/Host.swift", "import AppKit\n")
-        self.write("native/Unrelated/MacOnly.swift", "import AppKit\nstruct MacOnly {}\n")
+        self.write("native/Unrelated/MacOnly.swift", "import AppKit\nextension Token {\n    func unrelatedFeature() {}\n}\n")
         command = ["bash", "check-ios.sh", "native/Views", "native/Views/Screen.swift"]
         result = subprocess.run(command, cwd=scripts, text=True, capture_output=True)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
