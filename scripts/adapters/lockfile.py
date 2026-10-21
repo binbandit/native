@@ -13,6 +13,7 @@ NAME = r"(?:@[a-z0-9][a-z0-9._-]*/)?[a-z0-9][a-z0-9._-]*"
 NUMBER = r"(?:0|[1-9][0-9]*)"
 PRE = rf"(?:{NUMBER}|[0-9]*[A-Za-z-][0-9A-Za-z-]*)"
 VERSION = rf"{NUMBER}\.{NUMBER}\.{NUMBER}(?:-{PRE}(?:\.{PRE})*)?(?:\+[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?"
+REGISTRY_RANGE = r"[^/:\x00-\x1f\\]*"
 
 
 class AuditError(ValueError):
@@ -70,7 +71,7 @@ def audit(directory, package, version):
         for key in ("dependencies", "optionalDependencies", "peerDependencies"):
             dependencies = record.get(key, {})
             require(isinstance(dependencies, dict), "Invalid dependency metadata")
-            require(all(matches(NAME, name) and matches(rf"(?:npm:{NAME}@)?[^/:\x00-\x1f\\]*", spec)
+            require(all(matches(NAME, name) and matches(rf"(?:npm:{NAME}(?:@{REGISTRY_RANGE})?|{REGISTRY_RANGE})", spec)
                         and not spec.strip().startswith(".") for name, spec in dependencies.items()),
                     "Only registry dependency specifications are supported")
         peer_meta = record.get("peerDependenciesMeta", {})

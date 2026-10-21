@@ -156,3 +156,13 @@ sys.exit(int(os.environ.get('FAIL', '0')))
                         tool.audit(self.output, PACKAGE, VERSION)
                 else:
                     tool.audit(self.output, PACKAGE, VERSION)
+
+    def test_registry_aliases(self):
+        self.output.mkdir()
+        (self.output / "package.json").write_text(json.dumps({"dependencies": PIN}))
+        for alias in ("npm:child", "npm:@example/child", "npm:@example/child@^2.0.0"):
+            with self.subTest(alias=alias):
+                lock = copy.deepcopy(LOCK)
+                lock["packages"]["node_modules/" + PACKAGE]["dependencies"]["child"] = alias
+                (self.output / "package-lock.json").write_text(json.dumps(lock))
+                tool.audit(self.output, PACKAGE, VERSION)
