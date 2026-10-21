@@ -102,7 +102,7 @@ class CheckIOSIntegrationTests(unittest.TestCase):
         self.write("native/DesignSystem/Token.swift", "enum Token {}\n")
         self.write("native/Views/Screen.swift", "struct Screen { let model: Model; func read() -> Int { model.value() } }\n")
         self.write("native/Models/Model.swift", "#if os(macOS)\nimport HostOnly\n#else\nimport LocalSupport\n#endif\nstruct Model { let data: Payload }\n")
-        self.write("native/Feature/Model+Value.swift", "extension Model { func value() -> Int { data.number } }\n")
+        self.write("native/Feature/Model+Value.swift", "import LocalSupport\nextension Model { func value() -> Int { data.number } }\n")
         self.write("Packages/LocalSupport/Package.swift", "// swift-tools-version: 6.2\n")
         self.write("Packages/LocalSupport/Sources/LocalSupport/Payload.swift", "public struct Payload { public let number: Int }\n")
         self.write("Packages/HostOnly/Package.swift", "// swift-tools-version: 6.2\n")
