@@ -168,6 +168,10 @@ fi
 mkdir -p "$(dirname "$output")"
 staged="$cache/native-script-runtime.staged.$$"
 cp "$built" "$staged"
+# Cargo can succeed even when rustc's bundled rust-objcopy fails. Use Xcode's strip and require it
+# to succeed before signing. Keep dynamic references and leave cargo's cached binary untouched.
+xcrun strip -u -r -no_code_signature_warning "$staged" \
+    || { rm -f "$staged"; give_up "native-script-runtime couldn't be stripped."; }
 codesign --force --sign "$identity" --identifier "$identifier" --options runtime \
     ${sign_flags[@]+"${sign_flags[@]}"} --entitlements "$crate/ScriptRuntime.entitlements" "$staged" \
     || { rm -f "$staged"; give_up "native-script-runtime couldn't be signed."; }

@@ -190,6 +190,11 @@ scripts/build-script-runtime.sh --sandbox  # with V8's memory sandbox
   `NATIVE_SCRIPT_RUNTIME_CACHE`): Xcode's script sandbox forbids writing into the source tree, and
   every checkout and DerivedData folder can share one V8 download. Cargo's lock serializes
   concurrent builds.
+- Packaging strips the staged helper with Xcode's `strip -u -r` before signing, including when
+  cargo reuses a cached build. A strip failure stops packaging (or disables scripts with
+  `--optional`). Cargo's own stripping is disabled: Rust 1.99.0's bundled `rust-objcopy` can fail
+  to find `libLLVM.dylib` on macOS and only warn, leaving an oversized helper. The cached cargo
+  binary keeps its symbols; only the stripped, signed copy is embedded in the app.
 - In Xcode, "Embed Script Runtime" runs only when a file in `Runtime/ScriptRuntime/Sources.xcfilelist`
   or the build script changes (add new source files to that list), copies the runtime to
   `Contents/Helpers/native-script-runtime` and signs it with the app's identity and its own
