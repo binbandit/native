@@ -66,7 +66,7 @@ private struct TaskActivityRow: View {
                 Spacer(minLength: DS.Space.md)
                 Text(task.status.label)
                     .font(.dsCaption)
-                    .foregroundStyle(task.needsAttention ? .dsAccentText : .dsTextSecondary)
+                    .foregroundStyle(task.needsAttention ? .dsAttention : .dsTextSecondary)
             }
             .padding(.horizontal, DS.Space.md)
             .padding(.vertical, DS.Space.sm)
