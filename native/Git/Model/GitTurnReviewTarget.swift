@@ -7,8 +7,8 @@ struct GitTurnReviewTarget: Hashable {
     let session: SessionKey
     /// When the turn began, which finds its baseline; nil for history the agent replayed.
     let startedAt: Date?
-    /// The files the agent's edits touched, with the card's line counts. Paths are as the agent
-    /// wrote them: usually absolute, sometimes relative to `folder`.
+    /// The files the card lists, reported by edit tools or detected since the turn began, with
+    /// its line counts. Paths may be absolute or relative to `folder`.
     let editedFiles: [TurnSummary.ChangedFile]
     /// The task's working folder.
     let folder: URL
