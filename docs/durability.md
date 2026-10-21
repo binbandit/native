@@ -718,6 +718,9 @@ reloads the session from the agent (`session/load`), then `RecoveryPlanner` deci
   marked as its own: "Your previous turn was interrupted because …. Check the current state before
   you continue (for example, re-read files you were changing), then carry on. If it was already
   done, say so briefly." Whatever the agent committed is in its history; nothing is re-run blindly.
+  Agents keep that message in their history like any prompt, so a reload replays it; the transcript
+  shows it as Native's ("This turn was interrupted because …. Native asked the agent to pick up where
+  it left off."), never as the user's, and the turn carries on as it did live (`RecoveryPrompt`).
 - **The prompt isn't there** → it never arrived, so sending it again is safe.
 - **Three recoveries of the same turn already failed** → pause, so a crashing agent can't loop and
   burn quota. The queue pauses too; the user's next message continues.
