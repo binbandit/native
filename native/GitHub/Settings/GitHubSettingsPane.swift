@@ -11,7 +11,7 @@ extension SettingsPane {
         title: "GitHub",
         systemImage: "arrow.triangle.pull",
         group: .agents,
-        order: 26,
+        order: 25,
         keywords: ["pull request", "pr", "gh", "browser", "review"],
         searchEntries: {
             [

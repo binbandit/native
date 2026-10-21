@@ -9,7 +9,7 @@ extension SettingsPane {
     /// Settings › Usage, for `AppSettingsPanes`.
     static func usage(registry: PluginRegistry) -> SettingsPane {
         SettingsPane(
-            id: .usage, title: "Usage", systemImage: "gauge.with.dots.needle.33percent", group: .agents, order: 25,
+            id: .usage, title: "Usage", systemImage: "gauge.with.dots.needle.33percent", group: .agents, order: 24,
             keywords: [
                 "limits", "rate limit", "quota", "reset", "cost", "tokens", "spend", "activity", "streak", "graph",
             ]

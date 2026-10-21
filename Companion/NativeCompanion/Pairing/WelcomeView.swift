@@ -28,7 +28,7 @@ struct WelcomeView: View {
             }
             .buttonStyle(.ds(.primary, size: .large))
             .accessibilityIdentifier("pairWithMac")
-            Text("On your Mac: Native › Settings › Paired Devices › Pair iPhone.")
+            Text("On your Mac: Native ▸ Settings ▸ Paired Devices ▸ Pair iPhone.")
                 .font(CompanionType.caption)
                 .foregroundStyle(.dsTextTertiary)
                 .multilineTextAlignment(.center)

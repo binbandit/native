@@ -73,11 +73,11 @@ struct UpdatesSettingsPage: View {
                 channelRow
                 SettingsRow(
                     id: Self.checksRow,
-                    "Check automatically",
+                    "Check for updates automatically",
                     description: Text("Look for a new version once a day.")
                 ) {
                     SettingsSwitch(
-                        "Check automatically",
+                        "Check for updates automatically",
                         isOn: Binding(get: { controller.automaticallyChecks }, set: controller.setAutomaticallyChecks)
                     )
                     .disabled(!controller.isAvailable)
@@ -85,12 +85,12 @@ struct UpdatesSettingsPage: View {
                 .settingsManaged(by: .updatesEnabled)
                 SettingsRow(
                     id: Self.downloadsRow,
-                    "Download automatically",
+                    "Download updates automatically",
                     description: Text("Download updates in the background, so restarting is all it takes."),
                     detail: controller.automaticallyChecks ? nil : Text("Turn on automatic checks to use this.")
                 ) {
                     SettingsSwitch(
-                        "Download automatically",
+                        "Download updates automatically",
                         isOn: Binding(
                             get: { controller.automaticallyDownloads }, set: controller.setAutomaticallyDownloads)
                     )
@@ -125,13 +125,13 @@ struct UpdatesSettingsPage: View {
         if controller.channels.count > 1 {
             SettingsRow(
                 id: Self.channelRow,
-                "Channel",
+                "Update channel",
                 description: Text(controller.channel.summary),
                 detail: controller.channel == .beta
                     ? Text("Going back to Stable keeps this beta until a newer stable release arrives.") : nil
             ) {
                 SettingsSelect(
-                    label: "Channel",
+                    label: "Update channel",
                     selection: Binding(get: { controller.channel }, set: controller.setChannel),
                     options: controller.channels.map { .init(value: $0, title: $0.title) }
                 )
@@ -141,7 +141,7 @@ struct UpdatesSettingsPage: View {
         } else {
             SettingsRow(
                 id: Self.channelRow,
-                "Channel",
+                "Update channel",
                 description: Text(controller.channel.summary),
                 detail: Text(
                     controller.current.channel.isNightly

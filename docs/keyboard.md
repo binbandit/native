@@ -112,7 +112,7 @@ sidebar, the projects and the Settings pages, recently used ones first. With a t
 | Keys | Action |
 | --- | --- |
 | ⌘Return in Smart Commit | Commit the planned groups |
-| ⌘Return in the setup-script editor | Save the script new worktrees run (Settings ▸ Git) |
+| ⌘Return in the setup-script editor | Save the script new worktrees run (Settings ▸ Scripts) |
 | ⌘Return in Clean Up Merged | Clean up the included items |
 
 ## Pull request page

@@ -15,6 +15,8 @@ final class NotificationSounds {
     static let shared = NotificationSounds()
 
     let preferences: SoundPreferences
+    /// Reads the plugin switch live, including for sounds triggered outside session hooks.
+    @ObservationIgnored var isEnabled: () -> Bool = { false }
     let focus: any FocusStatusProviding
     private(set) var catalog: SoundCatalog
     /// Whether a session is on screen. The app sets this; until it does, no session counts as
@@ -43,14 +45,17 @@ final class NotificationSounds {
         self.focus = focus
         self.isAppActive = isAppActive
         catalog = SoundCatalog(customSounds: preferences.customSounds, folder: preferences.soundsFolder)
-        if preferences.isEnabled {
-            let chimes = SoundTrigger.allCases.compactMap { trigger -> NativeChime? in
-                if case .native(let chime) = preferences.sound(for: trigger) { chime } else { nil }
-            }
-            Task { [player] in
-                for chime in Set(chimes) {
-                    await player.prepare(chime)
-                }
+    }
+
+    /// Warm the selected chimes once the plugin's saved choice is available.
+    func prepare() {
+        guard isEnabled() else { return }
+        let chimes = SoundTrigger.allCases.compactMap { trigger -> NativeChime? in
+            if case .native(let chime) = preferences.sound(for: trigger) { chime } else { nil }
+        }
+        Task { [player] in
+            for chime in Set(chimes) {
+                await player.prepare(chime)
             }
         }
     }
@@ -64,7 +69,7 @@ final class NotificationSounds {
     /// whether it played.
     @discardableResult
     func play(_ trigger: SoundTrigger, for session: SessionContext? = nil) async -> Bool {
-        guard preferences.isEnabled, preferences.isEnabled(trigger) else { return false }
+        guard isEnabled(), preferences.isEnabled(trigger) else { return false }
         if preferences.staysQuietDuringFocus {
             // The first sound that would play is when Native asks to see Focus, never at launch.
             await focus.requestAccessIfNeeded()

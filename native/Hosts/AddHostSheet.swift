@@ -218,7 +218,7 @@ struct AddHostSheet: View {
                 header(
                     "\(name) is paired",
                     detail:
-                        "Pick it in New Task to run tasks there. This Mac can \(grants.abilities) on it. Remove it any time in Settings › Hosts."
+                        "Pick it in New Task to run tasks there. This Mac can \(grants.abilities) on it. Remove it any time in Settings ▸ Hosts."
                 )
             }
             footer {

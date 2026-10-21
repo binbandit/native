@@ -10,7 +10,7 @@ extension SettingsPane {
         title: "Git",
         systemImage: "arrow.triangle.branch",
         group: .agents,
-        order: 25,
+        order: 23,
         keywords: ["branch", "worktree", "prefix", "env", "archive"],
         searchEntries: {
             [

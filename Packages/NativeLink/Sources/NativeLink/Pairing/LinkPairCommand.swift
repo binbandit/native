@@ -183,7 +183,7 @@ public struct LinkPairCommand: Sendable {
             output(
                 """
                 Paired with “\(device.name)” (\(device.model) · \(device.system)). It can \(device.grants.abilities).
-                Remove it in Native's Settings › Paired Devices on this Mac, or forget this host on that one.
+                Remove it in Native's Settings ▸ Paired Devices on this Mac, or forget this host on that one.
                 """, false)
         }
         return ExitStatus.paired
@@ -212,7 +212,7 @@ public struct LinkPairCommand: Sendable {
         case .expired:
             "The link expired before a device used it. Run pair again for a new one."
         case .replaced:
-            "Another pairing started on this Mac (Settings › Paired Devices), which ended this link. Run pair again once it's done."
+            "Another pairing started on this Mac (Settings ▸ Paired Devices), which ended this link. Run pair again once it's done."
         case .tooManyAttempts:
             "Three attempts used the wrong link (an old one, or a guess), so this one is closed. Run pair again for a new link."
         case .hostStopped:

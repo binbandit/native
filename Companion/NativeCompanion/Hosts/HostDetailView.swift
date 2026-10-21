@@ -103,7 +103,7 @@ struct HostDetailView: View {
                 Button("Unpair", role: .destructive) { isConfirmingUnpair = true }
             } footer: {
                 Text(
-                    "Unpairing forgets this host's key on this phone. Remove the phone on the Mac too (Settings › Paired Devices)."
+                    "Unpairing forgets this host's key on this phone. Remove the phone on the Mac too (Settings ▸ Paired Devices)."
                 )
             }
         }
@@ -135,7 +135,7 @@ private struct HostAppIconPicker: View {
                 row(nil, title: "Don't Change")
                 ForEach(CompanionAppIcon.allCases) { row($0, title: $0.title) }
             } footer: {
-                Text("With Don't Change, the icon picked in Settings › App Icon stays.")
+                Text("With Don't Change, the icon picked in Settings ▸ App Icon stays.")
             }
         }
         .font(CompanionType.body)

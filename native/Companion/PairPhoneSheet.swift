@@ -148,7 +148,7 @@ struct PairPhoneSheet: View {
             model.status?.devices.first { $0.id == pairing.pairedDeviceID }?.device.name ?? "Your device"
         return outcome(
             "\(name) is paired", systemImage: "checkmark.circle",
-            message: "It can follow this Mac's tasks now. Remove it any time in Settings › Paired Devices.",
+            message: "It can follow this Mac's tasks now. Remove it any time in Settings ▸ Paired Devices.",
             isSuccess: true)
     }
 

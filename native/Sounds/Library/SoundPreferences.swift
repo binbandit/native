@@ -4,11 +4,6 @@ import Observation
 /// The user's sound choices, kept in `UserDefaults` under `sounds.*`.
 @Observable
 final class SoundPreferences {
-    /// The one switch for every sound Native plays.
-    var isEnabled: Bool {
-        didSet { defaults.set(isEnabled, forKey: Key.enabled) }
-    }
-
     /// Stay silent while Do Not Disturb or another Focus is on (when Native can tell).
     var staysQuietDuringFocus: Bool {
         didSet { defaults.set(staysQuietDuringFocus, forKey: Key.staysQuietDuringFocus) }
@@ -64,7 +59,6 @@ final class SoundPreferences {
 
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        isEnabled = defaults.object(forKey: Key.enabled) as? Bool ?? true
         staysQuietDuringFocus = defaults.object(forKey: Key.staysQuietDuringFocus) as? Bool ?? true
         // The one sound earlier versions played stays the task-finished sound; the others get
         // their own new defaults.
@@ -85,6 +79,15 @@ final class SoundPreferences {
         soundsFolder = defaults.data(forKey: Key.soundsFolder).flatMap {
             try? JSONDecoder().decode(SoundsFolder.self, from: $0)
         }
+    }
+
+    /// Preserve an old mute when the plugin switch becomes the only master switch. An old true
+    /// value must not turn a disabled plugin back on. Remove the legacy value after applying it.
+    func migrateEnabledChoice(setEnabled: (Bool) -> Void) {
+        if defaults.object(forKey: Key.enabled) as? Bool == false {
+            setEnabled(false)
+        }
+        defaults.removeObject(forKey: Key.enabled)
     }
 
     /// Remembers files the user picked and returns them, skipping ones already added.
