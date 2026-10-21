@@ -25,7 +25,11 @@ on:
 permissions:
   contents: read
 
-# No workflow concurrency group: GitHub replaces pending runs in a group, losing main commits.
+# Merge bursts publish the newest revision. Compare with the last upload, not just the last
+# commit, so a Mac-only merge cannot cancel and lose an earlier mobile change.
+concurrency:
+  group: testflight-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   checks:
     name: Check TestFlight automation
@@ -55,7 +59,6 @@ jobs:
       - name: Select changes and version
         id: metadata
         env:
-          BEFORE: ${{ github.event.before }}
           NIGHTLY: ${{ github.event_name == 'schedule' || inputs.nightly || false }}
           EVENT: ${{ github.event_name }}
         run: |
@@ -64,7 +67,7 @@ jobs:
             args+=(--nightly)
             base=$(git rev-parse --verify refs/tags/testflight-nightly 2>/dev/null || true)
           elif [ "$EVENT" = push ]; then
-            base="$BEFORE"
+            base=$(git rev-parse --verify refs/tags/testflight-latest 2>/dev/null || true)
           else
             base="" # A manual run always builds, including a rehearsal on a branch.
           fi
@@ -90,7 +93,7 @@ jobs:
     runs-on: ${{ vars.MACOS_RUNNER || 'macos-26' }}
     timeout-minutes: 90
     permissions:
-      contents: write # The nightly checkpoint is moved only after Apple accepts the build.
+      contents: write # Upload checkpoints move only after Apple accepts the build.
     env:
       DEVELOPER_DIR: ${{ vars.XCODE_DEVELOPER_DIR || '/Applications/Xcode_27.1.app/Contents/Developer' }}
       NATIVE_TEAM_ID: ${{ secrets.NATIVE_TEAM_ID }}
@@ -159,13 +162,18 @@ jobs:
           api-private-key: ${{ secrets.APP_STORE_CONNECT_API_KEY }}
           release-notes: ${{ needs.changes.outputs.notes }}
           wait-for-processing: 'true'
-      - name: Record the successful nightly
-        if: (github.event_name == 'schedule' || inputs.nightly) && !inputs.dry_run
+      - name: Record the successful upload
+        if: ${{ !inputs.dry_run }}
         env:
           SHA: ${{ needs.changes.outputs.sha }}
+          NIGHTLY: ${{ github.event_name == 'schedule' || inputs.nightly || false }}
         run: |
-          git tag -f testflight-nightly "$SHA"
-          git push origin refs/tags/testflight-nightly --force
+          git tag -f testflight-latest "$SHA"
+          git push origin refs/tags/testflight-latest --force
+          if [ "$NIGHTLY" = true ]; then
+            git tag -f testflight-nightly "$SHA"
+            git push origin refs/tags/testflight-nightly --force
+          fi
       - name: Save the signed rehearsal
         if: inputs.dry_run
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2

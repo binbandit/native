@@ -447,7 +447,8 @@ a folder to the workflow's typecheck once it compiles there.
 ### iPhone TestFlight
 
 `testflight.yml` publishes the iPhone companion (`dev.binbandit.native.companion`) after a push to
-`main` changes its shipped sources or resources. It does a cheap Git diff on Linux first, so
+`main` leaves changes to its shipped sources or resources since the last successful upload
+(`testflight-latest`, a rolling tag). It does a cheap Git diff on Linux first, so
 Mac-only, documentation and test-only changes do not allocate a Mac runner or upload a build.
 `scripts/companion/testflight-paths.txt` lists the companion's own sources, shared transcript and
 design-system files, icon artwork and local package products. Update that list when adding a
@@ -465,8 +466,10 @@ workflow run counter for unique, increasing Apple build numbers, including rerun
 attempt 1 is `2.0.1`. The SHA and commit subject appear in TestFlight's **What to Test** notes.
 Apple's version fields remain numeric. No source-version commits are generated.
 
-Uploads run only from `main`, never pull requests. There is deliberately no concurrency group:
-GitHub replaces pending runs in a group, which would discard commits while another build uploads.
+Uploads run only from `main`, never pull requests, and use `MACOS_RUNNER` (GitHub hosted), never
+the persistent `CI_MACOS_RUNNER` used by PR checks. A concurrency group cancels superseded runs
+so a burst of merges publishes the newest revision. Comparing against the last successful upload
+keeps pending mobile changes even if a Mac-only commit replaces their original run.
 The job archives Release for a real iOS device, exports a signed IPA, checks warnings, and uploads
 through Apple's pinned TestFlight action. Build logs and dSYMs are retained for seven days.
 Signing uses a temporary keychain and removes its credentials and installed profile even after

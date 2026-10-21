@@ -76,6 +76,11 @@ class TestFlightMetadataTests(unittest.TestCase):
         self.base = removed
         self.assertTrue(self.changed())
 
+    def test_mac_merge_after_cancelled_mobile_run_keeps_mobile_change(self):
+        self.commit("Companion/NativeCompanion/Task/Task.swift")
+        self.commit("native/Settings/Settings.swift")
+        self.assertTrue(self.changed())
+
     def test_unchanged_nightly_skips(self):
         self.assertFalse(self.changed())
 
