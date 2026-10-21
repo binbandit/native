@@ -23,5 +23,6 @@ starts no network activity. A mirror URL can remain configured while the catalog
 `policy.plugins.allowed` remains separate: it controls which manifest plugins may load, with
 the existing built-in exemptions unchanged. Catalog inputs do not alter plugin activation,
 feature defaults, `scriptsEnabled`, or other policy values. There is no offline master switch,
-fetcher, installer, registry integration, or new MDM profile in this change. The shared enterprise
-document and sample profile are unchanged pending consumer integration.
+fetcher, installer, registry integration, or new MDM profile in this change. The existing sample
+profile includes both keys as validated inputs for a future consumer, with the catalog disabled
+and an example mirror URL. They have no runtime effect until consumer integration.
