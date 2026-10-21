@@ -47,6 +47,9 @@ final class AgentLink {
     private(set) var generation = 0
     /// Set while the host stops the agent on purpose, so its exit isn't treated as a crash.
     var isStopping = false
+    /// The agent answered its rename command with a model's turn, so the host stops naming sessions
+    /// with it (`HostCore+AgentNames.swift`).
+    var renameAsksModel = false
     /// Why the host is ending the process, when it's one (a restart): recovery says so.
     var exitCause: RecoveryNote.Cause?
     /// Host sessions by the agent's id for them, for routing what the agent sends.
