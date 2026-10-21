@@ -12,6 +12,7 @@ final class GitHubAccountsModel {
     private(set) var error: GitHubError?
     private(set) var isLoading = false
     private(set) var switchingTo: String?
+    private(set) var switchFailure: String?
     private(set) var preferredHost: String?
     private(set) var profiles: [String: GitHubUser] = [:]
     private(set) var avatars: [String: Data] = [:]
@@ -77,6 +78,7 @@ final class GitHubAccountsModel {
 
     var guidance: String? {
         if switchingTo != nil { return "Switching account…" }
+        if let switchFailure { return switchFailure }
         if current?.state == .error { return "Sign-in expired or removed. Sign in again, or choose another account." }
         if case .notInstalled = error { return "Install GitHub CLI in a terminal, then check again." }
         if case .offline = error {
@@ -94,6 +96,7 @@ final class GitHubAccountsModel {
     func load(using cli: GitHubCLI) async {
         guard !isLoading else { return }
         isLoading = true
+        switchFailure = nil
         defer { isLoading = false }
         do {
             status = try await cli.authStatus()
@@ -109,6 +112,7 @@ final class GitHubAccountsModel {
     func select(_ account: AuthStatus.Account, using cli: GitHubCLI) async -> Bool {
         guard switchingTo == nil else { return false }
         switchingTo = key(account)
+        switchFailure = nil
         error = nil
         defer { switchingTo = nil }
         var next = selection
@@ -117,7 +121,8 @@ final class GitHubAccountsModel {
             let credentials = status.map { next.includingDefaults(from: $0) } ?? next
             let user = try await cli.selecting(credentials).targeting(host: account.host).currentUser()
             guard user.login.caseInsensitiveCompare(account.login) == .orderedSame else {
-                error = .notAuthenticated("GitHub returned a different account. Sign in again, then check accounts.")
+                switchFailure =
+                    "GitHub returned a different account. Your choice was kept. Sign in again, then check accounts."
                 return false
             }
             profiles[key(account)] = user
@@ -133,7 +138,14 @@ final class GitHubAccountsModel {
             }
             return true
         } catch {
-            self.error = error
+            let retained = current.map { " Still using \(name($0))." } ?? ""
+            let recovery =
+                if case .notAuthenticated = error {
+                    " Sign in to @\(account.login) again, then check accounts."
+                } else {
+                    " \(error.localizedDescription) Try again when GitHub is available."
+                }
+            switchFailure = "Couldn't switch to @\(account.login)." + retained + recovery
             return false
         }
     }

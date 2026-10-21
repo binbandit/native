@@ -5,7 +5,7 @@ import GitHub
 
 nonisolated enum GitHubAccountPreviewFixtures {
     enum State: String, CaseIterable, Identifiable {
-        case loading, single, multiple, signedOut, missing, expired, offline, longName
+        case loading, single, multiple, signedOut, missing, expired, offline, longName, failedSwitch
         var id: Self { self }
     }
 
@@ -30,7 +30,7 @@ nonisolated enum GitHubAccountPreviewFixtures {
         switch state {
         case .loading, .missing: return nil
         case .signedOut: return AuthStatus(hosts: [:])
-        case .multiple: return AuthStatus(hosts: ["github.com": [first, second]])
+        case .multiple, .failedSwitch: return AuthStatus(hosts: ["github.com": [first, second]])
         default:
             var account = first
             if state == .expired { account.state = .error }
@@ -76,6 +76,7 @@ nonisolated struct GitHubAccountFixtureRunner: CommandRunner {
             let login =
                 arguments.first(where: { $0.hasPrefix("users/") })?.replacingOccurrences(of: "users/", with: "")
                 ?? command.environment["GH_TOKEN"] ?? "alex-morgan"
+            if state == .failedSwitch, login == "alex-work" { return failure("HTTP 401: Bad credentials") }
             return success(
                 try JSONEncoder().encode(
                     GitHubAccountPreviewFixtures.profiles["github.com/\(login)"] ?? GitHubUser(login: login)))

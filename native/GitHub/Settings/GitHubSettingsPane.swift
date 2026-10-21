@@ -32,7 +32,9 @@ struct GitHubSettingsPage: View {
 
     var body: some View {
         @Bindable var gitHub = gitHub
+        #if os(macOS)
         @Bindable var accounts = gitHub.accounts
+        #endif
         SettingsPage {
             SettingsHeader(
                 "GitHub",
@@ -73,6 +75,6 @@ struct GitHubSettingsPage: View {
         GitHubSettingsPage()
             .settingsPreviewPage()
     }
-    .environment(GitHubModel.preview())
+    .environment(GitHubAccountPreviewFixtures.model(.multiple))
 }
 #endif
