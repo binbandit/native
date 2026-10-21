@@ -63,6 +63,26 @@ if ! command -v cargo >/dev/null 2>&1 && [ -n "${SHELL:-}" ]; then
 fi
 command -v cargo >/dev/null 2>&1 || give_up "cargo isn't installed. Install Rust from https://rustup.rs and build again."
 
+# The Rust the runtime ships from (Runtime/ScriptRuntime/rust-toolchain.toml): the cargo on the PATH
+# when it's that version, as on CI's image, otherwise that version through rustup.
+rust="$(sed -n 's/^channel = "\(.*\)"$/\1/p' "$crate/rust-toolchain.toml")"
+cargo=(cargo)
+if [ "$(rustc --version 2>/dev/null | cut -d' ' -f2)" != "$rust" ]; then
+    if command -v rustup >/dev/null 2>&1; then
+        # Installed once and then used offline (--no-update), one install at a time since several
+        # builds can get here at once.
+        lockf -k "${TMPDIR:-/tmp}/native-rustup-install.lock" \
+            rustup toolchain install "$rust" --profile minimal --no-self-update --no-update >/dev/null 2>&1 \
+            || give_up "couldn't install Rust $rust with rustup."
+        # By path: a rustc earlier on the PATH (Homebrew's) would ignore rustup's choice.
+        cargo=("$(rustup which --toolchain "$rust" cargo)")
+        RUSTC="$(rustup which --toolchain "$rust" rustc)"
+        export RUSTC
+    else
+        echo "note: building with $(rustc --version 2>/dev/null) rather than Rust $rust; releases use $rust (install rustup to match)."
+    fi
+fi
+
 # A rustc wrapper from the user's cargo config (sccache, kache) may not be on this PATH, and this
 # small crate doesn't need one: build without it so Xcode and a terminal behave the same.
 export RUSTC_WRAPPER=""
@@ -119,11 +139,11 @@ if [ "$sandbox" = 1 ]; then
 fi
 
 if [ "$test" = 1 ]; then
-    exec cargo test "${cargo_args[@]}"
+    exec "${cargo[@]}" test "${cargo_args[@]}"
 fi
 
 started=$SECONDS
-cargo build "${cargo_args[@]}" || give_up "native-script-runtime didn't build; see the cargo output above."
+"${cargo[@]}" build "${cargo_args[@]}" || give_up "native-script-runtime didn't build; see the cargo output above."
 built="$CARGO_TARGET_DIR/release/native-script-runtime"
 # The copy cargo linked, which a restored CI cache could have brought along unchecked.
 if [ "$sandbox" = 0 ] && ! has_sha256 "$CARGO_TARGET_DIR/release/gn_out/obj/librusty_v8.a" "$V8_LIBRARY_SHA256"; then

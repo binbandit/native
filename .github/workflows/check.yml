@@ -57,7 +57,7 @@ jobs:
         uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
           path: ~/Library/Caches/Native/ScriptRuntime
-          key: script-runtime-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'scripts/build-script-runtime.sh') }}
+          key: script-runtime-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Runtime/ScriptRuntime/Cargo.lock', 'Runtime/ScriptRuntime/rust-toolchain.toml', 'scripts/build-script-runtime.sh') }}
           restore-keys: script-runtime-${{ runner.os }}-${{ runner.arch }}-
       # Package checkouts and binary artifacts, keyed by what the project pins: about 25 s to restore
       # where resolving from nothing took 3.5 minutes.
