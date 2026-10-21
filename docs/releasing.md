@@ -370,8 +370,13 @@ library, about 130 MB; the toolchain and source aren't cached) and `~/Library/Ca
 build scripts and `Cargo.lock`, so a release restores what `main`'s checks built.
 
 **How CI stays quick.** GitHub runs at most five macOS jobs at once for this repository, so a push
-runs few: `ci.yml` runs the package tests in two shards, the Debug build and the lint, and
-`check.yml` the two release configurations. `scripts/ci/test-packages.sh` tests every
+runs few: `ci.yml` runs the package tests in two macOS shards and the Debug build; changed-file lint
+runs on Ubuntu in `swift:6.4`, with the same `swift format lint --strict` command. A Linux path check
+skips the Debug build on PRs that only change docs or development scripts. App sources, packages,
+resources, configuration, project files, embedded helpers, build scripts and the warning check still
+trigger it. Main and manual runs always build. `ios.yml` already filters PRs to its build inputs,
+and `check.yml` filters its two release configurations to their build inputs. Every PR workflow
+cancels superseded runs for the same PR. `scripts/ci/test-packages.sh` tests every
 `Packages/*/` with a `Tests` folder, so a new package can't be left out, and deals them into the
 shards by the time each took on CI (`scripts/ci/package-test-times.txt`; update it from a run's
 "passed in" lines when the shards drift apart, and an unlisted package counts as 30 seconds). A
