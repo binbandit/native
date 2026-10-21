@@ -147,6 +147,9 @@ final class HostNotificationFeed {
         }
         if let latest = list.latestID {
             remember(latest, on: host.id)
+        } else if seen == nil {
+            // A host that hasn't posted anything yet: its very first notification is news.
+            remember(0, on: host.id)
         }
         // A host's first connection only sets where news starts.
         guard seen != nil else { return }

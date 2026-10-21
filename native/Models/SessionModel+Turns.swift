@@ -286,7 +286,7 @@ extension SessionModel {
             instructions: AIInstructionsStore.shared.addition(for: .title, in: cwd))
         Task {
             await services.titles.generateIfNeeded(for: titleKey, request: request, using: services.plugins.titler)
-            if let title = services.titles.title(for: titleKey, agentTitle: nil) {
+            if let title = services.titles.namedTitle(for: titleKey) {
                 services.titleLanded(key, cwd, title)
             }
         }

@@ -13,12 +13,8 @@ struct TasksStatusItem: StatusBarItem {
     let placement = StatusBarPlacement.leading
     let order = 50
 
-    @ViewBuilder var content: some View {
-        if StatusBarTaskStates.isEnabled {
-            TasksSegment(source: source)
-        } else {
-            LegacyTasksSegment(source: source)
-        }
+    var content: some View {
+        TasksSegment(source: source)
     }
 }
 

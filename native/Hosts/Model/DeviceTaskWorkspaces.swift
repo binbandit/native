@@ -23,8 +23,7 @@ final class DeviceTaskWorkspaces: TaskWorkspaceProvider {
             guard let provider = host.taskWorkspaces,
                 let checkout = project.checkoutPath(on: .remote(host.id))
             else { continue }
-            let isWorktree = host.worktreesFolder.map { path.hasPrefix($0.hasSuffix("/") ? $0 : $0 + "/") } ?? false
-            if isWorktree || path == checkout {
+            if host.isTaskFolder(path, ofCheckoutAt: checkout) {
                 return (provider, project.onHost(at: checkout))
             }
         }

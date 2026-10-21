@@ -1,8 +1,34 @@
-# Only GitHub Actions: the Swift packages have no third-party dependencies apart from Sparkle,
-# which is pinned in the Xcode project.
+# Third-party code Native builds with: GitHub Actions, the Swift packages with remote dependencies,
+# and the script runtime's crates. Version updates for packages and crates come monthly as one
+# grouped pull request per ecosystem; security updates come as soon as there's an advisory.
 version: 2
 updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+
+  # Sparkle and Sentry are pinned in the Xcode project, which Dependabot can't edit, so a bump here
+  # also needs native.xcodeproj's Package.resolved updated in the same pull request (app builds take
+  # only the versions it records). Grammar bumps also need their copied queries checked
+  # (Packages/CodeThemes/NOTICE.md).
+  - package-ecosystem: swift
+    directories:
+      - /Packages/CodeThemes
+      - /Packages/NativeDiagnostics
+    schedule:
+      interval: monthly
+    groups:
+      swift-packages:
+        patterns: ["*"]
+
+  - package-ecosystem: cargo
+    directory: /Runtime/ScriptRuntime
+    schedule:
+      interval: monthly
+    ignore:
+      # Bumped by hand, with the prebuilt library's SHA-256 pins in scripts/build-script-runtime.sh.
+      - dependency-name: v8
+    groups:
+      script-runtime-crates:
+        patterns: ["*"]

@@ -3,13 +3,11 @@ import Foundation
 
 extension AppModel: StatusBarSource {
     var statusBarTasks: [TaskActivity] {
-        let usesTaskStates = StatusBarTaskStates.isEnabled
         let tasks = sessionList.compactMap { summary -> TaskActivity? in
             guard let session = session(summary.id) else { return nil }
-            let shared: TaskStatus? =
-                usesTaskStates ? session.taskStatus : StatusBarTaskStates.legacyStatus(of: session)
+            let status = session.taskStatus
             // Only what's on a turn or blocked on the user. Loading a task's history isn't work.
-            guard let status = shared, status == .working || status.needsAttention else { return nil }
+            guard status == .working || status.needsAttention else { return nil }
             return TaskActivity(
                 id: summary.id,
                 title: session.displayTitle,
