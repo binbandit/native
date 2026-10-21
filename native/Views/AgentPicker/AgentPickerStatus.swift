@@ -1,4 +1,3 @@
-#if NATIVE_AGENT_PICKER_WIP
 /// Where an agent stands for starting a session, in the words Home's cards and Settings use.
 enum AgentPickerStatus: Equatable {
     case ready
@@ -47,4 +46,3 @@ enum AgentPickerStatus: Equatable {
         }
     }
 }
-#endif

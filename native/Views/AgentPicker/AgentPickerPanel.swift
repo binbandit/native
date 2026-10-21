@@ -1,10 +1,8 @@
-#if NATIVE_AGENT_PICKER_WIP
 import NativeCommands
 import SwiftUI
 
 /// The agent picker: a filter field over every agent, each with its icon, name and state, then Add
-/// Agent and the keys along the bottom. It floats near the top of the window on the command
-/// palette's surface, since it's the same kind of moment: one keyboard-first choice from a list.
+/// Agent and the keys along the bottom. A sheet keeps the keyboard in this choice until it closes.
 ///
 /// It opens with the keyboard in the filter and the default agent highlighted. ↑ and ↓ move
 /// between the agents that can start a session, Return starts it, typing narrows the list, and
@@ -41,24 +39,28 @@ struct AgentPickerPanel<Notice: View>: View {
     var body: some View {
         let results = AgentPickerResults(options: options, missingAgents: missingAgents, query: query)
         let current = current(in: results)
-        let shape = RoundedRectangle(cornerRadius: DS.Radius.panel, style: .continuous)
         VStack(spacing: 0) {
-            filter(results, current: current)
-                .padding(DS.Space.md)
+            HStack(spacing: DS.Space.md) {
+                filter(results, current: current)
+                Button("Close", action: onDismiss)
+                    .buttonStyle(.ds(.ghost))
+            }
+            .padding(DS.Space.md)
             SeparatorLine()
             notice
             list(results, current: current)
             SeparatorLine()
             footer(current)
         }
-        .frame(maxWidth: AgentPickerMetrics.width)
-        .dsOverlayBackground(in: shape)
-        .clipShape(shape)
-        .overlay { shape.strokeBorder(.dsSeparator, lineWidth: 1) }
-        .dsShadow(.modal)
-        // After the field's own Escape, which clears what's typed first.
+        .frame(width: DS.isTouchPlatform ? nil : AgentPickerMetrics.width)
+        .background(.dsBackground)
+        // Both steps here, since this can hear Escape before the field's own clearing does.
         .onKeyPress(.escape) {
-            onDismiss()
+            if query.isEmpty {
+                onDismiss()
+            } else {
+                query = ""
+            }
             return .handled
         }
         .onAppear { focus = .filter }
@@ -227,4 +229,3 @@ extension AgentPickerPanel where Notice == EmptyView {
         }
     }
 }
-#endif
