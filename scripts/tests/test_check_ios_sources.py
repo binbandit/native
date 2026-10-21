@@ -100,6 +100,20 @@ class CheckIOSSourcesTests(unittest.TestCase):
             sources.prepare(self.root, self.destination, diagnostics="Screen.swift:1:8: error: no such module 'AppKit'"), []
         )
 
+    def test_required_cross_folder_conformance(self):
+        self.write("native/Support/Model+Source.swift", "extension Model: @MainActor RequiredSource {}\n")
+        self.write("native/Unrelated/Model+Other.swift", "import AppKit\nextension Model: OtherSource {}\n")
+        for index, diagnostic in enumerate([
+            "error: argument type 'Model' does not conform to expected type 'RequiredSource'",
+            "error: type 'Model' does not conform to protocol 'RequiredSource'",
+            "error: global function 'attach' requires that 'Model' conform to 'RequiredSource'",
+        ]):
+            with self.subTest(diagnostic=diagnostic):
+                self.assertEqual(
+                    sources.prepare(self.root, self.destination / str(index), diagnostics=diagnostic),
+                    [Path("native/Support/Model+Source.swift")],
+                )
+
     def test_preview_removal_preserves_lines_after_multiple_previews(self):
         text = 'struct Before {}\n#Preview("First") {\n    View { Text("Hi") }\n}\n#Preview { Text("Bye") }\nstruct After {}\n'
         prepared = sources.strip_previews(text)
@@ -148,6 +162,15 @@ class CheckIOSIntegrationTests(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("iOS check passed", result.stdout)
         self.assertIn("Including", result.stderr)
+
+        self.write("native/Views/RequiredSource.swift", "protocol RequiredSource {}\n")
+        self.write("native/Support/Model+Source.swift", "extension Model: RequiredSource {}\n")
+        self.write(
+            "native/Views/Screen.swift",
+            "func attach(_ source: any RequiredSource) {}\nfunc configure(_ model: Model) { attach(model) }\n",
+        )
+        result = subprocess.run(command, cwd=scripts, text=True, capture_output=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
         self.write(
             "native/Views/Screen.swift",

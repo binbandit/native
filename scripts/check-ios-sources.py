@@ -24,6 +24,10 @@ MEMBER = re.compile(
 )
 MISSING_NAME = re.compile(r"error: cannot find (?:type )?'([^']+)' in scope")
 MISSING_MEMBER = re.compile(r"error: .*has no (?:dynamic )?member '([^']+)'")
+MISSING_CONFORMANCE = re.compile(
+    r"(?:argument )?type '([^']+)' does not conform to (?:expected type|protocol) '([^']+)'"
+    r"|requires that '([^']+)' conform to '([^']+)'"
+)
 
 
 def strip_previews(text):
@@ -59,11 +63,18 @@ def source_files(root, paths):
 def prepare(root, destination, paths=(), diagnostics=""):
     sources = {path.relative_to(root): path.read_text() for path in (root / "native").rglob("*.swift")}
     declarations, extensions, members = defaultdict(set), defaultdict(set), defaultdict(set)
+    conformances = defaultdict(set)
     for path, text in sources.items():
         for name in DECLARATION.findall(text):
             declarations[name.strip("`")].add(path)
         for extension in EXTENSION.finditer(text):
             extensions[extension[1]].add(path)
+            header = text[extension.end():text.find("{", extension.end())].split("where", 1)[0]
+            if ":" in header:
+                extended_type = re.match(r"[\w.]+", text[extension.start(1):])[0]
+                inherited = header.split(":", 1)[1]
+                for protocol in re.findall(r"(?:^|,)\s*(?:@\w+\s+)*([\w.]+)", inherited):
+                    conformances[extended_type, protocol.rsplit(".", 1)[-1]].add(path)
             # The repository's formatter closes a top-level extension at column zero. Limit
             # candidates to its direct members, not locals or other types in the same file.
             closing = re.search(r"^}", text[extension.end():], re.MULTILINE)
@@ -83,6 +94,12 @@ def prepare(root, destination, paths=(), diagnostics=""):
             selected.update(members[name])
     for member in MISSING_MEMBER.findall(diagnostics):
         selected.update(members[member])
+    for match in MISSING_CONFORMANCE.finditer(diagnostics):
+        type_name, protocol = match.group(1, 2) if match[1] else match.group(3, 4)
+        type_name = re.sub(r"<.*>", "", type_name)
+        protocol = protocol.removeprefix("any ").rsplit(".", 1)[-1]
+        for candidate in (type_name, type_name.partition(".")[2], type_name.rsplit(".", 1)[-1]):
+            selected.update(conformances[candidate, protocol])
 
     # Keep a type's local implementation together. Extensions in other features are consumers too:
     # including them eagerly drags the whole app into independent DesignSystem/Platform checks.
