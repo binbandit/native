@@ -67,7 +67,8 @@ extension SessionLauncher {
                 title: title, parentID: parent?.host?.id, origin: origin.host,
                 mcpServers: try mcpServers(for: context, on: client), meta: meta(for: context), attach: true,
                 configChoices: services.titles.configChoices(for: .init(agent: key.agent, session: key.id))
-                    .choices.mapValues(\.value)))
+                    .choices.mapValues(\.value),
+                configDefaults: AgentSessionDefaults.configuredValues(for: key.agent)))
         let session = SessionModel(
             agent: runtime.agent, id: key.id, summary: summary, client: client, services: services,
             promptCapabilities: runtime.capabilities?.prompt ?? PromptCapabilities(), origin: origin, parent: parent)
