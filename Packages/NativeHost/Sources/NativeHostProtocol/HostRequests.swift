@@ -69,6 +69,9 @@ public struct OpenSessionParams: Codable, Sendable {
     /// Choices remembered before the host first adopted this session. An existing host record,
     /// including one kept when the session closed, always wins over these client values.
     public var configChoices: [String: String]?
+    /// Explicit client Settings defaults by ACP category, used only where this session has no
+    /// saved choice. The host resolves them after load and pins what the agent takes.
+    public var configDefaults: [String: String]?
     /// Follow the session's events. The answer then comes as soon as the session exists, with the
     /// replay streaming in after it; a load that fails leaves the session `disconnected` with its
     /// `problem` and a notice. Without it, the answer waits for the load and a failure throws.
@@ -78,7 +81,7 @@ public struct OpenSessionParams: Codable, Sendable {
         sessionID: HostSessionID? = nil, agentID: String, agentSessionID: SessionID, cwd: String,
         title: String? = nil, parentID: HostSessionID? = nil, origin: SessionOrigin = .user,
         mcpServers: [JSONValue] = [], meta: JSONValue? = nil, attach: Bool = false,
-        configChoices: [String: String]? = nil
+        configChoices: [String: String]? = nil, configDefaults: [String: String]? = nil
     ) {
         self.sessionID = sessionID
         self.agentID = agentID
@@ -91,6 +94,7 @@ public struct OpenSessionParams: Codable, Sendable {
         self.meta = meta
         self.attach = attach
         self.configChoices = configChoices
+        self.configDefaults = configDefaults
     }
 }
 

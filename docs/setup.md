@@ -143,7 +143,11 @@ terminal, then Restart Claude Code from its ⋯ menu.
 through switching tasks, relaunching and agent restarts. A new task starts on what the user last
 picked for that agent in any task (`AgentSessionDefaults.lastUsed`); under each agent in Settings ▸
 Agents, "Defaults for new tasks" can pin a model and effort instead, and a project's model
-(Settings ▸ Projects) wins over both. Settings ▸ General ▸ Follow-up behavior chooses whether
+(Settings ▸ Projects) wins over both. When opening an existing task with no saved model or effort,
+Native applies that agent's explicit Settings default for the missing choice and saves the result
+for future opens, even if the task started outside Native. Without an offered Settings default,
+the task keeps what the agent reports. Saved choices always win.
+Settings ▸ General ▸ Follow-up behavior chooses whether
 Return queues a message for after the turn (Queue) or adds it to the turn in progress (Steer).
 
 An agent Native doesn't know is a plugin: see the `build-a-native-plugin` skill.

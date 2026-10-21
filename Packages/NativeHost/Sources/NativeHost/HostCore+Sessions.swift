@@ -58,6 +58,9 @@ extension HostCore {
         if let existing = sessions.values.first(where: {
             $0.record.agentID == params.agentID && $0.record.agentSessionID == params.agentSessionID
         }) {
+            if existing.needsLoad, existing.loading == nil {
+                existing.loadConfigDefaults = params.configDefaults ?? [:]
+            }
             if let follower {
                 follow(existing, by: follower)
                 loadInBackground(existing)
@@ -76,6 +79,7 @@ extension HostCore {
         try store.insertSession(record)
         let session = HostSession(
             record: record, agentName: link.spec.name, phase: .loading, needsLoad: true, mcpServers: params.mcpServers)
+        session.loadConfigDefaults = params.configDefaults ?? [:]
         sessions[record.id] = session
         follower.map { follow(session, by: $0) }
         append(.reset(loading: false), to: session)
@@ -241,19 +245,19 @@ extension HostCore {
         var options = latest.map(Self.configOptions) ?? session.mirror.state.configOptions
         let saved = session.record.configChoices
         var choices = ConfigChoices()
-        for (configID, value) in saved {
-            if let option = options.first(where: { $0.id == configID }) {
-                choices.choose(option, value: value)
-            }
-        }
-        let missing = saved.keys.filter { choices.choices[$0] == nil }.sorted()
-        for configID in choices.restoreOrder(in: options) + missing {
+        var attempted: Set<String> = []
+        while true {
             // A model change can introduce an option absent from the load's initial response.
-            if choices.choices[configID] == nil, let value = saved[configID],
-                let option = options.first(where: { $0.id == configID })
-            {
-                choices.choose(option, value: value)
+            for (configID, value) in saved where choices.choices[configID] == nil {
+                if let option = options.first(where: { $0.id == configID }) {
+                    choices.choose(option, value: value)
+                }
             }
+            choices = choices.fillingDefaults(session.loadConfigDefaults, in: options)
+            guard let configID = choices.restoreOrder(in: options).first(where: { !attempted.contains($0) }) else {
+                break
+            }
+            attempted.insert(configID)
             guard
                 case .set(_, let value)? = choices.restoration(
                     of: configID, in: options, allows: { _, _ in true })
@@ -280,6 +284,7 @@ extension HostCore {
         // From here it runs with what the agent reports, a value it didn't take back included, so
         // the next reload sets back these rather than asking for that value again.
         pinConfig(options, of: session)
+        session.loadConfigDefaults = [:]
     }
 
     /// A rejected or removed setting must not silently change how the resumed task runs.
