@@ -101,13 +101,9 @@ struct NewSessionContextBuilder {
         return summary.info.title?.isEmpty == false || model.userTitle(for: summary.id) != nil
     }
 
+    /// The status every surface reads (`SessionModel.taskStatus`); a task not open in this run is idle.
     private func status(of session: SessionModel?) -> TaskStatus {
-        switch session?.wait {
-        case .input: .needsInput
-        case .permission: .needsPermission
-        case .planReview: .needsPlanReview
-        case nil: TaskStatus(session)
-        }
+        session?.taskStatus ?? .idle
     }
 
     private var pullRequests: [NewSessionContext.PullRequest] {
