@@ -46,7 +46,7 @@ jobs:
       # LFS (scripts/companion/app-icons.sh). Only these are fetched, about 50 MB, and kept in a cache.
       ICON_ARTWORK: design/app-icon/channel-themes/*/stable.icon/**,design/app-icon/celebrations/*/stable.icon/**
     steps:
-      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5.1.0
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Cache locations
         run: |
           echo "SOURCE_PACKAGES=$RUNNER_TEMP/SourcePackages" >> "$GITHUB_ENV"
