@@ -370,8 +370,13 @@ library, about 130 MB; the toolchain and source aren't cached) and `~/Library/Ca
 build scripts and `Cargo.lock`, so a release restores what `main`'s checks built.
 
 **How CI stays quick.** GitHub runs at most five macOS jobs at once for this repository, so a push
-runs few: `ci.yml` runs the package tests in two shards, the Debug build and the lint, and
-`check.yml` the two release configurations. `scripts/ci/test-packages.sh` tests every
+runs few: `ci.yml` runs the package tests in two macOS shards and the Debug build; changed-file lint
+runs on Ubuntu in `swift:6.4`, with the same `swift format lint --strict` command. A Linux path check
+skips the Debug build on PRs that only change docs or development scripts. App sources, packages,
+resources, configuration, project files, embedded helpers, build scripts and the warning check still
+trigger it. Main and manual runs always build. `ios.yml` already filters PRs to its build inputs,
+and `check.yml` filters its two release configurations to their build inputs. Every PR workflow
+cancels superseded runs for the same PR. `scripts/ci/test-packages.sh` tests every
 `Packages/*/` with a `Tests` folder, so a new package can't be left out, and deals them into the
 shards by the time each took on CI (`scripts/ci/package-test-times.txt`; update it from a run's
 "passed in" lines when the shards drift apart, and an unlisted package counts as 30 seconds). A
@@ -390,6 +395,15 @@ an x86_64 slice nothing links). The Debug, Release and Nightly builds also cache
   keeps it bounded: past that, Xcode starts a new generation and drops what later builds don't use.
 
 Releases cache neither: an archive that ships compiles from scratch.
+
+`CI_MACOS_RUNNER` overrides the runner for `ci.yml`, `check.yml` and `ios.yml`, falling back to
+`MACOS_RUNNER` and then `macos-26`. Publishing in Nightly and Release keeps `MACOS_RUNNER`.
+Swift package and compilation caches use keys containing the runner environment and architecture.
+Package resolution and compilation caches live in `RUNNER_TEMP`, so multiple runners under the
+same account never mutate the same Swift package checkout. Self-hosted jobs skip build-cache
+downloads and start with fresh package build state and a job-local script runtime cache; hosted
+jobs still restore their caches. The shared libghostty build already takes a lock on the machine.
+Self-hosted runners need the same build tools as the hosted image, including Git LFS for artwork.
 
 Every app build in CI, `check.sh` and `release.sh` passes `-disableAutomaticPackageResolution`, so
 packages come only at the versions and revisions `Package.resolved` records. When the project's
