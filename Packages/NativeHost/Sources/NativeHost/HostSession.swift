@@ -40,6 +40,9 @@ final class HostSession {
     var loading: Task<Void, any Error>?
     /// Config notifications during a load stay private until restoration has settled.
     var loadingConfigOptions: JSONValue?
+    /// Settings supplied by the client opening this session. Saved choices always win; after a
+    /// successful load the resolved values are durable and these fallbacks are no longer needed.
+    var loadConfigDefaults: [String: String] = [:]
     /// Set when the user cancels while recovery is under way, so it stops.
     var isRecoveryCancelled = false
     /// When stop was first asked for in the running turn; the agent has until the grace period

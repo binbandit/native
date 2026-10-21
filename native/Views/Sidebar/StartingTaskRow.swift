@@ -44,7 +44,7 @@ struct StartingTaskRow: View {
     /// The draft's first line once there is one, so a task named by what it's for shows that.
     private var title: String {
         let line = task.draft.split(separator: "\n", omittingEmptySubsequences: true).first.map(String.init)
-        return line?.trimmingCharacters(in: .whitespaces).nilIfEmpty ?? "New Session"
+        return line?.trimmingCharacters(in: .whitespaces).nilIfEmpty ?? "New Task"
     }
 
     private var tooltip: String {

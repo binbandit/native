@@ -1,8 +1,9 @@
 # Search
 
 Find any task by what was said in it: plain text across every agent run, every agent and every
-project, archived tasks included as a filter. ⇧⌘F (Go ▸ Search Tasks…) or **Search** at the top of
-the sidebar opens it; Return opens the task scrolled to the exact message, highlighted.
+project, archived tasks included as a filter. ⇧⌘F (Go ▸ Search Tasks…) or the magnifying glass in
+the window toolbar, between the sidebar toggle and the history arrows, opens it. The button stays
+available with the sidebar collapsed. Return opens the task scrolled to the exact message, highlighted.
 
 The code: `Packages/Search` (UI-free, macOS and iOS, tested), the history readers in
 `Packages/Search/Sources/Search/History` wired through each agent's plugin, and the app's part in
@@ -147,7 +148,7 @@ center and tints it for a moment.
 
 Local only: the index is a file in the app's own Application Support folder, queries never leave
 the process, and nothing is sent anywhere. Settings ▸ Search turns reading the agents' history off,
-excludes projects (their sessions are removed and never indexed), and clears the index. Turning
+excludes projects (their tasks are removed and never indexed), and clears the index. Turning
 the Search plugin off stops indexing altogether.
 
 ## Clients and the host

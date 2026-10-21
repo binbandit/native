@@ -37,10 +37,10 @@ enum HostError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .unknownAgent(let id): "No agent named \(id) is set up on this host."
-        case .unknownSession: "This session isn't open on the host."
-        case .agentUnavailable(let name): "\(name) isn't running, so it can't take this session."
-        case .cannotLoad(let name): "\(name) can't reopen sessions, so this one can't continue after a restart."
-        case .notAcceptingPrompts: "This subagent only takes work from the session that started it."
+        case .unknownSession: "This task isn't open on the host."
+        case .agentUnavailable(let name): "\(name) isn't running, so it can't take this task."
+        case .cannotLoad(let name): "\(name) can't reopen tasks, so this one can't continue after a restart."
+        case .notAcceptingPrompts: "This subagent only takes work from the task that started it."
         case .emptyMessage: "There's nothing to send."
         case .permissionNotPending: "That request was already answered."
         case .questionNotPending: "That question was already answered."
@@ -49,7 +49,7 @@ enum HostError: Error, LocalizedError {
         case .notAuthorized(let action): "This device isn't allowed to \(action) on this host."
         case .updateUnavailable(let reason): reason
         case .outsideProjects(let path):
-            "\(path) isn't inside one of this host's projects, sessions' folders or task worktrees."
+            "\(path) isn't inside one of this host's projects, tasks' folders or task worktrees."
         case .commandNotFound(let executable): "\(executable) isn't installed on this host, or isn't on its PATH."
         case .timedOut(let executable, let seconds):
             "\(executable) didn't finish within \(Duration.seconds(seconds)), so the host stopped it."

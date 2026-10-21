@@ -81,7 +81,7 @@ struct MCPServersSettingsPage: View {
             SettingsHeader(
                 title: "MCP Servers",
                 description: Text(
-                    "Servers give agents tools. Set one up here once and every agent gets it in every session. Agents also load servers from their own configuration, listed below; Native doesn't hand them a second copy."
+                    "Servers give agents tools. Set one up here once and every agent gets it in every task. Agents also load servers from their own configuration, listed below; Native doesn't hand them a second copy."
                 )
             ) {
                 Button("Check All", systemImage: "stethoscope") { Task { await library.probeAll() } }
@@ -103,8 +103,8 @@ struct MCPServersSettingsPage: View {
             if !waiting.isEmpty {
                 MCPNotice(
                     text:
-                        "\(waiting.map(\.name).joined(separator: " and ")) still starts sessions with the old switches. It restarts to pick them up as soon as none of its sessions is working.",
-                    tone: .neutral, actionTitle: "Apply to Running Sessions"
+                        "\(waiting.map(\.name).joined(separator: " and ")) still starts tasks with the old switches. It restarts to pick them up as soon as none of its tasks is working.",
+                    tone: .neutral, actionTitle: "Apply to Running Tasks"
                 ) {
                     Task { await library.host?.mcpApplyLaunchPolicies(force: true) }
                 }
@@ -134,7 +134,7 @@ struct MCPServersSettingsPage: View {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
             SettingsSubheading(
                 "Set up in Native",
-                note: "Handed to the agents and projects you choose, in every session they start or reopen.")
+                note: "Handed to the agents and projects you choose, in every task they start or reopen.")
             if library.servers.isEmpty {
                 MCPEmptyRow(
                     title: "No servers yet",

@@ -10,6 +10,7 @@ extension ExperimentCatalog {
         Variant.bubbles,
         Parameter<TranscriptWidth>.transcriptWidth,
         Gate.unfoldExploration,
+        Gate.sessionTools,
         Gate.sidebarNext,
         Gate.composerNext,
     ])
@@ -43,7 +44,7 @@ extension Parameter where Value == TranscriptWidth {
             id: "transcript-width",
             title: "Transcript width",
             summary: "How wide the conversation and the composer can grow on a large window.",
-            site: "Session ▸ column width",
+            site: "Task ▸ column width",
             stage: .beta,
             owner: "transcript",
             reviewBy: ReviewDate(year: 2026, month: 12, day: 15),
@@ -85,6 +86,17 @@ extension Gate {
         site: "Transcript ▸ tool activity",
         stage: .labs,
         owner: "transcript",
+        reviewBy: ReviewDate(year: 2026, month: 12, day: 15)
+    )
+
+    static let sessionTools = Gate(
+        id: "session-tools",
+        title: "Task tools",
+        summary: "A calmer task screen: no tool buttons in the header. Changes, terminals, runs and the rest "
+            + "show as facts under the title and open beside or under the conversation when they have something.",
+        site: "Task ▸ header and tools",
+        stage: .labs,
+        owner: "tasks",
         reviewBy: ReviewDate(year: 2026, month: 12, day: 15)
     )
 }

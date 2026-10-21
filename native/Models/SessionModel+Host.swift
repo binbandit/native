@@ -228,9 +228,7 @@ extension SessionModel {
             preamble: services.hooks.preamble(for: self, prompt: text).map(PromptPreambleSpec.init),
             behavior: behavior == .steer ? .steer : .queue, echo: echo, origin: origin == .task ? .task : .user)
         services.post(.promptSent(context, text: text))
-        if isFirstPrompt {
-            nameAfterFirstPrompt(text, attachments: attachments)
-        }
+        nameAfterPrompt(text, attachments: attachments, isFirstPrompt: isFirstPrompt)
         return switch try await host.client.prompt(params) {
         case .prompted: .prompted
         case .steered: .steered

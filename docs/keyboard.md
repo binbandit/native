@@ -34,7 +34,7 @@ turn holds the queue until you send again.
 
 While the agent works, the composer keeps a plain message prompt. The send button's tooltip and
 VoiceOver label describe whether it steers or queues, including the fallback for agents without
-steering. Pending questions, approvals, stopping and unavailable sessions still explain what is
+steering. Pending questions, approvals, stopping and unavailable tasks still explain what is
 needed in the placeholder. Code-block and queued-message editing hints remain visible when the
 controls row has room.
 
@@ -69,7 +69,7 @@ the queue. Clicking a message, or ↑ in an empty composer, opens it in the edit
 | --- | --- |
 | Return | Save the edit; the message keeps its place |
 | ⌘Return | Save the edit and Send Now |
-| ⌥⌘↑ / ⌥⌘↓ | Move it up / down the queue (Session ▸ Move Queued Message Up / Down) |
+| ⌥⌘↑ / ⌥⌘↓ | Move it up / down the queue (Task ▸ Move Queued Message Up / Down) |
 | Escape | Close it without saving |
 
 ## Agent questions
@@ -77,7 +77,7 @@ the queue. Clicking a message, or ↑ in an empty composer, opens it in the edit
 When an agent asks structured questions (Claude Code's AskUserQuestion, ACP form elicitation), they
 dock above the composer as a card: the question, a `1/3` pager, options, a free-text row, and Skip /
 Next. The card takes focus when it appears and the composer is empty. Plain digits pick options
-only while the card has focus; ⌘1 – ⌘9 stay session navigation.
+only while the card has focus; ⌘1 – ⌘9 stay task navigation.
 
 | Keys (card focused) | Action |
 | --- | --- |
@@ -95,7 +95,7 @@ sidebar, the projects and the Settings pages, recently used ones first. With a t
 
 | Keys (palette open) | Action |
 | --- | --- |
-| Type | Narrow the list; letters in order match too (`nwse` finds New Session) |
+| Type | Narrow the list; letters in order match too (`nwta` finds New Task) |
 | ↑ / ↓ | Move the selection |
 | Return | Run the selected command, or open the task, project or page |
 | Escape | Close the palette |
@@ -140,7 +140,7 @@ it to the agent.
 
 | Slash command | What Native does |
 | --- | --- |
-| `/clear` | Starts a fresh conversation in the same task: a new session of the same agent, in the same folder, with the same settings and title. The earlier conversation stays with the agent, a click away: Earlier Conversation in the toolbar, or Session ▸ Open Earlier Conversation. It opens read-only, with Current Conversation (or Session ▸ Open Current Conversation) where the composer was. Session ▸ Clear Conversation and the palette do the same as `/clear` |
+| `/clear` | Starts a fresh conversation in the same task, using the same agent, in the same folder, with the same settings and title. The earlier conversation stays with the agent, a click away: Earlier Conversation in the toolbar, or Task ▸ Open Earlier Conversation. It opens read-only, with Current Conversation (or Task ▸ Open Current Conversation) where the composer was. Task ▸ Clear Conversation and the palette do the same as `/clear` |
 | `/goal …` | Sets, pauses, resumes or clears the task's goal |
 
 | Keys | Action |
@@ -188,7 +188,7 @@ files; a file moved or deleted before sending is marked on its chip and holds th
 
 ## Permission requests
 
-The oldest pending request in the visible session answers these: a tool's permission request, a
+The oldest pending request in the visible task answers these: a tool's permission request, a
 workflow step waiting for approval, or an expedition's route (or route change) waiting for review.
 They're chosen not to collide with text editing in the composer.
 
@@ -204,8 +204,8 @@ expedition's lead (the composer key, on a page without a composer).
 ## Transcript
 
 Tool rows, exploration groups and condensed runs of tool calls start closed. Each is a button, so
-it opens with a click, a tap, or from the keyboard. The session remembers opened and closed rows,
-groups, runs and earlier turns while the app runs, including after switching sessions or transcript
+it opens with a click, a tap, or from the keyboard. The task remembers opened and closed rows,
+groups, runs and earlier turns while the app runs, including after switching tasks or transcript
 styles. A run's header still counts running and failed calls while closed. Pending approvals stay
 visible outside the groups; a container that holds one stays open until it is answered, then returns
 to the user's choice.
@@ -215,36 +215,36 @@ to the user's choice.
 | Space on a focused tool row (Tab moves focus, with Keyboard Navigation on) | Show or hide its output |
 | Space on a focused run of tool calls | Show or hide the run's list |
 
-## Sessions and navigation
+## Tasks and navigation
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
 | ⌘K | Command palette: run any command, or jump to a task, project or Settings page | View | `palette.show` |
 | ⌘/ | Keyboard shortcuts (also the "?" at the status bar's trailing end) | Help | `help.keyboardShortcuts` |
-| ⌘N | New session with the last-used agent | File | `session.new` |
-| ⌥⌘N | New session with… (agent picker) | File | `session.newWithAgent` |
+| ⌘N | New task with the last-used agent | File | `session.new` |
+| ⌥⌘N | New task with… (agent picker) | File | `session.newWithAgent` |
 | ⌥⌘E | New expedition (`docs/expeditions.md`) | File | `expedition.new` |
 | ⌘O | Open folder | File | `project.open` |
 | | The current project's settings (Settings ▸ Projects; also in the project's menu in the sidebar) | File | `project.settings` |
 | | Clean up the current project's merged task worktrees, branches and stale worktree records, after a review (also "Clean Up Merged…" in the project's menu in the sidebar) | File | `git.cleanUpMerged` |
-| ⇧⌘O | Open the task's folder in the default app (Open In) | Session | `session.openInDefaultApp` |
-| ⌥⌘P | Open the task's pull request, where clicking one goes (Settings ▸ GitHub); listed while its branch has one | Session | `pullRequest.openForTask` |
-| ⌘L | Focus the composer | Session | `composer.focus` |
-| ⌘[ / ⌘] | Back / forward through the sessions you've viewed | Go | `go.back` / `go.forward` |
-| ⌘1 – ⌘9 | Go to the Nth session in the sidebar | Session | `session.select1` – `session.select9` |
-| ⌃Tab / ⌃⇧Tab | Next / previous session | Session | `session.next` / `session.previous` |
-| Return on a selected sidebar session | Rename it (Escape cancels, Return commits) | Session | |
+| ⇧⌘O | Open the task's folder in the default app (Open In) | Task | `session.openInDefaultApp` |
+| ⌥⌘P | Open the task's pull request, where clicking one goes (Settings ▸ GitHub); listed while its branch has one | Task | `pullRequest.openForTask` |
+| ⌘L | Focus the composer | Task | `composer.focus` |
+| ⌘[ / ⌘] | Back / forward through the tasks you've viewed | Go | `go.back` / `go.forward` |
+| ⌘1 – ⌘9 | Go to the Nth task in the sidebar | Task | `session.select1` – `session.select9` |
+| ⌃Tab / ⌃⇧Tab | Next / previous task | Task | `session.next` / `session.previous` |
+| Return on a selected sidebar task | Rename it (Escape cancels, Return commits) | Task | |
 | ⌃⌘S | Show or hide the sidebar | View | `view.toggleSidebar` |
-| ⌥⌘↑ / ⌥⌘↓ | Move the selected project or session up / down (a queued message instead, while one is open in the composer) | Session | `sidebar.moveUp` / `sidebar.moveDown` |
+| ⌥⌘↑ / ⌥⌘↓ | Move the selected project or task up / down (a queued message instead, while one is open in the composer) | Task | `sidebar.moveUp` / `sidebar.moveDown` |
 | ⌘Z / ⇧⌘Z | Undo / redo the window's latest change, newest first: typing, or archiving, renaming, pinning or deleting a task or project (a deletion until it's carried out). The undo toast's Undo takes back the same change, once | Edit | |
-| ⇧⌘A | Archive the selected task and open the next task in the sidebar's current filter and sort order (or the previous task at the end). ⌘Z or the toast's Undo restores and reopens it. Unarchive an archived task; with several tasks picked, archive them all | Session | `session.archive` |
+| ⇧⌘A | Archive the selected task and open the next task in the sidebar's current filter and sort order (or the previous task at the end). ⌘Z or the toast's Undo restores and reopens it. Unarchive an archived task; with several tasks picked, archive them all | Task | `session.archive` |
 | ⌥⌘J | Turn the sidebar's Needs you filter on or off (its filter menu has the rest) | View | `view.needsYouFilter` |
 | ⌘⇧P | Pull requests | Go | `go.pullRequests` |
 | ⌘⇧X | Expeditions | Go | `go.expeditions` |
 | ⇧⌘F | Search every task (`docs/search.md`) | Go | `search.show` |
 | ⌥⌘I | Show or hide the subagent inspector | View | `view.toggleSubagentInspector` |
 | ⌘⇧D | Show or hide the changes inspector (the task's uncommitted git changes) | View | `view.toggleChanges` |
-| ⌃⌘M | Show the session's MCP servers (the server chip beside the composer's context ring) | View | `view.mcpServers` |
+| ⌃⌘M | Show the task's MCP servers (the server chip beside the composer's context ring) | View | `view.mcpServers` |
 | ⌃⌘A | Keep Mac awake: cycle Off → While agents work → On (View ▸ Keep Mac Awake) | View | `keepAwake.nextMode` |
 | | Show or hide the status bar along the window's bottom edge (on by default) | View | `statusBar.toggle` |
 
@@ -274,53 +274,53 @@ asks first.
 | ⇧-click a sidebar task | Pick every task from the last one picked (or the open task) to it | | |
 | ⌘A with the sidebar focused | Pick every task in the open task's project (in Pinned, every pinned task) | | |
 | Escape with tasks picked | Let them go | | |
-| | Select Tasks: taps pick instead of opening (also in the filter popover on iPad) | Session ▸ Selected Tasks | `sidebar.selectMode` |
-| | Pick every task in the project | Session ▸ Selected Tasks | `sidebar.selectAll` |
-| | Let the picked tasks go | Session ▸ Selected Tasks | `selection.clear` |
-| | Archive the picked tasks | Session ▸ Selected Tasks | `selection.archive` |
-| | Unarchive the picked tasks | Session ▸ Selected Tasks | `selection.unarchive` |
-| | Delete the picked tasks (asks first; Undo for a few seconds) | Session ▸ Selected Tasks | `selection.delete` |
-| | Mark the picked tasks as read | Session ▸ Selected Tasks | `selection.markRead` |
-| | Mark the picked tasks as unread | Session ▸ Selected Tasks | `selection.markUnread` |
-| | Pin the picked tasks | Session ▸ Selected Tasks | `selection.pin` |
-| | Unpin the picked tasks | Session ▸ Selected Tasks | `selection.unpin` |
-| | Stop the turns running in the picked tasks | Session ▸ Selected Tasks | `selection.stop` |
+| | Select Tasks: taps pick instead of opening (also in the filter popover on iPad) | Task ▸ Selected Tasks | `sidebar.selectMode` |
+| | Pick every task in the project | Task ▸ Selected Tasks | `sidebar.selectAll` |
+| | Let the picked tasks go | Task ▸ Selected Tasks | `selection.clear` |
+| | Archive the picked tasks | Task ▸ Selected Tasks | `selection.archive` |
+| | Unarchive the picked tasks | Task ▸ Selected Tasks | `selection.unarchive` |
+| | Delete the picked tasks (asks first; Undo for a few seconds) | Task ▸ Selected Tasks | `selection.delete` |
+| | Mark the picked tasks as read | Task ▸ Selected Tasks | `selection.markRead` |
+| | Mark the picked tasks as unread | Task ▸ Selected Tasks | `selection.markUnread` |
+| | Pin the picked tasks | Task ▸ Selected Tasks | `selection.pin` |
+| | Unpin the picked tasks | Task ▸ Selected Tasks | `selection.unpin` |
+| | Stop the turns running in the picked tasks | Task ▸ Selected Tasks | `selection.stop` |
 
-## Session settings
+## Task settings
 
 With the Quiet composer experiment enabled, each setting is a plain-word button under the draft.
-The same keys below still apply. The agent name opens New Session With (⌥⌘N); it does not move the
+The same keys below still apply. The agent name opens New Task With (⌥⌘N); it does not move the
 current conversation to another agent. Tab reaches the buttons, Space opens their pickers, and
 Escape closes a picker.
 
 | Keys | Action | Menu | Command |
 | --- | --- | --- | --- |
-| ⌘⇧M | Next permission mode | Session | `session.nextPermissionMode` |
-| ⌃⇧M | Next mode: Build, Plan, Ask, Debug, Review, then your own modes and the project's (the composer's Mode pill) | Session ▸ Mode | `session.nextMode` |
-| | Put the task in a mode, one command per mode ("Debug Mode"); your own and the project's modes get theirs too | Session ▸ Mode | `mode.build` / `mode.plan` / `mode.ask` / `mode.debug` / `mode.review` |
-| | Edit Modes… (Settings ▸ Modes) | Session ▸ Mode | `modes.edit` |
-| ⌘⇧E | Model picker | Session | `session.chooseModel` |
-| ⌥⌘G | Set or edit the session's goal | Session | `goal.edit` |
-| ⌥⌘R | Run a workflow | Session | `workflow.run` |
+| ⌘⇧M | Next permission mode | Task | `session.nextPermissionMode` |
+| ⌃⇧M | Next mode: Build, Plan, Ask, Debug, Review, then your own modes and the project's (the composer's Mode pill) | Task ▸ Mode | `session.nextMode` |
+| | Put the task in a mode, one command per mode ("Debug Mode"); your own and the project's modes get theirs too | Task ▸ Mode | `mode.build` / `mode.plan` / `mode.ask` / `mode.debug` / `mode.review` |
+| | Edit Modes… (Settings ▸ Modes) | Task ▸ Mode | `modes.edit` |
+| ⌘⇧E | Model picker | Task | `session.chooseModel` |
+| ⌥⌘G | Set or edit the task's goal | Task | `goal.edit` |
+| ⌥⌘R | Run a workflow | Task | `workflow.run` |
 
 ## Choosing an agent
 
-New Session With… (⌥⌘N) opens the agent picker in a sheet: every agent Native runs, each with
+New Task With… (⌥⌘N) opens the agent picker in a sheet: every agent Native runs, each with
 its state (ready, starting, needs sign-in, not installed, stopped) and, when it can't start a
-session, why and what to do, with the fix (Check Again, Restart) beside it. It opens with the
+task, why and what to do, with the fix (Check Again, Restart) beside it. It opens with the
 keyboard in its filter and the default agent (the one ⌘N starts) highlighted. Add Agent… at the
 end lists the agents Native knows but can't find. Close dismisses the picker with pointer or touch.
 
 | Keys (picker open) | Action |
 | --- | --- |
 | Type | Narrow the list by name; letters in order match too |
-| ↑ / ↓, ⌃N / ⌃P | Move between the agents that can start a session (and Add Agent…) |
-| Return | Start the session with the highlighted agent; one that needs sign-in signs in first, then starts it |
+| ↑ / ↓, ⌃N / ⌃P | Move between the agents that can start a task (and Add Agent…) |
+| Return | Start the task with the highlighted agent; one that needs sign-in signs in first, then starts it |
 | Escape | Clear the filter; with it empty, close the picker |
 
 ## Choosing a device
 
-New Session's device picker says where the task runs: This Mac or a paired host (Settings ▸ Hosts),
+New Task's device picker says where the task runs: This Mac or a paired host (Settings ▸ Hosts),
 each with whether it's online and has the project. It opens with the keyboard in its list; devices
 that can't take the task stay listed, dimmed, with the reason.
 
@@ -344,7 +344,9 @@ that can't take the task stay listed, dimmed, with the reason.
 
 ## Search
 
-The search panel (⇧⌘F) keeps focus in its field, so typing always refines the search.
+The search panel (⇧⌘F, Go ▸ Search Tasks…, or the magnifying glass in the window toolbar between
+the sidebar toggle and the history arrows) keeps focus in its field, so typing always refines the
+search. The toolbar button stays available with the sidebar collapsed.
 
 | Keys (panel open) | Action |
 | --- | --- |

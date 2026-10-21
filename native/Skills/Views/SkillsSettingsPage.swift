@@ -85,7 +85,7 @@ struct SkillsSettingsPage: View {
             SettingsHeader(
                 title: "Skills",
                 description: Text(
-                    "Skills teach agents one kind of work. Turn one off and Native leaves it out of every agent's new sessions, without touching its files."
+                    "Skills teach agents one kind of work. Turn one off and Native leaves it out of every agent's new tasks, without touching its files."
                 )
             ) {
                 Button("Install Skill", systemImage: "plus") { isInstalling = true }
@@ -148,8 +148,8 @@ struct SkillsSettingsPage: View {
         if !waiting.isEmpty {
             MCPNotice(
                 text:
-                    "\(waiting.map(\.name).joined(separator: " and ")) applies skill switches when it starts, so it restarts as soon as none of its sessions is working.",
-                tone: .neutral, actionTitle: "Apply to Running Sessions"
+                    "\(waiting.map(\.name).joined(separator: " and ")) applies skill switches when it starts, so it restarts as soon as none of its tasks is working.",
+                tone: .neutral, actionTitle: "Apply to Running Tasks"
             ) {
                 Task { await library.host?.skillApplyLaunchPolicies(force: true) }
             }

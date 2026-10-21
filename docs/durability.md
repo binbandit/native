@@ -535,7 +535,7 @@ form questions (`elicitation`), as the app's own `InitializeRequest` says.
 | --- | --- |
 | `session/list` | every session the host has open, as `HostSessionSummary` |
 | `session/new {sessionID?, agentID, cwd, parentID?, origin, mcpServers, meta?, attach}` | starts a session on an agent. The client may choose the id (it's `SessionContext.clientID`, which plugins key per-session MCP servers by before the session exists); an id the host has returns that session, so a retry never starts two. `meta` is the `_meta` for `session/new` and every `session/load`. With `attach`, the caller follows the session from its first event |
-| `_native/session/open {sessionID?, agentID, agentSessionID, cwd, title?, parentID?, origin, mcpServers, meta?, attach}` | adopts a session the agent listed, replaying it with `session/load`; an agent session already open returns its host session without a reload. With `attach` it answers as soon as the session exists (phase `loading`) and the replay streams in; a load that fails leaves it `disconnected` with its `problem` and a "Couldn't load this session" notice. Without, it answers after the load and a failure throws |
+| `_native/session/open {sessionID?, agentID, agentSessionID, cwd, title?, parentID?, origin, mcpServers, meta?, configChoices?, configDefaults?, attach}` | adopts a session the agent listed, replaying it with `session/load`; an agent session already open returns its host session without a reload. With `attach` it answers as soon as the session exists (phase `loading`) and the replay streams in; a load that fails leaves it `disconnected` with its `problem` and a "Couldn't load this session" notice. Without, it answers after the load and a failure throws. `configDefaults` carries explicit Settings defaults by ACP category (`model`, `thought_level`); after load the host fills only choices absent from its saved record, applies model before effort, and pins the result. Existing choices (including closed-session choices and pre-host `configChoices`) win, and an already loaded session is unchanged |
 | `_native/session/attach {sessionID, epoch?, afterSeq?}` | replays the session's events as notifications, then answers; live events follow |
 | `_native/session/detach`, `_native/session/close {sessionID, closeInAgent}` | stop following; stop tracking (history stays with the agent), and with `closeInAgent` free it in the agent's process (`session/close`) |
 | `_native/session/set_mcp_servers {sessionID, mcpServers, replacingNamed}` | the MCP servers the agent gets at the session's next load (a loaded session keeps its own): the whole list, or with `replacingNamed` an upsert by name that leaves other servers alone. Nothing is written when nothing changed. For servers whose address changed since the session opened (Native's orchestration server after a port fallback) |
@@ -718,6 +718,9 @@ reloads the session from the agent (`session/load`), then `RecoveryPlanner` deci
   marked as its own: "Your previous turn was interrupted because …. Check the current state before
   you continue (for example, re-read files you were changing), then carry on. If it was already
   done, say so briefly." Whatever the agent committed is in its history; nothing is re-run blindly.
+  Agents keep that message in their history like any prompt, so a reload replays it; the transcript
+  shows it as Native's ("This turn was interrupted because …. Native asked the agent to pick up where
+  it left off."), never as the user's, and the turn carries on as it did live (`RecoveryPrompt`).
 - **The prompt isn't there** → it never arrived, so sending it again is safe.
 - **Three recoveries of the same turn already failed** → pause, so a crashing agent can't loop and
   burn quota. The queue pauses too; the user's next message continues.
@@ -866,14 +869,21 @@ not to (`provider: off`).
   `instructions` are the user's title instructions (global, per project, the organization's), which
   the host applies for each task's folder. Only the owner, or a device allowed to manage the host,
   may change it.
-- **When.** As a task's first message starts its turn (not a session adopted from the agent's list,
-  not one with earlier messages), the host commits what the title is written from (project name,
+- **When.** As a task's first usable message starts its turn (not a session adopted from the agent's list),
+  the host commits what the title is written from (project name,
   the message up to 2,000 characters, `progress: generating`) and then writes it. Committed first,
-  so a host that stops mid-title writes it at its next start.
+  so a host that stops mid-title writes it at its next start. Content-only API prompts and attachment
+  names count too. A first message without usable title material leaves the next turn eligible.
+- **Retries.** A failed or unavailable generator gets one retry on the next ordinary turn, using
+  the original request. The host persists `retry_count` and the original `prompt_id`, so restarting
+  cannot reset the budget and automatic delivery resends cannot spend it before a new prompt.
+  Client title requests carry this number too, letting the app distinguish the retry from repeated
+  summaries. Generated and manually renamed titles are never retried. With host titles off, the
+  app uses the same decision rules and retries once during that app run.
 - **No model on the host** (Apple Intelligence off on a Mac mini, a Linux host), or provider
   `client`: the summary's `titles.request` asks clients, and the first one with a titler writes it
   and sends it with `_native/session/set_title {source: generated}`. Meanwhile, and when the model
-  failed, `titles.fallback` names the task from its first message (its first line, cut after eight
+  failed or is still generating, `titles.fallback` names the task from its first message (its first line, cut after eight
   words), shown after the agent's own title, so a task is never nameless while there's anything to
   name it by.
 - **The user's title wins.** A rename, from any client, and its undo (the previous title, or none)

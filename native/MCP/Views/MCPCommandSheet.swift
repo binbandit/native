@@ -25,7 +25,7 @@ struct MCPCommandSheet: View {
         case .add:
             "\(command.format.displayName) saves it in its own configuration, so it loads the server outside Native too."
         case .remove:
-            "\(command.format.displayName) stops loading it in new sessions. Native's own copy, if you set one up, isn't affected."
+            "\(command.format.displayName) stops loading it in new tasks. Native's own copy, if you set one up, isn't affected."
         case .signIn:
             "\(command.format.displayName) opens your browser to sign in and keeps the token itself. Come back here when the page says you're done."
         }

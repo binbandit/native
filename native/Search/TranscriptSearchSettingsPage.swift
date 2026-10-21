@@ -20,7 +20,7 @@ extension SettingsPane {
             searchEntries: {
                 [
                     SettingsSearchEntry(
-                        id: TranscriptSearchSettingsPage.historyRow, title: "Include agents' past sessions",
+                        id: TranscriptSearchSettingsPage.historyRow, title: "Include agents' past tasks",
                         keywords: ["history", "backfill"]),
                     SettingsSearchEntry(
                         id: TranscriptSearchSettingsPage.excludedRow, title: "Excluded projects",
@@ -57,13 +57,13 @@ struct TranscriptSearchSettingsPage: View {
             SettingsRowGroup {
                 SettingsRow(
                     id: Self.historyRow,
-                    "Include agents' past sessions",
+                    "Include agents' past tasks",
                     description: Text(
-                        "Also index the sessions your agents keep in their own history, including ones started outside Native. Read only; nothing there changes."
+                        "Also index the tasks your agents keep in their own history, including ones started outside Native. Read only; nothing there changes."
                     ),
                     detail: indexingDetail.map(Text.init)
                 ) {
-                    SettingsSwitch("Include agents' past sessions", isOn: $center.includesAgentHistory)
+                    SettingsSwitch("Include agents' past tasks", isOn: $center.includesAgentHistory)
                 }
                 if let days = PolicyCenter.shared.policy.searchRetentionDays {
                     SettingsRow(
@@ -93,7 +93,7 @@ struct TranscriptSearchSettingsPage: View {
             }
             SettingsSubheading(
                 "Excluded projects",
-                note: "Sessions in these folders are never indexed, and are removed from the index.")
+                note: "Tasks in these folders are never indexed, and are removed from the index.")
             SettingsRowGroup {
                 ForEach(center.excludedFolders, id: \.self) { folder in
                     SettingsRow(URL(filePath: folder).lastPathComponent, description: Text(folder)) {
@@ -105,7 +105,7 @@ struct TranscriptSearchSettingsPage: View {
                 SettingsRow(
                     id: Self.excludedRow,
                     center.excludedFolders.isEmpty ? "No excluded projects" : "Exclude another project",
-                    description: Text("Keep a project's sessions out of search, such as one with sensitive work."),
+                    description: Text("Keep a project's tasks out of search, such as one with sensitive work."),
                     detail: excludeUnavailableReason.map(Text.init)
                 ) {
                     Menu("Exclude Project") {
@@ -144,7 +144,7 @@ struct TranscriptSearchSettingsPage: View {
     private var indexingDetail: String? {
         switch center.indexing {
         case .idle: nil
-        case .indexing(let done, let total): "Indexing: \(done) of \(total) sessions."
+        case .indexing(let done, let total): "Indexing: \(done) of \(total) tasks."
         case .paused(let done, let total):
             "Paused on battery at \(done) of \(total); continues when your Mac is plugged in."
         }

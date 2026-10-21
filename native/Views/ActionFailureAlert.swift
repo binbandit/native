@@ -28,7 +28,7 @@ private struct ActionFailureAlert: ViewModifier {
 #Preview("Action failure") {
     let app = AppModel.preview()
     app.actionFailure = AppModel.ActionFailure(
-        "Couldn’t Start a Session", "Codex isn’t signed in. Run `codex login` in Terminal, then try again.")
+        "Couldn’t Start a Task", "Codex isn’t signed in. Run `codex login` in Terminal, then try again.")
     return Color.dsBackground
         .frame(width: 480, height: 320)
         .actionFailureAlert()

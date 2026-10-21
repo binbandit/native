@@ -39,7 +39,7 @@ enum HomePreviewFixtures {
         task("1", "Queue follow-ups while a turn runs", agent: 0, project: 0, minutesAgo: 4),
         task("2", "Fix flaky permission request test", agent: 1, project: 0, minutesAgo: 52),
         task("3", "Landing page hero", agent: 2, project: 1, minutesAgo: 3 * 60),
-        task("4", "Session titles from the first prompt", agent: 0, project: 0, minutesAgo: 26 * 60),
+        task("4", "Task titles from the first prompt", agent: 0, project: 0, minutesAgo: 26 * 60),
         task("5", "Steering support in the Codex adapter", agent: 1, project: 2, minutesAgo: 4 * 24 * 60),
         task("6", "Diff view word wrapping", agent: 0, project: 0, minutesAgo: 9 * 24 * 60),
     ]

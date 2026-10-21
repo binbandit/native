@@ -13,7 +13,7 @@ linked doc says how) but not built: say so, and don't invent a way around it.
 ## If you're an agent
 
 **Start with `setup_status`** on the `native` MCP server. It's read-only and reports, for the Mac
-your session runs on, six checks in this order:
+your task runs on, six checks in this order:
 
 1. **Native**: version, build and channel (`stable`, `beta`, `nightly`, or `dev` for a build run from
    source).
@@ -21,8 +21,8 @@ your session runs on, six checks in this order:
    `not_installed`, `turned_off`, `not_allowed`), `sign_in` (`signed_in`, `needs_sign_in`,
    `signing_in`, `unknown`), the version it reported, how Native launches it, the command missing from
    the PATH, and its plugin's install and sign-in commands. `is_caller` marks the agent you are.
-   Native only learns an agent is signed out when it turns a session away, so `unknown` is normal
-   for an agent with no session open yet.
+   Native only learns an agent is signed out when it turns a task away, so `unknown` is normal
+   for an agent with no task open yet.
 3. **Durable host**: the background host that keeps agents running after Native quits, and that
    paired devices connect through: `off`, `starting`, `connected`, `reconnecting`, `unreachable`,
    `incompatible`, `needs_approval` or `failed`, with its version.
@@ -45,7 +45,7 @@ same fields. Call it again after the user changes something, rather than assumin
   the login shell's PATH. Ask before editing shell startup files (`~/.zprofile`, `~/.zshrc`).
 - Download a release with `gh release download` or `curl`, when the user wants you to.
 - Write a `plugin.json` into Native's plugins folder, for an agent Native doesn't know or an MCP
-  server every session should get. Read the `build-a-native-plugin` skill first; this skill's
+  server every task should get. Read the `build-a-native-plugin` skill first; this skill's
   "On this Mac" section names the folder Native reads.
 - Draft a project's scripts ([docs/scripts.md](https://github.com/binbandit/native/blob/main/docs/scripts.md)),
   a Ghostty config, or a configuration profile from the sample, and write it where the user says. A
@@ -143,7 +143,11 @@ terminal, then Restart Claude Code from its ⋯ menu.
 through switching tasks, relaunching and agent restarts. A new task starts on what the user last
 picked for that agent in any task (`AgentSessionDefaults.lastUsed`); under each agent in Settings ▸
 Agents, "Defaults for new tasks" can pin a model and effort instead, and a project's model
-(Settings ▸ Projects) wins over both. Settings ▸ General ▸ Follow-up behavior chooses whether
+(Settings ▸ Projects) wins over both. When opening an existing task with no saved model or effort,
+Native applies that agent's explicit Settings default for the missing choice and saves the result
+for future opens, even if the task started outside Native. Without an offered Settings default,
+the task keeps what the agent reports. Saved choices always win.
+Settings ▸ General ▸ Follow-up behavior chooses whether
 Return queues a message for after the turn (Queue) or adds it to the turn in progress (Steer).
 
 An agent Native doesn't know is a plugin: see the `build-a-native-plugin` skill.
@@ -178,7 +182,7 @@ signed in (`gh auth login`), and sets whether pull requests open in Native or th
 Settings ▸ MCP Servers has two lists:
 
 - **Set up in Native**: servers Native hands to the agents and projects chosen for each (all of
-  them by default), in every session they start. Add Server takes a name and a local command (run
+  them by default), in every task they start. Add Server takes a name and a local command (run
   with the user's shell environment, so `npx` and `uvx` work) with environment variables, or a
   remote URL with headers. Import into Native, on a row in the other list, copies an agent's own
   server here.
@@ -188,18 +192,18 @@ Settings ▸ MCP Servers has two lists:
 
 Check All starts or reaches every server, lists its tools and disconnects, without calling any; a
 row's details show its tools and how much context their definitions take. Each row's switch turns a
-server off for new sessions, and its ⋯ menu sets how agents reach it (Agents Reach It):
+server off for new tasks, and its ⋯ menu sets how agents reach it (Agents Reach It):
 
-- **Loaded into Each Session**, the default.
+- **Loaded into Each Task**, the default.
 - **Through Native's Scripts**: agents don't load the server; they call its tools from Native's
-  `run_script` instead, so a heavy server (one with a hundred tools can take most of a session's
+  `run_script` instead, so a heavy server (one with a hundred tools can take most of a task's
   context) costs nothing until it's used. Needs a build with the script runtime, and the
   organization can turn scripts off.
 
-Changes apply to sessions started afterwards. Claude Code gets them per session; Codex reads them
-when it restarts (Native restarts it once idle, or right away with Apply to Running Sessions), and
+Changes apply to tasks started afterwards. Claude Code gets them per task; Codex reads them
+when it restarts (Native restarts it once idle, or right away with Apply to Running Tasks), and
 for Codex switching a server off is best effort. Cursor's own servers can't be switched off from
-Native. ⌃⌘M shows the current session's servers. Why each agent behaves this way:
+Native. ⌃⌘M shows the current task's servers. Why each agent behaves this way:
 [docs/agent-session-overrides.md](https://github.com/binbandit/native/blob/main/docs/agent-session-overrides.md).
 
 A server that should come with Native everywhere can also be a plugin (`build-a-native-plugin`).
@@ -209,7 +213,7 @@ A server that should come with Native everywhere can also be a plugin (`build-a-
 Settings ▸ Skills lists every skill the user's agents load (from user, project and agent folders),
 grouped by name, with one switch per skill that applies across agents, globally or per project.
 Install Skill takes a git URL, `owner/repo`, a folder or a skill from skills.sh, shows every file
-before writing anything, and can be undone. Switches reach Claude Code per session and Codex at
+before writing anything, and can be undone. Switches reach Claude Code per task and Codex at
 launch; Cursor, OpenCode, Pi and Copilot can't be switched from Native, and their rows say so.
 Details: [docs/skills.md](https://github.com/binbandit/native/blob/main/docs/skills.md).
 
@@ -276,7 +280,7 @@ configuration on each machine.
 
 ### The durable host
 
-Native's background host runs agents outside the app, so its sessions keep going when the window
+Native's background host runs agents outside the app, so its tasks keep going when the window
 closes, Native quits or it updates, and it resumes interrupted turns after a crash or a restart.
 It's on by default: Settings ▸ Background ▸ "Keep agents running when Native quits" turns it off,
 for troubleshooting, from the next launch. On a release build it registers as a login item named
@@ -359,16 +363,16 @@ manage. The keys:
 | Key | Manages |
 | --- | --- |
 | `policy.agents.allowed`, `policy.agents.environment` | which agents may run; extra environment per agent, such as routing Claude Code through Bedrock or Vertex |
-| `policy.mcp.allowed`, `policy.mcp.blocked`, `policy.mcp.required` | MCP servers by name or `command:` pattern; servers every session gets |
+| `policy.mcp.allowed`, `policy.mcp.blocked`, `policy.mcp.required` | MCP servers by name or `command:` pattern; servers every task gets |
 | `policy.plugins.allowed` | which plugins may load |
-| `policy.skills.blocked` | skills turned off for every session |
+| `policy.skills.blocked` | skills turned off for every task |
 | `policy.permissions.forbiddenModes` | permission modes users can't pick |
 | `policy.scripts.enabled`, `policy.labs.enabled` | the script runtime and `run_script`; Labs and experiments |
 | `policy.taskScripts.userScripts`, `policy.taskScripts.repositoryScripts` | task scripts written in Native; ones committed to repositories (docs/scripts.md) |
 | `policy.companion.enabled` | pairing devices |
 | `policy.remoteHosts.enabled` | remote hosts, which aren't available yet |
 | `policy.updates.feedURL`, `policy.updates.enabled`, `policy.updates.channels` | an internal update feed, updates off, allowed channels |
-| `policy.search.retentionDays` | how long search keeps sessions |
+| `policy.search.retentionDays` | how long search keeps tasks |
 | `policy.shortcuts.bindings` | shortcuts, in the format Settings ▸ Keyboard shortcuts exports |
 | `policy.telemetry.native`, `policy.telemetry.endpoints` | Native's own telemetry (`on`, `off`, or `user`); the organization's OpenTelemetry collectors |
 
@@ -384,9 +388,9 @@ managed for testing with `defaults write <bundle id> policy.debug.managedKeys -a
 
 Go through `setup_status` in its order, fixing the first problem before the next:
 
-1. **No `native` tools in your session.** The Orchestration extension is off (Settings ▸
+1. **No `native` tools in your task.** The Orchestration extension is off (Settings ▸
    Extensions), or the agent doesn't pass Native's MCP servers on: Pi's adapter doesn't yet, so Pi
-   sessions never see them. Use another agent for setup.
+   tasks never see them. Use another agent for setup.
 2. **An agent is `not_installed`.** Install the missing command, make sure a login shell finds it,
    then Settings ▸ Agents ▸ Add an Agent ▸ Check Again. For adapters, `npx` (Node.js) must be on the
    PATH too.

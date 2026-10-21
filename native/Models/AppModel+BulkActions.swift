@@ -28,7 +28,7 @@ extension AppModel {
             model.archiveAgain(archived)
         }
         for (key, project) in listed where archivedSessions.contains(key) {
-            _ = await putAwayWorkspace(of: key, titled: titles[key] ?? "New Session", in: project)
+            _ = await putAwayWorkspace(of: key, titled: titles[key] ?? "New Task", in: project)
         }
     }
 

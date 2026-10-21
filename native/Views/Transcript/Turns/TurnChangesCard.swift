@@ -118,6 +118,9 @@ struct TurnChangesActions {
     var commitForm: ((Binding<Bool>) -> AnyView)?
     /// Opens the changes inspector on one file's changes in this turn, by the path the card lists.
     var reviewFile: ((String) -> Void)?
+    /// What the latest turn changed as git sees it, whatever made the change; the card lists these
+    /// in place of the agent's reported edits, so a turn that edited through the shell gets one too.
+    var latestTurnChanges: TurnDetectedChanges?
 }
 
 /// A file row that opens its changes: a list row's hover fill, a shade darker while pressed.
@@ -142,3 +145,13 @@ extension EnvironmentValues {
     /// Next steps for the files-changed card; nil where there are none (a subagent's transcript).
     @Entry var turnChangesActions: TurnChangesActions?
 }
+
+#if DEBUG
+#Preview("Turn changes - Committed, long paths and binary file") {
+    DSPreviewPair {
+        TurnChangesCard(summary: TurnChangesPreviewFixtures.summary)
+            .environment(\.turnChangesActions, TurnChangesActions(review: {}, reviewFile: { _ in }))
+            .frame(width: 460)
+    }
+}
+#endif

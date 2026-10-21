@@ -8,7 +8,7 @@ struct AppearancePreviewWindow: View {
         let shape = RoundedRectangle(cornerRadius: DS.Radius.panel, style: .continuous)
         HStack(spacing: 0) {
             VStack(alignment: .leading, spacing: DS.Space.xxs) {
-                row("New Session")
+                row("New Task")
                 row("Sidebar polish", isSelected: true)
                 row("Fix flaky test")
             }

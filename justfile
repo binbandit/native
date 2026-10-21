@@ -54,7 +54,7 @@ install configuration="Release":
 run name="dev" *args:
     scripts/dev/run-isolated.sh {{name}} {{args}}
 
-# Drive an isolated instance through Accessibility, scoped to its process (`just drive mine press "New Session"`; docs/playtesting.md).
+# Drive an isolated instance through Accessibility, scoped to its process (`just drive mine press "New Task"`; docs/playtesting.md).
 [positional-arguments]
 drive name *args:
     @scripts/dev/drive.sh "$@"

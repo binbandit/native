@@ -245,9 +245,9 @@ final class AppTaskRuntime {
 
         var errorDescription: String? {
             switch self {
-            case .closed: "That session is no longer open in Native."
+            case .closed: "That task is no longer open in Native."
             case .unavailable(let agent):
-                "That session can't take messages right now: it's loading, or \(agent) stopped running."
+                "That task can't take messages right now: it's loading, or \(agent) stopped running."
             }
         }
     }

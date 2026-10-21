@@ -46,7 +46,7 @@ struct SetupReportTests {
         #expect(summary.contains("2. Agents (1 of 3 ready):"))
         #expect(
             summary.contains(
-                "- Codex (`codex`): ready and signed in. Reports codex-acp 2.2.2. This session runs on it."))
+                "- Codex (`codex`): ready and signed in. Reports codex-acp 2.2.2. This task runs on it."))
         #expect(
             summary.contains(
                 "- Claude Code (`claude-code`): not installed: `claude` isn't on the login shell's PATH. Install with `npm install -g @anthropic-ai/claude-code`. Then Settings ▸ Agents ▸ Add an Agent ▸ Check Again."
