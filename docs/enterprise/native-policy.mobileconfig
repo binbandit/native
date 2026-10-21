@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  A sample configuration profile for Native, with every policy key (docs/enterprise.md).
+  A sample configuration profile for Native, with every policy key (docs/enterprise.md and
+  docs/catalog-policy.md).
 
   Deploy it with your device management (Jamf, Kandji, Intune). macOS applies the settings as
   forced preferences for Native's bundle id, which Native shows as "Managed by your organization".
@@ -107,6 +108,14 @@
             <array>
                 <string>acme-tools</string>
             </array>
+
+            <!-- Inputs for a future plugin catalog consumer (docs/catalog-policy.md). These are
+                 validated but do not yet control catalog fetching, installation or plugin loading.
+                 A mirror may remain configured while the catalog is disabled. -->
+            <key>policy.catalog.enabled</key>
+            <false/>
+            <key>policy.catalog.indexURL</key>
+            <string>https://catalog.example.com/index.json</string>
 
             <!-- Skills, by name, denied in every session. -->
             <key>policy.skills.blocked</key>

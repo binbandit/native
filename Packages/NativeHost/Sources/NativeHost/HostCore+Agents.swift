@@ -137,8 +137,19 @@ extension HostCore {
         {
             adoptSubagent(child, of: session, on: link)
         }
+        if update.kind == "config_option_update", session.loading != nil, session.record.origin != .announced {
+            session.loadingConfigOptions =
+                (try? JSONDecoder().decode(JSONValue.self, from: update.json))?["configOptions"]
+            return
+        }
         let hadTitle = session.record.title
         append(update, to: session)
+        if update.kind == "config_option_update", session.record.origin != .announced, session.loading == nil,
+            !session.needsLoad, case .configOptions(let options)? = update.decoded
+        {
+            // The agent changed a setting itself; what a load reports is set back instead (`performLoad`).
+            pinConfig(options, of: session)
+        }
         if session.record.title != hadTitle {
             try? store.updateSession(session.record)
             publish(session)
