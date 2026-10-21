@@ -1,6 +1,8 @@
 """Exercise actual Git diffs, including changes the mobile pipeline must skip."""
 
 import datetime as dt
+import json
+import sys
 import importlib.util
 from pathlib import Path
 import subprocess
@@ -99,6 +101,47 @@ class TestFlightMetadataTests(unittest.TestCase):
         for run, attempt in [(0, 1), (999901, 1), (1, 100)]:
             with self.assertRaises(ValueError):
                 metadata.build_version(run, attempt)
+
+    def test_upload_only_retry_allocates_fresh_metadata(self):
+        # The source-selection job's outputs remain from attempt 1. Only this CLI runs again.
+        script = Path(metadata.__file__).resolve()
+        selection = self.root / "selection.json"
+        subprocess.run([sys.executable, str(script), "--select-only", "--output", str(selection)],
+                       cwd=self.root, check=True, capture_output=True)
+        self.assertNotIn("build", json.loads(selection.read_text()))
+        results = []
+        for attempt in (1, 2):
+            output = self.root / f"attempt-{attempt}.json"
+            subprocess.run([sys.executable, str(script), "--run-number", "101", "--attempt", str(attempt),
+                            "--output", str(output)], cwd=self.root, check=True, capture_output=True)
+            results.append(json.loads(output.read_text()))
+        self.assertEqual(results[0]["sha"], results[1]["sha"])
+        self.assertNotEqual(results[0]["build"], results[1]["build"])
+        self.assertIn(results[1]["build"], results[1]["notes"])
+
+    def test_older_run_retry_is_refused_after_newer_publication(self):
+        self.assertLess(metadata.build_version(101, 2), metadata.build_version(102, 1))
+        with self.assertRaisesRegex(ValueError, "superseded"):
+            metadata.require_current_run(101, 102)
+        metadata.require_current_run(102, 102)
+
+    def test_rehearsals_and_pull_requests_do_not_supersede_publication(self):
+        self.assertTrue(metadata.is_publish_run({"head_branch": "main", "event": "push",
+                                                "display_title": "TestFlight publish"}))
+        self.assertFalse(metadata.is_publish_run({"head_branch": "main", "event": "workflow_dispatch",
+                                                 "display_title": "TestFlight rehearsal"}))
+        self.assertFalse(metadata.is_publish_run({"head_branch": "main", "event": "pull_request",
+                                                 "display_title": "TestFlight publish"}))
+
+    def test_latest_publication_lookup_paginates_past_rehearsals(self):
+        rehearsal = {"head_branch": "main", "event": "workflow_dispatch",
+                     "display_title": "TestFlight rehearsal", "run_number": 103}
+        publish = {"head_branch": "main", "event": "push", "display_title": "TestFlight publish", "run_number": 102}
+        with patch.object(metadata.subprocess, "check_output", side_effect=[
+                json.dumps({"workflow_runs": [rehearsal] * 100}),
+                json.dumps({"workflow_runs": [publish]})]) as query:
+            self.assertEqual(metadata.latest_publish_run("example/repo"), 102)
+            self.assertIn("page=2", query.call_args.args[0][-1])
 
     def test_daily_version_and_sha_notes(self):
         now = dt.datetime(2026, 10, 21, tzinfo=dt.timezone.utc)

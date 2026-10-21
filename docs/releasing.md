@@ -462,8 +462,10 @@ skips when those mobile sources are unchanged. It moves the checkpoint only afte
 and processes the upload and the commit notes are attached. An upload failure therefore retries
 on the next nightly. A source revert counts as a change. Daily releases use calendar versions
 (`2026.10.21`, then `2026.10.22`); main builds use their commit's UTC date. All runs share the same
-workflow run counter for unique, increasing Apple build numbers, including reruns: run 101,
-attempt 1 is `2.0.1`. The SHA and commit subject appear in TestFlight's **What to Test** notes.
+workflow run counter for unique Apple build numbers: run 101, attempt 1 is `2.0.1`.
+The upload job allocates the number and notes itself, so rerunning only failed jobs uses the
+current attempt. An older run is refused once a newer main publishing run exists; dispatch a new
+main run to retry it. Rehearsals and pull requests do not supersede publishing runs. The SHA and commit subject appear in TestFlight's **What to Test** notes.
 Apple's version fields remain numeric. No source-version commits are generated.
 
 Uploads run only from `main`, never pull requests, and use `MACOS_RUNNER` (GitHub hosted), never
