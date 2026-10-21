@@ -71,6 +71,7 @@ public struct NativePolicy: Equatable, Sendable {
     /// Ids of the plugins installed from manifests that may load; nil allows all. Built-in plugins
     /// are part of Native and governed by their own keys.
     public var allowedPlugins: Set<String>?
+    public var catalog = Catalog()
     /// Skills, by name, denied in every session.
     public var blockedSkills: [String] = []
     /// Permission mode ids (an agent's `mode` choices) users can't pick.
