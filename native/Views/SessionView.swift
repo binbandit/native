@@ -110,6 +110,7 @@ struct SessionView: View {
         .mcpServersPresentation()
         .focusedSceneValue(\.gitChangesInspector, showsChangesBinding)
         .refreshesGitStatus(of: session, in: git)
+        .detectsTurnChanges(of: session, into: changesReview, in: git)
         .environment(\.transcriptColumnMaxWidth, columnWidth.maxWidth)
     }
 
@@ -139,7 +140,8 @@ struct SessionView: View {
                                 Task { await GitHubGitWiring.createPullRequest(from: repository, gitHub: gitHub) }
                             }))
                 } : nil,
-            reviewFile: { reviewTurn(file: $0) }
+            reviewFile: { reviewTurn(file: $0) },
+            latestTurnChanges: changesReview.latestTurnChanges
         )
     }
 
