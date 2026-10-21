@@ -64,8 +64,7 @@ struct AddHostSheet: View {
                     "SSH destination or pairing link", text: $model.input,
                     prompt: Text(verbatim: "me@mac-mini.local").foregroundStyle(.dsTextTertiary)
                 )
-                .focused($isFieldFocused)
-                .settingsField()
+                .settingsField(focus: $isFieldFocused)
                 .onSubmit(model.submit)
                 .accessibilityLabel("SSH destination or pairing link")
                 // The returning field can take focus once it is in the window.
