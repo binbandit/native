@@ -1,4 +1,3 @@
-#if NATIVE_HOSTSUI_WIP
 import ACP
 import Foundation
 import NativeHostClient
@@ -21,8 +20,10 @@ protocol HostsDirectory {
     func setLook(_ look: HostLook, for device: SessionDevice)
     /// Forgets a paired host on this Mac. Its sessions keep running there. Returns what undoes it.
     func remove(_ host: RemoteHostID) -> (() -> Void)?
-    /// Tries to connect now instead of at the next retry.
-    func reconnect(_ host: RemoteHostID)
+    /// Starts This Mac's background host again, while it isn't answering. A paired host needs no
+    /// such action: its client keeps retrying on its own, and replacing the client would strand
+    /// the runtimes and sessions made on it.
+    func restartLocalHost() async
     /// Sets when a host keeps itself awake, so nobody opens Native on it to change it. Needs a
     /// pairing that may manage the host.
     func setKeepAwake(_ mode: KeepAwakeMode, on device: SessionDevice) async throws
@@ -41,4 +42,3 @@ protocol HostsDirectory {
     /// there themselves. Fails while the agent is working, with a message that says so.
     func checkAgain(_ agent: AgentDefinition.ID, on device: SessionDevice) async throws
 }
-#endif

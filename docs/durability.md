@@ -432,8 +432,9 @@ a symbol and one of the app-icon palettes as its color (`HostLook`), kept on thi
 `HostDevicePicker` behind a `HostDevicePill` (↑ ↓ Return, digits, Escape; docs/keyboard.md), and a
 session on another device carries a `HostDeviceBadge`: the device's glyph on a sidebar row, glyph and
 name in the session header, with the state only while it isn't online. Settings ▸ Hosts lists This
-Mac and every paired host: its connection state (with the reason and Try Now while it's offline,
-what to update when versions differ, Pair Again when the host ended the pairing), what it runs on
+Mac and every paired host: its connection state (the reason while it's offline, with Restart Host
+for This Mac's own host, since a paired host's client retries by itself; what to update when
+versions differ; Pair Again when the host ended the pairing), what it runs on
 (system, Native version, uptime, load and whether it stays awake, from `_native/host/status`), its
 tasks, and its agents with whom each is signed in as. A host can be renamed, given another look,
 or removed: the confirmation says its tasks keep running there but leave this Mac's sidebar, and
@@ -442,7 +443,7 @@ would open it on the host's screen: the sign-in sheet leads with a key (kept in 
 keychain, with Remove) or a link and code to open on any device, then the exact SSH steps
 (`ssh <destination>`, then the agent's own terminal sign-in) and Check Again, and offers the browser
 method last. The page shows only while remote hosts are on; in development builds
-`-NativeHostsFixtures all|empty|signin|components` shows it with made-up hosts.
+`-NativeHostsFixtures all|empty|signin|components|local-offline` shows it with made-up hosts.
 
 **A host's tasks, like this Mac's.** Each paired host gets its own `GitStore` whose git runs on the
 host (`Git.onHost`: `RemoteCommandRunner`, the host's login-shell environment, and its change feed

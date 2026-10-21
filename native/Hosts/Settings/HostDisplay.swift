@@ -1,4 +1,3 @@
-#if NATIVE_HOSTSUI_WIP
 import Foundation
 import NativeHostProtocol
 
@@ -14,11 +13,11 @@ struct HostDisplay: Identifiable {
     var machine = HostMachineSummary()
     var agents: [HostAgentDisplay] = []
     var sessions = HostSessionCounts()
-    /// When it keeps itself awake, while that can be set from here; nil when it can't.
-    var keepAwakeMode: KeepAwakeMode?
-    /// Where `ssh` reaches it from this Mac ("mac-mini.local", "brayden@10.0.0.4"), for signing in
+    /// Where `ssh` reaches it from this Mac ("mac-mini.local", "you@10.0.0.4"), for signing in
     /// on it; nil for This Mac.
     var sshDestination: String?
+    /// When it keeps itself awake, while that can be set from here; nil when it can't.
+    var keepAwakeMode: KeepAwakeMode?
 
     var id: SessionDevice { device }
 
@@ -124,7 +123,7 @@ struct HostAgentDisplay: Identifiable {
     var status: AgentRuntimeStatus
     var needsSignIn = false
     var isSigningIn = false
-    /// What the agent says it's signed in with ("ChatGPT Pro · brayden@example.com", "Not logged
+    /// What the agent says it's signed in with ("ChatGPT Pro · you@example.com", "Not logged
     /// in"), when it says.
     var signInLabel: String?
     /// Whether it says it's signed in; nil when it doesn't say.
@@ -158,4 +157,3 @@ struct HostAgentDisplay: Identifiable {
         isSignedIn.map { !$0 } ?? needsSignIn
     }
 }
-#endif
