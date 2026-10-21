@@ -1,5 +1,6 @@
 import Foundation
 import Git
+import Observation
 import os
 
 /// Where each task turn began (`GitTurnBaseline`), recorded as the turn starts and kept across
@@ -7,6 +8,7 @@ import os
 /// are loose git objects only: no ref, index entry or file the user would see, and git's garbage
 /// collection takes them once they're old, when Review falls back as for an unrecorded turn.
 @MainActor
+@Observable
 final class GitTurnBaselines {
     /// One list for every store (this Mac's and a paired host's), since they share the defaults.
     static let shared = GitTurnBaselines()
@@ -40,6 +42,11 @@ final class GitTurnBaselines {
         baselines.last { $0.session == session && $0.began(at: startedAt) }
     }
 
+    /// Observed by the card detector so a baseline arriving after a short turn triggers a retry.
+    func latestBaseline(of session: SessionKey) -> GitTurnBaseline? {
+        baselines.last { $0.session == session }
+    }
+
     /// Snapshots `repository` for the turn that began at `startedAt`. Runs after the prompt went
     /// out, never before it: the turn's own edits come seconds later, once the agent has thought.
     func record(_ session: SessionKey, startedAt: Date, in repository: Repository) async {
@@ -62,7 +69,7 @@ final class GitTurnBaselines {
 
     /// The snapshot, or nil when git failed, ran past the deadline (and was stopped), or would have
     /// had too many untracked files to store.
-    nonisolated private static func snapshot(of repository: Repository) async -> WorkingTreeSnapshot? {
+    nonisolated static func snapshot(of repository: Repository) async -> WorkingTreeSnapshot? {
         await withTaskGroup(of: WorkingTreeSnapshot?.self) { group in
             group.addTask {
                 guard let untracked = try? await repository.untrackedFileCount(), untracked <= untrackedLimit else {

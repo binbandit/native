@@ -21,6 +21,7 @@ private struct StandardTranscript: View {
     /// Each turn's lines, kept until the turn changes.
     @State private var lineCache = StandardTranscriptLineCache()
     @Environment(TranscriptDisclosures.self) private var disclosures: TranscriptDisclosures?
+    @Environment(\.turnChangesActions) private var changesActions
 
     /// Earlier turns the user opened back up: kept with the transcript's disclosures, so they last
     /// as long as those do.
@@ -31,7 +32,8 @@ private struct StandardTranscript: View {
 
     var body: some View {
         let plan = StandardTranscriptLine.plan(
-            transcript, folding: foldsEarlierTurns, unfolded: unfoldedTurns.wrappedValue, cache: lineCache)
+            transcript, folding: foldsEarlierTurns, unfolded: unfoldedTurns.wrappedValue, cache: lineCache,
+            detected: changesActions?.latestTurnChanges)
         let context = StandardTranscriptLineContext(
             transcript: transcript, revealedLine: revealedLine, unfoldedTurns: unfoldedTurns)
         ScrollViewReader { proxy in
@@ -76,7 +78,8 @@ private struct StandardTranscript: View {
         // Let the unfolded rows lay out before scrolling to one of them.
         try? await Task.sleep(for: .milliseconds(80))
         let lines = StandardTranscriptLine.plan(
-            transcript, folding: foldsEarlierTurns, unfolded: unfoldedTurns.wrappedValue, cache: lineCache
+            transcript, folding: foldsEarlierTurns, unfolded: unfoldedTurns.wrappedValue, cache: lineCache,
+            detected: changesActions?.latestTurnChanges
         ).lines
         let line = lines.first { line in
             switch line.kind {
@@ -162,3 +165,23 @@ private struct QuietThinkingLabel: View {
         .task { await clock.hold() }
     }
 }
+
+#if DEBUG
+#Preview("Transcript - Shell-only changes") {
+    let app = AppModel.preview(.empty)
+    let session = TurnChangesPreviewFixtures.session(in: app)
+    return DSPreviewPair {
+        if let session {
+            ScrollView {
+                StandardTranscript(
+                    transcript: TranscriptStyleConfiguration(
+                        session: session, unfoldsExploration: false, openSubagent: { _ in }, sessionTitle: { _ in nil })
+                )
+            }
+            .environment(app)
+            .environment(\.turnChangesActions, TurnChangesPreviewFixtures.actions(for: session))
+            .frame(width: 600, height: 360)
+        }
+    }
+}
+#endif
