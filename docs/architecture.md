@@ -237,6 +237,16 @@ Scroll positions remain per window in `SessionTranscriptMemory`.
 | Scheduled resumes and similar durable app state | Application Support, owned by the feature |
 | A project's settings (Settings ▸ Projects) | With each value's owner: the name on `Project`, the icon in `ProjectIconStore` (Application Support), git overrides in `GitSettings` by project path, the agent and model under `projectDefaults.<project id>`, scripts, AI instructions and actions with their features (each contributes a section), MCP and skill switches in their libraries |
 
+The latest finished turn's files-changed card also compares its recorded baseline with the working
+tree on the session's host. This includes committed edits and shell commands that report no edit
+tool call. Reported files stay first, with Git's net counts when available; other changed files follow.
+The comparison includes other work in the same folder since the turn began, just like This Turn in
+the inspector. Review carries those detected files into the inspector so it can name them if their
+changes are subsequently undone. Detection runs when the task opens or a turn ends, and retries if
+the repository or baseline arrives later. Its snapshots use the same five-second deadline and
+2,000-untracked-file limit as baseline recording. Without a recorded baseline or a live turn time,
+the card keeps the agent's reported edits rather than attributing a whole branch to that turn.
+
 ## Related docs
 
 - `docs/keyboard.md`: every shortcut.

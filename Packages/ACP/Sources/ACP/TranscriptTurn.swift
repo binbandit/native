@@ -142,6 +142,12 @@ public struct TurnSummary: Hashable, Sendable {
         public var path: String
         public var added = 0
         public var removed = 0
+
+        public init(path: String, added: Int = 0, removed: Int = 0) {
+            self.path = path
+            self.added = added
+            self.removed = removed
+        }
     }
 
     public var linesAdded: Int {
