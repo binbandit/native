@@ -112,7 +112,7 @@ private struct ArchivedTaskRow: View {
             title: title,
             status: .idle,
             isSelected: model.selection == summary.id,
-            date: summary.info.updatedDate,
+            date: model.lastActivity(for: summary),
             indent: .flat,
             style: isQuiet ? .quiet : .standard,
             leading: AgentIcon(agent: summary.agent),

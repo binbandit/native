@@ -85,7 +85,7 @@ struct NewSessionContextBuilder {
                     title: model.title(for: summary),
                     agentName: summary.agent.displayName,
                     status: status(of: live),
-                    date: live?.lastActivity ?? summary.info.updatedDate,
+                    date: model.lastActivity(for: summary),
                     open: { [model] in model.selection = summary.id }
                 )
             }

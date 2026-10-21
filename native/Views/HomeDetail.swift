@@ -108,7 +108,7 @@ struct HomeDetail: View {
     }
 
     private func lastActivity(_ summary: SessionSummary) -> Date? {
-        model.session(summary.id)?.lastActivity ?? summary.info.updatedDate
+        model.lastActivity(for: summary)
     }
 
     private func lastActive(_ summary: SessionSummary) -> Date {

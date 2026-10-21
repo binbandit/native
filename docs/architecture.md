@@ -31,6 +31,9 @@
   tested against captured traffic, and it's shared with the future companion app.
 - **History lives with the agent.** Sessions are listed with `session/list` and reopened with
   `session/load`, which replays them. Native stores only its own additions (titles, order, goals).
+- **Task recency follows activity.** The host's startup snapshot and live summaries supply prompt
+  dates even for completed tasks whose transcripts aren't open. Task lists use the latest known
+  host, live-session or agent-listing date for both ages and order; opening history doesn't change it.
 - **Subagents** are child sessions: announced by agents (the ACP subagents RFD) or started by
   Native's orchestration tools on any agent. Both look and behave the same in the UI.
 

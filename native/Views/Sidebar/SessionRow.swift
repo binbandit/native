@@ -67,7 +67,7 @@ struct SessionRow<Accessory: View>: View {
                 status: TaskStatus(session),
                 isSelected: isSelected,
                 isUnread: isUnread,
-                date: session?.lastActivity ?? summary.info.updatedDate,
+                date: model.lastActivity(for: summary),
                 badge: badge,
                 indent: isQuiet ? .flat : indent,
                 style: isQuiet ? .quiet : .standard,
