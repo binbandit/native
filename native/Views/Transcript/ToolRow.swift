@@ -81,8 +81,9 @@ struct ToolRow<Accessory: View>: View {
         case .running, .awaitingApproval: "progress.indicator"
         case .completed: "checkmark.circle"
         case .failed: "xmark.circle"
-        case .cancelled: "stop.circle"
+        case .cancelled, .interrupted: "stop.circle"
         case .rejected: "hand.raised"
+        case .unreported: "circle.dashed"
         }
     }
 
@@ -154,6 +155,8 @@ struct ToolRow<Accessory: View>: View {
             case .failed: presentation.failureText(exitCode: timing.exitCode)
             case .cancelled: "Stopped"
             case .rejected: "Rejected"
+            case .interrupted: "Interrupted"
+            case .unreported: "No result"
             }
         guard isExpandable else { return status }
         return "\(status), \(isExpanded ? "expanded" : "collapsed")"
@@ -188,6 +191,16 @@ private struct ToolRowStatus: View {
             case .rejected:
                 Text("Rejected")
                     .foregroundStyle(.dsTextTertiary)
+            case .interrupted:
+                Text("Interrupted")
+                    .foregroundStyle(.dsTextTertiary)
+            // The turn ended without the agent saying how this went: no claim either way, and the
+            // clock stopped where the turn did.
+            case .unreported:
+                Text("No result")
+                    .foregroundStyle(.dsTextTertiary)
+                    .help("The agent didn't report how this went")
+                duration
             case .completed, .failed:
                 duration
             }

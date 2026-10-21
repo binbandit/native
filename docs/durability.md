@@ -638,7 +638,7 @@ reducer; Native's own facts are typed events: `reset(loading)`, `loaded`, `promp
 delivered, shown or not, with its request id, attachments and preamble marker; agents don't echo live
 prompts), `permissionRequested`/`permissionResolved`, `questionAsked`/`questionResolved`,
 `turnEnded`, `turnFailed` (with the agent's JSON-RPC error, so `auth_required` and usage-limit data
-survive), `notice` and `recovered`. `SessionMirror` folds a log into a transcript at each event's own
+survive, and `retry` when Native sends the message again by itself), `notice` and `recovered`. `SessionMirror` folds a log into a transcript at each event's own
 time, so a client attaching later times turns the same; the host keeps one per session too (that's
 how it reads an agent's replay), folded only when it reads it. Clients get each event as a
 `SessionMirror.Step`, its agent payload already decoded, from `NativeHostClient.addEventHandler`:
@@ -736,13 +736,21 @@ reloads the session from the agent (`session/load`), then `RecoveryPlanner` deci
 | User cancels during recovery | `session/cancel` while recovering | recovery stops; turn ends as cancelled; queue pauses | "Stopped." |
 | User restarts the agent mid-turn | `_native/agents/restart` | like an agent crash, with its own cause | "You restarted Codex at 2:14 PM. Native asked it to pick up where it left off." |
 | A session the agent never saved can't load | `session/load` fails for a session started here that never finished a turn | starts a fresh agent session under the same host id; recovery then resends the message | the message, answered (nothing was lost: the agent had nothing) |
-| The prompt fails for a passing reason (network, overloaded provider) | the agent's error reads like an outage, and the turn got nowhere | puts the message back at the queue's front, unshown, and sends it again after 5, 20, then 60 s (`retryAt`); Stop cancels the retry | "Codex couldn't be reached (…). Native kept your message and will try again in 5 seconds. Use Stop to cancel." |
-| The agent never confirms a stop | no answer 10 s after `session/cancel`, or Stop again after a second | ends the turn as cancelled on the host's side; a late answer is ignored | "Codex didn't confirm it stopped, so Native stopped waiting. It may still be finishing its last step." |
+| The prompt fails for a passing reason (network, overloaded provider) | the agent's error reads like an outage, and the turn got nowhere | puts the message back at the queue's front, unshown, and sends it again after 5, 20, then 60 s (`retryAt`); Stop cancels the retry | "Codex couldn't be reached (…). Native kept your message and will try again in 5 seconds. Use Stop to cancel." The same notice then says how it went: "Reconnected to Codex, and your message went through on retry." |
+| The agent never confirms a stop | no answer 10 s after `session/cancel`, or Stop again after a second | ends the turn as cancelled on the host's side; a late answer is ignored | "Codex didn't confirm it stopped, so Native stopped waiting. It may still be finishing its last step." Whatever it sends after that shows below the stopped turn, under "The agent kept going after the stop." |
 | Client disconnects mid-turn | socket closes | nothing: the turn runs on; the client re-attaches from its last event | the finished turn, as if it never left |
 | Client quits while an approval or question waits | socket closes | nothing: the agent keeps waiting, and the request stays in the session's log | the next client to attach (the app relaunched, an iPad) shows it and can answer it |
 
 The interruption time comes from the host's heartbeat (written every 30 s), so "at 2:14" is within
 half a minute; for agent crashes it's exact.
+
+**What a turn leaves behind.** ACP has no status for a tool call that didn't run to its end, and agents
+drop final updates, so whenever a turn ends, `SessionState` settles every call still open with only
+what Native knows, and stops its clock: "Stopped" when the user stopped the turn, "Interrupted" when
+the agent or the host went away (recovery, and a command codex-acp replays as failed with exit code -1
+at the end of its turn), and otherwise "No result": the agent never said, so neither success nor
+failure is claimed. A later report from the agent still lands; nothing runs again. The same rules run
+on a replay's end (`loaded`), so a reload tells the same story as the live turn did.
 
 **While you were away.** The activity journal records finished and failed turns, approvals asked,
 and every recovery with its cause and action; each entry carries the agent and its session id, so

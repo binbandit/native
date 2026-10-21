@@ -42,8 +42,10 @@ public struct HostEvent: Codable, Hashable, Sendable {
         /// An ACP stop reason, such as `end_turn` or `cancelled`.
         case turnEnded(stopReason: String)
         /// The prompt request failed instead of ending with a stop reason. `error` is the agent's
-        /// JSON-RPC error, verbatim, when it sent one (`auth_required`, usage-limit data).
-        case turnFailed(message: String, error: RPCError?)
+        /// JSON-RPC error, verbatim, when it sent one (`auth_required`, usage-limit data). With `retry`
+        /// the failure is passing, and Native sends the message again by itself (`SessionState.failTurn`);
+        /// `message` says so too, for clients that predate it.
+        case turnFailed(message: String, error: RPCError?, retry: DeliveryRetry? = nil)
         case notice(text: String, isError: Bool)
         /// The session's turn was cut off and Native did something about it.
         case recovered(RecoveryNote)
@@ -128,7 +130,7 @@ public struct RecoveryNote: Codable, Hashable, Sendable {
 extension HostEvent {
     private enum CodingKeys: String, CodingKey {
         case seq, at, type, loading, update, prompt, toolCallID, request, optionID, questionID, stopReason, message,
-            error, text, isError, recovery
+            error, retry, text, isError, recovery
     }
 
     public init(from decoder: any Decoder) throws {
@@ -160,7 +162,8 @@ extension HostEvent {
             case "turn_failed":
                 .turnFailed(
                     message: try container.decode(String.self, forKey: .message),
-                    error: try container.decodeIfPresent(RPCError.self, forKey: .error))
+                    error: try container.decodeIfPresent(RPCError.self, forKey: .error),
+                    retry: try container.decodeIfPresent(DeliveryRetry.self, forKey: .retry))
             case "notice":
                 .notice(
                     text: try container.decode(String.self, forKey: .text),
@@ -204,10 +207,11 @@ extension HostEvent {
         case .turnEnded(let stopReason):
             try container.encode("turn_ended", forKey: .type)
             try container.encode(stopReason, forKey: .stopReason)
-        case .turnFailed(let message, let error):
+        case .turnFailed(let message, let error, let retry):
             try container.encode("turn_failed", forKey: .type)
             try container.encode(message, forKey: .message)
             try container.encodeIfPresent(error, forKey: .error)
+            try container.encodeIfPresent(retry, forKey: .retry)
         case .notice(let text, let isError):
             try container.encode("notice", forKey: .type)
             try container.encode(text, forKey: .text)

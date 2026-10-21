@@ -16,6 +16,9 @@ public struct TranscriptTurn: Hashable, Sendable, Identifiable {
     /// How the turn ended, once it has: a live turn's from the agent's answer, a replayed one's only
     /// when the agent's history says the user stopped it.
     public var stopReason: StopReason?
+    /// Output the agent sent after its turn was stopped, which isn't part of that turn's flow. It opens
+    /// with a notice saying so, and has no prompt or clock of its own.
+    public var isLateOutput = false
     /// A live turn that hasn't ended. The agent may still have died without ending it, so pair this
     /// with the session's own phase before showing a clock.
     public var isOpen: Bool {
@@ -34,14 +37,16 @@ struct TurnClock: Hashable, Sendable {
     var startedAt: Date
     var endedAt: Date?
     var stopReason: StopReason?
+    /// When its message failed for a passing reason, while Native waits to send it again.
+    var suspendedAt: Date?
 }
 
 extension SessionState {
     /// The transcript split into turns, oldest first. A turn starts at each prompt that wasn't
-    /// steered into a running turn; anything before the first prompt (a subagent's hand-off, say)
-    /// is a turn of its own.
+    /// steered into a running turn, and where an agent's output after a stop begins; anything before
+    /// the first prompt (a subagent's hand-off, say) is a turn of its own.
     public var turns: [TranscriptTurn] {
-        var starts = promptIndices
+        var starts = turnStarts
         if !items.isEmpty, starts.first != 0 {
             starts.insert(0, at: 0)
         }
@@ -52,7 +57,7 @@ extension SessionState {
             return TranscriptTurn(
                 id: items[start].id, items: start..<end, revision: revision(ofTurnAt: start),
                 startedAt: clock?.startedAt, endedAt: clock?.endedAt,
-                stopReason: clock?.stopReason ?? replayedStops[start]
+                stopReason: clock?.stopReason ?? replayedStops[start], isLateOutput: lateOutputStarts.contains(start)
             )
         }
     }
