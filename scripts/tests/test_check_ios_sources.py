@@ -106,6 +106,7 @@ class CheckIOSSourcesTests(unittest.TestCase):
         for index, diagnostic in enumerate([
             "error: argument type 'Model' does not conform to expected type 'RequiredSource'",
             "error: type 'Model' does not conform to protocol 'RequiredSource'",
+            "error: value of type 'Model' does not conform to specified type 'RequiredSource'",
             "error: global function 'attach' requires that 'Model' conform to 'RequiredSource'",
         ]):
             with self.subTest(diagnostic=diagnostic):
@@ -131,6 +132,25 @@ class CheckIOSSourcesTests(unittest.TestCase):
 class CheckIOSIntegrationTests(unittest.TestCase):
     setUp = CheckIOSSourcesTests.setUp
     write = CheckIOSSourcesTests.write
+
+    def test_cli_loads_sdk_macro_plugins(self):
+        subprocess.run(["git", "init", "-q", str(self.root)], check=True)
+        scripts = self.root / "scripts"
+        scripts.mkdir()
+        for name in ["check-ios.sh", "check-ios-sources.py"]:
+            shutil.copy2(Path(__file__).parents[1] / name, scripts / name)
+        self.write("native/DesignSystem/Token.swift", "enum Token {}\n")
+        self.write("native/Models/Model.swift", "import Observation\n@Observable final class Model { var value = 0 }\n")
+        self.write(
+            "native/Views/Screen.swift",
+            "import SwiftUI\nstruct Screen: View {\n    @State private var model = Model()\n"
+            "    var body: some View { TextField(\"Value\", value: $model.value, format: .number) }\n}\n"
+            "extension EnvironmentValues {\n    @Entry var testValue: Int = 0\n}\n",
+        )
+        result = subprocess.run(
+            ["bash", "check-ios.sh", "native/Views"], cwd=scripts, text=True, capture_output=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
 
     def test_cli_resolves_app_and_package_dependencies_and_keeps_real_errors(self):
         subprocess.run(["git", "init", "-q", str(self.root)], check=True)
@@ -168,6 +188,13 @@ class CheckIOSIntegrationTests(unittest.TestCase):
         self.write(
             "native/Views/Screen.swift",
             "func attach(_ source: any RequiredSource) {}\nfunc configure(_ model: Model) { attach(model) }\n",
+        )
+        result = subprocess.run(command, cwd=scripts, text=True, capture_output=True)
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+
+        self.write(
+            "native/Views/Screen.swift",
+            "func configure(_ model: Model) { let _: any RequiredSource = model }\n",
         )
         result = subprocess.run(command, cwd=scripts, text=True, capture_output=True)
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)

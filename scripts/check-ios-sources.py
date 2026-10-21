@@ -25,7 +25,7 @@ MEMBER = re.compile(
 MISSING_NAME = re.compile(r"error: cannot find (?:type )?'([^']+)' in scope")
 MISSING_MEMBER = re.compile(r"error: .*has no (?:dynamic )?member '([^']+)'")
 MISSING_CONFORMANCE = re.compile(
-    r"(?:argument )?type '([^']+)' does not conform to (?:expected type|protocol) '([^']+)'"
+    r"(?:argument )?type '([^']+)' does not conform to (?:expected type|specified type|protocol) '([^']+)'"
     r"|requires that '([^']+)' conform to '([^']+)'"
 )
 

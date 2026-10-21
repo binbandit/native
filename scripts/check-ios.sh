@@ -155,8 +155,9 @@ while :; do
 
     swift_files "$work/sources"
     status=0
-    # One frontend checks every file, so all missing declarations can be resolved in one pass.
-    xcrun --sdk iphonesimulator swiftc -frontend -typecheck -module-name native -parse-as-library -default-isolation MainActor \
+    # The driver supplies the SDK macro plugin paths. Whole-module mode still checks every file
+    # in one frontend, so all missing declarations can be resolved in one pass.
+    xcrun --sdk iphonesimulator swiftc -typecheck -whole-module-optimization -module-name native -parse-as-library -default-isolation MainActor \
         -enable-upcoming-feature MemberImportVisibility "${flags[@]}" ${files[@]+"${files[@]}"} \
         >"$work/diagnostics" 2>&1 || status=$?
     python3 scripts/check-ios-sources.py "$work/sources" --diagnostics "$work/diagnostics" >"$work/added"
