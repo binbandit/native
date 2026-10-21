@@ -1,3 +1,4 @@
+import ACP
 import Observation
 
 /// Which tool rows, exploration groups and long runs of tool work the user opened or closed in one
@@ -10,6 +11,8 @@ final class TranscriptDisclosures {
     private var opened: Set<String> = []
     /// Long runs of tool work the user closed. They start open.
     private var closedRuns: Set<String> = []
+    /// Earlier turns the user opened back up.
+    var unfoldedTurns: Set<TranscriptTurn.ID> = []
 
     func isOpen(_ id: String) -> Bool {
         opened.contains(id)
