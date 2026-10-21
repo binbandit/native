@@ -40,22 +40,9 @@ extension AppModel {
         currentProject.flatMap { missingFolder(of: $0.id) }
     }
 
-    /// Closes the picker without starting a session, handing the keyboard back to the visible
-    /// task's composer, its place in a task (as ⌘L does).
-    func cancelChoosingAgent() {
-        isChoosingAgent = false
-        guard let key = selection else { return }
-        if let task = startingTask(key) {
-            task.wantsComposerFocus = true
-        } else {
-            session(key)?.wantsComposerFocus = true
-        }
-    }
-
-    /// Starts a session with the agent chosen in the picker, and closes it. An agent that wants a
+    /// Starts a session with the agent chosen in the picker. An agent that wants a
     /// sign-in asks for it first; the sign-in prompt starts the session once it's done.
     func chooseAgentForNewSession(_ agent: AgentDefinition.ID) async {
-        isChoosingAgent = false
         if let runtime = runtime(agent), runtime.needsSignIn, !runtime.authMethods.isEmpty {
             signInPrompt = agent
         } else {

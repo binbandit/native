@@ -294,11 +294,11 @@ asks first.
 
 ## Choosing an agent
 
-New Session With… (⌥⌘N) opens the agent picker over the window: every agent Native runs, each with
+New Session With… (⌥⌘N) opens the agent picker in a sheet: every agent Native runs, each with
 its state (ready, starting, needs sign-in, not installed, stopped) and, when it can't start a
 session, why and what to do, with the fix (Check Again, Restart) beside it. It opens with the
 keyboard in its filter and the default agent (the one ⌘N starts) highlighted. Add Agent… at the
-end lists the agents Native knows but can't find.
+end lists the agents Native knows but can't find. Close dismisses the picker with pointer or touch.
 
 | Keys (picker open) | Action |
 | --- | --- |
