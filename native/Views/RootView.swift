@@ -200,6 +200,10 @@ struct RootView: View {
                         }
                     }
                     .sharedBackgroundVisibility(.hidden)
+                    ToolbarItem {
+                        TranscriptSearchToolbarButton()
+                    }
+                    .sharedBackgroundVisibility(.hidden)
                     if releaseChannel.isNightly {
                         ToolbarItem {
                             NightlyMark()
@@ -207,7 +211,7 @@ struct RootView: View {
                         }
                         .sharedBackgroundVisibility(.hidden)
                     }
-                    // Pushes the toggle to the sidebar's leading edge, next to the window controls, and
+                    // Pushes the toggle and search to the leading edge, next to the window controls, and
                     // back and forward to its trailing edge, by the content they navigate.
                     ToolbarSpacer(.flexible)
                     // The update button: right-aligned before back and forward, and still there when
@@ -257,7 +261,6 @@ struct RootView: View {
 
     private var sidebar: some View {
         SidebarView {
-            TranscriptSearchNavItem()
             PullRequestsNavItem(isSelected: showsPullRequests) { showsPullRequests = true }
             // Minimal by default: only when goals and workflows are on, or a run is there to see.
             if model.plugins.isEnabled(BuiltInPlugins.automation.manifest.id) || !automation.workflows.runs.isEmpty {
