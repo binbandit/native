@@ -3,7 +3,7 @@
 #
 # Rehearse one without publishing anything: `gh workflow run release.yml --ref <branch> -f version=1.4.0`
 # builds that branch as the version given, signs, notarizes and packages it and writes the appcast,
-# then uploads the results as workflow artifacts. Only a pushed tag publishes.
+# then uploads the results as workflow artifacts. Tags and the beta scheduler publish.
 name: Release
 
 on:
@@ -17,12 +17,27 @@ on:
         description: The version to rehearse, e.g. 1.4.0 or 1.5.0-beta.1 (nothing is published)
         type: string
         required: true
+  workflow_call:
+    inputs:
+      version:
+        description: Version to publish from its existing v-prefixed tag
+        type: string
+        required: true
+      publish:
+        # A reusable call inherits its caller's event, which can also be workflow_dispatch.
+        # Only calls get this default; the existing dispatch stays a rehearsal.
+        type: boolean
+        default: true
+      notes_from:
+        description: Previous beta tag, or the last stable tag for the first beta
+        type: string
+        default: ''
 
 permissions:
   contents: write
 
 concurrency:
-  group: release${{ github.event_name == 'workflow_dispatch' && '-dry-run' || '' }}
+  group: release${{ github.event_name != 'push' && !inputs.publish && '-dry-run' || '' }}
   cancel-in-progress: false
 
 jobs:
@@ -35,10 +50,12 @@ jobs:
       NATIVE_TEAM_ID: ${{ secrets.NATIVE_TEAM_ID }}
       NATIVE_SENTRY_DSN: ${{ secrets.NATIVE_SENTRY_DSN }}
       NATIVE_SPARKLE_PUBLIC_KEY: ${{ vars.NATIVE_SPARKLE_PUBLIC_KEY }}
+      NATIVE_RELEASE_NOTES_FROM: ${{ inputs.notes_from }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         id: checkout
         with:
+          ref: ${{ inputs.publish && format('refs/tags/v{0}', inputs.version) || github.sha }}
           fetch-depth: 0
           fetch-tags: true
 
@@ -83,7 +100,7 @@ jobs:
       - name: Build, notarize and publish
         env:
           SENTRY_AUTH_TOKEN: ${{ secrets.SENTRY_AUTH_TOKEN }}
-          MODE: ${{ github.event_name == 'workflow_dispatch' && '--rehearse' || '--publish' }}
+          MODE: ${{ github.event_name != 'push' && !inputs.publish && '--rehearse' || '--publish' }}
         run: >-
           scripts/release/release.sh
           --channel "${{ steps.version.outputs.channel }}"
@@ -92,7 +109,7 @@ jobs:
 
       # What a rehearsal would have published, to download and check by hand (docs/releasing.md).
       - name: Upload the rehearsal
-        if: github.event_name == 'workflow_dispatch' && !cancelled()
+        if: github.event_name != 'push' && !inputs.publish && !cancelled()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: native-${{ steps.version.outputs.version }}-${{ github.run_number }}
@@ -107,7 +124,7 @@ jobs:
             ${{ runner.temp }}/native-release/${{ steps.version.outputs.channel }}/host/
             ${{ runner.temp }}/native-release/${{ steps.version.outputs.channel }}/celebrations/
       - name: Upload the rehearsal's symbols
-        if: github.event_name == 'workflow_dispatch' && !cancelled()
+        if: github.event_name != 'push' && !inputs.publish && !cancelled()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: native-${{ steps.version.outputs.version }}-${{ github.run_number }}-dSYMs
@@ -138,6 +155,8 @@ jobs:
     container: swift:6.2
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.publish && format('refs/tags/v{0}', inputs.version) || github.sha }}
       - name: Build native-host
         run: |
           swift build -c release --package-path Packages/NativeHost --product native-host --static-swift-stdlib

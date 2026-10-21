@@ -1,0 +1,68 @@
+# Tags a changed main every six hours, then reuses the normal Mac release pipeline.
+# The planning dry run never tags, builds, signs or publishes anything.
+name: Beta
+
+on:
+  schedule:
+    - cron: "17 */6 * * *" # 00:17, 06:17, 12:17 and 18:17 UTC
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: Print the next beta and commit without tagging, building or publishing
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+  actions: read
+
+concurrency:
+  # Keep planning/tagging serial, without holding the called workflow's release lock.
+  group: beta-schedule${{ inputs.dry_run && '-dry-run' || '' }}
+  cancel-in-progress: false
+
+jobs:
+  plan:
+    if: github.ref == 'refs/heads/main' || inputs.dry_run
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      skip: ${{ steps.plan.outputs.skip }}
+      version: ${{ steps.plan.outputs.version }}
+      notes_from: ${{ steps.plan.outputs.notes_from }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ inputs.dry_run && github.ref || 'main' }}
+          fetch-depth: 0
+          fetch-tags: true
+      - name: Plan the next beta
+        id: plan
+        env:
+          GH_TOKEN: ${{ github.token }}
+          DRY_RUN: ${{ inputs.dry_run }}
+        run: |
+          git fetch origin main 'refs/tags/v*:refs/tags/v*'
+          args=(--check-runs --github-output "$GITHUB_OUTPUT")
+          if [ "$DRY_RUN" = true ]; then args+=(--dry-run); fi
+          python3 scripts/release/beta-schedule.py "${args[@]}"
+      - name: Tag the selected main commit
+        if: steps.plan.outputs.skip == 'false' && !inputs.dry_run
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.plan.outputs.version }}
+          SHA: ${{ steps.plan.outputs.sha }}
+        # Creating a ref fails if another release took this version, even at the same commit.
+        # GITHUB_TOKEN cannot trigger a second workflow with this tag. Call it below.
+        run: >-
+          gh api --method POST "repos/$GITHUB_REPOSITORY/git/refs"
+          -f "ref=refs/tags/v${VERSION}" -f "sha=$SHA"
+
+  release:
+    needs: plan
+    if: needs.plan.outputs.skip == 'false' && !inputs.dry_run
+    uses: ./.github/workflows/release.yml
+    with:
+      version: ${{ needs.plan.outputs.version }}
+      notes_from: ${{ needs.plan.outputs.notes_from }}
+    secrets: inherit
