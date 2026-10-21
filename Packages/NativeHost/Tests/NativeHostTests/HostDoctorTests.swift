@@ -207,6 +207,23 @@ struct HostDoctorTests {
         #expect(HostDoctor.keepAwakeCheck(nil, now: .now).status == .unknown)
     }
 
+    @Test("Updates: with Native, by itself, after a rollback, or not on this host yet")
+    func updates() {
+        let current = HostUpdateStatus.Build(version: "1.4.0", build: "140", channel: "stable")
+        let app = HostUpdateStatus(provider: .app, current: current, state: .idle)
+        #expect(HostDoctor.updatesCheck(app).detail == "Updates with Native, now 1.4.0 (stable)")
+        var standalone = HostUpdateStatus(provider: .standalone, current: current, state: .upToDate)
+        #expect(HostDoctor.updatesCheck(standalone).status == .ok)
+        standalone.lastRollback = HostUpdateStatus.Rollback(from: "1.5.0", to: "1.4.0", at: .now)
+        #expect(HostDoctor.updatesCheck(standalone).status == .warning)
+        let linux = HostUpdateStatus(
+            provider: .none, current: current, state: .unavailable,
+            message: "Updates aren't available on this host yet.")
+        let unavailable = HostDoctor.updatesCheck(linux)
+        #expect(unavailable.status == .info)
+        #expect(unavailable.detail == "Updates aren't available on this host yet.")
+    }
+
     @Test("The text report lists each problem with its fix, and ends with a count")
     func text() async throws {
         var machine = Self.readyMachine
