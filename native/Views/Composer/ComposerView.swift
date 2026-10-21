@@ -306,16 +306,25 @@ struct ComposerView: View {
 
     /// Disabled in place when something blocks sending, saying why.
     var sendButton: some View {
-        ComposerSendButton(disabledReason: session.sendBlockedReason ?? attachmentsBlockedReason) { submit(followUp) }
-            .help(
-                isWorking
-                    ? FollowUpHint(
-                        preferred: followUp, supportsSteering: session.supportsSteering, agentName: session.agentName
-                    ).help : "Send (↩)")
+        let behavior = session.supportsSteering ? followUp : .queue
+        // An item can leave the queue while its editor stays open; submission then sends a new message.
+        let isEditingQueued =
+            session.queuedPrompts.contains { $0.id == session.editingQueuedPrompt }
+            && !session.draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        return ComposerSendButton(disabledReason: session.sendBlockedReason ?? attachmentsBlockedReason) {
+            submit(followUp)
+        }
+        .accessibilityLabel(
+            isEditingQueued ? "Save Queued Message" : isWorking ? "\(behavior.title) Message" : "Send Message"
+        )
+        .help(
+            isEditingQueued
+                ? "Save the edit, keeping its place in the queue."
+                : isWorking ? "\(behavior.title): \(behavior.explanation)" : "Send (↩)")
     }
 
     /// What the controls row's hint says: the keys in a code block, the keys for the queued message
-    /// open in the editor, or while the agent works, what Return and ⌘Return do with a follow-up.
+    /// open in the editor, or nothing during ordinary messaging.
     var followUpHint: FollowUpHint? {
         if isCaretInCodeBlock {
             return codeBlockHint
@@ -324,9 +333,7 @@ struct ComposerView: View {
             return .editingQueued(
                 sendNow: session.sendNowRoute.map { QueuedSendNow(route: $0, agentName: session.agentName) })
         }
-        guard isWorking else { return nil }
-        return FollowUpHint(
-            preferred: followUp, supportsSteering: session.supportsSteering, agentName: session.agentName)
+        return nil
     }
 
     func actionSlot(@ViewBuilder _ content: () -> some View) -> some View {
@@ -349,15 +356,13 @@ struct ComposerView: View {
         }
     }
 
-    /// Says what typing here will do: start work, queue or steer a follow-up, or nothing yet and why.
+    /// Invites a message, or explains what the session is waiting for.
     var placeholder: String {
         ComposerPlaceholder(
             phase: session.phase,
             agentName: session.agentName,
             hasQuestion: session.pendingQuestion != nil,
             needsApproval: session.needsApproval,
-            followUp: followUp,
-            supportsSteering: session.supportsSteering,
             isStopping: session.isStopping,
             isNewSession: session.isTranscriptEmpty,
             showsFocusHint: canEdit && !isFocused && ComposerPlatform.showsKeyboardHints

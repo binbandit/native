@@ -1,12 +1,9 @@
-/// What the empty composer says: what typing will do (start work, queue or steer a follow-up), or
-/// why it can't yet.
+/// A plain message prompt, or what the session needs before work can continue.
 struct ComposerPlaceholder {
     var phase: SessionModel.Phase
     var agentName: String
     var hasQuestion: Bool
     var needsApproval: Bool
-    var followUp: FollowUpBehavior
-    var supportsSteering: Bool
     /// Stop was pressed and the agent hasn't ended the turn yet.
     var isStopping = false
     var isNewSession: Bool
@@ -22,10 +19,8 @@ struct ComposerPlaceholder {
             case .prompting where isStopping: "Stopping \(agent)… press Stop again to stop waiting"
             case .prompting where hasQuestion: "\(agent) is waiting for your answer above…"
             case .prompting where needsApproval: "\(agent) is waiting for your approval…"
-            case .prompting where followUp == .steer && supportsSteering: "Steer \(agent)’s current turn…"
-            case .prompting: "Queue a follow-up for \(agent)…"
             case .idle where isNewSession: "What would you like \(agent) to work on?"
-            case .idle: "Message \(agent), or type / for commands"
+            case .idle, .prompting: "Message \(agent), or type / for commands"
             }
         return showsFocusHint ? "\(text)  ⌘L to focus" : text
     }
