@@ -13,7 +13,9 @@ public final class HostNotificationHistory {
 
     public init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
-        cursors = defaults.dictionary(forKey: Self.defaultsKey) as? [String: Int64] ?? [:]
+        // Foundation's numeric property-list values bridge differently on Apple platforms and Linux.
+        cursors =
+            defaults.dictionary(forKey: Self.defaultsKey)?.compactMapValues { ($0 as? NSNumber)?.int64Value } ?? [:]
         hostsSeenAtLaunch = Set(cursors.keys)
     }
 
