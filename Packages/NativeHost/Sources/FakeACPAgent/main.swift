@@ -2,6 +2,10 @@ import ACP
 import Foundation
 import NativeHostProtocol
 
+#if canImport(FoundationNetworking)
+import FoundationNetworking
+#endif
+
 // A scriptable ACP agent for the host's tests. Like a real agent it keeps its own session store
 // (in $FAKE_AGENT_STORE) and writes the user's message to it as soon as a prompt arrives, so
 // `session/load` replays exactly what it received (`session/resume` reopens a session without the
@@ -437,7 +441,7 @@ actor FakeAgent {
         let hash = text.utf8.reduce(UInt64(5381)) { ($0 << 5) &+ $0 &+ UInt64($1) }
         let marker = store.appending(path: "seen-\(hash)")
         guard !FileManager.default.fileExists(atPath: marker.path(percentEncoded: false)) else { return false }
-        FileManager.default.createFile(atPath: marker.path(percentEncoded: false), contents: Data())
+        _ = FileManager.default.createFile(atPath: marker.path(percentEncoded: false), contents: Data())
         return true
     }
 
