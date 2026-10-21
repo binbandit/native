@@ -73,7 +73,7 @@ scripts/release/check.sh                  # Release and Nightly compile; run bef
 scripts/dev/install-hooks.sh              # once per clone: format + lint staged Swift, conventional commit titles
 swift format format -i <files you changed>   # style lives in .swift-format (4 spaces, 120 columns)
 swift format lint --strict <files you changed>
-scripts/check-ios.sh native/<YourFeature>   # typechecks your folder (plus DesignSystem) for iPadOS
+scripts/check-ios.sh native/<YourFeature>   # typechecks your folder and its app/package dependencies for iPadOS
 ```
 
 Builds share this Mac with the person using it. `run-isolated.sh` builds through `scripts/dev/build-slot.sh`
