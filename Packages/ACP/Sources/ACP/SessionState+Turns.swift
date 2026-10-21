@@ -131,6 +131,9 @@ extension SessionState {
         if let start = turnStarts.last {
             settleInterruption(of: start, at: nil)
         }
+        // Recovery resumes the same turn, but a later stop belongs to the resumed work rather than
+        // the earlier interruption. Only repeated markers within one segment are duplicates.
+        replayedStops[promptIndices.last ?? 0] = nil
         var notice = TranscriptNotice(text: prompt.notice, isError: false)
         notice.sentToAgent = text
         appendItem(.notice(notice))

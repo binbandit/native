@@ -80,4 +80,45 @@ struct RecoveryPromptTests {
         state.apply(userChunk(RecoveryPrompt(reason: .agentStopped).text))
         #expect(state.items.count == 2)
     }
+
+    @Test("A stop after recovery settles the resumed work even if the earlier process recorded a stop")
+    func stopAfterRecovery() throws {
+        var state = SessionState()
+        for line in InterruptionMarkerTests.replay.prefix(4) {
+            state.apply(try Wire.update(line))
+        }
+        state.apply(userChunk(RecoveryPrompt(reason: .agentStopped).text))
+        state.apply(answer)
+        for line in InterruptionMarkerTests.toolUseReplay.dropFirst() {
+            state.apply(try Wire.update(line))
+        }
+        // Repeating the same segment's stop still adds nothing.
+        state.apply(userChunk("[Request interrupted by user for tool use]"))
+        state.endReplay()
+
+        let stops = state.items.compactMap { item -> String? in
+            if case .notice(let notice) = item, notice.text == "Stopped." { notice.text } else { nil }
+        }
+        let calls = state.items.compactMap { item -> ToolCallState? in
+            if case .toolCall(let call) = item { call } else { nil }
+        }
+        #expect(stops.count == 2)
+        #expect(calls.last?.status == .cancelled)
+        #expect(state.turns.count == 1)
+        #expect(state.turns.first?.stopReason == .cancelled)
+    }
+
+    @Test("A recovery that finishes no longer has the preceding interruption's stop reason")
+    func finishedRecoveryClearsEarlierStop() throws {
+        var state = SessionState()
+        for line in InterruptionMarkerTests.replay.prefix(4) {
+            state.apply(try Wire.update(line))
+        }
+        state.apply(userChunk(RecoveryPrompt(reason: .agentStopped).text))
+        state.apply(answer)
+        state.endReplay()
+
+        #expect(state.turns.count == 1)
+        #expect(state.turns.first?.stopReason == nil)
+    }
 }
