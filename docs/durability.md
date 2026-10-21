@@ -445,8 +445,9 @@ host (`Git.onHost`: `RemoteCommandRunner`, the host's login-shell environment, a
 for watching) and keeps worktrees in the host's `worktreesFolder`, wrapped in the same
 `GitTaskWorkspaceProvider` (`RemoteHostsWiring`). Everything that reads a task's folder (the
 changes inspector, branch and diff badges, turn baselines) reads a host's folder with that host's
-store (`GitStore.hostStore`, by `AppModel.remoteHost(holding:)`), so diffs and Files Changed come
-from the host's own git. `DeviceTaskWorkspaces` is the app's task
+store (`GitStore.sessionStore`, by `AppModel.device(of:)`), so diffs and Files Changed come
+from the host's own git. Folder-only lookups stay local; unavailable hosts never fall back to this
+Mac. Remote inspector file menus offer Copy Path, withholding local Open and Reveal actions. `DeviceTaskWorkspaces` is the app's task
 workspaces while remote hosts are on: it sends archiving, restoring, deleting and branch renames to
 the host whose worktrees folder or checkout holds the task's folder, so a task on a host is put away
 with its checkpoint there exactly as one here. Deleting a task's copy in its agent and pinning use

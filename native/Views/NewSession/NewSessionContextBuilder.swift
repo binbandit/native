@@ -59,7 +59,7 @@ struct NewSessionContextBuilder {
     }
 
     private func workspace(checkout: GitRepositoryModel) -> NewSessionContext.Workspace {
-        let folder = git.model(for: session.cwd)
+        let folder = git.model(for: session.cwd, session: session.key)
         switch folder.state {
         case .loading, .failed:
             return .unknown(path: session.cwd.abbreviatedPath)

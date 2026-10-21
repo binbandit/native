@@ -60,22 +60,8 @@ extension AppModel {
     /// it; else this Mac.
     func device(of session: SessionKey) -> SessionDevice {
         if let task = startingTask(session) { return task.device }
-        return remoteSession(session).map { .remote($0.host) } ?? .thisMac
-    }
-
-    /// The paired host `folder` is on: one of its checkouts of this Mac's projects, or one of their
-    /// task worktrees there. Nil for this Mac's folders. Cheap enough for views to ask.
-    func remoteHost(holding folder: URL) -> RemoteHost? {
-        guard offersRemoteHosts, !hosts.all.isEmpty else { return nil }
-        let path = folder.folderPath
-        for project in projects.all {
-            for checkout in project.checkouts {
-                if let host = hosts.host(checkout.host), host.isTaskFolder(path, ofCheckoutAt: checkout.path) {
-                    return host
-                }
-            }
-        }
-        return nil
+        if let remote = remoteSession(session) { return .remote(remote.host) }
+        return remotePlace(of: session).map { .remote($0.host.id) } ?? .thisMac
     }
 
     /// Where a remote session lives: `(HostID, HostSessionID)`. Nil for this Mac's sessions.

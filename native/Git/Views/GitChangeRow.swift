@@ -85,7 +85,7 @@ struct GitChangeRow: View {
         Button(stageLabel, action: toggleStaged)
         Button("Discard Changes…", role: .destructive, action: discard)
         Divider()
-        GitFileMenuItems(path: change.path, root: model.repository?.root)
+        GitFileMenuItems(path: change.path, root: model.localRoot)
     }
 
     /// Hovering shows a row's actions; selecting it does too, so touch can reach them.

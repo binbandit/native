@@ -30,22 +30,26 @@ final class GitStore {
     /// Where task worktrees go for a store whose projects are on a paired host; nil on this Mac,
     /// where `worktreesBase(of:)` works it out.
     let worktreesFolder: URL?
+    /// Only local repositories may hand file URLs to this machine's openers.
+    let isLocal: Bool
     @ObservationIgnored private let environmentProvider: EnvironmentProvider
     /// Builds git for the host the projects are on; a client passes one that runs on its host.
     @ObservationIgnored private let makeGit: ([String: String]) -> Git
     @ObservationIgnored private var git: Git?
     // Not observed: models are created lazily from view bodies, which mustn't mutate observed state.
     @ObservationIgnored private var models: [URL: GitRepositoryModel] = [:]
+    @ObservationIgnored private var unavailableModels: [URL: GitRepositoryModel] = [:]
 
     init(
         environment: @escaping EnvironmentProvider, settings: GitSettings = GitSettings(),
-        worktreesFolder: URL? = nil, turnBaselines: GitTurnBaselines = .shared,
+        worktreesFolder: URL? = nil, isLocal: Bool = true, turnBaselines: GitTurnBaselines = .shared,
         makeGit: @escaping ([String: String]) -> Git
     ) {
         environmentProvider = environment
         self.settings = settings
         self.turnBaselines = turnBaselines
         self.worktreesFolder = worktreesFolder
+        self.isLocal = isLocal
         self.makeGit = makeGit
     }
 
@@ -59,23 +63,28 @@ final class GitStore {
     }
     #endif
 
-    /// The store that reads `folder` when it's on another machine: its paired host's, whose git runs
-    /// there. Set by the app's wiring; nil, or nil for a folder, reads it here.
-    @ObservationIgnored var hostStore: ((URL) -> GitStore?)?
+    /// Selects by session identity, never by path: different machines can use the same path.
+    /// Nil from the resolver means the session's host is unavailable, not a local fallback.
+    @ObservationIgnored var sessionStore: ((SessionKey) -> GitStore?)?
 
-    /// The store for `folder`: its host's when it's on another machine, else this one.
-    private func owner(of folder: URL) -> GitStore {
-        guard let other = hostStore?(folder), other !== self else { return self }
-        return other
+    private func owner(for session: SessionKey?) -> GitStore? {
+        guard let session, let sessionStore else { return self }
+        return sessionStore(session)
     }
 
     /// The model for the working tree containing `folder`. It starts loading and watching right away.
-    func model(for folder: URL) -> GitRepositoryModel {
-        let owner = owner(of: folder)
+    func model(for folder: URL, session: SessionKey? = nil) -> GitRepositoryModel {
+        guard let owner = owner(for: session) else {
+            let key = folder.standardizedFileURL
+            if let model = unavailableModels[key] { return model }
+            let model = GitRepositoryModel(unavailableFolder: key)
+            unavailableModels[key] = model
+            return model
+        }
         if owner !== self { return owner.model(for: folder) }
         let key = folder.standardizedFileURL
         if let model = models[key] { return model }
-        let model = GitRepositoryModel(folder: key, git: { [weak self] in await self?.resolveGit() })
+        let model = GitRepositoryModel(folder: key, isLocal: isLocal, git: { [weak self] in await self?.resolveGit() })
         model.onPushed = { [weak self] project, branch in self?.onBranchPushed?(project, branch) }
         models[key] = model
         return model
@@ -83,16 +92,16 @@ final class GitStore {
 
     /// Re-reads a folder's status, e.g. after an agent finished a turn there. Folders nobody has
     /// asked about yet are skipped.
-    func refresh(folder: URL) {
-        let owner = owner(of: folder)
+    func refresh(folder: URL, session: SessionKey? = nil) {
+        guard let owner = owner(for: session) else { return }
         if owner !== self { return owner.refresh(folder: folder) }
         models[folder.standardizedFileURL]?.refresh()
     }
 
     /// Re-reads a folder's status once a burst of writes there settles, e.g. an agent's edits;
     /// the folder's own file events coalesce into the same rescan.
-    func refreshWhenSettled(folder: URL) {
-        let owner = owner(of: folder)
+    func refreshWhenSettled(folder: URL, session: SessionKey? = nil) {
+        guard let owner = owner(for: session) else { return }
         if owner !== self { return owner.refreshWhenSettled(folder: folder) }
         models[folder.standardizedFileURL]?.refreshWhenSettled()
     }
@@ -104,7 +113,7 @@ final class GitStore {
     /// Records how `folder` looked as a task's turn began there (`GitTurnBaselines`), in the
     /// background, so sending the prompt never waits on it. Folders outside git are skipped.
     func recordTurnStart(of session: SessionKey, at startedAt: Date, in folder: URL) {
-        let owner = owner(of: folder)
+        guard let owner = owner(for: session) else { return }
         if owner !== self { return owner.recordTurnStart(of: session, at: startedAt, in: folder) }
         Task(priority: .utility) {
             guard let repository = try? await resolveGit().repository(at: folder) else { return }
