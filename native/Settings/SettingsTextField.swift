@@ -33,3 +33,28 @@ private struct SettingsFieldModifier: ViewModifier {
             .opacity(isEnabled ? 1 : 0.5)
     }
 }
+
+#if DEBUG
+private struct SettingsTextFieldPreviewContent: View {
+    @State private var text = "Mac mini"
+    @FocusState private var isFocused: Bool
+
+    var body: some View {
+        VStack(spacing: DS.Space.lg) {
+            TextField("Default focus", text: $text).settingsField()
+            TextField("Shared focus", text: $text).settingsField(focus: $isFocused)
+            TextField("Disabled", text: .constant("Read only")).settingsField().disabled(true)
+            Button("Focus shared field") { isFocused = true }
+                .buttonStyle(.ds(.secondary))
+        }
+        .padding(DS.Space.xxl)
+        .frame(width: DS.Size.popoverWidth)
+    }
+}
+
+#Preview("Settings fields - Focus and disabled") {
+    DSPreviewPair {
+        SettingsTextFieldPreviewContent()
+    }
+}
+#endif
