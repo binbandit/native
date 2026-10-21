@@ -427,7 +427,12 @@ step runs even when the one before it failed, so one run reports every break:
   runs the same way locally. NativeHost builds only its client; its host runs agents, which iPadOS
   can't.
 - **The iPad typecheck** of the design system and the platform adapters:
-  `scripts/check-ios.sh native/Platform` (the design system always comes along).
+  `scripts/check-ios.sh native/Platform` (the design system always comes along). For other folders,
+  the checker adds app declarations the compiler reports missing, including their cross-folder
+  extensions, and recursively builds imported local package modules. It repeats until no more
+  dependencies can be added, then reports the compiler's remaining diagnostics at original paths
+  and line numbers. Package builds use the shared build queue; `NATIVE_IOS_CHECK_CACHE` can select
+  a private incremental cache.
 
 Our own files build without warnings for iOS too: every log goes through `scripts/check-warnings.sh`.
 It restores the Mac builds' package checkouts, which pin the same versions, and saves no caches of its
@@ -437,12 +442,13 @@ share (ACP, Exec) compile once instead of once per package: about 2.5 minutes fo
 locally, where building each from nothing took 8.
 
 **Not yet on iPad.** The app target is one module whose folders use each other freely (models,
-plugins, commands, settings, views), so the smallest set of folders that includes `native/Models`
-is the whole app, and that still imports macOS-only frameworks: ServiceManagement in `native/Host`
+plugins, commands, settings, views). Checking `native/Models` or a consumer now follows those
+dependencies automatically, but they still import macOS-only frameworks: ServiceManagement in `native/Host`
 (`HostRegistration`, the Background settings and host notices), IOKit in the KeepAwake engine, AppKit in
 `native/Terminal/Settings`, and `NativeApp.swift`, the Mac's entry point. Those move behind
 `native/Platform` adapters with the iPad destination (`docs/architecture.md`, "Getting there"); add
-a folder to the workflow's typecheck once it compiles there.
+a folder to the workflow's typecheck once it compiles there. A dependency's genuine platform error
+still fails its consumer's check; the checker does not stub types or suppress those errors.
 
 ### Repository secrets
 
