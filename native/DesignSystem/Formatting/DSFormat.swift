@@ -107,6 +107,18 @@ public nonisolated enum DSFormat {
             .joined(separator: " ")
     }
 
+    /// A diff stat as VoiceOver reads it: "1 line added, 2 removed", "3 lines removed", "No changed
+    /// lines".
+    public static func spokenDiffStat(added: Int, removed: Int) -> String {
+        func lines(_ count: Int) -> String { count == 1 ? "1 line" : "\(count) lines" }
+        return switch (added, removed) {
+        case (0, 0): "No changed lines"
+        case (let added, 0): "\(lines(added)) added"
+        case (0, let removed): "\(lines(removed)) removed"
+        case (let added, let removed): "\(lines(added)) added, \(removed) removed"
+        }
+    }
+
     /// Spend in a currency: "$0.42", "$12.30", "$1,234.50"; "<$0.01" for a nonzero sliver.
     public static func cost(_ amount: Double, currencyCode: String = "USD") -> String {
         let style = FloatingPointFormatStyle<Double>.Currency(code: currencyCode).precision(.fractionLength(2))
