@@ -63,7 +63,11 @@ extension HostCore {
         !session.needsLoad && session.loading == nil && session.phase == .idle && !session.isWorking
             && session.record.origin != .announced && session.record.agentSessionID != nil
             && session.pendingPermissions.isEmpty && session.pendingQuestions.isEmpty
-            && !subagents(of: session).contains(where: \.isWorking)
+            && !session.mirror.state.subagents.contains { $0.workState?.isWorking == true }
+            && !subagents(of: session).contains {
+                $0.isWorking || !$0.pendingPermissions.isEmpty || !$0.pendingQuestions.isEmpty
+                    || $0.mirror.state.subagents.contains { $0.workState?.isWorking == true }
+            }
     }
 
     /// The session's last event, or its subagents' if they're later: they report through it.
@@ -78,8 +82,31 @@ extension HostCore {
             || !session.pendingQuestions.isEmpty
     }
 
-    private func subagents(of session: HostSession) -> [HostSession] {
-        sessions.values.filter { $0.record.parentID == session.id && $0.record.origin == .announced }
+    /// Nested children share the parent's lifetime too, including their pending input and history.
+    func subagents(of session: HostSession) -> [HostSession] {
+        var descendants: [HostSession] = []
+        var parents: Set<HostSessionID> = [session.id]
+        var seen = parents
+        while !parents.isEmpty {
+            let children = sessions.values.filter {
+                $0.record.origin == .announced && $0.record.parentID.map(parents.contains) == true
+                    && !seen.contains($0.id)
+            }
+            descendants.append(contentsOf: children)
+            parents = Set(children.map(\.id))
+            seen.formUnion(parents)
+        }
+        return descendants
+    }
+
+    /// A full history replay reconstructs the child tree; keeping its old logs would duplicate it.
+    func discardSubagentsForReplay(of session: HostSession, on link: AgentLink) {
+        for child in subagents(of: session) {
+            if let agentSessionID = child.record.agentSessionID {
+                link.routes[agentSessionID] = nil
+            }
+            sessions[child.id] = nil
+        }
     }
 
     /// Closes the session in its agent (with `peer`, unless the agent is about to end), keeping it
@@ -91,6 +118,7 @@ extension HostCore {
         // They live in the parent's agent session, which takes them with it.
         for subagent in subagents(of: session) {
             subagent.needsLoad = true
+            subagent.reloadsQuietly = true
         }
         logger.info("Unloading an idle \(session.agentName) session")
         guard let peer, let agentSessionID = session.record.agentSessionID else { return }
@@ -114,6 +142,14 @@ extension HostCore {
             throw HostError.agentUnavailable(link.spec.name)
         }
         let generation = link.generation
+        let children = subagents(of: session)
+        // Register the whole tree before draining buffered updates, which can announce children again.
+        for child in children {
+            if let agentSessionID = child.record.agentSessionID {
+                link.routes[agentSessionID] = child.id
+            }
+        }
+        for child in children { route(child, on: link) }
         session.loadingConfigOptions = nil
         defer { session.loadingConfigOptions = nil }
         let response: RawConfigOptionsResponse
@@ -139,6 +175,10 @@ extension HostCore {
         tasks.sessionLoaded(session)
         session.needsLoad = false
         session.reloadsQuietly = false
+        for child in children {
+            child.needsLoad = false
+            child.reloadsQuietly = false
+        }
         session.supportsSteering = link.supportsSteering
         session.problem = nil
         publish(session)

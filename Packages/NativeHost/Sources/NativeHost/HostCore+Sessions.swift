@@ -146,6 +146,7 @@ extension HostCore {
             let generation = link.generation
             guard link.canLoadSessions else { throw HostError.cannotLoad(link.spec.name) }
             let servers = await tasks.agentServers(for: session.id, base: session.mcpServers)
+            discardSubagentsForReplay(of: session, on: link)
             append(.reset(loading: true), to: session)
             replaying = true
             route(session, on: link)

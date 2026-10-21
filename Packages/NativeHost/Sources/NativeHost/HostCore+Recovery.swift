@@ -63,8 +63,11 @@ extension HostCore {
         let now = Date.now
         for session in sessions.values where session.record.agentID == agentID {
             if session.record.origin == .announced {
-                // A subagent lives in its parent's agent process; the parent's reload brings it back.
-                sessions[session.id] = nil
+                // Quiet resume does not replay child history, so idle unloading keeps its log and id.
+                // Other exits use a full parent replay, which reconstructs the child tree.
+                if !session.reloadsQuietly {
+                    sessions[session.id] = nil
+                }
                 continue
             }
             session.needsLoad = true
