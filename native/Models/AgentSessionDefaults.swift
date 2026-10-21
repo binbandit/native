@@ -111,14 +111,23 @@ enum AgentSessionDefaults {
         defaults.set(data, forKey: lastUsedKey(for: agent))
     }
 
-    /// Starts a new session on what it should: the project's model, then the defaults from
-    /// Settings, then the user's last picks. Policy wins over all of them.
-    static func apply(to session: SessionModel, project: Project.ID?, defaults: UserDefaults = .standard) async {
-        let agent = session.agent.id
+    /// Explicit Settings defaults only: reopening a task must not inherit another task's picks
+    /// or a project's defaults for new tasks.
+    static func configuredValues(
+        for agent: AgentDefinition.ID, defaults: UserDefaults = .standard
+    ) -> [String: String] {
         var categories: [String: String] = [:]
         for setting in Setting.allCases {
             categories[setting.category] = explicitValue(for: agent, setting: setting, defaults: defaults)
         }
+        return categories
+    }
+
+    /// Starts a new session on what it should: the project's model, then the defaults from
+    /// Settings, then the user's last picks. Policy wins over all of them.
+    static func apply(to session: SessionModel, project: Project.ID?, defaults: UserDefaults = .standard) async {
+        let agent = session.agent.id
+        var categories = configuredValues(for: agent, defaults: defaults)
         if let project, let model = ProjectTaskDefaults.model(for: project, agent: agent, defaults: defaults) {
             categories[Setting.model.category] = model
         }
