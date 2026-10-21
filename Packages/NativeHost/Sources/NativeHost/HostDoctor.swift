@@ -65,10 +65,12 @@ public struct HostDoctor: Sendable {
         public var keepAwake: HostKeepAwakeState?
         public var gateway: HostDoctorGateway?
         public var isHostRunning: Bool
+        /// How the host updates; nil when no host answered.
+        public var updates: HostUpdateStatus?
 
         public init(
             machineName: String, environment: [String: String], agents: [AgentSpec], keepAwake: HostKeepAwakeState?,
-            gateway: HostDoctorGateway? = nil, isHostRunning: Bool
+            gateway: HostDoctorGateway? = nil, isHostRunning: Bool, updates: HostUpdateStatus? = nil
         ) {
             self.machineName = machineName
             self.environment = environment
@@ -76,6 +78,7 @@ public struct HostDoctor: Sendable {
             self.keepAwake = keepAwake
             self.gateway = gateway
             self.isHostRunning = isHostRunning
+            self.updates = updates
         }
     }
 
@@ -99,7 +102,8 @@ public struct HostDoctor: Sendable {
         let platform = await platformChecks
         let checks =
             platform.filter { $0.group == .host } + [Self.keepAwakeCheck(context.keepAwake, now: now)]
-            + (await agentChecks) + (await toolChecks) + (await systemChecks) + platform.filter { $0.group != .host }
+            + (context.updates.map { [Self.updatesCheck($0)] } ?? []) + (await agentChecks) + (await toolChecks)
+            + (await systemChecks) + platform.filter { $0.group != .host }
         return HostDoctorReport(
             machineName: context.machineName, checkedAt: now, isHostRunning: context.isHostRunning, checks: checks)
     }

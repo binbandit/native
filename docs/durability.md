@@ -209,11 +209,15 @@ green on main. On Linux today:
   process group and ending every group their children moved into (from `/proc`), running clients'
   commands (`_native/exec/*`, so Git on an iPad works against the box), polling file watches.
 - **Different:** no code-signature check of peers, so, as for a Mac development build, the user is the
-  boundary (the socket's folder is theirs alone). Prompt images go as they are only when they're PNG
+  boundary (the socket's folder is theirs alone). The host directory is `Native` under Foundation's
+  user application support directory (`$XDG_DATA_HOME`, or `~/.local/share`); named channels use its
+  `Channels/<channel>` subdirectory. Prompt images go as they are only when they're PNG
   or GIF already within the limits, since nothing scales them; anything else goes by path. npx always
   runs as npx (finding its install folder takes SHA-512). Logs go to stderr.
 - **Mac only for now:** plugin assets (their content hashes are SHA-256: a client asking gets "Plugin
-  assets aren't available on this host yet"), updating itself (Ed25519), Native's tools for agents
+  assets aren't available on this host yet"), updating itself (Ed25519: `native-host` is built without
+  `HostUpdater` there, and `_native/host/update/status` and the doctor say "Updates aren't available on
+  this host yet"), Native's tools for agents
   (the MCP server is on Network, its tokens are HMACs), attached hosts (`--exit-with-parent` watches
   the parent with kqueue), on-device titles and `native-host doctor`. The cryptography comes with
   swift-crypto, deferred until Linux is a real target (docs/decisions.md, "swift-crypto for Linux
