@@ -1,3 +1,4 @@
+import Experiments
 import SwiftUI
 import TaskList
 
@@ -23,6 +24,7 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
     @FocusState private var isListFocused: Bool
     @SceneStorage("sidebar.taskFilter") private var storedFilter = ""
     @State private var selection = SidebarSelectionModel()
+    @Experiment(.sidebarNext) private var usesSidebarNext
 
     private let navigationItems: NavigationItems
     private let accessories: Accessories
@@ -57,6 +59,7 @@ struct SidebarView<NavigationItems: View, Accessories: View, TaskAccessory: View
                     listing: listing, taskAccessory: taskAccessory, filter: filterBinding, selection: selection,
                     select: select
                 )
+                .environment(\.sidebarQuietProjects, usesSidebarNext)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, DS.Space.sm)
                 .padding(.vertical, DS.Space.md)

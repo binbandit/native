@@ -5,6 +5,7 @@ import SwiftUI
 /// detail column.
 struct StartingTaskRow: View {
     @Environment(AppModel.self) private var model
+    @Environment(\.sidebarQuietProjects) private var isQuiet
     let task: StartingTask
 
     var body: some View {
@@ -13,6 +14,7 @@ struct StartingTaskRow: View {
             status: task.failure == nil ? .starting : .failed,
             isSelected: model.selection == task.id,
             badge: nil,
+            indent: isQuiet ? .flat : .grouped,
             leading: AgentIcon(agent: task.agent),
             accessory: Text(task.failure == nil ? "Starting…" : "Couldn't start")
                 .font(.dsCaption)
