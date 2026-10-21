@@ -28,16 +28,19 @@ public struct SessionTitleState: Hashable, Sendable {
     public var progress: Progress?
     /// Kept by the host so reconnecting or restarting cannot replenish the retry budget.
     public private(set) var retryCount: Int
+    /// The logical prompt that first requested a title. Recovery may resend it after a restart.
+    public private(set) var promptID: UUID?
 
     public init(
         user: String? = nil, generated: String? = nil, request: SessionTitleRequest? = nil, progress: Progress? = nil,
-        retryCount: Int = 0
+        retryCount: Int = 0, promptID: UUID? = nil
     ) {
         self.user = user
         self.generated = generated
         self.request = request
         self.progress = progress
         self.retryCount = retryCount
+        self.promptID = promptID
     }
 
     public var isEmpty: Bool {
@@ -63,14 +66,18 @@ public struct SessionTitleState: Hashable, Sendable {
     /// Called for each new turn. Empty first messages don't consume the opportunity to title a
     /// task. A failed or unavailable generator gets one more attempt, using the original request.
     @discardableResult
-    public mutating func beginIfNeeded(_ request: SessionTitleRequest) -> Bool {
+    public mutating func beginIfNeeded(
+        _ request: SessionTitleRequest, promptID: UUID? = nil, allowsRetry: Bool = true
+    ) -> Bool {
         guard user == nil, generated == nil else { return false }
         if wantsTitle {
             guard SessionTitleRules.fallback(from: request.prompt) != nil else { return false }
-            begin(request)
+            begin(request, promptID: promptID)
             return true
         }
-        guard retryCount == 0, self.request != nil, progress == .failed || progress == .waitingForClient else {
+        guard allowsRetry, promptID == nil || promptID != self.promptID,
+            retryCount == 0, self.request != nil, progress == .failed || progress == .waitingForClient
+        else {
             return false
         }
         retryCount += 1
@@ -80,11 +87,12 @@ public struct SessionTitleState: Hashable, Sendable {
 
     /// Starts titling from the task's first message. Long messages are kept only as far as a title
     /// is ever written from.
-    public mutating func begin(_ request: SessionTitleRequest) {
+    public mutating func begin(_ request: SessionTitleRequest, promptID: UUID? = nil) {
         var request = request
         request.prompt = String(request.prompt.prefix(SessionTitlePrompt.requestLimit))
         request.instructions = nil
         self.request = request
+        self.promptID = promptID
         progress = .generating
     }
 

@@ -62,8 +62,12 @@ struct StoreTests {
         do {
             let store = try HostStore(url: url)
             try store.database.execute(
-                "DROP TABLE closed_session_config; ALTER TABLE titles DROP COLUMN retry_count; PRAGMA user_version = 8;"
-            )
+                """
+                DROP TABLE closed_session_config;
+                ALTER TABLE titles DROP COLUMN retry_count;
+                ALTER TABLE titles DROP COLUMN prompt_id;
+                PRAGMA user_version = 8;
+                """)
         }
         let session = StoredSession(
             id: HostSessionID(), agentID: "fake", agentSessionID: SessionID("saved"), cwd: "/tmp",

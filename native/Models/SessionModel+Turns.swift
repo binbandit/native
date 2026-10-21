@@ -270,13 +270,17 @@ extension SessionModel {
         }
         phase = .prompting
         lastActivity = .now
-        nameAfterPrompt(text, attachments: attachments, isFirstPrompt: isFirstPrompt)
+        // Automatic delivery retries are already in the transcript. They must not spend the
+        // title retry reserved for the next message the user sends.
+        nameAfterPrompt(text, attachments: attachments, isFirstPrompt: isFirstPrompt, allowsRetry: echo)
         services.post(.promptSent(context, text: text))
         return (state.items.count, preamble)
     }
 
     /// Starts or retries the title alongside a turn, so the prompt goes out right away.
-    func nameAfterPrompt(_ text: String, attachments: [PromptAttachment], isFirstPrompt: Bool) {
+    func nameAfterPrompt(
+        _ text: String, attachments: [PromptAttachment], isFirstPrompt: Bool, allowsRetry: Bool = true
+    ) {
         let prompt = text.isEmpty ? attachments.map(\.name).joined(separator: ", ") : text
         let request = TitleRequest(
             projectName: cwd.lastPathComponent, prompt: prompt,
@@ -284,7 +288,8 @@ extension SessionModel {
         Task {
             let previous = services.titles.namedTitle(for: titleKey)
             await services.titles.generateIfNeeded(
-                for: titleKey, request: request, using: services.plugins.titler, isFirstPrompt: isFirstPrompt)
+                for: titleKey, request: request, using: services.plugins.titler, isFirstPrompt: isFirstPrompt,
+                allowsRetry: allowsRetry)
             if let title = services.titles.namedTitle(for: titleKey), isFirstPrompt || title != previous {
                 services.titleLanded(key, cwd, title)
             }

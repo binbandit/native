@@ -110,6 +110,20 @@ struct SessionTitleStateTests {
         let titled = state.beginIfNeeded(request)
         #expect(!titled)
     }
+
+    @Test("Replaying the same logical prompt cannot spend the next-message retry")
+    func replayDoesNotSpendRetry() {
+        var state = SessionTitleState()
+        let id = UUID()
+        state.begin(request, promptID: id)
+        state.fail()
+        let resend = state.beginIfNeeded(request, promptID: id)
+        let appRetry = state.beginIfNeeded(request, allowsRetry: false)
+        #expect(!resend && !appRetry && state.retryCount == 0)
+        // Identical text is still a new message when the user sends it again.
+        let nextMessage = state.beginIfNeeded(request, promptID: UUID())
+        #expect(nextMessage && state.retryCount == 1)
+    }
 }
 
 @Suite("Title instructions")

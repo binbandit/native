@@ -872,7 +872,8 @@ not to (`provider: off`).
   so a host that stops mid-title writes it at its next start. Content-only API prompts and attachment
   names count too. A first message without usable title material leaves the next turn eligible.
 - **Retries.** A failed or unavailable generator gets one retry on the next ordinary turn, using
-  the original request. The host persists `retry_count`, so restarting cannot reset that budget.
+  the original request. The host persists `retry_count` and the original `prompt_id`, so restarting
+  cannot reset the budget and automatic delivery resends cannot spend it before a new prompt.
   Client title requests carry this number too, letting the app distinguish the retry from repeated
   summaries. Generated and manually renamed titles are never retried. With host titles off, the
   app uses the same decision rules and retries once during that app run.

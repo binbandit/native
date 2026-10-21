@@ -99,7 +99,7 @@ extension HostCore {
             } : prompt.attachments.map(\.name)
         let request = SessionTitleRequest(
             firstMessage: prompt.text.isEmpty ? contentText : prompt.text, attachmentNames: names, in: session.folder)
-        guard session.titleState.beginIfNeeded(request) else { return }
+        guard session.titleState.beginIfNeeded(request, promptID: prompt.id) else { return }
         saveTitles(of: session)
         writeTitle(for: session)
     }

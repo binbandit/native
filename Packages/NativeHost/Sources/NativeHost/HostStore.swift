@@ -82,7 +82,11 @@ final class HostStore {
                 try database.execute(Self.closedSessionConfigTable)
             }
             if version < 10 {
-                try database.execute("ALTER TABLE titles ADD COLUMN retry_count INTEGER NOT NULL DEFAULT 0")
+                try database.execute(
+                    """
+                    ALTER TABLE titles ADD COLUMN retry_count INTEGER NOT NULL DEFAULT 0;
+                    ALTER TABLE titles ADD COLUMN prompt_id TEXT;
+                    """)
             }
             try database.execute("PRAGMA user_version = \(Self.schemaVersion)")
         }

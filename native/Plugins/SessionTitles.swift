@@ -114,7 +114,8 @@ final class SessionTitles {
     /// Names the session from its first prompt, unless it already has a title of Native's or the
     /// user's. Call it for each prompt so a failed attempt can retry once. A task in a host is titled there.
     func generateIfNeeded(
-        for key: Key, request: TitleRequest, using titler: (any SessionTitler)?, isFirstPrompt: Bool = true
+        for key: Key, request: TitleRequest, using titler: (any SessionTitler)?, isFirstPrompt: Bool = true,
+        allowsRetry: Bool = true
     ) async {
         guard let titler, !isTitledByHost(key),
             userTitles[key.storageKey] == nil,
@@ -125,7 +126,7 @@ final class SessionTitles {
         defer { generating.remove(key) }
         var state = attempts[key] ?? SessionTitleState()
         let shouldGenerate = state.beginIfNeeded(
-            SessionTitleRequest(projectName: request.projectName, prompt: request.prompt))
+            SessionTitleRequest(projectName: request.projectName, prompt: request.prompt), allowsRetry: allowsRetry)
         attempts[key] = state
         guard shouldGenerate, let pending = state.request else { return }
         let titleRequest = TitleRequest(

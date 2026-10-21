@@ -7,11 +7,8 @@ import Testing
 
 @testable import NativeHost
 
-@Suite("Host title retries", .serialized, .timeLimit(.minutes(1)))
-@HostActor
-struct HostTitleRetryTests {
-    typealias Rig = HostTitleTests.Rig
-    typealias Titler = HostTitleTests.ScriptedTitler
+extension HostTitleTests {
+    typealias Titler = ScriptedTitler
 
     private func settled(_ id: HostSessionID, in host: HostCore) async throws {
         for _ in 0..<500 {
@@ -183,6 +180,29 @@ struct HostTitleRetryTests {
         await client.stop()
     }
 
+    @Test("Automatic delivery resends preserve the title retry for the next user prompt")
+    func deliveryResendDoesNotSpendRetry() async throws {
+        let rig = try Rig()
+        let titler = Titler(answer: nil)
+        let host = try rig.host(titler)
+        let client = try await rig.connect(to: host)
+        try await client.configureTitles(ConfigureTitlesParams(provider: .onDevice))
+        let id = try await rig.startTask("flaky-once login test", on: client)
+        for _ in 0..<600 {
+            if host.sessions[id]?.record.lastStopReason == "end_turn" { break }
+            try await Task.sleep(for: .milliseconds(20))
+        }
+        #expect(host.sessions[id]?.record.lastStopReason == "end_turn")
+        try await settled(id, in: host)
+        #expect(titler.requests.count == 1)
+        #expect(host.sessions[id]?.titleState.retryCount == 0)
+        titler.script.withLock { $0.answer = "Fix login test" }
+        _ = try await client.prompt(PromptParams(sessionID: id, text: "continue"))
+        try await settled(id, in: host)
+        #expect(host.sessions[id]?.titleState.generated == "Fix login test")
+        await client.stop()
+    }
+
     @Test("An unavailable model is retried on the next turn after a restart, not at each restart")
     func unavailableAcrossRestart() async throws {
         let rig = try Rig()
@@ -192,10 +212,12 @@ struct HostTitleRetryTests {
         try await client.configureTitles(ConfigureTitlesParams(provider: .onDevice))
         let id = try await rig.startTask("fix the login test", on: client)
         try await settled(id, in: first)
+        let promptID = try #require(first.sessions[id]?.titleState.promptID)
         await client.stop()
         for link in first.agents.values { link.endNow() }
         let second = try rig.host(titler)
         let later = try await rig.connect(to: second)
+        #expect(second.sessions[id]?.titleState.promptID == promptID)
         #expect(titler.requests.count == 1)
         titler.script.withLock { $0.answer = "Fix login test" }
         _ = try await later.prompt(PromptParams(sessionID: id, text: "continue"))
