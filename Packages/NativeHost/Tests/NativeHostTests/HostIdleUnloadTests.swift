@@ -45,7 +45,7 @@ struct HostIdleUnloadTests {
         try await recorder.wait("the agent to stop", timeout: .seconds(15)) {
             await $0.agents["fake"]?.state == .stopped
         }
-        #expect(kill(pid, 0) != 0)
+        try await recorder.wait("the process to exit") { _ in kill(pid, 0) != 0 }
 
         // Reading the retained transcript must not start the adapter or replay it again.
         try await recorder.client.detach(session.id)
@@ -53,9 +53,10 @@ struct HostIdleUnloadTests {
         #expect(summary.phase == .idle)
         #expect(await recorder.agents["fake"]?.state == .stopped)
         let resetCount = await resets(session.id, in: recorder)
+        let turnCount = await recorder.turnsEnded(session.id).count
 
         _ = try await recorder.client.prompt(PromptParams(sessionID: session.id, text: "config?"))
-        try await recorder.wait("the next turn") { await $0.turnsEnded(session.id).count == 2 }
+        try await recorder.wait("the next turn") { await $0.turnsEnded(session.id).count == turnCount + 1 }
         #expect(await recorder.agentText(session.id).contains("model=beta effort=high"))
         #expect(await userMessages(session.id, in: recorder) == ["hello", "config?"])
         // Reattaching replays the retained log once; sending never resets it.
