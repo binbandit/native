@@ -316,6 +316,7 @@ extension String {
     }
 }
 
+#if DEBUG
 /// Fixtures for the previews.
 private enum AddHostPreview {
     static let offer = AddHostOffer(
@@ -379,3 +380,4 @@ private enum AddHostPreview {
         AddHostSheet(model: AddHostPreview.model(.failed(.sshSignIn(destination: "me@mac-mini.local"))), close: {})
     }
 }
+#endif

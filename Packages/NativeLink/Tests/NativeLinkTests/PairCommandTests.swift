@@ -23,6 +23,7 @@ import Testing
 
         let events = run.events
         #expect(events.map(\.event) == [.invite, .paired])
+        #expect(events.first?.command == LinkPairCommand.marker)
         #expect(events.first?.host == build)
         #expect(events.first?.protocolVersion == HostProtocol.version)
         #expect(events.last?.device?.name == "Laptop")

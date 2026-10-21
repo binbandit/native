@@ -67,6 +67,18 @@ import Testing
         #expect(ending == .tooOld(version: "0.9.4"))
     }
 
+    @Test func findsThePairCommandInADebugLibrary() async throws {
+        let rig = try ScriptRig()
+        try rig.install("Debug.app", helper: "#!/bin/sh\necho '{\"event\":\"invite\",\"link\":\"debug-link\"}'")
+        let library = rig.root.appending(
+            path: "Debug.app/Contents/Library/LoginItems/Native Host.app/Contents/MacOS/Native Host.debug.dylib")
+        try Data(LinkPairCommand.marker.utf8).write(to: library)
+
+        let (events, ending) = await rig.run(app: "Debug.app", grants: .standard)
+        #expect(events.map(\.link) == ["debug-link"])
+        #expect(ending == .ran(exitCode: 0))
+    }
+
     @Test func saysWhenNativeIsntThere() async throws {
         let rig = try ScriptRig()
         let (_, ending) = await rig.run(app: "Missing.app", grants: .standard)

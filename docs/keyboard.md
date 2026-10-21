@@ -335,6 +335,7 @@ that can't take the task stay listed, dimmed, with the reason.
 
 | Keys | Action |
 | --- | --- |
+| ⇧⌘H in Hosts | Add Host: enter an SSH destination or paste a pairing link |
 | ⌘F | Focus the search field |
 | ↑ / ↓ | Move through the search results |
 | Return | Open the highlighted result |

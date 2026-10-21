@@ -177,6 +177,7 @@ struct HostsSettingsContent: View {
     private func addHostButton(size: DSButtonStyle.Size) -> some View {
         Button("Add Host…") { directory.addHost() }
             .buttonStyle(.ds(.primary, size: size))
+            .keyboardShortcut("h", modifiers: [.command, .shift])
             .disabled(!directory.canAddHost)
             .help(directory.canAddHost ? "Pair a machine with this Mac" : "Adding hosts isn't in this build yet")
             .settingsRevealTarget(HostsSettingsPage.addRow)
