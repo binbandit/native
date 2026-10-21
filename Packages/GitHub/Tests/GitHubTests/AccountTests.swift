@@ -117,6 +117,25 @@ struct AccountTests {
         #expect(runner.commands.filter { $0.executable == "git" }.count == 1)
     }
 
+    @Test func unresolvedSSHAliasCannotBypassTheSelectedAccount() async {
+        let runner = FakeRunner { command in
+            if command.executable == "git" {
+                return FakeRunner.success(Data("remote.origin.url\ngit@github-work:team/repo.git\0".utf8))
+            }
+            if command.arguments.starts(with: ["auth", "status"]) {
+                return FakeRunner.success(try Fixtures.data("auth-status-all-accounts"))
+            }
+            Issue.record("An unresolved host must not perform the request as gh's default account")
+            return FakeRunner.success(Data("[]".utf8))
+        }
+        let cli = GitHubCLI(environment: [:], runner: runner)
+            .selecting(.init(logins: ["github.com": "sage-smudge"]))
+        await #expect(throws: GitHubError.self) {
+            try await cli.pullRequests(in: .directory(URL(filePath: "/fixture")))
+        }
+        #expect(runner.commands.count == 2)
+    }
+
     @Test func ambiguousCheckoutFailsClosedUntilGhHasADefault() throws {
         let config =
             "remote.origin.url\nhttps://github.com/me/repo.git\0remote.upstream.url\nhttps://work.example.com/team/repo.git\0"

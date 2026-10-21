@@ -69,7 +69,8 @@ account. `GitHubCLI` retrieves a chosen account's token with `gh auth token --ho
 passes it only in its child process environment. It never runs `gh auth switch` or saves tokens.
 Switching clears account-specific inbox, branch and review-page caches. An unavailable selected
 account fails with sign-in guidance instead of silently using another account. Cross-host checkouts
-need a default remote set in gh when their target is ambiguous. The footer control is hidden on iPad
+need a default remote set in gh when their target is ambiguous; unresolved SSH aliases need a remote
+URL with the GitHub hostname. The footer control is hidden on iPad
 until account selection is carried by the remote-host protocol.
 
 ### Getting there

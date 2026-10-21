@@ -17,7 +17,19 @@ extension GitHubCLI {
         else { return command }
 
         let target = try await accountHost(for: request, environment: command.environment)
-        guard let login = accountSelection.logins[target] else { return command }
+        guard let login = accountSelection.logins[target] else {
+            if request.directory != nil {
+                // gh can translate SSH aliases that git's raw config doesn't expose. Never let
+                // an unresolved alias silently bypass Native's choice and use gh's active login.
+                let status = try await GitHubCLI(environment: environment, runner: runner).authStatus()
+                guard status.hosts[target]?.contains(where: \.active) == true else {
+                    throw GitHubError.notARepository(
+                        "This remote doesn't identify a signed-in GitHub host. Use a remote URL with the GitHub hostname, then try again."
+                    )
+                }
+            }
+            return command
+        }
         let token = try await accountToken(login: login, host: target)
         let key = target == "github.com" || target.hasSuffix(".ghe.com") ? "GH_TOKEN" : "GH_ENTERPRISE_TOKEN"
         command.environment[key] = token
