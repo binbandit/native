@@ -137,7 +137,7 @@ private struct SessionTranscriptLineModifier: ViewModifier {
                 geometry.frame(in: .named(SessionTranscriptPlaceTracker.space))
             } action: { [tracker, id] frame in
                 tracker?.lineFrames[id] = frame
-                if tracker?.bringingBack?.place.lineID == id { tracker?.layoutChanged() }
+                tracker?.lineChanged(id)
             }
             .onDisappear { [tracker, id] in
                 tracker?.lineFrames[id] = nil
@@ -159,6 +159,9 @@ private final class SessionTranscriptPlaceTracker {
 
     var lineFrames: [String: CGRect] = [:]
     var viewport: SessionTranscriptViewport?
+    /// Child rows can disappear before the transcript does. Keep the last valid layout instead of
+    /// trying to reconstruct it from whichever row frames survive teardown.
+    private var recordedPlace: Leaving = .keep
 
     /// A place being brought back, for the first moments after the transcript appears.
     struct BringingBack {
@@ -194,10 +197,19 @@ private final class SessionTranscriptPlaceTracker {
         bringingBack = nil
     }
 
+    func lineChanged(_ id: String) {
+        if bringingBack == nil || bringingBack?.place.lineID == id {
+            layoutChanged()
+        }
+    }
+
     /// After a layout while bringing a place back: shows the transcript if the line is in place,
     /// and scrolls to it again if not.
     func layoutChanged() {
-        guard let bringingBack else { return }
+        guard let bringingBack else {
+            recordPlace()
+            return
+        }
         if let frame = lineFrames[bringingBack.place.lineID], let bounds = viewport?.bounds {
             let wanted = bringingBack.place.anchor.y * (bounds.height - frame.height)
             let offset = frame.minY - bounds.minY
@@ -223,7 +235,14 @@ private final class SessionTranscriptPlaceTracker {
     private func finishBringingBack() {
         let show = bringingBack?.show
         bringingBack = nil
+        recordPlace()
         show?()
+    }
+
+    private func recordPlace() {
+        if case .remember(let place) = currentPlace {
+            recordedPlace = .remember(place)
+        }
     }
 
     enum Leaving {
@@ -236,26 +255,29 @@ private final class SessionTranscriptPlaceTracker {
 
     /// What to remember as the transcript goes.
     var leaving: Leaving {
-        if bringingBack != nil || viewport == nil { return .keep }
-        return .remember(place)
+        if bringingBack != nil { return .keep }
+        return recordedPlace
     }
 
-    /// Where the transcript is now; nil at its latest output.
-    private var place: SessionTranscriptPlace? {
-        guard let viewport, let bounds = viewport.bounds, bounds.height > 0 else { return nil }
+    /// Missing geometry is not evidence that the user returned to the latest output.
+    private var currentPlace: Leaving {
+        guard let viewport, let bounds = viewport.bounds, bounds.height > 0, viewport.contentHeight > 0 else {
+            return .keep
+        }
         // The jump button's generous near-end threshold would lose a small but deliberate scroll.
-        guard bounds.maxY < viewport.contentHeight - 0.5 else { return nil }
+        guard bounds.maxY < viewport.contentHeight - 0.5 else { return .remember(nil) }
         let visible = lineFrames.filter { $0.value.intersects(bounds) }.sorted { $0.value.minY < $1.value.minY }
         // Prefer a complete line, then one filling the viewport. Two partially visible lines can
         // also fill the screen: an anchor outside the unit square preserves that offset too.
         let line =
             visible.first { $0.value.minY >= bounds.minY && $0.value.maxY <= bounds.maxY }
             ?? visible.first { abs(bounds.height - $0.value.height) > 0.5 }
-        guard let line, abs(bounds.height - line.value.height) > 0.5 else { return nil }
+        guard let line, abs(bounds.height - line.value.height) > 0.5 else { return .keep }
         // `scrollTo` lines the anchor's point in the line up with the same point in the view:
         // offset + anchor * line height = anchor * view height.
         let offset = line.value.minY - bounds.minY
-        return SessionTranscriptPlace(
-            lineID: line.key, anchor: UnitPoint(x: 0.5, y: offset / (bounds.height - line.value.height)))
+        return .remember(
+            SessionTranscriptPlace(
+                lineID: line.key, anchor: UnitPoint(x: 0.5, y: offset / (bounds.height - line.value.height))))
     }
 }
