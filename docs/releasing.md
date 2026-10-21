@@ -511,7 +511,8 @@ actionlint .github/workflows/testflight.yml
    [operating-system encryption exemption](https://developer.apple.com/help/app-store-connect/manage-app-information/overview-of-export-compliance/).
    Reassess that declaration if adding another cryptographic implementation or protocol.
 5. Create an **internal** TestFlight group and enable **automatic distribution**, then add the
-   App Store Connect team members who should receive every build. Apple processing and compliance
+   only the owner's App Store Connect account. The configured `Native Team` group deliberately has
+   one tester; adding anyone else requires an explicit request. Apple processing and compliance
    clearance must finish before testers see a build. External testers require Apple's beta review;
    they are not an immediate per-commit distribution channel.
 
