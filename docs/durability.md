@@ -409,7 +409,8 @@ project without a hosted remote is the same project on another device only where
 folder there. Sessions are keyed as on this Mac (`SessionKey`: agent and agent session id), and
 `AppModel.remoteSession(_:)` says which host holds one; the sidebar keeps grouping by project and
 lists each project's sessions on paired hosts beside this Mac's (`remoteSessionSummaries`: what the
-host has open in its checkout, then what its agents saved there), with a device badge.
+host has open in its checkout or the checkout's task worktrees there, then what its agents saved in
+them), with a device badge.
 
 **New session on a device.** The device picker (`AppModel.deviceOptions(for:)`) lists This Mac and
 each paired host with its availability (online, connecting, or offline with the reason) and the
