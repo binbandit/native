@@ -7,6 +7,8 @@ import SwiftUI
 /// `@` file mentions floating above it. Its keys follow docs/keyboard.md.
 struct ComposerView: View {
     @Bindable var session: SessionModel
+    /// Previews supply an in-memory mode library.
+    var taskModes: TaskModes = .shared
     @Experiment(.composerNext) private var composerNext
 
     @AppStorage(FollowUpBehavior.storageKey) var followUp = FollowUpBehavior.defaultValue

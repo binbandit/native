@@ -177,7 +177,8 @@ Adding a **variant**:
 ### Quiet composer
 
 `NativeComposerNext` is an off-by-default Labs gate at the composer's resting controls. Enable it
-with Settings > Labs > Quiet composer, or launch with `-experiment.NativeComposerNext YES`.
+with Settings > Labs > Quiet composer, or set `experiment.NativeComposerNext` as a boolean in
+the app's user defaults before launch.
 The editor keeps its identity as the session starts and finishes work; only its footer changes.
 At rest, plain words open the agent, model, effort, autonomy and task-mode pickers. The agent entry
 opens New Session With, since an existing conversation belongs to its original agent. Other

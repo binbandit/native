@@ -12,7 +12,7 @@ extension ComposerView {
             onAttach: attach,
             onSet: set,
             onCycleEffort: { apply(settings.nextEffort) },
-            mode: TaskModeControl(session: session),
+            mode: TaskModeControl(session: session, modes: taskModes),
             extras: { density in SessionGoalControl(session: session, showsIcon: density.showsIcons) },
             context: { density in
                 // The session's MCP servers sit beside the context ring, quiet like it.
@@ -40,8 +40,8 @@ extension ComposerView {
             onChooseAgent: {
                 CommandRegistry.shared.perform(.sessionNewWithAgent, in: CommandContext(session: session))
             },
-            mode: TaskModeControl(session: session),
-            extras: { SessionGoalControl(session: session, showsIcon: false) },
+            mode: TaskModeControl(session: session, modes: taskModes),
+            extras: { SessionGoalControl(session: session, isQuiet: true) },
             context: {
                 HStack(spacing: DS.Space.xxs) {
                     MCPComposerChip(session: session, showsCount: true)

@@ -9,13 +9,15 @@ enum ComposerNextPreviewFixtures {
     static func composer(enabled: Bool = true, draft: String = "", phase: SessionModel.Phase = .idle) -> some View {
         let app = AppModel.preview(.empty)
         let session = session(in: app, draft: draft, phase: phase)
+        let defaults = PreviewUserDefaults()
+        let modes = TaskModes(library: ModeLibrary(defaults: defaults), defaults: defaults)
         let experiments = ExperimentStore(catalog: .native, storage: InMemoryExperimentStorage())
         let _ = experiments.set(enabled, for: .composerNext)
         let automation = AutomationCenter(
             goalStore: GoalStore(url: URL(filePath: "/native-preview-unused/goals.json")),
             workflows: WorkflowRunner(store: nil), automations: AutomationEngine(store: nil))
         if let session {
-            ComposerView(session: session)
+            ComposerView(session: session, taskModes: modes)
                 .environment(app)
                 .environment(automation)
                 .environment(CommandRegistry.shared)
