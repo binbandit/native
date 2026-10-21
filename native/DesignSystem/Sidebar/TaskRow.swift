@@ -213,9 +213,10 @@ public struct TaskRow<Leading: View, Accessory: View>: View {
         onArchive != nil && (isHovered || DS.isTouchPlatform)
     }
 
-    /// The type glyph stands in for the status at rest.
+    /// The type glyph stands in for the status at rest: idle, finished, or stopped by the user, who
+    /// needs no reminder of what they did themselves.
     private var showsLeading: Bool {
-        Leading.self != EmptyView.self && (status == .idle || status == .done)
+        Leading.self != EmptyView.self && (status == .idle || status == .done || status == .cancelled)
     }
 
     private var accessibilityValue: String {

@@ -169,6 +169,7 @@ build_embedded
 run xcodebuild archive \
     -project native.xcodeproj -scheme native -configuration "$configuration" \
     -archivePath "$archive" -derivedDataPath "$output/DerivedData" -destination 'generic/platform=macOS' \
+    -disableAutomaticPackageResolution \
     MARKETING_VERSION="$version" CURRENT_PROJECT_VERSION="$build_number" \
     NATIVE_CHANNEL_CONDITION="$channel_condition" NATIVE_APP_ICON_NAME="$app_icon" \
     NATIVE_SENTRY_DSN="${NATIVE_SENTRY_DSN:-}" NATIVE_SPARKLE_PUBLIC_KEY="$public_key" \
