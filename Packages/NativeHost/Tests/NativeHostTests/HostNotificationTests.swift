@@ -110,6 +110,24 @@ struct HostNotificationTests {
         await second.stop()
     }
 
+    @Test("A notification names its task as clients do: the user's title over the first message")
+    func namedAsClientsName() async throws {
+        let harness = try HostHarness()
+        try harness.start()
+        let recorder = try await harness.connect()
+        let session = try await recorder.client.newSession(
+            NewSessionParams(agentID: "fake", cwd: harness.root.path(percentEncoded: false), attach: true)
+        ).id
+        try await recorder.client.setSessionTitle(
+            SetSessionTitleParams(sessionID: session, title: "Uploads", source: .user))
+        _ = try await recorder.client.prompt(PromptParams(sessionID: session, text: "hello"))
+        try await recorder.wait("the turn") { await $0.turnsEnded(session) == ["end_turn"] }
+        let finished = try #require(try await recorder.client.notifications().notifications.last)
+        #expect(finished.kind == .turnFinished)
+        #expect(finished.title == "Uploads")
+        await recorder.stop()
+    }
+
     @Test("The backlog keeps the newest notifications, numbered on from those it dropped")
     func backlogIsBounded() throws {
         let url = FileManager.default.temporaryDirectory.appending(
