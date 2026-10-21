@@ -243,7 +243,7 @@ Scroll positions remain per window in `SessionTranscriptMemory`.
 | --- | --- |
 | Conversations | The agent's own store, via `session/list` and `session/load` |
 | Titles, preferences, disabled plugins | `UserDefaults` (typed keys next to their owner) |
-| Settings chosen per session (model, mode, effort), set back after `session/load` | `UserDefaults`, kept with the titles by `SessionTitles` |
+| Settings chosen per session (model, mode, effort), set back after `session/load` | The host's session record and closed-session choices; `SessionTitles` keeps the local fallback in `UserDefaults`. On load, saved choices win, then explicit per-agent Settings defaults, then the agent's reported values |
 | The mode each task is in (Build, Plan, Ask…) and the settings it changed | `UserDefaults` (`sessionModes`), by `TaskModes`; the user's own modes in `modes.custom`, a project's in `.native/modes/` |
 | Where each task turn began, for the changes inspector's This Turn | `UserDefaults` (`git.turnBaselines`, the newest 200), by `GitTurnBaselines`; each points at a snapshot of the working tree kept as loose git objects only (no ref or index entry), which `git gc` prunes after a couple of weeks, when This Turn falls back to HEAD as it was when the turn began and says so |
 | User plugins | `~/.native/plugins/<id>/plugin.json` |
