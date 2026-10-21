@@ -7,13 +7,14 @@ struct SessionGoalControl: View {
     let session: SessionModel
     /// The pill as only its icon, when the composer is short of room.
     var showsIcon = false
+    var isQuiet = false
 
     @Environment(AutomationCenter.self) private var center
     @State private var isEditing = false
 
     var body: some View {
         if let controller = center.goal(for: session) {
-            GoalPillButton(status: controller.goal?.status, showsIcon: showsIcon) { isEditing = true }
+            GoalPillButton(status: controller.goal?.status, showsIcon: showsIcon, isQuiet: isQuiet) { isEditing = true }
                 .popover(isPresented: $isEditing, arrowEdge: .top) {
                     GoalEditor(goal: controller.goal, agentName: session.agentName) { objective, budget in
                         isEditing = false
@@ -37,18 +38,22 @@ struct SessionGoalControl: View {
     }
 }
 
-#if NATIVE_PREVIEWS_WIP
+#if DEBUG
 #Preview("Goal control - No goal yet") {
     let app = AppModel.preview()
     let session = SessionModel.preview(in: app, title: "Queue follow-ups while a turn runs")
+    let automation = AutomationCenter(
+        goalStore: GoalStore(url: URL(filePath: "/native-preview-unused/goals.json")),
+        workflows: WorkflowRunner(store: nil), automations: AutomationEngine(store: nil))
     DSPreviewPair {
         if let session {
             HStack(spacing: DS.Space.lg) {
                 SessionGoalControl(session: session)
                 SessionGoalControl(session: session, showsIcon: true)
+                SessionGoalControl(session: session, isQuiet: true)
             }
         }
     }
-    .environment(AutomationCenter.preview())
+    .environment(automation)
 }
 #endif
