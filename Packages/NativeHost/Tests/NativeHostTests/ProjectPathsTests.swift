@@ -72,6 +72,19 @@ struct ProjectPathsTests {
         }
     }
 
+    @Test func readsKnownFilesThroughSearchOnlyDirectories() throws {
+        let folders = try Folders()
+        defer { folders.remove() }
+        let directory = folders.path("project/sub")
+        try FileManager.default.setAttributes([.posixPermissions: 0o111], ofItemAtPath: directory)
+        defer { try? FileManager.default.setAttributes([.posixPermissions: 0o755], ofItemAtPath: directory) }
+        let paths = ProjectPaths(roots: [folders.project])
+        let checked = try paths.resolve(folders.project + "/sub/file")
+        let handle = try ProjectPaths.openForReading(checked)
+        defer { try? handle.close() }
+        #expect(try handle.readToEnd() == Data("inside".utf8))
+    }
+
     @Test func readingNeverFollowsALinkSwappedInAfterTheCheck() throws {
         let folders = try Folders()
         defer { folders.remove() }
