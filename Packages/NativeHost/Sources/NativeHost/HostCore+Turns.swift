@@ -307,11 +307,15 @@ extension HostCore {
             RawSetConfigOptionRequest(sessionId: agentSessionID, configId: params.configID, value: params.value),
             as: RawConfigOptionsResponse.self
         )
-        // Remembered so a reload that comes back on the agent's default gets it set back.
-        session.record.configChoices[params.configID] = params.value
-        try? store.updateSession(session.record)
         if let options = response.configOptions {
             append(.update(SessionMirror.configOptionsUpdate(options)), to: session)
+            // As the agent took it (setting the model can move the effort too), so a reload that
+            // comes back on other values gets these set back.
+            pinConfig(Self.configOptions(options), of: session)
+        } else {
+            // The agent didn't say what it's on: as asked.
+            session.record.configChoices[params.configID] = params.value
+            try? store.updateSession(session.record)
         }
     }
 

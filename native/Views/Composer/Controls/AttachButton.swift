@@ -7,6 +7,7 @@ import UniformTypeIdentifiers
 struct AttachButton: View {
     @Binding var isPickingFiles: Bool
     let onPick: (IncomingAttachments) -> Void
+    var isQuiet = false
 
     @State private var isPickingPhotos = false
     @State private var photo: PhotosPickerItem?
@@ -18,13 +19,25 @@ struct AttachButton: View {
                     Button("Photo Library", systemImage: "photo.on.rectangle") { isPickingPhotos = true }
                     Button("Files…", systemImage: "folder") { isPickingFiles = true }
                 } label: {
-                    Label("Attach", systemImage: "plus")
-                        .labelStyle(.iconOnly)
-                        .pillChrome(isSquare: true)
+                    if isQuiet {
+                        Label("Attach", systemImage: "plus")
+                            .labelStyle(.iconOnly)
+                            .font(.dsBody)
+                            .foregroundStyle(.dsTextSecondary)
+                            .frame(width: DS.Size.minimumHitTarget, height: DS.Size.minimumHitTarget)
+                    } else {
+                        Label("Attach", systemImage: "plus")
+                            .labelStyle(.iconOnly)
+                            .pillChrome(isSquare: true)
+                    }
                 }
                 .menuStyle(.button)
                 .buttonStyle(.plain)
                 .menuIndicator(.hidden)
+            } else if isQuiet {
+                Button("Attach Files", systemImage: "plus") { isPickingFiles = true }
+                    .labelStyle(.iconOnly)
+                    .buttonStyle(ComposerFactButtonStyle())
             } else {
                 Button("Attach Files", systemImage: "plus") { isPickingFiles = true }
                     .labelStyle(.iconOnly)
@@ -52,6 +65,7 @@ struct AttachButton: View {
     DSPreviewPair {
         ComposerControlsBar {
             AttachButton(isPickingFiles: .constant(false), onPick: { _ in })
+            AttachButton(isPickingFiles: .constant(false), onPick: { _ in }, isQuiet: true)
         } trailing: {
             EmptyView()
         }

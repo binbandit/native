@@ -7,6 +7,9 @@ import SwiftUI
 /// `@` file mentions floating above it. Its keys follow docs/keyboard.md.
 struct ComposerView: View {
     @Bindable var session: SessionModel
+    /// Previews supply an in-memory mode library.
+    var taskModes: TaskModes = .shared
+    @Experiment(.composerNext) private var composerNext
 
     @AppStorage(FollowUpBehavior.storageKey) var followUp = FollowUpBehavior.defaultValue
     @Environment(\.undoManager) var undoManager
@@ -230,30 +233,18 @@ struct ComposerView: View {
                     onRemove: removeAttachment
                 )
             }
-            inputSection(suggestions: suggestions)
-            ComposerControlsRow(
-                settings: settings,
-                agentName: session.agentName,
-                resumedAutonomy: autonomyBeforePlan,
-                followUpHint: followUpHint,
-                isModelPickerOpen: $isModelPickerOpen,
-                isPickingFiles: $isPickingFiles,
-                onAttach: attach,
-                onSet: set,
-                onCycleEffort: { apply(settings.nextEffort) },
-                mode: TaskModeControl(session: session),
-                extras: { density in SessionGoalControl(session: session, showsIcon: density.showsIcons) },
-                context: { density in
-                    // The session's MCP servers sit beside the context ring, quiet like it.
-                    HStack(spacing: DS.Space.xxs) {
-                        MCPComposerChip(session: session, showsCount: !density.showsIcons)
-                        ContextIndicator(session: session, style: density.showsIcons ? .ring : .labeled)
-                    }
+            VStack(spacing: 0) {
+                // Keep the editor mounted when a turn changes the footer, preserving focus and selection.
+                inputSection(suggestions: suggestions)
+                if composerNext && (session.phase == .idle || session.phase == .disconnected)
+                    && !session.needsApproval && session.pendingQuestion == nil
+                {
+                    nextControls(settings)
+                } else {
+                    Rectangle().fill(.dsBorder).frame(height: DS.Composer.separatorWidth)
+                    currentControls(settings)
                 }
-            )
-            // The file picker opens on the task's own folder.
-            .fileDialogDefaultDirectory(session.cwd)
-            .disabled(!canEdit)
+            }
         }
         .dropDestination(for: ComposerDropItem.self) { items, _ in
             attach(items)
@@ -380,3 +371,35 @@ struct ComposerView: View {
         session.wantsComposerFocus = false
     }
 }
+
+#if DEBUG
+#Preview("Composer - Quiet at rest") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.lg) {
+            ComposerNextPreviewFixtures.composer()
+            ComposerNextPreviewFixtures.composer(draft: "Review @native/Views/Composer and the attached notes.")
+        }
+        .frame(width: 860)
+    }
+}
+
+#Preview("Composer - Quiet loading and disconnected") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.lg) {
+            ComposerNextPreviewFixtures.composer(phase: .loading)
+            ComposerNextPreviewFixtures.composer(draft: "Keep my draft", phase: .disconnected)
+        }
+        .frame(width: 860)
+    }
+}
+
+#Preview("Composer - Experiment off and running") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.lg) {
+            ComposerNextPreviewFixtures.composer(enabled: false)
+            ComposerNextPreviewFixtures.composer(phase: .prompting)
+        }
+        .frame(width: 860)
+    }
+}
+#endif
