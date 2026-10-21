@@ -16,8 +16,8 @@ struct PullRequestsStaleBanner: View {
             Image(systemName: systemImage)
                 .font(.system(size: DS.Size.navIcon))
                 .foregroundStyle(.dsWarning)
-            TimelineView(.everyMinute) { _ in
-                Text("\(reason) Showing results from \(fetchedAt, format: .relative(presentation: .named)).")
+            DSMinuteTimeline { _ in
+                Text("\(reason) Showing results from \(fetchedAt.formatted(.relative(presentation: .named))).")
                     .font(.dsBody)
                     .foregroundStyle(.dsTextSecondary)
                     .lineLimit(2)

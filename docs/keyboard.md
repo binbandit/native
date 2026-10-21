@@ -28,13 +28,15 @@ cancels, so those keys don't get rows of their own.
 | ↑ in an empty composer | Edit the last queued message, if any; else recall the last prompt | Edit the last queued message | |
 
 **Steer** adds the message to the running turn (`_session/steering`); agents that don't support
-steering queue it instead, and the hint says so. **Queue** holds the message above the composer
+steering queue it instead. **Queue** holds the message above the composer
 and sends it when the turn ends; queued messages go out one per turn, in order. A stopped or failed
 turn holds the queue until you send again.
 
-The composer shows the current mapping as a hint while the agent works, e.g.
-"↩ Steer · ⌘↩ Queue", when the controls row has room for it; the placeholder always says what
-Return does.
+While the agent works, the composer keeps a plain message prompt. The send button's tooltip and
+VoiceOver label describe whether it steers or queues, including the fallback for agents without
+steering. Pending questions, approvals, stopping and unavailable sessions still explain what is
+needed in the placeholder. Code-block and queued-message editing hints remain visible when the
+controls row has room.
 
 **Stop** asks the agent to end the turn, answers its open permission requests as rejected, and the
 transcript marks the turn Stopped. If the agent hasn't ended it after 10 seconds, or Stop is pressed

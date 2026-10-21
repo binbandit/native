@@ -1,6 +1,7 @@
 import Dispatch
 import Foundation
 import NativeHostProtocol
+import Synchronization
 
 #if canImport(Darwin)
 import Darwin
@@ -17,7 +18,8 @@ public protocol PeerVerifier: Sendable {
 /// Accepts clients on the host's Unix socket.
 final class SocketServer: Sendable {
     private let descriptor: Int32
-    private let source: any DispatchSourceRead
+    // Linux's DispatchSourceRead lacks Sendable; keep access inside the lock after setup.
+    private let source: Mutex<any DispatchSourceRead>
     private let logger = HostLogger(category: "SocketServer")
 
     /// Listens at `path` and hands each verified connection to `accept`.
@@ -26,7 +28,6 @@ final class SocketServer: Sendable {
         self.descriptor = descriptor
         let source = DispatchSource.makeReadSource(
             fileDescriptor: descriptor, queue: DispatchQueue(label: "Native.SocketServer"))
-        self.source = source
         let logger = logger
         source.setEventHandler {
             // The listening socket is non-blocking: take every connection that's waiting.
@@ -52,10 +53,11 @@ final class SocketServer: Sendable {
             _ = close(descriptor)
         }
         source.resume()
+        self.source = Mutex(source)
     }
 
     func stop() {
-        source.cancel()
+        source.withLock { $0.cancel() }
     }
 
     private static func acceptConnection(_ descriptor: Int32) -> Int32 {
