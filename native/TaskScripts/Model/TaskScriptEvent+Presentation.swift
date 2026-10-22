@@ -91,7 +91,7 @@ enum TaskScriptVariables {
         ("NATIVE_WORKTREE_PATH", "The task's folder, where the script runs"),
         ("NATIVE_BRANCH", "The task's branch"),
         ("NATIVE_BASE_BRANCH", "The branch the worktree was made from (setup)"),
-        ("NATIVE_TASK_ID", "The agent's id for the task's session (empty during setup)"),
+        ("NATIVE_TASK_ID", "The agent's id for the task (empty during setup)"),
         ("NATIVE_TASK_TITLE", "The task's title (empty during setup)"),
         ("NATIVE_AGENT", "The agent's id, such as codex or claude-code"),
     ]

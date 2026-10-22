@@ -76,7 +76,7 @@ import Testing
         let harness = try GatewayHarness(paired: { record in records.withLock { $0.append(record) } })
         _ = try await harness.pairDevice()
         #expect(records.value.map(\.wasPreapproved) == [false])
-        #expect(records.value.first?.summary.contains("Settings › Paired Devices") == true)
+        #expect(records.value.first?.summary.contains("Settings ▸ Paired Devices") == true)
     }
 
     @Test func theLinkCarriesItsGrantsAndOlderLinksStillRead() throws {
@@ -93,7 +93,9 @@ import Testing
 
     @Test func grantsReadAsOneSentence() {
         #expect(LinkGrants.standard.abilities == "follow and drive tasks")
-        #expect(LinkGrants(manageHost: true).abilities == "follow and drive tasks and install updates")
+        #expect(
+            LinkGrants(runCommands: true).abilities
+                == "follow and drive tasks, and run commands and edit files in its projects")
         #expect(
             LinkGrants(managePlugins: true, manageHost: true, runCommands: true).abilities
                 == "follow and drive tasks, run commands and edit files in its projects, install updates, and turn plugins on and off"

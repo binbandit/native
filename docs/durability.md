@@ -257,7 +257,11 @@ device, how it paired and what it may do) and to every connected client. Add Hos
 (`native/Hosts/AddHost*`) pastes the link, or runs `pair --json --run-commands --install-updates
 --manage-plugins` over the user's own SSH (BatchMode, never prompting), shows what the link offers
 with a checkbox each (commands and updates on, plugins off), and pairs with what the owner keeps.
-The pairing remembers the SSH destination. Only the embedded helper has `pair`: a host without it
+When that Mac's SSH waits for the sign-in to be approved in a browser (Tailscale SSH's check mode),
+Add Host shows the page to approve and carries on once it is. Its copied manual command finds
+Native and Native Nightly in both Applications folders and asks which installation to pair when
+more than one is present. The pairing remembers the SSH
+destination. Only the embedded helper has `pair`: a host without it
 (Linux, later) needs `native-host` moved into a package that depends on both NativeHost and
 NativeLink, with its `serve` starting a `LinkGateway`.
 
@@ -768,7 +772,7 @@ above the detail column: tasks that need the user first, each with its status, t
 sidebar's), what happened and when, opening its task on click; four rows, then Show All. Opening a
 task takes it off the card, and the card goes when it's empty or dismissed. Entries that arrive
 while the app is connected are news already and only move the baseline. Recoveries also show inline
-in the transcript, where they happened. With host notifications on (`NativeHostNotifications`), the
+in the transcript, where they happened. With host notifications on (the default; `NativeHostNotifications`), the
 card is folded from the host's notifications instead, so what was seen on another device is left out
 ("Notifications", "Coming back").
 
@@ -818,7 +822,7 @@ a `group`: one per task, and one per provider for limits. Clients show the newes
 answer wins wherever it came from, and a client that follows the session can answer with those
 directly (the notification carries the option ids).
 
-**On the Mac** (`HostNotificationFeed`, one for the app, behind `NativeHostNotifications`). It
+**On the Mac** (`HostNotificationFeed`, one for the app; on unless `NativeHostNotifications` is off). It
 follows this Mac's own host from launch and every paired host through `RemoteHosts`; notifications
 from a paired host say which ("Codex on Mac mini"). Live notifications show as Native's always have
 (the words of `NativeNotification`, Settings › Notifications' choices: needs you, long work and its
@@ -830,6 +834,9 @@ host connects (a click that launched Native) wait for it.
 
 With the switch on, the app's own path stays quiet about sessions a followed host runs, so nothing
 shows twice; sessions that run in the app (no host), workflows, goals and limits notify as before.
+The host advertises `notificationEvents: true` in its handshake before the client suppresses that
+fallback. Older protocol-v2 hosts omit this optional field and keep the app's session notifications
+and journal-based away summary, including hosts from before the notification methods existed.
 
 **Coming back.** The Mac remembers, per host, the newest notification it heard of
 (`NativeHostSeenNotifications`). After connecting it lists what came after: a host's first connection
@@ -843,6 +850,12 @@ any host while Native is in the background, also gets one notification with the 
 Only what's still `active` counts: an approval answered on the phone, or a finished task seen there,
 isn't news on the Mac. On every connection the Mac also takes down what it shows (from this run or
 an earlier one, read back from the notification center) that was cleared while it wasn't listening.
+
+When an existing user first enables host notifications, the app has an activity cursor but no
+notification cursor. That launch keeps the journal's away summary while establishing the new cursor;
+the next launch uses notifications. `HostNotificationHistory` captures which cursors existed at
+launch, so notification catch-up cannot erase the migration summary by saving its cursor first.
+A genuinely new host still only establishes its baseline, since it has no activity cursor either.
 
 What durability doesn't fix: a context window that's full, a provider outage, or side effects a tool
 call made outside the project (a deploy, an email). Those are surfaced, not hidden; the interruption
@@ -869,14 +882,21 @@ not to (`provider: off`).
   `instructions` are the user's title instructions (global, per project, the organization's), which
   the host applies for each task's folder. Only the owner, or a device allowed to manage the host,
   may change it.
-- **When.** As a task's first message starts its turn (not a session adopted from the agent's list,
-  not one with earlier messages), the host commits what the title is written from (project name,
+- **When.** As a task's first usable message starts its turn (not a session adopted from the agent's list),
+  the host commits what the title is written from (project name,
   the message up to 2,000 characters, `progress: generating`) and then writes it. Committed first,
-  so a host that stops mid-title writes it at its next start.
+  so a host that stops mid-title writes it at its next start. Content-only API prompts and attachment
+  names count too. A first message without usable title material leaves the next turn eligible.
+- **Retries.** A failed or unavailable generator gets one retry on the next ordinary turn, using
+  the original request. The host persists `retry_count` and the original `prompt_id`, so restarting
+  cannot reset the budget and automatic delivery resends cannot spend it before a new prompt.
+  Client title requests carry this number too, letting the app distinguish the retry from repeated
+  summaries. Generated and manually renamed titles are never retried. With host titles off, the
+  app uses the same decision rules and retries once during that app run.
 - **No model on the host** (Apple Intelligence off on a Mac mini, a Linux host), or provider
   `client`: the summary's `titles.request` asks clients, and the first one with a titler writes it
   and sends it with `_native/session/set_title {source: generated}`. Meanwhile, and when the model
-  failed, `titles.fallback` names the task from its first message (its first line, cut after eight
+  failed or is still generating, `titles.fallback` names the task from its first message (its first line, cut after eight
   words), shown after the agent's own title, so a task is never nameless while there's anything to
   name it by.
 - **The user's title wins.** A rename, from any client, and its undo (the previous title, or none)
@@ -990,7 +1010,12 @@ Window › Durable Sessions preview, opt-in per channel. Nothing else in the app
    `NativeHostSessions` default), `AppModel.connectHost(client:)` makes every `AgentRuntime` take its
    status from `_native/agents/changed` (`AgentRuntime.apply`, decoding the agent's `initialize`
    result) and start, stop, restart and sign in through the host (`AgentRuntime+Host.swift`). Idle
-   parking asks `_native/agents/stop`, which the host refuses while the agent works. Requests outside
+   parking asks `_native/agents/stop`, which the host refuses while the agent works. Agents whose spec
+   sets `idleUnloadTimeout` are left to the host instead (`HostCore+IdleUnload.swift`): it closes each
+   session idle that long in the agent (`session/close`) while keeping the session, its log and its
+   followers, including completed subagent transcripts and their host identities. It restores child
+   routing and resumes with `session/resume` (no replay, settings set back) the next time it's used,
+   and ends the agent's process once nothing is loaded and nothing used it for as long. Requests outside
    turns go through `AgentConnection`: `ACPConnection` for agents in the app, `HostAgentConnection`
    (list and delete sessions) for agents in the host, so listing and archiving code didn't change.
 2. `SessionModel` keeps `state`, `phase`, `queuedPrompts`, `needsApproval` and every method. It holds
@@ -1038,7 +1063,7 @@ Window › Durable Sessions preview, opt-in per channel. Nothing else in the app
 orchestration MCP server (done: "Native's tools in the host", behind the `NativeHostTasks` default;
 `setup_status` and `run_script` are answered by the app), titles (done: "Titles",
 behind the `NativeHostTitles` default), notifications with
-actions (done: "Notifications", behind the `NativeHostNotifications` default), limit resumes, goals and workflows, keep-awake (done: "Sleep"), the menu bar extra, unread state. The
+actions (done: "Notifications", on by default; `NativeHostNotifications` off goes back), limit resumes, goals and workflows, keep-awake (done: "Sleep"), the menu bar extra, unread state. The
 plugin registry's runtime side follows (the plugin API moves into a package both sides import).
 Engines come to the host as packages, never as app-target files: goals, workflows and automations
 link `Packages/Automation` (Foundation-only, Codable, pure state plus a `due(at:)` planner), and the

@@ -92,7 +92,7 @@ struct WorkflowRunHeader: View {
         case .halted:
             return "Nothing is running: a step stopped short. Retry, resume or skip it to go on."
         case .cancelled:
-            return "Stopped. Finished steps keep their sessions and results."
+            return "Stopped. Finished steps keep their tasks and results."
         case .succeeded:
             return run.endedAt.map { "Finished in \(DSFormat.duration($0.timeIntervalSince(run.createdAt)))." }
         case .running, .awaitingApproval, .blocked:

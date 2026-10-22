@@ -123,6 +123,8 @@ public final class HostCore {
     /// A standalone build to switch to when the host next exits for a restart.
     var pendingActivation: String?
     var updateChecks: Task<Void, Never>?
+    /// Checks for sessions to unload while idle (`HostCore+IdleUnload.swift`).
+    var idleUnloadChecks: Task<Void, Never>?
     /// Set once a restart was asked for, to exit when nothing is running.
     var isRestartingWhenIdle = false
     /// Who writes titles, and which are being written (`HostCore+Titles.swift`).
@@ -184,6 +186,7 @@ public final class HostCore {
         }
         startUpdates()
         startHostStatus()
+        unloadIdleSessionsPeriodically()
         let interval = configuration.heartbeatInterval
         heartbeat = Task { [weak self] in
             while !Task.isCancelled {
@@ -203,7 +206,7 @@ public final class HostCore {
             protocolVersion: HostProtocol.version, hostID: hostID, machineName: configuration.machineName,
             hostInfo: configuration.hostInfo,
             epoch: epoch, processID: ProcessInfo.processInfo.processIdentifier, startedAt: startedAt,
-            channel: configuration.location.channel
+            channel: configuration.location.channel, notificationEvents: true
         )
     }
 
@@ -261,6 +264,8 @@ public final class HostCore {
         for session in sessions.values {
             session.agentName = agents[session.record.agentID]?.spec.name ?? session.agentName
         }
+        // At the pace the new specs' timeouts call for.
+        unloadIdleSessionsPeriodically()
     }
 
     private func makeLink(_ spec: AgentSpec) -> AgentLink {

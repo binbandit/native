@@ -23,7 +23,7 @@ struct CodexPolicyTranslator: SessionPolicyTranslator {
         case .mcpServers:
             .atLaunch(
                 caveat:
-                    "Codex may still load it in sessions that bring Native's own tools, until its adapter is updated.")
+                    "Codex may still load it in tasks that bring Native's own tools, until its adapter is updated.")
         case .skills: .atLaunch(caveat: nil)
         }
     }

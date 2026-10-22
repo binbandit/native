@@ -148,7 +148,7 @@ center and tints it for a moment.
 
 Local only: the index is a file in the app's own Application Support folder, queries never leave
 the process, and nothing is sent anywhere. Settings ▸ Search turns reading the agents' history off,
-excludes projects (their sessions are removed and never indexed), and clears the index. Turning
+excludes projects (their tasks are removed and never indexed), and clears the index. Turning
 the Search plugin off stops indexing altogether.
 
 ## Clients and the host

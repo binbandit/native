@@ -12,8 +12,9 @@ extension LinkGrants {
     }
 
     /// What a device with these grants may do, as a sentence's list: "follow and drive tasks, run
-    /// commands and edit files in its projects, and install updates". The pair command, the host's
-    /// journal and Add Host all say it this way.
+    /// commands and edit files in its projects, and install updates". The items have "and"s of their
+    /// own, so the last always gets a comma. The pair command, the host's journal and Add Host all
+    /// say it this way.
     public var abilities: String {
         var abilities = ["follow and drive tasks"]
         if runCommands { abilities.append("run commands and edit files in its projects") }
@@ -21,6 +22,6 @@ extension LinkGrants {
         if managePlugins { abilities.append("turn plugins on and off") }
         guard let last = abilities.popLast() else { return "" }
         guard !abilities.isEmpty else { return last }
-        return "\(abilities.joined(separator: ", "))\(abilities.count > 1 ? "," : "") and \(last)"
+        return "\(abilities.joined(separator: ", ")), and \(last)"
     }
 }

@@ -93,7 +93,7 @@ struct OrchestratorTests {
         let result = try await tool("start_task", orchestrator)(
             stranger, arguments: ["agent": "codex", "prompt": "hi"])
         #expect(result.isError)
-        #expect(result.text.contains("doesn't have your session open"))
+        #expect(result.text.contains("doesn't have your task open"))
     }
 
     @Test("Skills switched off for the session are left out")

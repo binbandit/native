@@ -155,7 +155,7 @@ extension SessionMessageView {
         let sender =
             switch frame.sender {
             case .parent:
-                "the parent session"
+                "the parent task"
             case .task(let id, let label), .sibling(let id, let label):
                 Orchestrator.savedTask(id: id)?.title ?? OrchestrationTask.displayName(fromLabel: label)
                     ?? "another task"
@@ -176,7 +176,7 @@ extension SessionMessageView {
     }
 }
 
-#Preview("Session messages") {
+#Preview("Task messages") {
     DSPreviewPair {
         VStack(alignment: .leading, spacing: DS.Space.lg) {
             SessionMessageView(

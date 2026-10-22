@@ -97,7 +97,7 @@ struct PullRequestAskFailureView: View {
         .gitHub(.offline("error connecting to api.github.com")),
         .workspace("Native couldn't make a folder for the conversation: the disk is full."),
         .startFailed(name: "Claude Code", message: "The agent exited before it answered (code 1)."),
-        .reopenFailed(name: "Codex", message: "Session not found"),
+        .reopenFailed(name: "Codex", message: "Task not found"),
     ]
     return DSPreviewPair {
         VStack(spacing: DS.Space.lg) {

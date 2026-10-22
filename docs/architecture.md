@@ -60,6 +60,21 @@ What follows from that:
   are points on one range: the sidebar and inspector become overlays at narrow widths, and the
   iPhone's compact width is the companion layout.
 
+### GitHub account selection
+
+The Mac sidebar footer shows the GitHub account used by Native. `GitHubAccountsModel` lists all
+accounts from `gh auth status --json hosts`, loads names and cached avatars asynchronously, and
+remembers one chosen login per host in Native's defaults. Without a choice it follows gh's active
+account. `GitHubCLI` retrieves a chosen account's token with `gh auth token --hostname --user` and
+passes it only in its child process environment. It resolves Git URL rewrites before selecting
+credentials and pins the request host to that credential's host. API and search requests do not
+inherit the repository override from `GH_REPO`. It never runs `gh auth switch` or saves tokens.
+Switching clears account-specific inbox, branch and review-page caches. An unavailable selected
+account fails with sign-in guidance instead of silently using another account. Cross-host checkouts
+need a default remote set in gh when their target is ambiguous; unresolved SSH aliases need a remote
+URL with the GitHub hostname. The footer control is hidden on iPad
+until account selection is carried by the remote-host protocol.
+
 ### Getting there
 
 1. Rules now: no AppKit in models or shared views, no process spawning outside `Packages/Exec` and
@@ -138,9 +153,10 @@ The core (declarations, `ExtensionPoint`, resolution, `ExperimentStore`) is the 
 `Packages/Experiments`, tested with `swift test` and usable by the host and the companion. Every
 experiment Native has is declared in `native/Experiments/NativeExperiments.swift` and listed in
 `ExperimentCatalog.native`: id, title, one-line summary, stage (Labs or Beta), owner, review date,
-what it touches and whether it needs a relaunch. Settings ▸ Labs shows all of it, with conflicts,
-experiments past their review date, and Reset All (undoable). Values live in user defaults under
-`experiment.<id>`; experiments that need a relaunch keep their launch value until the next launch.
+what it touches and whether it needs a relaunch. Settings ▸ Labs shows the user-facing details,
+conflicts and Reset All (undoable); owner and review dates stay in the declarations for maintainers.
+Values live in user defaults under `experiment.<id>`; experiments that need a relaunch keep their
+launch value until the next launch.
 Plugins add experiments too, through the same store and the same resolution rules. A code plugin
 declares them in `NativePlugin.experiments` (gates, parameters, and variants claiming extension
 points); a `plugin.json` declares gates that switch its own contributions and parameters that fill
@@ -205,7 +221,7 @@ with Settings > Labs > Quiet composer, or set `experiment.NativeComposerNext` as
 the app's user defaults before launch.
 The editor keeps its identity as the session starts and finishes work; only its footer changes.
 At rest, plain words open the agent, model, effort, autonomy and task-mode pickers. The agent entry
-opens New Session With, since an existing conversation belongs to its original agent. Other
+opens New Task With, since an existing conversation belongs to its original agent. Other
 agent settings, attachments, goals and context remain reachable. Running turns and approval
 requests keep today's composer until their own slices land.
 

@@ -10,7 +10,7 @@ extension AppModel {
         }
         return titles.title(
             for: SessionTitles.Key(agent: summary.agent.id, session: summary.info.sessionId),
-            agentTitle: summary.info.title) ?? unsentDraftTitle(for: summary.id) ?? "New Session"
+            agentTitle: summary.info.title) ?? unsentDraftTitle(for: summary.id) ?? "New Task"
     }
 
     /// Lets the workspace provider name a task's workspace (its branch) after the task's first real
@@ -41,7 +41,7 @@ extension AppModel {
                 model.rename(key, to: previous, undoManager: undoManager)
             }
         }
-        undoManager?.setActionName("Rename Session")
+        undoManager?.setActionName("Rename Task")
     }
 
     /// The title the user gave the session, or nil while it goes by an automatic one.

@@ -29,9 +29,9 @@ struct ComposerNextControlsRow<Extras: View, Context: View>: View {
             HStack(spacing: DS.Space.xs) {
                 Button(agentName, action: onChooseAgent)
                     .buttonStyle(ComposerFactButtonStyle())
-                    .accessibilityLabel("Agent: \(agentName). New session with another agent")
+                    .accessibilityLabel("Agent: \(agentName). New task with another agent")
                     .help(
-                        CommandRegistry.shared.help("New session with another agent", for: .sessionNewWithAgent)
+                        CommandRegistry.shared.help("New task with another agent", for: .sessionNewWithAgent)
                             + ". This conversation stays with \(agentName).")
                 if settings.model != nil || !settings.modelSwitches.isEmpty {
                     separator

@@ -51,7 +51,7 @@ struct ExpeditionAttentionCard: View {
                 actions
                 Spacer()
                 if let slot, expedition.task(of: slot) != nil {
-                    Button("Show Session", systemImage: "sidebar.right") { onOpen(slot) }
+                    Button("Show Task", systemImage: "sidebar.right") { onOpen(slot) }
                         .buttonStyle(.ds(.ghost))
                 }
             }

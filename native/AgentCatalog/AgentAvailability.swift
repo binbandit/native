@@ -88,12 +88,12 @@ enum AgentAvailability: Equatable {
             } else {
                 "Native couldn't find `\(missing)` on your PATH. Install it, then choose Check Again."
             }
-        case .disabled: "Turn it on in Settings ▸ Agents to start sessions with \(agent.name)."
+        case .disabled: "Turn it on in Settings ▸ Agents to start tasks with \(agent.name)."
         case .needsSignIn:
             if let signIn = agent.setup?.signIn {
-                "Sign in to start sessions with \(agent.name), or run `\(signIn)` in a terminal."
+                "Sign in to start tasks with \(agent.name), or run `\(signIn)` in a terminal."
             } else {
-                "Sign in to start sessions with \(agent.name)."
+                "Sign in to start tasks with \(agent.name)."
             }
         case .failed(let message): message
         }

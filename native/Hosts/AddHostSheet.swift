@@ -1,4 +1,3 @@
-#if NATIVE_PAIRING_WIP
 import NativeHostProtocol
 import NativeLink
 import SwiftUI
@@ -8,12 +7,15 @@ import SwiftUI
 struct AddHostSheet: View {
     static let width: CGFloat = 460
     /// What to run on the other Mac by hand, for pairing without SSH from here.
-    static let pairCommand =
-        #""/Applications/Native.app/Contents/Library/LoginItems/Native Host.app/Contents/MacOS/Native Host" pair --run-commands --install-updates"#
+    static var pairCommand: String {
+        LinkSSHPairing.manualCommand(
+            grants: AddHostModel.defaultRequest, appName: Bundle.main.bundleURL.lastPathComponent)
+    }
 
     @Bindable var model: AddHostModel
     let close: () -> Void
     @State private var copiedCommand = false
+    @FocusState private var isFieldFocused: Bool
     @Environment(\.openURL) private var openURL
 
     var body: some View {
@@ -60,23 +62,29 @@ struct AddHostSheet: View {
                 detail:
                     "Run tasks on another Mac that stays on, like a Mac mini. They keep going while this Mac sleeps.")
             VStack(alignment: .leading, spacing: DS.Space.sm) {
-                TextField("SSH destination or pairing link", text: $model.input, prompt: Text("me@mac-mini.local"))
-                    .settingsField()
-                    .onSubmit(model.submit)
-                    .accessibilityLabel("SSH destination or pairing link")
+                TextField(
+                    "SSH destination or pairing link", text: $model.input,
+                    prompt: Text(verbatim: "me@mac-mini.local").foregroundStyle(.dsTextTertiary)
+                )
+                .settingsField(focus: $isFieldFocused)
+                .onSubmit(model.submit)
+                .accessibilityLabel("SSH destination or pairing link")
+                // The returning field can take focus once it is in the window.
+                .task { isFieldFocused = true }
+                .onDisappear { isFieldFocused = false }
                 Text(
                     "Native signs in with your SSH keys, starts a pairing link on that Mac and pairs with it. It never asks for a password."
                 )
                 .font(.dsCaption).foregroundStyle(.dsTextTertiary)
                 .fixedSize(horizontal: false, vertical: true)
             }
-            VStack(alignment: .leading, spacing: DS.Space.xs) {
-                Text("No SSH from here? Run this on that Mac and paste the link it prints.")
+            VStack(alignment: .leading, spacing: DS.Space.sm) {
+                HStack(alignment: .firstTextBaseline, spacing: DS.Space.md) {
+                    Text(
+                        "No SSH from here? Run this on that Mac and paste the link it prints. If it finds more than one installation, it asks which one to pair."
+                    )
                     .font(.dsCaption).foregroundStyle(.dsTextSecondary)
-                HStack(alignment: .firstTextBaseline, spacing: DS.Space.sm) {
-                    Text("Native Host pair --run-commands --install-updates")
-                        .font(.dsMonoCaption).foregroundStyle(.dsTextPrimary)
-                        .textSelection(.enabled)
+                    .fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 0)
                     Button(copiedCommand ? "Copied" : "Copy Command") {
                         DSPasteboard.copy(Self.pairCommand)
@@ -84,6 +92,7 @@ struct AddHostSheet: View {
                     }
                     .buttonStyle(.ds(.ghost, size: .small))
                 }
+                codeBlock("Native Host pair --run-commands --install-updates")
             }
             footer {
                 Button("Cancel", action: close).buttonStyle(.ds(.secondary, size: .large))
@@ -107,12 +116,14 @@ struct AddHostSheet: View {
                     .disabled(true)
                 grant(
                     "Run commands and edit files in its projects", isOn: $model.requested.runCommands,
-                    offered: offer.grants.runCommands, note: "Git, diffs and terminals for tasks there need this.")
+                    offered: offer.grants.runCommands, flag: "--run-commands",
+                    note: "Git, diffs and terminals for tasks there need this.")
                 grant(
-                    "Install Native updates on it", isOn: $model.requested.manageHost, offered: offer.grants.manageHost)
+                    "Install Native updates on it", isOn: $model.requested.manageHost,
+                    offered: offer.grants.manageHost, flag: "--install-updates")
                 grant(
                     "Turn its plugins on and off", isOn: $model.requested.managePlugins,
-                    offered: offer.grants.managePlugins)
+                    offered: offer.grants.managePlugins, flag: "--manage-plugins")
             }
             .addHostCheckboxes()
             .font(.dsBody)
@@ -134,12 +145,14 @@ struct AddHostSheet: View {
         }
     }
 
-    /// One grant: a checkbox when the link offers it, else why it can't be had from this link.
-    private func grant(_ title: String, isOn: Binding<Bool>, offered: Bool, note: String? = nil) -> some View {
+    /// One grant: a checkbox when the link offers it, else the option pair needs for it.
+    private func grant(
+        _ title: String, isOn: Binding<Bool>, offered: Bool, flag: String, note: String? = nil
+    ) -> some View {
         VStack(alignment: .leading, spacing: DS.Space.xxs) {
             Toggle(title, isOn: offered ? isOn : .constant(false))
                 .disabled(!offered)
-            if let detail = offered ? note : "The link doesn't offer this. Run pair with it to allow it." {
+            if let detail = offered ? note : "This link doesn't offer it. Run pair with \(flag) for one that does." {
                 Text(detail)
                     .font(.dsCaption).foregroundStyle(.dsTextTertiary)
                     .padding(.leading, DS.Space.xl)
@@ -173,12 +186,7 @@ struct AddHostSheet: View {
     private func working(_ title: String, detail: String) -> some View {
         Group {
             header(title)
-            HStack(alignment: .firstTextBaseline, spacing: DS.Space.md) {
-                DotGridLoader(pattern: .settingUp)
-                Text(detail)
-                    .font(.dsBody).foregroundStyle(.dsTextSecondary)
-                    .fixedSize(horizontal: false, vertical: true)
-            }
+            loading(detail)
             footer {
                 Button("Cancel", action: close).buttonStyle(.ds(.secondary, size: .large))
             }
@@ -188,24 +196,41 @@ struct AddHostSheet: View {
     /// The other Mac's SSH waits until the sign-in is approved in a browser; pairing carries on after.
     private func approving(_ machine: String, page: URL) -> some View {
         Group {
-            header("Approve the sign-in to \(machine)")
-            NoticeBanner(
-                tone: .info, systemImage: "lock.shield", title: "\(machine) asks you to confirm it's you",
+            header(
+                "Approve the sign-in to \(machine)",
                 detail:
-                    "Its SSH waits until you approve this sign-in in a browser. Native carries on as soon as you do.",
-                footnote: page.absoluteString
-            ) {
-                Button("Open Approval Page") { openURL(page) }
-                    .buttonStyle(.ds(.primary, size: .medium))
-            }
-            HStack(alignment: .firstTextBaseline, spacing: DS.Space.md) {
-                DotGridLoader(pattern: .waiting)
-                Text("Waiting for approval…").font(.dsBody).foregroundStyle(.dsTextSecondary)
-            }
+                    "Its SSH asks you to confirm it's you in a browser before it lets Native in. Native carries on as soon as you approve."
+            )
+            codeBlock(page.absoluteString)
+            loading("Waiting for approval…")
             footer {
                 Button("Cancel", action: close).buttonStyle(.ds(.secondary, size: .large))
+                Button("Open Approval Page") { openURL(page) }
+                    .buttonStyle(.ds(.primary, size: .large))
+                    .keyboardShortcut(.defaultAction)
             }
         }
+    }
+
+    /// The one loader row: dots, then what's happening.
+    private func loading(_ text: String) -> some View {
+        HStack(spacing: DS.Space.md) {
+            DotGridLoader(pattern: .settingUp)
+            Text(text)
+                .font(.dsBody).foregroundStyle(.dsTextSecondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+    }
+
+    /// A command or address to read or copy, set apart from the prose around it.
+    private func codeBlock(_ text: String) -> some View {
+        Text(verbatim: text)
+            .font(.dsMonoCaption).foregroundStyle(.dsTextPrimary)
+            .textSelection(.enabled)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, DS.Space.md)
+            .padding(.vertical, DS.Space.sm)
+            .background(.dsSurfaceSunken, in: .rect(cornerRadius: DS.Radius.control))
     }
 
     private func paired(_ name: String, grants: LinkGrants) -> some View {
@@ -218,7 +243,7 @@ struct AddHostSheet: View {
                 header(
                     "\(name) is paired",
                     detail:
-                        "Pick it in New Session to run tasks there. This Mac can \(grants.abilities) on it. Remove it any time in Settings › Hosts."
+                        "Pick it in New Task to run tasks there. This Mac can \(grants.abilities) on it. Remove it any time in Settings ▸ Hosts."
                 )
             }
             footer {
@@ -233,14 +258,21 @@ struct AddHostSheet: View {
         Group {
             header("Add Host")
             ErrorState(
-                failure.title, recovery: failure.recovery, suggestion: failure.suggestion, details: failure.details,
-                primary: failure.isWorthRetrying
-                    ? .init("Try Again", perform: model.retry) : .init("Edit", perform: model.edit),
-                secondary: failure.isWorthRetrying ? .init("Edit", perform: model.edit) : nil)
+                failure.title, recovery: failure.recovery, suggestion: failure.suggestion(overSSH: model.wasOverSSH),
+                details: failure.details,
+                primary: nextStep(failure),
+                secondary: model.canTryAgain ? .init("Edit", perform: model.edit) : nil)
             footer {
                 Button("Close", action: close).buttonStyle(.ds(.secondary, size: .large))
             }
         }
+    }
+
+    /// Over SSH, trying again brings a new link; a pasted link needs a new one pasted.
+    private func nextStep(_ failure: AddHostFailure) -> ErrorState.Action {
+        if model.canTryAgain { return .init("Try Again", perform: model.retry) }
+        if !model.wasOverSSH, failure.isWorthRetrying { return .init("Paste a New Link", perform: model.startOver) }
+        return .init("Edit", perform: model.edit)
     }
 
     private func header(_ title: String, detail: String? = nil) -> some View {
@@ -288,6 +320,7 @@ extension String {
     }
 }
 
+#if DEBUG
 /// Fixtures for the previews.
 private enum AddHostPreview {
     static let offer = AddHostOffer(
@@ -302,8 +335,10 @@ private enum AddHostPreview {
             grants: AddHostModel.sshOffer),
         sshDestination: "me@mac-mini.local", hostBuild: PeerInfo(name: "Native Host", version: "1.4.0", build: "140"))
 
-    static func model(_ phase: AddHostModel.Phase) -> AddHostModel {
-        AddHostModel(register: { _ in }, environment: { [:] }, input: "me@mac-mini.local", phase: phase)
+    static func model(_ phase: AddHostModel.Phase, approvalPage: URL? = nil) -> AddHostModel {
+        AddHostModel(
+            register: { _ in }, environment: { [:] }, input: "me@mac-mini.local", phase: phase,
+            approvalPage: approvalPage)
     }
 }
 
@@ -316,6 +351,16 @@ private enum AddHostPreview {
 #Preview("Confirm") {
     DSPreviewPair {
         AddHostSheet(model: AddHostPreview.model(.confirming(AddHostPreview.offer)), close: {})
+    }
+}
+
+#Preview("Approve") {
+    DSPreviewPair {
+        AddHostSheet(
+            model: AddHostPreview.model(
+                .reaching(destination: "me@mac-mini.local"),
+                approvalPage: URL(string: "https://login.tailscale.com/a/l1b2c3")),
+            close: {})
     }
 }
 

@@ -115,7 +115,7 @@ Settings, inside a terminal), which can't be changed.
 - **With nothing typed** it shows what was run recently, a few tasks, then everything else by kind.
   **With text** it ranks with `FuzzyMatch`, in tiers: the whole
   title, its start, a word's start, its initials, anywhere, the keywords, then the letters in order
-  (`nwse` finds New Session). Sections are ordered by their best match, and recently used items move
+  (`nwta` finds New Task). Sections are ordered by their best match, and recently used items move
   up within their tier, never into a better one.
 - **Commands that take text** (`takesQuery`) appear last for any text, so the palette offers
   "Search Tasks for “…”" instead of searching transcripts itself (`native/Search`).

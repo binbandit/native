@@ -192,10 +192,10 @@ struct GalleryControls: View {
                 }
             }
             EmptyStateView(
-                "No Sessions Yet", systemImage: "text.bubble",
+                "No Tasks Yet", systemImage: "text.bubble",
                 message: "Start one with ⌘N, or pick a project in the sidebar."
             ) {
-                Button("New Session") {}.buttonStyle(.ds(.primary))
+                Button("New Task") {}.buttonStyle(.ds(.primary))
                 Button("Open Folder…") {}.buttonStyle(.ds(.secondary))
             }
             .frame(height: 200)

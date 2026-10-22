@@ -256,8 +256,10 @@ final class RemoteHost: Identifiable {
         do {
             let entries = try await HostSeenActivity.entries(after: seen, from: client)
             HostSeenActivity.remember(entries, after: seen, on: info.hostID)
-            // With host notifications on, their feed sums up what was missed instead.
-            if summarize, seen != nil, !HostNotificationsSwitch.isEnabled {
+            if summarize, seen != nil,
+                HostNotificationsSwitch.history.usesActivitySummary(
+                    on: info, enabled: HostNotificationsSwitch.isEnabled)
+            {
                 away = AwaySummary(entries: entries, sessions: sessions)
             }
         } catch {

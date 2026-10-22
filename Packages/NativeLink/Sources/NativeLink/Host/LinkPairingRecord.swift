@@ -17,7 +17,7 @@ public struct LinkPairingRecord: Hashable, Sendable {
         let how =
             wasPreapproved
             ? "Paired with a link from the pair command, without confirming on a screen."
-            : "Paired after confirming in Settings › Paired Devices."
+            : "Paired after confirming in Settings ▸ Paired Devices."
         return "\(device.model) · \(device.system). \(how) It can \(device.grants.abilities)."
     }
 }

@@ -4,7 +4,7 @@ import Foundation
 extension GitHubCLI {
     /// The same gh, aimed at the pull request's host.
     public func forPullRequest(_ reference: PullRequestReference) -> GitHubCLI {
-        reference.ghHost == host ? self : targeting(host: reference.ghHost)
+        reference.host == host ? self : targeting(host: reference.host)
     }
 
     public func pullRequestPage(

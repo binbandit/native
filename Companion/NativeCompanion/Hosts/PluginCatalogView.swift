@@ -24,7 +24,7 @@ struct PluginCatalogView: View {
                 Text(
                     host.host.grants.managePlugins
                         ? "Changes apply on \(host.name) for everyone using it."
-                        : "Turning plugins on and off from this iPhone needs permission on the Mac, in Settings › Paired Devices."
+                        : "Turning plugins on and off from this iPhone needs permission on the Mac, in Settings ▸ Paired Devices."
                 )
             }
         }

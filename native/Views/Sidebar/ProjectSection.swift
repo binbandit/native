@@ -102,7 +102,7 @@ struct ProjectSection<TaskAccessory: View>: View {
         .accessibilityElement(children: .contain)
         .accessibilityLabel(project.name)
         .accessibilityActions {
-            Button("New Session") { Task { await model.newSession(in: project.id) } }
+            Button("New Task") { Task { await model.newSession(in: project.id) } }
             Button("Move Up") { model.move(.project(project.id), .up) }
             Button("Move Down") { model.move(.project(project.id), .down) }
             Button("Archive") { model.archiveProject(project.id, undoManager: undoManager) }
@@ -188,20 +188,20 @@ private struct ProjectEmptyRow: View {
             Button {
                 Task { await model.newSession(in: project.id) }
             } label: {
-                Label(isQuiet ? "Start the first task" : "Start a session", systemImage: "plus")
+                Label(isQuiet ? "Start the first task" : "Start a task", systemImage: "plus")
                     .labelStyle(EmptyRowLabelStyle())
                     .foregroundStyle(isHovered ? .dsTextSecondary : .dsTextTertiary)
                     .contentShape(.rect)
             }
             .buttonStyle(SidebarRowButtonStyle())
             .trackHover($isHovered)
-            .help("New session in \(project.name)")
+            .help("New task in \(project.name)")
         } else {
             // Only reached when no agent is installed: starting agents can already take a session.
             Button {
                 model.isAddingAgent = true
             } label: {
-                Label("Add an agent to start a session", systemImage: "plus")
+                Label("Add an agent to start a task", systemImage: "plus")
                     .labelStyle(EmptyRowLabelStyle())
                     .foregroundStyle(isHovered ? .dsTextSecondary : .dsTextTertiary)
                     .contentShape(.rect)
@@ -218,7 +218,7 @@ private struct ProjectEmptyRow: View {
 private struct FindingSessionsRow: View {
     var body: some View {
         Label {
-            Text("Finding sessions…")
+            Text("Finding tasks…")
         } icon: {
             DotGridLoader(pattern: .settingUp)
                 .frame(width: DS.Size.rowLeading * 0.75, height: DS.Size.rowLeading * 0.75)

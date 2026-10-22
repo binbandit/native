@@ -44,7 +44,7 @@ extension Parameter where Value == TranscriptWidth {
             id: "transcript-width",
             title: "Transcript width",
             summary: "How wide the conversation and the composer can grow on a large window.",
-            site: "Session ▸ column width",
+            site: "Task ▸ column width",
             stage: .beta,
             owner: "transcript",
             reviewBy: ReviewDate(year: 2026, month: 12, day: 15),
@@ -91,12 +91,12 @@ extension Gate {
 
     static let sessionTools = Gate(
         id: "session-tools",
-        title: "Session tools",
+        title: "Task tools",
         summary: "Shows live Changes facts under the task title, with Changes beside a wide conversation "
-            + "or over a narrow one. Other session tools are still being built.",
-        site: "Session ▸ header and tools",
+            + "or over a narrow one. Other task tools are still being built.",
+        site: "Task ▸ header and tools",
         stage: .labs,
-        owner: "session",
+        owner: "tasks",
         reviewBy: ReviewDate(year: 2026, month: 12, day: 15)
     )
 }

@@ -1,8 +1,8 @@
 // Drives one running Native through the Accessibility API, for `scripts/perf/measure.sh`. Only that
 // pid is touched: no keystrokes, nothing brought to the front.
 //
-//   drive <pid> menu <menu> <item>     presses a menu bar item, e.g. `menu File "New Session"`
-//   drive <pid> enabled <menu> <item>  prints whether a menu bar item is enabled (`Session Stop`
+//   drive <pid> menu <menu> <item>     presses a menu bar item, e.g. `menu File "New Task"`
+//   drive <pid> enabled <menu> <item>  prints whether a menu bar item is enabled (`Task Stop`
 //                                      is while a turn runs)
 //   drive <pid> prompt <text>          writes the composer's draft and presses Send
 //   drive <pid> minimize               minimizes the main window

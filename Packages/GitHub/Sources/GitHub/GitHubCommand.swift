@@ -8,6 +8,8 @@ public struct GitHubCommand: Sendable, Hashable {
     public var arguments: [String]
     /// Where gh runs; it finds the repository from this folder's git remotes.
     public var directory: URL?
+    /// An explicit repository selector takes precedence over GH_REPO, even without a host.
+    var repository: String?
     /// Written to gh's stdin: request bodies and pull request bodies, which can be long.
     public var input: Data?
     /// Whether it changes anything on GitHub, in a remote or in a working tree.
@@ -28,6 +30,7 @@ public struct GitHubCommand: Sendable, Hashable {
         case .remote(let repository):
             directory = nil
             self.arguments.append("--repo=\(repository)")
+            self.repository = repository
         case nil:
             directory = nil
         }
@@ -39,10 +42,10 @@ public struct GitHubCommand: Sendable, Hashable {
 extension GitHubCommand {
     public static let version = GitHubCommand(["--version"], timeout: .seconds(10))
 
-    /// Only the account gh uses per host. gh checks each token against its host, so this needs the
+    /// Every signed-in account per host. gh checks each token against its host, so this needs the
     /// network.
     public static func authStatus(host: String? = nil) -> GitHubCommand {
-        GitHubCommand(["auth", "status", "--active", "--json", "hosts"] + (host.map { ["--hostname=\($0)"] } ?? []))
+        GitHubCommand(["auth", "status", "--json", "hosts"] + (host.map { ["--hostname=\($0)"] } ?? []))
     }
 
     public static let currentUser = GitHubCommand(["api", "user"])
@@ -56,6 +59,7 @@ extension GitHubCommand {
         case .remote(let repository):
             // `repo view` takes the repository as its argument rather than `--repo`.
             GitHubCommand(["repo", "view", repository, "--json", GitHubRepository.fields])
+                .targetingRepository(repository)
         }
     }
 

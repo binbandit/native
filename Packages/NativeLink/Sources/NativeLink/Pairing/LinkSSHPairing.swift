@@ -69,7 +69,22 @@ public enum LinkSSHPairing {
     public static func script(
         grants: LinkGrants, appName: String, folders: [String] = applicationFolders
     ) -> String {
-        var flags = ["--json"]
+        commandScript(grants: grants, appName: appName, folders: folders, manual: false)
+    }
+
+    /// A command to paste into the other Mac's terminal. Unlike SSH, its user can choose between
+    /// installed editions; a separate shell keeps that prompt away from the pasted script itself.
+    public static func manualCommand(
+        grants: LinkGrants, appName: String, folders: [String] = applicationFolders
+    ) -> String {
+        let script = commandScript(grants: grants, appName: appName, folders: folders, manual: true)
+        return "/bin/sh -c \(quoted(script))"
+    }
+
+    private static func commandScript(
+        grants: LinkGrants, appName: String, folders: [String], manual: Bool
+    ) -> String {
+        var flags = manual ? [] : ["--json"]
         if grants.runCommands { flags.append("--run-commands") }
         if grants.manageHost { flags.append("--install-updates") }
         if grants.managePlugins { flags.append("--manage-plugins") }
@@ -79,22 +94,66 @@ public enum LinkSSHPairing {
             names.append(name)
         }
         let candidates = names.flatMap { name in folders.map { "\($0)/\(quoted(name))" } }
-        return """
-            [ "$(uname -s)" = Darwin ] || exit \(ScriptStatus.notAMac)
-            found=""
+        let discovery =
+            manual
+            ? manualInstallation(candidates: candidates)
+            : """
             for app in ${NATIVE_APP:+"$NATIVE_APP"} \(candidates.joined(separator: " ")); do
                 if [ -d "$app" ]; then found=$app; break; fi
             done
+            """
+        let oldHelperMessage =
+            manual ? "printf '%s\\n' \"This Native cannot pair from a terminal yet. Update it first.\" >&2" : ""
+        return """
+            [ "$(uname -s)" = Darwin ] || exit \(ScriptStatus.notAMac)
+            found=""
+            \(discovery)
             [ -n "$found" ] || exit \(ScriptStatus.notInstalled)
             helper="$found/Contents/Library/LoginItems/Native Host.app/Contents/MacOS/Native Host"
             # An older helper ignores its arguments and would start serving a host, so check first.
-            if [ ! -x "$helper" ] || ! /usr/bin/grep -qa \(quoted(LinkPairCommand.marker)) "$helper"; then
+            # The whole folder: a development build keeps its code in a library beside the executable.
+            if [ ! -x "$helper" ] || ! /usr/bin/grep -rqa \(quoted(LinkPairCommand.marker)) "${helper%/*}"; then
+                \(oldHelperMessage)
                 /usr/bin/defaults read "$found/Contents/Info" CFBundleShortVersionString 2>/dev/null
                 exit \(ScriptStatus.tooOld)
             fi
             exec "$helper" \(LinkPairCommand.name) \(flags.joined(separator: " "))
 
             """
+    }
+
+    private static func manualInstallation(candidates: [String]) -> String {
+        """
+        set -- \(candidates.joined(separator: " "))
+        [ -z "${NATIVE_APP:-}" ] || set -- "$NATIVE_APP"
+        count=0
+        for app do
+            [ -d "$app" ] || continue
+            count=$((count + 1))
+            found=$app
+            printf '%s. %s\\n' "$count" "$app" >&2
+        done
+        if [ "$count" -eq 0 ]; then
+            printf '%s\\n' "Native was not found. Install Native or Native Nightly in Applications or ~/Applications." >&2
+            exit \(ScriptStatus.notInstalled)
+        fi
+        if [ "$count" -gt 1 ]; then
+            printf 'Choose the installation to pair [1-%s]: ' "$count" >&2
+            IFS= read -r choice || exit 2
+            case "$choice" in ''|*[!0-9]*) printf '%s\\n' 'Enter one of the listed numbers.' >&2; exit 2;; esac
+            found=""
+            index=0
+            for app do
+                [ -d "$app" ] || continue
+                index=$((index + 1))
+                if [ "$index" -eq "$choice" ]; then found=$app; break; fi
+            done
+            if [ -z "$found" ]; then
+                printf '%s\\n' 'Enter one of the listed numbers.' >&2
+                exit 2
+            fi
+        fi
+        """
     }
 
     #if os(macOS)

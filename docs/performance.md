@@ -81,7 +81,7 @@ start time (`kinfo_proc.p_starttime`), which is as close to the Dock click as an
 | `appInit` | `NativeApp.init` runs: dyld and static initializers are done |
 | `firstFrame` | The main window's first frame is committed and the main thread is idle |
 | `sidebarInteractive` | The sidebar's rows are on screen and the main thread can take a click |
-| `agentsReady` | Agents are checked and the default one is running, so New Session doesn't wait |
+| `agentsReady` | Agents are checked and the default one is running, so New Task doesn't wait |
 
 The first three are what "instant" means. `agentsReady` happens off the main thread and is only
 there to catch regressions in agent startup.
@@ -91,11 +91,11 @@ there to catch regressions in agent startup.
 
 ### By hand
 
-- **Sessions.** `drive <pid> menu File "New Session"`, then `drive <pid> prompt "…"`; `drive <pid>
-  enabled Session Stop` says whether a turn is still running.
+- **Tasks.** `drive <pid> menu File "New Task"`, then `drive <pid> prompt "…"`; `drive <pid>
+  enabled Task Stop` says whether a turn is still running.
 - **Streaming.** Start a long Codex turn (`gpt-6.1-sol`, which the instance uses), then
   `sample <pid> 20` for the main thread and `rusage` for CPU and footprint growth.
-- **Growth and leaks.** Note `footprint`, run the workload (open and archive 20 sessions, switch
+- **Growth and leaks.** Note `footprint`, run the workload (open and archive 20 tasks, switch
   tasks, toggle Settings, the terminal and the inspectors), note it again and run `leaks <pid>`.
 
 ## Results
@@ -210,9 +210,9 @@ composer taking typing in the new task.
 | A second "+" while the first was starting | dropped silently | a second starting task, queued behind the first's git work |
 | Main thread while the worktree is made | idle (git runs in its own process) | idle |
 
-- **The click waited for everything before showing anything.** New Session made the worktree,
+- **The click waited for everything before showing anything.** New Task made the worktree,
   waited for the agent and asked for the session before the task existed anywhere on screen, and
-  ignored any other New Session meanwhile ("one at a time"). Now the click adds a starting task to
+  ignored any other New Task meanwhile ("one at a time"). Now the click adds a starting task to
   the sidebar and selects it at once (`AppModel+StartingTasks.swift`): its composer takes the first
   message, which goes out when the session exists, and the worktree and the agent start at the same
   time. A failure stays on the task with Retry and Discard instead of an alert.
@@ -531,6 +531,8 @@ that line without animation before showing the transcript, with bounded retries 
 stack lays out. Search reveals take precedence, and leaving during restoration cancels it without
 replacing the previous position. A session left at the latest output still opens at the latest;
 even a small scroll above it is remembered, with only a half-point rounding tolerance.
+The reading snapshot is captured during layout, before child rows discard their frames on removal.
+Missing row geometry keeps the previous snapshot; only a measured end records the latest output.
 Only this small state survives a switch: no hidden session view graphs, observation or layout.
 Entries hold sessions weakly and discard dead entries when another session is first visited.
 
@@ -802,8 +804,7 @@ several runs each. Task switches and Settings visits are AX presses on the insta
   (Accept edits), Native's mode and title. Only the turn's duration and the context gauge wait for
   the next turn. Claude Code's plugin now closes sessions unused for 10 minutes
   (`idleSessionTimeout` in the agent manifest, docs/plugins.md); the `sessionIdleTimeout` default
-  still overrides it for every agent. Codex stays open until codex-acp releases a closed session's
-  MCP servers (below).
+  still overrides it for every agent. Codex uses host idle unloading instead (below).
 - **Every Codex task ran the user's MCP servers twice.** codex-acp 2.2.2 titles a new session
   itself after its first turn, with a model, on a thread of its own that it never releases
   (codex-acp#628), and Codex starts the user's MCP servers for every thread. With a `~/.codex`
@@ -814,21 +815,50 @@ several runs each. Task switches and Settings visits are AX presses on the insta
   With host titles on, Native's title replaces the name before the next turn, so `codex resume`
   lists tasks as Native does.
 
+
+#### Codex idle unloading, 2026-10-21
+
+Five real Codex sessions in the isolated `codex-idle` Debug instance on elara, using codex-acp
+2.2.2, `gpt-6.1-sol` and Low effort. Each completed a short coding prompt without using tools,
+then sat idle for the shipped 600-second timeout. Other prewarmed adapters were stopped before
+the baseline. These are `footprint --noCategories -f bytes` totals for the host and its descendants,
+not the app's own memory. Elara's MCP configuration differs from the earlier Mac measurements.
+
+| State | Processes, including host | Physical footprint |
+| --- | --- | --- |
+| Five completed tasks, still loaded | 19 | 406.5 MiB |
+| After idle unloading | 1 | 11.2 MiB |
+| One task resumed and answered again | 7 | 200.5 MiB |
+| That task closed with `session/close`, sampled 5 s later | 6 | 197.9 MiB |
+
+The host released 395.3 MiB (97%) and every Codex descendant exited. Closing one thread alone
+retained its MCP processes; stopping the adapter freed them. Codex's manifest now enables
+`idleUnloadTimeout: 600`: the host checks at most every 30 seconds, closes eligible idle sessions,
+and stops the adapter once nothing still needs it. Working turns, approvals, questions, hidden
+commands, retries and active queues keep their agent alive.
+
+Attaching to read the parked transcript left Codex stopped. Sending a follow-up restarted it and
+completed a reply in 5.6 s. The host protocol emitted no history reset or loading phase, and the
+conversation and settings remained intact. The regression tests additionally restore a non-default
+model and effort and exercise waiting approvals and questions. The live check used production code
+at `31c1bd74`, including the child-history fix. Completed direct and nested children also have
+failing-before and passing-after host-protocol regression coverage. Elara cannot drive or capture the UI, so the visual check of quiet return remains for the
+main Mac.
+
 ## Still to do
 
 | What | Why | Owner |
 | --- | --- | --- |
 | Stop hover hit-testing while the transcript scrolls | 12–19% of a fast scroll, measured with an accessibility client and the cursor over the transcript. Can't be verified by a script: the cost needs the real cursor over the rows, and the proof (clicks and hover come back the moment a scroll ends) needs a real mouse wheel and trackpad, whose scroll phases no synthetic driver reproduces for this scroll view | Transcript performance, by hand |
-| Let Codex unload closed threads | A closed session's thread, and its MCP servers, stay loaded for 30 minutes (`thread_unload_delay_secs`, a Codex server setting codex-acp can't pass), so closing one session frees nothing for that long; the thread codex-acp titled a session with never unloads, but Native no longer lets it start (`renameCommand`, above) | Upstream Codex and codex-acp#628 / #629 |
-| Turn idle closing on for Codex | Claude Code closes sessions unused for 10 minutes now (`idleSessionTimeout` in its manifest). Once the row above lands, give Codex's manifest the same | App model |
-| "Couldn't run git: The file “project” doesn't exist" alert | New Session in a project whose folder is gone shows a modal; the sidebar already says "Can't find this project's folder" with Retry | Failures |
+| Release individual closed Codex threads while another task runs | The host now stops the adapter once every task is idle for 10 minutes. While another task keeps it running, a closed thread's MCP servers still wait for Codex's 30-minute `thread_unload_delay_secs`, which codex-acp cannot pass | Upstream Codex and codex-acp#629 |
+| "Couldn't run git: The file “project” doesn't exist" alert | New Task in a project whose folder is gone shows a modal; the sidebar already says "Can't find this project's folder" with Retry | Failures |
 | Launch within 150 ms of main-thread CPU | 481-518 ms in Release with 30 tasks (3.45-3.68 G instructions): mostly AppKit and SwiftUI restoring, laying out and drawing the window (Launch, above). It takes fewer views before the first frame, not faster code; the sidebar outside its rows (0.57 G: the navigation items, the project headers, the scroll view and its key handling) is the largest part Native controls | App shell, sidebar |
-| A cheaper main menu | 0.29-0.31 G of launch in optimized Debug (Launch, round three): SwiftUI building about 85 items' view lists and platform items. Reading the window's context once instead of eight focused values per item didn't change it. Building the items after the first frame loses the File menu (round two). Fewer items at launch might: submenus whose items come when they open (Selected Tasks, Mode, Status Bar Items, Keep Mac Awake, Appearance), if SwiftUI keeps a submenu that starts empty, or fewer than the nine Go to Session items | Commands |
+| A cheaper main menu | 0.29-0.31 G of launch in optimized Debug (Launch, round three): SwiftUI building about 85 items' view lists and platform items. Reading the window's context once instead of eight focused values per item didn't change it. Building the items after the first frame loses the File menu (round two). Fewer items at launch might: submenus whose items come when they open (Selected Tasks, Mode, Status Bar Items, Keep Mac Awake, Appearance), if SwiftUI keeps a submenu that starts empty, or fewer than the nine Go to Task items | Commands |
 | Native under 150 MB with a transcript open | 175–195 MB with one short transcript open (Home 130–140 MB): the first session view's SwiftUI graph is about 26 MB live, the rest pages the allocator kept after its transient allocations | Session view, transcript |
 | About 257 MB of graphics memory on whole-window redraws | For about a second at every launch and on some redraws when other windows uncover Native's (peak 390–405 MB); find what draws in-process with Metal then | App shell |
 | Changing a shortcut gets slower each time | Each change in a session costs about 1.5 times the one before: 0.3 M main-thread instructions for the first and 3.4-4.5 M for the twelfth, with the menu items rebuilt for each change or not (Launch, round three). Something that follows the bindings compounds; find what | Commands |
 | The composer's rich editor still leaks once it showed code | SwiftUI's rich `TextEditor` leaves about 14 KB behind each editor that goes away; only drafts with code use it now. Keeping one editor across task switches would end it | Composer |
-| Park the default agent when it has no open sessions for a long while, or start it on the first New Session | It's kept running so New Session never waits; with direct adapter launch that wait is now about 0.3 s for Codex | App model |
+| Park the default agent when it has no open sessions for a long while, or start it on the first New Task | It's kept running so New Task never waits; with direct adapter launch that wait is now about 0.3 s for Codex. Codex itself is now ended by the host once nothing has used it for 10 minutes (`idleUnloadTimeout`) | App model |
 | Opening the changes inspector on many files under 100 ms | Still 218–392 ms on 250 files against 69–77 ms on a clean repository: laying out and drawing the rows on screen (text measuring, the diff's selectable text) and the first file's diff, in Debug | Git |
 | Scroll a long transcript at 120 Hz | With the SwiftUI driver a screenful of new rows costs 25–80 ms (Release): their selectable text (TextKit 2) and the lazy stack placing them. Lists no longer use `Grid`; code blocks without a scroll view each didn't pay (`ViewThatFits` laid the text out twice). Not measured again on 2026-10-20 (every part of the screen was covered by other windows). Next to measure: what selection costs (reply sections without `.textSelection`); list markers without selection (each item has two marker texts, a hidden widest copy and the marker, both selectable today); and code that fits shown without a scroll view, decided from its longest line and the code font's advance rather than by laying it out twice. First check by hand whether fast trackpad scrolling shows the transcript blank: no synthetic driver can tell | Transcript |
 | Streaming within budget | The 500-turn session now streams at the 20-turn session's cost (Long transcripts, "2026-10-20, evening"), but both keep the main thread 31–35% busy in an optimized build, over the 25% budget: what's left is laying out and drawing the growing section on every chunk (its text 11–12%, committing the frame 14–16%, which includes that layout). Laying out only the section's last paragraph again, or chunks coalesced to the display's rate, are the next things to try | Transcript |

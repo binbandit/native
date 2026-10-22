@@ -12,9 +12,10 @@ import NativeHostProtocol
 /// host journals every pairing.
 public struct LinkPairCommand: Sendable {
     public static let name = "pair"
-    /// Only builds that have the command contain this string. Add Host looks for it in the helper
-    /// before running it, because an older helper ignores its arguments and would start serving a
-    /// host instead. Longer than 15 bytes, so Swift stores it as is rather than packed in code.
+    /// Only builds that have the command contain this string, which its `--json` output names
+    /// itself with. Add Host looks for it in the helper's files before running it, because an older
+    /// helper ignores its arguments and would start serving a host instead. Longer than 15 bytes, so
+    /// Swift stores it as is rather than packed into code.
     public static let marker = "native-host-pair-command-v1"
 
     public static let usage = """
@@ -155,7 +156,8 @@ public struct LinkPairCommand: Sendable {
         guard !options.printsJSON else {
             return emit(
                 LinkPairCommandEvent(
-                    event: .invite, link: link, host: build, protocolVersion: HostProtocol.version, grants: grants))
+                    event: .invite, command: Self.marker, link: link, host: build,
+                    protocolVersion: HostProtocol.version, grants: grants))
         }
         let expiry = invite.expiresAt.formatted(date: .omitted, time: .shortened)
         let addresses = invite.addresses.map(\.label).joined(separator: ", ")
@@ -183,7 +185,7 @@ public struct LinkPairCommand: Sendable {
             output(
                 """
                 Paired with “\(device.name)” (\(device.model) · \(device.system)). It can \(device.grants.abilities).
-                Remove it in Native's Settings › Paired Devices on this Mac, or forget this host on that one.
+                Remove it in Native's Settings ▸ Paired Devices on this Mac, or forget this host on that one.
                 """, false)
         }
         return ExitStatus.paired
@@ -212,7 +214,7 @@ public struct LinkPairCommand: Sendable {
         case .expired:
             "The link expired before a device used it. Run pair again for a new one."
         case .replaced:
-            "Another pairing started on this Mac (Settings › Paired Devices), which ended this link. Run pair again once it's done."
+            "Another pairing started on this Mac (Settings ▸ Paired Devices), which ended this link. Run pair again once it's done."
         case .tooManyAttempts:
             "Three attempts used the wrong link (an old one, or a guess), so this one is closed. Run pair again for a new link."
         case .hostStopped:

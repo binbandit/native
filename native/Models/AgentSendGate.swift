@@ -50,7 +50,7 @@ nonisolated enum SessionSendBlock: Equatable {
 
     var message: String {
         switch self {
-        case .notAcceptingPrompts: "This subagent only takes work from the session that started it."
+        case .notAcceptingPrompts: "This subagent only takes work from the task that started it."
         case .earlierConversation: "This conversation was cleared with /clear. Send to the current one instead."
         case .disconnected(let agentName): "\(agentName) stopped running. Restart it from the sidebar to send."
         case .signInNeeded(let agentName): "Sign in to \(agentName) to send messages."

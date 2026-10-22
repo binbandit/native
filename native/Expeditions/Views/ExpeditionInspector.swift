@@ -24,11 +24,11 @@ struct ExpeditionInspector<Transcript: View>: View {
                 if let session {
                     transcript(session)
                 } else if let openError {
-                    ErrorState("Couldn't open the session", suggestion: openError, layout: .pane)
+                    ErrorState("Couldn't open the task", suggestion: openError, layout: .pane)
                 } else if expedition.task(of: slot) == nil {
                     EmptyStateView(
                         "Not Started", systemImage: "circle.dashed",
-                        message: "This seat gets its session when its turn comes."
+                        message: "This seat gets its task when its turn comes."
                     ) {
                         EmptyView()
                     }

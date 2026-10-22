@@ -53,13 +53,7 @@ struct HostsSettingsPage: View {
     @Environment(AppModel.self) private var model
     @Environment(DurableHost.self) private var durableHost: DurableHost?
     @Environment(SettingsPresentation.self) private var settings
-    #if NATIVE_PAIRING_WIP
     @Environment(\.openAddHost) private var openAddHost
-    #else
-    // Add Host's opener comes with the pairing flow (AddHostPresentation.swift); drop this branch
-    // with its NATIVE_PAIRING_WIP guard.
-    private let openAddHost: (() -> Void)? = nil
-    #endif
     @Environment(\.hostLookStore) private var looks
     #if DEBUG
     @State private var fixtures = HostsFixtureDirectory.scenario.map { HostsFixtureDirectory($0) }
@@ -183,6 +177,7 @@ struct HostsSettingsContent: View {
     private func addHostButton(size: DSButtonStyle.Size) -> some View {
         Button("Add Host…") { directory.addHost() }
             .buttonStyle(.ds(.primary, size: size))
+            .keyboardShortcut("h", modifiers: [.command, .shift])
             .disabled(!directory.canAddHost)
             .help(directory.canAddHost ? "Pair a machine with this Mac" : "Adding hosts isn't in this build yet")
             .settingsRevealTarget(HostsSettingsPage.addRow)

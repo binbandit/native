@@ -1,4 +1,3 @@
-#if NATIVE_PAIRING_WIP
 import Foundation
 import NativeHostProtocol
 import NativeLink
@@ -85,13 +84,15 @@ nonisolated enum AddHostFailure: Hashable, Sendable {
         }
     }
 
-    /// What the user can do.
-    var suggestion: String {
-        switch self {
+    /// What the user can do. A new link comes from Try Again when Add Host ran pair over SSH, and
+    /// from running pair again when the user pasted the link.
+    func suggestion(overSSH: Bool) -> String {
+        let newLink = overSSH ? "Try again for a new one." : "Run pair on that Mac again and paste its new link."
+        return switch self {
         case .notALinkOrDestination:
             "Enter an SSH destination like me@mac-mini.local, or paste the link that “Native Host” pair printed."
         case .newerLink: "Update Native on this Mac, then paste the link again."
-        case .expired: "Links last five minutes. Try again for a new one."
+        case .expired: "Links last five minutes. \(newLink)"
         case .sshSignIn(let destination):
             "Native uses your SSH keys and never types a password. Add this Mac's key to it (ssh-copy-id \(destination)) or load your key into ssh-agent, then try again."
         case .sshHostKey(let destination):
@@ -99,7 +100,7 @@ nonisolated enum AddHostFailure: Hashable, Sendable {
         case .sshUnknownHost:
             "Check the name, or use its IP address. Names ending in .local only work on the same network."
         case .sshRefused:
-            "Turn on Remote Login on it (System Settings › General › Sharing), then try again."
+            "Turn on Remote Login on it (System Settings ▸ General ▸ Sharing), then try again."
         case .sshUnreachable:
             "Check that it's on and on a network this Mac can reach, like the same Wi-Fi or your tailnet."
         case .sshNotApproved(_, let page):
@@ -110,7 +111,7 @@ nonisolated enum AddHostFailure: Hashable, Sendable {
         case .tooOld: "Update Native on it to the same version as this Mac, then try again."
         case .notAMac: "Hosts are Macs for now."
         case .hostNotRunning(let host):
-            "Open Native on \(host) once (its host keeps running after that), or turn on Settings › Background › Keep agents running when Native quits there. Then try again."
+            "Open Native on \(host) once (its host keeps running after that), or turn on Settings ▸ Background ▸ Keep agents running when Native quits there. Then try again."
         case .notAllowed:
             "The organization that manages it turned paired devices off. Ask them to turn on the companion, then try again."
         case .versionMismatch(let host, let theirs, let theirProtocol):
@@ -121,10 +122,9 @@ nonisolated enum AddHostFailure: Hashable, Sendable {
             "Tried \(addresses). Check that both Macs are on the same network or tailnet, and that its firewall lets Native Host accept connections."
         case .wrongHost:
             "The address may belong to another machine now. Run pair on the host again for a link with its current addresses."
-        case .linkSpent:
-            "Each link pairs once, and closes when pair stops. Try again for a new one."
+        case .linkSpent: "Each link pairs once, and closes when pair stops. \(newLink)"
         case .replaced: "Finish or cancel the other pairing there, then try again."
-        case .tooManyAttempts: "Try again for a new link, and use only the newest one."
+        case .tooManyAttempts: "\(newLink) Use only the newest link."
         case .declined: "Ask whoever is at it to choose Pair, or try again."
         case .unexpected(let detail): detail
         }
@@ -199,4 +199,3 @@ nonisolated enum AddHostFailure: Hashable, Sendable {
         }
     }
 }
-#endif

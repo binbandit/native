@@ -137,10 +137,13 @@ extension SessionTitles {
     }
 
     /// Writes the title the host asked for, with this app's titler and the user's instructions for
-    /// the task's folder. Tried once a run: a titler that can't write it here won't on the next
-    /// summary either.
+    /// the task's folder. Repeated summaries don't retry it; the host requests one retry on the
+    /// next turn with a new attempt number.
     private func writeTitle(_ request: HostTitleRequest, for key: Key, on link: HostTitleLink) {
-        guard let titler = hostTitler(), writtenForHosts.insert(key).inserted else { return }
+        guard userTitle(for: key) == nil, generatedTitle(for: key) == nil,
+            let titler = hostTitler(), requestsForHosts[key] != request
+        else { return }
+        requestsForHosts[key] = request
         let titleRequest = TitleRequest(
             projectName: request.projectName, prompt: request.prompt,
             instructions: AIInstructionsStore.shared.addition(for: .title, in: link.folder))

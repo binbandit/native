@@ -28,6 +28,10 @@ if CommandLine.arguments.dropFirst().first == "doctor" {
 }
 let location = MacHost.location()
 var configuration = MacHost.configuration(location: location, info: info)
+// A development host can go by another name, so screenshots of a stand-in host don't show this Mac's.
+if location.isDevelopment, let name = ProcessInfo.processInfo.environment["NATIVE_HOST_MACHINE_NAME"] {
+    configuration.machineName = name
+}
 // Started by the app itself (background activity is off): it lives exactly as long as the app.
 let isAttached = CommandLine.arguments.contains(HostLocation.exitWithParentArgument)
 if isAttached {

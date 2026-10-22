@@ -21,7 +21,7 @@ struct HostsComponentsFixturePage: View {
                 "Device picker and badges", description: Text("Fixture devices, for checking the components."))
             HStack(alignment: .top, spacing: DS.Space.xxxl) {
                 VStack(alignment: .leading, spacing: DS.Space.lg) {
-                    SettingsSubheading("New Session")
+                    SettingsSubheading("New Task")
                     HostDevicePill(
                         options: HostDeviceFixtures.options, projectName: "native", selection: $selection,
                         isPickerOpen: $isPickerOpen, shortcut: "⇧⌘H", onAddHost: {}, lookOf: look)
@@ -45,7 +45,7 @@ struct HostsComponentsFixturePage: View {
                         }
                     }
                     .frame(width: DS.Size.sidebarWidth)
-                    SettingsSubheading("Session header")
+                    SettingsSubheading("Task header")
                     VStack(alignment: .leading, spacing: DS.Space.md) {
                         ForEach(HostDeviceFixtures.options.dropFirst()) { option in
                             badge(option, style: .header)

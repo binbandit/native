@@ -100,19 +100,34 @@ extension HostCore {
         client.attached.insert(session.id)
     }
 
+    /// Loads the session if the agent doesn't have it, except one the host unloaded while idle,
+    /// which waits until it's used: its log already shows everything.
     func loadInBackground(_ session: HostSession) {
-        guard session.needsLoad, session.record.origin != .announced else { return }
+        guard session.needsLoad, !session.reloadsQuietly, session.record.origin != .announced else { return }
         Task { try? await load(session) }
     }
 
     /// Makes sure the agent process has the session loaded, replaying it from the agent's store if
-    /// it doesn't (after the host or the agent restarted). Concurrent callers share one load.
+    /// it doesn't (after the host or the agent restarted), or resuming it quietly if the host
+    /// unloaded it while idle. Concurrent callers share one load.
     func load(_ session: HostSession) async throws {
         if let loading = session.loading {
             return try await loading.value
         }
         guard session.needsLoad else { return }
-        let task = Task { try await performLoad(session) }
+        let task = Task {
+            // Recovery reads the replay to tell whether the agent had the interrupted prompt.
+            if session.reloadsQuietly, session.phase != .recovering {
+                do {
+                    return try await reloadQuietly(session)
+                } catch {
+                    logger.error("Couldn't resume a session quietly, loading it: \(error.localizedDescription)")
+                }
+            }
+            // A load starts the log over, so it no longer holds the conversation to resume.
+            session.reloadsQuietly = false
+            try await performLoad(session)
+        }
         session.loading = task
         defer { session.loading = nil }
         try await task.value
@@ -135,6 +150,7 @@ extension HostCore {
             let generation = link.generation
             guard link.canLoadSessions else { throw HostError.cannotLoad(link.spec.name) }
             let servers = await tasks.agentServers(for: session.id, base: session.mcpServers)
+            discardSubagentsForReplay(of: session, on: link)
             append(.reset(loading: true), to: session)
             replaying = true
             route(session, on: link)
@@ -185,7 +201,7 @@ extension HostCore {
             if !wasRecovering {
                 session.phase = .disconnected
                 append(
-                    .notice(text: "Couldn't load this session: \(error.localizedDescription)", isError: true),
+                    .notice(text: "Couldn't load this task: \(error.localizedDescription)", isError: true),
                     to: session)
             }
             session.problem = error.localizedDescription
@@ -195,7 +211,7 @@ extension HostCore {
     }
 
     /// Starts a fresh agent session in place of one the agent never saved.
-    private func replaceUnsaved(
+    func replaceUnsaved(
         _ session: HostSession, on link: AgentLink, peer: JSONRPCPeer
     ) async throws -> RawConfigOptionsResponse {
         let servers = await tasks.agentServers(for: session.id, base: session.mcpServers)
@@ -285,13 +301,13 @@ extension HostCore {
                 else { continue }
                 let currentName = values.first { $0.value == current }?.name ?? current
                 notes.append(
-                    "\(session.agentName) didn't take back \(choice.valueName) for \(option.name), so this session uses \(currentName)."
+                    "\(session.agentName) didn't take back \(choice.valueName) for \(option.name), so this task uses \(currentName)."
                 )
                 retryCount += 1
             case .unavailable(let choice, let kept)?:
                 notes.append(
                     "\(session.agentName) no longer offers \(choice.valueName) for \(choice.optionName)."
-                        + (kept.map { " This session uses \($0)." } ?? ""))
+                        + (kept.map { " This task uses \($0)." } ?? ""))
             default: break
             }
         }
@@ -305,7 +321,7 @@ extension HostCore {
         if retryCount > 0 {
             notes.append(retryCount == 1 ? "Choose it again to retry." : "Choose them again to retry.")
         } else {
-            notes.append("Review this session's settings to choose another value.")
+            notes.append("Review this task's settings to choose another value.")
         }
         append(.notice(text: notes.joined(separator: " "), isError: false), to: session)
     }

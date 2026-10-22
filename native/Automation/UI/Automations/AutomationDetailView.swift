@@ -30,7 +30,7 @@ struct AutomationDetailView: View {
         .confirmationDialog("Delete \u{201C}\(automation.name)\u{201D}?", isPresented: $isConfirmingDelete) {
             Button("Delete Automation", role: .destructive, action: onDelete)
         } message: {
-            Text("Its run history goes with it. Runs in progress are stopped; their sessions stay with their agents.")
+            Text("Its run history goes with it. Runs in progress are stopped; their tasks stay with their agents.")
         }
     }
 
