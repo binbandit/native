@@ -153,9 +153,10 @@ The core (declarations, `ExtensionPoint`, resolution, `ExperimentStore`) is the 
 `Packages/Experiments`, tested with `swift test` and usable by the host and the companion. Every
 experiment Native has is declared in `native/Experiments/NativeExperiments.swift` and listed in
 `ExperimentCatalog.native`: id, title, one-line summary, stage (Labs or Beta), owner, review date,
-what it touches and whether it needs a relaunch. Settings ▸ Labs shows all of it, with conflicts,
-experiments past their review date, and Reset All (undoable). Values live in user defaults under
-`experiment.<id>`; experiments that need a relaunch keep their launch value until the next launch.
+what it touches and whether it needs a relaunch. Settings ▸ Labs shows the user-facing details,
+conflicts and Reset All (undoable); owner and review dates stay in the declarations for maintainers.
+Values live in user defaults under `experiment.<id>`; experiments that need a relaunch keep their
+launch value until the next launch.
 Plugins add experiments too, through the same store and the same resolution rules. A code plugin
 declares them in `NativePlugin.experiments` (gates, parameters, and variants claiming extension
 points); a `plugin.json` declares gates that switch its own contributions and parameters that fill

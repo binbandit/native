@@ -100,7 +100,7 @@ nonisolated enum AddHostFailure: Hashable, Sendable {
         case .sshUnknownHost:
             "Check the name, or use its IP address. Names ending in .local only work on the same network."
         case .sshRefused:
-            "Turn on Remote Login on it (System Settings › General › Sharing), then try again."
+            "Turn on Remote Login on it (System Settings ▸ General ▸ Sharing), then try again."
         case .sshUnreachable:
             "Check that it's on and on a network this Mac can reach, like the same Wi-Fi or your tailnet."
         case .sshNotApproved(_, let page):
@@ -111,7 +111,7 @@ nonisolated enum AddHostFailure: Hashable, Sendable {
         case .tooOld: "Update Native on it to the same version as this Mac, then try again."
         case .notAMac: "Hosts are Macs for now."
         case .hostNotRunning(let host):
-            "Open Native on \(host) once (its host keeps running after that), or turn on Settings › Background › Keep agents running when Native quits there. Then try again."
+            "Open Native on \(host) once (its host keeps running after that), or turn on Settings ▸ Background ▸ Keep agents running when Native quits there. Then try again."
         case .notAllowed:
             "The organization that manages it turned paired devices off. Ask them to turn on the companion, then try again."
         case .versionMismatch(let host, let theirs, let theirProtocol):

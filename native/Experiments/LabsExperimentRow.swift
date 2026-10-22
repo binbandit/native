@@ -1,8 +1,7 @@
 import Experiments
 import SwiftUI
 
-/// One experiment in Labs: its title and stage, what it does, what it changes, who owns it and
-/// when it's due for review, and the control for its tier.
+/// One experiment in Labs: its title and stage, what it does, what it changes, and the control for its tier.
 struct LabsExperimentRow: View {
     let id: SettingsRowID
     let experiment: ExperimentDescriptor
@@ -47,11 +46,10 @@ struct LabsExperimentRow: View {
         }
     }
 
-    /// "Changes Transcript style · Owned by transcript · Review by Jan 31, 2027", then a line for each
-    /// thing that needs attention.
+    /// What changes for the user, followed by anything they need to act on.
     private var detail: Text {
         let touches = experiment.touches.map(\.title).formatted(.list(type: .and))
-        var lines = [Text("Changes \(touches) · Owned by \(experiment.owner) · \(review)")]
+        var lines = [Text("Changes \(touches)")]
         if experiment.requiresRelaunch {
             lines.append(
                 needsRelaunch
@@ -66,14 +64,6 @@ struct LabsExperimentRow: View {
             )
         }
         return lines.dropFirst().reduce(lines[0]) { Text("\($0)\n\($1)") }
-    }
-
-    private var review: Text {
-        guard let date = experiment.reviewBy.date() else { return Text(verbatim: "") }
-        let day = date.formatted(date: .abbreviated, time: .omitted)
-        return experiment.reviewBy.isDue(at: .now)
-            ? Text("Due for review since \(day)").foregroundStyle(.dsAttention)
-            : Text("Review by \(day)")
     }
 }
 

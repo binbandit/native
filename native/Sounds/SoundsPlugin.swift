@@ -5,8 +5,10 @@ import ACP
 /// third when something went wrong. This is the only place Native plays sounds for events, so the
 /// user never hears two for one moment.
 struct SoundsPlugin: NativePlugin {
+    static let id = "sounds"
+
     let manifest = PluginManifest(
-        id: "sounds",
+        id: Self.id,
         name: "Sounds",
         description: "Plays a sound when a task finishes, when something needs you, and when something goes wrong."
     )
@@ -15,6 +17,13 @@ struct SoundsPlugin: NativePlugin {
 
     init(sounds: NotificationSounds = .shared) {
         self.sounds = sounds
+    }
+
+    /// Both Settings switches and every playback path follow the same saved plugin choice.
+    static func connect(_ sounds: NotificationSounds, plugins: PluginRegistry) {
+        sounds.preferences.migrateEnabledChoice { plugins.setEnabled($0, for: id) }
+        sounds.isEnabled = { [weak plugins] in plugins?.isEnabled(id) == true }
+        sounds.prepare()
     }
 
     func handle(_ event: SessionEvent) async {

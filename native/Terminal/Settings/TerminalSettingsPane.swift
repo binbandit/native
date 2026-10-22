@@ -12,7 +12,7 @@ extension SettingsPane {
             title: "Terminal",
             systemImage: "apple.terminal",
             group: .personal,
-            order: 18,
+            order: 17,
             keywords: ["shell", "console", "ghostty", "pty", "zsh", "theme", "import"],
             searchEntries: {
                 [

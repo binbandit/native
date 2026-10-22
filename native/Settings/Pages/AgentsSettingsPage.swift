@@ -10,7 +10,7 @@ extension SettingsPane {
         SettingsPane(
             id: .agents,
             title: "Agents",
-            systemImage: "wifi.router",
+            systemImage: "person.2",
             group: .agents,
             order: 0,
             searchEntries: {

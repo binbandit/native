@@ -76,7 +76,7 @@ import Testing
         let harness = try GatewayHarness(paired: { record in records.withLock { $0.append(record) } })
         _ = try await harness.pairDevice()
         #expect(records.value.map(\.wasPreapproved) == [false])
-        #expect(records.value.first?.summary.contains("Settings › Paired Devices") == true)
+        #expect(records.value.first?.summary.contains("Settings ▸ Paired Devices") == true)
     }
 
     @Test func theLinkCarriesItsGrantsAndOlderLinksStillRead() throws {

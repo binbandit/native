@@ -43,7 +43,7 @@ struct SettingsPane: Identifiable {
     let title: String
     let systemImage: String
     let group: Group
-    /// Position within the group. Built-in panes use multiples of 10 so others can go between.
+    /// Position within the group. Each built-in pane has a distinct value, with gaps for additions.
     let order: Int
     /// More words that find the pane in search, such as "dock" for Appearance.
     let keywords: [String]

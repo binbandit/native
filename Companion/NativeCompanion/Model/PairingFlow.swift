@@ -22,7 +22,7 @@ final class PairingFlow {
 
     func pair(invite: PairingInvite, discovered: [DiscoveredHost], store: CompanionStore) {
         guard !invite.isExpired(at: .now) else {
-            step = .failed("This code expired. On \(invite.hostName), make a new one in Settings › Paired Devices.")
+            step = .failed("This code expired. On \(invite.hostName), make a new one in Settings ▸ Paired Devices.")
             return
         }
         run(
