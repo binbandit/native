@@ -28,6 +28,8 @@ public struct LinkPairCommandEvent: Codable, Hashable, Sendable {
     }
 
     public var event: Kind
+    /// `invite`: the command and version of this output (`LinkPairCommand.marker`).
+    public var command: String?
     /// `invite`: the link.
     public var link: String?
     /// `invite`: the Native build that answered, to tell a version mismatch apart.
@@ -43,10 +45,12 @@ public struct LinkPairCommandEvent: Codable, Hashable, Sendable {
     public var message: String?
 
     public init(
-        event: Kind, link: String? = nil, host: PeerInfo? = nil, protocolVersion: Int? = nil,
-        device: LinkDeviceInfo? = nil, grants: LinkGrants? = nil, failure: Failure? = nil, message: String? = nil
+        event: Kind, command: String? = nil, link: String? = nil, host: PeerInfo? = nil,
+        protocolVersion: Int? = nil, device: LinkDeviceInfo? = nil, grants: LinkGrants? = nil,
+        failure: Failure? = nil, message: String? = nil
     ) {
         self.event = event
+        self.command = command
         self.link = link
         self.host = host
         self.protocolVersion = protocolVersion

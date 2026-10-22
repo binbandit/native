@@ -1,4 +1,3 @@
-#if NATIVE_PAIRING_WIP
 import NativeLink
 import SwiftUI
 import UserShell
@@ -102,4 +101,3 @@ enum AddHostTesting {
         #endif
     }
 }
-#endif

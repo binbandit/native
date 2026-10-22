@@ -56,9 +56,7 @@ struct RootView: View {
                 .undoToast($undoToast)
             StatusBar(registry: statusBar)
         }
-        #if NATIVE_PAIRING_WIP
         .addHostPresentation(hosts: model.hosts)
-        #endif
         // After an update with highlights, once nothing waits on the user.
         .whatsNewSheet(whatsNew, blocked: model.hasWorkNeedingUser)
         // Asked once, after real use, and never while an agent works (docs/enterprise.md).
