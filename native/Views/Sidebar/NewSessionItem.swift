@@ -43,7 +43,11 @@ struct NewSessionItem: View {
                 .labelStyle(.titleAndIcon)
             }
         }
-        .disabled(model.projects.all.isEmpty || !model.agents.contains { model.canCreateSession(with: $0.agent.id) })
+        .disabled(
+            model.projects.all.isEmpty
+                || (model.agentStartupFailure == nil
+                    && !model.agents.contains { model.canCreateSession(with: $0.agent.id) })
+        )
     }
 }
 

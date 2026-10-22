@@ -329,6 +329,10 @@ task, why and what to do, with the fix (Check Again, Restart) beside it. It open
 keyboard in its filter and the default agent (the one ⌘N starts) highlighted. Add Agent… at the
 end lists the agents Native knows but can't find. Close dismisses the picker with pointer or touch.
 
+When every installed agent has failed to start, New Task (⌘N) opens this recovery picker too.
+It names the failed agents and offers Restart beside each one, plus Agents Settings. Home shows
+the same failure with Restart on its agent cards and a link to Settings > Agents.
+
 | Keys (picker open) | Action |
 | --- | --- |
 | Type | Narrow the list by name; letters in order match too |

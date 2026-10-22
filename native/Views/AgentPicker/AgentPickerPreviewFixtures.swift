@@ -1,4 +1,5 @@
 #if DEBUG
+import NativeSetup
 import SwiftUI
 
 /// The built-in agents in every state the picker shows, for its previews; never from a running app.
@@ -26,6 +27,11 @@ enum AgentPickerPreviewFixtures {
                 agent: $0.agent, status: $0.status, choice: nil, reason: $0.reason, remedy: $0.remedy,
                 isDefault: $0.isDefault)
         }
+    }
+
+    static let failed: [AgentPickerOption] = [BuiltInPlugins.codex, BuiltInPlugins.claudeCode].map {
+        option(
+            $0, .stopped, choice: nil, reason: "The process exited before initialization finished.", remedy: .restart)
     }
 
     private static func option(
@@ -64,6 +70,22 @@ enum AgentPickerPreviewFixtures {
                 Button("Retry") {}.buttonStyle(.ds(.secondary))
             }
             .padding([.horizontal, .top], DS.Space.md)
+        }
+    }
+}
+
+#Preview("Agent picker - All agents failed") {
+    DSPreviewPair {
+        AgentPickerPanel(
+            options: AgentPickerPreviewFixtures.failed, projectName: "native", missingAgents: [],
+            defaultShortcut: "⌘N", onChoose: { _ in }, onRemedy: { _ in }, onAddAgent: {}, onDismiss: {}
+        ) {
+            if let failure = AgentStartupFailure(agents: [("Codex", .stopped), ("Claude Code", .stopped)]) {
+                NoticeBanner(tone: .warning, title: failure.title, detail: failure.message) {
+                    Button("Agents Settings") {}.buttonStyle(.ds(.secondary))
+                }
+                .padding([.horizontal, .top], DS.Space.md)
+            }
         }
     }
 }

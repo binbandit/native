@@ -42,6 +42,7 @@ private struct AgentPickerSheet: View {
     let close: (_ then: (@MainActor () -> Void)?) -> Void
 
     @Environment(AppModel.self) private var model
+    @Environment(SettingsPresentation.self) private var settings
 
     /// What Add Agent offers, less any agent already listed with its state (one found missing at
     /// launch keeps its row until the check for agents drops it).
@@ -68,6 +69,12 @@ private struct AgentPickerSheet: View {
                     Button("Retry") { Task { await model.retry(problem) } }
                         .buttonStyle(.ds(.secondary))
                         .disabled(model.isRetrying(problem))
+                }
+                .padding([.horizontal, .top], DS.Space.md)
+            } else if let failure = model.agentStartupFailure {
+                NoticeBanner(tone: .warning, title: failure.title, detail: failure.message) {
+                    Button("Agents Settings") { close { settings.open(.agents) } }
+                        .buttonStyle(.ds(.secondary))
                 }
                 .padding([.horizontal, .top], DS.Space.md)
             }
