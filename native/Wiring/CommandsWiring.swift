@@ -59,6 +59,7 @@ enum CommandsWiring {
         registry.register(NativeCommand.windowView)
         registry.register(NativeCommand.appearance(features.appearance))
         registry.register([.gitChanges, .keepAwake(features.keepAwake), .statusBar(features.statusBar)])
+        registry.register(NativeCommand.sessionTools)
         registry.register(NativeCommand.celebrations(features.celebrations, settings: settings))
         registry.register(NativeCommand.terminal(terminals))
         ProjectActionsWiring.registerCommands(registry, runner: features.projectActions, model: model)

@@ -5,10 +5,11 @@ import SwiftUI
 // chips' token-field keys, by `DraftAttachmentKeys`.
 extension ComposerView {
     func handleKey(_ press: KeyPress, suggestions: ComposerSuggestions?) -> KeyPress.Result {
-        if let result = handleAttachmentKey(press) { return result }
+        if !(press.key == .escape && overlayDismissal != nil), let result = handleAttachmentKey(press) { return result }
         guard let key = ComposerKeyMap.Key(press.key) else { return .ignored }
         let context = ComposerKeyMap.Context(
             isSuggestionListOpen: suggestions != nil,
+            hasOverlay: overlayDismissal != nil,
             isDraftEmpty: session.draft.isEmpty,
             isWorking: isWorking,
             hasQueuedPrompts: !session.queuedPrompts.isEmpty,
@@ -48,6 +49,8 @@ extension ComposerView {
             }
         case .closeSuggestionList:
             suggestionsDismissed = true
+        case .dismissOverlay:
+            overlayDismissal?.dismiss()
         case .recallLastPrompt:
             session.draft = session.state.lastPrompt ?? ""
         case .editLastQueuedPrompt:

@@ -92,8 +92,8 @@ extension Gate {
     static let sessionTools = Gate(
         id: "session-tools",
         title: "Task tools",
-        summary: "A calmer task screen: no tool buttons in the header. Changes, terminals, runs and the rest "
-            + "show as facts under the title and open beside or under the conversation when they have something.",
+        summary: "Shows live Changes facts under the task title, with Changes beside a wide conversation "
+            + "or over a narrow one. Other task tools are still being built.",
         site: "Task ▸ header and tools",
         stage: .labs,
         owner: "tasks",

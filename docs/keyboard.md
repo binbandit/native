@@ -250,6 +250,17 @@ to the user's choice.
 | ⌃⌘A | Keep Mac awake: cycle Off → While agents work → On (View ▸ Keep Mac Awake) | View | `keepAwake.nextMode` |
 | | Show or hide the status bar along the window's bottom edge (on by default) | View | `statusBar.toggle` |
 
+## Task tools (Labs)
+
+With Task Tools enabled in Settings ▸ Labs (off by default), the Changes fact under the title
+opens the changes panel. It docks beside a wide conversation and overlays a narrow one.
+
+| Keys | Action | Menu | Command |
+| --- | --- | --- | --- |
+| ⌥⌘1 | Show or hide Changes | View ▸ Tools | `sessionTools.changes` |
+| ⇧⌘D | Show or hide Changes, as on the standard task screen | View | |
+| Escape | Close the Changes overlay before composer Stop, suggestions or attachment actions; while focus is in the docked panel, close that panel | | |
+
 ## Quitting
 
 With "Keep agents running when Native quits" on (Settings ▸ Background, the default), ⌘Q quits only

@@ -14,6 +14,7 @@ struct ComposerView: View {
     @AppStorage(FollowUpBehavior.storageKey) var followUp = FollowUpBehavior.defaultValue
     @Environment(\.undoManager) var undoManager
     @Environment(\.composerNextSteps) var nextSteps
+    @Environment(\.composerOverlayDismissal) var overlayDismissal
     @Environment(\.transcriptColumnMaxWidth) var columnWidth
     @Environment(AutomationCenter.self) var automation
     @Environment(AppModel.self) var app
@@ -278,7 +279,8 @@ struct ComposerView: View {
                         // Escape stops from the editor through its keys (`ComposerKeyMap`), which
                         // see it first; the button's own Escape covers focus anywhere else.
                         ComposerStopButton(
-                            isEscapeEnabled: !isFocused && suggestions == nil && selectedAttachmentIndex == nil,
+                            isEscapeEnabled: overlayDismissal == nil && !isFocused && suggestions == nil
+                                && selectedAttachmentIndex == nil,
                             action: stop
                         )
                     }

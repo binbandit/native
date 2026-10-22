@@ -36,6 +36,7 @@ public enum DefaultShortcuts {
         "go.expeditions": "⇧⌘X",
         "view.toggleSubagentInspector": "⌥⌘I",
         "view.toggleChanges": "⇧⌘D",
+        "sessionTools.changes": "⌥⌘1",
         "view.mcpServers": "⌃⌘M",
         "keepAwake.nextMode": "⌃⌘A",
         "palette.show": "⌘K",

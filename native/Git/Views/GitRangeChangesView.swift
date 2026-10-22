@@ -11,7 +11,7 @@ struct GitRangeChangesView: View {
 
     @State private var model: GitRangeModel
 
-    /// `model` is for previews, which pass one frozen at a comparison.
+    /// The review retains `model` across container changes; previews pass one frozen at a comparison.
     init(
         repository: GitRepositoryModel, review: GitChangesReview, request: GitRangeRequest,
         model: GitRangeModel = GitRangeModel()
@@ -43,8 +43,9 @@ struct GitRangeChangesView: View {
         }
         .task(id: request) { show() }
         .onChange(of: review.requestedFile) { show() }
-        // Every rescan, not just status changes: an edit can keep its line counts.
-        .onChange(of: repository.scanCount) { model.refresh() }
+        // A retained scope can miss scans while hidden. Revalidate on activation as well as every
+        // rescan, not just status changes: an edit can keep its line counts.
+        .onChange(of: repository.scanCount, initial: true) { model.refresh() }
     }
 
     private func show() {

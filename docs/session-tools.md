@@ -5,7 +5,7 @@ terminals, project actions, subagents, the branch's pull request, Open In) is a 
 the user turns on and places, which shows up only while it has something to show. With every tool
 off, a task is the conversation and the composer, and nothing is missing.
 
-It's behind the Task Tools gate (Settings ▸ Labs) while it's built; `SessionView` shows
+It's behind the Task Tools gate (Settings ▸ Labs, off by default) while it's built; `SessionView` shows
 `SessionToolsScreen` when it's on.
 
 ## Places
@@ -32,3 +32,23 @@ the task panel seam the lean-core plan (`docs/plans/lean-core.md`) builds module
 
 Where the user put each tool is a `SessionToolArrangement`, saved in user defaults
 (`sessionTools.arrangement`) as only the places that differ from each tool's default.
+
+## Facts header and Changes
+
+The gated screen shows the task title, then its branch (or folder) and the live Changes fact:
+`feature-branch · 2 files +12 −3`. A clean repository has no Changes fact. Clicking the fact,
+View ▸ Tools ▸ Show Changes (⌥⌘1), or the existing ⇧⌘D opens Changes. The transcript's Review
+and file rows open the same panel on the latest turn; Commit retains the existing commit flow.
+The panel retains the inspector's loading, failure, non-repository and clean states.
+
+Changes docks when the task's available width can hold a 520pt conversation and a 420pt
+panel. The docked panel stays at 420pt, including after state restoration, so dragging or restoring
+a wider inspector cannot consume the conversation's reserve. Below 940pt it opens over the
+conversation. Resizing preserves the selected tool, review scope, selected file and loaded range
+diff. Escape closes the overlay ahead of composer actions, or the docked panel while focus is in
+it. Opening and closing the inspector disables animation to avoid the prototype's split-view constraint loop. The threshold
+still needs a visual check on the main Mac in both appearances.
+
+This step registers only Changes, with Side, Fact and Off placements. The existing subagent
+card inspector remains available. The other tool facts and panes, workbench, Settings editor,
+and default-on transition belong to later PRs. The standard screen is unchanged while Labs is off.

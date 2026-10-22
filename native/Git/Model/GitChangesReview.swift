@@ -14,6 +14,10 @@ final class GitChangesReview {
     /// A file the card asked to see, by the path the card lists; selected once the turn's changes
     /// are in.
     var requestedFile: String?
+    /// Range state belongs to the review, so moving its pane between containers keeps the file,
+    /// loaded diff and expansion. Separate models avoid showing a branch comparison in This Turn.
+    private(set) var turnRange = GitRangeModel()
+    private(set) var branchRange = GitRangeModel()
     /// What the latest turn changed as git sees it, for the files-changed card; nil until worked out,
     /// or when the turn's start wasn't recorded (the card then lists the agent's reported edits).
     private(set) var latestTurnChanges: TurnDetectedChanges?
@@ -80,5 +84,7 @@ final class GitChangesReview {
     func reset() {
         scope = .uncommitted
         requestedFile = nil
+        turnRange = GitRangeModel()
+        branchRange = GitRangeModel()
     }
 }
