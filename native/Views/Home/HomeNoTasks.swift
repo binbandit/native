@@ -2,8 +2,7 @@ import NativeSetup
 import SwiftUI
 
 /// What stands in for the recent tasks while there are none: what goes here, and how to start the
-/// first. The agent cards right above are the action, so this points at them instead of repeating
-/// one as a button.
+/// first. Failed agents keep their Restart cards above, with Settings here if a retry doesn't help.
 struct HomeNoTasks: View {
     let projectName: String
     /// The ⌘N shortcut, while an agent is ready to take it.
