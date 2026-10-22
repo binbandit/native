@@ -76,6 +76,8 @@ enum BuiltInPlugins {
                         install: "npm install -g @openai/codex",
                         docs: URL(string: "https://developers.openai.com/codex/cli")
                     ),
+                    // Closing a thread retains its MCP servers; ending the idle adapter frees them.
+                    idleUnloadTimeout: 600,
                     // codex-acp names a new session itself after its first turn, with a model, on a
                     // thread of its own that keeps a second set of the user's MCP servers running for
                     // as long as the adapter does. Named first, it doesn't; `/rename` asks no model.

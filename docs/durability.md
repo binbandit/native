@@ -1006,7 +1006,12 @@ Window › Durable Sessions preview, opt-in per channel. Nothing else in the app
    `NativeHostSessions` default), `AppModel.connectHost(client:)` makes every `AgentRuntime` take its
    status from `_native/agents/changed` (`AgentRuntime.apply`, decoding the agent's `initialize`
    result) and start, stop, restart and sign in through the host (`AgentRuntime+Host.swift`). Idle
-   parking asks `_native/agents/stop`, which the host refuses while the agent works. Requests outside
+   parking asks `_native/agents/stop`, which the host refuses while the agent works. Agents whose spec
+   sets `idleUnloadTimeout` are left to the host instead (`HostCore+IdleUnload.swift`): it closes each
+   session idle that long in the agent (`session/close`) while keeping the session, its log and its
+   followers, including completed subagent transcripts and their host identities. It restores child
+   routing and resumes with `session/resume` (no replay, settings set back) the next time it's used,
+   and ends the agent's process once nothing is loaded and nothing used it for as long. Requests outside
    turns go through `AgentConnection`: `ACPConnection` for agents in the app, `HostAgentConnection`
    (list and delete sessions) for agents in the host, so listing and archiving code didn't change.
 2. `SessionModel` keeps `state`, `phase`, `queuedPrompts`, `needsApproval` and every method. It holds

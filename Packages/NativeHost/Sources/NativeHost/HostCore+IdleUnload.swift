@@ -11,15 +11,15 @@ import NativeHostProtocol
 // loaded and nothing to do, its process ends too, which frees the rest; it starts again when
 // something needs it.
 extension HostCore {
-    /// Checks for idle sessions and agents for as long as the host runs, a few times per timeout.
+    /// Checks for idle sessions and agents for as long as the host runs, a few times per timeout,
+    /// starting over when agents' specs change.
     func unloadIdleSessionsPeriodically() {
-        Task { [weak self] in
-            var interval = Duration.seconds(30)
-            while !Task.isCancelled {
+        idleUnloadChecks?.cancel()
+        idleUnloadChecks = Task { [weak self] in
+            while let interval = self?.idleUnloadCheckInterval {
                 try? await Task.sleep(for: interval, tolerance: interval / 10)
-                guard let self else { return }
-                unloadIdleSessions()
-                interval = idleUnloadCheckInterval
+                guard !Task.isCancelled else { return }
+                self?.unloadIdleSessions()
             }
         }
     }
@@ -63,7 +63,11 @@ extension HostCore {
         !session.needsLoad && session.loading == nil && session.phase == .idle && !session.isWorking
             && session.record.origin != .announced && session.record.agentSessionID != nil
             && session.pendingPermissions.isEmpty && session.pendingQuestions.isEmpty
-            && !subagents(of: session).contains(where: \.isWorking)
+            && !session.mirror.state.subagents.contains { $0.workState?.isWorking == true }
+            && !subagents(of: session).contains {
+                $0.isWorking || !$0.pendingPermissions.isEmpty || !$0.pendingQuestions.isEmpty
+                    || $0.mirror.state.subagents.contains { $0.workState?.isWorking == true }
+            }
     }
 
     /// The session's last event, or its subagents' if they're later: they report through it.
@@ -78,8 +82,31 @@ extension HostCore {
             || !session.pendingQuestions.isEmpty
     }
 
-    private func subagents(of session: HostSession) -> [HostSession] {
-        sessions.values.filter { $0.record.parentID == session.id && $0.record.origin == .announced }
+    /// Nested children share the parent's lifetime too, including their pending input and history.
+    func subagents(of session: HostSession) -> [HostSession] {
+        var descendants: [HostSession] = []
+        var parents: Set<HostSessionID> = [session.id]
+        var seen = parents
+        while !parents.isEmpty {
+            let children = sessions.values.filter {
+                $0.record.origin == .announced && $0.record.parentID.map(parents.contains) == true
+                    && !seen.contains($0.id)
+            }
+            descendants.append(contentsOf: children)
+            parents = Set(children.map(\.id))
+            seen.formUnion(parents)
+        }
+        return descendants
+    }
+
+    /// A full history replay reconstructs the child tree; keeping its old logs would duplicate it.
+    func discardSubagentsForReplay(of session: HostSession, on link: AgentLink) {
+        for child in subagents(of: session) {
+            if let agentSessionID = child.record.agentSessionID {
+                link.routes[agentSessionID] = nil
+            }
+            sessions[child.id] = nil
+        }
     }
 
     /// Closes the session in its agent (with `peer`, unless the agent is about to end), keeping it
@@ -91,6 +118,7 @@ extension HostCore {
         // They live in the parent's agent session, which takes them with it.
         for subagent in subagents(of: session) {
             subagent.needsLoad = true
+            subagent.reloadsQuietly = true
         }
         logger.info("Unloading an idle \(session.agentName) session")
         guard let peer, let agentSessionID = session.record.agentSessionID else { return }
@@ -102,5 +130,57 @@ extension HostCore {
                 logger.error("Couldn't unload a \(session.agentName) session: \(error.localizedDescription)")
             }
         }
+    }
+
+    /// Brings back a session `unload` left, with `session/resume`, which replays nothing: its log
+    /// still holds the conversation, so every client's transcript and the session's phase stay as
+    /// they are. Its settings are set back where the agent reopened it on others. A session the
+    /// agent never saved has nothing to resume, so it carries on in a fresh one.
+    func reloadQuietly(_ session: HostSession) async throws {
+        let link = try await readyAgent(session.record.agentID)
+        guard let peer = link.peer, let agentSessionID = session.record.agentSessionID else {
+            throw HostError.agentUnavailable(link.spec.name)
+        }
+        let generation = link.generation
+        let children = subagents(of: session)
+        // Register the whole tree before draining buffered updates, which can announce children again.
+        for child in children {
+            if let agentSessionID = child.record.agentSessionID {
+                link.routes[agentSessionID] = child.id
+            }
+        }
+        for child in children { route(child, on: link) }
+        session.loadingConfigOptions = nil
+        defer { session.loadingConfigOptions = nil }
+        let response: RawConfigOptionsResponse
+        do {
+            if session.record.lastStopReason == nil && !session.record.isAdopted {
+                response = try await replaceUnsaved(session, on: link, peer: peer)
+            } else {
+                let servers = await tasks.agentServers(for: session.id, base: session.mcpServers)
+                route(session, on: link)
+                response = try await peer.request(
+                    "session/resume",
+                    RawLoadSessionRequest(
+                        sessionId: agentSessionID, cwd: session.record.cwd, mcpServers: servers,
+                        _meta: session.record.meta),
+                    as: RawConfigOptionsResponse.self)
+            }
+        } catch {
+            noteAgentError(error, from: link)
+            throw error
+        }
+        guard generation == link.generation else { throw PeerError.closed }
+        try await restoreConfigChoices(of: session, on: link, reported: response.configOptions)
+        tasks.sessionLoaded(session)
+        session.needsLoad = false
+        session.reloadsQuietly = false
+        for child in children {
+            child.needsLoad = false
+            child.reloadsQuietly = false
+        }
+        session.supportsSteering = link.supportsSteering
+        session.problem = nil
+        publish(session)
     }
 }

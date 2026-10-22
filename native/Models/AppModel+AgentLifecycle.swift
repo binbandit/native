@@ -88,7 +88,7 @@ extension AppModel {
     /// (seconds) for every agent when it's set, else the agent's own `idleSessionTimeout`, else
     /// never. It's checked as often as agents are, so shorten `agentIdleTimeout` to try a short one.
     /// Only Claude Code sets its own (docs/performance.md): each of its sessions is a process.
-    /// Codex keeps a closed session's MCP servers anyway, so closing doesn't pay there yet.
+    /// Codex is unloaded by the host instead (`idleUnloadTimeout`), which keeps the session open here.
     /// Reopening is faithful: a session loaded back gets its chosen settings set back
     /// (SessionModel+ConfigRestore.swift) and keeps Native's title.
     static func sessionIdleTimeout(for agent: AgentDefinition) -> Duration? {
