@@ -1,4 +1,5 @@
 #if DEBUG
+import ACP
 import Experiments
 import NativeAutomation
 import SwiftUI
@@ -6,7 +7,10 @@ import SwiftUI
 /// Inert state for the quiet composer. Nothing starts an agent or saves a setting.
 enum ComposerNextPreviewFixtures {
     @ViewBuilder
-    static func composer(enabled: Bool = true, draft: String = "", phase: SessionModel.Phase = .idle) -> some View {
+    static func composer(
+        enabled: Bool = true, draft: String = "", phase: SessionModel.Phase = .idle,
+        configure: (SessionModel) -> Void = { _ in }
+    ) -> some View {
         let app = AppModel.preview(.empty)
         let session = session(in: app, draft: draft, phase: phase)
         let defaults = PreviewUserDefaults()
@@ -17,11 +21,21 @@ enum ComposerNextPreviewFixtures {
             goalStore: GoalStore(url: URL(filePath: "/native-preview-unused/goals.json")),
             workflows: WorkflowRunner(store: nil), automations: AutomationEngine(store: nil))
         if let session {
+            let _ = configure(session)
             ComposerView(session: session, taskModes: modes)
                 .environment(app)
                 .environment(automation)
                 .environment(CommandRegistry.shared)
                 .environment(\.experimentStore, experiments)
+        }
+    }
+
+    static func queuedEdit(started: Bool) -> some View {
+        composer(phase: .prompting) { session in
+            session.queue.append("Check the empty queue")
+            session.editingQueuedPrompt = session.queuedPrompts.first?.id
+            session.draft = "Check the empty queue and keep these unsaved edits"
+            if started { _ = session.queue.next() }
         }
     }
 
@@ -63,6 +77,16 @@ enum ComposerNextPreviewFixtures {
                 )
             }
         }
+    }
+}
+
+#Preview("Composer - Queued edit before and after starting") {
+    DSPreviewPair {
+        VStack(spacing: DS.Space.lg) {
+            ComposerNextPreviewFixtures.queuedEdit(started: false)
+            ComposerNextPreviewFixtures.queuedEdit(started: true)
+        }
+        .frame(width: 860)
     }
 }
 #endif

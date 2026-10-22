@@ -72,6 +72,9 @@ the queue. Clicking a message, or ↑ in an empty composer, opens it in the edit
 | ⌥⌘↑ / ⌥⌘↓ | Move it up / down the queue (Task ▸ Move Queued Message Up / Down) |
 | Escape | Close it without saving |
 
+If the message starts or is removed while you edit it, queued-edit hints and shortcuts clear
+immediately. Your draft stays in the composer as a new message, including any unsaved edits.
+
 ## Agent questions
 
 When an agent asks structured questions (Claude Code's AskUserQuestion, ACP form elicitation), they
