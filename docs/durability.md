@@ -258,7 +258,9 @@ device, how it paired and what it may do) and to every connected client. Add Hos
 --manage-plugins` over the user's own SSH (BatchMode, never prompting), shows what the link offers
 with a checkbox each (commands and updates on, plugins off), and pairs with what the owner keeps.
 When that Mac's SSH waits for the sign-in to be approved in a browser (Tailscale SSH's check mode),
-Add Host shows the page to approve and carries on once it is. The pairing remembers the SSH
+Add Host shows the page to approve and carries on once it is. Its copied manual command finds
+Native and Native Nightly in both Applications folders and asks which installation to pair when
+more than one is present. The pairing remembers the SSH
 destination. Only the embedded helper has `pair`: a host without it
 (Linux, later) needs `native-host` moved into a package that depends on both NativeHost and
 NativeLink, with its `serve` starting a `LinkGateway`.

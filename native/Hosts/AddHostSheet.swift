@@ -7,8 +7,10 @@ import SwiftUI
 struct AddHostSheet: View {
     static let width: CGFloat = 460
     /// What to run on the other Mac by hand, for pairing without SSH from here.
-    static let pairCommand =
-        #""/Applications/Native.app/Contents/Library/LoginItems/Native Host.app/Contents/MacOS/Native Host" pair --run-commands --install-updates"#
+    static var pairCommand: String {
+        LinkSSHPairing.manualCommand(
+            grants: AddHostModel.defaultRequest, appName: Bundle.main.bundleURL.lastPathComponent)
+    }
 
     @Bindable var model: AddHostModel
     let close: () -> Void
@@ -78,9 +80,11 @@ struct AddHostSheet: View {
             }
             VStack(alignment: .leading, spacing: DS.Space.sm) {
                 HStack(alignment: .firstTextBaseline, spacing: DS.Space.md) {
-                    Text("No SSH from here? Run this on that Mac and paste the link it prints.")
-                        .font(.dsCaption).foregroundStyle(.dsTextSecondary)
-                        .fixedSize(horizontal: false, vertical: true)
+                    Text(
+                        "No SSH from here? Run this on that Mac and paste the link it prints. If it finds more than one installation, it asks which one to pair."
+                    )
+                    .font(.dsCaption).foregroundStyle(.dsTextSecondary)
+                    .fixedSize(horizontal: false, vertical: true)
                     Spacer(minLength: 0)
                     Button(copiedCommand ? "Copied" : "Copy Command") {
                         DSPasteboard.copy(Self.pairCommand)

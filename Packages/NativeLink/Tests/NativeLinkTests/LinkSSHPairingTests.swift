@@ -119,6 +119,86 @@ import Testing
         #expect(nightly < stable)
         #expect(script.components(separatedBy: "/'Native Nightly.app'").count == 3, "once per folder")
     }
+
+    @Test(arguments: [
+        "Applications/Native.app", "Applications/Native Nightly.app",
+        "home/Applications/Native.app", "home/Applications/Native Nightly.app",
+    ])
+    func manualCommandFindsEachSupportedInstallation(_ installation: String) async throws {
+        let rig = try ScriptRig()
+        try rig.install(installation, helper: Self.manualHelper)
+
+        let result = try await rig.runManual()
+
+        #expect(result.succeeded)
+        #expect(result.output == "fixture pairing link\n")
+        #expect(result.errorOutput.contains(installation))
+        #expect(!result.errorOutput.contains("Choose the installation"))
+        #expect(rig.helperArguments == "pair --run-commands --install-updates")
+    }
+
+    @Test(arguments: ["1\n", "2\n"])
+    func manualCommandLetsTheOwnerChooseAnEdition(_ choice: String) async throws {
+        let rig = try ScriptRig()
+        for name in ["Native.app", "Native Nightly.app"] {
+            try rig.install("Applications/\(name)", helper: Self.manualHelper + "\necho '\(name)'")
+        }
+
+        let result = try await rig.runManual(choice: choice)
+
+        #expect(result.succeeded)
+        #expect(result.errorOutput.contains("Choose the installation to pair [1-2]"))
+        let selected = choice == "1\n" ? "Native.app" : "Native Nightly.app"
+        #expect(result.output == "fixture pairing link\n\(selected)\n")
+    }
+
+    @Test(arguments: ["", "0\n", "3\n", "not a number\n"])
+    func manualCommandNeverPicksAnInstallationAfterAnInvalidChoice(_ choice: String) async throws {
+        let rig = try ScriptRig()
+        for name in ["Native.app", "Native Nightly.app"] {
+            try rig.install("Applications/\(name)", helper: Self.manualHelper)
+        }
+
+        let result = try await rig.runManual(choice: choice)
+
+        #expect(result.exitCode == 2)
+        #expect(result.output.isEmpty)
+        #expect(rig.helperArguments.isEmpty)
+    }
+
+    @Test func manualCommandReportsMissingAndOldInstallations() async throws {
+        let rig = try ScriptRig()
+        let missing = try await rig.runManual()
+        #expect(missing.exitCode == LinkSSHPairing.ScriptStatus.notInstalled)
+        #expect(missing.errorOutput.contains("Native was not found"))
+
+        try rig.install(
+            "home/Applications/Native Nightly.app", helper: "#!/bin/sh\necho started a host", version: "0.9.4")
+        let old = try await rig.runManual()
+        #expect(old.exitCode == LinkSSHPairing.ScriptStatus.tooOld)
+        #expect(old.errorOutput.contains("Update it first"))
+        #expect(old.output.trimmingCharacters(in: .whitespacesAndNewlines) == "0.9.4")
+    }
+
+    @Test func manualCommandHonorsAnExplicitInstallationWithShellCharacters() async throws {
+        let rig = try ScriptRig()
+        let installation = "Owner's Native $(false).app"
+        try rig.install(installation, helper: Self.manualHelper)
+        try rig.install("Applications/Native.app", helper: Self.manualHelper + "\necho wrong installation")
+
+        let result = try await rig.runManual(installation: installation)
+
+        #expect(result.succeeded)
+        #expect(result.output == "fixture pairing link\n")
+        #expect(!result.errorOutput.contains("Choose the installation"))
+    }
+
+    private static let manualHelper = """
+        #!/bin/sh
+        # \(LinkPairCommand.marker)
+        printf '%s\\n' "$*" >&2
+        echo 'fixture pairing link'
+        """
 }
 
 /// A stand-in ssh that runs the remote command here, searching only a folder of stand-in installs
@@ -165,6 +245,18 @@ private final class ScriptRig: Sendable {
             }
         }
         return (events, ending)
+    }
+
+    func runManual(choice: String = "", installation: String? = nil) async throws -> CommandResult {
+        var environment = ProcessInfo.processInfo.environment
+        environment["NATIVE_APP"] = installation.map { root.appending(path: $0).path }
+        let command = LinkSSHPairing.manualCommand(
+            grants: LinkGrants(manageHost: true, runCommands: true), appName: "Native.app",
+            folders: ["Applications", "home/Applications"].map { LinkSSHPairing.quoted(root.appending(path: $0).path) })
+        return try await LocalCommandRunner().run(
+            Command(
+                "/bin/sh", ["-c", command], environment: environment,
+                standardInput: Data(choice.utf8), timeout: .seconds(10)))
     }
 
     /// `preface` is what the stand-in ssh prints to standard error before running the script.
